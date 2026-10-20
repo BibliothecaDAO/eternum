@@ -20,13 +20,21 @@ const triangles = primitives.reduce((total, primitive) => total + primitive.getI
 if (triangles < 500 || triangles > 6296 || primitives.length > 5 || bytes.length > 257144) {
   throw new Error("Revise construction: small landmarks allow 500–6296 triangles, five primitives and 257144 bytes");
 }
+if (
+  basename(path) === "ruin.glb" &&
+  document
+    .getRoot()
+    .listMaterials()
+    .some((material) => material.getName() === "Violet rift residue")
+)
+  throw new Error("Remove the retired violet residue from the packed ruin; its floor uses runtime mist");
 if (document.getRoot().listAnimations().length) throw new Error("Outposts must remain static");
 const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 for (const node of document.getRoot().listNodes()) {
   if (node.getWorldMatrix().some((value, index) => Math.abs(value - identity[index]) > 1e-6))
     throw new Error("Bake every production transform for structure instancing");
 }
-if (["camp.glb", "village.glb", "stragglers.glb"].includes(basename(path)) || basename(path).startsWith("village-")) {
+if (["camp.glb", "village.glb"].includes(basename(path)) || basename(path).startsWith("village-")) {
   const cloth = document
     .getRoot()
     .listNodes()

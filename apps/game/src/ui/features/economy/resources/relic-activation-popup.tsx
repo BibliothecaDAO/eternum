@@ -1,15 +1,14 @@
-import Button from "@/ui/design-system/atoms/button";
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
-import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
+import { HudButton, HudChip, HudNotice, HudRow, HudWindow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { useGame } from "@/hooks/context/game-context";
 import { ID, RelicRecipientType } from "@bibliothecadao/types";
 import React, { useState } from "react";
+import { activateRelic, relicShortName } from "@/ui/design-system/kit/words";
 
 import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../../relics/hooks/use-relic-activation";
 import {
+  HeldRelic,
   RelicEssenceRequirement,
   RelicIncompatibilityNotice,
-  RelicSummary,
 } from "../../relics/components/relic-activation-shared";
 
 interface RelicActivationPopupProps {
@@ -39,7 +38,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
     account: { account },
   } = useGame();
 
-  const { relicInfo, resourceName, resourceKey, essenceCost } = useRelicMetadata(relicId);
+  const { relicInfo, resourceId: relicResourceId, essenceCost } = useRelicMetadata(relicId);
   const { essenceBalance, hasEnoughEssence, shortfall } = useRelicEssenceStatus(entityOwnerId, essenceCost);
   const compatible = isRelicCompatible(relicInfo, recipientType);
 
@@ -85,75 +84,44 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
     }
   };
 
-  const footer = (
-    <>
-      <div className="flex justify-center space-x-4">
-        <Button variant="default" onClick={onClose} disabled={isLoading}>
+  return (
+    <HudWindow title={activateRelic(relicResourceId)} icon="relics" size="task" onClose={onClose}>
+      <HudWindowFoot>
+        <HudButton kind="quiet" onClick={onClose} disabled={isLoading}>
           Cancel
-        </Button>
-        <Button
-          disabled={isLoading || !!error || !compatible || !hasEnoughEssence}
-          isLoading={isLoading}
-          variant="gold"
+        </HudButton>
+        <HudButton
+          kind="primary"
+          busy={isLoading ? "Activating…" : undefined}
+          disabled={!!error || !compatible || !hasEnoughEssence}
           onClick={handleConfirm}
         >
           Activate Relic
-        </Button>
+        </HudButton>
+      </HudWindowFoot>
+      <div className="flex flex-col gap-3">
+        <HeldRelic relicId={relicResourceId} held={String(relicBalance)} />
+        {relicInfo && (
+          <HudRow
+            title={relicShortName(relicResourceId)}
+            detail={relicInfo.effectLine}
+            trail={
+              <span className="flex gap-1">
+                <HudChip>{relicInfo.recipientType}</HudChip>
+                <HudChip>Level {relicInfo.level}</HudChip>
+              </span>
+            }
+          />
+        )}
+        <RelicEssenceRequirement
+          essenceCost={essenceCost}
+          essenceBalance={essenceBalance}
+          shortfall={shortfall}
+          hasEnoughEssence={hasEnoughEssence}
+        />
+        {!compatible && <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={recipientType} />}
+        {error && <HudNotice tone="bad" line={error} />}
       </div>
-      {error && <div className="px-3 mt-4 text-danger font-bold text-center">{error}</div>}
-    </>
-  );
-
-  return (
-    <SurfaceFrame title="Activate Relic" onClose={onClose} footer={footer} className="w-[560px]" bodyClassName="p-4">
-      <RelicSummary
-        resourceKey={resourceKey}
-        title={resourceName}
-        subtitle={`Available: ${relicBalance}`}
-        layout="vertical"
-        iconSize="xl"
-        className="mb-6"
-      />
-
-      <RelicEssenceRequirement
-        className="mb-4"
-        essenceCost={essenceCost}
-        essenceBalance={essenceBalance}
-        shortfall={shortfall}
-        hasEnoughEssence={hasEnoughEssence}
-        balanceLabel="Your Balance"
-      />
-
-      {relicInfo && (
-        <div className="w-full mb-6 rounded bg-dark-brown/50 p-4">
-          <p className="text-sm font-semibold mb-2">{relicInfo.name}</p>
-          <p className="text-sm text-gold/80 mb-2">
-            {relicInfo.effect}
-            {relicInfo.duration ? ` for ${relicInfo.duration}` : ""}
-          </p>
-          <div className="flex items-center gap-2">
-            <span className={`px-2 py-1 rounded text-sm font-semibold ${getRelicTypeColor(relicInfo.type)}`}>
-              {relicInfo.type}
-            </span>
-            <span
-              className={`px-2 py-1 rounded text-sm font-semibold ${getRecipientTypeColor(relicInfo.recipientType)}`}
-            >
-              {relicInfo.recipientType}
-            </span>
-            <span
-              className={`px-2 py-1 rounded text-sm font-bold ${
-                relicInfo.level === 2 ? "bg-purple-600/20 text-purple-400" : "bg-blue-600/20 text-blue-400"
-              }`}
-            >
-              Level {relicInfo.level}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {!compatible && (
-        <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={recipientType} className="mb-4" />
-      )}
-    </SurfaceFrame>
+    </HudWindow>
   );
 };

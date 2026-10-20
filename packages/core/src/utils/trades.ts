@@ -20,7 +20,6 @@ export const computeTrades = (
   orders: Iterable<NativeRows["TradeOrder"]>,
   currentBlockTimestamp: number,
   store: NativeFactStore,
-  isBlitz: boolean,
   playerName: PlayerNameResolver,
 ): MarketInterface[] =>
   [...orders]
@@ -30,7 +29,7 @@ export const computeTrades = (
       const maker = store.require("Structure", { game_id: order.game_id, entity_id: order.maker_id });
       return {
         makerName: maker.owner === 0n ? "" : (playerName(maker.owner) ?? ""),
-        originName: getStructureName(maker, isBlitz).name,
+        originName: getStructureName(maker).name,
         tradeId: safeInteger(order.trade_id),
         makerId: safeInteger(order.maker_id),
         takerId: safeInteger(order.taker_id),

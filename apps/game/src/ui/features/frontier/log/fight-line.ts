@@ -1,16 +1,13 @@
-import { formatExact } from "@/ui/design-system/kit/amount";
 import { fightLine } from "@/ui/design-system/kit/words";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, siteDisplayName } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { StructureType } from "@bibliothecadao/types";
+import { formatExact, fightVerdict, VERDICT_WORDS } from "@bibliothecadao/types";
 
 import { battleRecordOf } from "../sites/fight-record";
-import { fightVerdict } from "../sites/fight-result";
-import { VERDICT_WORDS } from "../sites/fight-result-card";
-import { TARGET_MARKS } from "../sites/site-marks";
 
 /**
- * The day log's line for one of the player's attacks on a site, from its battle story: the site, how the attack ended
+ * The day log's line for one of the player's attacks on a site, from its battle story: the site by its one name
+ * (siteDisplayName, as its map label, its clear and every story name it), how the attack ended
  * (the result card's own word), the troops it cost and the guard before and after. Null for any other story, or a
  * battle whose defender is no site this client knows.
  */
@@ -33,8 +30,9 @@ export const fightLogLine = (
   );
 };
 
+/** The site by its one name, once its expedition row (which outlives the Structure its clear removes) says it is one. */
 const siteWord = (store: NativeFactStore, entityId: unknown): string | null => {
-  const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: Number(entityId) });
-  const kind = structure && StructureType[structure.base.category];
-  return kind && kind in TARGET_MARKS ? TARGET_MARKS[kind as keyof typeof TARGET_MARKS].word : null;
+  const id = Number(entityId);
+  const site = store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: id });
+  return site ? siteDisplayName(id) : null;
 };

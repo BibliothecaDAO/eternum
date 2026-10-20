@@ -1,32 +1,32 @@
+import { formatCount } from "@bibliothecadao/types";
 import { type IconMeaning } from "@/ui/design-system/icon";
-import type { ReactNode } from "react";
 
-import { Chip } from "@/ui/design-system/kit/chip";
-import { ClockLine } from "@/ui/design-system/kit/clock-line";
-import { formatAmount } from "@/ui/design-system/kit/amount";
-
-import { DAY } from "@/ui/design-system/kit/words";
+import { AppButton, AppChip, AppGameCard, AppRow } from "@/ui/design-system/kit/app-elements";
+import { AppClockChip, clockLine } from "@/ui/design-system/kit/clock-chip";
+import {
+  BLITZ_WORDS,
+  DAY,
+  ENTRY_WORDS,
+  PITCH,
+  PLAY_WORDS,
+  WORDS,
+  dayEnds,
+  dayLeft,
+  phraseText,
+  tomorrowLasts,
+} from "@/ui/design-system/kit/words";
 
 import { lobbyId, lobbyTitle } from "../blitz/lobby";
-import { useSlotRegistered } from "../blitz/entry";
 import { SeatsChip } from "../blitz/seats-chip";
-import type { PlaytestSlot } from "../blitz-slot";
-import { ClockChip, clockLine } from "../clock-chip";
-import { useLayout } from "../frame/layout";
-import { StepVerb } from "../frame/step-verb";
 import { entryHref } from "../game-links";
 import type { DirectoryGame } from "../herald";
-import { paintingSources } from "../paintings";
 import { gameTitle } from "../season-tab/history-row";
 import { resultsHref } from "../season-tab/results-link";
 import { directoryDay } from "../season";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { signInHref } from "../sign-in/sign-in-route";
-import { BLITZ_WORDS, ENTRY_WORDS, PITCH, PLAY_WORDS, WORDS } from "../words";
 import { ageOf } from "./ages";
-import { GoButton } from "./go-button";
 import type { PlayItem } from "./play-board";
-import { LiveChip, StateChip } from "./state-chip";
 
 type ItemVerb = { word: string; icon: IconMeaning; to: string };
 
@@ -57,13 +57,13 @@ const verbOf = (item: PlayItem, signedIn: boolean): ItemVerb | null => {
     case "watch":
       return game ? { word: WORDS.watch, icon: "watch", to: entryHref(game, "spectate") } : null;
     case "join":
-      return { word: BLITZ_WORDS.join, icon: "play", to: lobbyHref(item) };
+      return { word: BLITZ_WORDS.join, icon: "plus", to: lobbyHref(item) };
     case "refund":
       return { word: ENTRY_WORDS.takeRefund, icon: "refresh", to: lobbyHref(item) };
     case "lobby":
-      return { word: BLITZ_WORDS.lobby, icon: "person", to: lobbyHref(item) };
+      return { word: BLITZ_WORDS.lobby, icon: "people", to: lobbyHref(item) };
     case "results":
-      return game ? { word: WORDS.results, icon: "victory", to: resultsHref(game) } : null;
+      return game ? { word: WORDS.results, icon: "leaderboard", to: resultsHref(game) } : null;
     case null:
       return null;
   }
@@ -80,111 +80,110 @@ const titleOf = (item: PlayItem): string => {
 const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; firstVisit: boolean }) => {
   if (item.source === "row") {
     const { row } = item;
-    if (row.action === "refund") return <StateChip icon="lock" text={ENTRY_WORDS.closed} />;
+    if (row.action === "refund") return <AppChip icon="lock">{ENTRY_WORDS.closed}</AppChip>;
     return (
       <>
         {row.startsAt === null ? (
           <>
-            <LiveChip />
-            {row.kind === "game" && <ClockChip prefix="ends" at={row.game.clock.end_at} now={now} />}
+            <AppChip tone="good" live>
+              {WORDS.live}
+            </AppChip>
+            {row.kind === "game" && <AppClockChip prefix="ends" at={row.game.clock.end_at} now={now} />}
           </>
         ) : row.kind === "slot" ? (
-          <ClockChip prefix="closes" at={row.closesAt} now={now} />
+          <AppClockChip prefix="closes" at={row.closesAt} now={now} />
         ) : (
-          <ClockChip prefix="starts" at={row.startsAt} now={now} />
+          <AppClockChip prefix="starts" at={row.startsAt} now={now} />
         )}
-        {row.action === "registered" ? <StateChip icon="check" text={WORDS.joined} /> : <SeatsChip row={row} />}
+        {row.action === "registered" ? <AppChip icon="check">{WORDS.joined}</AppChip> : <SeatsChip row={row} />}
       </>
     );
   }
   const { game } = item;
   if (item.verb === "results")
-    return <StateChip icon="victory" text={`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`} />;
+    return <AppChip icon="victory">{`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`}</AppChip>;
   if (item.mode === "eternum")
-    return item.verb === "enter" ? <LiveChip /> : <ClockChip prefix="opens" at={game.clock.start_main_at} now={now} />;
-  if (firstVisit) return <p className="font-body text-base text-kit-cream">{PITCH}</p>;
-  if (game.status !== "Live") return <ClockChip prefix="starts" at={game.clock.start_main_at} now={now} />;
+    return item.verb === "enter" ? (
+      <AppChip tone="good" live>
+        {WORDS.live}
+      </AppChip>
+    ) : (
+      <AppClockChip prefix="opens" at={game.clock.start_main_at} now={now} />
+    );
+  if (firstVisit) return <p className="text-app-body text-app-ink">{PITCH}</p>;
+  if (game.status !== "Live") return <AppClockChip prefix="starts" at={game.clock.start_main_at} now={now} />;
+  return <SeasonDay game={game} now={now} withPlayers={item.verb === "play"} />;
+};
+
+/** A live season's day: when today ends and the time left, how long tomorrow lasts; its players where it is to join. */
+const SeasonDay = ({ game, now, withPlayers }: { game: DirectoryGame; now: number; withPlayers: boolean }) => {
   const day = directoryDay(game, now);
+  const tone = day.tone === "ember" ? "bad" : day.tone === "amber" ? "warn" : undefined;
   return (
     <>
-      <ClockLine
-        endsAt={day.endsAt}
-        secondsLeft={day.secondsLeft}
-        tomorrowSeconds={day.tomorrowSeconds}
-        tone={day.tone}
-      />
-      {item.verb === "play" && (
-        <Chip icons={["person"]} value={formatAmount(game.player_count)} label={PLAY_WORDS.players} />
-      )}
+      <AppChip icon="hourglass" tone={tone}>
+        <span role="timer">{`${phraseText(dayEnds(day.endsAt))} · ${phraseText(dayLeft(day.secondsLeft))}`}</span>
+      </AppChip>
+      <AppChip icon="sun">{phraseText(tomorrowLasts(day.tomorrowSeconds))}</AppChip>
+      {withPlayers && <AppChip icon="people">{formatCount(game.player_count, PLAY_WORDS.player)}</AppChip>}
     </>
   );
 };
 
 /** The verb, or where a shard could not be read, the failure in its place. */
-const ItemVerbButton = ({ item, signedIn, gold }: { item: PlayItem; signedIn: boolean; gold: boolean }) => {
+const ItemVerbButton = ({ item, signedIn, lead }: { item: PlayItem; signedIn: boolean; lead: boolean }) => {
   const game = gameOf(item);
   if (game?.error) return <ServiceFailure service="directory" error={game.error} />;
   const verb = verbOf(item, signedIn);
   if (!verb) return null;
-  return <GoButton role={gold ? "primary" : "secondary"} word={verb.word} icon={verb.icon} to={verb.to} />;
+  return lead ? (
+    <AppButton kind="primary" size="lg" icon={verb.icon} to={verb.to} step>
+      {verb.word}
+    </AppButton>
+  ) : (
+    <AppButton kind="secondary" icon={verb.icon} to={verb.to}>
+      {verb.word}
+    </AppButton>
+  );
 };
 
 type ItemProps = { item: PlayItem; now: number; signedIn: boolean };
 
 /**
- * The lead: its title, its facts and the one gold verb from the card's top, on its mode's painting under a grade dark
- * enough for its words where they stand (the painting shows through at the card's far side).
- * Every item carries its game's key (`data-play-item`), so a press can be named by its game, not by its word.
- * A signed-out player's season says what Frontier is instead of its clock.
+ * The lead: the step the player most likely came for, on its age's painting, its title, its facts and the page's one
+ * gold verb (Enter presses it on a desktop). Every item carries its game's key (`data-play-item`), so a press can be
+ * named by its game, not by its word. A signed-out player's season says what Frontier is instead of its clock.
  */
-export const LeadCard = ({ item, now, signedIn }: ItemProps) => {
-  const desktop = useLayout() === "desktop";
-  const verb = <ItemVerbButton item={item} signedIn={signedIn} gold />;
+export const LeadCard = ({ item, now, signedIn, className }: ItemProps & { className?: string }) => {
+  const age = ageOf(item.mode);
   return (
-    <section data-play-item={item.key} className="painted flex rounded-2xl">
-      <img
-        {...paintingSources(ageOf(item.mode).painting)}
-        sizes={desktop ? "45vw" : "100vw"}
-        alt=""
-        className="absolute inset-0 -z-10 size-full object-cover"
+    <div data-play-item={item.key} className={className}>
+      <AppGameCard
+        age={item.mode}
+        painting={age.painting}
+        size="lead"
+        className="h-full"
+        title={titleOf(item)}
+        facts={<ItemFacts item={item} now={now} firstVisit={!signedIn && item.verb === "play"} />}
+        verb={<ItemVerbButton item={item} signedIn={signedIn} lead />}
       />
-      <span className="absolute inset-0 -z-10 bg-gradient-to-r from-kit-ground/95 via-kit-ground/80 to-kit-ground/40" />
-      <div className="flex min-w-0 flex-1 flex-col gap-3 p-4 lg:p-6">
-        <h2 className="font-display text-[32px] leading-none text-kit-cream lg:text-[40px]">{titleOf(item)}</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <ItemFacts item={item} now={now} firstVisit={!signedIn && item.verb === "play"} />
-        </div>
-        {desktop ? <StepVerb>{verb}</StepVerb> : verb}
-      </div>
-    </section>
+    </div>
   );
 };
 
-/** A row's facts as one line of text, which wraps where chips would overflow: what is so and when, then its count. */
-const ItemLine = ({ item, now }: { item: PlayItem; now: number }) =>
-  item.source === "row" && item.row.kind === "slot" && item.row.action !== "refund" ? (
-    <SlotLine slot={item.row.slot} closesAt={item.row.closesAt} now={now} />
-  ) : (
-    <span className="font-body text-sm text-kit-muted">{lineParts(item, now).join(" · ")}</span>
-  );
-
-const SlotLine = ({ slot, closesAt, now }: { slot: PlaytestSlot; closesAt: number; now: number }) => {
-  const registered = useSlotRegistered(slot);
-  const count = `${registered === undefined ? "—" : formatAmount(registered)} ${BLITZ_WORDS.registeredUnit}`;
-  return <span className="font-body text-sm text-kit-muted">{`${clockLine("closes", closesAt, now)} · ${count}`}</span>;
-};
+/** A row's facts as one line of text: what is so and when, then its count. */
+const ItemLine = ({ item, now }: { item: PlayItem; now: number }) => lineParts(item, now).join(" · ");
 
 const lineParts = (item: PlayItem, now: number): string[] => {
   if (item.source === "row") {
     const { row } = item;
     if (row.action === "refund") return [ENTRY_WORDS.closed];
-    const seats = row.kind === "game" ? `${row.seats.filled}/${row.seats.total}` : null;
-    if (row.startsAt === null)
-      return [WORDS.live, row.kind === "game" ? clockLine("ends", row.game.clock.end_at, now) : null, seats].filter(
-        isText,
-      );
+    if (row.kind === "slot") return [clockLine("closes", row.closesAt, now)];
+    const seats = `${row.seats.filled}/${row.seats.total}`;
+    // A live row's Live is its chip.
+    if (row.startsAt === null) return [clockLine("ends", row.game.clock.end_at, now), seats];
     if (row.action === "registered") return [clockLine("starts", row.startsAt, now), WORDS.joined];
-    return [clockLine("starts", row.startsAt, now), seats].filter(isText);
+    return [clockLine("starts", row.startsAt, now), seats];
   }
   const { game } = item;
   if (item.verb === "results") return [`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`];
@@ -195,35 +194,34 @@ const lineParts = (item: PlayItem, now: number): string[] => {
   return [`${DAY} ${day.day ?? "—"}`, clockLine("ends", day.endsAt, now)];
 };
 
-const isText = (part: string | null): part is string => part !== null;
-
-/** Any other item: its age's painting small, its title and facts, and its verb in outline, or none. */
+/** Any other item: its title and line, a slot's registered count, its live mark, and its verb, or none. */
 const ItemRow = ({ item, now, signedIn }: ItemProps) => (
-  <li data-play-item={item.key} className="flex items-center gap-3 border-b border-kit-line py-3 last:border-b-0">
-    <img
-      {...paintingSources(ageOf(item.mode).painting)}
-      sizes="48px"
-      alt=""
-      className="size-12 shrink-0 rounded-lg object-cover"
+  <li data-play-item={item.key}>
+    <AppRow
+      title={titleOf(item)}
+      detail={<ItemLine item={item} now={now} />}
+      trail={
+        <>
+          {item.when === "now" && (
+            <AppChip tone="good" live>
+              {WORDS.live}
+            </AppChip>
+          )}
+          {item.source === "row" && item.row.kind === "slot" && item.row.action !== "refund" && (
+            <SeatsChip row={item.row} />
+          )}
+          <ItemVerbButton item={item} signedIn={signedIn} lead={false} />
+        </>
+      }
     />
-    <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <span className="truncate font-body text-base font-bold text-kit-cream">{titleOf(item)}</span>
-      <ItemLine item={item} now={now} />
-    </span>
-    <ItemVerbButton item={item} signedIn={signedIn} gold={false} />
   </li>
 );
 
-/** A plate of item rows. */
+/** An age's games as rows, in the age's well. */
 export const ItemRows = ({ items, now, signedIn }: { items: readonly PlayItem[]; now: number; signedIn: boolean }) => (
-  <ul className="plate px-3">
+  <ul className="app-well">
     {items.map((item) => (
       <ItemRow key={item.key} item={item} now={now} signedIn={signedIn} />
     ))}
   </ul>
-);
-
-/** The heading over a Play section: "Now", "Next and done". */
-export const SectionLabel = ({ children }: { children: ReactNode }) => (
-  <h2 className="font-body text-sm font-bold text-kit-peach">{children}</h2>
 );

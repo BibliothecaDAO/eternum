@@ -1,3 +1,4 @@
+import { NODE_HEALTH_FILE, readNodeHealth } from "./node-health";
 import { waitForWorldDocument } from "./deployment";
 import { createNativeWorldIngestion } from "./native/world-ingestion";
 import { NativeDecoder } from "./native/decoder";
@@ -147,6 +148,7 @@ const main = async (): Promise<void> => {
     },
     history: historyStore,
     undecodableEventCount: () => native.receiptFailures,
+    nodeHealth: () => readNodeHealth(NODE_HEALTH_FILE),
     ingestionFailure: () =>
       native.halted
         ? { block: native.halted.block, transactionHash: native.halted.transactionHash, error: native.halted.message }

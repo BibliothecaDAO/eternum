@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Icon } from "@/ui/design-system/icon";
 import { iconDefinition, iconMeanings, type IconMeaning } from "@/ui/design-system/icon-meaning";
 import { ActionTile } from "@/ui/features/world/containers/left-facets/structure-actions-panel";
-import { Button } from "@/ui/design-system/kit/button";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { RealmLevelIcons, RealmHexFillComparison } from "./realm-level-icons";
 import { IconMinimap } from "./icon-minimap";
 import "./icon-lab.css";
 const families = [...new Set(iconMeanings.map((name) => iconDefinition(name).family))];
@@ -21,8 +22,13 @@ export function IconLab() {
     <main className="icon-lab" data-art="facets" data-hidden={!labels}>
       <header>
         <h1>Facets icons</h1>
-        <p>Production artwork at actual HUD sizes. Every meaning uses the same renderer as the game.</p>
+        <p>
+          Production artwork at actual HUD sizes. Utilities use Ivory relief; resources keep their paintings and LORDS
+          its official mark. Every meaning uses the same renderer as the game.
+        </p>
       </header>
+      <RealmHexFillComparison />
+      <RealmLevelIcons />
       <div className="icon-controls">
         <fieldset>
           <legend>Size</legend>
@@ -52,7 +58,6 @@ export function IconLab() {
           {(["build", "production", "military", "transfer", "trade"] as const).map((id) => (
             <ActionTile
               key={id}
-              variant="panel"
               action={{
                 id,
                 label: iconDefinition(id).label,
@@ -63,13 +68,14 @@ export function IconLab() {
             />
           ))}
           {(["move", "settings"] satisfies IconMeaning[]).map((name) => (
-            <Button
+            <HudButton
               key={name}
-              role="secondary"
-              word={iconDefinition(name).label}
+              kind="secondary"
               icon={name}
               onClick={() => setAction(`${iconDefinition(name).label} selected`)}
-            />
+            >
+              {iconDefinition(name).label}
+            </HudButton>
           ))}
         </div>
         <p role="status">{action}</p>

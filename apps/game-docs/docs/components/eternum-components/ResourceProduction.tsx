@@ -27,7 +27,6 @@ const styles = {
   subtitleStyle: section.subtitle,
   tableStyle: {
     ...table.table,
-    fontSize: "0.85rem",
   },
   tableWrapperStyle: {
     ...table.container,

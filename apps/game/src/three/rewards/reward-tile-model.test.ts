@@ -242,3 +242,32 @@ describe("reward part batching", () => {
     model.dispose();
   });
 });
+
+it("draws the settled chest and altar without instancing or batching decorative orbit gems", () => {
+  const asset = createAsset();
+  asset.scene.clear();
+  asset.animations = [];
+  const body = new Group();
+  body.name = "ChestBody";
+  const surface = new Mesh(new PlaneGeometry(), new MeshStandardMaterial());
+  surface.name = "body";
+  body.add(surface);
+  const altar = new Mesh(new PlaneGeometry(), new MeshStandardMaterial());
+  altar.name = "altar";
+  const orbit = new Group();
+  orbit.name = "OrbitGems";
+  const gem = new Mesh(new PlaneGeometry(), new MeshStandardMaterial());
+  gem.name = "gem";
+  orbit.add(gem);
+  asset.scene.add(body, altar, orbit);
+  const model = new RewardTileModel(asset, 4);
+  try {
+    model.setMatrixAt(0, new Matrix4());
+    model.setCount(1);
+    model.updateAnimations(0.5);
+    expect(model.renderMeshes.map((mesh) => mesh.name).sort()).toEqual(["altar", "body"]);
+    expect(model.renderMeshes.every((mesh) => mesh.visible)).toBe(true);
+  } finally {
+    model.dispose();
+  }
+});

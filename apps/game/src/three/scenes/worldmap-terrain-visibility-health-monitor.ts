@@ -1,6 +1,6 @@
 import { Box3 } from "three";
 
-import { evaluateChunkVisibilityAnomaly, evaluateTerrainVisibilityAnomaly } from "./worldmap-zoom-hardening";
+import { evaluateChunkVisibilityAnomaly } from "./worldmap-zoom-hardening";
 
 /** The only two refresh reasons the self-heal emits (both members of `WorldmapForceRefreshReason`). */
 export type WorldmapTerrainRecoveryReason = "offscreen_chunk" | "terrain_self_heal";
@@ -18,10 +18,7 @@ export interface WorldmapTerrainVisibilityHealthMonitorDeps {
 export interface WorldmapTerrainVisibilityHealthMonitorConfig {
   selfHealEnabled: boolean;
   zeroTerrainFrameThreshold?: number;
-  lowTerrainFrameThreshold?: number;
   offscreenChunkFrameThreshold?: number;
-  minRetainedTerrainFraction?: number;
-  minReferenceTerrainInstances?: number;
   terrainRecoveryCooldownMs?: number;
 }
 
@@ -35,26 +32,22 @@ export interface WorldmapTerrainVisibilityHealthTick {
 
 /**
  * Owns the terrain/chunk visibility self-heal: it watches whether the current chunk's bounds
- * stay onscreen and whether the retained terrain keeps a plausible instance count, and forces a
- * chunk refresh when either degrades past its frame threshold (rate-limited by a cooldown). All
+ * stay onscreen and whether any terrain is presented, and forces a chunk refresh when either
+ * fails past its frame threshold (rate-limited by a cooldown). How many cells are presented is
+ * the terrain's own choice (the window it composes), so only none at all counts as lost. All
  * of the frame counters and the recovery-in-flight guard live here, not in the scene, so the
  * scene's runtime reset routes through {@link reset} (the single chokepoint).
  */
 export class WorldmapTerrainVisibilityHealthMonitor {
   private zeroTerrainFrames = 0;
-  private lowTerrainFrames = 0;
   private offscreenChunkFrames = 0;
-  private terrainReferenceInstances = 0;
-  private terrainReferenceChunkKey: string | null = null;
+  private presentedChunkKey: string | null = null;
   private terrainRecoveryInFlight = false;
   private lastTerrainRecoveryAtMs = 0;
 
   private readonly selfHealEnabled: boolean;
   private readonly zeroTerrainFrameThreshold: number;
-  private readonly lowTerrainFrameThreshold: number;
   private readonly offscreenChunkFrameThreshold: number;
-  private readonly minRetainedTerrainFraction: number;
-  private readonly minReferenceTerrainInstances: number;
   private readonly terrainRecoveryCooldownMs: number;
   private readonly now: () => number;
 
@@ -64,26 +57,21 @@ export class WorldmapTerrainVisibilityHealthMonitor {
   ) {
     this.selfHealEnabled = config.selfHealEnabled;
     this.zeroTerrainFrameThreshold = config.zeroTerrainFrameThreshold ?? 3;
-    this.lowTerrainFrameThreshold = config.lowTerrainFrameThreshold ?? 3;
     this.offscreenChunkFrameThreshold = config.offscreenChunkFrameThreshold ?? 2;
-    this.minRetainedTerrainFraction = config.minRetainedTerrainFraction ?? 0.45;
-    this.minReferenceTerrainInstances = config.minReferenceTerrainInstances ?? 100;
     this.terrainRecoveryCooldownMs = config.terrainRecoveryCooldownMs ?? 1500;
     this.now = deps.now ?? (() => performance.now());
   }
 
-  /** Resets only the per-frame counters; the reference instance count and cooldown timestamp persist. */
+  /** Resets only the per-frame counters; the chunk key and the cooldown timestamp persist. */
   private resetFrameCounters(): void {
     this.zeroTerrainFrames = 0;
-    this.lowTerrainFrames = 0;
     this.offscreenChunkFrames = 0;
   }
 
   /** Scene runtime reset: clears every counter and the recovery guard (the cooldown timestamp persists). */
   reset(): void {
     this.resetFrameCounters();
-    this.terrainReferenceInstances = 0;
-    this.terrainReferenceChunkKey = null;
+    this.presentedChunkKey = null;
     this.terrainRecoveryInFlight = false;
   }
 
@@ -111,12 +99,11 @@ export class WorldmapTerrainVisibilityHealthMonitor {
       return;
     }
 
-    this.evaluateRetainedTerrain(input.currentChunk);
+    this.evaluatePresentedTerrain(input.currentChunk);
   }
 
   private recoverOffscreenChunk(currentChunk: string, shouldTriggerRecovery: boolean): void {
     this.zeroTerrainFrames = 0;
-    this.lowTerrainFrames = 0;
 
     if (!shouldTriggerRecovery) {
       return;
@@ -162,36 +149,17 @@ export class WorldmapTerrainVisibilityHealthMonitor {
       });
   }
 
-  private evaluateRetainedTerrain(currentChunk: string): void {
-    const totalTerrainInstances = this.deps.getPresentedCellCount();
+  private evaluatePresentedTerrain(currentChunk: string): void {
+    const presentedCells = this.deps.getPresentedCellCount();
 
-    if (this.terrainReferenceChunkKey !== currentChunk) {
-      this.terrainReferenceChunkKey = currentChunk;
-      this.terrainReferenceInstances = totalTerrainInstances;
+    if (this.presentedChunkKey !== currentChunk) {
+      this.presentedChunkKey = currentChunk;
       this.zeroTerrainFrames = 0;
-      this.lowTerrainFrames = 0;
       return;
     }
 
-    const anomalyResult = evaluateTerrainVisibilityAnomaly({
-      terrainInstances: totalTerrainInstances,
-      terrainReferenceInstances: this.terrainReferenceInstances,
-      zeroTerrainFrames: this.zeroTerrainFrames,
-      lowTerrainFrames: this.lowTerrainFrames,
-      zeroTerrainFrameThreshold: this.zeroTerrainFrameThreshold,
-      lowTerrainFrameThreshold: this.lowTerrainFrameThreshold,
-      minRetainedTerrainFraction: this.minRetainedTerrainFraction,
-      minReferenceTerrainInstances: this.minReferenceTerrainInstances,
-    });
-
-    this.zeroTerrainFrames = anomalyResult.zeroTerrainFrames;
-    this.lowTerrainFrames = anomalyResult.lowTerrainFrames;
-    if (!anomalyResult.shouldTriggerRecovery) {
-      if (totalTerrainInstances > 0 && this.lowTerrainFrames === 0) {
-        this.terrainReferenceInstances = totalTerrainInstances;
-      }
-      return;
-    }
+    this.zeroTerrainFrames = presentedCells === 0 ? this.zeroTerrainFrames + 1 : 0;
+    if (this.zeroTerrainFrames < this.zeroTerrainFrameThreshold) return;
 
     const now = this.now();
     if (this.terrainRecoveryInFlight || now - this.lastTerrainRecoveryAtMs < this.terrainRecoveryCooldownMs) {
@@ -201,22 +169,15 @@ export class WorldmapTerrainVisibilityHealthMonitor {
     this.lastTerrainRecoveryAtMs = now;
     this.terrainRecoveryInFlight = true;
 
-    console.warn("[WorldMap] Terrain visibility anomaly detected; forcing chunk refresh", {
+    console.warn("[WorldMap] No terrain presented; forcing chunk refresh", {
       chunk: currentChunk,
-      reason: anomalyResult.recoveryReason,
-      terrainInstances: totalTerrainInstances,
-      terrainReferenceInstances: this.terrainReferenceInstances,
       zeroTerrainFrames: this.zeroTerrainFrames,
-      lowTerrainFrames: this.lowTerrainFrames,
     });
     this.deps.recordBoundsRecovery();
     this.deps.emitTelemetry("self_heal_start", {
       chunk: currentChunk,
-      reason: anomalyResult.recoveryReason,
-      terrainInstances: totalTerrainInstances,
-      terrainReferenceInstances: this.terrainReferenceInstances,
+      reason: "zero",
       zeroTerrainFrames: this.zeroTerrainFrames,
-      lowTerrainFrames: this.lowTerrainFrames,
     });
 
     const refreshToken = this.deps.requestChunkRefresh(true, "terrain_self_heal");
@@ -235,11 +196,7 @@ export class WorldmapTerrainVisibilityHealthMonitor {
         });
         this.terrainRecoveryInFlight = false;
         this.zeroTerrainFrames = 0;
-        this.lowTerrainFrames = 0;
         this.offscreenChunkFrames = 0;
-        if (totalTerrainInstances > this.terrainReferenceInstances) {
-          this.terrainReferenceInstances = totalTerrainInstances;
-        }
       });
   }
 }

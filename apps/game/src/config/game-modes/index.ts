@@ -1,12 +1,14 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { configManager, getEntityInfo, getStructureName, nativeGameModeOf } from "@bibliothecadao/eternum";
 import {
-  configManager,
-  getEntityInfo,
-  getStructureName,
-  getStructureTypeName,
-  nativeGameModeOf,
-} from "@bibliothecadao/eternum";
-import { BuildingType, type ContractAddress, type ID, StructureType, getResourceTiers } from "@bibliothecadao/types";
+  BuildingType,
+  type ContractAddress,
+  type ID,
+  StructureType,
+  getResourceTiers,
+  structureName,
+  structurePlural,
+} from "@bibliothecadao/types";
 import { BUILDINGS_GROUPS, buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
 
 export type GameModeId = "frontier" | "blitz" | "eternum" | "duel";
@@ -44,8 +46,6 @@ export interface GameModeConfig {
      * Construction entry. Frontier builds only from its build sheet on a tapped plot.
      */
     showBuildMenus: boolean;
-    /** Where a player's session opens once through the doorway: the world map, or their realm's board. */
-    entryScene: "map" | "hex";
   };
   resources: {
     getTiers: () => ReturnType<typeof getResourceTiers>;
@@ -95,12 +95,12 @@ function resolveBuildingModelPaths(isBlitz: boolean) {
   return { ...paths, [BUILDINGS_GROUPS.BUILDINGS]: buildings };
 }
 
-const buildStructureHelpers = (isBlitz: boolean) => ({
+const buildStructureHelpers = (mode: GameModeId) => ({
   // A mode names the active game's structures, from the active game's facts.
-  getName: (structure: StructureNameInput) => getStructureName(structure, isBlitz),
-  getTypeName: getStructureTypeName,
+  getName: (structure: StructureNameInput) => getStructureName(structure),
+  getTypeName: (type: StructureType, mineKind?: number) => structureName(type, mineKind, mode),
   getEntityInfo: (entityId: ID, playerAccount: ContractAddress | null, store: NativeFactStore) =>
-    getEntityInfo(entityId, playerAccount, store, isBlitz),
+    getEntityInfo(entityId, playerAccount, store),
 });
 
 const buildBuildingRule = (extraExclusions: Set<string>) => (key: string) => {
@@ -135,7 +135,6 @@ const blitzConfig: GameModeConfig = {
     showGuildsTab: false,
     showAutomation: true,
     showBuildMenus: true,
-    entryScene: "map",
   },
   resources: {
     getTiers: () => getResourceTiers(true),
@@ -143,7 +142,7 @@ const blitzConfig: GameModeConfig = {
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(BLITZ_BUILDING_EXCLUSIONS),
   },
-  structure: buildStructureHelpers(true),
+  structure: buildStructureHelpers("blitz"),
   assets: {
     structureModelPaths: getStructureModelPaths(),
     buildingModelPaths: resolveBuildingModelPaths(true),
@@ -175,7 +174,6 @@ const eternumConfig: GameModeConfig = {
     showGuildsTab: true,
     showAutomation: true,
     showBuildMenus: true,
-    entryScene: "map",
   },
   resources: {
     getTiers: () => getResourceTiers(false),
@@ -183,7 +181,7 @@ const eternumConfig: GameModeConfig = {
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(new Set()),
   },
-  structure: buildStructureHelpers(false),
+  structure: buildStructureHelpers("eternum"),
   assets: {
     structureModelPaths: getStructureModelPaths(),
     buildingModelPaths: resolveBuildingModelPaths(false),
@@ -194,8 +192,11 @@ const frontierConfig: GameModeConfig = {
   ...blitzConfig,
   id: "frontier",
   displayName: "Frontier",
+  structure: buildStructureHelpers("frontier"),
   labels: {
     ...blitzConfig.labels,
+    village: structureName(StructureType.Camp, undefined, "frontier"),
+    villages: structurePlural(StructureType.Camp, undefined, "frontier"),
     timelineSubject: "Season",
     shareEventLabel: "Realms Frontier",
     endgameCardTitle: "Realms Frontier",
@@ -206,7 +207,6 @@ const frontierConfig: GameModeConfig = {
     showAutomation: false,
     showBuildMenus: false,
     // A Frontier session opens on the realm, where the day's first build and deploy happen.
-    entryScene: "hex",
   },
   resources: {
     getTiers: blitzConfig.resources.getTiers,
@@ -237,9 +237,6 @@ const GAME_MODE_CONFIGS: Record<GameModeId, GameModeConfig> = {
   eternum: eternumConfig,
   duel: duelConfig,
 };
-
-/** A mode's config by its id, for surfaces that know the mode (the directory's row) before the game's config syncs. */
-export const gameModeConfigOf = (id: GameModeId): GameModeConfig => GAME_MODE_CONFIGS[id];
 
 export function getGameModeConfig(presetId = configManager.getPresetId()): GameModeConfig {
   return GAME_MODE_CONFIGS[nativeGameModeOf(presetId)];

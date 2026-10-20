@@ -1,7 +1,6 @@
-use core::dict::{Felt252Dict, Felt252DictTrait};
 use crate::registrar::{IRegistrarSafeDispatcher, IRegistrarSafeDispatcherTrait};
 use crate::rules::RESOURCE_PRECISION;
-use crate::taxonomy::{RIFT_CATEGORY, RUIN_CATEGORY, STRAGGLERS_CATEGORY};
+use crate::taxonomy::{BEASTS_CATEGORY, RIFT_CATEGORY, RUIN_CATEGORY};
 use crate::troops::{TroopTier, TroopType, frontier_guard};
 
 #[test]
@@ -16,7 +15,6 @@ fn seeded_beasts_are_knights_on_the_inclusive_preset_grid() {
             } else {
                 (depth.site_guard_lower.into(), depth.site_guard_upper.into())
             };
-            let mut categories: Felt252Dict<u32> = Default::default();
             let mut saw_lower = false;
             let mut saw_upper = false;
             for seed in 0_u32..10000 {
@@ -27,9 +25,6 @@ fn seeded_beasts_are_knights_on_the_inclusive_preset_grid() {
                 assert_eq!((count - Into::<u32, u128>::into(lower)) % depth.guard_step.into(), 0);
                 saw_lower = saw_lower || count == lower.into();
                 saw_upper = saw_upper || count == upper.into();
-                let troop: u8 = guard.category.into();
-                let total = categories.get(troop.into());
-                categories.insert(troop.into(), total + 1);
                 // One troop type: every guard is T1 and its strength is its count.
                 assert_eq!(guard.tier, TroopTier::T1);
                 assert_eq!(guard.category, TroopType::Knight);
@@ -40,15 +35,66 @@ fn seeded_beasts_are_knights_on_the_inclusive_preset_grid() {
 }
 
 #[test]
-fn stragglers_are_a_third_of_the_camp_draw() {
+fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
     let (_, preset) = super::preset_projection::current_definition("frontier");
-    for depth in preset.settlement.depths {
+    let expected = array![
+        (300_u128, 350_u128, 450_u128, 550_u128), (900, 1050, 1350, 1650), (2400, 2800, 3600, 4400),
+        (6000, 7000, 9000, 11000),
+    ];
+    let mut previous_stronger = 0;
+    for depth_index in 0_u32..4 {
+        let depth = *preset.settlement.depths.at(depth_index);
+        let (weak_lower, weak_upper, strong_lower, strong_upper) = *expected.at(depth_index);
+        assert!(weak_lower > previous_stronger && strong_lower > weak_upper);
+        assert!(strong_upper < depth.site_guard_lower.into());
+        assert!(strong_upper < depth.ruin_guard_lower.into());
+        assert_eq!((depth.beast_weak_lower.into(), depth.beast_weak_upper.into()), (weak_lower, weak_upper));
+        assert_eq!((depth.beast_strong_lower.into(), depth.beast_strong_upper.into()), (strong_lower, strong_upper));
+        let mut weak_draws = 0_u32;
+        let mut strong_draws = 0_u32;
+        let mut weak_min = weak_upper;
+        let mut weak_max = weak_lower;
+        let mut strong_min = strong_upper;
+        let mut strong_max = strong_lower;
         for seed in 0_u32..2000 {
-            let camp = frontier_guard(crate::taxonomy::CAMP_CATEGORY, *depth, seed.into(), preset.rules, 360);
-            let stragglers = frontier_guard(STRAGGLERS_CATEGORY, *depth, seed.into(), preset.rules, 360);
-            assert_eq!(stragglers.tier, TroopTier::T1);
-            assert_eq!(stragglers.count, camp.count / RESOURCE_PRECISION / 3 * RESOURCE_PRECISION);
+            let guard = frontier_guard(BEASTS_CATEGORY, depth, seed.into(), preset.rules, 360);
+            assert_eq!(guard.category, TroopType::Knight);
+            assert_eq!(guard.tier, TroopTier::T1);
+            assert_eq!(guard.count % RESOURCE_PRECISION, 0);
+            let count = guard.count / RESOURCE_PRECISION;
+            if count <= weak_upper {
+                assert!(count >= weak_lower);
+                weak_draws += 1;
+                weak_min = core::cmp::min(weak_min, count);
+                weak_max = core::cmp::max(weak_max, count);
+            } else {
+                assert!(count >= strong_lower && count <= strong_upper);
+                strong_draws += 1;
+                strong_min = core::cmp::min(strong_min, count);
+                strong_max = core::cmp::max(strong_max, count);
+            }
         }
+        assert!(weak_draws >= 900 && weak_draws <= 1100, "weak beast odds drift");
+        assert!(strong_draws >= 900 && strong_draws <= 1100, "stronger beast odds drift");
+        assert!(weak_min < weak_max && strong_min < strong_max, "beast count did not vary");
+        previous_stronger = strong_upper;
+    }
+}
+
+#[test]
+fn beast_ranges_include_both_endpoints_at_every_depth() {
+    let (_, preset) = super::preset_projection::current_definition("frontier");
+    for (depth, seed, count) in array![
+        (0_u32, 18_u32, 300_u128), (0_u32, 114_u32, 550_u128), (0_u32, 142_u32, 450_u128), (0_u32, 173_u32, 350_u128),
+        (1_u32, 63_u32, 900_u128), (1_u32, 125_u32, 1050_u128), (1_u32, 542_u32, 1350_u128),
+        (1_u32, 1006_u32, 1650_u128), (2_u32, 314_u32, 2400_u128), (2_u32, 723_u32, 2800_u128),
+        (2_u32, 798_u32, 3600_u128), (2_u32, 1267_u32, 4400_u128), (3_u32, 1230_u32, 7000_u128),
+        (3_u32, 3288_u32, 11000_u128), (3_u32, 5293_u32, 9000_u128), (3_u32, 7262_u32, 6000_u128),
+    ] {
+        let guard = frontier_guard(
+            BEASTS_CATEGORY, *preset.settlement.depths.at(depth), seed.into(), preset.rules, 360,
+        );
+        assert_eq!(guard.count, count * RESOURCE_PRECISION);
     }
 }
 
@@ -65,10 +111,10 @@ fn ruin_beasts_are_sized_by_layer_in_one_troop_type() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn frontier_registration_refuses_zero_step_off_grid_and_reversed_guard_bounds() {
+fn frontier_registration_refuses_invalid_site_and_beast_guard_ranges() {
     let d = super::registrar::setup();
     snforge_std::start_cheat_caller_address(d.games, super::authority());
-    for invalid in 0_u8..6 {
+    for invalid in 0_u8..12 {
         let (id, mut preset) = super::preset_projection::current_definition("frontier");
         if invalid == 5 {
             preset.rules.troop_limit_config.t1_tier_strength = 2;
@@ -91,48 +137,27 @@ fn frontier_registration_refuses_zero_step_off_grid_and_reversed_guard_bounds() 
             if invalid == 4 {
                 depth.ruin_guard_lower = depth.ruin_guard_upper + 100;
             }
+            if invalid == 6 {
+                depth.beast_weak_lower = 0;
+            }
+            if invalid == 7 {
+                depth.beast_weak_lower = depth.beast_weak_upper + 1;
+            }
+            if invalid == 8 {
+                depth.beast_strong_lower = depth.beast_strong_upper + 1;
+            }
+            if invalid == 9 {
+                depth.beast_weak_upper = depth.beast_strong_lower;
+            }
+            if invalid == 10 {
+                depth.beast_strong_upper = depth.site_guard_lower;
+            }
+            if invalid == 11 {
+                depth.ruin_guard_lower = 100;
+            }
             depths.append(depth);
         }
         preset.settlement.depths = depths.span();
         assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(id, preset).is_err());
     }
-}
-
-#[test]
-fn only_stragglers_draw_among_the_three_troop_categories() {
-    let (_, preset) = super::preset_projection::current_definition("frontier");
-    let depth = *preset.settlement.depths.at(0);
-    let mut categories: Felt252Dict<u32> = Default::default();
-    for seed in 0_u32..10000 {
-        let guard = frontier_guard(STRAGGLERS_CATEGORY, depth, seed.into(), preset.rules, 360);
-        let troop: u8 = guard.category.into();
-        categories.insert(troop.into(), categories.get(troop.into()) + 1);
-    }
-    for troop in 0_u8..3 {
-        let count = categories.get(troop.into());
-        assert!(count >= 3234 && count <= 3433, "straggler category odds drift");
-    }
-}
-
-#[test]
-fn stragglers_draw_all_three_types_while_other_site_guards_are_knights() {
-    let (_, preset) = super::preset_projection::current_definition("frontier");
-    let mut saw_knight = false;
-    let mut saw_paladin = false;
-    let mut saw_crossbowman = false;
-    for depth in preset.settlement.depths {
-        for seed in 0_u32..2000 {
-            let straggler = frontier_guard(STRAGGLERS_CATEGORY, *depth, seed.into(), preset.rules, 360);
-            match straggler.category {
-                TroopType::Knight => saw_knight = true,
-                TroopType::Paladin => saw_paladin = true,
-                TroopType::Crossbowman => saw_crossbowman = true,
-            }
-            for category in array![crate::taxonomy::CAMP_CATEGORY, RIFT_CATEGORY, RUIN_CATEGORY] {
-                let beast = frontier_guard(category, *depth, seed.into(), preset.rules, 360);
-                assert_eq!(beast.category, TroopType::Knight);
-            }
-        }
-    }
-    assert!(saw_knight && saw_paladin && saw_crossbowman, "stragglers must draw every troop type");
 }

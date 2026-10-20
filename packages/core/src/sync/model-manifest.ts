@@ -1,4 +1,4 @@
-import { nativeSyncScopes } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { NativeStructureCategory, nativeSyncScopes } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 /** Schema-derived classification shared by Herald and the client transport. */
 export interface GameSyncModelDefinition {
@@ -74,6 +74,19 @@ export function gameSyncRegion(coord: Record<string, unknown>, spacing: number):
 
 const SYNC_SETS = ["owners", "entities", "realms", "realmTraits"] as const;
 
+/** Chest receipts reach the whole game; other stories keep the schema's owner scope. */
+export function isSharedChestStory(row: Record<string, unknown>): boolean {
+  const story = row.story;
+  if (typeof story !== "object" || story === null) return false;
+  if (Object.hasOwn(story, "RewardChestOpened")) return true;
+  const payout = (story as Record<string, unknown>).SitePayout;
+  return (
+    typeof payout === "object" &&
+    payout !== null &&
+    Number((payout as Record<string, unknown>).category) === NativeStructureCategory.Ruin
+  );
+}
+
 /**
  * The keys a row reaches subscriptions by: a scope holds the row exactly when the row is shared or its keys meet
  * gameSyncScopeKeys(scope). An epoch-bound row's keys carry its epoch, so only that day's scope meets them; `*` is met
@@ -86,7 +99,7 @@ export function gameSyncRowKeys(
 ): "shared" | string[] {
   const rule = syncRule(model);
   if (rule === "internal") return [];
-  if (rule === "shared") return "shared";
+  if (rule === "shared" || (model === "StoryEvent" && isSharedChestStory(row))) return "shared";
   if (rule === "actor") return [`actor:${syncScalar(row.actor)}`];
   const epoch = rule.epoch === undefined ? "" : `@${Number(row[rule.epoch])}`;
   const keys = ["*"];

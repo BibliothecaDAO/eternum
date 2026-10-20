@@ -2,10 +2,10 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { usePlayerDisplayName } from "@/hooks/use-player-profile";
+import { type PlayerNames, usePlayerDisplayName, usePlayerNames } from "@/hooks/use-player-profile";
 import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
-import { PlayerName } from "@/ui/design-system/kit/player-name";
+import { LordName } from "./realm-marks";
 import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
@@ -13,12 +13,11 @@ import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { GuideSlot } from "../guide/frontier-guide";
 import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow } from "./season-list";
 import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
 import { type SeasonLords, seasonLordsOf } from "./season-pool";
-import { findOwnEntry, ownRank, wholeLords, wholeResource } from "./standings";
+import { findOwnEntry, ownRank, wholeLords, earnedResource } from "./standings";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -67,30 +66,30 @@ export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBa
   const { rows, pinned } = useSeasonListRows(board.data, LIST_LENGTH);
   const chosen = entries.find((entry) => entry.address === opened);
   const visit = (entry: Entry) => {
-    startRealmVisit({ player: entry.address, structureId: safeInteger(entry.structure_id), opensOnArrival: true });
+    startRealmVisit({ player: entry.address, structureId: safeInteger(entry.structure_id), opensOn: "realm" });
     onBack();
   };
-  return (
-    <>
-      <SeasonList
-        rank={ownRank(board.data, viewer)}
-        chest={chest}
-        pool={pool}
-        rows={rows}
-        pinned={pinned}
-        state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
-        onRetry={() => void board.refetch()}
-        onOpen={setOpened}
-        onBack={onBack}
+  // A realm's detail stands in the list's place, never over it; its Back returns to the list.
+  if (chosen)
+    return (
+      <EntryDetail
+        entry={chosen}
+        onVisit={chosen === own ? undefined : () => visit(chosen)}
+        onClose={() => setOpened(null)}
       />
-      {chosen && (
-        <EntryDetail
-          entry={chosen}
-          onVisit={chosen === own ? undefined : () => visit(chosen)}
-          onClose={() => setOpened(null)}
-        />
-      )}
-    </>
+    );
+  return (
+    <SeasonList
+      rank={ownRank(board.data, viewer)}
+      chest={chest}
+      pool={pool}
+      rows={rows}
+      pinned={pinned}
+      state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
+      onRetry={() => void board.refetch()}
+      onOpen={setOpened}
+      onBack={onBack}
+    />
   );
 };
 
@@ -125,18 +124,21 @@ const useSeasonListRows = (
   length: number,
 ): { rows: SeasonListRow[]; pinned: SeasonListRow | undefined } => {
   const own = findOwnEntry(entries ?? [], useViewer());
+  // Each row's label is the one name rule's, read as the rows are built: built again when a name lands.
+  const names = usePlayerNames();
   const top = (entries ?? []).slice(0, length);
   return {
-    rows: top.map((entry) => listRow(entry, entry === own)),
-    pinned: own && !top.includes(own) ? listRow(own, true) : undefined,
+    rows: top.map((entry) => listRow(entry, entry === own, names)),
+    pinned: own && !top.includes(own) ? listRow(own, true, names) : undefined,
   };
 };
 
-const listRow = (entry: Entry, own: boolean): SeasonListRow => ({
+const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow => ({
   key: entry.address,
   rank: entry.rank,
   order: entry.order,
-  name: <PlayerName account={entry.address} you={own} portrait />,
+  name: <LordName account={entry.address} you={own} />,
+  label: names.text(entry.address),
   sitesCleared: entry.sites_cleared.total,
   lords: wholeLords(entry.rewards.lords),
   own,
@@ -150,19 +152,18 @@ const EntryDetail = ({ entry, onVisit, onClose }: { entry: Entry; onVisit?: () =
 const seasonDetail = (entry: Entry): SeasonDetail => ({
   rank: entry.rank,
   order: entry.order,
-  name: <PlayerName account={entry.address} />,
   sites: {
     total: entry.sites_cleared.total,
     camps: entry.sites_cleared.camps,
     rifts: entry.sites_cleared.rifts,
     ruins: entry.sites_cleared.ruins,
-    stragglers: entry.sites_cleared.stragglers,
+    beasts: entry.sites_cleared.beasts,
   },
   chests: entry.chests_earned,
   lords: wholeLords(entry.rewards.lords),
   reach: entry.deepest_depth,
-  essence: wholeResource(entry.rewards.essence),
-  labor: wholeResource(entry.rewards.labor),
+  essence: earnedResource(entry.rewards.essence),
+  labor: earnedResource(entry.rewards.labor),
 });
 
 /**
@@ -185,7 +186,6 @@ export const SeasonOver = ({ withdraw, onSeason }: { withdraw?: ReactNode; onSea
       podium={(entries ?? []).slice(0, 3).map((entry) => podiumPlace(entry, entry === own))}
       totals={own && seasonTotals(own)}
       withdraw={withdraw}
-      guide={<GuideSlot host="season-over" facts={{ seasonOver: true }} />}
       onSeason={onSeason}
       onExit={() => navigate("/")}
     />
@@ -195,7 +195,7 @@ export const SeasonOver = ({ withdraw, onSeason }: { withdraw?: ReactNode; onSea
 const podiumPlace = (entry: Entry, own: boolean): PodiumPlace => ({
   key: entry.address,
   rank: entry.rank,
-  name: <PlayerName account={entry.address} you={own} portrait />,
+  name: <LordName account={entry.address} you={own} portrait />,
   sitesCleared: entry.sites_cleared.total,
 });
 
@@ -204,6 +204,6 @@ const seasonTotals = (entry: Entry): SeasonTotals => ({
   chests: entry.chests_earned,
   lords: wholeLords(entry.rewards.lords),
   reach: entry.deepest_depth,
-  essence: wholeResource(entry.rewards.essence),
-  labor: wholeResource(entry.rewards.labor),
+  essence: earnedResource(entry.rewards.essence),
+  labor: earnedResource(entry.rewards.labor),
 });

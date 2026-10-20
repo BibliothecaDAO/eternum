@@ -39,17 +39,25 @@ pub fn publish_pool(game_id: u32, amount: u128) {
     write(game_id, first_day(chest_rules(game_id), amount, day));
 }
 
-/// Draw at the frozen daily price; only an actual ruin roll counts towards tomorrow.
+/// Draw a tier at the frozen daily price; reservation counts an actual reward roll towards tomorrow.
 pub fn candidate(game_id: u32, odds: ChestTiers, seed: u256, context: ExecutionContext) -> SiteChest {
-    let rules = chest_rules(game_id);
+    priced_chest(game_id, roll_tier(odds, seed), context)
+}
+
+pub fn common_candidate(game_id: u32, context: ExecutionContext) -> SiteChest {
+    priced_chest(game_id, 0, context)
+}
+
+fn priced_chest(game_id: u32, tier: u8, context: ExecutionContext) -> SiteChest {
     let today = today(game_id, context);
-    let tier = roll_tier(odds, seed);
     SiteChest {
-        tier, amount: Into::<u16, u128>::into(tier_value(rules.shares, tier)) * today.price, reservation_day: today.day,
+        tier,
+        amount: Into::<u16, u128>::into(tier_value(chest_rules(game_id).shares, tier)) * today.price,
+        reservation_day: today.day,
     }
 }
 
-/// Count every rolled ruin, including refusals; reserve only available LORDS.
+/// Count every rolled chest, including refusals; reserve only available LORDS.
 pub fn try_reserve(game_id: u32, chest: SiteChest, context: ExecutionContext) -> bool {
     let mut today = today(game_id, context);
     assert!(chest.reservation_day == today.day, "chest reservation day mismatch");
@@ -62,7 +70,7 @@ pub fn try_reserve(game_id: u32, chest: SiteChest, context: ExecutionContext) ->
     accepted
 }
 
-/// Pays a cleared ruin's stored chest out of the pool, as the LORDS its realm receives. Chests never pay more than
+/// Pays an opened or cleared chest out of the pool, as the LORDS its realm receives. Chests never pay more than
 /// the pool holds.
 pub fn pay(ruin: ResourceKey, context: ExecutionContext) -> crate::resources::ResourceAmount {
     let chest = site_chest(ruin).expect('missing ruin chest');

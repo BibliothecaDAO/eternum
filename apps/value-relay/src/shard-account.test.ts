@@ -55,9 +55,18 @@ it("enrolls only the relay bot device under the environment guardian, and return
   );
   expect(await joinShardOperator(env, target.chainId)).toEqual(expected);
 });
-it("refuses unlisted or retired shards before joining", async () => {
+it("keeps the relay account available while a shard drains its outstanding obligations", async () => {
+  calls.shard.mockResolvedValue({ ...shard, status: "draining" });
+  const expected = relayAccountAddress(shard);
+  expect(await joinShardOperator(env, target.chainId)).toEqual(expected);
+  expect(await joinShardOperator(env, target.chainId)).toEqual(expected);
+  expect(calls.join).toHaveBeenCalledTimes(2);
+});
+it("refuses unlisted, pending or retired shards before joining", async () => {
   calls.shard.mockRejectedValueOnce(new Error("unlisted_shard"));
   await expect(joinShardOperator(env, target.chainId)).rejects.toThrow("unlisted_shard");
+  calls.shard.mockResolvedValueOnce({ ...shard, status: "pending" });
+  await expect(joinShardOperator(env, target.chainId)).rejects.toThrow("relay_shard_inactive");
   calls.shard.mockResolvedValueOnce({ ...shard, status: "retired" });
   await expect(joinShardOperator(env, target.chainId)).rejects.toThrow("relay_shard_inactive");
   expect(calls.join).not.toHaveBeenCalled();

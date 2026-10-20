@@ -33,6 +33,13 @@ it("reads one manifest, without downloading a schema, and keys the shard by its 
   expect(fetch).toHaveBeenCalledWith("https://two.shard.test/manifest", expect.any(Object));
   await expect(openShard("https://three.shard.test", schemaHash)).rejects.toThrow("both claim chain 0xa");
 });
+it("opens a shard from the manifest its listing carries, without asking the shard again", async () => {
+  serve(manifest("0x0b"));
+  const shard = await openShard("https://four.shard.test", schemaHash, undefined, manifest("0x1d"));
+  expect(fetch).not.toHaveBeenCalled();
+  expect(shard).toMatchObject({ url: "https://four.shard.test", chainId: "0x1d", worldAddress: "0x77" });
+  expect(requireShard("0x1d")).toBe(shard);
+});
 it("resolves the game's release and leaves the shared shard registry unchanged on refresh", async () => {
   serve(manifest("0x0b"));
   const opened = await openShard("https://hotfix.shard.test", schemaHash);

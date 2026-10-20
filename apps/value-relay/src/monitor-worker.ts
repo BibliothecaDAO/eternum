@@ -15,7 +15,7 @@ import { shardConservationPort } from "./shard-conservation";
 import { frontierReceiptBindings } from "./frontier-binding";
 import { shardResultPort } from "./shard-results";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
-import { relayOperation } from "./ports";
+import { relayOperation, type MonitorPorts } from "./ports";
 import { runMonitor, resetMonitorRow, type MonitorProgress } from "./monitor";
 
 interface MonitorEnv extends MonitorSettings {
@@ -137,7 +137,9 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
       ...slotRosterReads(cohort, this.env.L2_RPC_URL, ledgerAddress(this.env.ENVIRONMENT), this.env.IDENTITY),
       pause: async () => {
         const row = `roster:${cohort.chainId}:${cohort.slotId}`;
-        await this.ctx.storage.put("progress", { ...(await this.status()), halted: row, fault: { row } });
+        // A roster check has no fact to waive: its reset re-observes the roster.
+        const halted: MonitorProgress = { ...(await this.status()), halted: row, fault: { row } };
+        await this.ctx.storage.put("progress", halted);
         await Effect.runPromise(monitorPortsOf(this.env, this.ctx.storage).ledger.pause());
       },
     });
@@ -176,16 +178,19 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
             const previous = (await tx.get<MonitorProgress>("progress")) ?? { halted: null };
             const sequence = ((await tx.get<number>("reset:sequence")) ?? 0) + 1;
             const progress = resetMonitorRow({ ...previous, fault }, row);
+            // What this reset cleared: the fault's exact fact, or null when it only cleared the halt and re-observes.
+            const waived = fault.fact ?? null;
             await tx.put(`reset:${sequence}`, {
               row,
               reason: reason.trim(),
               at: Math.floor(Date.now() / 1000),
               previous,
+              waived,
             });
             await tx.put("reset:sequence", sequence);
             await tx.put("progress", progress);
             await tx.delete("observation");
-            return progress;
+            return { ...progress, waived };
           });
         }),
       ),
@@ -211,10 +216,14 @@ const legacyFault = async (
   const page =
     stream === "paidClaims"
       ? await Effect.runPromise(
-          onIdentityChain(env.L2_RPC_URL, env.IDENTITY, reads.paidClaims(cursor.page, cursor.fromBlock)),
+          onIdentityChain(env.L2_RPC_URL, env.IDENTITY, reads.paidClaims(cursor.page, cursor.fromBlock, cursor.anchor)),
         )
       : await Effect.runPromise(
-          onIdentityChain(env.L2_RPC_URL, env.IDENTITY, reads.postedResults(cursor.page, cursor.fromBlock)),
+          onIdentityChain(
+            env.L2_RPC_URL,
+            env.IDENTITY,
+            reads.postedResults(cursor.page, cursor.fromBlock, cursor.anchor),
+          ),
         );
   const index = page.rows.findIndex((value) =>
     paid
@@ -227,15 +236,12 @@ const legacyFault = async (
     row !== `${stream}:${value.chainId}:${"transactionHash" in value ? value.transactionHash : value.gameId}`
   )
     throw new Error("fault_row_mismatch");
-  return {
-    row,
-    stream,
-    cursor: { fromBlock: cursor.fromBlock, page: cursor.page ?? JSON.stringify({ head: page.head, token: "" }) },
-    offset: index,
-  };
+  // The halt names the row but never recorded what the operator saw, so its reset waives nothing and re-observes.
+  return { row };
 };
 
-const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
+type LedgerPorts = MonitorPorts["ledger"];
+const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): MonitorPorts => {
   const shardPorts = async (chainId: string) => {
     const shard = await readRegisteredShard(env.IDENTITY, chainId);
     const reader = new ShardReader({
@@ -245,6 +251,8 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
     });
     return { reader, shard };
   };
+  // Resolved per read: a missing ledger fails that read, never the whole tick.
+  const ledgerReads = () => ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT));
   return {
     identity: {
       matchesPayDecision: (decision: import("@realms-world/identity").LedgerPayDecision) =>
@@ -283,24 +291,15 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
         }),
     },
     ledger: {
-      frontierPool: (chainId: string, gameId: number) =>
+      // Each read forwards its whole argument list, so the audit cursor's anchor reaches the ledger unchanged.
+      frontierPool: (...read: Parameters<LedgerPorts["frontierPool"]>) =>
         relayOperation("ledger Frontier funding unavailable", () =>
-          Effect.runPromise(
-            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT)).frontierPool(chainId, gameId),
-          ),
+          Effect.runPromise(ledgerReads().frontierPool(...read)),
         ),
-      paidClaims: (cursor: string | null, fromBlock?: number) =>
-        relayOperation("ledger paid claims unavailable", () =>
-          Effect.runPromise(
-            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT)).paidClaims(cursor, fromBlock),
-          ),
-        ),
-      postedResults: (cursor: string | null, fromBlock?: number) =>
-        relayOperation("ledger results unavailable", () =>
-          Effect.runPromise(
-            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT)).postedResults(cursor, fromBlock),
-          ),
-        ),
+      paidClaims: (...read: Parameters<LedgerPorts["paidClaims"]>) =>
+        relayOperation("ledger paid claims unavailable", () => Effect.runPromise(ledgerReads().paidClaims(...read))),
+      postedResults: (...read: Parameters<LedgerPorts["postedResults"]>) =>
+        relayOperation("ledger results unavailable", () => Effect.runPromise(ledgerReads().postedResults(...read))),
       pause: () =>
         relayOperation("ledger pause unavailable", () =>
           Effect.runPromise(

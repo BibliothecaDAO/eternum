@@ -1,8 +1,8 @@
-import { ResourceIcon } from "@/ui/design-system/molecules";
-import { getTierStyle } from "@/ui/utils/tier-styles";
-import { currencyFormat } from "@/ui/utils/utils";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { TierChip } from "../utils/tier-chip";
+import { knownAmount } from "@/ui/utils/utils";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
-import { resources, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
+import { resources, Troops, TroopTier, TroopType, formatAmount } from "@bibliothecadao/types";
 
 export const TroopChip = ({
   troops,
@@ -23,30 +23,22 @@ export const TroopChip = ({
     xs: {
       padding: "px-1.5 py-0.5",
       gap: "gap-1",
-      text: "text-sm",
-      tierText: "text-sm",
-      tierPadding: "px-1 py-0.5",
+      text: "text-hud-label",
     },
     sm: {
       padding: "px-2 py-1",
       gap: "gap-2",
-      text: "text-sm",
-      tierText: "text-sm",
-      tierPadding: "px-1.5 py-0.5",
+      text: "text-hud-label",
     },
     md: {
       padding: "px-2.5 py-1.5",
       gap: "gap-2",
-      text: "text-sm",
-      tierText: "text-sm",
-      tierPadding: "px-2 py-1",
+      text: "text-hud-body",
     },
     lg: {
       padding: "px-3 py-2",
       gap: "gap-3",
-      text: "text-base",
-      tierText: "text-sm",
-      tierPadding: "px-2.5 py-1",
+      text: "text-hud-body",
     },
   };
 
@@ -55,29 +47,23 @@ export const TroopChip = ({
   return (
     <div className={`relative w-full ${className}`}>
       <div
-        className={`${currentSize.padding} bg-gold/10 h-full flex items-center ${
+        className={`${currentSize.padding} bg-hud-hover h-full flex items-center ${
           direction === "row" ? "flex-row" : "flex-col"
-        } ${currentSize.gap} border border-gold/10`}
+        } ${currentSize.gap} border border-hud-divider`}
       >
-        <span
-          className={`${currentSize.tierPadding} rounded ${currentSize.tierText} font-bold border relative ${getTierStyle(troops.tier)}`}
-        >
-          <span className="relative z-10">{troops.tier}</span>
-        </span>
+        <TierChip tier={troops.tier} />
         <ResourceIcon
           withTooltip={false}
-          resource={
-            resources.find((r) => r.id === getTroopResourceId(troops.category as TroopType, TroopTier.T1))?.trait || ""
-          }
+          resource={getTroopResourceId(troops.category as TroopType, TroopTier.T1)}
           size={size}
         />
         <div
           className={`${
-            Number(troops.count || 0) === 0 ? "text-gold" : negative ? "text-red" : "text-green"
+            Number(troops.count || 0) === 0 ? "text-hud-accent" : negative ? "text-hud-bad" : "text-hud-good"
           } ${currentSize.text} self-center`}
         >
           {Number(troops.count || 0) === 0 ? "" : negative ? "-" : ""}
-          {currencyFormat(Number(troops.count || 0), 0)}
+          {formatAmount(knownAmount(Number(troops.count || 0)))}
         </div>
       </div>
     </div>

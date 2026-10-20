@@ -1,4 +1,4 @@
-import type { Painting } from "../paintings";
+import type { Painting } from "@/ui/design-system/kit/paintings";
 
 /** The modes as the lore's four ages, each with the lore's painting and words, for the app's paintings and labels. */
 export type AgeMode = "blitz" | "frontier" | "eternum" | "dominion";
@@ -11,7 +11,7 @@ type Age = {
   painting: Painting;
 };
 
-export const AGES: readonly Age[] = [
+const AGES: readonly Age[] = [
   {
     mode: "blitz",
     numeral: "I",

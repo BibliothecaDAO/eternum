@@ -124,6 +124,27 @@ describe("stamina under one game's rules", () => {
     }
   });
 
+  it("musters an army in a game without slots at the game's initial stamina, under its own tier's maximum", () => {
+    expect(musterStamina(null, { category: TroopType.Knight, tier: TroopTier.T1 }, 101, rules, 0, 60)).toEqual({
+      amount: 35,
+      max: 120,
+    });
+    expect(musterStamina(null, { category: TroopType.Paladin, tier: TroopTier.T3 }, 101, rules, 2, 60)).toEqual({
+      amount: 35,
+      max: 180,
+    });
+    expect(
+      musterStamina(
+        null,
+        { category: TroopType.Crossbowman, tier: TroopTier.T1 },
+        101,
+        { ...rules, stamina_initial: 150 },
+        0,
+        60,
+      ),
+    ).toEqual({ amount: 100, max: 100 });
+  });
+
   it("finds the exact second a cost is affordable across boost expiry, and refuses unreachable costs", () => {
     const troops = knight(10, 101, { percent: 5_000, seconds: 3 });
     expect(affordableAt(troops, 101, rules, 60, 12)).toBe(106);

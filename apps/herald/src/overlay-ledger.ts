@@ -50,6 +50,12 @@ export const collapseChanges = (changes: readonly FoldChange[]): FoldChange[] =>
 
 type ConfirmedRowLookup = (model: string, key: string) => FoldSet | undefined;
 
+/** A change routes by the row subscribers hold: the overlay row last published, else the fold's previous row. */
+const heldBefore = (change: FoldChange, held: LedgerEntry | undefined): FoldChange => ({
+  ...change,
+  previous: held?.row ?? change.previous,
+});
+
 /**
  * The pre-confirmed rows subscribers currently hold beyond the confirmed fold. Subscribers keep a row's value until a
  * later diff changes it (they no longer revert on overlay_reset), so the wire carries only the rows whose value
@@ -71,8 +77,7 @@ export class OverlayLedger {
       const held = this.held.get(identity) ?? this.heldBeforeReset.get(identity);
       // A pending write that repeats the confirmed row changes nothing for anyone and stays out of the ledger.
       if (!held && isSameHeldRow(confirmedRow(entry.model, entry.key) ?? null, entry.row)) continue;
-      if (!held || !isSameHeldRow(held.row, entry.row))
-        delta.push(change.del ? { ...change, previous: held?.row ?? change.previous } : change);
+      if (!held || !isSameHeldRow(held.row, entry.row)) delta.push(heldBefore(change, held));
       this.held.set(identity, entry);
     }
     return delta;
@@ -85,8 +90,7 @@ export class OverlayLedger {
       const entry = ledgerEntry(change);
       const identity = rowIdentity(entry.model, entry.key);
       const held = this.held.get(identity);
-      if (change.event || !held || !isSameHeldRow(held.row, entry.row))
-        published.push(change.del ? { ...change, previous: held?.row ?? change.previous } : change);
+      if (change.event || !held || !isSameHeldRow(held.row, entry.row)) published.push(heldBefore(change, held));
       this.held.delete(identity);
     }
     return published;
@@ -108,9 +112,8 @@ export class OverlayLedger {
       if (this.held.has(identity)) continue;
       const confirmed = confirmedRow(model, key);
       if (isSameHeldRow(confirmed ?? null, row)) continue;
-      reverts.push(
-        confirmed ? { gameId, set: confirmed } : { del: { key, model }, gameId, previous: row ?? undefined },
-      );
+      const previous = row ?? undefined;
+      reverts.push(confirmed ? { gameId, set: confirmed, previous } : { del: { key, model }, gameId, previous });
     }
     this.heldBeforeReset = new Map();
     return reverts;

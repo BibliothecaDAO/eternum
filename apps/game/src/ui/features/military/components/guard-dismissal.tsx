@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
+import { useConfirmFor, useConfirmsLoss } from "@/hooks/helpers/use-confirm-for";
 import { configManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { DISPLAYED_SLOT_NUMBER_MAP, type GuardSlot } from "@bibliothecadao/types";
-import Button from "@/ui/design-system/atoms/button";
+import { HudButton, HudConfirm } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
 
 export const GuardDismissal = ({
@@ -24,7 +25,8 @@ export const GuardDismissal = ({
   const game_id = configManager.getActiveGameId();
   const structure = useNativeRow("Structure", { game_id, entity_id: structureId });
   const guard = useNativeRow("Guard", { game_id, structure_id: structureId, slot });
-  const [confirming, setConfirming] = useState(false);
+  const { confirming, ask, close } = useConfirmFor(`${structureId}:${slot}`);
+  const confirmsDismissal = useConfirmsLoss();
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);
   const canDismiss =
@@ -43,7 +45,6 @@ export const GuardDismissal = ({
     setPending(true);
     try {
       await systemCalls.guard_delete({ signer: account, for_structure_id: structureId, slot });
-      toast.success("Guard dismissed");
       onDismissed();
     } catch (error) {
       toast.failed(error, "Could not dismiss guard");
@@ -54,25 +55,30 @@ export const GuardDismissal = ({
   };
 
   return (
-    <div className="space-y-2 border-t border-gold/20 pt-2">
+    <div className="space-y-2 border-t border-hud-line pt-2">
       {confirming ? (
         <>
-          <p className="text-sm">
-            Dismiss guard in slot {DISPLAYED_SLOT_NUMBER_MAP[slot as GuardSlot]}? All its troops are permanently lost.
-          </p>
-          <div className="flex gap-2">
-            <Button variant="danger" disabled={disabled || pending} onClick={dismiss}>
-              Confirm dismissal
-            </Button>
-            <Button disabled={pending} onClick={() => setConfirming(false)}>
-              Cancel
-            </Button>
-          </div>
+          <HudConfirm
+            question={`Dismiss guard in slot ${DISPLAYED_SLOT_NUMBER_MAP[slot as GuardSlot]}?`}
+            verb={pending ? "Dismissing…" : "Confirm dismissal"}
+            tone="bad"
+            onConfirm={() => {
+              if (!disabled && !pending) dismiss();
+            }}
+            onBack={close}
+          >
+            <span className="text-hud-body text-hud-muted">All its troops are permanently lost.</span>
+          </HudConfirm>
         </>
       ) : (
-        <Button variant="outline" disabled={disabled} onClick={() => setConfirming(true)}>
+        <HudButton
+          kind="danger"
+          disabled={disabled}
+          busy={pending ? "Dismissing…" : undefined}
+          onClick={confirmsDismissal ? ask : dismiss}
+        >
           Dismiss guard
-        </Button>
+        </HudButton>
       )}
     </div>
   );

@@ -23,16 +23,16 @@ export function prepareProceduralUnitAssembly(requested: ProceduralUnitConfig): 
   if (!PROCEDURAL_UNIT_KINDS.some(({ id }) => id === kind)) {
     throw new Error(`Unknown procedural unit kind: ${String(kind)}`);
   }
-  if (rendersHumanoid(kind)) validateAppearance(kind, requested.humanoid.appearanceId);
-  if (rendersMelee(kind)) validateMelee(kind, requested);
+  if (rendersProceduralHumanoid(kind)) validateAppearance(kind, requested.humanoid.appearanceId);
+  if (rendersProceduralMelee(kind)) validateMelee(kind, requested);
   return applyProceduralUnitConfigPatch(requested, {});
 }
 
-function rendersHumanoid(kind: ProceduralUnitKind): boolean {
+export function rendersProceduralHumanoid(kind: ProceduralUnitKind): boolean {
   return kind === "archer" || kind === "crossbowman" || kind === "knight" || kind === "paladin";
 }
 
-function rendersMelee(kind: ProceduralUnitKind): kind is "knight" | "paladin" {
+export function rendersProceduralMelee(kind: ProceduralUnitKind): kind is "knight" | "paladin" {
   return kind === "knight" || kind === "paladin";
 }
 

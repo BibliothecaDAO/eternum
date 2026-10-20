@@ -3,6 +3,29 @@
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::settlement::SettlementPool",
+    members: [
+      { name: "opened", type: "core::integer::u32" },
+      { name: "available", type: "core::array::Span::<world_native::settlement::SettlementLocation>" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "core::array::Span::<world_native::settlement::SettlementLocation>",
+    members: [{ name: "snapshot", type: "@core::array::Array::<world_native::settlement::SettlementLocation>" }],
+  },
+  {
+    type: "struct",
+    name: "world_native::settlement::SettlementLocation",
+    members: [{ name: "coords", type: "core::array::Span::<world_native::troops::Coord>" }],
+  },
+  {
+    type: "struct",
+    name: "core::array::Span::<world_native::troops::Coord>",
+    members: [{ name: "snapshot", type: "@core::array::Array::<world_native::troops::Coord>" }],
+  },
+  {
+    type: "struct",
     name: "world_native::troops::ArmySlotKey",
     members: [
       { name: "game_id", type: "core::integer::u32" },
@@ -1189,6 +1212,10 @@ const behaviouralFacts = {
       ruinGuardLower: "ruin_guard_lower",
       ruinGuardUpper: "ruin_guard_upper",
       guardStep: "guard_step",
+      beastWeakLower: "beast_weak_lower",
+      beastWeakUpper: "beast_weak_upper",
+      beastStrongLower: "beast_strong_lower",
+      beastStrongUpper: "beast_strong_upper",
       chestOdds: "chest",
       revealSiteNeighbors: "reveal_site_neighbors",
       entryStamina: "entry_stamina",
@@ -1372,7 +1399,7 @@ export const syncScopes = {
   TileOccupancy: { regions: [{ alt: "alt", x: "col", y: "row" }], entities: ["entity_id"] },
   Building: { realms: ["structure_id"] },
   RealmKnowledge: { realms: ["structure_id"] },
-  ExpeditionSite: { entities: ["entity_id"] },
+  ExpeditionSite: { regions: [{ alt: "alt", x: "col", y: "row" }], entities: ["entity_id"] },
   SiteChest: { entities: ["entity_id"] },
   // A relic chest's pack is public: anyone may open the chest, so every player sees what it holds.
   RelicChest: shared,

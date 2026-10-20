@@ -1,3 +1,4 @@
+import { REALMS_X_URL } from "@realms-world/chain";
 import { socials } from "@/site/data/socials";
 import { motion } from "framer-motion";
 import { ExternalLink, Github } from "lucide-react";
@@ -30,7 +31,7 @@ export function FooterSection() {
         },
         {
           label: "Twitter",
-          href: "https://x.com/LootRealms",
+          href: REALMS_X_URL,
           icon: ExternalLink,
         },
       ],

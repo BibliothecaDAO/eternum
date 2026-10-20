@@ -1,9 +1,8 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
+import type { SortInterface } from "@/ui/utils/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
-import { currencyIntlFormat } from "@/ui/utils/utils";
-import { GuildInfo, ResourcesIds } from "@bibliothecadao/types";
+import { HudButton, HudChip, HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
+import { GuildInfo, ResourcesIds, formatAmount, formatExact } from "@bibliothecadao/types";
 import clsx from "clsx";
 
 import { ReactElement, useMemo } from "react";
@@ -22,8 +21,9 @@ interface GuildCustom extends GuildInfo {
   isPublic?: boolean;
 }
 
-const GUILD_GRID_TEMPLATE =
-  "grid-cols-[68px_minmax(0,_1.3fr)_minmax(0,_0.85fr)_minmax(0,_0.95fr)_minmax(0,_0.95fr)_minmax(0,_1fr)_minmax(0,_0.85fr)]";
+/** Rank, name, members, structures, points and the two prizes. */
+const GUILD_COLS =
+  "68px minmax(0, 1.3fr) minmax(0, 0.85fr) minmax(0, 0.95fr) minmax(0, 0.95fr) minmax(0, 1fr) minmax(0, 0.85fr)";
 
 export const GuildListHeader = ({
   activeSort,
@@ -43,7 +43,7 @@ export const GuildListHeader = ({
         label: (
           <div className="flex w-full items-center justify-center gap-1">
             LORDS
-            <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="h-4 w-4" />
+            <ResourceIcon size="md" resource={ResourcesIds.Lords} className="h-4 w-4" />
           </div>
         ),
         sortKey: "prize.lords",
@@ -53,7 +53,7 @@ export const GuildListHeader = ({
         label: (
           <div className="flex w-full items-center justify-center gap-1">
             STRK
-            <ResourceIcon size="md" resource={"Strk"} className="h-4 w-4" />
+            <SemanticIcon name="strk" size={16} className="h-4 w-4" />
           </div>
         ),
         sortKey: "prize.strk",
@@ -63,76 +63,72 @@ export const GuildListHeader = ({
   }, []);
 
   return (
-    <SortPanel
-      className={clsx(
-        "grid gap-x-4 items-center pb-3 border-b border-gold/25 sticky top-0 z-10 bg-brown/80 backdrop-blur-sm px-4",
-        GUILD_GRID_TEMPLATE,
-      )}
-    >
+    <HudTableHead cols={GUILD_COLS}>
       {sortingParams.map(({ label, sortKey, align }) => (
-        <SortButton
-          key={sortKey}
-          label={label}
-          sortKey={sortKey}
-          activeSort={activeSort}
-          className={clsx("w-full gap-2 text-sm font-semibold transition-colors hover:text-amber-200", align)}
-          classNameCaret="w-2.5 h-2.5"
-          activeClassName="text-amber-200"
-          inactiveClassName="text-gold/70"
-          onChange={(_sortKey, _sort) => {
-            setActiveSort({
-              sortKey: _sortKey,
-              sort: _sort,
-            });
-          }}
-        />
+        <span key={sortKey} className={clsx("flex", align)}>
+          <SortHeader label={label} sortKey={sortKey} activeSort={activeSort} onChange={setActiveSort} />
+        </span>
       ))}
-    </SortPanel>
+    </HudTableHead>
   );
 };
 
-export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () => void }) => {
+/** The way a column sorts after a press: up, then down, then the list's own order. */
+const NEXT_SORT = { none: "asc", asc: "desc", desc: "none" } as const;
+
+/** A column's name as a quiet button that sorts the table on it; a chevron says which way it sorts now. */
+const SortHeader = ({
+  label,
+  sortKey,
+  activeSort,
+  onChange,
+}: {
+  label: string | ReactElement;
+  sortKey: string;
+  activeSort: SortInterface;
+  onChange: (sort: SortInterface) => void;
+}) => {
+  const sort = activeSort.sortKey === sortKey ? activeSort.sort : "none";
   return (
-    <div
-      className={clsx("flex w-full transition-colors duration-200 mb-1 rounded-md overflow-hidden group", {
-        "border border-gold/40 bg-gold/15 hover:bg-gold/20": guild.isMember,
-        "border border-transparent bg-dark/40 hover:border-gold/20 hover:bg-brown/40": !guild.isMember,
-      })}
+    <HudButton
+      kind="quiet"
+      size="sm"
+      icon={sort === "asc" ? "chevron-up" : sort === "desc" ? "chevron-down" : undefined}
+      aria-pressed={sort !== "none"}
+      onClick={() => onChange({ sortKey, sort: NEXT_SORT[sort] })}
     >
-      <div
-        className={clsx("grid w-full cursor-pointer items-center gap-x-4 px-4 py-2 text-sm", GUILD_GRID_TEMPLATE)}
-        onClick={onClick}
-      >
-        <p className="text-center font-medium text-gold/90">{guild.rank === null ? "—" : `#${guild.rank}`}</p>
-        <div className="flex min-w-0 items-center gap-2">
-          {guild.isPublic ? (
-            <SemanticIcon name="map" className="h-4 w-4 shrink-0 text-emerald-300/90" />
-          ) : (
-            <SemanticIcon name="lock" className="h-4 w-4 shrink-0 text-amber-300/90" />
-          )}
-          <p className="truncate text-sm font-semibold text-gold">{guild.name}</p>
-          {guild.isMember && (
-            <span className="shrink-0 rounded-full border border-amber-200/50 bg-amber-200/20 px-2 py-0.5 text-sm font-semibold text-amber-200">
-              Your Tribe
-            </span>
-          )}
-        </div>
-        <p className="text-center text-sm font-medium text-gold/90">{guild.memberCount}</p>
-        <p className="text-center text-sm font-medium text-gold/90">
-          {(guild.realms || 0) + (guild.mines || 0) + (guild.hyperstructures || 0)}
-        </p>
-        <p className="text-center text-sm font-semibold text-amber-200/90">
-          {guild.points === null ? "—" : currencyIntlFormat(guild.points)}
-        </p>
-        <div className="flex items-center justify-center gap-1 text-sm font-medium text-gold/90">
-          {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.lords)}
-          <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="h-4 w-4" withTooltip={false} />
-        </div>
-        <div className="flex items-center justify-center gap-1 text-sm font-medium text-gold/90">
-          {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.strk)}
-          <ResourceIcon size="md" resource={"Strk"} className="h-4 w-4" withTooltip={false} />
-        </div>
-      </div>
-    </div>
+      {label}
+    </HudButton>
   );
 };
+
+export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () => void }) => (
+  // The player's own tribe is lit, as their own row is on the players' table.
+  <div className={clsx("mb-1 rounded-md", guild.isMember && "bg-hud-hover")}>
+    <HudTableRow cols={GUILD_COLS} label={`${guild.name}: its members`} onClick={onClick}>
+      <span className="text-center text-hud-muted">{guild.rank === null ? "—" : `#${guild.rank}`}</span>
+      <div className="flex min-w-0 items-center gap-2">
+        {guild.isPublic ? (
+          <SemanticIcon name="map" className="h-4 w-4 shrink-0 text-hud-good" />
+        ) : (
+          <SemanticIcon name="lock" className="h-4 w-4 shrink-0 text-hud-warn" />
+        )}
+        <span className="truncate text-hud-strong">{guild.name}</span>
+        {guild.isMember && <HudChip tone="warn">Your Tribe</HudChip>}
+      </div>
+      <span className="text-center">{guild.memberCount}</span>
+      <span className="text-center">{(guild.realms || 0) + (guild.mines || 0) + (guild.hyperstructures || 0)}</span>
+      <span className="text-center text-hud-strong text-hud-gold">
+        {guild.points === null ? "—" : formatExact(guild.points)}
+      </span>
+      <span className="flex items-center justify-center gap-1">
+        {guild.prize === null ? "—" : formatAmount(guild.prize.lords)}
+        <ResourceIcon size="md" resource={ResourcesIds.Lords} className="h-4 w-4" withTooltip={false} />
+      </span>
+      <span className="flex items-center justify-center gap-1">
+        {guild.prize === null ? "—" : formatAmount(guild.prize.strk)}
+        <SemanticIcon name="strk" size={16} className="h-4 w-4" />
+      </span>
+    </HudTableRow>
+  </div>
+);

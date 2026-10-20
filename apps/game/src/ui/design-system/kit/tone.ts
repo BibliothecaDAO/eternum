@@ -7,17 +7,24 @@ export type Tone = "calm" | "amber" | "ember";
 export const TONE_TEXT: Record<Tone, string> = {
   calm: "text-kit-cream",
   amber: "text-kit-hot",
-  ember: "text-light-red",
+  ember: "text-kit-ember",
 };
 
 export const TONE_FILL: Record<Tone, string> = {
   calm: "bg-kit-gold",
   amber: "bg-kit-hot",
-  ember: "bg-light-red",
+  ember: "bg-kit-ember",
 };
 
 export const TONE_STROKE: Record<Tone, string> = {
   calm: "stroke-kit-amber",
   amber: "stroke-kit-hot",
-  ember: "stroke-light-red",
+  ember: "stroke-kit-ember",
+};
+
+/** A tone as the HUD sheet's elements take it: calm is none, amber the warn tone, ember the bad. */
+export const HUD_TONE: Record<Tone, "warn" | "bad" | undefined> = {
+  calm: undefined,
+  amber: "warn",
+  ember: "bad",
 };

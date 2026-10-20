@@ -24,16 +24,22 @@ const army = { art: "knight-t1" as const, troops: 5_000 };
 const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[role=dialog] button")];
 
 describe("a guarded site's card", () => {
-  it("forecasts a win as attacks to win and troops lost, and pays what the clear sends home with its XP", () => {
+  it("reads the attack as its result will: each side before and after, what it comes to, and what the clear pays", () => {
     const onAttack = vi.fn();
     act(() =>
       root.render(
         <SiteCardView
           site="Camp"
-          beast={undefined}
+          beast={{ name: "Troll", beast: "troll", combatClass: "Knight" }}
           army={army}
           guard={1_100}
-          fight={{ outcome: "wins", exchanges: 1, troopsLost: 180, guardLeft: 0 }}
+          fight={{
+            outcome: "wins",
+            exchanges: 1,
+            troopsLost: 180,
+            guardLeft: 0,
+            whole: { troopsLost: 180, guardKilled: 1_100, stamina: 30 },
+          }}
           pay={{ icon: "labor", amount: 550 }}
           xp={82}
           verb={{ kind: "attack", stamina: 30, onAttack }}
@@ -41,14 +47,71 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    const card = document.querySelector("section[aria-label='Camp']")!;
-    expect(card.textContent).toContain("−180");
+    const card = document.querySelector("section[aria-label='Troll']")!;
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("This attack clears itTroll");
+    const sides = [...card.querySelectorAll(".ui-sheet__body > .flex.gap-2 > *")].map((side) => side.textContent);
+    expect(sides).toEqual(["5,000 →4,820you lose 180", "1,100 →0you kill 1,100"]);
+    expect(card.textContent).toContain("Cleared in this attack");
     expect(card.textContent).toContain("+550");
-    expect(card.querySelector('[aria-label="XP +82"]')).not.toBeNull();
+    expect(card.textContent).toContain("+82 XP");
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
-    expect(attack.textContent).toBe("Attack30");
+    expect(attack.textContent).toBe("Attack");
+    expect(card.querySelector(".ui-cost")?.textContent).toBe("30 stamina");
     act(() => attack.click());
     expect(onAttack).toHaveBeenCalled();
+  });
+
+  it("stands Details at the foot's left and Attack alone at its right, and opens the whole fight's figures", () => {
+    act(() =>
+      root.render(
+        <SiteCardView
+          site="Camp"
+          beast={{ name: "Troll", beast: "troll", combatClass: "Knight" }}
+          army={{ ...army, troops: 1_500 }}
+          guard={1_300}
+          fight={{
+            outcome: "wins",
+            exchanges: 3,
+            troopsLost: 180,
+            guardLeft: 740,
+            whole: { troopsLost: 610, guardKilled: 1_300, stamina: 90 },
+          }}
+          pay={{ icon: "wood", amount: 650, fits: 120 }}
+          xp={90}
+          verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
+          onRealm={() => {}}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    const foot = document.querySelector("section[role=dialog] footer.ui-actions")!;
+    const words = [...foot.querySelectorAll("button")].map((button) => button.textContent);
+    // The way out and Details on the left, Attack last: the shared actions rule puts the last alone on the right.
+    expect(words).toEqual(["Details", "Realm", "Attack"]);
+    expect(foot.lastElementChild?.textContent).toBe("Attack");
+    const details = [...foot.querySelectorAll("button")][0]!;
+    expect(details.getAttribute("aria-expanded")).toBe("false");
+    expect(document.body.textContent).not.toContain("The whole fight");
+
+    act(() => details.click());
+    expect(details.getAttribute("aria-expanded")).toBe("true");
+    const whole = [...document.querySelectorAll("section[role=dialog] dl dt, section[role=dialog] dl dd")].map(
+      (cell) => cell.textContent,
+    );
+    expect(whole).toEqual([
+      "Attacks",
+      "3 · The guard falls",
+      "You lose",
+      "−610",
+      "You kill",
+      "1,300 / 1,300",
+      "Stamina",
+      "90",
+    ]);
+    expect(document.body.textContent).toContain("Cleared in 3 attacks");
+
+    act(() => details.click());
+    expect(document.querySelector("section[role=dialog] dl")).toBeNull();
   });
 
   it("shows a loss in amber with the guard left, dims a ruin's chest, and keeps Attack, in red, saying the army will be lost", () => {
@@ -56,10 +119,16 @@ describe("a guarded site's card", () => {
       root.render(
         <SiteCardView
           site="Ruin"
-          beast="Troll"
+          beast={{ name: "Basilisk", beast: "basilisk", combatClass: "Knight" }}
           army={{ ...army, troops: 1_200 }}
           guard={3_400}
-          fight={{ outcome: "loses", exchanges: 3, troopsLost: 1_200, guardLeft: 2_300 }}
+          fight={{
+            outcome: "loses",
+            exchanges: 3,
+            troopsLost: 1_200,
+            guardLeft: 2_300,
+            whole: { troopsLost: 1_200, guardKilled: 1_100, stamina: 90 },
+          }}
           pay={null}
           chest={{ tier: 3, lords: 128 }}
           xp={145}
@@ -69,13 +138,18 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Ruin']")!;
-    expect(card.textContent).toContain("Troll");
+    expect(card.textContent).toContain("Basilisk");
+    // The site's painting and the guard's side.
+    expect(card.querySelectorAll('[data-icon="beast-basilisk"]')).toHaveLength(2);
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("Your army is lostBasilisk · Ruin");
+    expect(card.querySelector('[data-icon="troops"]')).toBeNull();
+    expect(card.querySelector('[data-tip="Knight"]')).not.toBeNull();
     expect(card.textContent).toContain("2,300");
     expect(card.querySelector('[aria-label="128 LORDS"]')).not.toBeNull();
     expect(card.querySelector('[aria-label="Rare"]')).not.toBeNull();
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
     expect(attack.disabled).toBe(false);
-    expect(attack.dataset.warns).toBe("true");
+    expect(attack.dataset.kind).toBe("danger");
     expect(document.querySelector('[role="status"]')?.textContent).toBe("Army will be lost");
   });
 
@@ -85,10 +159,16 @@ describe("a guarded site's card", () => {
       root.render(
         <SiteCardView
           site="Camp"
-          beast={undefined}
+          beast={{ name: "Troll", beast: "troll", combatClass: "Knight" }}
           army={army}
           guard={1_100}
-          fight={{ outcome: "wins", exchanges: 1, troopsLost: 180, guardLeft: 0 }}
+          fight={{
+            outcome: "wins",
+            exchanges: 1,
+            troopsLost: 180,
+            guardLeft: 0,
+            whole: { troopsLost: 180, guardKilled: 1_100, stamina: 30 },
+          }}
           pay={{ icon: "labor", amount: 550, fits: 120 }}
           xp={82}
           verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
@@ -97,7 +177,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("section[aria-label='Camp']")!.textContent).toContain("+120");
+    expect(document.querySelector("section[aria-label='Troll']")!.textContent).toContain("+120");
     act(() =>
       buttons()
         .find((button) => button.textContent === "Realm")!
@@ -112,10 +192,16 @@ describe("a guarded site's card", () => {
       root.render(
         <SiteCardView
           site="Camp"
-          beast={undefined}
+          beast={{ name: "Troll", beast: "troll", combatClass: "Knight" }}
           army={army}
           guard={1_100}
-          fight={{ outcome: "wins", exchanges: 1, troopsLost: 180, guardLeft: 0 }}
+          fight={{
+            outcome: "wins",
+            exchanges: 1,
+            troopsLost: 180,
+            guardLeft: 0,
+            whole: { troopsLost: 180, guardKilled: 1_100, stamina: 30 },
+          }}
           pay={{ icon: "labor", amount: 550 }}
           xp={82}
           verb={{ kind: "short", stamina: { cost: 30, held: 10, wait: 40 * 60 } }}
@@ -129,13 +215,36 @@ describe("a guarded site's card", () => {
 });
 
 describe("a guarded site's card with no army chosen", () => {
+  it("keeps a named ruin's distinct kind and guard species beside its strength", () => {
+    act(() =>
+      root.render(
+        <SiteCardView
+          site="Ruin"
+          name="North Watch"
+          beast={{ name: "Basilisk", beast: "basilisk", combatClass: "Knight" }}
+          army={null}
+          guard={1_100}
+          fight={undefined}
+          pay={null}
+          xp={undefined}
+          verb={null}
+          choices={[{ label: "Army 1", ...army, fight: undefined, onPick: () => {} }]}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    const card = document.querySelector("section[aria-label='North Watch']")!;
+    expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("RuinBasilisk1,100");
+  });
+
   it("gives each army a row with the fight it would have, names the skull, and opens the attack on a tap", () => {
     const onPick = vi.fn();
     act(() =>
       root.render(
         <SiteCardView
           site="Rift"
-          beast={undefined}
+          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Knight" }}
           army={null}
           guard={1_100}
           fight={undefined}
@@ -147,14 +256,26 @@ describe("a guarded site's card with no army chosen", () => {
               label: "Army 1",
               art: army.art,
               troops: 5_000,
-              fight: { outcome: "wins", exchanges: 2, troopsLost: 456, guardLeft: 492 },
+              fight: {
+                outcome: "wins",
+                exchanges: 2,
+                troopsLost: 456,
+                guardLeft: 492,
+                whole: { troopsLost: 912, guardKilled: 1_100, stamina: 60 },
+              },
               onPick,
             },
             {
               label: "Army 2",
               art: army.art,
               troops: 154,
-              fight: { outcome: "loses", exchanges: 1, troopsLost: 154, guardLeft: 1_028 },
+              fight: {
+                outcome: "loses",
+                exchanges: 1,
+                troopsLost: 154,
+                guardLeft: 1_028,
+                whole: { troopsLost: 154, guardKilled: 72, stamina: 30 },
+              },
               onPick: () => {},
             },
             { label: "Army 3", art: army.art, troops: 600, fight: undefined, onPick: () => {} },
@@ -163,16 +284,21 @@ describe("a guarded site's card with no army chosen", () => {
         />,
       ),
     );
-    const row = (label: string) => document.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
+    /** An army's row: its button names it and its troops, its forecast sits beside the button. */
+    const row = (label: string) =>
+      [...document.querySelectorAll(".ui-row")].find((candidate) =>
+        candidate.querySelector("button")?.textContent?.startsWith(`${label}`),
+      )!;
     // Two attacks win it: the figures are the first one's, the troops it costs and the guard it leaves standing.
-    expect(row("Army 1").textContent).toBe("5,000−456492");
+    expect(row("Army 1").querySelector('[data-icon="beast-dark-fey"]')).not.toBeNull();
+    expect(row("Army 1").textContent).toBe("Army 15,000 troops−456492");
     expect(row("Army 1").querySelector('[aria-label="2"]')).not.toBeNull();
-    expect(row("Army 2").textContent).toBe("154−1541,028");
+    expect(row("Army 2").textContent).toBe("Army 2154 troops−1541,028");
     expect(row("Army 2").querySelector('[data-tip="Would be lost"]')).not.toBeNull();
     // Out of reach: the army is still a choice, with no forecast to show and no dash in its place.
-    expect(row("Army 3").textContent).toBe("600");
+    expect(row("Army 3").textContent).toBe("Army 3600 troops");
     expect(document.querySelector("section[aria-label='Rift']")!.textContent).not.toContain("—");
-    act(() => row("Army 1").click());
+    act(() => row("Army 1").querySelector("button")!.click());
     expect(onPick).toHaveBeenCalled();
   });
 });
@@ -185,7 +311,13 @@ describe("Enter on a guarded site's card", () => {
       beast={undefined}
       army={army}
       guard={1_100}
-      fight={{ outcome: fight, exchanges: 1, troopsLost: 180, guardLeft: fight === "wins" ? 0 : 900 }}
+      fight={{
+        outcome: fight,
+        exchanges: 1,
+        troopsLost: 180,
+        guardLeft: fight === "wins" ? 0 : 900,
+        whole: { troopsLost: 180, guardKilled: fight === "wins" ? 1_100 : 200, stamina: 30 },
+      }}
       pay={{ icon: "labor", amount: 550 }}
       xp={82}
       verb={{ kind: "attack", stamina: 30, onAttack }}
@@ -214,7 +346,7 @@ describe("a guarded site's card for an army out of reach", () => {
       root.render(
         <SiteCardView
           site="Rift"
-          beast={undefined}
+          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Knight" }}
           army={army}
           guard={1_100}
           fight={undefined}
@@ -235,7 +367,7 @@ describe("a guarded site's card for an army out of reach", () => {
       root.render(
         <SiteCardView
           site="Rift"
-          beast={undefined}
+          beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Knight" }}
           army={army}
           guard={1_100}
           fight={undefined}
@@ -247,6 +379,9 @@ describe("a guarded site's card for an army out of reach", () => {
       ),
     );
     expect(buttons().some((button) => button.textContent?.startsWith("Attack"))).toBe(false);
+    // Move carries its verb only; what it costs is the line under it.
+    expect(buttons().find((button) => button.textContent?.startsWith("Move"))!.textContent).toBe("Move");
+    expect(document.querySelector(".ui-cost")?.textContent).toBe("20 stamina");
     act(() =>
       buttons()
         .find((button) => button.textContent?.startsWith("Move"))!
@@ -267,4 +402,23 @@ describe("a cleared ruin's chest", () => {
     act(() => (moment as HTMLButtonElement).click());
     expect(onClose).toHaveBeenCalled();
   });
+});
+
+it("titles a single roaming Wraith by its species", () => {
+  act(() =>
+    root.render(
+      <SiteCardView
+        site="Beasts"
+        beast={{ name: "Wraith", beast: "wraith", combatClass: "Knight" }}
+        army={null}
+        guard={314}
+        fight={undefined}
+        pay={null}
+        xp={44}
+        verb={null}
+        onClose={() => {}}
+      />,
+    ),
+  );
+  expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Wraith");
 });

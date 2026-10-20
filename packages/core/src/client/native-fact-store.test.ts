@@ -548,6 +548,8 @@ describe("declared fact absence", () => {
       explorer_id: army.explorer_id,
       stamina: { amount: "7", settled_at: "17", remainder: 0 },
     };
+    store.applyFacts([set("0x70", "ArmySlot", occupied)]);
+    expect(resolveExplorerTroops(store, army)).toBeUndefined();
     store.applyFacts([
       set("0x70", "ArmySlot", occupied),
       set("0x72", "ArmyProgress", {

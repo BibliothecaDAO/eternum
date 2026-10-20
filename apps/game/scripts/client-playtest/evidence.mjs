@@ -10,6 +10,8 @@ const MAX_LOAD_AVERAGE = 12;
 const JANK_FRAME_MS = 1000 / 30;
 // A revealed tile turns from fog to terrain; the same patch of screen, unchanged, differs by a few levels at most.
 const REVEALED_TILE_CHANGE_MIN = 12;
+// The most a bar regenerates between two of the probe's half-second readings (a Blitz army gains about 0.4 a second).
+const PLATE_STAMINA_RISE_MAX = 5;
 // The discrete inputs a player feels; pointer enter/leave and hover events would only repeat the click's numbers.
 const TIMED_INPUTS = new Set(["click", "keydown", "pointerdown", "wheel"]);
 export const RENDERER_MODES = ["webgpu-auto", "webgpu-force-webgl"];
@@ -35,16 +37,19 @@ export function buildPlaytestUrl({ baseUrl, chainId, gameId, rendererMode, devOv
   url.searchParams.set("spectate", "true");
   url.searchParams.set("rendererMode", rendererMode);
   // Measure what players run: the dev overlays stay off even if this browser profile once enabled them, unless the
-  // steps play the dev tools themselves.
+  // steps need them (they play the dev tools, or read the world the dev build reports).
   url.searchParams.set("dev", devOverlays ? "1" : "0");
   return url.toString();
 }
 
-/** A player starts on the home page, signed in by the browser profile, and enters with its call to action. */
-export function buildPlayerHomeUrl({ baseUrl, rendererMode }) {
+/**
+ * A player starts on the home page, signed in by the browser profile, and enters with its call to action. The dev
+ * overlays are set there, as for a spectator's link: the page keeps the setting into the game.
+ */
+export function buildPlayerHomeUrl({ baseUrl, rendererMode, devOverlays = false }) {
   const url = new URL(baseUrl);
   url.searchParams.set("rendererMode", rendererMode);
-  url.searchParams.set("dev", "0");
+  url.searchParams.set("dev", devOverlays ? "1" : "0");
   return url.toString();
 }
 
@@ -96,7 +101,7 @@ export function hasEntryFinished(snapshot) {
 
 /**
  * One step's numbers, from the probe read when the step ended: frame intervals, draws, long animation frames, inputs,
- * heap, and Herald messages to the frame after them. A step whose page reloaded is measured on the new page, with what
+ * heap, the map labels' element count, and Herald messages to the frame after them. A step whose page reloaded is measured on the new page, with what
  * the reload cost. Frame intervals and long animation frames are different records: a missed frame need not be long.
  */
 export function summarizeStep(probe, { name, startedOn }) {
@@ -152,6 +157,7 @@ export function summarizeStep(probe, { name, startedOn }) {
       retainedDeltaMb: !reloaded && end ? toMb(end.heapBytes - startedOn.heapBytes) : null,
       peakMb: toMb(Math.max(...probe.heap.filter(([t]) => t >= from && t < to).map(([, bytes]) => bytes))),
     },
+    labelNodes: distribution((probe.labelNodes ?? []).filter(([t]) => t >= from && t < to).map(([, count]) => count)),
     herald: {
       count: messages.length,
       kb: round(sum(messages.map((message) => message.bytes)) / 1024),
@@ -183,7 +189,8 @@ export const failed = (reason, details = {}) => ({ status: "failed", reason, ...
 
 /**
  * An explore is evidence only when Explore was offered and pressed, the client's own record of that press carries a
- * hash, and its outcome was applied. Move offered instead, or nothing, is a refusal, never an explore.
+ * hash, its outcome was applied, and the army's plate never climbed back up while it settled (`plateStamina`, the
+ * probe's [time, reading] pairs). Move offered instead, or nothing, is a refusal, never an explore.
  */
 export function judgeExplore(played, clientActions) {
   if (played.army === null) return blocked("the player has no army on the HUD");
@@ -204,24 +211,41 @@ export function judgeExplore(played, clientActions) {
   if (!(played.tileChange >= REVEALED_TILE_CHANGE_MIN)) {
     return failed(`the explored tile did not visibly change on screen (${played.tileChange})`, { action });
   }
+  const stale = judgePlateStamina(played.plateStamina ?? [], played.pressedAt, { action });
+  if (stale) return stale;
   // `rendered` is the client's marker (a rAF callback after the terrain page rebuilt); the screenshot is what showed.
   return completed({ action, tileChange: played.tileChange });
 }
 
 /**
- * A burst is evidence only when at least two armies took an order back to back and every order was sent, confirmed and
- * started its army moving. Each order is timed from the right-click the client recorded (`move_requested`) to its
- * send's answer, Herald's status and the army moving on screen, in the page's clock.
+ * Fails an order whose army's plate climbed back to a bar it no longer has: a rise between two of the probe's
+ * [time, reading] pairs after `since` that regeneration cannot make. Null when the plate only paid and regenerated.
  */
-export function judgeBurst(played, armyMovement) {
+export function judgePlateStamina(readings, since, detail = {}) {
+  const read = readings.filter(([t, stamina]) => t >= since && stamina !== null).map(([, stamina]) => stamina);
+  for (let at = 1; at < read.length; at += 1) {
+    if (read[at] - read[at - 1] > PLATE_STAMINA_RISE_MAX) {
+      return failed(`the army's plate read ${read[at - 1]} stamina, then ${read[at]}: a bar it no longer has`, detail);
+    }
+  }
+  return null;
+}
+
+/**
+ * A burst is evidence only when at least two armies took an order back to back and every order was sent, confirmed and
+ * shown: a move by its army starting to move, an explore (which may leave the army where it stood) by the client's
+ * record of its reveal rendered. Each order is timed from the right-click the client recorded (`move_requested`) to
+ * its send's answer, Herald's status and that visible moment, in the page's clock.
+ */
+export function judgeBurst(played, { armyMovement, clientActions }) {
   if ((played.targets?.length ?? 0) < 2) {
     return blocked(`${played.targets?.length ?? 0} armies offered an order: a burst needs two`, {
       targets: played.targets,
     });
   }
-  const orders = played.burst.map(({ army }) => timeOrder(army, played.startedAt, armyMovement));
-  const unfinished = orders.find((order) => order.confirmedMs === undefined || order.movingMs === undefined);
-  if (unfinished) return failed(`army ${unfinished.army}'s order never moved it on screen`, { orders });
+  const orders = played.burst.map(({ army }) => timeOrder(army, played.startedAt, armyMovement, clientActions));
+  const unfinished = orders.find((order) => order.confirmedMs === undefined || order.visibleMs === undefined);
+  if (unfinished) return failed(`army ${unfinished.army}'s order never showed on screen`, { orders });
   if (orders.length < played.targets.length) {
     return failed(`${orders.length} of ${played.targets.length} armies took their order`, { orders });
   }
@@ -230,7 +254,7 @@ export function judgeBurst(played, armyMovement) {
 }
 
 /** One army's order in the burst, from its right-click to each phase after it; a phase missing stays undefined. */
-function timeOrder(army, since, armyMovement) {
+function timeOrder(army, since, armyMovement, clientActions) {
   const entries = armyMovement.filter((entry) => entry.entityId === army && entry.wallTimeMs >= since);
   const requested = entries.find((entry) => entry.phase === "move_requested");
   const after = (phase) => {
@@ -238,12 +262,26 @@ function timeOrder(army, since, armyMovement) {
       requested && entries.find((candidate) => candidate.phase === phase && candidate.sequence > requested.sequence);
     return entry ? round(entry.wallTimeMs - requested.wallTimeMs) : undefined;
   };
+  const explore = requested?.details?.actionType === "explore";
+  const reveal =
+    explore &&
+    clientActions.find(
+      (action) =>
+        action.operation === "explore_reveal" &&
+        action.entityId === army &&
+        action.phases.click >= requested.wallTimeMs - 5,
+    );
   return {
     army,
+    order: explore ? "explore" : "move",
     requestedAt: requested?.wallTimeMs,
     answeredMs: after("tx_response_received"),
     confirmedMs: after("tx_confirmed"),
-    movingMs: after("movement_started"),
+    visibleMs: explore
+      ? reveal?.phases.rendered === undefined
+        ? undefined
+        : round(reveal.phases.rendered - requested.wallTimeMs)
+      : after("movement_started"),
   };
 }
 
@@ -444,6 +482,7 @@ export function evaluatePlaytestSummary(summary, options = {}) {
     ) {
       failures.push(describeRun(result, "stalled after renderer-init-started without completion or fallback"));
     }
+    failures.push(...rendererMismatches(result));
     if (hasWebGpuFallback(result)) {
       if (!result.diagnostics?.fallbackReason) {
         failures.push(describeRun(result, "fallback happened without a fallback reason"));
@@ -644,6 +683,27 @@ function toMb(bytes) {
 
 function isFiniteNumber(value) {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+/**
+ * A run is evidence of the renderer it is labelled with only if that renderer ran: the renderer must have been asked
+ * for the run's mode (a request the page lost before the renderer read it runs the default), and a WebGL run must
+ * have run WebGL.
+ */
+function rendererMismatches(result) {
+  const diagnostics = result.diagnostics;
+  if (!diagnostics || !result.rendererMode) return [];
+  const mismatches = [];
+  if (diagnostics.requestedMode !== result.rendererMode)
+    mismatches.push(
+      describeRun(
+        result,
+        `the renderer was asked for ${diagnostics.requestedMode ?? "nothing"}, not ${result.rendererMode}`,
+      ),
+    );
+  if (result.rendererMode === "webgpu-force-webgl" && diagnostics.activeMode !== "webgl2-fallback")
+    mismatches.push(describeRun(result, `WebGL was asked for, but ${diagnostics.activeMode ?? "no renderer"} ran`));
+  return mismatches;
 }
 
 function hasRendererCompletedOrFallback(result) {

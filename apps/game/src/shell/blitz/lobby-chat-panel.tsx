@@ -2,15 +2,13 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import type { PlaytestSlot } from "../blitz-slot";
-import { YOU } from "@/ui/design-system/kit/words";
+import { YOU, CHAT_WORDS } from "@/ui/design-system/kit/words";
 import type { WorldChatMessage } from "@bibliothecadao/types";
-import { displayPlayerName } from "@bibliothecadao/eternum";
+import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
-import { Kbd } from "../frame/kbd";
-import { Panel } from "../panel";
-import { ServiceFailure } from "../service-failure";
-import { CHAT_WORDS } from "../words";
+import { AppField, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { type ChatHold, useLobbyChat } from "./lobby-chat";
 
 /** The longest message the chat takes (packages/types chat/shared.ts). */
@@ -24,7 +22,8 @@ const HOLD_LINES: Partial<Record<ChatHold, string>> = {
 /**
  * The lobby's chat, under the countdown on a desktop and under the registered count on a phone: its messages, oldest at
  * the top, read by any signed-in player, and the field for one the room lets write (a player registered in the slot),
- * Enter or the keyboard's Send sending. A reader sees no field.
+ * Enter or the keyboard's Send sending. A reader sees no field, and the line that says who writes; an empty room
+ * says so.
  */
 export const LobbyChatPanel = ({
   slot,
@@ -35,39 +34,51 @@ export const LobbyChatPanel = ({
 }) => {
   const chat = useLobbyChat(slot, membership);
   return (
-    <Panel icon="chat" title={CHAT_WORDS.chat}>
+    <AppPanel icon="chat" title={CHAT_WORDS.chat}>
       {chat.hold === "signed-out" ? (
-        <p className="px-1 py-2 text-base text-kit-muted">{CHAT_WORDS.signInToRead}</p>
+        <p className="py-2 text-app-body text-app-muted">{CHAT_WORDS.signInToRead}</p>
       ) : chat.hold === "unanswered" ? (
         <ServiceFailure service="chat" error={new Error("lobby chat closed")} />
       ) : (
         <>
-          <Messages messages={chat.messages} />
-          {chat.hold && HOLD_LINES[chat.hold] && <p className="px-1 text-sm text-kit-amber">{HOLD_LINES[chat.hold]}</p>}
-          {chat.canWrite && <Composer send={chat.send} />}
+          {chat.messages.length > 0 ? (
+            <Messages messages={chat.messages} />
+          ) : (
+            <p className="py-2 text-app-body text-app-muted">{CHAT_WORDS.empty}</p>
+          )}
+          {chat.hold && HOLD_LINES[chat.hold] && (
+            <p className="text-app-label text-app-warn">{HOLD_LINES[chat.hold]}</p>
+          )}
+          {chat.canWrite ? (
+            <Composer send={chat.send} />
+          ) : (
+            <p className="text-app-label text-app-muted">{CHAT_WORDS.registeredWrite}</p>
+          )}
         </>
       )}
-    </Panel>
+    </AppPanel>
   );
 };
 
 /** The messages, kept scrolled to the newest as they arrive. */
 const Messages = ({ messages }: { messages: readonly WorldChatMessage[] }) => {
   const { session } = useIdentitySession();
+  // A sender's name is read as the list draws, and the list draws again when one lands.
+  const names = usePlayerNames();
   const list = useRef<HTMLOListElement>(null);
   useEffect(() => {
     list.current?.scrollTo({ top: list.current.scrollHeight });
   }, [messages.length]);
   return (
-    <ol ref={list} className="flex h-64 flex-col gap-1.5 overflow-y-auto px-1 py-2 text-base">
+    <ol ref={list} className="flex max-h-64 flex-col gap-1.5 overflow-y-auto py-2 text-app-body text-app-ink">
       {messages.map((message) => (
         <li key={message.id} className="break-words">
-          <b className="mr-2 font-body text-kit-gold2">
+          <b className="mr-2 text-app-accent">
             {isOwn(message, session?.user.realmsId)
               ? YOU
-              : displayPlayerName(message.sender.playerId, message.sender.displayName ?? null)}
+              : resolveChatSenderName(names, message.sender.playerId, message.sender.displayName)}
           </b>
-          <span className="text-kit-cream">{message.content}</span>
+          <span>{message.content}</span>
         </li>
       ))}
     </ol>
@@ -88,17 +99,16 @@ const Composer = ({ send }: { send: (content: string) => void }) => {
     setDraft("");
   };
   return (
-    <form onSubmit={submit} className="relative">
-      <input
-        aria-label={CHAT_WORDS.message}
+    <form onSubmit={submit}>
+      <AppField
+        label={CHAT_WORDS.message}
+        icon="chat"
         placeholder={CHAT_WORDS.message}
         enterKeyHint="send"
         maxLength={MESSAGE_LIMIT}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
-        className="h-12 w-full rounded-xl border-2 border-kit-line2 bg-kit-ground px-3 pr-16 text-base text-kit-cream placeholder:text-kit-muted focus:border-kit-peach focus:outline-none"
       />
-      <Kbd keyName="Enter" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 max-lg:hidden" />
     </form>
   );
 };

@@ -4,7 +4,7 @@ import { Effect } from "effect";
 import { hash } from "starknet";
 import { beforeEach, expect, it, vi } from "vitest";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
-import { ledgerMonitorReads, ledgerResultAdapter, postVerifiedResult } from "./ledger";
+import { ledgerChestChanges, ledgerMonitorReads, ledgerResultAdapter, postVerifiedResult } from "./ledger";
 
 const rpc = vi.hoisted(() => ({
   call: vi.fn(),
@@ -213,4 +213,65 @@ it("leaves a result whose slot cannot be verified unposted and failing, so the r
     ),
   ).rejects.toThrow("paid_game_slot_missing");
   expect(postFor).not.toHaveBeenCalled();
+});
+
+it("rediscovers a chest request inserted behind the cursor by an L2 rewrite", async () => {
+  const request = {
+    from_address: "0x10",
+    transaction_hash: "0x123",
+    block_number: 1000,
+    block_hash: "0xa",
+    keys: [hash.getSelectorFromName("ChestRequested"), "7", "0", "0x123"],
+    data: ["1000"],
+  };
+  rpc.events.mockImplementation(async ({ from_block }) => ({
+    events: from_block.block_number <= 1000 ? [request] : [],
+  }));
+  const page = await Effect.runPromise(
+    ledgerChestChanges("https://ledger.test", "0x10", 1001, null, { number: 1000, hash: "0xdead" }),
+  );
+  expect(page.rows).toEqual([{ kind: "requested", request: { tokenId: "7", requester: "0x123", requestBlock: 1000 } }]);
+  expect(page.rewind).toBe(true);
+});
+
+it("fails the read, without a rewind, when the RPC answers a head below the anchor", async () => {
+  rpc.events.mockResolvedValue({ events: [] });
+  await expect(
+    Effect.runPromise(ledgerChestChanges("https://ledger.test", "0x10", 1002, null, { number: 1001, hash: "0xa" })),
+  ).rejects.toMatchObject({ operation: "ledger_head_behind_anchor" });
+  expect(rpc.events).not.toHaveBeenCalled();
+  const caughtUp = await Effect.runPromise(
+    ledgerChestChanges("https://ledger.test", "0x10", 1000, null, { number: 1000, hash: "0xa" }),
+  );
+  expect(caughtUp).toMatchObject({ rewind: false, head: 1000 });
+});
+
+it("refuses a ledger event page whose head changes while it is read", async () => {
+  rpc.events.mockImplementation(async () => {
+    rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 1000, block_hash: "0xb", timestamp: 1000 });
+    return { events: [] };
+  });
+  await expect(Effect.runPromise(ledgerChestChanges("https://ledger.test", "0x10", 0, null))).rejects.toThrow();
+});
+
+it("restarts pagination on a replaced checkpoint and anchors an old cursor by replaying it once", async () => {
+  const reads = ledgerMonitorReads("https://ledger.test", "0x10");
+  rpc.events.mockResolvedValue({ events: [], continuation_token: "next" });
+  const first = await Effect.runPromise(reads.postedResults(null));
+  rpc.block.mockImplementation(async (number) => ({
+    status: "ACCEPTED_ON_L2",
+    block_number: number === "latest" ? 1001 : number,
+    block_hash: "0xb",
+    timestamp: 1001,
+  }));
+  const replay = await Effect.runPromise(reads.postedResults(first.next, 0, first.anchor));
+  expect(replay).toMatchObject({ rewind: true, head: 1001, anchor: { number: 1001, hash: "0xb" } });
+  expect(rpc.events.mock.calls[1]![0]).not.toHaveProperty("continuation_token");
+  expect(rpc.events.mock.calls[1]![0].from_block).toEqual({ block_number: 0 });
+  const legacy = await Effect.runPromise(reads.postedResults(JSON.stringify({ head: 999, token: "old" }), 900));
+  expect(legacy.rewind).toBe(true);
+  rpc.events.mockResolvedValue({ events: [] });
+  const resumed = await Effect.runPromise(reads.postedResults(legacy.next, 0, legacy.anchor));
+  expect(resumed.rewind).toBe(false);
+  expect(rpc.events.mock.calls.at(-1)![0].continuation_token).toBe("next");
 });

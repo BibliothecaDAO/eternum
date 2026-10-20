@@ -18,7 +18,7 @@ const GUARD_SLOT_RULES: Record<StructureType, "by-level" | "fixed"> = {
   [StructureType.BitcoinMine]: "fixed",
   [StructureType.Rift]: "fixed",
   [StructureType.Ruin]: "fixed",
-  [StructureType.Stragglers]: "fixed",
+  [StructureType.Beasts]: "fixed",
 };
 
 export const getStructureDefenseSlotLimit = (

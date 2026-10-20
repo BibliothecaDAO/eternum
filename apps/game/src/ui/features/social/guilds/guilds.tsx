@@ -1,8 +1,6 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useFactView } from "@/hooks/use-fact-view";
 import { guildsView } from "@/sync/fact-views";
 import { LORDS_PRIZE_POOL, STRK_PRIZE_POOL } from "@/ui/constants";
-import { Button, TextInput } from "@/ui/design-system/atoms";
 import { CreateGuildButton } from "./create-guild-button";
 import { GuildListHeader, GuildRow } from "./guild-list";
 import { useSocialStore } from "../components/use-social-store";
@@ -18,6 +16,7 @@ import { usePlayerWhitelist } from "@/hooks/helpers/use-guilds";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 
 import { useMemo, useState } from "react";
+import { HudButton, HudField } from "@/ui/design-system/kit/hud-elements";
 
 export const Guilds = ({
   viewGuildMembers,
@@ -311,36 +310,29 @@ export const Guilds = ({
       <div className="mb-4 flex flex-col gap-2">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant={guildsViewGuildInvites ? "outline" : "primary"}
-              onClick={() => setGuildsViewGuildInvites(!guildsViewGuildInvites)}
-            >
+            <HudButton kind="secondary" onClick={() => setGuildsViewGuildInvites(!guildsViewGuildInvites)}>
               {guildsViewGuildInvites ? "Show Tribe Rankings" : "Show Tribe Invites"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={downloadSocialData}
-              className="flex items-center gap-1.5"
-              title="Download social data as JSON"
-            >
-              <SemanticIcon name="download" className="w-4 h-4" />
+            </HudButton>
+            <HudButton kind="quiet" icon="download" onClick={downloadSocialData} title="Download social data as JSON">
               Export Data
-            </Button>
+            </HudButton>
           </div>
           {playerGuild?.entityId ? (
-            <Button variant="gold" onClick={() => viewGuildMembers(playerGuild.entityId)} className="sm:ml-auto">
-              Tribe {playerGuild.name}
-              <SemanticIcon name="chevron-right" className="w-4 h-4 ml-2" />
-            </Button>
+            <span className="sm:ml-auto">
+              <HudButton kind="primary" onClick={() => viewGuildMembers(playerGuild.entityId)}>
+                Tribe {playerGuild.name}
+              </HudButton>
+            </span>
           ) : (
-            <Button
-              isLoading={isLoading}
-              variant={isCreatingGuild ? "outline" : "primary"}
-              className="sm:ml-auto min-w-[140px]"
-              onClick={toggleIsCreatingGuild}
-            >
-              {isCreatingGuild ? "Cancel" : "Create Tribe"}
-            </Button>
+            <span className="sm:ml-auto">
+              <HudButton
+                kind={isCreatingGuild ? "quiet" : "primary"}
+                busy={isLoading ? "Creating…" : undefined}
+                onClick={toggleIsCreatingGuild}
+              >
+                {isCreatingGuild ? "Cancel" : "Create Tribe"}
+              </HudButton>
+            </span>
           )}
         </div>
 
@@ -353,26 +345,26 @@ export const Guilds = ({
             setIsPublic={setIsPublic}
           />
         )}
-        <TextInput
+        <HudField
           placeholder="Search Tribe . . ."
+          aria-label="Search tribes"
           value={guildsGuildSearchTerm}
-          onChange={(searchTerm) => setGuildsGuildSearchTerm(searchTerm)}
-          className="w-full btn-bronze"
+          onChange={setGuildsGuildSearchTerm}
         />
       </div>
 
       <div className="flex min-h-0 flex-1">
         <div className="flex h-full min-h-0 flex-1 flex-col rounded-xl">
           <GuildListHeader activeSort={guildsActiveSort} setActiveSort={setGuildsActiveSort} />
-          <div className="mt-4 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+          <div className="mt-4 flex-1 overflow-y-auto">
             {filteredGuilds.map((guild) => (
               <GuildRow key={guild.entityId} guild={guild} onClick={() => viewGuildMembers(guild.entityId)} />
             ))}
             {!filteredGuilds.length && guildsViewGuildInvites && (
-              <p className="text-center text-gold/70 py-4">No Tribe Invites Received</p>
+              <p className="text-center italic text-hud-muted py-4">No Tribe Invites Received</p>
             )}
             {!filteredGuilds.length && !guildsViewGuildInvites && guildsGuildSearchTerm && (
-              <p className="text-center text-gold/70 py-4">No Tribes Found</p>
+              <p className="text-center italic text-hud-muted py-4">No Tribes Found</p>
             )}
           </div>
         </div>

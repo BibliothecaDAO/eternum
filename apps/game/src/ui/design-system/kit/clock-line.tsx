@@ -1,9 +1,7 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { formatClockTime, formatDuration } from "./time";
 import { TONE_TEXT, type Tone } from "./tone";
-import { DAY_ENDS, LEFT, TOMORROW_LASTS } from "./words";
+import { type ClockPhrase, dayEnds, dayLeft, tomorrowLasts } from "./words";
 
 /**
  * The clock line, ruled to stay in words: "Day ends 21:40 · 7h 14m left · Tomorrow lasts 12h". Days run 8 to 24 hours,
@@ -26,40 +24,29 @@ export const ClockLine = ({
     role="timer"
     className={cn("flex flex-wrap items-baseline justify-center gap-x-1 text-sm font-semibold", TONE_TEXT[tone])}
   >
-    <span>{DAY_ENDS}</span>
-    <Numeral>{formatClockTime(endsAt)}</Numeral>
+    <Phrase phrase={dayEnds(endsAt)} />
     <span aria-hidden>·</span>
-    <Numeral>{formatDuration(secondsLeft)}</Numeral>
-    <span>{LEFT}</span>
+    <Phrase phrase={dayLeft(secondsLeft)} />
     <span aria-hidden className="px-1">
       ·
     </span>
-    <span>{TOMORROW_LASTS}</span>
-    <Numeral>{formatDuration(tomorrowSeconds)}</Numeral>
+    <Phrase phrase={tomorrowLasts(tomorrowSeconds)} />
   </p>
 );
 
-/**
- * When today ends, for a sheet that needs it (the army deployed now ends then): "Day ends 21:40 · 7h 14m left". The
- * clock line's own words and time rule.
- */
-export const DayEnds = ({
-  endsAt,
-  secondsLeft,
-  tone,
-}: {
-  endsAt: number | undefined;
-  secondsLeft: number | undefined;
-  tone: Tone;
-}) => (
-  <p className={cn("flex items-center justify-center gap-x-1 text-sm font-semibold", TONE_TEXT[tone])}>
-    <SemanticIcon name="clock" size={18} />
-    <span>{DAY_ENDS}</span>
-    <Numeral>{formatClockTime(endsAt)}</Numeral>
-    <span aria-hidden>·</span>
-    <Numeral>{formatDuration(secondsLeft)}</Numeral>
-    <span>{LEFT}</span>
-  </p>
-);
-
-const Numeral = ({ children }: { children: string }) => <b className="text-sm tabular-nums">{children}</b>;
+/** A clock phrase with its reading set apart in bold numerals. */
+const Phrase = ({ phrase }: { phrase: ClockPhrase }) => {
+  const reading = <b className="tabular-nums">{phrase.reading}</b>;
+  const words = <span>{phrase.words}</span>;
+  return phrase.readingFirst ? (
+    <>
+      {reading}
+      {words}
+    </>
+  ) : (
+    <>
+      {words}
+      {reading}
+    </>
+  );
+};

@@ -1,7 +1,7 @@
 import { createBrowserScheduler } from "@/sync/browser-scheduler";
 import { createGameClient } from "@bibliothecadao/eternum";
 import { installFreshGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 type BrowserGameInput = Pick<
   Parameters<typeof createGameClient>[0],
@@ -17,7 +17,7 @@ export async function createBrowserGameClient(input: BrowserGameInput) {
   const { nativeBindings } = await import("@/runtime/world/native-bindings");
   return createGameClient({
     ...input,
-    playerNames: getPlayerName,
+    playerNames: getPlayerDisplayName,
     bindings: nativeBindings,
     scheduler: createBrowserScheduler(),
     // The scenes and hooks read the game's sync runtime as the active one.

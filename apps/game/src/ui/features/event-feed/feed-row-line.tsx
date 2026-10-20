@@ -1,152 +1,71 @@
-import { TransactionType } from "@bibliothecadao/provider";
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { structureMapPosition } from "@bibliothecadao/eternum";
-
+import type { IconMeaning } from "@/ui/design-system/icon";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { configManager, Position } from "@bibliothecadao/eternum";
-import { useGame } from "@/hooks/context/game-context";
-import { useNativeRow } from "@/hooks/helpers/use-native-facts";
-import type { CSSProperties, ReactNode } from "react";
+import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
+import { HudEventRow } from "@/ui/design-system/kit/hud-elements";
+import { Position } from "@bibliothecadao/eternum";
+import { formatClockTime } from "@bibliothecadao/types";
 import type { HeadlineType } from "../news-headlines/headline-types";
-import {
-  extractRoleLabel,
-  findSegmentValue,
-  formatWinnerName,
-  parsePresentationDescription,
-} from "../story-events/story-event-utils";
-import { transactionStatusLine, transferRowLabel } from "./event-feed-rows";
-import { formatFeedTime, type ImportantFeedRow } from "./important-feed-rows";
-import { resolveStoryEventPosition } from "./story-feed-row";
-
-/** One feed row in the Log button's translucent black, not the panels' surface: a fixed icon column, one line of
- *  text, the time flush right. */
-export const FEED_ROW_CLASS =
-  "pointer-events-auto flex h-8 w-full items-center gap-2 rounded-md bg-black/50 px-2.5 text-sm text-gold backdrop-blur-[2px]";
-const FEED_ROW_ICON_COLUMN_CLASS = "flex w-4 shrink-0 items-center justify-center";
+import { useStoryOpener } from "./story-feed-row";
+import type { ReactNode } from "react";
 
 const HEADLINE_ICONS: Record<HeadlineType, IconMeaning> = {
-  "realm-fall": "realm" as const,
-  "hyper-capture": "hyperstructure" as const,
-  elimination: "skull" as const,
-  "game-start": "play" as const,
-  "game-end": "victory" as const,
-  "five-min-warning": "hourglass" as const,
-  "t3-building": "build" as const,
+  "realm-fall": "realm",
+  "hyper-capture": "hyperstructure",
+  elimination: "skull",
+  "game-start": "play",
+  "game-end": "victory",
+  "five-min-warning": "hourglass",
+  "t3-building": "build",
 };
 
-export const HeadlineIcon = ({ type }: { type: HeadlineType }) => {
-  const Icon = HEADLINE_ICONS[type];
-  return <SemanticIcon name={Icon} className="h-4 w-4 shrink-0" />;
-};
+/** A clock milestone's painting. */
+export const headlineIcon = (type: HeadlineType): IconMeaning => HEADLINE_ICONS[type];
 
-/** One feed row, quick feed or log: icon, one line of text, the time; a row with a place flies the camera. */
-export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSSProperties }) => {
-  const target = useFeedRowTarget(row);
-  const navigate = useNavigateToMapView();
-  const { icon, text } = summarizeFeedRow(row);
-  const content = (
-    <>
-      <span className={FEED_ROW_ICON_COLUMN_CLASS}>{icon}</span>
-      <span className="min-w-0 flex-1 truncate text-left">{text}</span>
-      <span className="ml-auto shrink-0 text-right tabular-nums text-kit-muted">{formatFeedTime(row.at)}</span>
-    </>
-  );
-  if (!target) {
-    return (
-      <div className={FEED_ROW_CLASS} style={style}>
-        {content}
-      </div>
-    );
-  }
+/**
+ * One story's row, in the strip or the Log: its kind's painting, the Log's own sentence for it (with what came of it),
+ * and its time; it opens where the story happened (its army, for an opened crate).
+ */
+export const FeedRowLine = ({ event }: { event: ProcessedStoryEvent }) => {
+  const open = useStoryOpener(event);
+  const text = event.presentation.title;
   return (
-    <button
-      type="button"
-      onClick={() => navigate(target)}
-      className={cn(FEED_ROW_CLASS, "font-sans hover:bg-black/70")}
-      style={style}
+    <HudEventRow
+      time={formatClockTime(event.timestampMs / 1000)}
+      icon={storyIcon(event.story)}
+      onOpen={open ?? undefined}
     >
-      {content}
-    </button>
+      {text}
+    </HudEventRow>
   );
 };
 
-function useFeedRowTarget(row: ImportantFeedRow): Position | null {
-  const {
-    setup: { store },
-  } = useGame();
-  const structure = useNativeRow(
-    "Structure",
-    row.kind === "arrival" ? { game_id: configManager.getActiveGameId(), entity_id: row.structureEntityId } : undefined,
+/**
+ * A toast in the strip, the client's own and never a story: a notice (a refusal, a warning) in its tone, or a milestone
+ * of the game's clock, whole however long; one with a place flies the camera there.
+ */
+export const ToastRow = ({
+  icon,
+  tone,
+  text,
+  place,
+}: {
+  icon: IconMeaning;
+  tone?: "good" | "bad" | "warn";
+  text: ReactNode;
+  place: { x: number; y: number } | null;
+}) => {
+  const navigate = useNavigateToMapView();
+  return (
+    <HudEventRow icon={icon} tone={tone} onOpen={place ? () => navigate(Position.fromContract(place)) : undefined}>
+      {text}
+    </HudEventRow>
   );
-  if (row.kind === "headline") {
-    return row.headline.location
-      ? Position.fromContract({ x: row.headline.location.x, y: row.headline.location.y })
-      : null;
-  }
-  if (row.kind === "story") return resolveStoryEventPosition(row.event, store);
-  if (row.kind === "arrival") {
-    const site = structure && structureMapPosition(store, structure);
-    return site ? Position.fromContract(site) : null;
-  }
-  if (row.kind === "notice") return row.notice.location ? Position.fromContract(row.notice.location) : null;
-  return null;
-}
-
-function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: ReactNode } {
-  if (row.kind === "headline") {
-    return { icon: <HeadlineIcon type={row.headline.type} />, text: row.headline.description };
-  }
-  if (row.kind === "story") return { icon: <StoryIcon story={row.event.story} />, text: summarizeStory(row) };
-  if (row.kind === "arrival") {
-    return {
-      icon: <SemanticIcon name="transfer" className="h-4 w-4 shrink-0" />,
-      text: `${transferRowLabel(row)} · #${row.structureEntityId}`,
-    };
-  }
-  if (row.kind === "transaction") {
-    const { transaction } = row;
-    const failed = transaction.status === "reverted" || transaction.status === "not_sent";
-    const Icon =
-      transaction.type === TransactionType.SEND
-        ? "transfer"
-        : failed
-          ? ("warning" as const)
-          : transaction.status === "success"
-            ? ("check" as const)
-            : ("hourglass" as const);
-    return {
-      icon: <SemanticIcon name={Icon} className={cn("h-4 w-4 shrink-0", failed && "text-danger")} />,
-      text: `${transferRowLabel(row) ?? transaction.description} · ${transactionStatusLine(transaction)}`,
-    };
-  }
-  const Icon =
-    row.notice.kind === "error" || row.notice.kind === "warning"
-      ? ("warning" as const)
-      : row.notice.kind === "success"
-        ? ("check" as const)
-        : ("info" as const);
-  return { icon: <SemanticIcon name={Icon} className="h-4 w-4 shrink-0" />, text: row.notice.title };
-}
+};
 
 /** A fight's swords; a delivery's donkey; any other news of the player's realms, their castle. */
-const StoryIcon = ({ story }: { story: string }) => {
-  const Icon =
-    story === "BattleEvent" || story === "RaidEvent"
-      ? ("military" as const)
-      : story === "ResourceReceiveArrivalStory"
-        ? ("transfer" as const)
-        : ("realm" as const);
-  return <SemanticIcon name={Icon} className="h-4 w-4 shrink-0" />;
-};
-
-function summarizeStory(row: Extract<ImportantFeedRow, { kind: "story" }>): string {
-  const { event } = row;
-  if (event.story !== "BattleEvent") return event.presentation.title;
-  const description = event.presentation.description;
-  const winner = formatWinnerName(
-    findSegmentValue(parsePresentationDescription(description), (label) => label === "Winner"),
-  );
-  const sides = `${extractRoleLabel(description, "Attacker")} vs ${extractRoleLabel(description, "Defender")}`;
-  return winner ? `${sides} · ${winner} wins` : sides;
-}
+const storyIcon = (story: string): IconMeaning =>
+  story === "BattleEvent" || story === "RaidEvent"
+    ? "military"
+    : story === "ResourceReceiveArrivalStory"
+      ? "transfer"
+      : "realm";

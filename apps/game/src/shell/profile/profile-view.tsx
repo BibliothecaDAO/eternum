@@ -1,26 +1,36 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { PROFILE_WORDS, SEASON_WORDS } from "@/ui/design-system/kit/words";
+import { formatAmount } from "@bibliothecadao/types";
+import { useIdentitySession } from "@/hooks/context/identity-session";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
-import { playerPortraitUrl } from "@/services/identity/player-portrait";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatAmount } from "@/ui/design-system/kit/amount";
+import { profileOfIdentityUser } from "@realms-world/identity";
 
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { findOwnEntry } from "@/ui/features/frontier/board/standings";
 
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
+import { AppPanel, AppPortrait } from "@/ui/design-system/kit/app-elements";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+
 import { useLayout } from "../frame/layout";
 import { useDirectory, useLeaderboard, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { OwnRatingLine } from "../rating-line";
-import { paintingSources } from "../paintings";
-import { Panel } from "../panel";
-import { AgeLabel } from "../play/age-label";
 import { ageOf } from "../play/ages";
 import { chooseSeason } from "../season";
 import { HistoryRow } from "../season-tab/history-row";
-import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
-import { PROFILE_WORDS, SEASON_WORDS } from "../words";
+
+/**
+ * The profile a player's card shows: the player's own from the signed-in session, known at once, so the card never
+ * opens on a stand-in name and face (qa-app-1 P3-4); another player's as identity answers it.
+ */
+const useCardProfile = (account: string, own: boolean) => {
+  const { session } = useIdentitySession();
+  const fromSession = own && session !== null;
+  const looked = usePlayerProfile(fromSession ? null : account);
+  return fromSession ? { ...profileOfIdentityUser(session.user), known: true } : looked;
+};
 
 /** How many finished games a player's page lists. */
 const HISTORY = 8;
@@ -34,133 +44,88 @@ const useSeasonStanding = (account: string) => {
 };
 
 /**
- * Who a player is (spec 10): the banner (their best age's painting), the portrait, their Order and name; the one
- * figure, their season rank; and their finished games. The player's own page wears the peach ring.
+ * Who a player is (spec 10): their card (their season's painting with their place on its board, the portrait and the
+ * name, the player's own rating) and their finished games. The player's own card wears the accent ring. On the desktop
+ * the games stand at the card's right.
  */
 export const ProfileView = ({ account, own }: { account: string; own: boolean }) =>
   useLayout() === "phone" ? (
     <div className="flex flex-col gap-4">
-      <ProfileBanner account={account} own={own} />
-      <SeasonFigure account={account} />
-      <History account={account} />
+      <PlayerCard account={account} own={own} />
+      <History account={account} own={own} />
     </div>
   ) : (
-    <div className="grid grid-cols-[26rem_minmax(0,1fr)] items-start gap-6">
+    <div className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
       <PlayerCard account={account} own={own} />
-      <RecentGames account={account} />
+      <RecentGames account={account} own={own} />
     </div>
   );
 
 /**
- * The desktop's card for a player: Frontier's painting above, the portrait on its edge, the name, the season's place
- * with the Order, and on the player's own card their Blitz rating (another player's wallet is not known here).
+ * A player's card: Frontier's painting in its head with the player's place on the season's board, then the portrait,
+ * the name and, on the player's own card, their Blitz rating (another player's wallet is not known here).
  */
 export const PlayerCard = ({ account, own }: { account: string; own: boolean }) => {
-  const profile = usePlayerProfile(account);
+  const profile = useCardProfile(account, own);
   const { own: standing, field } = useSeasonStanding(account);
   const frontier = ageOf("frontier");
   return (
-    <section className="plate flex flex-col items-center gap-2 overflow-hidden pb-5">
-      <span className="painted -mb-12 block h-28 w-full rounded-none border-0">
-        <img
-          {...paintingSources(frontier.painting)}
-          sizes="26rem"
-          alt=""
-          className="absolute inset-0 -z-10 size-full object-cover"
+    <AppPanel
+      title={frontier.name}
+      painting={frontier.painting}
+      cue={
+        standing ? (
+          <span className="flex items-center gap-1.5">
+            <OrderEmblem order={standing.order} size={20} />
+            <b className="text-app-gold">{`#${standing.rank}`}</b>
+            {SEASON_WORDS.of} {formatAmount(field)}
+          </span>
+        ) : undefined
+      }
+    >
+      <div className="flex flex-col items-center gap-2 text-center">
+        <AppPortrait
+          src={profile.known ? playerPortraitUrl(account, profile.portrait) : undefined}
+          name={profile.known ? (profile.name ?? "") : ""}
+          size="lg"
+          own={own}
         />
-      </span>
-      <img
-        src={playerPortraitUrl(account, profile.portrait)}
-        alt=""
-        className={cn(
-          "relative size-24 rounded-full border-[3px] object-cover",
-          own ? "border-kit-peach" : "border-kit-line2",
-        )}
-      />
-      <h2 className="max-w-full px-4 font-display text-[30px] leading-none text-kit-cream">
-        <PlayerName account={account} />
-      </h2>
-      <p className="flex items-center gap-2 text-sm text-kit-muted">
-        {standing && <OrderEmblem order={standing.order} size={20} />}
-        <b className="font-body text-kit-gold">{standing ? `#${standing.rank}` : "—"}</b>
-        {SEASON_WORDS.of} {formatAmount(field)} ·
-        <AgeLabel numeral={frontier.numeral} />
-        <span className="text-kit-cream">{frontier.name}</span>
-      </p>
-      {own && <OwnRatingLine />}
-    </section>
+        <h2 className="max-w-full text-app-title text-app-ink">
+          <PlayerName account={account} profile={profile.known ? profile : undefined} />
+        </h2>
+        {!standing && <p className="text-app-label text-app-muted">{SEASON_WORDS.notOnBoard}</p>}
+        {own && <OwnRatingLine />}
+      </div>
+    </AppPanel>
   );
 };
-
-/** The desktop's finished games, in a titled plate; none, no plate. */
-export const RecentGames = ({ account }: { account: string }) => <History account={account} titled />;
 
 /**
- * The player's banner, their portrait and name at its top: until their best age is a recorded fact, Frontier's painting
- * stands for it, behind them.
+ * The desktop's finished games, in their panel; none yet, the panel says where they will show, so the page's right half
+ * is never empty (qa-app-1 P3-9).
  */
-const ProfileBanner = ({ account, own }: { account: string; own: boolean }) => {
-  const profile = usePlayerProfile(account);
-  const { own: standing } = useSeasonStanding(account);
-  return (
-    <section className="painted flex h-40 items-start gap-3 rounded-2xl p-3">
-      <img
-        {...paintingSources(ageOf("frontier").painting)}
-        sizes="(min-width: 1024px) 50vw, 100vw"
-        alt=""
-        className="absolute inset-0 -z-10 size-full object-cover"
-      />
-      <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground/90 to-transparent" />
-      <img
-        src={playerPortraitUrl(account, profile.portrait)}
-        alt=""
-        className={cn("size-20 rounded-full border-[3px] object-cover", own ? "border-kit-peach" : "border-kit-line2")}
-      />
-      <div className="flex min-h-20 min-w-0 items-center gap-2 font-body text-xl font-bold text-kit-cream">
-        {standing && <OrderEmblem order={standing.order} size={26} />}
-        <PlayerName account={account} />
-      </div>
-    </section>
-  );
-};
+export const RecentGames = ({ account, own }: { account: string; own: boolean }) => (
+  <History account={account} own={own} titled />
+);
 
-/** The one figure: the season rank of the field, with the age it was earned in. */
-const SeasonFigure = ({ account }: { account: string }) => {
-  const { own, field } = useSeasonStanding(account);
-  const frontier = ageOf("frontier");
-  return (
-    <section className="flex items-center gap-3 plate p-3">
-      <SemanticIcon name="victory" size={30} />
-      <span className="font-body text-[28px] font-extrabold tabular-nums text-kit-gold">
-        {own ? `#${own.rank}` : "—"}
-      </span>
-      <span className="text-base text-kit-muted">
-        {SEASON_WORDS.of} {formatAmount(field)}
-      </span>
-      <span className="ml-auto flex items-center gap-2">
-        <AgeLabel numeral={frontier.numeral} />
-        <span className="font-body text-base font-bold text-kit-cream">{frontier.name}</span>
-      </span>
-    </section>
-  );
-};
-
-/** Their finished games, newest first, on a plate (titled on desktop); absent when they have none. */
-const History = ({ account, titled = false }: { account: string; titled?: boolean }) => {
+/** Their finished games, newest first, in their panel. None yet: the desktop's panel says so, and the phone shows nothing. */
+const History = ({ account, own, titled = false }: { account: string; own: boolean; titled?: boolean }) => {
   const history = useRecentResults(HISTORY, account);
   const now = useNowSeconds();
   if (history.isError)
     return <ServiceFailure service="results" error={history.error} retry={() => void history.refetch()} />;
   if (history.isPending) return <Loading />;
-  if (history.data.games.length === 0) return null;
-  const rows = history.data.games.map((game) => (
-    <HistoryRow key={`${game.chainId}:${game.game_id}`} game={game} player={account} now={now} />
-  ));
-  return titled ? (
-    <Panel icon="victory" title={PROFILE_WORDS.recentGames}>
-      <ul>{rows}</ul>
-    </Panel>
-  ) : (
-    <ul className="plate px-2">{rows}</ul>
+  if (history.data.games.length === 0)
+    return titled ? (
+      <AppPanel title={PROFILE_WORDS.recentGames} icon="victory">
+        <p className="text-app-body text-app-muted">{own ? PROFILE_WORDS.noGamesOwn : PROFILE_WORDS.noGames}</p>
+      </AppPanel>
+    ) : null;
+  return (
+    <AppPanel title={PROFILE_WORDS.recentGames} icon="victory" flush>
+      {history.data.games.map((game) => (
+        <HistoryRow key={`${game.chainId}:${game.game_id}`} game={game} player={account} now={now} />
+      ))}
+    </AppPanel>
   );
 };

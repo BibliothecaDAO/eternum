@@ -24,12 +24,13 @@ describe("buildRealmBuildingSummary", () => {
         BuildingType.ResourceKnightT2,
       ],
       getBuildingCount: (buildingType) => buildingCounts[buildingType] ?? 0,
+      frontier: false,
     });
 
     expect(items).toEqual([
-      { buildingId: BuildingType.ResourceWood, label: "Wood", iconResource: "Wood", count: 2 },
-      { buildingId: BuildingType.WorkersHut, label: "Workers Hut", iconResource: "House", count: 1 },
-      { buildingId: BuildingType.ResourceKnightT1, label: "Knight T1", iconResource: "Knight", count: 3 },
+      { buildingId: BuildingType.ResourceWood, label: "Wood", icon: "wood", count: 2 },
+      { buildingId: BuildingType.WorkersHut, label: "Workers Hut", icon: "home", count: 1 },
+      { buildingId: BuildingType.ResourceKnightT1, label: "Knight T1", icon: "knight-t1", count: 3 },
     ]);
   });
 
@@ -40,6 +41,7 @@ describe("buildRealmBuildingSummary", () => {
       realmResourceIds: [ResourcesIds.Wheat],
       allowedBuildingTypes: [BuildingType.WorkersHut, BuildingType.ResourceWheat],
       getBuildingCount: () => 0,
+      frontier: false,
     });
 
     expect(items).toEqual([]);

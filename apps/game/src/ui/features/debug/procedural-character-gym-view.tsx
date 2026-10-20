@@ -163,25 +163,23 @@ export const ProceduralCharacterGymView = () => {
   const [captureBusy, setCaptureBusy] = useState(false);
   const [reviewBusy, setReviewBusy] = useState(false);
 
-  useEffect(
-    () =>
-      mountGymRenderer(
-        containerRef,
-        rendererRef,
-        configRef,
-        collisionConfigRef,
-        statsRef,
-        aimStatsRef,
-        setReady,
-        setStats,
-        setRendererError,
-      ),
-    [],
-  );
+  useEffect(() => {
+    return mountGymRenderer(
+      containerRef,
+      rendererRef,
+      configRef,
+      collisionConfigRef,
+      statsRef,
+      aimStatsRef,
+      setReady,
+      setStats,
+      setRendererError,
+    );
+  }, []);
 
   useEffect(() => {
     configRef.current = config;
-    rendererRef.current?.updateConfig(config);
+    void rendererRef.current?.updateConfig(config).catch((error) => setRendererError(String(error)));
   }, [config]);
 
   useEffect(() => {
@@ -292,8 +290,10 @@ export const ProceduralCharacterGymView = () => {
       setCollisionConfig(collision);
       setConfig(scenario.config);
       rendererRef.current?.updateCollisionConfig(collision);
-      rendererRef.current?.updateConfig(scenario.config);
-      rendererRef.current?.reset();
+      void rendererRef.current
+        ?.updateConfig(scenario.config)
+        .then(() => rendererRef.current?.reset())
+        .catch((error) => setRendererError(String(error)));
       closeCapture();
       return { sequence: resolveKnightReviewSequence(scenario.id), rootMotionSpeed: scenario.rootMotionSpeed };
     },
@@ -314,40 +314,38 @@ export const ProceduralCharacterGymView = () => {
     setSelectedCaptureFrame(null);
   }, []);
 
-  useEffect(
-    () =>
-      exposeCharacterGymDebugBridge(
-        configRef,
-        collisionConfigRef,
-        statsRef,
-        aimStatsRef,
-        reset,
-        runSmoke,
-        fireArrow,
-        cancelArrow,
-        attackMelee,
-        cancelMelee,
-        captureFrames,
-        seekFrame,
-        captureResultRef,
-        patchConfig,
-        patchCollisionConfig,
-        loadReviewScenario,
-      ),
-    [
-      attackMelee,
-      cancelArrow,
-      cancelMelee,
-      captureFrames,
-      fireArrow,
-      patchCollisionConfig,
-      loadReviewScenario,
-      patchConfig,
+  useEffect(() => {
+    return exposeCharacterGymDebugBridge(
+      configRef,
+      collisionConfigRef,
+      statsRef,
+      aimStatsRef,
       reset,
       runSmoke,
+      fireArrow,
+      cancelArrow,
+      attackMelee,
+      cancelMelee,
+      captureFrames,
       seekFrame,
-    ],
-  );
+      captureResultRef,
+      patchConfig,
+      patchCollisionConfig,
+      loadReviewScenario,
+    );
+  }, [
+    attackMelee,
+    cancelArrow,
+    cancelMelee,
+    captureFrames,
+    fireArrow,
+    patchCollisionConfig,
+    loadReviewScenario,
+    patchConfig,
+    reset,
+    runSmoke,
+    seekFrame,
+  ]);
 
   const applyPreset = useCallback((presetId: ProceduralCharacterPresetId) => {
     setSelectedPreset(presetId);
@@ -508,6 +506,9 @@ function mountGymRenderer(
     collisionConfig: collisionConfigRef.current,
     config: configRef.current,
     container,
+    onError: (error) => {
+      if (!cancelled) setRendererError(resolveRendererErrorMessage(error));
+    },
     onStats: (nextStats) => {
       statsRef.current = nextStats;
       if (nextStats.rangedPhase === "aim" && nextStats.previewArrowVisible) aimStatsRef.current = nextStats;

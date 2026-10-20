@@ -1,18 +1,14 @@
+import { formatExact } from "@bibliothecadao/types";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { displayAddress } from "@/ui/utils/utils";
-import { buildFaithLeaderboard, type FaithLeaderboardEntry } from "@/services/leaderboard/faith-leaderboard-service";
-import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models";
+import type { FaithLeaderboardEntry } from "@/services/leaderboard/faith-leaderboard-service";
+import { useFaithLeaderboard } from "@/services/leaderboard/use-faith-leaderboard";
 import { WonderFaithDetailModal } from "./wonder-faith-detail-panel";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
+import { HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
 
-const formatIntegerWithCommas = (value: number): string => value.toLocaleString("en-US");
-
-const formatBigIntWithCommas = (value: bigint): string => {
-  const sign = value < 0n ? "-" : "";
-  const digits = (value < 0n ? -value : value).toString();
-  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `${sign}${grouped}`;
-};
+/** Rank, wonder, owner, total faith, faith a second and followers. */
+const FAITH_COLS = "48px minmax(180px, 1.4fr) minmax(180px, 1.4fr) 120px 100px 100px";
 
 const isZeroAddress = (address: string): boolean => {
   return /^0x0+$/i.test(address.trim());
@@ -33,8 +29,7 @@ const buildOwnerLabel = (entry: FaithLeaderboardEntry): string => {
 export const FaithLeaderboardPanel = () => {
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
-  const readModels = useFaithReadModels();
-  const entries = useMemo(() => buildFaithLeaderboard(readModels), [readModels]);
+  const entries = useFaithLeaderboard();
 
   const hasEntries = entries.length > 0;
   const openWonderDetails = useCallback(
@@ -57,68 +52,48 @@ export const FaithLeaderboardPanel = () => {
     <div className="flex h-full w-full flex-col overflow-hidden p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex flex-col">
-          <span className="text-sm font-semibold text-gold">Faith Leaderboard</span>
-          <span className="text-sm text-kit-muted">Live from the game stream</span>
-          <span className="text-sm text-kit-muted">Total FP includes estimated unclaimed points from FP/sec.</span>
+          <span className="text-hud-strong text-hud-accent">Faith Leaderboard</span>
+          <span className="text-hud-label text-hud-muted">Live from the game stream</span>
+          <span className="text-hud-label text-hud-cue">Total FP includes estimated unclaimed points from FP/sec.</span>
         </div>
       </div>
 
       {!hasEntries ? (
-        <div className="flex h-full items-center justify-center text-sm text-gold/70">
+        <div className="flex h-full items-center justify-center text-hud-label text-hud-muted">
           No wonder faith data found for this world.
         </div>
       ) : (
-        <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-gold/15 bg-black/30">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="sticky top-0 z-10 bg-[#1d160e] text-gold/80">
-              <tr>
-                <th className="px-3 py-2 text-center font-semibold">#</th>
-                <th className="px-3 py-2 font-semibold">Wonder</th>
-                <th className="px-3 py-2 font-semibold">Owner</th>
-                <th className="px-3 py-2 text-right font-semibold">Total FP</th>
-                <th className="px-3 py-2 text-right font-semibold">FP/sec</th>
-                <th className="px-3 py-2 text-right font-semibold">Followers</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry) => (
-                <tr
-                  key={entry.wonderId.toString()}
-                  className="cursor-pointer border-t border-gold/10 text-gold/90 transition hover:bg-gold/5"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openWonderDetails(entry)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      openWonderDetails(entry);
-                    }
-                  }}
-                >
-                  <td className="px-3 py-2 text-center">{entry.rank}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-gold">{entry.wonderName}</span>
-                      <span className="text-sm text-kit-muted">Wonder #{entry.wonderId.toString()}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-col">
-                      <span className="font-medium text-gold">{buildOwnerLabel(entry)}</span>
-                      <span className="text-sm text-kit-muted">
-                        {isZeroAddress(entry.ownerAddress) ? "No owner recorded" : displayAddress(entry.ownerAddress)}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono">{formatBigIntWithCommas(entry.totalFaithPoints)}</td>
-                  <td className="px-3 py-2 text-right font-mono">
-                    {formatIntegerWithCommas(entry.faithPointsPerSecond)}
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono">{formatIntegerWithCommas(entry.followerCount)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-hud-divider bg-hud-well">
+          <div className="min-w-max">
+            <HudTableHead cols={FAITH_COLS}>
+              <span className="text-center">#</span>
+              <span>Wonder</span>
+              <span>Owner</span>
+              <span className="text-right">Total FP</span>
+              <span className="text-right">FP/sec</span>
+              <span className="text-right">Followers</span>
+            </HudTableHead>
+            {entries.map((entry) => (
+              <HudTableRow
+                key={entry.wonderId.toString()}
+                cols={FAITH_COLS}
+                label={`${entry.wonderName}: its faith`}
+                onClick={() => openWonderDetails(entry)}
+              >
+                <span className="text-center">{entry.rank}</span>
+                <span className="text-hud-strong">{entry.wonderName}</span>
+                <span className="flex flex-col">
+                  <span>{buildOwnerLabel(entry)}</span>
+                  <span className="text-hud-label text-hud-muted">
+                    {isZeroAddress(entry.ownerAddress) ? "No owner recorded" : displayAddress(entry.ownerAddress)}
+                  </span>
+                </span>
+                <span className="text-right font-mono">{formatExact(entry.totalFaithPoints)}</span>
+                <span className="text-right font-mono">{formatExact(entry.faithPointsPerSecond)}</span>
+                <span className="text-right font-mono">{formatExact(entry.followerCount)}</span>
+              </HudTableRow>
+            ))}
+          </div>
         </div>
       )}
     </div>

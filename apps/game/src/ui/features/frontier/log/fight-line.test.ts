@@ -1,3 +1,4 @@
+import { siteName } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { campBeside, SITE } from "../sites/site-fixture";
@@ -17,11 +18,28 @@ const battle = (army: [number, number], guard: [number, number], defenderId = SI
 describe("the day log's line for a fight", () => {
   it("names the site, how the attack ended, the troops it cost and the guard before and after", () => {
     const { store } = campBeside("Rift");
+    const name = siteName(SITE);
     expect(fightLogLine(battle([154, 0], [1_100, 1_028]), store)).toBe(
-      "Rift: Army lost, lost 154, guard 1,100 to 1,028",
+      `${name}: Army lost, lost 154, guard 1,100 to 1,028`,
     );
-    expect(fightLogLine(battle([500, 432], [334, 150]), store)).toBe("Rift: Guard holds, lost 68, guard 334 to 150");
-    expect(fightLogLine(battle([432, 364], [150, 0]), store)).toBe("Rift: Victory, lost 68, guard 150 to 0");
+    expect(fightLogLine(battle([500, 432], [334, 150]), store)).toBe(`${name}: Guard holds, lost 68, guard 334 to 150`);
+    expect(fightLogLine(battle([432, 364], [150, 0]), store)).toBe(`${name}: Victory, lost 68, guard 150 to 0`);
+  });
+
+  it("names a camp by its site's name, including after a clear removed its structure and guard", () => {
+    const { store, site } = campBeside("Camp");
+    const name = siteName(SITE);
+    expect(fightLogLine(battle([500, 432], [334, 150]), store)).toBe(`${name}: Guard holds, lost 68, guard 334 to 150`);
+    store.applyFacts([
+      {
+        model: "ExpeditionSite",
+        key: "0x72",
+        value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward: null } },
+      },
+      { model: "Structure", key: "0x71", value: null },
+      { model: "Guard", key: "0x73", value: null },
+    ] as never);
+    expect(fightLogLine(battle([432, 364], [150, 0]), store)).toBe(`${name}: Victory, lost 68, guard 150 to 0`);
   });
 
   it("leaves every other story, and a battle against no site, to their own titles", () => {

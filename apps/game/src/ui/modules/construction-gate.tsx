@@ -1,65 +1,39 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
-import Button from "../design-system/atoms/button";
+import { communityPlace } from "@/shell/community";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
-export const ConstructionGate = () => {
-  return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden p-4 text-center text-gold">
-      <video
-        className="absolute inset-0 h-full w-full object-cover"
-        src="/videos/01.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
-      />
+const open = (url: string) => () => window.open(url, "_blank", "noopener,noreferrer");
 
-      <div className="relative z-10 flex w-full max-w-lg flex-col items-center justify-center rounded-xl border border-gold/30 bg-[#1a1410]/95 p-6 sm:max-w-xl md:max-w-2xl md:p-10">
-        <EternumWordsLogo className="mx-auto w-28 fill-current stroke-current sm:w-40 lg:w-48" />
-
-        <p className="my-6 text-lg leading-snug sm:text-xl md:text-2xl">
-          Blitz is being crafted, and will be available soon...
-        </p>
-
-        <div className="mt-4 flex w-full flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
-          <a
-            href="https://discord.gg/uQnjZhZPfu"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-bronze flex items-center px-4 py-2"
-          >
-            <SemanticIcon name="discord" className="mr-2 h-5 w-5" />
-            Discord
-          </a>
-
-          <a
-            href="https://x.com/realmsgg"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-bronze flex items-center px-4 py-2"
-          >
-            <SemanticIcon name="twitter" className="mr-2 h-5 w-5" />
-            Twitter
-          </a>
-
-          <Button
-            variant="gold"
-            className="w-full sm:w-auto"
-            onClick={() => window.open("https://empire.realms.world/trade", "_blank")}
-          >
+/** While the game is closed for construction: the word that it is coming, and where to follow it. */
+export const ConstructionGate = () => (
+  <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden p-4 text-center">
+    <video
+      className="absolute inset-0 h-full w-full object-cover"
+      src="/videos/01.mp4"
+      autoPlay
+      loop
+      muted
+      playsInline
+    />
+    <HudPanel collapsible={false} className="relative w-full max-w-xl">
+      <div className="flex flex-col items-center gap-6 p-4 text-hud-gold">
+        <EternumWordsLogo className="mx-auto w-40 fill-current stroke-current" />
+        <p className="text-hud-display text-hud-ink">Blitz is being crafted, and will be available soon…</p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <HudButton kind="primary" onClick={open("https://empire.realms.world/trade")}>
             Buy a Season Pass
-          </Button>
-
-          <Button
-            variant="gold"
-            className="w-full sm:w-auto"
-            onClick={() => window.open("https://docs.realms.world/", "_blank")}
-          >
+          </HudButton>
+          <HudButton kind="secondary" icon="discord" onClick={open(communityPlace("Discord").href)}>
+            Discord
+          </HudButton>
+          <HudButton kind="secondary" icon="twitter" onClick={open(communityPlace("X").href)}>
+            Twitter
+          </HudButton>
+          <HudButton kind="secondary" onClick={open("https://docs.realms.world/")}>
             Docs
-          </Button>
+          </HudButton>
         </div>
       </div>
-    </div>
-  );
-};
+    </HudPanel>
+  </div>
+);

@@ -76,3 +76,23 @@ describe("structure paths", () => {
     );
   });
 });
+
+it("plans around standing structures and leaves a cleared site's tile open", async () => {
+  const { buildArmyPathIndexes } = await import("./path-indexes");
+  vi.spyOn(configManager, "getMapCenter").mockReturnValue(0);
+  const indexes = buildArmyPathIndexes({
+    setup: { store: { require: () => ({ owner: 9n }) } },
+    projection: {
+      getStructures: () => [
+        { entityId: 1, reserved: false, clearedSite: true, hexCoords: { col: 5, row: 6 } },
+        { entityId: 2, reserved: false, hexCoords: { col: 7, row: 8 } },
+      ],
+      getArmies: () => [],
+      getTiles: () => [],
+      getChests: () => [],
+    },
+  } as never);
+  expect(indexes.structureHexes.has(5)).toBe(false);
+  expect(indexes.structureHexes.get(7)?.get(8)).toEqual({ id: 2, owner: 9n });
+  vi.restoreAllMocks();
+});

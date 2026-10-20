@@ -3,12 +3,12 @@ import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, expect, it } from "vitest";
 
+import { AppButton } from "@/ui/design-system/kit/app-elements";
+
 import { useDesktopKeys } from "./desktop-keys";
-import { StepVerb } from "./step-verb";
-import { PLACES } from "./tabs";
 
 const Page = ({ back }: { back?: string }) => {
-  useDesktopKeys({ places: PLACES, back });
+  useDesktopKeys({ back });
   const { pathname } = useLocation();
   const navigate = useNavigate();
   return (
@@ -16,11 +16,9 @@ const Page = ({ back }: { back?: string }) => {
       <p data-testid="where">{pathname}</p>
       <input aria-label="field" />
       <button type="button">Other</button>
-      <StepVerb>
-        <button type="button" onClick={() => navigate("/g/step")}>
-          Resume
-        </button>
-      </StepVerb>
+      <AppButton kind="primary" step onClick={() => navigate("/g/step")}>
+        Resume
+      </AppButton>
     </>
   );
 };
@@ -55,14 +53,10 @@ const mount = async (path: string, back?: string) => {
   };
 };
 
-it("opens the three places with 1 to 3 and leads Back with Esc", async () => {
+it("leads Back with Esc, and opens nothing with a number (no key is shown beside a place)", async () => {
   const page = await mount("/blitz/x", "/blitz");
-  await page.press("4");
-  expect(page.where()).toBe("/blitz/x");
-  await page.press("3");
-  expect(page.where()).toBe("/profile");
   await page.press("2");
-  expect(page.where()).toBe("/season");
+  expect(page.where()).toBe("/blitz/x");
   await page.press("Escape");
   expect(page.where()).toBe("/blitz");
 });
@@ -75,7 +69,7 @@ it("leaves Esc to an open sheet and keys typed in a field to the field", async (
   await page.press("Escape");
   expect(page.where()).toBe("/blitz/x");
   sheet.remove();
-  await page.press("3", page.field());
+  await page.press("Escape", page.field());
   expect(page.where()).toBe("/blitz/x");
 });
 

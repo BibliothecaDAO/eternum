@@ -1,13 +1,11 @@
+import { SIGN_IN_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
 import { useState } from "react";
 
-import { Button } from "@/ui/design-system/kit/button";
-
-import { ClockChip } from "../clock-chip";
+import { AppButton, AppCode } from "@/ui/design-system/kit/app-elements";
+import { AppClockChip } from "@/ui/design-system/kit/clock-chip";
 import { useNowSeconds } from "../use-now";
-import { SIGN_IN_WORDS } from "../words";
-import { CodeBoxes } from "./fields";
 import { FailureLine } from "./failure-line";
 
 /**
@@ -43,13 +41,9 @@ export const CodeStep = ({
   const now = useNowSeconds();
   const expired = expiresAt !== undefined && now >= expiresAt;
   const newCode = (
-    <Button
-      role="outline"
-      word={SIGN_IN_WORDS.newCode}
-      icon="mail"
-      onClick={onNewCode}
-      loading={sending ? SIGN_IN_WORDS.sending : undefined}
-    />
+    <AppButton kind="secondary" icon="mail" onClick={onNewCode} busy={sending ? SIGN_IN_WORDS.sending : undefined}>
+      {SIGN_IN_WORDS.newCode}
+    </AppButton>
   );
 
   const type = (value: string) => {
@@ -64,19 +58,26 @@ export const CodeStep = ({
       <button
         type="button"
         onClick={onChangeEmail}
-        className="flex min-h-12 max-w-full items-center gap-2 font-body text-base font-bold text-kit-cream"
+        className="flex min-h-12 max-w-full items-center gap-2 text-app-strong text-app-ink"
       >
         <SemanticIcon name="mail" size={22} />
         <span className="truncate">{email}</span>
         <SemanticIcon name="edit" size={20} />
       </button>
-      <CodeBoxes code={code} refused={error !== null} disabled={checking || expired} onType={type} />
+      <AppCode
+        label={SIGN_IN_WORDS.code}
+        code={code}
+        length={SIGN_IN_CODE_LENGTH}
+        refused={error !== null}
+        disabled={checking || expired}
+        onType={type}
+      />
       {expired ? (
         newCode
       ) : checking ? (
-        <p className="font-body text-base font-bold text-kit-muted">{SIGN_IN_WORDS.checking}</p>
+        <p className="text-app-strong text-app-muted">{SIGN_IN_WORDS.checking}</p>
       ) : (
-        <ClockChip prefix="expires" at={expiresAt} now={now} />
+        <AppClockChip prefix="expires" at={expiresAt} now={now} />
       )}
       {expiresAt === undefined && !checking && newCode}
       <FailureLine line={error} />

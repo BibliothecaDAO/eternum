@@ -41,7 +41,8 @@ export interface LiveWorldInput {
 }
 
 interface GameChanges {
-  deletedRows: FoldSet[];
+  /** The rows as subscribers held them before these changes; routing only. */
+  previousRows: FoldSet[];
   del: FoldDelete[];
   set: FoldSet[];
 }
@@ -410,14 +411,14 @@ export class LiveWorld {
     for (const change of changes) {
       const gameIds = change.gameId === undefined ? this.hub.streamedGames() : [change.gameId];
       for (const gameId of gameIds) {
-        const grouped = byGame.get(gameId) ?? { del: [], set: [], deletedRows: [] };
+        const grouped = byGame.get(gameId) ?? { del: [], set: [], previousRows: [] };
         if (change.set) grouped.set.push(change.set);
         if (change.del) {
           if (!change.previous)
             throw new Error(`Deleted row lacks routing metadata: ${change.del.model}:${change.del.key}`);
           grouped.del.push(change.del);
-          grouped.deletedRows.push(change.previous);
         }
+        if (change.previous) grouped.previousRows.push(change.previous);
         byGame.set(gameId, grouped);
       }
     }
@@ -440,7 +441,7 @@ export class LiveWorld {
           ...(transactionHash ? { transaction_hash: transactionHash } : {}),
         },
         this.confirmedFold.streamKeys(gameId),
-        grouped.deletedRows,
+        grouped.previousRows,
       );
     }
   }

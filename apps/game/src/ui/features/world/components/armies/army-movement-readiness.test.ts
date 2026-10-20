@@ -1,7 +1,7 @@
+import { formatFoodBlock, formatTravelBlockedSummary } from "@/ui/design-system/kit/words";
 import { describe, expect, it } from "vitest";
 
 import { deriveArmyMovementReadiness } from "./army-movement-readiness";
-import { formatFoodBlock, formatTravelBlockedSummary } from "./army-warning-copy";
 
 const READY_INPUTS = {
   currentStamina: 90,
@@ -58,8 +58,6 @@ describe("deriveArmyMovementReadiness", () => {
 });
 
 describe("formatTravelBlockedSummary", () => {
-  const formatAmount = (amount: number) => `${amount}`;
-
   it("names both missing stamina and missing wheat", () => {
     expect(
       formatTravelBlockedSummary({
@@ -68,9 +66,8 @@ describe("formatTravelBlockedSummary", () => {
         missingWheat: 1_240,
         missingFish: 0,
         wheatLabel: "wheat",
-        formatAmount,
       }),
-    ).toBe("Cannot travel — needs 25+ stamina and 1240 wheat");
+    ).toBe("Cannot travel — needs 25+ stamina and 1,240 wheat");
   });
 
   it("returns null when nothing is missing", () => {
@@ -81,7 +78,6 @@ describe("formatTravelBlockedSummary", () => {
         missingWheat: 0,
         missingFish: 0,
         wheatLabel: "wheat",
-        formatAmount,
       }),
     ).toBeNull();
   });
@@ -89,7 +85,6 @@ describe("formatTravelBlockedSummary", () => {
 
 describe("food-blocked armies", () => {
   const march = { wheatPayAmount: 30.81, fishPayAmount: 0 };
-  const whole = (amount: number) => Math.round(amount).toString();
 
   it("names what one step costs and what the realm holds, below one step's cost", () => {
     const starved = deriveArmyMovementReadiness({
@@ -99,9 +94,7 @@ describe("food-blocked armies", () => {
       food: { wheat: 5.5, fish: 0 },
     });
     expect(starved.canTravel).toBe(false);
-    expect(formatFoodBlock(starved.foodBlock!, whole)).toBe(
-      "Can't march: each step costs 31 wheat; the realm has 6 wheat.",
-    );
+    expect(formatFoodBlock(starved.foodBlock!)).toBe("Can't march: each step costs 31 wheat; the realm has 6 wheat.");
   });
 
   it("clears the reason once the realm holds a step's wheat", () => {

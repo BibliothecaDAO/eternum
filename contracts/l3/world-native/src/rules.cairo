@@ -115,10 +115,11 @@ pub struct TroopStaminaConfig {
 pub struct TroopLimitConfig {
     // Guard specific settings
     pub guard_resurrection_delay: u16,
-    // Mercenary bounds without precision
-    pub mercenaries_troop_lower_bound: u16,
-    // without precision
-    pub mercenaries_troop_upper_bound: u16,
+    // Inclusive discovery guard bounds without precision
+    pub light_guard_lower_bound: u16,
+    pub light_guard_upper_bound: u16,
+    pub heavy_guard_lower_bound: u16,
+    pub heavy_guard_upper_bound: u16,
     // Deployment caps per structure level (without precision)
     // Max_Army_Size = (Deployment_Cap / Tier_Strength) * Tier_Modifier / 100
     pub settlement_deployment_cap: u32,
@@ -481,12 +482,20 @@ pub impl TroopStaminaConfigPacking of starknet::storage_access::StorePacking<Tro
     }
 }
 
-pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<TroopLimitConfig, PackedRuleWords> {
-    fn pack(value: TroopLimitConfig) -> PackedRuleWords {
-        PackedRuleWords {
+#[derive(Copy, Drop, starknet::Store)]
+pub struct PackedTroopLimitWords {
+    pub first: u128,
+    pub second: u128,
+    pub third: u128,
+    pub heavy_guard_bounds: u32,
+}
+
+pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<TroopLimitConfig, PackedTroopLimitWords> {
+    fn pack(value: TroopLimitConfig) -> PackedTroopLimitWords {
+        PackedTroopLimitWords {
             first: value.guard_resurrection_delay.into()
-                + value.mercenaries_troop_lower_bound.into() * 0x10000
-                + value.mercenaries_troop_upper_bound.into() * 0x100000000
+                + value.light_guard_lower_bound.into() * 0x10000
+                + value.light_guard_upper_bound.into() * 0x100000000
                 + value.starting_guard.into() * 0x1000000000000
                 + value.settlement_deployment_cap.into() * 0x100000000000000000000
                 + value.explore_reward_strength_cap.into() * 0x10000000000000000000000000000,
@@ -508,13 +517,16 @@ pub impl TroopLimitConfigPacking of starknet::storage_access::StorePacking<Troop
                 + value.kingdom_guard_slots.into() * 0x1000000000000000000000000
                 + value.empire_guard_slots.into() * 0x100000000000000000000000000
                 + value.camp_armies.into() * 0x10000000000000000000000000000,
+            heavy_guard_bounds: value.heavy_guard_lower_bound.into() + value.heavy_guard_upper_bound.into() * 0x10000,
         }
     }
-    fn unpack(value: PackedRuleWords) -> TroopLimitConfig {
+    fn unpack(value: PackedTroopLimitWords) -> TroopLimitConfig {
         TroopLimitConfig {
             guard_resurrection_delay: (value.first % 0x10000).try_into().unwrap(),
-            mercenaries_troop_lower_bound: (value.first / 0x10000 % 0x10000).try_into().unwrap(),
-            mercenaries_troop_upper_bound: (value.first / 0x100000000 % 0x10000).try_into().unwrap(),
+            light_guard_lower_bound: (value.first / 0x10000 % 0x10000).try_into().unwrap(),
+            light_guard_upper_bound: (value.first / 0x100000000 % 0x10000).try_into().unwrap(),
+            heavy_guard_lower_bound: (value.heavy_guard_bounds % 0x10000).try_into().unwrap(),
+            heavy_guard_upper_bound: (value.heavy_guard_bounds / 0x10000).try_into().unwrap(),
             settlement_deployment_cap: (value.first / 0x100000000000000000000 % 0x100000000).try_into().unwrap(),
             city_deployment_cap: (value.second % 0x100000000).try_into().unwrap(),
             kingdom_deployment_cap: (value.second / 0x100000000 % 0x100000000).try_into().unwrap(),

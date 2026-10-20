@@ -12,7 +12,7 @@
 /profile/settings / 200
 /sign-in / 200
 /scroll / 200
-/scroll/:post / 200
+/scroll/:post https://realms.world/scroll/:post 301
 /terms / 200
 /privacy / 200
 /credits / 200

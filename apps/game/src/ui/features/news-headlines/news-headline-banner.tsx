@@ -1,78 +1,20 @@
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import type { IconMeaning } from "@/ui/design-system/icon";
+import { HudBanner, HudButton, HudIconButton } from "@/ui/design-system/kit/hud-elements";
+import { HEADLINE_EYEBROWS } from "@/ui/design-system/kit/words";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { AlertBannerShell } from "@/ui/shared/components/alert-banner-shell";
-import { HUD_COLUMN_TOP } from "@/ui/features/world/containers/hud-layout";
-
+import { HeadlineLine } from "./headline-line";
 import type { Headline, HeadlineType } from "./headline-types";
 
-interface HeadlineTheme {
-  icon: IconMeaning;
-  eyebrow: string;
-  accentTextClassName: string;
-  accentSurfaceClassName: string;
-  accentEdgeClassName: string;
-}
-
-const HEADLINE_THEME_MAP: Record<HeadlineType, HeadlineTheme> = {
-  "realm-fall": {
-    icon: "realm" as const,
-    eyebrow: "War Report",
-    accentTextClassName: "text-anger-light",
-    accentSurfaceClassName: "border-anger-light/35 bg-anger-light/10 text-anger-light",
-    accentEdgeClassName: "bg-anger-light/80",
-  },
-  "hyper-capture": {
-    icon: "crown" as const,
-    eyebrow: "World Event",
-    accentTextClassName: "text-brilliance",
-    accentSurfaceClassName: "border-brilliance/35 bg-brilliance/10 text-brilliance",
-    accentEdgeClassName: "bg-brilliance/80",
-  },
-  elimination: {
-    icon: "skull" as const,
-    eyebrow: "War Report",
-    accentTextClassName: "text-anger-light",
-    accentSurfaceClassName: "border-anger-light/35 bg-anger-light/10 text-anger-light",
-    accentEdgeClassName: "bg-anger-light/80",
-  },
-  "game-start": {
-    icon: "crown" as const,
-    eyebrow: "Game started",
-    accentTextClassName: "text-gold",
-    accentSurfaceClassName: "border-gold/35 bg-gold/10 text-gold",
-    accentEdgeClassName: "bg-gold/80",
-  },
-  "game-end": {
-    icon: "victory" as const,
-    eyebrow: "Age Result",
-    accentTextClassName: "text-gold",
-    accentSurfaceClassName: "border-gold/35 bg-gold/10 text-gold",
-    accentEdgeClassName: "bg-gold/80",
-  },
-  "five-min-warning": {
-    icon: "hourglass" as const,
-    eyebrow: "Timer Warning",
-    accentTextClassName: "text-orange",
-    accentSurfaceClassName: "border-orange/35 bg-orange/10 text-orange",
-    accentEdgeClassName: "bg-orange/80",
-  },
-  "t3-building": {
-    icon: "defend" as const,
-    eyebrow: "Military Milestone",
-    accentTextClassName: "text-brilliance",
-    accentSurfaceClassName: "border-brilliance/35 bg-brilliance/10 text-brilliance",
-    accentEdgeClassName: "bg-brilliance/80",
-  },
-};
-
-const trimHeadlineDescription = (description: string) => {
-  if (description.startsWith('"') && description.endsWith('"')) {
-    return description.slice(1, -1);
-  }
-
-  return description;
+/** Each kind of news: its painting and its tone (none reads in the age's accent); its eyebrow is the words module's. */
+const HEADLINE_THEME_MAP: Record<HeadlineType, { icon: IconMeaning; tone?: "good" | "bad" | "warn" }> = {
+  "realm-fall": { icon: "realm", tone: "bad" },
+  "hyper-capture": { icon: "crown" },
+  elimination: { icon: "skull", tone: "bad" },
+  "game-start": { icon: "crown", tone: "good" },
+  "game-end": { icon: "victory", tone: "good" },
+  "five-min-warning": { icon: "hourglass", tone: "warn" },
+  "t3-building": { icon: "defend" },
 };
 
 interface NewsHeadlineBannerProps {
@@ -83,69 +25,46 @@ interface NewsHeadlineBannerProps {
 
 export function NewsHeadlineBanner({ headline, onDismiss, onNavigate }: NewsHeadlineBannerProps) {
   const theme = headline ? HEADLINE_THEME_MAP[headline.icon] : null;
-  const Icon = theme?.icon ?? null;
-  const description = headline ? trimHeadlineDescription(headline.description) : "";
   const navigationLocation = headline?.location ?? null;
   const canNavigate = Boolean(navigationLocation && onNavigate);
 
   return (
     <AnimatePresence mode="wait">
-      {headline && Icon && theme && (
+      {headline && theme && (
         <motion.div
           key={headline.id}
           initial={{ y: -32, opacity: 0, scale: 0.96 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: -16, opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-          className={cn("fixed inset-x-0 z-30 flex justify-center px-4", HUD_COLUMN_TOP)}
+          className="fixed inset-x-0 top-hud-header z-hud-rail flex justify-center px-4"
         >
-          <AlertBannerShell accentEdgeClassName={theme.accentEdgeClassName}>
-            <div className="relative grid grid-cols-[52px_minmax(0,1fr)_52px] items-center gap-3 px-4 py-3.5">
-              <div className="flex justify-center">
-                <div
-                  className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-full border shadow-[inset_0_1px_4px_rgba(0,0,0,0.45)]",
-                    theme.accentSurfaceClassName,
-                  )}
-                >
-                  <SemanticIcon name={Icon} className="h-[18px] w-[18px]" aria-hidden />
-                </div>
-              </div>
-
-              <div className="min-w-0">
-                <div className={cn("text-sm font-semibold ", theme.accentTextClassName)}>{theme.eyebrow}</div>
-                <div className="mt-1 font-body text-sm font-semibold text-gold">{headline.title}</div>
-                <div className="mt-1 text-sm leading-[1.35] text-gold/78">{description}</div>
-              </div>
-
-              <div className="relative flex min-h-[52px] flex-col items-center justify-center gap-1.5 before:absolute before:inset-y-1 before:left-0 before:w-px before:bg-gold/10">
-                {canNavigate ? (
-                  <button
-                    type="button"
+          <HudBanner
+            tone={theme.tone}
+            icon={theme.icon}
+            eyebrow={HEADLINE_EYEBROWS[headline.icon]}
+            title={headline.title}
+            line={<HeadlineLine parts={headline.description} />}
+            actions={
+              <>
+                {canNavigate && (
+                  <HudButton
+                    kind="secondary"
+                    size="sm"
+                    icon="navigation"
                     onClick={(evt) => {
                       evt.stopPropagation();
                       if (!navigationLocation || !onNavigate) return;
                       onNavigate(navigationLocation);
                     }}
-                    className={cn(
-                      "btn-bronze inline-flex h-9 w-11 flex-col items-center justify-center gap-0.5 rounded-md border text-sm font-semibold transition-colors",
-                      "border-gold/25 bg-black/20 text-gold hover:border-gold/45 hover:bg-black/35",
-                    )}
                   >
-                    <SemanticIcon name="navigation" className="h-3 w-3" />
-                    <span>View</span>
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={onDismiss}
-                  className="btn-bronze inline-flex h-7 w-7 items-center justify-center rounded-full border-gold/15 bg-black/20 p-0 text-kit-muted hover:bg-black/35 hover:text-gold"
-                >
-                  <SemanticIcon name="close" className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-          </AlertBannerShell>
+                    View
+                  </HudButton>
+                )}
+                <HudIconButton icon="close" label="Dismiss" kind="quiet" size="sm" onClick={onDismiss} />
+              </>
+            }
+          />
         </motion.div>
       )}
     </AnimatePresence>

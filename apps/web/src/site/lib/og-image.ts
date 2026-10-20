@@ -1,3 +1,4 @@
+import { REALMS_X_TAG } from "@realms-world/chain";
 interface OGImageParams {
   title: string;
   description?: string;
@@ -75,7 +76,7 @@ export function generateMetaTags(
     { name: "twitter:title", content: title },
     { name: "twitter:description", content: description },
     { name: "twitter:image", content: ogImage },
-    { name: "twitter:site", content: "@LootRealms" },
-    { name: "twitter:creator", content: "@LootRealms" },
+    { name: "twitter:site", content: REALMS_X_TAG },
+    { name: "twitter:creator", content: REALMS_X_TAG },
   ];
 }

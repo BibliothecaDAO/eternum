@@ -35,7 +35,7 @@ const fixture = (chain = TEST_CHAIN) => {
   const joinFailures = vi.fn(async (): Promise<import("./registrar").JoinFailure[]> => []);
   const app = createLaunchApp({
     config: { operatorToken: "operator-test-token" },
-    deployment: { environment: "staging", version: "test" },
+    deployment: { environment: "staging", version: "test", revision: "abc1234" },
     store,
     slots,
     calendar,

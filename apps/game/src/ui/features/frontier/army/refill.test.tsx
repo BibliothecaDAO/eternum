@@ -14,16 +14,21 @@ const render = (node: React.ReactNode) => {
 };
 
 describe("the refill", () => {
-  it("prices the missing points in LORDS, and shows the LORDS held against the price when they fall short", () => {
+  it("refills on its verb alone (its confirm says the price), and shows the LORDS held against the price when they fall short", () => {
     const onRefill = vi.fn();
     const enough = render(<RefillButton price={140} held={1_240} onRefill={onRefill} />);
     act(() => enough.host.querySelector("button")!.click());
     expect(onRefill).toHaveBeenCalled();
-    expect(enough.host.textContent).toContain("140");
+    expect(enough.host.textContent).toBe("Refill");
     enough.unmount();
     const short = render(<RefillButton price={130} held={40} onRefill={onRefill} />);
     expect(short.host.querySelector("button")).toBeNull();
-    expect(short.host.querySelector('[aria-label="LORDS 40 / 130"]')).not.toBeNull();
+    // Named Refill, and its hover says what the two numbers are: the LORDS held, against the refill's whole price.
+    const chip = short.host.querySelector('[role="img"]')!;
+    expect(chip.getAttribute("aria-label")).toBe(
+      "Refill to full: 130 LORDS, one a missing stamina point. The realm holds 40.",
+    );
+    expect(chip.textContent).toBe("Refill40 / 130");
     short.unmount();
   });
 

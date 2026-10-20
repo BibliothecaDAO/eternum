@@ -342,6 +342,14 @@ pub(crate) fn discovery_guards(
 ) -> Span<Troops> {
     use crate::troops::{TroopTier, TroopType};
     let light_guard = category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY;
+    let limits = rules.troop_limit_config;
+    let (lower, upper) = if light_guard {
+        (limits.light_guard_lower_bound, limits.light_guard_upper_bound)
+    } else {
+        (limits.heavy_guard_lower_bound, limits.heavy_guard_upper_bound)
+    };
+    let lower: u128 = lower.into();
+    let upper: u128 = upper.into();
     let three_guards = category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY
         || category == crate::taxonomy::BANK_CATEGORY;
     let count = if light_guard {
@@ -358,8 +366,17 @@ pub(crate) fn discovery_guards(
     };
     let mut guards = array![];
     for slot in 0_u8..count {
+        let guard_seed = seed + if three_guards {
+            Into::<u8, u256>::into(slot)
+        } else {
+            0
+        };
         let category = if light_guard {
-            TroopType::Crossbowman
+            match crate::random::range(guard_seed, 2, 3) {
+                0 => TroopType::Knight,
+                1 => TroopType::Paladin,
+                _ => TroopType::Crossbowman,
+            }
         } else {
             match slot {
                 1 => TroopType::Knight,
@@ -367,60 +384,37 @@ pub(crate) fn discovery_guards(
                 _ => TroopType::Paladin,
             }
         };
-        let guard_seed = seed + if three_guards {
-            Into::<u8, u256>::into(slot)
-        } else {
-            0
-        };
-        let troops = discovery_guard(category, tier, guard_seed, rules, timestamp);
+        let count = lower + crate::random::range(guard_seed, 1, upper - lower + 1);
+        let troops = discovered_guard(category, tier, count, rules, timestamp);
         guards.append(troops);
     }
     guards.span()
 }
 
-pub(crate) fn discovery_guard(
-    category: crate::troops::TroopType,
-    tier: crate::troops::TroopTier,
-    seed: u256,
-    rules: crate::rules::SliceRules,
-    timestamp: u64,
-) -> Troops {
-    let lower: u128 = rules.troop_limit_config.mercenaries_troop_lower_bound.into();
-    let upper: u128 = rules.troop_limit_config.mercenaries_troop_upper_bound.into();
-    let count = lower + crate::random::range(seed, 1, upper - lower);
-    discovered_guard(category, tier, count, rules, timestamp)
-}
-
-// Camps, rifts and ruins are guarded by Knight beasts. Only stragglers draw among the three troop categories and
-// keep a third of the site grid draw.
+// Every Frontier guard is Knight T1, so counts order encounters without changing combat matchups.
 pub(crate) fn frontier_guard(
     category: u8, depth: crate::expeditions::DepthRules, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Troops {
-    let (troop, lower, upper) = if category == crate::taxonomy::RUIN_CATEGORY {
-        (TroopType::Knight, depth.ruin_guard_lower, depth.ruin_guard_upper)
+    let (lower, upper) = if category == crate::taxonomy::RUIN_CATEGORY {
+        (depth.ruin_guard_lower, depth.ruin_guard_upper)
     } else {
-        let troop = if category == crate::taxonomy::STRAGGLERS_CATEGORY {
-            match crate::random::range(seed, 2, 3) {
-                0 => TroopType::Knight,
-                1 => TroopType::Paladin,
-                _ => TroopType::Crossbowman,
-            }
-        } else {
-            TroopType::Knight
-        };
-        (troop, depth.site_guard_lower.into(), depth.site_guard_upper.into())
+        (depth.site_guard_lower.into(), depth.site_guard_upper.into())
     };
-    let step: u128 = depth.guard_step.into();
     let lower: u128 = lower.into();
     let upper: u128 = upper.into();
-    // Preset validation makes both inclusive endpoints reachable on the grid.
-    let count = lower + step * crate::random::range(seed, 1, (upper - lower) / step + 1);
-    let count = if category == crate::taxonomy::STRAGGLERS_CATEGORY {
-        count / 3
+    let count = if category == crate::taxonomy::BEASTS_CATEGORY {
+        let (lower, upper) = if crate::random::range(seed, 2, 2) == 0 {
+            (depth.beast_weak_lower, depth.beast_weak_upper)
+        } else {
+            (depth.beast_strong_lower, depth.beast_strong_upper)
+        };
+        Into::<u16, u128>::into(lower) + crate::random::range(seed, 1, (upper - lower).into() + 1)
     } else {
-        count
+        // Preset validation makes both inclusive endpoints reachable on the grid.
+        let step: u128 = depth.guard_step.into();
+        lower + step * crate::random::range(seed, 1, (upper - lower) / step + 1)
     };
-    discovered_guard(troop, TroopTier::T1, count, rules, timestamp)
+    discovered_guard(TroopType::Knight, TroopTier::T1, count, rules, timestamp)
 }
 
 fn discovered_guard(

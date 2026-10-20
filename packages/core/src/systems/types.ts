@@ -34,7 +34,7 @@ export type ExplorerRewardSystemUpdate = {
 };
 /**
  * A site cleared, as its payout story and the winning exchange before it tell it (one transaction): what the site was,
- * what it paid home in whole units (stragglers pay only XP, a ruin its chest), where it stood and what the fight cost.
+ * what it paid home in whole units (beasts pay only XP, a ruin its chest), where it stood and what the fight cost.
  */
 export type SitePayoutSystemUpdate = {
   explorerId: ID;
@@ -54,13 +54,14 @@ export type TierBoughtSystemUpdate = {
   tier: number;
   price: number;
 };
-/** A relic crate opened by an explorer: the contract hex it stood on and the relics it yielded. */
-export type RelicChestOpenedSystemUpdate = {
-  /** The opening as the game's history titles it: its pack and where its relics went. */
+export type ChestReward = { kind: "relics"; relics: ResourcesIds[] } | { kind: "lords"; amount: number };
+
+/** The actual opening result; LORDS amounts are whole units, as the reward-chest story records them. */
+export type ChestOpenedSystemUpdate = ChestReward & {
+  /** The opening as the game's history titles it: its reward and recipient. */
   title: string;
   explorerId: ID;
   hex: { x: number; y: number };
-  relics: ResourcesIds[];
   timestamp: number;
 };
 
@@ -90,6 +91,8 @@ export type StoryEventSystemUpdate = {
   storyType: string;
   storyPayload: Record<string, unknown> | null;
   rawStory: unknown;
+  /** The player the story is told to, who reads as "you" where a story names them; null for a spectator. */
+  viewerAddress: string | null;
 };
 
 export enum StructureProgress {

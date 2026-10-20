@@ -1,0 +1,132 @@
+.rss-lab {
+  max-width: 1180px;
+  margin: auto;
+  padding: 24px;
+  color: #f2e9d8;
+}
+.rss-lab h1 {
+  font-size: 26px;
+  margin-bottom: 8px;
+}
+.rss-lab p {
+  color: #bdb7ac;
+  margin: 12px 0;
+  max-width: 75ch;
+}
+.rss-lab nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0;
+}
+.rss-lab button {
+  padding: 8px 16px;
+  border: 1px solid #595248;
+  border-radius: 6px;
+}
+.rss-lab button[aria-pressed="true"] {
+  background: #e5d6b4;
+  color: #201e1b;
+}
+.rss-lab article {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  padding: 20px 0;
+  border-bottom: 1px solid #393b3b;
+}
+.rss-lab article > p {
+  flex-basis: 100%;
+  margin: 0;
+}
+.rss-comparison h3 {
+  font-size: 16px;
+  margin: 0 0 12px;
+}
+.rss-versions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.rss-lab figure {
+  margin: 0;
+}
+.rss-lab figcaption {
+  color: #c1b9a7;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.rss-sizes {
+  display: flex;
+  gap: 8px;
+}
+.rss-sizes > div {
+  width: 48px;
+  min-height: 68px;
+  justify-content: flex-end;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.rss-art-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #182127;
+  border-radius: 6px;
+}
+.rss-art-slot img {
+  flex-shrink: 0;
+  max-width: none;
+}
+.rss-sizes small {
+  color: #969b9e;
+  font-size: 11px;
+}
+.rss-chip {
+  max-width: 260px;
+  margin-top: 12px;
+}
+.rss-history-glyph {
+  color: #f4ac43;
+}
+.rss-model {
+  margin-left: auto !important;
+}
+.rss-model img {
+  background: #182127;
+  border-radius: 8px;
+}
+.rss-inventory {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr));
+  gap: 24px;
+}
+.rss-inventory .rss-comparison {
+  padding: 16px 0;
+}
+@media (max-width: 600px) {
+  .rss-lab {
+    padding: 16px;
+  }
+  .rss-model {
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .rss-comparison {
+    width: 100%;
+  }
+  .rss-versions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .rss-sizes {
+    display: grid;
+    grid-template-columns: repeat(2, 48px);
+  }
+}

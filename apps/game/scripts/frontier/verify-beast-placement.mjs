@@ -1,24 +1,20 @@
 import { NodeIO } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import draco from "draco3dgltf";
-import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-const assetId = process.argv[2];
-if (!/^beast-(troll|wyvern|hydra)$/.test(assetId ?? "")) {
-  throw new Error("Provide beast-troll, beast-wyvern or beast-hydra");
-}
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
   "draco3d.decoder": await draco.createDecoderModule(),
 });
-const ruinPath = process.argv[3] ?? fileURLToPath(new URL("../../public/models/outposts/ruin.glb", import.meta.url));
-const scale = process.argv[4] === undefined ? undefined : Number(process.argv[4]);
-if (scale !== undefined && (!Number.isFinite(scale) || scale <= 0)) throw new Error("Scale must be positive");
-const ruin = await readGeometry("fallen-realm-ruin", ruinPath);
-const beast = await readGeometry(assetId);
-const measurement = measurePlacement({ assetId, ruin, beast, scale });
-console.log(JSON.stringify(measurement));
-if (measurement.passed === false) process.exitCode = 1;
+
+/** Read delivered triangles without changing either model. Roaming beasts have no ruin. */
+export async function measureBeastPlacement(species, scale, ruinPath, beastPath) {
+  if (!Number.isFinite(scale) || scale <= 0) throw new Error("Scale must be positive");
+  const assetId = `beast-${species}`;
+  const ruin = ruinPath ? await readGeometry("ruin", ruinPath) : { vertices: [], triangles: [] };
+  const beast = await readGeometry(assetId, beastPath);
+  return measurePlacement({ assetId, ruin, beast, scale });
+}
 
 async function readGeometry(name, override) {
   const path = override ?? fileURLToPath(new URL(`../../public/models/frontier/${name}.glb`, import.meta.url));
@@ -49,20 +45,72 @@ async function readGeometry(name, override) {
   return { vertices, triangles };
 }
 
-function measurePlacement(geometry) {
-  const script = fileURLToPath(new URL("measure-beast-placement.py", import.meta.url));
-  const result = spawnSync(
-    "blender",
-    ["--background", "--threads", "2", "--python-exit-code", "1", "--python", script],
-    {
-      input: JSON.stringify(geometry),
-      encoding: "utf8",
-      maxBuffer: 8 * 1024 * 1024,
-    },
+const CLEARANCE = 0.001;
+const GROUND_HEIGHT = 0.003;
+const subtract = (a, b) => a.map((value, axis) => value - b[axis]);
+const dot = (a, b) => a.reduce((sum, value, axis) => sum + value * b[axis], 0);
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+
+/** Measure the delivered surfaces, excluding only the ruin's painted ground support. */
+export function measurePlacement({ assetId, ruin, beast, scale }) {
+  const vertices = beast.vertices.map((point) => point.map((value) => value * scale));
+  const fitsTile = vertices.every((point) =>
+    [0, Math.PI / 3, (2 * Math.PI) / 3].every(
+      (angle) => Math.abs(point[0] * Math.cos(angle) + point[2] * Math.sin(angle)) <= Math.sqrt(3) / 2,
+    ),
   );
-  if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(result.stderr + result.stdout);
-  const report = result.stdout.split("\n").find((line) => line.startsWith("FRONTIER_PLACEMENT="));
-  if (!report) throw new Error("Blender did not return a placement measurement");
-  return JSON.parse(report.slice("FRONTIER_PLACEMENT=".length));
+  const obstacles = ruin.triangles
+    .map((face) => triangle(face.map((index) => ruin.vertices[index])))
+    .filter((face) => face.max[1] > GROUND_HEIGHT)
+    .sort((a, b) => a.min[0] - b.min[0]);
+  let masonryContacts = 0;
+  const touched = new Set();
+  for (const face of beast.triangles) {
+    const body = triangle(face.map((index) => vertices[index]));
+    for (const wall of obstacles) {
+      if (wall.min[0] > body.max[0] + CLEARANCE) break;
+      if (!boundsOverlap(body, wall) || separated(body, wall)) continue;
+      masonryContacts++;
+      touched.add(wall);
+    }
+  }
+  return {
+    assetId,
+    scale,
+    fitsTile,
+    masonryContacts,
+    contactBounds: [...touched].map((wall) => wall.points),
+    passed: fitsTile && masonryContacts === 0,
+    method:
+      "Decoded GLB triangles at runtime scale and shared ground-center origin; separating axes with 0.001 clearance tolerance",
+  };
+}
+
+function triangle(points) {
+  const edges = points.map((point, index) => subtract(points[(index + 1) % 3], point));
+  return {
+    points,
+    edges,
+    normal: cross(edges[0], edges[1]),
+    min: [0, 1, 2].map((axis) => Math.min(...points.map((point) => point[axis]))),
+    max: [0, 1, 2].map((axis) => Math.max(...points.map((point) => point[axis]))),
+  };
+}
+
+function boundsOverlap(a, b) {
+  return [0, 1, 2].every((axis) => a.min[axis] <= b.max[axis] + CLEARANCE && b.min[axis] <= a.max[axis] + CLEARANCE);
+}
+
+function separated(a, b) {
+  const axes = [a.normal, b.normal, ...a.edges.flatMap((edge) => b.edges.map((other) => cross(edge, other)))];
+  // In-plane edge normals also separate coplanar triangles with overlapping boxes.
+  for (const face of [a, b]) axes.push(...face.edges.map((edge) => cross(face.normal, edge)));
+  return axes.some((axis) => {
+    const length = Math.hypot(...axis);
+    if (length < 1e-12) return false;
+    const left = a.points.map((point) => dot(point, axis));
+    const right = b.points.map((point) => dot(point, axis));
+    const margin = CLEARANCE * length;
+    return Math.max(...left) + margin < Math.min(...right) || Math.max(...right) + margin < Math.min(...left);
+  });
 }

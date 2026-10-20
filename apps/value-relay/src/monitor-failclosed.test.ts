@@ -27,8 +27,11 @@ const fixture = () => {
           rows: [{ ...receipt, paymentTransactionHash: "0xdef", paidAt: 1, wallet: "0x123" }],
           next: null,
           head: 1000,
+          anchor: { number: 1000, hash: "0xa" },
+          rewind: false,
         }),
-      postedResults: () => Effect.succeed({ rows: [], next: null, head: 1000 }),
+      postedResults: () =>
+        Effect.succeed({ rows: [], next: null, head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false }),
       pause: vi.fn(() => Effect.void),
     },
   };
@@ -44,13 +47,16 @@ it("never stores a fault or pauses for repeated unavailable reads, and recovers 
   const f = fixture();
   for (let tick = 0; tick < 5; tick++) {
     await expect(f.tick()).rejects.toMatchObject({ operation: "shard_unavailable" });
-    expect(await f.store.load()).toEqual({ halted: null, cursors: { postedResults: { fromBlock: 1001, page: null } } });
+    expect(await f.store.load()).toEqual({
+      halted: null,
+      cursors: { postedResults: { fromBlock: 1001, page: null, anchor: { number: 1000, hash: "0xa" } } },
+    });
   }
   expect(f.ports.ledger.pause).not.toHaveBeenCalled();
   f.ports.shard.withdrawal = () => Effect.succeed(f.receipt);
   await expect(f.tick()).resolves.toMatchObject({
     halted: null,
-    cursors: { paidClaims: { fromBlock: 1001, page: null } },
+    cursors: { paidClaims: { fromBlock: 1001, page: null, anchor: { number: 1000, hash: "0xa" } } },
   });
   expect(f.ports.ledger.pause).not.toHaveBeenCalled();
 });

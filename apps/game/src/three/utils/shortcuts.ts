@@ -1,7 +1,8 @@
 import { KeyModifiers } from "@/hooks/store/use-shortcut-store";
 import { CentralizedShortcutManager, getShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
 import { SceneName } from "@/three/types/common";
-import { SceneManager } from "@/three/scene-manager";
+import type { SceneManager } from "@/three/scene-manager";
+import { skipGameEnd } from "../effects/endgame/state";
 
 /**
  * Register a shortcut from a Three.js scene or other non-React context
@@ -103,7 +104,10 @@ export class SceneShortcutManager {
       key: config.key,
       modifiers: config.modifiers,
       description: config.description,
-      action: config.action,
+      action: () => {
+        if (config.key.toLowerCase() === "escape" && skipGameEnd()) return;
+        config.action();
+      },
       condition: config.sceneRestriction || config.condition ? combinedCondition : undefined,
     });
 

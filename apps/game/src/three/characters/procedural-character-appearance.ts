@@ -124,3 +124,14 @@ export function doesProceduralCharacterRenderDetailChangeAsset(
     resolveProceduralCharacterAppearanceAssetId(id, tier, next)
   );
 }
+
+/** Selectors spanning several kinds offer only appearances every selected kind can wear. */
+export function listOfferedProceduralCharacterAppearances(kinds: readonly ProceduralUnitKind[]) {
+  return PROCEDURAL_CHARACTER_APPEARANCES.filter(({ id }) =>
+    kinds.every((kind) => isProceduralCharacterAppearanceCompatibleWithKind(id, kind)),
+  );
+}
+
+export function resolveDefaultUnitAppearance(kind: ProceduralUnitKind, tier: number): ProceduralCharacterAppearanceId {
+  return kind === "knight" && tier === 1 ? "t1-knight-default" : DEFAULT_PROCEDURAL_CHARACTER_APPEARANCE_ID;
+}

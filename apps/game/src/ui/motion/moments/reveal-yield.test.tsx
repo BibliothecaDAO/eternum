@@ -122,7 +122,7 @@ describe("the reveal yield", () => {
     const { playRevealYield } = await load();
     playRevealYield({ own: true, amount: 0.1, resourceId: LABOR, from: TILE, now: 0 });
     expect(flights).toHaveLength(0);
-    expect(rises).toEqual([expect.objectContaining({ at: TILE, label: "+0.1" })]);
+    expect(rises).toEqual([expect.objectContaining({ at: TILE, label: "+<1" })]);
     expect(plays).toHaveLength(1);
   });
 });

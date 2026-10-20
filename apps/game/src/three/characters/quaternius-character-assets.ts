@@ -38,38 +38,29 @@ const HEAD_NECK_RANGE = 0.42;
 const MIN_HEAD_SKIN_WEIGHT = 0.5;
 const REQUIRED_OBJECT_NAMES = ["Armature"] as const;
 
-export async function loadQuaterniusCharacterAssetTemplates(): Promise<LoadedProceduralCharacterAssetTemplate[]> {
-  const loader = new GLTFLoader();
-  const results = await Promise.allSettled(
-    Object.values(QUATERNIUS_CHARACTER_ASSETS).map(async (definition) => {
-      const gltf = await loader.loadAsync(definition.url);
-      const asset = { ...definition, gltf };
-      try {
-        validateQuaterniusCharacterAsset(definition, gltf);
-        return asset;
-      } catch (error) {
-        disposeQuaterniusCharacterAssetTemplates([asset]);
-        throw error;
-      }
-    }),
-  );
-  const loadedAssets = results.flatMap((result) => (result.status === "fulfilled" ? [result.value] : []));
-  const failure = results.find((result) => result.status === "rejected");
-  if (failure?.status === "rejected") {
-    disposeQuaterniusCharacterAssetTemplates(loadedAssets);
-    throw failure.reason;
-  }
+export async function loadQuaterniusCharacterAssetTemplate(
+  id: QuaterniusCharacterAssetId,
+  base?: LoadedProceduralCharacterAssetTemplate,
+): Promise<LoadedProceduralCharacterAssetTemplate> {
+  const definition = QUATERNIUS_CHARACTER_ASSETS[id];
+  const gltf = await new GLTFLoader().loadAsync(definition.url);
+  const asset = { ...definition, gltf };
   try {
-    prepareQuaterniusCharacterTemplates(loadedAssets);
-    return loadedAssets;
+    validateQuaterniusCharacterAsset(definition, gltf);
+    gltf.scene.traverse((object) => {
+      // The WebGPU backend cannot upload the source's vertex-color format.
+      if (object instanceof Mesh) object.geometry.deleteAttribute("color");
+    });
+    if (id !== "base") {
+      if (!base) throw new Error("Outfits require the Universal base head");
+      const headSources = HEAD_SOURCE_MESH_NAMES.map((name) => requireSkinnedMesh(base.gltf.scene, name));
+      attachHeadToOutfitTemplate(asset, headSources);
+    }
+    return asset;
   } catch (error) {
-    disposeQuaterniusCharacterAssetTemplates(loadedAssets);
+    disposeSkinnedSceneTemplates([gltf.scene]);
     throw error;
   }
-}
-
-function disposeQuaterniusCharacterAssetTemplates(assets: readonly LoadedProceduralCharacterAssetTemplate[]): void {
-  disposeSkinnedSceneTemplates(assets.map(({ gltf }) => gltf.scene));
 }
 
 function validateQuaterniusCharacterAsset(definition: ProceduralCharacterAssetDefinition, gltf: GLTF): void {
@@ -87,27 +78,6 @@ function validateQuaterniusCharacterAsset(definition: ProceduralCharacterAssetDe
   if (gltf.animations.length > 0) {
     throw new Error(`${definition.label} unexpectedly contains authored animation clips`);
   }
-}
-
-function prepareQuaterniusCharacterTemplates(assets: LoadedProceduralCharacterAssetTemplate[]): void {
-  assets.forEach(({ gltf }) => {
-    gltf.scene.traverse((object) => {
-      if (!(object instanceof Mesh)) return;
-      // Quaternius exports a vertex-color customization channel that Three's
-      // WebGPU backend promotes to an invalid `unorm32x4` pipeline format.
-      object.geometry.deleteAttribute("color");
-    });
-  });
-  composeBaseHeadOntoOutfitTemplates(assets);
-}
-
-function composeBaseHeadOntoOutfitTemplates(assets: LoadedProceduralCharacterAssetTemplate[]): void {
-  const targets = assets.filter(({ id }) => id !== "base");
-  if (targets.length === 0) return;
-  const baseAsset = assets.find(({ id }) => id === "base");
-  if (!baseAsset) throw new Error("Quaternius Universal base asset was not loaded");
-  const headSources = HEAD_SOURCE_MESH_NAMES.map((name) => requireSkinnedMesh(baseAsset.gltf.scene, name));
-  targets.forEach((asset) => attachHeadToOutfitTemplate(asset, headSources));
 }
 
 function attachHeadToOutfitTemplate(

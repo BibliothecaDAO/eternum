@@ -6,18 +6,24 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import type { PriceKind } from "@/ui/design-system/kit/price-chip";
+import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import { BUILDING_FIGURES, LABOR } from "@/ui/design-system/kit/words";
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import { buildablePlotCount, configManager, getBalance, ResourceManager } from "@bibliothecadao/eternum";
-import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import {
+  BUILDINGS_CENTER,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  TroopTier,
+  formatExact,
+  formatRate,
+} from "@bibliothecadao/types";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { type CastleSide, CastleView } from "./castle-view";
-import type { Figure } from "./type-upgrade-sheet";
+import type { Figure } from "./castle-view";
 
 /** Whether the player tapped their own realm's keep in the realm view. */
 export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean => {
@@ -41,10 +47,8 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
   const levelUp = useRealmLevelUp(safeInteger(realm.entity_id));
   const goToPlace = useGoToFrontierPlace(realm);
   if (!levelUp) return null;
-  const held = (resource: number) => {
-    const balance = knownBalance(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
-    return balance === undefined ? undefined : Math.floor(balance);
-  };
+  const held = (resource: number) =>
+    knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
   const short = levelUp.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   return (
     <CastleView
@@ -114,7 +118,7 @@ const castleFigures = (
     {
       icons: ["labor"],
       label: BUILDING_FIGURES.castleMakes(LABOR),
-      value: `+${formatAmount((Number(perSecond) / RESOURCE_PRECISION) * 3_600)}/h`,
+      value: formatRate(Number(perSecond) / RESOURCE_PRECISION),
     },
     {
       icons: ["labor", "resources"],

@@ -6,11 +6,15 @@ import { RealmInfo } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { type PlayerNames, usePlayerNames } from "@/hooks/use-player-profile";
 
-const buildOwnedStructureInfos = (playerStructures: ReturnType<typeof usePlayerStructures>, store: NativeFactStore) =>
+const buildOwnedStructureInfos = (
+  playerStructures: ReturnType<typeof usePlayerStructures>,
+  store: NativeFactStore,
+  names: PlayerNames,
+) =>
   playerStructures
-    .map((structure) => getRealmInfo(structure.entityId, store, getPlayerName))
+    .map((structure) => getRealmInfo(structure.entityId, store, names.text))
     .filter((structureInfo): structureInfo is RealmInfo => Boolean(structureInfo));
 
 const useOwnedStructureInfos = () => {
@@ -19,8 +23,12 @@ const useOwnedStructureInfos = () => {
   } = useGame();
   const playerStructures = usePlayerStructures();
   const revision = useNativeRevision(["StructureBuildings", "ResourceWeight"]);
+  const names = usePlayerNames();
 
-  return useMemo(() => buildOwnedStructureInfos(playerStructures, store), [playerStructures, store, revision]);
+  return useMemo(
+    () => buildOwnedStructureInfos(playerStructures, store, names),
+    [playerStructures, store, revision, names],
+  );
 };
 
 export const useOwnedMilitaryStructureInfos = () => {

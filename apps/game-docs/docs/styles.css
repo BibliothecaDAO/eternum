@@ -4,9 +4,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The app's two faces (decisions-1, apps/game/src/tokens.ts FONTS), from the files the app serves, bundled with the
+   docs so they ship with every deploy: Bokor for page titles, Atkinson Hyperlegible Next for everything read. */
 @font-face {
-  font-family: "IM Fell English SC";
-  src: url("/fonts/im-fell-english-sc-regular.ttf") format("truetype");
+  font-family: "Atkinson Hyperlegible Next";
+  src: url("../../game/public/fonts/atkinson-hyperlegible-next.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Bokor";
+  src: url("../../game/public/fonts/bokor-regular.ttf") format("truetype");
+  font-weight: 100 900;
   font-display: swap;
 }
 
@@ -30,15 +40,21 @@
   --vocs-content_horizontalPadding: clamp(1rem, 4vw, 3rem);
   --vocs-content_verticalPadding: clamp(1.5rem, 2.6vw, 2.25rem);
   --vocs-content_width: calc(76ch + (var(--vocs-content_horizontalPadding) * 2));
-  --vocs-fontFamily_default: "Exo 2", Rajdhani, sans-serif;
-  --vocs-fontFamily_mono: "Source Code Pro", monospace;
+  --docs-font-title: "Bokor", serif;
+  --docs-font-body: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --docs-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* The reading scale's table step: every table, MDX or component, reads it here and sets no size of its own. */
+  --docs-table-size: 15px;
+  --docs-table-leading: 22px;
+  --vocs-fontFamily_default: var(--docs-font-body);
+  --vocs-fontFamily_mono: var(--docs-font-mono);
 }
 
 html,
 body {
   background: var(--realm-bg-void) !important;
   color: var(--realm-text);
-  font-family: "Exo 2", sans-serif !important;
+  font-family: var(--docs-font-body) !important;
 }
 
 body::before {
@@ -61,16 +77,47 @@ h2,
 h3,
 h4 {
   color: var(--realm-title) !important;
-  font-family: "IM Fell English SC", Cinzel, serif !important;
-  font-weight: 400 !important;
+  font-family: var(--docs-font-body) !important;
+  font-weight: 700 !important;
   letter-spacing: 0 !important;
-  text-transform: uppercase;
+}
+
+/* The docs reading scale (docs-13 option C): the app's faces, sized for pages read through. */
+.vocs_Content h1,
+.vocs_Content .vocs_H1 {
+  font-family: var(--docs-font-title) !important;
+  font-weight: 400 !important;
+}
+
+.vocs_Content h2,
+.vocs_Content .vocs_H2 {
+  font-size: 24px !important;
+  line-height: 32px !important;
+}
+
+.vocs_Content h3,
+.vocs_Content .vocs_H3 {
+  font-size: 19px !important;
+  line-height: 28px !important;
+}
+
+.vocs_Content p,
+.vocs_Content li {
+  font-size: 17px;
+  line-height: 28px;
+  max-width: 70ch;
+}
+
+.vocs_Content td,
+.vocs_Content th {
+  font-size: var(--docs-table-size);
+  line-height: var(--docs-table-leading);
 }
 
 code,
 pre,
 .vocs_Code {
-  font-family: "Source Code Pro", monospace !important;
+  font-family: var(--docs-font-mono) !important;
 }
 
 .vocs_DocsLayout,
@@ -130,8 +177,8 @@ article.vocs_Content,
   margin-bottom: 0 !important;
   border: 0 !important;
   box-shadow: none !important;
-  font-size: clamp(1.55rem, 3.15vw, 2.45rem) !important;
-  line-height: 0.98 !important;
+  font-size: clamp(2rem, 1.4rem + 2.2vw, 2.75rem) !important;
+  line-height: 1.1 !important;
 }
 
 .vocs_Content .vocs_H2 {
@@ -263,7 +310,7 @@ article.vocs_Content,
 }
 
 .vocs_Sidebar a {
-  font-family: "Exo 2", sans-serif !important;
+  font-family: var(--docs-font-body) !important;
 }
 
 .vocs_Sidebar_sectionHeader {
@@ -288,12 +335,11 @@ article.vocs_Content,
 .vocs_Sidebar_sectionTitle {
   color: var(--realm-title) !important;
   cursor: pointer !important;
-  font-family: "IM Fell English SC", Cinzel, serif !important;
-  font-size: clamp(0.86rem, 0.74rem + 0.28vw, 1rem) !important;
-  font-weight: 400 !important;
+  font-family: var(--docs-font-body) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
   letter-spacing: 0 !important;
-  line-height: 1.05 !important;
-  text-transform: uppercase;
+  line-height: 20px !important;
   white-space: nowrap;
 }
 
@@ -589,11 +635,7 @@ article.vocs_Content,
 }
 
 .vocs_Content th {
-  font-family: "Exo 2", sans-serif;
   font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0;
-  text-transform: none;
   color: #c9a960;
   background-color: rgba(22, 27, 32, 0.92);
   border-bottom: 1px solid rgba(201, 169, 96, 0.28) !important;

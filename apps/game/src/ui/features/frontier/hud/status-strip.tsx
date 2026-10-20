@@ -1,20 +1,28 @@
+import { formatAmount, formatExact, formatDuration, formatRate } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import { ClockLine } from "@/ui/design-system/kit/clock-line";
-import { DayDial } from "@/ui/design-system/kit/day-dial";
-
-import { StoreBar } from "@/ui/design-system/kit/store-bar";
-import { formatDuration } from "@/ui/design-system/kit/time";
-import { TONE_TEXT, type Tone } from "@/ui/design-system/kit/tone";
-import { AN_HOUR, ESSENCE, FULL, FULL_IN, LABOR, OF, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+import { HudDial, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import type { Tone } from "@/ui/design-system/kit/tone";
+import {
+  DAY,
+  ESSENCE,
+  FULL,
+  FULL_IN,
+  LABOR,
+  OF,
+  TROOPS,
+  WHEAT,
+  dayEnds,
+  dayLeft,
+  phraseText,
+  tomorrowLasts,
+} from "@/ui/design-system/kit/words";
 import { useLandedValue, useLandingDelta } from "@/ui/motion/landing-hold";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { TickNumber } from "@/ui/motion/tick-number";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { guideTarget } from "../guide/guide-thread";
 import type { DayClock } from "./day-clock";
 
 export type StoreKind = "essence" | "labor" | "wheat" | "troops";
@@ -33,7 +41,14 @@ export type StoreReading = {
   flyTarget: string;
 };
 
-const STORES: Record<StoreKind, { icon: IconMeaning; word: string }> = {
+/** A store's tone on the sheet: calm reads as ink, within the hour as warn, at the limit as bad. */
+export const STORE_TONES: Record<Tone, { text: string; meter: "warn" | "bad" | undefined }> = {
+  calm: { text: "text-hud-ink", meter: undefined },
+  amber: { text: "text-hud-warn", meter: "warn" },
+  ember: { text: "text-hud-bad", meter: "bad" },
+};
+
+export const STORES: Record<StoreKind, { icon: IconMeaning; word: string }> = {
   essence: { icon: "essence", word: ESSENCE },
   labor: { icon: "labor", word: LABOR },
   wheat: { icon: "wheat", word: WHEAT },
@@ -53,38 +68,53 @@ export const StatusStrip = ({
   stores: StoreReading[];
   onOpenStores?: () => void;
 }) => (
-  <header className="frontier-card pointer-events-auto flex flex-col !rounded-xl px-1.5 pb-1 font-sans">
+  <HudPanel collapsible={false} bodyClassName="flex flex-col">
     <div className="flex h-12 items-center gap-1.5">
       <span className="flex w-11 shrink-0 justify-center">
-        <DayDial day={clock.day} shareLeft={clock.shareLeft} tone={clock.tone} />
+        <HudDial
+          value={clock.day ?? "—"}
+          share={clock.shareLeft ?? 0}
+          tone={STORE_TONES[clock.tone].meter}
+          label={clock.day === undefined ? DAY : `${DAY} ${clock.day}`}
+        />
       </span>
       <Stores stores={stores} onOpen={onOpenStores} />
     </div>
-    <ClockLine
-      endsAt={clock.endsAt}
-      secondsLeft={clock.secondsLeft}
-      tomorrowSeconds={clock.tomorrowSeconds}
-      tone={clock.tone}
-    />
-  </header>
+    <DayClockLine clock={clock} />
+  </HudPanel>
+);
+
+/** The day's clock in words, in the day's tone: "Day ends 21:40 · 7h 14m left · Tomorrow lasts 12h"; unknown a dash. */
+const DayClockLine = ({ clock }: { clock: DayClock }) => (
+  <p
+    role="timer"
+    className={cn(
+      "flex flex-wrap items-baseline justify-center gap-x-1 text-hud-label tabular-nums",
+      STORE_TONES[clock.tone].text,
+    )}
+  >
+    <span>{phraseText(dayEnds(clock.endsAt))}</span>
+    <span aria-hidden>·</span>
+    <span>{phraseText(dayLeft(clock.secondsLeft))}</span>
+    <span aria-hidden>·</span>
+    <span>{phraseText(tomorrowLasts(clock.tomorrowSeconds))}</span>
+  </p>
 );
 
 const Stores = ({ stores, onOpen }: { stores: StoreReading[]; onOpen?: () => void }) => {
   const plates = stores.map((store) => <StorePlate key={store.kind} store={store} />);
   const layout = "flex h-full min-w-0 flex-1 items-stretch gap-1";
   return onOpen ? (
-    <button type="button" onClick={onOpen} className={layout} {...guideTarget("stores")}>
+    <button type="button" onClick={onOpen} className={layout}>
       {plates}
     </button>
   ) : (
-    <div className={layout} {...guideTarget("stores")}>
-      {plates}
-    </div>
+    <div className={layout}>{plates}</div>
   );
 };
 
 /**
- * A store in one line, as its plate says it when asked: "Wheat 1,771 of 6,000 · +302 an hour · Full in 14h". Each part
+ * A store in one line, as its plate says it when asked: "Wheat 1,771 of 6,000 · +5/min · Full in 14h". Each part
  * is there only when the game's facts give it; a full store says Full in place of a rate it no longer earns.
  */
 export const storeLine = ({ kind, amount, limit, perHour, fullIn }: StoreReading): string => {
@@ -92,8 +122,8 @@ export const storeLine = ({ kind, amount, limit, perHour, fullIn }: StoreReading
   if (limit === undefined) return held;
   const against = `${held} ${OF} ${formatExact(limit)}`;
   if (fullIn === 0) return `${against} · ${FULL}`;
-  const rate = perHour !== undefined && perHour > 0 ? ` · +${formatAmount(perHour)} ${AN_HOUR}` : "";
-  return `${against}${rate}${fullIn === undefined ? "" : ` · ${FULL_IN} ${formatDuration(fullIn)}`}`;
+  const rate = perHour !== undefined && perHour > 0 ? ` · ${formatRate(perHour / 3600)}` : "";
+  return `${against}${rate}${fullIn === undefined ? "" : ` · ${FULL_IN} ${formatDuration(fullIn, { days: false })}`}`;
 };
 
 /**
@@ -115,22 +145,33 @@ const StorePlate = ({ store }: { store: StoreReading }) => {
           <span data-fly-target={store.flyTarget} className="inline-flex">
             <SemanticIcon name={icon} size={18} />
           </span>
-          <span className={cn("text-base leading-none tabular-nums", TONE_TEXT[store.tone])}>
+          <span className={cn("text-hud-body leading-none tabular-nums", STORE_TONES[store.tone].text)}>
             {shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}
           </span>
         </span>
-        <StoreBar amount={store.amount} limit={store.limit} tone={store.tone} />
+        <StoreMeter store={store} />
       </span>
     </span>
   );
 };
 
+/** How full a store is against its limit; a store with no limit (Essence) keeps the bar's room so the plates align. */
+const StoreMeter = ({ store }: { store: StoreReading }) =>
+  store.limit === undefined ? (
+    <span aria-hidden className="block h-1 w-full" />
+  ) : (
+    <HudMeter
+      share={store.amount === undefined || store.limit <= 0 ? 0 : store.amount / store.limit}
+      tone={STORE_TONES[store.tone].meter}
+      label={STORES[store.kind].word}
+    />
+  );
+
 /** A landing's "+N" shows this long, and never again when the counter remounts. */
 const DELTA_MS = 1_400;
-const delta = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
 /** The plate's "+N" as a payout lands: it pops above the number and fades as it rises. */
-const LandingDelta = ({ target }: { target: string }) => {
+export const LandingDelta = ({ target }: { target: string }) => {
   const landing = useLandingDelta(target);
   const reduced = useReducedMotion();
   return (
@@ -139,12 +180,12 @@ const LandingDelta = ({ target }: { target: string }) => {
         <motion.span
           key={landing.at}
           aria-live="polite"
-          className="pointer-events-none absolute -top-5 right-0 whitespace-nowrap text-sm font-semibold text-gold tabular-nums"
+          className="pointer-events-none absolute -top-5 right-0 whitespace-nowrap text-hud-strong text-hud-ink tabular-nums"
           initial={{ opacity: 0, y: 0, scale: reduced ? 1 : 0.8 }}
           animate={{ opacity: [0, 1, 1, 0], y: reduced ? 0 : -14, scale: 1 }}
           transition={{ duration: DELTA_MS / 1000, times: [0, 0.1, 0.7, 1], ease: EASE.outQuart }}
         >
-          +{delta.format(landing.amount)}
+          +{formatAmount(landing.amount)}
         </motion.span>
       )}
     </AnimatePresence>

@@ -30,11 +30,9 @@ export interface ChestRequest {
   requestBlock: number;
 }
 export type ChestChange = { kind: "requested"; request: ChestRequest } | { kind: "finished"; tokenId: string };
-export interface ChestPage extends Page<ChestChange> {
-  head: number;
-}
+export type ChestPage = LedgerPage<ChestChange>;
 export interface ChestPorts {
-  changes(fromBlock: number, cursor: string | null): RelayEffect<ChestPage>;
+  changes(fromBlock: number, cursor: string | null, anchor?: LedgerAnchor): RelayEffect<ChestPage>;
   head(): RelayEffect<number>;
   chest(
     tokenId: string,
@@ -108,12 +106,16 @@ export interface LaborClaim {
   realmsId: string;
   account: string;
 }
-export interface LedgerPage<A> extends Page<A> {
-  head: number;
-}
-export interface Page<A> {
+export interface LedgerPage<A> {
   rows: readonly A[];
   next: string | null;
+  head: number;
+  anchor: LedgerAnchor;
+  rewind: boolean;
+}
+export interface LedgerAnchor {
+  number: number;
+  hash: string;
 }
 
 /** Domain ports; receipt decoding and contract calls belong to the published contract adapters. */
@@ -158,8 +160,12 @@ export interface MonitorPorts {
   };
   ledger: {
     frontierPool(chainId: string, gameId: number): RelayEffect<string>;
-    paidClaims(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<PaidClaim>>;
-    postedResults(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<BlitzCommitment>>;
+    paidClaims(after: string | null, fromBlock?: number, anchor?: LedgerAnchor): RelayEffect<LedgerPage<PaidClaim>>;
+    postedResults(
+      after: string | null,
+      fromBlock?: number,
+      anchor?: LedgerAnchor,
+    ): RelayEffect<LedgerPage<BlitzCommitment>>;
     pause(): RelayEffect<void>;
   };
 }
@@ -183,6 +189,7 @@ export const relayOperation = <A>(operation: string, run: () => Promise<A>): Rel
   });
 
 export const relayServiceErrors = [
+  "ledger_head_behind_anchor",
   "shard_abi_unavailable",
   "frontier_funding_missing",
   "frontier_funding_differs_from_game",

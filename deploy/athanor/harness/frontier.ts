@@ -27,6 +27,7 @@ import {
   waitForWorldState,
 } from "@bibliothecadao/eternum";
 import { generateBuildablePositions } from "@bibliothecadao/eternum/automation";
+import { TransactionType } from "@bibliothecadao/provider";
 import {
   BUILDINGS_CENTER,
   getNeighborHexes,
@@ -62,11 +63,11 @@ import {
 // Frontier's own day unit: the evidence's time scale is how much faster a run's unit is.
 const DESIGN_DAY_UNIT_SECONDS = 14_400;
 const precision = BigInt(RESOURCE_PRECISION);
-/** Every guarded Frontier site an army may attack: camps, rifts, stragglers and the day's ruin. */
+/** Every guarded Frontier site an army may attack: camps, rifts, beasts and the day's ruin. */
 const GUARDED_SITES = new Set<number>([
   StructureType.Camp,
   StructureType.Rift,
-  StructureType.Stragglers,
+  StructureType.Beasts,
   StructureType.Ruin,
 ]);
 
@@ -643,8 +644,12 @@ interface Action {
   charge?: WheatCharge;
 }
 
-function command(client: GameClient, player: Player, value: NativeCommand): Action {
-  return { kind: value.kind, run: () => client.setup.network.provider.submitCommand(player.identity.account, value) };
+/** A planned command, sent as the client sends it: under its own transaction type, which names it in the feed. */
+function command(client: GameClient, player: Player, value: NativeCommand, type: TransactionType): Action {
+  return {
+    kind: value.kind,
+    run: () => client.setup.network.provider.submitCommand(player.identity.account, value, type),
+  };
 }
 
 function chooseAction(client: GameClient, game: HarnessGame, player: Player): Action | undefined {
@@ -699,7 +704,7 @@ function planUpgrade(client: GameClient, player: Player): Action | undefined {
   const realm = home(client, player);
   const store = client.setup.store;
   const essence = balance(client, player, 38);
-  const candidates: Array<{ cost: bigint; action: NativeCommand }> = [];
+  const candidates: Array<{ cost: bigint; action: NativeCommand; type: TransactionType }> = [];
   const recipe = store.get("UpgradeRecipe", { game_id: client.gameId, level: realm.base.level + 1 });
   if (
     recipe &&
@@ -708,6 +713,7 @@ function planUpgrade(client: GameClient, player: Player): Action | undefined {
     candidates.push({
       cost: recipe.costs.find((cost) => cost.resource_type === 38)?.amount ?? 0n,
       action: { kind: "LevelUp", value: player.realmId },
+      type: TransactionType.LEVEL_UP,
     });
   // Research the cheapest open row's next tier, always on its first side: Fields, Tools, Drill, camps.
   const learned = store.require("RealmKnowledge", { game_id: client.gameId, structure_id: player.realmId }).learned;
@@ -720,10 +726,11 @@ function planUpgrade(client: GameClient, player: Player): Action | undefined {
       candidates.push({
         cost: price.essence,
         action: { kind: "Research", value: { structure_id: player.realmId, row, choice: 0 } },
+        type: TransactionType.RESEARCH,
       });
   }
   const selected = candidates.sort((a, b) => Number(a.cost - b.cost))[0];
-  return selected ? command(client, player, selected.action) : undefined;
+  return selected ? command(client, player, selected.action, selected.type) : undefined;
 }
 // Buildings of a type on the realm board, the castle's own workshop aside.
 function standing(client: GameClient, player: Player, category: number): number {
@@ -801,13 +808,18 @@ function planStorageDemolition(
 ): Action | undefined {
   const surplusFarm = buildings.find((building) => building.category === 37);
   return surplusFarm
-    ? command(client, player, {
-        kind: "DestroyBuilding",
-        value: {
-          structure_id: player.realmId,
-          coord: { alt: false, x: surplusFarm.inner_col, y: surplusFarm.inner_row },
+    ? command(
+        client,
+        player,
+        {
+          kind: "DestroyBuilding",
+          value: {
+            structure_id: player.realmId,
+            coord: { alt: false, x: surplusFarm.inner_col, y: surplusFarm.inner_row },
+          },
         },
-      })
+        TransactionType.DESTROY_BUILDING,
+      )
     : undefined;
 }
 function planMuster(client: GameClient, player: Player): Action | undefined {
@@ -843,16 +855,21 @@ function planMuster(client: GameClient, player: Player): Action | undefined {
   );
   if (!spawn) return;
   return {
-    ...command(client, player, {
-      kind: "CreateExplorer",
-      value: {
-        structure_id: player.realmId,
-        category: 0,
-        tier: 0,
-        amount: troops * precision,
-        direction: spawn.direction,
+    ...command(
+      client,
+      player,
+      {
+        kind: "CreateExplorer",
+        value: {
+          structure_id: player.realmId,
+          category: 0,
+          tier: 0,
+          amount: troops * precision,
+          direction: spawn.direction,
+        },
       },
-    }),
+      TransactionType.EXPLORER_CREATE,
+    ),
     charge: { kind: "CreateExplorer", troopResource: ResourcesIds.Knight, troops },
   };
 }
@@ -883,18 +900,23 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
     const amount = game.explorerStamina(safeInteger(army.explorer_id), game.currentTicks().default);
     const upgrade = affordableUpgrade(client, safeInteger(army.explorer_id));
     if (upgrade)
-      return command(client, player, {
-        kind: "BuyTier",
-        value: {
-          explorer_id: army.explorer_id,
-          attribute: { kind: upgrade, value: undefined },
-          // A bot's Scouting raises rifts, the Essence it spends on research and depths.
-          kind:
-            upgrade === "Scouting"
-              ? { kind: "Some", value: { kind: "Rift", value: undefined } }
-              : { kind: "None", value: undefined },
+      return command(
+        client,
+        player,
+        {
+          kind: "BuyTier",
+          value: {
+            explorer_id: army.explorer_id,
+            attribute: { kind: upgrade, value: undefined },
+            // A bot's Scouting raises rifts, the Essence it spends on research and depths.
+            kind:
+              upgrade === "Scouting"
+                ? { kind: "Some", value: { kind: "Rift", value: undefined } }
+                : { kind: "None", value: undefined },
+          },
         },
-      });
+        TransactionType.BUY_TIER,
+      );
     const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);
     const neighbors = getNeighborHexes(coord.x, coord.y);
     const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
@@ -914,7 +936,12 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
     if (depth > 0 && atEntrance) {
       const cost = client.setup.store.require("DepthRules", { game_id: client.gameId, depth }).entry_stamina;
       if (amount < cost) continue;
-      const enter = command(client, player, { kind: "EnterDepth", value: { explorer_id: army.explorer_id, depth } });
+      const enter = command(
+        client,
+        player,
+        { kind: "EnterDepth", value: { explorer_id: army.explorer_id, depth } },
+        TransactionType.ENTER_DEPTH,
+      );
       enter.after = () => {
         day.otherStamina += cost;
       };
@@ -934,10 +961,15 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
         campAttempt = { armyId: safeInteger(army.explorer_id), siteId: safeInteger(target.entity_id), lost: false };
         day.campAttempts.push(campAttempt);
       }
-      const attack = command(client, player, {
-        kind: "BattleGuard",
-        value: { attacker_id: army.explorer_id, defender_id: target.entity_id },
-      });
+      const attack = command(
+        client,
+        player,
+        {
+          kind: "BattleGuard",
+          value: { attacker_id: army.explorer_id, defender_id: target.entity_id },
+        },
+        TransactionType.ATTACK_EXPLORER_VS_GUARD,
+      );
       attack.after = async (result) => {
         day.exchanges++;
         const exchanges = (player.siteExchanges.get(safeInteger(target.entity_id)) ?? 0) + 1;
@@ -993,10 +1025,15 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
     const ticks = game.currentTicks();
     if (frontier && armyActions.canExplore(ticks.default)) {
       const explore = {
-        ...command(client, player, {
-          kind: "Explore",
-          value: { explorer_id: army.explorer_id, direction: frontier.direction },
-        }),
+        ...command(
+          client,
+          player,
+          {
+            kind: "Explore",
+            value: { explorer_id: army.explorer_id, direction: frontier.direction },
+          },
+          TransactionType.EXPLORE,
+        ),
         charge: { kind: "Explore" as const, troops: army.troops.count / precision },
       };
       explore.after = () => {
@@ -1010,10 +1047,15 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       const direction = pathToUnexplored(client, army);
       if (direction !== undefined) {
         const move = {
-          ...command(client, player, {
-            kind: "Move",
-            value: { explorer_id: army.explorer_id, directions: [direction] },
-          }),
+          ...command(
+            client,
+            player,
+            {
+              kind: "Move",
+              value: { explorer_id: army.explorer_id, directions: [direction] },
+            },
+            TransactionType.TRAVEL_HEX,
+          ),
           charge: { kind: "Move" as const, troops: army.troops.count / precision },
         };
         move.after = () => {

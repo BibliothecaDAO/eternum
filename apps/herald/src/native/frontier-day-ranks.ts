@@ -7,6 +7,7 @@ import { integer, number, required } from "./values";
 import { historyEventOf, type HistoryStore } from "../history-store";
 import type { FoldRow } from "../types";
 import type { NativeIngestion } from "./ingestion";
+import { frontierRewardOf } from "./frontier-rewards";
 
 /** The pre-boundary snapshot is authoritative for depth and membership; later live rows cannot recover these ranks. */
 export function closingFrontierDays(
@@ -95,7 +96,7 @@ export async function replayWithFrontierDays(
       if (boundaries.length) {
         const stories = events.flatMap((event) => {
           const item = historyEventOf(event);
-          return item && isFrontierReward(item) ? [item] : [];
+          return item && frontierRewardOf(item) ? [item] : [];
         });
         for (const gameId of new Set(boundaries.map((day) => day.game_id))) {
           if (!previousHistory.has(gameId)) {
@@ -127,14 +128,4 @@ export async function replayWithFrontierDays(
       ),
   });
   return { ...replay, frontierDays };
-}
-
-function isFrontierReward(event: HeraldHistoryEvent): boolean {
-  const story = event.value.story;
-  return (
-    event.model === "StoryEvent" &&
-    typeof story === "object" &&
-    story !== null &&
-    (Object.hasOwn(story, "SitePayout") || Object.hasOwn(story, "ExplorationReward"))
-  );
 }

@@ -1,4 +1,4 @@
-import production from "../../../contracts/common/addresses/mainnet.json";
+import dev from "../../../contracts/common/addresses/dev.json";
 import { hash } from "starknet";
 import { beforeAll, expect, it } from "vitest";
 import { buildWorkerBundle, migrationStatements, newStorage, ORIGIN, startWorker, vapidKeys } from "./workerd-harness";
@@ -19,7 +19,7 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
   let unavailable = false;
   const worker = await startWorker({
     bundle,
-    environment: "production",
+    environment: "staging",
     storage: newStorage(),
     vapid: await vapidKeys(),
     outbound: async (request) => {
@@ -64,7 +64,7 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
       },
     });
     expect(calls.find((call) => call.method === "starknet_call")!.params).toMatchObject({
-      request: { contract_address: production.mmrToken, calldata: ["0xa"] },
+      request: { contract_address: dev.mmrToken, calldata: ["0xa"] },
       block_id: { block_hash: "0xabc" },
     });
     points = 1300n;
@@ -115,7 +115,7 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
         .map((call) => (call.params as { filter: { from_block: unknown; to_block: unknown } }).filter),
     ).toEqual([
       expect.objectContaining({
-        address: production.mmrToken,
+        address: dev.mmrToken,
         from_block: { block_number: 100 },
         to_block: { block_number: 124 },
       }),

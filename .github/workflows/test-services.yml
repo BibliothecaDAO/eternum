@@ -32,6 +32,8 @@ jobs:
         run: pnpm --dir apps/realms test
       - name: Test the launch Worker on D1
         run: pnpm --dir apps/launch-service test
+      - name: Test the admin Worker behind Access, on D1 and R2
+        run: pnpm --dir apps/admin test
       - name: Test value relay and independent payout checks
         run: pnpm --dir apps/value-relay test
       - name: Test shared ledger readers
@@ -43,6 +45,7 @@ jobs:
           pnpm --dir apps/realms typecheck
           pnpm --dir apps/guardian typecheck
           pnpm --dir apps/launch-service typecheck
+          pnpm --dir apps/admin typecheck
           pnpm --dir apps/status-monitor typecheck
           pnpm --dir apps/value-relay typecheck
           pnpm --dir packages/value-ledger typecheck

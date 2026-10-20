@@ -16,6 +16,15 @@ function optimizeModel(model) {
   const input = fileURLToPath(new URL(`public/models/${model}`, app));
   const output = input.replace(/\.glb$/, ".compressed.glb");
   const beforeBytes = statSync(input).size;
+  const bytes = readFileSync(input);
+  const existing = JSON.parse(bytes.toString("utf8", 20, 20 + bytes.readUInt32LE(12)));
+  if (
+    existing.meshes.every((mesh) =>
+      mesh.primitives.every((primitive) => primitive.extensions?.KHR_draco_mesh_compression),
+    ) &&
+    existing.images.every((image) => image.mimeType === "image/ktx2")
+  )
+    return;
   if (model === "ethereal/spire.glb") {
     // Retain the hierarchy and zero-scale current resets; only remove redundant keys.
     execFileSync(gltfTransform, ["resample", input, output, "--tolerance", "0.000001"], { stdio: "inherit" });
@@ -25,7 +34,12 @@ function optimizeModel(model) {
     stdio: "inherit",
   });
   // Draco compresses geometry without flattening the spire's animated hierarchy.
-  execFileSync(gltfTransform, ["draco", input, output, "--method", "edgebreaker"], { stdio: "inherit" });
+  const skinPrecision = model.startsWith("characters/t1-knight-default/")
+    ? ["--quantize-position", "20", "--quantize-generic", "20"]
+    : [];
+  execFileSync(gltfTransform, ["draco", input, output, "--method", "edgebreaker", ...skinPrecision], {
+    stdio: "inherit",
+  });
   renameSync(output, input);
   console.log(JSON.stringify({ model, beforeBytes, afterBytes: statSync(input).size }));
 }

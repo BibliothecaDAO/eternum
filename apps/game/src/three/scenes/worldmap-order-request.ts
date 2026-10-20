@@ -29,7 +29,8 @@ export const pinsOrder = (path: ActionPath[] | undefined): boolean => {
 
 /**
  * What a tap on a tile means for the selected army, the same tap for every order: a tile it can explore or move to
- * pins that order (the HUD shows its costs and its verb), a target in its reach opens the attack's preview with its
+ * pins that order (where the HUD carries the verb, it shows the costs and the verb; elsewhere the order's preview opens
+ * at the tile with them), a target in its reach opens the attack's preview with its
  * confirm, and a standing site out of its reach still opens that site's card for this army, which says what it lacks.
  * Anything else keeps its own tap.
  */
@@ -65,3 +66,28 @@ export const stepBackOnEscape = ({
   if (hudCarriesOrderVerb) return orderPinned ? "cancel-order" : "clear-selection";
   return navigationViewOpen ? "close-view" : "clear-selection";
 };
+
+/**
+ * Whether the HUD carries the order's verb: Frontier's on a phone, which has no pointer to hover. There a tap names the
+ * order's tile and the HUD confirms it. Elsewhere (Blitz, and Frontier on a desktop: the owner, 19 October 2026, "I
+ * dont see on desktop why it wouldnt be contextual the explore") the order under the pointer is the preview.
+ */
+export const orderVerbOnHud = ({ frontier, layout }: { frontier: boolean; layout: "phone" | "desktop" }): boolean =>
+  frontier && layout === "phone";
+
+/**
+ * Whether an attack is confirmed on the target's tile card, the HUD's sheet for the selected tile, rather than the
+ * attack preview. A standing expedition site always is. In Frontier, on every layout, so is an army's attack on another
+ * army: one surface for whatever an army attacks. A realm's own guard attacking still opens the preview.
+ */
+export const attackConfirmsOnTileCard = ({
+  frontier,
+  standingSite,
+  attackerIsArmy,
+  targetIsArmy,
+}: {
+  frontier: boolean;
+  standingSite: boolean;
+  attackerIsArmy: boolean;
+  targetIsArmy: boolean;
+}): boolean => standingSite || (frontier && attackerIsArmy && targetIsArmy);

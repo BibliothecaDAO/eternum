@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { BuildingType, BuildingTypeToString, ResourcesIds } from "@bibliothecadao/types";
+import { GameProvider } from "@/hooks/context/game-context";
+import { BuildingType, buildingName, ResourcesIds } from "@bibliothecadao/types";
+import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BuildingCard } from "@/ui/features/settlement/construction/select-preview-building";
+
+import { installBuildingRules, installFixtureGame, PLAYER } from "./fixture-game";
 
 const buildings = [
   BuildingType.ResourceWheat,
   BuildingType.WorkersHut,
+  BuildingType.ResourceLabor,
   BuildingType.ResourceDonkey,
   BuildingType.Storehouse,
   BuildingType.ResourceFish,
@@ -19,8 +24,24 @@ const buildings = [
   BuildingType.ResourceEssence,
 ];
 
-/** Real responsive construction cards; local counts let the controls be reviewed without a transaction. */
+/**
+ * Real responsive construction cards on the lab's fixture game, which holds the building rules and recipes a card's
+ * details read; local counts let the controls be reviewed without a transaction.
+ */
 export function ConstructionLab() {
+  const [store] = useState(() => {
+    const store = installFixtureGame();
+    installBuildingRules(store, buildings);
+    return store;
+  });
+  return (
+    <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: PLAYER } as never}>
+      <ConstructionCards />
+    </GameProvider>
+  );
+}
+
+const ConstructionCards = () => {
   const [counts, setCounts] = useState<Partial<Record<BuildingType, number>>>({});
   const [paused, setPaused] = useState<Partial<Record<BuildingType, boolean>>>({});
   const [selected, setSelected] = useState<BuildingType | null>(null);
@@ -33,16 +54,18 @@ export function ConstructionLab() {
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
         {buildings.map((building) => {
           const count = counts[building] ?? 1;
+          const name = buildingName(building, true);
           return (
-            <section key={building} aria-label={BuildingTypeToString[building]}>
+            <section key={building} aria-label={name}>
               <BuildingCard
                 buildingId={building}
-                buildingName={BuildingTypeToString[building]}
+                buildingName={name}
                 active={selected === building}
                 onClick={() => setSelected(building)}
                 count={count}
                 badge={<span>{count} built</span>}
-                toolTip={<p>Building model preview</p>}
+                entityId={undefined}
+                useSimpleCost={false}
                 requirements={[{ resource: ResourcesIds.Wood, current: 100, amount: 10 }]}
                 onBuild={() => setCounts({ ...counts, [building]: count + 1 })}
                 onDestroy={() => setCounts({ ...counts, [building]: Math.max(0, count - 1) })}
@@ -55,4 +78,4 @@ export function ConstructionLab() {
       </div>
     </main>
   );
-}
+};

@@ -1,6 +1,8 @@
+import { gameEndIsNear, type endgameFrame } from "../effects/endgame/sequence";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
+import { forgetCameraView, publishCameraView } from "./worldmap-camera-view";
 import { followArmyLayerChange } from "./worldmap-layer-follow";
 import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
 import { TileOccupier } from "@bibliothecadao/types";
@@ -16,6 +18,10 @@ import { type ArmyProgressFacts, xpGained } from "@/ui/features/frontier/attribu
 import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
+import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
+import { isTransferPair } from "@/ui/features/economy/transfers/transfer-pair";
+import { dispatchRightClick } from "./worldmap-right-click";
+import { publishMapSelection } from "@/observability/map-selection";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
@@ -43,6 +49,7 @@ import {
   isPendingReservedHyperstructureCreation,
   submitActiveWorldBlitzHyperstructureCreation,
 } from "@/services/blitz/blitz-hyperstructure-creation";
+import { runWorldmapDoubleClick } from "./worldmap-double-click";
 import { HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { CombatPresentationCoordinator } from "@/three/combat/combat-presentation-coordinator";
@@ -54,6 +61,7 @@ import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
 import { bindOwnershipRings } from "./worldmap-ownership-rings";
 import { bindMapSelection } from "./worldmap-map-selection";
 import { reportSelectedArmy } from "./worldmap-selected-army-report";
+import { ORDER_PREVIEW_SURFACE, OrderPreview } from "./worldmap-order-preview";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { FrameBudgetWorkQueue, type FrameBudgetWorkLane } from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
@@ -70,7 +78,8 @@ import {
   Position,
   isOpenSpawnHex,
   isViewerOwner,
-  siteKindOf,
+  isExpeditionRealm,
+  structureMapPosition,
 } from "@bibliothecadao/eternum";
 import {
   requireActiveGameSyncRuntime,
@@ -118,8 +127,10 @@ import {
   getBlockTimestamp,
   findArmyReach,
   getTileAt,
+  type OrderRefusal,
   recordArmyMovementLatencyPhase,
   SelectableArmy,
+  StaminaManager,
 } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { inFlight } from "@/hooks/store/use-actions-in-flight";
@@ -138,24 +149,20 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
-import { Box3, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
+import { Box3, Group, Plane, Raycaster, Sphere, Vector2, Vector3 } from "three";
+import { zoomTowardCursor } from "./worldmap-zoom/worldmap-zoom-anchor";
+import { openMapArea } from "../utils/labels/hud-clearance";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
 import type { TerrainPresentationEvent } from "@/three/terrain/worldmap-procedural-terrain";
 import { getRendererDiagnosticActiveMode } from "@/three/renderer-diagnostics";
 import { requireBiomeTypeFromId } from "@/three/managers/biome-colors";
-import { CompactEntityLabelRenderer } from "@/three/managers/compact-entity-label-renderer";
+import { MapPlateLayer } from "@/three/map-plates/map-plate-layer";
+import { orderLineSize } from "@/three/map-plates/map-plate-layout";
 import { StrategicMarkerLayer, type StrategicArmyMarkerTier } from "@/three/managers/strategic-marker-layer";
 import { structureMarkerKind } from "./worldmap-structure-marker-kind";
 import { playerColorManager } from "@/three/systems/player-colors";
-import {
-  normalizeOwnerAddress,
-  resolveWorldmapContentLadder,
-  type WorldmapContentLadder,
-  type WorldmapLabelPriorityContext,
-} from "./worldmap-content-ladder";
-import { isExplicitSpectateSession } from "@/utils/spectator-session";
-import { LeaderboardManager } from "@bibliothecadao/eternum";
+import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "./worldmap-content-ladder";
 import type { TerrainUploadMetrics } from "@/three/terrain/procedural-terrain";
 import { hexCellKey } from "@/three/terrain/hex-cell-key";
 import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
@@ -255,15 +262,23 @@ import {
   recordWorldmapTerrainReadyDuration,
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
-import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
+import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "./worldmap-army-select-request";
+import { cameraHexOf } from "./worldmap-camera-target";
 import { offerSelectedArmyOrdersAtOutcome, sendSelectedArmyTravel } from "./worldmap-army-order-selection";
 import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-order";
 import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
-import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
+import {
+  attackConfirmsOnTileCard,
+  ORDER_REQUEST_EVENT,
+  orderOnTap,
+  orderVerbOnHud,
+  readOrderRequest,
+  stepBackOnEscape,
+} from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
-import { type OrderTip, orderTip } from "@/ui/features/frontier/hud/order-tip";
-import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
-import { showOrderTip } from "./worldmap-order-tip";
+import { layoutNow } from "@/shell/frame/layout";
+import { type OrderTip, orderFood, orderTip } from "@/ui/features/frontier/hud/order-tip";
+import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
@@ -280,7 +295,6 @@ import {
   resolveEntityActionPathsTransitionTokenSync,
   resolvePendingChunkRefreshUiReason,
   shouldRequestTileRefreshForStructureBoundsChange,
-  shouldClearEntitySelectionForChunkSwitch,
   shouldClearEntitySelectionForEntityActionTransition,
   shouldClearEntitySelectionForMissingActionPathOwnership,
   shouldForceShortcutNavigationRefresh,
@@ -443,6 +457,9 @@ import {
   type WorldmapVisualTerrainWindow,
 } from "./worldmap-terrain-presentation-runtime";
 
+/** A desktop order preview's order, as the player read it: the army, the tile, and the order's verb and cost there. */
+type PreviewedOrder = { army: ID; hex: HexPosition; tip: OrderTip };
+
 interface PreparedTerrainChunk {
   chunkKey: string;
   startRow: number;
@@ -577,6 +594,8 @@ const actorOnHex = (entity: { army?: { id: ID }; structure?: { id: ID } }) => {
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
+/** What a refused order says when its error names no reason. */
+const ORDER_NOT_SENT = "The order was not sent.";
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
 const SHORTCUT_NAVIGATION_DURATION_SECONDS = 0;
 const WORLDMAP_CHUNK_PHASE_TIMEOUT_MS = env.VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS;
@@ -597,7 +616,6 @@ function isSameWorldSpatialHex(hex: WorldSpatialHex | undefined, contract: { x: 
 }
 
 /** How many leaderboard leaders keep their name tags in the mid zoom band. */
-const TOP_OWNER_LABEL_COUNT = 10;
 
 /** One minimap zoom click moves the camera by two wheel notches. */
 const MINIMAP_ZOOM_STEP_DELTA = 240;
@@ -698,6 +716,8 @@ export default class WorldmapScene extends WarpTravel {
   private activePrefetches = 0;
   private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
+  /** Where the wheel last turned, which its zoom goes toward while it eases. */
+  private zoomCursor: Vector2 | null = null;
   private zoomInputTarget: HTMLElement | null = null;
   private readonly zoomCoordinator = new WorldmapZoomCoordinator({
     initialDistance: this.getCurrentCameraDistance(),
@@ -739,7 +759,7 @@ export default class WorldmapScene extends WarpTravel {
   private interactiveHexWindowKey: string | null = null;
 
   private armyManager!: ArmyManager;
-  private compactEntityLabelRenderer!: CompactEntityLabelRenderer;
+  private mapPlates!: MapPlateLayer;
   private readonly terrainMovementInteractionBuffer: TerrainMovementInteraction[] = [];
   private latestRenderVisualProfile?: RenderVisualProfile;
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
@@ -848,7 +868,6 @@ export default class WorldmapScene extends WarpTravel {
   }
   private handleTransactionProgress?: (...args: any[]) => void;
   private readonly cameraTargetHexUpdateIntervalMs = 100;
-  private readonly cameraDistanceUpdateEpsilon = 0.5;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
   private structureManager!: StructureManager;
   private memoryMonitor?: MemoryMonitor;
@@ -876,37 +895,32 @@ export default class WorldmapScene extends WarpTravel {
   private updateCameraTargetHex = () => {
     const normalizedHex = this.getCameraTargetHex();
     const contractHex = Position.fromNormalized({ x: normalizedHex.col, y: normalizedHex.row }).getContract();
-    const nextHex = { col: Number(contractHex.x), row: Number(contractHex.y) };
-    const state = useUIStore.getState();
-    const currentHex = state.cameraTargetHex;
-    const hexChanged = !currentHex || currentHex.col !== nextHex.col || currentHex.row !== nextHex.row;
-    const nextCameraDistance = Math.round(this.controls.object.position.distanceTo(this.controls.target) * 100) / 100;
-    const distanceChanged =
-      state.cameraDistance === null ||
-      Math.abs(state.cameraDistance - nextCameraDistance) >= this.cameraDistanceUpdateEpsilon;
-
-    if (!hexChanged && !distanceChanged) return;
-
-    const nextState: { cameraTargetHex?: typeof nextHex; cameraDistance?: number } = {};
-    if (hexChanged) nextState.cameraTargetHex = nextHex;
-    if (distanceChanged) nextState.cameraDistance = nextCameraDistance;
-    useUIStore.setState(nextState);
+    useUIStore.getState().setCameraTargetHex({ col: Number(contractHex.x), row: Number(contractHex.y) });
   };
-  private minimapCameraMoveTarget: { col: number; row: number } | null = null;
+  private minimapCameraMoveTarget: Position | null = null;
   private minimapCameraMoveThrottled?: ReturnType<typeof throttle>;
   private minimapCameraMoveHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
-    const detail = (event as CustomEvent<{ col: number; row: number }>).detail;
-    if (!detail) return;
+    const detail = (event as CustomEvent<Position>).detail;
+    if (!(detail instanceof Position)) return;
     this.minimapCameraMoveTarget = detail;
     this.minimapCameraMoveThrottled?.();
   };
   private stopChestOpenRequests?: () => void;
-  private armySelectRequestHandler = (event: Event) => {
-    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
-    const request = readArmySelectRequest(event);
-    if (request) void this.selectRequestedArmy(request.entityId, request.forSite);
+  private armySelectRequestHandler = () => {
+    if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) this.selectAwaitedArmy();
   };
+
+  /** Shown, the map takes the army selection asked while another view was showing. */
+  public override activateInputSurface(): void {
+    super.activateInputSurface();
+    this.selectAwaitedArmy();
+  }
+
+  private selectAwaitedArmy(): void {
+    const request = takeArmySelectRequest();
+    if (request) void this.selectRequestedArmy(request.entityId, request.forSite);
+  }
   private orderRequestHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     if (!canIssueOrders()) return;
@@ -923,6 +937,10 @@ export default class WorldmapScene extends WarpTravel {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     // The flight tween is leaving this scene: no target-hex, terrain-window or chunk-refresh churn on its way out.
     if (this.cameraOwnedByFlight) return;
+    // The minimap follows the camera in this same frame.
+    publishCameraView(this.controls.target, this.getCurrentCameraDistance());
+    // The line follows its tile across the screen.
+    this.pointerOrderTip.refresh();
     this.updateCameraTargetHexThrottled?.();
     this.refreshVisualTerrainWindowThrottled?.();
 
@@ -959,8 +977,6 @@ export default class WorldmapScene extends WarpTravel {
     if (parsePlayRoute(window.location)?.scene === "hex") return;
     this.clearSelection();
   };
-  private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
-  private notifiedBattleEvents = new Set<string>();
   private previouslyHoveredHex: HexPosition | null = null;
   private lastHoverReconciliation: WorldmapHoverReconciliationSnapshot | null = null;
 
@@ -990,6 +1006,16 @@ export default class WorldmapScene extends WarpTravel {
     recoveryTransitionToken: number;
   } | null = null;
   private actionPathsTransitionToken: number | null = null;
+  /** Why each tile the selected army's rules looked at offers no order; set with its paths (updateEntityActionPaths). */
+  private orderRefusals: Map<string, OrderRefusal> = new Map();
+  /** The order the open order preview names, while one is open. */
+  private previewedOrder: PreviewedOrder | null = null;
+  /** The line under the pointer: the order a right-click sends at its tile, or why none. */
+  private readonly pointerOrderTip = new PointerOrderTip(
+    (hex) => this.placeOrderTip(hex),
+    () => this.mapPlates.placeOrderLine(null),
+    (hex, line) => this.placeLineAt(hex, line),
+  );
   private readonly selectedArmyOrders = new SelectedArmyOrders({
     reach: (entityId) =>
       findArmyReach(requireActiveGameClient(), {
@@ -1008,8 +1034,6 @@ export default class WorldmapScene extends WarpTravel {
   private readonly chunkRecoveryProgress = createWorldmapChunkRecoveryProgress();
 
   // Label groups
-  private armyLabelsGroup!: Group;
-  private structureLabelsGroup!: Group;
   private chestLabelsGroup!: Group;
   private reservedHyperstructureManager!: ReservedHyperstructureManager;
   private spireManager!: SpireManager;
@@ -1175,18 +1199,12 @@ export default class WorldmapScene extends WarpTravel {
   private applyWorldmapVisualLimits(features: RenderVisualProfile): void {
     this.visibilityManager?.setAnimationMaxDistance(features.animationCullDistance);
     this.structureManager?.setAnimationCullDistance(features.animationCullDistance);
-    this.armyManager?.setLabelRenderDistance(features.labelRenderDistance);
-    this.structureManager?.setLabelRenderDistance(features.labelRenderDistance);
   }
 
   private initializeWorldmapManagers(): void {
     this.worldSpatialProjection = requireActiveGameSyncRuntime().requireWorldSpatialProjection();
     this.unbindMapSelection = bindMapSelection(this.worldSpatialProjection);
-    this.compactEntityLabelRenderer = new CompactEntityLabelRenderer(this.scene);
-    this.armyLabelsGroup = new Group();
-    this.armyLabelsGroup.name = "ArmyLabelsGroup";
-    this.structureLabelsGroup = new Group();
-    this.structureLabelsGroup.name = "StructureLabelsGroup";
+    this.mapPlates = new MapPlateLayer(() => document.getElementById("labelrenderer"));
     this.chestLabelsGroup = new Group();
     this.chestLabelsGroup.name = "ChestLabelsGroup";
     this.spireLabelsGroup = new Group();
@@ -1196,8 +1214,7 @@ export default class WorldmapScene extends WarpTravel {
       this.scene,
       this.renderChunkSize,
       this.worldSpatialProjection,
-      this.compactEntityLabelRenderer.createScope("army"),
-      this.armyLabelsGroup,
+      this.mapPlates.createScope("army"),
       this,
       this.game,
       this.visibilityManager,
@@ -1236,8 +1253,7 @@ export default class WorldmapScene extends WarpTravel {
       this.scene,
       this.renderChunkSize,
       this.worldSpatialProjection,
-      this.compactEntityLabelRenderer.createScope("structure"),
-      this.structureLabelsGroup,
+      this.mapPlates.createScope("structure"),
       this,
       this.fxManager,
       this.game,
@@ -1258,6 +1274,7 @@ export default class WorldmapScene extends WarpTravel {
       this.getTerrainSurface(),
       this.markLabelsDirty,
       this.createRuleSpires(),
+      this.compilePipelines,
     );
     this.mapSiteManager = new MapSiteManager(this.scene, this.worldSpatialProjection, this.getTerrainSurface());
     this.chestManager = new ChestManager(
@@ -1386,7 +1403,6 @@ export default class WorldmapScene extends WarpTravel {
       this.reconcileHoverLabelsForProjectionChanges(changes);
       this.refreshTerrainPropOccupancy();
       this.syncStructureMarkers(changes);
-      this.showSuggestedArmyDeployment();
     });
     const unsubscribeTerrainEcology = bindWorldmapTerrainEcologyRefresh({
       onStructureChanged: (current) => {
@@ -1469,6 +1485,10 @@ export default class WorldmapScene extends WarpTravel {
 
   private writeStructureMarker(structure: StructureSpatialRenderable): void {
     if (structure.reserved) return;
+    if (structure.clearedSite) {
+      this.strategicMarkers.removeStructure(structure.entityId);
+      return;
+    }
     const facts = this.structureManager.getStructureMarkerFacts(structure.entityId);
     if (!facts) return;
     const position = this.resolveMarkerWorldPosition(structure.hexCoords);
@@ -1633,13 +1653,15 @@ export default class WorldmapScene extends WarpTravel {
           y: previous.hexCoords.row,
         }).getNormalized();
         const currentStayedAtPreviousHex =
-          current?.hexCoords.col === previous.hexCoords.col && current.hexCoords.row === previous.hexCoords.row;
+          !current?.clearedSite &&
+          current?.hexCoords.col === previous.hexCoords.col &&
+          current.hexCoords.row === previous.hexCoords.row;
         if (!currentStayedAtPreviousHex && this.isHexInRetainedRenderArea(previousHex.x, previousHex.y)) {
           gameWorkerManager.updateStructureHex(previousHex.x, previousHex.y, null);
         }
       }
 
-      if (current && !current.reserved) {
+      if (current && !current.reserved && !current.clearedSite) {
         const currentHex = Position.fromContract({
           x: current.hexCoords.col,
           y: current.hexCoords.row,
@@ -1681,37 +1703,22 @@ export default class WorldmapScene extends WarpTravel {
     this.mapSiteManager.setModelVisible(ladder.structureModels);
     this.strategicMarkers.setVisible(ladder.band === CameraView.Far);
     this.commitStrategicMarkers();
-    this.refreshLabelPriorityContext();
+    this.refreshSelectedPlate();
     this.syncStructureManagerGauges();
   }
 
-  private refreshLabelPriorityContext(): void {
-    const context = this.buildLabelPriorityContext();
-    this.armyManager.setLabelPriorityContext(context);
-    this.structureManager.setLabelPriorityContext(context);
-  }
-
-  private buildLabelPriorityContext(): WorldmapLabelPriorityContext {
-    const hovered = this.currentHoverLabelHex ? this.getHexagonEntity(this.currentHoverLabelHex) : undefined;
-    const selectedEntityId = getLiveWorldmapEntityActions().selectedEntityId;
-    return {
-      isSpectator: isExplicitSpectateSession(),
-      topOwnerAddresses: this.resolveTopOwnerAddresses(),
-      selectedEntityId:
-        selectedEntityId === undefined || selectedEntityId === null ? null : safeInteger(selectedEntityId),
-      hoveredEntityId: hovered?.army?.id ?? hovered?.structure?.id ?? null,
-    };
-  }
-
-  /** Top-10 by the live leaderboard; recomputed only when a label-priority refresh asks for it. */
-  private resolveTopOwnerAddresses(): ReadonlySet<string> {
-    const leaderboard = LeaderboardManager.instance(this.game.store);
-    const top = new Set<string>();
-    leaderboard.playersByRank.slice(0, TOP_OWNER_LABEL_COUNT).forEach(([address]: [bigint, number]) => {
-      const key = normalizeOwnerAddress(address);
-      if (key) top.add(key);
-    });
-    return top;
+  /**
+   * The selected thing's plate stays open in its token's place: the army taking orders, else what stands on the selected
+   * hex (a structure is selected by its hex alone).
+   */
+  private refreshSelectedPlate(): void {
+    const selectedHex = useUIStore.getState().selectedHex;
+    const onSelectedHex = selectedHex ? this.getHexagonEntity(sceneHexOf(selectedHex)) : undefined;
+    const selectedEntityId =
+      getLiveWorldmapEntityActions().selectedEntityId ?? onSelectedHex?.army?.id ?? onSelectedHex?.structure?.id;
+    this.mapPlates.setSelected(
+      selectedEntityId === undefined || selectedEntityId === null ? null : safeInteger(selectedEntityId),
+    );
   }
 
   private registerWorldUpdateSubscriptions(): void {
@@ -1722,7 +1729,7 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.registerBattleWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
-    this.registerRelicChestWorldUpdateSubscriptions();
+    this.registerChestWorldUpdateSubscriptions();
     this.registerSitePayoutWorldUpdateSubscriptions();
     this.registerArmyProgressWorldUpdateSubscriptions();
   }
@@ -1782,16 +1789,16 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  // A flourish only, for crates inside the loaded chunk: the relics themselves land in native store on the army or its home,
+  // A flourish only, for crates inside the loaded chunk: the reward itself lands in native store on the army or its home,
   // and the feed row (the UI's) covers every opening in the world.
-  private registerRelicChestWorldUpdateSubscriptions(): void {
+  private registerChestWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
-      this.worldUpdateListener.RelicChest.onRelicChestOpened((opening) => {
+      this.worldUpdateListener.Chests.onChestOpened((opening) => {
         if (this.currentChunk === "null" || getActiveGameSyncRuntime()?.getStatus() !== "running") return;
         const hex = Position.fromContract({ x: opening.hex.x, y: opening.hex.y }).getNormalized();
         if (!this.isColRowInCurrentRenderBounds(hex.x, hex.y)) return;
-        const revealed = this.chestManager.revealRelics({ col: opening.hex.x, row: opening.hex.y }, opening.relics);
-        if (!revealed) void this.resourceFXManager.playRelicBurst(opening.relics, hex.x, hex.y);
+        const revealed = this.chestManager.revealReward({ col: opening.hex.x, row: opening.hex.y }, opening);
+        if (!revealed) void this.resourceFXManager.playChestRewardBurst(opening, hex.x, hex.y);
       }),
     );
   }
@@ -1806,8 +1813,6 @@ export default class WorldmapScene extends WarpTravel {
           this.recalculateArrowsForEntity(attackerId);
           this.recalculateArrowsForEntity(defenderId);
         }
-
-        this.notifyArmyUnderAttack(update);
       }),
     );
   }
@@ -1833,8 +1838,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private bindWorldmapSceneUiLifecycle(): void {
-    // Legacy canvas minimap has been replaced by the React minimap (BottomRightPanel/HexMinimap).
-    // We keep only the "minimapCameraMove" event bridge + cameraTargetHex updates for the UI.
+    // The minimap follows the camera through publishCameraView; it moves the camera through "minimapCameraMove".
     this.updateCameraTargetHexThrottled = throttle(this.updateCameraTargetHex, this.cameraTargetHexUpdateIntervalMs);
     this.refreshVisualTerrainWindowThrottled = throttle(() => {
       void this.refreshVisualTerrainWindowFromCamera();
@@ -1844,7 +1848,7 @@ export default class WorldmapScene extends WarpTravel {
       if (!target) {
         return;
       }
-      this.moveCameraToColRow(target.col, target.row, 0.25);
+      this.moveCameraToMapPosition(target, 0.25);
     }, 16);
 
     window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
@@ -1856,6 +1860,7 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     window.addEventListener("resize", this.handleTerrainViewportResize);
+    publishCameraView(this.controls.target, this.getCurrentCameraDistance());
     this.updateCameraTargetHexThrottled();
     this.refreshVisualTerrainWindowThrottled();
   }
@@ -1958,6 +1963,11 @@ export default class WorldmapScene extends WarpTravel {
 
       event.preventDefault();
       event.stopPropagation();
+      const surface = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      this.zoomCursor = new Vector2(
+        ((event.clientX - surface.left) / surface.width) * 2 - 1,
+        -((event.clientY - surface.top) / surface.height) * 2 + 1,
+      );
       this.applyWorldmapZoomIntent({ type: "continuous_delta", delta: normalizedWheelDelta.normalizedDelta });
     };
 
@@ -1992,6 +2002,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private applyDirectionalZoomIntent(zoomOut: boolean) {
+    this.zoomCursor = null;
     const delta = zoomOut ? MINIMAP_ZOOM_STEP_DELTA : -MINIMAP_ZOOM_STEP_DELTA;
     this.applyWorldmapZoomIntent({ type: "continuous_delta", delta });
   }
@@ -2001,6 +2012,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected override beginTouchNavigation(): void {
+    this.zoomCursor = null;
     this.publishWorldmapZoomSnapshot(this.zoomCoordinator.beginDirectManipulation(this.getCurrentCameraDistance()));
   }
 
@@ -2090,9 +2102,11 @@ export default class WorldmapScene extends WarpTravel {
     useCameraZoomStore.getState().setWorldmapDistance(settled);
   }
 
-  public override moveCameraToColRow(col: number, row: number, duration: number = 2) {
-    if (!this.reachWorldOrigin({ col, row })) return;
-    super.moveCameraToColRow(col, row, duration);
+  /** Moves the camera onto a map position, by the one conversion every camera target goes through. */
+  public moveCameraToMapPosition(position: Position, duration: number = 2): void {
+    const hex = cameraHexOf(position);
+    if (!this.reachWorldOrigin(hex)) return;
+    super.moveCameraToColRow(hex.col, hex.row, duration);
   }
 
   /**
@@ -2123,7 +2137,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private moveCameraToRouteWorldPosition(routeWorldPosition: HexPosition): void {
     const { col, row } = routeWorldPosition;
-    this.moveCameraToColRow(col, row, 0);
+    this.moveCameraToMapPosition(Position.fromNormalized({ x: col, y: row }), 0);
   }
 
   private requestURLLocationRefreshIfNeeded(shouldRequestRefresh: boolean): void {
@@ -2182,25 +2196,6 @@ export default class WorldmapScene extends WarpTravel {
       this.controls.target.y + Math.sin(pitch) * distance,
       this.controls.target.z + Math.cos(pitch) * distance,
     );
-  }
-
-  private focusCameraOnEvent(col: number, row: number, message: string) {
-    this.moveCameraToColRow(col, row, 2);
-
-    const uiStore = useUIStore.getState();
-    uiStore.setFollowingArmyMessage(message);
-    uiStore.setIsFollowingArmy(true);
-
-    if (this.followCameraTimeout) {
-      clearTimeout(this.followCameraTimeout);
-    }
-
-    this.followCameraTimeout = setTimeout(() => {
-      const store = useUIStore.getState();
-      store.setIsFollowingArmy(false);
-      store.setFollowingArmyMessage(null);
-      this.followCameraTimeout = null;
-    }, 3000);
   }
 
   private getEntityOwnerAddress(entityId: ID): ContractAddress | undefined {
@@ -2296,79 +2291,6 @@ export default class WorldmapScene extends WarpTravel {
     return Boolean((globalThis as { __ETERNUM_DEBUG_REWARD_EVENTS__?: boolean }).__ETERNUM_DEBUG_REWARD_EVENTS__);
   }
 
-  private getEntityLabel(entityId: ID): string {
-    if (this.worldSpatialProjection.getArmy(entityId)) {
-      return `Army #${entityId}`;
-    }
-    if (this.worldSpatialProjection.getStructure(entityId)) {
-      return `Structure #${entityId}`;
-    }
-    return `Entity #${entityId}`;
-  }
-
-  private markBattleNotificationHandled(key: string) {
-    this.notifiedBattleEvents.add(key);
-    if (this.notifiedBattleEvents.size > 100) {
-      const iterator = this.notifiedBattleEvents.values().next();
-      if (!iterator.done) {
-        this.notifiedBattleEvents.delete(iterator.value);
-      }
-    }
-  }
-
-  private openBattleLogsPanel() {
-    const uiStore = useUIStore.getState();
-    uiStore.setLeftNavigationView(LeftView.StoryEvents);
-  }
-
-  private notifyArmyUnderAttack(update: BattleEventSystemUpdate) {
-    const defenderId = update.battleData.defenderId;
-    if (typeof defenderId !== "number") {
-      return;
-    }
-
-    const defenderOwner = this.getEntityOwnerAddress(defenderId);
-    if (!defenderOwner || !isAddressEqualToAccount(defenderOwner)) {
-      return;
-    }
-
-    const focusPosition = this.getArmyDisplayPosition(defenderId) ?? this.getStructureHexPosition(defenderId);
-
-    const notificationKey = `${update.entityId}-${update.battleData.timestamp}`;
-    if (this.notifiedBattleEvents.has(notificationKey)) {
-      return;
-    }
-
-    this.markBattleNotificationHandled(notificationKey);
-
-    const attackerId = update.battleData.attackerId;
-    const defenderLabel = this.getEntityLabel(defenderId);
-    const attackerLabel = typeof attackerId === "number" ? this.getEntityLabel(attackerId) : "Unknown attacker";
-
-    toast(
-      <div className="flex flex-col gap-2">
-        <div className="text-gold font-bold">⚠️ {defenderLabel} under attack</div>
-        <div className="text-light-pink">Engaged by {attackerLabel}.</div>
-        <div className="flex gap-2 mt-2">
-          <button
-            className="bg-gold text-brown font-semibold px-3 py-1 rounded"
-            onClick={() => this.openBattleLogsPanel()}
-          >
-            View logs
-          </button>
-          {focusPosition && (
-            <button
-              className="bg-gold text-brown font-semibold px-3 py-1 rounded"
-              onClick={() => this.focusCameraOnEvent(focusPosition.col, focusPosition.row, "Following Combat Alert")}
-            >
-              Focus camera
-            </button>
-          )}
-        </div>
-      </div>,
-    );
-  }
-
   // methods needed to add worldmap specific behavior to the click events
   protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: Vector3 } | null): void {
     const nextHexCoords = hex?.hexCoords ?? null;
@@ -2394,6 +2316,7 @@ export default class WorldmapScene extends WarpTravel {
       this.previouslyHoveredHex = null;
       this.showOrderUnderPointer(null);
       this.state.setHoveredHex(null);
+      publishMapSelection({ hovered: null });
       this.interactiveHexManager.applyHoverPalette(hoverPalette);
 
       // Reset cursor when leaving hex
@@ -2403,7 +2326,7 @@ export default class WorldmapScene extends WarpTravel {
       this.currentHoverLabelHex = null;
       this.clearPendingHoverLabelRecovery("hex_leave");
       this.hoverLabelManager.onHexLeave();
-      this.refreshLabelPriorityContext();
+      this.refreshSelectedPlate();
       return;
     }
     const { hexCoords } = hex;
@@ -2415,27 +2338,41 @@ export default class WorldmapScene extends WarpTravel {
       });
     }
     this.previouslyHoveredHex = hexCoords;
+    const { structure: hoveredStructure } = this.getHexagonEntity(hexCoords);
+    publishMapSelection({
+      hovered: hoveredStructure
+        ? {
+            id: Number(hoveredStructure.id),
+            ownedByViewer: hoveredStructure.owner !== undefined && isAddressEqualToAccount(hoveredStructure.owner),
+            selectedHolding: Number(hoveredStructure.id) === Number(useUIStore.getState().structureEntityId),
+          }
+        : null,
+    });
 
     // Handle label expansion on hover
     this.currentHoverLabelHex = hexCoords;
     this.reconcileHoverLabels("hover");
-    this.refreshLabelPriorityContext();
+    this.refreshSelectedPlate();
 
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
     // are required to distinguish "no selection" from a real selected entity.
     const hasOrders = selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0;
-    if (hasOrders || this.hudCarriesOrderVerb()) this.showOrderUnderPointer(hexCoords);
+    if (hasOrders || this.hudCarriesOrderVerb() || this.selectedArmyId() !== null)
+      this.showOrderUnderPointer(hexCoords);
 
     this.interactiveHexManager.applyHoverPalette(hoverPalette);
   }
 
   /**
-   * Whether this game's HUD carries the order's verb (Frontier's). There a click names the order's tile and the HUD
-   * confirms it, and the pointer never moves a named order. The other modes' HUD has no verb: the order under the
-   * pointer is the preview. In every mode a right-click (a long-press) sends the order at once.
+   * Whether this game's HUD carries the order's verb (orderVerbOnHud): there the pointer never moves a named order. In
+   * every mode a right-click (a long-press) sends the order at once.
    */
   private hudCarriesOrderVerb(): boolean {
+    return orderVerbOnHud({ frontier: this.isFrontierHud(), layout: layoutNow() });
+  }
+
+  private isFrontierHud(): boolean {
     return hudFor(getGameModeId(), true) === "frontier";
   }
 
@@ -2445,42 +2382,80 @@ export default class WorldmapScene extends WarpTravel {
    * has revealed) and a click opens the preview.
    */
   private showOrderUnderPointer(hexCoords: HexPosition | null): void {
-    if (!this.hudCarriesOrderVerb()) {
-      this.state.updateEntityActionHoveredHex(hexCoords);
-      return;
-    }
-    const tip = hexCoords && this.nameOrderAt(hexCoords);
-    showOrderTip(tip && hexCoords ? { ...tip, at: projectHexToScreen(hexCoords, this.camera) } : null);
+    if (!this.hudCarriesOrderVerb()) this.state.updateEntityActionHoveredHex(hexCoords);
+    this.pointerOrderTip.point(hexCoords);
+  }
+
+  /** The tile's line where it sits on screen now; with an army selected in every mode, and always where the HUD names tiles. */
+  private placeOrderTip(hexCoords: HexPosition): PlacedOrderTip | null {
+    if (!this.hudCarriesOrderVerb() && this.selectedArmyId() === null) return null;
+    const tip = this.nameOrderAt(hexCoords);
+    if (!tip) return null;
+    // The line stands beside its tile, clear of the opened plates (the plate layer places them together).
+    const at = this.mapPlates.placeOrderLine({
+      at: projectHexToScreen(hexCoords, this.camera),
+      size: orderLineSize(tip.line, tip.cost),
+    });
+    return at && { ...tip, at };
+  }
+
+  /** A line of the scene's own words beside a tile, clear of the opened plates, as the order's line stands. */
+  private placeLineAt(hexCoords: HexPosition, line: string): PlacedOrderTip | null {
+    const at = this.mapPlates.placeOrderLine({
+      at: projectHexToScreen(hexCoords, this.camera),
+      size: orderLineSize(line, null),
+    });
+    return at && { line, cost: null, at };
+  }
+
+  /** The army whose orders the map shows, or null when the selection is no army. */
+  private selectedArmyId(): ID | null {
+    const { selectedEntityId } = getLiveWorldmapEntityActions();
+    if (selectedEntityId === null || selectedEntityId === undefined) return null;
+    return this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined ? selectedEntityId : null;
   }
 
   private nameOrderAt(hexCoords: HexPosition): OrderTip | null {
-    const { structure } = this.getHexagonEntity(hexCoords);
+    const key = ActionPaths.posKey(hexCoords, true);
+    const refusal = this.orderRefusals.get(key);
+    const path = getLiveWorldmapEntityActions().actionPaths.get(key);
+    const armyTroops = this.selectedArmyRow()?.troops;
     return orderTip({
-      path: getLiveWorldmapEntityActions().actionPaths.get(ActionPaths.posKey(hexCoords, true)),
-      target: structure ? this.siteWord(structure.id) : null,
+      path,
       exploreStamina: configManager.getExploreStaminaCost(),
+      food: armyTroops ? orderFood(path, armyTroops) : { wheat: 0, fish: 0 },
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
+      refusal,
+      staminaWait: refusal?.reason === "stamina" ? this.secondsUntilSelectedArmyHolds(refusal.need) : undefined,
     });
   }
 
-  /** A standing site as its card names it; null for anything else. */
-  private siteWord(entityId: ID): string | null {
-    if (!this.isStandingExpeditionSite(entityId)) return null;
-    const structure = this.game.store.require("Structure", {
+  /** The selected army's troops row, or undefined when the selection is no army. */
+  private selectedArmyRow() {
+    const armyId = this.selectedArmyId();
+    if (armyId === null) return undefined;
+    return this.game.store.get("ExplorerTroops", {
       game_id: configManager.getActiveGameId(),
-      entity_id: safeInteger(entityId),
+      explorer_id: safeInteger(armyId),
     });
-    return TARGET_MARKS[siteKindOf(structure.base.category)].word;
   }
 
-  // double-click reserved hyperstructure tiles to materialize them; otherwise enter the real structure
-  protected onHexagonDoubleClick(hexCoords: HexPosition) {
-    if (this.isReservedHyperstructureHex(hexCoords)) {
-      void this.createReservedHyperstructureFromWorldmap(hexCoords);
-      return;
-    }
+  /** Seconds until the selected army holds this much stamina, by the stamina rules the chain settles it with. */
+  private secondsUntilSelectedArmyHolds(need: number): number | undefined {
+    const row = this.selectedArmyRow();
+    const troops = row && resolveExplorerTroops(this.game.store, row);
+    if (!troops) return undefined;
+    const { currentDefaultTick } = getBlockTimestamp();
+    const ready = StaminaManager.getAffordableAt(troops, need, currentDefaultTick);
+    return ready === null ? undefined : Math.max(0, ready - currentDefaultTick);
+  }
 
-    this.enterStructureFromSelectedHex(hexCoords);
+  protected onHexagonDoubleClick(hexCoords: HexPosition) {
+    runWorldmapDoubleClick(hexCoords, {
+      isReservedHyperstructureSite: (hex) => this.isReservedHyperstructureHex(hex),
+      foundHyperstructure: (hex) => void this.createReservedHyperstructureFromWorldmap(hex),
+      enterStructure: (hex) => this.enterStructureFromSelectedHex(hex),
+    });
   }
 
   private enterStructureFromSelectedHex(hexCoords: HexPosition) {
@@ -2516,8 +2491,6 @@ export default class WorldmapScene extends WarpTravel {
       if (!didSubmit) {
         return;
       }
-
-      toast.success("Creating Hyperstructure...", { location: contract });
     } catch (error) {
       console.error("[Worldmap] Failed to create reserved hyperstructure", error);
       toast.failed(error, "Unable to create this Hyperstructure right now.");
@@ -2554,10 +2527,11 @@ export default class WorldmapScene extends WarpTravel {
     const army = this.getArmyAtHex({ col: hex.x, row: hex.y });
     const projectedStructure = this.worldSpatialProjection
       .getStructuresAtHex({ alt: activeMapLayer(), col: contractHex.x, row: contractHex.y })
-      .find((candidate) => !candidate.reserved);
-    const structure = projectedStructure
-      ? { id: projectedStructure.entityId, owner: this.getStructureOwnerAddress(projectedStructure.entityId) }
-      : undefined;
+      .find((candidate) => !candidate.reserved && !candidate.clearedSite);
+    const structure =
+      projectedStructure && !projectedStructure.reserved
+        ? { id: projectedStructure.entityId, owner: this.getStructureOwnerAddress(projectedStructure.entityId) }
+        : undefined;
     const projectedChest = this.worldSpatialProjection.getChestsAtHex({
       alt: activeMapLayer(),
       col: contractHex.x,
@@ -2651,6 +2625,18 @@ export default class WorldmapScene extends WarpTravel {
     return position;
   }
 
+  /** A click on a resting map token selects its thing: the army's or structure's own tile, never the tile behind it. */
+  protected resolveLabelClick(event: MouseEvent): HexPosition | null {
+    const key = this.mapPlates?.tokenAt(event.clientX, event.clientY);
+    if (!key) return null;
+    const [kind, id] = key.split(":");
+    if (kind === "army") {
+      const hex = this.armyManager.getArmy(Number(id))?.hexCoords.getNormalized();
+      return hex ? { col: hex.x, row: hex.y } : null;
+    }
+    return kind === "structure" ? (this.structureManager.getStructureHex(Number(id)) ?? null) : null;
+  }
+
   // hexcoords is normalized
   protected onHexagonClick(hexCoords: HexPosition | null) {
     if (
@@ -2733,36 +2719,48 @@ export default class WorldmapScene extends WarpTravel {
 
     const { structure } = this.getHexagonEntity(hexCoords);
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
-    const hasActiveEntityAction = selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0;
     const clickedHexKey = ActionPaths.posKey(hexCoords, true);
+    const isMineStructure = structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false;
 
     this.logInteractionDebug("right_click_received", {
       hexCoords,
       clickedHexKey,
       hasAccount: Boolean(account),
-      isMineStructure: structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false,
+      isMineStructure,
       ...this.getInteractionDebugSnapshot(),
     });
 
-    const isMineStructure = structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false;
-
-    if (structure && isMineStructure && !hasActiveEntityAction) {
-      this.logInteractionDebug("opening_owned_structure_context_menu", {
-        structureId: structure.id,
-        hexCoords,
-        ...this.getInteractionDebugSnapshot(),
-      });
-      this.interactionAdapter.openOwnedStructureContextMenu({
-        event,
-        structure,
-        hexCoords,
-      });
-      return;
-    }
-
-    // The fast order: an explore or a move leaves at once, and an attack opens its forecast, never sent unseen.
-    showOrderTip(null);
-    this.actAtHex(hexCoords);
+    const ui = useUIStore.getState();
+    const actorSelected = selectedEntityId !== null && selectedEntityId !== undefined;
+    dispatchRightClick(
+      {
+        orderAtTarget: actorSelected && actionPaths.has(clickedHexKey),
+        armySelected:
+          ui.mapSelection?.kind === "army" ||
+          (actorSelected && this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined),
+        selectedHoldingId: Number(ui.structureEntityId),
+        clickedHoldingId: structure && isMineStructure ? Number(structure.id) : null,
+        canTransferBetween: isTransferPair,
+        transfersAllowed: configManager.isCommandEnabled("SendResources"),
+      },
+      {
+        // The fast order: an explore or a move leaves at once, and an attack opens its forecast, never sent unseen.
+        order: () => {
+          this.pointerOrderTip.take();
+          this.actAtHex(hexCoords);
+        },
+        transfer: openTransfer,
+        menu: () => {
+          if (!structure) return;
+          this.logInteractionDebug("opening_owned_structure_context_menu", {
+            structureId: structure.id,
+            hexCoords,
+            ...this.getInteractionDebugSnapshot(),
+          });
+          this.interactionAdapter.openOwnedStructureContextMenu({ event, structure, hexCoords });
+        },
+      },
+    );
   }
 
   /**
@@ -2782,8 +2780,14 @@ export default class WorldmapScene extends WarpTravel {
       armySelected: this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined,
       standingSite: structure !== undefined && this.isStandingExpeditionSite(structure.id),
     });
-    if (order === "pin") {
+    if (order === "pin" && !this.hudCarriesOrderVerb()) {
+      this.openOrderPreview(hexCoords);
+    } else if (order === "pin") {
       // The tile becomes the order's target: its path and costs show, and the HUD's verb runs it.
+      const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+      const target = { alt: activeMapLayer(), col: contract.x, row: contract.y };
+      if (this.worldSpatialProjection.getStructuresAtHex(target).some((site) => site.clearedSite))
+        this.openTargetCardForSelectedArmy(target);
       this.state.updateEntityActionHoveredHex(hexCoords);
     } else if (order === "attack" && path) {
       this.onArmyAttack(path, selectedEntityId);
@@ -2792,8 +2796,56 @@ export default class WorldmapScene extends WarpTravel {
       this.openTargetCardForSelectedArmy({ col: contractHex.x, row: contractHex.y });
     }
     // The preview has the tile now; its name on the tooltip would only sit over it.
-    if (order !== null) showOrderTip(null);
+    if (order !== null) this.pointerOrderTip.take();
     return order !== null;
+  }
+
+  /**
+   * Where the HUD carries no verb (a desktop), a tap on a tile the army can explore or move to opens that order's
+   * preview at the tile, as a tap on a target opens the attack's: its cost and its verb, which sends it as the
+   * right-click does.
+   */
+  private openOrderPreview(hexCoords: HexPosition): void {
+    const army = this.selectedArmyId();
+    const tip = this.nameOrderAt(hexCoords);
+    if (army === null || !tip) return;
+    const shown: PreviewedOrder = { army, hex: hexCoords, tip };
+    this.previewedOrder = shown;
+    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    this.openTargetActionSurface(
+      { col: contract.x, row: contract.y },
+      { id: ORDER_PREVIEW_SURFACE, content: <OrderPreview tip={tip} onSend={() => this.sendPreviewedOrder(shown)} /> },
+    );
+  }
+
+  /** The preview's verb sends the order the player read, and only while it still is the army's order at that tile. */
+  private sendPreviewedOrder(shown: PreviewedOrder): void {
+    if (this.holdsPreviewedOrder(shown)) this.actAtHex(shown.hex);
+  }
+
+  /** The same army is selected, and its order at the tile reads as shown: the same verb at the same cost. */
+  private holdsPreviewedOrder(shown: PreviewedOrder): boolean {
+    const now = this.nameOrderAt(shown.hex);
+    return this.selectedArmyId() === shown.army && now?.line === shown.tip.line && now.cost === shown.tip.cost;
+  }
+
+  /**
+   * The open preview closes once its order no longer holds (a reveal turned the explore into a move, another army was
+   * selected, the cost changed, the tile left the army's reach): a verb never sends another order than it names.
+   */
+  private closeStaleOrderPreview(): void {
+    const shown = this.previewedOrder;
+    if (!shown) return;
+    const popover = usePopoverStore.getState();
+    if (popover.surface?.id === ORDER_PREVIEW_SURFACE && this.holdsPreviewedOrder(shown)) return;
+    this.previewedOrder = null;
+    if (popover.surface?.id === ORDER_PREVIEW_SURFACE) popover.closeSurface();
+  }
+
+  /** What the selected army's orders read changed: the line under the pointer and the open preview read them again. */
+  private sayOrdersAgain(): void {
+    this.pointerOrderTip.refresh();
+    this.closeStaleOrderPreview();
   }
 
   /**
@@ -3103,7 +3155,8 @@ export default class WorldmapScene extends WarpTravel {
           this.pendingExploreLatencyActions.delete(selectedEntityId);
           this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
           console.error("Army movement failed:", error);
-          toast.failed(error, "The order was not sent.");
+          toast.failed(error, ORDER_NOT_SENT);
+          this.pointerOrderTip.sayRefusal(order.to, extractReadableErrorMessage(error, ORDER_NOT_SENT));
         },
       });
       return;
@@ -3181,14 +3234,13 @@ export default class WorldmapScene extends WarpTravel {
     this.state.updateEntityActionHoveredHex(null);
   }
 
-  /**
-   * Whether the attack is confirmed on the target's tile card, the HUD's sheet for the selected tile. A standing
-   * expedition site always is. Where the HUD carries the order's verb (Frontier), so is an army's attack on another
-   * army: one surface for whatever an army attacks. A realm's own guard attacking still opens the older preview.
-   */
   private confirmsAttackOnTileCard(target: { type: ActorType; id: ID }, attackerIsArmy: boolean): boolean {
-    if (this.isStandingExpeditionSite(target.id)) return true;
-    return this.hudCarriesOrderVerb() && attackerIsArmy && target.type === ActorType.Explorer;
+    return attackConfirmsOnTileCard({
+      frontier: this.isFrontierHud(),
+      standingSite: this.isStandingExpeditionSite(target.id),
+      attackerIsArmy,
+      targetIsArmy: target.type === ActorType.Explorer,
+    });
   }
 
   /** The target's tile card with the selected army kept as its actor: the forecast and Attack, or what the army lacks. */
@@ -3205,7 +3257,7 @@ export default class WorldmapScene extends WarpTravel {
       game_id: configManager.getActiveGameId(),
       entity_id: safeInteger(entityId),
     });
-    return site !== undefined && !site.cleared;
+    return site !== undefined && !site.clear;
   }
 
   private onArmySpireTravel(actionPath: ActionPath[], selectedEntityId: ID) {
@@ -3338,33 +3390,6 @@ export default class WorldmapScene extends WarpTravel {
     else if (type === ActionType.Chest) this.onChestSelection(path, selectedEntityId);
     else this.onArmySpireTravel(path, selectedEntityId);
     return true;
-  }
-
-  private showSuggestedArmyDeployment(): void {
-    const intent = useUIStore.getState();
-    if (intent.suggestedArmyDeploymentStructureId === null) return;
-    const structure = this.worldSpatialProjection.getStructure(intent.suggestedArmyDeploymentStructureId);
-    if (!structure) return;
-    intent.setSuggestedArmyDeploymentStructureId(null);
-    if (!canIssueOrders()) return;
-    const normalized = Position.fromContract({
-      x: structure.hexCoords.col,
-      y: structure.hexCoords.row,
-    }).getNormalized();
-    this.onStructureSelection(structure.entityId, { col: normalized.x, row: normalized.y });
-    const points = [...getLiveWorldmapEntityActions().actionPaths.values()]
-      .filter((path) => ActionPaths.getActionType(path) === ActionType.CreateArmy)
-      .map((path) => {
-        const target = path[path.length - 1].hex;
-        const hex = Position.fromContract({ x: target.col, y: target.row }).getNormalized();
-        return projectHexToScreen({ col: hex.x, row: hex.y }, this.camera);
-      });
-    points.sort(
-      (a, b) =>
-        Math.hypot(a.x - window.innerWidth / 2, a.y - window.innerHeight / 2) -
-        Math.hypot(b.x - window.innerWidth / 2, b.y - window.innerHeight / 2),
-    );
-    showArmyDeploymentTooltip(points[0] ?? null);
   }
 
   // actionPath is not normalized
@@ -3634,10 +3659,23 @@ export default class WorldmapScene extends WarpTravel {
     if (entityId !== null) this.selectedArmyOrders.offer(entityId, this.getArmyOwnerAddress(entityId));
   }
 
+  /**
+   * A pan into another chunk keeps the selection. The selected army's orders are planned again for the chunk now
+   * shown, or dropped while it stands outside it; the switch that brings it back plans them again.
+   */
+  private replanSelectedArmyOrdersForChunk(): void {
+    const { selectedEntityId } = getLiveWorldmapEntityActions();
+    if (selectedEntityId == null) return;
+    if (this.selectedOrderableArmyId() !== null) this.refreshSelectedArmyOrders();
+    else this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
+  }
+
   /** Chain time moved: the selected army's orders are planned again once its stamina or food pays for others. */
   private followSelectedArmyReach(): void {
     const entityId = this.selectedOrderableArmyId();
     if (entityId !== null) this.selectedArmyOrders.followConfirmedHead(entityId, this.getArmyOwnerAddress(entityId));
+    // A stamina wait counts down even where the orders stay the same.
+    this.sayOrdersAgain();
   }
 
   private hasEligibleArmyForTabCycle(): boolean {
@@ -3747,7 +3785,7 @@ export default class WorldmapScene extends WarpTravel {
     const paths = actionPaths.getPaths();
     const highlightedHexes = actionPaths.getHighlightDescriptors();
 
-    this.updateEntityActionPaths(paths);
+    this.updateEntityActionPaths(paths, actionPaths.getRefusals());
     this.highlightHexManager.highlightHexes(highlightedHexes);
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
   }
@@ -3789,7 +3827,7 @@ export default class WorldmapScene extends WarpTravel {
   private buildProjectedStructureActionIndex(): Map<number, Map<number, HexEntityInfo>> {
     const index = new Map<number, Map<number, HexEntityInfo>>();
     this.worldSpatialProjection.getStructures(activeMapLayer()).forEach((structure) => {
-      if (structure.reserved) return;
+      if (structure.reserved || structure.clearedSite) return;
 
       const normalized = Position.fromContract({
         x: structure.hexCoords.col,
@@ -3871,7 +3909,7 @@ export default class WorldmapScene extends WarpTravel {
 
   /**
    * The one chest opener, for a tap here or the HUD's request: a relic crate's command goes out, and its result comes
-   * back as its story. Frontier has no chest on a tile: a ruin's chest opens at its clear.
+   * back as its story, whether the chest yields Blitz relics or Frontier LORDS.
    */
   private async openChest(explorerId: ID, hex: HexPosition): Promise<void> {
     const account = useAccountStore.getState().account;
@@ -3897,17 +3935,28 @@ export default class WorldmapScene extends WarpTravel {
     this.state.selectOnMap(null);
   }
 
-  private updateEntityActionPaths(actionPaths: Map<string, ActionPath[]>) {
+  /**
+   * The selection's orders, and why each tile the rules looked at offers none (ActionPaths.getRefusals): the two always
+   * change together, so the map never names a reason from another moment's orders.
+   */
+  private updateEntityActionPaths(
+    actionPaths: Map<string, ActionPath[]>,
+    refusals: Map<string, OrderRefusal> = new Map(),
+  ) {
+    this.orderRefusals = refusals;
     // Stamp token before publishing store updates to avoid transient null-token
     // windows inside synchronous subscribers.
     this.actionPathsTransitionToken = actionPaths.size > 0 ? this.chunkTransitionToken : null;
-    if (ActionPaths.samePaths(getLiveWorldmapEntityActions().actionPaths, actionPaths)) return;
-    this.isApplyingLocalActionPathUpdate = true;
-    try {
-      this.state.updateEntityActionActionPaths(actionPaths);
-    } finally {
-      this.isApplyingLocalActionPathUpdate = false;
+    if (!ActionPaths.samePaths(getLiveWorldmapEntityActions().actionPaths, actionPaths)) {
+      this.isApplyingLocalActionPathUpdate = true;
+      try {
+        this.state.updateEntityActionActionPaths(actionPaths);
+      } finally {
+        this.isApplyingLocalActionPathUpdate = false;
+      }
     }
+    // The same paths can come with other reasons: the line under the pointer and the preview read both again.
+    this.sayOrdersAgain();
   }
 
   private syncEntityActionPathsTransitionToken(): void {
@@ -3931,10 +3980,10 @@ export default class WorldmapScene extends WarpTravel {
 
   private clearEntitySelection() {
     showArmyDeploymentTooltip(null);
-    showOrderTip(null);
     this.highlightHexManager.highlightHexes([]);
     this.updateEntityActionPaths(new Map());
     this.state.deselectEntity();
+    this.pointerOrderTip.refresh();
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     this.attachWorldmapManagerLabels();
   }
@@ -4058,7 +4107,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getWorldmapLabelGroups(): Group[] {
-    return [this.armyLabelsGroup, this.structureLabelsGroup, this.chestLabelsGroup, this.spireLabelsGroup];
+    return [this.chestLabelsGroup, this.spireLabelsGroup];
   }
 
   private attachWorldmapLabelGroupsToScene(): void {
@@ -4115,12 +4164,13 @@ export default class WorldmapScene extends WarpTravel {
   public override async setup(setupContext?: SceneSetupContext): Promise<void> {
     if (!this.hasInitialized) await this.openOnEntryDestination();
     await super.setup(setupContext);
+    this.mapPlates.setVisible(true);
   }
 
   private async openOnEntryDestination(): Promise<void> {
     if (resolvePlayRouteWorldPosition(window.location)) return;
     const destination = await whenEntryDestinationSettled();
-    if (destination) this.moveCameraToColRow(destination.col, destination.row, 0);
+    if (destination) this.moveCameraToMapPosition(destination, 0);
   }
 
   /** The flight owns the camera: no chunk work (terrain pages, composites, refreshes) draws on its way out. */
@@ -4348,6 +4398,7 @@ export default class WorldmapScene extends WarpTravel {
       ...this.getInteractionDebugSnapshot(),
     });
     this.applyWorldmapSceneExitProjection(nextSceneName);
+    this.mapPlates.setVisible(false);
     this.invalidateWorldmapSwitchOffTransitions();
     this.clearWorldmapLoadingStateForSwitchOff();
     this.resetWorldmapInteractionForSwitchOff(nextSceneName);
@@ -4370,12 +4421,6 @@ export default class WorldmapScene extends WarpTravel {
     this.isSwitchedOff = runtimeState.isSwitchedOff;
     this.lastControlsCameraDistance = runtimeState.lastControlsCameraDistance;
     this.currentChunk = runtimeState.currentChunk;
-
-    // Clear follow camera timeout to prevent callback firing on destroyed UI store state
-    if (this.followCameraTimeout) {
-      clearTimeout(this.followCameraTimeout);
-      this.followCameraTimeout = null;
-    }
 
     // Cancel all travel effects and their internal timeouts (maxLifetimeTimeout up to 90s)
     this.travelEffects.forEach((cleanup) => cleanup());
@@ -6321,7 +6366,7 @@ export default class WorldmapScene extends WarpTravel {
     retainedBounds.forEach((bounds) => {
       const contractBounds = this.toContractBounds(bounds);
       this.worldSpatialProjection.getStructuresInBounds(contractBounds).forEach((structure) => {
-        if (structure.reserved || retainedStructureIds.has(structure.entityId)) {
+        if (structure.reserved || structure.clearedSite || retainedStructureIds.has(structure.entityId)) {
           return;
         }
         retainedStructureIds.add(structure.entityId);
@@ -7150,7 +7195,7 @@ export default class WorldmapScene extends WarpTravel {
         const transitionToken = this.claimNextChunkTransitionToken();
         const switchStartedAt = performance.now();
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_started");
-        return runWorldmapChunkTransition({
+        const committed = await runWorldmapChunkTransition({
           hardTimeoutMs: WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS,
           onFinally: () => {
             recordChunkDiagnosticsEvent(this.chunkDiagnostics, "switch_duration_recorded", {
@@ -7172,11 +7217,12 @@ export default class WorldmapScene extends WarpTravel {
             startRow,
             force,
             transitionToken,
-            options.reason,
             triggerReason,
             focusPoint.clone(),
           ),
         });
+        if (committed) this.replanSelectedArmyOrdersForChunk();
+        return committed;
       }
 
       if (chunkDecision.action === "refresh_current_chunk") {
@@ -7319,7 +7365,6 @@ export default class WorldmapScene extends WarpTravel {
     startRow: number,
     force: boolean,
     transitionToken: number,
-    reason: "default" | "shortcut",
     triggerReason: string,
     switchPosition?: Vector3,
   ) {
@@ -7331,17 +7376,6 @@ export default class WorldmapScene extends WarpTravel {
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-switch-pre-${chunkKey}`);
 
     try {
-      // Keep selection continuity during shortcut tabbing, including any
-      // overlapping scheduled refresh that still routes through the default branch.
-      if (
-        shouldClearEntitySelectionForChunkSwitch({
-          reason,
-          isShortcutArmySelectionInFlight: this.isShortcutArmySelectionInFlight,
-        })
-      ) {
-        this.clearEntitySelection();
-      }
-
       const {
         effectiveForce,
         hasFiniteOldChunkCoordinates,
@@ -7834,14 +7868,34 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
+  public advanceGameEnd(frame: ReturnType<typeof endgameFrame>, delta: number): void {
+    if (frame.phase === "live") {
+      if (gameEndIsNear(configManager.getSeasonConfig().endAt, getBlockTimestamp().currentBlockTimestamp))
+        this.spireManager.prepareGameEnd();
+      this.spireManager.advanceGameEnd(frame, delta, this.camera, null);
+      return;
+    }
+    let sparedHex = null;
+    const viewer = accountAddress();
+    if (getGameModeId() === "frontier" && viewer !== null) {
+      const owned = this.game.store.structuresOwnedBy(configManager.getActiveGameId(), viewer);
+      const realm = [...owned].find((row) => isExpeditionRealm(this.game.store, row));
+      const position = realm ? structureMapPosition(this.game.store, realm) : null;
+      if (position && position.alt === activeMapLayer())
+        sparedHex = { col: position.x - FELT_CENTER(), row: position.y - FELT_CENTER() };
+    }
+    this.spireManager.advanceGameEnd(frame, delta, this.camera, sparedHex);
+  }
+
   update(deltaTime: number) {
     const animationContext = this.getAnimationVisibilityContext();
     this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
-    this.compactEntityLabelRenderer.updateCamera(this.camera, window.innerHeight);
     runWithFrameWorkOwner("armies:update", () =>
       this.armyManager.update(deltaTime, animationContext, this.animationsPaused),
     );
+    // After the armies, so a marching army's plate stands where it is drawn this frame.
+    this.mapPlates.update(this.camera, window.innerWidth, window.innerHeight);
     this.structureManager.updateAnimations(deltaTime, animationContext, this.animationsPaused);
     this.spireManager.update(this.animationsPaused ? 0 : deltaTime, this.camera);
     if (!this.animationsPaused) {
@@ -7914,7 +7968,12 @@ export default class WorldmapScene extends WarpTravel {
       nowMs: performance.now(),
     });
     if (zoomFrame.didMove) {
-      this.placeWorldmapCameraAtDistance(zoomFrame.snapshot.actualDistance);
+      zoomTowardCursor(this.camera, this.controls.target, this.zoomCursor, () =>
+        this.positionWorldmapCameraAtDistance(zoomFrame.snapshot.actualDistance),
+      );
+      this.notifyControlsChanged();
+    } else if (zoomFrame.snapshot.status === "idle") {
+      this.zoomCursor = null;
     }
 
     this.publishWorldmapZoomSnapshot(zoomFrame.snapshot);
@@ -8246,11 +8305,12 @@ export default class WorldmapScene extends WarpTravel {
       fxManager: this.fxManager,
       resourceFXManager: this.resourceFXManager,
     });
-    this.compactEntityLabelRenderer.dispose();
+    this.mapPlates.dispose();
     this.updateCameraTargetHexThrottled?.cancel();
     this.refreshVisualTerrainWindowThrottled?.cancel();
     this.minimapCameraMoveThrottled?.cancel();
     this.controls.removeEventListener("change", this.handleWorldmapControlsChange);
+    forgetCameraView();
     window.removeEventListener("resize", this.handleTerrainViewportResize);
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
@@ -8332,19 +8392,52 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  /** The HUD's army dock picked this army: frame it and select it the way the Tab shortcut does. */
   /**
-   * Selects the army the HUD asked for. Asked from a site's card, the card stays open on that site with the army as
-   * its actor: the attack's preview, or what the army lacks.
+   * Selects the army the HUD asked for, framed in the map's open area, the way the Tab shortcut does. Asked from a
+   * site's card or Next up, the card stays open on that site with the army as its actor: the attack's preview, or what
+   * the army lacks. The framing moves the camera, into another chunk when the site is far, so it runs as the shortcut
+   * does: the chunk under the framed view switches at once, without the delay a pan's switch waits out.
    */
-  private async selectRequestedArmy(entityId: number, forSite: HexPosition | null): Promise<void> {
+  private async selectRequestedArmy(entityId: number, forSite: Position | null): Promise<void> {
     const account = accountAddress();
     const position = this.getArmyDisplayPosition(entityId);
     if (account === null || !position) return;
-    await this.runShortcutArmySelection(() => this.focusAndSelectArmy(entityId, position, account));
-    if (forSite && getLiveWorldmapEntityActions().selectedEntityId === entityId) {
-      this.openTargetCardForSelectedArmy(forSite);
-    }
+    await this.runShortcutArmySelection(async () => {
+      await this.focusAndSelectArmy(entityId, position, account);
+      if (getLiveWorldmapEntityActions().selectedEntityId !== entityId) return;
+      const army = Position.fromNormalized({ x: position.col, y: position.row });
+      this.frameOnOpenMap(forSite ? [army, forSite] : [army]);
+      if (!forSite) return;
+      const site = forSite.getContract();
+      this.openTargetCardForSelectedArmy({ col: site.x, row: site.y });
+    });
+  }
+
+  /**
+   * Frames hexes in the map's open area, between the HUD's columns and above its order bubbles, instead of the screen's
+   * centre, which those cover: their midpoint lands at the open area's centre, at the same zoom and angle.
+   */
+  private frameOnOpenMap(positions: Position[]): void {
+    const hexes = positions.map(cameraHexOf);
+    if (!this.reachWorldOrigin(hexes[0])) return;
+    const points = hexes.map((hex) => this.hexSpace.positionForHex(hex));
+    const middle = points
+      .reduce((sum, point) => sum.add(new Vector3(point.x, point.y, point.z)), new Vector3())
+      .divideScalar(points.length);
+    this.moveCameraToXYZ(middle.x, middle.y, middle.z, 0);
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    const area = openMapArea(viewport);
+    const aim = new Vector2(
+      (area.left + area.right) / viewport.width - 1,
+      1 - (area.top + area.bottom) / viewport.height,
+    );
+    this.camera.updateMatrixWorld();
+    const raycaster = new Raycaster();
+    raycaster.setFromCamera(aim, this.camera);
+    const ground = raycaster.ray.intersectPlane(new Plane(new Vector3(0, 1, 0), -middle.y), new Vector3());
+    if (!ground) return;
+    // The ground now under the open area's centre is where the midpoint should be: move by the difference.
+    this.moveCameraToXYZ(2 * middle.x - ground.x, middle.y, 2 * middle.z - ground.z, 0);
   }
 
   private async focusAndSelectArmy(
@@ -8352,7 +8445,10 @@ export default class WorldmapScene extends WarpTravel {
     resolvedPosition: { col: number; row: number },
     account: ContractAddress,
   ): Promise<void> {
-    this.moveCameraToColRow(resolvedPosition.col, resolvedPosition.row, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+    this.moveCameraToMapPosition(
+      Position.fromNormalized({ x: resolvedPosition.col, y: resolvedPosition.row }),
+      SHORTCUT_NAVIGATION_DURATION_SECONDS,
+    );
 
     try {
       await this.refreshChunksAfterShortcutNavigation(resolvedPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
@@ -8394,7 +8490,10 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  /** Shortcut selections hold chunk refreshes on the shortcut's reason until the camera and chunks settle. */
+  /**
+   * Shortcut selections hold chunk refreshes on the shortcut's reason until the camera and chunks settle, so the chunk
+   * the jump lands in switches at once, without a pan's switch delay or refresh debounce.
+   */
   private async runShortcutArmySelection(select: () => Promise<void>): Promise<void> {
     this.isShortcutArmySelectionInFlight = true;
     if (this.chunkRefreshTimeout !== null || this.chunkRefreshRunning) {
@@ -8631,11 +8730,12 @@ export default class WorldmapScene extends WarpTravel {
       },
       onEntityActionsChanged: (nextEntityActions, previousEntityActions) => {
         this.handleEntityActionsStoreUpdate(nextEntityActions, previousEntityActions);
-        this.refreshLabelPriorityContext();
+        this.refreshSelectedPlate();
       },
       onSelectedHexChanged: (selectedHex) => {
         this.state.selectedHex = selectedHex;
         this.showSelectedHexRing(selectedHex);
+        this.refreshSelectedPlate();
       },
     });
     this.storeSubscriptions.push(
@@ -8650,12 +8750,6 @@ export default class WorldmapScene extends WarpTravel {
       useChainTimeStore.subscribe((next, previous) => {
         if (next.executionFloorMs !== previous.executionFloorMs) this.followSelectedArmyReach();
       }),
-    );
-    this.storeSubscriptions.push(
-      useUIStore.subscribe(
-        (state) => state.suggestedArmyDeploymentStructureId,
-        () => this.showSuggestedArmyDeployment(),
-      ),
     );
     this.storeSubscriptions.push(
       useUIStore.subscribe(
@@ -8678,7 +8772,6 @@ export default class WorldmapScene extends WarpTravel {
     this.storeSubscriptions.push(offerSelectedArmyOrdersAtOutcome((entityId) => this.offerOrdersAtOutcome(entityId)));
     this.storeSubscriptions.push(onPlayRouteBootStarted(() => this.announceEntryReadinessWhileShown()));
     this.syncMapLayer();
-    this.showSuggestedArmyDeployment();
     this.bindRouteOwnedRefreshLifecycle();
     this.bindPersistedZoomPreferenceLifecycle();
 
@@ -8782,6 +8875,7 @@ export default class WorldmapScene extends WarpTravel {
       onSelectedHexChanged: (selectedHex) => {
         this.state.selectedHex = selectedHex;
         this.showSelectedHexRing(selectedHex);
+        this.refreshSelectedPlate();
       },
       onSynced: (uiState) => {
         this.logInteractionDebug("sync_state_from_store", {
@@ -8815,6 +8909,7 @@ export default class WorldmapScene extends WarpTravel {
       this.actionPathsTransitionToken = null;
       this.previouslyHoveredHex = null;
       this.lastHoverReconciliation = null;
+      this.pointerOrderTip.point(null);
       document.body.style.cursor = "default";
       this.applyContextualHoverPalette(null);
     } finally {
@@ -8928,7 +9023,7 @@ export default class WorldmapScene extends WarpTravel {
       spectator: this.state.isSpectating,
     });
 
-    this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+    this.moveCameraToMapPosition(worldMapPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
     void this.refreshChunksAfterShortcutNavigation(
       { col: normalizedPosition.x, row: normalizedPosition.y },
       SHORTCUT_NAVIGATION_DURATION_SECONDS,
@@ -8958,7 +9053,7 @@ export default class WorldmapScene extends WarpTravel {
         worldMapPosition,
         spectator: this.state.isSpectating,
       });
-      this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+      this.moveCameraToMapPosition(worldMapPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
       void this.refreshChunksAfterShortcutNavigation(
         { col: normalizedPosition.x, row: normalizedPosition.y },
         SHORTCUT_NAVIGATION_DURATION_SECONDS,

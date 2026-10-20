@@ -11,14 +11,9 @@ const spacingGap: Record<LayoutScale, string> = {
   compact: "gap-2",
 };
 
-const titleText: Record<LayoutScale, string> = {
-  default: "text-sm",
-  compact: "text-sm",
-};
-
 const bodyText: Record<LayoutScale, string> = {
-  default: "text-sm",
-  compact: "text-sm",
+  default: "text-hud-body",
+  compact: "text-hud-label",
 };
 
 const getScale = (compact: boolean): LayoutScale => (compact ? "compact" : "default");
@@ -56,23 +51,16 @@ export const EntityDetailStatList = ({
 interface EntityDetailStatProps {
   label: ReactNode;
   value: ReactNode;
-  emphasizeValue?: boolean;
   className?: string;
   compact?: boolean;
 }
 
-export const EntityDetailStat = ({
-  label,
-  value,
-  emphasizeValue = false,
-  className,
-  compact = false,
-}: EntityDetailStatProps) => {
+export const EntityDetailStat = ({ label, value, className, compact = false }: EntityDetailStatProps) => {
   const scale = getScale(compact);
   return (
     <div className={cn("flex flex-col", spacingGap[scale], className)}>
-      <span className={cn("font-semibold text-gold/70", titleText[scale])}>{label}</span>
-      <span className={cn(emphasizeValue ? "text-gold" : "text-gold/80", bodyText[scale])}>{value}</span>
+      <span className="text-hud-label text-hud-muted">{label}</span>
+      <span className={cn("text-hud-ink", bodyText[scale])}>{value}</span>
     </div>
   );
 };

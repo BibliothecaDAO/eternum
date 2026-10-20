@@ -1,23 +1,21 @@
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { formatAmount, formatExact } from "./amount";
-import { Button } from "./button";
 import { ClockLine } from "./clock-line";
-import { clockLineText } from "./clock-text";
 import { DayDial } from "./day-dial";
-import { Notice } from "./notice";
-import { PriceChip } from "./price-chip";
-import { ReasonPlate, shortfallLine } from "./reason-plate";
+import { ListRow } from "./list-row";
+import { Pill } from "./pill";
+import { Portrait } from "./portrait";
+import { shortfallLine } from "./reasons";
 import { SeasonRow } from "./season-row";
 import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
 import { StoreBar } from "./store-bar";
 import { TierChip } from "./tier-chip";
-import { formatClockTime, formatDuration, formatMoment } from "./time";
-import { ViewSwitch } from "./view-switch";
+import { dayEnds, dayLeft, phraseText, tomorrowLasts } from "./words";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
@@ -34,43 +32,6 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
-});
-
-describe("amounts", () => {
-  it("shows an unknown amount as a dash, never zero, and compacts past ten thousand", () => {
-    expect(formatAmount(undefined)).toBe("—");
-    expect(formatAmount(0)).toBe("0");
-    expect(formatAmount(1_498)).toBe("1,498");
-    expect(formatAmount(12_400)).toBe("12.4K");
-  });
-
-  it("keeps a price exact at any size", () => {
-    expect(formatExact(24_000)).toBe("24,000");
-    expect(formatExact(undefined)).toBe("—");
-  });
-});
-
-describe("time", () => {
-  it("writes durations in hours and minutes, never days, rounding up so time left never reads 0m", () => {
-    expect(formatDuration(7 * 3600 + 14 * 60)).toBe("7h 14m");
-    expect(formatDuration(12 * 3600)).toBe("12h");
-    expect(formatDuration(42 * 60)).toBe("42m");
-    expect(formatDuration(30 * 3600)).toBe("30h");
-    expect(formatDuration(1)).toBe("1m");
-    expect(formatDuration(undefined)).toBe("—");
-  });
-
-  it("writes a moment as the local clock time, unknown as a dash", () => {
-    const at = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
-    expect(formatClockTime(at)).toBe("21:40");
-    expect(formatClockTime(undefined)).toBe("—");
-  });
-
-  it("writes a moment a day away with its day, so a clock time already gone today never reads as past", () => {
-    const now = new Date(2026, 9, 10, 15, 0).getTime() / 1000;
-    expect(formatMoment(new Date(2026, 9, 11, 14, 32).getTime() / 1000, now)).toBe("11 Oct 14:32");
-    expect(formatMoment(undefined, now)).toBe("—");
-  });
 });
 
 describe("the clock", () => {
@@ -103,44 +64,13 @@ describe("stores and prices", () => {
     expect(renderToStaticMarkup(<StoreBar amount={undefined} limit={18_000} tone="calm" />)).toContain("width:0%");
     expect(renderToStaticMarkup(<StoreBar amount={5} tone="calm" />)).not.toContain("meter");
   });
-
-  it("prices in a resource by its icon and in XP by its word; an unknown price is a dash", () => {
-    expect(renderToStaticMarkup(<PriceChip of="wheat" amount={10_000} />)).toContain('aria-label="10,000 wheat"');
-    expect(text(renderToStaticMarkup(<PriceChip of="xp" amount={400} />))).toBe("400XP");
-    expect(text(renderToStaticMarkup(<PriceChip of="lords" amount={undefined} />))).toBe("—");
-  });
 });
 
-describe("Button", () => {
-  it("runs its verb, and while the action is under way shows the step's word and takes no second tap", () => {
-    const onClick = vi.fn();
-    act(() =>
-      root.render(<Button role="primary" word="Deploy" prices={[{ of: "wheat", amount: 10_000 }]} onClick={onClick} />),
+describe("a shortfall's line", () => {
+  it("names what is counted, with the exact wait", () => {
+    expect(shortfallLine({ kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * 3600 + 44 * 60 })).toBe(
+      "Needs 15K labor, have 9,640 · in 10h 44m",
     );
-    const button = host.querySelector("button")!;
-    expect(button.textContent).toBe("Deploy10,000");
-    act(() => button.click());
-    expect(onClick).toHaveBeenCalledTimes(1);
-
-    act(() => root.render(<Button role="primary" word="Deploy" loading="Deploying…" onClick={onClick} />));
-    expect(button.textContent).toBe("Deploying…");
-    expect(button.disabled).toBe(true);
-    act(() => button.click());
-    expect(onClick).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("ReasonPlate", () => {
-  it("says a shortfall in one line that names what is counted, with the exact wait, and the step beside it", () => {
-    const plate = text(
-      renderToStaticMarkup(
-        <ReasonPlate
-          reason={{ kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * 3600 + 44 * 60 }}
-          step={<Button role="primary" word="Map" />}
-        />,
-      ),
-    );
-    expect(plate).toBe("Needs 15,000 labor, have 9,640 · in 10h 44mMap");
   });
 
   it("counts what is free, or a store's own limit, in the same line", () => {
@@ -148,52 +78,96 @@ describe("ReasonPlate", () => {
       "Needs 3 population, 2 free",
     );
     expect(shortfallLine({ kind: "short", of: "labor", counted: "limit", held: 18_000, need: 24_000 })).toBe(
-      "Needs 24,000 labor, the store holds 18,000",
+      "Needs 24K labor, the store holds 18K",
     );
     expect(shortfallLine({ kind: "short", of: "essence", held: undefined, need: 48_000 })).toBe(
-      "Needs 48,000 Essence, have —",
+      "Needs 48K Essence, have —",
     );
   });
 
-  it("names what failed in one line", () => {
-    const plate = text(
-      renderToStaticMarkup(<ReasonPlate reason={{ kind: "failed", line: "Season did not answer." }} />),
-    );
-    expect(plate).toBe("Season did not answer.");
+  it("never reads a shortfall as met where both sides round alike", () => {
+    const line = (held: number, need: number) => shortfallLine({ kind: "short", of: "labor", held, need });
+    expect(line(28.1, 28.15)).toBe("Needs 28.2 labor, have 28.1");
+    expect(line(12_440, 12_449)).toBe("Needs 12,449 labor, have 12,440");
+    expect(line(0.555, 0.556)).toBe("Needs 0.556 labor, have 0.555");
   });
 });
 
-describe("Notice", () => {
-  it("runs its verb, and offers Later only when it can be put off", () => {
-    const onVerb = vi.fn();
-    const onLater = vi.fn();
-    act(() => root.render(<Notice icon="network-off" line="Offline" verb="Try again" onVerb={onVerb} ember />));
-    expect(host.querySelectorAll("button")).toHaveLength(1);
-    act(() => host.querySelector("button")!.click());
-    expect(onVerb).toHaveBeenCalled();
+describe("Pill", () => {
+  it("says one fact with its icon, or leads with the sage dot for a game under way", () => {
+    const closed = renderToStaticMarkup(<Pill icon="lock">Closed</Pill>);
+    expect(text(closed)).toBe("Closed");
+    expect(closed).toContain('data-icon="lock"');
+    const live = renderToStaticMarkup(<Pill tone="live">Live</Pill>);
+    expect(live).toContain("bg-kit-sage");
+    expect(live).not.toContain("data-icon");
+  });
 
+  it("runs its step when it is a button, and crosses out the icon of a prize that does not come", () => {
+    const onClick = vi.fn();
     act(() =>
-      root.render(<Notice icon="network-off" line="Update ready" verb="Update" onVerb={onVerb} onLater={onLater} />),
+      root.render(
+        <Pill as="button" size="lg" tone="muted" icon="refresh" onClick={onClick}>
+          Another wallet
+        </Pill>,
+      ),
     );
     act(() => host.querySelector("button")!.click());
-    expect(onLater).toHaveBeenCalled();
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(
+      renderToStaticMarkup(
+        <Pill size="lg" tone="muted" icon="lords" struck>
+          No LORDS
+        </Pill>,
+      ),
+    ).toContain("bg-kit-red");
   });
 });
 
-describe("ViewSwitch", () => {
-  it("lights one view and switches only to another", () => {
-    const onChange = vi.fn();
-    const views = [
-      { id: "season", word: "Season" },
-      { id: "history", word: "History" },
-    ] as const;
-    act(() => root.render(<ViewSwitch label="Season" views={[...views]} lit="season" onChange={onChange} />));
-    const [season, history] = host.querySelectorAll("button");
-    expect(season.getAttribute("aria-checked")).toBe("true");
-    act(() => season.click());
-    expect(onChange).not.toHaveBeenCalled();
-    act(() => history.click());
-    expect(onChange).toHaveBeenCalledWith("history");
+describe("Portrait", () => {
+  it("shows the chosen portrait, else the account's stock one, and a dash for a player not named", () => {
+    const chosen = renderToStaticMarkup(<Portrait account="0x1" portrait="04" size={28} weight={1.5} />);
+    expect(chosen).toContain('src="/images/avatars/04.png"');
+    expect(renderToStaticMarkup(<Portrait account="0x1" size={28} weight={1.5} />)).toMatch(
+      /src="\/images\/avatars\/[^"]+\.png"/,
+    );
+    expect(renderToStaticMarkup(<Portrait portrait="04" size={24} weight={2} />)).toContain("width:24px");
+    expect(text(renderToStaticMarkup(<Portrait.Empty />))).toBe("—");
+  });
+});
+
+describe("ListRow", () => {
+  it("taps as a whole when it opens something, and only shows otherwise", () => {
+    const onClick = vi.fn();
+    act(() => root.render(<ListRow onClick={onClick} title="Settings" chevron />));
+    const button = host.querySelector("button");
+    expect(button?.getAttribute("type")).toBe("button");
+    expect(button?.textContent).toBe("Settings");
+    expect(button?.querySelector('[data-icon="chevron-right"]')).not.toBeNull();
+    act(() => button?.click());
+    expect(onClick).toHaveBeenCalledOnce();
+    const shown = renderToStaticMarkup(<ListRow title="Music" trailing={<input />} />);
+    expect(shown).toMatch(/^<div /);
+  });
+
+  it("in a list, the item holds the row's hook and the link inside it the tap", () => {
+    const item = renderToStaticMarkup(
+      <MemoryRouter>
+        <ul>
+          <ListRow as="li" to="/results/1" title="Blitz 15:00" line={<span>7 Oct</span>} />
+          <ListRow as="li" data-play-item="blitz-1" title="Blitz 1630" />
+        </ul>
+      </MemoryRouter>,
+    );
+    expect(item).toMatch(/<li [^>]*><a [^>]*href="\/results\/1"/);
+    expect(item).toMatch(/<li [^>]*data-play-item="blitz-1"/);
+  });
+
+  it("opens another site in a new tab, and says the reader's own row", () => {
+    const link = renderToStaticMarkup(<ListRow href="https://realms.world" current title="Guide" />);
+    expect(link).toContain('target="_blank"');
+    expect(link).toContain('rel="noopener noreferrer"');
+    expect(link).toContain('aria-current="true"');
   });
 });
 
@@ -302,14 +276,18 @@ describe("a Sheet closed in the tick it opened", () => {
   });
 });
 
-describe("the clock line as text", () => {
-  it("writes the Day-end reminder's line from its instants with the clock line's words", () => {
+describe("the day's clock, written once (live-qa-night-1 P3-8)", () => {
+  it("writes when today ends, the time left and how long tomorrow lasts, a day's lengths in hours, never days", () => {
     const endsAt = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
-    expect(clockLineText({ endsAt, secondsLeft: 3_600, tomorrowSeconds: 12 * 3_600 })).toBe(
-      "Day ends 21:40 · 1h left · Tomorrow lasts 12h",
-    );
-    expect(clockLineText({ endsAt: undefined, secondsLeft: undefined, tomorrowSeconds: undefined })).toBe(
-      "Day ends — · — left · Tomorrow lasts —",
-    );
+    expect(phraseText(dayEnds(endsAt))).toBe("Day ends 21:40");
+    expect(phraseText(dayLeft(3_600))).toBe("1h left");
+    expect(phraseText(dayLeft(24 * 3_600))).toBe("24h left");
+    expect(phraseText(tomorrowLasts(12 * 3_600))).toBe("Tomorrow lasts 12h");
+    expect(phraseText(tomorrowLasts(24 * 3_600))).toBe("Tomorrow lasts 24h");
+    expect([dayEnds(undefined), dayLeft(undefined), tomorrowLasts(undefined)].map(phraseText)).toEqual([
+      "Day ends —",
+      "— left",
+      "Tomorrow lasts —",
+    ]);
   });
 });

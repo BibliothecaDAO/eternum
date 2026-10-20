@@ -1,16 +1,14 @@
-import { fallenRealmBeast } from "@/three/structures/fallen-realm";
+import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structures/frontier-beast";
 import {
   activeCombatRules,
   configManager,
-  expeditionDepth,
   forecastFight,
   getBlockTimestamp,
   ResourceManager,
   getGuardsByStructure,
-  readExpeditionRules,
   siteKindOf,
   siteReward,
-  type SiteKind,
+  StaminaManager,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -26,7 +24,7 @@ import {
   type TroopType,
 } from "@bibliothecadao/types";
 
-import type { AttackTargetKind } from "./site-marks";
+import { attackTargetName, type AttackTargetKind } from "./site-marks";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
@@ -47,6 +45,7 @@ export interface SiteAttack {
  */
 export interface SiteCardPlan {
   name: string;
+  beast?: FrontierBeast;
   guard: { type: TroopType; tier: TroopTier; count: number } | null | undefined;
   kind: AttackTargetKind;
   /** The XP a clear pays; another player's army pays none this card can promise. */
@@ -63,13 +62,20 @@ export interface SiteCardPlan {
 }
 
 /**
- * The fight ahead, in two scales that never mix. The outcome and its count of attacks speak of the whole fight, attack
- * after attack. The troops lost and the guard left speak of the one attack the Attack button sends now, so they are
- * the figures its result will show.
+ * The fight ahead, in two scales that never mix. The outcome, its count of attacks and `whole` speak of the whole
+ * fight, attack after attack. The troops lost and the guard left speak of the one attack the Attack button sends now,
+ * so they are the figures its result will show.
  */
 export type SiteFight =
   | { outcome: "refused" }
-  | { outcome: "wins" | "loses" | "stalls"; exchanges: number; troopsLost: number; guardLeft: number };
+  | {
+      outcome: "wins" | "loses" | "stalls";
+      exchanges: number;
+      troopsLost: number;
+      guardLeft: number;
+      /** Over every attack the fight takes: the troops the army loses, the guard it kills, the stamina it spends. */
+      whole: { troopsLost: number; guardKilled: number; stamina: number };
+    };
 
 export const readSiteCard = (
   store: NativeFactStore,
@@ -86,8 +92,10 @@ export const readSiteCard = (
     kind === "Ruin"
       ? chest && { resourceType: ResourcesIds.Lords, amount: chest.amount * PRECISION }
       : siteReward(kind, site);
+  const beast = readStandingFrontierBeast(store, site.game_id, safeInteger(site.entity_id));
   return {
-    name: siteName(store, kind, site, siteTile),
+    name: beast?.name ?? attackTargetName(kind),
+    beast,
     guard: guards === undefined ? undefined : guard ? troopsOf(guard.troops) : null,
     kind,
     xp: siteClearXp(site),
@@ -163,19 +171,6 @@ export const storeAtLimit = (store: NativeFactStore, realmId: number, resourceId
   return held?.hasReachedMaxCapacity === true;
 };
 
-/** A site by its kind; a ruin by the Loot Survivor beast that holds it at its depth. */
-const siteName = (
-  store: NativeFactStore,
-  kind: SiteKind,
-  site: NativeRows["ExpeditionSite"],
-  siteTile: { row: number },
-): string => {
-  if (kind !== "Ruin") return kind;
-  const rules = readExpeditionRules(store, site.game_id);
-  if (!rules) throw new Error(`Ruin ${site.entity_id} stands in a game without expedition rules`);
-  return fallenRealmBeast(expeditionDepth(rules, { y: siteTile.row })).name;
-};
-
 const troopsOf = (troops: Pick<Troops, "category" | "tier" | "count">) => ({
   type: troops.category as TroopType,
   tier: troops.tier as TroopTier,
@@ -183,8 +178,8 @@ const troopsOf = (troops: Pick<Troops, "category" | "tier" | "count">) => ({
 });
 
 /**
- * The fight as the contract resolves it, attack after attack now, with no dice: Frontier's combat is exact. An army out
- * of its troops' reach has no fight to forecast.
+ * The fight as the contract resolves it, attack after attack from the moment the army can attack, with no dice:
+ * Frontier's combat is exact. An army out of its troops' reach has no fight to forecast.
  */
 const forecastFightAt = (
   store: NativeFactStore,
@@ -203,7 +198,7 @@ const forecastFightAt = (
     troops,
     guard,
     {
-      timestamp: attack.timestamp,
+      timestamp: whenItCanAttack(troops, attack.timestamp),
       attackDistance: distance,
       attackerBiome: attack.biome,
       defenderBiome: attack.biome,
@@ -220,5 +215,18 @@ const forecastFightAt = (
     exchanges: forecast.exchanges,
     troopsLost: Number(forecast.firstExchange.attackerLoss / PRECISION),
     guardLeft: Number((guard.count - forecast.firstExchange.defenderLoss) / PRECISION),
+    whole: {
+      troopsLost: Number(forecast.attackerLoss / PRECISION),
+      guardKilled: Number(forecast.defenderLoss / PRECISION),
+      stamina: Number(forecast.staminaSpent),
+    },
   };
 };
+
+/**
+ * The moment the army holds the attack's stamina: now, or later for an army short of it, so the card counts the fight
+ * its Attack will send rather than none. Damage does not depend on the attacker's stamina; the guard's own stamina at
+ * that moment does, and is read then.
+ */
+const whenItCanAttack = (troops: Troops, now: number): number =>
+  StaminaManager.getAffordableAt(troops, activeCombatRules().stamina.stamina_attack_req, now) ?? now;

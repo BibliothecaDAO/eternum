@@ -10,8 +10,15 @@ import * as THREE from "three";
 import { SceneName } from "../types";
 import type { TouchNavigation } from "./touch-camera-navigation";
 
-type ListenerTypes = "click" | "mousemove" | "contextmenu" | "dblclick" | "mousedown";
+type ListenerTypes = "click" | "mousemove" | "mouseleave" | "contextmenu" | "dblclick" | "mousedown";
 type InputCallback = (event: MouseEvent, raycaster: THREE.Raycaster) => void;
+
+/**
+ * A mouse press is a click while its pointer stays this close to where it went down, as a hand's press travels a few
+ * pixels, and the map does not move under it. Past it the press is a pan: the map follows from the press point and no
+ * click is sent. The press decides alone, whatever else moves the camera (damping, the zoom, keys, flights).
+ */
+const CLICK_SLOP_PX = 8;
 
 interface InputListener {
   callback: InputCallback;
@@ -22,7 +29,7 @@ interface InputListener {
 export class InputManager {
   private listeners: InputListener[] = [];
   private isDragged = false;
-  private currentDragListener: ((e: MouseEvent) => void) | null = null;
+  private currentDragListener: ((e: PointerEvent) => void) | null = null;
   private currentMouseUpListener: ((e: MouseEvent) => void) | null = null;
   private mouseDownHandler: (e: MouseEvent) => void;
   private surface: HTMLElement | null = null;
@@ -123,6 +130,10 @@ export class InputManager {
   private processImmediateEvent(event: ListenerTypes, mouseEvent: MouseEvent, callback: InputCallback): void {
     if (event === "contextmenu") {
       mouseEvent.preventDefault();
+    }
+    // The pointer left the surface: a move still queued for the next frame would bring the hover back.
+    if (event === "mouseleave") {
+      this.cancelPendingMouseMove();
     }
 
     this.updatePointerRaycaster(mouseEvent);
@@ -324,26 +335,29 @@ export class InputManager {
     const mouseY = e.clientY;
     this.isDragged = false;
 
-    this.currentDragListener = (e: MouseEvent) => {
-      if (Math.abs(mouseX - e.clientX) > 10 || Math.abs(mouseY - e.clientY) > 10) {
-        this.isDragged = true;
-        // Clear tooltip when dragging starts
-        useTooltipStore.getState().setTooltip(null);
-        this.cleanupDragListeners();
+    // Seen first, in the window's capture phase: a move inside the slop never reaches the map controls.
+    this.currentDragListener = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
+      if (Math.hypot(mouseX - e.clientX, mouseY - e.clientY) <= CLICK_SLOP_PX) {
+        e.stopImmediatePropagation();
+        return;
       }
+      this.isDragged = true;
+      useTooltipStore.getState().setTooltip(null);
+      this.cleanupDragListeners();
     };
 
     this.currentMouseUpListener = () => {
       this.cleanupDragListeners();
     };
 
-    window.addEventListener("mousemove", this.currentDragListener);
+    window.addEventListener("pointermove", this.currentDragListener, { capture: true });
     window.addEventListener("mouseup", this.currentMouseUpListener, { once: true });
   }
 
   private cleanupDragListeners(): void {
     if (this.currentDragListener) {
-      window.removeEventListener("mousemove", this.currentDragListener);
+      window.removeEventListener("pointermove", this.currentDragListener, { capture: true });
       this.currentDragListener = null;
     }
     if (this.currentMouseUpListener) {

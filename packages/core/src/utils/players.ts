@@ -2,7 +2,7 @@ import { type ContractAddress, type Player, type PlayerInfo } from "@bibliotheca
 import type { NativeFactStore } from "../client/native-fact-store";
 import { LeaderboardManager } from "../managers/leaderboard-manager";
 import { configManager } from "../managers/config-manager";
-import { displayPlayerName } from "./entities";
+import { displayPlayerName, type PlayerNameResolver } from "./entities";
 import { getGuild } from "./guild";
 import { isViewerOwner } from "./viewer";
 
@@ -21,6 +21,7 @@ export const getPlayerInfo = (
     }
   >,
   store: NativeFactStore,
+  playerName: PlayerNameResolver,
 ): PlayerInfo[] => {
   const game_id = configManager.getActiveGameId();
 
@@ -34,7 +35,7 @@ export const getPlayerInfo = (
       return {
         entity: player.entity,
         address: player.address,
-        name: displayPlayerName(player.address, player.name),
+        name: displayPlayerName(player.address, playerName(player.address)),
         isAlive,
         guildName: guild?.name,
       };

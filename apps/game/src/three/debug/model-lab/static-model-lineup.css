@@ -1,0 +1,17 @@
+.model-lineup {
+  position: relative;
+  overflow: hidden;
+}
+.model-lineup-label {
+  position: absolute;
+  z-index: 2;
+  transform: translateX(-50%);
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #172322dd;
+  color: #eee;
+  font: 12px/1.4 sans-serif;
+  text-align: center;
+  white-space: pre;
+  pointer-events: none;
+}

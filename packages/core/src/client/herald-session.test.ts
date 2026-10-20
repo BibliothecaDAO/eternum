@@ -41,6 +41,20 @@ describe("buildHeraldGameStreamUrl", () => {
 });
 
 describe("createHeraldGameSyncSession", () => {
+  it("reads a finalized game's final state from the shard's review snapshot", async () => {
+    const review = { confirmed_block: 40, game_id: "0x36", models: [] };
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(review), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const session = createSession();
+    const finalState = (session.transport as unknown as { options: { finalState: () => Promise<unknown> } }).options
+      .finalState;
+    await expect(finalState()).resolves.toEqual(review);
+    expect(String((fetchMock.mock.calls[0] as unknown[])[0])).toBe(
+      "https://herald.realms.test/games/54/review/snapshot",
+    );
+    vi.unstubAllGlobals();
+  });
+
   it("reports each snapshot phase once, with its duration, the coherent store, and forwards real progress", () => {
     const onSnapshotProgress = vi.fn();
     const observer = {

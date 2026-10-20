@@ -1,11 +1,20 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  DISPLAYED_SLOT_NUMBER_MAP,
+  GUARD_SLOT_NAMES,
+  TroopTier,
+  TroopType,
+  GuardSlot,
+  formatExact,
+  guardSlotName,
+} from "@bibliothecadao/types";
 import clsx from "clsx";
 
 import { GuardCooldownBadge } from "../guard-cooldown-badge";
 import { GuardStaminaBar } from "../guard-stamina-bar";
 import { TransferDirection } from "./transfer-direction";
+import { acceptsTroops } from "./transfer-eligibility";
 import { TroopBadge } from "./transfer-troop-badge";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 interface SlotTroopInfo {
   slot: number;
@@ -68,29 +77,31 @@ export const TransferSlotSelection = ({
     if (!troop) {
       return (
         <div className="flex flex-col gap-1">
-          <div className="text-sm font-bold text-gold/70 leading-none">Empty</div>
-          <div className="text-sm text-kit-muted">No troops</div>
+          <div className="text-hud-strong text-hud-muted leading-none">Empty</div>
+          <div className="text-hud-label uppercase tracking-wide text-hud-cue">No troops</div>
         </div>
       );
     }
 
     const rawCount = Number(troop.count);
-    const countLabel = rawCount.toLocaleString();
+    const countLabel = formatExact(rawCount);
 
     return (
       <div className="flex flex-col gap-1 min-w-0">
         <div className="flex items-center gap-2">
           <TroopBadge category={troop.category} tier={troop.tier} emphasize />
-          <span className="text-sm font-bold text-gold leading-none">{countLabel}</span>
+          <span className="text-hud-strong text-hud-accent leading-none">{countLabel}</span>
         </div>
-        <div className="text-sm text-gold/70">{String(troop.category)}</div>
-        <GuardStaminaBar current={troop.staminaCurrent} max={troop.staminaMax} className="mt-1" />
+        <div className="text-hud-label uppercase tracking-wide text-hud-muted">{String(troop.category)}</div>
+        <span className="mt-1 block">
+          <GuardStaminaBar current={troop.staminaCurrent} max={troop.staminaMax} />
+        </span>
       </div>
     );
   };
 
   return (
-    <div className="rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20 p-2">
+    <div className="rounded-xl border border-hud-line p-2">
       <div className="grid grid-cols-2 gap-1.5">
         {balanceOption?.visible && balanceOption.troop && (
           <button
@@ -100,18 +111,19 @@ export const TransferSlotSelection = ({
             className={clsx(
               "p-2 flex flex-col gap-1 text-left transition-all duration-150 rounded border-2 relative",
               selectedSlot === balanceOption.key
-                ? "border-gold bg-gold/10"
-                : "border-gold/30 bg-brown/5 hover:bg-gold/5 hover:border-gold/50",
-              balanceOption.disabled && "opacity-60 cursor-not-allowed bg-brown/5 border-brown/30",
+                ? "border-hud-line-strong bg-hud-hover"
+                : "border-hud-line bg-hud-well hover:bg-hud-hover hover:border-hud-line-strong",
+              balanceOption.disabled && "opacity-60 cursor-not-allowed bg-hud-well border-hud-divider",
             )}
           >
-            <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-sm px-1 rounded font-bold">0</div>
-            <div className="text-sm font-bold truncate text-gold/80">Balance</div>
+            <div className="absolute top-0.5 right-0.5 bg-hud-chosen text-hud-accent text-hud-label px-1 rounded">
+              0
+            </div>
+            <div className="text-hud-label truncate text-hud-accent">Balance</div>
             {renderTroopPill(balanceOption.troop)}
             {balanceOption.disabledReason && (
-              <span className="self-start border border-danger/60 bg-danger/10 text-danger px-1.5 py-0.5 rounded text-sm font-semibold flex items-center gap-1.5">
-                <SemanticIcon name="warning" className="w-3 h-3" />
-                Explorer not owned by this structure
+              <span className="self-start">
+                <HudChip tone="bad">Explorer not owned by this structure</HudChip>
               </span>
             )}
           </button>
@@ -121,7 +133,7 @@ export const TransferSlotSelection = ({
           const guardData = guards.find((guard) => guard.slot === slotId);
           const troopInfo = guardData?.troops;
           const displayedSlotNumber = DISPLAYED_SLOT_NUMBER_MAP[slotId as keyof typeof DISPLAYED_SLOT_NUMBER_MAP];
-          const slotLabel = GUARD_SLOT_NAMES[slotId as keyof typeof GUARD_SLOT_NAMES] ?? `Slot ${displayedSlotNumber}`;
+          const slotLabel = guardSlotName(slotId as GuardSlot);
           const cooldownSeconds = guardData?.cooldownRemaining ?? 0;
           const isCooldownActive = cooldownSeconds > 0;
           const isActive = selectedSlot === slotId;
@@ -133,14 +145,10 @@ export const TransferSlotSelection = ({
 
           const isMismatch =
             transferDirection === TransferDirection.ExplorerToStructure
-              ? troopInfo?.count !== 0 &&
-                selectedTroop &&
-                (selectedTroop.tier !== troopInfo?.tier || selectedTroop.category !== troopInfo?.category)
+              ? !!selectedTroop && !acceptsTroops(troopInfo, selectedTroop)
               : transferDirection === TransferDirection.StructureToExplorer &&
-                targetTroop &&
-                targetTroop.count !== 0 &&
-                troopInfo &&
-                (targetTroop.tier !== troopInfo.tier || targetTroop.category !== troopInfo.category);
+                !!troopInfo &&
+                !acceptsTroops(targetTroop, troopInfo);
 
           const isSlotDisabled = isSourceSlotOutOfTroops || isCooldownLocked;
 
@@ -148,14 +156,7 @@ export const TransferSlotSelection = ({
           const orderNumber = orderIndex;
           const isFrontline = frontlineSlot === slotId;
           const isFinalLine = lastGuardSlot === slotId;
-          const orderBadgeClass = clsx(
-            "border rounded px-1.5 py-0.5 text-sm font-semibold",
-            isFrontline
-              ? "border-danger/50 bg-danger/10 text-danger/80"
-              : isFinalLine
-                ? "border-gold/40 bg-gold/10 text-gold/80"
-                : "border-gold/20 bg-dark-brown/60 text-kit-muted",
-          );
+          const orderBadgeTone = isFrontline ? "bad" : undefined;
           const orderBadgeText = (() => {
             if (isFrontline) return "Hit first";
             if (orderNumber === 2) return "Hit second";
@@ -166,13 +167,13 @@ export const TransferSlotSelection = ({
 
           const cardClasses = clsx(
             "p-2 flex flex-col gap-1 text-left transition-all duration-150 rounded border-2 relative",
-            isActive && !isMismatch && !isSlotDisabled && "border-gold bg-gold/10",
+            isActive && !isMismatch && !isSlotDisabled && "border-hud-line-strong bg-hud-hover",
             !isActive &&
               !isMismatch &&
               !isSlotDisabled &&
-              "border-gold/30 bg-brown/5 hover:bg-gold/5 hover:border-gold/50",
-            isSlotDisabled && "opacity-60 cursor-not-allowed bg-brown/5 border-brown/30",
-            isMismatch && "border-danger/50 hover:border-danger/60",
+              "border-hud-line bg-hud-well hover:bg-hud-hover hover:border-hud-line-strong",
+            isSlotDisabled && "opacity-60 cursor-not-allowed bg-hud-well border-hud-divider",
+            isMismatch && "border-hud-bad hover:border-hud-bad",
           );
 
           return (
@@ -188,17 +189,21 @@ export const TransferSlotSelection = ({
               aria-pressed={isActive}
               className={cardClasses}
             >
-              <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-sm px-1 rounded font-bold">
+              <div className="absolute top-0.5 right-0.5 bg-hud-chosen text-hud-accent text-hud-label px-1 rounded">
                 {displayedSlotNumber}
               </div>
 
-              <div className="text-sm font-bold truncate text-gold/80">{slotLabel}</div>
+              <div className="text-hud-label truncate text-hud-accent">{slotLabel}</div>
 
               {renderTroopPill(troopInfo)}
 
-              {orderedSlots.length > 0 && <span className={orderBadgeClass}>{orderBadgeText}</span>}
+              {orderedSlots.length > 0 && <HudChip tone={orderBadgeTone}>{orderBadgeText}</HudChip>}
 
-              {isCooldownActive && <GuardCooldownBadge seconds={cooldownSeconds} className="mt-1 self-start" />}
+              {isCooldownActive && (
+                <span className="mt-1 self-start">
+                  <GuardCooldownBadge seconds={cooldownSeconds} />
+                </span>
+              )}
             </button>
           );
         })}

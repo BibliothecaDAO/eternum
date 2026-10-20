@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/react";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import React, { Component, ReactNode } from "react";
 import {
   isDynamicImportChunkError,
@@ -64,20 +65,22 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         this.props.fallback || (
-          <div className="flex h-screen w-screen items-center justify-center bg-brown p-4">
-            <div className="max-w-md rounded-xl border border-gold/30 bg-[#1a1410]/95 p-6 text-center text-gold">
-              <h2 className="mb-4 text-xl font-bold">{title}</h2>
-              <p className="mb-4 text-sm">{description}</p>
-              <button
-                className="btn-bronze px-4 py-2"
-                onClick={() => {
-                  this.setState({ hasError: false, error: undefined });
-                  window.location.reload();
-                }}
-              >
-                {buttonLabel}
-              </button>
-            </div>
+          <div className="flex h-screen w-screen items-center justify-center bg-hud-dark p-4">
+            <HudPanel collapsible={false} className="max-w-md">
+              <div className="flex flex-col items-center gap-4 p-2 text-center">
+                <h2 className="text-hud-display text-hud-ink">{title}</h2>
+                <p className="text-hud-body text-hud-muted">{description}</p>
+                <HudButton
+                  kind="primary"
+                  onClick={() => {
+                    this.setState({ hasError: false, error: undefined });
+                    window.location.reload();
+                  }}
+                >
+                  {buttonLabel}
+                </HudButton>
+              </div>
+            </HudPanel>
           </div>
         )
       );

@@ -1,7 +1,7 @@
 import { useMemo, useCallback, useState } from "react";
 import { useTransferAutomationStore, type TransferAutomationEntry } from "@/hooks/store/use-transfer-automation-store";
-import Button from "@/ui/design-system/atoms/button";
-import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { HudButton, HudEmpty, HudField, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { ResourcesIds, RESOURCE_PRECISION, formatCharge, resourceName, formatAgo } from "@bibliothecadao/types";
 import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -11,23 +11,11 @@ const formatResourceSummary = (entry: TransferAutomationEntry): string => {
     return entry.resourceConfigs
       .map((cfg) => {
         const amount = Math.max(0, Math.floor(cfg.amount ?? 0));
-        return `${ResourcesIds[cfg.resourceId] ?? cfg.resourceId} ${amount.toLocaleString()}`;
+        return `${resourceName(cfg.resourceId)} ${formatCharge(amount)}`;
       })
       .join(", ");
   }
-  return entry.resourceIds.map((rid) => ResourcesIds[rid] ?? `Resource ${rid}`).join(", ");
-};
-
-const formatLastRun = (timestamp: number) => {
-  const now = Date.now();
-  const diffMs = Math.max(0, now - timestamp);
-  if (diffMs < 60_000) return "just now";
-  const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 60) return `${minutes} min${minutes === 1 ? "" : "s"} ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} day${days === 1 ? "" : "s"} ago`;
+  return entry.resourceIds.map((rid) => resourceName(rid)).join(", ");
 };
 
 export const TransferAutomationAdvancedModal = () => {
@@ -98,7 +86,6 @@ export const TransferAutomationAdvancedModal = () => {
         });
 
         update(entry.id, { lastRunAt: Date.now() });
-        toast.success("Transfer executed.");
       } catch (e) {
         console.error(e);
         toast.failed(e, "Execution failed.");
@@ -176,68 +163,66 @@ export const TransferAutomationAdvancedModal = () => {
 
   const hasActiveFiltered = filtered.some((entry) => entry.active);
 
-  const content = (
-    <div className="p-3 space-y-3 overflow-y-auto max-h-[70vh]">
-      <div className="mb-3 flex flex-col gap-2">
-        <input
-          type="text"
-          className="w-full px-2 py-1 text-sm rounded border border-gold/30 bg-black/30 text-gold/80 outline-none"
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
+        <HudField
+          icon="search"
+          aria-label="Filter by source or destination"
           placeholder="Filter by source/destination"
           value={filter}
-          onChange={(e) => setFilter(e.target.value)}
+          onChange={setFilter}
         />
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="xs"
+          <HudButton
+            kind="primary"
+            size="sm"
+            busy={isRunningAll ? "Running…" : undefined}
+            disabled={!hasActiveFiltered}
             onClick={runActiveNow}
-            disabled={isRunningAll || !hasActiveFiltered}
-            isLoading={isRunningAll}
           >
             Run active transfers now
-          </Button>
-          <Button size="xs" variant="outline" onClick={pauseAll}>
+          </HudButton>
+          <HudButton kind="secondary" size="sm" onClick={pauseAll}>
             Pause all
-          </Button>
-          <Button size="xs" variant="outline" onClick={resumeAll}>
+          </HudButton>
+          <HudButton kind="secondary" size="sm" onClick={resumeAll}>
             Resume all
-          </Button>
+          </HudButton>
         </div>
       </div>
       {filtered.length === 0 ? (
-        <div className="text-sm text-kit-muted">No scheduled transfers.</div>
+        <HudEmpty icon="transfer" line="No scheduled transfers." />
       ) : (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-1">
           {filtered.map((e) => (
-            <div key={e.id} className="flex items-center justify-between rounded border border-gold/20 bg-black/30 p-2">
-              <div className="flex flex-col text-sm text-gold/80">
-                <div className="font-semibold text-gold/90">
-                  {e.sourceName ?? e.sourceEntityId} → {e.destinationName ?? e.destinationEntityId}
-                </div>
-                <div>
+            <HudRow
+              key={e.id}
+              title={`${e.sourceName ?? e.sourceEntityId} → ${e.destinationName ?? e.destinationEntityId}`}
+              detail={
+                <>
                   {formatResourceSummary(e)}
                   {e.active ? ` • every ${e.intervalMinutes}m` : " • paused"}
-                  {typeof e.lastRunAt === "number" && (
-                    <span className="text-kit-muted"> • last run {formatLastRun(e.lastRunAt)}</span>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button size="xs" onClick={() => runNow(e)}>
-                  Run now
-                </Button>
-                <Button size="xs" variant="outline" onClick={() => toggleActive(e.id, !e.active)}>
-                  {e.active ? "Pause" : "Resume"}
-                </Button>
-                <Button size="xs" variant="danger" onClick={() => remove(e.id)}>
-                  Delete
-                </Button>
-              </div>
-            </div>
+                  {typeof e.lastRunAt === "number" && ` • last run ${formatAgo(e.lastRunAt / 1000)}`}
+                </>
+              }
+              trail={
+                <>
+                  <HudButton kind="secondary" size="sm" onClick={() => runNow(e)}>
+                    Run now
+                  </HudButton>
+                  <HudButton kind="quiet" size="sm" onClick={() => toggleActive(e.id, !e.active)}>
+                    {e.active ? "Pause" : "Resume"}
+                  </HudButton>
+                  <HudButton kind="danger" size="sm" onClick={() => remove(e.id)}>
+                    Delete
+                  </HudButton>
+                </>
+              }
+            />
           ))}
         </div>
       )}
     </div>
   );
-
-  return content;
 };

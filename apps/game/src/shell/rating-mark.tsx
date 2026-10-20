@@ -1,10 +1,10 @@
+import { formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { formatExact } from "@/ui/design-system/kit/amount";
 
 import { ratingPoints, tierOf } from "./ratings";
 
 /** A tier's mark: its gilded shield, labelled with the tier's name so it reads without the picture. */
-export const TierMark = ({ rating, size = 18 }: { rating: string; size?: number }) => {
+const TierMark = ({ rating, size = 18 }: { rating: string; size?: number }) => {
   const tier = tierOf(ratingPoints(rating));
   return (
     <span role="img" aria-label={tier.name} className="inline-flex shrink-0">
@@ -15,7 +15,7 @@ export const TierMark = ({ rating, size = 18 }: { rating: string; size?: number 
 
 /** A rating on a row: its tier's mark and its whole points. */
 export const RatingFigure = ({ rating }: { rating: string }) => (
-  <span className="inline-flex items-center gap-1.5 font-body text-base font-bold tabular-nums text-kit-cream">
+  <span className="inline-flex items-center gap-1.5 text-app-strong tabular-nums text-app-ink">
     <TierMark rating={rating} size={16} />
     {formatExact(ratingPoints(rating))}
   </span>

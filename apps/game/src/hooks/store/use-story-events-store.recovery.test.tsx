@@ -1,14 +1,17 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 
 const history = vi.hoisted(() =>
-  vi.fn(async () => ({ items: [], complete_through_block: 0, limit: 1, offset: 0, total: 0 })),
+  vi.fn(async () => ({ items: [] as HeraldHistoryEvent[], complete_through_block: 0, limit: 1, offset: 0, total: 0 })),
 );
 
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: {} } }) }));
-vi.mock("@/hooks/use-player-profile", () => ({ getPlayerName: () => null }));
+// Names are not what these reads are about: no player has one, and none ever lands.
+const NAMES = vi.hoisted(() => ({ text: () => "", reading: () => ({ state: "waiting" as const, text: "…" }) }));
+vi.mock("@/hooks/use-player-profile", () => ({ usePlayerNames: () => NAMES }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => ({ chainId: "0x1" }) }));
 vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
@@ -27,6 +30,7 @@ import {
   resetGameSyncStoryEvents,
   useSeasonWinner,
   useStoryEvents,
+  useStoryReads,
 } from "./use-story-events-store";
 
 const scope = { chainId: "0x1", worldAddress: "0xabc", gameId: 1 };
@@ -79,6 +83,7 @@ let root: Root;
 
 beforeEach(async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  notifyManager.setNotifyFunction((notify) => act(notify));
   history.mockClear();
   resetGameSyncStoryEvents();
   host = document.createElement("div");
@@ -92,9 +97,188 @@ beforeEach(async () => {
   );
 });
 
-afterEach(() => act(() => root.unmount()));
+afterEach(() => {
+  history.mockReset();
+  history.mockResolvedValue({ items: [], complete_through_block: 0, limit: 1, offset: 0, total: 0 });
+  act(() => root.unmount());
+  notifyManager.setNotifyFunction((notify) => notify());
+});
+
+it("recovers the exact relic activation from history on reload without an active effect or a streamed event", async () => {
+  const payload = {
+    relic_id: "0x29",
+    recipient: "Explorer",
+    rate_bps: "0x4e2",
+    duration_seconds: "0x708",
+    radius: "0x0",
+  };
+  history.mockResolvedValue({
+    items: [
+      {
+        model: "StoryEvent",
+        game_id: "1",
+        block_number: 10,
+        transaction_hash: "0xfeed",
+        transaction_index: 0,
+        event_index: 2,
+        value: {
+          game_id: "0x1",
+          owner: "0xa",
+          entity_id: "0x9",
+          timestamp: "0x64",
+          story: { RelicActivated: payload },
+        },
+      },
+    ],
+    complete_through_block: 10,
+    limit: 1,
+    offset: 0,
+    total: 1,
+  });
+  const RelicLog = () => (
+    <ol>
+      {useStoryEvents(10, "RelicActivated", "0xa").data.map((event) => (
+        <li key={event.id}>
+          {JSON.stringify({ owner: event.owner, target: event.entity_id, effect: event.storyPayload })}
+        </li>
+      ))}
+    </ol>
+  );
+  for (let reload = 0; reload < 2; reload++) {
+    await act(async () => resetGameSyncStoryEvents());
+    const log = document.createElement("div");
+    const logRoot = createRoot(log);
+    await act(async () =>
+      logRoot.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <RelicLog />
+        </QueryClientProvider>,
+      ),
+    );
+    await vi.waitFor(() => expect(log.querySelectorAll("li")).toHaveLength(1));
+    expect(JSON.parse(log.querySelector("li")!.textContent!)).toEqual({ owner: "0xa", target: 9, effect: payload });
+    await act(async () => logRoot.unmount());
+  }
+});
+
+/** A streamed battle: `striker`'s army against `holder`'s structure 7. */
+const battleStreamed = (index: number, striker: string, holder: string) =>
+  acceptGameSyncStoryEvent(
+    {
+      model: "BattleEvent",
+      key: `0xbattle${index}`,
+      value: {
+        game_id: "0x1",
+        attacker_id: "0x384",
+        defender_id: "0x7",
+        attacker: { player: striker },
+        defender: { player: holder },
+        timestamp: `0x${(100 + index).toString(16)}`,
+        event_position: {
+          block_number: index,
+          transaction_hash: `0xb${index.toString(16)}`,
+          transaction_index: 0,
+          event_index: 0,
+        },
+      },
+    },
+    scope,
+    { block: index, preconfirmed: false },
+  );
+
+const PlayerBattles = () => (
+  <ol>
+    {useStoryEvents(10, "BattleEvent", "0x0a").data.map((event) => (
+      <li key={event.id}>{String((event.storyPayload.attacker as { player: string }).player)}</li>
+    ))}
+  </ol>
+);
+
+/** A streamed capture of structure `structure`, block `index`. */
+const captureStreamed = (index: number, structure: number) =>
+  acceptGameSyncStoryEvent(
+    {
+      model: "StoryEvent",
+      key: `0xcapture${index}`,
+      value: {
+        game_id: "0x1",
+        order: `0x${index.toString(16)}`,
+        index: "0x0",
+        owner: "0x0e",
+        entity_id: `0x${structure.toString(16)}`,
+        tx_hash: `0xc${index.toString(16)}`,
+        story: { StructureCapturedStory: { previous_owner: "0x0f", new_owner: "0x0e" } },
+        timestamp: `0x${(100 + index).toString(16)}`,
+        event_position: {
+          block_number: index,
+          transaction_hash: `0xc${index.toString(16)}`,
+          transaction_index: 0,
+          event_index: 0,
+        },
+      },
+    },
+    scope,
+    { block: index, preconfirmed: false },
+  );
+
+const PlayerFightsAndStructureCaptures = () => (
+  <ol>
+    {useStoryReads([
+      { limit: 2, story: "BattleEvent", owner: "0x0a" },
+      { limit: 2, story: "StructureCapturedStory", entityId: 7 },
+    ]).data.map((event) => (
+      <li key={event.id}>{`${event.story}@${event.position.block}`}</li>
+    ))}
+  </ol>
+);
+
+describe("several story reads", () => {
+  it("keep each its own newest, so what one leaves out never takes another's room, all newest on the chain first", async () => {
+    const log = document.createElement("div");
+    const logRoot = createRoot(log);
+    await act(async () =>
+      logRoot.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <PlayerFightsAndStructureCaptures />
+        </QueryClientProvider>,
+      ),
+    );
+    await act(async () => {
+      battleStreamed(1, "0x0a", "0x0b");
+      captureStreamed(2, 7);
+      battleStreamed(3, "0x0c", "0x0a");
+      for (let index = 10; index < 40; index++) battleStreamed(index, "0x0c", "0x0d");
+      for (let index = 40; index < 70; index++) captureStreamed(index, 8);
+    });
+    expect([...log.querySelectorAll("li")].map((item) => item.textContent)).toEqual([
+      "BattleEvent@3",
+      "StructureCapturedStory@2",
+      "BattleEvent@1",
+    ]);
+    await act(async () => logRoot.unmount());
+  });
+});
 
 describe("a story read", () => {
+  it("keeps, for a player's read, each streamed story naming the player, as their attacker or their defender", async () => {
+    const log = document.createElement("div");
+    const logRoot = createRoot(log);
+    await act(async () =>
+      logRoot.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <PlayerBattles />
+        </QueryClientProvider>,
+      ),
+    );
+    await act(async () => {
+      battleStreamed(1, "0x0a", "0x0b");
+      battleStreamed(2, "0x0c", "0x0a");
+      battleStreamed(3, "0x0c", "0x0d");
+    });
+    expect([...log.querySelectorAll("li")].map((item) => item.textContent)).toEqual(["0x0c", "0x0a"]);
+    await act(async () => logRoot.unmount());
+  });
+
   it("reads Herald's history once per handshake, never once per confirmed block", async () => {
     expect(history).toHaveBeenCalledTimes(1);
     for (let block = 1; block <= 30; block++) {
@@ -141,4 +325,165 @@ describe("a story read", () => {
     ]);
     act(() => logRoot.unmount());
   });
+});
+
+describe("a history answer that lands late", () => {
+  /** The player's battles read, its history answer held until `finish`, and a reconnect asking it. */
+  const holdTheAnswer = async () => {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <PlayerBattles />
+        </QueryClientProvider>,
+      ),
+    );
+    let finish!: (through: number) => void;
+    history.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = (through) => resolve({ items: [], complete_through_block: through, limit: 10, offset: 0, total: 0 });
+        }),
+    );
+    await act(async () => useConnectionStore.getState().recordGlobalHandshake());
+    return (through: number) =>
+      act(async () => {
+        finish(through);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      });
+  };
+  /** 599 unrelated moves in one block: the stream's 512-story ring moves past everything before them. */
+  const rollTheRing = () =>
+    act(async () => {
+      for (let index = 1001; index < 1600; index++)
+        storyAt(index, { ExplorerMove: {} }, { block: 1001, transaction: index - 1001 });
+    });
+
+  it("keeps a delivered battle when an older history read finishes after the mixed ring rolled over", async () => {
+    const answer = await holdTheAnswer();
+    await act(async () => battleStreamed(1000, "0x0c", "0x0a"));
+    expect(host.textContent).toBe("0x0c");
+    await rollTheRing();
+    expect(host.textContent).toBe("0x0c");
+    // History complete through 999 cannot speak for the battle at 1000.
+    await answer(999);
+    expect(host.textContent).toBe("0x0c");
+  });
+
+  it("lets history covering a delivered story's block decide it, and keeps no pre-confirmed story it rolled past", async () => {
+    const answer = await holdTheAnswer();
+    await act(async () => {
+      battleStreamed(1000, "0x0c", "0x0a");
+      // A pre-confirmed battle has no block yet: only the stream can confirm it, or let it go.
+      acceptGameSyncStoryEvent(
+        {
+          model: "BattleEvent",
+          key: "0xbattlepending",
+          value: {
+            game_id: "0x1",
+            attacker_id: "0x385",
+            defender_id: "0x7",
+            attacker: { player: "0x0d" },
+            defender: { player: "0x0a" },
+            timestamp: "0x500",
+            event_position: { block_number: null, transaction_hash: "0xbeef", transaction_index: 0, event_index: 0 },
+          },
+        },
+        scope,
+        { block: null, preconfirmed: true },
+      );
+    });
+    expect(host.textContent).toBe("0x0d0x0c");
+    await rollTheRing();
+    // History complete through 1000 holds no battle at 1000: it decides.
+    await answer(1000);
+    expect(host.textContent).toBe("");
+  });
+});
+
+it("asks a failed history read again once on each handshake, never on a remount or a render", async () => {
+  history.mockClear();
+  history.mockRejectedValue(new Error("temporary HTTP 503"));
+  const client = new QueryClient();
+  const show = () =>
+    act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <PlayerBattles />
+        </QueryClientProvider>,
+      ),
+    );
+  await show();
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+  expect(history).toHaveBeenCalledTimes(1);
+  // A remount and renders of the same read, under the same handshake: nothing new to ask under.
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await show();
+  await show();
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+  expect(history).toHaveBeenCalledTimes(1);
+  // Each new handshake asks it once more, whether it fails again or not.
+  for (const asked of [2, 3]) {
+    await act(async () => useConnectionStore.getState().recordGlobalHandshake());
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+    expect(history).toHaveBeenCalledTimes(asked);
+  }
+});
+
+it("reads the world's stories again each time a reader opens, so another player's new chest reaches the Log", async () => {
+  const chestOpened = (block: number, owner: string) => ({
+    model: "StoryEvent",
+    game_id: "1",
+    block_number: block,
+    transaction_hash: `0xc${block}`,
+    transaction_index: 0,
+    event_index: 0,
+    value: {
+      game_id: "0x1",
+      owner,
+      entity_id: "0x9",
+      timestamp: `0x${(100 + block).toString(16)}`,
+      story: { RewardChestOpened: { explorer_id: "0x7", structure_id: "0x9", coord: {}, amount: "0x32" } },
+    },
+  });
+  const answer = (items: ReturnType<typeof chestOpened>[], through: number) => ({
+    items,
+    complete_through_block: through,
+    limit: 350,
+    offset: 0,
+    total: items.length,
+  });
+  history.mockResolvedValue(answer([chestOpened(10, "0xd1")], 10));
+  const client = new QueryClient();
+  // The Log's World history: every player's stories, which a Frontier client's stream never carries.
+  const World = () => (
+    <ol>
+      {useStoryEvents(350).data.map((event) => (
+        <li key={event.id}>{event.owner}</li>
+      ))}
+    </ol>
+  );
+  const open = async () => {
+    const log = document.createElement("div");
+    const logRoot = createRoot(log);
+    await act(async () =>
+      logRoot.render(
+        <QueryClientProvider client={client}>
+          <World />
+        </QueryClientProvider>,
+      ),
+    );
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+    const owners = [...log.querySelectorAll("li")].map((row) => row.textContent);
+    await act(async () => logRoot.unmount());
+    return owners;
+  };
+
+  expect(await open()).toEqual(["0xd1"]);
+  // Another player opens a chest after the Log closed; nothing streams it to this client.
+  history.mockResolvedValue(answer([chestOpened(12, "0xd2"), chestOpened(10, "0xd1")], 12));
+  const asked = history.mock.calls.length;
+
+  expect(await open()).toEqual(["0xd2", "0xd1"]);
+  expect(history).toHaveBeenCalledTimes(asked + 1);
 });

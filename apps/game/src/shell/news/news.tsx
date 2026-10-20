@@ -1,72 +1,75 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRef, useState } from "react";
 
-import { Sheet } from "@/ui/design-system/kit/sheet";
-import { latestFeatures } from "@/ui/features/world/latest-features";
+import { Icon } from "@/ui/design-system/icon";
+import { AppLink, AppPanel, AppTabs } from "@/ui/design-system/kit/app-elements";
+import { NEWS_WORDS, WORDS } from "@/ui/design-system/kit/words";
 
-import { formatContentDay } from "../clock-chip";
+import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
-import { SettingRow, SettingRows } from "../profile/setting-row";
-import { PROFILE_WORDS } from "../words";
-import { postHref, publishedPosts } from "./posts";
+import { patchNotes } from "../generated/patch-notes";
+import { changedSections, PatchHead, type PatchNote, PatchSection, patchSection, ReleaseRows } from "./patch-notes";
+
+/** The game's full rules, on the docs site: the notes say what changed, the docs say everything. */
+const FULL_RULES = "https://docs.realms.world";
 
 /**
- * What's new (spec 13), a row under You and the Scroll's address: the Scroll's posts and the latest changes in one list,
- * newest first. It ends on the footer, which holds the community and the legal pages.
+ * What's new (spec 13), a place of its own in the bar: the game's patch notes, the page's whole width. A release's head
+ * with the link to the full rules, a tab per section it changed (All modes, then Frontier, Blitz, Eternum) over that
+ * section on its painting, then every release, newest first; a release picked there is shown from its head, scrolled to
+ * and focused (qa-app-1 P3-1). It ends on the footer.
  */
-export const WhatsNewPage = () => (
-  <PageFrame back="/profile" title={PROFILE_WORDS.whatsNew} footer>
-    <div className="max-w-[48rem]">
-      <SettingRows>
-        <NewsRows items={newsItems()} />
-      </SettingRows>
-    </div>
-  </PageFrame>
-);
+export const WhatsNewPage = () => {
+  const phone = useLayout() === "phone";
+  const [shown, setShown] = useState(0);
+  const note = patchNotes[shown];
+  const release = useRef<HTMLDivElement | null>(null);
+  // A release picked from the list is read from its head: the page takes the reader there, its focus with it.
+  const show = (index: number) => {
+    setShown(index);
+    queueMicrotask(() => {
+      release.current?.scrollIntoView({ block: "start" });
+      release.current?.focus({ preventScroll: true });
+    });
+  };
+  return (
+    <PageFrame title={WORDS.whatsNew}>
+      <div className="flex flex-col gap-6">
+        {phone && <h1 className="text-app-title text-app-ink">{WORDS.whatsNew}</h1>}
+        <div ref={release} tabIndex={-1} className="flex scroll-mt-6 flex-col gap-6 outline-none">
+          <Release key={note.date} note={note} />
+        </div>
+        <AppPanel icon="calendar" title={NEWS_WORDS.releases} flush>
+          <ReleaseRows notes={patchNotes} shown={shown} onShow={show} />
+        </AppPanel>
+      </div>
+    </PageFrame>
+  );
+};
 
-/** One entry of What's new: a post, or a change from the latest-features list. */
-type NewsItem =
-  | { kind: "post"; key: string; title: string; date: string; slug: string }
-  | { kind: "change"; key: string; title: string; date: string; description: string };
-
-const newsItems = (): NewsItem[] =>
-  [
-    ...publishedPosts.map(
-      (post): NewsItem => ({ kind: "post", key: post.slug, title: post.title, date: post.date, slug: post.slug }),
-    ),
-    ...latestFeatures.map(
-      (change): NewsItem => ({
-        kind: "change",
-        key: `${change.date}:${change.title}`,
-        title: change.title,
-        date: change.date,
-        description: change.description,
-      }),
-    ),
-  ].toSorted((a, b) => b.date.localeCompare(a.date));
-
-/** What's new's rows; a post opens its page, a change its sheet. */
-const NewsRows = ({ items }: { items: readonly NewsItem[] }) => {
-  const navigate = useNavigate();
-  const [change, setChange] = useState<Extract<NewsItem, { kind: "change" }> | null>(null);
+/** One release: its head, a tab per section it changed (the first chosen), and the chosen section. */
+const Release = ({ note }: { note: PatchNote }) => {
+  const sections = changedSections(note);
+  const [section, setSection] = useState(sections[0]);
   return (
     <>
-      {items.map((item) => (
-        <SettingRow
-          key={item.key}
-          icon="chronicles"
-          name={item.title}
-          value={formatContentDay(item.date)}
-          onOpen={() => (item.kind === "post" ? navigate(postHref(item)) : setChange(item))}
-        />
-      ))}
-      {change && (
-        <Sheet label={change.title} onClose={() => setChange(null)} placement="page">
-          <h2 className="pt-1 font-body text-lg font-bold text-kit-cream">{change.title}</h2>
-          <p className="text-sm text-kit-muted">{formatContentDay(change.date)}</p>
-          <p className="pb-2 text-base leading-[26px] text-kit-cream">{change.description}</p>
-        </Sheet>
-      )}
+      <AppPanel icon="book" title={NEWS_WORDS.patchNotes} cue={<FullRulesLink />}>
+        <PatchHead note={note} />
+      </AppPanel>
+      <AppTabs
+        tabs={sections.map((mode) => ({ key: mode, label: patchSection(mode).name }))}
+        value={section}
+        onChange={setSection}
+        label={NEWS_WORDS.patchNotes}
+      >
+        <PatchSection note={note} mode={section} />
+      </AppTabs>
     </>
   );
 };
+
+const FullRulesLink = () => (
+  <AppLink to={FULL_RULES} className="flex items-center gap-2 text-app-strong text-app-ink hover:underline">
+    {NEWS_WORDS.fullRules}
+    <Icon name="external-link" size={18} />
+  </AppLink>
+);

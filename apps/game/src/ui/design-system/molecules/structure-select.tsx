@@ -1,5 +1,4 @@
-import { useId } from "react";
-import { safeInteger } from "@bibliothecadao/eternum/game-client";
+import { HudSelect } from "@/ui/design-system/kit/hud-elements";
 
 interface StructureSelectProps {
   value: number;
@@ -7,27 +6,18 @@ interface StructureSelectProps {
   options: { entityId: number; name: string }[];
 }
 
-/** Native selection keeps long realm lists usable with touch and the mobile keyboard. */
-export const StructureSelect = ({ value, onChange, options }: StructureSelectProps) => {
-  const id = useId();
-  return (
-    <div className="flex min-w-0 items-center gap-2">
-      <label htmlFor={id} className="shrink-0 text-sm text-gold/75">
-        Structure
-      </label>
-      <select
-        id={id}
-        value={value}
-        onChange={(event) => onChange(safeInteger(event.target.value))}
-        className="min-h-11 min-w-0 flex-1 rounded-md border border-gold/30 bg-[#101c23] px-2 text-base text-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
-      >
-        {!options.some((option) => option.entityId === value) && <option value={value}>Select a structure</option>}
-        {options.map((option) => (
-          <option key={option.entityId} value={option.entityId}>
-            {option.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-};
+/** Which structure a workspace edits, as the sheet's select: its list opens over every surface. */
+export const StructureSelect = ({ value, onChange, options }: StructureSelectProps) => (
+  <div className="flex min-w-0 items-center gap-2">
+    <span className="shrink-0 text-hud-label text-hud-muted">Structure</span>
+    <HudSelect
+      label="Structure"
+      value={value}
+      options={[
+        ...(options.some((option) => option.entityId === value) ? [] : [{ value, label: "Select a structure" }]),
+        ...options.map((option) => ({ value: option.entityId, label: option.name })),
+      ]}
+      onChange={onChange}
+    />
+  </div>
+);

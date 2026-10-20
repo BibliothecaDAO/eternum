@@ -8,7 +8,7 @@ import { routeIdentityRequest } from "./routes";
 
 const query = vi.fn();
 const env = {
-  ENVIRONMENT: "production",
+  ENVIRONMENT: "staging",
   L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   PUBLIC_RATE_LIMIT: { limit: vi.fn(async () => ({ success: true })) },
   DB: { prepare: () => ({ bind: (...ids: string[]) => ({ all: () => query(ids) }) }) },
@@ -23,7 +23,7 @@ const request = (parameters: string) =>
 let cache: ReturnType<typeof testRatingReader>;
 let call: MockInstance<RpcProvider["callContract"]>;
 beforeEach(() => {
-  Object.assign(env, { ENVIRONMENT: "production" });
+  Object.assign(env, { ENVIRONMENT: "staging" });
   cache = testRatingReader();
   env.RATING_READER = cache.binding as unknown as IdentityEnv["RATING_READER"];
   query.mockClear();
@@ -173,6 +173,15 @@ it("uses the dev rating token instead of production on the same chain", async ()
   expect(idFromName).toHaveBeenCalledWith("SN_MAIN");
   expect(call).toHaveBeenCalledWith(expect.objectContaining({ contractAddress: "0xded" }), "0xabc");
   expect(resolve).toHaveBeenCalledWith("mmrToken", "staging");
+});
+
+it("serves no production rating while production's book names no deployed rating token", async () => {
+  cache.close();
+  Object.assign(env, { ENVIRONMENT: "production" });
+  cache = testRatingReader({ ENVIRONMENT: "production" });
+  env.RATING_READER = cache.binding as unknown as IdentityEnv["RATING_READER"];
+  expect((await request("players=0xa")).status).toBe(503);
+  expect(call).not.toHaveBeenCalled();
 });
 
 it("does not read production ratings when the dev token has not been deployed", async () => {

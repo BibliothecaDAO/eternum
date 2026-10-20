@@ -17,6 +17,37 @@ describe("the map's shortcuts", () => {
     expect(escape.defaultPrevented).toBe(true);
   });
 
+  it("leave Enter and Space to a focused button, link or tab, which they press, and take every other key there", () => {
+    const pressed = vi.fn();
+    const lettered = vi.fn();
+    const manager = CentralizedShortcutManager.getInstance();
+    manager.registerShortcut({ id: "chat", key: "Enter", description: "", action: pressed });
+    manager.registerShortcut({ id: "step", key: " ", description: "", action: pressed });
+    manager.registerShortcut({ id: "build", key: "b", description: "", action: lettered });
+    const controls = ['<button type="button"></button>', '<a href="#"></a>', '<div role="tab" tabindex="0"></div>'];
+    const taken = controls.flatMap((html) => {
+      document.body.innerHTML = html;
+      return ["Enter", " ", "b"].map((key) => {
+        const event = press(key);
+        document.body.firstElementChild!.dispatchEvent(event);
+        return event.defaultPrevented;
+      });
+    });
+    document.body.innerHTML = "";
+    expect(pressed).not.toHaveBeenCalled();
+    expect(lettered).toHaveBeenCalledTimes(3);
+    expect(taken).toEqual([false, false, true, false, false, true, false, false, true]);
+  });
+
+  it("leave every key typed into a field", () => {
+    const action = vi.fn();
+    CentralizedShortcutManager.getInstance().registerShortcut({ id: "build", key: "b", description: "", action });
+    document.body.innerHTML = '<input /><textarea></textarea><div contenteditable="true"></div>';
+    for (const field of document.body.children) field.dispatchEvent(press("b"));
+    document.body.innerHTML = "";
+    expect(action).not.toHaveBeenCalled();
+  });
+
   it("leave a key an open surface already took", () => {
     const action = vi.fn();
     CentralizedShortcutManager.getInstance().registerShortcut({ id: "back", key: "Escape", description: "", action });

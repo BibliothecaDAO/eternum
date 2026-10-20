@@ -1,5 +1,4 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import Button from "@/ui/design-system/atoms/button";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { GuildInviteList } from "@/ui/features/social/guilds/guild-invites-list";
 import { GuildMemberList } from "./guild-member-list";
@@ -13,6 +12,7 @@ import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 
 import { env } from "../../../../../env";
+import { HudButton, HudTabs } from "@/ui/design-system/kit/hud-elements";
 
 interface GuildMembersProps {
   players: PlayerInfo[];
@@ -119,24 +119,28 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
     [update_whitelist, account],
   );
 
-  const socialsText =
+  // Written when Share is pressed, as every shared line is.
+  const shareTribe =
     userGuild?.entityId === selectedGuildEntityId
-      ? formatSocialText(userGuild?.isOwner ? twitterTemplates.createdTribe : twitterTemplates.joinedTribe, {
-          tribeName: selectedGuild?.name,
-          addressName: playerName,
-          url: env.VITE_SOCIAL_LINK,
-        })
+      ? () =>
+          formatSocialText(userGuild?.isOwner ? twitterTemplates.createdTribe : twitterTemplates.joinedTribe, {
+            tribeName: selectedGuild?.name,
+            addressName: playerName,
+            url: env.VITE_SOCIAL_LINK,
+          })
       : undefined;
 
   return (
     <div className="flex min-h-72 h-full w-full flex-col overflow-hidden p-2">
-      <div className="mb-4 rounded-xl border border-gold/20 bg-dark/45 p-4">
+      <div className="mb-4 rounded-xl border border-hud-line bg-hud-well p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h2 className="truncate text-lg font-semibold text-gold">{selectedGuild?.name || "Tribe"}</h2>
-            <p className="mt-1 text-sm text-kit-muted">{selectedGuild?.isPublic ? "Public Tribe" : "Private Tribe"}</p>
+            <h2 className="truncate text-hud-title text-hud-accent">{selectedGuild?.name || "Tribe"}</h2>
+            <p className="mt-1 text-hud-label uppercase text-hud-muted">
+              {selectedGuild?.isPublic ? "Public Tribe" : "Private Tribe"}
+            </p>
           </div>
-          {socialsText && <TwitterShareButton text={socialsText} />}
+          {shareTribe && <TwitterShareButton text={shareTribe} />}
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -153,28 +157,18 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
 
       {userIsGuildMaster && (
         <div className="mb-3 grid grid-cols-2 gap-2">
-          <Button
-            className={`flex items-center justify-center gap-1.5 ${viewGuildInvites ? "" : "bg-gold/10 border-gold/40"}`}
-            variant="outline"
-            size="xs"
-            onClick={() => setViewGuildInvites(false)}
-          >
-            <SemanticIcon name="people" className="h-4 w-4" />
-            <span>Members ({memberCount})</span>
-          </Button>
-          <Button
-            className={`flex items-center justify-center gap-1.5 ${viewGuildInvites ? "bg-gold/10 border-gold/40" : ""}`}
-            variant="outline"
-            size="xs"
-            onClick={() => setViewGuildInvites(true)}
-          >
-            <SemanticIcon name="mail" className="h-4 w-4" />
-            <span>Invites ({inviteCount})</span>
-          </Button>
+          <HudTabs
+            tabs={[
+              { key: "members", label: "Members", count: memberCount, icon: "people" },
+              { key: "invites", label: "Invites", count: inviteCount, icon: "mail" },
+            ]}
+            value={viewGuildInvites ? "invites" : "members"}
+            onChange={(key) => setViewGuildInvites(key === "invites")}
+          />
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border border-gold/15 bg-dark/40 p-2">
+      <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border border-hud-divider bg-hud-well p-2">
         {viewGuildInvites ? (
           <GuildInviteList
             invitedPlayers={invitedPlayers}
@@ -196,25 +190,23 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
 
       <div className="mt-4 flex flex-wrap gap-2">
         {userGuild?.entityId === selectedGuildEntityId && (
-          <Button
-            className="flex-1 flex items-center justify-center gap-1.5"
-            isLoading={isLoading}
-            variant="red"
+          <HudButton
+            kind="danger"
+            icon="minus"
+            busy={isLoading ? "Leaving…" : undefined}
             onClick={() => (userGuild.isOwner ? disbandGuild() : leaveGuild())}
           >
-            <SemanticIcon name="minus" className="h-4 w-4" />
-            <span>{userGuild.isOwner ? "Disband Tribe" : "Leave Tribe"}</span>
-          </Button>
+            {userGuild.isOwner ? "Disband Tribe" : "Leave Tribe"}
+          </HudButton>
         )}
         {!userGuild?.entityId && (selectedGuild?.isPublic || userIsInvited) && (
-          <Button
-            className="flex-1 flex items-center justify-center gap-1.5"
-            isLoading={isLoading}
-            variant="primary"
+          <HudButton
+            kind="primary"
+            busy={isLoading ? "Joining…" : undefined}
             onClick={() => joinGuild(selectedGuildEntityId)}
           >
             Join Tribe
-          </Button>
+          </HudButton>
         )}
       </div>
     </div>
@@ -222,11 +214,11 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
 };
 
 const GuildMetaPill = ({ icon: Icon, label, value }: { icon: IconMeaning; label: string; value: string }) => (
-  <div className="rounded-md border border-gold/15 bg-black/25 px-2 py-1.5 text-sm">
-    <div className="flex items-center gap-1 text-kit-muted">
+  <div className="rounded-md border border-hud-divider bg-hud-well px-2 py-1.5 text-hud-label">
+    <div className="flex items-center gap-1 text-hud-muted">
       <SemanticIcon name={Icon} className="h-3.5 w-3.5" />
-      <span className="">{label}</span>
+      <span className="uppercase">{label}</span>
     </div>
-    <div className="mt-1 truncate font-semibold text-gold">{value}</div>
+    <div className="mt-1 truncate text-hud-strong text-hud-accent">{value}</div>
   </div>
 );

@@ -4,6 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 
 import { dayOf } from "@bibliothecadao/eternum";
 
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
+import { Tooltip } from "@/ui/design-system/molecules/tooltip";
+
 import { dayBounds } from "../hud/day-clock";
 import { TodaySheet } from "./today-sheet";
 
@@ -17,16 +20,19 @@ const render = (props: Partial<Parameters<typeof TodaySheet>[0]>) => {
   const root = createRoot(host);
   act(() =>
     root.render(
-      <TodaySheet
-        day={12}
-        today
-        totals={totals}
-        lines={[{ id: "a", at: 0, text: "Army 1 cleared a camp" }]}
-        failed={false}
-        onRetry={vi.fn()}
-        onClose={vi.fn()}
-        {...props}
-      />,
+      <>
+        <Tooltip />
+        <TodaySheet
+          day={12}
+          today
+          totals={totals}
+          lines={[{ id: "a", at: 0, text: "Army 1 cleared a camp" }]}
+          failed={false}
+          onRetry={vi.fn()}
+          onClose={vi.fn()}
+          {...props}
+        />
+      </>,
     ),
   );
   return { host, unmount: () => act(() => root.unmount()) };
@@ -52,13 +58,34 @@ describe("Today", () => {
     // Each of the six figures is one image named with its figure: what a reader hears, and what the tooltip shows.
     expect(
       [...host.querySelectorAll('[role="img"][aria-label]')].map((cell) => cell.getAttribute("aria-label")),
-    ).toEqual(["Reveals 19", "Sites cleared 2", "Chests 0", "Essence +4,150", "labor +550", "LORDS —"]);
+    ).toEqual(["Reveals 19", "Sites cleared 2", "Chests 0", "Essence +4,150", "Labor +550", "LORDS —"]);
+    // Each tally is named in words under its figure, not by its icon alone.
+    expect([...host.querySelectorAll("[data-total]")].map((cell) => cell.textContent)).toEqual([
+      "19Reveals",
+      "2Sites cleared",
+      "0Chests",
+      "+4,150Essence",
+      "+550Labor",
+      "—LORDS",
+    ]);
     expect(host.textContent).toContain("—");
     expect(host.textContent).toContain("Army 1 cleared a camp");
     const later = host.querySelector<HTMLButtonElement>("button[aria-label='Day 13']")!;
     expect(later.disabled).toBe(true);
     act(() => host.querySelector<HTMLButtonElement>("button[aria-label='Day 11']")!.click());
     expect(onEarlier).toHaveBeenCalled();
+    unmount();
+  });
+
+  it("puts no tooltip over a line that already reads whole", () => {
+    const { host, unmount } = render({});
+    const line = [...host.querySelectorAll("li")].find((row) => row.textContent?.includes("Army 1 cleared a camp"))!;
+    act(() => {
+      const event = new MouseEvent("pointerover", { bubbles: true });
+      Object.defineProperty(event, "pointerType", { value: "mouse" });
+      line.querySelector(".ui-event__text")!.dispatchEvent(event);
+    });
+    expect(useTooltipStore.getState().tooltip).toBeNull();
     unmount();
   });
 

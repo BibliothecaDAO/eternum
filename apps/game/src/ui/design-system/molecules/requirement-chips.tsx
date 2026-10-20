@@ -1,7 +1,9 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatIncomingEta } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds, formatExact } from "@bibliothecadao/types";
+import { costLine } from "@/ui/design-system/kit/words";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 export interface ResourceRequirement {
   resource: ResourcesIds;
@@ -12,10 +14,7 @@ export interface ResourceRequirement {
   incoming?: { amount: number; etaSeconds: number } | null;
 }
 
-export const REQUIREMENT_CHIP =
-  "flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-sm font-semibold tabular-nums";
-
-/** Every cost the HUD shows reads the same way: held / needed per resource, red while short. */
+/** A cost as chips, one per resource, each read as every cost reads (costLine), in bad while short. */
 export const RequirementChips = ({
   requirements,
   className,
@@ -24,24 +23,22 @@ export const RequirementChips = ({
   className?: string;
 }) => (
   <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
-    {requirements === undefined && <span className={REQUIREMENT_CHIP}>—</span>}
+    {requirements === undefined && <HudChip>—</HudChip>}
     {requirements?.map((req) => {
       const isMet = req.current !== undefined && req.current >= req.amount;
       const incomingTitle = req.incoming
-        ? ` (+${Math.floor(req.incoming.amount).toLocaleString()} in transit, ${formatIncomingEta(req.incoming.etaSeconds)})`
+        ? ` (+${formatExact(Math.floor(req.incoming.amount))} in transit, ${formatIncomingEta(req.incoming.etaSeconds)})`
         : "";
       return (
         <span
           key={`${req.resource}-${req.amount}`}
-          className={REQUIREMENT_CHIP}
-          title={`${ResourcesIds[req.resource] ?? `Resource ${req.resource}`} — need ${req.amount.toLocaleString()}${incomingTitle}`}
+          data-tip={`${costLine(req.amount, req.current, req.resource)}${incomingTitle}`}
         >
-          <ResourceIcon withTooltip={false} resource={ResourcesIds[req.resource]} size="xs" />
-          <span className={isMet ? "text-gold" : "text-red-300"}>
-            {req.current === undefined ? "—" : Math.floor(req.current).toLocaleString()}
-          </span>
-          <span className={isMet ? "text-kit-muted" : "text-red-300/80"}>/ {req.amount.toLocaleString()}</span>
-          {req.incoming && <span className="text-emerald-300/90">↑</span>}
+          <HudChip tone={isMet ? undefined : "bad"}>
+            <ResourceIcon withTooltip={false} resource={req.resource} size="xs" />
+            {costLine(req.amount, req.current)}
+            {req.incoming && <span className="text-hud-good">↑</span>}
+          </HudChip>
         </span>
       );
     })}

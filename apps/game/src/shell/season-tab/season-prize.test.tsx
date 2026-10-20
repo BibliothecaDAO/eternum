@@ -5,7 +5,7 @@ import type { Call } from "starknet";
 import { afterEach, expect, it, vi } from "vitest";
 
 const signed = vi.hoisted(() => ({ calls: [] as Call[][], owners: [] as string[] }));
-vi.mock("@/ui/modules/identity/wallet-actions", () => ({
+vi.mock("@/shell/value/wallet-actions", () => ({
   WalletSign: ({ owner, calls, onLanded }: { owner: string; calls: Call[]; onLanded: () => void }) => (
     <button
       type="button"
@@ -156,7 +156,7 @@ afterEach(async () => {
 
 it("shows the pool, and on each paid rating place what it would take if the season ended now", async () => {
   const panel = await mountPrize(prize({}));
-  expect(panel.querySelector("h2")!.textContent).toContain("7,000");
+  expect(panel.querySelector("header")!.textContent).toContain("7,000");
   expect(panel.textContent).toContain("3 places paid");
   // Places 1 to 3 of the rating take 4,000, 2,000 and 1,000 of the pool: ceil(25 × 10%) places, each half the last.
   expect([...panel.querySelectorAll("li")].map((row) => row.textContent)).toEqual([
@@ -312,18 +312,21 @@ const RATINGS_DOWN = { isError: true, isPending: false, isSuccess: false, error:
 const RATINGS_WAITING = { isError: false, isPending: true, isSuccess: false };
 
 it.each([
-  ["fails", RATINGS_DOWN, "Ratings did not answer."],
+  ["fails", RATINGS_DOWN, "Ratings did not answer.Try again"],
   ["is still on its way", RATINGS_WAITING, ""],
 ])("keeps a share to claim claimable while the rating %s", async (_, rating, line) => {
   ratings.current = rating;
   const claim = await mountPrize(
     prize({ posted: true, end: NOW - 7200, reviewUntil: NOW - 60 }, { share: 4_000n * WEI, position: 0 }),
   );
-  expect(claim.querySelector("h2")!.textContent).toContain("7,000");
-  expect(claim.textContent).toContain("Your share4,000");
+  expect(claim.querySelector("header")!.textContent).toContain("7,000");
+  // The share is a figure: its value over its label.
+  expect(claim.textContent).toContain("4,000Your share");
   // The rating's rows are its own: absent, with their one wait or failure in their place.
   expect(claim.querySelectorAll("li")).toHaveLength(0);
-  expect([...claim.querySelectorAll('[role="status"]')].map((status) => status.textContent)).toEqual([line]);
+  expect([...claim.querySelectorAll('[role="status"], [role="alert"]')].map((status) => status.textContent)).toEqual([
+    line,
+  ]);
   await act(async () =>
     [...claim.querySelectorAll("button")].find((button) => button.textContent === "Claim")!.click(),
   );

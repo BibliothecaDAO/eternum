@@ -1,5 +1,4 @@
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { configManager } from "@bibliothecadao/eternum";
@@ -12,21 +11,16 @@ type TableComponent = React.ComponentType<{
   disableButtons?: boolean;
 }>;
 
-/** Resource actions need the selected structure to be the player's own, and the main phase to have begun. */
-const useResourceActionsDisabled = (): boolean => {
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const ownsSelected = useFactView(playerStructuresView).some((structure) => structure.entityId === structureEntityId);
+/** Resource actions need the holding shown to be the player's own, and the main phase to have begun. */
+const useResourceActionsDisabled = (entityId: ID | undefined): boolean => {
+  const ownsShown = useFactView(playerStructuresView).some((structure) => structure.entityId === entityId);
   const nowSeconds = useCurrentBlockTimestamp();
-  return !ownsSelected || configManager.getSeasonConfig().startMainAt > nowSeconds;
+  return !ownsShown || configManager.getSeasonConfig().startMainAt > nowSeconds;
 };
 
 export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | undefined }) => {
   const [useNewVersion, setUseNewVersion] = useState(() => localStorage.getItem("useNewResourceTable") === "true");
-  const disableButtons = useResourceActionsDisabled();
-
-  const [hasInteractedWithToggle, setHasInteractedWithToggle] = useState(
-    () => localStorage.getItem("hasUsedResourceTableToggle") === "true",
-  );
+  const disableButtons = useResourceActionsDisabled(entityId);
 
   const [OldTable, setOldTable] = useState<TableComponent | null>(null);
   const [NewTable, setNewTable] = useState<TableComponent | null>(null);
@@ -43,18 +37,10 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
     }
   }, [useNewVersion, OldTable, NewTable]);
 
-  const handleToggle = useCallback(
-    (newValue: boolean) => {
-      setUseNewVersion(newValue);
-      localStorage.setItem("useNewResourceTable", String(newValue));
-
-      if (!hasInteractedWithToggle) {
-        setHasInteractedWithToggle(true);
-        localStorage.setItem("hasUsedResourceTableToggle", "true");
-      }
-    },
-    [hasInteractedWithToggle],
-  );
+  const handleToggle = useCallback((newValue: boolean) => {
+    setUseNewVersion(newValue);
+    localStorage.setItem("useNewResourceTable", String(newValue));
+  }, []);
 
   const TableComponent = useNewVersion ? NewTable : OldTable;
 
@@ -65,13 +51,8 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
   return (
     <div className="flex flex-col gap-4">
       {!disableButtons && (
-        <div className="flex justify-center pb-2 border-b border-gold/20">
-          <ViewToggle
-            useNewVersion={useNewVersion}
-            onToggle={handleToggle}
-            showAnimation={!hasInteractedWithToggle}
-            variant="full"
-          />
+        <div className="flex justify-center border-b border-hud-divider pb-2">
+          <ViewToggle useNewVersion={useNewVersion} onToggle={handleToggle} />
         </div>
       )}
       <TableComponent entityId={entityId} disableButtons={disableButtons} />

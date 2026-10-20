@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import { TransactionType } from "@bibliothecadao/provider";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
@@ -8,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { disposeActiveGameSyncRuntime, installFreshGameSyncRuntime } from "../sync/game-sync-runtime";
 import type { HeraldSocket } from "../sync/herald-game-sync-transport";
+import { HERALD_GAME_FINALIZED_CLOSE } from "../sync/herald-http-types";
 import { createManualGameSyncScheduler } from "../sync/scheduler";
 import { createGameClient, type CreateGameClientInput } from "./game-client";
 import * as shardMetadata from "./shard";
@@ -184,7 +186,13 @@ describe("createGameClient", () => {
       }),
     };
     const send = () =>
-      harness.settle(client.setup.network.provider.submitCommand(account as unknown as AccountInterface, explore));
+      harness.settle(
+        client.setup.network.provider.submitCommand(
+          account as unknown as AccountInterface,
+          explore,
+          TransactionType.EXPLORE,
+        ),
+      );
     try {
       await send();
       // A second tab signs at the chain's next nonce, outside this client's local submission registry.
@@ -219,7 +227,7 @@ describe("createGameClient", () => {
     const harness = createHarness({ actor: "0x111" });
     const client = await bootClient(harness);
     const { account, execute } = playerAccount();
-    void client.setup.network.provider.submitCommand(account, explore).catch(() => undefined);
+    void client.setup.network.provider.submitCommand(account, explore, TransactionType.EXPLORE).catch(() => undefined);
     await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce());
     expect(execute.mock.calls[0]![0]).toMatchObject({ contractAddress: "0x1", entrypoint: "play" });
     expect(playCalldata(execute).slice(0, 3)).toEqual(["54", "1", String(0x789n)]);
@@ -279,8 +287,8 @@ describe("createGameClient", () => {
     provider.on("transactionComplete", complete);
     provider.on("transactionFailed", failed);
     try {
-      const first = provider.submitCommand(account, explore);
-      const next = provider.submitCommand(account, explore);
+      const first = provider.submitCommand(account, explore, TransactionType.EXPLORE);
+      const next = provider.submitCommand(account, explore, TransactionType.EXPLORE);
       await vi.advanceTimersByTimeAsync(299);
       expect(nonces).toEqual(["0x7", "0x8"]);
       expect(complete).not.toHaveBeenCalled();
@@ -311,6 +319,77 @@ describe("createGameClient", () => {
     client.dispose();
   });
 
+  it("watches a finished game from its final state and keeps it whole through connect, visit and disconnect", async () => {
+    const harness = createHarness();
+    // The finished game as Herald archived it: its rules, its release and its registry, ended at 1,792,400,000.
+    const review = {
+      confirmed_block: 640,
+      game_id: "54",
+      models: [rulesSnapshot, releaseSnapshot]
+        .map(({ model, rows }) => ({ model, rows }))
+        .concat({
+          model: "GameRegistry",
+          rows: [
+            {
+              key: "0x36",
+              value: {
+                name: "0x7465737432",
+                seed: "0x1",
+                ready: true,
+                end_at: "0x6ad5da80",
+                game_id: "0x36",
+                settled: true,
+                preset_id: "0x2",
+                dev_mode_on: false,
+                start_main_at: "0x6ad5cf60",
+                end_grace_seconds: "0x0",
+                start_settling_at: "0x6ad5ce34",
+              },
+            },
+          ],
+        }),
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        String(url).endsWith("/games/54/review/snapshot")
+          ? new Response(JSON.stringify(review))
+          : new Response(JSON.stringify(harness.manifest)),
+      ),
+    );
+    const creation = createGameClient(harness.input);
+    await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
+    // Herald refuses a finalized game's stream for good.
+    (harness.sockets[0]!.onclose as unknown as (event: { code: number }) => void)({
+      code: HERALD_GAME_FINALIZED_CLOSE,
+    });
+    const client = await harness.settle(creation);
+    const scheduler = harness.input.scheduler as ReturnType<typeof createManualGameSyncScheduler>;
+    // The runtime applies a gate change through its ingest queue, which this harness runs by hand.
+    const drain = async () => {
+      for (let round = 0; round < 20; round += 1) {
+        scheduler.flushNext();
+        await flushMicrotasks();
+      }
+    };
+    const scope = () => client.setup.store.subscriptionScope();
+    await drain();
+    expect(scope()).toHaveProperty("known");
+    // An account connecting, a realm visited, the account leaving: the archive holds every scope, so none reopens a
+    // stream or leaves an absent row unknown.
+    client.connect({ address: "0x111" } as AccountInterface);
+    await drain();
+    expect(scope()).toHaveProperty("known");
+    client.visit("0x222");
+    await drain();
+    expect(scope()).toHaveProperty("known");
+    client.disconnect();
+    await drain();
+    expect(scope()).toHaveProperty("known");
+    expect(harness.sockets).toHaveLength(1);
+    client.dispose();
+  });
+
   it("opens and submits a release-1 game when the shard's current release is 2", async () => {
     const harness = createHarness();
     harness.fetchManifest.mockResolvedValue(new Response(JSON.stringify({ ...harness.manifest, releaseId: "2" })));
@@ -323,7 +402,7 @@ describe("createGameClient", () => {
     for (const message of [rulesSnapshot, releaseSnapshot, snapshotEnd]) socket.receive(message);
     const client = await harness.settle(creation);
     const { account, execute } = playerAccount();
-    void client.setup.network.provider.submitCommand(account, explore).catch(() => undefined);
+    void client.setup.network.provider.submitCommand(account, explore, TransactionType.EXPLORE).catch(() => undefined);
     await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce());
     expect(playCalldata(execute)[1]).toBe("1");
     expect(harness.fetchManifest).toHaveBeenCalledOnce();
@@ -354,7 +433,7 @@ describe("createGameClient", () => {
     ]);
     await flushMicrotasks(30);
     const { account, execute } = playerAccount();
-    void client.setup.network.provider.submitCommand(account, explore).catch(() => undefined);
+    void client.setup.network.provider.submitCommand(account, explore, TransactionType.EXPLORE).catch(() => undefined);
     await flushMicrotasks();
     expect(execute).not.toHaveBeenCalled();
     expect(socket.closed).toBe(false);
@@ -400,7 +479,7 @@ describe("createGameClient", () => {
     await harness.settle(Promise.resolve());
     await vi.waitFor(() => expect(harness.fetchManifest).toHaveBeenCalledOnce());
     const { account, execute } = playerAccount();
-    void client.setup.network.provider.submitCommand(account, explore).catch(() => undefined);
+    void client.setup.network.provider.submitCommand(account, explore, TransactionType.EXPLORE).catch(() => undefined);
     await flushMicrotasks();
     expect(execute).not.toHaveBeenCalled();
     finishRefresh();

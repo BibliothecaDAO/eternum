@@ -1,4 +1,4 @@
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { useAudio } from "@/audio/hooks/useAudio";
 import { resolveCompactLane, useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import {
@@ -7,9 +7,9 @@ import {
   type SurfacePlacement,
   usePopoverStore,
 } from "@/hooks/store/use-popover-store";
-import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { HudIconButton } from "@/ui/design-system/kit/hud-elements";
+import { isInLayerOpenedFrom } from "@/ui/design-system/kit/sheet-closes";
 
 import {
   type CSSProperties,
@@ -29,17 +29,8 @@ const HEADER_CLEARANCE_PX = 56;
 const COMPACT_SHEET_BOTTOM_INSET = "max(1rem, env(safe-area-inset-bottom))";
 /** Portrait sheets use at most 85% of the screen; the keyboard can reduce the content height further. */
 const COMPACT_SHEET_CONTENT_HEIGHT = "85dvh";
-/** The landscape drawer's width cap; keep in step with the `max-lg:landscape:w-[...]` in `SURFACE_WORKSPACE_CLASS`. */
+/** The landscape drawer's width cap; keep in step with the workspace drawer width in hud-sheet.css. */
 const COMPACT_DRAWER_MAX_WIDTH = "min(100vw, 640px)";
-
-/**
- * Size of a full workspace surface (Build, Military, Market...): a wide desk on desktop, a full bottom sheet below
- * `lg`, and a drawer down the right edge when the phone is sideways. The landscape height is the drawer's header
- * clearance (`HEADER_CLEARANCE_PX`, 3.5rem) plus its bottom inset (`COMPACT_SHEET_BOTTOM_INSET`), so the child
- * fits the drawer exactly; Tailwind needs the class as a literal, so keep the three in step.
- */
-export const SURFACE_WORKSPACE_CLASS =
-  "w-[1180px] h-[calc(100dvh-9rem)] max-lg:w-screen max-lg:h-[min(85dvh,calc(var(--surface-viewport-height,100dvh)-4rem))] max-lg:landscape:w-[min(60vw,640px)] max-lg:landscape:h-[calc(var(--surface-viewport-height,100dvh)-3.5rem-max(1rem,env(safe-area-inset-bottom))-2px)]";
 
 type PopoverAlign = "start" | "end";
 
@@ -93,6 +84,8 @@ const OpenPanel = ({
 }: PopoverPanelProps) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelStyle, setPanelStyle] = useState<CSSProperties | null>(null);
+  // A HUD window draws its own surface, bar and size; the panel then only places it, drags it and closes it.
+  const [holdsWindow, setHoldsWindow] = useState(false);
   const lane = useCompactLane();
   const drag = useSurfaceDrag(lane === null);
   const resolveAnchor = typeof anchor === "function" ? anchor : () => anchor;
@@ -106,8 +99,10 @@ const OpenPanel = ({
   isInsideAnchorRef.current = isInsideAnchor;
 
   useLayoutEffect(() => {
-    const place = () =>
+    const place = () => {
+      setHoldsWindow(isHudWindow(panelRef.current));
       setPanelStyle(resolvePanelStyle(resolveAnchorRef.current(), align, placement, panelRef.current));
+    };
     place();
     // Content that grows or shrinks after opening (data arriving) moves a centred modal and a popover's fit.
     const content = panelRef.current?.firstElementChild;
@@ -132,6 +127,7 @@ const OpenPanel = ({
       )
         return;
       if (isInsideAnchorRef.current(event.target) || isInside(event.target, panelRef.current)) return;
+      if (panelRef.current && isInLayerOpenedFrom(event.target, panelRef.current)) return;
       const policy = mapClickRef.current;
       if (event.target instanceof HTMLCanvasElement && policy !== "dismiss" && policy.reanchor(event)) return;
       onDismissRef.current();
@@ -176,11 +172,13 @@ const OpenPanel = ({
       aria-label={ariaLabel}
       data-popover-panel={id}
       className={cn(
-        "pointer-events-auto fixed z-[130] w-80 touch-pan-y overflow-y-auto outline-none overscroll-contain rounded-xl p-4 text-gold",
-        "max-lg:w-screen max-lg:rounded-b-none",
-        "max-lg:landscape:w-auto max-lg:landscape:rounded-b-xl max-lg:landscape:rounded-r-none",
-        OVERLAY_SURFACE_BASE,
-        className,
+        "pointer-events-auto fixed z-hud-popover touch-pan-y overflow-y-auto outline-none overscroll-contain",
+        !holdsWindow && [
+          "ui ui-popover w-80 rounded-xl p-4",
+          "max-lg:w-screen max-lg:rounded-b-none",
+          "max-lg:landscape:w-auto max-lg:landscape:rounded-b-xl max-lg:landscape:rounded-r-none",
+          className,
+        ],
       )}
       style={drag.apply(panelStyle)}
       onPointerDown={drag.onPointerDown}
@@ -280,40 +278,10 @@ interface PopoverHeaderProps {
   onClose: () => void;
 }
 
-/** The header strip for a large surface: title, optional icon, close. Dragging it moves the surface. */
-const PopoverHeader = ({ title, icon: Icon, onClose }: PopoverHeaderProps) => (
-  <div
-    data-popover-drag-handle
-    className="flex shrink-0 cursor-move max-lg:cursor-default select-none touch-none items-center justify-between gap-2 border-b border-gold/15 px-4 py-2.5 max-lg:py-1"
-  >
-    <span className={cn("flex items-center gap-2", HUD_LABEL_BRIGHT)}>
-      {Icon && <SemanticIcon name={Icon} className="h-4 w-4 text-gold" />}
-      {title}
-    </span>
-    <button
-      type="button"
-      onClick={onClose}
-      className="inline-flex h-7 w-7 max-lg:h-11 max-lg:w-11 cursor-pointer items-center justify-center rounded-full border border-gold/30 bg-black/30 text-gold/80 transition hover:border-gold hover:bg-gold/15 hover:text-gold"
-      aria-label="Close"
-      title="Close"
-    >
-      <SemanticIcon name="close" className="h-4 w-4" />
-    </button>
-  </div>
-);
-
-interface SurfaceFrameProps {
-  title: ReactNode;
-  icon?: IconMeaning;
-  onClose: () => void;
-  footer?: ReactNode;
-  /** Width and height of the surface, usually `SURFACE_WORKSPACE_CLASS`; the panel caps both to the viewport. */
-  className?: string;
-  bodyClassName?: string;
-  children: ReactNode;
-}
-
-/** A large surface's frame: the header strip over a scrolling body, with an optional footer. It is a full modal. */
+/**
+ * A large surface's frame, in the HUD sheet's window: its bar (title, painting, close; dragging it moves the surface)
+ * over a scrolling body, with an optional foot. It is a full modal, and the panel draws no box of its own around it.
+ */
 export const SurfaceFrame = ({
   title,
   icon,
@@ -323,12 +291,27 @@ export const SurfaceFrame = ({
   bodyClassName,
   children,
 }: SurfaceFrameProps) => (
-  <div data-surface-frame className={cn("flex max-w-full min-h-0 flex-col", className)}>
-    <PopoverHeader title={title} icon={icon} onClose={onClose} />
-    <div className={cn("min-h-0 flex-1 overflow-y-auto", bodyClassName)}>{children}</div>
-    {footer && <div className="shrink-0 border-t border-gold/15 p-4 max-lg:p-2">{footer}</div>}
-  </div>
+  <section data-surface-frame className={cn("ui ui-window max-w-full min-h-0", className)}>
+    <header className="ui-window__bar" data-popover-drag-handle>
+      {icon && <Icon name={icon} size={22} />}
+      <span>{title}</span>
+      <HudIconButton icon="close" label="Close" kind="quiet" onClick={onClose} />
+    </header>
+    <div className={cn("ui-window__body", bodyClassName)}>{children}</div>
+    {footer && <footer className="ui-window__foot ui-actions">{footer}</footer>}
+  </section>
 );
+
+interface SurfaceFrameProps {
+  title: ReactNode;
+  icon?: IconMeaning;
+  onClose: () => void;
+  footer?: ReactNode;
+  /** Width and height of the surface, usually the sheet's workspace class; the panel caps both to the viewport. */
+  className?: string;
+  bodyClassName?: string;
+  children: ReactNode;
+}
 
 /** The rect a surface should hang from when a button opens it. */
 export const surfaceAnchorFrom = (element: Element): SurfaceAnchor => {
@@ -339,7 +322,7 @@ export const surfaceAnchorFrom = (element: Element): SurfaceAnchor => {
 /**
  * Where the panel sits. Below `lg` every anchor collapses: a phone has no room beside a trigger, so upright it is a
  * bottom sheet whose height budget is its content plus the safe-area strip, and sideways it is a drawer down the
- * right edge under the header, so a `SURFACE_WORKSPACE_CLASS` child fits exactly either way. On desktop a full modal
+ * right edge under the header, so a workspace-sized child fits exactly either way. On desktop a full modal
  * stands in the middle of the screen, wherever it was opened from (a tile, a button), unless it is set against a side
  * of the screen; a small popover hangs from its anchor.
  */
@@ -359,9 +342,12 @@ const resolvePanelStyle = (
   return resolveAnchoredPanelStyle(anchor, align, panel);
 };
 
-/** A full modal is a `SurfaceFrame`; anything else in a panel is a small popover. */
+/** A HUD window (HudWindow) in the panel: it brings its own surface, bar and size. */
+const isHudWindow = (panel: HTMLElement | null): boolean => panel?.querySelector(":scope > .ui-window") != null;
+
+/** A full modal is a HUD window or a `SurfaceFrame`; anything else in a panel is a small popover. */
 const isFullModal = (panel: HTMLElement | null): boolean =>
-  panel?.querySelector(":scope > [data-surface-frame]") != null;
+  isHudWindow(panel) || panel?.querySelector(":scope > [data-surface-frame]") != null;
 
 const isSideEdge = (anchor: PanelAnchor): boolean => anchor === "right-edge" || anchor === "bottom-right";
 

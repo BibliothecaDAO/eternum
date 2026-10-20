@@ -22,25 +22,20 @@ export interface EmpireSuggestion extends Omit<BlitzSuggestionDraft, "priority">
   icon: IconMeaning;
 }
 
+/** Each step's painting: what it builds, or the realm's level-up. */
 const ACTION_ICONS: Record<EmpireSuggestionAction, IconMeaning> = {
-  "build-copper": "realm" as const,
-  "build-coal": "realm" as const,
-  "build-first": "realm" as const,
-  "build-military": "defend" as const,
-  "build-market": "realm" as const,
-  "build-wheat": "wheat" as const,
-  "build-wood": "realm" as const,
-  "build-worker-hut": "home" as const,
-  "deploy-explorer": "map" as const,
-  "expand-population": "relics" as const,
-  garrison: "defend" as const,
-  upgrade: "arrow-up" as const,
+  "build-copper": "copper",
+  "build-coal": "coal",
+  "build-military": "barracks",
+  "build-wheat": "farm",
+  "build-wood": "wood",
+  "build-worker-hut": "workers-hut",
+  upgrade: "upgrade",
 };
 
-const compareSuggestionDrafts = (left: BlitzSuggestionDraft, right: BlitzSuggestionDraft) => {
-  if (left.emphasis !== right.emphasis) return left.emphasis === "primary" ? -1 : 1;
-  return left.priority - right.priority;
-};
+/** The realms' next steps in the order their kind comes first: a level-up, a hut, then the order's buildings. */
+const compareSuggestionDrafts = (left: BlitzSuggestionDraft, right: BlitzSuggestionDraft) =>
+  left.priority - right.priority;
 
 const resolveBlitzActivity = ({
   resolvedWorldGameMode,
@@ -71,9 +66,8 @@ const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestion => {
 };
 
 /**
- * Aggregates per-realm suggestions across the current empire. Blitz suggestions
- * are intentionally affordability-aware and only expose build actions that can
- * be submitted by the same autobuild path used in the construction UI.
+ * Every realm's next step in a running Blitz (core's buildBlitzRealmSuggestions on the default build order): only a
+ * step that can be submitted now, by the same build path the construction window uses.
  */
 export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const {

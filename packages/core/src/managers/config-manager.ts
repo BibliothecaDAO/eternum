@@ -14,6 +14,11 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
+
+/** The first relic's resource id: the game's relic rules are listed from it (relics.cairo FIRST_RELIC). */
+const FIRST_RELIC_ID = ResourcesIds.StaminaRelic1;
+/** The stamina relics, which last their uses rather than their duration. */
+const STAMINA_RELIC_IDS = new Set<number>([ResourcesIds.StaminaRelic1, ResourcesIds.StaminaRelic2]);
 import { buildingCostModeOf, type BuildingCostMode } from "../utils/building-cost-mode";
 import { enabledHelpTransfers, type HelpTransfer } from "../utils/army-help";
 import { isModeRuleEnabled } from "../utils/mode-rules";
@@ -121,6 +126,21 @@ export class ClientConfigManager {
     const recipe = this.facts().get("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId });
     if (!recipe) return missingRule(`production recipe for resource ${resourceId}`);
     return this.divideByPrecision(Number(simple ? recipe.simple_output : recipe.complex_output));
+  }
+  /**
+   * A recipe in the chain's own integer units, as refill_from_recipes spends and makes it: what each cycle burns and
+   * makes. The simple recipe is labor's, the complex one resources'.
+   */
+  getRecipeUnits(resourceId: ResourcesIds, simple: boolean) {
+    const recipe = this.facts().get("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId });
+    if (!recipe) return missingRule(`production recipe for resource ${resourceId}`);
+    return {
+      inputs: (simple ? recipe.simple_inputs : recipe.complex_inputs).map(({ resource_type, amount }) => ({
+        resource: resource_type as ResourcesIds,
+        units: BigInt(amount),
+      })),
+      outputUnits: BigInt(simple ? recipe.simple_output : recipe.complex_output),
+    };
   }
   /** The upgrade recipes this game defines, by the level they unlock. */
   realmUpgradeRecipes() {
@@ -428,7 +448,7 @@ export class ClientConfigManager {
       // A Frontier site stands behind the one guard it was found with.
       [StructureType.Rift]: 1,
       [StructureType.Ruin]: 1,
-      [StructureType.Stragglers]: 1,
+      [StructureType.Beasts]: 1,
     };
   }
   getResourceBridgeFeeSplitConfig() {
@@ -484,9 +504,11 @@ export class ClientConfigManager {
     if (grams === undefined) throw new Error("Unknown capacity category");
     return Number(grams) / 1000;
   }
-  getSpeedConfig(entityType: EntityType): number {
+  /** Seconds a donkey takes per tile; donkeys carrying troops have their own pace. */
+  getSpeedConfig(entityType: EntityType, carriesTroops = false): number {
     if (entityType !== EntityType.DONKEY) throw new Error("Unknown entity speed");
-    return this.rules().speed_config.donkey_sec_per_km;
+    const speed = this.rules().speed_config;
+    return carriesTroops ? speed.donkey_sec_per_km_troops : speed.donkey_sec_per_km;
   }
   getBuildingConfig() {
     return this.rules().building_config;
@@ -520,15 +542,26 @@ export class ClientConfigManager {
       pointsForWin: wholePoints(this.facts().require("SeasonWinThreshold", { game_id: this.gameId }).points),
     };
   }
-  /** What each scoring action grants in this game, in whole victory points. */
+  /**
+   * What each scoring action grants in this game, in whole victory points. A held hyperstructure earns its rate every
+   * second, times what the contract's multiplier counts (hyperstructures.cairo): 1 without the multiplier rule, 2 in a
+   * Duel, else each realm settled on the six sites around it.
+   */
   getVictoryPointGrants() {
-    const grants = this.rules().victory_points_grant_config;
+    const rules = this.rules();
+    const grants = rules.victory_points_grant_config;
+    const hyperstructureScale: "flat" | "double" | "per-realm" = !isModeRuleEnabled(rules, "HYPERSTRUCTURE_MULTIPLIERS")
+      ? "flat"
+      : this.getSettlementConfig().mode === "Duel"
+        ? "double"
+        : "per-realm";
     return {
       exploreTile: wholePoints(grants.explore_tiles_points),
       claimCampFromBandits: wholePoints(grants.claim_otherstructure_points),
       claimHyperstructureFromBandits: wholePoints(grants.claim_hyperstructure_points),
       openRelicCrate: wholePoints(grants.relic_open_points),
-      hyperstructurePerRealmPerSecond: wholePoints(grants.hyp_points_per_second),
+      hyperstructurePerSecond: wholePoints(grants.hyp_points_per_second),
+      hyperstructureScale,
     };
   }
   getBasePopulationCapacity() {
@@ -578,6 +611,22 @@ export class ClientConfigManager {
   }
   getSpireTravelEssenceCost() {
     return this.divideByPrecision(Number(this.rules().spire_travel_essence_cost));
+  }
+  /**
+   * How long a relic's effect lasts, in seconds (0 for one that acts at once), and the Essence it costs to activate,
+   * as the game's relic rules set them: rules are listed from the first relic id, and the stamina relics last their
+   * uses, the others their duration, each in army ticks (relics.cairo, boost_explorer and boost_production). The rule
+   * holds the cost in whole Essence, which the chain scales to resource precision when it spends it.
+   */
+  getRelicActivation(relicId: number): { durationSeconds: number; essenceCost: number } {
+    const rules = this.facts().require("RelicRules", { game_id: this.gameId }).rules;
+    const rule = rules[relicId - FIRST_RELIC_ID];
+    if (!rule) throw new Error(`No relic rule for relic ${relicId}`);
+    const ticks = STAMINA_RELIC_IDS.has(relicId) ? rule.uses : rule.duration;
+    return {
+      durationSeconds: ticks * this.getTick(TickIds.Armies),
+      essenceCost: Number(rule.essence_cost),
+    };
   }
   getArtificerConfig() {
     return {

@@ -86,8 +86,10 @@ export function buildTroopLimitConfig(config: Config) {
     // A preset that sets no cap pays exploration rewards on the whole army, which the contract reads as 0.
     explore_reward_strength_cap: config.troop.limit.exploreRewardStrengthCap ?? 0,
 
-    mercenaries_troop_lower_bound: config.troop.limit.mercenariesTroopLowerBound,
-    mercenaries_troop_upper_bound: config.troop.limit.mercenariesTroopUpperBound,
+    light_guard_lower_bound: config.troop.limit.lightGuardLowerBound,
+    light_guard_upper_bound: config.troop.limit.lightGuardUpperBound,
+    heavy_guard_lower_bound: config.troop.limit.heavyGuardLowerBound,
+    heavy_guard_upper_bound: config.troop.limit.heavyGuardUpperBound,
     settlement_deployment_cap: config.troop.limit.settlementDeploymentCap,
     city_deployment_cap: config.troop.limit.cityDeploymentCap,
     kingdom_deployment_cap: config.troop.limit.kingdomDeploymentCap,

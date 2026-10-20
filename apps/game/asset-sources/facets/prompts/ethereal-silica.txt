@@ -1,1 +1,1 @@
-A pale cyan translucent silica crystal with milky opalescent interior, broad frosted planes, no external glow.
+Restore the exact master from apps/game/asset-sources/lab/rss-icons/history/ethereal-silica.png, verified against its catalog SHA-256. Historical provenance: 638fd7fb410:apps/game/public/images/resources/21.png. Deliver through normalizeMaster and deliverIcon; the visible subject fills about 90% of each final canvas.

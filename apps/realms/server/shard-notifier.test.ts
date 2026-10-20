@@ -171,12 +171,23 @@ const createHerald = () => {
       timestamp: Math.floor(Date.now() / 1000),
     });
   };
+  /** Any story of the player's on the next block, written as the explore story was recorded. */
+  const story = (variant: string, payload: Record<string, unknown>) => {
+    const recorded = recordedItem("StoryEvent", "ExplorationReward");
+    append(recorded, {
+      ...recorded.value,
+      game_id: GAME_ID,
+      owner: PLAYER_ACCOUNT,
+      timestamp: Math.floor(Date.now() / 1000),
+      story: { [variant]: payload },
+    });
+  };
   /** The same host now serves a fresh chain: another chain id, and a history that starts again at block 11. */
   const newChain = (chain: string) => {
     state.chain = chain;
     log.length = 0;
   };
-  return { answer, act, battle, newChain, state };
+  return { answer, act, battle, newChain, state, story };
 };
 
 /** The game's rules with a short armies tick, the player's home realm, and their army if it still exists. */
@@ -540,6 +551,23 @@ it.concurrent(
     await waitUntil(() => push.received.length >= 3, 20_000);
     await pause(polls(10));
     expect(push.received).toEqual([201, 201, 201]);
+    await worker.dispose();
+  },
+  120_000,
+);
+
+it.concurrent(
+  "a story that cannot be put into words is left, and the explore reward and battle after it still alert",
+  async () => {
+    const { herald, push, worker } = await createHarness("all");
+    await worker.runCron();
+    await pause(polls(5)); // the notifier reaches the shard's head
+    herald.story("BuildingPlacementStory", { change: "Unknown" }); // its copy refuses an unknown change
+    herald.act(0); // an explore reward: delivered at All, in its own words
+    herald.battle();
+    await waitUntil(() => push.received.length >= 2, 20_000);
+    await pause(polls(5)); // nothing more comes for the page (the army's rest is ticks away)
+    expect(push.received).toEqual([201, 201]);
     await worker.dispose();
   },
   120_000,

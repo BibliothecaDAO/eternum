@@ -1,32 +1,45 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { useGame } from "@/hooks/context/game-context";
 import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-
-import { Position as PositionType, structureMapPosition } from "@bibliothecadao/eternum";
-import { playerAvatarUrl, usePlayerDisplayName } from "@/hooks/use-player-profile";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useFactView } from "@/hooks/use-fact-view";
 import { gameStructuresView } from "@/sync/fact-views";
-
-import { Button } from "@/ui/design-system/atoms";
-import { ViewOnMapIcon } from "@/ui/design-system/molecules";
-import { NavigateToPositionIcon } from "@/ui/design-system/molecules/navigate-to-position-icon";
-import { configManager, getRealmNameById, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
-import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress, StructureType } from "@bibliothecadao/types";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
+import { playerAvatarUrl, usePlayerDisplayName } from "@/hooks/use-player-profile";
+import {
+  configManager,
+  getEntityName,
+  getGameMode,
+  LeaderboardManager,
+  Position,
+  presentedMineKind,
+  structureMapPosition,
+} from "@bibliothecadao/eternum";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { PlayerActivityBreakdown } from "@bibliothecadao/eternum/game-sync";
+import {
+  ContractAddress,
+  formatExact,
+  formatPercent,
+  formatRate,
+  formatPoints,
+  structureName,
+  type StructureType,
+} from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { presentedMineKind } from "@bibliothecadao/eternum";
-import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
-interface PlayerStructureView {
-  entity_id: number;
-  coord_x: number;
-  coord_y: number;
-  category: StructureType;
-  realm_id: number;
-  has_wonder: boolean;
-}
+import { normalizeLeaderboardAddress } from "../player/finalized-blitz-leaderboard";
+import { useInGameLeaderboard } from "../player/use-in-game-leaderboard";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 
+/**
+ * A player's detail beside the leaderboard: what earns them points and what they hold. Their points by activity, the
+ * structures they own by kind, and the hyperstructures paying them now, each with its share, its points a second and a
+ * way to go to it.
+ */
 export const PlayerId = ({
   selectedPlayer,
   selectedGuild,
@@ -36,222 +49,181 @@ export const PlayerId = ({
   selectedGuild?: ContractAddress;
   back?: () => void;
 }) => {
+  const name = usePlayerDisplayName(selectedPlayer);
+  const address = normalizeLeaderboardAddress(selectedPlayer);
+  const standing = useInGameLeaderboard().standingsByAddress.get(address);
+  const { data: activity } = useLeaderboardActivity();
+  const breakdown =
+    activity?.find((entry) => normalizeLeaderboardAddress(entry.address) === address)?.activityBreakdown ?? null;
+  const holdings = useHyperstructuresPaying(selectedPlayer);
+  const owned = ownedStructures(useFactView(gameStructuresView), BigInt(selectedPlayer));
+  const ownedTotal = owned.reduce((total, { count }) => total + count, 0);
+
+  return (
+    <section aria-label="Player details" className="flex flex-col gap-2 p-2">
+      {selectedGuild !== undefined && back && (
+        <button type="button" onClick={back} className={`flex items-center gap-1 self-start px-1 text-hud-body`}>
+          <SemanticIcon name="arrow-left" className="h-3 w-3" /> Back
+        </button>
+      )}
+      <header className="flex items-center gap-2 px-1">
+        <Avatar address={selectedPlayer} />
+        <span className={`min-w-0 flex-1 truncate text-hud-title`}>{name || "Unknown player"}</span>
+        {standing && (
+          <span className="text-hud-strong">
+            #{standing.rank} · {formatPoints(standing.points)}
+          </span>
+        )}
+      </header>
+
+      <HudPanel kind="section" collapsible={false} title="Points">
+        <PointsByActivity breakdown={breakdown} />
+      </HudPanel>
+
+      <HudPanel
+        kind="section"
+        collapsible={false}
+        title="Structures"
+        cue={ownedTotal > 0 ? formatExact(ownedTotal) : undefined}
+      >
+        {owned.length === 0 ? (
+          <p className="text-hud-body text-hud-cue">None.</p>
+        ) : (
+          <dl aria-label="Structures owned" className="flex flex-col gap-1">
+            {owned.map(({ name, count }) => (
+              <div key={name} className="flex items-baseline justify-between gap-2">
+                <dt className="text-hud-body">{name}</dt>
+                <dd className="text-hud-strong">{formatExact(count)}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </HudPanel>
+
+      <HudPanel kind="section" collapsible={false} title="Hyperstructures giving points">
+        {holdings.length === 0 ? (
+          <p className="text-hud-body text-hud-cue">None now.</p>
+        ) : (
+          <ul className="flex flex-col gap-1">
+            {holdings.map((holding) => (
+              <HyperstructureRow key={holding.id} holding={holding} />
+            ))}
+          </ul>
+        )}
+      </HudPanel>
+    </section>
+  );
+};
+
+/** The activities that earned the player points, each with its count and points; nothing for one that earned none. */
+export const PointsByActivity = ({ breakdown }: { breakdown: PlayerActivityBreakdown | null }) => {
+  if (!breakdown) return <p className="text-hud-body text-hud-cue">Reading the points…</p>;
+  const lines = [
+    { label: "Tiles explored", stat: breakdown.exploration },
+    { label: "Crates opened", stat: breakdown.openRelicChest },
+    { label: "Rifts and camps taken", stat: breakdown.otherStructureBanditsDefeat },
+    { label: "Hyperstructures taken", stat: breakdown.hyperStructureBanditsDefeat },
+    { label: "Hyperstructures held", stat: { ...breakdown.hyperstructureShare, count: 0 } },
+  ].filter(({ stat }) => stat.points > 0);
+  if (lines.length === 0) return <p className="text-hud-body text-hud-cue">No points yet.</p>;
+  return (
+    <dl className="flex flex-col gap-1">
+      {lines.map(({ label, stat }) => (
+        <div key={label} className="flex items-baseline justify-between gap-2">
+          <dt className="text-hud-body">
+            {label}
+            {stat.count > 0 && <span className="text-hud-muted"> · {formatExact(stat.count)}</span>}
+          </dt>
+          <dd className="text-hud-strong">{formatPoints(stat.points)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+};
+
+/** What a player owns, by kind (a mine by what it yields), the most held first: "Realm 2", "Camp 1". */
+const ownedStructures = (
+  structures: readonly NativeRows["Structure"][],
+  owner: bigint,
+): { name: string; count: number }[] => {
+  const counts = new Map<string, number>();
+  for (const structure of structures) {
+    if (structure.owner !== owner) continue;
+    const name = structureName(structure.base.category as StructureType, presentedMineKind(structure), getGameMode());
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return [...counts]
+    .map(([name, count]) => ({ name, count }))
+    .toSorted((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+};
+
+interface HyperstructurePaying {
+  id: number;
+  name: string;
+  share: number;
+  perSecond: number;
+  position: Position | null;
+}
+
+/** One hyperstructure paying the player: its name, their share, what it pays them a second, and where it stands. */
+const HyperstructureRow = ({ holding }: { holding: HyperstructurePaying }) => {
+  const navigateToMapView = useNavigateToMapView();
+  const selectOnMap = useUIStore((state) => state.selectOnMap);
+  const at = holding.position?.getNormalized();
+  return (
+    <li className="flex items-center gap-2">
+      <span className={`min-w-0 flex-1 truncate text-hud-body`}>{holding.name}</span>
+      <span className="text-hud-body tabular-nums text-hud-muted">{formatPercent(holding.share)}</span>
+      <span className="text-hud-strong">points {formatRate(holding.perSecond)}</span>
+      {at && (
+        <button
+          type="button"
+          title="Go to it on the map"
+          onClick={() => {
+            // The map, on the hyperstructure, with it selected; the leaderboard closes so it shows.
+            usePopoverStore.getState().close("leaderboard");
+            navigateToMapView(holding.position!);
+            selectOnMap({ kind: "structure", entityId: holding.id });
+          }}
+          className="rounded-md border border-hud-line px-1.5 text-hud-body tabular-nums text-hud-accent hover:bg-hud-hover"
+        >
+          ({at.x}, {at.y})
+        </button>
+      )}
+    </li>
+  );
+};
+
+/** The hyperstructures paying the player now: their current shares at each allocation's rate, not what has accrued. */
+const useHyperstructuresPaying = (player: ContractAddress): HyperstructurePaying[] => {
   const {
     setup: { store },
   } = useGame();
-
-  const mode = useGameModeConfig();
-  // The world slices are the subscription: the bridge publishes them once per ingest slice.
-  const structures = useFactView(gameStructuresView);
-  const revision = useNativeRevision(["HyperstructureShares", "PlayerPoints"]);
+  const revision = useNativeRevision(["HyperstructureShares", "SliceRules", "GameRegistry", "Structure"]);
   const now = useCoarseNowSeconds(30);
-
-  const playerStructures = useMemo(
-    () =>
-      structures.flatMap((structure) => {
-        if (structure.owner !== selectedPlayer) return [];
-
-        const position = structureMapPosition(store, structure);
-        if (!position) return [];
-        return [
-          {
-            entity_id: safeInteger(structure.entity_id),
-            coord_x: position.x,
-            coord_y: position.y,
-            category: Number(structure.base.category) as StructureType,
-            realm_id: Number(structure.metadata.realm_id),
-            has_wonder: Boolean(structure.metadata.has_wonder),
-          },
-        ];
-      }),
-    [selectedPlayer, structures],
-  );
-
-  const playerName = usePlayerDisplayName(selectedPlayer);
-
-  // getHyperstructureConfig
-  // Count structure types
-  const structureCounts = useMemo(() => {
-    if (!playerStructures) return { realms: 0, mines: 0, hyperstructures: 0, banks: 0, villages: 0 };
-
-    return playerStructures.reduce(
-      (acc, structure) => {
-        if (structure.category === StructureType.Realm) {
-          acc.realms++;
-        } else if (structure.category === StructureType.Mine) {
-          acc.mines++;
-        } else if (structure.category === StructureType.Hyperstructure) {
-          acc.hyperstructures++;
-        } else if (structure.category === StructureType.Bank) {
-          acc.banks++;
-        } else if (structure.category === StructureType.Village) {
-          acc.villages++;
-        }
-
-        return acc;
-      },
-      { realms: 0, mines: 0, hyperstructures: 0, banks: 0, villages: 0 },
-    );
-  }, [playerStructures]);
-
-  // Get hyperstructure shareholder points breakdown
-  const unregisteredShareholderPointsBreakdown = useMemo(() => {
-    if (!selectedPlayer) return [];
-    return LeaderboardManager.instance(store).getPlayerHyperstructurePointsBreakdown(selectedPlayer);
-  }, [selectedPlayer, store, revision, now]);
-
-  // Helper function to get structure name
-  const getStructureName = (structure: PlayerStructureView): string => {
-    if (structure.category === StructureType.Realm && structure.realm_id) {
-      const baseName = getRealmNameById(structure.realm_id);
-      return structure.has_wonder ? `WONDER - ${baseName}` : baseName;
-    }
-
-    // For other structure types, use the type name with entity ID
-    return `${mode.structure.getTypeName(structure.category as StructureType, mineKindOf(store, structure.entity_id)) ?? "Structure"} ${structure.entity_id}`;
-  };
-
-  return (
-    <div className="pointer-events-auto h-full flex flex-col">
-      {!!selectedGuild && (
-        <Button variant={"outline"} className={"mt-2 ml-2"} onClick={back}>
-          <SemanticIcon name="arrow-left" className="w-2 mr-2" /> Back
-        </Button>
-      )}
-
-      <div className="p-4 flex-1 flex flex-col overflow-hidden">
-        {/* Player header */}
-        <div className="flex flex-row gap-4 border-gold/20">
-          <AvatarImage address={toHexString(selectedPlayer!)} />
-
-          <div className="flex flex-col justify-between flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <div className=" items-center gap-3 rounded-lg shadow-md flex-1">
-                <h4 className=" truncate">{playerName || "No player selected"}</h4>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Structure counts */}
-        {playerStructures && playerStructures.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 my-2">
-            <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
-              <span className="text-xl font-bold text-gold">{structureCounts.realms}</span>
-              <span className="text-sm text-gold/80 h6">{mode.labels.realms}</span>
-            </div>
-            <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
-              <span className="text-xl font-bold text-gold">{structureCounts.villages}</span>
-              <span className="text-sm text-gold/80 h6">{mode.labels.villages}</span>
-            </div>
-            <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
-              <span className="text-xl font-bold text-gold">{structureCounts.hyperstructures}</span>
-              <span className="text-sm text-gold/80 h6">Hyperstructures</span>
-            </div>
-            <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
-              <span className="text-xl font-bold text-gold">{structureCounts.mines}</span>
-              <span className="text-sm text-gold/80 h6">Mines</span>
-            </div>
-            {structureCounts.banks > 0 && (
-              <div className="flex flex-col items-center p-2 rounded-md border border-gold/10">
-                <span className="text-xl font-bold text-gold">{structureCounts.banks}</span>
-                <span className="text-sm text-gold/80 h6">Banks</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Hyperstructure Shareholder Points */}
-        {unregisteredShareholderPointsBreakdown.length > 0 && (
-          <div className="mb-4 py-3">
-            <h5 className="text-sm font-semibold text-gold mb-3 px-1">Hyperstructure Shareholdings</h5>
-            <div className="space-y-2">
-              {unregisteredShareholderPointsBreakdown.map((breakdown) => {
-                const pointsPerSecond = breakdown.pointsPerSecond.toFixed(2);
-                return (
-                  <div
-                    key={breakdown.hyperstructureId}
-                    className="bg-gradient-to-r from-blue-500/10 to-transparent p-3 rounded-lg border border-blue-400/30 shadow-sm hover:shadow-md transition-all duration-300"
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-medium text-blue-300/90">
-                        Hyperstructure #{breakdown.hyperstructureId}
-                      </span>
-                      <span className="text-sm text-blue-300/80"></span>
-                    </div>
-                    <p className="text-sm  flex items-center">
-                      <span role="img" aria-label="sparkle" className="mr-1.5 text-base">
-                        ✨
-                      </span>
-                      <span>
-                        Share:{" "}
-                        <strong className="font-medium text-yellow-400">
-                          {(breakdown.shareholderPercentage * 100).toFixed(1)}%
-                        </strong>
-                      </span>
-                      <span className="mx-1.5 ">|</span>
-                      <span>
-                        Yield: <strong className="font-medium text-lime-400">{pointsPerSecond}</strong> pts/sec
-                      </span>
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-          <div className="grid grid-cols-1 gap-3">
-            {playerStructures.map((structure) => {
-              const position = PositionType.fromContract({ x: structure.coord_x, y: structure.coord_y });
-              const structureName = getStructureName(structure);
-
-              return (
-                <div
-                  key={structure.entity_id}
-                  className="flex flex-col gap-2 border border-gold/20 p-3 rounded-md bg-brown/5 hover:bg-brown/10 transition-colors"
-                >
-                  <div className="flex justify-between items-start">
-                    <h6 className="truncate flex-1">{structureName}</h6>
-                    <div className="flex items-center gap-1">
-                      <NavigateToPositionIcon className="w-5 h-5" position={position} />
-                      <ViewOnMapIcon className="w-4 h-4" position={position} />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 text-sm text-gold/70 mb-2">
-                    <SemanticIcon name="location" size={12} />
-                    <span>
-                      Position: {position.getNormalized().x}, {position.getNormalized().y}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-
-            {playerStructures.length === 0 && (
-              <div className="col-span-2 text-center p-4 text-kit-muted">No properties found for this player</div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return useMemo(() => {
+    void revision;
+    void now;
+    return LeaderboardManager.instance(store)
+      .getPlayerHyperstructuresPaying(player)
+      .map((share) => {
+        const structure = store.get("Structure", {
+          game_id: configManager.getActiveGameId(),
+          entity_id: share.hyperstructureId,
+        });
+        const at = structure ? structureMapPosition(store, structure) : null;
+        return {
+          id: share.hyperstructureId,
+          name: getEntityName(share.hyperstructureId, store) ?? "Hyperstructure",
+          share: share.shareholderPercentage,
+          perSecond: share.pointsPerSecond,
+          position: at ? Position.fromContract({ x: at.x, y: at.y }) : null,
+        };
+      });
+  }, [player, store, revision, now]);
 };
 
-const AvatarImage = ({ address }: { address: string }) => {
-  const avatarUrl = playerAvatarUrl(address);
-
-  return (
-    <div className="w-24 h-24 rounded-md overflow-hidden border-2 border-gold/20 shadow-lg bg-brown/30">
-      <img className="h-full w-full object-cover" src={avatarUrl} alt="Player avatar" />
-    </div>
-  );
-};
-
-/** The mine kind a structure is drawn as, when the game's facts hold it. */
-const mineKindOf = (store: NativeFactStore, entityId: number) => {
-  const row = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
-  return row ? presentedMineKind(row) : undefined;
+const Avatar = ({ address }: { address: ContractAddress }) => {
+  const url = playerAvatarUrl(address);
+  return url ? <img src={url} alt="" className="h-8 w-8 rounded-full border border-hud-line object-cover" /> : null;
 };

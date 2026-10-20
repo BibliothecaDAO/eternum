@@ -105,7 +105,7 @@ patchedDependencies:
     hash: fbafe2385e9760ac2c5a414ddc801db85a9accc4709f27138759aad1de5efc0e
     path: patches/@cartridge__controller@0.13.16.patch
   three@0.186.1:
-    hash: 94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021
+    hash: 11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e
     path: patches/three@0.186.1.patch
 
 importers:
@@ -197,6 +197,40 @@ importers:
       vitest:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@20.19.33)(@vitest/ui@2.1.9)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)
+
+  apps/admin:
+    dependencies:
+      '@bibliothecadao/eternum':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@bibliothecadao/launch-service':
+        specifier: workspace:*
+        version: link:../launch-service
+      '@realms-world/status-monitor':
+        specifier: workspace:*
+        version: link:../status-monitor
+      hono:
+        specifier: ^4.9.12
+        version: 4.11.10
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: 5.20260922.1
+        version: 5.20260922.1
+      '@types/node':
+        specifier: ^22.13.5
+        version: 22.20.1
+      miniflare:
+        specifier: 4.20260730.0
+        version: 4.20260730.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@22.20.1)(@vitest/ui@2.1.9)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)
+      wrangler:
+        specifier: 4.136.3
+        version: 4.136.3(@cloudflare/workers-types@5.20260922.1)(@types/node@22.20.1)(bufferutil@4.1.0)(utf-8-validate@5.0.10)
 
   apps/agent-runner:
     dependencies:
@@ -384,7 +418,7 @@ importers:
         version: 8.9.2
       starknetkit:
         specifier: catalog:game
-        version: 3.4.3(0bc49ee50f12721c0ef4306dc362daf6)
+        version: 3.4.3(c87bad8f184530984f1f80b67f7fc8a8)
       tailwind-merge:
         specifier: ^2.5.2
         version: 2.6.1
@@ -393,7 +427,7 @@ importers:
         version: 3.4.19(tsx@4.21.0)(yaml@2.9.0)
       three:
         specifier: ^0.186.1
-        version: 0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021)
+        version: 0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e)
       vite-plugin-pwa:
         specifier: ^0.20.5
         version: 0.20.5(vite@5.4.21(@types/node@20.19.33)(lightningcss@1.32.0)(terser@5.46.0))(workbox-build@7.4.0(@types/babel__core@7.20.5))(workbox-window@7.4.0)
@@ -482,9 +516,6 @@ importers:
       rollup-plugin-visualizer:
         specifier: ^6.0.3
         version: 6.0.5(rolldown@1.2.5)(rollup@2.79.2)
-      sanitize-html:
-        specifier: ^2.17.0
-        version: 2.17.7
       typescript-eslint:
         specifier: ^8.53.1
         version: 8.56.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3)
@@ -1353,9 +1384,6 @@ importers:
 
   packages/identity:
     dependencies:
-      effect:
-        specifier: 4.0.4
-        version: 4.0.4
       '@bibliothecadao/notifications':
         specifier: workspace:*
         version: link:../notifications
@@ -1365,6 +1393,9 @@ importers:
       '@scure/starknet':
         specifier: ^1.1.0
         version: 1.1.2
+      effect:
+        specifier: 4.0.4
+        version: 4.0.4
     devDependencies:
       tsup:
         specifier: ^8.0.2
@@ -1394,12 +1425,12 @@ importers:
 
   packages/provider:
     dependencies:
-      effect:
-        specifier: 4.0.4
-        version: 4.0.4
       '@bibliothecadao/types':
         specifier: workspace:*
         version: link:../types
+      effect:
+        specifier: 4.0.4
+        version: 4.0.4
       eventemitter3:
         specifier: ^5.0.1
         version: 5.0.4
@@ -1456,15 +1487,15 @@ importers:
 
   packages/value-ledger:
     dependencies:
-      effect:
-        specifier: 4.0.4
-        version: 4.0.4
       '@bibliothecadao/eternum':
         specifier: workspace:*
         version: link:../core
       '@bibliothecadao/provider':
         specifier: workspace:*
         version: link:../provider
+      effect:
+        specifier: 4.0.4
+        version: 4.0.4
       starknet:
         specifier: catalog:web
         version: 9.4.2(typescript@5.9.3)(zod@4.3.6)
@@ -7668,9 +7699,6 @@ packages:
   '@swc/types@0.1.25':
     resolution: {integrity: sha512-iAoY/qRhNH8a/hBvm3zKj9qQ4oc2+3w1unPJa2XvTK3XjeLXtzcCingVPw/9e5mn1+0yPqxcBGp9Jf0pkfMb1g==}
 
-  '@swc/wasm@1.15.11':
-    resolution: {integrity: sha512-230rdYZf8ux3nIwISOQNCFrxzxpL/UFY4Khv/3UsvpEdo709j/+Tg80yXWW3DXETeZNPBV72QpvEBhXsl7Lc9g==}
-
   '@tailwindcss/node@4.3.3':
     resolution: {integrity: sha512-/T8IKEsf9VTU6tLjgC7+sv2mOPtQxzE2jMw7u4Tt40Tx+QSZxpzh95/H6cMKoja9XuW7iMdLJYBB0o9G1CaAgg==}
 
@@ -10193,31 +10221,15 @@ packages:
   dom-serializer@2.0.0:
     resolution: {integrity: sha512-wIkAryiqt/nV5EQKqQpo3SToSOV9J0DnbJqwK7Wv/Trc92zIAYZ4FlMu+JPFW1DfGFt81ZTCGgDEabffXeLyJg==}
 
-  dom-serializer@3.1.1:
-    resolution: {integrity: sha512-4MEa38/QexBob6gFNwu+EGdWvhJ1OKuNwdYY3Y3NyeWDQfnGeDYQUDfIRzWu5B5gsv03so2Uxd28YC6zrsx3Lw==}
-    engines: {node: '>=20.19.0'}
-
   domelementtype@2.3.0:
     resolution: {integrity: sha512-OLETBj6w0OsagBwdXnPdN0cnMfF9opN69co+7ZrbfPGrdpPVNBUj02spi6B1N7wChLQiPn4CSH/zJvXw56gmHw==}
-
-  domelementtype@3.0.0:
-    resolution: {integrity: sha512-umCQid3jKbDmVjx8jGaW7uUykm4DEUeyV21hPxNMo2nV955DhUThwqyOIDtreepP31hl84X7G5U9ZfsWvIB3Pg==}
-    engines: {node: '>=20.19.0'}
 
   domhandler@5.0.3:
     resolution: {integrity: sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==}
     engines: {node: '>= 4'}
 
-  domhandler@6.0.1:
-    resolution: {integrity: sha512-gYzvtM72ZtxQO0T048kd6HWSbbGCNOUwcnfQ01cqIJ4X2IYKFFHZ5mKvrQETcFXxsRObZulDaKmy//R7TPtsBg==}
-    engines: {node: '>=20.19.0'}
-
   domutils@3.2.2:
     resolution: {integrity: sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==}
-
-  domutils@4.0.2:
-    resolution: {integrity: sha512-qI4JLRKnSzqFqr7hAlS5xQDusBCjKSEG4t4+7aNrIQMHBcsC2TGEhuyABJdYkgSewL57PNLYEiibY2iPKhKpaA==}
-    engines: {node: '>=20.19.0'}
 
   dot-case@3.0.4:
     resolution: {integrity: sha512-Kv5nKlh6yRrdrGvxeJ2e5y2eRUpkUosIW4A2AS38zwSz27zu7ufDwQPi5Jhs3XAlGNetl3bmnGhQsMtkKJnj3w==}
@@ -10530,10 +10542,6 @@ packages:
   entities@7.0.1:
     resolution: {integrity: sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA==}
     engines: {node: '>=0.12'}
-
-  entities@8.0.0:
-    resolution: {integrity: sha512-zwfzJecQ/Uej6tusMqwAqU/6KL2XaB2VZ2Jg54Je6ahNBGNH6Ek6g3jjNCF0fG9EWQKGZNddNjU5F1ZQn/sBnA==}
-    engines: {node: '>=20.19.0'}
 
   env-paths@2.2.1:
     resolution: {integrity: sha512-+h1lkLKhZMTYjog1VEpJNG7NZJWcuc2DDk/qsqSTRRCOXiLjeQ1d1/udrUGhqMxUgAlwKNZ0cf2uqan5GLuS2A==}
@@ -11602,10 +11610,6 @@ packages:
   htmlparser2@10.1.0:
     resolution: {integrity: sha512-VTZkM9GWRAtEpveh7MSF6SjjrpNVNNVJfFup7xTY3UpFtm67foy9HDVXneLtFVt4pMz5kZtgNcvCniNFb1hlEQ==}
 
-  htmlparser2@12.0.0:
-    resolution: {integrity: sha512-Tz7u1i95/g2x2jz81+x0FBVhBhY5aRTvD3tXXdFaljuNdzDLJ8UGNRrTcj2cgQvAg3iW/h77Fz15nLW0L0CrZw==}
-    engines: {node: '>=20.19.0'}
-
   http-errors@2.0.1:
     resolution: {integrity: sha512-4FbRdAX+bSdmo4AUFuS0WNiPz8NgFt+r8ThgNWmlrjQjt1Q7ZR9+zTlce2859x4KSXrwIsaeTqDoKQmtP8pLmQ==}
     engines: {node: '>= 0.8'}
@@ -11942,10 +11946,6 @@ packages:
 
   is-plain-object@2.0.4:
     resolution: {integrity: sha512-h5PpgXkWitc38BBMYawTYMWJHFZJVnBquFE57xFpjB8pJFiF6gZ+bU+WyI/yqXiFR5mdLsgYNaPe8uao6Uv9Og==}
-    engines: {node: '>=0.10.0'}
-
-  is-plain-object@5.1.0:
-    resolution: {integrity: sha512-bUi/yjmtKYcRVUtWRGr0UA6xEFh2I6zWUwMrUXB3s7bmYCaZ8a+0ZsTRkrawh/mzlSD1Y0Ph8bp/U+TvBpWDNw==}
     engines: {node: '>=0.10.0'}
 
   is-potential-custom-element-name@1.0.1:
@@ -12355,9 +12355,6 @@ packages:
   language-tags@2.1.0:
     resolution: {integrity: sha512-D4CgpyCt+61f6z2jHjJS1OmZPviAWM57iJ9OKdFFWSNgS7Udj9QVWqyGs/cveVNF57XpZmhSvMdVIV5mjLA7Vg==}
     engines: {node: '>=22'}
-
-  launder@1.7.1:
-    resolution: {integrity: sha512-mU6WRz5EusL9ZZuiZ5SO4Y6C0P9PAUR9iwdb6bzj4KDihm28DiHFw+/yk9DBH4f+Pv1wuzQ4e2jV3oQ7mkIqvw==}
 
   leva@0.9.36:
     resolution: {integrity: sha512-mzzxZzpPdN1bugl6LXCLgK5PS4rU1NdRX7CWnXjVelK49OP8bdoMHhDDweo/uWIk4UHgwpO1sj9CD5Dai+Pvrg==}
@@ -13541,9 +13538,6 @@ packages:
     resolution: {integrity: sha512-ayCKvm/phCGxOkYRSCM82iDwct8/EonSEgCSxWxD7ve6jHggsFl4fZVQBPRNgQoKiuV/odhFrGzQXZwbifC8Rg==}
     engines: {node: '>=8'}
 
-  parse-srcset@1.0.2:
-    resolution: {integrity: sha512-/2qh0lav6CmI15FzA3i/2Bzk2zCgQhGMkvhOhKNcBVQ1ldgpbfiNTVslmooUmWJcADi1f1kIeynbDRVzNlfR6Q==}
-
   parse5-htmlparser2-tree-adapter@7.1.0:
     resolution: {integrity: sha512-ruw5xyKs6lrpo9x9rCZqZZnIUntICjQAd0Wsmp396Ul9lN/h+ifgVV1x1gZHi8euej6wTfpqX8j+BFQxF0NS/g==}
 
@@ -14559,10 +14553,6 @@ packages:
 
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
-
-  sanitize-html@2.17.7:
-    resolution: {integrity: sha512-PGtEkc9cbnedU3s9TmzDbpsZ8w086g/0Q8k8/oIO1NLNU3i5k9yn835CrjJSajp1KMmkisbO1qPXxNKO3welAg==}
-    engines: {node: '>=22.12.0'}
 
   satori@0.12.2:
     resolution: {integrity: sha512-3C/laIeE6UUe9A+iQ0A48ywPVCCMKCNSTU5Os101Vhgsjd3AAxGNjyq0uAA8kulMPK5n0csn8JlxPN9riXEjLA==}
@@ -15859,11 +15849,6 @@ packages:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
 
-  uuid@10.0.0:
-    resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
-    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
-    hasBin: true
-
   uuid@8.3.2:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
     deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
@@ -16847,7 +16832,7 @@ snapshots:
       immutable: 5.1.9
       invariant: 2.2.4
 
-  '@argent/x-ui@1.109.1(7463e768fee14b5a8e93cc29f1696f14)':
+  '@argent/x-ui@1.109.1(24f9cb056f9d72db5e67787f4da5f5f0)':
     dependencies:
       '@chakra-ui/react': 2.10.10(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(framer-motion@11.18.2(@emotion/is-prop-valid@1.4.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@emotion/react': 11.14.0(@types/react@18.3.28)(react@18.3.1)
@@ -16877,7 +16862,7 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       react-i18next: 15.4.1(i18next@24.2.3(typescript@5.9.3))(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)
       react-router-dom: 7.13.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      react-spring-bottom-sheet: 3.5.0-alpha.0(@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021)))(@types/react@18.3.28)(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react-konva@18.2.16(@types/react@18.3.28)(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react-zdog@1.2.2)(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021))(zdog@1.1.3)
+      react-spring-bottom-sheet: 3.5.0-alpha.0(@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e)))(@types/react@18.3.28)(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react-konva@18.2.16(@types/react@18.3.28)(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react-zdog@1.2.2)(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e))(zdog@1.1.3)
       react-virtuoso: 4.18.16(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       starknet: 8.9.2
       swr: 1.3.0(react@18.3.1)
@@ -22570,15 +22555,15 @@ snapshots:
       '@react-spring/types': 9.7.5
       react: 18.3.1
 
-  '@react-spring/three@9.7.5(@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021)))(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021))':
+  '@react-spring/three@9.7.5(@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e)))(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e))':
     dependencies:
       '@react-spring/animated': 9.7.5(react@18.3.1)
       '@react-spring/core': 9.7.5(react@18.3.1)
       '@react-spring/shared': 9.7.5(react@18.3.1)
       '@react-spring/types': 9.7.5
-      '@react-three/fiber': 9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021))
+      '@react-three/fiber': 9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e))
       react: 18.3.1
-      three: 0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021)
+      three: 0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e)
 
   '@react-spring/types@9.7.5': {}
 
@@ -22602,7 +22587,7 @@ snapshots:
       react-zdog: 1.2.2
       zdog: 1.1.3
 
-  '@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021))':
+  '@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e))':
     dependencies:
       '@babel/runtime': 7.28.6
       '@types/webxr': 0.5.24
@@ -22613,7 +22598,7 @@ snapshots:
       react-use-measure: 2.1.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       scheduler: 0.28.0
       suspend-react: 0.1.3(react@18.3.1)
-      three: 0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021)
+      three: 0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e)
       use-sync-external-store: 1.7.0(react@18.3.1)
       zustand: 5.0.11(@types/react@18.3.28)(immer@11.1.4)(react@18.3.1)(use-sync-external-store@1.7.0(react@18.3.1))
     optionalDependencies:
@@ -23656,10 +23641,6 @@ snapshots:
       serialize-javascript: 6.0.2
       smob: 1.6.1
       terser: 5.46.0
-    optionalDependencies:
-      rollup: 2.79.2
-
-  '@rollup/plugin-virtual@3.0.2(rollup@2.79.2)':
     optionalDependencies:
       rollup: 2.79.2
 
@@ -24946,8 +24927,10 @@ snapshots:
       '@swc/core-win32-ia32-msvc': 1.15.11
       '@swc/core-win32-x64-msvc': 1.15.11
       '@swc/helpers': 0.5.18
+    optional: true
 
-  '@swc/counter@0.1.3': {}
+  '@swc/counter@0.1.3':
+    optional: true
 
   '@swc/helpers@0.5.18':
     dependencies:
@@ -24956,8 +24939,7 @@ snapshots:
   '@swc/types@0.1.25':
     dependencies:
       '@swc/counter': 0.1.3
-
-  '@swc/wasm@1.15.11': {}
+    optional: true
 
   '@tailwindcss/node@4.3.3':
     dependencies:
@@ -26193,7 +26175,7 @@ snapshots:
     dependencies:
       '@vitest/utils': 1.6.1
       fast-glob: 3.3.3
-      fflate: 0.8.2
+      fflate: 0.8.3
       flatted: 3.3.3
       pathe: 1.1.2
       picocolors: 1.1.1
@@ -28648,35 +28630,17 @@ snapshots:
       domhandler: 5.0.3
       entities: 4.5.0
 
-  dom-serializer@3.1.1:
-    dependencies:
-      domelementtype: 3.0.0
-      domhandler: 6.0.1
-      entities: 8.0.0
-
   domelementtype@2.3.0: {}
-
-  domelementtype@3.0.0: {}
 
   domhandler@5.0.3:
     dependencies:
       domelementtype: 2.3.0
-
-  domhandler@6.0.1:
-    dependencies:
-      domelementtype: 3.0.0
 
   domutils@3.2.2:
     dependencies:
       dom-serializer: 2.0.0
       domelementtype: 2.3.0
       domhandler: 5.0.3
-
-  domutils@4.0.2:
-    dependencies:
-      dom-serializer: 3.1.1
-      domelementtype: 3.0.0
-      domhandler: 6.0.1
 
   dot-case@3.0.4:
     dependencies:
@@ -28843,8 +28807,6 @@ snapshots:
   entities@6.0.1: {}
 
   entities@7.0.1: {}
-
-  entities@8.0.0: {}
 
   env-paths@2.2.1: {}
 
@@ -30472,13 +30434,6 @@ snapshots:
       domutils: 3.2.2
       entities: 7.0.1
 
-  htmlparser2@12.0.0:
-    dependencies:
-      domelementtype: 3.0.0
-      domhandler: 6.0.1
-      domutils: 4.0.2
-      entities: 8.0.0
-
   http-errors@2.0.1:
     dependencies:
       depd: 2.0.0
@@ -30857,8 +30812,6 @@ snapshots:
   is-plain-object@2.0.4:
     dependencies:
       isobject: 3.0.1
-
-  is-plain-object@5.1.0: {}
 
   is-potential-custom-element-name@1.0.1: {}
 
@@ -31274,10 +31227,6 @@ snapshots:
   language-tags@2.1.0:
     dependencies:
       language-subtag-registry: 0.3.23
-
-  launder@1.7.1:
-    dependencies:
-      dayjs: 1.11.13
 
   leva@0.9.36(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
@@ -33023,8 +32972,6 @@ snapshots:
       json-parse-even-better-errors: 2.3.1
       lines-and-columns: 1.2.4
 
-  parse-srcset@1.0.2: {}
-
   parse5-htmlparser2-tree-adapter@7.1.0:
     dependencies:
       domhandler: 5.0.3
@@ -33666,7 +33613,7 @@ snapshots:
     dependencies:
       react: 18.3.1
 
-  react-spring-bottom-sheet@3.5.0-alpha.0(@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021)))(@types/react@18.3.28)(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react-konva@18.2.16(@types/react@18.3.28)(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react-zdog@1.2.2)(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021))(zdog@1.1.3):
+  react-spring-bottom-sheet@3.5.0-alpha.0(@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e)))(@types/react@18.3.28)(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react-konva@18.2.16(@types/react@18.3.28)(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react-zdog@1.2.2)(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e))(zdog@1.1.3):
     dependencies:
       '@juggle/resize-observer': 3.4.0
       '@reach/portal': 0.13.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -33674,7 +33621,7 @@ snapshots:
       body-scroll-lock: 3.1.5
       focus-trap: 6.9.4
       react: 18.3.1
-      react-spring: 9.7.5(@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021)))(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react-konva@18.2.16(@types/react@18.3.28)(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react-zdog@1.2.2)(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021))(zdog@1.1.3)
+      react-spring: 9.7.5(@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e)))(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react-konva@18.2.16(@types/react@18.3.28)(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react-zdog@1.2.2)(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e))(zdog@1.1.3)
       react-use-gesture: 8.0.1(react@18.3.1)
       xstate: 4.38.3
     transitivePeerDependencies:
@@ -33689,12 +33636,12 @@ snapshots:
       - three
       - zdog
 
-  react-spring@9.7.5(@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021)))(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react-konva@18.2.16(@types/react@18.3.28)(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react-zdog@1.2.2)(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021))(zdog@1.1.3):
+  react-spring@9.7.5(@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e)))(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react-konva@18.2.16(@types/react@18.3.28)(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react-zdog@1.2.2)(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e))(zdog@1.1.3):
     dependencies:
       '@react-spring/core': 9.7.5(react@18.3.1)
       '@react-spring/konva': 9.7.5(konva@10.7.1)(react-konva@18.2.16(@types/react@18.3.28)(konva@10.7.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       '@react-spring/native': 9.7.5(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)
-      '@react-spring/three': 9.7.5(@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021)))(react@18.3.1)(three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021))
+      '@react-spring/three': 9.7.5(@react-three/fiber@9.8.1(@types/react@18.3.28)(immer@11.1.4)(react-dom@18.3.1(react@18.3.1))(react-native@0.87.1(@babel/core@7.29.7)(@types/react@18.3.28)(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e)))(react@18.3.1)(three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e))
       '@react-spring/web': 9.7.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@react-spring/zdog': 9.7.5(react-dom@18.3.1(react@18.3.1))(react-zdog@1.2.2)(react@18.3.1)(zdog@1.1.3)
       react: 18.3.1
@@ -34264,16 +34211,6 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
-  sanitize-html@2.17.7:
-    dependencies:
-      deepmerge: 4.3.1
-      escape-string-regexp: 4.0.0
-      htmlparser2: 12.0.0
-      is-plain-object: 5.1.0
-      launder: 1.7.1
-      parse-srcset: 1.0.2
-      postcss: 8.5.6
-
   satori@0.12.2:
     dependencies:
       '@shuding/opentype.js': 1.4.0-beta.0
@@ -34792,9 +34729,9 @@ snapshots:
       - typescript
       - zod
 
-  starknetkit@3.4.3(0bc49ee50f12721c0ef4306dc362daf6):
+  starknetkit@3.4.3(c87bad8f184530984f1f80b67f7fc8a8):
     dependencies:
-      '@argent/x-ui': 1.109.1(7463e768fee14b5a8e93cc29f1696f14)
+      '@argent/x-ui': 1.109.1(24f9cb056f9d72db5e67787f4da5f5f0)
       '@cartridge/controller': 0.10.7(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@cloudflare/workers-types@5.20260922.1)(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.2)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.7.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6)
       '@starknet-io/get-starknet': 4.0.8
       '@starknet-io/get-starknet-core': 4.0.8
@@ -35246,7 +35183,7 @@ snapshots:
 
   three@0.174.0: {}
 
-  three@0.186.1(patch_hash=94dc5f2058014d67082f7f9dc5d6acce416fe0067551e8c5aef768d4a4034021): {}
+  three@0.186.1(patch_hash=11829abac556761c439a9fadef8abff0ff96888bbf8512f08839276bb996a05e): {}
 
   throat@5.0.0: {}
 
@@ -35831,8 +35768,6 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   utils-merge@1.0.1: {}
-
-  uuid@10.0.0: {}
 
   uuid@8.3.2:
     optional: true

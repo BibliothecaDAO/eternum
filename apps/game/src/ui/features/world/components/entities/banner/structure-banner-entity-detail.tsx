@@ -4,20 +4,18 @@ import { IncomingCaravans } from "./incoming-caravans";
 import { StructureOwnershipTransfer } from "./structure-ownership-transfer";
 import { memo, useCallback } from "react";
 
-import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
-import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import { InfoBubble } from "../collapsible-bubble";
+import { HudIconButton, HudPanel, HudPortrait } from "@/ui/design-system/kit/hud-elements";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { HyperstructureConstruction } from "@/ui/features/world/components/hyperstructures/hyperstructure-construction";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
-import { ID, StructureType } from "@bibliothecadao/types";
-import { configManager, formatTime, toHexString } from "@bibliothecadao/eternum";
+import { ID, StructureType, formatWait } from "@bibliothecadao/types";
+import { configManager, toHexString } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { LeftView } from "@/types";
@@ -63,9 +61,9 @@ interface StructureBannerEntityDetailContentProps extends Omit<StructureBannerEn
 }
 
 const VillageTimerChip = ({ label, value, title }: { label: string; value: string; title?: string }) => (
-  <div className="rounded border border-gold/15 bg-black/25 px-1.5 py-1" title={title}>
-    <div className="text-sm leading-tight text-kit-muted">{label}</div>
-    <div className="mt-0.5 text-sm font-semibold leading-none text-gold">{value}</div>
+  <div className="rounded border border-hud-divider bg-hud-well px-1.5 py-1" title={title}>
+    <div className="text-hud-label text-hud-muted">{label}</div>
+    <div className="mt-0.5 text-hud-label leading-none text-hud-ink">{value}</div>
   </div>
 );
 
@@ -89,8 +87,7 @@ const StructureBannerEntityDetailContent = memo(
       guardSlotsUsed,
       guardSlotsMax,
       isMine,
-      hyperstructureRealmCount,
-      hyperstructurePointsPerSecond,
+      hyperstructureRate,
       isHyperstructure,
       isLoadingStructure,
     } = useStructureEntityDetail({ structureEntityId });
@@ -99,8 +96,6 @@ const StructureBannerEntityDetailContent = memo(
     const isEternumMode = resolvedWorldMode === "eternum";
     const currentBlockTimestamp = useCurrentBlockTimestamp();
     const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
-    const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
-    const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
 
     const productionSummary = useStructureProductionSummary(structure, resources);
     const ownerAddress =
@@ -112,10 +107,8 @@ const StructureBannerEntityDetailContent = memo(
     const rawCategory = structure?.base?.category;
     const handleOpenTransferPanel = useCallback(() => {
       if (!structure?.entity_id) return;
-      setTransferPanelSourceId(safeInteger(structure.entity_id));
-      setLogisticsActiveTab("transfer");
-      setLeftNavigationView(LeftView.ResourceArrivals);
-    }, [setLeftNavigationView, setLogisticsActiveTab, setTransferPanelSourceId, structure?.entity_id]);
+      openTransfer({ sourceId: safeInteger(structure.entity_id), destinationIds: [] });
+    }, [structure?.entity_id]);
 
     if (isLoadingStructure) {
       return (
@@ -139,17 +132,17 @@ const StructureBannerEntityDetailContent = memo(
       : null;
     const militiaUnlockLabel = villageTimerSummary
       ? villageTimerSummary.militiaUnlockRemainingSeconds > 0
-        ? formatTime(villageTimerSummary.militiaUnlockRemainingSeconds)
+        ? formatWait(villageTimerSummary.militiaUnlockRemainingSeconds)
         : "Ready"
       : "—";
     const settlementImmunityLabel = villageTimerSummary
       ? villageTimerSummary.settlementImmunityRemainingSeconds > 0
-        ? formatTime(villageTimerSummary.settlementImmunityRemainingSeconds)
+        ? formatWait(villageTimerSummary.settlementImmunityRemainingSeconds)
         : "Expired"
       : "—";
     const postRaidWindowLabel = villageTimerSummary
       ? villageTimerSummary.postRaidImmunityWindowSeconds > 0
-        ? formatTime(villageTimerSummary.postRaidImmunityWindowSeconds)
+        ? formatWait(villageTimerSummary.postRaidImmunityWindowSeconds)
         : "Unavailable"
       : "—";
     const showFaithTab =
@@ -164,12 +157,8 @@ const StructureBannerEntityDetailContent = memo(
         structureCategory as StructureType,
       ) &&
       typeof structure.entity_id !== "undefined";
-    // The owner-bubble header transfer shortcut stays hidden to avoid
-    // duplicating the Resources bubble cue (which is the primary affordance).
-    const showTransferButton = false;
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
-    const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
-    const showHyperstructureVP = isHyperstructure && hyperstructurePointsPerSecond !== undefined;
+    const showHyperstructureVP = isHyperstructure && hyperstructureRate !== undefined;
     const occupiedGuardSlots = guards?.filter((guard) => guard.troops.count > 0n).length;
     const guardCue =
       occupiedGuardSlots === undefined
@@ -180,62 +169,37 @@ const StructureBannerEntityDetailContent = memo(
     const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
 
     return (
-      <div className={cn("flex min-w-0 flex-col divide-y divide-gold/15 rounded-xl", OVERLAY_SURFACE_BASE, className)}>
+      <HudPanel className={cn("min-w-0", className)} divided bodyClassName="flex flex-col">
         <IncomingCaravans structureId={structureEntityId} isOwner={isMine} />
         {/* Owner bubble — visible on the right-side tile inspector. Hidden on
             the LeftStructureColumn where the picker already names the
             structure being controlled. */}
         {!hideOwner && (
-          <InfoBubble
-            variant="section"
+          <HudPanel
+            kind="section"
             title={coordsLabel ?? ownerDisplayName ?? "Owner"}
             cue={coordsLabel ? headerAction : structureName}
-            bodyClassName="pt-0"
           >
             <div className="flex items-start justify-between gap-2">
-              <div className="flex min-w-0 items-center gap-2 text-gold">
-                <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
-                  {ownerAvatarUrl ? (
-                    <img
-                      className="h-full w-full object-cover"
-                      src={ownerAvatarUrl}
-                      alt={`${ownerDisplayName} avatar`}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-kit-muted">
-                      {ownerInitial}
-                    </div>
-                  )}
-                </div>
+              <div className="flex min-w-0 items-center gap-2 text-hud-ink">
+                {ownerAvatarUrl ? (
+                  <HudPortrait src={ownerAvatarUrl} label={`${ownerDisplayName} avatar`} />
+                ) : (
+                  <HudPortrait initial={ownerInitial} label={ownerDisplayName ?? "Unknown"} />
+                )}
                 <div className="min-w-0">
-                  <p className={cn("truncate", HUD_HEADLINE)}>{ownerDisplayName}</p>
-                  <span className={cn("block truncate", HUD_BODY)}>{structureName}</span>
+                  <p className="truncate text-hud-title text-hud-ink">{ownerDisplayName}</p>
+                  <span className="block truncate text-hud-body text-hud-ink">{structureName}</span>
                 </div>
               </div>
-              {showTransferButton && canOpenTransferPanel && (
-                <Button
-                  size="xs"
-                  variant="outline"
-                  className="border-gold/30 bg-dark/40 text-gold hover:bg-dark/60 !px-2 !py-1 min-w-0"
-                  onClick={handleOpenTransferPanel}
-                  aria-label="Open transfer panel"
-                >
-                  <SemanticIcon name="swap" className="h-4 w-4" />
-                </Button>
-              )}
             </div>
             <StructureOwnershipTransfer key={structureEntityId} structureId={structureEntityId} />
             {showHyperstructureVP && (
-              <div className="mt-2 border-t border-gold/15 pt-2">
-                <HyperstructureVPDisplay
-                  pointsPerSecond={hyperstructurePointsPerSecond}
-                  realmCount={hyperstructureRealmCount ?? 0}
-                  isOwned={isHyperstructureOwned}
-                  className="w-full"
-                />
+              <div className="mt-2 border-t border-hud-divider pt-2">
+                <HyperstructureVPDisplay rate={hyperstructureRate} className="w-full" />
               </div>
             )}
-          </InfoBubble>
+          </HudPanel>
         )}
 
         {isEternumMode && isHyperstructure && (
@@ -243,13 +207,13 @@ const StructureBannerEntityDetailContent = memo(
         )}
 
         {relicEffects.length > 0 && (
-          <InfoBubble variant="section" title="Active Relics" icon={"relics" as const}>
-            <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
-          </InfoBubble>
+          <HudPanel kind="section" title="Active Relics" icon={"relics" as const}>
+            <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} />
+          </HudPanel>
         )}
 
         {shouldRenderVillageTimers && (
-          <InfoBubble variant="section" title="Village Intel">
+          <HudPanel kind="section" title="Village Intel">
             <div className="grid grid-cols-3 gap-1">
               <VillageTimerChip label="Militia" value={militiaUnlockLabel} title="Militia unlock timer" />
               <VillageTimerChip
@@ -263,13 +227,13 @@ const StructureBannerEntityDetailContent = memo(
                 title="Post-raid resource immunity window"
               />
             </div>
-          </InfoBubble>
+          </HudPanel>
         )}
 
         {/* Guards — always shown for structures that can hold defenders. */}
-        <InfoBubble variant="section" title="Guards" icon={"defend" as const} cue={guardCue}>
+        <HudPanel kind="section" title="Guards" icon={"defend" as const} cue={guardCue}>
           {guards === undefined ? (
-            <p className={HUD_BODY_MUTED}>Loading guards…</p>
+            <p className="text-hud-body text-hud-muted">Loading guards…</p>
           ) : guards.length > 0 ? (
             <CompactDefenseDisplay
               troops={guards}
@@ -281,28 +245,26 @@ const StructureBannerEntityDetailContent = memo(
               hideSlotSummary
             />
           ) : (
-            <p className={HUD_BODY_MUTED}>No defenders stationed.</p>
+            <p className="text-hud-body text-hud-muted">No defenders stationed.</p>
           )}
-        </InfoBubble>
+        </HudPanel>
 
         {/* Merged production + balance — one token panel (like the Empire panel).
             Owners get a Transfer button (this realm as recipient) and the build
             "+" on each token. */}
-        <InfoBubble
-          variant="section"
+        <HudPanel
+          kind="section"
           title="Resources"
           icon={"production" as const}
           cue={
             canOpenTransferPanel ? (
-              <button
-                type="button"
-                onClick={handleOpenTransferPanel}
-                className="inline-flex items-center justify-center rounded-md border border-gold/40 bg-gold/10 p-1 text-gold transition hover:border-gold hover:bg-gold/20"
+              <HudIconButton
+                icon="swap"
+                label="Transfer resources from this structure"
                 title="Transfer resources from this structure"
-                aria-label="Transfer resources from this structure"
-              >
-                <SemanticIcon name="swap" className="h-3.5 w-3.5" />
-              </button>
+                size="sm"
+                onClick={handleOpenTransferPanel}
+              />
             ) : undefined
           }
         >
@@ -316,18 +278,18 @@ const StructureBannerEntityDetailContent = memo(
               activeRelicIds={activeRelicIds}
             />
           ) : (
-            <p className={HUD_BODY_MUTED}>No resources stored.</p>
+            <p className="text-hud-body text-hud-muted">No resources stored.</p>
           )}
-        </InfoBubble>
+        </HudPanel>
 
         <BitcoinMiningActionPanel structureEntityId={structureEntityId} />
 
         {showFaithTab && (
-          <InfoBubble variant="section" title="Faith" icon={"relics" as const}>
+          <HudPanel kind="section" title="Faith" icon={"relics" as const}>
             <FaithDevotionActionPanel structureEntityId={structureEntityId} />
-          </InfoBubble>
+          </HudPanel>
         )}
-      </div>
+      </HudPanel>
     );
   },
 );

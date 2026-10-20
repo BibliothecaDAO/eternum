@@ -12,6 +12,7 @@ const ACTION_SURFACES: ReadonlySet<string> = new Set([
   "market",
   "army-deployment",
   "quick-attack",
+  "order-preview",
   "spire-travel",
   "help",
 ]);

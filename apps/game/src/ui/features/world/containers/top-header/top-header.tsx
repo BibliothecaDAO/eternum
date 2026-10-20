@@ -1,7 +1,7 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
-import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
+import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { HudHeaderLayout } from "./hud-header-layout";
 import { MapViewControls } from "./map-view-controls";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -14,11 +14,16 @@ import { useUISound } from "@/audio/hooks/useUISound";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameClock } from "./game-clock";
 import { AttentionPill } from "./attention-pill";
-import { IdentityChip } from "./identity-chip";
+import { IdentityChip, type SeasonGoal } from "./identity-chip";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
-export const TopHeader = memo(() => {
+import { memo, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+
+/**
+ * The in-game top bar every mode shares: who plays (a mode may add its season goal), the clock (a mode may bring its
+ * own: Frontier's day), the realm and world views, and settings.
+ */
+export const TopHeader = memo(({ season, clock }: { season?: SeasonGoal; clock?: ReactNode }) => {
   const lane = useCompactLane();
   const { setup } = useGame();
 
@@ -100,9 +105,11 @@ export const TopHeader = memo(() => {
     <>
       <HudHeaderLayout
         lane={lane}
-        identity={<IdentityChip compact={lane !== null} />}
-        clock={<GameClock compact={lane !== null} />}
-        attention={<AttentionPill />}
+        identity={<IdentityChip compact={lane !== null} season={season} />}
+        clock={clock ?? <GameClock compact={lane !== null} />}
+        // On a desktop Next up, atop the rail, is the one queue of what needs the player (the owner's ruling, 16
+        // October 2026); the phone, which has no Next up yet, keeps the pill.
+        attention={lane ? <AttentionPill /> : null}
         settings={<SecondaryMenuItems />}
         viewControls={
           <MapViewControls
@@ -119,15 +126,18 @@ export const TopHeader = memo(() => {
 
       {/* Camera-following status toast — extracted from the old wrapper so it floats independently. */}
       {isFollowingArmy && (
-        <div className="fixed top-16 left-1/2 z-50 -translate-x-1/2 pointer-events-auto">
-          <div className="flex items-center gap-2 rounded-lg border-2 border-gold bg-black/40 px-4 py-2 text-gold shadow-lg animate-bounce">
-            {followingArmyMessage?.toLowerCase().includes("combat") ? (
-              <SemanticIcon name="military" className="w-4 h-4 animate-pulse text-gold" />
-            ) : (
-              <SemanticIcon name="eye" className="w-4 h-4 animate-pulse text-gold" />
-            )}
-            <span className={HUD_LABEL_BRIGHT}>{followingArmyMessage ?? "Following Army"}</span>
-          </div>
+        <div className="pointer-events-auto fixed left-1/2 top-16 z-50 -translate-x-1/2">
+          <HudPill>
+            {[
+              <span key="following" className="flex items-center gap-2">
+                <SemanticIcon
+                  name={followingArmyMessage?.toLowerCase().includes("combat") ? "military" : "eye"}
+                  className="h-4 w-4 animate-pulse"
+                />
+                {followingArmyMessage ?? "Following Army"}
+              </span>,
+            ]}
+          </HudPill>
         </div>
       )}
     </>

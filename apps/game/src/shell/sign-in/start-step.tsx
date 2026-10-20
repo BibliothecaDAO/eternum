@@ -1,9 +1,8 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { SIGN_IN_WORDS } from "@/ui/design-system/kit/words";
 import { useState, type FormEvent } from "react";
 
-import { Button } from "@/ui/design-system/kit/button";
+import { AppButton, AppField } from "@/ui/design-system/kit/app-elements";
 
-import { SIGN_IN_WORDS } from "../words";
 import { FailureLine } from "./failure-line";
 
 /**
@@ -30,36 +29,37 @@ export const StartStep = ({
     <div className="flex flex-col gap-4">
       {onDiscord && (
         <>
-          <Button role="primary" word={SIGN_IN_WORDS.discord} icon="discord" onClick={onDiscord} disabled={sending} />
-          <div className="flex items-center gap-3 text-sm text-kit-muted">
-            <span className="h-px flex-1 bg-kit-line" />
+          <AppButton kind="primary" size="lg" icon="discord" onClick={onDiscord} disabled={sending}>
+            {SIGN_IN_WORDS.discord}
+          </AppButton>
+          <div className="flex items-center gap-3 text-app-label text-app-muted">
+            <span className="h-px flex-1 bg-app-line" />
             {SIGN_IN_WORDS.or}
-            <span className="h-px flex-1 bg-kit-line" />
+            <span className="h-px flex-1 bg-app-line" />
           </div>
         </>
       )}
       <form onSubmit={submit} className="flex flex-col gap-3">
-        <label className="flex h-14 items-center gap-2 rounded-2xl border-2 border-kit-line bg-kit-plate px-4 focus-within:border-kit-peach">
-          <SemanticIcon name="mail" size={24} />
-          <input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@mail.com"
-            aria-label={SIGN_IN_WORDS.email}
-            className="min-w-0 flex-1 bg-transparent text-base text-kit-cream outline-none placeholder:text-kit-muted"
-          />
-        </label>
-        <Button
-          role={onDiscord ? "secondary" : "primary"}
-          type="submit"
-          word={SIGN_IN_WORDS.sendCode}
+        <AppField
+          label={SIGN_IN_WORDS.email}
           icon="mail"
-          loading={sending ? SIGN_IN_WORDS.sending : undefined}
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@mail.com"
         />
+        <AppButton
+          kind={onDiscord ? "secondary" : "primary"}
+          size="lg"
+          type="submit"
+          icon="mail"
+          busy={sending ? SIGN_IN_WORDS.sending : undefined}
+        >
+          {SIGN_IN_WORDS.sendCode}
+        </AppButton>
       </form>
       <FailureLine line={error} />
     </div>

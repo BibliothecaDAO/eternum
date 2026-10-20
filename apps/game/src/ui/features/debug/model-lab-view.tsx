@@ -1,4 +1,8 @@
+import { FrontierSiteLab } from "./frontier-site-lab";
+import { FrontierBeastLab } from "./frontier-beast-lab";
+import { WorkshopModelLab } from "./workshop-model-lab";
 import { RealmSeriesLab } from "./realm-series-lab";
+import { ClearedSiteLab } from "./cleared-site-lab";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 // @refresh reset
@@ -11,7 +15,6 @@ import {
   type ModelLabStats,
 } from "@/three/debug/model-lab/model-lab-renderer";
 import {
-  isSourceOffered,
   listModelLabActions,
   listModelLabBiomeIds,
   MODEL_LAB_BIOMES,
@@ -41,6 +44,10 @@ const CLASS_ICONS = { knight: 26, crossbowman: 29, paladin: 32 };
 
 export function ModelLabView() {
   const [params] = useSearchParams();
+  if (params.get("family") === "beasts")
+    return params.get("group") === "site-map" ? <FrontierSiteLab /> : <FrontierBeastLab />;
+  if (params.get("family") === "workshops") return <WorkshopModelLab />;
+  if (params.get("family") === "cleared-sites") return <ClearedSiteLab />;
   return params.get("family") === "realms" ? <RealmSeriesLab /> : <UnitModelLabView />;
 }
 
@@ -116,7 +123,7 @@ function UnitModelLabView() {
     const next = readModelLabSettings(writeModelLabSettings({ ...settingsRef.current, ...patch }));
     settingsRef.current = next;
     setCopied(false);
-    // Params the lab does not own (a review flag, capture=1) stay in the address.
+    // Params the lab does not own (capture=1) stay in the address.
     const search = new URLSearchParams(params);
     writeModelLabSettings(next).forEach((value, key) => search.set(key, value));
     setParams(search, { replace: true });
@@ -157,7 +164,10 @@ function UnitModelLabView() {
     <main className="model-lab" data-ready={ready} data-debug-route="model-lab">
       <header className="ml-header">
         <SemanticIcon name="resources" size={25} />
+        <Link to="/lab/models?family=beasts">Frontier beasts</Link>
         <Link to="/lab/models?family=realms">Realm ladder</Link>
+        <Link to="/lab/models?family=workshops">Workshop · Craft Yard</Link>
+        <Link to="/lab/models?family=cleared-sites">Cleared sites</Link>
         <div>
           <strong>Models & motion</strong>
           <span>FLEETS · ARMIES · BIOMES</span>
@@ -190,7 +200,7 @@ function UnitModelLabView() {
             className="ml-family"
             key={family}
             aria-pressed={settings.family === family}
-            onClick={() => change({ family, source: "default", action: "idle" })}
+            onClick={() => change({ family, source: "current", action: "idle" })}
           >
             <SemanticIcon name={resourceMeaning(CLASS_ICONS[family])} alt="" />
             <span>
@@ -227,12 +237,21 @@ function UnitModelLabView() {
             {settings.family === "ships" && <option value="study">Blender fleet concepts</option>}
             <option value="current">Current character runtime</option>
             <option value="default">Default game GLBs</option>
-            <option value="legacy">Older alternatives</option>
-            {isSourceOffered("t1-knight-default", settings.family) && (
-              <option value="t1-knight-default">T1 Knight Default</option>
-            )}
+            {settings.family === "knight" && <option value="comparison">Previous / current side by side</option>}
           </select>
         </label>
+        {settings.family === "knight" && (
+          <label className="ml-field">
+            SKIN DETAIL
+            <select
+              value={settings.detail}
+              onChange={(event) => change({ detail: event.target.value as ModelLabSettings["detail"] })}
+            >
+              <option value="hero">Near — 13,499 triangles</option>
+              <option value="crowd">Mid — 4,498 triangles</option>
+            </select>
+          </label>
+        )}
         {isStudy && (
           <fieldset>
             <legend>SAIL IDENTITY & WIND</legend>
@@ -469,7 +488,7 @@ function UnitModelLabView() {
             ? ["T1 and T2 use horse mounts.", "T3 uses the existing dragon rider. Switch to Move to inspect flight."]
             : [
                 "Compare all three tiers using the same camera and lighting.",
-                "Switch source to inspect the original GLBs and older alternatives.",
+                "Switch source to inspect the original GLBs.",
               ]
         ).map((note) => (
           <p key={note}>{note}</p>

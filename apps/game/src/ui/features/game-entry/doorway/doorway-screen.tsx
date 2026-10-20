@@ -3,13 +3,10 @@ import { useNavigate } from "react-router-dom";
 
 import { useLayout } from "@/shell/frame/layout";
 import { PageFrame } from "@/shell/frame/page-frame";
-import { StepVerb } from "@/shell/frame/step-verb";
-import type { Painting } from "@/shell/paintings";
+import type { Painting } from "@/ui/design-system/kit/paintings";
 import { DEVICES_PATH } from "@/shell/profile/settings-route";
-import { DOORWAY_WORDS, WORDS } from "@/shell/words";
-import { Button } from "@/ui/design-system/kit/button";
-import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
-import { TRY_AGAIN } from "@/ui/design-system/kit/words";
+import { AppButton, AppNotice, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { TRY_AGAIN, DOORWAY_WORDS, WORDS } from "@/ui/design-system/kit/words";
 
 import type { DoorwayView } from "./doorway-view";
 import { StepTrack } from "./step-track";
@@ -66,20 +63,23 @@ export const DoorwayScreen = ({
     />
   );
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-kit-ground">
+    // The shell's surface from the window's edge, so the ground behind the frame is the shell's too.
+    <div data-surface="shell" className="fixed inset-0 z-50 overflow-y-auto bg-app-ground">
       <PageFrame back="/" title={title} tabs={false} painting={painting} stage>
         {desktop ? (
           <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
-            <div className="plate flex w-[34rem] flex-col items-stretch gap-5 p-6">
-              {realm && <RealmRising realm={realm} />}
-              <StepTrack steps={view.steps} />
-              {hold}
-              {children}
-            </div>
+            <AppPanel className="w-column">
+              <div className="flex flex-col items-stretch gap-5">
+                {realm && <RealmRising realm={realm} />}
+                <StepTrack steps={view.steps} />
+                {hold}
+                {children}
+              </div>
+            </AppPanel>
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-[640px] flex-col items-center gap-6 py-6">
-            {realm ? <RealmRising realm={realm} /> : <div className="h-24" aria-hidden />}
+          <div className="mx-auto flex w-full max-w-doorway flex-col items-center gap-6 py-6">
+            {realm && <RealmRising realm={realm} />}
             <StepTrack steps={view.steps} />
             {hold}
             {children}
@@ -94,11 +94,14 @@ export const DoorwayScreen = ({
 const RealmRising = ({ realm }: { realm: DoorwayRealm }) => (
   <div className="flex flex-col items-center gap-3">
     {realm.emblem && <img src={realm.emblem.art} alt={realm.emblem.name} className="size-12 object-contain" />}
-    <h2 className="text-center font-body text-[26px] font-extrabold text-kit-cream">{realm.name}</h2>
+    <h2 className="text-center text-app-heading text-app-ink">{realm.name}</h2>
   </div>
 );
 
-/** What holds the doorway, as one plate: its line and the one step the player can take. */
+/**
+ * What holds the doorway: its line as the app's notice, then the one step the player can take (on Enter on a desktop);
+ * a second way on (Try again beside Open realm) stands over it.
+ */
 const Hold = ({
   view,
   onRetry,
@@ -115,66 +118,66 @@ const Hold = ({
   results?: string;
 }) => {
   const navigate = useNavigate();
-  const desktop = useLayout() === "desktop";
-  // A phone sets the step beside its line; the desktop stacks them, the step full width on Enter.
-  // A second way on (Try again beside Open realm) stands over the step on desktop and before it on a phone.
-  const plate = (line: string, step: ReactNode, other?: ReactNode) =>
-    desktop ? (
-      <div className="flex w-full flex-col gap-3">
-        <ReasonPlate reason={{ kind: "failed", line }} />
-        {other}
-        <StepVerb>{step}</StepVerb>
-      </div>
-    ) : (
-      <div className="w-full">
-        <ReasonPlate
-          reason={{ kind: "failed", line }}
-          step={
-            <>
-              {other}
-              {step}
-            </>
-          }
-        />
-      </div>
-    );
+  const hold = (notice: ReactNode, step: ReactNode, other?: ReactNode) => (
+    <div className="flex w-full flex-col items-stretch gap-3">
+      {notice}
+      {other}
+      {step}
+    </div>
+  );
+  const retry = (kind: "primary" | "secondary") => (
+    <AppButton kind={kind} size="lg" icon="refresh" step={kind === "primary"} onClick={onRetry}>
+      {TRY_AGAIN}
+    </AppButton>
+  );
   switch (view.blocker?.kind) {
     case "sign-in":
-      return plate(
-        DOORWAY_WORDS.signInToPlay,
-        <Button role="primary" word={WORDS.signIn} icon="person" onClick={onSignIn} />,
+      return hold(
+        <AppNotice line={DOORWAY_WORDS.signInToPlay} />,
+        <AppButton kind="primary" size="lg" icon="person" step onClick={onSignIn}>
+          {WORDS.signIn}
+        </AppButton>,
       );
-    case "retry": {
-      const retry = <Button role="outline" word={TRY_AGAIN} icon="refresh" onClick={onRetry} />;
+    case "retry":
       return view.blocker.openRealm && onOpenRealm
-        ? plate(
-            view.blocker.line,
-            <Button role="primary" word={DOORWAY_WORDS.openRealm} icon="realm" onClick={onOpenRealm} />,
-            retry,
+        ? hold(
+            <AppNotice tone="bad" line={view.blocker.line} />,
+            <AppButton kind="primary" size="lg" icon="realm" step onClick={onOpenRealm}>
+              {DOORWAY_WORDS.openRealm}
+            </AppButton>,
+            retry("secondary"),
           )
-        : plate(view.blocker.line, retry);
-    }
+        : hold(<AppNotice tone="bad" line={view.blocker.line} />, retry("primary"));
     case "devices":
-      return (
-        <div className="flex w-full flex-col gap-3">
-          <ReasonPlate reason={{ kind: "failed", line: DOORWAY_WORDS.deviceLimit }} />
-          <p className="text-sm text-kit-cream">{DOORWAY_WORDS.deviceLimitRecovery}</p>
-          <a href={DEVICES_PATH} target="_blank" rel="noopener noreferrer" className="text-kit-gold underline">
-            Settings → Devices
-          </a>
-          <Button role="primary" word={TRY_AGAIN} icon="refresh" onClick={onRetry} />
-        </div>
+      return hold(
+        <AppNotice
+          tone="bad"
+          line={DOORWAY_WORDS.deviceLimit}
+          why={
+            <>
+              {DOORWAY_WORDS.deviceLimitRecovery}{" "}
+              <a href={DEVICES_PATH} target="_blank" rel="noopener noreferrer" className="text-app-accent underline">
+                Settings → Devices
+              </a>
+            </>
+          }
+        />,
+        retry("primary"),
       );
   }
   if (view.spectating === "watch" && onSpectate)
-    return plate(
-      DOORWAY_WORDS.notOnThisGame,
-      <Button role="secondary" word={WORDS.watch} icon="watch" onClick={onSpectate} />,
+    return hold(
+      <AppNotice line={DOORWAY_WORDS.notOnThisGame} />,
+      <AppButton kind="primary" size="lg" icon="watch" step onClick={onSpectate}>
+        {WORDS.watch}
+      </AppButton>,
     );
   if (view.spectating === "results" && results)
-    return plate(
-      DOORWAY_WORDS.ended,
-      <Button role="secondary" word={WORDS.results} icon="victory" onClick={() => navigate(results)} />,
+    return hold(
+      <AppNotice line={DOORWAY_WORDS.ended} />,
+      <AppButton kind="primary" size="lg" icon="victory" step onClick={() => navigate(results)}>
+        {WORDS.results}
+      </AppButton>,
     );
   return null;
 };

@@ -1,7 +1,9 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
-import { PwaInstallControl, PwaInstallRuntime } from "./pwa-install-control";
+import { InstallSetting } from "@/ui/modules/settings/install-setting";
+
+import { PwaInstallRuntime } from "./pwa-install-control";
 
 afterEach(() => vi.unstubAllGlobals());
 async function mount(visible = true) {
@@ -13,7 +15,7 @@ async function mount(visible = true) {
       root.render(
         <>
           <PwaInstallRuntime />
-          {show && <PwaInstallControl />}
+          {show && <InstallSetting />}
         </>,
       ),
     );

@@ -34,10 +34,10 @@ const STRUCTURE_INFLUENCE: Record<StructureType, StructureInfluence> = {
   [StructureType.Village]: { disturbanceStrength: 0.62, levelDisturbance: 0.12, levelRadius: 0.12, radiusScale: 0.78 },
   [StructureType.Camp]: CAMP_INFLUENCE,
   // Frontier's sites: a rift tears the ground as a mine does, a ruin keeps a fallen realm's footprint without growing
-  // with a level, and stragglers stand as a camp.
+  // with a level, and beasts stand as a camp.
   [StructureType.Rift]: MINE_INFLUENCE,
   [StructureType.Ruin]: { disturbanceStrength: 0.78, levelDisturbance: 0, levelRadius: 0, radiusScale: 1 },
-  [StructureType.Stragglers]: CAMP_INFLUENCE,
+  [StructureType.Beasts]: CAMP_INFLUENCE,
 };
 
 export function resolveTerrainSettlementInfluence(anchor: TerrainSettlementAnchor): TerrainSettlementInfluenceProfile {

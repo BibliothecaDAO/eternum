@@ -1,6 +1,6 @@
 import { lazy, Suspense, type ComponentProps } from "react";
 
-import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
+import { HudLoading } from "@/ui/design-system/kit/hud-elements";
 import { ProductionPopupShell } from "./production-popup-shell";
 
 const ProductionContent = lazy(() =>
@@ -11,7 +11,7 @@ export const ProductionModal = (props: ComponentProps<typeof ProductionContent>)
   <Suspense
     fallback={
       <ProductionPopupShell>
-        <LoadingAnimation />
+        <HudLoading line="Loading production…" />
       </ProductionPopupShell>
     }
   >

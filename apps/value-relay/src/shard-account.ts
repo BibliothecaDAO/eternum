@@ -36,7 +36,7 @@ export async function joinShardOperator(env: Environment, chainId: string) {
 
 async function joinOperator(env: Environment, chainId: string) {
   const shard = await readRegisteredShard(env.IDENTITY, chainId);
-  if (shard.status !== "active") throw new Error("relay_shard_inactive");
+  if (shard.status !== "active" && shard.status !== "draining") throw new Error("relay_shard_inactive");
   const provider = rpcAt(shard.rpcUrl);
   const account = await joinRealmsAccount({
     provider: provider as unknown as Parameters<typeof joinRealmsAccount>[0]["provider"],

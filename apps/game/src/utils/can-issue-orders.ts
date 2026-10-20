@@ -1,17 +1,27 @@
+import { formatGameClock } from "@bibliothecadao/types";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { formatGameClockDuration } from "@/ui/features/world/containers/top-header/game-clock-policy";
 import { isExplicitSpectateSession } from "./spectator-session";
 import { configManager, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 /**
- * Whether this viewer plays this game: not spectating, and the game not over. Surfaces that only a player has are
- * shown on it; React surfaces can subscribe with useUIStore(canIssueOrders). Whether an order can be sent right now is
- * the other half of the gate, actNowRefusal.
+ * Whether this viewer watches the game rather than plays it: the HUD spectates, or the session was entered to spectate
+ * (`?spectate=true`) whatever the account owns. A watcher has nothing of their own in the game.
+ */
+const isWatching = (state: { isSpectating: boolean } = useUIStore.getState()): boolean =>
+  state.isSpectating || isExplicitSpectateSession();
+
+/** The same, for a rendered surface. */
+export const useIsWatching = (): boolean => useUIStore(isWatching);
+
+/**
+ * Whether this viewer plays this game: not watching, and the game not over. Surfaces that only a player has are shown
+ * on it; React surfaces can subscribe with useUIStore(canIssueOrders). Whether an order can be sent right now is the
+ * other half of the gate, actNowRefusal.
  */
 export function canIssueOrders(state: { isSpectating: boolean } = useUIStore.getState()): boolean {
-  return !state.isSpectating && !isExplicitSpectateSession() && !configManager.isGameOver();
+  return !isWatching(state) && !configManager.isGameOver();
 }
 
 /**
@@ -33,7 +43,7 @@ export const refusedBeforePlay = (): boolean => {
 };
 
 export const refusalBefore = (opensAt: number, now: number): string | null =>
-  now < opensAt ? `Starts in ${formatGameClockDuration(opensAt - now)}` : null;
+  now < opensAt ? `Starts in ${formatGameClock(opensAt - now)}` : null;
 
 const playOpensAt = (): number => {
   if (configManager.getDevModeConfig().dev_mode_on) return 0;

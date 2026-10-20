@@ -9,7 +9,10 @@ import { BlitzLobbyPage } from "../blitz/blitz-pages";
 import { entryTermsKey, refundOwedKey, registeredSlotsKey, slotRegisteredKey } from "../blitz/entry";
 import { seasonPrizeKey } from "../season-tab/blitz-season";
 import { rewardKey } from "../season-tab/reward";
+import { PageAddress } from "../frame/page-address";
+import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
+import { NotFoundPage } from "../not-found";
 import { PlayPage } from "../play/play-page";
 import { PlayerPage, ProfilePage, SettingsPage } from "../profile/profile-pages";
 import { ResultsPage } from "../season-tab/results-page";
@@ -30,6 +33,7 @@ import {
   LAB_EMAIL_CODE,
   LAB_ENTRY_TERMS,
   LAB_GAME_KEYS,
+  LAB_NAMES,
   LAB_REWARDS,
   LAB_SEASON_PRIZES,
   LAB_PAYOUT_WALLETS,
@@ -40,11 +44,13 @@ import {
   labSlots,
   type LabScreen,
 } from "./app-lab-fixtures";
+import { LabDoorway, LabSignIn } from "./app-lab-flows";
 
 /**
  * The dev build's app lab: the real pages over one fixture state per screen, for the painted pass's captures of states
  * the dev stack cannot hold (Day 12 of a season, a full lobby, a season just over). Opened as /lab/app/<screen>/<page>;
- * the lab answers the app's own /api reads and seeds the shard boards, so nothing leaves the tab.
+ * the lab answers the app's own /api reads and seeds the shard boards, so nothing leaves the tab. Beside the pages:
+ * sign-in's steps, the doorway's holds (app-lab-flows.tsx), the reading pages and an unknown path's.
  */
 export const AppLabView = () => {
   const { screen } = useParams();
@@ -74,19 +80,29 @@ const LabScreenView = ({ screen }: { screen: LabScreen }) => {
   );
 };
 
+/** The real pages at their addresses under the screen's, each told its own so the places light it. */
 const LabPages = ({ screen }: { screen: LabScreen }) => {
   useLabSession(screen);
+  const { "*": page = "" } = useParams();
   return (
-    <Routes>
-      <Route index element={<PlayPage />} />
-      <Route path="blitz/:id" element={<BlitzLobbyPage />} />
-      <Route path="season" element={<SeasonPage />} />
-      <Route path="results/:id" element={<ResultsPage />} />
-      <Route path="profile" element={<ProfilePage />} />
-      <Route path="profile/settings" element={<SettingsPage />} />
-      <Route path="p/:address" element={<PlayerPage />} />
-      <Route path="scroll" element={<WhatsNewPage />} />
-    </Routes>
+    <PageAddress.Provider value={`/${page}`}>
+      <Routes>
+        <Route index element={<PlayPage />} />
+        <Route path="blitz/:id" element={<BlitzLobbyPage />} />
+        <Route path="season" element={<SeasonPage />} />
+        <Route path="results/:id" element={<ResultsPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="profile/settings" element={<SettingsPage />} />
+        <Route path="p/:address" element={<PlayerPage />} />
+        <Route path="scroll" element={<WhatsNewPage />} />
+        <Route path="terms" element={<TermsPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="credits" element={<CreditsPage />} />
+        <Route path="sign-in/:step" element={<LabSignIn />} />
+        <Route path="doorway/:state" element={<LabDoorway />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </PageAddress.Provider>
   );
 };
 
@@ -96,7 +112,12 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
  */
 const useLabSession = (screen: LabScreen) => {
   useEffect(() => {
-    const session = { ...LAB_SESSION, user: { ...LAB_SESSION.user, address: LAB_PAYOUT_WALLETS[screen] ?? null } };
+    const user = {
+      ...LAB_SESSION.user,
+      name: LAB_NAMES[screen] ?? LAB_SESSION.user.name,
+      address: LAB_PAYOUT_WALLETS[screen] ?? null,
+    };
+    const session = { ...LAB_SESSION, user };
     useIdentitySessionStore.getState().applySession(LAB_SCREENS[screen].signedIn ? session : null);
   }, [screen]);
 };
@@ -165,7 +186,7 @@ const answerAppReads = (screen: LabScreen) => {
       }),
     "/api/directory/history": () =>
       json({
-        games: [LAB_FINISHED_BLITZ],
+        games: screen === "no-games" || screen === "no-blitz" ? [] : [LAB_FINISHED_BLITZ],
         next: null,
         failures: [],
       }),

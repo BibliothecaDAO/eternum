@@ -1,32 +1,44 @@
+import { formatAmount, formatCharge, formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
-import { Chip } from "@/ui/design-system/kit/chip";
+import {
+  HudButton,
+  HudChip,
+  HudEmpty,
+  HudIconButton,
+  HudPanel,
+  HudRarity,
+  HudSkeleton,
+  HudTableHead,
+  HudTableRow,
+} from "@/ui/design-system/kit/hud-elements";
 
-import { SeasonRow } from "@/ui/design-system/kit/season-row";
-import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
+import { OrderMark } from "./realm-marks";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
   BACK,
-  LORDS,
   LORDS_EARNED,
   PER_SHARE,
   POOL_NOT_PUBLISHED,
+  RANK,
+  REALM,
   SEASON,
   SEASON_ERROR,
   SEASON_POOL,
   SHARE_CEILING,
+  SITES,
   SITES_CLEARED,
   TODAY,
   TRY_AGAIN,
 } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-/** A realm's row on the list: what SeasonRow draws, keyed to open its detail. */
+/** A realm's row on the list, keyed to open its detail; `label` is its name as text, for assistive technology. */
 export type SeasonListRow = {
   key: string;
   rank: number;
   order: number;
   name: ReactNode;
+  label: string;
   sitesCleared: number;
   lords: number;
   own: boolean;
@@ -66,24 +78,23 @@ export const SeasonList = ({
   onOpen: (key: string) => void;
   onBack: () => void;
 }) => (
-  <section
-    aria-label={SEASON}
-    className="frontier-card pointer-events-auto flex min-h-0 flex-1 flex-col gap-1 !rounded-xl p-2"
+  <HudPanel
+    label={SEASON}
+    collapsible={false}
+    className="pointer-events-auto flex min-h-0 flex-1 flex-col"
+    bodyClassName="flex min-h-0 flex-1 flex-col gap-1"
   >
-    <header className="flex h-12 shrink-0 items-center gap-1.5">
-      <button
-        type="button"
-        aria-label={BACK}
-        onClick={onBack}
-        className="-ml-1 flex size-12 shrink-0 items-center justify-center rounded-xl text-kit-cream"
-      >
-        <SemanticIcon name="arrow-left" size={26} />
-      </button>
-      <h2 className="frontier-title flex-1 !text-xl">{SEASON}</h2>
+    <header className="flex shrink-0 items-center gap-1.5">
+      <HudIconButton icon="arrow-left" label={BACK} kind="quiet" onClick={onBack} />
+      <h2 className="flex-1 text-hud-title text-hud-accent">{SEASON}</h2>
       {chest ? (
         <ChestChip tier={chest.tier} lords={chest.lords} rank={rank} />
       ) : (
-        rank !== null && <Chip icons={["victory"]} label={SEASON} value={rankShown(rank)} />
+        rank !== null && (
+          <HudChip icons={["victory"]} label={SEASON}>
+            {rankShown(rank)}
+          </HudChip>
+        )
       )}
     </header>
     {pool !== undefined && <PoolLine pool={pool} />}
@@ -93,16 +104,16 @@ export const SeasonList = ({
       <>
         <BoardHead />
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-          {state === "loading"
-            ? Array.from({ length: SKELETON_ROWS }, (_, index) => (
-                <span key={index} className="h-[52px] shrink-0 animate-pulse border-b border-kit-line" />
-              ))
-            : rows.map((row) => <ListRow key={row.key} row={row} onOpen={onOpen} />)}
+          {state === "loading" ? (
+            <HudSkeleton rows={SKELETON_ROWS} />
+          ) : (
+            rows.map((row) => <ListRow key={row.key} row={row} onOpen={onOpen} />)
+          )}
         </div>
         {pinned && <ListRow row={pinned} onOpen={onOpen} />}
       </>
     )}
-  </section>
+  </HudPanel>
 );
 
 /**
@@ -124,56 +135,58 @@ export type SeasonPoolFigures = {
  */
 const PoolLine = ({ pool }: { pool: SeasonPoolFigures | null }) =>
   pool === null ? (
-    <p className="flex h-9 shrink-0 items-center gap-2 px-1 text-sm text-kit-muted">
+    <p className="flex h-9 shrink-0 items-center gap-2 px-1 text-hud-body text-hud-muted">
       <SemanticIcon name="hourglass" size={18} />
       {POOL_NOT_PUBLISHED}
     </p>
   ) : (
-    <dl className="grid shrink-0 grid-cols-[auto_auto] justify-start gap-x-5 gap-y-1.5 whitespace-nowrap px-1 py-1.5 text-sm">
+    <dl className="flex shrink-0 flex-wrap gap-x-5 gap-y-1.5 whitespace-nowrap px-1 py-1.5 text-hud-body">
       <PoolFigure word={SEASON_POOL} value={formatExact(pool.lords)} />
       {pool.today !== undefined && <PoolFigure word={TODAY} value={`+${formatExact(pool.today)}`} />}
-      {pool.price !== undefined && <PoolFigure word={PER_SHARE} value={formatExact(pool.price)} />}
+      {pool.price !== undefined && <PoolFigure word={PER_SHARE} value={formatCharge(pool.price)} />}
       {pool.ceiling !== undefined && <PoolFigure word={SHARE_CEILING} value={formatExact(pool.ceiling)} />}
     </dl>
   );
 
 const PoolFigure = ({ word, value }: { word: string; value: string }) => (
   <div className="flex items-center gap-1.5">
-    <dt className="text-kit-muted">{word}</dt>
-    <dd className="flex items-center gap-1 font-bold tabular-nums text-kit-cream">
+    <dt className="text-hud-muted">{word}</dt>
+    <dd className="flex items-center gap-1 text-hud-strong tabular-nums">
       <SemanticIcon name="lords" size={16} />
       {value}
     </dd>
   </div>
 );
 
+/** Rank, Order, name, sites cleared (what ranks) and LORDS: the list's head and its rows share these columns. */
+const COLS = "2.25rem 1.75rem minmax(0, 1fr) 3rem 3.5rem";
+
+/** One realm on the list, a row of the sheet's table that opens its detail; the player's own carries the chosen bar. */
 const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) => void }) => (
-  <SeasonRow
-    rank={row.rank}
-    order={row.order}
-    name={row.name}
-    sitesCleared={row.sitesCleared}
-    lords={row.lords}
-    own={row.own}
-    onOpen={() => onOpen(row.key)}
-  />
+  <HudTableRow cols={COLS} label={`#${row.rank} ${row.label}`} selected={row.own} onClick={() => onOpen(row.key)}>
+    <span className="text-center tabular-nums">{formatAmount(row.rank)}</span>
+    <OrderMark order={row.order} />
+    <span className="min-w-0 truncate">{row.name}</span>
+    <span className="text-right tabular-nums">{formatAmount(row.sitesCleared)}</span>
+    <span className="text-right tabular-nums">{formatAmount(row.lords)}</span>
+  </HudTableRow>
 );
 
 /**
- * The columns' icons over SeasonRow's numbers: sites cleared, then LORDS. Each icon names its column on the tooltip:
- * hover it, or press and hold it on a phone.
+ * Each column's name over it, as Blitz's standings name theirs: Rank, the realm (its Order mark and name), Sites cleared
+ * (what ranks) and LORDS. The number columns' full names are on their heads' tooltip.
  */
 const BoardHead = () => (
-  <div className="flex h-6 shrink-0 items-center gap-2 px-1">
-    <span className="flex-1" />
-    <span role="img" aria-label={SITES_CLEARED} className="flex h-6 w-12 items-center justify-end">
-      <SemanticIcon name="flag" size={18} />
+  <HudTableHead cols={COLS}>
+    <span className="text-center">{RANK}</span>
+    <span className="col-span-2">{REALM}</span>
+    <span className="text-right" data-tip={SITES_CLEARED}>
+      {SITES}
     </span>
-    <span role="img" aria-label={LORDS_EARNED} className="flex h-6 w-14 items-center justify-end">
-      <SemanticIcon name="lords" size={18} />
+    <span className="text-right" data-tip={LORDS_EARNED}>
+      {LORDS}
     </span>
-    <span className="w-[18px]" />
-  </div>
+  </HudTableHead>
 );
 
 const rankShown = (rank: number | undefined) => (rank === undefined ? "—" : `#${rank}`);
@@ -186,29 +199,35 @@ const ChestChip = ({ tier, lords, rank }: { tier: Tier; lords: number; rank: num
   <span
     role="img"
     aria-label={rank === null ? `${LORDS} ${lords}` : `${LORDS} ${lords}, ${SEASON} ${rankShown(rank)}`}
-    className="frontier-chip h-7 shrink-0 !gap-1 !py-0"
+    className="inline-flex shrink-0"
   >
-    <span className="contents">
-      <SemanticIcon name="chest" size={18} />
-      <TierChip tier={tier} showWord={false} />
-      <SemanticIcon name="lords" size={18} />
-      <span className="frontier-chip-number tabular-nums !text-base">{formatAmount(lords)}</span>
+    <HudChip>
+      <SemanticIcon name="chest" size={16} />
+      <HudRarity tier={tier} />
+      <SemanticIcon name="lords" size={16} />
+      <span className="tabular-nums">{formatAmount(lords)}</span>
       {rank !== null && (
         <>
-          <span aria-hidden className="mx-0.5 h-4 w-px bg-kit-line2" />
-          <SemanticIcon name="victory" size={18} />
-          <span className="frontier-chip-number tabular-nums !text-base">{rankShown(rank)}</span>
+          <span aria-hidden className="mx-0.5 h-4 w-px bg-hud-divider" />
+          <SemanticIcon name="victory" size={16} />
+          <span className="tabular-nums">{rankShown(rank)}</span>
         </>
       )}
-    </span>
+    </HudChip>
   </span>
 );
 
 /** What failed, by name, with Try again on the card itself. */
 const Failed = ({ onRetry }: { onRetry: () => void }) => (
-  <div role="alert" className="flex flex-col items-center justify-center gap-2.5 px-4 py-6">
-    <SemanticIcon name="victory" size={40} />
-    <p className="text-sm text-kit-cream">{SEASON_ERROR}</p>
-    <Button role="secondary" word={TRY_AGAIN} onClick={onRetry} className="w-[150px]" />
+  <div role="alert">
+    <HudEmpty
+      icon="victory"
+      line={SEASON_ERROR}
+      action={
+        <HudButton kind="secondary" onClick={onRetry}>
+          {TRY_AGAIN}
+        </HudButton>
+      }
+    />
   </div>
 );

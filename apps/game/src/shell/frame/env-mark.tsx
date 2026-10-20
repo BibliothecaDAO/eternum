@@ -1,4 +1,4 @@
-import { WORDS } from "../words";
+import { WORDS } from "@/ui/design-system/kit/words";
 import { IS_DEV_ENVIRONMENT } from "./environment";
 
 /**
@@ -14,9 +14,5 @@ export const EnvChip = () =>
 
 export const EnvEdge = () =>
   IS_DEV_ENVIRONMENT ? (
-    <div
-      aria-hidden
-      data-env-edge
-      className="pointer-events-none fixed inset-x-0 top-0 z-50 h-1 bg-[repeating-linear-gradient(135deg,theme(colors.kit.muted)_0_4px,transparent_4px_8px)]"
-    />
+    <div aria-hidden data-env-edge className="pointer-events-none fixed inset-x-0 top-0 z-50 h-1 bg-stripes" />
   ) : null;

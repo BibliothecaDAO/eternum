@@ -128,7 +128,8 @@ pub fn validate(preset: PresetDefinition) {
         "invalid guard slot limit",
     );
 
-    assert!(troops.mercenaries_troop_lower_bound < troops.mercenaries_troop_upper_bound, "invalid mercenary bounds");
+    assert!(troops.light_guard_lower_bound <= troops.light_guard_upper_bound, "invalid light guard bounds");
+    assert!(troops.heavy_guard_lower_bound <= troops.heavy_guard_upper_bound, "invalid heavy guard bounds");
     if crate::rules::rule_enabled(preset.rules, crate::rules::DISCOVER_CAMPS)
         && map.camp_win_probability != 0
         && preset.rules.day_unit_seconds == 0 {
@@ -167,6 +168,18 @@ pub trait IPresetValidation<T> {
 #[starknet::interface]
 pub trait IPresetStructures<T> {
     fn store_structure_preset(ref self: T, commitment: felt252, structures: StructurePreset);
+}
+
+#[starknet::interface]
+pub trait IPresetRelics<T> {
+    fn store_relic_preset(
+        ref self: T,
+        commitment: felt252,
+        rules: Span<crate::relics::RelicRule>,
+        chests: Option<crate::relics::ChestRules>,
+        mode_rules: u32,
+        day_unit_seconds: u32,
+    );
 }
 
 #[starknet::interface]

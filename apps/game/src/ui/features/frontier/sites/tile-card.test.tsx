@@ -19,13 +19,13 @@ vi.mock("@/sync/active-game-client", async (original) => ({
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
-import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
+import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
 import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ActionPaths, ActionType, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { ActionPaths, ActionType, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds, siteName } from "@bibliothecadao/types";
 import { closeFightResult, useFightResult } from "./fight-result";
 import { FightResultCard } from "./fight-result-card";
 import { campBeside, otherArmyAt, SITE, SITE_TILE } from "./site-fixture";
@@ -143,17 +143,39 @@ const renderCard = (army: "beside" | "far") => {
 };
 
 describe("the tile card", () => {
-  it("names the guard, offers no Attack until an army is chosen, then attacks with the same tap", async () => {
+  it("titles the site by its map name over its kind, names the guard, offers no Attack until an army is chosen, then attacks with the same tap", async () => {
     const { host, attack, button, unmount } = renderCard("beside");
-    expect(host.querySelector('section[aria-label="Camp"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="troops 1,100"]')).not.toBeNull();
-    expect(button("Attack")).toBeUndefined();
+    try {
+      const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
+      expect(card).not.toBeNull();
+      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1,100");
+      expect(host.querySelector('[aria-label="Beast 1,100"]')).not.toBeNull();
+      expect(button("Attack")).toBeUndefined();
 
-    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
-    expect(button("Attack")?.disabled).toBe(false);
-    await act(async () => button("Attack")!.click());
-    expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
-    unmount();
+      act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+      expect(card!.textContent?.match(/Troll/g)).toHaveLength(1);
+      expect(button("Attack")?.disabled).toBe(false);
+      await act(async () => button("Attack")!.click());
+      expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
+    } finally {
+      unmount();
+    }
+  });
+
+  it("titles the site by the name its holder gave it, as its plate, its lists and its stories do", () => {
+    setEntityNameLocalStorage(SITE, "North Watch");
+    const { host, unmount } = renderCard("beside");
+    try {
+      const card = host.querySelector('section[aria-label="North Watch"]')!;
+      expect(card).not.toBeNull();
+      expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
+      expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1,100");
+      expect(card.textContent?.match(/Troll/g)).toHaveLength(1);
+      expect(card.textContent).not.toMatch(/\bcamp\b/i);
+    } finally {
+      unmount();
+      localStorage.removeItem(`entity-name-${SITE}`);
+    }
   });
 
   it("offers Move by the order that leads beside the site, never by a tile another army of the player holds", () => {
@@ -173,7 +195,7 @@ describe("the tile card", () => {
     });
     expect(button("Move")?.disabled).toBe(false);
     expect(button("Attack")).toBeUndefined();
-    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Camp");
+    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Troll");
     unmount();
   });
 
@@ -182,7 +204,7 @@ describe("the tile card", () => {
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(button("Attack")?.disabled).toBe(true);
     expect(button("Move")).toBeUndefined();
-    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Camp");
+    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Troll");
     unmount();
   });
 
@@ -212,7 +234,9 @@ describe("the tile card", () => {
     );
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(host.querySelector('section[aria-label="Army"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="troops 300"]')).not.toBeNull();
+    // The other army stands where a guard does: its 300 troops before this attack, on the guard's side.
+    const sides = [...host.querySelectorAll(".ui-sheet__body > .flex.gap-2 > *")].map((side) => side.textContent);
+    expect(sides[1]).toMatch(/^300 →/);
     const button = [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))!;
     await act(async () => button.click());
     expect(attack).toHaveBeenCalledWith(
@@ -318,7 +342,7 @@ describe("the result of the player's attack", () => {
     await act(async () => card.button("Attack")!.click());
     act(() => lands(card.store));
     await act(async () => apply(APPLIED));
-    const result = () => card.host.querySelector<HTMLButtonElement>("button[aria-label^='Camp:']");
+    const result = () => card.host.querySelector<HTMLButtonElement>("button[aria-label^='Troll:']");
     return { ...card, result };
   };
 
@@ -327,9 +351,9 @@ describe("the result of the player's attack", () => {
       battleArrives([1_498, 0], [1_100, 1_028]);
       store.applyFacts(ARMY_GONE as never);
     });
-    expect(result()?.getAttribute("aria-label")).toBe("Camp: Army lost");
+    expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
     expect(result()!.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
-    expect(result()!.querySelector('[aria-label="troops 1,100 → 1,028"]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Troll 1,100 → 1,028"]')).not.toBeNull();
     unmount();
   });
 
@@ -338,8 +362,8 @@ describe("the result of the player's attack", () => {
       battleArrives([1_498, 0], [1_100, 1_028]);
       store.applyFacts([...ARMY_GONE, ...SITE_OUT_OF_SCOPE] as never);
     });
-    expect(result()?.getAttribute("aria-label")).toBe("Camp: Army lost");
-    expect(result()!.querySelector('[aria-label="troops 1,100 → 1,028"]')).not.toBeNull();
+    expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
+    expect(result()!.querySelector('[aria-label="Troll 1,100 → 1,028"]')).not.toBeNull();
     expect(result()!.textContent).not.toContain("+550");
     expect(result()!.querySelector('[aria-label^="XP"]')).toBeNull();
     unmount();
@@ -349,7 +373,7 @@ describe("the result of the player's attack", () => {
     const { result, unmount } = await attackThatLands((store) =>
       store.applyFacts([...ARMY_GONE, ...SITE_OUT_OF_SCOPE] as never),
     );
-    expect(result()?.getAttribute("aria-label")).toBe("Camp: Army lost");
+    expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
     expect(result()!.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
     expect(result()!.querySelector('[aria-label^="troops"]')).toBeNull();
     expect(result()!.textContent).not.toContain("+");
@@ -368,11 +392,11 @@ describe("the result of the player's attack", () => {
       // The card's preview said 550 labor; the record of what the contract paid says 700, and the card says that.
       payoutArrives({ resource_type: ResourcesIds.Labor, amount: whole(700) });
     });
-    expect(result()?.getAttribute("aria-label")).toBe("Camp: Victory");
+    expect(result()?.getAttribute("aria-label")).toBe("Troll: Victory");
     expect(result()!.querySelector('[aria-label="Army 1,498 → 1,318"]')).not.toBeNull();
     expect(result()!.textContent).toContain("+700");
     expect(result()!.textContent).not.toContain("550");
-    expect(result()!.querySelector('[aria-label^="XP +"]')).not.toBeNull();
+    expect(result()!.textContent).toMatch(/\+[\d,]+ XP/);
     expect(result()!.querySelector('[aria-label="Store Full"]')).toBeNull();
     unmount();
   });
@@ -392,8 +416,8 @@ describe("the result of the player's attack", () => {
 
   it("shows a victory's XP alone when no payout record of the clear arrived", async () => {
     const { result, unmount } = await attackThatLands(() => battleArrives([1_498, 1_318], [1_100, 0]));
-    expect(result()?.getAttribute("aria-label")).toBe("Camp: Victory");
-    expect(result()!.querySelector('[aria-label^="XP +"]')).not.toBeNull();
+    expect(result()?.getAttribute("aria-label")).toBe("Troll: Victory");
+    expect(result()!.textContent).toMatch(/\+[\d,]+ XP/);
     expect(result()!.textContent).not.toContain("550");
     unmount();
   });
@@ -406,7 +430,7 @@ describe("the result of the player's attack", () => {
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Army is resting");
     // The army ends its day, and the site's guard changes: neither is this attack's doing.
     act(() => store.applyFacts([...ARMY_GONE, gone("Guard", "0x73")] as never));
-    expect(host.querySelector("button[aria-label^='Camp:']")).toBeNull();
+    expect(host.querySelector("button[aria-label^='Troll:']")).toBeNull();
     unmount();
   });
 });
@@ -463,9 +487,16 @@ describe("an army picked from a site's card", () => {
   it("asks the map for that army and names the site's tile, so the card stays open with the army as its actor", () => {
     const { host, unmount } = renderCard("beside");
     const asked: unknown[] = [];
-    const hear = (event: Event) => asked.push(readArmySelectRequest(event));
+    // The site's place as the map reads it: the tile's contract hex, carried as a Position.
+    const hear = () => {
+      const request = takeArmySelectRequest();
+      const site = request?.forSite?.getContract();
+      asked.push({ entityId: request?.entityId, forSite: site && { col: site.x, row: site.y } });
+    };
     window.addEventListener(ARMY_SELECT_REQUEST_EVENT, hear);
-    const rows = [...host.querySelectorAll<HTMLButtonElement>("button[aria-label^='Army']")];
+    const rows = [...host.querySelectorAll<HTMLButtonElement>(".ui-row__choose")].filter((row) =>
+      row.textContent?.startsWith("Army"),
+    );
     expect(rows.length).toBeGreaterThan(0);
     act(() => rows[0].click());
     window.removeEventListener(ARMY_SELECT_REQUEST_EVENT, hear);

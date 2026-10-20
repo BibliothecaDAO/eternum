@@ -1,15 +1,15 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { HudField, HudTableHead } from "@/ui/design-system/kit/hud-elements";
 import { resolveBestPrices } from "./best-prices";
 import { MarketResourceRow } from "./market-resource-row";
 import { MarketManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { findResourceById, ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
+import { ID, MarketInterface, ResourcesIds, resourceName } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
-const SEARCH_INPUT_CLASS =
-  "h-8 w-full rounded-md border border-gold/25 bg-black/40 px-2 text-sm text-gold placeholder:text-kit-muted focus:border-gold/60 focus:outline-none";
+/** The list's columns: the resource and its balance, then its best buy, best sell and AMM prices. */
+export const MARKET_RESOURCE_COLS = "minmax(0,2fr) 1fr 1fr 1fr";
 
 export const MarketResourceSidebar = ({
   entityId,
@@ -54,31 +54,27 @@ export const MarketResourceSidebar = ({
   const visibleResources = useMemo(() => {
     const needle = search.trim().toLowerCase();
     if (!needle) return tradableResources;
-    return tradableResources.filter((resourceId) =>
-      (findResourceById(resourceId)?.trait ?? "").toLowerCase().includes(needle),
-    );
+    return tradableResources.filter((resourceId) => resourceName(resourceId).toLowerCase().includes(needle));
   }, [tradableResources, search]);
 
   return (
-    <div className="market-resource-bar-selector flex min-h-0 flex-1 flex-col">
-      <div className="px-3 py-2">
-        <input
-          type="text"
-          value={search}
-          placeholder="Search resources…"
-          autoComplete="off"
-          onChange={(event) => setSearch(event.currentTarget.value)}
-          onKeyDown={(event) => event.stopPropagation()}
-          className={SEARCH_INPUT_CLASS}
-        />
-      </div>
-      <div className={`grid grid-cols-[minmax(0,2fr)_1fr_1fr_1fr] border-b border-gold/15 px-3 pb-1.5 ${HUD_LABEL}`}>
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <HudField
+        value={search}
+        icon="search"
+        placeholder="Search resources…"
+        aria-label="Search resources"
+        autoComplete="off"
+        onChange={setSearch}
+        onKeyDown={(event) => event.stopPropagation()}
+      />
+      <HudTableHead cols={MARKET_RESOURCE_COLS}>
         <span>Resource</span>
-        <span className="market-resource-bar-buy-selector text-right">Buy</span>
-        <span className="market-resource-bar-sell-selector text-right">Sell</span>
-        <span className="market-resource-bar-amm-selector text-right">AMM</span>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-1">
+        <span className="text-right">Buy</span>
+        <span className="text-right">Sell</span>
+        <span className="text-right">AMM</span>
+      </HudTableHead>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {visibleResources.map((resourceId) => (
           <MarketResourceRow
             key={resourceId}

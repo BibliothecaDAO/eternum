@@ -80,13 +80,6 @@ export type Tile = {
   reward_extracted: boolean;
 };
 
-export type PlayerStructure = {
-  entityId: ID;
-  structure: NativeRows["Structure"];
-  position: Position;
-  category: StructureType;
-  owner: ContractAddress;
-};
 export interface Building {
   name: string;
   category: BuildingType;
@@ -185,6 +178,15 @@ export type ContractAddress = bigint;
 
 export function ID(id: number | string): ID {
   return Number(id);
+}
+
+/**
+ * An entity id as one 32-bit word to hash: its home namespace (the high half) mixed into its serial (the low half).
+ * Bitwise operators and Math.imul keep only a number's low 32 bits, so an id hashed directly loses its home, and every
+ * home's Nth army hashes alike. `seed` gives each use its own word for one id.
+ */
+export function foldEntityId(entityId: ID, seed = 0): number {
+  return ((entityId % 2 ** 32) ^ seed ^ Math.imul(Math.floor(entityId / 2 ** 32), 0x9e3779b1)) >>> 0;
 }
 
 export function ContractAddress(address: string | bigint): ContractAddress {
@@ -333,8 +335,11 @@ export interface Config {
       /** The most army strength an exploration reward pays on; a preset without it pays on the whole army. */
       exploreRewardStrengthCap?: number;
 
-      mercenariesTroopLowerBound: number;
-      mercenariesTroopUpperBound: number;
+      /** Inclusive discovery guard bounds, in whole troops. */
+      lightGuardLowerBound: number;
+      lightGuardUpperBound: number;
+      heavyGuardLowerBound: number;
+      heavyGuardUpperBound: number;
       settlementDeploymentCap: number;
       cityDeploymentCap: number;
       kingdomDeploymentCap: number;

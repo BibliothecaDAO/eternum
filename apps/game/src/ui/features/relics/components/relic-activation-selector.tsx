@@ -1,31 +1,46 @@
-import { useMemo, useState } from "react";
-import { useFactView } from "@/hooks/use-fact-view";
-import { playerStructuresView } from "@/sync/fact-views";
+import { useEffect, useMemo, useState } from "react";
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import Button from "@/ui/design-system/atoms/button";
-import { currencyFormat } from "@/ui/utils/utils";
+import {
+  HudButton,
+  HudChip,
+  HudEmpty,
+  HudNotice,
+  HudPanel,
+  HudRow,
+  HudWindow,
+} from "@/ui/design-system/kit/hud-elements";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { EntityType, ID, RelicRecipientType, Troops } from "@bibliothecadao/types";
+import { EntityType, ID, RelicRecipientType, Troops, formatAmount } from "@bibliothecadao/types";
 
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../hooks/use-relic-activation";
-import type { RelicHolderPreview } from "./player-relic-tray";
-import { RelicEssenceRequirement, RelicIncompatibilityNotice, RelicSummary } from "./relic-activation-shared";
+import { HeldRelic, RelicEssenceRequirement, RelicIncompatibilityNotice } from "./relic-activation-shared";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
+import { configManager, getArmyName } from "@bibliothecadao/eternum";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { getExplorerStaminaSnapshot } from "@/lib/army-stamina/source-resolution";
+import { activateRelic, relicHolderLine, STAMINA_FULL } from "@/ui/design-system/kit/words";
+
+/** A structure or army holding a relic, with how many whole relics it holds: one choice of who activates it. */
+export interface RelicHolderPreview {
+  entityId: ID;
+  held: number;
+  recipientType: RelicRecipientType;
+  entityType: EntityType;
+}
 
 interface RelicActivationSelectorProps {
   resourceId: ID;
-  displayAmount: string;
   holders: RelicHolderPreview[];
   onClose: () => void;
 }
 
 interface EnrichedHolder extends RelicHolderPreview {
-  entityOwnerId: ID;
+  entityOwnerId: ID | undefined;
   entityName: string;
   parentStructureId: number | null;
   parentStructureName: string | null;
@@ -44,7 +59,7 @@ type RelicActivationHolderCardProps = {
   holder: EnrichedHolder;
   relicInfo: RelicInfoType;
   essenceCost: number;
-  onActivate: (request: ActivationRequest) => void;
+  onActivate: (request: ActivationRequest) => Promise<void>;
   isActivating: boolean;
   activationError?: string | null;
 };
@@ -60,128 +75,76 @@ const RelicActivationHolderCard = ({
   const { essenceBalance, hasEnoughEssence, shortfall } = useRelicEssenceStatus(holder.entityOwnerId, essenceCost);
   const compatible = isRelicCompatible(relicInfo, holder.recipientType);
   const isArmyHolder = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
-  const parentRealmLabel = (() => {
-    if (holder.parentStructureName) {
-      const suffix = holder.parentStructureId != null ? ` (#${holder.parentStructureId})` : "";
-      return `${holder.parentStructureName}${suffix}`;
-    }
-
-    if (holder.parentStructureId != null) {
-      return `Realm #${holder.parentStructureId}`;
-    }
-
-    return null;
-  })();
+  const staminaFull = useStaminaFull(isArmyHolder ? holder.troops : null);
+  const armyUnknown = isArmyHolder && holder.troops === null;
+  useEffect(() => {
+    if (import.meta.env.DEV && armyUnknown)
+      console.warn("Relic activation is waiting for synchronized army facts", { entityId: holder.entityId });
+  }, [armyUnknown, holder.entityId]);
 
   return (
-    <div className="rounded border border-gold/20 bg-dark-brown/30 p-3">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-gold">{holder.entityName}</p>
-          <p className="text-sm text-kit-muted">ID: {holder.entityId}</p>
-        </div>
-        <div className="text-sm font-semibold text-gold/70">Amount: {currencyFormat(holder.amount, 0)}</div>
-      </div>
-
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
-        <span
-          className={`rounded px-2 py-1 ${
-            compatible ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"
-          }`}
-        >
-          {compatible ? "Compatible" : "Incompatible"}
-        </span>
-        <span
-          className={`rounded px-2 py-1 ${
-            hasEnoughEssence ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"
-          }`}
-        >
-          {hasEnoughEssence ? "Enough essence" : "Need essence"}
-        </span>
-      </div>
-
-      {isArmyHolder && parentRealmLabel && (
-        <div className="mt-2 w-full text-sm text-kit-muted">Parent Realm · {parentRealmLabel}</div>
-      )}
-
-      {isArmyHolder && holder.troops && (
-        <div className="mt-2">
-          <TroopChip troops={holder.troops} size="sm" />
-        </div>
-      )}
-
-      <RelicEssenceRequirement
-        className="mt-3"
-        essenceCost={essenceCost}
-        essenceBalance={essenceBalance}
-        shortfall={shortfall}
-        hasEnoughEssence={hasEnoughEssence}
-        balanceLabel="Essence Balance"
-      />
-
-      {!compatible && (
-        <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={holder.recipientType} className="mt-2" />
-      )}
-
-      {activationError && <p className="mt-2 text-sm font-semibold text-red-300">{activationError}</p>}
-
-      <div className="mt-3 flex justify-end">
-        <Button
-          variant="gold"
-          size="md"
-          disabled={!compatible || !hasEnoughEssence || isActivating}
-          isLoading={isActivating}
-          onClick={() =>
-            onActivate({
-              holder,
-              hasEnoughEssence,
-              shortfall,
-            })
+    <HudPanel kind="section" title={holder.entityName} cue={`×${formatAmount(holder.held)}`} collapsible={false}>
+      <div className="flex flex-col gap-2">
+        <HudRow
+          title={relicHolderLine(isArmyHolder, holder.parentStructureName)}
+          trail={
+            <span className="flex gap-1">
+              <HudChip tone={compatible ? "good" : "bad"}>{compatible ? "Compatible" : "Incompatible"}</HudChip>
+              <HudChip tone={hasEnoughEssence ? "good" : "bad"}>
+                {hasEnoughEssence ? "Enough essence" : "Need essence"}
+              </HudChip>
+            </span>
           }
-        >
-          Activate
-        </Button>
+        />
+        {isArmyHolder && holder.troops && <TroopChip troops={holder.troops} size="sm" />}
+        <RelicEssenceRequirement
+          essenceCost={essenceCost}
+          essenceBalance={essenceBalance}
+          shortfall={shortfall}
+          hasEnoughEssence={hasEnoughEssence}
+        />
+        {!compatible && <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={holder.recipientType} />}
+        {compatible && relicInfo?.type === "Stamina" && staminaFull && (
+          <HudNotice tone="warn" line={STAMINA_FULL.line} why={STAMINA_FULL.why} />
+        )}
+        {armyUnknown && <HudNotice tone="warn" line="Army data unavailable. Waiting for synchronization." />}
+        {activationError && <HudNotice tone="bad" line={activationError} />}
+        <span className="flex justify-end">
+          <HudButton
+            kind="secondary"
+            busy={isActivating ? "Activating…" : undefined}
+            disabled={!compatible || !hasEnoughEssence || armyUnknown}
+            onClick={() => onActivate({ holder, hasEnoughEssence, shortfall })}
+          >
+            Activate
+          </HudButton>
+        </span>
       </div>
-    </div>
+    </HudPanel>
   );
 };
 
-const toEntityId = (value: unknown, fallback: ID): ID => {
-  if (typeof value === "number") {
-    return value;
-  }
-
-  if (typeof value === "bigint") {
-    return Number(value);
-  }
-
-  if (typeof value === "string") {
-    try {
-      const parsedBigInt = BigInt(value);
-      return Number(parsedBigInt);
-    } catch {
-      const parsedNumber = Number(value);
-      return Number.isNaN(parsedNumber) ? fallback : parsedNumber;
-    }
-  }
-
-  return fallback;
+/** Whether an army's stamina is at its most now: a relic that speeds the refill then has nothing to refill. */
+const useStaminaFull = (troops: Troops | null): boolean => {
+  const now = useCurrentDefaultTick();
+  const stamina = getExplorerStaminaSnapshot({ timestamp: now, liveTroops: troops });
+  return stamina !== null && stamina.current >= stamina.max;
 };
 
-export const RelicActivationSelector = ({
-  resourceId,
-  displayAmount: _initialDisplayAmount,
-  holders,
-  onClose,
-}: RelicActivationSelectorProps) => {
+export const RelicActivationSelector = ({ resourceId, holders, onClose }: RelicActivationSelectorProps) => {
   const {
     setup: { store, systemCalls },
     account: { account },
   } = useGame();
   const mode = useGameModeConfig();
-  const revision = useNativeRevision(["Structure", "ExplorerTroops", "TileOccupancy"]);
-
-  const playerStructures = useFactView(playerStructuresView);
+  const revision = useNativeRevision([
+    "Structure",
+    "ExplorerTroops",
+    "EntityName",
+    "ArmySlot",
+    "ArmyProgress",
+    "SliceRules",
+  ]);
 
   const [activatingHolderId, setActivatingHolderId] = useState<string | null>(null);
   const [activationError, setActivationError] = useState<{ holderId: string | null; message: string | null }>({
@@ -189,69 +152,26 @@ export const RelicActivationSelector = ({
     message: null,
   });
 
-  const structureNameMap = useMemo(() => {
-    const map = new Map<string, string>();
-    playerStructures.forEach((structure) => {
-      const id = safeInteger(structure.entityId);
-      if (Number.isNaN(id)) {
-        return;
-      }
+  const { relicInfo, resourceId: relicResourceId, essenceCost } = useRelicMetadata(resourceId);
 
-      try {
-        const name = mode.structure.getName(structure.structure).name;
-        map.set(String(id), name);
-      } catch {
-        map.set(String(id), `Realm #${id}`);
-      }
-    });
-
-    return map;
-  }, [mode, playerStructures]);
-
-  const { relicInfo, resourceName, resourceKey, essenceCost } = useRelicMetadata(resourceId);
-
-  const relicDescription = useMemo(() => {
-    if (!relicInfo) {
-      return undefined;
-    }
-
-    if (!relicInfo.duration) {
-      return relicInfo.effect;
-    }
-
-    return `${relicInfo.effect} (${relicInfo.duration})`;
-  }, [relicInfo]);
+  const relicDescription = relicInfo?.effectLine;
 
   const enrichedHolders = useMemo<EnrichedHolder[]>(() => {
-    const resolveParentStructureName = (structureId: ID | null): string | null => {
-      if (structureId == null) {
-        return null;
-      }
-
-      const cachedName = structureNameMap.get(String(structureId));
-      if (cachedName) {
-        return cachedName;
-      }
-
-      try {
-        const parentInfo = mode.structure.getEntityInfo(structureId, null, store);
-        return parentInfo?.name?.name ?? null;
-      } catch {
-        return null;
-      }
-    };
-
     return holders.map((holder) => {
-      const entityInfo = mode.structure.getEntityInfo(holder.entityId, null, store);
-      const entityName = entityInfo?.name?.name ?? `Entity ${holder.entityId}`;
-      const selfId = toEntityId(holder.entityId, holder.entityId);
+      const game_id = configManager.getActiveGameId();
       const isArmy = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
-      const explorerOwnerRaw = isArmy ? entityInfo?.explorer?.owner : undefined;
-      const entityOwnerId = isArmy ? toEntityId(explorerOwnerRaw, selfId) : selfId;
-      const hasParentStructure = isArmy && entityOwnerId !== selfId;
-      const parentStructureId = hasParentStructure ? entityOwnerId : null;
-      const parentStructureName = hasParentStructure ? resolveParentStructureName(parentStructureId) : null;
-      const troops = isArmy ? ((entityInfo?.explorer?.troops as Troops | undefined) ?? null) : null;
+      const explorer = isArmy ? store.get("ExplorerTroops", { game_id, explorer_id: holder.entityId }) : undefined;
+      const entityOwnerId = isArmy ? (explorer ? safeInteger(explorer.owner) : undefined) : holder.entityId;
+      const structure =
+        entityOwnerId === undefined ? undefined : store.get("Structure", { game_id, entity_id: entityOwnerId });
+      const entityName = isArmy
+        ? getArmyName(holder.entityId, store)
+        : structure
+          ? mode.structure.getName(structure).name
+          : "Structure";
+      const parentStructureId = isArmy ? (entityOwnerId ?? null) : null;
+      const parentStructureName = isArmy && structure ? mode.structure.getName(structure).name : null;
+      const troops = explorer ? (resolveExplorerTroops(store, explorer) ?? null) : null;
 
       return {
         ...holder,
@@ -262,10 +182,9 @@ export const RelicActivationSelector = ({
         troops,
       };
     });
-  }, [store, holders, mode, structureNameMap, revision]);
+  }, [store, holders, mode, revision]);
 
-  const visibleHolders = enrichedHolders;
-  const visibleDisplayAmount = _initialDisplayAmount;
+  const held = holders.reduce((total, holder) => total + holder.held, 0);
 
   const handleActivate = async ({ holder, hasEnoughEssence, shortfall }: ActivationRequest) => {
     if (!relicInfo) {
@@ -318,41 +237,29 @@ export const RelicActivationSelector = ({
   };
 
   return (
-    <SurfaceFrame title="Select Activation Target" onClose={onClose} className="w-[560px]" bodyClassName="p-4">
-      <div className="space-y-5">
-        <RelicSummary
-          resourceKey={resourceKey}
-          title={resourceName}
-          subtitle={`Total available: ${visibleDisplayAmount}`}
-          description={relicDescription}
-        />
-
-        {visibleHolders.length === 0 ? (
-          <div className="rounded border border-gold/20 bg-dark-brown/20 p-6 text-center text-sm text-gold/70">
-            No entities currently hold this relic.
-          </div>
+    <HudWindow title={activateRelic(relicResourceId)} icon="relics" size="task" onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        <HeldRelic relicId={relicResourceId} held={formatAmount(held)} />
+        {relicDescription && <p className="text-hud-label text-hud-muted">{relicDescription}</p>}
+        {enrichedHolders.length === 0 ? (
+          <HudEmpty icon="relics" line="No entities currently hold this relic." />
         ) : (
-          <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
-            {visibleHolders.map((holder) => {
-              const holderKey = String(holder.entityId);
-              const isActivating = activatingHolderId === holderKey;
-              const holderError = activationError.holderId === holderKey ? activationError.message : null;
-
-              return (
-                <RelicActivationHolderCard
-                  key={holder.entityId}
-                  holder={holder}
-                  relicInfo={relicInfo}
-                  essenceCost={essenceCost}
-                  onActivate={handleActivate}
-                  isActivating={isActivating}
-                  activationError={holderError}
-                />
-              );
-            })}
-          </div>
+          enrichedHolders.map((holder) => {
+            const holderKey = String(holder.entityId);
+            return (
+              <RelicActivationHolderCard
+                key={holder.entityId}
+                holder={holder}
+                relicInfo={relicInfo}
+                essenceCost={essenceCost}
+                onActivate={handleActivate}
+                isActivating={activatingHolderId === holderKey}
+                activationError={activationError.holderId === holderKey ? activationError.message : null}
+              />
+            );
+          })
         )}
       </div>
-    </SurfaceFrame>
+    </HudWindow>
   );
 };

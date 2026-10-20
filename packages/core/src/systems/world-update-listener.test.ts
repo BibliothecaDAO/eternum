@@ -1,4 +1,4 @@
-import { StructureType } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { describe, expect, it, vi } from "vitest";
 import { WorldUpdateListener } from "./world-update-listener";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -20,6 +20,64 @@ function fixture() {
 }
 
 describe("native scene updates", () => {
+  it.each([5, 0])("delivers a ruin's actual %s LORDS payout with its winning battle", (amount) => {
+    const { store, listener } = fixture();
+    const delivered = vi.fn();
+    const stop = listener.SitePayouts.onSitePayout(delivered);
+    const position = (event_index: number) => ({
+      block_number: 9,
+      transaction_hash: "0xab",
+      transaction_index: 0,
+      event_index,
+    });
+    store.applyEvent({
+      model: "StoryEvent",
+      key: "payout",
+      value: {
+        game_id: 1,
+        owner: "0x111",
+        timestamp: 100,
+        event_position: position(4),
+        story: {
+          SitePayout: {
+            structure_id: 3,
+            explorer_id: 7,
+            site_id: 9,
+            category: StructureType.Ruin,
+            reward: { resource_type: ResourcesIds.Lords, amount: String(BigInt(amount) * BigInt(RESOURCE_PRECISION)) },
+          },
+        },
+      },
+    });
+    expect(delivered).not.toHaveBeenCalled();
+    store.applyEvent({
+      model: "BattleEvent",
+      key: "battle",
+      value: {
+        game_id: 1,
+        defender_id: 9,
+        coord: { x: 40, y: 12 },
+        attacker: { before: "1000000000000", after: "900000000000" },
+        defender: { before: "100000000000", after: "0" },
+        event_position: position(5),
+      },
+    });
+    expect(delivered.mock.calls).toEqual([
+      [
+        {
+          explorerId: 7,
+          siteId: 9,
+          ownerAddress: 0x111n,
+          kind: "Ruin",
+          reward: { resourceId: ResourcesIds.Lords, amount },
+          coord: { x: 40, y: 12 },
+          troopsLost: 100,
+        },
+      ],
+    ]);
+    stop();
+  });
+
   it("reads an army's Upgrade in either enum form, and refuses one it cannot name", () => {
     const { store, listener } = fixture();
     const chosen = vi.fn();
@@ -87,7 +145,7 @@ describe("native scene updates", () => {
     story("0xb", 9, StructureType.Camp, { resource_type: 23, amount: "550000000000" });
     expect(payout).not.toHaveBeenCalled();
     battle("0xb", 9);
-    story("0xc", 10, StructureType.Stragglers, null);
+    story("0xc", 10, StructureType.Beasts, null);
     battle("0xc", 10);
     expect(payout.mock.calls.map(([update]) => update)).toEqual([
       {
@@ -99,28 +157,203 @@ describe("native scene updates", () => {
         coord: { x: 40, y: 12 },
         troopsLost: 420,
       },
-      expect.objectContaining({ siteId: 10, kind: "Stragglers", reward: null }),
+      expect.objectContaining({ siteId: 10, kind: "Beasts", reward: null }),
     ]);
 
-    // A payout the next battle does not answer is a contract bug, never a guess: another site's battle, another
-    // transaction's, or a second payout in its place.
+    // Within one transaction, a different site's battle or a second payout is still a pairing fault.
     story("0xd", 11, StructureType.Rift, { resource_type: 29, amount: "1" });
     expectReported(() => battle("0xd", 12), "Site payout 11 arrived without its winning battle");
     story("0xe", 11, StructureType.Rift, { resource_type: 29, amount: "1" });
-    expectReported(() => battle("0xf", 11), "Site payout 11 arrived without its winning battle");
+    expectReported(
+      () => story("0xe", 13, StructureType.Camp, { resource_type: 23, amount: "1" }),
+      "Site payout 11 arrived without its winning battle",
+    );
+    battle("0xe", 13);
     story("0x10", 11, StructureType.Rift, { resource_type: 29, amount: "1" });
     expectReported(
       () => story("0x11", 13, StructureType.Camp, { resource_type: 23, amount: "1" }),
       "Site payout 11 arrived without its winning battle",
     );
     battle("0x11", 13);
-    expect(payout).toHaveBeenCalledTimes(3);
+    expect(payout).toHaveBeenCalledTimes(4);
     expectReported(() => story("0x12", 11, StructureType.Rift, null), "A cleared Rift pays nothing");
 
     stop();
     story("0x13", 12, StructureType.Camp, { resource_type: 23, amount: "1" });
     battle("0x13", 12);
-    expect(payout).toHaveBeenCalledTimes(3);
+    expect(payout).toHaveBeenCalledTimes(4);
+  });
+
+  it.each([
+    { category: StructureType.Camp, kind: "Camp", resourceId: ResourcesIds.Labor },
+    { category: StructureType.Rift, kind: "Rift", resourceId: ResourcesIds.Essence },
+    { category: StructureType.Beasts, kind: "Beasts", resourceId: null },
+  ])(
+    "reports an unpaired private $kind payout once without losing the following clear",
+    ({ category, kind, resourceId }) => {
+      const { store, listener } = fixture();
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      const delivered = vi.fn();
+      const stop = listener.SitePayouts.onSitePayout(delivered);
+      const at = (transaction_hash: string, event_index: number) => ({
+        event_position: { block_number: 9, transaction_hash, transaction_index: 0, event_index },
+      });
+      const payout = (tx: string, site_id: number) =>
+        store.applyEvent({
+          model: "StoryEvent",
+          key: `story-${tx}`,
+          value: {
+            game_id: 1,
+            owner: "0xa",
+            timestamp: 100,
+            ...at(tx, 4),
+            story: {
+              SitePayout: {
+                structure_id: 3,
+                explorer_id: 7,
+                site_id,
+                category,
+                reward: resourceId === null ? null : { resource_type: resourceId, amount: String(RESOURCE_PRECISION) },
+              },
+            },
+          },
+        });
+      const battle = (tx: string, defender_id: number) =>
+        store.applyEvent({
+          model: "BattleEvent",
+          key: `battle-${tx}`,
+          value: {
+            game_id: 1,
+            defender_id,
+            coord: { x: 40, y: 12 },
+            attacker: { before: "1000000000000", after: "900000000000" },
+            defender: { before: "100000000000", after: "0" },
+            ...at(tx, 5),
+          },
+        });
+      try {
+        // A private receipt without its battle, then another action: report the lost clear once.
+        payout("0xaa", 9);
+        battle("0xbb", 5);
+        expect(delivered).not.toHaveBeenCalled();
+        expect(errors).toHaveBeenCalledTimes(1);
+        expect(String(errors.mock.calls[0])).toContain("Site payout 9 arrived without its winning battle");
+        payout("0xcc", 8);
+        battle("0xcc", 8);
+        // A payout can itself end the prior transaction: report the fault after retaining the new receipt.
+        payout("0xdd", 10);
+        payout("0xee", 11);
+        battle("0xee", 11);
+        expect(errors).toHaveBeenCalledTimes(2);
+        expect(String(errors.mock.calls[1])).toContain("Site payout 10 arrived without its winning battle");
+        expect(delivered.mock.calls.map(([clear]) => clear)).toEqual(
+          [8, 11].map((siteId) => ({
+            explorerId: 7,
+            siteId,
+            ownerAddress: 0xan,
+            kind,
+            reward: resourceId === null ? null : { resourceId, amount: 1 },
+            coord: { x: 40, y: 12 },
+            troopsLost: 100,
+          })),
+        );
+      } finally {
+        stop();
+        errors.mockRestore();
+      }
+    },
+  );
+
+  it("quietly leaves a peer's ruin receipt unpaired when its transaction ends, then delivers the viewer's clear", () => {
+    const { store, listener } = fixture();
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const delivered = vi.fn();
+    const stop = listener.SitePayouts.onSitePayout(delivered);
+    const at = (transaction_hash: string, event_index: number) => ({
+      event_position: { block_number: 9, transaction_hash, transaction_index: 0, event_index },
+    });
+    const story = (tx: string, owner: string, site_id: number, category: number) =>
+      store.applyEvent({
+        model: "StoryEvent",
+        key: `story-${tx}`,
+        value: {
+          game_id: 1,
+          owner,
+          timestamp: 100,
+          ...at(tx, 4),
+          story: {
+            SitePayout: {
+              structure_id: 3,
+              explorer_id: 7,
+              site_id,
+              category,
+              reward: {
+                resource_type: category === StructureType.Ruin ? ResourcesIds.Lords : ResourcesIds.Labor,
+                amount: String(5n * BigInt(RESOURCE_PRECISION)),
+              },
+            },
+          },
+        },
+      });
+    const battle = (tx: string, defender_id: number) =>
+      store.applyEvent({
+        model: "BattleEvent",
+        key: `battle-${tx}`,
+        value: {
+          game_id: 1,
+          defender_id,
+          coord: { x: 40, y: 12 },
+          attacker: { before: "1000000000000", after: "900000000000" },
+          defender: { before: "100000000000", after: "0" },
+          ...at(tx, 6),
+        },
+      });
+    const otherStory = (tx: string) =>
+      store.applyEvent({
+        model: "StoryEvent",
+        key: `other-story-${tx}`,
+        value: {
+          game_id: 1,
+          owner: "0xa",
+          timestamp: 100,
+          story: { FaithPointsClaimedStory: { wonder_id: 3, new_points: 1, total_points: 2 } },
+          ...at(tx, 5),
+        },
+      });
+    try {
+      // Shared peer receipt, then an unrelated own clear.
+      story("0xaa", "0xb", 99, StructureType.Ruin);
+      expect(delivered).not.toHaveBeenCalled();
+      story("0xbb", "0xa", 9, StructureType.Camp);
+      otherStory("0xbb");
+      battle("0xbb", 9);
+      expect(delivered.mock.calls).toEqual([
+        [
+          {
+            explorerId: 7,
+            siteId: 9,
+            ownerAddress: 0xan,
+            kind: "Camp",
+            reward: { resourceId: ResourcesIds.Labor, amount: 5 },
+            coord: { x: 40, y: 12 },
+            troopsLost: 100,
+          },
+        ],
+      ]);
+      expect(errors).not.toHaveBeenCalled();
+      // Even a battle naming the same site cannot pair across transactions.
+      story("0xcc", "0xb", 98, StructureType.Ruin);
+      battle("0xdd", 98);
+      // Any event from another transaction ends the pending pair, not just another payout or battle.
+      story("0xee", "0xb", 97, StructureType.Ruin);
+      otherStory("0xff");
+      battle("0xee", 97);
+      expect(delivered).toHaveBeenCalledTimes(1);
+      expect(errors).not.toHaveBeenCalled();
+    } finally {
+      stop();
+      errors.mockRestore();
+    }
   });
 
   it("reads building additions and removals from committed facts and unsubscribes", () => {
@@ -149,7 +382,7 @@ describe("native scene updates", () => {
     const { store, listener } = fixture();
     const chest = vi.fn();
     const reward = vi.fn();
-    const stop = listener.RelicChest.onRelicChestOpened(chest);
+    const stop = listener.Chests.onChestOpened(chest);
     listener.ExplorerReward.onExplorerRewardEventUpdate(reward);
     const opening = {
       game_id: "0x1",
@@ -166,7 +399,8 @@ describe("native scene updates", () => {
     };
     store.applyEvent({ model: "StoryEvent", key: "0x1", value: opening });
     expect(chest).toHaveBeenCalledWith({
-      title: "War pack: 3 relics to the army",
+      kind: "relics",
+      title: "Crate opened: 3 relics to the army",
       explorerId: 7,
       hex: { x: 10, y: 20 },
       relics: [41, 43, 39],
@@ -206,4 +440,44 @@ describe("native scene updates", () => {
     expect(chest).toHaveBeenCalledTimes(1);
     expect([...store.rows("ExplorerTroops")]).toEqual([]);
   });
+});
+
+it("delivers paid and expired reward chest stories through the one opening subscription, and releases both handlers", () => {
+  const { store, listener } = fixture();
+  const received = vi.fn();
+  const stop = listener.Chests.onChestOpened(received);
+  const emit = (amount: number, game_id = 1) =>
+    store.applyEvent({
+      model: "StoryEvent",
+      key: "0xce",
+      value: {
+        game_id,
+        timestamp: 361,
+        story: { RewardChestOpened: { explorer_id: 7, structure_id: 5, coord: { alt: false, x: 10, y: 20 }, amount } },
+      },
+    });
+  emit(17);
+  emit(0);
+  emit(50, 2);
+  expect(received.mock.calls.map(([value]) => value)).toEqual([
+    {
+      kind: "lords",
+      amount: 17,
+      title: "Chest opened: 17 LORDS to its realm",
+      explorerId: 7,
+      hex: { x: 10, y: 20 },
+      timestamp: 361,
+    },
+    {
+      kind: "lords",
+      amount: 0,
+      title: "Chest expired: no LORDS paid",
+      explorerId: 7,
+      hex: { x: 10, y: 20 },
+      timestamp: 361,
+    },
+  ]);
+  stop();
+  emit(17);
+  expect(received).toHaveBeenCalledTimes(2);
 });

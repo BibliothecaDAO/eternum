@@ -55,7 +55,7 @@ export interface NativePreset {
   /** One price per research row tier above common; rows are research.cairo's ROW_* ids. */
   research: readonly { row: number; tier: number; essenceCost: number; laborCost: number }[];
   discovery: null | {
-    stragglersBps: number;
+    beastsBps: number;
     campBps: number;
     riftBps: number;
     ruinBps: number;
@@ -85,6 +85,10 @@ export interface NativePreset {
     ruinGuardLower: number;
     ruinGuardUpper: number;
     guardStep: number;
+    beastWeakLower: number;
+    beastWeakUpper: number;
+    beastStrongLower: number;
+    beastStrongUpper: number;
     revealSiteNeighbors: boolean;
     entryStamina: number;
     chest: ChestTiers;

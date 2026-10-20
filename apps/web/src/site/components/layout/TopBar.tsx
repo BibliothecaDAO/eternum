@@ -1,3 +1,4 @@
+import { REALMS_X_URL } from "@realms-world/chain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/site/components/ui/button";
@@ -291,7 +292,7 @@ export function TopBar() {
 
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <a href="https://x.com/LootRealms" target="_blank" rel="noopener noreferrer" className="w-full">
+                      <a href={REALMS_X_URL} target="_blank" rel="noopener noreferrer" className="w-full">
                         X / Twitter
                       </a>
                     </DropdownMenuItem>
@@ -320,7 +321,7 @@ export function TopBar() {
 
                 <div className="hidden lg:flex items-center gap-1">
                   <a
-                    href="https://x.com/LootRealms"
+                    href={REALMS_X_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-foreground/50 hover:text-primary hover:bg-primary/10 transition-colors"

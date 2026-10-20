@@ -1,3 +1,5 @@
+import { foldEntityId } from "@bibliothecadao/types";
+
 /** Preserve the existing tower's landmark height. */
 export const HYPERSTRUCTURE_HEIGHT = 3.9;
 export const HYPERSTRUCTURE_COURSES = 8;
@@ -25,7 +27,7 @@ export interface HyperstructureConstruction {
 }
 
 export function resolveHyperstructureDesign(entityId: number) {
-  let state = (entityId ^ 0x85ebca6b) >>> 0;
+  let state = foldEntityId(entityId, 0x85ebca6b);
   const random = () => {
     state = (state + 0x6d2b79f5) >>> 0;
     let value = Math.imul(state ^ (state >>> 15), state | 1);

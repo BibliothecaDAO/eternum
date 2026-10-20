@@ -1,17 +1,16 @@
+import { AGES } from "@bibliothecadao/types";
 import { buildEntryHref } from "@/play/navigation/play-route";
 
 import type { DirectoryGame } from "./herald";
-import type { Painting } from "./paintings";
+import type { Painting } from "@/ui/design-system/kit/paintings";
 import { ageOf } from "./play/ages";
 
 export const modeLabel = (game: Pick<DirectoryGame, "mode" | "preset_id">): string => {
   switch (game.mode) {
     case "frontier":
-      return "Frontier";
     case "blitz":
-      return "Blitz";
     case "eternum":
-      return "Eternum";
+      return AGES[game.mode].game;
     case "duel":
       return "Duel";
     default:

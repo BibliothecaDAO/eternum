@@ -1,12 +1,12 @@
-import { validateInputs } from "./dates";
+import { setupQuestions, validateInputs } from "./dates";
 import { afterEach, expect, mock, test } from "bun:test";
 import { chmodSync, existsSync, lstatSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Account, hash, num, type RpcProvider } from "starknet";
+import { Account, CallData, hash, num, type RpcProvider } from "starknet";
 import { PrivateStore } from "./private-store";
 import { runSteps, type Step } from "./run";
-import { environments, ACCOUNT_CLASS, WEI, root, type Inputs } from "./settings";
+import { addressBook, environments, ACCOUNT_CLASS, WEI, root, type Inputs } from "./settings";
 import { accountIdentity, classAt, prepareAccounts, send, type Keys } from "./chain";
 import {
   assetPlans,
@@ -21,6 +21,11 @@ import { Platform, workerSecrets, workers, type Secrets } from "./platform";
 import { preparationSteps, type Deployment } from "./main";
 import { validateDates } from "./dates";
 import { artifactFiles } from "./box";
+import { buildLordsChestPreset, buildMysteryChestPreset } from "../../contracts/l2/ledger/scripts/chest-preset.js";
+import {
+  buildLedgerEconomicPreset,
+  buildRegisterLedgerPresetCalldata,
+} from "../../config/deployer/clean/ledger/economics";
 
 const temporary: string[] = [];
 const fetchBefore = globalThis.fetch;
@@ -109,8 +114,15 @@ test("positive integral deposit and duration required; production asks for publi
   for (const amount of ["0", "-1", "1.1", "1e6", (2n ** 128n).toString()])
     expect(() => validateInputs({ ...input, amount }, environments.dev)).toThrow();
   expect(() => validateInputs({ ...input, blitzEnd: input.blitzStart }, environments.dev)).toThrow();
-  expect(() => validateInputs(input, environments.production)).toThrow("public cold");
-  expect(() => validateInputs({ ...input, admin: "0x9", treasury: "0xa" }, environments.production)).not.toThrow();
+  expect(() => validateInputs({ ...input, alertEmail: "oncall@example.test" }, environments.production)).toThrow(
+    "public cold",
+  );
+  expect(() =>
+    validateInputs(
+      { ...input, admin: "0x9", treasury: "0xa", alertEmail: "oncall@example.test" },
+      environments.production,
+    ),
+  ).not.toThrow();
 });
 
 test("dry run inspects every step, including unavailable ones, and never calls a write", async () => {
@@ -251,26 +263,35 @@ test("a lost invoke response retries the same nonce while it remains current", a
   expect(nonces).toEqual(["7", "7", "7"]);
 });
 
-test("dev deploys five assets; production deploys only a cold-admin ledger with existing assets", () => {
-  const dev = assetPlans(environments.dev, "0x20", "0x21", "0x22", assets);
-  expect(dev.map((plan) => plan.artifact)).toEqual([
-    "TestLords",
-    "MMRToken",
-    "RealmsCollectible",
-    "RealmsCollectible",
-    "GameLedger",
+test("each environment deploys what its book does not name: production reuses dev's test LORDS", () => {
+  // Dev, from an empty book: its test LORDS, rating token and two collections, then its ledger once they exist.
+  expect(assetPlans(environments.dev, "0x20", "0x21", "0x22", {}).map((plan) => plan.name)).toEqual([
+    "lords",
+    "mmr",
+    "chests",
+    "cosmetics",
   ]);
-  const production = assetPlans(environments.production, "0xc01d", "0x21", "0x22", assets);
-  expect(production).toHaveLength(1);
-  expect(production[0]!.constructor).toEqual([
-    "0xc01d",
-    "0x21",
-    "0x22",
-    assets.lords,
-    assets.mmr,
-    assets.chests,
-    assets.cosmetics,
+  // Production's book names dev's test LORDS, so it deploys only its own rating token and collections.
+  expect(addressBook(environments.production).lords).toBe(addressBook(environments.dev).lords);
+  const testLords = addressBook(environments.dev).lords!;
+  const production = assetPlans(environments.production, "0xc01d", "0x21", "0x22", { lords: testLords });
+  expect(production.map((plan) => [plan.name, plan.artifact])).toEqual([
+    ["mmr", "MMRToken"],
+    ["chests", "RealmsCollectible"],
+    ["cosmetics", "RealmsCollectible"],
   ]);
+  // Its collections carry production's names and description, and its cold admin owns all three.
+  const chest = production.find((plan) => plan.name === "chests")!;
+  expect(chest.constructor).toContain(BigInt("0xc01d").toString());
+  expect(chest.constructor).not.toEqual(
+    assetPlans(environments.dev, "0xc01d", "0x21", "0x22", { lords: testLords }).find((plan) => plan.name === "chests")!
+      .constructor,
+  );
+  // Once they exist, its own ledger is built on dev's test LORDS with production's admin, operator and treasury.
+  const deployed = { lords: testLords, mmr: "0x31", chests: "0x32", cosmetics: "0x33" };
+  const ledger = assetPlans(environments.production, "0xc01d", "0x21", "0x22", deployed);
+  expect(ledger).toHaveLength(1);
+  expect(ledger[0]!.constructor).toEqual(["0xc01d", "0x21", "0x22", testLords, "0x31", "0x32", "0x33"]);
   expect(fixedSalt("dev", "0x123", "ledger")).not.toBe(fixedSalt("production", "0x123", "ledger"));
 });
 
@@ -322,11 +343,65 @@ test("setup keeps only missing role calls and uses the environment's two preset 
   expect(
     production.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
   ).toEqual(["2", "5"]);
-  expect(production.some((call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid")).toBe(false);
   const provider = { callContract: async () => ["0x1"] } as unknown as RpcProvider;
   expect(await setupPresenceReader(provider)(dev[0]!, 10)).toBe(true);
   provider.callContract = async () => ["0x0"];
   expect(await setupPresenceReader(provider)(dev[0]!, 10)).toBe(false);
+});
+
+const setupOf = (target: typeof environments.dev, entrypoint: string) =>
+  setupCalls(target, assets, "0x33", 4000, 9000, 1).filter((call) => call.entrypoint === entrypoint);
+const registered = (call: { calldata: unknown }) => call.calldata as string[];
+
+test("dev registers its mystery chests and their cosmetics metadata exactly as before", () => {
+  const mystery = buildMysteryChestPreset();
+  expect(setupOf(environments.dev, "register_preset").map(registered)).toEqual([
+    buildRegisterLedgerPresetCalldata(1, buildLedgerEconomicPreset("blitz", { environment: "dev" }), mystery),
+    buildRegisterLedgerPresetCalldata(2, buildLedgerEconomicPreset("frontier"), mystery),
+  ]);
+  const cosmetics = setupOf(environments.dev, "set_attrs_raw_to_ipfs_cid").filter(
+    (call) => call.contractAddress === assets.cosmetics,
+  );
+  expect(cosmetics.map((call) => BigInt(registered(call)[0]!))).toEqual(mystery.items.flat().map(BigInt));
+});
+
+test("production's chests pay one entry of LORDS from a 90% reserve and award no cosmetic", () => {
+  const [blitz, frontier] = setupOf(environments.production, "register_preset").map(registered);
+  const lords = buildLordsChestPreset();
+  for (const band of lords.bands) {
+    expect(band.lords_shares).toBe(1);
+    expect([band.odds.common, band.odds.uncommon, band.odds.rare, band.odds.epic, band.odds.legendary]).toEqual([
+      0, 0, 0, 0, 0,
+    ]);
+    expect(band.odds.lords + band.odds.sword + band.odds.shield).toBe(10000);
+  }
+  const economics = buildLedgerEconomicPreset("blitz", { environment: "production", chests: lords });
+  expect(economics.chest_lords_bps).toBe(9000);
+  // The ledger pays the reserve out of the pool left after its protocol cut; more would fail every result.
+  expect(economics.chest_lords_bps + economics.protocol_cut_bps).toBeLessThanOrEqual(10000);
+  expect(blitz).toEqual(buildRegisterLedgerPresetCalldata(2, economics, lords));
+  expect(frontier).toEqual(
+    buildRegisterLedgerPresetCalldata(5, buildLedgerEconomicPreset("frontier", { chests: lords }), lords),
+  );
+  const metadata = setupOf(environments.production, "set_attrs_raw_to_ipfs_cid");
+  expect(metadata.every((call) => call.contractAddress === assets.chests)).toBe(true);
+  expect(metadata).toHaveLength(5);
+});
+
+test("setup reads registered chest rewards back against its own call; mystery chests on production's ledger refuse", async () => {
+  const [call] = setupOf(environments.production, "register_preset");
+  const readsBack = (chests: ReturnType<typeof buildMysteryChestPreset>) =>
+    ({
+      callContract: async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
+        if (entrypoint === "get_preset") return registered(call!).slice(1, 19);
+        if (entrypoint === "get_chest_band") return CallData.compile(chests.bands[Number(calldata[1])]!);
+        return CallData.compile([chests.items[Number(calldata[1])]!]);
+      },
+    }) as unknown as RpcProvider;
+  expect(await setupPresenceReader(readsBack(buildLordsChestPreset()))(call!, 10)).toBe(true);
+  await expect(setupPresenceReader(readsBack(buildMysteryChestPreset()))(call!, 10)).rejects.toThrow(
+    "Registered chest rewards differ",
+  );
 });
 
 test("metadata presence follows all confirmed event pages; differing metadata refuses", async () => {
@@ -364,13 +439,59 @@ test("metadata presence follows all confirmed event pages; differing metadata re
 });
 
 test("every service uses one RPC; deployer and cold admin keys never enter Worker values", () => {
-  const map = Object.fromEntries(workers.map((worker) => [worker.id, workerSecrets(worker, input, secrets, keys)]));
+  const access = { teamDomain: "realms.cloudflareaccess.com", audience: "aud", operators: ["o@x.io"], writers: [] };
+  const map = Object.fromEntries(
+    workers.map((worker) => [worker.id, workerSecrets(worker, input, secrets, keys, access)]),
+  );
   for (const name of ["identity", "relay", "monitor", "status"]) expect(map[name]!.L2_RPC_URL).toBe(input.rpc);
   expect(map.guardian).toEqual({});
   expect(map.relay!.LEDGER_OPERATOR_PRIVATE_KEY).toBe(keys.relay);
   expect(map.monitor!.PAUSER_PRIVATE_KEY).toBe(keys.monitor);
   expect(Object.values(map).flatMap(Object.values)).not.toContain(keys.deployer);
   expect(map.launch!.LAUNCH_DEPLOYER_PRIVATE_KEY).toBe(keys.launcher);
+  expect(map.admin).toEqual({
+    OPERATOR_TOKEN: secrets.operator,
+    ACCESS_TEAM_DOMAIN: "realms.cloudflareaccess.com",
+    ACCESS_AUD: "aud",
+  });
+  const admin = workers.find((worker) => worker.id === "admin")!;
+  expect(() => workerSecrets(admin, input, secrets, keys, undefined)).toThrow("Admin access is not set up yet");
+});
+
+test("setup asks for an alert email on production only, and dev's inputs can never hold one", () => {
+  const asked = (environment: keyof typeof environments) =>
+    setupQuestions(environments[environment]).map(([name]) => name);
+  expect(asked("dev")).toEqual([
+    "cloudflareToken",
+    "rpc",
+    "resend",
+    "amount",
+    "frontierStart",
+    "frontierEnd",
+    "blitzStart",
+    "blitzEnd",
+  ]);
+  expect(asked("production")).toContain("alertEmail");
+  for (const alertEmail of ["oncall@example.test", ""])
+    expect(() => validateInputs({ ...input, alertEmail }, environments.dev)).toThrow("Dev sends no alert email");
+  const production = { ...input, admin: "0x9", treasury: "0xa" };
+  expect(() => validateInputs(production, environments.production)).toThrow("Production needs the alert email");
+  expect(() => validateInputs({ ...production, alertEmail: "not-an-address" }, environments.production)).toThrow(
+    "Production needs the alert email",
+  );
+});
+
+test("the status monitor emails incidents through the identity Worker's Resend key, to the address setup recorded", () => {
+  const status = workers.find((worker) => worker.id === "status")!;
+  expect(workerSecrets(status, { ...input, alertEmail: "oncall@example.test" }, secrets, keys, undefined)).toEqual({
+    L2_RPC_URL: input.rpc,
+    RESEND_API_KEY: input.resend,
+    ALERT_EMAIL: "oncall@example.test",
+  });
+  expect(workerSecrets(status, { ...input, alertEmail: undefined }, secrets, keys, undefined)).toEqual({
+    L2_RPC_URL: input.rpc,
+    RESEND_API_KEY: input.resend,
+  });
 });
 
 test("dry platform refuses every write entry before any network or subprocess call", async () => {
@@ -413,6 +534,22 @@ test("missing secrets use stdin JSON, never argv; a retry preserves existing one
   await platform.installSecrets(workers[1], { OPERATOR_TOKEN: sentinel });
   await platform.installSecrets(workers[1], { OPERATOR_TOKEN: sentinel });
   expect(commands).toHaveLength(1);
+});
+
+test("a changed alert address is re-sent by the next setup, replacing the old one in place", async () => {
+  const { store } = storage();
+  const platform = new Platform(environments.production, input, store, true);
+  platform.secretNames = async () => ["ALERT_EMAIL"];
+  const sent: unknown[] = [];
+  platform.wrangler = async (_worker, _argv, body) => {
+    sent.push(JSON.parse(body!));
+    return "";
+  };
+  const status = workers.find((worker) => worker.id === "status")!;
+  await platform.installSecrets(status, { ALERT_EMAIL: "old@example.test" });
+  await platform.installSecrets(status, { ALERT_EMAIL: "old@example.test" });
+  await platform.installSecrets(status, { ALERT_EMAIL: "new@example.test" });
+  expect(sent).toEqual([{ ALERT_EMAIL: "old@example.test" }, { ALERT_EMAIL: "new@example.test" }]);
 });
 
 test("release artifact list includes Sierra and CASM for each of the four declared classes", () => {

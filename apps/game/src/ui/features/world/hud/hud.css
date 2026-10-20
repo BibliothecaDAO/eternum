@@ -1,0 +1,157 @@
+/* The Blitz and Eternum HUD's parts inside its panels: round medallions with rim badges, round command bubbles and tabs,
+   on the teal surfaces and in the faces html.classic-hud gives the HUD (index.css). Every size is
+   fixed, so hover, focus and selection only recolour; nothing in the HUD moves when the pointer does. */
+
+/* Medallion */
+.hud-medallion {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+}
+.hud-medallion--sm {
+  width: 36px;
+  height: 36px;
+}
+.hud-medallion--lg {
+  width: 68px;
+  height: 68px;
+}
+/* The face sits inside a 4 px band the production ring draws in, so the ring never leaves the medallion. */
+.hud-medallion__face {
+  position: absolute;
+  inset: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 9999px;
+  border: 2px solid #6f8f8c;
+  background: radial-gradient(circle at 50% 35%, #2a3f45 0%, #16252a 70%, #0d171b 100%);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.7),
+    0 2px 6px rgba(0, 0, 0, 0.55);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+.hud-medallion__face img {
+  max-width: 76%;
+  max-height: 76%;
+}
+.hud-medallion--lit .hud-medallion__face {
+  border-color: var(--gold2);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.6),
+    0 0 0 2px rgba(223, 170, 84, 0.35),
+    0 0 14px rgba(243, 208, 138, 0.45);
+}
+.hud-medallion--ready .hud-medallion__face {
+  border-color: #9fd38a;
+}
+.hud-medallion__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: conic-gradient(rgba(102, 221, 171, 0.95) var(--hud-ring), rgba(102, 221, 171, 0.14) var(--hud-ring));
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+  mask: radial-gradient(closest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+}
+
+.hud-badge {
+  position: absolute;
+  z-index: 1;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  border: 1px solid rgba(223, 170, 84, 0.65);
+  background: #0d171b;
+  color: var(--cream);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.hud-badge--corner {
+  top: -4px;
+  right: -6px;
+}
+.hud-badge--foot {
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* A round command bubble with its word under it. */
+.hud-bubble {
+  pointer-events: auto;
+  display: flex;
+  width: 76px;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  color: var(--cream);
+  font-size: 14px;
+  font-weight: 700;
+  text-shadow:
+    0 1px 2px #000,
+    0 0 6px #000;
+}
+.hud-bubble:hover .hud-medallion__face,
+.hud-bubble:focus-visible .hud-medallion__face {
+  border-color: var(--gold2);
+}
+.hud-bubble:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.hud-search {
+  width: 100%;
+  height: 34px;
+  border: 1px solid var(--line2);
+  border-radius: 9999px;
+  background: rgba(10, 8, 6, 0.7);
+  padding: 0 14px;
+  color: var(--cream);
+  font-size: 14px;
+}
+.hud-search::placeholder {
+  color: var(--muted);
+}
+
+/* Tabs: a tab per kind held, its painting and its count; the lit one is the list shown. */
+.hud-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(116, 168, 170, 0.28);
+}
+.hud-tab {
+  display: inline-flex;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-bottom: 2px solid transparent;
+  padding: 0 2px;
+  line-height: 1;
+  color: #b9b09a;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.hud-tab:hover {
+  color: #f1dfb0;
+}
+.hud-tab[aria-selected="true"] {
+  border-bottom-color: #f3d08a;
+  color: #f3d08a;
+}

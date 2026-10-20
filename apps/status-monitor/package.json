@@ -2,6 +2,7 @@
   "name": "@realms-world/status-monitor",
   "private": true,
   "type": "module",
+  "exports": { "./model": "./src/model.ts" },
   "scripts": { "test": "vitest run", "typecheck": "tsc --noEmit" },
   "dependencies": { "@realms-world/chain": "workspace:*", "effect": "4.0.4" },
   "devDependencies": {

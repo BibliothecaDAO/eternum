@@ -1,16 +1,13 @@
+import { formatAmount, formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-
-import { LABOR, LORDS, REALMS } from "@/ui/design-system/kit/words";
+import { HudPill } from "@/ui/design-system/kit/hud-elements";
+import { LABOR, REALMS } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-const TAB =
-  "flex h-11 items-center gap-1.5 rounded-b-xl border border-t-0 bg-[linear-gradient(180deg,#221a10,#120d08)] pl-1.5 pr-3";
-
 /**
- * What hangs under the strip's right end: the realm's LORDS count (it opens Withdraw where one exists) and, while the
- * player's Realms have labor waiting today, the Realms chip beside it.
+ * Under the phone's strip, at its right end, over the map: the realm's LORDS count (it opens Withdraw where one exists)
+ * and, while the player's Realms have labor waiting today, the Realms chip beside it (the phone's Menu always has
+ * Realms). A desktop's realm panel carries both, its Realms chip always.
  */
 export const PurseRow = ({ children }: { children: ReactNode }) => (
   <div className="pointer-events-auto absolute right-2 top-full z-10 flex gap-1.5">{children}</div>
@@ -25,39 +22,36 @@ export const LordsPurse = ({
   lords: number | undefined;
   gain?: number;
   onOpen?: () => void;
-}) => {
-  const body = (
-    <>
-      <SemanticIcon name="lords" size={26} />
-      <span className="text-base tabular-nums text-kit-cream">{formatExact(lords)}</span>
-      {gain !== undefined && <span className="text-base tabular-nums text-[#b9e58a]">+{formatExact(gain)}</span>}
-    </>
-  );
-  const look = cn(
-    TAB,
-    gain === undefined ? "border-kit-line" : "border-kit-hot shadow-[0_0_14px_rgba(246,172,29,0.45)]",
-  );
-  return onOpen ? (
-    <button type="button" aria-label={`${LORDS} ${formatExact(lords)}`} onClick={onOpen} className={look}>
-      {body}
-    </button>
-  ) : (
-    <span role="img" aria-label={`${LORDS} ${formatExact(lords)}`} className={look}>
-      {body}
-    </span>
-  );
-};
+}) => (
+  <HudPill label={`${LORDS} ${formatExact(lords)}`} role={onOpen ? undefined : "img"} onPress={onOpen}>
+    {[
+      <span key="lords" className="flex items-center gap-1.5 tabular-nums">
+        <SemanticIcon name="lords" size={26} />
+        {formatExact(lords)}
+      </span>,
+      ...(gain === undefined
+        ? []
+        : [
+            <span key="gain" className="tabular-nums text-hud-good">
+              +{formatExact(gain)}
+            </span>,
+          ]),
+    ]}
+  </HudPill>
+);
 
-/** The labor the player's Realms have waiting today; it opens Realms. */
+/** The way to Realms, where a Realm is added and its labor claimed, wearing the labor they have waiting today. */
 export const RealmsChip = ({ labor, onOpen }: { labor: number; onOpen: () => void }) => (
-  <button
-    type="button"
-    aria-label={`${REALMS} +${formatAmount(labor)} ${LABOR}`}
-    onClick={onOpen}
-    className={cn(TAB, "border-kit-hot shadow-[0_0_14px_rgba(246,172,29,0.45)]")}
-  >
-    <SemanticIcon name="realm" size={24} />
-    <SemanticIcon name="labor" size={22} />
-    <span className="text-base tabular-nums text-kit-cream">+{formatAmount(labor)}</span>
-  </button>
+  <HudPill label={labor > 0 ? `${REALMS} +${formatAmount(labor)} ${LABOR}` : REALMS} onPress={onOpen}>
+    {[
+      <span key="labor" className="flex items-center gap-1 tabular-nums">
+        <SemanticIcon name="realm" size={24} />
+        {labor > 0 && (
+          <>
+            <SemanticIcon name="labor" size={22} />+{formatAmount(labor)}
+          </>
+        )}
+      </span>,
+    ]}
+  </HudPill>
 );

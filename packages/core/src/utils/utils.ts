@@ -1,6 +1,7 @@
 import { Position, RESOURCE_PRECISION, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "../managers/game-entity-keys";
 import { configManager } from "..";
+import { nativeGameModeOf } from "./native-preset-mode";
 
 export { getEntityIdFromKeys };
 
@@ -8,20 +9,6 @@ export const FELT_CENTER = () => configManager.getMapCenter();
 
 export const toHexString = (num: bigint) => {
   return `0x${num.toString(16)}`;
-};
-
-export const formatTime = (seconds: number) => {
-  const days = Math.floor(seconds / (24 * 60 * 60));
-  const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
-  const minutes = Math.floor((seconds % (60 * 60)) / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-
-  return [
-    days > 0 ? `${days}d ` : "",
-    hours > 0 ? `${hours}h ` : "",
-    minutes > 0 ? `${minutes}m ` : "",
-    remainingSeconds > 0 ? `${remainingSeconds}s` : "",
-  ].join("");
 };
 
 export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMiningTypes>> = {
@@ -109,4 +96,4 @@ export function divideWithPrecision(
   return Number(Number(a).toFixed(round));
 }
 
-export const getIsBlitz = () => [2, 4].includes(configManager.getPresetId());
+export const getGameMode = () => nativeGameModeOf(configManager.getPresetId());

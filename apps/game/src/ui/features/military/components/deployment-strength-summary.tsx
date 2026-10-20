@@ -1,7 +1,7 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager } from "@bibliothecadao/eternum";
-import { TroopTier } from "@bibliothecadao/types";
+import { TroopTier, formatExact } from "@bibliothecadao/types";
 
 import { useId, useState } from "react";
 
@@ -23,9 +23,9 @@ const isDeploymentLevel = (level: number | null | undefined): level is number =>
   typeof level === "number" && LEVEL_LABELS[level] !== undefined;
 
 const Metric = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded border border-gold/15 bg-black/20 px-2 py-1">
-    <div className="text-sm text-kit-muted">{label}</div>
-    <div className="mt-1 text-sm font-semibold text-gold">{value}</div>
+  <div className="rounded border border-hud-divider bg-hud-well px-2 py-1">
+    <div className="text-hud-label uppercase text-hud-muted">{label}</div>
+    <div className="mt-1 text-hud-label text-hud-accent">{value}</div>
   </div>
 );
 
@@ -55,49 +55,49 @@ export const DeploymentStrengthSummary = ({
     <div className="grid grid-cols-2 gap-2">
       <Metric
         label={hasDeploymentLevel ? `${LEVEL_LABELS[structureLevel]} cap` : "Deployment cap"}
-        value={deploymentCap === undefined ? "—" : `${deploymentCap.toLocaleString()} strength`}
+        value={deploymentCap === undefined ? "—" : `${formatExact(deploymentCap)} strength`}
       />
       <Metric label="Tier strength" value={`${troopTier} = ${tierStrength}`} />
-      <Metric label="Projected strength" value={projectedArmyStrength.toLocaleString()} />
+      <Metric label="Projected strength" value={formatExact(projectedArmyStrength)} />
       <Metric
         label="Max troops (tier)"
-        value={resolvedMaxTroopSize !== null ? resolvedMaxTroopSize.toLocaleString() : "—"}
+        value={resolvedMaxTroopSize !== null ? formatExact(resolvedMaxTroopSize) : "—"}
       />
       {resolvedCapacityRemaining !== null && (
-        <Metric label="Cap remaining" value={resolvedCapacityRemaining.toLocaleString()} />
+        <Metric label="Cap remaining" value={formatExact(resolvedCapacityRemaining)} />
       )}
     </div>
   );
 
   if (!collapsible) {
     return (
-      <div className={cn("rounded border border-gold/20 bg-black/35 px-2 py-2", className)}>
-        <div className="text-sm text-kit-muted">Deployment & Strength</div>
+      <div className={cn("rounded border border-hud-line bg-hud-well px-2 py-2", className)}>
+        <div className="text-hud-label uppercase text-hud-muted">Deployment & Strength</div>
         <div className="mt-2">{metrics}</div>
       </div>
     );
   }
 
   return (
-    <div className={cn("rounded border border-gold/20 bg-black/35", className)}>
+    <div className={cn("rounded border border-hud-line bg-hud-well", className)}>
       <button
         type="button"
-        className="flex w-full items-center justify-between gap-3 px-2 py-2 text-left transition hover:bg-black/25"
+        className="flex w-full items-center justify-between gap-3 px-2 py-2 text-left transition hover:bg-hud-well"
         onClick={() => setIsExpanded((current) => !current)}
         aria-expanded={isExpanded}
         aria-controls={metricsId}
       >
         <span className="flex items-center gap-2">
-          <span className="text-sm text-kit-muted">Deployment & Strength</span>
-          <span className="text-sm text-kit-muted">{isExpanded ? "Hide details" : "Show details"}</span>
+          <span className="text-hud-label uppercase text-hud-muted">Deployment & Strength</span>
+          <span className="text-hud-label uppercase text-hud-cue">{isExpanded ? "Hide details" : "Show details"}</span>
         </span>
         <SemanticIcon
           name="chevron-down"
-          className={cn("h-4 w-4 text-gold/70 transition-transform", isExpanded && "rotate-180")}
+          className={cn("h-4 w-4 text-hud-muted transition-transform", isExpanded && "rotate-180")}
         />
       </button>
       {isExpanded ? (
-        <div id={metricsId} className="border-t border-gold/15 px-2 py-2">
+        <div id={metricsId} className="border-t border-hud-divider px-2 py-2">
           {metrics}
         </div>
       ) : null}

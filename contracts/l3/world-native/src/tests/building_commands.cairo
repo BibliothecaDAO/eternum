@@ -716,15 +716,13 @@ fn realm_knowledge_packs_each_row_tier_and_choice_where_the_client_reads_them() 
     learned = crate::research::learn(learned, crate::research::ROW_WORKSHOP, crate::research::CHOICE_MAKE);
     learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, crate::research::KIND_RIFTS);
     learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, crate::research::KIND_CAMPS);
-    learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, crate::research::KIND_STRAGGLERS);
+    learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, crate::research::KIND_BEASTS);
     learned = crate::research::learn(learned, crate::research::ROW_SHRINE, 0);
     learned = crate::research::learn(learned, crate::research::ROW_DEPTH, 0);
     learned = crate::research::learn(learned, crate::research::ROW_DEPTH, 0);
     assert_eq!(learned, 160600638357650);
     assert_eq!(crate::research::picks(learned, crate::research::ROW_FARM, crate::research::CHOICE_STORE), 1);
-    assert_eq!(
-        crate::research::choice(learned, crate::research::ROW_SCOUTS_LODGE, 3), crate::research::KIND_STRAGGLERS,
-    );
+    assert_eq!(crate::research::choice(learned, crate::research::ROW_SCOUTS_LODGE, 3), crate::research::KIND_BEASTS);
     // Every row, filled to its last tier on its last side, stays inside its own field.
     let mut full = 0;
     for row in 0..crate::research::ROW_COUNT {

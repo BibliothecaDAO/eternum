@@ -1,14 +1,14 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { MaxButton } from "@/ui/design-system/atoms";
-import Button from "@/ui/design-system/atoms/button";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { HudButton, HudTransfer, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 
 import { configManager, divideByPrecision, getArmyTotalCapacityInKg, gramToKg } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ActorType, ID, RelicRecipientType, RELICS, resources, ResourcesIds } from "@bibliothecadao/types";
+import { ActorType, ID, RelicRecipientType, RELICS, resources, formatExact, resourceName } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { getActorTypes, TransferDirection } from "./transfer-troops/transfer-direction";
 
@@ -401,37 +401,37 @@ export const TransferResourcesContainer = ({
     const displayAvailableCapacityKg = Math.max(0, availableCapacityKg);
 
     return (
-      <div className="p-3 border border-gold/30 rounded-md bg-dark-brown/50">
-        <h4 className="text-lg text-gold font-bold mb-3 text-center">Explorer Capacity</h4>
+      <div className="p-3 border border-hud-line rounded-md bg-hud-well">
+        <h4 className="text-hud-title text-hud-accent mb-3 text-center">Explorer Capacity</h4>
 
         <div className="space-y-2">
           {/* Max Capacity Info */}
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gold/80">Max Capacity:</span>
-            <span className="font-semibold text-gold">{maxCapacityKg.toLocaleString()} kg</span>
+          <div className="flex justify-between items-center text-hud-body">
+            <span className="text-hud-accent">Max Capacity:</span>
+            <span className="text-hud-strong text-hud-accent">{formatExact(maxCapacityKg)} kg</span>
           </div>
 
           {/* Capacity Bar */}
-          <div className="relative w-full h-6 bg-dark-brown border border-gold/20 rounded-md overflow-hidden my-1">
+          <div className="relative w-full h-6 bg-hud-well border border-hud-line rounded-md overflow-hidden my-1">
             {/* Current load */}
             <div
-              className="absolute top-0 left-0 h-full bg-blue-500/70 flex items-center justify-center"
+              className="absolute top-0 left-0 h-full bg-hud-accent flex items-center justify-center"
               style={{ width: `${capacityPercentageForBar}%` }}
-              title={`Current Load: ${currentLoadKg.toLocaleString()} kg`}
+              title={`Current Load: ${formatExact(currentLoadKg)} kg`}
             >
               {capacityPercentageForBar > 15 && (
-                <span className="text-sm text-white/90 truncate px-1">{currentLoadKg.toLocaleString()} kg</span>
+                <span className="text-hud-label text-hud-dark truncate px-1">{formatExact(currentLoadKg)} kg</span>
               )}
             </div>
             {/* Weight that will be added with the current selection */}
             <div
-              className="absolute top-0 h-full bg-orange-500/70 flex items-center justify-center bg-green/30"
+              className="absolute top-0 h-full bg-hud-warn flex items-center justify-center"
               style={{ width: `${selectedPercentageForBar}%`, left: `${capacityPercentageForBar}%` }}
-              title={`Selected: ${selectedResourcesWeightKg.toLocaleString()} kg`}
+              title={`Selected: ${formatExact(selectedResourcesWeightKg)} kg`}
             >
               {selectedPercentageForBar > 15 && (
-                <span className="text-sm text-white/90 truncate px-1">
-                  {selectedResourcesWeightKg.toLocaleString()} kg
+                <span className="text-hud-label text-hud-dark truncate px-1">
+                  {formatExact(selectedResourcesWeightKg)} kg
                 </span>
               )}
             </div>
@@ -441,36 +441,32 @@ export const TransferResourcesContainer = ({
                 className="absolute top-0 right-0 h-full flex items-center justify-end px-2 "
                 style={{ width: `${100 - totalAfterSelectionPercentage}%`, left: `${totalAfterSelectionPercentage}%` }}
               >
-                <span className="text-sm text-gold/70">Empty</span>
+                <span className="text-hud-label text-hud-muted">Empty</span>
               </div>
             )}
           </div>
 
           {/* Detailed Breakdown */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-hud-body">
             <div>
-              <span className="text-blue-400/90">Current Load:</span>
-              <span className="font-medium float-right text-white/90">{currentLoadKg.toLocaleString()} kg</span>
+              <span className="text-hud-accent">Current Load:</span>
+              <span className="float-right text-hud-ink">{formatExact(currentLoadKg)} kg</span>
             </div>
             <div>
-              <span className="text-orange-400/90">Selected:</span>
-              <span className="font-medium float-right text-white/90">
-                {selectedResourcesWeightKg.toLocaleString()} kg
-              </span>
+              <span className="text-hud-warn">Selected:</span>
+              <span className="float-right text-hud-ink">{formatExact(selectedResourcesWeightKg)} kg</span>
             </div>
             <div>
-              <span className="text-gold/80">After Transfer:</span>
+              <span className="text-hud-accent">After Transfer:</span>
               <span
-                className={`font-medium float-right ${currentLoadKg + selectedResourcesWeightKg > maxCapacityKg ? "text-red-500" : "text-white/90"}`}
+                className={`float-right ${currentLoadKg + selectedResourcesWeightKg > maxCapacityKg ? "text-hud-bad" : "text-hud-ink"}`}
               >
-                {(currentLoadKg + selectedResourcesWeightKg).toLocaleString()} kg
+                {formatExact(currentLoadKg + selectedResourcesWeightKg)} kg
               </span>
             </div>
             <div>
-              <span className="text-green-400/90">Remaining:</span>
-              <span className="font-medium float-right text-white/90">
-                {displayAvailableCapacityKg.toLocaleString()} kg
-              </span>
+              <span className="text-hud-good">Remaining:</span>
+              <span className="float-right text-hud-ink">{formatExact(displayAvailableCapacityKg)} kg</span>
             </div>
           </div>
         </div>
@@ -486,76 +482,37 @@ export const TransferResourcesContainer = ({
     return (
       <div
         key={resource.resourceId}
-        className={`p-3 rounded-md border ${isSelected ? "bg-gold/20 border-gold" : "bg-dark-brown border-gold/30"}`}
+        className={`p-3 rounded-md border ${isSelected ? "bg-hud-chosen border-hud-line-strong" : "bg-hud-well border-hud-line"}`}
       >
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[resource.resourceId]} size="sm" withTooltip={false} />
-            <span className="ml-2 font-medium">{ResourcesIds[resource.resourceId]}</span>
+            <ResourceIcon resource={resource.resourceId} size="sm" withTooltip={false} />
+            <span className="ml-2">{resourceName(resource.resourceId)}</span>
           </div>
-          <button
-            className={`px-3 py-1 rounded-md text-sm ${
-              isSelected ? "bg-red/50 hover:bg-red/70 text-red-300" : "bg-gold/10 hover:bg-gold/20 text-gold"
-            }`}
-            onClick={() => toggleResourceSelection(resource)}
-          >
+          <HudButton kind="secondary" size="sm" onClick={() => toggleResourceSelection(resource)}>
             {isSelected ? "Remove" : "Select"}
-          </button>
+          </HudButton>
         </div>
 
-        <div className="flex items-center text-sm text-gold/80 mb-2 gap-2">
+        <div className="flex items-center text-hud-body text-hud-accent mb-2 gap-2">
           <span>{resourceWeight} kg per unit</span>
-          <span className="text-kit-muted">•</span>
-          <span>{displayAmount.toLocaleString()} available</span>
+          <span className="text-hud-cue">•</span>
+          <span>{formatExact(displayAmount)} available</span>
         </div>
 
         {isSelected && (
           <div className="mt-3">
-            <div className="flex items-center gap-3">
-              <MaxButton
-                max={() => 0}
-                label="None"
-                onChange={(value) => handleResourceAmountChange(resource.resourceId, parseInt(value))}
-                className="px-2 py-1 text-sm bg-gold/10 hover:bg-gold/20 rounded-md text-gold border border-gold/30"
-                size="xs"
-              />
-              <button
-                className="px-2 py-1 text-sm bg-gold/10 hover:bg-gold/20 rounded-md"
-                onClick={() =>
-                  handleResourceAmountChange(
-                    resource.resourceId,
-                    Math.max(0, (resourceAmounts[resource.resourceId] || 0) - 1),
-                  )
-                }
-              >
-                -
-              </button>
-              <input
-                type="number"
-                min="0"
-                max={displayAmount}
-                value={resourceAmounts[resource.resourceId] || 0}
-                onChange={(e) => handleResourceAmountChange(resource.resourceId, parseInt(e.target.value))}
-                className="w-24 px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold text-center"
-              />
-              <button
-                className="px-2 py-1 text-sm bg-gold/10 hover:bg-gold/20 rounded-md"
-                onClick={() =>
-                  handleResourceAmountChange(
-                    resource.resourceId,
-                    Math.min(displayAmount, (resourceAmounts[resource.resourceId] || 0) + 1),
-                  )
-                }
-              >
-                +
-              </button>
-              <MaxButton
-                max={() => displayAmount}
-                onChange={(value) => handleResourceAmountChange(resource.resourceId, parseInt(value))}
-                className="px-2 py-1 text-sm bg-gold/10 hover:bg-gold/20 rounded-md text-gold border border-gold/30"
-                size="xs"
-              />
-            </div>
+            <HudTransfer
+              rows={[
+                {
+                  icon: resourceMeaning(resource.resourceId),
+                  name: resourceName(resource.resourceId),
+                  held: displayAmount,
+                  value: resourceAmounts[resource.resourceId] || 0,
+                },
+              ]}
+              onChange={(_, amount) => handleResourceAmountChange(resource.resourceId, amount)}
+            />
           </div>
         )}
       </div>
@@ -564,10 +521,8 @@ export const TransferResourcesContainer = ({
 
   const formatActorLabel = (actorType?: ActorType, entityId?: ID, entityName?: string | null) => {
     if (actorType === undefined || !entityId) return "Unknown";
-    if (actorType === ActorType.Explorer) return `Explorer ${entityId}`;
-    if (actorType === ActorType.Structure && entityName) return entityName;
-    if (actorType === ActorType.Structure) return `Structure ${entityId}`;
-    return `Entity ${entityId}`;
+    if (actorType === ActorType.Structure) return entityName || "Structure";
+    return actorType === ActorType.Explorer ? "Army" : "Unknown";
   };
 
   const selectedStructureName = useMemo(() => {
@@ -590,30 +545,30 @@ export const TransferResourcesContainer = ({
       {/* Add Select All / Unselect All buttons here */}
       <div className="flex items-center justify-between mb-3 gap-3">
         <div className="flex items-center gap-2">
-          <Button
+          <HudButton
+            kind="secondary"
+            size="sm"
             onClick={handleSelectAllResources}
-            variant="outline"
-            size="xs"
             disabled={availableResources.length === 0}
           >
             Select All Available
-          </Button>
-          <Button
+          </HudButton>
+          <HudButton
+            kind="quiet"
+            size="sm"
             onClick={handleUnselectAllResources}
-            variant="outline"
-            size="xs"
             disabled={selectedResources.length === 0}
           >
             Unselect All
-          </Button>
+          </HudButton>
         </div>
-        <div className="text-sm text-gold/70 font-semibold whitespace-nowrap">
+        <div className="text-hud-label text-hud-muted whitespace-nowrap">
           {fromLabel} → {toLabel}
         </div>
       </div>
 
       {availableResources.length === 0 ? (
-        <p className="text-kit-muted">No relics available to transfer.</p>
+        <p className="text-hud-muted">No relics available to transfer.</p>
       ) : showExplorerCapacity ? (
         <div className="h-full grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="sticky top-0 z-10 sm:col-span-1">{renderExplorerCapacity()}</div>
@@ -632,22 +587,18 @@ export const TransferResourcesContainer = ({
         </div>
       )}
 
-      {/* Fixed position transfer button at the bottom */}
-      <div className="mt-10 mx-auto">
-        <Button
+      <HudWindowFoot>
+        <HudButton
+          kind="primary"
           onClick={handleTransfer}
-          variant="gold"
+          busy={loading ? "Processing..." : undefined}
           disabled={
-            loading ||
-            selectedResources.length === 0 ||
-            selectedResources.every((r) => (resourceAmounts[r.resourceId] || 0) === 0)
+            selectedResources.length === 0 || selectedResources.every((r) => (resourceAmounts[r.resourceId] || 0) === 0)
           }
-          isLoading={loading}
-          className="w-full sm:w-auto"
         >
-          {loading ? "Processing..." : "Transfer Relics"}
-        </Button>
-      </div>
+          Transfer Relics
+        </HudButton>
+      </HudWindowFoot>
     </div>
   );
 };

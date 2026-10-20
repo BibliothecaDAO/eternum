@@ -5,6 +5,7 @@ import type {
   ProceduralUnitConfig,
   ProceduralUnitRuntime,
 } from "@/three/characters";
+import { T1_KNIGHT_WORLD_SCALE } from "@/three/constants/army-constants";
 import type { CosmeticAttachmentTemplate } from "@/three/cosmetics/types";
 import { CombatImpactRegistry } from "@/three/combat/combat-impact-registry";
 import { intersectSweptSphere } from "@/three/projectiles/arrow-ballistics";
@@ -40,7 +41,7 @@ export interface ProceduralArmyCharacterPresentation {
   category: TroopType;
   attachments?: readonly CosmeticAttachmentTemplate[];
   entityId: number;
-  distanceToViewCenterSquared?: number;
+  distanceToCameraSquared?: number;
   isNaval: boolean;
   isMoving: boolean;
   isSelected?: boolean;
@@ -59,6 +60,8 @@ interface ProceduralArmyActorRecord {
   attackTargetEntityId?: number;
   collisionProfile: ProceduralCollisionProfile;
   configSignature: string;
+  renderDetail: RenderDetail;
+  isT1Knight: boolean;
   hitTarget: Mesh;
   lastReactionStrength: number;
   unsubscribeActionEvents: () => void;
@@ -78,6 +81,10 @@ interface DefeatedProceduralArmyActor {
 
 export interface ProceduralArmyCharacterLayerStats {
   actorCount: number;
+  nearKnightCount: number;
+  midKnightCount: number;
+  meshDrawsPerPass: number;
+  trianglesPerPass: number;
   collisionBodyCount: number;
   collisionMaximumOffset: number;
   collisionPairCount: number;
@@ -143,8 +150,10 @@ export class ProceduralArmyCharacterLayer {
   private characterModule?: CharacterModule;
   private runtime?: ProceduralUnitRuntime;
   private runtimePromise?: Promise<void>;
+  private preparingAssets?: Promise<void>;
   private latestPresentations: readonly ProceduralArmyCharacterPresentation[] = [];
-  private loadError?: unknown;
+  private readonly assetNeeds = new Map<string, { failed: boolean }>();
+  private readonly desiredAssetSignatures = new Set<string>();
   private generation = 0;
   private shadowsEnabled = false;
   private elapsedSeconds = 0;
@@ -154,13 +163,13 @@ export class ProceduralArmyCharacterLayer {
 
   public sync(presentations: readonly ProceduralArmyCharacterPresentation[], deltaSeconds: number): void {
     if (this.disposed) return;
+    this.syncAssetNeeds(presentations);
 
     if (!this.runtime || !this.characterModule) {
       if (presentations.length === 0) {
         this.latestPresentations = [];
         return;
       }
-      if (this.loadError) return;
       this.latestPresentations = presentations.map(clonePresentation);
       this.startRuntimeLoad();
       return;
@@ -320,15 +329,40 @@ export class ProceduralArmyCharacterLayer {
   }
 
   public getStats(): ProceduralArmyCharacterLayerStats {
+    let nearKnightCount = 0,
+      midKnightCount = 0,
+      meshDrawsPerPass = 0,
+      trianglesPerPass = 0;
+    this.actors.forEach(({ actor, renderDetail, isT1Knight }) => {
+      if (isT1Knight) {
+        if (renderDetail === "hero") nearKnightCount++;
+        else midKnightCount++;
+      }
+      actor.object.traverseVisible((object) => {
+        if (!(object instanceof Mesh)) return;
+        meshDrawsPerPass += Array.isArray(object.material) ? object.geometry.groups.length : 1;
+        trianglesPerPass += (object.geometry.index?.count ?? object.geometry.attributes.position.count) / 3;
+      });
+    });
     const collision = this.separationSimulation.getStats();
     return {
       actorCount: this.actors.size,
+      nearKnightCount,
+      midKnightCount,
+      meshDrawsPerPass,
+      trianglesPerPass,
       collisionBodyCount: collision.bodyCount,
       collisionMaximumOffset: collision.maximumOffset,
       collisionPairCount: collision.resolvedPairCount,
       defeatedActorCount: this.defeatedActors.length,
       hitTargetCount: this.actors.size,
-      loadState: this.loadError ? "failed" : this.runtime ? "ready" : this.runtimePromise ? "loading" : "idle",
+      loadState: [...this.assetNeeds.values()].some((need) => need.failed)
+        ? "failed"
+        : this.runtime
+          ? "ready"
+          : this.runtimePromise
+            ? "loading"
+            : "idle",
       pendingImpactCount: this.impactRegistry.getStats().activeCount,
       ragdollCount:
         [...this.actors.values()].filter(({ actor }) => actor.mode === "ragdoll").length +
@@ -368,6 +402,8 @@ export class ProceduralArmyCharacterLayer {
     if (this.disposed) return;
     this.disposed = true;
     this.generation += 1;
+    this.assetNeeds.clear();
+    this.desiredAssetSignatures.clear();
     this.latestPresentations = [];
     this.separationSimulation.reset();
     this.impactRegistry.reset();
@@ -383,8 +419,22 @@ export class ProceduralArmyCharacterLayer {
     this.hitTargetMaterial.dispose();
   }
 
+  /** A failure belongs to this continuous need; leaving it permits a fresh attempt on return. */
+  private syncAssetNeeds(presentations: readonly ProceduralArmyCharacterPresentation[]): void {
+    this.desiredAssetSignatures.clear();
+    presentations.forEach((presentation) => {
+      const signature = resolveAssetSignature(presentation, this.renderDetailOf(presentation));
+      this.desiredAssetSignatures.add(signature);
+      if (!this.assetNeeds.has(signature)) this.assetNeeds.set(signature, { failed: false });
+    });
+    this.assetNeeds.forEach((_need, signature) => {
+      if (!this.desiredAssetSignatures.has(signature)) this.assetNeeds.delete(signature);
+    });
+  }
+
   private startRuntimeLoad(): void {
-    if (this.runtimePromise || this.loadError) return;
+    const needs = [...this.assetNeeds.values()];
+    if (this.runtimePromise || !needs.some((need) => !need.failed)) return;
     const generation = this.generation;
     this.runtimePromise = import("@/three/characters")
       .then(async (characterModule) => {
@@ -401,7 +451,10 @@ export class ProceduralArmyCharacterLayer {
         this.syncReadyPresentations(pendingPresentations, 0);
       })
       .catch((error: unknown) => {
-        this.loadError = error;
+        if (this.disposed || generation !== this.generation) return;
+        needs.forEach((need) => {
+          need.failed = true;
+        });
         console.error("[ProceduralArmyCharacterLayer] Failed to load the procedural unit runtime", error);
       })
       .finally(() => {
@@ -427,11 +480,11 @@ export class ProceduralArmyCharacterLayer {
         this.disposeActorRecord(record);
         this.actors.delete(presentation.entityId);
       }
-      if (!this.actors.has(presentation.entityId)) {
-        if (remainingCreations === 0) return;
-        remainingCreations -= 1;
-      }
+      const creating = !this.actors.has(presentation.entityId);
+      if (creating && remainingCreations === 0) return;
       this.syncActor(presentation);
+      // Only an actor made spends the budget: one whose skin is still loading, or failed, leaves it to the next.
+      if (creating && this.actors.has(presentation.entityId)) remainingCreations -= 1;
     });
   }
 
@@ -542,80 +595,124 @@ export class ProceduralArmyCharacterLayer {
     const characterModule = this.characterModule;
     if (!runtime || !characterModule) return;
 
-    const configSignature = resolveConfigSignature(presentation);
+    const renderDetail = this.renderDetailOf(presentation);
+    const configSignature = resolveConfigSignature(presentation, renderDetail);
     let record = this.actors.get(presentation.entityId);
-    const desiredKind = resolveUnitKind(presentation);
-    const desiredActorFamily = resolveActorFamily(presentation);
-    if (!record) {
-      const actor = runtime.createActor(resolveUnitConfig(characterModule, presentation));
-      actor.object.name = `procedural-army-character:${presentation.entityId}`;
-      const hitTarget = this.createHitTarget(presentation);
-      actor.object.add(hitTarget);
-      const unsubscribeRanged = actor.onRangedRelease((event) => {
-        const attack = this.actors.get(presentation.entityId);
-        this.rangedReleaseListeners.forEach((listener) =>
-          listener(
-            presentation.entityId,
-            event,
-            attack?.attackTargetEntityId,
-            attack?.attackAuthority ?? "provisional",
-          ),
-        );
-      });
-      const unsubscribeMelee = actor.onMeleeContact((event) => {
-        const attack = this.actors.get(presentation.entityId);
-        this.meleeContactListeners.forEach((listener) =>
-          listener(
-            presentation.entityId,
-            event,
-            attack?.attackTargetEntityId,
-            attack?.attackAuthority ?? "provisional",
-          ),
-        );
-      });
-      this.applyActorShadowState(actor);
-      this.scene.add(actor.object);
-      record = {
-        actor,
-        actorFamily: desiredActorFamily,
-        attackAuthority: "provisional",
-        attackTargetEntityId: undefined,
-        collisionProfile: createProceduralCollisionProfile(
+    if (!record || record.configSignature !== configSignature) {
+      const config = resolveUnitConfig(characterModule, presentation, renderDetail);
+      if (!this.prepareActorAssets(runtime, config, resolveAssetSignature(presentation, renderDetail))) return;
+      const desiredKind = resolveUnitKind(presentation);
+      if (!record) {
+        record = this.createActorRecord(runtime, presentation, config, configSignature);
+        this.actors.set(presentation.entityId, record);
+      } else {
+        runtime.updateActorConfig(record.actor, config);
+        record.collisionProfile = createProceduralCollisionProfile(
           desiredKind,
           resolveWorldCharacterScale(presentation.category, presentation.isNaval),
-        ),
-        configSignature,
-        hitTarget,
-        lastReactionStrength: 0,
-        unsubscribeActionEvents: () => {
-          unsubscribeRanged();
-          unsubscribeMelee();
-        },
-        wasInContact: false,
-      };
-      this.actors.set(presentation.entityId, record);
-    } else if (record.configSignature !== configSignature) {
-      runtime.updateActorConfig(record.actor, resolveUnitConfig(characterModule, presentation));
-      record.collisionProfile = createProceduralCollisionProfile(
-        desiredKind,
-        resolveWorldCharacterScale(presentation.category, presentation.isNaval),
-      );
-      record.configSignature = configSignature;
+        );
+        record.configSignature = configSignature;
+        record.renderDetail = config.humanoid.renderDetail;
+        record.isT1Knight = isT1FootKnight(presentation);
+      }
     }
 
     configureHitTarget(record.hitTarget, presentation.category, presentation.isNaval);
+    if (isT1FootKnight(presentation)) {
+      record.hitTarget.position.set(0, 0.31, 0);
+      record.hitTarget.scale.set(0.45, 0.64, 0.3);
+    }
     if (record.actor.mode === "animated") {
-      record.actor.object.scale.setScalar(resolveWorldCharacterScale(presentation.category, presentation.isNaval));
+      record.actor.object.scale.setScalar(
+        isT1FootKnight(presentation)
+          ? T1_KNIGHT_WORLD_SCALE
+          : resolveWorldCharacterScale(presentation.category, presentation.isNaval),
+      );
     }
   }
 
-  private async requireActor(entityId: number): Promise<ProceduralUnitActor | undefined> {
-    if (this.disposed || this.loadError) return undefined;
-    if (!this.runtime) {
-      this.startRuntimeLoad();
-      await this.runtimePromise;
+  /** The detail an army's actor draws at: its current one until the camera passes the far edge of the switch band. */
+  private renderDetailOf(presentation: ProceduralArmyCharacterPresentation): RenderDetail {
+    return resolveArmyRenderDetail(
+      presentation.distanceToCameraSquared,
+      this.actors.get(presentation.entityId)?.renderDetail,
+    );
+  }
+
+  private prepareActorAssets(runtime: ProceduralUnitRuntime, config: ProceduralUnitConfig, signature: string): boolean {
+    const need = this.assetNeeds.get(signature);
+    if (!need) return false;
+    if (runtime.areAssetsReady(config)) {
+      need.failed = false;
+      return true;
     }
-    return this.actors.get(entityId)?.actor;
+    if (!this.preparingAssets && !need.failed) {
+      this.preparingAssets = runtime
+        .prepareAssets(config)
+        .catch((error) => {
+          if (this.disposed) return;
+          need.failed = true;
+          console.error("[ProceduralArmyCharacterLayer] Failed to load visible unit assets", error);
+        })
+        .finally(() => {
+          this.preparingAssets = undefined;
+        });
+    }
+    return false;
+  }
+
+  private createActorRecord(
+    runtime: ProceduralUnitRuntime,
+    presentation: ProceduralArmyCharacterPresentation,
+    config: ProceduralUnitConfig,
+    configSignature: string,
+  ): ProceduralArmyActorRecord {
+    const actor = runtime.createActor(config);
+    actor.object.name = `procedural-army-character:${presentation.entityId}`;
+    const hitTarget = this.createHitTarget(presentation);
+    actor.object.add(hitTarget);
+    const unsubscribeRanged = actor.onRangedRelease((event) => {
+      const attack = this.actors.get(presentation.entityId);
+      this.rangedReleaseListeners.forEach((listener) =>
+        listener(presentation.entityId, event, attack?.attackTargetEntityId, attack?.attackAuthority ?? "provisional"),
+      );
+    });
+    const unsubscribeMelee = actor.onMeleeContact((event) => {
+      const attack = this.actors.get(presentation.entityId);
+      this.meleeContactListeners.forEach((listener) =>
+        listener(presentation.entityId, event, attack?.attackTargetEntityId, attack?.attackAuthority ?? "provisional"),
+      );
+    });
+    this.applyActorShadowState(actor);
+    this.scene.add(actor.object);
+    return {
+      actor,
+      actorFamily: resolveActorFamily(presentation),
+      attackAuthority: "provisional",
+      attackTargetEntityId: undefined,
+      collisionProfile: createProceduralCollisionProfile(
+        resolveUnitKind(presentation),
+        resolveWorldCharacterScale(presentation.category, presentation.isNaval),
+      ),
+      configSignature,
+      renderDetail: config.humanoid.renderDetail,
+      isT1Knight: isT1FootKnight(presentation),
+      hitTarget,
+      lastReactionStrength: 0,
+      unsubscribeActionEvents: () => {
+        unsubscribeRanged();
+        unsubscribeMelee();
+      },
+      wasInContact: false,
+    };
+  }
+
+  private async requireActor(entityId: number): Promise<ProceduralUnitActor | undefined> {
+    if (this.disposed) return undefined;
+    const actor = this.actors.get(entityId)?.actor;
+    if (actor) return actor;
+    await this.runtimePromise;
+    return this.disposed ? undefined : this.actors.get(entityId)?.actor;
   }
 
   private clearActors(): void {
@@ -738,8 +835,8 @@ function compareCollisionPriority(
   const movingDifference = Number(right.isMoving) - Number(left.isMoving);
   if (movingDifference !== 0) return movingDifference;
   const distanceDifference =
-    (left.distanceToViewCenterSquared ?? Number.POSITIVE_INFINITY) -
-    (right.distanceToViewCenterSquared ?? Number.POSITIVE_INFINITY);
+    (left.distanceToCameraSquared ?? Number.POSITIVE_INFINITY) -
+    (right.distanceToCameraSquared ?? Number.POSITIVE_INFINITY);
   if (distanceDifference !== 0) return distanceDifference;
   return left.entityId - right.entityId;
 }
@@ -782,6 +879,7 @@ function configureHitTarget(target: Mesh, category: TroopType, isNaval: boolean)
 function resolveUnitConfig(
   characterModule: CharacterModule,
   presentation: ProceduralArmyCharacterPresentation,
+  renderDetail: RenderDetail,
 ): ProceduralUnitConfig {
   const tier = resolveCharacterTier(presentation.tier);
   const kind = resolveUnitKind(presentation);
@@ -820,7 +918,7 @@ function resolveUnitConfig(
       animationMode: kind === "paladin" ? "mounted" : presentation.isMoving ? "walk" : "idle",
       autoRotate: false,
       primaryColor: presentation.primaryColor,
-      renderDetail: "crowd",
+      renderDetail,
       seed: resolveCharacterSeed(presentation.entityId),
       tier,
     },
@@ -829,17 +927,38 @@ function resolveUnitConfig(
       volleyCount: tier === 3 ? 7 : tier === 2 ? 5 : 3,
       volleySpreadDegrees: tier === 3 ? 1.2 : 0.8,
     },
-    melee: { detailedEquipment: false, ...resolveMeleeLoadout(presentation.attachments) },
+    melee: { detailedEquipment: kind === "knight" && tier === 1, ...resolveMeleeLoadout(presentation.attachments) },
   });
 }
 
-function resolveConfigSignature(presentation: ProceduralArmyCharacterPresentation): string {
+type RenderDetail = "hero" | "crowd";
+
+/**
+ * Near detail is reserved for close inspection; gameplay-distance armies use the mid mesh. An actor takes near detail
+ * inside 11 units of the camera and keeps it out to 13, so a small zoom in the closest band never rebuilds its rig.
+ */
+const HERO_DETAIL_ENTER = 11;
+const HERO_DETAIL_LEAVE = 13;
+
+function resolveArmyRenderDetail(distanceSquared: number | undefined, current: RenderDetail | undefined): RenderDetail {
+  const reach = current === "hero" ? HERO_DETAIL_LEAVE : HERO_DETAIL_ENTER;
+  return (distanceSquared ?? Infinity) <= reach * reach ? "hero" : "crowd";
+}
+
+function resolveConfigSignature(presentation: ProceduralArmyCharacterPresentation, renderDetail: RenderDetail): string {
+  return [
+    resolveAssetSignature(presentation, renderDetail),
+    presentation.primaryColor,
+    presentation.isMoving ? "moving" : "idle",
+  ].join(":");
+}
+
+function resolveAssetSignature(presentation: ProceduralArmyCharacterPresentation, renderDetail: RenderDetail): string {
   return [
     presentation.category,
     presentation.tier,
+    renderDetail,
     presentation.isNaval ? "naval" : "land",
-    presentation.primaryColor,
-    presentation.isMoving ? "moving" : "idle",
     resolveAttachmentSignature(presentation.attachments),
   ].join(":");
 }
@@ -905,4 +1024,8 @@ function resolveActorFamily(
 function resolveWorldCharacterScale(category: TroopType, isNaval: boolean): number {
   if (isNaval) return 0.92;
   return category === TroopType.Paladin ? WORLD_CHARACTER_SCALE * 0.74 : WORLD_CHARACTER_SCALE;
+}
+
+function isT1FootKnight(presentation: ProceduralArmyCharacterPresentation): boolean {
+  return !presentation.isNaval && presentation.category === TroopType.Knight && presentation.tier === TroopTier.T1;
 }

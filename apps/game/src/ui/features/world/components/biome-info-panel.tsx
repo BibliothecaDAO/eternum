@@ -1,8 +1,9 @@
+import { ResourcesIds } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useEffect, useMemo, useState } from "react";
 
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { formatBiomeBonus } from "@/ui/features/military";
+import { biomeBonusText, formatBiomeBonus } from "@/ui/features/military";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
 
@@ -46,15 +47,15 @@ const formatBiomeLabel = (biome: BiomeType | string) => {
 // Troop type configuration with resource names for ResourceIcon
 const troopConfig = {
   [TroopType.Knight]: {
-    resourceName: "Knight",
+    resourceId: ResourcesIds.Knight,
     label: "Knights",
   },
   [TroopType.Crossbowman]: {
-    resourceName: "Crossbowman",
+    resourceId: ResourcesIds.Crossbowman,
     label: "Crossbowmen",
   },
   [TroopType.Paladin]: {
-    resourceName: "Paladin",
+    resourceId: ResourcesIds.Paladin,
     label: "Paladins",
   },
 };
@@ -63,19 +64,19 @@ const troopConfig = {
 const getBonusStyles = (bonus: number) => {
   if (bonus > 1) {
     return {
-      containerClass: "border-green-500/60 bg-green-900/30 shadow-green-500/20",
-      textClass: "text-green-300",
+      containerClass: "border-hud-good",
+      textClass: "text-hud-good",
     };
   }
   if (bonus < 1) {
     return {
-      containerClass: "border-red-500/60 bg-red-900/30 shadow-red-500/20",
-      textClass: "text-red-300",
+      containerClass: "border-hud-bad",
+      textClass: "text-hud-bad",
     };
   }
   return {
-    containerClass: "border-gold/30 bg-brown-800/60 shadow-gold/10",
-    textClass: "text-gold/90",
+    containerClass: "border-hud-line",
+    textClass: "text-hud-ink",
   };
 };
 
@@ -103,7 +104,7 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
           config,
           bonus,
           styles,
-          summaryTextClass: bonus > 1 ? "text-green-300" : bonus < 1 ? "text-red-300" : "text-gold/80",
+          summaryTextClass: bonus > 1 ? "text-hud-good" : bonus < 1 ? "text-hud-bad" : "text-hud-ink",
         };
       }),
     [biome, troopTypes],
@@ -116,74 +117,62 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
   if (!configManager.hasBiomeCombatEffects()) return null;
 
   return (
-    <div className="rounded-xl border border-gold/25 bg-dark/70 backdrop-blur-sm shadow-md">
+    <div className="rounded-xl border border-hud-line bg-hud-surface">
       <button
         type="button"
         onClick={handleToggle}
-        className="flex w-full items-center justify-between gap-3 rounded-t-xl px-3 py-1.5 text-left transition-colors hover:bg-gold/5"
+        className="flex w-full items-center justify-between gap-3 rounded-t-xl px-3 py-1.5 text-left transition-colors hover:bg-hud-hover"
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm text-kit-muted">Biome</span>
-          <span className="text-sm font-semibold text-gold">{formatBiomeLabel(biome)}</span>
+          <span className="text-hud-label text-hud-muted">Biome</span>
+          <span className="text-hud-strong text-hud-ink">{formatBiomeLabel(biome)}</span>
         </div>
         <div className="flex items-center gap-2">
           {troopBonuses.map(({ troopType, config, bonus, summaryTextClass }) => (
-            <div key={troopType} className="flex items-center gap-1 rounded-md bg-dark/60 px-1.5 py-0.5">
-              <ResourceIcon resource={config.resourceName} size="xs" withTooltip={false} />
-              <span className={`text-sm font-semibold leading-none ${summaryTextClass}`}>
-                {formatBiomeBonus(bonus)}
-              </span>
+            <div key={troopType} className="flex items-center gap-1 rounded-md bg-hud-well px-1.5 py-0.5">
+              <ResourceIcon resource={config.resourceId} size="xs" withTooltip={false} />
+              <span className={`text-hud-label leading-none ${summaryTextClass}`}>{formatBiomeBonus(bonus)}</span>
             </div>
           ))}
           <SemanticIcon
             name="chevron-down"
-            className={`h-4 w-4 text-gold/70 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+            className={`h-4 w-4 text-hud-muted transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
           />
         </div>
       </button>
 
       {isExpanded && (
         <div
-          className="relative overflow-hidden rounded-b-xl border-t border-gold/20 p-3 shadow-inner"
-          style={{
-            backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.85), rgba(20, 16, 13, 0.85)), url(${getBiomeImage(biome)})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
+          className="relative overflow-hidden rounded-b-xl border-t border-hud-divider bg-cover bg-center p-3"
+          style={{ backgroundImage: `url(${getBiomeImage(biome)})` }}
         >
-          <div className="pointer-events-none absolute inset-0 rounded-b-xl border-2 border-transparent bg-gradient-to-br from-gold/5 to-transparent" />
+          {/* The biome's painting shows faintly through the panel's own ground, so its words read on it. */}
+          <div className="pointer-events-none absolute inset-0 bg-hud-surface opacity-90" />
 
           <div className="relative z-10 flex flex-col gap-3">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-gold">{formatBiomeLabel(biome)}</h2>
-              <div className="group relative">
-                <SemanticIcon name="info" className="h-4 w-4 text-kit-muted transition-colors group-hover:text-gold" />
-                <div className="absolute left-6 top-0 hidden whitespace-nowrap rounded-lg border border-gold/30 bg-brown-900/95 p-3 text-sm text-gold/90 shadow-xl group-hover:block">
-                  Terrain affects combat effectiveness
-                </div>
-              </div>
+              <h2 className="text-hud-title text-hud-ink">{formatBiomeLabel(biome)}</h2>
+              <span data-tip="Terrain affects combat effectiveness" className="group">
+                <SemanticIcon
+                  name="info"
+                  className="h-4 w-4 text-hud-muted transition-colors group-hover:text-hud-ink"
+                />
+              </span>
             </div>
-            <p className="text-sm font-medium text-gold/70">Combat effectiveness varies by troop type</p>
+            <p className="text-hud-body text-hud-muted">Combat effectiveness varies by troop type</p>
 
             <div className="flex flex-row gap-2">
               {troopBonuses.map(({ troopType, config, bonus, styles }) => (
                 <div
                   key={troopType}
-                  className={`group relative flex-1 rounded-lg border-2 px-2 py-2 shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl ${styles.containerClass}`}
+                  className={`relative flex-1 rounded-lg border-2 px-2 py-2 ${styles.containerClass}`}
                   role="tooltip"
-                  aria-label={`${config.label}: ${formatBiomeBonus(bonus)} combat effectiveness`}
+                  aria-label={`${config.label}: ${biomeBonusText(bonus)} combat effectiveness`}
                 >
                   <div className="mb-1.5 flex justify-center">
-                    <ResourceIcon resource={config.resourceName} size="lg" withTooltip={false} className="opacity-90" />
+                    <ResourceIcon resource={config.resourceId} size="lg" withTooltip={false} className="opacity-90" />
                   </div>
-                  <div className={`text-sm font-bold text-center ${styles.textClass}`}>{formatBiomeBonus(bonus)}</div>
-                  {bonus !== 1 && (
-                    <div
-                      className={`pointer-events-none absolute inset-0 rounded-lg opacity-20 ${
-                        bonus > 1 ? "bg-green-400/20" : "bg-red-400/20"
-                      } animate-pulse`}
-                    />
-                  )}
+                  <div className={`text-hud-strong text-center ${styles.textClass}`}>{formatBiomeBonus(bonus)}</div>
                 </div>
               ))}
             </div>

@@ -1,7 +1,6 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-
 import { FormEvent, useCallback, useRef, useState } from "react";
 import { EmojiPicker } from "./emoji-picker";
+import { HudButton, HudField, HudNotice } from "@/ui/design-system/kit/hud-elements";
 
 interface MessageComposerProps {
   onSend(message: string): Promise<void> | void;
@@ -61,10 +60,10 @@ export function MessageComposer({
   if (isRecipientOffline) {
     return (
       <div className="p-1.5 flex-shrink-0">
-        <div className="flex items-center justify-center p-2 bg-black/20 rounded text-kit-muted text-sm">
-          <SemanticIcon name="warning" className="h-4 w-4 mr-2" />
-          {recipientName || "User"} is offline. You will be able to send messages when they come back online.
-        </div>
+        <HudNotice
+          tone="warn"
+          line={`${recipientName || "User"} is offline. You will be able to send messages when they come back online.`}
+        />
       </div>
     );
   }
@@ -72,34 +71,28 @@ export function MessageComposer({
   return (
     <form onSubmit={handleSubmit} className="p-1.5 flex-shrink-0 transition-all duration-300">
       <div className="flex space-x-1.5 relative">
-        <input
+        <HudField
           ref={inputRef}
           type="text"
+          aria-label="Message"
           placeholder={placeholder}
           value={draft}
           disabled={disabled || isSending}
-          onChange={(event) => {
-            setDraft(event.target.value);
-          }}
+          onChange={setDraft}
           onKeyDown={(e) => e.stopPropagation()}
-          className="w-full px-2 py-1.5 bg-black/20 focus:bg-black/40 focus:outline-none text-gold placeholder-gold/30 rounded transition-all duration-300 text-sm max-lg:min-h-11"
           maxLength={maxLength}
         />
-        <button
-          type="button"
+        <HudButton
+          kind="secondary"
+          aria-label="Emoji"
           onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          className="px-2 py-1.5 bg-black/20 hover:bg-black/40 rounded transition-all duration-300 text-sm text-gold/70 hover:text-gold max-lg:min-h-11 max-lg:min-w-11"
           disabled={disabled || isSending}
         >
           😀
-        </button>
-        <button
-          type="submit"
-          className="px-2 py-1.5 bg-black/20 hover:bg-black/40 rounded transition-all duration-300 text-sm text-gold/70 hover:text-gold max-lg:min-h-11"
-          disabled={disabled || isSending}
-        >
-          {isSending ? "Sending…" : "Send"}
-        </button>
+        </HudButton>
+        <HudButton kind="secondary" type="submit" disabled={disabled} busy={isSending ? "Sending…" : undefined}>
+          Send
+        </HudButton>
         {showEmojiPicker && <EmojiPicker onEmojiSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />}
       </div>
     </form>

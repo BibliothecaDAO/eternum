@@ -213,6 +213,7 @@ function invokeAgentBrowser(session, commandArgs, { headed = false } = {}) {
     cwd: resolveAgentBrowserWorkingDirectory(),
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
+    maxBuffer: 8 * 1024 * 1024,
     timeout: 30_000,
     killSignal: "SIGKILL",
   });

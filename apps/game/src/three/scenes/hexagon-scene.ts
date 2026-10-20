@@ -337,7 +337,8 @@ export abstract class HexagonScene {
   }
 
   private setupInputHandlers(): void {
-    this.inputManager.addListener("mousemove", throttle(this.handleMouseMove.bind(this), 50));
+    this.inputManager.addListener("mousemove", this.throttledMouseMove);
+    this.inputManager.addListener("mouseleave", this.handleMouseLeave.bind(this));
     this.inputManager.addListener("dblclick", this.handleDoubleClick.bind(this));
     this.inputManager.addListener("click", this.handleClick.bind(this));
     this.inputManager.addListener("contextmenu", this.handleRightClick.bind(this));
@@ -370,6 +371,15 @@ export abstract class HexagonScene {
 
   public deactivateInputSurface(): void {
     this.inputManager.deactivate();
+  }
+
+  private readonly throttledMouseMove = throttle(this.handleMouseMove.bind(this), 50);
+
+  /** The pointer left the map for the HUD or the page: no tile is under it, and a throttled move must not say one is. */
+  private handleMouseLeave(): void {
+    this.throttledMouseMove.cancel();
+    this.interactiveHexManager.clearHover();
+    this.onHexagonMouseMove(null);
   }
 
   private handleMouseMove(event: MouseEvent, raycaster: Raycaster): void {
@@ -427,11 +437,15 @@ export abstract class HexagonScene {
     }
   }
 
-  private handleClick(_event: MouseEvent, raycaster: Raycaster): void {
+  private handleClick(event: MouseEvent, raycaster: Raycaster): void {
     useUIStore.getState().closeContextMenu();
-    const clickedHex = this.resolveClickedHex(raycaster);
-    this.onHexagonClick(clickedHex?.hexCoords ?? null);
+    // A click on a map label's resting token is a click on its thing's tile; anywhere else, the tile under the pointer.
+    const labelled = this.resolveLabelClick?.(event);
+    this.onHexagonClick(labelled ?? this.resolveClickedHex(raycaster)?.hexCoords ?? null);
   }
+
+  /** The tile of the thing whose map label is drawn under the click, if a scene draws labels that take one. */
+  protected resolveLabelClick?(event: MouseEvent): HexPosition | null;
 
   private resolveClickedHex(raycaster: Raycaster): { hexCoords: HexPosition; position: Vector3 } | null {
     const clickedHex = this.interactiveHexManager.onClick(raycaster);
@@ -937,7 +951,8 @@ export abstract class HexagonScene {
     }
   }
 
-  public moveCameraToColRow(col: number, row: number, duration: number = 2) {
+  /** Moves the camera onto one of this scene's own hexes. The world map takes map positions instead (moveCameraToMapPosition). */
+  protected moveCameraToColRow(col: number, row: number, duration: number = 2) {
     const { x, y, z } = this.hexSpace.positionForHex({ col, row });
 
     const newTarget = new Vector3(x, y, z);

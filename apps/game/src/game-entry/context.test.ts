@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildEntryHrefFromEntryContext,
-  buildPlayRouteFromEntryContext,
   resolveEntryContextCacheKey,
   resolveEntryContextFromEntryRoute,
   resolveEntryContextFromLandingSelection,
@@ -48,7 +47,7 @@ describe("game-entry context", () => {
     });
   });
 
-  it("builds entry and play hrefs from the shared entry context", () => {
+  it("builds the entry href from the shared entry context", () => {
     const context = {
       chainId: "0xb2",
       gameId: 9,
@@ -58,14 +57,6 @@ describe("game-entry context", () => {
     };
 
     expect(buildEntryHrefFromEntryContext(context)).toBe("/g/0xb2/9");
-    expect(buildPlayRouteFromEntryContext({ context })).toBe("/g/0xb2/9/hex");
-    expect(
-      buildPlayRouteFromEntryContext({
-        context: { ...context, intent: "spectate" },
-        col: 4,
-        row: 9,
-      }),
-    ).toBe("/g/0xb2/9/map?col=4&row=9&spectate=true");
     expect(resolveEntryContextCacheKey(context)).toBe("0xb2:9");
   });
 });

@@ -151,8 +151,8 @@ export const getStructureInfoFromTileOccupier = (
       return { type: StructureType.Rift, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
     case TileOccupier.Ruin:
       return { type: StructureType.Ruin, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
-    case TileOccupier.Stragglers:
-      return { type: StructureType.Stragglers, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
+    case TileOccupier.Beasts:
+      return { type: StructureType.Beasts, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
 
     default:
       return undefined;

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Realms Admin</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <aside class="rail">
+      <div class="brand">
+        <span class="brand-name">Realms</span>
+        <span class="brand-sub">Admin</span>
+      </div>
+      <nav aria-label="Screens">
+        <p class="eyebrow">Operate</p>
+        <button class="place" data-screen="games" aria-current="page">Games</button>
+        <button class="place" data-screen="deploys">Deploys</button>
+        <p class="eyebrow">Record</p>
+        <button class="place" data-screen="audit">Audit</button>
+      </nav>
+      <div class="rail-foot">
+        <div class="switch" role="group" aria-label="Environment: each opens its own admin">
+          <button data-env="dev" aria-pressed="false">Dev</button>
+          <button data-env="production" aria-pressed="false">Prod</button>
+        </div>
+        <p class="who" id="who" title="Your Cloudflare Access identity; the server checks it on every call">—</p>
+      </div>
+    </aside>
+
+    <div class="stage">
+      <header class="bar">
+        <h1 id="title">Games</h1>
+        <span class="env-badge" id="env-badge">Dev</span>
+      </header>
+      <main>
+        <p id="prod-banner" class="banner" hidden>
+          Production: every action here changes the live game and is logged with your name.
+        </p>
+        <p id="denied" class="banner" hidden></p>
+
+        <div data-panel="games">
+          <section class="plate">
+            <h2>Status <span class="note" id="checked"></span></h2>
+            <div class="strip" id="status"></div>
+          </section>
+          <div class="pair">
+            <section class="plate">
+              <h2>Season calendar</h2>
+              <table>
+                <tbody id="calendar"></tbody>
+              </table>
+            </section>
+            <section class="plate">
+              <h2>Blitz slots</h2>
+              <table>
+                <tbody id="slots"></tbody>
+              </table>
+            </section>
+          </div>
+          <section class="plate">
+            <h2>Games <button class="step" id="new-game">New game</button></h2>
+            <div class="scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Kind</th>
+                    <th>Status</th>
+                    <th class="wide">Game</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="runs"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div data-panel="deploys" hidden>
+          <section class="plate">
+            <h2>Running now</h2>
+            <table>
+              <tbody id="running"></tbody>
+            </table>
+          </section>
+          <section class="plate">
+            <h2>Deploy</h2>
+            <p class="note">
+              Deploys run from your machine, in a checkout of the pushed commit; production also needs that commit green
+              on next. This page holds no deploy credentials.
+            </p>
+            <div id="commands"></div>
+          </section>
+        </div>
+
+        <section class="plate" data-panel="audit" hidden>
+          <h2>Audit log</h2>
+          <div class="scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Who</th>
+                  <th>Env</th>
+                  <th>Action</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody id="audit"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="kind-dialog">
+      <h3>New game</h3>
+      <div class="kinds">
+        <button data-kind="test-blitz">
+          <b>Free test Blitz</b>
+          <small>Dev only. Named players, live five minutes after creation, no entry, no result.</small>
+        </button>
+        <button data-kind="open-slot">
+          <b>Paid Blitz slot</b><small>Opens registration; players pay entry on the ledger.</small>
+        </button>
+        <button data-kind="frontier">
+          <b>Frontier phase</b><small>Sets the season's dates; the launcher creates the game at its start.</small>
+        </button>
+      </div>
+      <div class="row"><button class="quiet" data-close>Cancel</button></div>
+    </dialog>
+
+    <dialog id="action-dialog">
+      <h3 id="action-title"></h3>
+      <form id="action-form" method="dialog"></form>
+      <p class="note">
+        The server sends this with its own credential, never the browser's, and logs it under your name:
+      </p>
+      <pre id="action-call"></pre>
+      <p class="error" id="action-error" hidden></p>
+      <div class="row">
+        <button class="quiet" data-close>Cancel</button>
+        <button class="step" id="action-send">Send</button>
+      </div>
+    </dialog>
+
+    <script type="module" src="admin.js"></script>
+  </body>
+</html>

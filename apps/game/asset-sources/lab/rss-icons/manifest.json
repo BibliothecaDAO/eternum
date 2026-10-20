@@ -1,0 +1,475 @@
+{
+  "before": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+  "changes": [
+    {
+      "meaning": "stone",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "coal",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "wood",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "copper",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "ironwood",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "obsidian",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "gold",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "silver",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "mithral",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "alchemical-silver",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "cold-iron",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "deep-crystal",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "ruby",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "diamonds",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "hartwood",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "ignium",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "twilight-quartz",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "true-ice",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "adamantine",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "sapphire",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "ethereal-silica",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "dragonhide",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "essence",
+      "group": "Resources",
+      "note": "Restored shipped square violet Essence bottle."
+    },
+    {
+      "meaning": "camp",
+      "group": "Models",
+      "note": "Canvas tents and palisade from the outpost model."
+    },
+    {
+      "meaning": "hyperstructure",
+      "group": "Models",
+      "note": "Completed runtime Hyperstructure: full shaft and crown, entity 17 at 100%."
+    },
+    {
+      "meaning": "chest",
+      "group": "Models",
+      "note": "Chest body only, with no tile, pedestal, seals or orbit gems."
+    },
+    {
+      "meaning": "stamina-relic-1",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "stamina-relic-2",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "damage-relic-1",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "damage-relic-2",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "damage-reduction-relic-1",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "damage-reduction-relic-2",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "exploration-relic-1",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "exploration-relic-2",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "exploration-reward-relic-1",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "exploration-reward-relic-2",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "structure-damage-reduction-relic-1",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "structure-damage-reduction-relic-2",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "production-relic-1",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "production-relic-2",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "labor-production-relic-1",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "labor-production-relic-2",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "troop-production-relic-1",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "troop-production-relic-2",
+      "group": "Relics",
+      "note": "Approved Facets repaint of the original relic design."
+    },
+    {
+      "meaning": "research",
+      "group": "Resources",
+      "note": "Shipped book and flask, with a teal liquid interior."
+    },
+    {
+      "meaning": "rift",
+      "group": "Models",
+      "note": "Actual stone basin and violet pool; earth tile removed."
+    },
+    {
+      "meaning": "spire",
+      "group": "Models",
+      "note": "Dark suspended spire and portal orb from the shipped spire model."
+    },
+    {
+      "meaning": "farm",
+      "group": "Models",
+      "note": "Windmill, wheat field and fence from the current farm model."
+    },
+    {
+      "meaning": "workers-hut",
+      "group": "Models",
+      "note": "Tiled timber hut and yard from the current workers hut model."
+    },
+    {
+      "meaning": "workshop",
+      "group": "Models",
+      "note": "Orange tiled roofs, open timber work bays and workbench from the shipped Craft Yard model."
+    }
+  ],
+  "kept": [
+    "labor",
+    "knight-t1",
+    "knight-t2",
+    "knight-t3",
+    "crossbowman-t1",
+    "crossbowman-t2",
+    "crossbowman-t3",
+    "paladin-t1",
+    "paladin-t2",
+    "paladin-t3",
+    "move",
+    "transfer",
+    "production",
+    "settings"
+  ],
+  "beforeHashes": {
+    "stone": {
+      "64": "3bb34975b9a0cdfe9238638434af3310149040e696892d9dba069ef7e744e271",
+      "128": "b501672aee1ab862129643457d5e2d03ac65ebb4ae8c1fd4bf4bb4e087e7e98d"
+    },
+    "coal": {
+      "64": "0d448dfd01b3ac3f943d2878813ed1f4244adf20d6410d08d067adfb4f1473d7",
+      "128": "b39d1595a697c74562258b450e4e6d74922b99a6ccf1b0bbaeb55882407fd04d"
+    },
+    "wood": {
+      "64": "80b4ccd791e58883e760828442ce5b490c4a2418c023dad188d693448cf1671e",
+      "128": "ad22f92025fddaaafcdd4d88772c4e5b856f5844a27f64307fa161ed8dfe9c57"
+    },
+    "copper": {
+      "64": "e1cfa3dbdfa1832c8b1f9179067536ef985cad6c51106c7fddc1d3ecd85ecd3b",
+      "128": "c810517ee41ffe0e5f313913e337ca8efd15b4b701c72f28d0967864fed90d94"
+    },
+    "ironwood": {
+      "64": "ca386f82d527092489e518a3207babdeb56a18876d7e38d7dbf58ba2f6a40438",
+      "128": "ad5eabf8515e011cf7796cfeef97b528ac952cda7d01ecb216e6120c452b56f9"
+    },
+    "obsidian": {
+      "64": "da7897ca7a3d25a0a97a26f690a1d21904adb5d88d40484c6f708fa26693dc14",
+      "128": "595e5c1d93eac7d94d1dfc24531b41940b3ad4e428692e8721811654129b404f"
+    },
+    "gold": {
+      "64": "e231e0c5f0ed32eca13ba5dcd5753373651837a004bebdeeb8c6602bff81d0c4",
+      "128": "a723599ecec3690d8d1cc8caf3146741b6b53d65d37caf6a1f8761d4805cc516"
+    },
+    "silver": {
+      "64": "d3132e1f98464e55f13dbe86079f329b1fe1a3d05946bf41f3b69e8c45b9b2eb",
+      "128": "c82d26d6cbe9417c2bf3cc7ffaae3c5d16c29956ce459c237d21df651b2cc6d0"
+    },
+    "mithral": {
+      "64": "a525677353fd7605d947d6968e5832b584883ea88a13c993617ab9764aa27d32",
+      "128": "948ba98a3ecd08fe527812a190bb5a8944a094d6cbe1e8859cd1b2ba5a90c085"
+    },
+    "alchemical-silver": {
+      "64": "104542ae5997992eef0ec37482451a5fdd08fe181608de4e21b0907fe53699eb",
+      "128": "fa0737d23a9f99370a77ff2d150250a82ce31a35cb80ae373802a32f2e3e090f"
+    },
+    "cold-iron": {
+      "64": "c9b44cd5a1c731874b5e870ddfcb40e33283effae3b8690f3f8358861ff1764b",
+      "128": "f13571e39fbd2de17ff9d7b5142fad2fd657b31092cdb9f7b42f545276348fd1"
+    },
+    "deep-crystal": {
+      "64": "c62265af8d7dfae847c87fc03c589e32d40bc53669f15038ac2ec785f235a373",
+      "128": "ddcf5abae3174a3bd00903e9c96684cba0aaebd5d56084ed9a972f8dfb02490e"
+    },
+    "ruby": {
+      "64": "f81310398abfe62d504f163f58b082e732e79191c465d5dc9c4002ab67b96020",
+      "128": "6a167ad902395ea1b49b2a095e36a59ccf3209b3f9319556836fa6c559cc82bc"
+    },
+    "diamonds": {
+      "64": "70174eb5ecc6216322a8835e905098bc78c95740084ebea78f988d0973b2025b",
+      "128": "9a2b28197ead8da710b3cd7ffc1faf71463036d9973f87b4ccc70f8a94eea6e8"
+    },
+    "hartwood": {
+      "64": "f80bd1fd1892107bdf2d65361f52972fbafb2d188d86bfbb9f67c44083a5a076",
+      "128": "33c135f8568d3deb070978bb3fb3f3961f5aa845b3e62bd95ff573c23fd9270c"
+    },
+    "ignium": {
+      "64": "9f3dc7244551cb4fcf031f1cfaf20d9020b989da09affa28bf48e4e467803373",
+      "128": "91d221e42a5dc96346bd32f8daed5af41528de47e346b3918e0b5392a93b6b8d"
+    },
+    "twilight-quartz": {
+      "64": "be65a9a90dc2e3f4e08a4d6c7d6f74ff317d0e9accf1a21f9c19015e54ecc7f4",
+      "128": "9c11ce69ae37a921a1d32a1cc4fe10dce1ee6aee9139151d6e9cd2bda12e09b0"
+    },
+    "true-ice": {
+      "64": "19b268d941505e935011e49b48be4fdfaf845f4dcf8c639e4c446d5923cf6570",
+      "128": "bcbdff1168fcab447860297d0a71aa95881af01bbd99323a7b018c79901f1110"
+    },
+    "adamantine": {
+      "64": "96cfe76f9e0d48fe879e6ddee097557a3dc296d03fa311083d657a2f3153ec28",
+      "128": "64ff5a25ef01159446f72ed1a820ef97101d0fd2ba6159de170e62b55b16a4d1"
+    },
+    "sapphire": {
+      "64": "88845d94462efcef975fb7b62f52aaf3ee39917077e98d017fe1637d79a4bd11",
+      "128": "1a81ba64f810efcb58236a93d280fef8b5138f73f7b0f70d58a4af3315411e89"
+    },
+    "ethereal-silica": {
+      "64": "fbb116633f82e66ee2943a305dcb5daba26e832da5ca03bb8fe556a50e3d2396",
+      "128": "224a59e310bd04c70b93e1086adc0da3b8b34a2933f95f3ff6f1039f11b598cf"
+    },
+    "dragonhide": {
+      "64": "4b7fa4b88f133ca69f26a756961329620ec80862758bb3975ac21b3cb3030b2e",
+      "128": "b048c716361f1d9dd4a0b4d0c51fbea3d4f1172f116dc572214194b74eecd124"
+    },
+    "essence": {
+      "64": "4f03d120f632455a4598038683cf174efe45182de8a6c2d3c56bac1db505b45a",
+      "128": "3cb2734eebc3d2bfd06d73fcada1a296ee2702c9b717425b44778b1bfb6c782b"
+    },
+    "camp": {
+      "64": "ddf9a17f26fedd054e8e72edf2e79912c30f35184614f7d2ba38294b57383770",
+      "128": "cec9b21b170160f1fe7f61480373de96d018615977473c2012de0d5d29a63729"
+    },
+    "hyperstructure": {
+      "64": "3e74e633b96d8ca3cd8d08a960cef80709f7006e4210840280b57fc4bf854257",
+      "128": "08d5e5b12d64ac0db9065e1f016fd51cca4d0cea22bf5ba21d24828bc7b96f26"
+    },
+    "chest": {
+      "64": "c0ff2e02f443a404026380ab4776a0e2df79394ab805ccbae95766d0bccd1a32",
+      "128": "e828148428026bbaa6bb17abad6e121adc63c176a9912301470d9d04fb06580a"
+    },
+    "stamina-relic-1": {
+      "64": "9b91cb636fe8c961067039004cc0cd9d1a70acc7de97aa7a4b7e681bde60521a",
+      "128": "c4e7168d27cb0a3d2878700c30706cfb7b09e635a48152671ecb8ca75a744044"
+    },
+    "stamina-relic-2": {
+      "64": "91e7bc665131dbb1b82a2a7999eb49bebde6ea8384e85fe739826ae518f615b4",
+      "128": "1e06840f857c1724feb4f2a24e98520f98d9b840236a03208c318c9de0f23282"
+    },
+    "damage-relic-1": {
+      "64": "918f83d0eb493f9e5c4bc6401139b91118d42046d045c16641eaee7b6a412a46",
+      "128": "d090b12baa7580765e6632d8ac53db67db183284c35e7be3d84cd9eeb01ccf86"
+    },
+    "damage-relic-2": {
+      "64": "05efa865cb73447e906a8add53381573f65e3b375009e96a9e6845712b335ab5",
+      "128": "3675892ad9428136037f3d0d89aead5e8a5efd33a87bd5d412fa6dca7247208c"
+    },
+    "damage-reduction-relic-1": {
+      "64": "27138a45d680cfc4016d873295e24957513367f5763ad23029688d4b3d0b3dbe",
+      "128": "3b174f50681b95c60a926546432963a304d0a5881dc885125cbb7cae33cae9e8"
+    },
+    "damage-reduction-relic-2": {
+      "64": "c65bd522dfa01209ef19d08c7fe534c3b17633cef184e926572bfd0637a04a60",
+      "128": "539800e22d72b464ab88f0073fee1dd998b1610fd1569afd36eb493c5175ebf6"
+    },
+    "exploration-relic-1": {
+      "64": "e400be78a8907484dbe951e4c13a1dcbaa3edd0b53094538ec0b96c6d995c294",
+      "128": "1cf84b7c7b19ae6fd622a08210049b09f44580100c1a6f5037d224d826520d88"
+    },
+    "exploration-relic-2": {
+      "64": "e3770120380f95c11779ae73ee52a72ed010db556b0ba82a6305d26675cddb64",
+      "128": "9d499fe483bad08ac5424de2a5b42a951e76c2ad74728ad67ff62ee513669ea7"
+    },
+    "exploration-reward-relic-1": {
+      "64": "5ae6d4dacb661e19fc483567fb890b1ebad3752afa1b6071cfab6c3c42d8d2cb",
+      "128": "b6500a7a967bc822fb42dedec7979c2bf742c162059bdd15200b197bedfd03ef"
+    },
+    "exploration-reward-relic-2": {
+      "64": "84962138c3624d013067f39db51227c4eeb87348b611952caed38bdb63dd2d93",
+      "128": "9721f31b044d4a37c74d43c31f1489c5a09f685d03cb3f3f9d08d324ff5f3a1e"
+    },
+    "structure-damage-reduction-relic-1": {
+      "64": "37d3d13cfdb689f652d71ba5d7701f713c0aff3fc982b40795d35f118a6085e9",
+      "128": "f2f0f5f2e73da496c1ceaa5d920e5ac6c9fdb0171bc377eccd53483d1a39d269"
+    },
+    "structure-damage-reduction-relic-2": {
+      "64": "e79855f137d9ce8da5806efbe5f699d7c99f9612da2c4edbbb4b5c60d5a0eceb",
+      "128": "0efd9117c4da2673742f0c2df5034ff3c21a05b111d0c90d24b24703c28a13ad"
+    },
+    "production-relic-1": {
+      "64": "26a2d5282f52f64994c961d117503ddb213541e178fa71043253b7f001348435",
+      "128": "b200bd194ad0a1db53b62f223e88f35d7ebcdc515b8d25f8b2cdb105e621899a"
+    },
+    "production-relic-2": {
+      "64": "e9fe41646c7c3b767ec99114dcab2259c099f1d80e764a17ec388e63f959b602",
+      "128": "67a9feccbf47b5192f1771f75e2a111f7f394c1bfaf0310a813187e10b56aa84"
+    },
+    "labor-production-relic-1": {
+      "64": "0627bae08a3dafb9a31a70557442cbf361462435d1a0941a85461a375b5ca5a1",
+      "128": "86c7455488d3e040f576cb6f7f2d284b5d1a5347cff8e8cc60eb2fc65f663fb6"
+    },
+    "labor-production-relic-2": {
+      "64": "177e0b294b99311a263f518e3ea67f6a6535fbd2efd5fbc2f338b8013461bde4",
+      "128": "656ff645b8665dacada3e2ff2f6ff98eea442a61bb3167eeef56fa2dac0005c5"
+    },
+    "troop-production-relic-1": {
+      "64": "11c57990801d23b6fd029178bdbb900da5c5d30d751cf3bc7048bf8599ec7626",
+      "128": "7b48c46e71d690956ab93b87128e6dcc1056bf9d8d272d8e0fb8a335774b0afe"
+    },
+    "troop-production-relic-2": {
+      "64": "a3517f8b49f25a45895cde55a3837c16515ca619749dd12e6fd2c7b43ecade18",
+      "128": "b9e3ef5a5a5b356cb4e20c605ec509f6b00e8f48d32db7dd3540dd7efaf5c802"
+    },
+    "research": {
+      "64": "4ae07f53163e5130fb11c0224c6a743223682a64afb37289ffe46ee195e50a78",
+      "128": "a97369cce5045bf08eb39291d52632b81b7eab3424fdc61579fcef8f05949f68"
+    },
+    "rift": {
+      "64": "63148a51c6d60a349b477b697d4a867ce64fa7e9fcc6ef1cf2e35697729c01f3",
+      "128": "cbf490a69b6580e3c1e874a7fc58f7917883e4660a68430d3bd25235d81c74bf"
+    },
+    "spire": {
+      "64": "ba1f18d093c4ffddd0f9667a946e539246679c977fc72beffe09a617eabe5249",
+      "128": "133216325784ddf605b2c47841e631dafddb1119f4456c55cce44c2e05e6744a"
+    },
+    "farm": {
+      "64": "5774e0786383c9926aa6e8f140532d2f10ae5d7edfca0fc2a61e2e4e6016d45c",
+      "128": "4c8a5e0e00fcf3d757a1e4274d253ba87053d89e29b74934a55cc89a6c3daa22"
+    },
+    "workers-hut": {
+      "64": "946997056fbb03e5aa4acfc63c8486b2e08cb174f43fc3d7dcaed143dce7b2c8",
+      "128": "d560ced7ccd9d0b08376b0a04eff9578f99a4bfe5718ad45c8596bfe800e8a2a"
+    },
+    "workshop": {
+      "64": "9dac90355c5082f9f1c6719ca6f9f21a3a5f746c2ed5c9b1c793f8c330193e4a",
+      "128": "5a15121fe253de09882573d49732895ececc9d9eab66808a7c159c8f7ca4e0dc"
+    }
+  },
+  "relicsBefore": "0220d0a1bd60c33eb6c35064d055ffb7fe8429ac",
+  "workshopBefore": "549586f46ea922767564a83e94c6b752a17f7d33"
+}

@@ -68,14 +68,7 @@ export class LeaderboardManager {
     return shares.flatMap((row) =>
       unclaimedSharePoints(row, rate, cutoff).map(({ points }, index) => {
         const share = row.shareholders[index];
-        return {
-          playerAddress: share.player,
-          basisPoints: BigInt(share.bps),
-          hyperstructureId: safeInteger(row.entity_id),
-          elapsed: Number(cutoff - row.start_at),
-          rate: wholePoints(hyperstructurePointsPerSecond(rate, row.multiplier) * BigInt(share.bps)) / 10_000,
-          points: wholePoints(points),
-        };
+        return { playerAddress: share.player, points: wholePoints(points) };
       }),
     );
   }
@@ -112,32 +105,36 @@ export class LeaderboardManager {
       : undefined;
   }
 
-  getPlayerHyperstructurePointsBreakdown(player: ContractAddress) {
-    const grouped = new Map<
-      ID,
-      {
-        hyperstructureId: ID;
-        shareholderPercentage: number;
-        pointsPerSecond: number;
-        timeElapsed: number;
-        totalPoints: number;
+  /**
+   * The hyperstructures paying a player now, from the current allocations alone: each one the player holds a share of,
+   * at its rate (the grant times the allocation's multiplier, times the player's share), whatever has accrued since
+   * its last checkpoint. Outside development mode nothing pays once the game has ended.
+   */
+  getPlayerHyperstructuresPaying(player: ContractAddress) {
+    const game = configManager.getActiveGameId();
+    const clock = this.store.require("GameRegistry", { game_id: game });
+    const now = BigInt(Math.floor(getBlockTimestamp().currentBlockTimestamp));
+    if (sharePointCutoff(clock, now) < now) return [];
+    const grant = this.store.require("SliceRules", { game_id: game }).victory_points_grant_config.hyp_points_per_second;
+    const paying = new Map<ID, { hyperstructureId: ID; shareholderPercentage: number; pointsPerSecond: number }>();
+    for (const row of this.store.inGame("HyperstructureShares", game)) {
+      const rate = hyperstructurePointsPerSecond(grant, row.multiplier);
+      for (const share of row.shareholders) {
+        if (BigInt(share.player) !== BigInt(player)) continue;
+        const pointsPerSecond = wholePoints(rate * BigInt(share.bps)) / 10_000;
+        if (pointsPerSecond <= 0) continue;
+        const hyperstructureId = safeInteger(row.entity_id);
+        const entry = paying.get(hyperstructureId) ?? {
+          hyperstructureId,
+          shareholderPercentage: 0,
+          pointsPerSecond: 0,
+        };
+        entry.shareholderPercentage += Number(share.bps) / 10_000;
+        entry.pointsPerSecond += pointsPerSecond;
+        paying.set(hyperstructureId, entry);
       }
-    >();
-    for (const share of this.readAccruedShares()) {
-      if (share.playerAddress !== player) continue;
-      const entry = grouped.get(share.hyperstructureId) ?? {
-        hyperstructureId: share.hyperstructureId,
-        shareholderPercentage: 0,
-        pointsPerSecond: 0,
-        timeElapsed: share.elapsed,
-        totalPoints: 0,
-      };
-      entry.shareholderPercentage += Number(share.basisPoints) / 10_000;
-      entry.pointsPerSecond += share.rate;
-      entry.totalPoints += share.points;
-      grouped.set(share.hyperstructureId, entry);
     }
-    return [...grouped.values()];
+    return [...paying.values()];
   }
 
   getPlayerShares(player: ContractAddress, entityId: ID): number {

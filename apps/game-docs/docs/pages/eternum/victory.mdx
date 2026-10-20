@@ -1,10 +1,9 @@
-import { ETERNUM_CONFIG } from "@/utils/config";
+import { ETERNUM_CONFIG, victoryPointsOf } from "@/utils/config";
 import {
   HyperstructureInitializationShardsTable,
   HyperstructureConstructionCostTable,
   HyperstructurePointsTable,
   getTotalHyperstructureCompletionPoints,
-  HYPERSTRUCTURE_POINT_MULTIPLIER,
 } from "@/components/eternum-components/HyperstructureTable";
 import { formatNumberWithCommas } from "@/utils/formatting";
 
@@ -46,18 +45,16 @@ available to claim throughout the construction process.
 ## Accumulation Victory Points
 
 Separately, and in addition to the victory points awarded at completion, the owner of the Hyperstructure begins to
-accumulate
-**{formatNumberWithCommas(Number(ETERNUM_CONFIG("eternum").hyperstructures.hyperstructurePointsPerCycle)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
-victory points** for every second the structure remains under their control. These accumulating victory points can be
-shared among multiple Lords through a customizable share split, allowing the owner to distribute glory and reward
-cooperation. If a Hyperstructure is claimed by another Lord, future accumulated victory points are redirected to the new
-owner, who may similarly decide on sharing arrangements.
+accumulate victory points, **{victoryPointsOf("eternum", "hyperstructurePointsPerCycle")}** for every second the
+structure remains under their control. These accumulating victory points can be shared among multiple Lords through a
+customizable share split, allowing the owner to distribute glory and reward cooperation. If a Hyperstructure is claimed
+by another Lord, future accumulated victory points are redirected to the new owner, who may similarly decide on sharing
+arrangements.
 
 ## Total Victory
 
 Victory points earned through construction contributions or accumulation cannot be lost once awarded. The first player
-to reach
-**{formatNumberWithCommas(Number(ETERNUM_CONFIG("eternum").hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
-total victory points** unlocks the ability to select the ‘End Season’ option, concluding the current game season.
+to reach **{victoryPointsOf("eternum", "pointsForWin")} total victory points** unlocks the ability to select the ‘End
+Season’ option, concluding the current game season.
 
 <HyperstructurePointsTable />

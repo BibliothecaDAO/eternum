@@ -64,7 +64,7 @@
     "CHOICE_RATIONS": 1,
     "KIND_CAMPS": 0,
     "KIND_RIFTS": 1,
-    "KIND_STRAGGLERS": 2,
+    "KIND_BEASTS": 2,
     "HUT": 1,
     "WORKSHOP": 25,
     "BARRACKS": 28,
@@ -461,6 +461,30 @@
           },
           {
             "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowDeleted",
+        "prefix": [
+          "0x39e1872116c7663c8921f9ee75ba10cccc267663c7087f62af7ae609f2dc747",
+          "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
             "type": "core::array::Span::<core::felt252>",
             "kind": "data"
           }
@@ -2764,9 +2788,9 @@
       ],
       "members": [
         {
-          "name": "stragglers_bps",
+          "name": "beasts_bps",
           "type": "core::integer::u16",
-          "id": "0x7374726167676c6572735f627073",
+          "id": "0x6265617374735f627073",
           "feltLength": 1
         },
         {
@@ -4680,20 +4704,44 @@
       ],
       "members": [
         {
+          "name": "category",
+          "type": "core::integer::u8",
+          "id": "0x63617465676f7279",
+          "feltLength": 1
+        },
+        {
           "name": "initial_guard_count",
           "type": "core::integer::u128",
           "id": "0x696e697469616c5f67756172645f636f756e74",
           "feltLength": 1
         },
         {
-          "name": "cleared",
+          "name": "alt",
           "type": "core::bool",
-          "id": "0x636c6561726564",
+          "id": "0x616c74",
           "feltLength": 1
+        },
+        {
+          "name": "col",
+          "type": "core::integer::u32",
+          "id": "0x636f6c",
+          "feltLength": 1
+        },
+        {
+          "name": "row",
+          "type": "core::integer::u32",
+          "id": "0x726f77",
+          "feltLength": 1
+        },
+        {
+          "name": "clear",
+          "type": "core::option::Option::<world_native::expeditions::SiteClear>",
+          "id": "0x636c656172",
+          "feltLength": null
         }
       ],
       "keyLength": 2,
-      "valueLength": 2
+      "valueLength": null
     },
     {
       "name": "Structure",
@@ -5927,10 +5975,34 @@
           "type": "core::integer::u32",
           "id": "0x67756172645f73746570",
           "feltLength": 1
+        },
+        {
+          "name": "beast_weak_lower",
+          "type": "core::integer::u16",
+          "id": "0x62656173745f7765616b5f6c6f776572",
+          "feltLength": 1
+        },
+        {
+          "name": "beast_weak_upper",
+          "type": "core::integer::u16",
+          "id": "0x62656173745f7765616b5f7570706572",
+          "feltLength": 1
+        },
+        {
+          "name": "beast_strong_lower",
+          "type": "core::integer::u16",
+          "id": "0x62656173745f7374726f6e675f6c6f776572",
+          "feltLength": 1
+        },
+        {
+          "name": "beast_strong_upper",
+          "type": "core::integer::u16",
+          "id": "0x62656173745f7374726f6e675f7570706572",
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 13,
+      "valueLength": 17,
       "observation": {
         "domain": "expedition",
         "fields": {
@@ -5940,6 +6012,10 @@
           "ruinGuardLower": "ruin_guard_lower",
           "ruinGuardUpper": "ruin_guard_upper",
           "guardStep": "guard_step",
+          "beastWeakLower": "beast_weak_lower",
+          "beastWeakUpper": "beast_weak_upper",
+          "beastStrongLower": "beast_strong_lower",
+          "beastStrongUpper": "beast_strong_upper",
           "chestOdds": "chest",
           "revealSiteNeighbors": "reveal_site_neighbors",
           "entryStamina": "entry_stamina"
@@ -6143,7 +6219,7 @@
           "name": "troop_limit_config",
           "type": "world_native::rules::TroopLimitConfig",
           "id": "0x74726f6f705f6c696d69745f636f6e666967",
-          "feltLength": 24
+          "feltLength": 26
         },
         {
           "name": "capacity_config",
@@ -6225,7 +6301,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 101,
+      "valueLength": 103,
       "derivedFrom": "preset"
     },
     {
@@ -7051,6 +7127,20 @@
         {
           "name": "Some",
           "type": "world_native::expeditions::FrontierDiscoveryRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::expeditions::SiteClear>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::expeditions::SiteClear>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::expeditions::SiteClear"
         },
         {
           "name": "None",
@@ -8561,7 +8651,7 @@
           "type": "world_native::relics::SiteChest"
         },
         {
-          "name": "Stragglers",
+          "name": "Beasts",
           "type": "()"
         },
         {
@@ -8574,6 +8664,10 @@
         },
         {
           "name": "Spire",
+          "type": "()"
+        },
+        {
+          "name": "Chest",
           "type": "()"
         }
       ]
@@ -8671,6 +8765,22 @@
         {
           "name": "guard_step",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "beast_weak_lower",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "beast_weak_upper",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "beast_strong_lower",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "beast_strong_upper",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -8711,12 +8821,28 @@
       "name": "world_native::expeditions::ExpeditionSite",
       "members": [
         {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
+        {
           "name": "initial_guard_count",
           "type": "core::integer::u128"
         },
         {
-          "name": "cleared",
+          "name": "alt",
           "type": "core::bool"
+        },
+        {
+          "name": "col",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "row",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "clear",
+          "type": "core::option::Option::<world_native::expeditions::SiteClear>"
         }
       ]
     },
@@ -8725,7 +8851,7 @@
       "name": "world_native::expeditions::FrontierDiscoveryRules",
       "members": [
         {
-          "name": "stragglers_bps",
+          "name": "beasts_bps",
           "type": "core::integer::u16"
         },
         {
@@ -8751,6 +8877,24 @@
         {
           "name": "empty_reveal_limit",
           "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::expeditions::SiteClear": {
+      "type": "struct",
+      "name": "world_native::expeditions::SiteClear",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "home_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "reward",
+          "type": "core::option::Option::<world_native::resources::ResourceAmount>"
         }
       ]
     },
@@ -10149,6 +10293,14 @@
         {
           "name": "SpireDiscovered",
           "type": "world_native::exploration_rewards::ExtractedReward"
+        },
+        {
+          "name": "RewardChestOpened",
+          "type": "world_native::relics::RewardChestOpened"
+        },
+        {
+          "name": "RelicActivated",
+          "type": "world_native::relics::RelicActivated"
         }
       ]
     },
@@ -10611,7 +10763,7 @@
           "type": "()"
         },
         {
-          "name": "Stragglers",
+          "name": "Beasts",
           "type": "()"
         }
       ]
@@ -10970,6 +11122,32 @@
         }
       ]
     },
+    "world_native::relics::RelicActivated": {
+      "type": "struct",
+      "name": "world_native::relics::RelicActivated",
+      "members": [
+        {
+          "name": "relic_id",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "recipient",
+          "type": "world_native::relics::Recipient"
+        },
+        {
+          "name": "rate_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "duration_seconds",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "radius",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
     "world_native::relics::RelicChest": {
       "type": "struct",
       "name": "world_native::relics::RelicChest",
@@ -11028,6 +11206,28 @@
         },
         {
           "name": "draw_weight",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::relics::RewardChestOpened": {
+      "type": "struct",
+      "name": "world_native::relics::RewardChestOpened",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "amount",
           "type": "core::integer::u128"
         }
       ]
@@ -11611,11 +11811,19 @@
           "type": "core::integer::u16"
         },
         {
-          "name": "mercenaries_troop_lower_bound",
+          "name": "light_guard_lower_bound",
           "type": "core::integer::u16"
         },
         {
-          "name": "mercenaries_troop_upper_bound",
+          "name": "light_guard_upper_bound",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "heavy_guard_lower_bound",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "heavy_guard_upper_bound",
           "type": "core::integer::u16"
         },
         {
@@ -12917,5 +13125,5 @@
       ]
     }
   },
-  "identity": "706b281be1c8da6c91df2cf8856fa91981c9a779882440e7fbccf8f3c85844ac"
+  "identity": "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e"
 }

@@ -1,6 +1,5 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { configManager, getExplorerOwner, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
-import { getPlayerDisplayName } from "@/hooks/use-player-profile";
+import { configManager, getExplorerOwner, getStructureName } from "@bibliothecadao/eternum";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { ContractAddress, type ID, StructureType } from "@bibliothecadao/types";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -40,10 +39,9 @@ interface WorldEventEntityReader {
 export const createWorldEventEntityReader = (
   store: NativeFactStore,
   projection: WorldSpatialProjection,
+  /** The one name rule's text, from the caller's reader (React's: `usePlayerNames().text`). */
+  getPlayerName: (ownerAddress: string) => string,
 ): WorldEventEntityReader => {
-  // The one player resolver: identity profile over chain name, Player-xxxxxx for neither.
-  const getPlayerName = (ownerAddress: string): string => getPlayerDisplayName(ownerAddress);
-
   const getStructure = (entityId: number): WorldEventStructure | null => {
     const spatial = projection.getStructure(entityId);
     const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
@@ -56,7 +54,7 @@ export const createWorldEventEntityReader = (
       coordY: spatial.hexCoords.row,
       ownerAddress,
       ownerName: getPlayerName(ownerAddress),
-      structureName: getStructureName(structure, getIsBlitz()).name,
+      structureName: getStructureName(structure).name,
       structureType: structure.base.category as StructureType,
     };
   };

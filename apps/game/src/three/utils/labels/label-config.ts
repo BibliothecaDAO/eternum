@@ -37,7 +37,7 @@ export const LABEL_STYLES: Record<string, LabelStyle> = {
 /**
  * Hover styles that correspond to base styles
  */
-export const HOVER_STYLES: Record<string, LabelStyle> = {
+const HOVER_STYLES: Record<string, LabelStyle> = {
   MINE: {
     backgroundColor: "rgba(22, 101, 52, 0.4)",
   },
@@ -63,7 +63,7 @@ const BASE_LABEL_CONFIG: LabelConfig = {
     "rounded-md",
     "p-0.5",
     "-translate-x-1/2",
-    "text-sm",
+    "text-xxs",
     "flex",
     "items-center",
     "group",

@@ -1,5 +1,5 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import CircleButton from "@/ui/design-system/molecules/circle-button";
+import { HudIconButton } from "@/ui/design-system/kit/hud-elements";
 import { Popover } from "@/ui/design-system/molecules/popover";
 import { SETTINGS_POPOVER_ID, SettingsPanel } from "@/ui/modules/settings/settings";
 
@@ -14,17 +14,12 @@ export const SecondaryMenuItems = () => {
         id={SETTINGS_POPOVER_ID}
         ariaLabel="Settings"
         align="end"
-        className="w-[420px] overflow-y-auto"
+        className="w-hud-settings overflow-y-auto"
         trigger={
-          <CircleButton
-            variant="hud"
-            className="settings-selector"
-            tooltipLocation="bottom"
-            active={openPopoverId === SETTINGS_POPOVER_ID}
-            image={"settings" as const}
-            label={"Settings"}
-            aria-label="Settings"
-            size="topbar"
+          <HudIconButton
+            icon="settings"
+            label="Settings"
+            aria-expanded={openPopoverId === SETTINGS_POPOVER_ID}
             onClick={() => togglePopover(SETTINGS_POPOVER_ID)}
           />
         }

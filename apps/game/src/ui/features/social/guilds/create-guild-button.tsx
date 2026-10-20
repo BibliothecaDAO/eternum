@@ -1,9 +1,5 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-
-import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import Button from "@/ui/design-system/atoms/button";
-import TextInput from "@/ui/design-system/atoms/text-input";
 import { MAX_NAME_LENGTH } from "@bibliothecadao/types";
+import { HudButton, HudField, HudIconButton } from "@/ui/design-system/kit/hud-elements";
 
 interface CreateGuildButtonProps {
   handleCreateGuild: (guildName: string, isPublic: boolean) => void;
@@ -20,60 +16,29 @@ export const CreateGuildButton = ({
   isPublic,
   setIsPublic,
 }: CreateGuildButtonProps) => {
-  const setTooltip = useTooltipStore((state) => state.setTooltip);
-
   const handleSubmit = () => {
     handleCreateGuild(guildName, isPublic);
   };
 
   return (
     <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-      <TextInput
+      <HudField
         placeholder="Tribe Name . . ."
+        aria-label="Tribe name"
+        value={guildName}
         onChange={setGuildName}
         maxLength={MAX_NAME_LENGTH}
-        className="w-full btn-bronze"
       />
       <div className="flex items-center gap-2 sm:shrink-0">
-        <button
-          type="button"
-          className="grid h-9 w-9 place-items-center rounded-md border border-gold/30 bg-black/20 transition-colors hover:bg-gold/10"
+        <HudIconButton
+          icon={isPublic ? "unlock" : "lock"}
+          label={isPublic ? "Public" : "Private"}
           onClick={() => setIsPublic(!isPublic)}
-        >
-          {isPublic ? (
-            <SemanticIcon
-              name="unlock"
-              className="h-4 w-4 "
-              onMouseEnter={() => {
-                setTooltip({
-                  position: "bottom",
-                  content: <>Public</>,
-                });
-              }}
-              onMouseLeave={() => {
-                setTooltip(null);
-              }}
-            />
-          ) : (
-            <SemanticIcon
-              name="lock"
-              className="h-4 w-4 opacity-60"
-              onMouseEnter={() => {
-                setTooltip({
-                  position: "bottom",
-                  content: <>Private</>,
-                });
-              }}
-              onMouseLeave={() => {
-                setTooltip(null);
-              }}
-            />
-          )}
-        </button>
+        />
 
-        <Button variant="primary" onClick={handleSubmit} disabled={!guildName} className="min-w-[120px]">
+        <HudButton kind="primary" onClick={handleSubmit} disabled={!guildName}>
           Confirm
-        </Button>
+        </HudButton>
       </div>
     </div>
   );

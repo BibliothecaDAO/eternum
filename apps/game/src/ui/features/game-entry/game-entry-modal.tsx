@@ -3,6 +3,7 @@
  * hand-off to the game's route, where the doorway carries on while the map boots.
  */
 
+import { BLITZ_WORDS } from "@/ui/design-system/kit/words";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -23,9 +24,8 @@ import { isGameOver, isMember } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { gamePainting, modeLabel } from "@/shell/game-links";
 import { resultsHref } from "@/shell/season-tab/results-link";
-import { StateChip } from "@/shell/play/state-chip";
-import { BLITZ_WORDS } from "@/shell/words";
-import { ClockChip } from "@/shell/clock-chip";
+import { Pill } from "@/ui/design-system/kit/pill";
+import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 import { seasonRealm } from "@/shell/season";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
@@ -42,7 +42,7 @@ import {
   type GameEntryModalPhase as ModalPhase,
 } from "./game-entry-phase";
 
-import { gameModeConfigOf } from "@/config/game-modes";
+import { parseRendererOptions } from "@/play/navigation/play-route";
 import { resolveGameEntryTarget } from "./game-entry-navigation";
 import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } from "./selected-world-entity-wait";
 
@@ -420,8 +420,6 @@ export const GameEntryModal = ({
     setPreflightRetryNonce((current) => current + 1);
   }, [resetBootstrapDependentState]);
 
-  // The mode decides the first view; a game whose row names no mode opens on the map, the scene every mode has.
-  const entryScene = worldMeta?.mode ? gameModeConfigOf(worldMeta.mode).ui.entryScene : "map";
   const enterGame = useCallback(
     (spectate: boolean) => {
       if (!navigationEntryContext || hasEnteredGameRef.current) {
@@ -437,13 +435,13 @@ export const GameEntryModal = ({
         structureEntityId: useUIStore.getState().structureEntityId,
         worldMapReturnPosition: useUIStore.getState().worldMapReturnPosition,
         isSpectateMode: spectate,
-        entryScene,
+        renderer: parseRendererOptions(new URLSearchParams(window.location.search)),
       });
 
       navigate(entryTarget.url);
       window.dispatchEvent(new Event("urlChanged"));
     },
-    [entryScene, navigate, navigationEntryContext],
+    [navigate, navigationEntryContext],
   );
   const handleEnterGame = useCallback(
     () => enterGame(navigationEntryContext?.intent === "spectate"),
@@ -606,10 +604,9 @@ export const GameEntryModal = ({
     >
       {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
       {phase === "settlement" && isBlitzMode && worldMeta && (
-        <StateChip
-          icon="check"
-          text={`${BLITZ_WORDS.preparing} ${Math.min(worldMeta.player_count, worldMeta.roster_count)}/${worldMeta.roster_count}`}
-        />
+        <Pill icon="check">
+          {`${BLITZ_WORDS.preparing} ${Math.min(worldMeta.player_count, worldMeta.roster_count)}/${worldMeta.roster_count}`}
+        </Pill>
       )}
       {phase === "settlement" && isSeasonMode && !foundsOnItsOwn && settleStage === "idle" && (
         <>

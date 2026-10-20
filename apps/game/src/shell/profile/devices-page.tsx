@@ -1,9 +1,11 @@
+import { KEEP, PROFILE_WORDS } from "@/ui/design-system/kit/words";
 import { useCallback, useEffect, useState } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
 import { listOpenShards, openKnownShards } from "@/runtime/world/shards";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
-import { Button } from "@/ui/design-system/kit/button";
+import { Icon } from "@/ui/design-system/icon";
+import { AppButton, AppDialog, AppSetting } from "@/ui/design-system/kit/app-elements";
 import {
   getOrCreateDeviceKey,
   readAccountDevices,
@@ -13,11 +15,7 @@ import {
 
 import { useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
-import { StateChip } from "../play/state-chip";
-import { ServiceFailure } from "../service-failure";
-import { PROFILE_WORDS } from "../words";
-import { Confirm } from "./confirm";
-import { SettingRow, SettingRows } from "./setting-row";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 
 /** One device key and the shards where it signs for the player's account. */
 interface Device {
@@ -39,6 +37,16 @@ const readDevices = async (address: string) => {
   };
 };
 
+/**
+ * The account's devices with this one among them: a device signed in is the account's, whether or not its
+ * registration has reached the shards' events yet (right after sign-in it may not have: qa-app-1 P3-5 read an empty
+ * list). A device removed elsewhere never reaches this list; the page says it was removed instead.
+ */
+const withThisDevice = (devices: Device[], thisDevice: string): Device[] =>
+  devices.some((device) => BigInt(device.key) === BigInt(thisDevice))
+    ? devices
+    : [{ key: thisDevice, shards: [] }, ...devices];
+
 /** A device's name until the identity Worker stores names at registration: "Device" and its key's last four. */
 const deviceName = (key: string) => PROFILE_WORDS.device(BigInt(key).toString(16).slice(-4));
 
@@ -59,12 +67,12 @@ export const DevicesCard = ({ realmsId }: { realmsId: string }) => {
     if (!address) return;
     readDevices(address).then(
       ({ devices, partial }) => {
-        setDevices(devices);
+        setDevices(withThisDevice(devices, thisDevice));
         setFailed(partial ? "partial" : null);
       },
       (cause: unknown) => setFailed(cause),
     );
-  }, [address]);
+  }, [address, thisDevice]);
   useEffect(load, [load]);
 
   const remove = async (device: Device) => {
@@ -84,23 +92,34 @@ export const DevicesCard = ({ realmsId }: { realmsId: string }) => {
 
   if (player.isError || failed)
     return (
-      <div className="flex flex-col gap-3">
+      <>
         {devices && <DeviceRows devices={devices} thisDevice={thisDevice} removing={removing} onRemove={setAsking} />}
-        <ServiceFailure service="devices" error={player.error ?? failed} retry={load} />
-      </div>
+        <div className="p-3">
+          <ServiceFailure service="devices" error={player.error ?? failed} retry={load} />
+        </div>
+      </>
     );
   if (!devices) return <Loading />;
   return (
     <>
       <DeviceRows devices={devices} thisDevice={thisDevice} removing={removing} onRemove={setAsking} />
       {asking && (
-        <Confirm
-          question={PROFILE_WORDS.removeAsk(deviceName(asking.key))}
-          cost={PROFILE_WORDS.removeCost}
-          verb={PROFILE_WORDS.remove}
-          onKeep={() => setAsking(null)}
-          onConfirm={() => void remove(asking)}
-        />
+        <AppDialog
+          title={PROFILE_WORDS.removeAsk(deviceName(asking.key))}
+          onClose={() => setAsking(null)}
+          actions={
+            <>
+              <AppButton kind="quiet" onClick={() => setAsking(null)}>
+                {KEEP}
+              </AppButton>
+              <AppButton kind="secondary" tone="bad" onClick={() => void remove(asking)}>
+                {PROFILE_WORDS.remove}
+              </AppButton>
+            </>
+          }
+        >
+          {PROFILE_WORDS.removeCost}
+        </AppDialog>
       )}
     </>
   );
@@ -117,30 +136,29 @@ const DeviceRows = ({
   thisDevice: string;
   removing: string | null;
   onRemove: (device: Device) => void;
-}) => (
-  <SettingRows>
-    {devices.map((device) => {
-      const own = BigInt(device.key) === BigInt(thisDevice);
-      return (
-        <SettingRow
-          key={device.key}
-          icon="monitor"
-          name={own ? PROFILE_WORDS.thisDevice : deviceName(device.key)}
-          end={
-            own ? (
-              <StateChip icon="check" />
-            ) : (
-              <Button
-                role="outline"
-                word={PROFILE_WORDS.remove}
-                loading={removing === device.key ? PROFILE_WORDS.removing : undefined}
-                disabled={removing !== null}
-                onClick={() => onRemove(device)}
-              />
-            )
-          }
-        />
-      );
-    })}
-  </SettingRows>
-);
+}) =>
+  devices.map((device) => {
+    const own = BigInt(device.key) === BigInt(thisDevice);
+    return (
+      <AppSetting
+        key={device.key}
+        icon="monitor"
+        name={own ? PROFILE_WORDS.thisDevice : deviceName(device.key)}
+        control={
+          own ? (
+            <Icon name="check" size={22} />
+          ) : (
+            <AppButton
+              kind="secondary"
+              tone="bad"
+              busy={removing === device.key ? PROFILE_WORDS.removing : undefined}
+              disabled={removing !== null}
+              onClick={() => onRemove(device)}
+            >
+              {PROFILE_WORDS.remove}
+            </AppButton>
+          )
+        }
+      />
+    );
+  });

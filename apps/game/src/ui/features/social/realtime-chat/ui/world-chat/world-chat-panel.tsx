@@ -1,10 +1,12 @@
+import { formatClockTime } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { Position } from "@bibliothecadao/eternum";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
-import { resolveChatSenderName } from "@/hooks/use-player-profile";
+import { type PlayerNames, resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import {
   useRealtimeChatActions,
   useRealtimeChatSelector,
@@ -79,10 +81,10 @@ const CoordinateNavButton = ({
 }) => {
   return (
     <button
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-gold hover:text-kit-muted transition-colors duration-200 rounded bg-gold/15 hover:bg-gold/25"
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-hud-accent hover:text-hud-cue transition-colors duration-200 rounded bg-hud-chosen hover:bg-hud-chosen"
       onClick={() => onNavigate?.(coordinates)}
     >
-      <span className="text-sm">{`${coordinates.x}, ${coordinates.y}`}</span>
+      <span className="text-hud-label">{`${coordinates.x}, ${coordinates.y}`}</span>
       <SemanticIcon name="location" className="w-3 h-3" />
     </button>
   );
@@ -91,18 +93,14 @@ const CoordinateNavButton = ({
 const formatWorldMessageTime = (message: WorldChatMessage) => {
   const created = message.createdAt instanceof Date ? message.createdAt : new Date(message.createdAt);
   if (created instanceof Date && !Number.isNaN(created.getTime())) {
-    return created.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
+    return formatClockTime(created.getTime() / 1000);
   }
   return "Now";
 };
 
 /** The registered name first; the chat server's display name only for a sender this game has not registered. */
-const formatSenderName = (message: WorldChatMessage) =>
-  resolveChatSenderName(message.sender.playerId, message.sender.displayName) || "Unknown adventurer";
+const formatSenderName = (names: PlayerNames, message: WorldChatMessage) =>
+  resolveChatSenderName(names, message.sender.playerId, message.sender.displayName) || "Unknown adventurer";
 
 export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelProps) {
   // Select value directly to prevent infinite re-renders
@@ -129,6 +127,8 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   const hasInitialAnchorRef = useRef(false);
 
   const navigateToMapView = useNavigateToMapView();
+  // A sender's name is read as the list draws, and the list draws again when one lands.
+  const names = usePlayerNames();
   const handleNavigateToCoordinates = useCallback(
     (coordinates: { x: number; y: number }) => {
       navigateToMapView(Position.fromNormalized({ x: coordinates.x, y: coordinates.y }));
@@ -272,7 +272,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
     <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
       <div className="flex-1 min-h-0 px-4 py-3">
         {!hasChannelAccess && (
-          <p className="text-sm text-kit-muted">{reconnecting ? "Reconnecting…" : "Chat unavailable."}</p>
+          <p className="text-hud-body text-hud-cue">{reconnecting ? "Reconnecting…" : "Chat unavailable."}</p>
         )}
         {hasChannelAccess && zone && (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -281,39 +281,36 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
               <div ref={topSentinelRef} className="h-1" />
 
               {zone.historyError && (
-                <div role="status" className="mb-2 text-sm text-gold/70">
-                  {zone.historyError}{" "}
-                  <button
-                    type="button"
-                    className="text-gold underline"
-                    onClick={() => void loadHistory(zone.lastFetchedCursor ?? undefined)}
-                  >
-                    Retry
-                  </button>
+                <div className="mb-2">
+                  <HudNotice
+                    tone="bad"
+                    line={zone.historyError}
+                    retry={() => loadHistory(zone.lastFetchedCursor ?? undefined)}
+                  />
                 </div>
               )}
               {zone.isFetchingHistory && (
                 <div className="flex justify-center py-2">
-                  <span className="text-sm text-kit-muted">Loading older messages...</span>
+                  <span className="text-hud-label text-hud-cue">Loading older messages...</span>
                 </div>
               )}
 
               {/* Anchored to the input: a short history sits at the bottom, next to where the reply goes. */}
               <ul className="mt-auto flex flex-col gap-0.5">
                 {messages.map((message, index) => {
-                  const senderName = formatSenderName(message);
+                  const senderName = formatSenderName(names, message);
                   const messageParts = processMessage(message.content);
                   return (
                     <Fragment key={message.id}>
                       {dateSeparators.has(index) && (
                         <li key={`sep-${index}`} className="flex items-center gap-2 py-2 px-4">
-                          <div className="flex-1 border-t border-gold/20" />
-                          <span className="text-sm text-kit-muted">{dateSeparators.get(index)}</span>
-                          <div className="flex-1 border-t border-gold/20" />
+                          <div className="flex-1 border-t border-hud-line" />
+                          <span className="text-hud-label text-hud-cue">{dateSeparators.get(index)}</span>
+                          <div className="flex-1 border-t border-hud-line" />
                         </li>
                       )}
                       {/* Every message carries its author: avatar, time and name, then the text. */}
-                      <li className="flex items-start gap-2 text-sm leading-snug text-white/90">
+                      <li className="flex items-start gap-2 text-hud-body leading-snug text-hud-ink">
                         <UserAvatar
                           name={senderName}
                           address={message.sender.playerId}
@@ -322,10 +319,10 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                           className="mt-0.5 shrink-0"
                         />
                         <p className="min-w-0 flex-1 break-words">
-                          <span className="text-white/30">[{formatWorldMessageTime(message)}]</span>{" "}
+                          <span className="text-hud-cue">[{formatWorldMessageTime(message)}]</span>{" "}
                           <span
                             onClick={() => handleUserClick(message.sender.playerId)}
-                            className="cursor-pointer text-gold/90 transition-colors hover:text-gold"
+                            className="cursor-pointer text-hud-accent transition-colors hover:text-hud-accent"
                             title={`Click to send DM to ${senderName}`}
                           >
                             &lt;{senderName}&gt;
@@ -348,7 +345,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                   );
                 })}
                 {messages.length === 0 && !zone.isFetchingHistory && !zone.historyError && (
-                  <li className="text-sm text-kit-muted">No messages yet. Be the first to say hello!</li>
+                  <li className="text-hud-body text-hud-cue">No messages yet. Be the first to say hello!</li>
                 )}
               </ul>
             </div>

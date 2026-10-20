@@ -21,14 +21,14 @@ vi.mock("@/ui/features/social/player/use-in-game-leaderboard", () => ({
 }));
 vi.mock("@/ui/features/social/components/social-board", () => ({
   LEADERBOARD_POPOVER_ID: "leaderboard",
-  SocialBoard: () => null,
+  LeaderboardSurface: () => null,
 }));
 
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { overrideSpectateIntent, resolveSpectateIntent } from "@/utils/spectator-session";
 import { StructureType } from "@bibliothecadao/types";
 
-import { IdentityChip } from "./identity-chip";
+import { IdentityChip, playerReadings } from "./identity-chip";
 
 let unmount: (() => Promise<void>) | null = null;
 afterEach(async () => {
@@ -51,7 +51,7 @@ const openChip = async () => {
     ),
   );
   unmount = () => act(async () => root.unmount());
-  await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Identity"]')!.click());
+  await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Account"]')!.click());
   return document.body;
 };
 
@@ -70,4 +70,24 @@ it("says a spectator's account owns no realm here when none of the game's struct
   const page = await openChip();
   expect(page.textContent).toContain("Your account owns no realm in this game.");
   expect([...page.querySelectorAll("button")].map((button) => button.textContent)).not.toContain("Play");
+});
+
+// The top line as a player reads it, one reading a cell: the score once, its noun once ("35 points", never "35 points
+// points"), and "1 point" for one.
+it.each([
+  { points: 35, reads: "35 points" },
+  { points: 1, reads: "1 point" },
+  { points: 0, reads: "0 points" },
+])("writes a score of $points as '$reads' on the top line", async ({ points, reads }) => {
+  const TopLine = () => <p>{playerReadings("clientlane", { rank: 1, points })}</p>;
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const container = document.createElement("div");
+  document.body.replaceChildren(container);
+  const root = createRoot(container);
+  await act(async () => root.render(<TopLine />));
+  unmount = () => act(async () => root.unmount());
+  expect([...container.querySelector("p")!.children].map((cell) => cell.textContent)).toEqual([
+    "clientlane",
+    `#1 · ${reads}`,
+  ]);
 });

@@ -1,4 +1,5 @@
-import { applyGameEndFrost, mapAnimationTime as time } from "../effects/game-end-freeze";
+import { applyEndgameFrost } from "../effects/endgame/field";
+import { mapAnimationTime as time } from "../effects/endgame/state";
 import { NormalRGPacking } from "three";
 import type Node from "three/src/nodes/core/Node.js";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
@@ -331,7 +332,7 @@ function shadeTerrainSurface(baseColor: Node<"vec3">, grassContrast: Node<"float
   const originalBorderColor = mix(surfaceColor.mul(0.45), vec3(0.14), darkSurface);
   // Grass needs a muted lighter edge; other surfaces retain the subtle original grid.
   const borderColor = mix(originalBorderColor, vec3(0.22, 0.26, 0.19), grassContrast.mul(0.65));
-  return applyGameEndFrost(mix(surfaceColor, borderColor, border.mul(0.42).mul(normalLocal.y.abs())));
+  return applyEndgameFrost(mix(surfaceColor, borderColor, border.mul(0.42).mul(normalLocal.y.abs())));
 }
 
 function selectStrongestGroundPair(weights0: Node<"vec4">, weights1: Node<"vec4">): Node<"vec4"> {
@@ -373,7 +374,7 @@ function shadeWithSurfaceBasalt(ground: Node<"vec3">, grassContrast: Node<"float
     If(weight.greaterThan(0), () => {
       const basalt = createBasaltSurface(positionWorld.xz);
       const coverage = weight.mul(mix(basalt.softEdge, 1, smoothstep(0.55, 1, weight)));
-      result.assign(mix(result, applyGameEndFrost(basalt.color), coverage));
+      result.assign(mix(result, applyEndgameFrost(basalt.color), coverage));
     });
     return result;
   })();

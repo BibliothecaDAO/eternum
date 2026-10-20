@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { COMPACT_HUD_MEDIA_QUERY } from "@/hooks/helpers/use-compact-hud";
 import { type SurfaceAnchor, usePopoverStore } from "@/hooks/store/use-popover-store";
 
+import { HudSelect, HudWindow } from "@/ui/design-system/kit/hud-elements";
+
 import { PopoverPanel, SurfaceFrame, SurfaceHost } from "./popover";
 import { dragHeader, panelOf, placementOf } from "./surface-panel-testing";
 
@@ -183,10 +185,96 @@ describe("a desk the player dragged, opened again", () => {
     expect([panelOf("help")?.textContent?.includes("another army"), placementOf("help")]).toEqual([true, DRAGGED]);
   });
 
+  it("leaves a HUD window its own surface, centres it and drags it by its bar", async () => {
+    await mountHost();
+    await act(async () =>
+      usePopoverStore.getState().openSurface({
+        id: "transfer",
+        content: (
+          <HudWindow title="Transfer" size="workspace" onClose={() => {}}>
+            <p>Send from</p>
+          </HudWindow>
+        ),
+      }),
+    );
+    const panel = panelOf("transfer")!;
+    // The window is the surface: the panel draws no box, padding or width of its own around it.
+    expect(["rounded-xl", "p-4", "w-80", "w-auto"].filter((look) => panel.classList.contains(look))).toEqual([]);
+    expect(panel.firstElementChild?.classList.contains("ui-window")).toBe(true);
+    expect(placementOf("transfer")).toEqual(CENTRED);
+    await dragHeader("transfer", { x: 300, y: 200 });
+    expect(placementOf("transfer")).toEqual(DRAGGED);
+  });
+
+  it("frames a SurfaceFrame as the sheet's window, with no panel box around it, and still drags it by its bar", async () => {
+    await mountHost();
+    await act(async () => usePopoverStore.getState().openSurface({ id: "transfer", content: fullModal }));
+    const panel = panelOf("transfer")!;
+    expect(panel.classList.contains("ui-popover")).toBe(false);
+    const frame = panel.firstElementChild!;
+    expect(frame.classList.contains("ui-window")).toBe(true);
+    expect(frame.querySelector(".ui-window__bar")?.hasAttribute("data-popover-drag-handle")).toBe(true);
+    expect(frame.querySelector('button[aria-label="Close"]')).not.toBeNull();
+    expect(placementOf("transfer")).toEqual(CENTRED);
+    await dragHeader("transfer", { x: 300, y: 200 });
+    expect(placementOf("transfer")).toEqual(DRAGGED);
+  });
+
+  it("draws a small popover in the sheet's panel look, sized and padded by the panel", async () => {
+    const opened = await openPanel(TILE, smallPopover);
+    const panel = document.querySelector<HTMLElement>('[data-popover-panel="surface"]')!;
+    expect(["ui", "ui-popover", "w-80", "p-4", "rounded-xl"].every((look) => panel.classList.contains(look))).toBe(
+      true,
+    );
+    await opened.close();
+  });
+
   it("opens centred for a player whose browser still holds a position saved by an older client", async () => {
     window.localStorage.setItem("eternum.free-surface-offset", JSON.stringify({ x: 300, y: 200 }));
     await mountHost();
     await openDesk("production");
     expect(placementOf("production")).toEqual(CENTRED);
+  });
+});
+
+describe("a select inside the panel", () => {
+  beforeEach(() => useScreen(1440, 900));
+
+  it("takes a choice from its list, drawn outside the panel, without closing the panel; a press elsewhere closes it", async () => {
+    const dismiss = vi.fn();
+    const chosen = vi.fn();
+    const root = createRoot(document.createElement("div"));
+    await act(async () =>
+      root.render(
+        <PopoverPanel id="settings" ariaLabel="Settings" anchor={TILE} onDismiss={dismiss}>
+          <HudSelect
+            label="Quality"
+            value="high"
+            options={[
+              { value: "balanced", label: "Balanced" },
+              { value: "high", label: "High" },
+            ]}
+            onChange={chosen}
+          />
+        </PopoverPanel>,
+      ),
+    );
+    const panel = document.querySelector<HTMLElement>('[data-popover-panel="settings"]')!;
+    await act(async () => panel.querySelector<HTMLButtonElement>(".ui-select")!.click());
+    const balanced = [...document.querySelectorAll<HTMLButtonElement>(".ui-select__layer .ui-menu__item")].find(
+      (item) => item.textContent === "Balanced",
+    )!;
+    expect(panel.contains(balanced)).toBe(false);
+
+    await act(async () => {
+      balanced.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      balanced.click();
+    });
+    expect(dismiss).not.toHaveBeenCalled();
+    expect(chosen).toHaveBeenCalledWith("balanced");
+
+    await act(async () => document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })));
+    expect(dismiss).toHaveBeenCalledTimes(1);
+    await act(async () => root.unmount());
   });
 });

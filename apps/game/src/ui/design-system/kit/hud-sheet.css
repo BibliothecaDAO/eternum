@@ -1,0 +1,2033 @@
+/* The HUD's elements (hud-elements.tsx), built only from the HUD scope of src/tokens.ts (the --hud-* variables) and the
+   one spacing scale. Each age's accent (HUD_MODES) draws every line, title, label, tab and focus ring; the primary
+   button and what is earned stay gold. A state reads the same whether the pointer or the lab asks for it: hover,
+   pressed and focus also answer to data-state, so /lab/kit can show each one. */
+.ui {
+  font-family: var(--hud-font);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-leading-body);
+  font-weight: var(--hud-weight-body);
+}
+/* Every control of the sheet takes the pointer wherever it stands. The HUD's bands and columns let the pointer through
+   to the map, so a control placed straight in one, outside a panel, would otherwise never be pressed. */
+button[class^="ui"] {
+  pointer-events: auto;
+}
+
+/* ── Panel: the HUD's one panel, a header band naming it over a divider, then its body; a section is a part of one. ── */
+/* A panel is a column: given a height, its body takes what the head leaves and may shrink below its content, so a
+   list inside it scrolls within the panel rather than pushing past it. */
+.ui-panel {
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-panel);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+}
+/* The header band: the name, then the cue on the same line while both fit whole. A name is never cut to make room for
+   its cue: the cue wraps under it instead, at the right, and a name wider than the whole band is cut alone. */
+.ui-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(spacing.1) theme(spacing.2);
+  border-bottom: 1px solid var(--hud-divider);
+  padding: theme(spacing.2) theme(spacing.3);
+  color: var(--hud-muted);
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
+  font-weight: var(--hud-weight-title);
+}
+/* The panel's name: its chevron (when it folds), its icon and its title, one line. */
+.ui-panel__name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: theme(spacing.2);
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+button.ui-panel__name {
+  cursor: pointer;
+  user-select: none;
+}
+.ui-panel__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-panel__chevron,
+.ui-panel__icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.ui-panel__chevron {
+  opacity: 0.8;
+  transition: transform var(--hud-fast) var(--hud-ease);
+}
+.ui-panel__chevron[data-folded="true"] {
+  transform: rotate(-90deg);
+}
+.ui-panel__cue {
+  flex: none;
+  margin-left: auto;
+  color: var(--hud-cue);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+}
+/* The body's padding is a default the caller's layout may change (bodyClassName's p-0, pt-0): it carries no weight
+   of its own, so a utility always wins whichever stylesheet loads last. */
+:where(.ui-panel__body) {
+  padding: theme(spacing[1.5]) theme(spacing.3) theme(spacing.3);
+}
+.ui-panel__body {
+  min-height: 0;
+}
+/* A body of sections: each section brings its own padding, a divider between each. */
+.ui-panel__body[data-divided] {
+  padding: 0;
+}
+.ui-panel__body[data-divided] > * + * {
+  border-top: 1px solid var(--hud-divider);
+}
+
+/* ── Button: primary (the one verb), secondary (beside it), quiet (a way out), icon (a square of the secondary). ── */
+/* A button never outgrows the box it stands in: its words shrink and truncate inside it instead. */
+.ui-button {
+  display: inline-flex;
+  max-width: 100%;
+  height: var(--hud-control);
+  align-items: center;
+  justify-content: center;
+  gap: theme(spacing[1.5]);
+  border: 1px solid transparent;
+  border-radius: var(--hud-radius-control);
+  padding: 0 theme(spacing.3);
+  font-family: inherit;
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+  font-weight: var(--hud-weight-strong);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--hud-fast) var(--hud-ease),
+    border-color var(--hud-fast) var(--hud-ease),
+    transform var(--hud-fast) var(--hud-ease);
+}
+.ui-button[data-size="sm"] {
+  height: calc(var(--hud-control) - 8px);
+  padding: 0 theme(spacing.2);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+}
+.ui-button[data-kind="primary"] {
+  background: rgb(var(--hud-gold));
+  color: rgb(var(--hud-dark));
+  box-shadow: var(--hud-shadow-control);
+}
+.ui-button[data-kind="primary"]:is(:hover, [data-state="hover"]) {
+  background: color-mix(in srgb, rgb(var(--hud-gold)) 88%, white);
+}
+.ui-button[data-kind="secondary"] {
+  border-color: var(--hud-line-strong);
+  background: transparent;
+  color: rgb(var(--hud-accent));
+}
+.ui-button[data-kind="quiet"] {
+  background: transparent;
+  color: var(--hud-muted);
+}
+/* A quiet painting that toggles (a star that pins): faint until pressed, brighter under the pointer. */
+.ui-button[data-kind="quiet"][data-icon-only][aria-pressed="false"] > img {
+  opacity: 0.35;
+  transition: opacity var(--hud-fast) var(--hud-ease);
+}
+.ui-button[data-kind="quiet"][data-icon-only][aria-pressed="false"]:is(:hover, [data-state="hover"]) > img {
+  opacity: 0.7;
+}
+/* What destroys something (delete, disband, dismiss): one look, a red well with a red line and the ink on it, in every
+   age, never the accent's. Hover deepens the red, a press darkens it. */
+.ui-button[data-kind="danger"] {
+  border-color: color-mix(in srgb, var(--hud-bad) 70%, transparent);
+  background: color-mix(in srgb, var(--hud-bad) 22%, var(--hud-surface-to));
+  color: rgb(var(--hud-ink));
+}
+.ui-button[data-kind="danger"]:is(:hover, [data-state="hover"]) {
+  border-color: var(--hud-bad);
+  background: color-mix(in srgb, var(--hud-bad) 36%, var(--hud-surface-to));
+}
+.ui-button[data-kind="danger"]:is(:active, [data-state="pressed"]):not(:disabled) {
+  background: color-mix(in srgb, var(--hud-bad) 14%, var(--hud-surface-to));
+}
+.ui-button:is([data-kind="secondary"], [data-kind="quiet"]):is(:hover, [data-state="hover"]) {
+  background: var(--hud-hover);
+  color: rgb(var(--hud-accent));
+}
+.ui-button[data-icon-only] {
+  width: var(--hud-control);
+  padding: 0;
+}
+.ui-button:is(:active, [data-state="pressed"]):not(:disabled) {
+  transform: translateY(1px);
+}
+.ui-button[data-kind="primary"]:is(:active, [data-state="pressed"]):not(:disabled) {
+  background: color-mix(in srgb, rgb(var(--hud-gold)) 82%, black);
+}
+.ui-button:is([data-kind="secondary"], [data-kind="quiet"]):is(:active, [data-state="pressed"]):not(:disabled),
+.ui-button[aria-pressed="true"] {
+  background: var(--hud-chosen);
+}
+.ui-button:is(:focus-visible, [data-state="focus"]),
+.ui-field:is(:focus-within, [data-state="focus"]),
+.ui-tab:is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+/* Disabled keeps the button's own shape and colour, only fainter: it is the same button, not a different one. */
+.ui-button:is(:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+/* ── Field: what is typed (a name, a search, an amount), in a well. ── */
+.ui-field {
+  display: inline-flex;
+  height: var(--hud-control);
+  align-items: center;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: 0 theme(spacing.2);
+  transition: border-color var(--hud-fast) var(--hud-ease);
+}
+.ui-field:is(:hover, [data-state="hover"]) {
+  border-color: var(--hud-line-strong);
+}
+.ui-field input {
+  width: 6ch;
+  border: 0;
+  background: transparent;
+  color: rgb(var(--hud-ink));
+  font-family: inherit;
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+.ui-field:has(input:disabled) {
+  opacity: 0.45;
+}
+/* A field on its own (a name, a search, an amount) is as wide as its container; the amount rows size their own. */
+.ui-field[data-fill] {
+  display: flex;
+  width: 100%;
+  gap: theme(spacing.2);
+}
+.ui-field[data-fill] input {
+  min-width: 0;
+  flex: 1 1 auto;
+  width: auto;
+}
+/* ── Tooltip: the app's one tooltip, and the map's order line in it. Its words are its own: no caller restyles them. ── */
+.ui-tip {
+  display: inline-flex;
+  max-width: min(24rem, calc(100vw - 3.5rem));
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing[0.5]);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+  padding: theme(spacing[1.5]) theme(spacing.3);
+  text-align: center;
+}
+.ui-tip__line {
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-leading-body);
+  font-weight: var(--hud-weight-body);
+}
+/* What a verb costs, exactly as charged, one compact line: under its order in a tip, centred under its button, at the
+   left of a window's foot. */
+.ui-cost {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* ── Tabs: a strip of choices; the chosen one in gold over a gold rule. ── */
+.ui-tabs {
+  display: flex;
+  gap: theme(spacing.1);
+  border-bottom: 1px solid var(--hud-divider);
+}
+.ui-tab {
+  display: inline-flex;
+  height: var(--hud-control);
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--hud-radius-control) var(--hud-radius-control) 0 0;
+  background: transparent;
+  padding: 0 theme(spacing.3);
+  color: var(--hud-cue);
+  font-family: inherit;
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
+  font-weight: var(--hud-weight-title);
+  cursor: pointer;
+  transition:
+    color var(--hud-fast) var(--hud-ease),
+    background-color var(--hud-fast) var(--hud-ease);
+}
+.ui-tabs[data-size="sm"] .ui-tab {
+  height: calc(var(--hud-control) - 8px);
+  padding: 0 theme(spacing.2);
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-leading-body);
+}
+/* A phone's sheet is narrower than a full-size strip: each tab at the body's size, closer together. The phone layout's
+ * width, not a container's: a strip that sizes to its tabs (the top bar's) cannot also be sized by them. */
+@media (max-width: 1023px) {
+  .ui-tab {
+    padding: 0 theme(spacing.2);
+    font-size: var(--hud-text-body);
+    line-height: var(--hud-leading-body);
+  }
+}
+.ui-tab:is(:hover, [data-state="hover"]) {
+  background: var(--hud-hover);
+  color: var(--hud-muted);
+}
+.ui-tab[aria-selected="true"] {
+  border-bottom-color: rgb(var(--hud-accent));
+  color: rgb(var(--hud-accent));
+}
+.ui-tab:is(:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* ── Chip: a small tag: a count, a state, a troop tier. ── */
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing[0.5]);
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-chip);
+  background: var(--hud-hover);
+  padding: 1px theme(spacing[1.5]);
+  color: rgb(var(--hud-accent));
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+  font-variant-numeric: tabular-nums;
+  /* A chip is one tag: it never breaks over two lines, and gives way to the words beside it instead. */
+  flex: none;
+  white-space: nowrap;
+}
+/* A chip's paintings: two overlap, so a pair reads as one thing. */
+.ui-chip__icons {
+  display: inline-flex;
+}
+.ui-chip__icons > * + * {
+  margin-left: calc(-1 * theme(spacing.1));
+}
+.ui-chip[data-tone="good"] {
+  border-color: color-mix(in srgb, var(--hud-good) 45%, transparent);
+  background: color-mix(in srgb, var(--hud-good) 14%, transparent);
+  color: var(--hud-good);
+}
+.ui-chip[data-tone="bad"] {
+  border-color: color-mix(in srgb, var(--hud-bad) 45%, transparent);
+  background: color-mix(in srgb, var(--hud-bad) 14%, transparent);
+  color: var(--hud-bad);
+}
+.ui-chip[data-tone="warn"] {
+  border-color: color-mix(in srgb, var(--hud-warn) 45%, transparent);
+  background: color-mix(in srgb, var(--hud-warn) 14%, transparent);
+  color: var(--hud-warn);
+}
+/* A chip on a primary button's gold: its tones are washes over the dark, so on gold it takes the dark under it. */
+.ui-button[data-kind="primary"] .ui-chip {
+  background: rgb(var(--hud-dark));
+}
+/* ── Dial: a number in a ring that drains, in a tone near its end. ── */
+.ui-dial {
+  position: relative;
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+.ui-dial > svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+.ui-dial circle {
+  fill: none;
+  stroke-width: 4;
+}
+.ui-dial__track {
+  stroke: var(--hud-divider);
+}
+.ui-dial__left {
+  stroke: rgb(var(--hud-accent));
+  stroke-linecap: round;
+}
+.ui-dial[data-tone="warn"] {
+  color: var(--hud-warn);
+}
+.ui-dial[data-tone="warn"] .ui-dial__left {
+  stroke: var(--hud-warn);
+}
+.ui-dial[data-tone="bad"] {
+  color: var(--hud-bad);
+}
+.ui-dial[data-tone="bad"] .ui-dial__left {
+  stroke: var(--hud-bad);
+}
+
+.ui-chip[data-tier] {
+  border-color: rgb(var(--tier) / 0.45);
+  background: linear-gradient(180deg, rgb(var(--tier) / 0.3), rgb(var(--tier) / 0.1));
+  color: color-mix(in srgb, rgb(var(--tier)) 60%, white);
+}
+.ui-chip[data-tier="1"] {
+  --tier: var(--hud-t1);
+}
+.ui-chip[data-tier="2"] {
+  --tier: var(--hud-t2);
+}
+.ui-chip[data-tier="3"] {
+  --tier: var(--hud-t3);
+  background: rgb(var(--hud-t3));
+  color: white;
+}
+
+/* ── Rarity: a chest's tier, common to legendary; its frame thickens and warms with the tier, its pips fill. ── */
+.ui-rarity {
+  --rarity: var(--hud-rarity-1);
+  display: inline-flex;
+  height: 26px;
+  flex: none;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  border: 1px solid var(--rarity);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-surface-to);
+  padding: 0 theme(spacing.2);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+  white-space: nowrap;
+}
+.ui-rarity[data-tier="2"] {
+  --rarity: var(--hud-rarity-2);
+  border-width: 2px;
+}
+.ui-rarity[data-tier="3"] {
+  --rarity: var(--hud-rarity-3);
+  border-width: 3px;
+  border-style: double;
+}
+.ui-rarity[data-tier="4"] {
+  --rarity: var(--hud-rarity-4);
+  border-width: 4px;
+  border-style: double;
+}
+.ui-rarity[data-tier="5"] {
+  --rarity: var(--hud-rarity-5);
+  border-width: 5px;
+  border-style: double;
+  box-shadow: 0 0 10px var(--hud-rarity-5);
+}
+.ui-rarity__pips {
+  display: inline-flex;
+  gap: 3px;
+}
+.ui-rarity__pips > i {
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgb(var(--hud-gold));
+  border-radius: var(--hud-radius-round);
+}
+.ui-rarity__pips > i[data-filled] {
+  background: rgb(var(--hud-gold));
+}
+
+/* ── Ring: a painting in a round well, its numbers on badges pinned to the rim, all in one badge: buildings top left,
+   the time left top right, the amount on the foot; a production arc around it. The two top badges share one line as
+   wide as the rim, so they push apart rather than cover each other. ── */
+.ui-ring {
+  --ring-size: 48px;
+  --ring-face: 40px;
+  --ring-tone: rgb(var(--hud-accent) / 0.2);
+  position: relative;
+  display: inline-grid;
+  width: var(--ring-size);
+  height: var(--ring-size);
+  flex: none;
+  place-items: center;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+}
+.ui-ring[data-production="producing"] {
+  --ring-tone: var(--hud-good);
+}
+.ui-ring[data-production="idle"] {
+  --ring-tone: var(--hud-warn);
+}
+button.ui-ring {
+  cursor: pointer;
+}
+button.ui-ring:focus-visible {
+  outline: none;
+}
+button.ui-ring:focus-visible .ui-ring__face {
+  box-shadow: var(--hud-focus);
+}
+.ui-ring__arc {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--hud-radius-round);
+  background: conic-gradient(var(--ring-tone) var(--ring-arc, 0deg), rgb(var(--hud-accent) / 0.2) 0);
+  mask: radial-gradient(circle closest-side, transparent calc(100% - 4px), black calc(100% - 3px));
+}
+.ui-ring__face {
+  display: grid;
+  width: var(--ring-face);
+  height: var(--ring-face);
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-round);
+  background: radial-gradient(circle at 50% 35%, var(--hud-surface-from), var(--hud-surface-to));
+}
+.ui-ring[data-production] .ui-ring__face {
+  border-color: var(--ring-tone);
+}
+.ui-ring__top {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  display: flex;
+  width: max-content;
+  min-width: calc(100% + 4px);
+  gap: 2px;
+  transform: translateX(-50%);
+}
+.ui-ring__badge {
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-surface-to);
+  padding: 0 3px;
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-badge);
+  line-height: var(--hud-leading-badge);
+  font-weight: var(--hud-weight-badge);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ui-ring__badge[data-at="timer"] {
+  margin-left: auto;
+}
+.ui-ring__badge[data-at="foot"] {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ── List row: one thing of a list (a holding, a player): what it is, what it says, its value; chosen, a gold bar. ── */
+.ui-row {
+  display: flex;
+  min-height: var(--hud-control);
+  align-items: center;
+  gap: theme(spacing.2);
+  border-left: 2px solid transparent;
+  border-radius: var(--hud-radius-chip);
+  padding: theme(spacing.1) theme(spacing.2);
+  cursor: pointer;
+  transition: background-color var(--hud-fast) var(--hud-ease);
+}
+.ui-row:is(:hover, [data-state="hover"]) {
+  background: var(--hud-hover);
+}
+.ui-row[aria-selected="true"] {
+  border-left-color: rgb(var(--hud-accent));
+  background: var(--hud-chosen);
+}
+/* A row that is pressed to choose it is a button with the row's look. */
+button.ui-row {
+  width: 100%;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.ui-row:is(:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ui-row:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+.ui-row__title {
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-leading-body);
+  font-weight: var(--hud-weight-body);
+}
+.ui-row__detail {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+}
+/* A row with its own controls: the button that chooses it takes the room, the controls keep theirs. */
+.ui-row__choose {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-self: stretch;
+  justify-content: center;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+span.ui-row__choose {
+  cursor: default;
+}
+.ui-row__choose:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+.ui-row__controls {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: theme(spacing.1);
+}
+.ui-row__trail {
+  margin-left: auto;
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Table row: one row of a table (the leaderboard), its columns on the caller's grid (--cols, --cols-wide from a
+   tablet up); the list row's hover and chosen bar, and a button, so Enter and Space choose it. Its header names the
+   columns on the same grid. ── */
+.ui-table-row,
+.ui-table-head {
+  display: grid;
+  width: 100%;
+  grid-template-columns: var(--cols);
+  align-items: center;
+  column-gap: theme(spacing.3);
+  padding: theme(spacing.1) theme(spacing.3);
+}
+@media (min-width: 768px) {
+  .ui-table-row,
+  .ui-table-head {
+    grid-template-columns: var(--cols-wide);
+    column-gap: theme(spacing.4);
+    padding: theme(spacing.1) theme(spacing.4);
+  }
+}
+.ui-table-row {
+  min-height: var(--hud-control);
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: var(--hud-radius-chip);
+  background: transparent;
+  color: rgb(var(--hud-ink));
+  font-family: inherit;
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-leading-body);
+  font-weight: var(--hud-weight-body);
+  text-align: inherit;
+  cursor: pointer;
+  transition: background-color var(--hud-fast) var(--hud-ease);
+}
+.ui-table-row:is(:hover, [data-state="hover"]):not(:disabled) {
+  background: var(--hud-hover);
+}
+.ui-table-row:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+/* A row that is only read (a reference table): no cursor and no hover. */
+.ui-table-row[role="row"] {
+  cursor: default;
+}
+.ui-table-row[role="row"]:is(:hover, [data-state="hover"]) {
+  background: transparent;
+}
+.ui-table-row[aria-current="true"] {
+  border-left-color: rgb(var(--hud-accent));
+  background: var(--hud-chosen);
+}
+.ui-table-row:is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+/* The head stays over its rows as they scroll, on the surface, so no row shows through it. */
+.ui-table-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  align-items: start;
+  background: var(--hud-surface-from);
+  border-bottom: 1px solid var(--hud-divider);
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+}
+
+/* ── Event row: what happened, said once: its time as a cue, a tone mark, the words. A notice is one too. ── */
+.ui-event {
+  display: flex;
+  align-items: baseline;
+  gap: theme(spacing.2);
+  padding: theme(spacing.1) 0;
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-leading-body);
+  font-weight: var(--hud-weight-body);
+}
+.ui-event__time {
+  flex: none;
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+  color: var(--hud-cue);
+  font-variant-numeric: tabular-nums;
+}
+.ui-event__mark {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  align-self: center;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-muted);
+}
+.ui-event[data-tone="good"] .ui-event__mark {
+  background: var(--hud-good);
+}
+.ui-event[data-tone="bad"] .ui-event__mark {
+  background: var(--hud-bad);
+}
+.ui-event[data-tone="warn"] .ui-event__mark {
+  background: var(--hud-warn);
+}
+.ui-event__text {
+  min-width: 0;
+  flex: 1 1 auto;
+  color: rgb(var(--hud-ink));
+}
+.ui-event__icon {
+  flex: none;
+  align-self: center;
+}
+/* A row pressed to go where it happened: the row's words as one button, its action beside it. */
+.ui-event__open {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: baseline;
+  gap: theme(spacing.2);
+  border: 0;
+  border-radius: var(--hud-radius-chip);
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--hud-fast) var(--hud-ease);
+}
+.ui-event__open:hover {
+  background: var(--hud-hover);
+}
+.ui-event__open:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+.ui-event__text strong {
+  color: rgb(var(--hud-accent));
+  font-weight: var(--hud-weight-strong);
+}
+
+/* ── Window: a panel the size of a task (Military, Transfer), its title bar and a way out. ── */
+/* ── Sheet: a panel over the stage; a bottom sheet on a phone, docked under the top bar from the desktop width up. ── */
+.ui-sheet__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: calc(theme(zIndex.hud-sheet) - 1);
+  border: 0;
+  background: transparent;
+  cursor: default;
+  pointer-events: auto;
+}
+.ui-sheet {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: theme(zIndex.hud-sheet);
+  display: flex;
+  max-height: 85dvh;
+  flex-direction: column;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  /* Shown even while the panel it opened from steps aside for it. */
+  visibility: visible;
+}
+.ui-sheet__grip {
+  display: block;
+  width: theme(spacing.10);
+  height: theme(spacing.1);
+  border-radius: 9999px;
+  background: var(--hud-line-strong);
+}
+.ui-sheet__body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: theme(spacing.2);
+  overflow-y: auto;
+  padding: theme(spacing.2) theme(spacing.3) max(theme(spacing.3), env(safe-area-inset-bottom));
+}
+@media (min-width: 1024px) {
+  .ui-sheet__backdrop {
+    display: none;
+  }
+  .ui-sheet {
+    inset-inline: auto;
+    right: theme(spacing.2);
+    top: theme(spacing.hud-frontier-page-top);
+    bottom: auto;
+    width: theme(spacing.hud-frontier-page);
+    max-height: calc(100dvh - theme(spacing.hud-frontier-page-top) - theme(spacing.2));
+    border-radius: var(--hud-radius-panel);
+  }
+}
+
+.ui-window {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-panel);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+}
+.ui-window__bar {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+  border-bottom: 1px solid var(--hud-divider);
+  padding: theme(spacing.2) theme(spacing.2) theme(spacing.2) theme(spacing.4);
+  color: rgb(var(--hud-accent));
+  font-size: var(--hud-text-display);
+  line-height: var(--hud-leading-display);
+  font-weight: var(--hud-weight-display);
+}
+.ui-window__bar > :last-child {
+  margin-left: auto;
+}
+/* Dragging the bar moves a window that hangs from the screen (the popover's drag reads data-popover-drag-handle). */
+.ui-window__bar[data-popover-drag-handle] {
+  cursor: move;
+  user-select: none;
+  touch-action: none;
+}
+.ui-window__body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: theme(spacing.4);
+}
+/* The panel's own look around a small popover: the window's surface, line and shadow; its width, padding and corners
+   stay the panel's utilities so a caller can size it. */
+.ui-popover {
+  border: 1px solid var(--hud-line);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+}
+/* Sizes, by what a window holds: one task, a page to read, a workspace that fills the desk, or fit: as large as its
+   content (a table). Every size stays inside the screen, and its body scrolls within it. */
+.ui-window:is([data-size], .ui-workspace) {
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100dvh - 7rem);
+}
+.ui-window[data-size="task"] {
+  width: 35rem;
+}
+.ui-window[data-size="page"] {
+  width: 68.75rem;
+}
+.ui-window:is([data-size="workspace"], .ui-workspace) {
+  width: 73.75rem;
+  height: calc(100dvh - 9rem);
+}
+.ui-window[data-size="fit"] {
+  width: fit-content;
+}
+/* Below the desktop HUD a workspace is the full bottom sheet, or the drawer down the right edge on a phone held
+   sideways; the drawer's height is the header clearance plus its bottom inset (popover.tsx). A SurfaceFrame takes the
+   workspace size by its .ui-workspace class. */
+@media (max-width: 1023px) {
+  .ui-window__bar[data-popover-drag-handle] {
+    cursor: default;
+  }
+  .ui-window:is([data-size="workspace"], .ui-workspace) {
+    width: 100vw;
+    max-width: 100vw;
+    height: min(85dvh, calc(var(--surface-viewport-height, 100dvh) - 4rem));
+  }
+  .ui-window[data-size="fit"] {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: min(85dvh, calc(var(--surface-viewport-height, 100dvh) - 4rem));
+  }
+}
+@media (max-width: 1023px) and (orientation: landscape) {
+  .ui-window:is([data-size="workspace"], .ui-workspace) {
+    width: min(60vw, 640px);
+    height: calc(var(--surface-viewport-height, 100dvh) - 3.5rem - max(1rem, env(safe-area-inset-bottom)) - 2px);
+  }
+  .ui-window[data-size="fit"] {
+    width: min(60vw, 640px);
+    max-height: calc(var(--surface-viewport-height, 100dvh) - 3.5rem - max(1rem, env(safe-area-inset-bottom)) - 2px);
+  }
+}
+
+/* ── Minimap frame: a panel with no header, its map in a well. ── */
+.ui-minimap {
+  display: flex;
+  flex-direction: column;
+  padding: theme(spacing[1.5]);
+}
+.ui-minimap__well {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--hud-divider);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+}
+
+/* ── Relic: a relic's painting, what it gives in its kind's colour, and its time or count. ── */
+.ui-relic {
+  --relic: var(--hud-relic-stamina);
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  border: 1px solid color-mix(in srgb, var(--relic) 35%, transparent);
+  border-radius: var(--hud-radius-control);
+  background: color-mix(in srgb, var(--relic) 14%, transparent);
+  padding: theme(spacing.1) theme(spacing.2);
+}
+.ui-relic[data-kind="damage"] {
+  --relic: var(--hud-relic-damage);
+}
+.ui-relic[data-kind="damage-reduction"] {
+  --relic: var(--hud-relic-damage-reduction);
+}
+.ui-relic[data-kind="exploration"] {
+  --relic: var(--hud-relic-exploration);
+}
+.ui-relic[data-kind="production"] {
+  --relic: var(--hud-relic-production);
+}
+.ui-relic > img {
+  flex: none;
+}
+/* Working: its whole line in its kind's colour. Only held: a dashed line, fainter. Ready: it breathes. */
+.ui-relic[data-state="active"] {
+  border-color: var(--relic);
+}
+.ui-relic[data-state="held"] {
+  border-style: dashed;
+  opacity: 0.7;
+}
+.ui-relic[data-state="ready"] {
+  animation: ui-relic-ready 1.6s var(--hud-ease) infinite;
+}
+@keyframes ui-relic-ready {
+  50% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--relic) 35%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-relic[data-state="ready"] {
+    animation: none;
+  }
+}
+/* A relic that is pressed to set it to work is a button with the chip's look. */
+button.ui-relic {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--hud-fast) var(--hud-ease);
+}
+button.ui-relic:hover {
+  background: color-mix(in srgb, var(--relic) 24%, transparent);
+}
+button.ui-relic:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+.ui-relic__gives {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--relic);
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+  font-weight: var(--hud-weight-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-relic__trail {
+  flex: none;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+  font-variant-numeric: tabular-nums;
+}
+.ui-relic__trail[data-tone="good"] {
+  color: var(--hud-good);
+}
+.ui-relic__trail[data-tone="warn"] {
+  color: var(--hud-warn);
+}
+.ui-relic__trail[data-tone="bad"] {
+  color: var(--hud-bad);
+}
+
+/* ── Actions: a row of buttons with its one verb last. The verb stands alone at the right edge; the way out and any
+   other button sit at the left edge, then what the task costs or says (owner, 19 October 2026: "details on the left
+   please attack stays on the right"). Every window's foot, every confirm and the combat forecast use it. ── */
+.ui-actions {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+}
+.ui-actions__note {
+  order: 1;
+  min-width: 0;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+}
+.ui-actions > :last-child:not(.ui-actions__note) {
+  order: 2;
+  margin-left: auto;
+}
+
+/* ── Window footer: the window's actions, under a rule. ── */
+.ui-window__foot:empty {
+  display: none;
+}
+.ui-window__foot {
+  border-top: 1px solid var(--hud-divider);
+  padding: theme(spacing.3) theme(spacing.4);
+}
+
+/* ── Troop amount: the count typed, +500 and Max beside it, then out of how many can, for a quick deploy. ── */
+/* The count typed, +500, Max and out of how many on one line; the slider across the whole control under them. */
+.ui-amount {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: theme(spacing.2);
+}
+.ui-amount > .ui-slider {
+  flex-basis: 100%;
+}
+.ui-amount .ui-field input {
+  width: 6rem;
+}
+/* Deploying an army: a column per troop, its tiers under its name, then the amount. */
+.ui-deploy {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.3);
+}
+.ui-deploy__troops {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: theme(spacing.2);
+}
+.ui-deploy__troop {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: theme(spacing[1.5]);
+}
+.ui-deploy__troop > .ui-button {
+  justify-content: flex-start;
+}
+.ui-deploy__name {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+}
+/* A number set in steps: the field between a step down and a step up. */
+.ui-number {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.1);
+}
+.ui-number .ui-field {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.ui-number .ui-field input {
+  width: 100%;
+  text-align: center;
+}
+.ui-amount__of {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Slider: a transfer row's amount, by dragging. ── */
+.ui-slider {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+/* Where something runs out before the end: a mark across the track, past which the thumb does not go. */
+.ui-slider__stop {
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  border-radius: var(--hud-radius-chip);
+  background: var(--hud-bad);
+  pointer-events: none;
+}
+.ui-slider input[type="range"] {
+  width: 100%;
+  height: 6px;
+  appearance: none;
+  border-radius: var(--hud-radius-round);
+  background: linear-gradient(
+    90deg,
+    rgb(var(--hud-accent)) var(--fill, 0%),
+    rgb(var(--hud-accent) / 0.18) var(--fill, 0%)
+  );
+  cursor: pointer;
+}
+.ui-slider input[type="range"]::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  appearance: none;
+  border: 2px solid rgb(var(--hud-dark));
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-accent));
+  box-shadow: var(--hud-shadow-control);
+}
+.ui-slider input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgb(var(--hud-dark));
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-accent));
+}
+.ui-slider input[type="range"]:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+.ui-slider input[type="range"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+/* ── Transfer: one row per resource, its painting and name, the slider, quick shares, the amount typed. ── */
+.ui-transfer {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.1);
+}
+.ui-transfer__row {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr) auto 6.5rem;
+  align-items: center;
+  gap: theme(spacing.3);
+  border-radius: var(--hud-radius-chip);
+  padding: theme(spacing.1) theme(spacing.2);
+}
+.ui-transfer__row:is(:hover, [data-state="hover"]) {
+  background: var(--hud-hover);
+}
+.ui-transfer__what {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+}
+.ui-transfer__held {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+}
+.ui-transfer__steps {
+  display: flex;
+  gap: theme(spacing.1);
+}
+/* A row that cannot be sent: why, across the controls' place. */
+.ui-transfer__why {
+  grid-column: 2 / -1;
+}
+.ui-transfer .ui-field input {
+  width: 100%;
+  text-align: right;
+}
+/* A phone's sheet is narrower than the four columns: each row on two lines, the resource beside its amount, then the
+ * slider beside the quick shares. */
+@media (max-width: 1023px) {
+  .ui-transfer__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "what amount"
+      "slider steps";
+    row-gap: theme(spacing.1);
+  }
+  .ui-transfer__row > :nth-child(1) {
+    grid-area: what;
+  }
+  .ui-transfer__row > :nth-child(2) {
+    grid-area: slider;
+  }
+  .ui-transfer__row > :nth-child(3) {
+    grid-area: steps;
+  }
+  .ui-transfer__row > :nth-child(4) {
+    grid-area: amount;
+    width: 6.5rem;
+  }
+}
+
+/* ── Select and its list: a choice opened from its trigger. As wide as its choice, never wider than where it sits: in
+ * a full row it gives up room and its choice ends in an ellipsis. ── */
+.ui-select {
+  display: inline-flex;
+  height: var(--hud-control);
+  min-width: 0;
+  max-width: 100%;
+  flex-shrink: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(spacing.2);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: 0 theme(spacing.3);
+  color: rgb(var(--hud-ink));
+  font-family: inherit;
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-body);
+  cursor: pointer;
+}
+.ui-select > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-select:is(:hover, [data-state="hover"]) {
+  border-color: rgb(var(--hud-accent));
+}
+.ui-select:is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+/* An open select's list, over every surface (the popover's 130) and under the tooltip (250), where its trigger is. */
+.ui-select__layer {
+  position: fixed;
+  z-index: 200;
+}
+.ui-select__layer[data-placed="false"] {
+  top: 0;
+  left: 0;
+  visibility: hidden;
+}
+.ui-select__layer > .ui-menu {
+  max-height: min(20rem, 60dvh);
+  overflow-y: auto;
+}
+.ui-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ui-menu {
+  display: flex;
+  min-width: 12rem;
+  flex-direction: column;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+  padding: theme(spacing.1);
+}
+.ui-menu__item {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  gap: theme(spacing.2);
+  border: 0;
+  border-radius: var(--hud-radius-chip);
+  background: transparent;
+  padding: 0 theme(spacing.2);
+  color: rgb(var(--hud-ink));
+  font-family: inherit;
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-body);
+  text-align: left;
+  cursor: pointer;
+}
+.ui-menu__item:is(:hover, [data-state="hover"]) {
+  background: var(--hud-hover);
+}
+.ui-menu__item[aria-checked="true"] {
+  color: rgb(var(--hud-accent));
+  font-weight: var(--hud-weight-title);
+}
+.ui-menu__item:is(:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ui-menu__item[data-tone="bad"] {
+  color: var(--hud-bad);
+}
+.ui-menu__hint {
+  margin-left: auto;
+  color: var(--hud-cue);
+  font-size: var(--hud-text-label);
+}
+.ui-menu__head {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+  border-bottom: 1px solid var(--hud-divider);
+  margin-bottom: theme(spacing.1);
+  padding: theme(spacing.1) theme(spacing.2);
+}
+.ui-menu__title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+}
+.ui-menu__label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-menu__rule {
+  height: 1px;
+  margin: theme(spacing.1) 0;
+  background: var(--hud-divider);
+}
+
+/* ── Switch and checkbox: on or off; a setting row names what it sets. ── */
+.ui-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex: none;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
+  cursor: pointer;
+  transition: background-color var(--hud-fast) var(--hud-ease);
+}
+.ui-switch::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-ink) / 0.8);
+  content: "";
+  transition: transform var(--hud-fast) var(--hud-ease);
+}
+.ui-switch[aria-checked="true"] {
+  background: rgb(var(--hud-accent));
+}
+.ui-switch[aria-checked="true"]::after {
+  background: rgb(var(--hud-dark));
+  transform: translateX(18px);
+}
+.ui-check {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-chip);
+  background: var(--hud-well);
+  color: rgb(var(--hud-dark));
+  cursor: pointer;
+}
+.ui-check[aria-checked="true"] {
+  border-color: rgb(var(--hud-accent));
+  background: rgb(var(--hud-accent));
+}
+:is(.ui-switch, .ui-check):is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+:is(.ui-switch, .ui-check):is(:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ui-setting {
+  display: flex;
+  min-height: var(--hud-control);
+  align-items: center;
+  gap: theme(spacing.3);
+  border-bottom: 1px solid var(--hud-divider);
+  padding: theme(spacing.2) 0;
+}
+.ui-setting__name {
+  flex: 1;
+  color: rgb(var(--hud-ink));
+  font-weight: var(--hud-weight-title);
+}
+
+/* ── Confirm: a question that stops the task, what it costs, the way back and the verb. ── */
+.ui-confirm {
+  display: flex;
+  width: 26rem;
+  flex-direction: column;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-panel);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+}
+.ui-confirm__body {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.2);
+  padding: theme(spacing.4);
+}
+.ui-confirm__question {
+  color: rgb(var(--hud-accent));
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
+  font-weight: var(--hud-weight-title);
+}
+.ui-confirm[data-tone="bad"] {
+  border-color: color-mix(in srgb, var(--hud-bad) 55%, transparent);
+}
+.ui-confirm[data-tone="bad"] .ui-confirm__question {
+  color: var(--hud-bad);
+}
+
+/* ── Notice: a line the game says about the screen it sits in (a refusal, a warning, a success); in Events it is a row. */
+.ui-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: theme(spacing.2);
+  border: 1px solid var(--hud-line);
+  border-left: 3px solid var(--hud-muted);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: theme(spacing.2) theme(spacing.3);
+}
+.ui-notice[data-tone="good"] {
+  border-left-color: var(--hud-good);
+}
+.ui-notice[data-tone="bad"] {
+  border-left-color: var(--hud-bad);
+}
+.ui-notice[data-tone="warn"] {
+  border-left-color: var(--hud-warn);
+}
+.ui-notice__retry {
+  margin-left: auto;
+  align-self: center;
+  flex-shrink: 0;
+}
+.ui-notice__why {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+}
+
+/* ── Action bubble: one of the HUD's round actions, its word under it, a count on its rim. ── */
+.ui-bubble {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.1);
+  border: 0;
+  background: transparent;
+  color: var(--hud-muted);
+  font-family: inherit;
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+  cursor: pointer;
+}
+/* The word under a bubble stands on the map: it takes a small ground of the HUD's surface, so it reads over snow and
+   sand as over the dark. */
+.ui-bubble__word {
+  border-radius: var(--hud-radius-round);
+  background: color-mix(in srgb, var(--hud-surface-to) 85%, transparent);
+  padding: 0 theme(spacing[1.5]);
+}
+.ui-bubble__disc {
+  position: relative;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: radial-gradient(circle at 50% 35%, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+  transition: border-color var(--hud-fast) var(--hud-ease);
+}
+.ui-bubble:is(:hover, [data-state="hover"]) .ui-bubble__disc {
+  border-color: rgb(var(--hud-accent));
+}
+.ui-bubble:is(:active, [data-state="pressed"]) .ui-bubble__disc {
+  background: var(--hud-chosen);
+}
+.ui-bubble:is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+}
+.ui-bubble:is(:focus-visible, [data-state="focus"]) .ui-bubble__disc {
+  box-shadow: var(--hud-focus);
+}
+.ui-bubble:is(:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ui-bubble[aria-pressed="true"] .ui-bubble__disc {
+  border-color: rgb(var(--hud-accent));
+  background: var(--hud-chosen);
+}
+/* A count to act on: a badge on the rim, the same badge everywhere. */
+.ui-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-accent));
+  padding: 0 theme(spacing.1);
+  color: rgb(var(--hud-dark));
+  font-size: var(--hud-text-badge);
+  line-height: 18px;
+  font-weight: var(--hud-weight-badge);
+  text-align: center;
+}
+.ui-badge[data-tone="bad"] {
+  background: var(--hud-bad);
+}
+.ui-badge[data-tone="good"] {
+  background: var(--hud-good);
+}
+.ui-badge[data-tone="warn"] {
+  background: var(--hud-warn);
+}
+
+/* ── Meter: how full (stamina, production, a load): a track and its fill, in a tone. ── */
+.ui-meter {
+  height: 4px;
+  overflow: hidden;
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-ink) / 0.14);
+}
+.ui-meter > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: rgb(var(--hud-accent));
+}
+.ui-meter[data-tone="good"] > i {
+  background: var(--hud-good);
+}
+.ui-meter[data-tone="warn"] > i {
+  background: var(--hud-warn);
+}
+.ui-meter[data-tone="bad"] > i {
+  background: var(--hud-bad);
+}
+/* Filling (stamina refilling): a light sweeps across the fill, on its own tone; still, a brighter leading edge. */
+.ui-meter[data-filling] > i {
+  position: relative;
+  overflow: hidden;
+}
+.ui-meter[data-filling] > i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 0%, rgb(var(--hud-ink) / 0.4) 45%, transparent 100%);
+  transform: translateX(-140%);
+  animation: ui-meter-fill 1.9s var(--hud-ease) infinite;
+}
+@keyframes ui-meter-fill {
+  to {
+    transform: translateX(140%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-meter[data-filling] > i::after {
+    left: auto;
+    width: 3px;
+    transform: none;
+    animation: none;
+    background: rgb(var(--hud-ink) / 0.7);
+  }
+}
+
+/* ── Loading: a spinner where an answer is awaited, rows standing in for a list, a line while the game comes in. ── */
+.ui-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgb(var(--hud-accent) / 0.25);
+  border-top-color: rgb(var(--hud-accent));
+  border-radius: var(--hud-radius-round);
+  animation: ui-spin 0.8s linear infinite;
+}
+/* Inside a button the spinner takes the button's own ink, so it reads on the gold primary as on a secondary. */
+.ui-button .ui-spinner {
+  border-color: color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+}
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ui-minimap__loading.ui-skeleton {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  border-radius: 0;
+}
+.ui-skeleton {
+  height: 12px;
+  border-radius: var(--hud-radius-chip);
+  background: linear-gradient(90deg, var(--hud-hover), var(--hud-chosen), var(--hud-hover));
+  background-size: 200% 100%;
+  animation: ui-shimmer 1.4s var(--hud-ease) infinite;
+}
+@keyframes ui-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-spinner,
+  .ui-skeleton {
+    animation: none;
+  }
+}
+.ui-loading {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+  color: var(--hud-muted);
+}
+
+/* ── Empty: nothing to show yet, said once, with the one thing that would fill it. ── */
+.ui-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.2);
+  padding: theme(spacing.4) theme(spacing.3);
+  color: var(--hud-muted);
+  text-align: center;
+}
+.ui-empty__line {
+  color: rgb(var(--hud-ink) / 0.85);
+}
+
+/* ── Top bar pill: the HUD's top line (the clock, the player and the points), one rounded strip. ── */
+.ui-pill {
+  display: inline-flex;
+  height: var(--hud-control);
+  align-items: center;
+  gap: theme(spacing.3);
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-round);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+  padding: 0 theme(spacing.4);
+}
+/* A strip that is one button: it lights under the pointer and while what it opens is open. */
+button.ui-pill {
+  cursor: pointer;
+  transition:
+    border-color var(--hud-fast) var(--hud-ease),
+    background-color var(--hud-fast) var(--hud-ease);
+}
+button.ui-pill:is(:hover, [data-state="hover"], [aria-expanded="true"]) {
+  border-color: var(--hud-line-strong);
+  background:
+    linear-gradient(var(--hud-hover), var(--hud-hover)),
+    linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+}
+button.ui-pill:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+.ui-pill__rule {
+  width: 1px;
+  height: 16px;
+  background: var(--hud-divider);
+}
+
+/* ── Portrait: a player's or an army's painting, centred in its disc. ── */
+.ui-portrait {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
+}
+.ui-portrait > * {
+  display: block;
+  margin: auto;
+}
+.ui-portrait__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ui-portrait__initial {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+  font-weight: var(--hud-weight-strong);
+}
+
+/* ── Card: a painting to pick (a building to build), its name and words on the foot, its actions and badge over it. ── */
+.ui-card {
+  position: relative;
+  height: 12rem;
+  min-width: 5rem;
+  overflow: hidden;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  transition: border-color var(--hud-fast) var(--hud-ease);
+}
+.ui-card:is(:hover, [data-state="hover"]):not([data-disabled]) {
+  border-color: var(--hud-line-strong);
+}
+.ui-card[data-selected] {
+  border-color: rgb(var(--hud-accent));
+  box-shadow: inset 0 0 0 1px rgb(var(--hud-accent));
+}
+.ui-card__choose {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+button.ui-card__choose {
+  cursor: pointer;
+}
+button.ui-card__choose:disabled {
+  cursor: not-allowed;
+}
+.ui-card__choose:focus-visible {
+  outline: 2px solid rgb(var(--hud-accent) / 0.65);
+  outline-offset: -2px;
+}
+/* The painting is drawn whole, never cropped: a building keeps its shape at any card size. */
+.ui-card__picture {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ui-card__picture > * {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.ui-card[data-disabled] .ui-card__picture {
+  opacity: 0.5;
+}
+.ui-card__foot {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing[0.5]);
+  padding: theme(spacing.6) theme(spacing.2) theme(spacing.2);
+  background: linear-gradient(to top, var(--hud-surface-to) 55%, transparent);
+}
+.ui-card__title {
+  overflow: hidden;
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
+  font-weight: var(--hud-weight-title);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-card__detail {
+  display: flex;
+  flex-direction: column;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+}
+/* A small card, three to a sheet's row (a Frontier building): its painting above its name, what it gives and its band
+   centred under it. */
+.ui-card[data-size="sm"] {
+  height: theme(spacing.hud-frontier-build-card);
+}
+.ui-card[data-size="sm"] .ui-card__picture {
+  inset: theme(spacing.2) 0 auto;
+  height: theme(spacing.7);
+}
+.ui-card[data-size="sm"] .ui-card__picture > * {
+  width: auto;
+}
+.ui-card[data-size="sm"] .ui-card__foot {
+  align-items: center;
+  padding: 0 theme(spacing[1.5]) theme(spacing[1.5]);
+  background: none;
+}
+.ui-card[data-size="sm"] .ui-card__title {
+  max-width: 100%;
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+  font-weight: var(--hud-weight-strong);
+}
+.ui-card[data-size="sm"] .ui-card__detail {
+  flex-direction: row;
+  align-items: center;
+  gap: theme(spacing.1);
+}
+.ui-card__refusal {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+}
+.ui-card__actions {
+  position: absolute;
+  top: theme(spacing.2);
+  left: theme(spacing.2);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.1);
+}
+.ui-card__corner {
+  position: absolute;
+  top: theme(spacing.2);
+  right: theme(spacing.2);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.1);
+}
+
+/* ── Motion over the HUD: what flies from the world to a holding, and the light that crosses a gain. ── */
+/* A coin's painting is dark: a rim of the sheet's gold keeps it a coin on the dark HUD. */
+.ui-coin {
+  filter: drop-shadow(0 0 3px rgb(var(--hud-gold)));
+}
+/* The words that fly with it: the gain, readable over any ground. */
+.ui-float {
+  color: rgb(var(--hud-gold));
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-leading-body);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.9);
+}
+/* The light that crosses a number as it lands. */
+.ui-sweep {
+  background: linear-gradient(90deg, transparent, rgb(var(--hud-ink) / 0.35), transparent);
+}
+
+/* ── Banner: news across the top of the map, its side and mark in the news' tone. ── */
+.ui-banner {
+  --banner-tone: rgb(var(--hud-accent));
+  display: flex;
+  width: 32rem;
+  max-width: 100%;
+  align-items: center;
+  gap: theme(spacing.3);
+  border: 1px solid var(--hud-line);
+  border-left: 3px solid var(--banner-tone);
+  border-radius: var(--hud-radius-panel);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+  padding: theme(spacing.3) theme(spacing.4);
+  pointer-events: auto;
+}
+.ui-banner[data-tone="good"] {
+  --banner-tone: var(--hud-good);
+}
+.ui-banner[data-tone="bad"] {
+  --banner-tone: var(--hud-bad);
+}
+.ui-banner[data-tone="warn"] {
+  --banner-tone: var(--hud-warn);
+}
+.ui-banner__mark {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--banner-tone);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
+}
+.ui-banner__words {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: theme(spacing[0.5]);
+}
+.ui-banner__eyebrow {
+  color: var(--banner-tone);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
+}
+.ui-banner__title {
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
+  font-weight: var(--hud-weight-title);
+}
+.ui-banner__line {
+  color: var(--hud-muted);
+}
+.ui-banner__actions {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.1);
+  border-left: 1px solid var(--hud-divider);
+  padding-left: theme(spacing.3);
+}
+
+/* ── Loading backdrop: the contour lines behind the loading panel, in the age's accent on the dark ground. ── */
+.ui-contours__line {
+  fill: none;
+  stroke: rgb(var(--hud-accent) / 0.85);
+  stroke-dasharray: 8 14 64 20 32 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ui-contours__line[data-short] {
+  stroke-dasharray: 4 8 20 10;
+}
+.ui-contours__glow {
+  stop-color: rgb(var(--hud-accent) / 0.06);
+}
+.ui-contours__vignette {
+  stop-color: rgb(0 0 0 / 0.72);
+}
+.ui-contours__grid {
+  background-image:
+    linear-gradient(rgb(var(--hud-accent) / 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--hud-accent) / 0.06) 1px, transparent 1px);
+  background-position: center center;
+  background-size: 96px 96px;
+  mask-image: radial-gradient(circle at center, rgb(0 0 0 / 0.5) 24%, transparent 82%);
+  opacity: 0.24;
+}
+
+/* A docked sheet or nav page takes the right rail's place on a desktop: the rail steps aside under it. */
+@media (min-width: 1024px) {
+  body:has([data-kit-sheet]) [data-hud-rail],
+  body:has([data-page]) [data-hud-rail] {
+    visibility: hidden;
+  }
+}

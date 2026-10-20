@@ -2,15 +2,16 @@ import { safeInteger } from "../utils/safe-integer";
 import { BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
 import type { GameClientSetup } from "../client/game-client";
 import { configManager } from "../managers/config-manager";
+import { isSharedChestStory } from "../sync/model-manifest";
 import { divideByPrecision } from "../utils/utils";
 import { siteKindOf } from "../utils/expeditions";
-import { describeRelicChestOpening } from "./story-event-formatter";
+import { describeRelicChestOpening, describeRewardChestOpening } from "./story-event-formatter";
 import type {
   BattleEventSystemUpdate,
   BuildingSystemUpdate,
   TierBoughtSystemUpdate,
   ExplorerRewardSystemUpdate,
-  RelicChestOpenedSystemUpdate,
+  ChestOpenedSystemUpdate,
   SitePayoutSystemUpdate,
 } from "./types";
 
@@ -75,20 +76,38 @@ export class WorldUpdateListener {
     });
   }
 
-  get RelicChest() {
+  get Chests() {
     return {
-      onRelicChestOpened: (callback: (value: RelicChestOpenedSystemUpdate) => void) =>
-        this.onStory("RelicChestOpened", (payload, event) => {
+      onChestOpened: (callback: (value: ChestOpenedSystemUpdate) => void) => {
+        const stopRelics = this.onStory("RelicChestOpened", (payload, event) => {
           const coord = fields(payload.coord);
           if (!coord || !Array.isArray(payload.relics)) throw new Error("Malformed chest opening");
           callback({
+            kind: "relics",
             title: describeRelicChestOpening(payload, this.setup.store),
             explorerId: integer(payload.explorer_id),
             hex: { x: integer(coord.x), y: integer(coord.y) },
             relics: payload.relics.map(integer) as ResourcesIds[],
             timestamp: integer(event.timestamp),
           });
-        }),
+        });
+        const stopLords = this.onStory("RewardChestOpened", (payload, event) => {
+          const coord = fields(payload.coord);
+          if (!coord) throw new Error("Malformed reward chest opening");
+          callback({
+            kind: "lords",
+            title: describeRewardChestOpening(payload, this.setup.store),
+            explorerId: integer(payload.explorer_id),
+            hex: { x: integer(coord.x), y: integer(coord.y) },
+            amount: integer(payload.amount),
+            timestamp: integer(event.timestamp),
+          });
+        });
+        return () => {
+          stopRelics();
+          stopLords();
+        };
+      },
     };
   }
 
@@ -112,35 +131,34 @@ export class WorldUpdateListener {
   get SitePayouts() {
     return {
       /**
-       * Each cleared site, with the exchange that won it. The contract pays the site from inside the capture and only
-       * then emits the winning BattleEvent (logic/combat.cairo), so a payout waits for the next battle, which must be
-       * its own: same transaction, same site. Any other battle, or another payout, leaves it without one: refused.
+       * The contract pays a site before emitting its winning battle. Pair them within that transaction only:
+       * only shared receipts may legitimately end without their scoped battle. Other unpaired payouts are errors.
        */
       onSitePayout: (callback: (value: SitePayoutSystemUpdate) => void) => {
-        let waiting: { transaction: string; clear: PaidSite } | undefined;
-        const takeWaiting = () => {
-          const payout = waiting;
-          waiting = undefined;
-          return payout;
-        };
-        const stopPayouts = this.onStory("SitePayout", (payload, event) => {
-          const unanswered = takeWaiting();
-          waiting = { transaction: transactionOf(event), clear: paidSite(payload, event) };
-          if (unanswered) throw new Error(`Site payout ${unanswered.clear.siteId} arrived without its winning battle`);
+        let waiting: { transaction: string; clear: PaidSite; shared: boolean } | undefined;
+        return this.setup.store.subscribeEvents((event) => {
+          const value = event.value;
+          if (integer(value.game_id) !== configManager.getActiveGameId()) return;
+          const transaction = transactionOf(value);
+          const unpaired = waiting?.transaction !== transaction ? waiting : undefined;
+          if (unpaired) waiting = undefined;
+          const payload = event.model === "StoryEvent" ? fields(fields(value.story)?.SitePayout) : undefined;
+          if (payload) {
+            const unanswered = waiting;
+            waiting = undefined;
+            waiting = { transaction, clear: paidSite(payload, value), shared: isSharedChestStory(value) };
+            if (unanswered)
+              throw new Error(`Site payout ${unanswered.clear.siteId} arrived without its winning battle`);
+          } else if (event.model === "BattleEvent" && waiting) {
+            const payout = waiting;
+            waiting = undefined;
+            if (payout.clear.siteId !== integer(value.defender_id))
+              throw new Error(`Site payout ${payout.clear.siteId} arrived without its winning battle`);
+            callback({ ...payout.clear, ...wonExchange(value) });
+          }
+          if (unpaired && !unpaired.shared)
+            throw new Error(`Site payout ${unpaired.clear.siteId} arrived without its winning battle`);
         });
-        const stopBattles = this.setup.store.subscribeEvents((event) => {
-          const battle = event.model === "BattleEvent" ? fields(event.value) : undefined;
-          if (!battle || integer(battle.game_id) !== configManager.getActiveGameId()) return;
-          const payout = takeWaiting();
-          if (!payout) return;
-          if (payout.transaction !== transactionOf(battle) || payout.clear.siteId !== integer(battle.defender_id))
-            throw new Error(`Site payout ${payout.clear.siteId} arrived without its winning battle`);
-          callback({ ...payout.clear, ...wonExchange(battle) });
-        });
-        return () => {
-          stopPayouts();
-          stopBattles();
-        };
       },
     };
   }
@@ -224,7 +242,7 @@ type PaidSite = Omit<SitePayoutSystemUpdate, "coord" | "troopsLost">;
 const paidSite = (payload: Fields, story: Fields): PaidSite => {
   const kind = siteKindOf(integer(payload.category));
   const reward = siteReward(payload.reward);
-  if ((kind === "Ruin" || kind === "Stragglers") !== (reward === null))
+  if ((kind === "Beasts") !== (reward === null))
     throw new Error(`A cleared ${kind} pays ${reward === null ? "nothing" : "a resource"}`);
   return {
     explorerId: integer(payload.explorer_id),
@@ -246,7 +264,7 @@ const wonExchange = (battle: Fields): Pick<SitePayoutSystemUpdate, "coord" | "tr
   };
 };
 
-/** A camp or rift pays a resource; stragglers pay none, and a ruin its closed chest. */
+/** The receipt carries what was paid: a ruin's LORDS included, even when its chest expired and paid zero. */
 const siteReward = (value: unknown): SitePayoutSystemUpdate["reward"] => {
   if (value === null) return null;
   const reward = fields(value);

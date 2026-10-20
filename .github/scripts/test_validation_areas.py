@@ -5,6 +5,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from validation_areas import AREAS, PATH_SCOPED, selected_areas, unowned_ci_files
+from check_validation_areas import ran_files, steps
 
 
 def areas_run_by(*files):
@@ -90,6 +91,40 @@ class CiFileOwnership(unittest.TestCase):
             unowned_ci_files([".github/workflows/new-check.yml", ".github/workflows/test-client.yml", "README.md"]),
             [".github/workflows/new-check.yml"],
         )
+
+
+class WorkflowCommands(unittest.TestCase):
+    def test_a_change_to_a_client_checker_alone_selects_the_client_area(self):
+        for path in (
+            "scripts/words/check.mjs",
+            "scripts/shell-tokens/check.mjs",
+            "scripts/hud-sheet/reach.mjs",
+            "scripts/icons/build.mjs",
+            "scripts/check-forbidden-hosts.mjs",
+        ):
+            with self.subTest(path=path):
+                self.assertIn("client", areas_run_by(path))
+
+    def test_a_pnpm_script_runs_the_files_its_package_names(self):
+        scripts = {".": {"words:check": "node --test scripts/words/*.test.mjs && node scripts/words/check.mjs --check"}}
+        ran = ran_files(".", "pnpm words:check", lambda directory: scripts.get(directory, {}))
+        self.assertIn("scripts/words/check.mjs", ran)
+        self.assertIn("scripts/words/check.test.mjs", ran)
+
+    def test_a_step_runs_from_its_working_directory_and_cd(self):
+        workflow = """jobs:
+  client:
+    steps:
+      - name: Patch notes
+        working-directory: apps/game
+        run: node scripts/generate-patch-notes.mjs && git diff --exit-code
+      - name: Deploy checks
+        run: |
+          cd deploy/first
+          bun test ./first.test.ts
+"""
+        ran = set().union(*(ran_files(directory, command) for directory, command in steps(workflow)))
+        self.assertEqual(ran, {"apps/game/scripts/generate-patch-notes.mjs", "deploy/first/first.test.ts"})
 
 
 if __name__ == "__main__":

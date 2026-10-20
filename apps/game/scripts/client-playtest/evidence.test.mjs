@@ -133,7 +133,7 @@ const probeOf = (overrides) => ({
 describe("summarizeStep", () => {
   const startedOn = { name: "pan", t: 1000, heapBytes: 100 * MB, timeOrigin: 1_000_000 };
 
-  it("measures the step's frames, long frames, inputs, heap and Herald messages to their frame", () => {
+  it("measures the step's frames, long frames, inputs, heap, label elements and Herald messages to their frame", () => {
     const summary = summarizeStep(
       probeOf({
         // One frame before the step gives the first in-step frame its interval.
@@ -154,6 +154,11 @@ describe("summarizeStep", () => {
         heap: [
           [1000, 110 * MB],
           [1100, 130 * MB],
+        ],
+        labelNodes: [
+          [990, 900],
+          [1000, 240],
+          [1100, 260],
         ],
         messages: [{ arrived: 1050, start: 1052, end: 1053, bytes: 2048, host: "herald", type: "head" }],
         inputs: [
@@ -188,6 +193,7 @@ describe("summarizeStep", () => {
       ],
       presses: [{ type: "keydown", key: "Enter", atMs: 12, trusted: true }],
       heap: { startMb: 100, endMb: 104, retainedDeltaMb: 4, peakMb: 130 },
+      labelNodes: { n: 2, p50: 240, p95: 260, p99: 260, max: 260 },
       herald: {
         count: 1,
         kb: 2,
@@ -271,11 +277,26 @@ describe("evaluatePlaytestSummary", () => {
     ok: true,
     expectedSteps: ["map-idle"],
     steps: [{ name: "map-idle", verdict: { status: "completed" } }],
-    diagnostics: { activeMode: "webgpu" },
+    diagnostics: { activeMode: "webgpu", requestedMode: "webgpu-auto" },
     metrics: { entryReadyMs: 2500, worldInteractiveMs: 3500 },
     rendererMode: "webgpu-auto",
     iteration: 1,
   };
+
+  it("fails a run whose renderer is not the one it is labelled with: a lost request, or WebGL asked for and not run", () => {
+    // unified-hud-3's "WebGL" run: the request was lost on the way, and WebGPU ran.
+    const lost = {
+      ...bootedRun,
+      rendererMode: "webgpu-force-webgl",
+      diagnostics: { activeMode: "webgpu", requestedMode: "webgpu-auto" },
+    };
+    expect(evaluatePlaytestSummary({ results: [lost] }).failures).toEqual([
+      "webgpu-force-webgl #1: the renderer was asked for webgpu-auto, not webgpu-force-webgl",
+      "webgpu-force-webgl #1: WebGL was asked for, but webgpu ran",
+    ]);
+    const webgl = { ...lost, diagnostics: { activeMode: "webgl2-fallback", requestedMode: "webgpu-force-webgl" } };
+    expect(evaluatePlaytestSummary({ results: [webgl] }).ok).toBe(true);
+  });
 
   it("rejects a bootstrapped game that never becomes interactive", () => {
     const result = { ...bootedRun, metrics: { entryReadyMs: 2500, worldInteractiveMs: null } };
@@ -487,6 +508,30 @@ describe("judgeExplore", () => {
     expect(judgeExplore(pressed(41.5), [action])).toEqual({ status: "completed", action, tileChange: 41.5 });
   });
 
+  it("fails an explore whose army's plate climbed back to an older bar while it settled", () => {
+    const action = explore({ store_applied: 1190, rendered: 1230 }, { transactionHash: "0xabc" });
+    // Army 2's third explore on dev Frontier (c6006261cbb): 90, then its first explore's 120 for a second, then 60.
+    const staleWalk = [
+      [500, 90],
+      [1000, 90],
+      [1500, 120],
+      [2000, 120],
+      [2500, 60],
+    ];
+    expect(judgeExplore({ ...pressed(41.5), plateStamina: staleWalk }, [action]).reason).toBe(
+      "the army's plate read 90 stamina, then 120: a bar it no longer has",
+    );
+    // The bar paid, then regenerating; a reading before the press and a deselected plate are not judged.
+    const paidThenRegenerating = [
+      [500, 150],
+      [1000, 90],
+      [1500, null],
+      [2000, 60],
+      [2500, 61],
+    ];
+    expect(judgeExplore({ ...pressed(41.5), plateStamina: paidThenRegenerating }, [action]).status).toBe("completed");
+  });
+
   it("fails an applied explore the screen never showed, or the client never marked rendered", () => {
     const applied = explore({ store_applied: 1190 }, { transactionHash: "0xabc" });
     expect(judgeExplore(pressed(41.5), [applied]).reason).toBe("the client never marked the reveal rendered");
@@ -631,38 +676,47 @@ describe("assertInTargetGame", () => {
 });
 
 describe("judgeBurst", () => {
-  const trace = (sequence, entityId, phase, wallTimeMs) => ({ sequence, entityId, phase, wallTimeMs });
+  const trace = (sequence, entityId, phase, wallTimeMs, details) => ({
+    sequence,
+    entityId,
+    phase,
+    wallTimeMs,
+    details,
+  });
   const played = { startedAt: 1_000, targets: [{ army: 7 }, { army: 8 }], burst: [{ army: 7 }, { army: 8 }] };
   const armyMovement = [
-    trace(1, 7, "move_requested", 500),
-    trace(2, 7, "move_requested", 1_100),
-    trace(3, 8, "move_requested", 1_250),
+    trace(1, 7, "move_requested", 500, { actionType: "move" }),
+    trace(2, 7, "move_requested", 1_100, { actionType: "move" }),
+    trace(3, 8, "move_requested", 1_250, { actionType: "explore" }),
     trace(4, 7, "tx_response_received", 1_220),
     trace(5, 7, "tx_confirmed", 1_300),
     trace(6, 8, "tx_response_received", 1_370),
     trace(7, 7, "movement_started", 1_310),
     trace(8, 8, "tx_confirmed", 1_460),
-    trace(9, 8, "movement_started", 1_475),
+  ];
+  // An explore may leave its army where it stood: it shows as its reveal rendered.
+  const clientActions = [
+    { operation: "explore_reveal", entityId: 8, phases: { click: 400, rendered: 600 } },
+    { operation: "explore_reveal", entityId: 8, phases: { click: 1_250, rendered: 1_490 } },
   ];
 
-  it("times each army's order from its right-click in the burst to its answer, Herald's status and its move", () => {
-    expect(judgeBurst(played, armyMovement)).toEqual({
+  it("times each order from its right-click to its answer, Herald's status and its move or its reveal on screen", () => {
+    expect(judgeBurst(played, { armyMovement, clientActions })).toEqual({
       status: "completed",
       spanMs: 150,
       orders: [
-        { army: 7, requestedAt: 1_100, answeredMs: 120, confirmedMs: 200, movingMs: 210 },
-        { army: 8, requestedAt: 1_250, answeredMs: 120, confirmedMs: 210, movingMs: 225 },
+        { army: 7, order: "move", requestedAt: 1_100, answeredMs: 120, confirmedMs: 200, visibleMs: 210 },
+        { army: 8, order: "explore", requestedAt: 1_250, answeredMs: 120, confirmedMs: 210, visibleMs: 240 },
       ],
     });
   });
 
-  it("fails a burst whose order never moved its army, and blocks one with a single army", () => {
-    const stalled = armyMovement.filter(({ sequence }) => sequence !== 9);
-    expect(judgeBurst(played, stalled)).toMatchObject({
+  it("fails a burst whose explore never rendered its reveal, and blocks one with a single army", () => {
+    expect(judgeBurst(played, { armyMovement, clientActions: clientActions.slice(0, 1) })).toMatchObject({
       status: "failed",
-      reason: "army 8's order never moved it on screen",
+      reason: "army 8's order never showed on screen",
     });
-    expect(judgeBurst({ ...played, targets: [{ army: 7 }] }, armyMovement)).toMatchObject({
+    expect(judgeBurst({ ...played, targets: [{ army: 7 }] }, { armyMovement, clientActions })).toMatchObject({
       status: "blocked",
       reason: "1 armies offered an order: a burst needs two",
     });

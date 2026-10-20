@@ -1,11 +1,12 @@
-import { shortString } from "starknet";
+import { hash, shortString } from "starknet";
 import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
-import { gamesEventAbi as abi, withdrawalEvent } from "../../../packages/value-ledger/test-support/abi";
+import { gamesAbi, gamesEventAbi as abi, withdrawalEvent } from "../../../packages/value-ledger/test-support/abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ShardReader } from "./shard-rpc";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { RelayFailure } from "./ports";
+import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import { frontierPayment } from "./adapters";
 
 const rpc = vi.hoisted(() => ({
@@ -17,9 +18,16 @@ const rpc = vi.hoisted(() => ({
   events: vi.fn(),
   contract: vi.fn(),
   receipt: vi.fn(),
+  call: vi.fn(),
+  batch: vi.fn(),
 }));
 vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
   ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
+  // A batch of header reads answers each call as the node's single read would.
+  rpcBatch: async (url: string, method: string, calls: { block_id: { block_number: number } }[]) => {
+    rpc.batch(url, method, calls.length);
+    return Promise.all(calls.map(({ block_id }) => rpc.header(block_id.block_number)));
+  },
   rpcAt: () => ({
     getEvents: rpc.events,
     getChainId: rpc.chain,
@@ -29,6 +37,7 @@ vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
     getClassHashAt: rpc.classHash,
     getClassByHash: rpc.contract,
     getTransactionReceipt: rpc.receipt,
+    callContract: rpc.call,
   }),
 }));
 const address = "0x10";
@@ -60,6 +69,8 @@ beforeEach(() => {
   rpc.contract.mockResolvedValue({ abi });
   rpc.receipt.mockResolvedValue(receipt());
   rpc.events.mockResolvedValue({ events: [emitted()] });
+  // A shard with no release registered: the Games class alone declares its events.
+  rpc.call.mockResolvedValue(["0x0"]);
 });
 it("reads a confirmed debit receipt and pays exact wei to the resolved account's wallet", async () => {
   const f = fixture();
@@ -247,4 +258,164 @@ it("does not fetch the full class again when the next alarm creates another read
   rpc.classHash.mockResolvedValue("0xfff");
   await fixture().reader.page(10, 10, null);
   expect(rpc.contract).toHaveBeenCalledTimes(2);
+});
+
+// Game 10 of dev chain DEV_18dfa7f2b475f083, as its shard emitted it at block 75,043: the prizes logic runs by library
+// call from the Games contract and emits under BlitzEvent, a path the Games class itself does not declare.
+const DEV_CHAIN = "0x4445565f31386466613766326234373566303833";
+const GAME_TEN_WALLET = "0x269cb810bc22316f8e6a53d164398e83f8255f7e980621f6083e5f7bad74fa0";
+const GAME_TEN_COMMITMENT = "0x3712465ef7b04dd2fbf16ed51b0fd17c6f2c88a3f5e1b2887eeabf07cb353fd";
+const gameTenResult = {
+  from_address: address,
+  keys: [
+    hash.getSelectorFromName("BlitzEvent"),
+    hash.getSelectorFromName("RowSet"),
+    "0x1",
+    shortString.encodeShortString("BlitzResult"),
+  ],
+  data: ["0x1", "0xa", "0x5", "0x1", GAME_TEN_WALLET, "0x1", "0x1", GAME_TEN_COMMITMENT],
+  transaction_hash: "0xbeef",
+  block_number: 10,
+  block_hash: "0xa",
+};
+const PRIZES_LOGIC = "0x77";
+const prizesLogicAbi = () => [
+  {
+    type: "event",
+    name: "prizes::Event",
+    kind: "enum",
+    variants: [{ name: "BlitzEvent", type: "prizes::BlitzResultState::Event", kind: "nested" }],
+  },
+  {
+    type: "event",
+    name: "prizes::BlitzResultState::Event",
+    kind: "enum",
+    variants: [{ name: "RowSet", type: "fixture::RowSet", kind: "nested" }],
+  },
+  (abi as { name: string }[]).find((item) => item.name === "fixture::RowSet")!,
+];
+
+/**
+ * A shard whose Games class is `gamesClass` and whose one release answers `release`, holding game 10's result. The node
+ * returns an event only when every key position the filter names matches it.
+ */
+const shardWithGameTen = (gamesClass: unknown[], release: string[]) => {
+  rpc.chain.mockResolvedValue(DEV_CHAIN);
+  rpc.contract.mockImplementation(async (classHash: string) => ({
+    abi: BigInt(classHash) === BigInt(PRIZES_LOGIC) ? prizesLogicAbi() : gamesClass,
+  }));
+  rpc.call.mockImplementation(async ({ entrypoint }: { entrypoint: string }) =>
+    entrypoint === "current_release" ? ["0x1"] : release,
+  );
+  rpc.events.mockImplementation(async ({ keys }: { keys: string[][] }) => ({
+    events: keys.every(
+      (allowed, index) =>
+        !allowed.length || allowed.some((key) => BigInt(key) === BigInt(gameTenResult.keys[index] ?? "0x-1")),
+    )
+      ? [gameTenResult]
+      : [],
+  }));
+};
+
+/** Every Blitz result the relay reads from block 10, through each event filter. */
+const resultsAtBlockTen = async () => {
+  const reader = new ShardReader({ chainId: DEV_CHAIN, rpcUrl: "https://shard.test/rpc", gamesAddress: address });
+  const ports = shardWithdrawalPorts(reader, fixture().bindings);
+  const results = [];
+  let cursor: string | null = null;
+  do {
+    const page: { results: readonly unknown[]; next?: string | null } = await Effect.runPromise(
+      ports.eventsPage(10, 10, cursor),
+    );
+    results.push(...page.results);
+    cursor = page.next ?? null;
+  } while (cursor);
+  return results;
+};
+
+const GAME_TEN = [
+  {
+    chainId: DEV_CHAIN,
+    gameId: 10,
+    rows: [{ wallet: GAME_TEN_WALLET, rank: 1 }],
+    commitment: GAME_TEN_COMMITMENT,
+    blockNumber: 10,
+  },
+];
+
+it("reads a Blitz result that a release's logic class emits under its own event enum", async () => {
+  // The Games class: its events, and the committed release entrypoints and types its Release layout is read from.
+  shardWithGameTen([...abi, ...gamesAbi], [...Array(17).fill(PRIZES_LOGIC), "0x0"]);
+  expect(await resultsAtBlockTen()).toEqual(GAME_TEN);
+});
+
+it("reads a release laid out with one more logic class than today, from the Games ABI alone", async () => {
+  // A release that splits an eighteenth logic class off: its LogicClasses struct gains a member, and `release` answers
+  // nineteen felts. The prizes logic is the new class; the other seventeen are the old ones.
+  const games = JSON.parse(JSON.stringify(gamesAbi)) as { type: string; name: string; members?: unknown[] }[];
+  games
+    .find((item) => item.type === "struct" && item.name === "games_storage::release::LogicClasses")!
+    .members!.push({ name: "season_rules", type: "core::starknet::class_hash::ClassHash" });
+  shardWithGameTen([...abi, ...games], [...Array(17).fill("0x66"), PRIZES_LOGIC, "0x0"]);
+  expect(await resultsAtBlockTen()).toEqual(GAME_TEN);
+});
+
+it("pays a withdrawal the relics logic emits under its own event enum, read from its transaction receipt", async () => {
+  // The relics logic runs by library call and writes LordsWithdrawal rows under RelicEvent, as the committed schema
+  // lists ([RelicEvent, RowSet]); the Games class itself declares only the direct RowSet path the base fixture uses.
+  const RELICS_LOGIC = "0x88";
+  const debit = event();
+  const relicDebit = { ...debit, keys: [hash.getSelectorFromName("RelicEvent"), ...debit.keys] };
+  rpc.receipt.mockResolvedValue({ ...receipt(), events: [relicDebit] });
+  rpc.contract.mockImplementation(async (classHash: string) => ({
+    abi:
+      BigInt(classHash) === BigInt(RELICS_LOGIC)
+        ? [
+            {
+              type: "event",
+              name: "relics::Event",
+              kind: "enum",
+              variants: [{ name: "RelicEvent", type: "relics::RelicState::Event", kind: "nested" }],
+            },
+            {
+              type: "event",
+              name: "relics::RelicState::Event",
+              kind: "enum",
+              variants: [{ name: "RowSet", type: "fixture::RowSet", kind: "nested" }],
+            },
+            (abi as { name: string }[]).find((item) => item.name === "fixture::RowSet")!,
+          ]
+        : [...abi, ...gamesAbi],
+  }));
+  rpc.call.mockImplementation(async ({ entrypoint }: { entrypoint: string }) =>
+    entrypoint === "current_release" ? ["0x1"] : [...Array(17).fill(RELICS_LOGIC), "0x0"],
+  );
+  const withdrawal = await Effect.runPromise(fixture().ports.withdrawal("0x1", "0xabc"));
+  expect(withdrawal).toEqual({
+    blockNumber: 10,
+    chainId: "0x1",
+    seasonId: 3,
+    transactionHash: "0xabc",
+    realmsId: "0x2",
+    amount: "17000000000000000000",
+    confirmedAt: 1000,
+  });
+});
+
+it("reads a full page's headers in batches the shard RPC accepts, checking each against its parent", async () => {
+  rpc.events.mockResolvedValue({ events: [] });
+  rpc.header.mockImplementation(async (number: number) => ({
+    ...header,
+    block_number: number,
+    block_hash: `0x${(number + 1).toString(16)}`,
+    parent_hash: `0x${number.toString(16)}`,
+  }));
+  const from = 1_000;
+  const page = await Effect.runPromise(fixture().ports.eventsPage(from, from + SHARD_PAGE_BLOCKS - 1, null));
+  expect(page.anchors).toHaveLength(SHARD_PAGE_BLOCKS);
+  // The 498 headers between the page's ends go in batches of at most 32, never one round trip each.
+  const batches = rpc.batch.mock.calls.map(([, method, size]) => [method, size]);
+  expect(batches.every(([method, size]) => method === "starknet_getBlockWithTxHashes" && size <= 32)).toBe(true);
+  expect(batches.reduce((total, [, size]) => total + (size as number), 0)).toBe(SHARD_PAGE_BLOCKS - 2);
+  expect(batches).toHaveLength(Math.ceil((SHARD_PAGE_BLOCKS - 2) / 32));
 });

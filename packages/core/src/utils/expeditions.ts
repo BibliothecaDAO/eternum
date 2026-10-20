@@ -42,12 +42,12 @@ export const seasonDay = (rules: ExpeditionRules, timestamp: number): number | n
   dayOf(rules, timestamp)?.index ?? null;
 
 /** A guarded Frontier site's kind is its structure category. */
-export type SiteKind = "Camp" | "Rift" | "Ruin" | "Stragglers";
+export type SiteKind = "Camp" | "Rift" | "Ruin" | "Beasts";
 const SITE_KINDS = new Map<number, SiteKind>([
   [StructureType.Camp, "Camp"],
   [StructureType.Rift, "Rift"],
   [StructureType.Ruin, "Ruin"],
-  [StructureType.Stragglers, "Stragglers"],
+  [StructureType.Beasts, "Beasts"],
 ]);
 export const siteKindOf = (category: number): SiteKind => {
   const kind = SITE_KINDS.get(category);
@@ -56,14 +56,16 @@ export const siteKindOf = (category: number): SiteKind => {
 };
 
 /**
- * What clearing a site pays home in resources, as the contract's site_reward computes it from the guard it started
- * with: a camp half its troops in labor, a rift three times them in Essence, both in game precision. Stragglers pay
- * only XP; a ruin pays its chest.
+ * What clearing a site still pays home in resources, as the contract's site_reward computes it from the guard it
+ * started with: a camp half its troops in labor, a rift three times them in Essence, both in game precision. A cleared
+ * site has paid and pays nothing again (the contract refuses a second payout); beasts pay only XP; a ruin pays its
+ * chest.
  */
 export const siteReward = (
   kind: SiteKind,
-  site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count">,
+  site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count" | "clear">,
 ): { resourceType: ResourcesIds; amount: bigint } | null => {
+  if (site.clear) return null;
   if (kind === "Camp") return { resourceType: ResourcesIds.Labor, amount: site.initial_guard_count / 2n };
   if (kind === "Rift") return { resourceType: ResourcesIds.Essence, amount: site.initial_guard_count * 3n };
   return null;
@@ -132,7 +134,7 @@ export const isExpeditionRealm = (
   structure: NativeRows["Structure"],
 ): boolean => isRealmCategory(structure.base.category) && readExpeditionRules(store, structure.game_id) !== null;
 
-/** Frontier homes use their daily site; all other structures read their canonical occupancy. */
+/** Frontier homes follow the calendar; every standing fixed structure occupies its tile. */
 export const structureMapPosition = (
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   structure: NativeRows["Structure"],

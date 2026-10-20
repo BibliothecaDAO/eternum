@@ -1,4 +1,3 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
@@ -6,22 +5,15 @@ import { type MouseEvent, useEffect, useMemo, useState } from "react";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useNowSeconds, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/design-system/atoms/button";
-import { Checkbox } from "@/ui/design-system/atoms/checkbox";
+import { HudActions, HudButton, HudCheck, HudIconButton, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_CUE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
-import { getTierStyle } from "@/ui/utils/tier-styles";
 import {
   activeCombatRules,
-  COMBAT_DIE_FACES,
   configManager,
-  forecastFight,
-  resolveExchange,
-  formatTime,
   getGuardsByStructure,
   getTroopResourceId,
   StaminaManager,
@@ -33,7 +25,8 @@ import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from ".
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
-import { describeFight, wholeTroops } from "./fight-forecast";
+import { combatTitle, describeFightCost, forecastAttack, wholeTroops } from "./fight-forecast";
+import { readSurvivalAdvice } from "./survival-advice";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
 
@@ -47,7 +40,10 @@ import {
   type ActorType,
   type ID,
   type Troops,
+  formatWait,
+  formatExact,
 } from "@bibliothecadao/types";
+import { TierChip } from "../utils/tier-chip";
 
 interface ActorSummary {
   type: ActorType;
@@ -67,25 +63,6 @@ enum AttackerType {
   Army,
 }
 
-/** Each side's losses at both ends of the dice, from this attack's exact exchanges; null when the attack is refused. */
-const exchangeSides = (
-  worst: ReturnType<typeof resolveExchange>,
-  best: ReturnType<typeof resolveExchange>,
-): { attacker: SideRange; defender: SideRange } | null => {
-  if (!worst.ok || !best.ok) return null;
-  const side = (loss: bigint, remaining: bigint) => ({ losses: wholeTroops(loss), remaining: wholeTroops(remaining) });
-  return {
-    attacker: {
-      worst: side(worst.attackerLoss, worst.attacker.count),
-      best: side(best.attackerLoss, best.attacker.count),
-    },
-    defender: {
-      worst: side(worst.defenderLoss, worst.defender.count),
-      best: side(best.defenderLoss, best.defender.count),
-    },
-  };
-};
-
 export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps) => {
   const {
     account: { account },
@@ -99,7 +76,16 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       store,
     },
   } = useGame();
-  const revision = useNativeRevision(["ArmySlot", "Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
+  const revision = useNativeRevision([
+    "ArmySlot",
+    "Structure",
+    "Guard",
+    "ExplorerTroops",
+    "TileOccupancy",
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+  ]);
 
   const accountName = usePlayerDisplayName(account?.address);
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -115,6 +101,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const executionSecond = useCurrentDefaultTick();
 
   const { target: targetData, targetResources, isLoading } = useAttackTargetData(attacker.id, target.hex, target.alt);
+  const targetOwnerName = usePlayerDisplayName(targetData ? (targetData.addressOwner ?? 0n) : null);
 
   const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
   const ethereal = target.alt;
@@ -186,35 +173,24 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   );
 
   const totalGuardCount = isStructureTarget ? targetTroopSnapshots.length : 0;
-  const hasQueuedGuards = totalGuardCount > 1;
 
   // Every exchange is the contract's own arithmetic on both sides' troops, stamina and boosts at chain time: this
-  // attack and the whole fight as successive attacks now. Where the game rolls dice, both at the attacker's worst roll
-  // against the defender's best and the reverse; without dice the two ends are one exact result.
+  // attack and the whole fight as successive attacks now, at both ends of the dice.
   const fight = useMemo(() => {
     if (!attackerArmyData || !targetArmyData) return null;
-    const rules = activeCombatRules();
-    const at = (attackerRoll: number, defenderRoll: number) => {
-      const context = {
+    return forecastAttack(
+      attackerArmyData.troops,
+      targetArmyData.troops,
+      {
         timestamp: executionSecond,
         attackDistance: targetDistance,
         attackerBiome: biome,
         defenderBiome: biome,
         attackerIsStructureGuard: attackerType === AttackerType.Structure,
         defenderIsStructureGuard: isStructureTarget,
-        attackerRoll,
-        defenderRoll,
-      };
-      return {
-        exchange: resolveExchange(attackerArmyData.troops, targetArmyData.troops, context, rules),
-        forecast: forecastFight(attackerArmyData.troops, targetArmyData.troops, context, rules),
-      };
-    };
-    if (!rollsDice) {
-      const exact = at(0, 0);
-      return { worst: exact, best: exact };
-    }
-    return { worst: at(1, COMBAT_DIE_FACES), best: at(COMBAT_DIE_FACES, 1) };
+      },
+      { rules: activeCombatRules(), rollsDice },
+    );
   }, [
     attackerArmyData,
     targetArmyData,
@@ -236,9 +212,22 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return Number(targetArmyData.troops.count) / RESOURCE_PRECISION;
   }, [targetArmyData]);
 
-  const sides = fight ? exchangeSides(fight.worst.exchange, fight.best.exchange) : null;
-  const attackerSide = sides?.attacker ?? null;
-  const defenderSide = sides?.defender ?? null;
+  const attackerSide = fight?.sides?.attacker ?? null;
+  const defenderSide = fight?.sides?.defender ?? null;
+  // The army falls at every roll: Attack steps back and the forecast says what would survive.
+  const certainLoss = fight?.certainLoss ?? false;
+  // What would survive it, within what the player can raise.
+  const survivalAdvice = useMemo(() => {
+    void revision;
+    if (!fight?.extraToSurvive || !attackerArmyData) return null;
+    const armyId = attackerType === AttackerType.Army ? attacker.id : null;
+    return readSurvivalAdvice(
+      store,
+      { id: armyId, troops: attackerArmyData.troops },
+      fight.extraToSurvive,
+      executionSecond,
+    );
+  }, [fight, attackerArmyData, attackerType, attacker.id, store, revision, executionSecond]);
 
   // Capture and garrison are judged on the attacker's worst roll, so the atomic claim never counts on luck.
   const attackerRemaining = attackerSide ? attackerSide.worst.remaining : attackerTroopsTotal;
@@ -252,8 +241,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       const isActive = index === 0;
       const remaining = isActive ? defenderRemaining : Number(snapshot.count) / RESOURCE_PRECISION;
       const resourceId = getTroopResourceId(snapshot.category, snapshot.tier);
-      const trait = resources.find((resource) => resource.id === resourceId)?.trait ?? "";
-      return { tier: snapshot.tier, trait, remaining, isActive, eliminated: remaining <= 0 };
+      return { tier: snapshot.tier, resourceId, remaining, isActive, eliminated: remaining <= 0 };
     });
   }, [isStructureTarget, targetTroopSnapshots, defenderRemaining]);
 
@@ -334,26 +322,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return attackStaminaState.actionLabel;
   })();
 
-  const outcomeLabel = (() => {
-    if (!fight) {
-      if (isStructureTarget && hasQueuedGuards) return `${totalGuardCount} guards defending`;
-      return "No defenders";
-    }
-
-    const [worst, best] = [describeFight(fight.worst.forecast), describeFight(fight.best.forecast)];
-    const baseLabel = worst === best ? (worst ?? "—") : `Worst roll: ${worst ?? "—"} · best: ${best ?? "—"}`;
-
-    if (!isStructureTarget || !hasQueuedGuards) {
-      return baseLabel;
-    }
-
-    if (defenderRemaining <= 0) {
-      const remaining = queuedTargetGuards.length;
-      const suffix = remaining === 1 ? "1 guard remains" : `${remaining} guards remain`;
-      return `${baseLabel} • ${suffix}`;
-    }
-
-    return `${baseLabel} • Guard 1/${totalGuardCount}`;
+  // Who survives and what each side loses are the casualty lines below; the title only names the sides.
+  const title = combatTitle(accountName, targetOwnerName);
+  const fightCost = (() => {
+    if (!fight) return null;
+    const [worst, best] = [describeFightCost(fight.worst.forecast), describeFightCost(fight.best.forecast)];
+    return worst === best ? worst : `Worst roll: ${worst ?? "—"} · best: ${best ?? "—"}`;
   })();
 
   // Shared submit pipeline: guards, pending worldmap FX, sound, and teardown are identical across
@@ -447,29 +421,19 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   };
 
   const formatTroopValue = (value: number) => {
-    return Math.round(value).toLocaleString();
+    return formatExact(Math.round(value));
   };
-
-  const renderDetailsButton = (extraClassName?: string) => (
-    <Button variant="outline" size="md" onClick={handleShowDetails} className={cn("px-3 py-1 text-sm", extraClassName)}>
-      Details
-    </Button>
-  );
 
   const casualtyLine = (label: string, side: SideRange) => {
     const survival = survivalOf(side);
     return (
-      <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
+      <div className="rounded-md border border-hud-line bg-hud-well px-3 py-2">
         <div className="flex items-center justify-between">
-          <span className={HUD_LABEL}>{label}</span>
+          <span className="text-hud-label text-hud-muted">{label}</span>
           <span
             className={cn(
-              HUD_CUE,
-              survival === "Eliminated"
-                ? "text-red-300"
-                : survival === "Survives"
-                  ? "text-emerald-300"
-                  : "text-amber-300",
+              "text-hud-label",
+              survival === "Eliminated" ? "text-hud-bad" : survival === "Survives" ? "text-hud-good" : "text-hud-warn",
             )}
           >
             {survival}
@@ -477,12 +441,14 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         </div>
         <div className="mt-1 flex items-center justify-between gap-3">
           <span className="flex items-center gap-1">
-            <span className={HUD_CUE}>Losses</span>
-            <span className={HUD_VALUE}>{formatAcross(side.worst.losses, side.best.losses, formatTroopValue)}</span>
+            <span className="text-hud-label text-hud-cue">Losses</span>
+            <span className="text-hud-strong">
+              {formatAcross(side.worst.losses, side.best.losses, formatTroopValue)}
+            </span>
           </span>
           <span className="flex items-center gap-1">
-            <span className={HUD_CUE}>Remaining</span>
-            <span className={HUD_VALUE}>
+            <span className="text-hud-label text-hud-cue">Remaining</span>
+            <span className="text-hud-strong">
               {formatAcross(side.worst.remaining, side.best.remaining, formatTroopValue)}
             </span>
           </span>
@@ -494,30 +460,20 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   if (structureGuards === undefined) return <div>Loading guards…</div>;
 
   return (
-    <div className="w-[280px] max-w-[85vw] px-3 py-2.5 text-gold">
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className={cn("truncate", HUD_LABEL)}>{accountName || "Your army"}</span>
-        <div className="flex items-center gap-2">
-          <span className={cn("shrink-0", HUD_CUE)}>{outcomeLabel}</span>
-          <button
-            type="button"
-            aria-label="Close attack preview"
-            className="rounded-full border border-gold/30 bg-transparent p-1 text-gold transition hover:bg-gold/10"
-            onClick={closeSurface}
-          >
-            <SemanticIcon name="close" className="h-3 w-3" />
-          </button>
-        </div>
+    <div className="w-72 max-w-full px-3 py-2.5">
+      <div className="mb-1.5 flex items-start justify-between gap-2">
+        <span className="min-w-0 break-words text-hud-label text-hud-muted">{title}</span>
+        <HudIconButton icon="close" label="Close attack preview" kind="quiet" onClick={closeSurface} />
       </div>
 
       {isLoading ? (
-        <div className="py-6 text-center text-sm text-gold/70">Loading enemy intel...</div>
+        <div className="py-6 text-center text-hud-body text-hud-muted">Loading enemy intel...</div>
       ) : !targetData ? (
-        <div className="py-6 text-center text-sm text-gold/70">No target detected.</div>
+        <div className="py-6 text-center text-hud-body text-hud-muted">No target detected.</div>
       ) : (
         <div className="space-y-1.5">
           {rollsDice && (
-            <p className="text-sm text-gold/70">
+            <p className="text-hud-label text-hud-muted">
               Each side rolls a d20 for +1% to +20% damage; ranges run from your worst roll to your best.
             </p>
           )}
@@ -527,46 +483,37 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               <>
                 {casualtyLine("Your forces", attackerSide)}
                 {casualtyLine(isStructureTarget ? "Active guard" : "Enemy army", defenderSide)}
+                {fightCost && <p className="text-hud-label text-hud-cue">{fightCost}</p>}
               </>
             )
           ) : (
-            <div className="rounded-md border border-emerald-500/40 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-200">
-              {rangedClaimBlocked
-                ? "No defending troops. Move adjacent to claim this structure."
-                : "No defending troops. You can claim without resistance."}
-            </div>
+            <HudNotice
+              tone="good"
+              line={
+                rangedClaimBlocked
+                  ? "No defending troops. Move adjacent to claim this structure."
+                  : "No defending troops. You can claim without resistance."
+              }
+            />
           )}
 
           {isStructureTarget && totalGuardCount >= 1 && (
-            <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
+            <div className="rounded-md border border-hud-line bg-hud-well px-3 py-2">
               <div className="flex items-center justify-between">
-                <span className={HUD_LABEL}>Defenders</span>
-                <span className={HUD_CUE}>Post Fight</span>
+                <span className="text-hud-label text-hud-muted">Defenders</span>
+                <span className="text-hud-label text-hud-cue">Post Fight</span>
               </div>
               <ul className="mt-1.5 space-y-1">
                 {defenderSlots.map((slot, index) => (
                   <li key={index} className="flex items-center gap-2">
+                    <TierChip tier={slot.tier} />
+                    <ResourceIcon withTooltip={false} resource={slot.resourceId} size="sm" className="shrink-0" />
                     <span
-                      className={cn(
-                        "shrink-0 rounded px-1.5 py-0.5 text-sm font-bold border leading-none",
-                        getTierStyle(slot.tier),
-                      )}
-                    >
-                      {slot.tier}
-                    </span>
-                    {slot.trait && (
-                      <ResourceIcon withTooltip={false} resource={slot.trait} size="sm" className="shrink-0" />
-                    )}
-                    <span
-                      className={cn(
-                        "tabular-nums",
-                        HUD_VALUE,
-                        slot.eliminated && "text-red-300 line-through decoration-red-300/60",
-                      )}
+                      className={cn("tabular-nums", "text-hud-strong", slot.eliminated && "text-hud-bad line-through")}
                     >
                       {formatTroopValue(slot.remaining)}
                     </span>
-                    {slot.isActive && <span className={cn("ml-auto", HUD_CUE)}>Active</span>}
+                    {slot.isActive && <span className="ml-auto text-hud-label text-hud-cue">Active</span>}
                   </li>
                 ))}
               </ul>
@@ -574,48 +521,59 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           )}
 
           {attackDisabled && (
-            <div className="rounded-md border border-red-400/30 bg-red-900/20 px-3 py-2 text-sm text-red-200">
-              <span>{attackButtonLabel}</span>
-              {cooldownBlocksAttack && attackerCooldownRemaining > 0 && (
-                <div className="mt-1 text-sm text-gold/70">{formatTime(attackerCooldownRemaining)} remaining</div>
-              )}
-              {isLowStamina && (
-                <div className="mt-1 text-sm text-gold/70">
-                  <div>
-                    Current: {attackerStaminaValue ?? "—"} / Required: {requiredAttackStamina}
-                  </div>
-                  {staminaWaitSeconds !== null && <div>Ready in: {formatTime(staminaWaitSeconds)}</div>}
-                </div>
-              )}
-            </div>
+            <HudNotice
+              tone="bad"
+              line={attackButtonLabel}
+              why={
+                [
+                  cooldownBlocksAttack && attackerCooldownRemaining > 0
+                    ? `${formatWait(attackerCooldownRemaining)} remaining`
+                    : null,
+                  isLowStamina ? `Current: ${attackerStaminaValue ?? "—"} / Required: ${requiredAttackStamina}` : null,
+                  isLowStamina && staminaWaitSeconds !== null ? `Ready in: ${formatWait(staminaWaitSeconds)}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || undefined
+              }
+            />
           )}
         </div>
       )}
 
       {canGarrison && (
-        <div className="modal-no-drag mt-1.5 flex items-center justify-between rounded-md border border-gold/20 bg-black/25 px-3 py-2">
-          <Checkbox
-            enabled={garrisonEnabled}
-            onClick={() => setGarrisonEnabled((enabled) => !enabled)}
-            text="Garrison survivors"
-          />
-          <span className={cn("tabular-nums", HUD_VALUE)}>{formatTroopValue(garrisonTroopCount)}</span>
+        <div className="modal-no-drag mt-1.5 flex items-center justify-between rounded-md border border-hud-line bg-hud-well px-3 py-2">
+          <label className="flex items-center gap-2 text-hud-body">
+            <HudCheck checked={garrisonEnabled} label="Garrison survivors" onChange={setGarrisonEnabled} />
+            Garrison survivors
+          </label>
+          <span className="tabular-nums text-hud-strong">{formatTroopValue(garrisonTroopCount)}</span>
         </div>
       )}
 
-      <div className="modal-no-drag mt-2 flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          size="md"
-          disabled={attackDisabled || !targetData || isLoading}
-          isLoading={isSubmitting}
+      {certainLoss && (
+        <div className="modal-no-drag mt-2">
+          <HudNotice
+            tone="bad"
+            line="Certain loss: your army is wiped out at any roll."
+            why={survivalAdvice ? `${survivalAdvice[0].toUpperCase()}${survivalAdvice.slice(1)}.` : undefined}
+          />
+        </div>
+      )}
+
+      <HudActions className="modal-no-drag mt-2">
+        <HudButton kind="secondary" onClick={handleShowDetails}>
+          Details
+        </HudButton>
+        {/* A certain loss steps Attack back to secondary: the forecast, not the button, is the point. */}
+        <HudButton
+          kind={certainLoss ? "secondary" : "primary"}
+          disabled={attackDisabled || !targetData || isLoading || isSubmitting}
+          aria-busy={isSubmitting}
           onClick={handlePrimaryAction}
-          className="px-3 py-1 text-sm"
         >
           {rangedClaimBlocked ? "Move adjacent to claim" : willCaptureStructure ? "Claim" : "Attack"}
-        </Button>
-        {renderDetailsButton()}
-      </div>
+        </HudButton>
+      </HudActions>
     </div>
   );
 };

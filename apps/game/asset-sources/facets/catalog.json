@@ -65,13 +65,25 @@
       "id": "stone",
       "label": "Stone",
       "family": "Resources",
-      "prompt": "prompts/stone.txt"
+      "prompt": "prompts/stone.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/1.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/stone.png",
+        "sha256": "85ba053423b4c21cd4ae9a59c3462857d2fe2581c1beaacb560e38bd05d35d78"
+      }
     },
     {
       "id": "wood",
       "label": "Wood",
       "family": "Resources",
-      "prompt": "prompts/wood.txt"
+      "prompt": "prompts/wood.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/3.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/wood.png",
+        "sha256": "bfa65db3ebc1a0e682781daffa03a2914027af7b4b4341f70b1bfcc8ed99a87e"
+      }
     },
     {
       "id": "wheat",
@@ -95,13 +107,25 @@
       "id": "essence",
       "label": "Essence",
       "family": "Resources",
-      "prompt": "prompts/essence.txt"
+      "prompt": "prompts/essence.txt",
+      "source": {
+        "revision": "301ca1d55a2",
+        "path": "apps/game/asset-sources/facets/masters/essence.png",
+        "committedPath": "apps/game/asset-sources/rss-icons/selected/essence-shipped.png",
+        "sha256": "94617d6f15d644acd4ade83200bf7c51f3b13e0c120f3e51a3badbda5efd249f"
+      }
     },
     {
       "id": "ironwood",
       "label": "Ironwood",
       "family": "Resources",
-      "prompt": "prompts/ironwood.txt"
+      "prompt": "prompts/ironwood.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/5.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/ironwood.png",
+        "sha256": "4b7a2e467e764ed292ae3317513d57ae2f0024c6c1662d7e6ee860f95bb7390d"
+      }
     },
     {
       "id": "fragment",
@@ -119,73 +143,218 @@
       "id": "camp",
       "label": "Camp",
       "family": "Structures",
-      "prompt": "prompts/camp.txt"
+      "prompt": "prompts/camp.txt",
+      "source": {
+        "model": "/models/outposts/camp.glb",
+        "inputs": {
+          "apps/game/public/models/outposts/camp.glb": "4f4b2224ebc747638f7fe7c9e97e850cc09d6981920cab8d618cdc7dcfbca3d1",
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
+        },
+        "sha256": "be4c06dc03496566f9c532f5c966b95e68e4fc1263b377c2627314f9245899f4"
+      }
     },
     {
       "id": "hyperstructure",
       "label": "Hyperstructure",
       "family": "Structures",
-      "prompt": "prompts/hyperstructure.txt"
+      "prompt": "prompts/hyperstructure.txt",
+      "source": {
+        "model": "procedural:hyperstructure",
+        "inputs": {
+          "apps/game/src/three/structures/hyperstructure-kit.ts": "c07bccfb3db16bfc3ee3d61103b92e619f38db2fef8cf9489202e214d3da07dd",
+          "apps/game/src/three/structures/hyperstructure-design.ts": "38e9ae3b979ab15786e464e4860d76129c538f6ca456f5884eaba583f7ead369",
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca",
+          "apps/game/src/three/structures/hyperstructure-model.ts": "1ec99bfd8918f1a4bd247fe334f5f2902cbdcc30c3a3c55c4c97c6abc840e5ad",
+          "apps/game/src/three/structures/hyperstructure-power.ts": "676b2984ac5ab209f6d483181ff2294f1d8f951d9be916c23ddc2a9409cb8057"
+        },
+        "sha256": "5a821ec79eeb77d98b9f5bd9248a2ff5acfcd29caaccd9ffcadfa5642c370a2c"
+      }
     },
     {
       "id": "chest",
       "label": "Chest",
       "family": "Structures",
-      "prompt": "prompts/chest.txt"
+      "prompt": "prompts/chest.txt",
+      "source": {
+        "model": "/models/reward-tiles/chest-c2.glb",
+        "inputs": {
+          "apps/game/public/models/reward-tiles/chest-c2.glb": "e65db3a9a319316b0f485bf9feeb426b74b970a17a619ce758991d91cf2fd438",
+          "apps/game/src/three/rewards/chest-presentation.ts": "85e99e1dbb26ef1360a72159d41450a4af120262da40b25c82fb2f7165b1d4ce",
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
+        },
+        "sha256": "dbb342171232be10ede039516ec4893e54fe93ec9b2293e2ad8fb21645794d9f"
+      }
     },
     {
       "id": "move",
       "label": "Move",
       "family": "Actions",
-      "prompt": "prompts/move.txt"
+      "prompt": "prompts/move.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 1280,
+          "top": 0,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "d03152fcce7106db29c9db12c51538221ebd32e5136ddf5abc049cc75587c45e"
+      }
     },
     {
       "id": "explore",
       "label": "Explore",
       "family": "Actions",
-      "prompt": "prompts/explore.txt"
+      "prompt": "prompts/explore.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 0,
+          "top": 0,
+          "width": 256,
+          "height": 265
+        },
+        "sha256": "93a14945cb987c502ca89c62431fcf7b81b0844a62c0e5cde1127c8737f91c8f"
+      }
     },
     {
       "id": "attack",
       "label": "Attack",
       "family": "Actions",
-      "prompt": "prompts/attack.txt"
+      "prompt": "prompts/attack.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 768,
+          "top": 0,
+          "width": 256,
+          "height": 257
+        },
+        "sha256": "449bab324daa0552ce5cd78d5c07bd25c83dc38308c94979a946d969ec373b6f"
+      }
     },
     {
       "id": "build",
       "label": "Build",
       "family": "Actions",
-      "prompt": "prompts/build.txt"
+      "prompt": "prompts/build.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 256,
+          "top": 0,
+          "width": 256,
+          "height": 258
+        },
+        "sha256": "1e595163b12b313d42cd7e09246afed19b1f5de0156dc2d699eb7e4553e3bd38"
+      }
     },
     {
       "id": "trade",
       "label": "Trade",
       "family": "Actions",
-      "prompt": "prompts/trade.txt"
+      "prompt": "prompts/trade.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 512,
+          "top": 0,
+          "width": 256,
+          "height": 258
+        },
+        "sha256": "6061808b4f339fafba34358db7aaa4926557020e426ea9d30e82b735dae5eb54"
+      }
     },
     {
       "id": "stamina",
       "label": "Stamina",
       "family": "Statuses",
-      "prompt": "prompts/stamina.txt"
+      "prompt": "prompts/stamina.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 768,
+          "top": 0,
+          "width": 256,
+          "height": 271
+        },
+        "sha256": "3830880e5016bda4b4574bf6f02c9d53ea213277b41ca1f339d0b21677c48b5a"
+      }
     },
     {
       "id": "victory",
       "label": "Victory points",
       "family": "Statuses",
-      "prompt": "prompts/victory.txt"
+      "prompt": "prompts/victory.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 1024,
+          "top": 259,
+          "width": 256,
+          "height": 253
+        },
+        "sha256": "34f84db2f04cf84613d475d386257dbadacfd3cd2981a7592a74c860c07c8ac8"
+      }
     },
     {
       "id": "settings",
       "label": "Settings",
       "family": "HUD",
-      "prompt": "prompts/settings.txt"
+      "prompt": "prompts/settings.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 267,
+          "top": 0,
+          "width": 245,
+          "height": 259
+        },
+        "sha256": "59b314c2f4ed4e2fb21a7712d19adebeee00b7b6293201e770cee58be16f7d9c"
+      }
     },
     {
       "id": "chat",
       "label": "Chat",
       "family": "HUD",
-      "prompt": "prompts/chat.txt"
+      "prompt": "prompts/chat.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 768,
+          "top": 257,
+          "width": 256,
+          "height": 255
+        },
+        "sha256": "58c114e454577caeeeb7348c3b81001c49d5905d569ca85cc5ae65b7a70cab8f"
+      }
     },
     {
       "id": "map-army",
@@ -215,247 +384,464 @@
       "id": "coal",
       "label": "Coal",
       "family": "Resources",
-      "prompt": "prompts/coal.txt"
+      "prompt": "prompts/coal.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/2.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/coal.png",
+        "sha256": "e63f09d99239ed05f07d597cfc711f845b7866564f4d92163f0541cc65866f2e"
+      }
     },
     {
       "id": "copper",
       "label": "Copper",
       "family": "Resources",
-      "prompt": "prompts/copper.txt"
+      "prompt": "prompts/copper.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/4.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/copper.png",
+        "sha256": "03fdedec6cadb4c7d93a1332be00e9571e5052991637ad7b721f56647553a00d"
+      }
     },
     {
       "id": "donkey",
       "label": "Pack donkey / Transfer",
-      "family": "Actions",
+      "family": "Resources",
       "prompt": "prompts/donkey.txt"
     },
     {
       "id": "production",
       "label": "Production",
       "family": "Actions",
-      "prompt": "prompts/production.txt"
+      "prompt": "prompts/production.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 267,
+          "top": 259,
+          "width": 245,
+          "height": 253
+        },
+        "sha256": "44668c2a3dab0c34055bfd1139525dba26eae8b1745a343d0978adce17f386e6"
+      }
     },
     {
       "id": "obsidian",
       "label": "Obsidian",
       "family": "Resources",
-      "prompt": "prompts/obsidian.txt"
+      "prompt": "prompts/obsidian.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/6.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/obsidian.png",
+        "sha256": "1557b9e3f62813a24271c845daeab9a7f443b37e0bd751a8b02c69c4991c0dfb"
+      }
     },
     {
       "id": "gold",
       "label": "Gold",
       "family": "Resources",
-      "prompt": "prompts/gold.txt"
+      "prompt": "prompts/gold.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/7.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/gold.png",
+        "sha256": "e68ead6472307fed4dacfa3f9cdfd3f3521fa734a8de99ea018f55e978f5a7ff"
+      }
     },
     {
       "id": "silver",
       "label": "Silver",
       "family": "Resources",
-      "prompt": "prompts/silver.txt"
+      "prompt": "prompts/silver.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/8.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/silver.png",
+        "sha256": "3c9cdd596e22c4faa43af7b59be06a4c420460ed89a6c3a29d3d8994862ff031"
+      }
     },
     {
       "id": "mithral",
       "label": "Mithral",
       "family": "Resources",
-      "prompt": "prompts/mithral.txt"
+      "prompt": "prompts/mithral.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/9.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/mithral.png",
+        "sha256": "ac24774bce4ddf19e3d6570be2bf5223ca852ac18b813d5eb2f990b825519f03"
+      }
     },
     {
       "id": "alchemical-silver",
       "label": "Alchemical Silver",
       "family": "Resources",
-      "prompt": "prompts/alchemical-silver.txt"
+      "prompt": "prompts/alchemical-silver.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/10.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/alchemical-silver.png",
+        "sha256": "fdda73e3735e42374f34d03b575865efc217deccd2660a80eae510d1c5d6292e"
+      }
     },
     {
       "id": "cold-iron",
       "label": "Cold Iron",
       "family": "Resources",
-      "prompt": "prompts/cold-iron.txt"
+      "prompt": "prompts/cold-iron.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/11.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/cold-iron.png",
+        "sha256": "50dec308fd3846b22fb85c65d0395aa0627e752a149fea5ba424fbb84b450efc"
+      }
     },
     {
       "id": "deep-crystal",
       "label": "Deep Crystal",
       "family": "Resources",
-      "prompt": "prompts/deep-crystal.txt"
+      "prompt": "prompts/deep-crystal.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/12.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/deep-crystal.png",
+        "sha256": "c13b1492805e75c9f985405a1bf99fb8150a7ff2a953caa7fb0406374aa1e32c"
+      }
     },
     {
       "id": "ruby",
       "label": "Ruby",
       "family": "Resources",
-      "prompt": "prompts/ruby.txt"
+      "prompt": "prompts/ruby.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/13.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/ruby.png",
+        "sha256": "11fb249d86a21869d7863671ccf3f1d614a8f0d6cf155897c3c4d38ed5a71fcb"
+      }
     },
     {
       "id": "diamonds",
       "label": "Diamonds",
       "family": "Resources",
-      "prompt": "prompts/diamonds.txt"
+      "prompt": "prompts/diamonds.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/14.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/diamonds.png",
+        "sha256": "31078efdaa85dd0d12b20c3593bab0a2d8476f7d0f3cc6924aff7ac03cdcd7cd"
+      }
     },
     {
       "id": "hartwood",
       "label": "Hartwood",
       "family": "Resources",
-      "prompt": "prompts/hartwood.txt"
+      "prompt": "prompts/hartwood.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/15.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/hartwood.png",
+        "sha256": "5c6c8bb596476767f7daa99713e66eb00ed9b005ec23976af4f1fecc83fb8e42"
+      }
     },
     {
       "id": "ignium",
       "label": "Ignium",
       "family": "Resources",
-      "prompt": "prompts/ignium.txt"
+      "prompt": "prompts/ignium.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/16.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/ignium.png",
+        "sha256": "4e0cd37e69ec4f57e1d9f597bd2c94ef17391760b0a153947a9355b9bacc0684"
+      }
     },
     {
       "id": "twilight-quartz",
       "label": "Twilight Quartz",
       "family": "Resources",
-      "prompt": "prompts/twilight-quartz.txt"
+      "prompt": "prompts/twilight-quartz.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/17.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/twilight-quartz.png",
+        "sha256": "bedcd1de691236a526c498e9613ed14fc99e33c60a425185b57f0b650b5fe009"
+      }
     },
     {
       "id": "true-ice",
       "label": "True Ice",
       "family": "Resources",
-      "prompt": "prompts/true-ice.txt"
+      "prompt": "prompts/true-ice.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/18.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/true-ice.png",
+        "sha256": "864a4306745056621e28ddd6b016e090e942c8abc167157a7bbf6d1d43fc4e4b"
+      }
     },
     {
       "id": "adamantine",
       "label": "Adamantine",
       "family": "Resources",
-      "prompt": "prompts/adamantine.txt"
+      "prompt": "prompts/adamantine.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/19.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/adamantine.png",
+        "sha256": "52a2903cdf0eb5da31b805be8de083f45db91eb4b6911c6b1411aa3f331a0550"
+      }
     },
     {
       "id": "sapphire",
       "label": "Sapphire",
       "family": "Resources",
-      "prompt": "prompts/sapphire.txt"
+      "prompt": "prompts/sapphire.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/20.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/sapphire.png",
+        "sha256": "a7443ec78d358af153fa609434659ffd171d0f684edaeaeb2b4c93c1a030c5cd"
+      }
     },
     {
       "id": "ethereal-silica",
       "label": "Ethereal Silica",
       "family": "Resources",
-      "prompt": "prompts/ethereal-silica.txt"
+      "prompt": "prompts/ethereal-silica.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/21.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/ethereal-silica.png",
+        "sha256": "e46d6a5a1182ad2999713e34e9a823f98f321328e0b820683ce579da4657259c"
+      }
     },
     {
       "id": "dragonhide",
       "label": "Dragonhide",
       "family": "Resources",
-      "prompt": "prompts/dragonhide.txt"
-    },
-    {
-      "id": "lords",
-      "label": "Lords",
-      "family": "Resources",
-      "prompt": "prompts/lords.txt"
+      "prompt": "prompts/dragonhide.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/22.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/dragonhide.png",
+        "sha256": "9a8557eff93575b06198ef01d9baab56947743521be8ebe53ea6d9de599dd8c5"
+      }
     },
     {
       "id": "stamina-relic-1",
       "label": "Stamina Relic1",
       "family": "Relics",
-      "prompt": "prompts/stamina-relic-1.txt"
+      "prompt": "prompts/stamina-relic-1.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/stamina-relic-1.png",
+        "sha256": "715326102f7b37fdb8c3ea9789a2c54a8715bf8d190711a08ed5d69fe9bbbbf4"
+      }
     },
     {
       "id": "stamina-relic-2",
       "label": "Stamina Relic2",
       "family": "Relics",
-      "prompt": "prompts/stamina-relic-2.txt"
+      "prompt": "prompts/stamina-relic-2.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/stamina-relic-2.png",
+        "sha256": "07f721d2e5dfbfbe1caf4d366caee5e6f03388b930501ae8883b5e4a55f59500"
+      }
     },
     {
       "id": "damage-relic-1",
       "label": "Damage Relic1",
       "family": "Relics",
-      "prompt": "prompts/damage-relic-1.txt"
+      "prompt": "prompts/damage-relic-1.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/damage-relic-1.png",
+        "sha256": "17942b322c5058670f0c1a39a6313230ecc2528f9e4a3f61df1e7933889bc66a"
+      }
     },
     {
       "id": "damage-relic-2",
       "label": "Damage Relic2",
       "family": "Relics",
-      "prompt": "prompts/damage-relic-2.txt"
+      "prompt": "prompts/damage-relic-2.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/damage-relic-2.png",
+        "sha256": "fcbbdf74d5d87235f1b202231c84506402306184c8064c251ac79e8dfd7c0989"
+      }
     },
     {
       "id": "damage-reduction-relic-1",
       "label": "Damage Reduction Relic1",
       "family": "Relics",
-      "prompt": "prompts/damage-reduction-relic-1.txt"
+      "prompt": "prompts/damage-reduction-relic-1.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/damage-reduction-relic-1.png",
+        "sha256": "e5c9ebfaf6574ff122333e1ee8bd7ed373c2e91370fa03fbdfe9926f9749a4a1"
+      }
     },
     {
       "id": "damage-reduction-relic-2",
       "label": "Damage Reduction Relic2",
       "family": "Relics",
-      "prompt": "prompts/damage-reduction-relic-2.txt"
+      "prompt": "prompts/damage-reduction-relic-2.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/damage-reduction-relic-2.png",
+        "sha256": "1971cd71c6160e6a97e9efaa535c3e8f9e8f743af284c0eca21199b23318dcc4"
+      }
     },
     {
       "id": "exploration-relic-1",
       "label": "Exploration Relic1",
       "family": "Relics",
-      "prompt": "prompts/exploration-relic-1.txt"
+      "prompt": "prompts/exploration-relic-1.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/exploration-relic-1.png",
+        "sha256": "35b49b59728d2fcd41b1b1dfbcc66271152d508cde8393e8d8b042ee34f6d565"
+      }
     },
     {
       "id": "exploration-relic-2",
       "label": "Exploration Relic2",
       "family": "Relics",
-      "prompt": "prompts/exploration-relic-2.txt"
+      "prompt": "prompts/exploration-relic-2.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/exploration-relic-2.png",
+        "sha256": "fe9e2a60d91f11268eda1f2bd920625d9cb53fba6285295b56e83776e4b33221"
+      }
     },
     {
       "id": "exploration-reward-relic-1",
       "label": "Exploration Reward Relic1",
       "family": "Relics",
-      "prompt": "prompts/exploration-reward-relic-1.txt"
+      "prompt": "prompts/exploration-reward-relic-1.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/exploration-reward-relic-1.png",
+        "sha256": "67ee63ffc7a17389a16277c8ce935120926421bdfcd71b9985296754f7cf9163"
+      }
     },
     {
       "id": "exploration-reward-relic-2",
       "label": "Exploration Reward Relic2",
       "family": "Relics",
-      "prompt": "prompts/exploration-reward-relic-2.txt"
+      "prompt": "prompts/exploration-reward-relic-2.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/exploration-reward-relic-2.png",
+        "sha256": "b7c70556e586a545fa9ebc5b848888bc2884bf91c3169ef7abc8878a9beab9f3"
+      }
     },
     {
       "id": "structure-damage-reduction-relic-1",
       "label": "Structure Damage Reduction Relic1",
       "family": "Relics",
-      "prompt": "prompts/structure-damage-reduction-relic-1.txt"
+      "prompt": "prompts/structure-damage-reduction-relic-1.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/structure-damage-reduction-relic-1.png",
+        "sha256": "b1e0d6e9d0cdd997e53959bc65605b16b78da23c11cab23f212ef7165c8d34a2"
+      }
     },
     {
       "id": "structure-damage-reduction-relic-2",
       "label": "Structure Damage Reduction Relic2",
       "family": "Relics",
-      "prompt": "prompts/structure-damage-reduction-relic-2.txt"
+      "prompt": "prompts/structure-damage-reduction-relic-2.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/structure-damage-reduction-relic-2.png",
+        "sha256": "14b5ec1dfa667da379aa3c85f2eb470db7ac10461090ba8900a9157d94f28858"
+      }
     },
     {
       "id": "production-relic-1",
       "label": "Production Relic1",
       "family": "Relics",
-      "prompt": "prompts/production-relic-1.txt"
+      "prompt": "prompts/production-relic-1.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/production-relic-1.png",
+        "sha256": "7ff34ce1d2c8f1202ca1dd873918862f00bce8f3724913e91dfd7c726679de4d"
+      }
     },
     {
       "id": "production-relic-2",
       "label": "Production Relic2",
       "family": "Relics",
-      "prompt": "prompts/production-relic-2.txt"
+      "prompt": "prompts/production-relic-2.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/production-relic-2.png",
+        "sha256": "85a45cf19e37f4328d3df96eb15c583fad16b21ff4f07550a351f3a4ebd8f6bd"
+      }
     },
     {
       "id": "labor-production-relic-1",
       "label": "Labor Production Relic1",
       "family": "Relics",
-      "prompt": "prompts/labor-production-relic-1.txt"
+      "prompt": "prompts/labor-production-relic-1.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/labor-production-relic-1.png",
+        "sha256": "d369aa255a09cbe8606490a201e5b8f1d34e01c234d3b9fd925904129379fdd3"
+      }
     },
     {
       "id": "labor-production-relic-2",
       "label": "Labor Production Relic2",
       "family": "Relics",
-      "prompt": "prompts/labor-production-relic-2.txt"
+      "prompt": "prompts/labor-production-relic-2.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/labor-production-relic-2.png",
+        "sha256": "d61b10c52b3e5e28c47c8d9e492010308057c140cb21fd88158e6b7a2f3c7f97"
+      }
     },
     {
       "id": "troop-production-relic-1",
       "label": "Troop Production Relic1",
       "family": "Relics",
-      "prompt": "prompts/troop-production-relic-1.txt"
+      "prompt": "prompts/troop-production-relic-1.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/troop-production-relic-1.png",
+        "sha256": "921d7ef4aa7ab64bf7e511aa6c765f4244837318e3bba78442244db1989be6b7"
+      }
     },
     {
       "id": "troop-production-relic-2",
       "label": "Troop Production Relic2",
       "family": "Relics",
-      "prompt": "prompts/troop-production-relic-2.txt"
+      "prompt": "prompts/troop-production-relic-2.txt",
+      "source": {
+        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
+        "path": "apps/game/asset-sources/rss-icons/relics/masters/troop-production-relic-2.png",
+        "sha256": "8b879a3ff050cf04c001a467464d043e6f8c79f4c3819b971c5cd42d0cd2a317"
+      }
     },
     {
       "id": "research",
       "label": "Research",
       "family": "Resources",
-      "prompt": "prompts/research.txt"
+      "prompt": "prompts/research.txt",
+      "source": {
+        "inputs": {
+          "apps/game/asset-sources/rss-icons/selected/research-shipped.png": "db588a91ffca6098edd9dbbd60ac970fdaf358780442148abdf296ef1f262757"
+        },
+        "sha256": "e3b101ff5456bd82246ab7650984f55db7804504673566c26782210dfd647b60"
+      }
     },
     {
       "id": "s-a-t",
@@ -467,439 +853,1388 @@
       "id": "military",
       "label": "Military",
       "family": "Controls",
-      "prompt": "prompts/military.txt"
+      "prompt": "prompts/military.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 1024,
+          "top": 0,
+          "width": 248,
+          "height": 262
+        },
+        "sha256": "9c4c26f4831f1099230553721b423dd43872d41db04dc1935471829c06c50ee8"
+      }
     },
     {
       "id": "automation",
       "label": "Automation",
       "family": "Controls",
-      "prompt": "prompts/automation.txt"
+      "prompt": "prompts/automation.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 1272,
+          "top": 0,
+          "width": 264,
+          "height": 256
+        },
+        "sha256": "d594452085d631ebf2f7d8e58c501a21698c78005c1913ec8a69971214ca8070"
+      }
     },
     {
       "id": "map",
       "label": "World Map",
       "family": "Controls",
-      "prompt": "prompts/map.txt"
+      "prompt": "prompts/map.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 512,
+          "top": 256,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "b74c08682d279e09dcfbbbcb789527af99350bc429ce2f4224e29530d47af972"
+      }
     },
     {
       "id": "guild",
       "label": "Guild",
       "family": "Controls",
-      "prompt": "prompts/guild.txt"
+      "prompt": "prompts/guild.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 0,
+          "top": 265,
+          "width": 256,
+          "height": 247
+        },
+        "sha256": "8703fd1ffdcd675dfc594f84ba9b24c4780a77380550fce71352aaab5e7d1284"
+      }
     },
     {
       "id": "close",
       "label": "Close",
       "family": "Controls",
-      "prompt": "prompts/close.txt"
+      "prompt": "prompts/close.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 267,
+          "top": 512,
+          "width": 245,
+          "height": 239
+        },
+        "sha256": "5dece468ded8a7e77e48fb9407417be7abd308e583b81421850751de792be1e3"
+      }
     },
     {
       "id": "check",
       "label": "Check",
       "family": "Controls",
-      "prompt": "prompts/check.txt"
+      "prompt": "prompts/check.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 512,
+          "top": 512,
+          "width": 256,
+          "height": 241
+        },
+        "sha256": "5dae09fd7d31152ad42cb4b077bef8fd2ec8f8ae68b8b7e731da41201c8d4559"
+      }
     },
     {
       "id": "chevron-down",
       "label": "Chevron Down",
       "family": "Controls",
-      "prompt": "prompts/chevron-down.txt"
+      "prompt": "prompts/chevron-down.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 768,
+          "top": 512,
+          "width": 256,
+          "height": 239
+        },
+        "sha256": "7f0c1736520f8f53ec0031c74b7d3d22aa0125eadabe5dcfd6bc441e662aeef8"
+      }
     },
     {
       "id": "arrow-right",
       "label": "Arrow Right",
       "family": "Controls",
-      "prompt": "prompts/arrow-right.txt"
+      "prompt": "prompts/arrow-right.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 256,
+          "top": 258,
+          "width": 256,
+          "height": 254
+        },
+        "sha256": "3d864b10a85ef83b4022d55a8bc920ffa44c14f776c827184cb150ddcfa28ecd"
+      }
     },
     {
       "id": "plus",
       "label": "Plus",
       "family": "Controls",
-      "prompt": "prompts/plus.txt"
+      "prompt": "prompts/plus.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 1024,
+          "top": 512,
+          "width": 256,
+          "height": 239
+        },
+        "sha256": "77e84af56019ae9104843c4f42bfa6351791656fe795d88c343d559cbabb31e8"
+      }
     },
     {
       "id": "search",
       "label": "Search",
       "family": "Controls",
-      "prompt": "prompts/search.txt"
+      "prompt": "prompts/search.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 0,
+          "top": 512,
+          "width": 267,
+          "height": 241
+        },
+        "sha256": "df5db02ee8776ad17cbc47893cda0c613f8a8a15497f99e41715e96403d3a353"
+      }
     },
     {
       "id": "pause",
       "label": "Pause",
       "family": "Controls",
-      "prompt": "prompts/pause.txt"
+      "prompt": "prompts/pause.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 512,
+          "top": 258,
+          "width": 256,
+          "height": 254
+        },
+        "sha256": "fcab1134f97251f3e8bb19952df738b8492c0a8f3cb5f75f26c2b9b11cecac3c"
+      }
     },
     {
       "id": "play",
       "label": "Play",
       "family": "Controls",
-      "prompt": "prompts/play.txt"
+      "prompt": "prompts/play.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 512,
+          "top": 0,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "7ec8a7b95c6f4b3e013e95546f376c01f54630f3dc680ba99b3fd8b5122220b6"
+      }
     },
     {
       "id": "refresh",
       "label": "Refresh",
       "family": "Controls",
-      "prompt": "prompts/refresh.txt"
+      "prompt": "prompts/refresh.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 1280,
+          "top": 512,
+          "width": 256,
+          "height": 249
+        },
+        "sha256": "9d4f2d2782c1a9b2a85ed097241a7e3c7f79e04c52bcc81da31e7426ec9ce5df"
+      }
     },
     {
       "id": "warning",
       "label": "Warning",
       "family": "Controls",
-      "prompt": "prompts/warning.txt"
+      "prompt": "prompts/warning.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 0,
+          "top": 753,
+          "width": 267,
+          "height": 271
+        },
+        "sha256": "53333fc46197edab02929b4357b470d1c9219aee8bf20c9da0741791d25c70cf"
+      }
     },
     {
       "id": "info",
       "label": "Info",
       "family": "Controls",
-      "prompt": "prompts/info.txt"
+      "prompt": "prompts/info.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 267,
+          "top": 751,
+          "width": 245,
+          "height": 273
+        },
+        "sha256": "da62b83208b386eb3e6ccef00fbe85f5dd66317f14a357ade2d18792a443ec18"
+      }
     },
     {
       "id": "copy",
       "label": "Copy",
       "family": "Controls",
-      "prompt": "prompts/copy.txt"
+      "prompt": "prompts/copy.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 512,
+          "top": 753,
+          "width": 256,
+          "height": 271
+        },
+        "sha256": "74f90dd1f1783b8850b58fd4b0e93f9e4ad66c187d1b1ef985fdb147d7e37ec6"
+      }
     },
     {
       "id": "eye",
       "label": "Eye",
       "family": "Controls",
-      "prompt": "prompts/eye.txt"
+      "prompt": "prompts/eye.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 768,
+          "top": 271,
+          "width": 256,
+          "height": 241
+        },
+        "sha256": "1145f5cfed281bd08d8ec789165295afcae6f2de4c46f6f5997ace996f89b1e1"
+      }
     },
     {
       "id": "lock",
       "label": "Lock",
       "family": "Controls",
-      "prompt": "prompts/lock.txt"
+      "prompt": "prompts/lock.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 1024,
+          "top": 262,
+          "width": 248,
+          "height": 250
+        },
+        "sha256": "a4b0c0040b09453388def3309699b7bd0619da6ee2e3a9945e6df1b396bc33f6"
+      }
     },
     {
       "id": "unlock",
       "label": "Unlock",
       "family": "Controls",
-      "prompt": "prompts/unlock.txt"
+      "prompt": "prompts/unlock.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 1272,
+          "top": 256,
+          "width": 264,
+          "height": 256
+        },
+        "sha256": "8256304a8dd1941f31f7212f0c136ad0089e22569c58ee0f33c6b49dd82338bf"
+      }
     },
     {
       "id": "edit",
       "label": "Edit",
       "family": "Controls",
-      "prompt": "prompts/edit.txt"
+      "prompt": "prompts/edit.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 0,
+          "top": 512,
+          "width": 256,
+          "height": 244
+        },
+        "sha256": "1d7b9216576baaf73dc6c4c9b342ab4ab712d1dfe1c53ac619e2e7870c8a7083"
+      }
     },
     {
       "id": "trash",
       "label": "Trash",
       "family": "Controls",
-      "prompt": "prompts/trash.txt"
+      "prompt": "prompts/trash.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 256,
+          "top": 512,
+          "width": 256,
+          "height": 247
+        },
+        "sha256": "5ee7b4156a2ab996b2bc4012f6a98fdf6cf407ab80427c6b5c74dc319f9cf110"
+      }
     },
     {
       "id": "mail",
       "label": "Mail",
       "family": "Controls",
-      "prompt": "prompts/mail.txt"
+      "prompt": "prompts/mail.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 512,
+          "top": 512,
+          "width": 256,
+          "height": 242
+        },
+        "sha256": "57896c9d3a70e5243496e954b7d168e03d7337614e779fc0c8d0ea01b805d900"
+      }
     },
     {
       "id": "crown",
       "label": "Crown",
       "family": "Controls",
-      "prompt": "prompts/crown.txt"
+      "prompt": "prompts/crown.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 768,
+          "top": 512,
+          "width": 256,
+          "height": 242
+        },
+        "sha256": "c3d3a4c9b51187997251e3a2b66e562d2b94b30e528ff350236b94ce4a48d5f0"
+      }
     },
     {
       "id": "pickaxe",
       "label": "Pickaxe",
       "family": "Controls",
-      "prompt": "prompts/pickaxe.txt"
+      "prompt": "prompts/pickaxe.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 1024,
+          "top": 512,
+          "width": 248,
+          "height": 249
+        },
+        "sha256": "d0c4651332d95318ec5e1fe12bf124079bff9745d5cb20bff446bd778528ff12"
+      }
     },
     {
       "id": "people",
       "label": "People",
       "family": "Controls",
-      "prompt": "prompts/people.txt"
+      "prompt": "prompts/people.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 1272,
+          "top": 512,
+          "width": 264,
+          "height": 241
+        },
+        "sha256": "5c552518ec03b3a30c0d1eb0c2f7370450faa057d11e2073040951bfd823edc5"
+      }
     },
     {
       "id": "person",
       "label": "Person",
       "family": "Controls",
-      "prompt": "prompts/person.txt"
+      "prompt": "prompts/person.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 1280,
+          "top": 256,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "874199d18f95a7bcda0a2ef88e2ef253aaf75f569a3316145f2ac959584fb091"
+      }
     },
     {
       "id": "skull",
       "label": "Skull",
       "family": "Controls",
-      "prompt": "prompts/skull.txt"
+      "prompt": "prompts/skull.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 0,
+          "top": 756,
+          "width": 256,
+          "height": 268
+        },
+        "sha256": "1ab1cde8bbcef58c39ec8c53708eb34632d468c55c7b413ec512420d391e5481"
+      }
     },
     {
       "id": "star",
       "label": "Star",
       "family": "Controls",
-      "prompt": "prompts/star.txt"
+      "prompt": "prompts/star.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 256,
+          "top": 759,
+          "width": 256,
+          "height": 265
+        },
+        "sha256": "256059ba81e33aebd1f55d971b5a14809980387b56d2c57a5f4dec0581809557"
+      }
     },
     {
       "id": "flame",
       "label": "Flame",
       "family": "Controls",
-      "prompt": "prompts/flame.txt"
+      "prompt": "prompts/flame.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 512,
+          "top": 754,
+          "width": 256,
+          "height": 270
+        },
+        "sha256": "71c035d9514fe1c1c6342b90df52ffbbd670321c8fe237927e5d547d3e1080a8"
+      }
     },
     {
       "id": "sun",
       "label": "Sun",
       "family": "Controls",
-      "prompt": "prompts/sun.txt"
+      "prompt": "prompts/sun.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 768,
+          "top": 754,
+          "width": 256,
+          "height": 270
+        },
+        "sha256": "e540a605fee72d5e3429641c49c4845d41999bb7624fa734ddcc3263ea62dd3d"
+      }
     },
     {
       "id": "moon",
       "label": "Moon",
       "family": "Controls",
-      "prompt": "prompts/moon.txt"
+      "prompt": "prompts/moon.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 1024,
+          "top": 761,
+          "width": 248,
+          "height": 263
+        },
+        "sha256": "ec80d8a0de208df3702497e2243493b6e4b6a4800737562261aac854833a1f17"
+      }
     },
     {
       "id": "location",
       "label": "Location",
       "family": "Controls",
-      "prompt": "prompts/location.txt"
+      "prompt": "prompts/location.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-2.png",
+        "sheetSha256": "3fd4c44a687765f7200c4c23076edd77cb157052d9d8c96dcac79e5540d7dfde",
+        "crop": {
+          "left": 1272,
+          "top": 753,
+          "width": 264,
+          "height": 271
+        },
+        "sha256": "92ecbfa098268ecc915e7bb0c6cfe6ba82664efbfb1fccd1f9ded697f7e564c8"
+      }
     },
     {
       "id": "target",
       "label": "Target",
       "family": "Controls",
-      "prompt": "prompts/target.txt"
+      "prompt": "prompts/target.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 0,
+          "top": 0,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "731785f5edd28554d2ea2affafa4931c7ec38ea2b5d6b5dc7d9d2d532589d213"
+      }
     },
     {
       "id": "calendar",
       "label": "Calendar",
       "family": "Controls",
-      "prompt": "prompts/calendar.txt"
+      "prompt": "prompts/calendar.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 256,
+          "top": 0,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "001708d45e272f609b82193f0c067a1f02a9a2a3ed4964a292e7becc00653f5f"
+      }
     },
     {
       "id": "expand",
       "label": "Expand",
       "family": "Controls",
-      "prompt": "prompts/expand.txt"
+      "prompt": "prompts/expand.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 512,
+          "top": 0,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "7e8e5847e2ddc7815ca9e08995c44f40c7cb99765c0b623e47f56426b9ee20c8"
+      }
     },
     {
       "id": "collapse",
       "label": "Collapse",
       "family": "Controls",
-      "prompt": "prompts/collapse.txt"
+      "prompt": "prompts/collapse.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 768,
+          "top": 0,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "f695fb2c55b5870031f6a8b9a2a8261b868cd4c9de32181c602a619c50d96bfe"
+      }
     },
     {
       "id": "menu",
       "label": "Menu",
       "family": "Controls",
-      "prompt": "prompts/menu.txt"
+      "prompt": "prompts/menu.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 0,
+          "top": 0,
+          "width": 267,
+          "height": 256
+        },
+        "sha256": "0ed55beac7c4b32e23602180f5f7053c14cc2490ddfcbc67375efe1561f9f056"
+      }
     },
     {
       "id": "volume",
       "label": "Volume",
       "family": "Controls",
-      "prompt": "prompts/volume.txt"
+      "prompt": "prompts/volume.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 1024,
+          "top": 0,
+          "width": 247,
+          "height": 256
+        },
+        "sha256": "6cccd2c69dad8a8786c00c993e91d9455434a0f2282a028db8aa43046a96df86"
+      }
     },
     {
       "id": "mute",
       "label": "Mute",
       "family": "Controls",
-      "prompt": "prompts/mute.txt"
+      "prompt": "prompts/mute.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 1271,
+          "top": 0,
+          "width": 265,
+          "height": 256
+        },
+        "sha256": "b5c095c4add9cd834433c17072b903e2cbee8d514bf9104459098e769ad1f828"
+      }
     },
     {
       "id": "music",
       "label": "Music",
       "family": "Controls",
-      "prompt": "prompts/music.txt"
+      "prompt": "prompts/music.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 0,
+          "top": 256,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "dc28b6e3ae33066600a89ceecdffacc04c790a64c4a1c3b1d51b316a2c9733d3"
+      }
     },
     {
       "id": "camera",
       "label": "Camera",
       "family": "Controls",
-      "prompt": "prompts/camera.txt"
+      "prompt": "prompts/camera.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 256,
+          "top": 256,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "ef7353538202ff876a867826347093dbb113d7202653a16947cbe3d686d8693e"
+      }
     },
     {
       "id": "video",
       "label": "Video",
       "family": "Controls",
-      "prompt": "prompts/video.txt"
+      "prompt": "prompts/video.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 512,
+          "top": 256,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "f735ae9472dbfd0e93d71800cf8de11438a47eb67419593cf43e6a0501793a75"
+      }
     },
     {
       "id": "bug",
       "label": "Bug",
       "family": "Controls",
-      "prompt": "prompts/bug.txt"
+      "prompt": "prompts/bug.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 768,
+          "top": 256,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "0acc5e70077d14e034dd5fc68a3a5677f3e95ec587e8145c2fdb762aabbfb430"
+      }
     },
     {
       "id": "dice",
       "label": "Dice",
       "family": "Controls",
-      "prompt": "prompts/dice.txt"
+      "prompt": "prompts/dice.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 1024,
+          "top": 256,
+          "width": 247,
+          "height": 256
+        },
+        "sha256": "503f129b13a6ab18b260fc7a761b399bd1a08a64c411a185310d70cc9464c0c6"
+      }
     },
     {
       "id": "gauge",
       "label": "Gauge",
       "family": "Controls",
-      "prompt": "prompts/gauge.txt"
+      "prompt": "prompts/gauge.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 1271,
+          "top": 256,
+          "width": 265,
+          "height": 256
+        },
+        "sha256": "e84ae3404fbdb830412008ffa8814e0b50174f7ded28fff814116824629078b9"
+      }
     },
     {
       "id": "anchor",
       "label": "Anchor",
       "family": "Controls",
-      "prompt": "prompts/anchor.txt"
+      "prompt": "prompts/anchor.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 0,
+          "top": 512,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "f8c45148cc1eb4ac8b26e5862f12eee2d4134687d795f891e19d62d38f5f5902"
+      }
     },
     {
       "id": "ship",
       "label": "Ship",
       "family": "Controls",
-      "prompt": "prompts/ship.txt"
+      "prompt": "prompts/ship.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 256,
+          "top": 512,
+          "width": 256,
+          "height": 249
+        },
+        "sha256": "fa736c15f43fddcb61f66c6a752d7474b8b9a4662798ea4fc70e0d5c170b89b4"
+      }
     },
     {
       "id": "waves",
       "label": "Waves",
       "family": "Controls",
-      "prompt": "prompts/waves.txt"
+      "prompt": "prompts/waves.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 512,
+          "top": 512,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "36bf45a134ba94a0bcdd83c608ff3c6b0b5b811967e82accac9e49f34ae79168"
+      }
     },
     {
       "id": "flag",
       "label": "Flag",
       "family": "Controls",
-      "prompt": "prompts/flag.txt"
+      "prompt": "prompts/flag.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 768,
+          "top": 512,
+          "width": 256,
+          "height": 236
+        },
+        "sha256": "2a998c8a520be8f7ccc6dbfd114d94ba32e4866fede91e17f190829df6aef4e9"
+      }
     },
     {
       "id": "layers",
       "label": "Layers",
       "family": "Controls",
-      "prompt": "prompts/layers.txt"
+      "prompt": "prompts/layers.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 1024,
+          "top": 512,
+          "width": 247,
+          "height": 244
+        },
+        "sha256": "a33113c8499e5c18197fb2fefe2af9c24f1ea145f6b1457ca8fd4666078542e9"
+      }
     },
     {
       "id": "hexagon",
       "label": "Hexagon",
       "family": "Controls",
-      "prompt": "prompts/hexagon.txt"
+      "prompt": "prompts/hexagon.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 1271,
+          "top": 512,
+          "width": 265,
+          "height": 256
+        },
+        "sha256": "5bdc9c2bb39682cb721dfc0051fe5ebc69b7490d37fee98b3967d4ef78c63e6f"
+      }
     },
     {
       "id": "hash",
       "label": "Hash",
       "family": "Controls",
-      "prompt": "prompts/hash.txt"
+      "prompt": "prompts/hash.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 0,
+          "top": 768,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "40249d54959f47a706d461fc0dfb100b1699e00a5869799aa7dce35730dc4110"
+      }
     },
     {
       "id": "share",
       "label": "Share",
       "family": "Controls",
-      "prompt": "prompts/share.txt"
+      "prompt": "prompts/share.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 256,
+          "top": 761,
+          "width": 256,
+          "height": 263
+        },
+        "sha256": "530bf1b58366293d8d6e466695413d7d376428b09232f6a6a87d8fb35befd9bc"
+      }
     },
     {
       "id": "notifications",
       "label": "Bell",
       "family": "Controls",
-      "prompt": "prompts/notifications.txt"
+      "prompt": "prompts/notifications.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 1024,
+          "top": 751,
+          "width": 256,
+          "height": 273
+        },
+        "sha256": "7316edfbebd935ee6b2526a23d64d85e059500e23bf5f6a9238072e3d1abf1d4"
+      }
     },
     {
       "id": "book",
       "label": "Book",
       "family": "Controls",
-      "prompt": "prompts/book.txt"
+      "prompt": "prompts/book.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 512,
+          "top": 768,
+          "width": 256,
+          "height": 256
+        },
+        "sha256": "b0a4125198a2d9ae8cd3f3cafc069c979b571fba784420cc48f398037276ea08"
+      }
     },
     {
       "id": "rocket",
       "label": "Rocket",
       "family": "Controls",
-      "prompt": "prompts/rocket.txt"
+      "prompt": "prompts/rocket.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 768,
+          "top": 748,
+          "width": 256,
+          "height": 276
+        },
+        "sha256": "52fb900b2656eb114abb76a6c8349fbc36c0127ac3c5b0397c514db3b9acbe01"
+      }
     },
     {
       "id": "wrench",
       "label": "Wrench",
       "family": "Controls",
-      "prompt": "prompts/wrench.txt"
+      "prompt": "prompts/wrench.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 1024,
+          "top": 756,
+          "width": 247,
+          "height": 268
+        },
+        "sha256": "4c2c8343c8895a3d5fcd2178b2f863d59c0c9eb88fa668ce5d2f85ab4aed6b56"
+      }
     },
     {
       "id": "mountain",
       "label": "Mountain",
       "family": "Controls",
-      "prompt": "prompts/mountain.txt"
+      "prompt": "prompts/mountain.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-3.png",
+        "sheetSha256": "14267d192248ebf5440c936101540b4bda7692237052bc3854807fe7c540e7a7",
+        "crop": {
+          "left": 1271,
+          "top": 768,
+          "width": 265,
+          "height": 256
+        },
+        "sha256": "c0ae414bfc98b9129edba7eef4293788899c8f5e12a05d4c4556c5f238d98cf8"
+      }
     },
     {
       "id": "trees",
       "label": "Trees",
       "family": "Controls",
-      "prompt": "prompts/trees.txt"
+      "prompt": "prompts/trees.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 0,
+          "top": 0,
+          "width": 268,
+          "height": 270
+        },
+        "sha256": "31485ccd0f2af24ad48d697b6d2280b181538f47341f761831e5f1f47e78fb53"
+      }
     },
     {
       "id": "watch",
       "label": "Telescope",
       "family": "Controls",
-      "prompt": "prompts/watch.txt"
+      "prompt": "prompts/watch.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 268,
+          "top": 0,
+          "width": 263,
+          "height": 256
+        },
+        "sha256": "0793d3ba50434f3b131734bfa687595dfacdf2337f985f12889e87ae1deaf978"
+      }
     },
     {
       "id": "route",
       "label": "Route",
       "family": "Controls",
-      "prompt": "prompts/route.txt"
+      "prompt": "prompts/route.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 531,
+          "top": 0,
+          "width": 237,
+          "height": 256
+        },
+        "sha256": "f1eea979cd0666c52e9f1dc24cc2f3e14eddee36a10f1268d658cdb29a9fe74c"
+      }
     },
     {
       "id": "network-off",
       "label": "Network Off",
       "family": "Controls",
-      "prompt": "prompts/network-off.txt"
+      "prompt": "prompts/network-off.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 768,
+          "top": 0,
+          "width": 256,
+          "height": 266
+        },
+        "sha256": "34e753500367313e7e5795fda9d511f60e91c7666e4056c36861e84a25cf870b"
+      }
     },
     {
       "id": "monitor",
       "label": "Monitor",
       "family": "Controls",
-      "prompt": "prompts/monitor.txt"
+      "prompt": "prompts/monitor.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 1024,
+          "top": 0,
+          "width": 255,
+          "height": 265
+        },
+        "sha256": "0e44029acbce98cf61b6475b8baa6c702fa759ec9ec6d0c7e5c8e652e89fb16c"
+      }
     },
     {
       "id": "activity",
       "label": "Activity",
       "family": "Controls",
-      "prompt": "prompts/activity.txt"
+      "prompt": "prompts/activity.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 1279,
+          "top": 0,
+          "width": 257,
+          "height": 263
+        },
+        "sha256": "4bc57961c59cf7e19f6dafbf360dad2806ad2a08708883b1b09fa53d7e649357"
+      }
     },
     {
       "id": "cloud-lightning",
       "label": "Cloud Lightning",
       "family": "Controls",
-      "prompt": "prompts/cloud-lightning.txt"
+      "prompt": "prompts/cloud-lightning.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 0,
+          "top": 270,
+          "width": 268,
+          "height": 247
+        },
+        "sha256": "237a33090f154c1a902b24c548304df3315321c0281ed4c115297c2a6781e073"
+      }
     },
     {
       "id": "download",
       "label": "Download",
       "family": "Controls",
-      "prompt": "prompts/download.txt"
+      "prompt": "prompts/download.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 268,
+          "top": 256,
+          "width": 263,
+          "height": 256
+        },
+        "sha256": "b4d9079d8b3db59ef1dad9fdef1d9af83124460d98c8c1ee33daf0e817a87298"
+      }
     },
     {
       "id": "external-link",
       "label": "External Link",
       "family": "Controls",
-      "prompt": "prompts/external-link.txt"
+      "prompt": "prompts/external-link.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 531,
+          "top": 256,
+          "width": 237,
+          "height": 256
+        },
+        "sha256": "c828760661540a6644f4f1155f771cb50eb468265ca3e6531e9dbc4590e6a25e"
+      }
     },
     {
       "id": "swap",
       "label": "Swap",
       "family": "Controls",
-      "prompt": "prompts/swap.txt"
+      "prompt": "prompts/swap.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 768,
+          "top": 266,
+          "width": 256,
+          "height": 246
+        },
+        "sha256": "533468d3572043abc4c5cb429f17aba656556b9a9905b3b5e8bdbb45ff34ea80"
+      }
     },
     {
       "id": "skip",
       "label": "Skip",
       "family": "Controls",
-      "prompt": "prompts/skip.txt"
+      "prompt": "prompts/skip.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 1024,
+          "top": 265,
+          "width": 255,
+          "height": 247
+        },
+        "sha256": "3bbca8aa6bbc669133c7632c905abad25ab3f0eb6cf69e6eefccbf4e9407accd"
+      }
     },
     {
       "id": "step",
       "label": "Step",
       "family": "Controls",
-      "prompt": "prompts/step.txt"
+      "prompt": "prompts/step.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 1279,
+          "top": 263,
+          "width": 257,
+          "height": 249
+        },
+        "sha256": "9023f3c46c806cd94a5a74168aa57bdc1e1e08c589a4808fc1bb4417eae7f215"
+      }
     },
     {
       "id": "minus",
       "label": "Minus",
       "family": "Controls",
-      "prompt": "prompts/minus.txt"
+      "prompt": "prompts/minus.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 0,
+          "top": 517,
+          "width": 268,
+          "height": 234
+        },
+        "sha256": "ef4450e07144aca69cccf4ec46409f250e10cc0aa4e83af8d0c5488cc5fda6aa"
+      }
     },
     {
       "id": "pin",
       "label": "Pin",
       "family": "Controls",
-      "prompt": "prompts/pin.txt"
+      "prompt": "prompts/pin.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 268,
+          "top": 512,
+          "width": 263,
+          "height": 256
+        },
+        "sha256": "e1b7bf0c2901bed0c033e87c5f5b33191930368122ab21583f539fe369e61500"
+      }
     },
     {
       "id": "backpack",
       "label": "Backpack",
       "family": "Controls",
-      "prompt": "prompts/backpack.txt"
+      "prompt": "prompts/backpack.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 531,
+          "top": 512,
+          "width": 237,
+          "height": 244
+        },
+        "sha256": "5ca0edf6f99ac0c753fbc061066357bbc6735f23c05a83c36b1cc7dce94babf0"
+      }
     },
     {
       "id": "resources",
@@ -911,43 +2246,134 @@
       "id": "defend",
       "label": "Defend",
       "family": "Statuses",
-      "prompt": "prompts/defend.txt"
+      "prompt": "prompts/defend.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 1024,
+          "top": 0,
+          "width": 256,
+          "height": 259
+        },
+        "sha256": "fa48b9b7d5170a37c523bdacb567bfe4a4f9d073ce89bb0c55f0dbbf27046fa2"
+      }
     },
     {
       "id": "home",
       "label": "Home",
       "family": "Shell",
-      "prompt": "prompts/home.txt"
+      "prompt": "prompts/home.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 768,
+          "top": 512,
+          "width": 256,
+          "height": 240
+        },
+        "sha256": "184ce6d49985b4f6b114d7c2a66de1fde83b2048d803ed872a7cbd0370e53364"
+      }
     },
     {
       "id": "exit",
       "label": "Leave",
       "family": "Shell",
-      "prompt": "prompts/exit.txt"
+      "prompt": "prompts/exit.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 1024,
+          "top": 512,
+          "width": 255,
+          "height": 243
+        },
+        "sha256": "059cf45a9723703c3127684e7e342043e8e68a5de9a5373695c1bf6447411511"
+      }
     },
     {
       "id": "guide",
       "label": "Guide",
       "family": "Shell",
-      "prompt": "prompts/guide.txt"
+      "prompt": "prompts/guide.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 1279,
+          "top": 512,
+          "width": 257,
+          "height": 256
+        },
+        "sha256": "79d3bf14fcbad345ecc4b7a64d2ad2756f338e0d117e89e5d248c7cdfffad2f6"
+      }
     },
     {
       "id": "chronicles",
       "label": "Chronicles",
       "family": "Shell",
-      "prompt": "prompts/chronicles.txt"
+      "prompt": "prompts/chronicles.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 0,
+          "top": 751,
+          "width": 268,
+          "height": 273
+        },
+        "sha256": "ada3a21d79d0a3749e7126c6d5f874c47ba918b24b6b3a2922538693159ce442"
+      }
     },
     {
       "id": "news",
       "label": "News",
       "family": "Shell",
-      "prompt": "prompts/news.txt"
+      "prompt": "prompts/news.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 268,
+          "top": 768,
+          "width": 263,
+          "height": 256
+        },
+        "sha256": "780528ed6fef7a97b9fb920e5d6e2e52e4af2bdc98a2378e439590c317cbae75"
+      }
     },
     {
       "id": "help",
       "label": "Help",
       "family": "Shell",
-      "prompt": "prompts/help.txt"
+      "prompt": "prompts/help.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 531,
+          "top": 756,
+          "width": 237,
+          "height": 268
+        },
+        "sha256": "20b834226ba09412f8039f8137b1c370b23835fd963c024d20d3fa1c2798012e"
+      }
     },
     {
       "id": "bank",
@@ -965,55 +2391,159 @@
       "id": "relics",
       "label": "Relics",
       "family": "Statuses",
-      "prompt": "prompts/relics.txt"
+      "prompt": "prompts/relics.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 768,
+          "top": 752,
+          "width": 256,
+          "height": 272
+        },
+        "sha256": "5e52c58cbe76e6daec91e263d1ba73f1f0bef734398f4a6c6b4c1e6c41bc29b9"
+      }
     },
     {
       "id": "health",
       "label": "Health",
       "family": "Statuses",
-      "prompt": "prompts/health.txt"
+      "prompt": "prompts/health.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 1280,
+          "top": 761,
+          "width": 256,
+          "height": 263
+        },
+        "sha256": "93d6f44521fececff71a9e348b94740255ccbca516e2189a0a827b7064deeea0"
+      }
     },
     {
       "id": "strength",
       "label": "Strength",
       "family": "Statuses",
-      "prompt": "prompts/strength.txt"
+      "prompt": "prompts/strength.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 1024,
+          "top": 755,
+          "width": 255,
+          "height": 269
+        },
+        "sha256": "94c9fce3085ed9ea9e3340105ed98a5633088b8ef1c6db7c764f98fa0b9d47ef"
+      }
     },
     {
       "id": "claim",
       "label": "Claim",
       "family": "Actions",
-      "prompt": "prompts/claim.txt"
+      "prompt": "prompts/claim.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-4.png",
+        "sheetSha256": "b2691233a5b2b89a7cf1c61a72940cbc111916a5e4d9528e82be7eabad6da3e6",
+        "crop": {
+          "left": 1279,
+          "top": 768,
+          "width": 257,
+          "height": 256
+        },
+        "sha256": "a8a9a9cf17fc87d3219c3c862da657acd0a0172ce0348a9d8f2ba0be28b58986"
+      }
     },
     {
       "id": "raid",
       "label": "Raid",
       "family": "Actions",
-      "prompt": "prompts/raid.txt"
+      "prompt": "prompts/raid.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-5.png",
+        "sheetSha256": "06692c8d539b910a2f759fdf523a21972d2c92001e1c346f9c557d1905a8d05b",
+        "crop": {
+          "left": 0,
+          "top": 0,
+          "width": 373,
+          "height": 385
+        },
+        "sha256": "ab1ca5d989ef61eda7bd0810dcd70beb6588ae6286c261f4c4bc04622dfd149e"
+      }
     },
     {
       "id": "deploy",
       "label": "Deploy",
       "family": "Actions",
-      "prompt": "prompts/deploy.txt"
+      "prompt": "prompts/deploy.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-5.png",
+        "sheetSha256": "06692c8d539b910a2f759fdf523a21972d2c92001e1c346f9c557d1905a8d05b",
+        "crop": {
+          "left": 373,
+          "top": 0,
+          "width": 351,
+          "height": 391
+        },
+        "sha256": "de75be1227dd76a524c5c298ed50cf6475f90f820357c077423b5eaa4d7688ec"
+      }
     },
     {
       "id": "upgrade",
       "label": "Upgrade",
       "family": "Actions",
-      "prompt": "prompts/upgrade.txt"
+      "prompt": "prompts/upgrade.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-5.png",
+        "sheetSha256": "06692c8d539b910a2f759fdf523a21972d2c92001e1c346f9c557d1905a8d05b",
+        "crop": {
+          "left": 724,
+          "top": 0,
+          "width": 336,
+          "height": 373
+        },
+        "sha256": "55462947c67ab286540edcdc8ac2331277e9106e47ac0cb1446d28793029ef3e"
+      }
     },
     {
       "id": "travel",
       "label": "Travel",
       "family": "Actions",
-      "prompt": "prompts/travel.txt"
+      "prompt": "prompts/travel.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-5.png",
+        "sheetSha256": "06692c8d539b910a2f759fdf523a21972d2c92001e1c346f9c557d1905a8d05b",
+        "crop": {
+          "left": 1060,
+          "top": 0,
+          "width": 388,
+          "height": 371
+        },
+        "sha256": "0dd3e7d4a485f1d783715d96f68c621219eac0666e25c3f2e9a7d407cf8ac9fd"
+      }
     },
     {
-      "id": "stragglers",
-      "label": "Stragglers",
+      "id": "beasts",
+      "label": "Beasts",
       "family": "Structures",
-      "prompt": "prompts/stragglers.txt"
+      "prompt": "prompts/beasts.txt"
     },
     {
       "id": "shrine",
@@ -1037,13 +2567,29 @@
       "id": "rift",
       "label": "Rift",
       "family": "Structures",
-      "prompt": "prompts/rift.txt"
+      "prompt": "prompts/rift.txt",
+      "source": {
+        "model": "/models/reward-tiles/rift.glb",
+        "inputs": {
+          "apps/game/public/models/reward-tiles/rift.glb": "134730f681899c93287d6167946d58c3f9cfdca7b443f8131e495638135ed2d9",
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
+        },
+        "sha256": "45d92b72f0a877456444727a386e433d174b1ed285e4917029102a54fdd08ff3"
+      }
     },
     {
       "id": "spire",
       "label": "Spire",
       "family": "Structures",
-      "prompt": "prompts/spire.txt"
+      "prompt": "prompts/spire.txt",
+      "source": {
+        "model": "/models/ethereal/spire.glb",
+        "inputs": {
+          "apps/game/public/models/ethereal/spire.glb": "3f53c5bf3892be2e577a7e5ff26e67bf6a9d6fec7df3751a912766874ac04b06",
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
+        },
+        "sha256": "83ade5ae2e7820676f9a869cdbaf535ba8a424b7eef363209e9232a6e38cf853"
+      }
     },
     {
       "id": "bitcoin-mine",
@@ -1073,13 +2619,28 @@
       "id": "farm",
       "label": "Farm",
       "family": "Structures",
-      "prompt": "prompts/farm.txt"
+      "prompt": "prompts/farm.txt",
+      "source": {
+        "model": "/models/new-buildings-opt/farm.glb",
+        "inputs": {
+          "apps/game/public/models/new-buildings-opt/farm.glb": "29bdee8dc0e9db8e45afc730b7092cfc794d9fef07dc145d67afcf1d197c4187",
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
+        },
+        "sha256": "b5dae52cc40030b7bdf9788defb0070ae9e6630740bd5e3edcfc34e092ef3568"
+      }
     },
     {
       "id": "workshop",
       "label": "Workshop",
       "family": "Structures",
-      "prompt": "prompts/workshop.txt"
+      "source": {
+        "model": "/models/new-buildings-opt/workshop.glb",
+        "inputs": {
+          "apps/game/public/models/new-buildings-opt/workshop.glb": "f9b2864946c7d9122de26ee471447b2aeb042c0cc2a4bb4467bfe997b8298210",
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
+        },
+        "sha256": "b4e88a332b13a62fa3a78a207f9608b0e3b8fa044ddef072d0b7debed2e95aa1"
+      }
     },
     {
       "id": "barracks",
@@ -1091,7 +2652,15 @@
       "id": "workers-hut",
       "label": "Workers hut",
       "family": "Structures",
-      "prompt": "prompts/workers-hut.txt"
+      "prompt": "prompts/workers-hut.txt",
+      "source": {
+        "model": "/models/new-buildings-opt/workers_hut.glb",
+        "inputs": {
+          "apps/game/public/models/new-buildings-opt/workers_hut.glb": "1b158f385d0c420e0cb0516a097c905bb9f621da01a665d43713162b8018d353",
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
+        },
+        "sha256": "9495de6067634afad03bd5239def44324332cf708d4e8d846bafe2cf92d01dca"
+      }
     },
     {
       "id": "war-hall",
@@ -1157,49 +2726,153 @@
       "id": "final-seal",
       "label": "Final seal",
       "family": "Statuses",
-      "prompt": "prompts/final-seal.txt"
+      "prompt": "prompts/final-seal.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-5.png",
+        "sheetSha256": "06692c8d539b910a2f759fdf523a21972d2c92001e1c346f9c557d1905a8d05b",
+        "crop": {
+          "left": 0,
+          "top": 385,
+          "width": 373,
+          "height": 335
+        },
+        "sha256": "eecc3790698acf84014e58643bfa5ef6a0bfd1c771feb135bd4cee2f0a1dafee"
+      }
     },
     {
       "id": "army-capacity",
       "label": "Army capacity",
       "family": "Statuses",
-      "prompt": "prompts/army-capacity.txt"
+      "prompt": "prompts/army-capacity.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-5.png",
+        "sheetSha256": "06692c8d539b910a2f759fdf523a21972d2c92001e1c346f9c557d1905a8d05b",
+        "crop": {
+          "left": 373,
+          "top": 391,
+          "width": 351,
+          "height": 319
+        },
+        "sha256": "9c7bf32a05b2f702f1580e81e24117933ee7207350fc32e2c89242cfe543e987"
+      }
     },
     {
       "id": "clock",
       "label": "Match clock",
       "family": "Statuses",
-      "prompt": "prompts/clock.txt"
+      "prompt": "prompts/clock.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-5.png",
+        "sheetSha256": "06692c8d539b910a2f759fdf523a21972d2c92001e1c346f9c557d1905a8d05b",
+        "crop": {
+          "left": 724,
+          "top": 373,
+          "width": 336,
+          "height": 346
+        },
+        "sha256": "b7614c7eb6244408325de02bd4a858d44ad117dd36fd47ca2570c4610d1549cd"
+      }
     },
     {
       "id": "hourglass",
       "label": "Time remaining",
       "family": "Statuses",
-      "prompt": "prompts/hourglass.txt"
+      "prompt": "prompts/hourglass.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 768,
+          "top": 751,
+          "width": 256,
+          "height": 273
+        },
+        "sha256": "0ef6da6df4add9e03d43912f3234a0b2e1a300e3e98578c206159514f7db4193"
+      }
     },
     {
       "id": "depth-1",
       "label": "Ethereal reach I",
       "family": "Statuses",
-      "prompt": "prompts/depth-1.txt"
+      "prompt": "prompts/depth-1.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-5.png",
+        "sheetSha256": "06692c8d539b910a2f759fdf523a21972d2c92001e1c346f9c557d1905a8d05b",
+        "crop": {
+          "left": 1060,
+          "top": 371,
+          "width": 388,
+          "height": 353
+        },
+        "sha256": "a5d87346ca6f8a3717f130e4ca152ac7d55c416a8ced6e1a7c9580023a36e8bb"
+      }
     },
     {
       "id": "depth-2",
       "label": "Ethereal reach II",
       "family": "Statuses",
-      "prompt": "prompts/depth-2.txt"
+      "prompt": "prompts/depth-2.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-5.png",
+        "sheetSha256": "06692c8d539b910a2f759fdf523a21972d2c92001e1c346f9c557d1905a8d05b",
+        "crop": {
+          "left": 0,
+          "top": 720,
+          "width": 373,
+          "height": 366
+        },
+        "sha256": "f7a25e5d7d46da7a07858c482eee74566607bbe85097fc0b1989818ac44516da"
+      }
     },
     {
       "id": "depth-3",
       "label": "Ethereal reach III",
       "family": "Statuses",
-      "prompt": "prompts/depth-3.txt"
+      "prompt": "prompts/depth-3.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-5.png",
+        "sheetSha256": "06692c8d539b910a2f759fdf523a21972d2c92001e1c346f9c557d1905a8d05b",
+        "crop": {
+          "left": 373,
+          "top": 710,
+          "width": 351,
+          "height": 376
+        },
+        "sha256": "cb058714ef437783c36a155d94fb2634eb5de774e43702036413cb35744866a2"
+      }
     },
     {
       "id": "reward",
       "label": "Reward",
       "family": "Shell",
-      "prompt": "prompts/reward.txt"
+      "prompt": "prompts/reward.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-5.png",
+        "sheetSha256": "06692c8d539b910a2f759fdf523a21972d2c92001e1c346f9c557d1905a8d05b",
+        "crop": {
+          "left": 724,
+          "top": 719,
+          "width": 336,
+          "height": 367
+        },
+        "sha256": "9b87ee0a2319c2c8b73383ab2b14173ba88f9ccbca2d81f011c41d700d178e7a"
+      }
     },
     {
       "id": "stable",
@@ -1415,13 +3088,155 @@
       "id": "picks",
       "label": "Choose skill",
       "family": "HUD",
-      "prompt": "prompts/picks.txt"
+      "prompt": "prompts/picks.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-5.png",
+        "sheetSha256": "06692c8d539b910a2f759fdf523a21972d2c92001e1c346f9c557d1905a8d05b",
+        "crop": {
+          "left": 1060,
+          "top": 724,
+          "width": 388,
+          "height": 362
+        },
+        "sha256": "ac48f95bca6830af9f1d26d14bddeaa4c8737e84928d3e373bf223c2eae95e9c"
+      }
     },
     {
       "id": "twitter",
       "label": "Twitter",
-      "family": "HUD",
+      "family": "Brands",
       "prompt": "prompts/twitter.txt"
+    },
+    {
+      "id": "map-realm-0",
+      "label": "Settlement hex emblem",
+      "family": "Minimap",
+      "prompt": "prompts/map-realm-0.txt"
+    },
+    {
+      "id": "map-realm-1",
+      "label": "City hex emblem",
+      "family": "Minimap",
+      "prompt": "prompts/map-realm-1.txt"
+    },
+    {
+      "id": "realm-2",
+      "label": "Kingdom",
+      "family": "Structures",
+      "prompt": "prompts/realm-2.txt"
+    },
+    {
+      "id": "map-realm-2",
+      "label": "Kingdom hex emblem",
+      "family": "Minimap",
+      "prompt": "prompts/map-realm-2.txt"
+    },
+    {
+      "id": "map-realm-3",
+      "label": "Empire hex emblem",
+      "family": "Minimap",
+      "prompt": "prompts/map-realm-3.txt"
+    },
+    {
+      "id": "transfer",
+      "label": "Transfer",
+      "family": "Actions",
+      "prompt": "prompts/transfer.txt",
+      "source": {
+        "kind": "ivory-relief",
+        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
+        "path": "apps/game/asset-sources/glyph-style/sheets/relief-1.png",
+        "sheetSha256": "78ff9677f99451ac30d0b877102a92874f401896274ea60115f43fc3983ae33a",
+        "crop": {
+          "left": 0,
+          "top": 256,
+          "width": 267,
+          "height": 256
+        },
+        "sha256": "f42cf6a7a7183a888e47358a46ea3240808183849456e3a8303f1dfa2028cbc7"
+      }
+    },
+    {
+      "id": "beast-troll",
+      "label": "Troll",
+      "family": "Beasts",
+      "prompt": "prompts/beast-troll.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "24ac2ec5727873fc451e11eb90d9b45916440b6fcc63ff0b7bb5905dd8e47451"
+      }
+    },
+    {
+      "id": "beast-wyvern",
+      "label": "Wyvern",
+      "family": "Beasts",
+      "prompt": "prompts/beast-wyvern.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "6429f4a77ecec9e0c8287045343b16a9b8e8367c32455997166d117d1685b3c8"
+      }
+    },
+    {
+      "id": "beast-hydra",
+      "label": "Hydra",
+      "family": "Beasts",
+      "prompt": "prompts/beast-hydra.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "28c887a4fdeb7d477f065021756e308c78a821e49f46654170e03a4eeb0a54cb"
+      }
+    },
+    {
+      "id": "beast-wraith",
+      "label": "Wraith",
+      "family": "Beasts",
+      "prompt": "prompts/beast-wraith.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "2a6a3a0cf4cfd1f345e3e29e56ab0544e2193d26181c34947f342b2fd6278d95"
+      }
+    },
+    {
+      "id": "beast-cyclops",
+      "label": "Cyclops",
+      "family": "Beasts",
+      "prompt": "prompts/beast-cyclops.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "f5b1cc00c9a6c055b8a47bac1a2e28da61f18533cc9352005feb84dd140562de"
+      }
+    },
+    {
+      "id": "beast-ammit",
+      "label": "Ammit",
+      "family": "Beasts",
+      "prompt": "prompts/beast-ammit.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "2253b85d67ee33bceb93e52723b962848eed387b177113980a661b6eededd304"
+      }
+    },
+    {
+      "id": "beast-basilisk",
+      "label": "Basilisk",
+      "family": "Beasts",
+      "prompt": "prompts/beast-basilisk.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "6f96faad2b3a0c494f2eb7e2454674f37c3021ef4925c8b20cc21941a5104538"
+      }
+    },
+    {
+      "id": "beast-dark-fey",
+      "label": "Dark fey",
+      "family": "Beasts",
+      "prompt": "prompts/beast-dark-fey.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "fb42992e25b5433cef42aa42b63724029db28d34473e55a6b3938556f77e66c5"
+      }
     }
   ]
 }

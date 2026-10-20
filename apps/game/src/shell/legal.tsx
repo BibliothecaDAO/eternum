@@ -1,3 +1,4 @@
+import { FOOTER_WORDS, NEWS_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -5,9 +6,8 @@ import { Link } from "react-router-dom";
 import { communityPlace } from "./community";
 import { useLayout } from "./frame/layout";
 import { PageFrame } from "./frame/page-frame";
-import { WHATS_NEW_PATH } from "./news/posts";
-import { Panel } from "./panel";
-import { FOOTER_WORDS, NEWS_WORDS } from "./words";
+import { WHATS_NEW_PATH } from "./frame/tabs";
+import { AppPanel } from "@/ui/design-system/kit/app-elements";
 
 /** The terms, the privacy policy and the credits: static text, so the shell serves it with no game module. */
 
@@ -17,7 +17,7 @@ interface LegalSection {
 }
 
 const ExternalLink = ({ href, children }: { href: string; children: ReactNode }) => (
-  <a href={href} target="_blank" rel="noopener noreferrer" className="text-kit-peach underline">
+  <a href={href} target="_blank" rel="noopener noreferrer" className="text-app-accent underline">
     {children}
   </a>
 );
@@ -52,18 +52,18 @@ const LEGAL_PAGES = [
 const LegalPage = ({ title, updated, sections }: { title: string; updated: string; sections: LegalSection[] }) => {
   const desktop = useLayout() === "desktop";
   const reading = (
-    <article className="flex max-w-[760px] flex-col gap-5">
-      <p className="flex items-center gap-2 text-sm text-kit-muted">
+    <article className="flex max-w-prose flex-col gap-5">
+      <p className="flex items-center gap-2 text-app-label text-app-muted">
         <SemanticIcon name="clock" size={18} />
         {NEWS_WORDS.updated} {updated}
         {desktop && <OtherLegalPages title={title} />}
       </p>
       {sections.map((section, index) => (
         <section key={section.title} id={sectionId(index)} className="scroll-mt-6">
-          <h2 className="mb-2 font-body text-base font-bold text-kit-cream">
+          <h2 className="mb-2 text-app-heading text-app-ink">
             {index + 1}. {section.title}
           </h2>
-          <div className="space-y-3 text-base leading-[26px] text-kit-cream [&_li]:mb-1 [&_ul]:list-disc [&_ul]:pl-5">
+          <div className="space-y-3 text-app-body text-app-ink [&_li]:mb-1 [&_ul]:list-disc [&_ul]:pl-5">
             {section.body}
           </div>
         </section>
@@ -71,14 +71,14 @@ const LegalPage = ({ title, updated, sections }: { title: string; updated: strin
     </article>
   );
   return (
-    <PageFrame back={WHATS_NEW_PATH} title={title} footer>
+    <PageFrame back={WHATS_NEW_PATH} title={title}>
       {desktop ? (
-        <div className="grid grid-cols-[20rem_minmax(0,760px)] justify-center gap-10">
+        <div className="grid grid-cols-[20rem_minmax(0,theme(maxWidth.prose))] justify-center gap-10">
           <Contents title={title} sections={sections} />
           {reading}
         </div>
       ) : (
-        <div className="mx-auto max-w-[760px]">{reading}</div>
+        <div className="mx-auto max-w-prose">{reading}</div>
       )}
     </PageFrame>
   );
@@ -89,25 +89,25 @@ const sectionId = (index: number) => `section-${index + 1}`;
 /** The sections as a list beside the reading column, staying in view under the top bar (68 px) while it scrolls. */
 const Contents = ({ title, sections }: { title: string; sections: LegalSection[] }) => (
   <nav aria-label={title} className="sticky top-[92px] self-start">
-    <Panel icon="guide" title={title}>
+    <AppPanel icon="guide" title={title}>
       {sections.map((section, index) => (
         <a
           key={section.title}
           href={`#${sectionId(index)}`}
-          className="flex min-h-10 items-center gap-3 rounded-lg px-1 text-base text-kit-cream hover:bg-kit-gold/[.06]"
+          className="flex min-h-10 items-center gap-3 rounded-lg px-1 text-app-body text-app-ink hover:bg-app-hover"
         >
-          <span className="w-6 text-right font-bold tabular-nums text-kit-muted">{index + 1}</span>
+          <span className="w-6 text-right text-app-strong tabular-nums text-app-muted">{index + 1}</span>
           {section.title}
         </a>
       ))}
-    </Panel>
+    </AppPanel>
   </nav>
 );
 
 const OtherLegalPages = ({ title }: { title: string }) => (
   <span className="ml-auto flex gap-4">
     {LEGAL_PAGES.filter((page) => page.word !== title).map((page) => (
-      <Link key={page.to} to={page.to} className="font-body text-sm text-kit-peach hover:text-kit-gold2">
+      <Link key={page.to} to={page.to} className="text-app-label text-app-accent hover:text-app-gold">
         {page.word}
       </Link>
     ))}
@@ -559,6 +559,7 @@ const CREDITS: LegalSection[] = [
           authors="Igino Marini (Reserved Font Name IM FELL English SC)"
           licence="im-fell-english-sc-regular.OFL.txt"
         />
+        <Typeface name="Exo 2" authors="The Exo 2 Project Authors" licence="exo-2.OFL.txt" />
         <Typeface
           name="Atkinson Hyperlegible Next"
           authors="The Atkinson Hyperlegible Next Project Authors (Braille Institute)"

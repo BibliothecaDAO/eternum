@@ -118,7 +118,7 @@ fn main() {
         }
     }
     println!(
-        "{{\"discoveryCounts\":{:?},\"doubledStragglers\":{},\"essenceOf10000\":{}}}",
+        "{{\"discoveryCounts\":{:?},\"doubledBeasts\":{},\"essenceOf10000\":{}}}",
         discovery, doubled, essence
     );
 }

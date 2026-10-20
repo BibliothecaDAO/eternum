@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { nativeSyncScopes } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { gameSyncRegion, rowInGameSyncScope, syncScalar, type GameSyncScope } from "./model-manifest";
+import { nativeStoryVariants, nativeSyncScopes } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { gameSyncRegion, gameSyncRowKeys, rowInGameSyncScope, syncScalar, type GameSyncScope } from "./model-manifest";
 
 const SPACING = 21;
 const SETS = ["owners", "entities", "realms", "realmTraits"] as const;
@@ -11,8 +11,8 @@ type Rule = Partial<Record<(typeof SETS)[number], readonly string[]>> & {
 };
 
 /**
- * The membership rule as the schema declares it, written out: an actor row belongs to its actor, a shared row to
- * everyone, and a scoped row to a scope with no expedition or to the expedition naming one of its sets or regions on
+ * Default membership as the schema declares it (chest receipts are tested separately): an actor row belongs to its
+ * actor, a shared row to everyone, and a scoped row to a scope with no expedition or one naming its sets or regions on
  * its day. The key encoding must admit exactly these.
  */
 const declaredMembership = (model: string, row: Record<string, unknown>, scope: GameSyncScope): boolean => {
@@ -37,7 +37,38 @@ const random = (seed: number) => () => {
 };
 
 describe("rowInGameSyncScope", () => {
-  it("admits exactly the rows the declared rule gives a scope, for every model in the schema", () => {
+  it("shares only discovery-chest and ruin-payout stories, leaving every other variant with its owner", () => {
+    const peer: GameSyncScope = {
+      actor: "0x2",
+      expedition: {
+        day: 0,
+        spacing: SPACING,
+        owners: new Set(["2"]),
+        entities: new Set(),
+        realms: new Set(),
+        realmTraits: new Set(),
+        regions: new Set(),
+      },
+    };
+    for (const kind of nativeStoryVariants) {
+      const row = { owner: "0x1", story: { [kind]: {} } };
+      const shared = kind === "RewardChestOpened";
+      expect(gameSyncRowKeys("StoryEvent", row, SPACING), kind).toEqual(shared ? "shared" : ["*", "owners:1"]);
+      expect(rowInGameSyncScope("StoryEvent", row, peer), kind).toBe(shared);
+    }
+    for (const category of [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, "0xa", 10n]) {
+      const row = { owner: "0x1", story: { SitePayout: { category } } };
+      expect(gameSyncRowKeys("StoryEvent", row, SPACING)).toEqual(
+        Number(category) === 10 ? "shared" : ["*", "owners:1"],
+      );
+      expect(rowInGameSyncScope("StoryEvent", row, peer)).toBe(Number(category) === 10);
+    }
+    expect(
+      gameSyncRowKeys("ExplorerTroops", { explorer_id: "0x1", story: { RewardChestOpened: {} } }, SPACING),
+    ).toEqual(["*", "entities:1"]);
+  });
+
+  it("admits non-chest rows according to the declared scope rule, for every model in the schema", () => {
     const next = random(7);
     const pick = <T>(values: readonly T[]): T => values[Math.floor(next() * values.length)]!;
     // Identities arrive as decimal, hex and bigint forms; the scope holds normalized decimals.

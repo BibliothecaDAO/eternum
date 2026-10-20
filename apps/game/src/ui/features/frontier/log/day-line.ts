@@ -1,15 +1,6 @@
-import { formatExact } from "@/ui/design-system/kit/amount";
-import {
-  builtLine,
-  deployedLine,
-  disbandedLine,
-  ESSENCE,
-  LABOR,
-  LORDS,
-  revealLine,
-} from "@/ui/design-system/kit/words";
+import { builtLine, deployedLine, disbandedLine, ESSENCE, LABOR, revealLine } from "@/ui/design-system/kit/words";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds, formatCharge, LORDS, scaledToUnits } from "@bibliothecadao/types";
 
 import { frontierBuildingName } from "../build/building-names";
 import { armyLabel } from "../hud/dock-armies";
@@ -56,10 +47,9 @@ const builtLineOf = (payload: Record<string, unknown>): string | null => {
   return name ? builtLine(name) : null;
 };
 
-/** "+98 labor": what the reveal paid, in whole units as the totals above the log count it. */
+/** "+98 labor": what the reveal paid, written as the panel and the Log write it (scaledToUnits, one rounding). */
 const revealPayLine = (payload: Record<string, unknown>): string | null => {
   const word = REVEAL_WORDS[Number(payload.resource_type)];
   if (!word) return null;
-  const whole = BigInt(String(payload.amount)) / BigInt(RESOURCE_PRECISION);
-  return revealLine(formatExact(Number(whole)), word);
+  return revealLine(formatCharge(scaledToUnits(BigInt(String(payload.amount)))), word);
 };

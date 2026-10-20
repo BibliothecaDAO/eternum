@@ -143,7 +143,7 @@ export class RewardTileModel {
   private prepareParts(): void {
     const materials = new Map<Material, Material>();
     const batchCandidates = new Map<string, Mesh[]>();
-    this.pose.traverse((source) => {
+    this.pose.traverseVisible((source) => {
       if (!(source instanceof Mesh)) return;
       const key = resolveRewardBatchKey(source);
       if (!key) {

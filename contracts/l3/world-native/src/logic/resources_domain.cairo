@@ -58,16 +58,17 @@ pub mod ResourcesLogic {
             context: crate::commands::ActionContext,
         ) -> () {
             let context = crate::commands::execution_context(key.game_id, context);
-            let site = crate::logic::expeditions::clear_site(key);
-            let category = crate::logic::structures::structure(key).expect('missing site').base.category;
+            let site = crate::logic::expeditions::expedition_site(key).expect('missing expedition site');
+            assert!(site.clear.is_none(), "site already cleared");
+            let category = site.category;
             let reward = if category == crate::taxonomy::RUIN_CATEGORY {
                 Some(crate::logic::lords_budget::pay(key, context))
             } else {
                 crate::expeditions::site_reward(category, site)
             };
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
-            if let Some(reward) = reward {
-                self
+            let reward = if let Some(reward) = reward {
+                let amount = self
                     .grant_resource(
                         home,
                         reward.resource_type,
@@ -75,7 +76,14 @@ pub mod ResourcesLogic {
                         context.timestamp,
                         crate::commands::resource_context(context),
                     );
-            }
+                Some(crate::resources::ResourceAmount { amount, ..reward })
+            } else {
+                None
+            };
+            self.resources.destroy(key);
+            crate::logic::expeditions::clear_site(
+                key, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward },
+            );
             crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
                 crate::progression::IArmyProgressionLibraryDispatcher {
                     class_hash: self.release.classes(key.game_id).relics.read(),

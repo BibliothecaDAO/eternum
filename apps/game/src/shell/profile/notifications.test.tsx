@@ -25,9 +25,9 @@ it("offers three levels, lights none for a stored Standard, and saves the level 
   const root = createRoot(container);
   await act(async () => root.render(<NotificationsCard />));
   try {
-    const levels = [...container.querySelectorAll('[role="radio"]')];
+    const levels = [...container.querySelectorAll('[role="tab"]')];
     expect(levels.map((level) => level.textContent)).toEqual(["Off", "Important", "All"]);
-    expect(levels.filter((level) => level.getAttribute("aria-checked") === "true")).toEqual([]);
+    expect(levels.filter((level) => level.getAttribute("aria-selected") === "true")).toEqual([]);
     await act(async () => (levels[1] as HTMLButtonElement).click());
     expect(save).toHaveBeenCalledWith("important");
     expect(container.textContent).toContain("This device");

@@ -251,6 +251,10 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
       ruin_guard_lower: depth.ruinGuardLower,
       ruin_guard_upper: depth.ruinGuardUpper,
       guard_step: depth.guardStep,
+      beast_weak_lower: depth.beastWeakLower,
+      beast_weak_upper: depth.beastWeakUpper,
+      beast_strong_lower: depth.beastStrongLower,
+      beast_strong_upper: depth.beastStrongUpper,
     })),
     realms: {
       resources: amounts(config.startingResources, config.resources.resourcePrecision),
@@ -537,20 +541,20 @@ function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
     Object.values(rules).some((value) => !Number.isSafeInteger(value) || value < 0 || value > 10000) ||
     rules.emptyRevealLimit < 1 ||
     rules.emptyRevealLimit > 255 ||
-    rules.stragglersBps + rules.campBps + rules.riftBps === 0 ||
-    rules.stragglersBps +
+    rules.beastsBps + rules.campBps + rules.riftBps === 0 ||
+    rules.beastsBps +
       rules.campBps +
       rules.riftBps +
       rules.ruinBps +
       rules.shrineBps +
       rules.wellBps +
       // Every Scouting tier on one kind doubles it: the largest of the three kinds is the most Scouting adds.
-      Math.max(rules.stragglersBps, rules.campBps, rules.riftBps) >
+      Math.max(rules.beastsBps, rules.campBps, rules.riftBps) >
       10000
   )
     throw new Error("Invalid categorical discovery rules");
   return new CairoOption(CairoOptionVariant.Some, {
-    stragglers_bps: rules.stragglersBps,
+    beasts_bps: rules.beastsBps,
     camp_bps: rules.campBps,
     rift_bps: rules.riftBps,
     ruin_bps: rules.ruinBps,

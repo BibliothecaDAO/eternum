@@ -256,7 +256,7 @@ const HoverTooltip = ({ className }: TooltipProps) => {
         transform: isVisible ? "translate3d(0, 0, 0)" : hiddenTransform,
       }}
       className={clsx(
-        "fixed z-[250] pointer-events-none select-none inline-flex border border-gold/30 text-sm px-4 py-2 bg-[#15100a] flex-col justify-start items-center text-gold",
+        "ui ui-tip pointer-events-none fixed z-hud-tip select-none",
         // A held name is there the moment the hold is long enough; a hovered one eases in.
         !tooltip.held && "transition-all duration-150 ease-out",
         className,

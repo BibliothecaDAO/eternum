@@ -1,3 +1,4 @@
+import { LORE_LINE, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { IdentityRequestError } from "@realms-world/identity";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
@@ -14,8 +15,7 @@ import { failureSentence, type IdentityAction } from "@/ui/modules/identity/iden
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
-import { paintingSources } from "../paintings";
-import { LORE_LINE, SIGN_IN_WORDS, WORDS } from "../words";
+import { paintingSources } from "@/ui/design-system/kit/paintings";
 import { CodeStep } from "./code-step";
 import { ProfileStep } from "./profile-step";
 import { nextOf, signInHref } from "./sign-in-route";
@@ -144,9 +144,9 @@ const useIdentityAction = (initialError: () => string | null) => {
 /**
  * The flow's frame on PageFrame, with no tabs: on a phone one column, the painting and the lore line above the first
  * step only; on desktop the window split: the painting with the lore line at its foot, and the steps in a panel the
- * window's height at the right, under the step's title.
+ * window's height at the right, under the step's title. The app lab draws each step in it.
  */
-const SignInFrame = ({
+export const SignInFrame = ({
   next,
   title,
   hero = false,
@@ -171,38 +171,36 @@ const SignInFrame = ({
   );
 
 const PhoneHero = () => (
-  <section className="relative isolate -mx-4 flex h-[38dvh] items-start overflow-hidden px-4 pt-3">
-    <img
-      {...paintingSources(PAINTING)}
-      sizes="100vw"
-      alt=""
-      className="absolute inset-0 -z-10 size-full object-cover"
-    />
-    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground via-transparent to-transparent" />
-    <p className="font-body text-xl leading-snug text-kit-cream">{LORE_LINE}</p>
+  <section className="relative isolate flex h-[38dvh] items-start pt-3">
+    {/* The painting runs to the screen's edges; the lore line keeps to the column. */}
+    <div aria-hidden className="absolute inset-y-0 -inset-x-gutter -z-10 overflow-hidden">
+      <img {...paintingSources(PAINTING)} sizes="100vw" alt="" className="size-full object-cover" />
+      <span className="absolute inset-0 bg-gradient-to-b from-app-ground via-transparent to-transparent" />
+    </div>
+    <p className="text-app-heading text-app-ink">{LORE_LINE}</p>
   </section>
 );
 
 /** The panel's width; the painting takes the rest of the window beside it, under the top bar (68 px). */
-const PANEL = "w-[34rem] min-[1800px]:w-[38rem]";
+const PANEL = "w-column wide:w-column-wide";
 
 const DesktopSplit = ({ title, children }: { title: string; children?: ReactNode }) => (
   <>
     {/* No stacking context of its own: the fixed painting must sit behind the frame's title row (Back), not over it. */}
-    <div aria-hidden className="grain pointer-events-none fixed inset-0 -z-10">
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
       <img {...paintingSources(PAINTING)} sizes="70vw" alt="" className="size-full object-cover object-[35%_50%]" />
-      <span className="absolute inset-0 bg-gradient-to-t from-kit-ground/80 via-transparent to-transparent" />
+      <span className="absolute inset-0 bg-gradient-to-t from-app-ground via-transparent to-transparent" />
     </div>
-    <p className="fixed bottom-10 left-8 max-w-[36rem] font-display text-[44px] leading-[1.1] text-kit-cream [text-shadow:0_2px_0_theme(colors.kit.ink/70%)] min-[1800px]:left-12">
+    <p className="fixed bottom-10 left-gutter-desk max-w-tagline text-app-display text-app-ink drop-shadow-lg wide:left-gutter-wide">
       {LORE_LINE}
     </p>
     <section
       className={cn(
-        "leather fixed bottom-0 right-0 top-[68px] z-10 flex flex-col gap-5 overflow-y-auto border-l bg-kit-plate px-10 pb-10 pt-12",
+        "fixed bottom-0 right-0 top-[68px] z-10 flex flex-col gap-5 overflow-y-auto border-l border-app-line bg-app-surface px-10 pb-10 pt-12",
         PANEL,
       )}
     >
-      <h1 className="font-display text-[34px] leading-tight text-kit-cream">{title}</h1>
+      <h1 className="text-app-title text-app-ink">{title}</h1>
       {children}
     </section>
   </>

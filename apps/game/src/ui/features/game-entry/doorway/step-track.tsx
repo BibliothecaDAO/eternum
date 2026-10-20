@@ -1,7 +1,6 @@
+import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-
-import { DOORWAY_WORDS } from "@/shell/words";
 
 import type { DoorwayStep, DoorwayView } from "./doorway-view";
 
@@ -19,20 +18,20 @@ export const StepTrack = ({ steps }: { steps: DoorwayView["steps"] }) => (
         aria-current={state === "running" ? "step" : undefined}
         className={cn(
           "flex w-16 flex-col items-center gap-1.5 font-body text-sm font-semibold",
-          state === "waiting" ? "text-kit-muted opacity-60" : "text-kit-cream",
+          state === "waiting" ? "text-app-muted opacity-60" : "text-app-ink",
         )}
       >
         <span
           className={cn(
-            "relative flex size-14 items-center justify-center rounded-full border-[3px] bg-kit-plate",
-            state === "done" && "border-kit-sage",
-            state === "running" && "animate-pulse border-kit-peach",
-            state === "waiting" && "border-kit-line",
+            "relative flex size-14 items-center justify-center rounded-full border-[3px] bg-app-surface",
+            state === "done" && "border-app-good",
+            state === "running" && "animate-pulse border-app-accent",
+            state === "waiting" && "border-app-line",
           )}
         >
           <SemanticIcon name={STEP_ICON[step]} size={28} />
           {state === "done" && (
-            <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-kit-sage">
+            <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-app-good">
               <SemanticIcon name="check" size={14} />
             </span>
           )}

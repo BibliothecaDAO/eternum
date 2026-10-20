@@ -24,15 +24,13 @@ export function LocalNotificationLifecycle() {
       reportNotificationDeliveryError(error);
     }
   };
-  useEffect(
-    () =>
-      useIdentitySessionStore.subscribe((next, previous) => {
-        const oldOwner = notificationOwnerOf(previous.session);
-        if (!oldOwner || oldOwner === notificationOwnerOf(next.session) || !("serviceWorker" in navigator)) return;
-        void detach(oldOwner);
-      }),
-    [],
-  );
+  useEffect(() => {
+    return useIdentitySessionStore.subscribe((next, previous) => {
+      const oldOwner = notificationOwnerOf(previous.session);
+      if (!oldOwner || oldOwner === notificationOwnerOf(next.session) || !("serviceWorker" in navigator)) return;
+      void detach(oldOwner);
+    });
+  }, []);
   useEffect(() => {
     if (status === "loading") return;
     void reconcilePushAccount().catch((error) => {
@@ -50,7 +48,7 @@ export function LocalNotificationLifecycle() {
       {detachOwner && (
         <aside
           role="alert"
-          className="fixed bottom-4 left-4 z-[200] max-w-sm rounded border border-gold/40 bg-black p-3 text-sm text-gold"
+          className="fixed bottom-4 left-4 z-[200] max-w-sm rounded border border-kit-gold/40 bg-kit-shade p-3 text-sm text-kit-gold"
         >
           Background notifications need attention. Reconnect or apply the latest game update, then retry.
           <button

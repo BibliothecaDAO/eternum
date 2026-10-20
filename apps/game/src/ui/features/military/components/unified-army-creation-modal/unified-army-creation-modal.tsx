@@ -4,12 +4,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { Direction } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
-import { ActionFooter } from "./action-footer";
 import { ArmyTypeToggle } from "./army-type-toggle";
 import { DefenseSlotSelection } from "./defense-slot-selection";
 import { RealmHexDeployMap } from "./realm-hex-deploy-map";
-import { TroopCountSelector } from "./troop-count-selector";
-import { TroopSelectionGrid } from "./troop-selection-grid";
+import { DeployTroops, DeployVerb } from "./deploy-form";
+import type { TroopStack } from "./types";
 import { useArmyCreation } from "./use-army-creation";
 
 interface UnifiedArmyCreationProps {
@@ -18,15 +17,17 @@ interface UnifiedArmyCreationProps {
   isExplorer?: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
+  /** The troop stack an order named; the form opens on that troop at that count, within what can be raised. */
+  initialTroops?: TroopStack;
   followSelectedStructure?: boolean;
 }
 
 type UnifiedArmyCreationBodyProps = UnifiedArmyCreationProps & {
   /**
-   * Kept for call-site compatibility. The legacy popup chrome has been removed;
-   * the parent Military modal provides the window shell.
+   * Whether the form is on screen. A form that is not (the phone's other tab) keeps its draft but draws nothing, its
+   * Deploy included, so no hidden choice can be sent.
    */
-  embedded?: boolean;
+  shown?: boolean;
 };
 
 export const UnifiedArmyCreationBody = ({
@@ -35,8 +36,9 @@ export const UnifiedArmyCreationBody = ({
   isExplorer = true,
   direction,
   initialGuardSlot,
+  initialTroops,
   followSelectedStructure,
-  embedded = true,
+  shown = true,
 }: UnifiedArmyCreationBodyProps) => {
   const mode = useGameModeConfig();
   const playerStructures = useOwnedMilitaryStructureInfos();
@@ -110,113 +112,53 @@ export const UnifiedArmyCreationBody = ({
     isExplorer,
     direction,
     initialGuardSlot,
+    initialTroops,
   });
-  const leftColumnClass = "flex flex-1 min-w-0 flex-col";
-  const rightColumnClass = "flex flex-1 min-w-0 flex-col";
+  if (!shown) return null;
 
+  // Where it goes, then the troops; the one verb sits in the window's foot.
   return (
-    <div className="flex min-h-full flex-col p-3">
-      <div className="flex flex-1 flex-col items-stretch gap-3 lg:flex-row">
-        <div className={leftColumnClass}>
-          <div className="flex flex-1 flex-col rounded-xl border border-gold/25 bg-black/25 p-2 gap-3">
-            <TroopSelectionGrid
-              options={form.troopOptions}
-              selected={form.selectedTroopCombo}
-              isDefenseTroopLocked={form.isDefenseTroopLocked}
-              selectedGuardCategory={form.selectedGuardCategory}
-              selectedGuardTier={form.selectedGuardTier}
-              onSelect={form.handleTroopSelect}
-              bare
-            />
-            <div className="border-t border-gold/15" />
-            <TroopCountSelector
-              troopCount={form.troopCount}
-              maxAffordable={form.maxAffordable}
-              onChange={form.handleTroopCountChange}
-              capacityRemaining={form.capacityRemainingForSelector}
-              troopMaxSize={form.troopCapacityLimit ?? undefined}
-              unavailableReason={form.troopAvailabilityReason}
-              embedded
-            />
-            {form.troopCapacityLimit !== null && form.troopCapacityLimit !== undefined && (
-              <>
-                <div className="border-t border-gold/15" />
-                <div className="flex items-center justify-between px-1 py-0.5 text-sm">
-                  <span className="text-kit-muted">Max troops</span>
-                  <span className="font-semibold tabular-nums text-gold">
-                    {form.troopCapacityLimit.toLocaleString()}
-                  </span>
-                </div>
-              </>
-            )}
-            {form.troopTrainingLine && (
-              <>
-                <div className="border-t border-gold/15" />
-                <p className="px-1 py-1 text-sm text-gold/70">{form.troopTrainingLine}</p>
-              </>
-            )}
-            {form.raiseCostLine && (
-              <>
-                <div className="border-t border-gold/15" />
-                <p className="px-1 py-1 text-sm text-gold/70">{form.raiseCostLine}</p>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className={rightColumnClass}>
-          <div className="flex flex-1 flex-col rounded-xl border border-gold/25 bg-black/25 p-2 gap-2">
-            <ArmyTypeToggle
-              armyType={form.armyType}
-              canCreateAttackArmy={form.canCreateAttackArmy}
-              canCreateDefenseArmy={form.canCreateDefenseArmy}
-              canInteractWithDefense={form.canInteractWithDefense}
-              currentExplorersCount={form.currentExplorersCount}
-              maxExplorers={form.maxExplorers}
-              currentGuardsCount={form.currentGuardsCount}
-              maxGuards={form.resolvedMaxDefenseSlots}
-              onSelect={form.handleArmyTypeSelect}
-            />
-            <div className="border-t border-gold/15" />
-            <div className="flex-1 min-h-[140px] flex flex-col">
-              {!form.armyType && (
-                <DefenseSlotSelection
-                  guardSlot={form.guardSlot}
-                  maxDefenseSlots={form.resolvedMaxDefenseSlots}
-                  guardsBySlot={form.guardsBySlot}
-                  availableSlots={form.availableGuardSlots}
-                  selectedTroopCombo={form.selectedTroopCombo}
-                  canCreateDefenseArmy={form.canCreateDefenseArmy}
-                  defenseSlotInfoMessage={form.defenseSlotInfoMessage}
-                  defenseSlotErrorMessage={form.defenseSlotErrorMessage}
-                  onSelect={form.handleGuardSlotSelect}
-                />
-              )}
-              {form.armyType && form.structureCoordX !== undefined && form.structureCoordY !== undefined && (
-                <RealmHexDeployMap
-                  centerCol={Number(form.structureCoordX)}
-                  centerRow={Number(form.structureCoordY)}
-                  availableDirections={form.freeDirections}
-                  selectedDirection={form.selectedDirection}
-                  isLoading={false}
-                  onSelect={form.handleDirectionSelect}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      </div>{" "}
-      <div className="sticky bottom-0 z-10 mt-2 shrink-0 bg-[#101c23] py-2">
-        <ActionFooter
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <ArmyTypeToggle
           armyType={form.armyType}
-          label={form.actionLabel}
-          isLoading={form.isLoading}
-          isDisabled={form.isActionDisabled}
-          blockedReason={form.submitBlockedReason}
-          onSubmit={form.handleCreate}
-          embedded
+          canCreateAttackArmy={form.canCreateAttackArmy}
+          canCreateDefenseArmy={form.canCreateDefenseArmy}
+          canInteractWithDefense={form.canInteractWithDefense}
+          currentExplorersCount={form.currentExplorersCount}
+          maxExplorers={form.maxExplorers}
+          currentGuardsCount={form.currentGuardsCount}
+          maxGuards={form.resolvedMaxDefenseSlots}
+          onSelect={form.handleArmyTypeSelect}
         />
+        {!form.armyType && (
+          <DefenseSlotSelection
+            guardSlot={form.guardSlot}
+            maxDefenseSlots={form.resolvedMaxDefenseSlots}
+            guardsBySlot={form.guardsBySlot}
+            availableSlots={form.availableGuardSlots}
+            selectedTroopCombo={form.selectedTroopCombo}
+            canCreateDefenseArmy={form.canCreateDefenseArmy}
+            defenseSlotInfoMessage={form.defenseSlotInfoMessage}
+            defenseSlotErrorMessage={form.defenseSlotErrorMessage}
+            onSelect={form.handleGuardSlotSelect}
+          />
+        )}
+        {form.armyType && form.deployCenter && (
+          <RealmHexDeployMap
+            centerCol={form.deployCenter.col}
+            centerRow={form.deployCenter.row}
+            ring={form.deployRing}
+            selectedDirection={form.selectedDirection}
+            onSelect={form.handleDirectionSelect}
+          />
+        )}
       </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <DeployTroops form={form} />
+        {form.troopSourceLine && <p className="text-hud-label text-hud-muted">{form.troopSourceLine}</p>}
+      </div>
+      <DeployVerb form={form} />
     </div>
   );
 };

@@ -1,7 +1,11 @@
-import { REALM_PATHS, realmModelIndex, isWonderModelPath } from "../structures/realm-design";
+import {
+  getBuildingDisplayName,
+  resolveBuildingModelSelection,
+  type BuildingModelSelection,
+} from "./hexception-building-model";
+import { isWonderModelPath } from "../structures/realm-design";
 import { RealmLivingAura } from "../structures/realm-living-aura";
 import { HexceptionTierModels, disposeBuildingModel } from "./hexception-tier-models";
-import { byStructureCategory } from "@/lib/structure-category-table";
 import { SettlementAnimation } from "../structures/settlement-animation";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
@@ -13,7 +17,6 @@ import {
 import { isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
 import { isAddressEqualToAccount } from "../utils/utils";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
-import { buildingTierModelPath } from "../structures/building-tiers";
 import { PlotConstructionPicker } from "@/ui/features/settlement/construction/plot-construction-picker";
 import {
   createHexceptionTerrainRequest,
@@ -31,8 +34,7 @@ import { actNowRefusal, canIssueOrders, refusedBeforePlay } from "@/utils/can-is
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { resolveSettlementRotationY } from "@/three/structures/settlement-orientation";
-import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
+import { resolveStructureRotationY } from "@/three/structures/structure-orientation";
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
 import { RealmGridBuilds } from "./hexception-grid-builds";
 import { awaitLocalScenePresentable } from "./local-scene-presentation";
@@ -44,8 +46,6 @@ import {
   HEX_SIZE,
   LOCAL_CAMERA_ZOOM,
   MinesMaterialsParams,
-  castleLevelToRealmCastle,
-  hyperstructureStageToModel,
   structureTypeToBuildingType,
 } from "@/three/constants";
 import {
@@ -98,6 +98,7 @@ import { IS_FLAT_MODE } from "@/ui/config";
 import { ProductionModal } from "@/ui/features/settlement";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
+import { sendBuilding } from "@/ui/features/settlement/construction/send-building";
 import { playerStructuresView, readFactView, watchFactView } from "@/sync/fact-views";
 import {
   safeInteger,
@@ -108,7 +109,6 @@ import {
 import {
   ActionType,
   type BuildingTiles,
-  ResourceIdToMiningType,
   ResourceManager,
   configManager,
   getRealmInfo,
@@ -121,16 +121,15 @@ import {
   BUILDINGS_CENTER,
   BiomeType,
   BuildingType,
-  BuildingTypeToString,
   HexPosition,
   RealmLevels,
   ResourceMiningTypes,
   ResourcesIds,
   Structure,
   StructureType,
-  findResourceById,
   getHexDistance,
   getProducedResource,
+  resourceName,
 } from "@bibliothecadao/types";
 import gsap from "gsap";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -153,7 +152,7 @@ import { SceneName } from "../types";
 import { LOCAL_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { localHexPosition } from "./hexception-layout";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 const loader = gltfLoader;
 const BUILDING_RENDER_SIGNATURE = "eternumBuildingRenderSignature";
@@ -173,36 +172,12 @@ interface HexceptionBuilding {
   tier?: number;
 }
 
-interface BuildingModelSelection {
-  group: BUILDINGS_GROUPS;
-  type: BUILDINGS_CATEGORIES_TYPES;
-  /** The tier's own model, for a building upgraded past tier I. */
-  tierPath?: string;
-}
-
 const generateHexPositions = (center: HexPosition, radius: number) =>
   getLocalHexDisk(center, radius).map((cell) => ({
     ...localHexPosition(cell),
     ...cell,
     color: new Color("gray"),
   }));
-
-/**
- * What the keep on a structure's board is called, by the structure's category: the realm's castle by its level, the
- * game mode's word for a village, or a name of its own. A new category fails typecheck here until it has one.
- */
-const KEEP_NAMES: Record<StructureType, "realm-castle" | "village" | string> = {
-  [StructureType.Realm]: "realm-castle",
-  [StructureType.Village]: "village",
-  [StructureType.Camp]: "village",
-  [StructureType.Bank]: "Bank",
-  [StructureType.Hyperstructure]: "Hyperstructure",
-  [StructureType.Mine]: "Mine",
-  [StructureType.BitcoinMine]: "Mine",
-  [StructureType.Rift]: "Rift",
-  [StructureType.Ruin]: "Ruin",
-  [StructureType.Stragglers]: "Stragglers",
-};
 
 const BIOME_MATRIX_KEYS = [
   "None",
@@ -919,7 +894,7 @@ export default class HexceptionScene extends HexagonScene {
 
       const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, this.state.useSimpleCost);
       const structureEntityId = useUIStore.getState().structureEntityId;
-      const realm = getRealmInfo(structureEntityId, this.game.store, getPlayerName);
+      const realm = getRealmInfo(structureEntityId, this.game.store, getPlayerDisplayName);
       const buildability = resolveConstructionBuildability({
         entityId: structureEntityId,
         buildingType: buildingType.type,
@@ -939,14 +914,14 @@ export default class HexceptionScene extends HexagonScene {
       }
 
       this.clearBuildingMode();
+      AudioManager.getInstance().play("ui.build_place");
       try {
-        await requireActiveGameClient().actions.placeBuilding({
-          structureId: structureEntityId,
-          buildingType: buildingType.type,
-          hex: normalizedCoords,
+        await sendBuilding({
+          realmId: structureEntityId,
+          type: buildingType.type,
+          plot: normalizedCoords,
           useSimpleCost,
         });
-        AudioManager.getInstance().play("ui.build_place");
       } catch (error) {
         console.error("[Hexception] building placement failed", error);
       }
@@ -1003,7 +978,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!this.isEntered || !canIssueOrders() || !this.mode.ui.showBuildMenus || refusedBeforePlay()) return false;
     const entityId = useUIStore.getState().structureEntityId;
     const account = useAccountStore.getState().account;
-    const realm = getRealmInfo(entityId, this.game.store, getPlayerName);
+    const realm = getRealmInfo(entityId, this.game.store, getPlayerDisplayName);
     if (!account || !realm || realm.owner !== BigInt(account.address)) return false;
     if (spot.col === BUILDINGS_CENTER[0] && spot.row === BUILDINGS_CENTER[1]) return false;
     if (this.tileManager.isHexOccupied(spot)) return false;
@@ -1074,7 +1049,12 @@ export default class HexceptionScene extends HexagonScene {
       return;
     }
 
-    const buildingName = this.getBuildingDisplayName(building);
+    const buildingName = getBuildingDisplayName(
+      { ...building, ...normalizedCoords },
+      this.structureStage,
+      this.mode.labels.village,
+      this.mode.id === "frontier",
+    );
     const producedResource = getProducedResource(building.category as BuildingType);
 
     if (producedResource) {
@@ -1085,14 +1065,13 @@ export default class HexceptionScene extends HexagonScene {
       const currentTick = getBlockTimestamp().currentDefaultTick;
       const isActive =
         (productionEndsAt ?? 0) > currentTick || productionManager?.isFood(producedResource as ResourcesIds);
-      const resourceInfo = findResourceById(producedResource as ResourcesIds);
-      const resourceName = resourceInfo?.trait ?? "Unknown resource";
+      const producedName = resourceName(producedResource as ResourcesIds);
 
       this.hoverLabelManager.update(position, {
         kind: "resource",
         buildingName,
         resourceId: producedResource as ResourcesIds,
-        resourceName,
+        resourceName: producedName,
         isActive: !!isActive,
       });
       return;
@@ -1102,37 +1081,6 @@ export default class HexceptionScene extends HexagonScene {
       kind: "building",
       buildingName,
     });
-  }
-
-  private getBuildingDisplayName(building: { category: BuildingType; structureType?: StructureType }): string {
-    const buildingType = building.category as BuildingType;
-
-    if (buildingType === BuildingType.None) {
-      return "Empty";
-    }
-
-    if (buildingType === BuildingType.ResourceAncientFragment) {
-      return "Fragment Mine";
-    }
-
-    if (buildingType === BuildingType.ResourceLabor) {
-      // The board of a structure whose category is not known yet shows a plain keep.
-      if (building.structureType === undefined) return "Castle";
-      const keep = byStructureCategory(KEEP_NAMES, building.structureType, "keep name", "Castle");
-      if (keep === "realm-castle") return castleLevelToRealmCastle[this.structureStage as RealmLevels] ?? "Castle";
-      return keep === "village" ? this.mode.labels.village : keep;
-    }
-
-    const baseName = BuildingTypeToString[buildingType];
-    if (!baseName) {
-      return "Building";
-    }
-
-    if (baseName.endsWith(" Resource")) {
-      return baseName.replace(" Resource", "");
-    }
-
-    return baseName;
   }
 
   private clearHoverLabel(): void {
@@ -1190,7 +1138,7 @@ export default class HexceptionScene extends HexagonScene {
     const standing = requireActiveGameSyncRuntime()
       .requireWorldSpatialProjection()
       .getStructuresAtHex({ alt: DEFAULT_COORD_ALT, col: position.col, row: position.row })
-      .find((entry) => entry.entityId !== null);
+      .find((entry) => entry.entityId !== null && !entry.clearedSite);
     const structure = pickLocalRealm({
       atRoute: standing?.entityId
         ? this.game.store.get("Structure", { game_id: gameId, entity_id: standing.entityId })
@@ -1484,7 +1432,14 @@ export default class HexceptionScene extends HexagonScene {
     mainStructureType: StructureType | undefined,
   ): BuildingInstanceAction {
     const key = buildingKey(position);
-    const selection = building ? this.resolveBuildingModelSelection(building, mainStructureType) : undefined;
+    const selection = building
+      ? resolveBuildingModelSelection(building, {
+          stage: this.structureStage,
+          structureId: this.state.structureEntityId,
+          mainStructureType,
+          wonder: !!this.tileManager.getWonder(this.state.structureEntityId),
+        })
+      : undefined;
     // A tier's model loads the first time a building needs it; until then the building keeps what it shows.
     if (selection?.tierPath && !this.tierModels.get(selection.tierPath)) {
       this.loadTierModel(selection.tierPath);
@@ -1516,46 +1471,6 @@ export default class HexceptionScene extends HexagonScene {
   private playBuildingCompleteBurst(position: HexPosition): void {
     const world = localHexPosition(position);
     this.playBurst(new Vector3(world.x, 0.1, world.z), "building.complete", 1);
-  }
-
-  private resolveBuildingModelSelection(
-    building: HexceptionBuilding,
-    mainStructureType: StructureType | undefined,
-  ): BuildingModelSelection {
-    let group: BUILDINGS_GROUPS;
-    let type: BUILDINGS_CATEGORIES_TYPES;
-
-    if (building.resource && (building.resource < 23 || building.resource === ResourcesIds.AncientFragment)) {
-      group = BUILDINGS_GROUPS.RESOURCES_MINING;
-      type = ResourceIdToMiningType[building.resource] as ResourceMiningTypes;
-    } else {
-      group = BUILDINGS_GROUPS.BUILDINGS;
-      type = building.category;
-    }
-
-    if (group === BUILDINGS_GROUPS.BUILDINGS && type === BuildingType.ResourceLabor) {
-      group = BUILDINGS_GROUPS.REALMS;
-      type = castleLevelToRealmCastle[this.structureStage];
-    }
-
-    const isCenterBuilding = building.col === BUILDINGS_CENTER[0] && building.row === BUILDINGS_CENTER[1];
-    if (isCenterBuilding && isVillageLikeStructureCategory(mainStructureType)) {
-      group = BUILDINGS_GROUPS.VILLAGE;
-      type = mainStructureType as StructureType.Village | StructureType.Camp;
-    }
-
-    if (building.structureType === StructureType.Hyperstructure) {
-      group = BUILDINGS_GROUPS.HYPERSTRUCTURE;
-      type = hyperstructureStageToModel[this.structureStage as StructureProgress];
-    }
-
-    const tierPath =
-      group === BUILDINGS_GROUPS.REALMS && this.tileManager.getWonder(this.state.structureEntityId)
-        ? REALM_PATHS[realmModelIndex(this.structureStage, true, this.state.structureEntityId)]
-        : group === BUILDINGS_GROUPS.BUILDINGS
-          ? buildingTierModelPath(type as BuildingType, building.tier)
-          : undefined;
-    return { group, type, tierPath };
   }
 
   private resolveBuildingRenderSignature(building: HexceptionBuilding, selection: BuildingModelSelection): string {
@@ -1597,7 +1512,9 @@ export default class HexceptionScene extends HexagonScene {
     instance.applyMatrix4(building.matrix);
     if (selection.group === BUILDINGS_GROUPS.REALMS || selection.group === BUILDINGS_GROUPS.VILLAGE) {
       // Apply after the template and tile transforms so neither can turn the entrance away.
-      instance.rotation.set(0, resolveSettlementRotationY(this.tileManager.structureType(), instance.rotation.y), 0);
+      const categoryPaths: Readonly<Record<string, string>> = this.mode.assets.buildingModelPaths[selection.group];
+      const modelPath = selection.tierPath ?? categoryPaths[selection.type];
+      instance.rotation.set(0, resolveStructureRotationY([modelPath], instance.rotation.y), 0);
     }
     if (selection.tierPath && isWonderModelPath(selection.tierPath)) {
       const aura = new RealmLivingAura(buildingData.model);

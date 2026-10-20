@@ -1,15 +1,26 @@
+import { formatAmount, REALM_LEVELS } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatAmount } from "@/ui/design-system/kit/amount";
-import { Button, type Price } from "@/ui/design-system/kit/button";
-import { Chip } from "@/ui/design-system/kit/chip";
+import { Icon } from "@/ui/design-system/icon";
+import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
+import { HudButton, HudCard, HudChip, HudCost, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import type { Refusal } from "@/ui/design-system/kit/refusal";
+import { CASTLE, TROOPS, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 
-import { type Refusal, RefusedVerb } from "@/ui/design-system/kit/refused-verb";
-import { Sheet } from "@/ui/design-system/kit/sheet";
-import { CASTLE, REALM_LEVELS, TROOPS, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
+import { RefusedVerb } from "../refused-verb";
 
-import { type Figure, Figures } from "./type-upgrade-sheet";
+/** One figure of the castle as it stands: its icons, its number, and the name its tooltip says. */
+export type Figure = { icons: IconMeaning[]; label: string; value: string };
+
+/** What the castle is doing now, as chips: icons and numbers on the surface, each named when asked. */
+const Figures = ({ figures }: { figures: readonly Figure[] }) => (
+  <div className="flex flex-wrap items-center justify-center gap-1.5">
+    {figures.map((figure) => (
+      <HudChip key={figure.label} icons={figure.icons} label={figure.label}>
+        {figure.value}
+      </HudChip>
+    ))}
+  </div>
+);
 
 /** The castle at one level: its art and level, the plots it opens, its army slots, each store's limit, the deploy cap. */
 export type CastleSide = {
@@ -24,7 +35,7 @@ export type CastleSide = {
 
 /**
  * The castle's sheet (wireframe 02): what the castle makes and holds now, the castle now and at its next level side by side, what the next level brings lit,
- * and Upgrade carrying its labor price. When the realm cannot pay, Upgrade stays, dimmed, with its price; the line
+ * and Upgrade with its labor cost under it. When the realm cannot pay, Upgrade stays, dimmed, with its cost; the line
  * under it says what it needs against what is held and the exact wait; the map is offered where a reveal pays labor.
  * At the last level there is no next side and no verb.
  */
@@ -48,17 +59,13 @@ export const CastleView = ({
   onUpgrade: () => void;
   onClose: () => void;
 }) => (
-  <Sheet label={CASTLE} onClose={onClose}>
-    <header className="flex items-center gap-2.5">
-      <SemanticIcon name="realm" size={30} />
-      <h2 className="frontier-title flex-1 !text-xl">{CASTLE}</h2>
-    </header>
+  <HudSheet label={CASTLE} onClose={onClose}>
     {makes.length > 0 && <Figures figures={makes} />}
     <div className="flex items-center gap-2">
       <Side side={now} />
       {next && (
         <>
-          <span aria-hidden className="text-xl text-kit-hot">
+          <span aria-hidden className="text-hud-title text-hud-accent">
             →
           </span>
           <Side side={next} lit />
@@ -69,29 +76,41 @@ export const CastleView = ({
       (refusal ? (
         <RefusedVerb word={UPGRADE} prices={prices} refusal={refusal} />
       ) : (
-        <Button
-          role="primary"
-          word={UPGRADE}
-          prices={prices}
-          loading={sending ? UPGRADING : undefined}
-          onClick={onUpgrade}
-        />
+        <>
+          <HudButton kind="primary" busy={sending ? UPGRADING : undefined} onClick={onUpgrade}>
+            {UPGRADE}
+          </HudButton>
+          <HudCost line={costLine(prices)} />
+        </>
       ))}
-  </Sheet>
+  </HudSheet>
 );
 
+/** The castle at a level, its picture over what it opens and holds; the next level lit. */
 const Side = ({ side, lit = false }: { side: CastleSide; lit?: boolean }) => (
-  <div
-    className={cn(
-      "frontier-card flex flex-1 flex-col items-center gap-1 !rounded-xl py-2",
-      lit && "!border-2 !border-kit-hot",
-    )}
-  >
-    <SemanticIcon name={side.art} alt="" className="h-[52px] w-14 object-contain" />
-    <span className="text-sm font-semibold text-kit-cream">{REALM_LEVELS[side.level]}</span>
-    <Chip icons={["hexagon"]} label="plots" value={formatAmount(side.plots)} />
-    <Chip icons={["army-capacity"]} label="army slots" value={formatAmount(side.slots)} />
-    {side.limit !== undefined && <Chip icons={["resources"]} label="limit" value={formatAmount(side.limit)} />}
-    <Chip icons={["troops"]} label={TROOPS} value={formatAmount(side.deployCap)} />
+  <div className="flex-1">
+    <HudCard
+      title={REALM_LEVELS[side.level]}
+      picture={<Icon name={side.art} alt="" size={56} />}
+      selected={lit}
+      detail={
+        <span className="flex flex-col items-center gap-1">
+          <HudChip icons={["hexagon"]} label="plots">
+            {formatAmount(side.plots)}
+          </HudChip>
+          <HudChip icons={["army-capacity"]} label="army slots">
+            {formatAmount(side.slots)}
+          </HudChip>
+          {side.limit !== undefined && (
+            <HudChip icons={["resources"]} label="limit">
+              {formatAmount(side.limit)}
+            </HudChip>
+          )}
+          <HudChip icons={["troops"]} label={TROOPS}>
+            {formatAmount(side.deployCap)}
+          </HudChip>
+        </span>
+      }
+    />
   </div>
 );

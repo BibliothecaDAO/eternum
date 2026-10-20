@@ -22,9 +22,9 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   const initial = ((name || "?").charAt(0) || "?").toUpperCase();
 
   const sizeClasses = {
-    sm: "h-6 w-6 text-sm",
-    md: "h-8 w-8 text-base",
-    lg: "h-10 w-10 text-lg",
+    sm: "h-6 w-6 text-hud-body",
+    md: "h-8 w-8 text-hud-body",
+    lg: "h-10 w-10 text-hud-title",
   };
 
   const resolvedAvatarUrl = address ? (avatarUrl ?? playerAvatarUrl(address)) : (avatarUrl ?? null);
@@ -32,9 +32,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   return (
     <div
       className={`relative flex items-center justify-center overflow-hidden ${sizeClasses[size]} ${
-        isOnline
-          ? "bg-gradient-to-br from-orange-500/30 to-orange-600/30"
-          : "bg-gradient-to-br from-gray-500/30 to-gray-600/30"
+        isOnline ? " " : " "
       } rounded ${className}`}
     >
       {resolvedAvatarUrl ? (

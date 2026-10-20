@@ -33,13 +33,16 @@ describe("OverlayLedger", () => {
       set: { key: "0x1", model: "StoryEvent", value: { timestamp: 1 } },
     };
     expect(ledger.delta([event], noConfirmedRow)).toEqual([event]);
-    expect(ledger.settleConfirmed([event])).toEqual([event]);
+    expect(ledger.settleConfirmed([event])).toEqual([{ ...event, previous: event.set }]);
   });
   it("keeps only the changes that alter what subscribers hold", () => {
     const ledger = new OverlayLedger();
 
     expect(ledger.delta([set("0xabc", "0x1"), set("0xdef", "0x2")], noConfirmedRow)).toHaveLength(2);
-    expect(ledger.delta([set("0xabc", "0x1"), set("0xdef", "0x3")], noConfirmedRow)).toEqual([set("0xdef", "0x3")]);
+    // A change routes by the row subscribers held before it, so whoever held the old value hears of the new one.
+    expect(ledger.delta([set("0xabc", "0x1"), set("0xdef", "0x3")], noConfirmedRow)).toEqual([
+      { ...set("0xdef", "0x3"), previous: row("0xdef", "0x2") },
+    ]);
     expect(ledger.delta([del("0xabc"), del("0xabc")], noConfirmedRow)).toEqual([
       { ...del("0xabc"), previous: row("0xabc", "0x1") },
     ]);
@@ -85,8 +88,10 @@ describe("OverlayLedger", () => {
     ledger.delta([set("0xabc", "0x2"), set("0xdef", "0x4"), chainSet("0x1", "0x5")], confirmedRow);
 
     ledger.reset();
-    expect(ledger.delta([set("0xabc", "0x2"), set("0xdef", "0x6")], confirmedRow)).toEqual([set("0xdef", "0x6")]);
-    expect(ledger.settleReverts(confirmedRow)).toEqual([chainSet("0x1", "0x0")]);
+    expect(ledger.delta([set("0xabc", "0x2"), set("0xdef", "0x6")], confirmedRow)).toEqual([
+      { ...set("0xdef", "0x6"), previous: row("0xdef", "0x4") },
+    ]);
+    expect(ledger.settleReverts(confirmedRow)).toEqual([{ ...chainSet("0x1", "0x0"), previous: row("0x1", "0x5") }]);
 
     expect(ledger.delta([set("0xabc", "0x2")], confirmedRow)).toEqual([]);
     expect(ledger.settleReverts(confirmedRow)).toEqual([]);
@@ -105,7 +110,7 @@ describe("OverlayLedger", () => {
     ledger.delta([set("0xabc", "0x2"), set("0xdef", "0x4")], noConfirmedRow);
 
     expect(ledger.settleConfirmed([set("0xabc", "0x2"), set("0xdef", "0x5"), set("0x9", "0x9")])).toEqual([
-      set("0xdef", "0x5"),
+      { ...set("0xdef", "0x5"), previous: row("0xdef", "0x4") },
       set("0x9", "0x9"),
     ]);
 

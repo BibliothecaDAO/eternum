@@ -1,15 +1,11 @@
+import { formatCharge, formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { formatExact } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
-import { Chip } from "@/ui/design-system/kit/chip";
-
-import { Sheet } from "@/ui/design-system/kit/sheet";
-import { StoreBar } from "@/ui/design-system/kit/store-bar";
-import { CANCEL, LORDS, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
+import { HudButton, HudChip, HudMeter, HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { CANCEL, REFILL, REFILLING, STAMINA, heldAgainstNeed, refillShort } from "@/ui/design-system/kit/words";
 
 /**
  * Refill's control (wireframes 05, 08): the missing points as a LORDS price, one LORDS a point; when the realm holds
- * fewer LORDS, what it holds against the price takes the button's place.
+ * fewer LORDS, what it holds against the price takes the button's place, named Refill, its hover saying what it counts.
  */
 export const RefillButton = ({
   price,
@@ -24,28 +20,22 @@ export const RefillButton = ({
   onRefill: () => void;
 }) =>
   held !== undefined && held < price ? (
-    <span
-      role="img"
-      aria-label={`${LORDS} ${formatExact(held)} / ${formatExact(price)}`}
-      className="frontier-card flex h-12 shrink-0 items-center gap-1.5 !rounded-xl px-2"
-    >
-      <SemanticIcon name="lords" size={18} />
-      <span className="flex min-w-14 flex-col gap-[3px]">
-        <span className="whitespace-nowrap text-sm tabular-nums text-kit-cream">
-          {formatExact(held)} / {formatExact(price)}
+    <span role="img" aria-label={refillShort(formatExact(held), formatCharge(price))} className="flex shrink-0">
+      <HudPanel collapsible={false} bodyClassName="flex items-center gap-1.5">
+        <SemanticIcon name="lords" size={18} />
+        <span className="flex min-w-14 flex-col gap-1">
+          <span className="text-hud-label text-hud-muted">{REFILL}</span>
+          <span className="whitespace-nowrap text-hud-body tabular-nums text-hud-ink">
+            {heldAgainstNeed(held, price)}
+          </span>
+          <HudMeter share={price > 0 ? held / price : 0} label={LORDS} />
         </span>
-        <StoreBar amount={held} limit={price} tone="calm" />
-      </span>
+      </HudPanel>
     </span>
   ) : (
-    <Button
-      role="secondary"
-      icon="stamina"
-      word={REFILL}
-      prices={[{ of: "lords", amount: price }]}
-      loading={refilling ? REFILLING : undefined}
-      onClick={onRefill}
-    />
+    <HudButton kind="secondary" icon="stamina" busy={refilling ? REFILLING : undefined} onClick={onRefill}>
+      {REFILL}
+    </HudButton>
   );
 
 /**
@@ -67,34 +57,27 @@ export const RefillConfirm = ({
 }) => {
   const price = Math.max(0, stamina.max - stamina.current);
   return (
-    <Sheet label={REFILL} onClose={onCancel}>
-      <header className="flex items-center gap-2.5">
-        <SemanticIcon name="stamina" size={30} />
-        <h2 className="frontier-title flex-1 !text-xl">{REFILL}</h2>
-      </header>
+    <HudSheet label={REFILL} onClose={onCancel}>
       <div className="flex items-center justify-center gap-2">
-        <Chip
+        <HudChip
           icons={["stamina"]}
           label={STAMINA}
-          value={`${formatExact(stamina.current)} → ${formatExact(stamina.max)}`}
-        />
-        <Chip
+        >{`${formatExact(stamina.current)} → ${formatExact(stamina.max)}`}</HudChip>
+        <HudChip
           icons={["lords"]}
           label={LORDS}
-          value={`${formatExact(held)} → ${held === undefined ? "—" : formatExact(held - price)}`}
-        />
+        >{`${formatExact(held)} → ${held === undefined ? "—" : formatExact(held - price)}`}</HudChip>
       </div>
-      <div className="flex gap-2">
-        <Button role="outline" word={CANCEL} onClick={onCancel} className="w-[120px]" />
-        <Button
-          role="primary"
-          word={REFILL}
-          prices={[{ of: "lords", amount: price }]}
-          loading={sending ? REFILLING : undefined}
-          onClick={onRefill}
-          className="flex-1"
-        />
+      <div className="grid grid-cols-3 gap-2">
+        <HudButton kind="quiet" onClick={onCancel}>
+          {CANCEL}
+        </HudButton>
+        <span className="col-span-2 grid">
+          <HudButton kind="primary" busy={sending ? REFILLING : undefined} onClick={onRefill}>
+            {REFILL}
+          </HudButton>
+        </span>
       </div>
-    </Sheet>
+    </HudSheet>
   );
 };

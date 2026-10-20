@@ -1,34 +1,32 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
-import { resolveChatSenderName } from "@/hooks/use-player-profile";
+import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { Icon } from "@/ui/design-system/icon";
+import { HudChip, HudPanel, HudPill } from "@/ui/design-system/kit/hud-elements";
 import {
   RealtimeChatShell,
   type InitializeRealtimeClientParams,
   useRealtimeChatInitializer,
   useRealtimeChatSelector,
 } from "@/ui/features/social";
+import type { RealtimeConnectionStatus } from "@/ui/features/social/realtime-chat/model/types";
 import { configManager } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
 import { useEffect, useMemo, useRef } from "react";
 import { getActiveGame } from "@/runtime/world";
-import { isTypingTarget } from "@/utils/shortcuts/typing-target";
+import { isKeyForSurface } from "@/utils/shortcuts/typing-target";
 import { CHAT_SHORTCUT } from "./chat-shortcut";
 
 /**
- * The game's chat room: joined once the player is signed in, its history loaded on connect, its unread count, and the
- * room marked read while `open`. Every HUD that hosts chat reads it here, so the count matches what the room holds.
+ * The game's chat room as the player stands in it: signed in or not, the room's name (game ids repeat across shards,
+ * so a room is named by its shard's chain and the game), the zone shown, and what joining it takes.
  */
-export function useGameChat(open: boolean) {
+const useGameChatRoom = () => {
   const { status } = useIdentitySession();
   const signedIn = status === "signed-in";
-  const requestSignIn = useRequestSignIn();
   const game = getActiveGame();
-  // A game room is named by its shard's chain and the game: game ids repeat across shards.
   const gameZoneId = game ? `game:0x${BigInt(game.chainId).toString(16)}:${configManager.getActiveGameId()}` : "";
   const zoneId = useRealtimeChatSelector((state) =>
     state.activeZoneId === gameZoneId ? gameZoneId : GLOBAL_CHAT_CHANNEL_ID,
@@ -37,29 +35,95 @@ export function useGameChat(open: boolean) {
     () => (signedIn ? { baseUrl: window.location.origin, joinZones: gameZoneId ? [gameZoneId] : [] } : null),
     [signedIn, gameZoneId],
   );
+  return { status, gameZoneId, zoneId, initializer };
+};
+
+/**
+ * The game's chat connection, held once for the whole game, whichever HUD composition draws chat (a desktop's rail, a
+ * phone's page or sheet): it joins the room once the player is signed in and loads the room's history on connect, so
+ * the strip shows the last message before chat was ever opened. Mounted once beside the HUD; a layout change swaps
+ * the views, never the connection, so the room, its history and its unread count carry over.
+ */
+export function GameChatConnection() {
+  const { initializer, zoneId } = useGameChatRoom();
   useRealtimeChatInitializer(initializer);
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
   const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
   const loadWorldHistory = useRealtimeChatSelector((state) => state.actions.loadWorldHistory);
-  const lastMessage = useRealtimeChatSelector((state) => state.worldZones[zoneId]?.messages.at(-1));
-  const unread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
-  const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
-
-  // The strip shows the last message before the chat was ever opened, so history loads on connect.
   useEffect(() => {
     if (initializer && connection === "connected" && hasGameChat) void loadWorldHistory({ zoneId, limit: 10 });
   }, [initializer, connection, hasGameChat, loadWorldHistory, zoneId]);
+  return null;
+}
+
+/**
+ * The game's chat as a view reads it: the room, the strip's line (chatStripLine) and unread count, and the room marked
+ * read while `open`. Every view that shows chat reads it here; the connection itself is GameChatConnection's.
+ */
+export function useGameChat(open: boolean) {
+  const { status, gameZoneId, zoneId, initializer } = useGameChatRoom();
+  const requestSignIn = useRequestSignIn();
+  const connection = useRealtimeChatSelector((state) => state.connectionStatus);
+  const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
+  const lastMessage = useRealtimeChatSelector((state) => state.worldZones[zoneId]?.messages.at(-1));
+  const history = useRealtimeChatSelector((state) => historyState(state.worldZones[zoneId]));
+  const unread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
+  const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
   useEffect(() => {
     setShellOpen(open);
     return () => setShellOpen(false);
   }, [open, setShellOpen]);
 
-  return { status, initializer, requestSignIn, gameZoneId, connection, hasGameChat, lastMessage, unread };
+  // The strip names the last sender, and draws again when a name lands.
+  const names = usePlayerNames();
+  const stripLine = chatStripLine({
+    signedIn: initializer !== null,
+    connection,
+    hasGameChat,
+    history,
+    last:
+      lastMessage &&
+      `${resolveChatSenderName(names, lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${lastMessage.content}`,
+  });
+  return { status, initializer, requestSignIn, gameZoneId, unread, stripLine };
 }
 
-/** The strip at the foot of the right column: last message and unread count. Open, a fixed-height pane rises
- *  above the strip and the details above keep whatever room is left. `foldToIcon` shrinks the strip to its icon and
- *  unread count on a phone held upright, when something else needs the room. */
+/** Where the room's history stands: not answered yet, answered (with or without messages), or failed. */
+type HistoryState = "loading" | "answered" | "failed";
+const historyState = (zone: { historyError?: string; lastFetchedCursor?: string | null } | undefined): HistoryState =>
+  zone?.historyError ? "failed" : zone?.lastFetchedCursor !== undefined ? "answered" : "loading";
+
+/**
+ * What the chat strip says, from what chat has actually told: the last message once one is known; that chat is
+ * unavailable when the room is not joined, the connection failed or the history read failed; "No messages yet" only
+ * once the room's history answered with none; and that it is loading until then, never an empty room it has not read.
+ */
+const chatStripLine = ({
+  signedIn,
+  connection,
+  hasGameChat,
+  history,
+  last,
+}: {
+  signedIn: boolean;
+  connection: RealtimeConnectionStatus;
+  hasGameChat: boolean;
+  history: HistoryState;
+  last: string | undefined;
+}): string => {
+  if (!signedIn) return "Sign in to chat";
+  if (connection === "connected" && !hasGameChat) return CHAT_UNAVAILABLE;
+  if (last) return last;
+  if (connection === "error" || history === "failed") return CHAT_UNAVAILABLE;
+  return history === "answered" ? "No messages yet" : "Loading chat…";
+};
+const CHAT_UNAVAILABLE = "Chat unavailable";
+
+/** The strip at the foot of the right column: last message and unread count, on the sheet's strip so it reads over any
+ *  ground the map shows under it, and pressable once the player's identity has loaded. Open, a pane rises above it, as
+ *  tall as `chat-pane` while there is room; in a column short of room it gives up height with what stands above it,
+ *  down to `chat-least` (the rail's stacking rule). `foldToIcon` shrinks the strip to its icon and unread count on a
+ *  phone held upright, when something else needs the room. */
 export function HudChatWindow({
   open,
   onOpenChange,
@@ -69,9 +133,8 @@ export function HudChatWindow({
   onOpenChange: (open: boolean) => void;
   foldToIcon?: boolean;
 }) {
-  const { status, initializer, requestSignIn, gameZoneId, connection, hasGameChat, lastMessage, unread } =
-    useGameChat(open);
-  const pane = useRef<HTMLElement>(null);
+  const { status, initializer, requestSignIn, gameZoneId, unread, stripLine } = useGameChat(open);
+  const pane = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) pane.current?.querySelector<HTMLInputElement | HTMLTextAreaElement>("input,textarea")?.focus();
@@ -85,7 +148,7 @@ export function HudChatWindow({
         return;
       }
       if (event.key !== CHAT_SHORTCUT.key || open || event.repeat || event.defaultPrevented) return;
-      if (isTypingTarget(event.target)) return;
+      if (isKeyForSurface(event)) return;
       event.preventDefault();
       onOpenChange(true);
     };
@@ -100,57 +163,51 @@ export function HudChatWindow({
     };
   }, [initializer, onOpenChange, open]);
 
-  const stripText = !initializer
-    ? "Sign in to chat"
-    : connection === "connected" && !hasGameChat
-      ? "Chat unavailable"
-      : lastMessage
-        ? `${resolveChatSenderName(lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${lastMessage.content}`
-        : "No messages yet";
-
   return (
-    <div className="mt-auto flex shrink-0 flex-col gap-2">
+    <div className={cn("mt-auto flex flex-col gap-2", open ? "min-h-hud-chat-least" : "shrink-0")}>
       {open && (
-        <section
-          ref={pane}
-          aria-label="Chat"
-          className={cn(
-            "pointer-events-auto flex h-[min(60vh,520px)] shrink-0 flex-col overflow-hidden rounded-xl",
-            OVERLAY_SURFACE_BASE,
-          )}
-        >
-          <RealtimeChatShell
-            defaultZoneId={GLOBAL_CHAT_CHANNEL_ID}
-            gameZoneId={gameZoneId}
-            displayMode="embedded"
-            autoInitializeClient={false}
-            showInlineToggle={false}
+        <div ref={pane} className="pointer-events-auto flex h-hud-chat-pane min-h-0 flex-col">
+          <HudPanel
+            label="Chat"
+            collapsible={false}
             className="min-h-0 flex-1"
-          />
-        </section>
+            // The chat shell pads its own tabs, history and composer.
+            bodyClassName="flex min-h-0 flex-1 flex-col p-0"
+          >
+            <RealtimeChatShell
+              defaultZoneId={GLOBAL_CHAT_CHANNEL_ID}
+              gameZoneId={gameZoneId}
+              displayMode="embedded"
+              autoInitializeClient={false}
+              showInlineToggle={false}
+              className="min-h-0 flex-1"
+            />
+          </HudPanel>
+        </div>
       )}
-      <button
-        type="button"
-        aria-label="Chat strip"
-        aria-expanded={open}
-        disabled={status === "loading"}
-        // A signed-out spectator's strip is their way into the sign-in flow, which brings them back to this game.
-        onClick={() => (initializer ? onOpenChange(!open) : requestSignIn())}
-        className={cn(
-          "pointer-events-auto flex h-8 w-full shrink-0 items-center gap-2 rounded-xl px-3 text-left font-sans ",
-          OVERLAY_SURFACE_BASE,
-          "hover:border-gold/50",
-          foldToIcon && "portrait:w-auto portrait:self-start",
-        )}
-      >
-        <SemanticIcon name="chat" className="h-3.5 w-3.5 shrink-0 text-gold/70" />
-        <span className={cn("min-w-0 flex-1 truncate", HUD_BODY, foldToIcon && "portrait:sr-only")}>{stripText}</span>
-        {initializer && !open && unread > 0 && (
-          <span aria-label="Unread chat messages" className="rounded-full bg-gold px-1.5 text-sm text-dark-brown">
-            {unread}
-          </span>
-        )}
-      </button>
+      <div className={cn("pointer-events-auto shrink-0", foldToIcon && "portrait:w-auto portrait:self-start")}>
+        <HudPill
+          label="Chat strip"
+          aria-expanded={open}
+          className="max-w-full"
+          // A signed-out spectator's strip is their way into the sign-in flow, which brings them back to this game.
+          onPress={status === "loading" ? undefined : () => (initializer ? onOpenChange(!open) : requestSignIn())}
+        >
+          {[
+            <span key="last" className="flex min-w-0 items-center gap-1.5">
+              <Icon name="chat" size={20} />
+              <span className={cn("min-w-0 truncate", foldToIcon && "portrait:sr-only")}>{stripLine}</span>
+            </span>,
+            ...(initializer && !open && unread > 0
+              ? [
+                  <HudChip key="unread" label="Unread chat messages">
+                    {unread}
+                  </HudChip>,
+                ]
+              : []),
+          ]}
+        </HudPill>
+      </div>
     </div>
   );
 }

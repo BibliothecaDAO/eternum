@@ -20,6 +20,7 @@ const row = (rank: number, own = false): SeasonListRow => ({
   rank,
   order: rank,
   name: `Realm ${rank}`,
+  label: `Realm ${rank}`,
   sitesCleared: 100 - rank,
   lords: 50,
   own,
@@ -29,7 +30,7 @@ const button = (host: HTMLElement, word: string) =>
   [...host.querySelectorAll("button")].find((candidate) => candidate.textContent === word)!;
 
 describe("the season list", () => {
-  it("lists the realms, pins the player's own row under them, opens a row and goes back", () => {
+  it("names its columns, lists the realms, pins the player's own row under them, opens a row and goes back", () => {
     const onOpen = vi.fn();
     const onBack = vi.fn();
     const { host, unmount } = render(
@@ -43,6 +44,15 @@ describe("the season list", () => {
         onBack={onBack}
       />,
     );
+    expect([...host.querySelectorAll(".ui-table-head > span")].map((head) => head.textContent)).toEqual([
+      "Rank",
+      "Realm",
+      "Sites",
+      "LORDS",
+    ]);
+    expect(
+      [...host.querySelectorAll(".ui-table-head > [data-tip]")].map((head) => head.getAttribute("data-tip")),
+    ).toEqual(["Sites cleared", "LORDS earned"]);
     const own = host.querySelector("button[aria-current='true']")!;
     expect(own.textContent).toContain("Realm 12");
     expect(host.querySelector("[aria-label='Season #12']")).not.toBeNull();
@@ -79,8 +89,7 @@ describe("the season list", () => {
     const detail = {
       rank: 2,
       order: 2,
-      name: "Aldric",
-      sites: { total: 132, camps: 70, rifts: 43, ruins: 9, stragglers: 10 },
+      sites: { total: 132, camps: 70, rifts: 43, ruins: 9, beasts: 10 },
       chests: 9,
       lords: 640,
       reach: 0,

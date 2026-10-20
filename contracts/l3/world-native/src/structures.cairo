@@ -161,11 +161,11 @@ pub(crate) fn discovered_structure(
         Discovery::Ruin(_) => (
             crate::taxonomy::RUIN_CATEGORY, crate::taxonomy::RUIN_OCCUPIER, 0, capacities.camp_capacity,
         ),
-        Discovery::Stragglers => (
-            crate::taxonomy::STRAGGLERS_CATEGORY, crate::taxonomy::STRAGGLERS_OCCUPIER, 0, capacities.camp_capacity,
+        Discovery::Beasts => (
+            crate::taxonomy::BEASTS_CATEGORY, crate::taxonomy::BEASTS_OCCUPIER, 0, capacities.camp_capacity,
         ),
-        Discovery::None | Discovery::Shrine | Discovery::Well |
-        Discovery::Spire => panic!("discovery is not a structure"),
+        Discovery::None | Discovery::Shrine | Discovery::Well | Discovery::Spire |
+        Discovery::Chest => panic!("discovery is not a structure"),
     };
     assert!(
         discovery == Discovery::Mine || coord.alt == (discovery == Discovery::BitcoinMine), "invalid discovery layer",

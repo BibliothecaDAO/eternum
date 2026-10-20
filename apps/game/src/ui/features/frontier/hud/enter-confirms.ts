@@ -1,4 +1,4 @@
-import { isTypingTarget } from "@/utils/shortcuts/typing-target";
+import { isKeyForSurface } from "@/utils/shortcuts/typing-target";
 import { useEffect, useLayoutEffect, useRef } from "react";
 
 /**
@@ -12,7 +12,7 @@ export const useEnterConfirms = (onGo: (() => void) | undefined) => {
   });
   useEffect(() => {
     const confirm = (event: KeyboardEvent) => {
-      if (event.key !== "Enter" || event.repeat || isTypingTarget(event.target) || !latest.current) return;
+      if (event.key !== "Enter" || event.repeat || isKeyForSurface(event) || !latest.current) return;
       event.preventDefault();
       latest.current();
     };

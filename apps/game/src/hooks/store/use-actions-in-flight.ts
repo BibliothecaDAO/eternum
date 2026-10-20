@@ -12,7 +12,7 @@ type ArmyOrderInFlight = { order: OrderInFlight; to?: { col: number; row: number
 /**
  * What an action is sent for, and what the place that shows it needs to draw it while it is in flight. One action at
  * a time for each: an army's order, a plot's building, a realm's next army, a research row, a castle's level, an
- * army's refill, an army's tier.
+ * army's refill, an army's tier, a transfer's shipment from one holding to another.
  */
 interface InFlight {
   army: ArmyOrderInFlight;
@@ -22,6 +22,7 @@ interface InFlight {
   castle: true;
   refill: true;
   tier: true;
+  shipment: true;
 }
 type Subject = keyof InFlight;
 type Key = string | number;

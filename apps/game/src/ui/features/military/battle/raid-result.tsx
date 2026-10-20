@@ -3,25 +3,25 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { getPlayerDisplayName, usePlayerDisplayName } from "@/hooks/use-player-profile";
+import { type PlayerNames, usePlayerName, usePlayerNames } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
-import { ContractAddress, ID, RESOURCE_PRECISION, resources } from "@bibliothecadao/types";
+import { ContractAddress, formatCharge, ID, RESOURCE_PRECISION, resourceName } from "@bibliothecadao/types";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AttackTarget } from "./types";
 import { storyPayloadId } from "@/utils/native-id";
 
 // Add the tweet formatting function
 const getFormattedRaidTweet = ({
-  accountName,
+  names,
   accountAddress,
   targetAddress,
   stolenResources,
   store,
 }: {
-  accountName: string | null;
+  names: PlayerNames;
   accountAddress: string;
   targetAddress: ContractAddress | null;
   stolenResources: Array<{ resourceId: number; amount: number }>;
@@ -33,18 +33,20 @@ const getFormattedRaidTweet = ({
   // Format the resources text
   const resourcesText = stolenResources
     .map((resource) => {
-      const resourceName = resources.find((r) => r.id === resource.resourceId)?.trait || "";
-      return `${resource.amount} ${resourceName}`;
+      return `${formatCharge(resource.amount)} ${resourceName(resource.resourceId)}`;
     })
     .join(", ");
 
   return formatSocialText(twitterTemplates.raid, {
-    attackerNameText: `${accountName || accountAddress.slice(0, 6) + "..." + accountAddress.slice(-4)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
-    defenderNameText: `${targetAddress ? getPlayerDisplayName(targetAddress) : "Bandits"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
+    attackerNameText: `${names.text(accountAddress)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
+    defenderNameText: `${names.text(targetAddress ?? 0n)} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
     raidResources: resourcesText,
     url: env.VITE_SOCIAL_LINK,
   });
 };
+
+/** The win's confetti, in the sheet's gold, ink and good. */
+const CONFETTI = ["bg-hud-gold", "bg-hud-ink", "bg-hud-good"] as const;
 
 export const RaidResult = ({
   raiderId,
@@ -95,18 +97,20 @@ export const RaidResult = ({
     if (raidResult) setIsSlowingDown(true);
   }, [raidResult]);
 
-  const accountName = usePlayerDisplayName(account.address);
+  const names = usePlayerNames();
 
-  // Format the tweet text
-  const formattedTweet = useMemo(() => {
-    return getFormattedRaidTweet({
-      accountName,
+  // Both names are asked as the sheet draws, so they have landed by the time Share is pressed; the shared line is
+  // written then, from the live name reader: never a cached string.
+  usePlayerName(account.address);
+  usePlayerName(target.addressOwner);
+  const shareLine = () =>
+    getFormattedRaidTweet({
+      names,
       accountAddress: account.address,
       targetAddress: target.addressOwner,
       stolenResources: initialStolenResources,
       store,
     });
-  }, [raidResult, account.address, initialStolenResources, store, accountName]);
 
   // Generate random outcome items for the roulette animation
   const generateOutcomeItems = useCallback(
@@ -169,16 +173,16 @@ export const RaidResult = ({
 
   // Determine outcome text and styles
   const outcomeText = raidResult?.success === true ? "Raid Successful!" : "Raid Failed!";
-  const outcomeColor = raidResult?.success === true ? "text-order-brilliance" : "text-order-giants";
-  const outcomeBgColor = raidResult?.success === true ? "bg-order-brilliance/20" : "bg-order-giants/20";
-  const outcomeBorderColor = raidResult?.success === true ? "border-order-brilliance/30" : "border-order-giants/30";
+  const outcomeColor = raidResult?.success === true ? "text-hud-good" : "text-hud-bad";
+  const outcomeBgColor = raidResult?.success === true ? "bg-hud-chosen" : "bg-hud-well";
+  const outcomeBorderColor = raidResult?.success === true ? "border-hud-good" : "border-hud-bad";
   const outcomeEmoji = raidResult?.success === true ? "💰" : "💀";
 
   return (
     <div className="flex flex-col items-center justify-center p-4">
       <div className="text-center mb-4">
-        <h3 className="text-xl font-bold text-gold">Raid Result</h3>
-        <p className="text-sm text-gold/70">
+        <h3 className="text-hud-display text-hud-accent">Raid Result</h3>
+        <p className="text-hud-body text-hud-muted">
           {raidResult
             ? spinComplete
               ? `${outcomeText} ${raidResult.success ? "Resources were captured!" : "Your troops were repelled!"}`
@@ -187,9 +191,9 @@ export const RaidResult = ({
         </p>
       </div>
 
-      <div className="relative w-64 h-64 overflow-hidden rounded-2xl border-4 border-gold/30 bg-dark-brown/80 backdrop-blur-sm shadow-xl">
+      <div className="relative w-64 h-64 overflow-hidden rounded-2xl border-4 border-hud-line bg-hud-well backdrop-blur-sm shadow-xl">
         {/* Spinning roulette container */}
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-dark-brown/60 to-dark-brown/90 overflow-hidden">
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
           <AnimatePresence>
             {!spinComplete && (
               <div className="absolute w-full h-64 overflow-hidden">
@@ -218,8 +222,8 @@ export const RaidResult = ({
                     return (
                       <div
                         key={`spin-item-${i}`}
-                        className={`p-4 rounded-lg shadow-inner flex items-center justify-center text-2xl
-                          ${item?.type === "success" ? "bg-order-brilliance/20" : "bg-order-giants/20"}`}
+                        className={`p-4 rounded-lg shadow-inner flex items-center justify-center text-hud-display
+                          ${item?.type === "success" ? "bg-hud-chosen" : "bg-hud-well"}`}
                       >
                         {item?.emoji}
                       </div>
@@ -242,12 +246,12 @@ export const RaidResult = ({
             }}
             className="absolute inset-0 flex flex-col items-center justify-center p-4"
           >
-            <div className="text-lg font-bold mb-2 text-gold">Raid Result:</div>
+            <div className="text-hud-title mb-2 text-hud-accent">Raid Result:</div>
             <div
               className={`p-6 ${outcomeBgColor} rounded-xl shadow-inner flex flex-col items-center justify-center border-2 ${outcomeBorderColor}`}
             >
-              <div className="text-5xl mb-2">{outcomeEmoji}</div>
-              <div className={`text-2xl font-bold ${outcomeColor} mt-2`}>{outcomeText}</div>
+              <div className="text-hud-display mb-2">{outcomeEmoji}</div>
+              <div className={`text-hud-display ${outcomeColor} mt-2`}>{outcomeText}</div>
             </div>
           </motion.div>
         )}
@@ -276,6 +280,7 @@ export const RaidResult = ({
               return (
                 <motion.div
                   key={i}
+                  className={CONFETTI[i % CONFETTI.length]}
                   initial={{
                     x: "-50%",
                     y: "-50%",
@@ -303,16 +308,6 @@ export const RaidResult = ({
                     width: `${Math.random() * 16 + 8}px`,
                     height: `${Math.random() * 16 + 8}px`,
                     borderRadius: Math.random() > 0.3 ? "50%" : `${Math.random() * 5}px`,
-                    backgroundColor: [
-                      "#D4AF37", // Gold
-                      "#C5A028", // Darker gold
-                      "#E6BE44", // Lighter gold
-                      "#F8F4E3", // Off-white
-                      "#5C7D11", // Green (for success)
-                      "#7FB935", // Light green
-                      "#3D5E0F", // Dark green
-                    ][Math.floor(Math.random() * 7)],
-                    boxShadow: "0 0 12px 4px rgba(212, 175, 55, 0.5)",
                     zIndex: 30,
                   }}
                 />
@@ -334,8 +329,7 @@ export const RaidResult = ({
                 width: "80px",
                 height: "80px",
                 borderRadius: "50%",
-                background:
-                  "radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(92,125,17,0.4) 70%, transparent 100%)",
+                background: "radial-gradient(circle, var(--hud-good) 0%, transparent 70%)",
                 transform: "translate(-50%, -50%)",
                 zIndex: 25,
               }}
@@ -357,7 +351,7 @@ export const RaidResult = ({
                 opacity: [0, 0.4, 0],
                 transition: { duration: 1.5, ease: "easeOut", times: [0, 0.3, 1] },
               }}
-              className="absolute inset-0 bg-red-800/40 z-10"
+              className="absolute inset-0 bg-hud-bad z-10"
             />
 
             {/* Smoke particles */}
@@ -391,8 +385,7 @@ export const RaidResult = ({
                     width: "20px",
                     height: "20px",
                     borderRadius: "50%",
-                    background:
-                      "radial-gradient(circle, rgba(100,100,100,0.8) 0%, rgba(70,70,70,0.5) 50%, transparent 100%)",
+                    background: "radial-gradient(circle, var(--hud-neutral) 0%, transparent 100%)",
                     filter: "blur(3px)",
                     zIndex: 20,
                   }}
@@ -407,28 +400,28 @@ export const RaidResult = ({
       {spinComplete && raidResult && (
         <div className="mt-6 w-full max-w-md">
           <div className={`p-4 rounded-lg border ${outcomeBorderColor} text-center`}>
-            <h4 className={`text-lg font-bold ${outcomeColor} mb-2`}>
+            <h4 className={`text-hud-title ${outcomeColor} mb-2`}>
               {raidResult.success ? "Raid Successful" : "Raid Repelled"}
             </h4>
 
             {/* Show stolen resources only if raid was successful */}
             {raidResult.success === true && initialStolenResources.length > 0 ? (
-              <div className="mt-3 pt-3 border-t border-gold/10">
-                <h5 className="text-md font-semibold text-gold mb-2">Stolen Resources:</h5>
+              <div className="mt-3 pt-3 border-t border-hud-divider">
+                <h5 className="text-md text-hud-strong text-hud-accent mb-2">Stolen Resources:</h5>
                 {initialStolenResources.map((resource, index) => (
                   <div key={index} className="flex justify-between items-center py-1">
-                    <span className="flex items-center text-gold/80">
+                    <span className="flex items-center text-hud-accent">
                       <ResourceIcon resource={resource.resourceId} size={"lg"} className="mr-2" />
-                      Resource: {resources.find((r) => r.id === resource.resourceId)?.trait || ""}
+                      Resource: {resourceName(resource.resourceId)}
                     </span>
-                    <span className="text-order-brilliance font-medium">{resource.amount}</span>
+                    <span className="text-hud-good">{formatCharge(resource.amount)}</span>
                   </div>
                 ))}
               </div>
             ) : (
               !raidResult.success === true && (
-                <div className="mt-3 pt-3 border-t border-gold/10">
-                  <div className="flex flex-col items-center text-red-400">
+                <div className="mt-3 pt-3 border-t border-hud-divider">
+                  <div className="flex flex-col items-center text-hud-bad">
                     <p>Your raid was unsuccessful. No resources were stolen.</p>
                   </div>
                 </div>
@@ -436,9 +429,9 @@ export const RaidResult = ({
             )}
 
             {/* Add Twitter Share Button */}
-            {formattedTweet && raidResult.success === true && (
-              <div className="mt-4 pt-4 border-t border-gold/10">
-                <TwitterShareButton text={formattedTweet} callToActionText="Share your Raid" variant="outline" />
+            {raidResult.success === true && (
+              <div className="mt-4 pt-4 border-t border-hud-divider">
+                <TwitterShareButton text={shareLine} callToActionText="Share your Raid" />
               </div>
             )}
           </div>

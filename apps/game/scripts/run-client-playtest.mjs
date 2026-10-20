@@ -9,6 +9,7 @@ import {
   createBrowserSession,
   openPageDevTools,
   recordRpcSends,
+  setViewport,
   VIEWPORT,
 } from "./client-playtest/browser-session.mjs";
 import { startClient } from "./client-playtest/client-server.mjs";
@@ -85,6 +86,9 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     throw new Error(`--steps takes ${Object.keys(STEP_SETS).join(", ")}, not "${stepSet}"`);
   }
 
+  const viewport = /^(\d+)x(\d+)$/.exec(option("--viewport", "1920x1080"));
+  if (!viewport) throw new Error(`--viewport takes <width>x<height>, not "${option("--viewport")}"`);
+
   return {
     baseUrl: option("--base-url", null),
     chainId: option("--chain-id", ""),
@@ -100,6 +104,7 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     stepSet,
     timeoutMs: integer("--timeout-ms", DEFAULTS.timeoutMs, 1),
     trace: argv.includes("--trace"),
+    viewport: { width: Number(viewport[1]), height: Number(viewport[2]) },
   };
 }
 
@@ -108,8 +113,8 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
  * that play the dev tools.
  */
 export function buildRunUrl({ baseUrl, game, player, rendererMode, stepSet }) {
-  if (player) return buildPlayerHomeUrl({ baseUrl, rendererMode });
   const { devOverlays = false } = STEP_SETS[stepSet];
+  if (player) return buildPlayerHomeUrl({ baseUrl, rendererMode, devOverlays });
   return buildPlaytestUrl({ baseUrl, chainId: game.chainId, gameId: game.gameId, rendererMode, devOverlays });
 }
 
@@ -130,6 +135,8 @@ async function main(argv) {
   let options = null;
   try {
     options = readPlaytestOptions(argv, process.env.INIT_CWD ?? process.cwd());
+    setViewport(options.viewport);
+    output.viewport = options.viewport;
     runDir = allocateRunDirectory(options.outRoot, options.player ? "player" : "spectator");
     output.source = describeSource();
     output.stage = "starting the client";
@@ -276,16 +283,19 @@ async function playRun(context) {
     if (cpuThrottle > 1) await devTools.send("Emulation.setCPUThrottlingRate", { rate: cpuThrottle });
     record.rpcSends = await recordRpcSends(devTools);
     record.url = buildRunUrl({ baseUrl: context.baseUrl, game, player, rendererMode, stepSet: context.stepSet });
+    // The trace is the boot's: from before the game page opens to the world being interactive. A longer one is not
+    // kept whole (the browser records into a ring buffer, and the boot is overwritten first) and costs gigabytes.
+    if (context.trace) browser.run(["trace", "start"]);
     // A player is signed in first, on the sign-in page, then opens the home page.
     if (player) record.signIn = await signInAsPlayer({ ...context, browser, url: record.url });
     else browser.run(["open", record.url]);
     const entered = player ? await enterAsPlayer(browser, owner, timeoutMs, { card: stepsGame.card, game }) : null;
     record.boot = { ...(await waitForEntrySnapshot(browser, owner, timeoutMs)), entered };
+    if (context.trace) browser.run(["trace", "stop", join(runDir, `${label}-trace.json`)]);
     browser.screenshot(join(runDir, `${label}-00-boot.png`));
     if (player) record.daySummary = await continuePastTheDaySummary(browser, owner);
     // No order is sent before the run is proven to be in the game it was asked to play.
     record.game = assertInTargetGame(browser.observe().path, game);
-    if (context.trace) browser.run(["trace", "start"]);
 
     for (const [index, step] of steps.entries()) {
       owner.throwIfCancelled();
@@ -294,7 +304,6 @@ async function playRun(context) {
       record.steps.push(played);
       if (played.cancelled) throw played.cancelled;
     }
-    if (context.trace) browser.run(["trace", "stop", join(runDir, `${label}-trace.json`)]);
   } catch (error) {
     record.error = error.message;
     record.cancelled = error instanceof Cancelled;

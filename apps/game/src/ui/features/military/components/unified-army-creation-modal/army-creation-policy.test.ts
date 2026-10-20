@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-  describeTroopRaiseCost,
-  describeTroopTraining,
+  describeTroopSource,
   resolveArmyCreationBlockedReason,
   resolveArmyTroopAvailability,
   resolveInitialTroop,
   resolveSpawnDirection,
   resolveTroopAvailabilityReason,
+  troopRaiseLine,
 } from "./army-creation-policy";
-import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
 const noBarracks = { name: "Knight T1", perHour: 0, secondsToFullArmy: null };
 const training = { name: "Knight T1", perHour: 250, secondsToFullArmy: 7_800 };
@@ -54,7 +54,7 @@ describe("army deployment blocked states", () => {
     [{ capacityRemaining: null }, "Army capacity is still loading."],
     [{ capacityRemaining: 0 }, "Troop cap reached."],
     [{ troopCount: 3001 }, "Troop cap reached."],
-    [{ available: 0 }, "No Knight T1 troops. A Knight T1 barracks on the realm board trains them."],
+    [{ available: 0 }, "No Knight T1 on hand."],
     [{ available: 999 }, "Not enough of this troop."],
     [{ troopCount: 0 }, "Choose a troop count."],
     [{ canPayRaise: false }, "Realm cannot pay to raise troops."],
@@ -75,29 +75,23 @@ describe("army deployment blocked states", () => {
 });
 
 describe("troop raise cost", () => {
-  it("names what deploying costs beyond the troops, and nothing where it costs nothing", () => {
-    expect(describeTroopRaiseCost([{ resource: 35, amount: 20_000_000_000n, held: 0n }])).toBe(
-      "Deploying costs 20 wheat.",
-    );
-    expect(describeTroopRaiseCost([])).toBeNull();
-    expect(describeTroopRaiseCost(undefined)).toBeNull();
+  it("writes what deploying costs beyond the troops as one line beside the Deploy verb, and nothing where it costs nothing", () => {
+    expect(troopRaiseLine([{ resource: 35, amount: 20_000_000_000n, held: 0n }])).toBe("20 wheat");
+    expect(troopRaiseLine([{ resource: 35, amount: 0n, held: 0n }])).toBe("");
+    expect(troopRaiseLine(undefined)).toBe("");
   });
 });
 
 describe("troop supply", () => {
-  it("names the barracks that trains a troop the realm has none of", () => {
+  it("says in a few words that the realm has none of a troop", () => {
     expect(resolveTroopAvailabilityReason({ capacityRemaining: 3000, available: 0, supply: noBarracks })).toBe(
-      "No Knight T1 troops. A Knight T1 barracks on the realm board trains them.",
+      "No Knight T1 on hand.",
     );
   });
-  it("shows the training rate and when a full army is ready while a barracks trains", () => {
+  it("says when a full army is ready while a barracks trains a troop the realm has none of", () => {
     expect(resolveTroopAvailabilityReason({ capacityRemaining: 3000, available: 0, supply: training })).toBe(
-      "Training 250 Knight T1 per hour; a full army in 2h 10m.",
+      "No Knight T1 yet: a full army in 2h 10m.",
     );
-    expect(describeTroopTraining({ ...training, secondsToFullArmy: 0 })).toBe(
-      "Training 250 Knight T1 per hour; a full army is ready.",
-    );
-    expect(describeTroopTraining(noBarracks)).toBeNull();
   });
   it("has no availability reason while a troop can be chosen", () => {
     expect(resolveTroopAvailabilityReason({ capacityRemaining: 3000, available: 1, supply: noBarracks })).toBeNull();
@@ -112,9 +106,13 @@ describe("initial troop", () => {
     {
       type: TroopType.Crossbowman,
       label: "Crossbow",
-      tiers: [{ tier: TroopTier.T1, available: crossbows, resourceTrait: "" }],
+      tiers: [{ tier: TroopTier.T1, available: crossbows, resourceId: ResourcesIds.Crossbowman }],
     },
-    { type: TroopType.Knight, label: "Knight", tiers: [{ tier: TroopTier.T1, available: knights, resourceTrait: "" }] },
+    {
+      type: TroopType.Knight,
+      label: "Knight",
+      tiers: [{ tier: TroopTier.T1, available: knights, resourceId: ResourcesIds.Knight }],
+    },
   ];
   const knightsOnly = (troop: { type: TroopType }) => troop.type === TroopType.Knight;
 
@@ -140,5 +138,20 @@ describe("spawn direction", () => {
   });
   it("chooses nothing when no hex is free", () => {
     expect(resolveSpawnDirection(0, [], undefined)).toBeNull();
+  });
+});
+
+describe("where troops come from", () => {
+  it("names the barracks that trains a troop and what it is made from, per troop", () => {
+    // Blitz's Knight T1 recipe, per troop: ten from 2 wheat and 0.8 copper.
+    expect(
+      describeTroopSource("Knight T1", [
+        { resource: ResourcesIds.Wheat, perTroop: 0.2 },
+        { resource: ResourcesIds.Copper, perTroop: 0.08 },
+      ]),
+    ).toBe("Knight T1 are trained by a Knight T1 barracks on the realm board, from 0.2 wheat and 0.08 copper each.");
+    expect(describeTroopSource("Knight T1", [])).toBe(
+      "Knight T1 are trained by a Knight T1 barracks on the realm board.",
+    );
   });
 });

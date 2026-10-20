@@ -1,51 +1,28 @@
-import { SortInterface } from "@/ui/design-system/atoms/sort-button";
-import { divideByPrecision, getBlockTimestamp } from "@bibliothecadao/eternum";
+import { divideByPrecision } from "@bibliothecadao/eternum";
 import { ResourceCost, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 
 export { getEntityIdFromKeys };
 
-export const formatStringNumber = (number: number, decimals: number): string => {
-  return number.toLocaleString("en-US", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-};
-
-export const formatNumber = (num: number, decimals: number): string => {
-  // Convert to string with max decimals
-  let str = num.toFixed(decimals);
-
-  // Remove trailing zeros after decimal point
-  if (str.includes(".")) {
-    str = str.replace(/\.?0+$/, "");
-  }
-
-  return str;
-};
-
-/** A raw balance for display: undefined when it is not known here, which shows as "—", never as zero. */
-export const knownBalance = (raw: bigint | number | undefined): number | undefined =>
-  raw === undefined ? undefined : divideByPrecision(Number(raw));
-
-/** A raw amount for display; an amount this client does not know shows as "—", never as zero. */
-export const currencyFormat = (num: number | undefined, decimals: number): string => {
-  if (num === undefined) return "—";
-  const formattedDecimals = formatNumber(divideByPrecision(num, false), decimals);
-  return Number(formattedDecimals).toLocaleString();
-};
-
-export function currencyIntlFormat(num: number, decimals: number = 2): string {
-  return Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: decimals,
-  }).format(num || 0);
-}
+/**
+ * A raw balance or amount, divided out exactly and never floored: an affordability check sees 28.2 wheat held against a
+ * 28.15 cost as covered, and a fraction reaches the words module ("<1", "28.1 / 28.2"). Undefined when it is not known
+ * here, which shows as "—", never as zero. A whole-number field floors its own maximum; a count of whole troops floors
+ * where it is counted.
+ */
+export const knownAmount = (raw: bigint | number | undefined): number | undefined =>
+  raw === undefined ? undefined : divideByPrecision(Number(raw), false);
 
 export function displayAddress(string: string) {
   if (string === undefined) return "unknown";
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
 }
+
+/** A list's sort: the key it sorts on, and which way (none keeps the list's own order). */
+export type SortInterface = {
+  sortKey: string;
+  sort: "asc" | "desc" | "none";
+};
 
 export function sortItems<T>(items: T[], activeSort: SortInterface, defaultSortKey: SortInterface): T[] {
   const compareValues = (a: T, b: T, sortKey: string, sortDirection: "asc" | "desc" | "none"): number => {
@@ -109,32 +86,4 @@ export const getRandomBackgroundImage = () => {
 
 export const adjustWonderLordsCost = (cost: ResourceCost[]): ResourceCost[] => {
   return cost.map((item) => (item.resource === ResourcesIds.Lords ? { ...item, amount: item.amount * 0.1 } : item));
-};
-
-export const normalizeDiacriticalMarks = (str: string) => {
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-};
-
-export const calculateArrivalTime = (travelTimeMinutes: number | undefined) => {
-  if (travelTimeMinutes === undefined) return null;
-
-  const currentBlockTimestampMs = getBlockTimestamp().currentBlockTimestamp * 1000;
-  const travelTimeMs = travelTimeMinutes * 60 * 1000;
-  const arrivalTimeMs = currentBlockTimestampMs + travelTimeMs;
-
-  // Round up to the next hour boundary
-  const arrivalDate = new Date(arrivalTimeMs);
-  const nextHourDate = new Date(arrivalDate);
-  nextHourDate.setHours(arrivalDate.getHours() + 1, 0, 0, 0);
-
-  return nextHourDate;
-};
-
-export const formatArrivalTime = (date: Date | null) => {
-  if (!date) return "";
-
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-
-  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} `;
 };

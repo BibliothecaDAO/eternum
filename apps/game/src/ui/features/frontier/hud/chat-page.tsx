@@ -1,4 +1,4 @@
-import { Button } from "@/ui/design-system/kit/button";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { SIGN_IN } from "@/ui/design-system/kit/words";
 import { RealtimeChatShell } from "@/ui/features/social";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
@@ -20,24 +20,28 @@ export const ChatPage = ({
   /** The chat key focuses this pane's field. */
   pane: RefObject<HTMLElement>;
 }) => (
-  <section
-    ref={pane}
-    aria-label="Chat"
-    className="frontier-card pointer-events-auto flex min-h-0 flex-1 flex-col overflow-hidden !rounded-xl"
-  >
-    {signedIn ? (
-      <RealtimeChatShell
-        defaultZoneId={GLOBAL_CHAT_CHANNEL_ID}
-        gameZoneId={gameZoneId}
-        displayMode="embedded"
-        autoInitializeClient={false}
-        showInlineToggle={false}
-        className="min-h-0 flex-1"
-      />
-    ) : (
-      <div className="flex flex-1 items-center justify-center p-4">
-        <Button role="primary" word={SIGN_IN} onClick={onSignIn} />
-      </div>
-    )}
+  <section ref={pane} aria-label="Chat" className="flex min-h-0 flex-1 flex-col">
+    <HudPanel
+      collapsible={false}
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
+      bodyClassName="flex min-h-0 flex-1 flex-col p-0"
+    >
+      {signedIn ? (
+        <RealtimeChatShell
+          defaultZoneId={GLOBAL_CHAT_CHANNEL_ID}
+          gameZoneId={gameZoneId}
+          displayMode="embedded"
+          autoInitializeClient={false}
+          showInlineToggle={false}
+          className="min-h-0 flex-1"
+        />
+      ) : (
+        <div className="flex flex-1 items-center justify-center p-4">
+          <HudButton kind="primary" onClick={onSignIn}>
+            {SIGN_IN}
+          </HudButton>
+        </div>
+      )}
+    </HudPanel>
   </section>
 );

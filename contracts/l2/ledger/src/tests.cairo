@@ -4,7 +4,7 @@ use collectibles::contract::{
 use core::num::traits::Zero;
 use game_ledger::contract::{
     IGameLedgerDispatcher, IGameLedgerDispatcherTrait, IGameLedgerSafeDispatcher, IGameLedgerSafeDispatcherTrait,
-    result_commitment,
+    IMMRTokenDispatcher, IMMRTokenDispatcherTrait, result_commitment,
 };
 use game_ledger::test_lords::{ITestLordsDispatcher, ITestLordsDispatcherTrait};
 use game_ledger::types::{ChestBandPreset, ChestOdds, GameKey, MmrParams, Preset, RankedPlayer, SlotKey};
@@ -96,6 +96,7 @@ struct Fixture {
     ledger_address: ContractAddress,
     ledger: IGameLedgerDispatcher,
     lords_address: ContractAddress,
+    mmr: IMMRTokenDispatcher,
     chest_address: ContractAddress,
     cosmetics_address: ContractAddress,
     lords: IERC20Dispatcher,
@@ -135,6 +136,7 @@ fn deploy_ledger() -> Fixture {
         ledger_address,
         ledger,
         lords_address,
+        mmr: IMMRTokenDispatcher { contract_address: mmr_address },
         chest_address: loot_chest,
         cosmetics_address: cosmetics,
         lords: IERC20Dispatcher { contract_address: lords_address },
@@ -1992,7 +1994,7 @@ fn reporting_grace_accepts_confirmed_receipts_after_the_shards_withdrawal_cutoff
 
 #[test]
 #[should_panic(expected: "Ledger: duplicate result owner")]
-fn existing_result_rank_rejects_duplicate_wallets() {
+fn results_reject_duplicate_wallets() {
     let fixture = deploy_fixture(default_preset());
     register_players(@fixture, 2);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
@@ -2328,4 +2330,198 @@ fn ranked_season_pool_keeps_its_u128_capacity() {
     fixture.ledger.register(SLOT_KEY, false, false);
     apply_results(@fixture, array![row(player(0), 1)]);
     assert!(fixture.ledger.get_season(1).pool == entry_fee);
+}
+
+fn assert_preview_applies(fixture: @Fixture, ranked: Array<RankedPlayer>) -> Array<i32> {
+    let pool_before = fixture.ledger.get_slot(SLOT_KEY).pool;
+    let mut repeated = array![];
+    let mut settlement = array![];
+    for row in ranked.span() {
+        repeated.append(*row);
+        settlement.append(*row);
+    }
+    let mut events = spy_events();
+    let preview = fixture.ledger.preview_mmr(SLOT_KEY, ranked);
+    let again = fixture.ledger.preview_mmr(SLOT_KEY, repeated);
+    assert!(preview.len() == settlement.len());
+    assert!(events.get_events().events.is_empty(), "preview emits nothing");
+    assert!(fixture.ledger.get_slot(SLOT_KEY).pool == pool_before);
+    assert!(fixture.ledger.get_result_commitment(GAME_KEY) == 0);
+    assert!(fixture.ledger.get_season(1).participant_count == 0);
+    for index in 0..preview.len() {
+        let entry = *preview.at(index);
+        assert!(entry == *again.at(index), "preview is repeatable");
+        assert!(entry.wallet == *settlement.at(index).wallet);
+        assert!(fixture.ledger.get_registration(SLOT_KEY, entry.wallet).game_id == 0);
+        assert!(fixture.ledger.get_player_result(GAME_KEY, entry.wallet).rank == 0);
+        assert!(fixture.mmr.get_player_mmr(entry.wallet) / 1_000_000_000_000_000_000 == entry.mmr_before.into());
+    }
+    apply_results(fixture, settlement);
+    let mut deltas = array![];
+    for entry in preview {
+        let applied = fixture.ledger.get_player_result(GAME_KEY, entry.wallet);
+        assert!(applied.mmr_before == entry.mmr_before && applied.mmr_after == entry.mmr_after);
+        assert!(fixture.mmr.get_player_mmr(entry.wallet) / 1_000_000_000_000_000_000 == entry.mmr_after.into());
+        if entry.delta >= 0 {
+            assert!(applied.mmr_after - applied.mmr_before == entry.delta.try_into().unwrap());
+        } else {
+            assert!(applied.mmr_before - applied.mmr_after == (-entry.delta).try_into().unwrap());
+        }
+        deltas.append(entry.delta);
+    }
+    deltas
+}
+
+#[test]
+fn preview_matches_even_tied_settlement() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 4);
+    let deltas = assert_preview_applies(
+        @fixture, array![row(player(0), 1), row(player(1), 2), row(player(2), 2), row(player(3), 4)],
+    );
+    assert!(deltas == array![26, 7, 7, -11]);
+}
+
+#[test]
+fn preview_matches_odd_tied_settlement() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 3);
+    let deltas = assert_preview_applies(@fixture, array![row(player(0), 1), row(player(1), 1), row(player(2), 3)]);
+    assert!(deltas == array![16, 16, -9]);
+}
+
+#[test]
+fn preview_matches_a_game_subset_with_unequal_live_ratings() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 6);
+    fixture
+        .mmr
+        .update_mmr_batch(
+            array![(player(1), 1_800_000_000_000_000_000_999), (player(3), 1_200_000_000_000_000_000_000)],
+        );
+    let deltas = assert_preview_applies(@fixture, array![row(player(1), 1), row(player(3), 2), row(player(5), 3)]);
+    assert!(deltas.len() == 3);
+    assert!(fixture.ledger.get_registration(SLOT_KEY, player(0)).game_id == 0);
+}
+
+#[test]
+fn preview_includes_sword_and_shield_modifiers() {
+    let fixture = deploy_fixture(default_preset());
+    for index in 0_u16..4 {
+        let owner = player(index);
+        fund_and_approve_player(@fixture, owner, 1000);
+        start_cheat_caller_address(fixture.ledger_address, owner);
+        fixture.ledger.register(SLOT_KEY, index == 0, index != 0);
+        stop_cheat_caller_address(fixture.ledger_address);
+    }
+    let deltas = assert_preview_applies(
+        @fixture, array![row(player(0), 1), row(player(1), 2), row(player(2), 2), row(player(3), 4)],
+    );
+    assert!(deltas == array![52, 7, 7, -5]);
+}
+
+#[test]
+fn preview_single_player_with_sword_is_unchanged() {
+    let fixture = deploy_fixture(default_preset());
+    fund_and_approve_player(@fixture, player(0), 1000);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.register(SLOT_KEY, true, false);
+    stop_cheat_caller_address(fixture.ledger_address);
+    assert!(assert_preview_applies(@fixture, ranked_players(1)) == array![0]);
+}
+
+#[test]
+fn preview_disabled_mmr_is_unchanged() {
+    let mut preset = default_preset();
+    preset.mmr.enabled = false;
+    let fixture = deploy_fixture(preset);
+    register_players(@fixture, 2);
+    let maximum: u128 = 0xffffffffffffffffffffffffffffffff;
+    let rating: u256 = maximum.into() * 1_000_000_000_000_000_000;
+    fixture.mmr.update_mmr_batch(array![(player(0), rating), (player(1), rating)]);
+    assert!(assert_preview_applies(@fixture, ranked_players(2)) == array![0, 0]);
+}
+
+#[test]
+fn preview_covers_the_maximum_game_roster() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 24);
+    assert!(assert_preview_applies(@fixture, ranked_players(24)).len() == 24);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: empty result")]
+fn preview_rejects_empty_ranking() {
+    let fixture = deploy_fixture(default_preset());
+    fixture.ledger.preview_mmr(SLOT_KEY, array![]);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: invalid competition rank")]
+fn preview_rejects_dense_ranks_after_a_tie() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 3);
+    fixture.ledger.preview_mmr(SLOT_KEY, array![row(player(0), 1), row(player(1), 1), row(player(2), 2)]);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: unordered tie")]
+fn preview_rejects_unordered_tied_wallets() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 2);
+    fixture.ledger.preview_mmr(SLOT_KEY, array![row(player(1), 1), row(player(0), 1)]);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: duplicate result owner")]
+fn preview_rejects_duplicate_wallets() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 2);
+    fixture.ledger.preview_mmr(SLOT_KEY, array![row(player(0), 1), row(player(0), 2)]);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: unregistered result owner")]
+fn preview_rejects_unregistered_wallets() {
+    let fixture = deploy_fixture(default_preset());
+    fixture.ledger.preview_mmr(SLOT_KEY, ranked_players(1));
+}
+
+#[test]
+#[should_panic(expected: "Ledger: slot unavailable")]
+fn preview_rejects_unknown_slot() {
+    let fixture = deploy_fixture(default_preset());
+    fixture.ledger.preview_mmr(SlotKey { shard: 'other', slot_id: 42 }, ranked_players(1));
+}
+
+#[test]
+#[should_panic(expected: "Ledger: slot unavailable")]
+fn preview_rejects_cancelled_slot() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.cancel_slot(SLOT_KEY);
+    stop_cheat_caller_address(fixture.ledger_address);
+    fixture.ledger.preview_mmr(SLOT_KEY, ranked_players(1));
+}
+
+#[test]
+#[should_panic(expected: "Ledger: registration refundable")]
+fn preview_rejects_refundable_registration() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    start_cheat_block_timestamp(fixture.ledger_address, START);
+    fixture.ledger.mark_refundable(SLOT_KEY, array![player(0)]);
+    stop_cheat_caller_address(fixture.ledger_address);
+    fixture.ledger.preview_mmr(SLOT_KEY, ranked_players(1));
+}
+
+#[test]
+#[should_panic(expected: "Ledger: registration already settled")]
+fn preview_rejects_settled_registration() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    apply_results(@fixture, ranked_players(1));
+    fixture.ledger.preview_mmr(SLOT_KEY, ranked_players(1));
 }

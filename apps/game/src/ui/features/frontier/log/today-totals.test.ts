@@ -11,6 +11,23 @@ const story = (name: string, payload: Record<string, unknown>, owner = "0x111", 
 });
 
 describe("the player's day in totals", () => {
+  it.each([50, 0])("includes a %s LORDS exploration chest without inventing a reveal or clear", (amount) => {
+    const stories = [
+      story("RewardChestOpened", { amount: String(amount) }),
+      story("RewardChestOpened", { amount: "900" }, "0x222"),
+      story("RewardChestOpened", { amount: "900" }, "0x111", 500),
+      story("RewardChestOpened", { amount: "900" }, "0x111", 9_000),
+    ];
+    expect(totalToday(stories, "0x0111", { startMs: 1_000, endMs: 9_000 })).toEqual({
+      reveals: 0,
+      cleared: 0,
+      chests: 1,
+      essence: 0,
+      labor: 0,
+      lords: amount,
+    });
+  });
+
   it("adds up the player's own reveals, clears and chests within today", () => {
     const stories = [
       story("ExplorationReward", { resource_type: ResourcesIds.Essence, amount: whole(150) }),

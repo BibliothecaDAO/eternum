@@ -1,0 +1,9 @@
+[
+  {
+    "file": "apps/game/src/shell/account-state.tsx",
+    "match": "text-danger",
+    "count": 1,
+    "reason": "AccountStatePrompt renders in the HUD's top header (identity-chip), not the shell; danger is the HUD's error red, not a palette colour",
+    "issue": "#5052"
+  }
+]

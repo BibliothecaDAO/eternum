@@ -62,13 +62,20 @@ const buildSearch = (searchParams: URLSearchParams): string => {
   return queryString ? `?${queryString}` : "";
 };
 
-function parseRendererOptions(
+/**
+ * The one opt-in for diagnostics on screen: `?logs=1` turns on verbose logs and the boot's debug panel. Players never
+ * see either without it.
+ */
+export const requestsDiagnostics = (searchParams: URLSearchParams): boolean => searchParams.get("logs") === "1";
+
+/** What an address asks of the renderer: a backend (`rendererMode`) and diagnostics (`logs=1`), carried route to route. */
+export function parseRendererOptions(
   searchParams: URLSearchParams,
 ): Pick<PlayRouteDescriptor, "rendererMode" | "verboseLogs"> {
   const rendererMode = searchParams.get("rendererMode");
   return {
     ...(rendererMode ? { rendererMode: resolveRendererBuildMode(rendererMode) } : {}),
-    ...(searchParams.get("logs") === "1" ? { verboseLogs: true } : {}),
+    ...(requestsDiagnostics(searchParams) ? { verboseLogs: true } : {}),
   };
 }
 

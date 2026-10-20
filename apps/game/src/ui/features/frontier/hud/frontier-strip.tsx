@@ -24,13 +24,13 @@ export const FrontierStrip = ({
   onOpenStores?: () => void;
 }) => {
   const clock = dayClock(rules, useNowSeconds());
-  const stores = useRealmStores(realm, rules);
-  return <StatusStrip clock={clock} stores={storeReadings(stores)} onOpenStores={onOpenStores} />;
+  return <StatusStrip clock={clock} stores={useStoreReadings(realm, rules)} onOpenStores={onOpenStores} />;
 };
 
-/** Each plate of the strip: its store's reading and where a payout of it lands. */
-const storeReadings = (stores: ReturnType<typeof useRealmStores>): StoreReading[] =>
-  PLATES.map(({ kind, flyTarget }) => {
+/** Each store of the realm (the strip's plates, the realm panel's rings): its reading and where a payout of it lands. */
+export const useStoreReadings = (realm: NativeRows["Structure"] | null, rules: ExpeditionRules): StoreReading[] => {
+  const stores = useRealmStores(realm, rules);
+  return PLATES.map(({ kind, flyTarget }) => {
     const store = stores?.[kind];
     return {
       kind,
@@ -42,6 +42,7 @@ const storeReadings = (stores: ReturnType<typeof useRealmStores>): StoreReading[
       flyTarget,
     };
   });
+};
 
 const PLATES: { kind: StoreReading["kind"]; flyTarget: string }[] = [
   { kind: "essence", flyTarget: bankedCounterTarget(ResourcesIds.Essence) },

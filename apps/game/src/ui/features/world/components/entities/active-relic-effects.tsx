@@ -1,59 +1,29 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { formatRelicBonusText } from "@/ui/utils/relic-utils";
-import { bonusActive, formatTime } from "@bibliothecadao/eternum";
-import { getRelicInfo, ID, RelicEffect, RelicInfo, ResourcesIds } from "@bibliothecadao/types";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { HudRelic } from "@/ui/design-system/kit/hud-elements";
+import { RELIC_KIND } from "./relic-kind";
+import { relicShortName } from "@/ui/design-system/kit/words";
+import { bonusActive } from "@bibliothecadao/eternum";
+import { getRelicInfo, ID, RelicEffect, ResourcesIds, formatWait } from "@bibliothecadao/types";
 
 import { useMemo } from "react";
 
 interface ActiveRelicEffectsProps {
   relicEffects: RelicEffect[];
   entityId: ID;
-  compact?: boolean;
-  className?: string;
-  variant?: "default" | "inline";
-  maxItems?: number;
 }
 
-const RELIC_TYPE_BORDER: Record<RelicInfo["type"], string> = {
-  Stamina: "border-relics-stamina-text/30",
-  Damage: "border-relics-damage-text/30",
-  "Damage Reduction": "border-relics-damageReduction-text/30",
-  Exploration: "border-relics-exploration-text/30",
-  Production: "border-relics-production-text/30",
-};
+/** How short a relic's time runs: under five minutes it is about to go, under an hour it is going. */
+const timeLeftTone = (remainingSeconds: number) =>
+  remainingSeconds < 300 ? "bad" : remainingSeconds < 3600 ? "warn" : "good";
 
-const RELIC_TYPE_BG: Record<RelicInfo["type"], string> = {
-  Stamina: "bg-relics-stamina-bg",
-  Damage: "bg-relics-damage-bg",
-  "Damage Reduction": "bg-relics-damageReduction-bg",
-  Exploration: "bg-relics-exploration-bg",
-  Production: "bg-relics-production-bg",
-};
-
-const RELIC_TYPE_TEXT: Record<RelicInfo["type"], string> = {
-  Stamina: "text-relics-stamina-text",
-  Damage: "text-relics-damage-text",
-  "Damage Reduction": "text-relics-damageReduction-text",
-  Exploration: "text-relics-exploration-text",
-  Production: "text-relics-production-text",
-};
-
-const getTimerUrgency = (remainingSeconds: number): string => {
-  if (remainingSeconds < 300) return "text-relics-damage-text";
-  if (remainingSeconds < 3600) return "text-yellow-400";
-  return "text-relics-stamina-text";
-};
-
-export const ActiveRelicEffects = ({
-  relicEffects,
-  entityId,
-  compact = false,
-  className,
-  variant = "default",
-  maxItems,
-}: ActiveRelicEffectsProps) => {
+/**
+ * The relics working on a structure or an army: each its painting and its name in its kind's colour, as the held chip
+ * names it, and how long it still works, in a tone as it runs short; what it does on hover. Gone the moment its time
+ * ends.
+ */
+export const ActiveRelicEffects = ({ relicEffects, entityId }: ActiveRelicEffectsProps) => {
   const now = useCurrentDefaultTick();
 
   const activeEffects = useMemo(() => {
@@ -76,123 +46,31 @@ export const ActiveRelicEffects = ({
           relicInfo,
           remainingSeconds,
           resourceId,
-          bonusText: formatRelicBonusText(relicInfo),
         };
       })
       .filter((effect): effect is NonNullable<typeof effect> => effect !== null);
   }, [relicEffects, now]);
 
-  if (activeEffects.length === 0) {
-    return null;
-  }
-
-  if (variant === "inline") {
-    const visibleEffects = maxItems ? activeEffects.slice(0, maxItems) : activeEffects;
-    const hiddenEffectsCount = Math.max(activeEffects.length - visibleEffects.length, 0);
-
-    return (
-      <div className={`flex flex-wrap gap-1.5 ${className ?? ""}`}>
-        {visibleEffects.map((effect) => {
-          const type = effect.relicInfo.type;
-          const border = RELIC_TYPE_BORDER[type] ?? "border-gold/20";
-          const bg = RELIC_TYPE_BG[type] ?? "bg-dark-brown/80";
-          const text = RELIC_TYPE_TEXT[type] ?? "text-gold";
-          const timerColor = getTimerUrgency(effect.remainingSeconds);
-
-          return (
-            <div
-              key={`${entityId}-${effect.resourceId}`}
-              className={`flex max-w-full items-center gap-1.5 rounded border ${border} ${bg} px-2 py-1`}
-              title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
-            >
-              <ResourceIcon resource={ResourcesIds[effect.resourceId]} size="xs" withTooltip={false} />
-              <span className={`truncate text-sm font-semibold ${text}`}>{effect.bonusText}</span>
-              <span className={`shrink-0 text-sm font-medium ${timerColor}`}>
-                {formatTime(effect.remainingSeconds)}
-              </span>
-            </div>
-          );
-        })}
-        {hiddenEffectsCount > 0 ? (
-          <div
-            className="flex items-center rounded border border-gold/25 bg-black/40 px-2 py-1 text-sm font-semibold text-gold/70"
-            title={`${hiddenEffectsCount} more active relic effect${hiddenEffectsCount === 1 ? "" : "s"}`}
-          >
-            +{hiddenEffectsCount}
-          </div>
-        ) : null}
-      </div>
-    );
-  }
-
-  if (compact) {
-    return (
-      <div className={`flex flex-col gap-1.5 w-full mt-1 border-t border-gold/20 pt-1.5 ${className ?? ""}`}>
-        <div className="text-sm text-gold/80 font-semibold flex items-center gap-1">
-          <SemanticIcon name="relics" className="h-3 w-3 text-relic2 animate-pulse" />
-          Active Relic Effects
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {activeEffects.map((effect) => {
-            const type = effect.relicInfo.type;
-            const border = RELIC_TYPE_BORDER[type] ?? "border-gold/20";
-            const bg = RELIC_TYPE_BG[type] ?? "bg-dark-brown/80";
-            const text = RELIC_TYPE_TEXT[type] ?? "text-gold";
-            const timerColor = getTimerUrgency(effect.remainingSeconds);
-
-            return (
-              <div
-                key={`${entityId}-${effect.resourceId}`}
-                className={`flex items-center gap-1.5 rounded border ${border} ${bg} px-2 py-1`}
-                title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
-              >
-                <ResourceIcon resource={ResourcesIds[effect.resourceId]} size="xs" withTooltip={false} />
-                <span className={`text-sm font-semibold ${text}`}>{effect.bonusText}</span>
-                <span className={`text-sm font-medium ${timerColor}`}>{formatTime(effect.remainingSeconds)}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
+  if (activeEffects.length === 0) return null;
 
   return (
-    <div className={`flex flex-col gap-2 w-full mt-1 border-t border-gold/20 pt-2 ${className ?? ""}`}>
-      <div className="text-sm text-gold/80 font-semibold flex items-center gap-1">
-        <SemanticIcon name="relics" className="h-3 w-3 text-relic2 animate-pulse" />
-        Active Relic Effects
+    <div className="flex w-full flex-col gap-1.5">
+      <div className="flex items-center gap-1 text-hud-label text-hud-muted">
+        <SemanticIcon name="relics" className="h-3 w-3" />
+        Active relic effects
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-        {activeEffects.map((effect) => {
-          const type = effect.relicInfo.type;
-          const border = RELIC_TYPE_BORDER[type] ?? "border-gold/20";
-          const bg = RELIC_TYPE_BG[type] ?? "bg-dark-brown/80";
-          const text = RELIC_TYPE_TEXT[type] ?? "text-gold";
-          const timerColor = getTimerUrgency(effect.remainingSeconds);
-
-          return (
-            <div
-              key={`${entityId}-${effect.resourceId}`}
-              className={`border ${border} rounded ${bg} p-3`}
-              title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
-            >
-              <div className="flex items-start gap-2">
-                <ResourceIcon resource={ResourcesIds[effect.resourceId]} size="sm" withTooltip={false} />
-                <div className="flex flex-col gap-0.5">
-                  <span className={`text-sm font-semibold ${text}`}>{effect.relicInfo.name}</span>
-                  <span className="text-sm text-gold/70">{effect.bonusText}</span>
-                  <span className="text-sm text-kit-muted">{effect.relicInfo.effect}</span>
-                </div>
-              </div>
-              <div className={`text-sm ${timerColor} font-medium mt-1.5 flex items-center gap-1`}>
-                <SemanticIcon name="relics" className="h-3 w-3" />
-                {formatTime(effect.remainingSeconds)} left
-              </div>
-            </div>
-          );
-        })}
+      <div className="flex flex-wrap gap-1.5">
+        {activeEffects.map((effect) => (
+          <HudRelic
+            key={`${entityId}-${effect.resourceId}`}
+            icon={resourceMeaning(effect.resourceId)}
+            kind={RELIC_KIND[effect.relicInfo.type]}
+            gives={relicShortName(effect.resourceId)}
+            trail={`${formatWait(effect.remainingSeconds)} left`}
+            trailTone={timeLeftTone(effect.remainingSeconds)}
+            title={`${relicShortName(effect.resourceId)}: ${effect.relicInfo.effect}`}
+          />
+        ))}
       </div>
     </div>
   );

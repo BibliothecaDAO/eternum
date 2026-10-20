@@ -1,5 +1,5 @@
 import { streamedStoriesOf } from "@/hooks/store/use-story-events-store";
-import { RESOURCE_PRECISION, type ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, type ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
@@ -36,7 +36,7 @@ type PayoutRecord = { resourceId: ResourcesIds; amount: number };
 
 /**
  * What the action's clear paid, by its transaction, from the payout story the contract emits with the winning
- * battle: the reward, null for a site that pays none (stragglers, or a ruin, whose chest is its own), and undefined
+ * battle: the reward, null when the story has no resource reward, and undefined
  * when no payout story of that transaction reached this client.
  */
 export const readPayoutRecord = (transactionHash: string): PayoutRecord | null | undefined => {
@@ -46,7 +46,7 @@ export const readPayoutRecord = (transactionHash: string): PayoutRecord | null |
   if (reward === null) return null;
   if (!reward || typeof reward !== "object" || !("resource_type" in reward) || !("amount" in reward))
     throw new Error("Malformed site payout reward");
-  return { resourceId: Number(reward.resource_type), amount: Number(BigInt(String(reward.amount)) / PRECISION) };
+  return { resourceId: Number(reward.resource_type), amount: scaledToUnits(BigInt(String(reward.amount))) };
 };
 
 /** One side's whole troops before and after the battle, as its story carries them in game precision. */

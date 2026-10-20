@@ -13,8 +13,8 @@ type TransactionFailurePayload = {
 };
 
 /**
- * The sound of a transaction: pending, confirmed, failed. The rows themselves live in the transaction store (the
- * listener writes them) and the event feed shows them; this only plays the cue and logs the failure.
+ * The sound of a transaction: pending, confirmed, failed. The rows themselves live in the transaction store, and a
+ * refusal's notice on screen, both from the transaction listener; this only plays the cue and logs the failure.
  */
 export function TransactionAudioCues() {
   const {

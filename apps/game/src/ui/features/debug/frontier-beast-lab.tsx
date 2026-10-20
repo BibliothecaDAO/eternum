@@ -1,0 +1,246 @@
+import { siteDisplayName, type BeastBand } from "@bibliothecadao/eternum";
+import { useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { StructureType, frontierSiteName } from "@bibliothecadao/types";
+import { mountStaticLineup, type LineupAsset, type LineupSettings } from "@/three/debug/model-lab/static-model-lineup";
+import {
+  FRONTIER_BEASTS,
+  frontierBeast,
+  frontierSiteComposition,
+  FALLEN_REALM_RUIN_PATH,
+  FALLEN_REALM_DEPTHS,
+} from "@/three/structures/frontier-beast";
+import { CAMP_MODEL_PATH } from "@/three/constants/scene-constants";
+import { Token } from "@/three/map-plates/map-plate-token";
+import { Plate } from "@/three/map-plates/map-plates";
+import { buildStructurePlate } from "@/three/map-plates/map-plate-model";
+import { SiteCardView } from "../frontier/sites/site-card-view";
+import { BEAST_NAMES } from "@/ui/design-system/kit/words";
+import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { Icon } from "@/ui/design-system/icon";
+import "./workshop-model-lab.css";
+import "./frontier-beast-lab.css";
+import "@/three/map-plates/map-plates.css";
+
+const MODEL_BEASTS = Object.keys(FRONTIER_BEASTS).map((beast) => ({ beast: beast as keyof typeof FRONTIER_BEASTS }));
+const MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast }) => ({
+  label: BEAST_NAMES[beast],
+  parts: [{ path: FRONTIER_BEASTS[beast].path, scale: FRONTIER_BEASTS[beast].maxScale }],
+}));
+const SITES = [
+  { kind: "Camp", category: StructureType.Camp, base: CAMP_MODEL_PATH },
+  { kind: "Rift", category: StructureType.Rift, base: "/models/reward-tiles/rift.glb" },
+  { kind: "Ruin", category: StructureType.Ruin, base: FALLEN_REALM_RUIN_PATH },
+  { kind: "Beasts", category: StructureType.Beasts, base: "" },
+] as const;
+const SITE_MODELS: readonly LineupAsset[] = SITES.map(({ category, base }) => {
+  const beast = frontierBeast(0, category, "lowly");
+  const composition = frontierSiteComposition(category);
+  return {
+    label: frontierSiteName(category, beast),
+    parts: [
+      ...(composition.baseScale ? [{ path: base, scale: composition.baseScale, z: composition.baseZ }] : []),
+      { path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale, z: composition.beastZ, y: composition.beastY },
+    ],
+  };
+});
+const BEAST_MODELS = (["lowly", "stronger"] as const).map((band) => {
+  const beast = frontierBeast(0, StructureType.Beasts, band);
+  return { label: `${beast.name} · ${band}`, parts: [{ path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale }] };
+});
+
+const LINEUPS: Readonly<Record<string, readonly LineupAsset[]>> = {
+  models: MODELS,
+  sites: SITE_MODELS,
+  beasts: BEAST_MODELS,
+  ruins: FALLEN_REALM_DEPTHS.map(({ beast, scale }, depth) => ({
+    label: `${BEAST_NAMES[beast]} · depth ${depth}`,
+    parts: [
+      { path: FALLEN_REALM_RUIN_PATH, scale: 1 },
+      { path: FRONTIER_BEASTS[beast].path, scale },
+    ],
+  })),
+};
+
+export function FrontierBeastLab() {
+  const [params, setParams] = useSearchParams();
+  const group = params.get("group") ?? "models";
+  const lineup = LINEUPS[group] ?? MODELS;
+  const index = Number(params.get("focus"));
+  const focus =
+    params.has("focus") && Number.isInteger(index) && index >= 0 && index < lineup.length ? index : "lineup";
+  const settings: LineupSettings = {
+    focus,
+    distance: focus === "lineup" ? 20 : 3.5,
+    yaw: Number(params.get("yaw") ?? 30),
+    lighting: params.get("lighting") === "sunset" ? "sunset" : "day",
+  };
+  const latest = useRef(settings);
+  latest.current = settings;
+  const host = useRef<HTMLDivElement>(null);
+  const renderer = useRef<Awaited<ReturnType<typeof mountStaticLineup>> | null>(null);
+  const [status, setStatus] = useState("Loading…");
+  const [ready, setReady] = useState(false);
+  const [panel, setPanel] = useState(false);
+  const [site, setSite] = useState(2);
+  const [band, setBand] = useState<BeastBand>("lowly");
+  const [depth, setDepth] = useState(0);
+  const beast = frontierBeast(depth, SITES[site].category, band);
+  const strength = site === 3 ? (band === "lowly" ? 325 : 500) : 2800;
+  const plate = buildStructurePlate({
+    entityId: 29,
+    structureName: siteDisplayName(29),
+    structureType: SITES[site].category,
+    isMine: false,
+    isAlly: false,
+    owner: { address: 0n, ownerName: "", guildName: "" },
+    frontierBeast: beast,
+    guardArmies: [{ slot: 0, category: "Knight", tier: 1, count: strength }],
+  });
+  useEffect(() => {
+    const controller = new AbortController();
+    let mounted: typeof renderer.current = null;
+    setReady(false);
+    setStatus("Loading…");
+    void mountStaticLineup(host.current!, latest.current, controller.signal, lineup)
+      .then((value) => {
+        mounted = value;
+        if (controller.signal.aborted) return value.dispose();
+        renderer.current = value;
+        value.update(latest.current);
+        setReady(true);
+        setStatus("Loaded · game renderer, world scale · current models and creature studies");
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) setStatus(`Error: ${String(error)}`);
+      });
+    return () => {
+      controller.abort();
+      mounted?.dispose();
+      renderer.current = null;
+    };
+  }, [lineup]);
+  useEffect(() => {
+    renderer.current?.update(latest.current);
+  }, [settings.focus, settings.yaw, settings.lighting]);
+  const change = (key: string, value: string) =>
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set(key, value);
+      if (key === "group" || (key === "focus" && value === "lineup")) next.delete("focus");
+      return next;
+    });
+  return (
+    <main className="workshop-lab beast-lab" data-beasts-ready={ready} data-group={group} data-hud-mode="frontier">
+      <header>
+        <Link to="/lab/models">Models</Link>
+        <h1>Frontier beasts</h1>
+        <Link to="?family=beasts&group=site-map">Final site map</Link>
+        <label>
+          Set{" "}
+          <select aria-label="Set" value={group} onChange={(e) => change("group", e.target.value)}>
+            <option value="models">Eight production species</option>
+            <option value="ruins">Ruin depths</option>
+            <option value="sites">Standing sites</option>
+            <option value="beasts">Roaming beasts</option>
+          </select>
+        </label>
+        <>
+          <label>
+            View{" "}
+            <select aria-label="View" value={focus} onChange={(e) => change("focus", e.target.value)}>
+              <option value="lineup">Gameplay lineup</option>
+              {lineup.map((entry, i) => (
+                <option key={entry.label} value={i}>
+                  {entry.label} · detail
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Turn{" "}
+            <select aria-label="Turn" value={settings.yaw} onChange={(e) => change("yaw", e.target.value)}>
+              {[0, 30, 90, 180, 270].map((yaw) => (
+                <option key={yaw} value={yaw}>
+                  {yaw}°
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Light{" "}
+            <select aria-label="Light" value={settings.lighting} onChange={(e) => change("lighting", e.target.value)}>
+              <option value="day">Day</option>
+              <option value="sunset">Sunset</option>
+            </select>
+          </label>
+        </>
+      </header>
+      <p role="status">{status}</p>
+      <div ref={host} className="workshop-lab-canvas" />
+      <>
+        <div className="beast-proof ui">
+          <div>
+            <label>
+              Site{" "}
+              <select aria-label="Site" value={site} onChange={(e) => setSite(Number(e.target.value))}>
+                {SITES.map((entry, i) => (
+                  <option key={frontierSiteName(entry.category)} value={i}>
+                    {frontierSiteName(entry.category)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {site === 3 ? (
+              <select aria-label="Beast strength" value={band} onChange={(e) => setBand(e.target.value as BeastBand)}>
+                <option value="lowly">Lowly · {BEAST_NAMES.cyclops}</option>
+                <option value="stronger">Stronger · {BEAST_NAMES.wraith}</option>
+              </select>
+            ) : (
+              <select aria-label="Depth" value={depth} onChange={(e) => setDepth(Number(e.target.value))}>
+                {["Surface", "I", "II", "III"].map((label, index) => (
+                  <option key={label} value={index}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            )}
+            <button onClick={() => setPanel(true)}>Select site</button>
+          </div>
+          <div data-after>
+            <small>Selected plate, and its token at rest</small>
+            <Plate plate={plate} />
+            <Token plate={plate} />
+          </div>
+          <div className="beast-icon-studies">
+            <small>Species portraits · 20 px</small>
+            {MODEL_BEASTS.map(({ beast: species }) => (
+              <span key={species} title={BEAST_NAMES[species]}>
+                <Icon name={beastMeaning(species)} size={20} />
+              </span>
+            ))}
+          </div>
+        </div>
+        {panel && (
+          <SiteCardView
+            site={SITES[site].kind}
+            beast={{ ...beast, combatClass: "Knight" }}
+            army={{ art: "knight-t1", troops: 5000 }}
+            guard={strength}
+            fight={{
+              outcome: "wins",
+              exchanges: 2,
+              troopsLost: Math.floor(strength / 5),
+              guardLeft: Math.floor(strength / 3),
+              whole: { troopsLost: Math.floor((strength * 2) / 5), guardKilled: strength, stamina: 60 },
+            }}
+            pay={site === 0 ? { icon: "labor", amount: 1400 } : site === 1 ? { icon: "essence", amount: 8400 } : null}
+            xp={132}
+            verb={null}
+            onClose={() => setPanel(false)}
+          />
+        )}
+      </>
+    </main>
+  );
+}

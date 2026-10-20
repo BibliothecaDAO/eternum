@@ -1,19 +1,15 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { realmLevelNumber } from "@/ui/lib/realm-level";
 
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import { STRUCTURE_GROUP_CONFIG } from "@/ui/features/world/containers/top-header/structure-groups";
 import {
   StructureRealmActions,
   type StructureWithMetadata,
 } from "@/ui/features/world/containers/top-header/structure-picker/chip";
-import {
-  formatPopulationStatusLabel,
-  formatUsedBuildingTilesLabel,
-} from "@/ui/features/world/containers/structure-status";
+import { formatUsedBuildingTilesLabel } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
-import { type ID, StructureType } from "@bibliothecadao/types";
+import { formatPopulation, type ID, StructureType } from "@bibliothecadao/types";
 import { memo, useCallback } from "react";
 
 const getCategoryIcon = (category: StructureType | number | undefined): IconMeaning =>
@@ -52,14 +48,14 @@ const resolveStatusTone = (
 };
 
 const STATUS_TONE_TEXT: Record<"green" | "amber" | "red", string> = {
-  green: "text-emerald-300 drop-shadow-[0_0_4px_rgba(110,231,183,0.55)]",
-  amber: "text-amber-300 drop-shadow-[0_0_4px_rgba(252,211,77,0.55)]",
-  red: "text-rose-400 drop-shadow-[0_0_4px_rgba(244,114,114,0.7)]",
+  green: "text-hud-good",
+  amber: "text-hud-warn",
+  red: "text-hud-bad",
 };
 
 const InlineStat = ({ icon: Icon, label, title }: { icon: IconMeaning; label: string; title?: string }) => (
-  <span className="inline-flex items-center gap-0.5 text-sm font-semibold tabular-nums text-kit-cream" title={title}>
-    <SemanticIcon name={Icon} className="h-3 w-3 text-kit-muted" />
+  <span className="inline-flex items-center gap-0.5 text-hud-label tabular-nums text-hud-muted" title={title}>
+    <SemanticIcon name={Icon} className="h-3 w-3 text-hud-muted" />
     <span>{label}</span>
   </span>
 );
@@ -107,17 +103,14 @@ export const StructureStatusRow = memo(
     statsVariant = "default",
   }: StructureStatusRowProps) => {
     const capabilities = resolveStructureUiCapabilities(structure.structure);
-    const groupConfig = structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor] : null;
     const statusTone = resolveStatusTone(structure);
-    // Use numeric realm level (1..6) instead of the letter abbreviation —
-    // shorter, sortable at a glance, no Settlement-vs-Hamlet mental lookup.
     const levelBadge =
       capabilities.hasPopulationDetails && Number.isFinite(structure.realmLevel)
-        ? String(Math.max(1, Math.trunc(structure.realmLevel)))
+        ? String(realmLevelNumber(Math.trunc(structure.realmLevel)))
         : null;
     const populationLabel =
       statsVariant === "default" && capabilities.hasPopulationDetails
-        ? formatPopulationStatusLabel(structure.population, structure.populationCapacity)
+        ? formatPopulation(structure.population, structure.populationCapacity)
         : null;
     const buildingTilesLabel =
       statsVariant === "default" &&
@@ -156,7 +149,7 @@ export const StructureStatusRow = memo(
       [handleCardClick],
     );
 
-    const starTone = statusTone ? STATUS_TONE_TEXT[statusTone.tone] : "text-kit-muted";
+    const starTone = statusTone ? STATUS_TONE_TEXT[statusTone.tone] : "text-hud-muted";
     const starTitle = statusTone?.title ?? (isFavorite ? "Remove from favorites" : "Favorite structure");
 
     return (
@@ -166,11 +159,11 @@ export const StructureStatusRow = memo(
         onClick={handleCardClick}
         onKeyDown={handleKeyDown}
         className={cn(
-          "pointer-events-auto cursor-pointer rounded-xl transition",
-          isFull && "h-[60px]",
+          "pointer-events-auto cursor-pointer rounded-xl border bg-hud-surface transition",
+          isFull && "h-16",
           isActive
-            ? "border border-gold/65 ring-1 ring-gold/30 bg-gradient-to-b from-[#231913]/97 to-[#2c2018]/97 shadow-[0_0_18px_rgba(223,170,84,0.3),inset_0_1px_0_rgba(255,214,102,0.28)] backdrop-blur-sm"
-            : cn(OVERLAY_SURFACE_BASE, "hover:border-gold/50"),
+            ? "border-hud-line-strong ring-1 ring-hud-line-strong"
+            : "border-hud-line hover:border-hud-line-strong",
         )}
         aria-pressed={isActive}
         title={structure.displayName}
@@ -205,29 +198,18 @@ export const StructureStatusRow = memo(
                 event.stopPropagation();
                 onRequestRename(structure.entityId);
               }}
-              className="flex-shrink-0 rounded border border-gold/30 p-0.5 text-kit-muted hover:text-gold"
+              className="flex-shrink-0 rounded border border-hud-line p-0.5 text-hud-muted hover:text-hud-ink"
               title="Rename structure"
               aria-label="Rename structure"
             >
               <SemanticIcon name="edit" className="h-3 w-3" />
             </button>
           )}
-          <CategoryIcon
-            category={structure.category}
-            className={cn("h-4 w-4 flex-shrink-0", groupConfig ? groupConfig.textClass : "text-gold")}
-          />
-          {groupConfig && <span className={cn("h-1.5 w-1.5 flex-shrink-0 rounded-full", groupConfig.dotClass)} />}
-          <span
-            className={cn(
-              "min-w-0 flex-1 truncate text-sm font-semibold",
-              groupConfig ? groupConfig.textClass : "text-gold",
-            )}
-          >
-            {structure.displayName}
-          </span>
+          <CategoryIcon category={structure.category} className="h-4 w-4 flex-shrink-0 text-hud-ink" />
+          <span className="min-w-0 flex-1 truncate text-hud-strong text-hud-ink">{structure.displayName}</span>
           {hasAttention && (
             <span
-              className="h-2 w-2 flex-shrink-0 rounded-full bg-gold shadow-[0_0_6px_rgba(223,170,84,0.7)]"
+              className="h-2 w-2 flex-shrink-0 rounded-full bg-hud-gold"
               aria-hidden="true"
               title="Needs attention"
             />
@@ -244,7 +226,7 @@ export const StructureStatusRow = memo(
           <div className="flex items-center gap-1.5 px-2.5 pt-1 pb-2">
             {levelBadge && (
               <span
-                className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1.5 text-sm font-semibold tabular-nums text-kit-cream"
+                className="flex-shrink-0 rounded-sm border border-hud-line bg-hud-well px-1.5 text-hud-label tabular-nums text-hud-ink"
                 title="Realm level"
               >
                 {levelBadge}

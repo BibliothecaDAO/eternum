@@ -2,11 +2,10 @@ import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
-import { usePlayerProfile } from "@/hooks/use-player-profile";
+import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import {
   configManager,
   getExplorerOwner,
-  getArmyName,
   getArmyRelicEffects,
   getGuildFromPlayerAddress,
   isViewerOwner,
@@ -30,14 +29,10 @@ interface DerivedArmyData {
   maxStamina: number;
   staminaDisplay: ArmyStaminaPresentation | null;
   playerGuild?: { name: string } | undefined;
-  addressName?: string;
+  /** The army's owner by the one owner rule: the Vanguard when no player holds it. */
+  addressName: string;
   isMine: boolean;
   structureOwnerName?: string;
-}
-
-interface AlignmentBadge {
-  label: string;
-  className: string;
 }
 
 export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions) => {
@@ -80,7 +75,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     [currentTroops, timestamp],
   );
 
-  const ownerProfile = usePlayerProfile(owner);
+  const addressName = usePlayerDisplayName(owner) ?? "";
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
     if (!explorer) return undefined;
 
@@ -97,8 +92,6 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
 
     const guild = owner ? getGuildFromPlayerAddress(owner, store) : undefined;
     const isMine = isViewerOwner(owner, userAddress);
-
-    const addressName = owner ? (ownerProfile.name ?? undefined) : getArmyName(armyEntityId, store);
 
     const structureOwnerName = structure ? mode.structure.getName(structure).name : undefined;
 
@@ -119,32 +112,11 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     timestamp,
     explorer,
     mode,
-    ownerProfile.name,
+    addressName,
     staminaSnapshot,
     structure,
     userAddress,
   ]);
-
-  const alignmentBadge: AlignmentBadge | undefined = useMemo(() => {
-    if (!derivedData) return undefined;
-
-    if (derivedData.isMine) {
-      return { label: "Your Army", className: "bg-gold/20 border border-gold/40 text-gold" };
-    }
-
-    if (derivedData.playerGuild) {
-      return {
-        label: `Guild · ${derivedData.playerGuild.name}`,
-        className: "bg-order-protection/20 border border-order-protection/40 text-order-protection",
-      };
-    }
-
-    if (derivedData.structureOwnerName) {
-      return { label: "Visiting", className: "bg-blueish/20 border border-blueish/40 text-blueish" };
-    }
-
-    return undefined;
-  }, [derivedData]);
 
   const handleDeleteExplorer = useCallback(async () => {
     setIsLoadingDelete(true);
@@ -167,7 +139,6 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     structureResources,
     relicEffects,
     derivedData,
-    alignmentBadge,
     isLoadingExplorer: explorer === undefined,
     isLoadingStructure: explorer?.owner !== undefined && structure === undefined,
     handleDeleteExplorer,

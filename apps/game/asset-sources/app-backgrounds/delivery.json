@@ -1,0 +1,44 @@
+[
+  {
+    "id": "season-citadel",
+    "masterSha256": "f93bd88febc7ad08a10b02868099b0e6853fc57aa3c1fdbb05575f71a407dcb2",
+    "promptSha256": "fb5e413167b385a21d8fe58493a8f3ca51014eee671700986e3dde97176cb7db",
+    "width": 1536,
+    "height": 1024,
+    "files": [
+      {
+        "file": "season-citadel-800.webp",
+        "width": 800,
+        "bytes": 60820,
+        "sha256": "1bb1fde12fd9df5af3bcc90e849e60b5ad83afe34de66a8dcc8b0ac1c624cdac"
+      },
+      {
+        "file": "season-citadel-1536.webp",
+        "width": 1536,
+        "bytes": 179814,
+        "sha256": "a6691f4626273eba6252f040dbaef01795598ad6f083231ff3c64324e4c1e2bc"
+      }
+    ]
+  },
+  {
+    "id": "blitz-aftermath",
+    "masterSha256": "bea27b358129693a3954b16de63602ebafbcf0f8d4dff7f926d5d60851c4a80f",
+    "promptSha256": "13afba3f3e67fef8d1f4b8fcf788d536a72c56ceecc07824266df1ff1db8f336",
+    "width": 1536,
+    "height": 1024,
+    "files": [
+      {
+        "file": "blitz-aftermath-800.webp",
+        "width": 800,
+        "bytes": 39568,
+        "sha256": "d956d44d7b8a459b317484e075f5992936271c41af80cd801dbb7112d0af3978"
+      },
+      {
+        "file": "blitz-aftermath-1536.webp",
+        "width": 1536,
+        "bytes": 112374,
+        "sha256": "f29234db4b774b3eadd82e8e2ca571d317882b7db19405803d9744c56149afdd"
+      }
+    ]
+  }
+]

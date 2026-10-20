@@ -168,12 +168,20 @@ const startSync = async (
     release.dispose();
     outcomes.abort(new Error("Game client disposed"));
   };
+  runtime.subscribeResynced(() => input.observer?.onResynced?.());
   await runtime.startSession(session);
   await release.ready();
   // Chain time must be known before the first spatial projection reads it.
   await runtime.waitForConfirmedHead();
   const submit = nativePlay(
-    { bindings: input.bindings, release, shard: input.shard, stopped: outcomes.signal, runtime },
+    {
+      bindings: input.bindings,
+      release,
+      shard: input.shard,
+      stopped: outcomes.signal,
+      runtime,
+      onSendStage: input.observer?.onSendStage,
+    },
     setupResult.store,
     input.gameId,
     input.shard.worldAddress,

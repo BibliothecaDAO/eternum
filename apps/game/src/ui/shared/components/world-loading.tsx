@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
+import { HudLoading, HudPill } from "@/ui/design-system/kit/hud-elements";
 
 const WORLD_LOADING_ITEMS = [
   { key: LoadingStateKey.Market, label: "Gathering Merchants" },
@@ -9,33 +10,14 @@ const WORLD_LOADING_ITEMS = [
   { key: LoadingStateKey.Leaderboard, label: "Ranking Players" },
 ] as const;
 
+/** What the world is still loading, said once at the screen's foot in the sheet's loading line; nothing when done. */
 export const WorldLoading = () => {
   const loadingStates = useUIStore((state) => state.loadingStates);
   const loadingItems = WORLD_LOADING_ITEMS.filter(({ key }) => loadingStates[key]).map(({ label }) => label);
-  const hasLoadingItems = loadingItems.length > 0;
-
+  if (loadingItems.length === 0) return null;
   return (
-    <div
-      className={`
-        z-1000
-        fixed left-1/2 transform -translate-x-1/2
-         rounded-lg
-        transition-all duration-200 ease-in-out
-        origin-bottom scale-75 md:scale-100
-        ${hasLoadingItems ? "bottom-0 opacity-100" : "translate-y-full opacity-0"}
-      `}
-      id="world-loading"
-    >
-      {hasLoadingItems && (
-        <div
-          aria-live="polite"
-          className="flex flex-row items-center justify-center h-full p-2 rounded-xl border border-gold/30 bg-[#1a1410]/95 min-w-64"
-          role="status"
-        >
-          <img alt="" src="/images/logos/eternum-loader.png" className="w-10" />
-          <div className="ml-4 text-sm">{loadingItems.join(", ")}</div>
-        </div>
-      )}
+    <div id="world-loading" className="pointer-events-none fixed bottom-2 left-1/2 z-hud-loading -translate-x-1/2">
+      <HudPill>{[<HudLoading key="line" line={loadingItems.join(", ")} />]}</HudPill>
     </div>
   );
 };

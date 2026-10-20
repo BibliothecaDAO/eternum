@@ -3,9 +3,7 @@ interface CleanupVisibleStructurePassInput<TEntityId extends string | number | b
   activeAttachmentEntities: Set<number>;
   attachmentSignatures: Map<number, string>;
   removeAttachments: (entityId: number) => void;
-  trackedLabelEntityIds: Iterable<TEntityId>;
   visibleStructureIds: Set<TEntityId>;
-  removeEntityIdLabel: (entityId: TEntityId) => void;
   removeStructureCompactLabel: (entityId: TEntityId) => void;
   previousVisibleIds: Set<TEntityId>;
 }
@@ -26,12 +24,6 @@ export function cleanupVisibleStructurePass<TEntityId extends string | number | 
       input.activeAttachmentEntities.delete(entityId);
       input.attachmentSignatures.delete(entityId);
     });
-  }
-
-  for (const entityId of input.trackedLabelEntityIds) {
-    if (!input.visibleStructureIds.has(entityId)) {
-      input.removeEntityIdLabel(entityId);
-    }
   }
 
   for (const entityId of input.previousVisibleIds) {

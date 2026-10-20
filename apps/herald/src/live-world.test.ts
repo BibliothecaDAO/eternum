@@ -52,6 +52,125 @@ function fixture(historyStore?: HistoryStore) {
   return { live, messages, submit, confirm, confirmed, pending, fold, native, tile, decoder };
 }
 
+/** A Frontier game on its day 0, one second before the rollover, with two players (0xa, 0xb) attached. */
+async function expeditionWorld() {
+  const { native, decoder, fold } = setup();
+  const event = rulesEvent();
+  const rules = decoder.decodeRowSet("SliceRules", ["1"], event.data.slice(3));
+  if (rules.kind !== "set") throw new Error("Expected rules row");
+  rules.value.day_unit_seconds = 14_400;
+  const dayStart = Date.parse("2026-09-22T00:00:00Z") / 1000;
+  // The season's day 0, drawn from the game's seed 7 below; its last second is the eve of the rollover.
+  const dayZero = dayOf({ seed: 7n, startMainAt: dayStart + 120, dayUnitSeconds: 14_400 }, dayStart + 120)!;
+  const beforeMidnight = dayZero.end - 1;
+  fold.apply(rules);
+  const homes = [1, 2].map((id) =>
+    rowEvent("Structure", ["1", String(id)], {
+      ...structureValue,
+      owner: id + 9,
+      base: {
+        ...structureValue.base,
+        troop_max_explorer_count: 2,
+        created_at: 120,
+        category: 1,
+        starting_troops_granted: true,
+      },
+      metadata: { ...structureValue.metadata, realm_id: id },
+    }),
+  );
+  const armies = [1, 2].map((id) =>
+    rowEvent("ExplorerTroops", ["1", String(id * 10)], explorerValue(String(id), 1000n, 120n, 1n)),
+  );
+  const positions = [1, 2].map((id) =>
+    rowEvent("TileOccupancy", ["1", "0", String(id * 100 - 50), "50"], {
+      entity_id: String(id * 10),
+      category: "15",
+      is_structure: false,
+    }),
+  );
+  native.applyReceipt(
+    fold,
+    receipt(
+      seedDerivedRows(fold, decoder, [
+        rowEvent("GameRegistry", ["1"], {
+          name: "7",
+          preset_id: "1",
+          creator: "10",
+          settled: false,
+          ready: true,
+          dev_mode_on: false,
+          start_settling_at: String(dayStart + 120),
+          start_main_at: String(dayStart + 120),
+          end_at: String(dayStart + 120 + 2 * 288_000),
+          end_grace_seconds: "0",
+          seed: "7",
+        }),
+        rowEvent("SettlementRules", ["1"], {
+          registration_start: 0n,
+          registration_limit: 0n,
+          mode: new CairoCustomEnum({ Single: {} }),
+          spacing: 100n,
+        }),
+        ...homes,
+        ...armies,
+        ...positions,
+        rowEvent("ExpeditionDiscovery", ["1", "1", "0"], { empty_reveals: 7, ruin_found: false }),
+        rowEvent("ExpeditionDiscovery", ["1", "2", "0"], { empty_reveals: 3, ruin_found: false }),
+        rowEvent("TileOccupancy", ["1", "0", "51", "50"], { entity_id: 300, category: 34, is_structure: false }),
+        rowEvent("ResourceBalance", ["1", "1", "28"], { balance: 100n }),
+        rowEvent("ResourceBalance", ["1", "2", "28"], { balance: 200n }),
+        ...[1, 2, 10, 20].flatMap((entityId) => [
+          rowEvent("ResourceWeight", ["1", String(entityId)], { capacity: 1000n, weight: 100n }),
+          rowEvent("EntityName", ["1", String(entityId)], { name: String(entityId) }),
+        ]),
+        rowEvent("ResourceProduction", ["1", "100", "29"], {
+          building_count: 1n,
+          production_rate: 10n,
+          output_amount_left: 100n,
+          last_settled_at: 2,
+        }),
+        rowEvent("ResourceProduction", ["1", "99", "29"], {
+          building_count: 1n,
+          production_rate: 10n,
+          output_amount_left: 100n,
+          last_settled_at: 2,
+        }),
+        rowEvent("TileOpt", ["1", "0", "50", "50"], { data: 1n }),
+        rowEvent("TileOpt", ["1", "0", "150", "50"], { data: 1n }),
+        rowEvent("TileOpt", ["1", "0", "50", "150"], { data: 1n }),
+        rowEvent("TileOpt", ["1", "0", "50", "450"], { data: 1n }),
+        rowEvent("TileOpt", ["1", "0", "150", "450"], { data: 1n }),
+      ]),
+    ),
+    9,
+    0,
+  );
+  const confirmed: RpcBlockWithReceipts = { block_number: 10, timestamp: beforeMidnight, transactions: [] };
+  const pending: RpcBlockWithReceipts = { block_number: 11, timestamp: beforeMidnight, transactions: [] };
+  const live = new LiveWorld({
+    native,
+    registry: decoder.registry,
+    chain: "madara",
+    checkpointEveryBlocks: 100,
+    checkpointStore: { save: async () => undefined },
+    confirmedBlock: 9,
+    confirmedFold: fold,
+    rpc: {
+      getBlockHeader: async () => confirmed,
+      getPreconfirmedHeader: async () => pending,
+      readBlock: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
+    } as unknown as MadaraRpc,
+  });
+  await live.acceptSubscribedHead({ block_number: 10, timestamp: beforeMidnight });
+  const messages: HeraldStreamMessage[][] = [[], []];
+  const sessions = ["0xa", "0xb"].map((actor, index) => {
+    const session = live.attach("1", { send: (text) => messages[index].push(JSON.parse(text)) }, actor);
+    live.resume(session, { type: "resume", epoch: "", seq: 0 });
+    return session;
+  });
+  return { native, decoder, fold, positions, confirmed, pending, live, beforeMidnight, dayZero, messages, sessions };
+}
+
 describe("native live publication", () => {
   it("publishes complete receipts once and keeps confirmed snapshots separate from the overlay", () => {
     const { live, messages, submit } = fixture();
@@ -146,121 +265,75 @@ describe("native live publication", () => {
     expect(diffs.some((message) => (message.del as unknown[]).length === 1)).toBe(true);
   });
 
-  it("keeps two expedition scopes isolated through depth changes, overlay reset, reconnect and rollover", async () => {
-    const { native, decoder, fold } = setup();
-    const event = rulesEvent();
-    const rules = decoder.decodeRowSet("SliceRules", ["1"], event.data.slice(3));
-    if (rules.kind !== "set") throw new Error("Expected rules row");
-    rules.value.day_unit_seconds = 14_400;
-    const dayStart = Date.parse("2026-09-22T00:00:00Z") / 1000;
-    // The season's day 0, drawn from the game's seed 7 below; its last second is the eve of the rollover.
-    const dayZero = dayOf({ seed: 7n, startMainAt: dayStart + 120, dayUnitSeconds: 14_400 }, dayStart + 120)!;
-    const beforeMidnight = dayZero.end - 1;
-    fold.apply(rules);
-    const homes = [1, 2].map((id) =>
-      rowEvent("Structure", ["1", String(id)], {
-        ...structureValue,
-        owner: id + 9,
-        base: {
-          ...structureValue.base,
-          troop_max_explorer_count: 2,
-          created_at: 120,
-          category: 1,
-          starting_troops_granted: true,
-        },
-        metadata: { ...structureValue.metadata, realm_id: id },
-      }),
+  it("takes a held row from the stream a change moves it away from: every stream equals a fresh one", async () => {
+    const { decoder, confirmed, pending, live, beforeMidnight, messages } = await expeditionWorld();
+    const persistent = new Set(
+      decoder.registry.persistent
+        .filter(({ definition }) => definition.deletion === "component")
+        .map(({ definition }) => definition.name),
     );
-    const armies = [1, 2].map((id) =>
-      rowEvent("ExplorerTroops", ["1", String(id * 10)], explorerValue(String(id), 1000n, 120n, 1n)),
-    );
-    const positions = [1, 2].map((id) =>
-      rowEvent("TileOccupancy", ["1", "0", String(id * 100 - 50), "50"], {
-        entity_id: String(id * 10),
-        category: "15",
-        is_structure: false,
-      }),
-    );
-    native.applyReceipt(
-      fold,
-      receipt(
-        seedDerivedRows(fold, decoder, [
-          rowEvent("GameRegistry", ["1"], {
-            name: "7",
-            preset_id: "1",
-            creator: "10",
-            settled: false,
-            ready: true,
-            dev_mode_on: false,
-            start_settling_at: String(dayStart + 120),
-            start_main_at: String(dayStart + 120),
-            end_at: String(dayStart + 120 + 2 * 288_000),
-            end_grace_seconds: "0",
-            seed: "7",
-          }),
-          rowEvent("SettlementRules", ["1"], {
-            registration_start: 0n,
-            registration_limit: 0n,
-            mode: new CairoCustomEnum({ Single: {} }),
-            spacing: 100n,
-          }),
-          ...homes,
-          ...armies,
-          ...positions,
-          rowEvent("ExpeditionDiscovery", ["1", "1", "0"], { empty_reveals: 7, ruin_found: false }),
-          rowEvent("ExpeditionDiscovery", ["1", "2", "0"], { empty_reveals: 3, ruin_found: false }),
-          rowEvent("TileOccupancy", ["1", "0", "51", "50"], { entity_id: 300, category: 34, is_structure: false }),
-          rowEvent("ResourceBalance", ["1", "1", "28"], { balance: 100n }),
-          rowEvent("ResourceBalance", ["1", "2", "28"], { balance: 200n }),
-          ...[1, 2, 10, 20].flatMap((entityId) => [
-            rowEvent("ResourceWeight", ["1", String(entityId)], { capacity: 1000n, weight: 100n }),
-            rowEvent("EntityName", ["1", String(entityId)], { name: String(entityId) }),
-          ]),
-          rowEvent("ResourceProduction", ["1", "100", "29"], {
-            building_count: 1n,
-            production_rate: 10n,
-            output_amount_left: 100n,
-            last_settled_at: 2,
-          }),
-          rowEvent("ResourceProduction", ["1", "99", "29"], {
-            building_count: 1n,
-            production_rate: 10n,
-            output_amount_left: 100n,
-            last_settled_at: 2,
-          }),
-          rowEvent("TileOpt", ["1", "0", "50", "50"], { data: 1n }),
-          rowEvent("TileOpt", ["1", "0", "150", "50"], { data: 1n }),
-          rowEvent("TileOpt", ["1", "0", "50", "150"], { data: 1n }),
-          rowEvent("TileOpt", ["1", "0", "50", "450"], { data: 1n }),
-          rowEvent("TileOpt", ["1", "0", "150", "450"], { data: 1n }),
-        ]),
-      ),
-      9,
-      0,
-    );
-    const confirmed: RpcBlockWithReceipts = { block_number: 10, timestamp: beforeMidnight, transactions: [] };
-    const pending: RpcBlockWithReceipts = { block_number: 11, timestamp: beforeMidnight, transactions: [] };
-    const live = new LiveWorld({
-      native,
-      registry: decoder.registry,
-      chain: "madara",
-      checkpointEveryBlocks: 100,
-      checkpointStore: { save: async () => undefined },
-      confirmedBlock: 9,
-      confirmedFold: fold,
-      rpc: {
-        getBlockHeader: async () => confirmed,
-        getPreconfirmedHeader: async () => pending,
-        readBlock: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
-      } as unknown as MadaraRpc,
-    });
-    await live.acceptSubscribedHead({ block_number: 10, timestamp: beforeMidnight });
-    const messages: HeraldStreamMessage[][] = [[], []];
-    const sessions = ["0xa", "0xb"].map((actor, index) => {
-      const session = live.attach("1", { send: (text) => messages[index].push(JSON.parse(text)) }, actor);
+    // What a client holds after applying a stream's snapshot and diffs.
+    const replica = (stream: HeraldStreamMessage[]) => {
+      const rows = new Map<string, unknown>();
+      for (const message of stream) {
+        if (message.type === "snapshot")
+          for (const row of message.rows) rows.set(`${message.model}:${row.key}`, row.value);
+        if (message.type !== "diff") continue;
+        for (const row of message.set) if (persistent.has(row.model)) rows.set(`${row.model}:${row.key}`, row.value);
+        for (const row of message.del) rows.delete(`${row.model}:${row.key}`);
+      }
+      return rows;
+    };
+    const fresh = (actor: string) => {
+      const stream: HeraldStreamMessage[] = [];
+      const session = live.attach("1", { send: (text) => stream.push(JSON.parse(text)) }, actor);
       live.resume(session, { type: "resume", epoch: "", seq: 0 });
-      return session;
-    });
+      live.detach(session);
+      return replica(stream);
+    };
+    const faith = (owner: bigint) =>
+      rowEvent("WonderFaith", ["1", "5"], {
+        last_recorded_owner: owner,
+        claimed_points: 0n,
+        claim_per_sec: 1,
+        claim_last_at: 0,
+        owner_claim_per_sec: 1,
+        num_structures_pledged: 0,
+      });
+    const confirm = async (block: number, owner?: bigint) => {
+      confirmed.block_number = block;
+      pending.block_number = block + 1;
+      confirmed.transactions =
+        owner === undefined
+          ? []
+          : [{ receipt: receipt([faith(owner)], `0x${block}`), transaction: { type: "INVOKE" } }];
+      await live.acceptSubscribedHead({ block_number: block, timestamp: beforeMidnight });
+    };
+    const expectFresh = () =>
+      ["0xa", "0xb"].forEach((actor, index) => expect(replica(messages[index]), actor).toEqual(fresh(actor)));
+    const wonder = (rows: Map<string, unknown>) => [...rows.keys()].filter((key) => key.startsWith("WonderFaith:"));
+
+    // The wonder's faith is 0xa's, held by its owner; then it passes to 0xb. Its keys no longer meet 0xa's scope.
+    await confirm(11, 10n);
+    expect(wonder(replica(messages[0]))).toHaveLength(1);
+    expect(wonder(replica(messages[1]))).toEqual([]);
+    await confirm(12, 11n);
+    expect(wonder(replica(messages[0]))).toEqual([]);
+    expect(wonder(replica(messages[1]))).toHaveLength(1);
+    expectFresh();
+
+    // A pending transfer back to 0xa that the next block drops: 0xa is shown it, then loses it to the revert.
+    live.acceptReceipt({ ...receipt([faith(10n)], "0x99"), finality_status: "PRE_CONFIRMED" });
+    expect(wonder(replica(messages[0]))).toHaveLength(1);
+    expect(wonder(replica(messages[1]))).toEqual([]);
+    await confirm(13);
+    expect(wonder(replica(messages[0]))).toEqual([]);
+    expectFresh();
+  });
+
+  it("keeps two expedition scopes isolated through depth changes, overlay reset, reconnect and rollover", async () => {
+    const { fold, positions, confirmed, pending, live, beforeMidnight, dayZero, messages, sessions } =
+      await expeditionWorld();
     for (const [index, stream] of messages.entries()) {
       const snapshots = stream.filter((message) => message.type === "snapshot");
       const foreignEntities = new Set(index === 0 ? [2, 20, 100] : [1, 10, 99]);

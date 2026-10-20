@@ -26,7 +26,7 @@ export function installNotificationWorker(worker: ServiceWorkerGlobalScope): voi
   worker.addEventListener("message", (event) => {
     if (event.data?.type !== "GAME_NOTIFICATION") return;
     if (queued >= 64) {
-      event.ports[0]?.postMessage({ ok: false, error: "Notification queue is full" });
+      event.ports[0]?.postMessage({ ok: false, error: "Too many notifications at once" });
       return;
     }
     queued++;

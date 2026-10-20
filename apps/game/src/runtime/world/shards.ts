@@ -51,11 +51,20 @@ export const openKnownShards = async (): Promise<ShardOpenFailure[]> => {
 
 export const listOpenShards = (): Shard[] => getShards();
 
-/** Validate before registry insertion: a shard whose manifest names another chain than its listed one owns no route. */
+/**
+ * Opened from the manifest our directory already holds, so entering a game waits on no second read of its shard; a shard
+ * the directory could not read is asked itself. Validate before registry insertion: a shard whose manifest names another
+ * chain than its listed one owns no route.
+ */
 const openListedShard = (listed: DirectoryShard): Promise<Shard> =>
-  openShard(listed.url, nativeFactSchemaIdentity, (shard) => {
-    if (BigInt(listed.chainId) !== BigInt(shard.chainId))
-      throw new Error(`Shard ${shard.url} does not serve its listed chain ${listed.chainId}`);
-  });
+  openShard(
+    listed.url,
+    nativeFactSchemaIdentity,
+    (shard) => {
+      if (BigInt(listed.chainId) !== BigInt(shard.chainId))
+        throw new Error(`Shard ${shard.url} does not serve its listed chain ${listed.chainId}`);
+    },
+    listed.manifest ?? undefined,
+  );
 
 const toError = (reason: unknown): Error => (reason instanceof Error ? reason : new Error(String(reason)));

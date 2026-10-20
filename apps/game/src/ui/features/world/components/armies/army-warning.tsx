@@ -1,13 +1,16 @@
+import {
+  formatArmyFoodRequirement,
+  getArmyFoodRequirementLabel,
+  getArmyReadinessTitle,
+} from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import type { ReactNode } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatNumber } from "@/ui/utils/utils";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 import type { ArmyMovementReadiness } from "./army-movement-readiness";
-import { formatArmyFoodRequirement, getArmyFoodRequirementLabel, getArmyReadinessTitle } from "./army-warning-copy";
 
 interface ArmyWarningProps {
   readiness: ArmyMovementReadiness;
@@ -83,7 +86,6 @@ const getMissingFoodText = (foodWarning: { missingWheat: number; missingFish: nu
     missingWheat: foodWarning.missingWheat,
     missingFish: foodWarning.missingFish,
     wheatLabel: foodRequirementLabel,
-    formatAmount: (amount) => formatNumber(Number(amount), 0),
   });
 
 const formatRequirementTitle = ({
@@ -102,19 +104,8 @@ const formatRequirementTitle = ({
   return `${label} needs ${missingRequirements.join(" and ")}`;
 };
 
-const ReadinessIcon = ({ icon, active, title }: { icon: ReactNode; active: boolean; title: string }) => {
-  return (
-    <span
-      aria-label={title}
-      title={title}
-      className={cn(
-        "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border",
-        active
-          ? "border-order-brilliance/30 bg-order-brilliance/10 text-order-brilliance"
-          : "border-danger/35 bg-danger/10 text-danger",
-      )}
-    >
-      {icon}
-    </span>
-  );
-};
+const ReadinessIcon = ({ icon, active, title }: { icon: ReactNode; active: boolean; title: string }) => (
+  <span aria-label={title} title={title} className="flex shrink-0">
+    <HudChip tone={active ? "good" : "bad"}>{icon}</HudChip>
+  </span>
+);

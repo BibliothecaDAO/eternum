@@ -1,4 +1,7 @@
-use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{
+    EventSpyTrait, EventsFilterTrait, start_cheat_block_timestamp_global, start_cheat_caller_address,
+    stop_cheat_caller_address,
+};
 use starknet::storage::StorageMapReadAccess;
 use crate::commands::{Command, ExecutionContext};
 use crate::exploration_rewards::{ExplorationReward, IExtractionSafeDispatcher, IExtractionSafeDispatcherTrait};
@@ -131,6 +134,69 @@ fn apply(key: ResourceKey, id: u8, recipient: Recipient) -> Command {
 fn map_relics(deployment: super::Deployment) -> IRelicMapDispatcher {
     IRelicMapDispatcher { contract_address: deployment.games }
 }
+fn activations(
+    ref spy: snforge_std::EventSpy, address: starknet::ContractAddress,
+) -> Array<crate::ownership::StoryEvent> {
+    let mut stories = array![];
+    for (_, event) in spy.get_events().emitted_by(address).events.span() {
+        let mut keys = event.keys.span();
+        while let Some(key) = keys.pop_front() {
+            if *key == selector!("StoryEvent") {
+                let mut data = event.data.span();
+                let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+                if let crate::ownership::Story::RelicActivated(_) = story.story {
+                    stories.append(story);
+                }
+                break;
+            }
+        }
+    }
+    stories
+}
+
+#[test]
+fn every_relic_activation_records_actor_target_and_applied_effect_once() {
+    let (deployment, home, explorer) = setup(false);
+    for id in 39_u8..57 {
+        let (target, recipient) = if id < 49 {
+            (explorer, Recipient::Explorer)
+        } else if id < 51 {
+            (home, Recipient::StructureGuard)
+        } else {
+            (home, Recipient::StructureProduction)
+        };
+        let mut spy = snforge_std::spy_events();
+        assert!(execute(deployment, apply(target, id, recipient), 40));
+        let stories = activations(ref spy, deployment.games);
+        assert_eq!(stories.len(), 1);
+        let story = stories.at(0);
+        assert_eq!(*story.game_id, 3);
+        assert_eq!(*story.owner, Some(deployment.actor));
+        assert_eq!(*story.entity_id, Some(target.entity_id));
+        assert_eq!(*story.timestamp, 40);
+        let rule = *rules().at((id - 39).into());
+        assert_eq!(
+            *story.story,
+            crate::ownership::Story::RelicActivated(
+                crate::relics::RelicActivated {
+                    relic_id: id,
+                    recipient,
+                    rate_bps: rule.rate_bps,
+                    duration_seconds: if id == 45 || id == 46 {
+                        0
+                    } else {
+                        30
+                    },
+                    radius: if id == 45 || id == 46 {
+                        rule.uses
+                    } else {
+                        0
+                    },
+                },
+            ),
+        );
+    }
+}
 pub fn chest(deployment: super::Deployment, origin: Coord, seed: u256, time: u64) -> Coord {
     let coord = crate::relics::chest_destination(origin, seed, 12);
     start_cheat_block_timestamp_global(time);
@@ -262,6 +328,7 @@ fn guard_relics_apply_to_all_four_slots_and_preserve_destroyed_ticks() {
 #[test]
 fn failed_payments_and_wrong_targets_roll_back_effects() {
     let (deployment, home, explorer) = setup(false);
+    let mut spy = snforge_std::spy_events();
     let original = troop(deployment, explorer);
     for (id, recipient, key) in array![
         (56_u8, Recipient::Explorer, explorer), (39, Recipient::StructureGuard, home),
@@ -290,6 +357,7 @@ fn failed_payments_and_wrong_targets_roll_back_effects() {
     assert_eq!(balance(deployment, explorer, 42), 3 * RESOURCE_PRECISION);
     move_fixture(deployment, explorer, Coord { alt: true, ..original.coord });
     assert_terminal_rejection(deployment, apply(explorer, 39, Recipient::Explorer), 40);
+    assert!(activations(ref spy, deployment.games).is_empty(), "rejected activation recorded a story");
 }
 #[test]
 fn reveal_relics_reveal_only_the_ring_without_points_or_discovery() {

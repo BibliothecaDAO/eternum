@@ -30,10 +30,6 @@ vi.mock("@/ui/features/world/containers/military-modal", async () => {
     ),
   };
 });
-vi.mock("@/ui/features/world/containers/logistics-view", () => ({ LogisticsView: () => <p>Arrivals</p> }));
-vi.mock("@/ui/features/world/containers/top-header/structure-groups", () => ({
-  useStructureGroups: () => ({ structureGroups: {}, updateStructureGroup: () => {} }),
-}));
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => ({}) }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRow: () => undefined }));
 
@@ -63,10 +59,6 @@ it("opens each workspace the player switches to centred, not where the last one 
 
   await switchTo(LeftView.MilitaryView);
   expect([panelOf("build"), placementOf("military")]).toEqual([null, CENTRED]);
-
-  await dragHeader("military", { x: -200, y: 100 });
-  await switchTo(LeftView.ResourceArrivals);
-  expect([panelOf("military"), placementOf("logistics")]).toEqual([null, CENTRED]);
 
   await switchTo(LeftView.None);
   await act(async () => root.unmount());

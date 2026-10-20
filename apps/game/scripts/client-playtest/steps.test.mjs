@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
-import { CLOSEST_CAMERA_DISTANCE, SPECTATOR_STEPS, STEP_SETS } from "./steps.mjs";
+import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
+import { ARMY_LABEL_POINT } from "./plates.mjs";
+import { CLOSEST_CAMERA_DISTANCE, FARTHEST_CAMERA_DISTANCE, SPECTATOR_STEPS, STEP_SETS } from "./steps.mjs";
 
 const onTheMap = { scene: "map", rendered: "map", place: "Map", dialogs: [], pressed: [] };
 const verifyOf = (name) => SPECTATOR_STEPS.find((step) => step.name === name).verify;
@@ -46,6 +48,15 @@ describe("the still map's zoom to the closest view", () => {
 
   it("is the map's own closest distance", () => {
     expect(CLOSEST_CAMERA_DISTANCE).toBe(WORLDMAP_CAMERA_ZOOM.minDistance);
+  });
+
+  it("has a farthest view the plates read too: the map's own farthest distance", () => {
+    expect(FARTHEST_CAMERA_DISTANCE).toBe(WORLDMAP_CAMERA_ZOOM.maxDistance);
+    const out = STEP_SETS["frontier-plates"].steps.find((step) => step.name === "zoom-out").verify;
+    expect(out({ seen: onTheMap, played: { distance: 45 } }).status).toBe("completed");
+    expect(out({ seen: onTheMap, played: { distance: 30 } }).reason).toBe(
+      "the camera stopped at distance 30, not the farthest (45)",
+    );
   });
 
   it("completes at the closest distance, including a camera that started there", () => {
@@ -128,8 +139,44 @@ describe("holding the sun", () => {
   });
 });
 
+describe("entering Frontier", () => {
+  const verify = verifyOf("enter-on-map");
+
+  it("completes on the world map, and fails a session that opens on the realm", () => {
+    expect(verify({ seen: onTheMap }).status).toBe("completed");
+    const onTheRealm = { ...onTheMap, scene: "hex", rendered: "hex", place: "Realm" };
+    expect(verify({ seen: onTheRealm }).status).toBe("failed");
+  });
+});
+
+describe("reading the season", () => {
+  const verify = verifyOf("season");
+  const page = (open, pressed = open ? ["Season"] : []) => ({ page: open, pressed });
+
+  it("completes on a desktop when the Season place opened its page and a second press closed it", () => {
+    expect(verify({ seen: onTheMap, played: { desktop: true, opened: page(true), closed: page(false) } }).status).toBe(
+      "completed",
+    );
+  });
+
+  it("fails a desktop whose Season place opened nothing, or whose page stayed open", () => {
+    expect(verify({ seen: onTheMap, played: { desktop: true, opened: page(false), closed: page(false) } }).reason).toBe(
+      "the Season place opened no page",
+    );
+    expect(verify({ seen: onTheMap, played: { desktop: true, opened: page(true), closed: page(true) } }).reason).toBe(
+      "the Season page did not close",
+    );
+  });
+
+  it("reads a phone's season from its Menu sheet", () => {
+    const phone = { desktop: false, opened: ["Menu"], read: ["Season"], closed: [] };
+    expect(verify({ seen: onTheMap, played: phone }).status).toBe("completed");
+    expect(verify({ seen: onTheMap, played: { ...phone, opened: [] } }).status).toBe("failed");
+  });
+});
+
 describe("a scene check", () => {
-  const verify = verifyOf("open-map");
+  const verify = verifyOf("return-to-map");
 
   it("fails a route on the map with Map lit while the realm is still drawn", () => {
     const realmDrawnUnderTheMapRoute = { ...onTheMap, rendered: "hex" };
@@ -199,7 +246,8 @@ describe("the Blitz order steps", () => {
     ],
   });
   // The tile panel's hex follows the selected army unless a case says where it stayed.
-  const ordered = (played, { confirmed = true, tile = played.after?.hex ?? null } = {}) => ({
+  // The probe's readings of the selected army's plate through the step: [page time, stamina].
+  const ordered = (played, { confirmed = true, tile = played.after?.hex ?? null, plateStamina = [] } = {}) => ({
     seen: { ...onTheMap, selection: { hex: tile, structure: null, ringedHexes: 0, army: played.after ?? null } },
     played: {
       before: army(home, 6),
@@ -211,12 +259,33 @@ describe("the Blitz order steps", () => {
     },
     actionLatency: traceOfOneMove({ confirmed }),
     window,
+    probe: { plateStamina },
   });
 
   it("completes an order whose army stayed selected through it and is offered orders from where it went", () => {
     const verdict = blitzStep("order-kept")(ordered({ after: army(moved, 5) }));
     expect(verdict).toMatchObject({ status: "completed", before: army(home, 6), after: army(moved, 5) });
     expect(verdict.orders.commands).toEqual([{ kind: "move", hash: "0x1", confirmed: true }]);
+  });
+
+  it("fails an order whose army's plate climbed back to an older bar while it walked", () => {
+    // A walk that redraws the plate from a stale record: 13, then 22 (a bar it had before), then 3.
+    const staleWalk = [
+      [10, 13],
+      [30, 22],
+      [50, 3],
+    ];
+    expect(blitzStep("order-kept")(ordered({ after: army(moved, 5) }, { plateStamina: staleWalk })).reason).toBe(
+      "the army's plate read 13 stamina, then 22: a bar it no longer has",
+    );
+    const paidThenRegenerating = [
+      [10, 13],
+      [30, 3],
+      [50, 4],
+    ];
+    expect(
+      blitzStep("order-kept")(ordered({ after: army(moved, 5) }, { plateStamina: paidThenRegenerating })).status,
+    ).toBe("completed");
   });
 
   it("fails an order that handed the selection away, at the send or at the outcome", () => {
@@ -318,5 +387,200 @@ describe("the Blitz order steps", () => {
     expect(verify({ seen: reporting, played: { army: null } }).status).toBe("blocked");
     expect(verify({ seen: reporting, played: { army: army(home, 6) } }).status).toBe("completed");
     expect(verify({ seen: { ...onTheMap, selection: null }, played: { army: army(home, 6) } }).status).toBe("failed");
+  });
+});
+
+describe("the HUD's layout on the map", () => {
+  const verify = verifyOf("hud-layout");
+  const desktop = { width: 1280, height: 800 };
+  // A Frontier desktop at 1280 by 800: the top bar's chip, the left column's strip, purse, armies and minimap, the
+  // rail's events and chat, a round place at the foot.
+  const parts = {
+    "uxplay #12 Season": { left: 676, top: 4, right: 893, bottom: 40 },
+    strip: { left: 12, top: 60, right: 332, bottom: 144 },
+    "LORDS 1,240": { left: 220, top: 150, right: 324, bottom: 178 },
+    Armies: { left: 12, top: 186, right: 332, bottom: 460 },
+    Minimap: { left: 12, top: 468, right: 332, bottom: 780 },
+    Events: { left: 948, top: 60, right: 1268, bottom: 110 },
+    Research: { left: 560, top: 720, right: 610, bottom: 790 },
+  };
+  const minimap = parts.Minimap;
+  const judged = (layout) =>
+    verify({ seen: onTheMap, played: { layout: { viewport: desktop, minimap, covered: [], ...layout } } });
+
+  it("completes with every part drawn whole on the page, none over another, every control reachable", () => {
+    expect(judged({ parts }).status).toBe("completed");
+  });
+
+  it("fails a desktop with no minimap", () => {
+    expect(judged({ parts, minimap: null }).reason).toBe("not drawn: the minimap");
+  });
+
+  it("fails a part pushed off the page, two parts over each other, or a control drawn over", () => {
+    expect(judged({ parts: { ...parts, Minimap: { ...minimap, bottom: 820 } } }).reason).toBe("off the page: Minimap");
+    expect(
+      judged({ parts: { ...parts, "LORDS 1,240": { ...parts["LORDS 1,240"], top: 180, bottom: 210 } } }).reason,
+    ).toBe("overlapping: LORDS 1,240 over Armies");
+    expect(judged({ parts, covered: ["Research: Research"] }).reason).toBe("covered controls: Research: Research");
+  });
+
+  it("fails a region holding more than seven parts, and holds one of seven", () => {
+    expect(judged({ parts, regions: { holdings: 4, commands: 7 } }).status).toBe("completed");
+    expect(judged({ parts, regions: { holdings: 4, commands: 8 } }).reason).toBe("more than seven parts: commands (8)");
+  });
+
+  it("fails off the map, however the HUD lies", () => {
+    const onTheRealm = { ...onTheMap, scene: "hex", rendered: "hex", place: "Realm" };
+    expect(
+      verify({ seen: onTheRealm, played: { layout: { viewport: desktop, parts, minimap, covered: [] } } }).status,
+    ).toBe("failed");
+  });
+});
+
+describe("the plate steps (a live Blitz's map plates, read as drawn)", () => {
+  const verify = STEP_SETS["blitz-plates"].steps.find((step) => step.name === "plates-hovered").verify;
+  const clear = { labels: 34, opened: 1, tokens: 33, orderLine: null, overlaps: [], crowded: [], things: [] };
+
+  it("completes when no reading holds a token, plate or order line over or crowding another", () => {
+    const played = {
+      readings: [
+        { offset: [65, -95], seen: clear },
+        { offset: [137, 0], seen: clear },
+      ],
+    };
+    expect(verify({ played }).status).toBe("completed");
+  });
+
+  it("fails on the first reading where two overlap or crowd, naming the tile hovered", () => {
+    const overlap = { ...clear, overlaps: [{ a: "djizus T1 1,501", b: "The Vanguard", gap: -12 }] };
+    const crowded = { ...clear, crowded: [{ a: "Attack", b: "Tamsin T2 700", gap: 2 }] };
+    expect(verify({ played: { readings: [{ offset: [137, 0], seen: overlap }] } })).toMatchObject({
+      status: "failed",
+      offset: [137, 0],
+      reason: "1 pairs overlap",
+    });
+    expect(verify({ played: { readings: [{ offset: null, seen: crowded }] } }).reason).toBe(
+      "1 pairs stand closer than 4px",
+    );
+  });
+
+  it("fails an opened plate that does not cover the token drawn for its thing before it opened", () => {
+    const token = { kind: "token", key: "army:5", open: false, text: "T3 600", x: 400, y: 500, w: 64, h: 46 };
+    const before = { ...clear, things: [token] };
+    // Its army as drawn: its model's top at y 560 and its label point at y 546, under the token's foot (546).
+    const over = { tile: { x: 432, y: 600 }, top: { x: 432, y: 560 }, point: { x: 432, y: 546 } };
+    const plate = (x, y) => ({
+      kind: "plate",
+      key: "army:5",
+      open: true,
+      text: "Lord 3f2a",
+      x,
+      y,
+      w: 174,
+      h: 80,
+      over,
+    });
+    // Over the token: its middle (432, 523) under the plate.
+    const inPlace = { ...clear, things: [plate(345, 466)] };
+    expect(verify({ played: { before, readings: [{ offset: null, seen: inPlace }] } }).status).toBe("completed");
+    // 52px above it (the reviewer's crowded case): the token's middle is below the plate.
+    const far = { ...clear, things: [plate(345, 414)] };
+    expect(verify({ played: { before, readings: [{ offset: null, seen: far }] } }).reason).toBe(
+      "1 opened plates stand away from their thing's token",
+    );
+  });
+
+  it("measures an army against its own label point", () => {
+    expect(ARMY_LABEL_POINT).toBe(ARMY_PLATE_HEIGHT);
+  });
+
+  it("fails a label that reaches down onto its thing, or stands beside it, as the renderer places the thing", () => {
+    // An army's tile at (420, 560) on screen, its tallest model's top at (432, 520) and its label point at (434, 514),
+    // leaning right as drawn.
+    const over = { tile: { x: 420, y: 560 }, top: { x: 432, y: 520 }, point: { x: 434, y: 514 } };
+    const token = (x, y) => ({ kind: "token", key: "army:5", open: false, text: "T1 1,500", x, y, w: 64, h: 50, over });
+    const reading = (thing) => ({ played: { readings: [{ offset: null, seen: { ...clear, things: [thing] } }] } });
+    // Its foot on the label point, 6px over the model's top, across it: above it.
+    expect(verify(reading(token(400, 464))).status).toBe("completed");
+    // Centred on that point (owner-army-label-on.png): its lower half over the army.
+    expect(verify(reading(token(400, 489))).reason).toBe("1 labels stand on their thing or away from it");
+    // A step aside (owner-camp-label-zoomout.png): its span no longer over the thing.
+    expect(verify(reading(token(470, 464))).reason).toBe("1 labels stand on their thing or away from it");
+    // A narrow token at a screen's edge, where the thing leans far: on its label point, past the top's x, still over it.
+    const leaning = { tile: { x: 1595, y: 329 }, top: { x: 1699, y: 172 }, point: { x: 1716, y: 146 } };
+    expect(verify(reading({ ...token(1701, 116), w: 30, h: 30, over: leaning })).status).toBe("completed");
+  });
+
+  it("fails a reading where a label takes pointer input, or a click at a label lands on it", () => {
+    const reading = (seen) => ({ played: { readings: [{ offset: null, seen: { ...clear, ...seen } }] } });
+    expect(verify(reading({ takers: 0, caught: [] })).status).toBe("completed");
+    expect(verify(reading({ takers: 2, caught: [] })).reason).toBe(
+      "labels take pointer input: 2 elements, a click caught on 0",
+    );
+    expect(verify(reading({ takers: 0, caught: ["T1 500"] })).reason).toBe(
+      "labels take pointer input: 0 elements, a click caught on 1",
+    );
+  });
+
+  it("passes a click on a token only where it selects its thing's tile, and on a plate only where it lands beneath", () => {
+    const click = STEP_SETS["frontier-plates"].steps.find((step) => step.name === "labels-click-through-far").verify;
+    const hex = (col, row) => ({ col, row });
+    const token = {
+      label: "T1 500",
+      kind: "token",
+      at: [10, -40],
+      expectedAt: [12, 8],
+      shown: hex(4, 7),
+      expected: hex(4, 7),
+    };
+    const plate = {
+      label: "Own B",
+      kind: "plate",
+      at: [60, -40],
+      expectedAt: [60, -40],
+      shown: hex(5, 6),
+      expected: hex(5, 6),
+    };
+    expect(click({ played: { clicks: [token, plate] } }).status).toBe("completed");
+    // The token's click selected the tile behind it, not its thing's (qa-fresh-chain-frontier-1 #1).
+    expect(click({ played: { clicks: [{ ...token, shown: hex(4, 6) }] } }).reason).toBe(
+      "1 clicks at a label did not select its thing's tile, or the tile beneath a plate",
+    );
+    expect(click({ played: { clicks: [{ ...plate, shown: null }] } }).status).toBe("failed");
+    expect(click({ played: { clicks: [] } }).status).toBe("blocked");
+  });
+
+  it("calls a page that does not report its world blocked: its labels were not measured against their things", () => {
+    const token = {
+      kind: "token",
+      key: "army:5",
+      open: false,
+      text: "T3 600",
+      x: 400,
+      y: 500,
+      w: 64,
+      h: 46,
+      over: null,
+    };
+    const seen = { ...clear, world: false, things: [token] };
+    expect(verify({ played: { readings: [{ offset: null, seen }] } }).status).toBe("blocked");
+  });
+
+  it("calls a view with no label drawn blocked: an empty map proves nothing either way", () => {
+    const empty = { ...clear, labels: 0, opened: 0, tokens: 0 };
+    expect(verify({ played: { readings: [{ offset: null, seen: empty }] } }).status).toBe("blocked");
+  });
+
+  it("takes the readiest army first only in a seated player's list", () => {
+    const names = (set) => STEP_SETS[set].steps.map((step) => step.name);
+    expect(names("blitz-plates")).not.toContain("select-army");
+    expect(names("blitz-plates-player").slice(0, 2)).toEqual(["open-world", "select-army"]);
+    // A Frontier session enters on the world map, as a player's does.
+    expect(names("frontier-plates").slice(0, 2)).toEqual(["enter-on-map", "plates"]);
+    expect(names("frontier-plates")).toEqual(expect.arrayContaining(["zoom-out", "plates-far", "plates-far-hovered"]));
+    // Each opens the page with the dev overlays: the page then reports its world, and every label is measured.
+    for (const set of ["blitz-plates", "blitz-plates-player", "frontier-plates", "frontier-plates-player"])
+      expect(STEP_SETS[set].devOverlays).toBe(true);
+    expect(names("frontier-plates-player").slice(0, 2)).toEqual(["enter-on-map", "select-army"]);
   });
 });

@@ -1,2 +1,1 @@
-Subject: One dense dark red-brown ironwood log with a visible cut end, dark iron-grey growth rings and tough metallic bark ridges. A wood material, no metal bands or frame, no ground.
-Old counterpart: apps/game/public/images/resources/5.png.
+Restore the exact master from apps/game/asset-sources/lab/rss-icons/history/ironwood.png, verified against its catalog SHA-256. Historical provenance: 638fd7fb410:apps/game/public/images/resources/5.png. Deliver through normalizeMaster and deliverIcon; the visible subject fills about 90% of each final canvas.

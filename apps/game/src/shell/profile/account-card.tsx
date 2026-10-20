@@ -1,5 +1,7 @@
+import { CLOSE, KEEP, PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
+import type { IconMeaning } from "@/ui/design-system/icon";
 import { nameRuleViolation, type Session } from "@realms-world/identity";
-import { type ReactNode, useEffect, useState, type FormEvent } from "react";
+import { type ReactNode, useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import {
@@ -9,28 +11,23 @@ import {
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { Button } from "@/ui/design-system/kit/button";
+import { AppButton, AppDialog, AppPanel, AppSetting } from "@/ui/design-system/kit/app-elements";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
-import { Sheet } from "@/ui/design-system/kit/sheet";
 import { failureSentence, nameRefusal } from "@/ui/modules/identity/identity-failures";
 import { shortAddress } from "@/ui/design-system/kit/address";
 
-import { useLayout } from "../frame/layout";
 import { FailureLine } from "../sign-in/failure-line";
 import { NameField, PortraitGrid } from "../sign-in/fields";
-import { PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS } from "../words";
-import { Confirm } from "./confirm";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { walletReturnOf } from "./settings-route";
 import { PayoutWalletPanel } from "./payout-wallet-panel";
-import { SettingRow, SettingRows } from "./setting-row";
 
 type Open = "name" | "portrait" | "payout" | null;
 
 /**
  * Account (spec 11), Settings' first group: the name, the portrait, how the player signs in and the payout wallet, each
- * a row that opens its sheet (under the rows on desktop). Sent to Settings from a page that needs a wallet (`?next=`),
- * it opens on the payout wallet and returns there once one is linked.
+ * a row that opens its step in a panel under the rows. Sent to Settings from a page that needs a wallet (`?next=`), it
+ * opens on the payout wallet and returns there once one is linked.
  */
 export const AccountCard = ({ session }: { session: Session }) => {
   const refresh = useIdentitySessionStore((state) => state.refresh);
@@ -48,34 +45,34 @@ export const AccountCard = ({ session }: { session: Session }) => {
   };
   return (
     <div className="flex flex-col gap-4">
-      <SettingRows>
-        <SettingRow
+      <AppPanel title={PROFILE_WORDS.account} icon="person" flush>
+        <AppSetting
           icon="person"
           name={PROFILE_WORDS.name}
           value={account ? <PlayerName account={account} /> : (identityUsername(session) ?? "—")}
-          onOpen={() => toggle("name")}
+          onClick={() => toggle("name")}
         />
-        <SettingRow icon="edit" name={PROFILE_WORDS.portrait} onOpen={() => toggle("portrait")} />
-        <SettingRow icon="discord" name={PROFILE_WORDS.signInMethods} value={<SignInMethods session={session} />} />
-        <SettingRow
+        <AppSetting icon="edit" name={PROFILE_WORDS.portrait} onClick={() => toggle("portrait")} />
+        <AppSetting icon="lock" name={PROFILE_WORDS.signInMethods} value={<SignInMethods session={session} />} />
+        <AppSetting
           icon="backpack"
           name={WALLET_WORDS.payoutWallet}
           value={payout ? shortAddress(payout) : PROFILE_WORDS.linkWallet}
-          onOpen={() => toggle("payout")}
+          onClick={() => toggle("payout")}
         />
-      </SettingRows>
+      </AppPanel>
       {open === "payout" && (
-        <Opened label={WALLET_WORDS.payoutWallet} onClose={close}>
+        <Opened label={WALLET_WORDS.payoutWallet} icon="backpack" onClose={close}>
           <PayoutWalletPanel wallet={payout} email={session.user.email} onChanged={() => void refresh()} />
         </Opened>
       )}
       {open === "name" && (
-        <Opened label={PROFILE_WORDS.name} onClose={close}>
+        <Opened label={PROFILE_WORDS.name} icon="person" onClose={close}>
           <NameSheet current={identityUsername(session) ?? session.user.suggestedName ?? ""} onDone={done} />
         </Opened>
       )}
       {open === "portrait" && (
-        <Opened label={PROFILE_WORDS.portrait} onClose={close}>
+        <Opened label={PROFILE_WORDS.portrait} icon="edit" onClose={close}>
           <PortraitSheet current={session.user.image ?? null} onDone={done} />
         </Opened>
       )}
@@ -83,20 +80,35 @@ export const AccountCard = ({ session }: { session: Session }) => {
   );
 };
 
-/** Sign out, Settings' last step: outline, asking first. */
+/** Sign out, Settings' last step: a loss, so in the bad tone, asking first. */
 export const SignOut = () => {
   const [asking, setAsking] = useState(false);
   return (
     <>
-      <Button role="outline" word={PROFILE_WORDS.signOut} icon="exit" onClick={() => setAsking(true)} />
+      <AppButton kind="secondary" tone="bad" icon="exit" onClick={() => setAsking(true)}>
+        {PROFILE_WORDS.signOut}
+      </AppButton>
       {asking && (
-        <Confirm
-          question={PROFILE_WORDS.signOutAsk}
-          cost={PROFILE_WORDS.signOutCost}
-          verb={PROFILE_WORDS.signOut}
-          onKeep={() => setAsking(false)}
-          onConfirm={() => void signOutIdentitySession().catch(reportSignOutFailure)}
-        />
+        <AppDialog
+          title={PROFILE_WORDS.signOutAsk}
+          onClose={() => setAsking(false)}
+          actions={
+            <>
+              <AppButton kind="quiet" onClick={() => setAsking(false)}>
+                {KEEP}
+              </AppButton>
+              <AppButton
+                kind="secondary"
+                tone="bad"
+                onClick={() => void signOutIdentitySession().catch(reportSignOutFailure)}
+              >
+                {PROFILE_WORDS.signOut}
+              </AppButton>
+            </>
+          }
+        >
+          {PROFILE_WORDS.signOutCost}
+        </AppDialog>
       )}
     </>
   );
@@ -112,19 +124,40 @@ const useReturnOnceLinked = (returnTo: string | null, payout: string | null) => 
 };
 
 /**
- * What a row opens: a sheet on a phone; on a desktop a plate under the rows, in the Account column it opened from, so
- * nothing covers the rows or the page.
+ * What a row opens: a panel under the rows, in the column it opened from, so nothing covers the rows or the page;
+ * brought into view as it opens, with Close at its head.
  */
-const Opened = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) =>
-  useLayout() === "phone" ? (
-    <Sheet label={label} onClose={onClose}>
-      {children}
-    </Sheet>
-  ) : (
-    <section aria-label={label} className="plate p-5">
-      {children}
-    </section>
+const Opened = ({
+  label,
+  icon,
+  onClose,
+  children,
+}: {
+  label: string;
+  icon: IconMeaning;
+  onClose: () => void;
+  children: ReactNode;
+}) => {
+  const panel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    panel.current?.scrollIntoView({ block: "nearest" });
+  }, []);
+  return (
+    <div ref={panel} role="region" aria-label={label}>
+      <AppPanel
+        title={label}
+        icon={icon}
+        cue={
+          <AppButton kind="quiet" icon="close" onClick={onClose}>
+            {CLOSE}
+          </AppButton>
+        }
+      >
+        {children}
+      </AppPanel>
+    </div>
   );
+};
 
 /** How the player signs in: Discord, an email code, or both, as the identity service lists them. */
 const SignInMethods = ({ session }: { session: Session }) => {
@@ -155,6 +188,8 @@ const NameSheet = ({ current, onDone }: { current: string; onDone: () => void })
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const valid = nameRuleViolation(name.trim()) === null;
+  // Nothing to claim until the name changes: the one held is already the player's (qa-app-1 P3-6).
+  const changed = name.trim() !== current;
   const claim = async (event: FormEvent) => {
     event.preventDefault();
     setSaving(true);
@@ -172,21 +207,21 @@ const NameSheet = ({ current, onDone }: { current: string; onDone: () => void })
     <form onSubmit={(event) => void claim(event)} className="flex flex-col gap-3 py-2">
       <NameField
         name={name}
-        valid={valid}
         onName={(value) => {
           setError(null);
           setName(value);
         }}
       />
       <FailureLine line={error} />
-      <Button
-        role="primary"
+      <AppButton
+        kind="primary"
         type="submit"
-        word={SIGN_IN_WORDS.claimName}
         icon="check"
-        disabled={!valid}
-        loading={saving ? SIGN_IN_WORDS.saving : undefined}
-      />
+        disabled={!valid || !changed}
+        busy={saving ? SIGN_IN_WORDS.saving : undefined}
+      >
+        {SIGN_IN_WORDS.claimName}
+      </AppButton>
     </form>
   );
 };

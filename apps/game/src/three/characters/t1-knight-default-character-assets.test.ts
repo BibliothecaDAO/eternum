@@ -1,13 +1,14 @@
-import { Bone, BoxGeometry, Group, MeshStandardMaterial, SkinnedMesh } from "three";
+import { Bone, BoxGeometry, Group, MeshStandardMaterial, Skeleton, SkinnedMesh } from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
-  loadT1KnightDefaultCharacterAssetTemplates,
+  loadT1KnightDefaultCharacterAssetTemplate,
   validateT1KnightDefaultCharacterAsset,
 } from "./t1-knight-default-character-assets";
 import { resolveHumanoidRigRequiredBoneNames } from "./humanoid-rig-adapter";
 import { T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER } from "./t1-knight-default-humanoid-rig-adapter";
+import { ProceduralCharacterLibrary } from "./procedural-character-assets";
 import { prepareProceduralUnitAssembly } from "./procedural-unit-assembly";
 import { applyProceduralUnitConfigPatch, createDefaultProceduralUnitConfig } from "./procedural-unit-config";
 
@@ -18,7 +19,9 @@ function riggedFixture(): GLTF {
     bone.name = name;
     scene.add(bone);
   }
-  scene.add(new SkinnedMesh(new BoxGeometry(), new MeshStandardMaterial()));
+  const mesh = new SkinnedMesh(new BoxGeometry(), new MeshStandardMaterial());
+  mesh.bind(new Skeleton(scene.children as Bone[]));
+  scene.add(mesh);
   return { scene, animations: [] } as unknown as GLTF;
 }
 
@@ -48,9 +51,54 @@ describe("T1 Knight asset registration", () => {
     expect(() => prepareProceduralUnitAssembly({ ...paladin, melee: t1KnightDefault.melee })).toThrow("incompatible");
   });
 
-  it("loads near and mid skins only through the explicit helper", async () => {
+  it("fetches only the requested LOD, shares concurrent preparation, and reuses a completed load on return", async () => {
     const load = vi.spyOn(GLTFLoader.prototype, "loadAsync").mockImplementation(async () => riggedFixture());
-    const templates = await loadT1KnightDefaultCharacterAssetTemplates();
+    const library = new ProceduralCharacterLibrary([]);
+    const mid = { appearanceId: "t1-knight-default", tier: 1, renderDetail: "crowd" } as const;
+    const near = { ...mid, renderDetail: "hero" } as const;
+    try {
+      expect(load).not.toHaveBeenCalled();
+      await Promise.all([library.prepare(mid), library.prepare(mid)]);
+      expect(library.isReady(mid)).toBe(true);
+      expect(library.isReady(near)).toBe(false);
+      expect(load.mock.calls.map(([url]) => url)).toEqual(["/models/characters/t1-knight-default/mid/skin.glb"]);
+      await library.prepare(mid);
+      expect(load).toHaveBeenCalledTimes(1);
+      await library.prepare(near);
+      expect(library.isReady(near)).toBe(true);
+      expect(load.mock.calls.map(([url]) => url)).toEqual([
+        "/models/characters/t1-knight-default/mid/skin.glb",
+        "/models/characters/t1-knight-default/near/skin.glb",
+      ]);
+    } finally {
+      library.dispose();
+    }
+  });
+
+  it("retries a rejected LOD request instead of retaining the rejected promise", async () => {
+    const load = vi
+      .spyOn(GLTFLoader.prototype, "loadAsync")
+      .mockRejectedValueOnce(new Error("network"))
+      .mockImplementationOnce(async () => riggedFixture());
+    const library = new ProceduralCharacterLibrary([]);
+    const config = { appearanceId: "t1-knight-default", tier: 1, renderDetail: "crowd" } as const;
+    try {
+      await expect(library.prepare(config)).rejects.toThrow("network");
+      expect(library.isReady(config)).toBe(false);
+      await library.prepare(config);
+      expect(library.isReady(config)).toBe(true);
+      expect(load).toHaveBeenCalledTimes(2);
+    } finally {
+      library.dispose();
+    }
+  });
+
+  it("validates each requested skin before registering it", async () => {
+    const load = vi.spyOn(GLTFLoader.prototype, "loadAsync").mockImplementation(async () => riggedFixture());
+    const templates = await Promise.all([
+      loadT1KnightDefaultCharacterAssetTemplate("hero"),
+      loadT1KnightDefaultCharacterAssetTemplate("crowd"),
+    ]);
     expect(load.mock.calls.map(([url]) => url)).toEqual([
       "/models/characters/t1-knight-default/near/skin.glb",
       "/models/characters/t1-knight-default/mid/skin.glb",

@@ -1,38 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
-import { StructureType } from "@bibliothecadao/types";
-import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
+import { StructureType, formatExact } from "@bibliothecadao/types";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGame } from "@/hooks/context/game-context";
 import { useFactView } from "@/hooks/use-fact-view";
-import { usePlayers } from "@/hooks/use-player-profile";
+import { usePlayerNames } from "@/hooks/use-player-profile";
 import { gameStructuresView } from "@/sync/fact-views";
-import { displayPlayerName } from "@bibliothecadao/eternum";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import { HUD_COLUMN_TOP, HUD_COLUMN_WIDTH } from "./hud-layout";
-import { advanceStandingsTick, selectSpectatorStandings, type StandingsTick } from "./spectator-standings-model";
+import { HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
+import { YOU } from "@/ui/design-system/kit/words";
+import { useRealmsPlayer } from "@/shell/herald";
+import { useGameFinished } from "./top-header/game-clock";
+import { selectSpectatorStandings } from "./spectator-standings-model";
 
-/** The desktop left column for a spectator: the standings table in its own fixed frame. */
-export function SpectatorStandings() {
-  return (
-    <section
-      aria-label="Spectator standings"
-      className={cn(
-        "fixed left-3 z-20 pointer-events-auto rounded-xl overflow-hidden",
-        HUD_COLUMN_TOP,
-        HUD_COLUMN_WIDTH,
-        OVERLAY_SURFACE_BASE,
-      )}
-    >
-      <SpectatorStandingsBody />
-    </section>
-  );
-}
+/** Rank, player and points. */
+const STANDINGS_COLS = "2rem 1fr 4rem";
 
-/** The standings table without a frame, so the desktop column and the compact sheet host the same rows. */
+/** The standings table without a frame or title, so the desktop panel and the compact sheet host the same rows. */
 export function SpectatorStandingsBody() {
   return <StandingsRows key={configManager.getActiveGameId()} />;
 }
@@ -48,63 +33,57 @@ function StandingsRows() {
       })),
     [standingsByAddress],
   );
-  const tick = useCurrentArmiesTick();
-  const [history, setHistory] = useState<StandingsTick | null>(null);
   const structures = useFactView(gameStructuresView);
   const {
     setup: { store },
   } = useGame();
-  const players = usePlayers();
+  // Names are read as each row draws, and the rows draw again when one lands.
+  const names = usePlayerNames();
   const selectedId = useUIStore((state) => state.structureEntityId);
   const navigate = useNavigateToMapView();
-  useEffect(() => {
-    setHistory((previous) => advanceStandingsTick(previous, tick, standings));
-  }, [standings, tick]);
   const selectedOwner = structures.find((structure) => structure.entity_id === BigInt(selectedId))?.owner;
-  const rows = selectSpectatorStandings(standings, selectedOwner, history);
+  const viewer = useRealmsPlayer().data;
+  const rows = selectSpectatorStandings(standings, { viewer, selected: selectedOwner });
+  const finished = useGameFinished();
 
   return (
     <>
-      <div className="px-3 py-2 text-sm text-gold border-b border-gold/20">Standings</div>
-      <div className="grid grid-cols-[2rem_1fr_4rem_3rem] px-3 py-1 text-sm text-kit-muted">
+      <HudTableHead cols={STANDINGS_COLS}>
         <span>#</span>
         <span>Player</span>
-        <span className="text-right">VP</span>
-        <span className="text-right">Δ tick</span>
-      </div>
+        <span className="text-right">Points</span>
+      </HudTableHead>
       {rows.map((row) => {
         const address = BigInt(row.address);
-        const name = displayPlayerName(address, players.find((player) => player.address === address)?.name);
+        const name = names.text(address);
+        const shown = row.own ? YOU : name;
         const capital = structures
           .filter((structure) => structure.owner === address && structure.base.category === StructureType.Realm)
           .toSorted((a, b) => (a.entity_id < b.entity_id ? -1 : 1))[0];
         return (
-          <button
+          <HudTableRow
             key={row.address}
-            type="button"
+            cols={STANDINGS_COLS}
+            label={`${shown}: ${formatExact(Math.floor(row.totalPoints))} points`}
+            title={capital ? `Fly to ${name}'s capital` : "No surviving realm"}
+            selected={row.own}
             disabled={!capital}
-            aria-current={row.pinned ? "true" : undefined}
             onClick={() => {
               const site = capital && structureMapPosition(store, capital);
               if (site) navigate(Position.fromContract(site));
             }}
-            title={capital ? `Fly to ${name}'s capital` : "No surviving realm"}
-            className={cn(
-              "grid w-full grid-cols-[2rem_1fr_4rem_3rem] items-center px-3 py-2 font-sans text-sm text-gold enabled:hover:bg-gold/10 disabled:opacity-60",
-              row.pinned && "bg-gold/15 border-t border-gold/30",
-            )}
           >
             <span>{row.rank}</span>
-            <span className="truncate text-left">{name}</span>
-            <span className="text-right tabular-nums">{Math.floor(row.totalPoints).toLocaleString()}</span>
-            <span className="text-right tabular-nums text-kit-muted">
-              {row.delta > 0 ? "+" : ""}
-              {Math.floor(row.delta)}
-            </span>
-          </button>
+            <span className="truncate text-left">{shown}</span>
+            <span className="text-right tabular-nums">{formatExact(Math.floor(row.totalPoints))}</span>
+          </HudTableRow>
         );
       })}
-      {!rows.length && <p className="px-3 py-4 text-sm text-kit-muted">No points scored yet</p>}
+      {!rows.length && (
+        <p className="px-3 py-4 text-hud-label text-hud-muted">
+          {finished ? "No points scored" : "No points scored yet"}
+        </p>
+      )}
     </>
   );
 }

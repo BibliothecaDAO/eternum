@@ -1,5 +1,6 @@
+import { getGameModeId } from "@/config/game-modes";
 import { configManager } from "@bibliothecadao/eternum";
-import { updateGameEndFreeze } from "./effects/game-end-freeze";
+import { resetGameEnd } from "./effects/endgame/state";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { GRAPHICS_DEV_GUI_ENABLED, createGraphicsGuiLifetime, createGuiFolder } from "@/three/utils/gui-manager";
@@ -316,22 +317,6 @@ export default class GameRenderer {
     return Math.min(pixelRatio, resolveRendererPixelRatioCap());
   }
 
-  handleKeyEvent(event: KeyboardEvent): void {
-    const { key } = event;
-
-    switch (key) {
-      case "e":
-        break;
-      case "Escape":
-        if (this.sceneManager?.getCurrentScene() === SceneName.Hexception) {
-          this.sceneManager.switchScene(SceneName.WorldMap);
-        }
-        break;
-      default:
-        break;
-    }
-  }
-
   onWindowResize() {
     resizeRendererDisplay({
       backend: this.backend,
@@ -376,14 +361,16 @@ export default class GameRenderer {
       onFrameSuccess: () => this.getRendererFrameFailureCircuit().recordSuccess(),
       renderFrame: ({ currentTime, cycleProgress, deltaTime }) => {
         const sceneName = this.sceneManager?.getRenderingScene();
-        const animationsPaused = configManager.isGameOver();
-        updateGameEndFreeze(configManager.getActiveGameId(), animationsPaused, deltaTime);
         const rendered = runRendererFrame({
           backend: this.backend,
           camera: this.camera,
           captureStatsSample: () => this.sessionRuntime.captureStatsSample(),
           currentScene: sceneName,
-          animationsPaused,
+          gameEnd: {
+            gameId: configManager.getActiveGameId(),
+            ended: configManager.isGameOver(),
+            frontier: getGameModeId() === "frontier",
+          },
           currentTime,
           cycleProgress,
           deltaTime,
@@ -470,12 +457,12 @@ export default class GameRenderer {
   }
 
   public destroy(): void {
-    updateGameEndFreeze(0, false, 0);
     // Prevent multiple destroy calls
     if (this.isDestroyed) {
       console.warn("GameRenderer already destroyed, skipping cleanup");
       return;
     }
+    resetGameEnd();
 
     this.isDestroyed = true;
     this.stopAnimationLoop();

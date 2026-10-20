@@ -130,24 +130,16 @@ export function resolvePathBankAngle(spline: CatmullRomCurve3, t: number, maxBan
 }
 
 /**
- * Vertical sine wave bob + forward pitch lean during movement.
- * Frequency scales gently with speed. Bob is subtle marching rhythm (~1.8 Hz base).
- * Pitch lean is proportional to speed — no lean when stationary.
+ * Forward pitch lean during movement, with a subtle marching rhythm (~1.8 Hz base).
+ * Frequency scales gently with speed. The lean is proportional to speed — none when stationary.
  */
-export function resolveRhythmicBob(input: {
-  elapsedTime: number;
-  speed: number;
-  amplitude: number;
-  baseFrequency: number;
-}): { yOffset: number; pitchAngle: number } {
+export function resolveRhythmicLean(input: { elapsedTime: number; speed: number; baseFrequency: number }): number {
   // Gentler frequency scaling: sqrt keeps it from getting frantic at high speeds
   const freq = input.baseFrequency * Math.sqrt(Math.max(0.25, input.speed));
   const phase = input.elapsedTime * freq * Math.PI * 2;
-  const yOffset = Math.sin(phase) * input.amplitude;
   // Forward lean proportional to speed (0 lean at speed=0, ~5° at speed=1.25)
   const leanBase = -0.07 * Math.min(1, input.speed / 1.25);
-  const pitchAngle = leanBase + Math.cos(phase) * 0.01;
-  return { yOffset, pitchAngle };
+  return leanBase + Math.cos(phase) * 0.01;
 }
 
 /**

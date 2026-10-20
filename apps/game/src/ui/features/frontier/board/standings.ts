@@ -1,6 +1,6 @@
 import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-leaderboard-service";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, scaledToUnits } from "@bibliothecadao/types";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -28,8 +28,8 @@ export const boardRows = (
 export const ownRank = (entries: readonly Entry[] | undefined, viewer: string | null): number | null | undefined =>
   entries && (findOwnEntry(entries, viewer)?.rank ?? null);
 
-/** Essence or labor earned, whole, from Herald's decimal string in resource base units. */
-export const wholeResource = (baseUnits: string): number => Number(BigInt(baseUnits) / PRECISION);
+/** Essence or labor earned, from Herald's decimal string in resource base units, exact (scaledToUnits). */
+export const earnedResource = (baseUnits: string): number => scaledToUnits(BigInt(baseUnits));
 
 /** LORDS won, from Herald's decimal string already in whole LORDS. */
 export const wholeLords = (lords: string): number => Number(BigInt(lords));

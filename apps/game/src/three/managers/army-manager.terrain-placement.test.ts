@@ -17,7 +17,6 @@ describe("army terrain placement", () => {
     const manager = Object.assign(Object.create(ArmyManager.prototype), {
       isDestroyed: false,
       armyPresentations: armies,
-      armyPaths: new Map(),
       visibleArmyIndices: new Map([
         [1, 0],
         [2, 1],

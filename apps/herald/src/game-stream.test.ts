@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
+import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 
 import { HERALD_GAME_FINALIZED_CLOSE } from "@bibliothecadao/eternum/game-sync";
 import { GameStreamHub, type StreamSocket } from "./game-stream";
 import { scopeLookup } from "@bibliothecadao/eternum/game-sync-models";
 import { rowStreamKeys } from "./subscription-keys";
-import { setup, rowEvent, receipt, schema } from "./native/fixtures";
-import { GameFinalizedError } from "./world-fold";
+import { setup, rowEvent, receipt, schema, manifest } from "./native/fixtures";
+import { encodeMembers } from "./native/serde";
+import { GameSubscription } from "./game-subscription";
+import { GameFinalizedError, type WorldFold } from "./world-fold";
 import type { GameSnapshot } from "./types";
 
 const snapshot: GameSnapshot = {
@@ -23,6 +26,123 @@ const recordingSocket = (): StreamSocket & { messages: Array<Record<string, unkn
 };
 
 describe("GameStreamHub", () => {
+  it.each([false, true])("streams peer chest earnings only within their game (preconfirmed=%s)", (preconfirmed) => {
+    const { decoder, native, fold } = setup();
+    const hub = new GameStreamHub("chest-stories", { info: vi.fn() });
+    const attach = (actor?: string, gameId = "7") => {
+      const scopedFold = {
+        subscriptionScope: () => ({
+          actor,
+          expedition: {
+            day: 0,
+            spacing: 21,
+            owners: new Set(actor ? [BigInt(actor).toString()] : []),
+            entities: new Set(),
+            realms: new Set(),
+            realmTraits: new Set(),
+            regions: new Set(),
+          },
+        }),
+        scopeValidUntil: () => 86_400,
+        subscriptionSnapshot: () => ({ confirmed_block: 12, game_id: gameId, models: [] }),
+      } as unknown as WorldFold;
+      const subscription = new GameSubscription(
+        gameId,
+        actor,
+        () => scopedFold,
+        () => 12,
+        () => 100,
+        decoder.registry,
+      );
+      const socket = recordingSocket();
+      const session = hub.attach({
+        actor,
+        gameId,
+        socket,
+        confirmedBlock: 12,
+        preconfirmedBlock: 13,
+        snapshot: () => subscription.snapshot(),
+        overlay: () => [],
+        project: (body) => subscription.project(body),
+        interest: () => subscription.interest(),
+      });
+      hub.resume(session, { type: "resume", epoch: "", seq: 0 });
+      return {
+        rows: () => socket.messages.filter((message) => message.type === "diff").flatMap((message) => message.set),
+      };
+    };
+    const owner = attach("0xa");
+    const peer = attach("0xb");
+    const spectator = attach();
+    const otherGame = attach("0xb", "8");
+    const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
+    const chest = (amount: number) => ({
+      RewardChestOpened: { explorer_id: 70, structure_id: 7, coord: { alt: false, x: 40, y: 12 }, amount },
+    });
+    const payout = (category: number, amount: number) => ({
+      SitePayout: {
+        structure_id: 7,
+        explorer_id: 70,
+        site_id: 99,
+        category,
+        reward: amount
+          ? new CairoOption(CairoOptionVariant.Some, { resource_type: 37, amount })
+          : new CairoOption(CairoOptionVariant.None),
+      },
+    });
+    const variants = [
+      chest(50),
+      chest(0),
+      payout(10, 50_000_000_000),
+      payout(10, 0),
+      payout(7, 10),
+      payout(9, 10),
+      payout(11, 10),
+      { FaithPointsClaimedStory: { wonder_id: 7, new_points: 3, total_points: 4 } },
+    ];
+    const events = variants.map((story) => {
+      const values = {
+        version: 2,
+        game_id: 7,
+        owner: new CairoOption(CairoOptionVariant.Some, 10),
+        entity_id: new CairoOption(CairoOptionVariant.Some, 7),
+        tx_hash: 85,
+        timestamp: 100,
+        story: new CairoCustomEnum(story),
+      };
+      return {
+        from_address: manifest.world.address,
+        keys: [
+          ...layout.prefix,
+          ...encodeMembers(
+            schema,
+            layout.members.filter(({ kind }) => kind === "key"),
+            values,
+          ),
+        ],
+        data: encodeMembers(
+          schema,
+          layout.members.filter(({ kind }) => kind === "data"),
+          values,
+        ),
+      };
+    });
+    const { changes } = native.applyReceipt(fold, receipt(events), preconfirmed ? null : 13, 0);
+    const rows = changes.flatMap(({ change }) => (change?.set ? [change.set] : []));
+    expect(rows).toHaveLength(8);
+    const publish = (set: typeof rows) =>
+      hub.publishDiff("7", { block: 13, preconfirmed, set, del: [] }, (row) => rowStreamKeys(row.model, row.value, 21));
+    // A private-only diff must not wake a peer, and sharing a mixed diff must not leak its private rows.
+    publish(rows.slice(4));
+    expect(owner.rows()).toEqual(rows.slice(4));
+    expect(peer.rows()).toEqual([]);
+    publish(rows);
+    expect(owner.rows()).toEqual([...rows.slice(4), ...rows]);
+    expect(peer.rows()).toEqual(rows.slice(0, 4));
+    expect(spectator.rows()).toEqual(rows.slice(0, 4));
+    expect(otherGame.rows()).toEqual([]);
+  });
+
   it("isolates visit replay identities and sends the actor's outcomes to all of its visits", () => {
     const hub = new GameStreamHub("epoch-a");
     const attach = (actor: string, visit?: string) => {

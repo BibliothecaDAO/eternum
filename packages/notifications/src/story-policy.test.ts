@@ -11,13 +11,15 @@ it("covers every native story and tests every cumulative level", () => {
   const storyType = event.event.members.find((member: { name: string }) => member.name === "story").type;
   const variants = schema.types[storyType].variants.map((variant: { name: string }) => variant.name);
   const nativeLevels = {
-    important: ["BattleEvent", "RaidEvent"],
+    important: ["BattleEvent", "RaidEvent", "StructureCapturedStory"],
     standard: [
       "RealmCreatedStory",
       "SpireDiscovered",
       "BuildingPlacementStory",
       "StructureLevelUpStory",
       "ResourceReceiveArrivalStory",
+      "RelicChestOpened",
+      "RewardChestOpened",
     ],
     all: [
       "ProductionStory",
@@ -29,7 +31,6 @@ it("covers every native story and tests every cumulative level", () => {
       "ExplorerDeleteStory",
       "GuardAddStory",
       "GuardDeleteStory",
-      "StructureCapturedStory",
       "BitcoinAwardStory",
       "TradeCreated",
       "TradeAccepted",
@@ -37,7 +38,6 @@ it("covers every native story and tests every cumulative level", () => {
       "BankSwap",
       "BankLiquidity",
       "HyperstructurePoints",
-      "RelicChestOpened",
       "TierBought",
       "SitePayout",
       "ExplorationReward",
@@ -46,6 +46,7 @@ it("covers every native story and tests every cumulative level", () => {
       "FaithRemoved",
       "BlitzFinalized",
       "RelicCrafted",
+      "RelicActivated",
       "TroopsTransferred",
     ],
     excluded: ["FaithPointsClaimedStory", "LordsWithdrawn"],
@@ -80,6 +81,7 @@ it("uses event-time recipients, normalizes duplicates, and excludes neutral addr
   ).toEqual(["0x1", "0x2"]);
   expect(storyRecipients("RealmCreatedStory", "0x003", battle)).toEqual(["0x3"]);
   expect(storyRecipients("TierBought", "0x003", { explorer_id: 7 })).toEqual(["0x3"]);
+  expect(storyRecipients("RelicActivated", "0x003", { relic_id: 41, recipient: "Explorer" })).toEqual(["0x3"]);
   expect(storyRecipients("BattleEvent", "0xff", { attacker: { player: "0x1" }, defender: { player: "0x01" } })).toEqual(
     ["0x1"],
   );
@@ -138,4 +140,11 @@ it("notifies the acting owner of a native troop transfer only at all activity le
 it("notifies both owners for player capture, excluding the zero bandit owner", () => {
   expect(storyRecipients("StructureCapturedStory", "0x222", { previous_owner: "0x111" })).toEqual(["0x222", "0x111"]);
   expect(storyRecipients("StructureCapturedStory", "0x222", { previous_owner: "0x0" })).toEqual(["0x222"]);
+});
+
+it("notifies only the opening player of a reward chest payment or expiry", () => {
+  for (const amount of [17, 0])
+    expect(storyRecipients("RewardChestOpened", "0x0003", { explorer_id: 7, structure_id: 5, amount })).toEqual([
+      "0x3",
+    ]);
 });

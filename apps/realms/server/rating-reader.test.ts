@@ -106,7 +106,7 @@ const create = () => {
     return Response.json(Array.isArray(raw) ? answers : answers[0]);
   });
   const reader = new RatingReader(ctx as unknown as DurableObjectState, {
-    ENVIRONMENT: "production",
+    ENVIRONMENT: "staging",
     L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   });
   vi.stubGlobal("fetch", network);
@@ -178,7 +178,7 @@ it("keeps the paid-method budget across a reader restart with no cached bypass",
     await reader.ratings(["0x1"]);
     await ctx.storage.put("rpc-budget", { minute: Math.floor(Date.now() / 60000), used: 10000 });
     const restarted = new RatingReader(ctx as unknown as DurableObjectState, {
-      ENVIRONMENT: "production",
+      ENVIRONMENT: "staging",
       L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
     });
     const before = paid.length;

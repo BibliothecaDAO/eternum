@@ -35,11 +35,11 @@ describe("attribute tiers", () => {
     // Rift, Camp, Rift, Rift: uncommon, epic and legendary on rifts, rare on camps.
     const mixed = 2 + 1 * 4 + 2 * 16 + 2 * 64;
     expect(scoutingKindsOf(5, mixed)).toEqual(["Rift", "Camp", "Rift", "Rift"]);
-    expect(scoutingBonusBps(5, mixed)).toEqual({ Camp: 2000, Rift: 8000, Stragglers: 0 });
-    expect(scoutingBonusBps(5, 2 + 2 * 4 + 2 * 16 + 2 * 64)).toEqual({ Camp: 0, Rift: 10000, Stragglers: 0 });
-    expect(scoutingBonusBps(5, 3 + 3 * 4 + 3 * 16 + 3 * 64)).toEqual({ Camp: 0, Rift: 0, Stragglers: 10000 });
-    // A lodge trained Rift, Camp, Stragglers, Rift.
-    expect(scoutingKindsOf(5, 2 + 4 + 3 * 16 + 2 * 64)).toEqual(["Rift", "Camp", "Stragglers", "Rift"]);
-    expect(scoutingBonusBps(1, 0)).toEqual({ Camp: 0, Rift: 0, Stragglers: 0 });
+    expect(scoutingBonusBps(5, mixed)).toEqual({ Camp: 2000, Rift: 8000, Beasts: 0 });
+    expect(scoutingBonusBps(5, 2 + 2 * 4 + 2 * 16 + 2 * 64)).toEqual({ Camp: 0, Rift: 10000, Beasts: 0 });
+    expect(scoutingBonusBps(5, 3 + 3 * 4 + 3 * 16 + 3 * 64)).toEqual({ Camp: 0, Rift: 0, Beasts: 10000 });
+    // A lodge trained Rift, Camp, Beasts, Rift.
+    expect(scoutingKindsOf(5, 2 + 4 + 3 * 16 + 2 * 64)).toEqual(["Rift", "Camp", "Beasts", "Rift"]);
+    expect(scoutingBonusBps(1, 0)).toEqual({ Camp: 0, Rift: 0, Beasts: 0 });
   });
 });

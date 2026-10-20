@@ -5,8 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
-import { Button } from "./button";
-import { Chip } from "./chip";
+import { HudButton, HudChip } from "./hud-elements";
 import { TierChip } from "./tier-chip";
 
 let host: HTMLDivElement;
@@ -42,10 +41,12 @@ const mount = (onClick = () => undefined) =>
       <>
         <Tooltip />
         <button type="button" data-testid="army" onClick={onClick}>
-          <Chip icons={["stamina"]} label="stamina" value="150" />
+          <HudChip icons={["stamina"]} label="stamina">
+            150
+          </HudChip>
         </button>
         <TierChip tier={1} showWord />
-        <Button role="primary" word="Deploy" />
+        <HudButton kind="primary">Deploy</HudButton>
         <span data-testid="store" data-tip="Wheat 1,771 of 6,000 · +302 an hour · Full in 14h">
           1,771
         </span>
@@ -79,6 +80,28 @@ describe("a name on the one tooltip", () => {
       "mouse",
     );
     expect(tip()).toBeNull();
+  });
+
+  it("never repeats words a row already shows whole, and says them where they are cut off at its edge", () => {
+    act(() =>
+      root.render(
+        <>
+          <Tooltip />
+          <span data-testid="row" data-tip="Explored: +150 Labor">
+            Explored: +150 Labor
+          </span>
+          <p data-testid="plain">plain</p>
+        </>,
+      ),
+    );
+    const row = host.querySelector<HTMLElement>('[data-testid="row"]')!;
+    pointer("pointerover", row, "mouse");
+    expect(tip()).toBeNull();
+    pointer("pointerover", host.querySelector('[data-testid="plain"]')!, "mouse");
+    Object.defineProperty(row, "scrollWidth", { configurable: true, value: 240 });
+    Object.defineProperty(row, "clientWidth", { configurable: true, value: 120 });
+    pointer("pointerover", row, "mouse");
+    expect(tip()).toBe("Explored: +150 Labor");
   });
 
   it("shows the name after a press-and-hold on a touch screen, and the hold is not a tap", () => {

@@ -1,13 +1,11 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useFactView } from "@/hooks/use-fact-view";
-import { usePlayers } from "@/hooks/use-player-profile";
+import { usePlayerNames, usePlayers } from "@/hooks/use-player-profile";
 import { gameStructuresView, settlementPlayersView } from "@/sync/fact-views";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { filterPlayersByBlitzSettlement } from "@/services/blitz/blitz-settlement-players";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Tabs } from "@/ui/design-system/atoms/tab";
-import { ResultsPanel } from "@/ui/features/results";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { HudTabs, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { getPlayerInfo } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
@@ -23,7 +21,6 @@ import { useSocialStore } from "./use-social-store";
 
 interface SocialTabConfig {
   key: string;
-  label: ReactNode;
   component: ReactNode;
   expandedContent: ReactNode;
 }
@@ -56,11 +53,23 @@ const countStructuresByOwner = (structures: NativeRows["Structure"][]) =>
 
 export const LEADERBOARD_POPOVER_ID = "leaderboard";
 
+/** The leaderboard hangs from the top centre as a HUD window as large as its table and rows, draggable by its bar. */
+export const LeaderboardSurface = () => (
+  <HudWindow
+    title="Leaderboard"
+    icon="victory"
+    size="fit"
+    onClose={() => usePopoverStore.getState().close(LEADERBOARD_POPOVER_ID)}
+  >
+    <SocialBoard focusOwnPlayer />
+  </HudWindow>
+);
+
 /**
- * The social board: players, tribes, faith and prize tabs with the expandable player / tribe detail column. It
+ * The social board: players, tribes and faith tabs with the expandable player / tribe detail column. It
  * renders inside the identity chip's popover; its world-slice subscriptions exist only while that is open.
  */
-export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) => {
+const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) => {
   const {
     account: { account },
     setup: { store },
@@ -87,6 +96,7 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
 
   // The world slices are the subscription: the bridge publishes each once per ingest slice, already active-game scoped.
   const allPlayers = usePlayers();
+  const names = usePlayerNames();
   const blitzSettlementPlayerAddresses = useFactView(settlementPlayersView);
   const structures = useFactView(gameStructuresView);
   const players = useMemo(
@@ -112,9 +122,16 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
 
   useEffect(() => {
     setPlayerInfo(
-      getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, store),
+      getPlayerInfo(
+        players,
+        ContractAddress(account.address),
+        playersByRank,
+        playerStructureCountsMap,
+        store,
+        names.text,
+      ),
     );
-  }, [players, account.address, playersByRank, playerStructureCountsMap, store, setPlayerInfo]);
+  }, [players, account.address, playersByRank, playerStructureCountsMap, store, setPlayerInfo, names]);
 
   const viewGuildMembers = useCallback(
     (guildEntityId: ContractAddress) => {
@@ -145,12 +162,6 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
     const baseTabs: SocialTabConfig[] = [
       {
         key: "Players",
-        label: (
-          <div className="flex items-center gap-2">
-            <SemanticIcon name="people" size={16} />
-            <span>Players</span>
-          </div>
-        ),
         component: (
           <PlayersPanel players={playerInfo} viewPlayerInfo={viewPlayerInfo} focusOwnPlayer={focusOwnPlayer} />
         ),
@@ -161,12 +172,6 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
     if (showGuildsTab) {
       baseTabs.push({
         key: "Tribes",
-        label: (
-          <div className="flex items-center gap-2">
-            <SemanticIcon name="hexagon" size={16} />
-            <span>Tribes</span>
-          </div>
-        ),
         component: <Guilds players={playerInfo} viewGuildMembers={viewGuildMembers} />,
         expandedContent: selectedPlayer ? (
           <PlayerId selectedPlayer={selectedPlayer} selectedGuild={selectedGuild} back={() => viewPlayerInfo(0n)} />
@@ -179,26 +184,7 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
     if (isEternumMode) {
       baseTabs.push({
         key: "Faith",
-        label: (
-          <div className="flex items-center gap-2">
-            <SemanticIcon name="relics" size={16} />
-            <span>Faith</span>
-          </div>
-        ),
         component: <FaithLeaderboardPanel />,
-        expandedContent: null,
-      });
-    }
-
-    if (isBlitzMode) {
-      baseTabs.push({
-        key: "Results",
-        label: (
-          <div className="flex items-center gap-2">
-            <span>Results</span>
-          </div>
-        ),
-        component: <ResultsPanel />,
         expandedContent: null,
       });
     }
@@ -208,7 +194,6 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
     focusOwnPlayer,
     showGuildsTab,
     isEternumMode,
-    isBlitzMode,
     selectedGuild,
     selectedPlayer,
     playerInfo,
@@ -226,46 +211,27 @@ export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boole
   }, [activeTabIndex, selectedTab, setSelectedTab, tabsLength]);
 
   return (
-    <div
-      className={cn(
-        "flex h-[720px] max-h-[calc(100vh-7rem)] max-w-full overflow-hidden",
-        isExpanded ? "w-[1400px]" : "w-[1000px]",
-      )}
-    >
-      <div className="flex-1 min-w-0 overflow-hidden">
-        <Tabs
-          size="small"
-          selectedIndex={activeTabIndex}
-          onChange={(index: number) => {
-            setSelectedTab(index);
-            setIsExpanded(false);
-            setSelectedPlayer(0n);
-          }}
-          className="h-full"
-        >
-          <div className="flex flex-col h-full">
-            <Tabs.List className="">
-              {tabs.map((tab) => (
-                <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
-                  {tab.label}
-                </Tabs.Tab>
-              ))}
-            </Tabs.List>
-
-            <Tabs.Panels className="overflow-hidden flex-1">
-              {tabs.map((tab) => (
-                <Tabs.Panel key={tab.key} className="h-full">
-                  {tab.component}
-                </Tabs.Panel>
-              ))}
-            </Tabs.Panels>
+    <div className="flex max-w-full">
+      <div className="min-w-0 flex-1">
+        {tabsLength === 1 ? (
+          tabs[0].component
+        ) : (
+          <div className="flex h-full flex-col gap-2">
+            <HudTabs
+              tabs={tabs.map((tab) => ({ key: tab.key, label: tab.key }))}
+              value={tabs[activeTabIndex].key}
+              onChange={(key) => {
+                setSelectedTab(tabs.findIndex((tab) => tab.key === key));
+                setIsExpanded(false);
+                setSelectedPlayer(0n);
+              }}
+            />
+            <div className="flex-1 overflow-hidden">{tabs[activeTabIndex].component}</div>
           </div>
-        </Tabs>
+        )}
       </div>
       {isExpanded && (
-        <div className="w-[400px] shrink-0 overflow-auto border-l border-gold/15">
-          {tabs[activeTabIndex]?.expandedContent ?? null}
-        </div>
+        <div className="w-96 shrink-0 border-l border-hud-divider">{tabs[activeTabIndex]?.expandedContent ?? null}</div>
       )}
     </div>
   );

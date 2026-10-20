@@ -1,0 +1,35 @@
+// The operator page of one environment, behind Cloudflare Access on its admin hostname (deploy/first's
+// environments.json `admin`). deploy/first creates its D1 database and Access applications, and installs its secrets:
+// OPERATOR_TOKEN, ACCESS_TEAM_DOMAIN, ACCESS_AUD and, on production, ADMIN_WRITERS. It reaches the launch Worker by
+// service binding: a plain fetch to a route on its own zone would skip that Worker and reach the client's Pages.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "realms-admin",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // No preview URL per version: the page is reachable only on its Access-protected hostname.
+  "preview_urls": false,
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "env": {
+    "staging": {
+      "name": "realms-admin-staging",
+      "workers_dev": false,
+      "routes": [{ "pattern": "admin.dev-realms.party", "custom_domain": true }],
+      "vars": { "ADMIN_ENVIRONMENT": "dev" },
+      "d1_databases": [{ "binding": "DB", "database_name": "realms-admin-staging", "migrations_dir": "migrations" }],
+      "r2_buckets": [{ "binding": "STATUS", "bucket_name": "realms-status-staging" }],
+      "services": [{ "binding": "LAUNCH", "service": "realms-launch-staging" }],
+    },
+    "production": {
+      "name": "realms-admin",
+      "workers_dev": false,
+      "routes": [{ "pattern": "admin.realms.party", "custom_domain": true }],
+      "vars": { "ADMIN_ENVIRONMENT": "production" },
+      "d1_databases": [{ "binding": "DB", "database_name": "realms-admin-production", "migrations_dir": "migrations" }],
+      "r2_buckets": [{ "binding": "STATUS", "bucket_name": "realms-status" }],
+      "services": [{ "binding": "LAUNCH", "service": "realms-launch" }],
+    },
+  },
+}

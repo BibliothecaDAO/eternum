@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import {
   buildSceneSmokeUrl,
@@ -12,11 +15,27 @@ import {
   normalizeSceneList,
   resolveAgentBrowserWorkingDirectory,
   resolveSceneSmokeGame,
+  runAgentBrowser,
 } from "./run-renderer-scene-smoke.mjs";
 
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
+});
+
+it("returns complete model-render data above the default one-megabyte command buffer", () => {
+  const directory = mkdtempSync(join(tmpdir(), "model-render-command-"));
+  const executable = join(directory, "browser");
+  const image = "x".repeat(2 * 1024 * 1024);
+  try {
+    writeFileSync(executable, '#!/usr/bin/env node\nprocess.stdout.write(JSON.stringify("x".repeat(2*1024*1024)));\n', {
+      mode: 0o700,
+    });
+    vi.stubEnv("AGENT_BROWSER_BIN", executable);
+    expect(JSON.parse(runAgentBrowser("model-render", ["eval", "renderModel()"]))).toBe(image);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 describe("glow repro matrix", () => {

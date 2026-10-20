@@ -3,7 +3,7 @@ export { configureGltfTextureSupport, gltfLoader, loadKtx2Texture } from "./gltf
 
 export function createPausedLabel() {
   const div = document.createElement("div");
-  div.classList.add("rounded-md", "bg-brown/50", "text-gold", "p-1", "-translate-x-1/2", "text-sm");
+  div.classList.add("rounded-md", "bg-brown/50", "text-gold", "p-1", "-translate-x-1/2", "text-xs");
   div.textContent = `⚠️ Production paused`;
   return div;
 }

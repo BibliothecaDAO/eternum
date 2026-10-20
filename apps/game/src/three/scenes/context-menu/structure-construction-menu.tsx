@@ -3,18 +3,22 @@ import { LeftView } from "@/types";
 import { getGameModeConfig } from "@/config/game-modes";
 import { ContextMenuAction } from "@/types/context-menu";
 import type { ReactNode } from "react";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
-import { getRealmInfo, configManager, resolveUseSimpleCost } from "@bibliothecadao/eternum";
+import { getRealmInfo, configManager, getEntityName, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import {
   BuildingType,
   HexEntityInfo,
   ResourcesIds,
   findResourceById,
   getBuildingFromResource,
+  resourceName,
+  StructureType,
+  structureName as structureKindName,
 } from "@bibliothecadao/types";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 type Store = SetupResult["store"];
@@ -37,61 +41,73 @@ const militaryTierConfig: Array<{
     suffix: "tier-1",
     label: "Tier I",
     units: [
-      { label: "Crossbowman", building: BuildingType.ResourceCrossbowmanT1, resource: ResourcesIds.Crossbowman },
-      { label: "Paladin", building: BuildingType.ResourcePaladinT1, resource: ResourcesIds.Paladin },
-      { label: "Knight", building: BuildingType.ResourceKnightT1, resource: ResourcesIds.Knight },
+      {
+        label: resourceName(ResourcesIds.Crossbowman),
+        building: BuildingType.ResourceCrossbowmanT1,
+        resource: ResourcesIds.Crossbowman,
+      },
+      {
+        label: resourceName(ResourcesIds.Paladin),
+        building: BuildingType.ResourcePaladinT1,
+        resource: ResourcesIds.Paladin,
+      },
+      {
+        label: resourceName(ResourcesIds.Knight),
+        building: BuildingType.ResourceKnightT1,
+        resource: ResourcesIds.Knight,
+      },
     ],
   },
   {
     suffix: "tier-2",
     label: "Tier II",
     units: [
-      { label: "Crossbowman", building: BuildingType.ResourceCrossbowmanT2, resource: ResourcesIds.CrossbowmanT2 },
-      { label: "Paladin", building: BuildingType.ResourcePaladinT2, resource: ResourcesIds.PaladinT2 },
-      { label: "Knight", building: BuildingType.ResourceKnightT2, resource: ResourcesIds.KnightT2 },
+      {
+        label: resourceName(ResourcesIds.CrossbowmanT2),
+        building: BuildingType.ResourceCrossbowmanT2,
+        resource: ResourcesIds.CrossbowmanT2,
+      },
+      {
+        label: resourceName(ResourcesIds.PaladinT2),
+        building: BuildingType.ResourcePaladinT2,
+        resource: ResourcesIds.PaladinT2,
+      },
+      {
+        label: resourceName(ResourcesIds.KnightT2),
+        building: BuildingType.ResourceKnightT2,
+        resource: ResourcesIds.KnightT2,
+      },
     ],
   },
   {
     suffix: "tier-3",
     label: "Tier III",
     units: [
-      { label: "Crossbowman", building: BuildingType.ResourceCrossbowmanT3, resource: ResourcesIds.CrossbowmanT3 },
-      { label: "Paladin", building: BuildingType.ResourcePaladinT3, resource: ResourcesIds.PaladinT3 },
-      { label: "Knight", building: BuildingType.ResourceKnightT3, resource: ResourcesIds.KnightT3 },
+      {
+        label: resourceName(ResourcesIds.CrossbowmanT3),
+        building: BuildingType.ResourceCrossbowmanT3,
+        resource: ResourcesIds.CrossbowmanT3,
+      },
+      {
+        label: resourceName(ResourcesIds.PaladinT3),
+        building: BuildingType.ResourcePaladinT3,
+        resource: ResourcesIds.PaladinT3,
+      },
+      {
+        label: resourceName(ResourcesIds.KnightT3),
+        building: BuildingType.ResourceKnightT3,
+        resource: ResourcesIds.KnightT3,
+      },
     ],
   },
 ];
 
 const toSlug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
-const createResourceIconComponent = (
-  resource: string | ResourcesIds | null | undefined,
-  isDisabled: boolean = false,
-): ReactNode => {
-  if (resource === undefined || resource === null) {
-    return undefined;
-  }
+/** A building's painting as its menu item's lead; a disabled item dims it with the rest of the item. */
+const createResourceIconComponent = (meaning: IconMeaning): ReactNode => <Icon name={meaning} size={16} />;
 
-  const resourceName =
-    typeof resource === "number" ? (findResourceById(resource)?.trait ?? ResourcesIds[resource]) : resource;
-
-  if (!resourceName) {
-    return undefined;
-  }
-
-  return (
-    <ResourceIcon
-      resource={resourceName}
-      size="sm"
-      withTooltip={false}
-      className={`pointer-events-none ${isDisabled ? "opacity-40 grayscale" : ""}`}
-    />
-  );
-};
-
-const createTierIconComponent = (tierLabel: string): ReactNode => (
-  <span className="pointer-events-none text-sm font-semibold text-gold">{tierLabel}</span>
-);
+const createTierIconComponent = (tierLabel: string): ReactNode => <HudChip>{tierLabel}</HudChip>;
 
 export const createConstructionMenu = ({
   structure,
@@ -105,7 +121,8 @@ export const createConstructionMenu = ({
   const mode = getGameModeConfig();
   const simpleCostEnabled = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
-  const realmInfo = getRealmInfo(structureEntityId, store, getPlayerName);
+  const realmInfo = getRealmInfo(structureEntityId, store, getPlayerDisplayName);
+  const structureName = getEntityName(structureEntityId, store) ?? structureKindName(StructureType.Realm);
 
   const makeBuildingAction = ({
     suffix,
@@ -155,7 +172,7 @@ export const createConstructionMenu = ({
     icon?: string;
     building: BuildingType;
     resource?: ResourcesIds;
-    iconResource?: string | ResourcesIds | null;
+    iconResource: IconMeaning;
   }): ContextMenuAction | null => {
     const buildability = resolveConstructionBuildability({
       entityId: structureEntityId,
@@ -167,8 +184,6 @@ export const createConstructionMenu = ({
     });
     const canBuild = buildability.canSubmit;
 
-    const iconDescriptor = iconResource ?? resource ?? label;
-
     return makeBuildingAction({
       suffix,
       label,
@@ -176,7 +191,7 @@ export const createConstructionMenu = ({
       building,
       view: LeftView.ConstructionView,
       resource,
-      iconComponent: createResourceIconComponent(iconDescriptor, !canBuild),
+      iconComponent: createResourceIconComponent(iconResource),
       disabled: !canBuild,
       hint: buildability.reason,
     });
@@ -196,43 +211,45 @@ export const createConstructionMenu = ({
 
       return createActionWithAvailability({
         suffix: `resource-${resourceId}`,
-        label: resource.trait,
+        label: resourceName(typedResourceId),
         icon,
         building,
         resource: typedResourceId,
-        iconResource: typedResourceId,
+        iconResource: resourceMeaning(typedResourceId),
       });
     })
     .filter((action): action is ContextMenuAction => action !== null);
 
-  const economicActions: ContextMenuAction[] = [
-    {
-      suffix: "economic-farm",
-      label: "Farm",
-      building: BuildingType.ResourceWheat,
-      resource: ResourcesIds.Wheat,
-      iconResource: ResourcesIds.Wheat,
-    },
-    {
-      suffix: "economic-workers-hut",
-      label: "Workers Hut",
-      building: BuildingType.WorkersHut,
-      iconResource: ResourcesIds.Labor,
-    },
-    {
-      suffix: "economic-storehouse",
-      label: "Storehouse",
-      building: BuildingType.Storehouse,
-      iconResource: "Silo",
-    },
-    {
-      suffix: "economic-market",
-      label: "Market",
-      building: BuildingType.ResourceDonkey,
-      resource: ResourcesIds.Donkey,
-      iconResource: ResourcesIds.Donkey,
-    },
-  ]
+  const economicActions: ContextMenuAction[] = (
+    [
+      {
+        suffix: "economic-farm",
+        label: "Farm",
+        building: BuildingType.ResourceWheat,
+        resource: ResourcesIds.Wheat,
+        iconResource: resourceMeaning(ResourcesIds.Wheat),
+      },
+      {
+        suffix: "economic-workers-hut",
+        label: "Workers Hut",
+        building: BuildingType.WorkersHut,
+        iconResource: resourceMeaning(ResourcesIds.Labor),
+      },
+      {
+        suffix: "economic-storehouse",
+        label: "Storehouse",
+        building: BuildingType.Storehouse,
+        iconResource: "granary",
+      },
+      {
+        suffix: "economic-market",
+        label: "Market",
+        building: BuildingType.ResourceDonkey,
+        resource: ResourcesIds.Donkey,
+        iconResource: resourceMeaning(ResourcesIds.Donkey),
+      },
+    ] satisfies Parameters<typeof createActionWithAvailability>[0][]
+  )
     .map((config) => createActionWithAvailability(config))
     .filter((action): action is ContextMenuAction => action !== null);
 
@@ -249,22 +266,19 @@ export const createConstructionMenu = ({
       label,
       iconComponent: createTierIconComponent(tierLabel),
       childTitle: `${label} Units`,
-      childSubtitle: `Realm ${idString}`,
+      childSubtitle: structureName,
       onSelect: () => {},
       disabled: tierDisabled,
       hint: tierDisabled ? "Unavailable in labor cost mode" : undefined,
       children: units
         .map(({ label: unitLabel, building, resource }) => {
-          const resourceInfo = findResourceById(resource);
-          const iconResource = resourceInfo?.trait ?? ResourcesIds[resource];
-
           return createActionWithAvailability({
             suffix: `military-${suffix}-${toSlug(unitLabel)}`,
             label: unitLabel,
             icon: iconUrl(resourceMeaning(resource)),
             building,
             resource,
-            iconResource,
+            iconResource: resourceMeaning(resource),
           });
         })
         .filter((action): action is ContextMenuAction => action !== null),
@@ -277,7 +291,7 @@ export const createConstructionMenu = ({
       label: "Resource Buildings",
       icon: iconUrl("resources"),
       childTitle: "Resource Buildings",
-      childSubtitle: `Realm ${idString}`,
+      childSubtitle: structureName,
       onSelect: () => {},
       children: realmResourceActions.length > 0 ? realmResourceActions : undefined,
       disabled: realmResourceActions.length === 0,
@@ -287,7 +301,7 @@ export const createConstructionMenu = ({
       label: "Economic Buildings",
       icon: iconUrl("build"),
       childTitle: "Economic Buildings",
-      childSubtitle: `Realm ${idString}`,
+      childSubtitle: structureName,
       onSelect: () => {},
       children: economicActions,
     },
@@ -296,7 +310,7 @@ export const createConstructionMenu = ({
       label: "Military Buildings",
       icon: iconUrl("military"),
       childTitle: "Select Tier",
-      childSubtitle: `Realm ${idString}`,
+      childSubtitle: structureName,
       onSelect: () => {},
       children: militaryTierActions,
     },
@@ -307,7 +321,7 @@ export const createConstructionMenu = ({
     label: "Construction",
     icon: iconUrl("build"),
     childTitle: "Select Building Category",
-    childSubtitle: `Realm ${idString}`,
+    childSubtitle: structureName,
     children: constructionCategories,
     onSelect: () => {},
   };

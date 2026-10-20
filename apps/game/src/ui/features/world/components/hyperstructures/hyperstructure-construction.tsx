@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { configManager, getHyperstructureTotalContributableAmounts, ResourceManager } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  getHyperstructureTotalContributableAmounts,
+  getStructureName,
+  ResourceManager,
+} from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, resourceName } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import Button from "@/ui/design-system/atoms/button";
+import { HudButton, HudField, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -93,13 +98,12 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
   );
   const canSubmit = canContribute && source && contributions.length > 0 && requirements.every((row) => row.valid);
 
-  const submit = async (action: () => Promise<unknown>, message: string) => {
+  const submit = async (action: () => Promise<unknown>) => {
     if (!account || actor === 0n || pending) return;
     setPending(true);
     try {
       await action();
       setAmounts({});
-      toast.success(message);
     } catch (error) {
       toast.failed(error, "Construction action failed");
     } finally {
@@ -109,34 +113,26 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
 
   const initialize = () => {
     if (!owned) return;
-    return submit(
-      () => systemCalls.initialize_hyperstructure({ signer: account, hyperstructure_id: entityId }),
-      "Hyperstructure construction started",
-    );
+    return submit(() => systemCalls.initialize_hyperstructure({ signer: account, hyperstructure_id: entityId }));
   };
   const contribute = () => {
     if (!canSubmit || !source) return;
-    return submit(
-      () =>
-        systemCalls.contribute_to_construction({
-          signer: account,
-          hyperstructure_entity_id: entityId,
-          contributor_entity_id: source.entity_id,
-          contributions,
-        }),
-      "Construction resources contributed",
+    return submit(() =>
+      systemCalls.contribute_to_construction({
+        signer: account,
+        hyperstructure_entity_id: entityId,
+        contributor_entity_id: source.entity_id,
+        contributions,
+      }),
     );
   };
   const setAccess = (access: number) => {
     if (!owned) return;
-    return submit(
-      () => systemCalls.set_access({ signer: account, hyperstructure_entity_id: entityId, access }),
-      "Construction access updated",
-    );
+    return submit(() => systemCalls.set_access({ signer: account, hyperstructure_entity_id: entityId, access }));
   };
 
   return (
-    <section className="space-y-3 p-3 text-sm text-gold" aria-label="Hyperstructure construction">
+    <section className="space-y-3 p-3 text-hud-body text-hud-ink" aria-label="Hyperstructure construction">
       <h4>Construction</h4>
       {hyperstructure.stage === "Foundation" ? (
         <>
@@ -145,61 +141,56 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
             construction.
           </p>
           {owned && (
-            <Button disabled={pending} onClick={initialize}>
+            <HudButton kind="secondary" size="sm" disabled={pending} onClick={initialize}>
               Start construction
-            </Button>
+            </HudButton>
           )}
         </>
       ) : (
         <>
           {owned ? (
-            <label className="flex justify-between gap-2">
+            <div className="flex items-center justify-between gap-2">
               Contributors
-              <select
-                aria-label="Construction access"
+              <HudSelect
+                label="Construction access"
                 value={accessOptions.indexOf(hyperstructure.access)}
                 disabled={pending}
-                onChange={(event) => void setAccess(Number(event.target.value))}
-              >
-                {accessOptions.map((access, index) => (
-                  <option key={access} value={index} disabled={access === "GuildOnly" && !ownerGuild}>
-                    {access === "GuildOnly" ? "Guild only" : access}
-                  </option>
-                ))}
-              </select>
-            </label>
+                options={accessOptions.map((access, index) => ({
+                  value: index,
+                  label: access === "GuildOnly" ? "Guild only" : access,
+                  disabled: access === "GuildOnly" && !ownerGuild,
+                }))}
+                onChange={(access) => void setAccess(access)}
+              />
+            </div>
           ) : (
             <p>Construction access: {hyperstructure.access === "GuildOnly" ? "Guild only" : hyperstructure.access}</p>
           )}
           {canContribute && sources.length > 0 && (
-            <label className="flex justify-between gap-2">
+            <div className="flex items-center justify-between gap-2">
               Supply from
-              <select
-                aria-label="Construction source"
+              <HudSelect
+                label="Construction source"
                 value={source?.entity_id.toString() ?? ""}
                 disabled={pending}
-                onChange={(event) => {
-                  setSourceId(BigInt(event.target.value));
+                options={[
+                  ...(source ? [] : [{ value: "", label: "Select an owned structure", disabled: true }]),
+                  ...sources.map((row) => ({
+                    value: row.entity_id.toString(),
+                    label: getStructureName(row).name,
+                  })),
+                ]}
+                onChange={(id) => {
+                  setSourceId(BigInt(id));
                   setAmounts({});
                 }}
-              >
-                {!source && (
-                  <option value="" disabled>
-                    Select an owned structure
-                  </option>
-                )}
-                {sources.map((row) => (
-                  <option key={row.entity_id} value={row.entity_id.toString()}>
-                    Structure #{row.entity_id.toString()}
-                  </option>
-                ))}
-              </select>
-            </label>
+              />
+            </div>
           )}
           {requirements.map((row) => (
             <label key={row.resource} className="flex justify-between gap-2">
               <span>
-                {ResourcesIds[row.resource]}: {row.remaining === undefined ? "—" : displayAmount(row.remaining)} needed
+                {resourceName(row.resource)}: {row.remaining === undefined ? "—" : displayAmount(row.remaining)} needed
                 {canContribute && source && (
                   <small className="block">
                     {row.available === undefined
@@ -209,23 +200,24 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
                 )}
               </span>
               {canContribute && source && (
-                <input
-                  aria-label={`${ResourcesIds[row.resource]} contribution`}
-                  inputMode="decimal"
-                  className="w-20 bg-black/40 p-1"
-                  value={amounts[row.resource] ?? ""}
-                  disabled={
-                    pending || row.remaining === undefined || row.remaining === 0n || row.available === undefined
-                  }
-                  onChange={(event) => setAmounts((previous) => ({ ...previous, [row.resource]: event.target.value }))}
-                />
+                <span className="w-20">
+                  <HudField
+                    aria-label={`${resourceName(row.resource)} contribution`}
+                    inputMode="decimal"
+                    value={amounts[row.resource] ?? ""}
+                    disabled={
+                      pending || row.remaining === undefined || row.remaining === 0n || row.available === undefined
+                    }
+                    onChange={(value) => setAmounts((previous) => ({ ...previous, [row.resource]: value }))}
+                  />
+                </span>
               )}
             </label>
           ))}
           {canContribute && source && (
-            <Button disabled={!canSubmit || pending} onClick={contribute}>
+            <HudButton kind="secondary" size="sm" disabled={!canSubmit || pending} onClick={contribute}>
               Contribute resources
-            </Button>
+            </HudButton>
           )}
         </>
       )}

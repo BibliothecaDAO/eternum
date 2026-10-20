@@ -4,7 +4,7 @@ import MeshBasicNodeMaterial from "three/src/materials/nodes/MeshBasicNodeMateri
 import type NodeMaterial from "three/src/materials/nodes/NodeMaterial.js";
 import type NodeBuilder from "three/src/nodes/core/NodeBuilder.js";
 import StandardNodeLibrary from "three/src/renderers/webgpu/nodes/StandardNodeLibrary.js";
-import { applyGameEndFrost } from "./game-end-freeze";
+import { applyEndgameFrost } from "./endgame/field";
 
 export class FrostedStandardNodeMaterial extends MeshStandardNodeMaterial {
   override setupObserver(builder: NodeBuilder) {
@@ -19,7 +19,7 @@ export class FrostedStandardNodeMaterial extends MeshStandardNodeMaterial {
     super.setupDiffuseColor(builder);
     // Coat solid surfaces and cutout foliage, preserving translucent glow cards.
     if (!this.transparent || this.alphaTest > 0) {
-      diffuseColor.rgb.assign(applyGameEndFrost(diffuseColor.rgb));
+      diffuseColor.rgb.assign(applyEndgameFrost(diffuseColor.rgb));
     }
   }
 }
@@ -33,7 +33,7 @@ class FrostedArmyNodeMaterial extends MeshBasicNodeMaterial {
 
   override setupDiffuseColor(builder: NodeBuilder): void {
     super.setupDiffuseColor(builder);
-    if (builder.object.userData.gameEndFrost) diffuseColor.rgb.assign(applyGameEndFrost(diffuseColor.rgb));
+    if (builder.object.userData.gameEndFrost) diffuseColor.rgb.assign(applyEndgameFrost(diffuseColor.rgb));
   }
 }
 

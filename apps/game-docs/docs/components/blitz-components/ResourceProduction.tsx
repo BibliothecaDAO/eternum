@@ -7,7 +7,7 @@ const styles = {
   section: section.wrapper,
   subtitle: section.subtitle,
   tableWrapper: { ...table.container, overflowX: "hidden" as const },
-  table: { ...table.table, fontSize: "0.85rem" },
+  table: table.table,
   resourceHeader: { ...table.headerCell, width: "22%", whiteSpace: "nowrap" as const },
   inputHeader: { ...table.headerCell, width: "57%", whiteSpace: "nowrap" as const },
   outputHeader: { ...table.headerCell, width: "21%", whiteSpace: "nowrap" as const },

@@ -6,39 +6,24 @@ interface Standing {
   rank: number;
   totalPoints: number;
 }
-export interface StandingsTick {
-  tick: number;
-  current: Map<string, number>;
-  previous: Map<string, number>;
-}
 
-export function advanceStandingsTick(
-  previous: StandingsTick | null,
-  tick: number,
-  entries: readonly Standing[],
-): StandingsTick {
-  const current = new Map(entries.map((entry) => [normalizeLeaderboardAddress(entry.address), entry.totalPoints]));
-  if (!previous || tick < previous.tick) return { tick, current, previous: current };
-  return { tick, current, previous: tick === previous.tick ? previous.previous : previous.current };
-}
-
+/**
+ * The top ten by rank, then, when they rank lower, the viewer's own row (as Results keeps it) and the selected
+ * structure's owner. Only the viewer's row is marked `own`, as on Results: a tie is never lit as someone's first place.
+ */
 export function selectSpectatorStandings(
   entries: readonly Standing[],
-  pinnedAddress: bigint | undefined,
-  history: StandingsTick | null,
+  { viewer, selected }: { viewer: string | null | undefined; selected: bigint | undefined },
 ) {
-  const pinnedKey = pinnedAddress ? normalizeLeaderboardAddress(pinnedAddress) : null;
-  const ranked = entries.toSorted((left, right) => left.rank - right.rank);
-  const visible = ranked.slice(0, 10);
-  const pinned = ranked.find((entry) => normalizeLeaderboardAddress(entry.address) === pinnedKey);
-  if (pinned && !visible.includes(pinned)) visible.push(pinned);
-  return visible.map((entry) => {
-    const address = normalizeLeaderboardAddress(entry.address);
-    return {
-      ...entry,
-      address,
-      pinned: address === pinnedKey,
-      delta: entry.totalPoints - (history?.previous.get(address) ?? entry.totalPoints),
-    };
-  });
+  const ownKey = viewer ? normalizeLeaderboardAddress(viewer) : null;
+  const selectedKey = selected ? normalizeLeaderboardAddress(selected) : null;
+  const ranked = entries
+    .map((entry) => ({ ...entry, address: normalizeLeaderboardAddress(entry.address) }))
+    .toSorted((left, right) => left.rank - right.rank);
+  const kept = new Set(ranked.slice(0, 10).map((entry) => entry.address));
+  if (ownKey) kept.add(ownKey);
+  if (selectedKey) kept.add(selectedKey);
+  return ranked
+    .filter((entry) => kept.has(entry.address))
+    .map((entry) => ({ ...entry, own: entry.address === ownKey }));
 }

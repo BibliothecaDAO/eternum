@@ -39,6 +39,9 @@ jobs:
       - name: Test that a CI file selects only the area that owns it
         run: python3 .github/scripts/test_validation_areas.py
 
+      - name: Test the check that refuses AI attribution in commits
+        run: python3 .github/scripts/test_commit_attribution.py
+
       - uses: oven-sh/setup-bun@v2
 
       - name: Check workflows cannot read stored secrets
@@ -48,6 +51,14 @@ jobs:
         run: |
           node --test scripts/check-committed-env-rpc.test.mjs
           node scripts/check-committed-env-rpc.mjs
+
+      - name: Check every package's test script runs once
+        run: |
+          node --test scripts/check-test-scripts-run-once.test.mjs
+          node scripts/check-test-scripts-run-once.mjs
+
+      - name: Check the Realms X account is written in one place
+        run: pnpm check:realms-x
 
       - name: Check formatting
         run: pnpm run format:check

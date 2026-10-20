@@ -261,8 +261,18 @@ function structurePosition(
     );
   }
   const tile = facts.position(integer(row.game_id).toString(), integer(row.entity_id).toString());
-  if (!tile) throw new Error(`Missing native position for entity ${row.game_id}:${row.entity_id}`);
-  return { col: number(tile.col), row: number(tile.row) };
+  if (tile) return { col: number(tile.col), row: number(tile.row) };
+  // A structure with no tile keeps its row without a position, never failing the player's whole directory; it is
+  // reported with its game and entity.
+  console.warn(
+    JSON.stringify({
+      event: "herald_directory_structure_unplaced",
+      game_id: integer(row.game_id).toString(),
+      entity_id: integer(row.entity_id).toString(),
+      category: number(record(row.base).category),
+    }),
+  );
+  return null;
 }
 
 export function buildNativeLeaderboard(

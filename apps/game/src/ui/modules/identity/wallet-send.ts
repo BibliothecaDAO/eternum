@@ -1,8 +1,8 @@
+import { VALUE_WORDS } from "@/ui/design-system/kit/words";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import type { AccountInterface, Call, ProviderInterface } from "starknet";
 
 import { L2_CHAIN } from "@/runtime/l2-rpc";
-import { VALUE_WORDS } from "@/shell/words";
 
 /** What a wallet's send came to: landed, refused by the ledger with its reason, or not sent for lack of STRK. */
 export type WalletSendOutcome = { kind: "landed" } | { kind: "refused"; reason: string } | { kind: "no-strk" };

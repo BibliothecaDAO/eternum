@@ -207,7 +207,7 @@ export class EternumProvider extends EventEmitter {
   public submitCommand(
     signer: AccountInterface,
     command: NativeCommand,
-    transactionType?: TransactionType,
+    transactionType: TransactionType,
     startedAt?: number,
   ): Promise<GetTransactionReceiptResponse> {
     if (!this.commandAbi) throw new Error("Native command ABI is not configured");
@@ -347,22 +347,11 @@ export class EternumProvider extends EventEmitter {
   private async executeAndCheckTransaction(
     signer: Account | AccountInterface,
     rawTransactionDetails: AllowArray<Call>,
-    transactionType?: TransactionType,
+    txType: TransactionType,
   ): Promise<GetTransactionReceiptResponse> {
     const transactionDetails = rawTransactionDetails;
 
     const isMultipleTransactions = Array.isArray(transactionDetails);
-
-    // Get the transaction type based on the entrypoint name
-    let txType: TransactionType;
-
-    if (isMultipleTransactions) {
-      // For multiple calls, use the first call's entrypoint
-      txType = TransactionType[transactionDetails[0]?.entrypoint.toUpperCase() as keyof typeof TransactionType];
-    } else {
-      txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
-    }
-    txType = transactionType ?? txType;
 
     const transactionMeta = this.buildTransactionLifecycleMeta(transactionDetails, {
       type: txType,
@@ -544,7 +533,7 @@ export class EternumProvider extends EventEmitter {
     return this.submitCommand(
       props.signer,
       { kind: "CreateReservedHyperstructure", value: { alt: props.alt, x: props.x, y: props.y } },
-      TransactionType.INITIALIZE,
+      TransactionType.CREATE_HYPERSTRUCTURE,
     );
   }
 
@@ -573,7 +562,7 @@ export class EternumProvider extends EventEmitter {
     props: SystemProps.SystemSigner & {
       explorerId: number;
       attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming";
-      scoutingKind?: "Camp" | "Rift" | "Stragglers";
+      scoutingKind?: "Camp" | "Rift" | "Beasts";
     },
   ) {
     return this.submitCommand(
@@ -767,18 +756,26 @@ export class EternumProvider extends EventEmitter {
   }
 
   public async bitcoin_mine_close_phase(props: SystemProps.BitcoinMinePhaseProps) {
-    return this.submitCommand(props.signer, { kind: "CloseBitcoinPhase", value: props.phase_id });
+    return this.submitCommand(
+      props.signer,
+      { kind: "CloseBitcoinPhase", value: props.phase_id },
+      TransactionType.BITCOIN_MINE_CLOSE_PHASE,
+    );
   }
 
   public async bitcoin_mine_bind_phase(props: SystemProps.BitcoinMinePhaseProps) {
-    return this.submitCommand(props.signer, { kind: "BindBitcoinPhase", value: props.phase_id });
+    return this.submitCommand(
+      props.signer,
+      { kind: "BindBitcoinPhase", value: props.phase_id },
+      TransactionType.BITCOIN_MINE_BIND_PHASE,
+    );
   }
 
   public async toggle_alternate(props: SystemProps.ToggleAlternateProps) {
     return this.submitCommand(
       props.signer,
       { kind: "ToggleAlternate", value: { explorer_id: props.explorer_id, spire_direction: props.spire_direction } },
-      TransactionType.TRAVEL_HEX,
+      TransactionType.TOGGLE_ALTERNATE,
     );
   }
 
@@ -931,7 +928,7 @@ export class EternumProvider extends EventEmitter {
     return this.submitCommand(
       props.signer,
       { kind: "InitializeHyperstructure", value: props.hyperstructure_id },
-      TransactionType.INITIALIZE,
+      TransactionType.INITIALIZE_HYPERSTRUCTURE,
     );
   }
 
@@ -1025,28 +1022,40 @@ export class EternumProvider extends EventEmitter {
   }
 
   public async apply_relic(props: SystemProps.ApplyRelicProps) {
-    return this.submitCommand(props.signer, {
-      kind: "ApplyRelic",
-      value: {
-        entity_id: props.entity_id,
-        relic_id: props.relic_resource_id,
-        recipient: unitVariant(props.recipient_type, ["Explorer", "StructureProduction", "StructureGuard"] as const),
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "ApplyRelic",
+        value: {
+          entity_id: props.entity_id,
+          relic_id: props.relic_resource_id,
+          recipient: unitVariant(props.recipient_type, ["Explorer", "StructureProduction", "StructureGuard"] as const),
+        },
       },
-    });
+      TransactionType.APPLY_RELIC,
+    );
   }
 
   public async transfer_structure_ownership(props: SystemProps.TransferStructureOwnershipProps) {
-    return this.submitCommand(props.signer, {
-      kind: "TransferStructureOwnership",
-      value: { entity_id: props.structure_id, new_owner: props.new_owner },
-    });
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "TransferStructureOwnership",
+        value: { entity_id: props.structure_id, new_owner: props.new_owner },
+      },
+      TransactionType.TRANSFER_STRUCTURE_OWNERSHIP,
+    );
   }
 
   public async structure_burn(props: SystemProps.StructureBurnProps) {
-    return this.submitCommand(props.signer, {
-      kind: "BurnStructureResources",
-      value: { entity_id: props.structure_id, resources: resourceAmounts(props.resources) },
-    });
+    return this.submitCommand(
+      props.signer,
+      {
+        kind: "BurnStructureResources",
+        value: { entity_id: props.structure_id, resources: resourceAmounts(props.resources) },
+      },
+      TransactionType.STRUCTURE_BURN,
+    );
   }
 
   public async destroy_building(props: SystemProps.DestroyBuildingProps) {
@@ -1248,10 +1257,14 @@ export class EternumProvider extends EventEmitter {
   public async add_liquidity(props: SystemProps.AddLiquidityProps) {
     let receipt: GetTransactionReceiptResponse | undefined;
     for (const value of props.calls)
-      receipt = await this.submitCommand(props.signer, {
-        kind: "AddBankLiquidity",
-        value: { bank_id: props.bank_entity_id, structure_id: props.entity_id, ...value },
-      });
+      receipt = await this.submitCommand(
+        props.signer,
+        {
+          kind: "AddBankLiquidity",
+          value: { bank_id: props.bank_entity_id, structure_id: props.entity_id, ...value },
+        },
+        TransactionType.ADD_LIQUIDITY,
+      );
     if (!receipt) throw new Error("Liquidity deposit requires resources");
     return receipt;
   }
@@ -1322,15 +1335,19 @@ export class EternumProvider extends EventEmitter {
         calldata: CallData.compile({ spender: this.bridgeAddress(), amount: uint256.bnToUint256(resource.amount) }),
       });
       await this.provider.waitForTransaction(approval.transaction_hash);
-      receipt = await this.submitCommand(props.signer, {
-        kind: "DepositResource",
-        value: {
-          structure_id: props.recipient_structure_id,
-          resource_type: resource.resource_type,
-          amount: resource.amount,
-          client_fee_recipient: props.client_fee_recipient,
+      receipt = await this.submitCommand(
+        props.signer,
+        {
+          kind: "DepositResource",
+          value: {
+            structure_id: props.recipient_structure_id,
+            resource_type: resource.resource_type,
+            amount: resource.amount,
+            client_fee_recipient: props.client_fee_recipient,
+          },
         },
-      });
+        TransactionType.BRIDGE_DEPOSIT,
+      );
     }
     if (!receipt) throw new Error("Bridge deposit requires resources");
     return receipt;
@@ -1339,16 +1356,20 @@ export class EternumProvider extends EventEmitter {
   public async bridge_withdraw_from_realm(props: SystemProps.BridgeWithdrawFromRealmProps) {
     let receipt: GetTransactionReceiptResponse | undefined;
     for (const resource of props.resources)
-      receipt = await this.submitCommand(props.signer, {
-        kind: "WithdrawResource",
-        value: {
-          structure_id: props.from_structure_id,
-          resource_type: resource.resource_type,
-          amount: resource.amount,
-          recipient: props.recipient_address,
-          client_fee_recipient: props.client_fee_recipient,
+      receipt = await this.submitCommand(
+        props.signer,
+        {
+          kind: "WithdrawResource",
+          value: {
+            structure_id: props.from_structure_id,
+            resource_type: resource.resource_type,
+            amount: resource.amount,
+            recipient: props.recipient_address,
+            client_fee_recipient: props.client_fee_recipient,
+          },
         },
-      });
+        TransactionType.BRIDGE_WITHDRAW,
+      );
     if (!receipt) throw new Error("Bridge withdrawal requires resources");
     return receipt;
   }
@@ -1356,13 +1377,21 @@ export class EternumProvider extends EventEmitter {
   public async claim_wonder_points(
     props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimWonderPoints"] },
   ) {
-    return this.submitCommand(props.signer, { kind: "ClaimWonderPoints", value: props.value });
+    return this.submitCommand(
+      props.signer,
+      { kind: "ClaimWonderPoints", value: props.value },
+      TransactionType.CLAIM_WONDER_POINTS,
+    );
   }
 
   public async claim_player_faith_points(
     props: SystemProps.SystemSigner & { value: NativeCommandPayloads["ClaimPlayerFaithPoints"] },
   ) {
-    return this.submitCommand(props.signer, { kind: "ClaimPlayerFaithPoints", value: props.value });
+    return this.submitCommand(
+      props.signer,
+      { kind: "ClaimPlayerFaithPoints", value: props.value },
+      TransactionType.CLAIM_PLAYER_FAITH_POINTS,
+    );
   }
 }
 

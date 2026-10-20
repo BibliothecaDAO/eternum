@@ -1,5 +1,6 @@
 import { BlitzWorldStructureDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
 import "@/styles.css";
+import { startingForcesOf } from "@/utils/config";
 
 # Armies
 
@@ -8,7 +9,23 @@ import "@/styles.css";
 Individual armies consist of a single troop type and tier. Each hex can host only one army, so Lords must carefully
 manage their positioning and engagement opportunities.
 
+## Starting forces
+
+Each of your three realms is dealt one troop type, one realm Knights, one Crossbowmen and one Paladins, in an order
+drawn for you. Each starts with **{startingForcesOf("blitz").garrison}** T1 troops of its type garrisoned and
+**{startingForcesOf("blitz").reserve}** in reserve. No army stands on the map at the start: create one from the reserve.
+
+## Merging armies
+
+Select an army, then an adjacent army or realm of yours: the transfer panel moves troops between them, across your
+realms too. An army, or a guard slot that holds troops, takes only its own troop type and tier; an empty guard slot
+takes any type and tier, and only from an army.
+
 ## Structure Guards and Claims
+
+Discovered Camps and Essence Rifts each start with one T1 guard of 999–1,499 troops. Its type is chosen with equal
+chances from Knight, Paladin and Crossbowman, independently of its troop count. Hyperstructures start with three T2
+guards: one Paladin, one Knight and one Crossbowman, each with 1,499–1,999 troops.
 
 Structure guards defend Camps, Essence Rifts, Hyperstructures, and Realms from their guard slots. Crossbowman armies and
 Crossbowman guards can use Combat v3 range-2 attacks to clear or threaten enemies from a distance, but a ranged attack
@@ -45,7 +62,6 @@ number of field and guard army slots.
       border: "1px solid rgba(201, 169, 96, 0.18)",
       borderRadius: "8px",
       overflow: "hidden",
-      fontSize: "0.85rem",
     }}
   >
     <thead style={{ backgroundColor: "rgba(22, 27, 32, 0.86)" }}>
@@ -58,7 +74,6 @@ number of field and guard army slots.
             fontWeight: 700,
             color: "#c9a960",
             borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
-            fontSize: "0.85rem",
           }}
         >
           Realm Level
@@ -71,7 +86,6 @@ number of field and guard army slots.
             fontWeight: 700,
             color: "#c9a960",
             borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
-            fontSize: "0.85rem",
           }}
         >
           Deployment Cap
@@ -84,7 +98,6 @@ number of field and guard army slots.
             fontWeight: 700,
             color: "#c9a960",
             borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
-            fontSize: "0.85rem",
           }}
         >
           Field Army Slots
@@ -97,7 +110,6 @@ number of field and guard army slots.
             fontWeight: 700,
             color: "#c9a960",
             borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
-            fontSize: "0.85rem",
           }}
         >
           Guard Army Slots
@@ -112,7 +124,6 @@ number of field and guard army slots.
             textAlign: "left",
             color: "#ece0bd",
             borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-            fontSize: "0.85rem",
           }}
         >
           Settlement
@@ -123,7 +134,6 @@ number of field and guard army slots.
             textAlign: "center",
             color: "#ece0bd",
             borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-            fontSize: "0.85rem",
           }}
         >
           3,000
@@ -134,7 +144,6 @@ number of field and guard army slots.
             textAlign: "center",
             color: "#ece0bd",
             borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-            fontSize: "0.85rem",
           }}
         >
           1
@@ -145,7 +154,6 @@ number of field and guard army slots.
             textAlign: "center",
             color: "#ece0bd",
             borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-            fontSize: "0.85rem",
           }}
         >
           1
@@ -158,7 +166,6 @@ number of field and guard army slots.
             textAlign: "left",
             color: "#ece0bd",
             borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-            fontSize: "0.85rem",
           }}
         >
           City
@@ -169,7 +176,6 @@ number of field and guard army slots.
             textAlign: "center",
             color: "#ece0bd",
             borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-            fontSize: "0.85rem",
           }}
         >
           15,000
@@ -180,7 +186,6 @@ number of field and guard army slots.
             textAlign: "center",
             color: "#ece0bd",
             borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-            fontSize: "0.85rem",
           }}
         >
           3
@@ -191,7 +196,6 @@ number of field and guard army slots.
             textAlign: "center",
             color: "#ece0bd",
             borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-            fontSize: "0.85rem",
           }}
         >
           2
@@ -204,7 +208,6 @@ number of field and guard army slots.
             textAlign: "left",
             color: "#ece0bd",
             borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-            fontSize: "0.85rem",
           }}
         >
           Kingdom
@@ -215,7 +218,6 @@ number of field and guard army slots.
             textAlign: "center",
             color: "#ece0bd",
             borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-            fontSize: "0.85rem",
           }}
         >
           45,000
@@ -226,7 +228,6 @@ number of field and guard army slots.
             textAlign: "center",
             color: "#ece0bd",
             borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-            fontSize: "0.85rem",
           }}
         >
           5
@@ -237,17 +238,16 @@ number of field and guard army slots.
             textAlign: "center",
             color: "#ece0bd",
             borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
-            fontSize: "0.85rem",
           }}
         >
           3
         </td>
       </tr>
       <tr>
-        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#ece0bd", fontSize: "0.85rem" }}>Empire</td>
-        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#ece0bd", fontSize: "0.85rem" }}>90,000</td>
-        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#ece0bd", fontSize: "0.85rem" }}>8</td>
-        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#ece0bd", fontSize: "0.85rem" }}>4</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#ece0bd" }}>Empire</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#ece0bd" }}>90,000</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#ece0bd" }}>8</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#ece0bd" }}>4</td>
       </tr>
     </tbody>
   </table>

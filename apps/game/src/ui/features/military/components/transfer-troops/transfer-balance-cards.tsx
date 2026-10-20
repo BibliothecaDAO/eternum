@@ -1,7 +1,6 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
-import { formatNumber } from "@/ui/utils/utils";
-import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { TroopTier, TroopType, formatCharge, formatExact } from "@bibliothecadao/types";
 
 import { TroopBadge } from "./transfer-troop-badge";
 
@@ -26,11 +25,12 @@ export const TransferBalanceCards = ({ cards }: TransferBalanceCardsProps) => {
   return (
     <div className="grid gap-3 sm:grid-rows-2">
       {cards.map(({ label, before, after, tone, changeLabel, troop }) => {
-        const toneClass = tone === "positive" ? "text-gold" : tone === "negative" ? "text-danger" : "text-kit-muted";
+        const toneClass =
+          tone === "positive" ? "text-hud-accent" : tone === "negative" ? "text-hud-bad" : "text-hud-muted";
 
         return (
-          <div key={label} className="rounded-lg border border-gold/50 bg-dark-brown/80 p-4 shadow-sm">
-            <div className="flex items-center justify-between text-sm font-semibold text-gold/70">
+          <div key={label} className="rounded-lg border border-hud-line-strong bg-hud-well p-4 shadow-sm">
+            <div className="flex items-center justify-between text-hud-label uppercase tracking-wide text-hud-muted">
               <span>{label}</span>
               <span className={toneClass}>{changeLabel}</span>
             </div>
@@ -44,10 +44,10 @@ export const TransferBalanceCards = ({ cards }: TransferBalanceCardsProps) => {
                 />
               </div>
             ) : null}
-            <div className="mt-3 flex items-center gap-2 text-2xl font-bold text-gold">
-              <span>{formatNumber(Math.max(0, before), 0)}</span>
-              <SemanticIcon name="arrow-right" className="h-5 w-5 text-gold/70" />
-              <span>{formatNumber(Math.max(0, after), 0)}</span>
+            <div className="mt-3 flex items-center gap-2 text-hud-display text-hud-accent">
+              <span>{formatExact(Math.max(0, before))}</span>
+              <SemanticIcon name="arrow-right" className="h-5 w-5 text-hud-muted" />
+              <span>{formatExact(Math.max(0, after))}</span>
             </div>
           </div>
         );

@@ -1,5 +1,3 @@
-import { TickIds } from "@bibliothecadao/types";
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
   computeTravelFoodCosts,
   configManager,
@@ -7,33 +5,45 @@ import {
   type GameActions,
   getBalance,
   getTroopResourceId,
-  readRevealPercent,
   readTroopRaiseCost,
   realmLearned,
   researchTier,
-  revealYield,
 } from "@bibliothecadao/eternum";
 import {
+  nativeResearchConstants as research,
   safeInteger,
-  nativeResearchConstants,
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
 import { musterStamina, type OpenArmySlot, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
-import { type Direction, RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { type Direction, RESOURCE_PRECISION, ResourcesIds, TickIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
 import { stocksAtNextDeploy } from "../frontier-home";
-import { sidesTaken } from "../research/sides-taken";
 
 /**
- * What Deploy needs, read from facts with no UI of its own: the next open slot, the troops at home, the wheat each
- * troop costs and the wheat the realm holds. Troops are one count; the troop resource they are drawn from is the
- * realm's own, never shown.
+ * An open army slot and the stamina a new army starts on in it (the owner, 20 October 2026: "stamina is slot tied"):
+ * full at its own maximum when the slot is fresh today, else the bar the slot's last army left, recovering since.
+ * Its army's number is the slot's, counted from one, as the dock and the map plate number armies.
+ */
+export interface SlotStart {
+  slot: number;
+  number: number;
+  /** Whether the slot's bar was left by an army today; a fresh slot starts full. */
+  inherited: boolean;
+  /** The bar the army starts on, under the game's rules; unknown while the troops it would take are. */
+  start: { current: number; max: number } | undefined;
+}
+
+/**
+ * What Deploy needs, read from facts with no UI of its own: the open slots and the bar each would start an army on,
+ * the troops at home, the wheat each troop costs and the wheat the realm holds. Troops are one count; the troop
+ * resource they are drawn from is the realm's own, never shown.
  */
 interface DeployPlan {
+  /** Today's open slots, lowest first, as the contract fills them. */
+  open: SlotStart[];
   /** The slot the next army fills, or null when every slot today holds an army. */
-  next: OpenArmySlot | null;
-  slots: { used: number; allowed: number };
+  next: SlotStart | null;
   /** The troops at home the next army draws from; null when the realm holds none. */
   troops: { type: TroopType; tier: TroopTier; atHome: number; cap: number } | null;
   /** Whole wheat a troop costs to deploy (0 where deploying costs nothing). */
@@ -42,15 +52,7 @@ interface DeployPlan {
   wheatPerTroopTile: number;
   /** Whole wheat the realm holds. */
   wheat: number;
-  /** The Logistics tiers above common the realm's Supply yard gives every new army. */
-  trainedLogistics: number;
-  /** The tiers the realm's four training buildings start a new army at. */
-  startingTiers: StartingTiers;
-  /** The Barracks row has taken Rations: each troop deploys for less wheat. */
-  rations: boolean;
 }
-
-type StartingTiers = readonly [Tier, Tier, Tier, Tier];
 
 const TYPES = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin] as const;
 const TIERS = [TroopTier.T1, TroopTier.T2, TroopTier.T3] as const;
@@ -70,34 +72,44 @@ export const readDeployPlan = (
   const allowed = realm.base.troop_max_explorer_count;
   const open = openArmySlots(store, { game_id: realm.game_id, entity_id: realm.entity_id, allowedSlots: allowed });
   const wheat = getBalance(safeInteger(realm.entity_id), ResourcesIds.Wheat, defaultTick, store).balance;
+  // A troop's price waits on the realm's research: the Barracks' Rations lowers it.
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (!open || wheat === undefined || learned === undefined) return undefined;
   const troops = readTroopsAtHome(store, realm, rules, clock);
   if (troops === undefined) return undefined;
+  // A new army's Logistics starts at its realm's Supply yard tier, which raises the bar a fresh slot starts full at.
+  const trained = researchTier(learned, research.ROW_SUPPLY_YARD);
+  const starts = open.map((slot) => slotStart(slot, troops, trained, clock.defaultTick));
   return {
-    next: open[0] ?? null,
-    slots: { used: allowed - open.length, allowed },
+    open: starts,
+    next: starts[0] ?? null,
     troops,
     wheatPerTroop: troops ? wheatToDeploy(store, realm, troops, 1, defaultTick) : 0,
     wheatPerTroopTile: troops
       ? Math.abs(computeTravelFoodCosts({ category: troops.type, count: PRECISION }).wheatPayAmount)
       : 0,
     wheat: Number(BigInt(wheat) / PRECISION),
-    trainedLogistics: researchTier(learned, nativeResearchConstants.ROW_SUPPLY_YARD),
-    startingTiers: startingTiers(learned),
-    rations: sidesTaken(learned, nativeResearchConstants.ROW_BARRACKS).includes("rations"),
   };
 };
 
-/** The tiers a new army starts at, as progression.cairo's starting tiers read the training rows, in the attributes' order. */
-const startingTiers = (learned: bigint): StartingTiers => {
-  const tier = (row: number) => (researchTier(learned, row) + 1) as Tier;
-  return [
-    tier(nativeResearchConstants.ROW_WAR_HALL),
-    tier(nativeResearchConstants.ROW_SUPPLY_YARD),
-    tier(nativeResearchConstants.ROW_SCOUTS_LODGE),
-    tier(nativeResearchConstants.ROW_HEARTH),
-  ];
+/** One open slot's start, through the core's one rule for it (musterStamina), on the dock's clock. */
+const slotStart = (slot: OpenArmySlot, troops: DeployPlan["troops"], trained: number, timestamp: number): SlotStart => {
+  const bar =
+    troops &&
+    musterStamina(
+      slot,
+      { category: troops.type, tier: troops.tier },
+      timestamp,
+      configManager.getTroopStaminaRules(),
+      trained,
+      Number(configManager.getTick(TickIds.Armies)),
+    );
+  return {
+    slot: slot.slot,
+    number: slot.slot + 1,
+    inherited: slot.inherited !== null,
+    start: bar ? { current: bar.amount, max: bar.max } : undefined,
+  };
 };
 
 /**
@@ -141,7 +153,7 @@ const wheatToDeploy = (
   return Math.ceil(Number(wheat) / RESOURCE_PRECISION);
 };
 
-/** The slider's ends: one troop (a scout), and the most one army can take: troops at home, the castle's cap, the wheat. */
+/** The most one army can take: the troops at home, the castle's cap and the wheat, whichever runs out first. */
 export const deployRange = (plan: DeployPlan): { troopsMax: number; wheatMax: number; max: number } => {
   if (!plan.troops) return { troopsMax: 0, wheatMax: 0, max: 0 };
   const troopsMax = Math.min(plan.troops.atHome, plan.troops.cap);
@@ -149,53 +161,16 @@ export const deployRange = (plan: DeployPlan): { troopsMax: number; wheatMax: nu
   return { troopsMax, wheatMax, max: Math.min(troopsMax, wheatMax) };
 };
 
-/**
- * The army a count makes: what it costs in wheat, the wheat left, how many tiles that wheat moves it, what each reveal
- * sends home and the stamina it starts with.
- */
+/** The army a count makes: what it costs in wheat, the wheat left, and how many tiles that wheat moves it. */
 export const previewDeploy = (
-  store: NativeFactStore,
-  gameId: number,
   plan: DeployPlan,
   count: number,
-  timestamp: number,
-): {
-  count: number;
-  wheatCost: number;
-  wheatLeft: number;
-  tiles: number;
-  revealYield: bigint | undefined;
-  stamina: { amount: number; max: number } | null;
-} => {
+): { count: number; wheatCost: number; wheatLeft: number; tiles: number } => {
   const whole = Math.max(0, Math.min(Math.floor(count), deployRange(plan).max));
   const wheatCost = whole * plan.wheatPerTroop;
   const wheatLeft = Math.max(0, plan.wheat - wheatCost);
   const perTile = whole * plan.wheatPerTroopTile;
-  const { troop_limit_config: limits, troop_stamina_config: staminaRules } = configManager.getTroopConfig();
-  // A new army starts on land.
-  const percent = readRevealPercent(store, gameId, 0);
-  const troops = plan.troops;
-  return {
-    count: whole,
-    wheatCost,
-    wheatLeft,
-    tiles: perTile > 0 ? Math.floor(wheatLeft / perTile) : 0,
-    revealYield:
-      percent === undefined || !troops
-        ? undefined
-        : revealYield({ tier: troops.tier, count: BigInt(whole) * PRECISION }, limits, percent),
-    stamina:
-      plan.next && troops
-        ? musterStamina(
-            plan.next,
-            { category: troops.type, tier: troops.tier },
-            timestamp,
-            staminaRules,
-            plan.trainedLogistics,
-            Number(configManager.getTick(TickIds.Armies)),
-          )
-        : null,
-  };
+  return { count: whole, wheatCost, wheatLeft, tiles: perTile > 0 ? Math.floor(wheatLeft / perTile) : 0 };
 };
 
 /**

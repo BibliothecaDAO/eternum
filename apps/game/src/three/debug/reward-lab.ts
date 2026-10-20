@@ -1,5 +1,5 @@
 import { RewardLabChestPresentation, type ChestPalette } from "./reward-lab-presentation";
-import { ChestRelicReveal } from "../rewards/chest-relic-reveal";
+import { ChestRewardReveal } from "../rewards/chest-reward-reveal";
 import { RiftPresentation } from "../rewards/rift-presentation";
 import { resolveRewardNightAmount } from "../rewards/reward-lighting";
 import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
@@ -55,7 +55,7 @@ interface RewardActor {
   phase: number;
   summoning?: RewardSummoning;
   presentation?: RewardLabChestPresentation;
-  relics?: ChestRelicReveal;
+  reward?: ChestRewardReveal;
   rift?: RiftPresentation;
 }
 export interface RewardLab {
@@ -220,10 +220,10 @@ class RewardReviewScene implements RewardLab {
       if (!actor.summoning) continue;
       actor.summoning.seek(1);
       actor.summoning.open();
-      actor.relics?.dispose();
+      actor.reward?.dispose();
       // Preview rewards only; live openings use the three IDs from the game event.
-      actor.relics = new ChestRelicReveal([39, 40, 41]);
-      actor.object.add(actor.relics.label);
+      actor.reward = new ChestRewardReveal({ kind: "relics", relics: [41, 43, 39] });
+      actor.object.add(actor.reward.label);
     }
     this.needsRender = true;
   }
@@ -342,8 +342,8 @@ class RewardReviewScene implements RewardLab {
 
   private clearRelicReveals(): void {
     for (const actor of this.actors) {
-      actor.relics?.dispose();
-      actor.relics = undefined;
+      actor.reward?.dispose();
+      actor.reward = undefined;
     }
   }
 
@@ -381,11 +381,11 @@ class RewardReviewScene implements RewardLab {
       for (const actor of this.actors) {
         actor.presentation?.faceCamera(this.camera.position);
         actor.summoning?.update(this.settings.paused ? 0 : delta);
-        if (actor.relics && actor.summoning) {
-          actor.relics.update(actor.summoning.openingElapsed);
+        if (actor.reward && actor.summoning) {
+          actor.reward.update(actor.summoning.openingElapsed);
           if (actor.summoning.isAbsorbed) {
-            actor.relics.dispose();
-            actor.relics = undefined;
+            actor.reward.dispose();
+            actor.reward = undefined;
           }
         }
       }

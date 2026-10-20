@@ -1,0 +1,30 @@
+[
+  {
+    "level": 0,
+    "model": "/models/realms/settlement.glb",
+    "modelSha256": "0f91c75185f25e02127a03e82968b3b03f65b929684bf6e68a4b0117b3c08c6f",
+    "render": "/lab/realm-level-icons/settlement-model.png",
+    "renderSha256": "280d21018c70bfb8a6efb31117772f0b60a673e73b2f9dedfcad58b690eb8c1c"
+  },
+  {
+    "level": 1,
+    "model": "/models/realms/city.glb",
+    "modelSha256": "4454ee8824f788dfb47aea9b58a1e2e2f643636b7a440774085ce66b1905af67",
+    "render": "/lab/realm-level-icons/city-model.png",
+    "renderSha256": "f50c60ddeb390788e81140c7275010782a77cac53b930dd6ac9ea11c01a8b45a"
+  },
+  {
+    "level": 2,
+    "model": "/models/realms/kingdom.glb",
+    "modelSha256": "c1922da5cbbdb76f08ac3214acfb8071e979df37c35b1964ce14660c40d4345c",
+    "render": "/lab/realm-level-icons/kingdom-model.png",
+    "renderSha256": "1aeb16cf0d4b62c12f545eae1fb666439479d7dec208d40ed9a8e80199adb827"
+  },
+  {
+    "level": 3,
+    "model": "/models/realms/empire.glb",
+    "modelSha256": "6fca354317a3d7a9fe173ef2999ccc37178976be963fbf2d5d291c1971ce6a79",
+    "render": "/lab/realm-level-icons/empire-model.png",
+    "renderSha256": "70b886d3006ced27cb5c5176df25b395197a64fd1b97be0bae84ad6e59569b96"
+  }
+]

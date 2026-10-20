@@ -17,7 +17,6 @@ describe("resolveGameEntryTarget", () => {
         structureEntityId: 77,
         worldMapReturnPosition: { col: 12, row: 34 },
         isSpectateMode: false,
-        entryScene: "map",
       }),
     ).toEqual({
       spectator: false,
@@ -35,7 +34,6 @@ describe("resolveGameEntryTarget", () => {
         structureEntityId: 91,
         worldMapReturnPosition: { col: 7, row: 9 },
         isSpectateMode: true,
-        entryScene: "map",
       }),
     ).toEqual({
       spectator: true,
@@ -45,7 +43,7 @@ describe("resolveGameEntryTarget", () => {
     });
   });
 
-  it("opens a Frontier player's session on their realm at its normalized site, and a spectator's on the map", () => {
+  it("opens a Frontier player's session on the map at their realm's normalized site, as every mode does", () => {
     const site = Position.fromContract({ x: 13850, y: 19650 });
     const enter = (isSpectateMode: boolean) =>
       resolveGameEntryTarget({
@@ -54,17 +52,28 @@ describe("resolveGameEntryTarget", () => {
         structureEntityId: 139,
         worldMapReturnPosition: mapRouteHex(site),
         isSpectateMode,
-        entryScene: "hex",
       });
 
     const normalized = { col: 13850 - 2010831280, row: 19650 - 2010831280 };
     expect(enter(false)).toEqual({
       spectator: false,
       structureEntityId: 139,
-      url: `/g/0xa1/1/map?col=${normalized.col}&row=${normalized.row}&boot=map-first&resumeScene=hex`,
+      url: `/g/0xa1/1/map?col=${normalized.col}&row=${normalized.row}`,
       worldMapPosition: normalized,
     });
     expect(enter(true).url).toBe(`/g/0xa1/1/map?col=${normalized.col}&row=${normalized.row}&spectate=true`);
+  });
+
+  it("carries the renderer request the entry was opened with to the map, where the renderer reads it", () => {
+    const url = resolveGameEntryTarget({
+      chainId: "0xa1",
+      gameId: 3,
+      structureEntityId: 0,
+      worldMapReturnPosition: null,
+      isSpectateMode: true,
+      renderer: { rendererMode: "webgpu-force-webgl", verboseLogs: true },
+    }).url;
+    expect(url).toBe("/g/0xa1/3/map?spectate=true&rendererMode=webgpu-force-webgl&logs=1");
   });
 
   it("falls back to a canonical map route when bootstrap did not seed a structure target", () => {
@@ -75,7 +84,6 @@ describe("resolveGameEntryTarget", () => {
         structureEntityId: 0,
         worldMapReturnPosition: null,
         isSpectateMode: false,
-        entryScene: "map",
       }),
     ).toEqual({
       spectator: false,
@@ -83,20 +91,6 @@ describe("resolveGameEntryTarget", () => {
       url: "/g/0xa1/3/map",
       worldMapPosition: null,
     });
-  });
-
-  it("keeps a realm-first player's handoff when the entry runs before the realm is selected", () => {
-    const enter = (isSpectateMode: boolean) =>
-      resolveGameEntryTarget({
-        chainId: "0xa1",
-        gameId: 3,
-        structureEntityId: 0,
-        worldMapReturnPosition: null,
-        isSpectateMode,
-        entryScene: "hex",
-      }).url;
-    expect(enter(false)).toBe("/g/0xa1/3/map?boot=map-first&resumeScene=hex");
-    expect(enter(true)).toBe("/g/0xa1/3/map?spectate=true");
   });
 
   it("falls back to a canonical spectator map route when no structure target is available", () => {
@@ -107,7 +101,6 @@ describe("resolveGameEntryTarget", () => {
         structureEntityId: 0,
         worldMapReturnPosition: null,
         isSpectateMode: true,
-        entryScene: "map",
       }),
     ).toEqual({
       spectator: true,

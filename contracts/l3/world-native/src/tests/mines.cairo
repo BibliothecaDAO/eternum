@@ -171,6 +171,11 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     let map = IMapLogicDispatcher { contract_address: deployment.games };
+    let guard_types = array![
+        TroopType::Crossbowman, TroopType::Knight, TroopType::Crossbowman, TroopType::Paladin, TroopType::Crossbowman,
+        TroopType::Crossbowman, TroopType::Crossbowman, TroopType::Crossbowman, TroopType::Knight, TroopType::Knight,
+        TroopType::Paladin, TroopType::Crossbowman,
+    ];
     let mut seen = 0_u8;
     for index in 0_u32..12 {
         let coord = Coord { alt: false, x: 2000100 + index * 10, y: 2000100 };
@@ -199,7 +204,7 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
             )
                 .troops
                 .category,
-            TroopType::Crossbowman,
+            *guard_types.at(index),
         );
         assert_eq!(
             crate::guards::IGuardsDispatcherTrait::guard(

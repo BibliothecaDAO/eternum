@@ -1,16 +1,82 @@
 const plugin = require("tailwindcss/plugin");
 
-import { COLORS, FONT_FACES, FONTS } from "./src/tokens";
+import {
+  CLASSIC_HUD_FONTS,
+  FONT_FACES,
+  FONTS,
+  GUTTERS,
+  HUD_COLOR_CLASSES,
+  APP_COLOR_CLASSES,
+  APP_TYPE,
+  appAgeVariables,
+  appVariables,
+  HUD_COLORS,
+  HUD_FINISH,
+  HUD_LAYERS,
+  HUD_LAYOUT,
+  HUD_MODES,
+  HUD_PHONE,
+  HUD_TYPE,
+  hudModeVariables,
+  hudVariables,
+  RADII,
+  SCREENS,
+  SHELL_COLORS,
+  SHELL_FINISH,
+  SPACING,
+  surfaceVariables,
+  TYPE,
+  WIDTHS,
+} from "./src/tokens";
+
+/** A token group as theme values named `<prefix>-<name>` (`hud-column`), so a class reads its role (`w-hud-column`). */
+const prefixed = (group, prefix) =>
+  Object.fromEntries(Object.entries(group).map(([name, value]) => [`${prefix}-${name}`, value]));
+
+/**
+ * A finish group as theme values that read the surface's variable (`var(--shadow-mark)`), so one class draws the HUD's
+ * value on :root and the shell's under `data-surface="shell"`.
+ */
+const finishTheme = (group, prefix) =>
+  Object.fromEntries(Object.keys(HUD_FINISH[group]).map((name) => [name, `var(--${prefix}-${name})`]));
 
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
+    spacing: SPACING,
     extend: {
       textShadow: {
         "glow-yellow-xs": "0 0 5px rgba(250, 204, 21, 0.7)", // yellow-400 with 70% opacity
         "glow-brilliance-xs": "0 0 5px rgba(125, 255, 186, 0.7)", // brilliance (#7DFFBA) with 70% opacity
+        ...finishTheme("textShadow", "text-shadow"),
       },
+      boxShadow: finishTheme("shadow", "shadow"),
+      // The shell's named sizes, radii, widths, gutters and wide screen (src/tokens.ts); the spacing scale is theme.spacing.
+      // The Blitz and Eternum HUD keeps its own small sizes (a7b72331e56).
+      fontSize: {
+        ...TYPE,
+        xs: ".975rem",
+        xxs: ".825rem",
+        // The HUD's type roles (src/tokens.ts HUD_TYPE): `text-hud-body` sets its size, leading and weight together.
+        ...Object.fromEntries(
+          Object.keys(HUD_TYPE).map((role) => [
+            `hud-${role}`,
+            [
+              `var(--hud-text-${role})`,
+              { lineHeight: `var(--hud-leading-${role})`, fontWeight: `var(--hud-weight-${role})` },
+            ],
+          ]),
+        ),
+      },
+      borderRadius: RADII,
+      maxWidth: WIDTHS,
+      width: WIDTHS,
+      spacing: { ...GUTTERS, ...prefixed(HUD_LAYOUT, "hud") },
+      // An item sized to what it holds whatever its `height`, which then sets only its least size (the rail's details).
+      flexBasis: { content: "content" },
+      zIndex: { 1: "1", 100: "100", 250: "250", 1000: "1000", ...prefixed(HUD_LAYERS, "hud") },
+      screens: SCREENS,
       typography: ({ theme }) => ({
         pink: {
           css: {
@@ -50,8 +116,15 @@ export default {
         },
       }),
       colors: {
-        kit: COLORS,
-        gold: COLORS.gold,
+        // Each kit colour reads its surface's channels, so opacity modifiers (`/10`, `theme(colors.kit.gold / 7%)`) work.
+        kit: Object.fromEntries(
+          Object.keys(HUD_COLORS).map((name) => [name, `rgb(var(--kit-${name}) / <alpha-value>)`]),
+        ),
+        // The HUD sheet's colour roles (src/tokens.ts HUD_COLOR_CLASSES): `text-hud-muted`, `border-hud-line`.
+        hud: HUD_COLOR_CLASSES,
+        // The app sheet's colour roles (src/tokens.ts APP_COLOR_CLASSES): `text-app-muted`, `bg-app-surface`.
+        app: APP_COLOR_CLASSES,
+        gold: HUD_COLORS.gold,
         crimson: "#582C4D",
         relic: "#a78bfa", // purple-300
         relic2: "#c084f5", // purple-400
@@ -157,6 +230,7 @@ export default {
         map: "url(/images/map.svg)",
         "old-map": "url(public/textures/paper/worldmap-bg.png)",
         "dark-wood": "linear-gradient(rgba(12, 10, 8, 0.7), rgba(12, 10, 8, 0.7))", // Modern: solid dark-brown/70 instead of texture
+        ...finishTheme("gradient", "gradient"),
       },
       fontFamily: FONTS,
       cursor: {
@@ -167,12 +241,6 @@ export default {
       },
       strokeWidth: {
         8: "8px",
-      },
-      zIndex: {
-        1: "1",
-        100: "100",
-        250: "250",
-        1000: "1000",
       },
       animation: {
         slowPulse: "slowPulse 2s ease-in-out infinite",
@@ -329,28 +397,66 @@ export default {
     "h-2",
     "w-16",
     "rounded-full",
+    "text-[10px]",
   ],
   plugins: [
     require("@tailwindcss/typography"),
-    // The token file's values as CSS variables, and its faces, for stylesheets and code that cannot take a class.
+    // The token file's values as CSS variables, and its faces, for stylesheets and code that cannot take a class: the
+    // HUD's palette and finish on :root, the shell's under data-surface="shell".
     plugin(function ({ addBase }) {
       addBase({ "@font-face": FONT_FACES });
       addBase({
         ":root": {
-          ...Object.fromEntries(Object.entries(COLORS).map(([name, value]) => [`--${name}`, value])),
+          ...surfaceVariables(HUD_COLORS, HUD_FINISH),
           ...Object.fromEntries(Object.entries(FONTS).map(([name, value]) => [`--font-${name}`, value])),
+          ...Object.fromEntries(Object.entries(RADII).map(([name, value]) => [`--radius-${name}`, value])),
+        },
+        "html.classic-hud": Object.fromEntries(
+          Object.entries(CLASSIC_HUD_FONTS).map(([name, value]) => [`--font-${name}`, value]),
+        ),
+        '[data-surface="shell"]': {
+          ...surfaceVariables(SHELL_COLORS, SHELL_FINISH),
+          ...appVariables(),
+          // What the shell inherits from html and body, restated so it resolves to the shell's own values.
+          color: "var(--gold)",
+          textShadow: "var(--text-shadow-ambient)",
         },
       });
+      // The HUD's style sheet (src/tokens.ts): its values on :root in Blitz's surface, each mode's surface on its root,
+      // and a phone's sizes on a coarse pointer (and on the lab's phone frame).
+      const phone = Object.fromEntries(Object.entries(HUD_PHONE).map(([name, value]) => [`--hud-${name}`, value]));
+      addBase({
+        ":root": { ...hudVariables(), ...hudModeVariables("blitz") },
+        ...Object.fromEntries(
+          Object.keys(HUD_MODES).map((mode) => [`[data-hud-mode="${mode}"]`, hudModeVariables(mode)]),
+        ),
+        '[data-hud-device="phone"]': phone,
+        // The age a game shows in the app, on its card or page.
+        ...Object.fromEntries(Object.keys(HUD_MODES).map((age) => [`[data-age="${age}"]`, appAgeVariables(age)])),
+        "@media (pointer: coarse)": { ":root": phone },
+      });
     }),
-    plugin(function ({ addUtilities, theme, e }) {
-      const textShadowUtilities = {
-        ".text-shadow-glow-yellow-xs": {
-          textShadow: theme("textShadow.glow-yellow-xs"),
-        },
-        ".text-shadow-glow-brilliance-xs": {
-          textShadow: theme("textShadow.glow-brilliance-xs"),
-        },
-      };
+    // The app's type roles (src/tokens.ts APP_TYPE): `text-app-title` sets its face, size, leading and weight together.
+    plugin(function ({ addUtilities }) {
+      addUtilities(
+        Object.fromEntries(
+          Object.keys(APP_TYPE).map((role) => [
+            `.text-app-${role}`,
+            {
+              fontFamily: `var(--app-face-${role})`,
+              fontSize: `var(--app-text-${role})`,
+              lineHeight: `var(--app-leading-${role})`,
+              fontWeight: `var(--app-weight-${role})`,
+            },
+          ]),
+        ),
+      );
+    }),
+    plugin(function ({ addUtilities, theme }) {
+      // One `.text-shadow-<name>` per textShadow key: the HUD's glows and the shell's title shadows.
+      const textShadowUtilities = Object.fromEntries(
+        Object.entries(theme("textShadow")).map(([name, textShadow]) => [`.text-shadow-${name}`, { textShadow }]),
+      );
       addUtilities(textShadowUtilities, ["responsive", "hover"]);
 
       const newUtilities = {

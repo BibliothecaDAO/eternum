@@ -3,7 +3,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useOwnedProductionStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
+import { HudButton, HudLoading } from "@/ui/design-system/kit/hud-elements";
 import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProductionPopupShell } from "./production-popup-shell";
@@ -88,8 +88,8 @@ const ProductionContainer = ({
   );
 
   return (
-    <div className="production-modal-selector flex h-full min-h-0 flex-col overflow-hidden lg:grid lg:grid-cols-12">
-      <div className="flex shrink-0 items-center gap-2 border-b border-gold/15 px-3 py-1 lg:hidden">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden lg:grid lg:grid-cols-12">
+      <div className="flex shrink-0 items-center gap-2 border-b border-hud-divider px-3 py-1 lg:hidden">
         <div className="min-w-0 flex-1">
           <StructureSelect
             value={selectedRealm?.entityId ?? 0}
@@ -100,23 +100,22 @@ const ProductionContainer = ({
             }))}
           />
         </div>
-        <button
-          type="button"
+        <HudButton
+          kind="quiet"
           onClick={() => setPickerOpen(!pickerOpen)}
           aria-expanded={pickerOpen}
-          className="min-h-11 shrink-0 px-2 text-sm text-gold underline underline-offset-4"
           aria-label={pickerOpen ? "Back to production" : "Browse production and presets"}
         >
           {pickerOpen ? "Back" : "Browse"}
-        </button>
+        </HudButton>
       </div>
       <div
         className={cn(
-          "min-h-0 flex-1 overflow-y-auto px-2 py-3 lg:col-span-3 lg:border-r lg:border-gold/15",
+          "min-h-0 flex-1 overflow-y-auto px-2 py-3 lg:col-span-3 lg:border-r lg:border-hud-divider",
           !pickerOpen && "max-lg:hidden",
         )}
       >
-        <Suspense fallback={<LoadingAnimation />}>
+        <Suspense fallback={<HudLoading line="Loading production…" />}>
           {playerStructures.length > 0 && (
             <ProductionSidebar
               realms={playerStructures}
@@ -133,7 +132,7 @@ const ProductionContainer = ({
           pickerOpen && "max-lg:hidden",
         )}
       >
-        <Suspense fallback={<LoadingAnimation />}>
+        <Suspense fallback={<HudLoading line="Loading production…" />}>
           {selectedRealm && (
             <ProductionBody
               realm={selectedRealm}

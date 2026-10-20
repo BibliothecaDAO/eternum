@@ -1,6 +1,11 @@
 import { BiomeType, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { SiteKind } from "@bibliothecadao/eternum";
-import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import {
+  nativeFactModels,
+  nativeRuleConstants,
+  type NativeModelName,
+} from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { frontierDay } from "../deploy/deploy-fixture";
@@ -16,6 +21,18 @@ const troops = (count: bigint, stamina: bigint) => ({
   stamina: { Inline: { amount: String(stamina), settled_at: "360", remainder: 0 } },
 });
 
+/** Reload only surviving wire facts into a fresh store, without any prior entity state. */
+export const reloadSiteFacts = (store: NativeFactStore): NativeFactStore => {
+  const snapshot = (Object.keys(nativeFactModels) as NativeModelName[]).flatMap((model) =>
+    [...store.entries(model)].map(([key, value]) => ({ model, key, value })),
+  );
+  const restored = new NativeFactStore();
+  restored.applyFacts(
+    JSON.parse(JSON.stringify(snapshot, (_, value) => (typeof value === "bigint" ? value.toString() : value))),
+  );
+  return restored;
+};
+
 /**
  * The deploy fixture's Frontier day with a camp guarded by 1,100 T1 knights on row 12 and the realm's 1,498-knight army beside
  * it, in a game without combat dice as Frontier plays.
@@ -24,10 +41,10 @@ const SITE_CATEGORY: Record<SiteKind, StructureType> = {
   Camp: StructureType.Camp,
   Rift: StructureType.Rift,
   Ruin: StructureType.Ruin,
-  Stragglers: StructureType.Stragglers,
+  Beasts: StructureType.Beasts,
 };
 
-export const campBeside = (kind: SiteKind = "Camp", guardKnown = true) => {
+export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStamina = 100n) => {
   const { store } = frontierDay();
   const noDice =
     preset.rules.mode_rules & ~(nativeRuleConstants.COMBAT_DICE | nativeRuleConstants.COMBAT_DICE_ETHEREAL);
@@ -55,8 +72,10 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true) => {
     set("0x72", "ExpeditionSite", {
       game_id: 1,
       entity_id: SITE,
+      category: SITE_CATEGORY[kind],
       initial_guard_count: String(1_100n * PRECISION),
-      cleared: false,
+      ...SITE_TILE,
+      clear: null,
     }),
     ...(kind === "Ruin"
       ? [set("0x76", "SiteChest", { game_id: 1, entity_id: SITE, tier: 3, amount: "500", reservation_day: "0" })]
@@ -72,7 +91,7 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true) => {
           }),
         ]
       : []),
-    set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, 100n) }),
+    set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, armyStamina) }),
     set("0x75", "TileOccupancy", {
       game_id: 1,
       alt: false,

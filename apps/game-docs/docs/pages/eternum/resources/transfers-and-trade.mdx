@@ -1,3 +1,4 @@
+import { iconUrl } from "@/utils/icons";
 import { importantNote } from "@/components/styles";
 
 # Transfers & Trade
@@ -47,11 +48,7 @@ be manually claimed via the 'Resource Arrivals' tab before they become available
 ### Banks
 
 <div style={{ display: "flex", justifyContent: "center", margin: "2rem 0" }}>
-  <img
-    src="/images/buildings/construction/bank.png"
-    alt="Bank Building"
-    style={{ maxWidth: "100%", height: "auto", borderRadius: "8px" }}
-  />
+  <img src={iconUrl("bank", 256)} width="256" alt="Bank" style={{ maxWidth: "100%", height: "auto" }} />
 </div>
 
 Six ancient Banks stand evenly distributed around, and equidistant from, the center of the map.

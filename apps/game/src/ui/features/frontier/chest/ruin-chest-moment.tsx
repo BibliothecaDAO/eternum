@@ -1,9 +1,9 @@
+import { formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { formatExact } from "@/ui/design-system/kit/amount";
-import { Chip } from "@/ui/design-system/kit/chip";
 
-import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
-import { LORDS, RUIN, TROOPS, XP } from "@/ui/design-system/kit/words";
+import { HudRarity, HudChip } from "@/ui/design-system/kit/hud-elements";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
+import { RUIN, TROOPS, XP } from "@/ui/design-system/kit/words";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { motion } from "framer-motion";
@@ -35,7 +35,7 @@ export const RuinChestMoment = ({
       type="button"
       aria-label={RUIN}
       onClick={onClose}
-      className="pointer-events-auto fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/80"
+      className="pointer-events-auto fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-hud-well"
     >
       <motion.span
         initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.6, y: 24 }}
@@ -45,18 +45,20 @@ export const RuinChestMoment = ({
       >
         <span
           className="rounded-3xl"
-          style={{ boxShadow: GLOW_PX[tier] ? `0 0 ${GLOW_PX[tier]}px theme(colors.kit.hot)` : undefined }}
+          style={{ boxShadow: GLOW_PX[tier] ? `0 0 ${GLOW_PX[tier]}px var(--hud-warn)` : undefined }}
         >
           <SemanticIcon name="chest" size={132} />
         </span>
         <span className="flex items-center gap-2" aria-label={`${formatExact(lords)} ${LORDS}`}>
           <SemanticIcon name="lords" size={34} />
-          <span className="text-[44px] leading-none tabular-nums text-kit-gold2">+{formatExact(lords)}</span>
+          <span className="text-hud-display tabular-nums text-hud-gold">+{formatExact(lords)}</span>
         </span>
-        <TierChip tier={tier} showWord />
+        <HudRarity tier={tier} word />
         <span className="flex items-center gap-2">
-          {xp !== undefined && <Chip icons={[]} label={XP} value={`+${formatExact(xp)}`} unit={XP} />}
-          <Chip icons={["skull"]} label={TROOPS} value={`−${formatExact(troopsLost)}`} />
+          {xp !== undefined && <HudChip>{`+${formatExact(xp)} ${XP}`}</HudChip>}
+          <HudChip icons={["skull"]} label={TROOPS}>
+            {`−${formatExact(troopsLost)}`}
+          </HudChip>
         </span>
       </motion.span>
     </button>

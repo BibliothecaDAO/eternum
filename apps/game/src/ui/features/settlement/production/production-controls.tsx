@@ -1,31 +1,34 @@
 import { isMilitaryResource } from "@bibliothecadao/eternum";
 import { RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
+import type { RunSizing } from "./production-run";
 import { useProductionBonuses } from "./use-production-bonuses";
 import { ResourceProductionControls } from "./resource-production-controls";
 
-export const ProductionControls = ({
-  selectedResource,
-  realm,
-  compact = false,
-}: {
-  selectedResource: number;
-  realm: RealmInfo;
-  compact?: boolean;
-}) => {
+type ProductionControlsProps = { selectedResource: number; realm: RealmInfo; compact?: boolean };
+
+/**
+ * A realm's production form for one output. What it holds (the recipe chosen, the output or input budget typed) belongs
+ * to that realm and output: choosing another resource or realm starts a fresh form, so a budget typed for one recipe's
+ * input never sizes another recipe that does not burn it. Every caller gets that scope from here.
+ */
+export const ProductionControls = (props: ProductionControlsProps) => (
+  <ProductionForm key={`${props.realm.entityId}:${props.selectedResource}`} {...props} />
+);
+
+const ProductionForm = ({ selectedResource, realm, compact = false }: ProductionControlsProps) => {
   const bonuses = useProductionBonuses(realm.entityId);
   const [useRawResources, setUseRawResources] = useState(true);
-  const [productionAmount, setProductionAmount] = useState(1);
-  const [ticks, setTicks] = useState<number | undefined>();
+  const [sizing, setSizing] = useState<RunSizing>({ by: "output", amount: 1 });
 
   if (!bonuses) return <p>Loading production…</p>;
-  const { laborBonus, productionBonus, troopsBonus } = bonuses;
-  const resourceProductionBonus =
+  // The bonus the chain adds to this resource's output: labor's for labor, troops' for troops, else resources'.
+  const bonusPercent =
     selectedResource === ResourcesIds.Labor
-      ? laborBonus
+      ? bonuses.labor
       : isMilitaryResource(selectedResource)
-        ? troopsBonus
-        : productionBonus;
+        ? bonuses.troops
+        : bonuses.production;
 
   return (
     <ResourceProductionControls
@@ -33,12 +36,10 @@ export const ProductionControls = ({
       selectedResource={selectedResource}
       useRawResources={useRawResources}
       setUseRawResources={setUseRawResources}
-      productionAmount={productionAmount}
-      setProductionAmount={setProductionAmount}
+      sizing={sizing}
+      setSizing={setSizing}
       realm={realm}
-      ticks={ticks}
-      setTicks={setTicks}
-      bonus={resourceProductionBonus}
+      bonusPercent={bonusPercent}
     />
   );
 };

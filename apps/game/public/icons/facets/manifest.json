@@ -110,7 +110,7 @@
     "camp": {
       "art": "camp",
       "label": "Camp",
-      "family": "Controls"
+      "family": "Structures"
     },
     "hyperstructure": {
       "art": "hyperstructure",
@@ -120,7 +120,7 @@
     "chest": {
       "art": "chest",
       "label": "Chest",
-      "family": "Controls"
+      "family": "Structures"
     },
     "move": {
       "art": "move",
@@ -201,8 +201,8 @@
     },
     "donkey": {
       "art": "donkey",
-      "label": "Pack donkey / Transfer",
-      "family": "Actions",
+      "label": "Donkey",
+      "family": "Resources",
       "resourceId": 25
     },
     "production": {
@@ -313,8 +313,8 @@
       "resourceId": 22
     },
     "lords": {
-      "art": "lords",
-      "label": "Lords",
+      "token": "lords",
+      "label": "LORDS",
       "family": "Resources",
       "resourceId": 37
     },
@@ -428,8 +428,8 @@
     },
     "research": {
       "art": "research",
-      "label": "Flask",
-      "family": "Controls"
+      "label": "Research",
+      "family": "Resources"
     },
     "s-a-t": {
       "art": "s-a-t",
@@ -438,7 +438,7 @@
       "resourceId": 58
     },
     "transfer": {
-      "art": "donkey",
+      "art": "transfer",
       "label": "Transfer resources",
       "family": "Actions"
     },
@@ -939,9 +939,9 @@
       "label": "Travel",
       "family": "Actions"
     },
-    "stragglers": {
-      "art": "stragglers",
-      "label": "Stragglers",
+    "beasts": {
+      "art": "beasts",
+      "label": "Beasts",
       "family": "Structures"
     },
     "shrine": {
@@ -1145,7 +1145,7 @@
       "family": "Minimap"
     },
     "realm-2": {
-      "art": "realm",
+      "art": "realm-2",
       "label": "Kingdom",
       "family": "Structures"
     },
@@ -1339,7 +1339,147 @@
     "twitter": {
       "art": "twitter",
       "label": "Twitter",
-      "family": "HUD"
+      "family": "Brands"
+    },
+    "map-realm-0": {
+      "art": "map-realm-0",
+      "label": "Settlement hex emblem",
+      "family": "Minimap"
+    },
+    "map-realm-1": {
+      "art": "map-realm-1",
+      "label": "City hex emblem",
+      "family": "Minimap"
+    },
+    "map-realm-2": {
+      "art": "map-realm-2",
+      "label": "Kingdom hex emblem",
+      "family": "Minimap"
+    },
+    "map-realm-3": {
+      "art": "map-realm-3",
+      "label": "Empire hex emblem",
+      "family": "Minimap"
+    },
+    "reward-chest": {
+      "rewardChest": "band-4-sealed",
+      "label": "Reward chest",
+      "family": "Rewards"
+    },
+    "reward-chest-0": {
+      "rewardChest": "band-0-sealed",
+      "label": "Top 10% reward chest",
+      "family": "Rewards"
+    },
+    "reward-chest-0-opened": {
+      "rewardChest": "band-0-opened",
+      "label": "Top 10% reward chest · opened",
+      "family": "Rewards"
+    },
+    "reward-chest-1": {
+      "rewardChest": "band-1-sealed",
+      "label": "Top 10–25% reward chest",
+      "family": "Rewards"
+    },
+    "reward-chest-1-opened": {
+      "rewardChest": "band-1-opened",
+      "label": "Top 10–25% reward chest · opened",
+      "family": "Rewards"
+    },
+    "reward-chest-2": {
+      "rewardChest": "band-2-sealed",
+      "label": "Top 25–50% reward chest",
+      "family": "Rewards"
+    },
+    "reward-chest-2-opened": {
+      "rewardChest": "band-2-opened",
+      "label": "Top 25–50% reward chest · opened",
+      "family": "Rewards"
+    },
+    "reward-chest-3": {
+      "rewardChest": "band-3-sealed",
+      "label": "Top 50–75% reward chest",
+      "family": "Rewards"
+    },
+    "reward-chest-3-opened": {
+      "rewardChest": "band-3-opened",
+      "label": "Top 50–75% reward chest · opened",
+      "family": "Rewards"
+    },
+    "reward-chest-4": {
+      "rewardChest": "band-4-sealed",
+      "label": "Bottom 25% reward chest",
+      "family": "Rewards"
+    },
+    "reward-chest-4-opened": {
+      "rewardChest": "band-4-opened",
+      "label": "Bottom 25% reward chest · opened",
+      "family": "Rewards"
+    },
+    "beast-troll": {
+      "art": "beast-troll",
+      "label": "Troll",
+      "family": "Beasts"
+    },
+    "beast-wyvern": {
+      "art": "beast-wyvern",
+      "label": "Wyvern",
+      "family": "Beasts"
+    },
+    "beast-hydra": {
+      "art": "beast-hydra",
+      "label": "Hydra",
+      "family": "Beasts"
+    },
+    "beast-wraith": {
+      "art": "beast-wraith",
+      "label": "Wraith",
+      "family": "Beasts"
+    },
+    "beast-cyclops": {
+      "art": "beast-cyclops",
+      "label": "Cyclops",
+      "family": "Beasts"
+    },
+    "brand-x": {
+      "token": "brand-x",
+      "label": "X",
+      "family": "Brands"
+    },
+    "brand-discord": {
+      "token": "brand-discord",
+      "label": "Discord",
+      "family": "Brands"
+    },
+    "brand-telegram": {
+      "token": "brand-telegram",
+      "label": "Telegram",
+      "family": "Brands"
+    },
+    "brand-github": {
+      "token": "brand-github",
+      "label": "GitHub",
+      "family": "Brands"
+    },
+    "brand-coingecko": {
+      "token": "brand-coingecko",
+      "label": "CoinGecko",
+      "family": "Brands"
+    },
+    "beast-ammit": {
+      "art": "beast-ammit",
+      "label": "Ammit",
+      "family": "Beasts"
+    },
+    "beast-basilisk": {
+      "art": "beast-basilisk",
+      "label": "Basilisk",
+      "family": "Beasts"
+    },
+    "beast-dark-fey": {
+      "art": "beast-dark-fey",
+      "label": "Dark fey",
+      "family": "Beasts"
     }
   },
   "resources": {

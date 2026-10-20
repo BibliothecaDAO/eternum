@@ -5,7 +5,6 @@ import {
   AutomationSignerUnavailable,
   AutomationPending,
 } from "@/ui/features/infrastructure/automation/model/automation-runner";
-import { structureMapPosition } from "@bibliothecadao/eternum";
 import { resolveResourceArrivalIndicators } from "@/ui/utils/resource-arrival-indicators";
 
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -27,15 +26,9 @@ import { sendAutomaticProvision } from "@/ui/modules/entity-details/realm-castle
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
-import {
-  configManager,
-  getBuildingCount,
-  getIsBlitz,
-  getStructureName,
-  ResourceArrivalManager,
-} from "@bibliothecadao/eternum";
+import { configManager, getBuildingCount, getStructureName, ResourceArrivalManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { BuildingType, StructureType, type ResourceArrivalInfo } from "@bibliothecadao/types";
+import { BuildingType, StructureType, formatCount, type ResourceArrivalInfo } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -187,8 +180,6 @@ const ResourceArrivalAutoClaim = () => {
   return null;
 };
 
-type ProvisionableRealm = RealmProvisionCandidate & { location: { x: number; y: number } };
-
 const AutoProvisionRealms = () => {
   const client = requireActiveGameClient();
   const {
@@ -200,7 +191,7 @@ const AutoProvisionRealms = () => {
   useEffect(() => {
     if (!isBlitzWorld || !account || accountAddress() === null) return;
 
-    const readRealms = (): ProvisionableRealm[] =>
+    const readRealms = (): RealmProvisionCandidate[] =>
       readFactView(store, playerStructuresView)
         .filter((structure) => structure.category === StructureType.Realm)
         .flatMap((structure) => {
@@ -208,17 +199,15 @@ const AutoProvisionRealms = () => {
             game_id: configManager.getActiveGameId(),
             entity_id: structure.entityId,
           });
-          const location = structureMapPosition(store, structure.structure);
-          if (!buildings || !location) return [];
+          if (!buildings) return [];
           const packedCounts = [buildings.packed_counts_1, buildings.packed_counts_2, buildings.packed_counts_3].map(
             (count) => BigInt(count),
           );
           return [
             {
               entityId: safeInteger(structure.entityId),
-              name: getStructureName(structure.structure, getIsBlitz()).name,
+              name: getStructureName(structure.structure).name,
               provisioned: getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0,
-              location,
             },
           ];
         });
@@ -243,9 +232,6 @@ const AutoProvisionRealms = () => {
       report: {
         provisioned: (realms) => {
           toast.dismiss(provisionBatchNoticeId(realms));
-          realms.forEach((realm) =>
-            toast.success(`Provisioned ${realm.name}`, { location: (realm as ProvisionableRealm).location }),
-          );
         },
         failed: (realms, error, retry) =>
           realms.forEach((realm) =>
@@ -274,7 +260,7 @@ const describeProvisionFailure = (
   const next =
     retry.nextAttemptInHeads === null
       ? "giving up until reload"
-      : `retry in ${retry.nextAttemptInHeads} ${retry.nextAttemptInHeads === 1 ? "block" : "blocks"}`;
+      : `retry in ${formatCount(retry.nextAttemptInHeads, "block")}`;
   return `Provisioning ${names} failed (attempt ${retry.attempt}): ${reason} · ${next}`;
 };
 

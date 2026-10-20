@@ -1,5 +1,5 @@
 import type { GameSyncModelDefinition } from "./model-manifest";
-import { HERALD_GAME_FINALIZED_CLOSE } from "./herald-http-types";
+import { HERALD_GAME_FINALIZED_CLOSE, HeraldHttpError, type HeraldGameSnapshot } from "./herald-http-types";
 import type {
   GameSyncFact,
   GameSyncHead,
@@ -73,6 +73,12 @@ interface Deferred<Value> {
 }
 
 export interface HeraldGameSyncTransportOptions {
+  /**
+   * A finalized game's final state, every row of it (Herald's review snapshot), read once Herald closes the stream as
+   * finalized: a session already showing the game ends whole on it, and a spectator opening a finished game starts on
+   * it. A player opening a finished game is refused (its results hold it).
+   */
+  finalState?: () => Promise<HeraldGameSnapshot>;
   gameId: number;
   modelDefinition: (name: string) => GameSyncModelDefinition;
   /** Herald greeted the stream (true), or the socket was lost and is being retried (false). */
@@ -85,6 +91,9 @@ export interface HeraldGameSyncTransportOptions {
 const DEFAULT_RECONNECT_MS = 200;
 // A stalled browser WebSocket handshake took 31 seconds before retrying during entry profiling.
 const HELLO_TIMEOUT_MS = 10_000;
+// Every client of a game reads its final state in the same second: retries back off and spread out.
+const FINAL_STATE_RETRY_FIRST_MS = 1_000;
+const FINAL_STATE_RETRY_MAX_MS = 30_000;
 
 const deferred = <Value>(): Deferred<Value> => {
   let rejectPromise!: (error: Error) => void;
@@ -112,6 +121,12 @@ const deferred = <Value>(): Deferred<Value> => {
 const toFact = ({ model, key, value }: HeraldSet): GameSyncFact => ({ model, key, value });
 
 const toRemoval = ({ model, key }: HeraldDelete): GameSyncFact => ({ model, key, value: null });
+
+/** When a finalized game ended, by its registry's own clock, in seconds; undefined when the snapshot holds none. */
+const endOf = (snapshot: HeraldGameSnapshot): number | undefined => {
+  const endAt = snapshot.models.find(({ model }) => model === "GameRegistry")?.rows[0]?.value.end_at;
+  return typeof endAt === "string" || typeof endAt === "number" ? Number(BigInt(endAt)) : undefined;
+};
 
 /** Who the stream serves: the acting account (null for a spectator) and the player whose realm it visits, if any. */
 interface ScopeSelection {
@@ -166,6 +181,10 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private seq = 0;
   private attachedThroughBlock = Number.MAX_SAFE_INTEGER;
   private stopped = true;
+  /** Herald finalized the game: its archived final state, once applied, is the whole session; no stream follows. */
+  private finalized = false;
+  /** A spectator's start waiting on its final state: its subscription's own, settled when that read ends or is cancelled. */
+  private finalStart: Deferred<void> | null = null;
   private forceFreshSnapshot = true;
   private firstSnapshotEnded = false;
   private snapshotStreaming = false;
@@ -190,6 +209,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   public selectActor(actor: string | undefined, visit?: string): void {
     const selection = { actor: canonicalAddress(actor), visit: canonicalAddress(visit) };
     if (sameSelection(selectionOf(this.options.url), selection)) return;
+    if (this.finalized) return this.selectInFinalState(selection);
     this.completeActor = undefined;
     this.publishSnapshotState();
     this.actorSnapshotGeneration++;
@@ -251,6 +271,18 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     else void applied.then(complete, () => undefined);
   }
 
+  /**
+   * A finished game holds every scope's rows (its archive is the whole game), so an account connecting or leaving, or
+   * a realm visited, needs no stream: the gate follows the selection and stays open once the final state is in.
+   */
+  private selectInFinalState(selection: ScopeSelection): void {
+    this.options.url = withSelection(this.options.url, selection);
+    if (this.completeActor === undefined) return;
+    this.completeActor = selection.actor;
+    this.completeVisit = selection.visit;
+    void this.publishSnapshotState();
+  }
+
   private sendActorSelection(): void {
     if (!this.resumed || !this.socket || this.pendingSelection === undefined) return;
     const { actor, visit } = this.pendingSelection;
@@ -259,6 +291,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   public async subscribe(handlers: GameSyncSubscriptionHandlers): Promise<GameSyncWriter> {
+    this.cancelFinalStart("replaced");
     this.stop();
     this.resetSession(handlers);
     this.connect();
@@ -276,6 +309,8 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.snapshotStreaming = false;
     this.acceptingSnapshotOverlay = false;
     this.stopped = false;
+    this.finalized = false;
+    this.finalStart = null;
   }
 
   private connect(): void {
@@ -297,14 +332,106 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       event?.code === HERALD_GAME_FINALIZED_CLOSE ? this.endFinalized(socket) : this.reconnectSocket(socket);
   }
 
-  /** Herald will never serve a finalized game again, so the stream ends instead of reconnecting. */
+  /**
+   * Herald will never serve a finalized game again, so the stream ends instead of reconnecting. A session already
+   * showing the game ends whole on its final state (the stream may have ended mid-snapshot, and a store left incomplete
+   * reads every absent row, a player who never scored, as unknown); a spectator opening a finished game starts on it;
+   * a player opening one is refused.
+   */
   private endFinalized(socket: HeraldSocket): void {
     if (this.socket !== socket) return;
+    const clock = this.scopeTimestamp;
+    // Stopping shuts the store's gate; the final state opens it again.
     this.stop();
+    this.finalized = true;
     const failure = new GameFinalizedError(this.options.url);
     console.warn(`[Herald] ${failure.message}; not reconnecting`);
+    if (this.firstSnapshotEnded) void this.applyFinalState({ clock });
+    else if (selectionOf(this.options.url).actor === null) {
+      this.finalStart = this.ready;
+      void this.applyFinalState({ failure });
+    } else this.failStart(failure);
+  }
+
+  /**
+   * A start still reading its final state is its subscription's own: disposing or replacing that subscription settles
+   * it, though its socket was already stopped for the read.
+   */
+  private cancelFinalStart(how: "disposed" | "replaced"): void {
+    const start = this.finalStart;
+    this.finalStart = null;
+    start?.reject(new Error(`Herald transport was ${how} before its final state was read`));
+  }
+
+  private failStart(failure: Error): void {
     if (!this.ready.settled) this.ready.reject(failure);
     else if (!this.firstSnapshotEnded) this.handlers?.onStartFailure(failure);
+  }
+
+  /**
+   * The game's final state as one snapshot through the same handlers a stream's snapshot reaches, then the store's
+   * gate opened on it for the selected scope. A game that was shown keeps the last chain time its stream reported; a
+   * start on the final state takes the game's own end as its one head, before any row reads chain time, and is refused
+   * as finalized when the final state holds no end or Herald refuses it (a review never frozen stays so). A read that
+   * fails otherwise is retried, as a dropped stream reconnects, until it answers. A session cancelled or restarted
+   * meanwhile takes nothing.
+   */
+  private async applyFinalState(start: { clock: number | undefined } | { failure: GameFinalizedError }): Promise<void> {
+    const handlers = this.handlers;
+    const generation = this.actorSnapshotGeneration;
+    const current = () => handlers === this.handlers && generation === this.actorSnapshotGeneration;
+    // A refusal is the starting subscription's alone: one cancelled or replaced meanwhile is never failed by it.
+    const refuse = () => {
+      if (!("failure" in start) || !current()) return;
+      this.finalStart = null;
+      this.failStart(start.failure);
+    };
+    const read = this.options.finalState;
+    if (!handlers || !read) return refuse();
+    let final: HeraldGameSnapshot;
+    for (let delay = FINAL_STATE_RETRY_FIRST_MS; ; delay = Math.min(delay * 2, FINAL_STATE_RETRY_MAX_MS)) {
+      try {
+        final = await read();
+        break;
+      } catch (error) {
+        if (!current()) return;
+        if (error instanceof HeraldHttpError && error.permanent) {
+          console.warn(`[Herald] the final state of ${this.options.url} was refused`, error);
+          return refuse();
+        }
+        console.warn(`[Herald] the final state of ${this.options.url} could not be read; retrying`, error);
+      }
+      await new Promise((resolve) => setTimeout(resolve, delay * (0.5 + Math.random() / 2)));
+      if (!current()) return;
+    }
+    if (!current()) return;
+    const clock = "clock" in start ? start.clock : endOf(final);
+    if (!("clock" in start)) {
+      if (clock === undefined) {
+        console.warn(`[Herald] the final state of ${this.options.url} holds no GameRegistry end`);
+        return refuse();
+      }
+      this.finalStart = null;
+      this.ready.resolve();
+      handlers.onHead({ block: final.confirmed_block, preconfirmed: false, timestamp: clock });
+    }
+    handlers.onSnapshotStart();
+    let rowsReceived = 0;
+    final.models.forEach(({ model, rows }, index) => {
+      rowsReceived += rows.length;
+      handlers.onSnapshotModel(
+        model,
+        rows.map((row) => toFact({ ...row, model })),
+        { bytesReceived: 0, model, modelsReceived: index + 1, rowsReceived },
+      );
+    });
+    this.firstSnapshotEnded = true;
+    if ((await handlers.onSnapshotEnd(final.confirmed_block)) !== true || !current()) return;
+    const { actor, visit } = selectionOf(this.options.url);
+    this.scopeTimestamp = clock;
+    this.completeActor = actor;
+    this.completeVisit = visit;
+    await this.publishSnapshotState();
   }
 
   private reconnectSocket(socket: HeraldSocket): void {
@@ -536,6 +663,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   /** Stops reconnecting and fails a subscribe or first snapshot still waiting on the socket. */
   public dispose(): void {
     const wasRunning = !this.stopped;
+    this.cancelFinalStart("disposed");
     this.stop();
     if (!wasRunning) return;
     const failure = new Error("Herald transport was disposed before its subscription became active");

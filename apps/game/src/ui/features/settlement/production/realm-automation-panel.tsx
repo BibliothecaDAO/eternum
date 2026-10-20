@@ -8,12 +8,19 @@ import {
 } from "@/hooks/store/use-automation-store";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import Button from "@/ui/design-system/atoms/button";
 import { aggregateConsumptionPerSecond, configManager } from "@bibliothecadao/eternum";
-import { ResourcesIds } from "@bibliothecadao/types";
-import clsx from "clsx";
-import { HUD_BODY_MUTED, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { ResourcesIds, formatFigure, formatPercent } from "@bibliothecadao/types";
+import {
+  HudButton,
+  HudEmpty,
+  HudField,
+  HudNotice,
+  HudPanel,
+  HudRow,
+  HudSlider,
+} from "@/ui/design-system/kit/hud-elements";
+import { NOTHING_TO_AUTOMATE } from "@/ui/design-system/kit/words";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   resolveProductionPercentages,
   REALM_PRESETS,
@@ -45,22 +52,8 @@ const ARMY_T2_T3_RESOURCES = new Set<ResourcesIds>([
   ResourcesIds.PaladinT3,
 ]);
 
-const formatPerCycle = (value: number): string => {
-  if (!Number.isFinite(value) || Math.abs(value) < 0.0001) return "0/c";
-  const abs = Math.abs(value);
-  const label =
-    abs >= 1000
-      ? Math.round(abs).toLocaleString()
-      : abs >= 100
-        ? abs.toFixed(0)
-        : abs >= 10
-          ? abs.toFixed(1)
-          : abs >= 1
-            ? abs.toFixed(2)
-            : abs.toFixed(3);
-  const sign = value > 0 ? "+" : "-";
-  return `${sign}${label}/c`;
-};
+const formatPerCycle = (value: number): string =>
+  !Number.isFinite(value) || Math.abs(value) < 0.0001 ? "0/c" : `${formatFigure(value, { signed: true })}/c`;
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
@@ -507,249 +500,193 @@ export const RealmAutomationPanel = ({
   ]);
 
   if (!automationRows.length) {
-    return (
-      <div className="rounded-lg border border-gold/20 bg-black/30 p-4 text-sm text-gold/70">
-        This realm has no active production buildings yet. Create production structures to configure automation.
-      </div>
-    );
+    return <HudEmpty icon="automation" line={NOTHING_TO_AUTOMATE} />;
   }
 
   return (
-    <div className="rounded-lg border border-gold/20 bg-black/30 p-4 space-y-4">
-      <header className="flex flex-col gap-3">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h4 className={HUD_HEADLINE}>Production automation</h4>
-            <p className={HUD_BODY_MUTED}>Move a slider or apply a preset, then save.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={hasLocalChanges ? "gold" : "outline"}
-              size="xs"
-              onClick={handleSave}
-              disabled={!hasLocalChanges || isOverallocated}
-              isPulsing={hasLocalChanges && !isOverallocated}
-              title={isOverallocated ? "Resolve over-allocation before saving changes." : undefined}
-            >
-              Save Changes
-            </Button>
-            <Button variant="outline" size="xs" onClick={handleUndo} disabled={!hasLocalChanges}>
-              Undo
-            </Button>
-          </div>
-        </div>
+    <HudPanel
+      kind="section"
+      title="Production automation"
+      collapsible={false}
+      cue={
+        <span className="flex gap-2">
+          <HudButton kind="quiet" size="sm" onClick={handleUndo} disabled={!hasLocalChanges}>
+            Undo
+          </HudButton>
+          <HudButton
+            kind={hasLocalChanges ? "primary" : "secondary"}
+            size="sm"
+            onClick={handleSave}
+            disabled={!hasLocalChanges || isOverallocated}
+            title={isOverallocated ? "Resolve over-allocation before saving changes." : undefined}
+          >
+            Save Changes
+          </HudButton>
+        </span>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <p className="text-hud-muted">Move a slider or apply a preset, then save.</p>
         {isOverallocated && (
-          <div className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger/80">
-            Resolve over-allocation for {overallocatedLabels.join(", ")} before saving.
-          </div>
+          <HudNotice tone="bad" line={`Resolve over-allocation for ${overallocatedLabels.join(", ")} before saving.`} />
         )}
         <div className="flex flex-wrap gap-2">
-          {REALM_PRESETS.filter((preset) => preset.id !== "custom").map((preset) => {
-            const isActive = activePresetId === preset.id;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                className={clsx(
-                  "px-3 py-1 rounded border text-sm transition-colors",
-                  isActive
-                    ? "border-gold text-gold bg-gold/10"
-                    : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold",
-                )}
-                title={preset.description}
-                onClick={() => handlePresetSelect(preset.id)}
-              >
-                {preset.label}
-              </button>
-            );
-          })}
-          {REALM_PRESETS.filter((preset) => preset.id === "custom").map((preset) => {
-            const isActive = activePresetId === preset.id;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => handlePresetSelect("custom")}
-                className={clsx(
-                  "px-3 py-1 rounded border text-sm transition-colors",
-                  isActive ? "border-gold text-gold bg-gold/10" : "border-gold/15 text-kit-muted",
-                )}
-                title={preset.description}
-              >
-                {preset.label}
-              </button>
-            );
-          })}
+          {[
+            ...REALM_PRESETS.filter((preset) => preset.id !== "custom"),
+            ...REALM_PRESETS.filter((preset) => preset.id === "custom"),
+          ].map((preset) => (
+            <HudButton
+              key={preset.id}
+              kind="secondary"
+              size="sm"
+              aria-pressed={activePresetId === preset.id}
+              title={preset.description}
+              onClick={() => handlePresetSelect(preset.id)}
+            >
+              {preset.label}
+            </HudButton>
+          ))}
         </div>
-        {hasLocalChanges && (
-          <span className="text-sm text-warning">Unsaved changes pending. Save to apply automation updates.</span>
-        )}
-      </header>
+        {hasLocalChanges && <HudNotice tone="warn" line="Unsaved changes pending. Save to apply automation updates." />}
 
-      <section className="space-y-2">
-        <h5 className={HUD_LABEL}>Resource usage</h5>
-        {usageDisplayList.length === 0 ? (
-          <p className="text-sm text-kit-muted">No resources allocated yet.</p>
-        ) : (
-          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {usageDisplayList.map(({ resourceId, percent, perCycle }) => {
-              const label = resolveResourceLabel(resourceId);
-              const isOverBudget = percent > MAX_RESOURCE_ALLOCATION_PERCENT;
-              const perCycleLabel = formatPerCycle(perCycle);
-              return (
-                <li
-                  key={`usage-${resourceId}`}
-                  className={clsx(
-                    "min-w-0 rounded border px-3 py-2 text-sm",
-                    isOverBudget ? "border-danger/60 text-danger" : "border-gold/20 text-gold/80",
-                  )}
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="shrink-0">
-                      <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="xs" />
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="truncate">{label}</span>
-                        <span className={clsx("shrink-0 font-semibold", isOverBudget ? "text-danger" : "text-gold")}>
-                          {Math.round(percent)}%
+        <section className="flex flex-col gap-2">
+          <h5 className="text-hud-label text-hud-muted">Resource usage</h5>
+          {usageDisplayList.length === 0 ? (
+            <p className="text-hud-label text-hud-muted">No resources allocated yet.</p>
+          ) : (
+            <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {usageDisplayList.map(({ resourceId, percent, perCycle }) => {
+                const isOverBudget = percent > MAX_RESOURCE_ALLOCATION_PERCENT;
+                return (
+                  <li key={`usage-${resourceId}`}>
+                    <HudRow
+                      lead={<ResourceIcon resource={resourceId as ResourcesIds} size="xs" />}
+                      title={resolveResourceLabel(resourceId)}
+                      detail={formatPerCycle(perCycle)}
+                      trail={
+                        <span className={isOverBudget ? "text-hud-strong text-hud-bad" : "text-hud-strong"}>
+                          {formatPercent(percent / 100)}
                         </span>
-                      </div>
-                      <div className="text-sm text-kit-muted">{perCycleLabel}</div>
+                      }
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        {/* The sliders are always in reach: moving one turns the preset into Custom. */}
+        {
+          <section aria-label="Automation allocations" className="grid grid-cols-4 gap-3">
+            {automationRows.map(({ resourceId, percentages, complexInputs, simpleInputs }) => {
+              const label = resolveResourceLabel(resourceId);
+              const complexImpacted = gatherImpactedResources(complexInputs.map((input) => input.resource));
+              const simpleImpacted = gatherImpactedResources(simpleInputs.map((input) => input.resource));
+              const resourceUsage = aggregatedUsageRecord[resourceId] ?? 0;
+              const resourceOverBudget = resourceUsage > MAX_RESOURCE_ALLOCATION_PERCENT;
+
+              const renderSlider = (
+                sliderLabel: string,
+                value: number,
+                onChange: (next: number) => void,
+                impactedResources: number[],
+              ) => {
+                const impactedTotals = impactedResources.map((id) => aggregatedUsageRecord[id] ?? 0);
+                const overBudgetResources = impactedResources.filter(
+                  (id) => (aggregatedUsageRecord[id] ?? 0) > MAX_RESOURCE_ALLOCATION_PERCENT,
+                );
+                return (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-hud-label text-hud-muted">{sliderLabel}</span>
+                      <span className="flex w-24 items-center gap-1">
+                        <HudField
+                          value={String(value)}
+                          inputMode="numeric"
+                          aria-label={`${label} ${sliderLabel.toLowerCase()} share`}
+                          onChange={(typed) => onChange(clampPercent(Number(typed.replace(/\D/g, "")) || 0))}
+                        />
+                        <span className="text-hud-strong">%</span>
+                      </span>
                     </div>
+                    <HudSlider
+                      label={`${label} ${sliderLabel.toLowerCase()} share`}
+                      value={value}
+                      max={MAX_RESOURCE_ALLOCATION_PERCENT}
+                      step={sliderStep}
+                      onChange={onChange}
+                    />
+                    {impactedResources.length > 0 && (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-hud-label text-hud-cue">Inputs</span>
+                        <div className="flex flex-wrap gap-1">
+                          {impactedResources.map((impacted) => (
+                            <span key={`impact-${resourceId}-${impacted}`} title={resolveResourceLabel(impacted)}>
+                              <ResourceIcon resource={impacted as ResourcesIds} size="sm" />
+                            </span>
+                          ))}
+                        </div>
+                        {impactedTotals.length > 0 && (
+                          <span className="text-right text-hud-label text-hud-cue">
+                            Peak usage {formatPercent(Math.max(...impactedTotals) / 100)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {overBudgetResources.length > 0 && (
+                      <span className="text-hud-label text-hud-bad">
+                        Over budget for {overBudgetResources.map((res) => resolveResourceLabel(res)).join(", ")}
+                      </span>
+                    )}
                   </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      {/* The sliders are always in reach: moving one turns the preset into Custom. */}
-      {
-        <section aria-label="Automation allocations" className="grid grid-cols-4 gap-3">
-          {automationRows.map(({ resourceId, percentages, complexInputs, simpleInputs }) => {
-            const label = resolveResourceLabel(resourceId);
-            const complexImpacted = gatherImpactedResources(complexInputs.map((input) => input.resource));
-            const simpleImpacted = gatherImpactedResources(simpleInputs.map((input) => input.resource));
-            const resourceUsage = aggregatedUsageRecord[resourceId] ?? 0;
-            const resourceOverBudget = resourceUsage > MAX_RESOURCE_ALLOCATION_PERCENT;
-
-            const renderSlider = (
-              sliderLabel: string,
-              value: number,
-              onChange: (next: number) => void,
-              impactedResources: number[],
-            ) => {
-              const impactedTotals = impactedResources.map((id) => aggregatedUsageRecord[id] ?? 0);
-              const overBudgetResources = impactedResources.filter(
-                (id) => (aggregatedUsageRecord[id] ?? 0) > MAX_RESOURCE_ALLOCATION_PERCENT,
-              );
-              const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-                const next = clampPercent(Number(event.target.value));
-                onChange(next);
+                );
               };
 
+              const isDonkeyResource = resourceId === ResourcesIds.Donkey;
+              const laborDisabled =
+                !laborEnabled || isDonkeyResource || ARMY_T2_T3_RESOURCES.has(resourceId as ResourcesIds);
+
               return (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-sm text-gold/80">
-                    <span>{sliderLabel}</span>
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="number"
-                        min={0}
-                        max={MAX_RESOURCE_ALLOCATION_PERCENT}
-                        step={sliderStep}
-                        value={value}
-                        onChange={handleInputChange}
-                        className="w-16 rounded border border-gold/30 bg-black/40 px-2 py-1 text-right text-sm text-gold focus:border-gold/60 focus:outline-none"
-                      />
-                      <span className="font-semibold text-gold">%</span>
-                    </div>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={MAX_RESOURCE_ALLOCATION_PERCENT}
-                    step={sliderStep}
-                    value={value}
-                    onChange={(event) => onChange(Number(event.target.value))}
-                    className="w-full accent-gold/80 bg-black/40"
-                  />
-                  {impactedResources.length > 0 && (
-                    <div className="space-y-1 text-sm text-kit-muted">
-                      <span className="font-semibold text-kit-muted">Inputs</span>
-                      <div className="grid grid-cols-4 gap-1">
-                        {impactedResources.map((impacted) => (
-                          <div
-                            key={`impact-${resourceId}-${impacted}`}
-                            className="flex items-center justify-center rounded border border-gold/20 bg-black/10 p-2"
-                            title={resolveResourceLabel(impacted)}
-                          >
-                            <ResourceIcon resource={ResourcesIds[impacted as ResourcesIds]} size="sm" />
-                          </div>
-                        ))}
-                      </div>
-                      {impactedTotals.length > 0 && (
-                        <span className="block text-right text-sm text-kit-muted">
-                          Peak usage {Math.round(Math.max(...impactedTotals))}%
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {overBudgetResources.length > 0 && (
-                    <div className="text-sm text-danger/80">
-                      Over budget for {overBudgetResources.map((res) => resolveResourceLabel(res)).join(", ")}
-                    </div>
-                  )}
-                </div>
-              );
-            };
-
-            const isDonkeyResource = resourceId === ResourcesIds.Donkey;
-            const laborDisabled =
-              !laborEnabled || isDonkeyResource || ARMY_T2_T3_RESOURCES.has(resourceId as ResourcesIds);
-
-            return (
-              <div
-                key={`automation-row-${resourceId}`}
-                className={clsx(
-                  "rounded border border-gold/20 bg-black/20 p-3 space-y-3",
-                  resourceOverBudget && "border-danger/60",
-                )}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="sm" />
-                    <div>
-                      <div className="text-sm font-semibold text-gold">{label}</div>
-                      {resourceOverBudget && (
-                        <div className="text-sm text-danger/80">{Math.round(resourceUsage)}% allocated</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {renderSlider(
-                    "Resource",
-                    percentages.resourceToResource,
-                    (next) => handleSliderChange(resourceId, "resourceToResource", next),
-                    complexImpacted,
-                  )}
-                  {!laborDisabled &&
-                    renderSlider(
-                      "Labor",
-                      percentages.laborToResource,
-                      (next) => handleSliderChange(resourceId, "laborToResource", next),
-                      simpleImpacted,
+                <HudPanel
+                  key={`automation-row-${resourceId}`}
+                  kind="section"
+                  collapsible={false}
+                  title={
+                    <span className="flex items-center gap-2">
+                      <ResourceIcon resource={resourceId as ResourcesIds} size="sm" />
+                      {label}
+                    </span>
+                  }
+                  cue={
+                    resourceOverBudget ? (
+                      <span className="text-hud-label text-hud-bad">
+                        {formatPercent(resourceUsage / 100)} allocated
+                      </span>
+                    ) : undefined
+                  }
+                >
+                  <div className="flex flex-col gap-3">
+                    {renderSlider(
+                      "Resource",
+                      percentages.resourceToResource,
+                      (next) => handleSliderChange(resourceId, "resourceToResource", next),
+                      complexImpacted,
                     )}
-                </div>
-              </div>
-            );
-          })}
-        </section>
-      }
-    </div>
+                    {!laborDisabled &&
+                      renderSlider(
+                        "Labor",
+                        percentages.laborToResource,
+                        (next) => handleSliderChange(resourceId, "laborToResource", next),
+                        simpleImpacted,
+                      )}
+                  </div>
+                </HudPanel>
+              );
+            })}
+          </section>
+        }
+      </div>
+    </HudPanel>
   );
 };

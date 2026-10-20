@@ -1,4 +1,4 @@
-import { buildPlayHref } from "@/play/navigation/play-route";
+import { buildPlayHref, type PlayRouteDescriptor } from "@/play/navigation/play-route";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import type { GameRef } from "@bibliothecadao/eternum/game-client";
 
@@ -7,12 +7,14 @@ type WorldMapPosition = {
   row: number;
 };
 
+/** What the entry's address asked of the renderer (a backend, diagnostics): the map's address carries it on. */
+type RendererRequest = Pick<PlayRouteDescriptor, "rendererMode" | "verboseLogs">;
+
 type ResolveGameEntryTargetInput = GameRef & {
   structureEntityId: number;
   worldMapReturnPosition: WorldMapPosition | null;
   isSpectateMode: boolean;
-  /** The mode's first view for a player with a realm: the map, or the realm's board. */
-  entryScene: "map" | "hex";
+  renderer?: RendererRequest;
 };
 
 type ResolvedGameEntryTarget = {
@@ -24,24 +26,28 @@ type ResolvedGameEntryTarget = {
 
 const isFiniteCoordinate = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 
-/** The map boots first either way; a realm-first mode then hands off to the realm's board. */
+/**
+ * Every mode's session opens on the world map; the realm view is one press of Realm away. The renderer request the
+ * entry was opened with goes on to the map, where the renderer reads it.
+ */
 const buildCanonicalGameEntryUrl = ({
   chainId,
   gameId,
   isSpectateMode,
   worldMapPosition,
-  realmFirst,
+  renderer,
 }: GameRef & {
   isSpectateMode: boolean;
   worldMapPosition: WorldMapPosition | null;
-  realmFirst: boolean;
+  renderer?: RendererRequest;
 }) => {
   return buildPlayHref({
-    bootMode: realmFirst ? "map-first" : "direct",
+    ...renderer,
+    bootMode: "direct",
     chainId,
     gameId,
     col: worldMapPosition?.col ?? null,
-    resumeScene: realmFirst ? "hex" : null,
+    resumeScene: null,
     row: worldMapPosition?.row ?? null,
     scene: "map",
     spectate: isSpectateMode,
@@ -79,8 +85,7 @@ const buildWorldMapEntryTargetFromBootstrappedSelection = (
       gameId: input.gameId,
       worldMapPosition: target.worldMapPosition,
       isSpectateMode: input.isSpectateMode,
-      // Only a player entering their own realm opens on it; a spectator starts on the map.
-      realmFirst: input.entryScene === "hex" && !input.isSpectateMode,
+      renderer: input.renderer,
     }),
     worldMapPosition: target.worldMapPosition,
   };
@@ -95,8 +100,7 @@ const buildFallbackGameEntryTarget = (input: ResolveGameEntryTargetInput): Resol
       gameId: input.gameId,
       worldMapPosition: null,
       isSpectateMode: input.isSpectateMode,
-      // Entered before the realm is selected, the handoff still waits for it rather than settling on the map.
-      realmFirst: input.entryScene === "hex" && !input.isSpectateMode,
+      renderer: input.renderer,
     }),
     worldMapPosition: null,
   };
@@ -108,7 +112,7 @@ export const resolveGameEntryTarget = ({
   structureEntityId,
   worldMapReturnPosition,
   isSpectateMode,
-  entryScene,
+  renderer,
 }: ResolveGameEntryTargetInput): ResolvedGameEntryTarget => {
   const input = {
     chainId,
@@ -116,7 +120,7 @@ export const resolveGameEntryTarget = ({
     structureEntityId,
     worldMapReturnPosition,
     isSpectateMode,
-    entryScene,
+    renderer,
   };
   const bootstrappedWorldMapTarget = resolveBootstrappedWorldMapTarget(input);
 

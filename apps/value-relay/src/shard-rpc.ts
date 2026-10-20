@@ -1,8 +1,9 @@
 import { normalizeStarknetAddress, isSameStarknetAddress } from "../../../packages/identity/src/address";
 import { RelayFailure } from "./failure";
+import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import { hash, shortString, type RpcProvider } from "starknet";
-import { readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
-import { rpcAt } from "../../../packages/value-ledger/src/rpc";
+import { readClassAbi, readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
+import { rpcAt, rpcBatch, SHARD_RPC_MAX_BATCH_CALLS } from "../../../packages/value-ledger/src/rpc";
 
 export interface ShardConnection {
   rpcUrl: string;
@@ -38,6 +39,8 @@ export interface ValueRow {
   transactionHash: string;
 }
 const VALUE_MODELS = ["LordsWithdrawal", "BlitzResult"] as const;
+/** Header batches in flight at once: a Worker holds at most six connections. */
+const HEADER_BATCHES_IN_FLIGHT = 4;
 
 interface EventType {
   type: string;
@@ -62,6 +65,28 @@ export class ShardReader {
     const block = await provider.getBlock(number);
     validateHeader(block, number === "latest" ? undefined : number);
     return block;
+  }
+  /** Every confirmed header from `from` to `to`, read in batches the shard's public RPC accepts. */
+  async headers(from: number, to: number): Promise<Map<number, ShardBlock>> {
+    const batches: number[][] = [];
+    for (let start = from; start <= to; start += SHARD_RPC_MAX_BATCH_CALLS)
+      batches.push(Array.from({ length: Math.min(SHARD_RPC_MAX_BATCH_CALLS, to - start + 1) }, (_, i) => start + i));
+    const headers = new Map<number, ShardBlock>();
+    for (let index = 0; index < batches.length; index += HEADER_BATCHES_IN_FLIGHT)
+      await Promise.all(
+        batches.slice(index, index + HEADER_BATCHES_IN_FLIGHT).map(async (numbers) => {
+          const blocks = await rpcBatch<unknown>(
+            this.connection.rpcUrl,
+            "starknet_getBlockWithTxHashes",
+            numbers.map((number) => ({ block_id: { block_number: number } })),
+          );
+          blocks.forEach((block, i) => {
+            validateHeader(block, numbers[i]);
+            headers.set(numbers[i]!, block);
+          });
+        }),
+      );
+    return headers;
   }
   async page(
     from: number,
@@ -97,17 +122,15 @@ export class ShardReader {
     });
     if (page.events.length > 100 || (page.continuation_token && page.continuation_token === position.token))
       throw new Error("invalid_shard_event_page");
+    if (to - from >= SHARD_PAGE_BLOCKS) throw new Error("shard_block_range_too_large");
     const headers = new Map<number, ShardBlock>([
       [from, first],
+      ...(await this.headers(from + 1, to - 1)),
       [to, block],
     ]);
-    if (to - from >= 100) throw new Error("shard_block_range_too_large");
-    for (let number = from + 1; number <= to; number++) {
-      const header = headers.get(number) ?? (await this.header(number));
-      if (!sameFelt(header.parent_hash, headers.get(number - 1)!.block_hash))
+    for (let number = from + 1; number <= to; number++)
+      if (!sameFelt(headers.get(number)!.parent_hash, headers.get(number - 1)!.block_hash))
         throw new RelayFailure({ operation: `confirmed_block_changed:${number - 1}` });
-      headers.set(number, header);
-    }
     const rows: (ValueRow & { confirmedAt: number })[] = [];
     for (const event of page.events) {
       if (
@@ -193,8 +216,19 @@ export class ShardReader {
   private async assertChain(provider: RpcProvider) {
     if (!sameFelt(await provider.getChainId(), this.connection.chainId)) throw new Error("shard_chain_differs");
   }
+  /**
+   * Every RowSet path the Games contract emits at a block: its own, and those of each registered release's logic
+   * classes, which it runs by library call and which emit from its address under their own event enums.
+   */
   private async prefixes(provider: RpcProvider, number: number) {
-    return rowSetPrefixes(await readShardAbi(provider, this.connection.gamesAddress, number));
+    const address = this.connection.gamesAddress;
+    const games = await readShardAbi(provider, address, number);
+    const prefixes = rowSetPrefixes(games);
+    for (const classHash of await releaseClasses(provider, address, number, games))
+      prefixes.push(...(await logicClassPrefixes(provider, classHash)));
+    const unique = new Map(prefixes.map((prefix) => [prefix.map(felt).join(), prefix]));
+    if (!unique.size) throw new Error("rowset_abi_unavailable");
+    return [...unique.values()];
   }
 
   private rows(receipt: ShardReceipt, prefixes: string[][]): ValueRow[] {
@@ -235,6 +269,72 @@ const valueEventFilters = (prefixes: string[][]): string[][][] => {
   return [...byDepth.values()].map((keys) => [...keys, ["0x1"], VALUE_MODELS.map(shortString.encodeShortString)]);
 };
 
+/** Each logic class's RowSet paths, by class hash: class content is immutable, and a path is a few felts. */
+const logicPrefixes = new Map<string, string[][]>();
+const logicClassPrefixes = async (provider: RpcProvider, classHash: string) => {
+  let prefixes = logicPrefixes.get(classHash);
+  if (!prefixes) {
+    prefixes = rowSetPrefixes(await readClassAbi(provider, classHash));
+    logicPrefixes.set(classHash, prefixes);
+  }
+  return prefixes;
+};
+
+/** The logic and migration classes of every release the Games contract has registered by a block. */
+const releaseClasses = async (
+  provider: RpcProvider,
+  address: string,
+  number: number,
+  games: unknown,
+): Promise<string[]> => {
+  const call = (entrypoint: string, calldata: string[]) =>
+    provider.callContract({ contractAddress: address, entrypoint, calldata }, number);
+  const [current] = await call("current_release", []);
+  const classes = new Set<string>();
+  const layout = BigInt(current ?? "0") > 0n ? releaseLayout(games) : null;
+  for (let release = 1n; layout && release <= BigInt(current!); release++) {
+    const answer = await call("release", [release.toString()]);
+    if (answer.length !== layout.size) throw new Error("invalid_release_classes");
+    // A zero migration class is a release that migrates nothing.
+    for (const position of layout.classes) if (BigInt(answer[position]!) !== 0n) classes.add(felt(answer[position]!));
+  }
+  return [...classes];
+};
+
+const CLASS_HASH = "core::starknet::class_hash::ClassHash";
+const ONE_FELT = new Set(["core::felt252", "core::integer::u8", "core::integer::u16", "core::integer::u32"]);
+
+/**
+ * Where the class hashes sit in `release`'s answer, and its length, read from the Games ABI's Release type: a logic
+ * class split off in a new release needs no relay change. A field the walk cannot size is refused, never guessed.
+ */
+const releaseLayout = (raw: unknown): { size: number; classes: number[] } => {
+  const abi = (typeof raw === "string" ? JSON.parse(raw) : raw) as {
+    type: string;
+    name?: string;
+    items?: unknown[];
+    outputs?: { type: string }[];
+    members?: { type: string }[];
+  }[];
+  const items = abi.flatMap((item) => (item.type === "interface" ? (item.items as typeof abi) : [item]));
+  const entry = items.find((item) => item.type === "function" && item.name === "release");
+  if (entry?.outputs?.length !== 1) throw new Error("release_abi_unavailable");
+  const structs = new Map(items.filter((item) => item.type === "struct").map((item) => [item.name, item]));
+  const layout = { size: 0, classes: [] as number[] };
+  const walk = (type: string, within: string[]) => {
+    if (type === CLASS_HASH) layout.classes.push(layout.size++);
+    else if (ONE_FELT.has(type)) layout.size++;
+    else {
+      const struct = structs.get(type);
+      if (!struct?.members || within.includes(type)) throw new Error("unsupported_release_abi");
+      for (const member of struct.members) walk(member.type, [...within, type]);
+    }
+  };
+  walk(entry.outputs[0]!.type, []);
+  return layout;
+};
+
+/** The RowSet paths one class declares; a class that emits no RowSet declares none. */
 const rowSetPrefixes = (raw: unknown): string[][] => {
   const abi = typeof raw === "string" ? JSON.parse(raw) : raw;
   if (!Array.isArray(abi)) throw new Error("shard_event_abi_unavailable");
@@ -265,7 +365,6 @@ const rowSetPrefixes = (raw: unknown): string[][] => {
     }
   };
   for (const root of events.filter((event) => !referenced.has(event.name))) walk(root, [], new Set());
-  if (!prefixes.length) throw new Error("rowset_abi_unavailable");
   return prefixes;
 };
 const rowFrame = (data: string[]) => {

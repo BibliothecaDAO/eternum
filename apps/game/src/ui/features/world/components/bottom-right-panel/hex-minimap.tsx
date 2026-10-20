@@ -2,8 +2,14 @@ import { HexMarker } from "@/ui/design-system/hex-marker";
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { minimapMarkersView, type MinimapMarker } from "./minimap-markers";
 import { latticeHexAt, latticeHexBoundsForWorldRect, latticeToWorld } from "@/three/utils/hex-lattice";
-import { fromRenderHex, toRenderHex } from "@/three/world-origin";
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { fromRenderHex, toRenderHex, worldOrigin } from "@/three/world-origin";
+import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
+import {
+  readCameraView,
+  subscribeCameraView,
+  type CameraView,
+  type GroundPoint,
+} from "@/three/scenes/worldmap-camera-view";
 import { useFactView } from "@/hooks/use-fact-view";
 import { FELT_CENTER } from "@/ui/config";
 import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
@@ -13,9 +19,19 @@ import {
   hasTileOccupier,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
+  Position,
 } from "@bibliothecadao/eternum";
-import { HexPosition, StructureType, TileOccupier } from "@bibliothecadao/types";
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import { HexPosition, TileOccupier } from "@bibliothecadao/types";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+  type WheelEvent,
+} from "react";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 
 export interface MinimapTile {
@@ -58,7 +74,7 @@ export const readMinimapTiles = (
     });
   }
   for (const structure of projection.getStructures(alt)) {
-    if (structure.entityId === null) continue;
+    if (structure.entityId === null || structure.clearedSite) continue;
     const key = `${structure.hexCoords.col}:${structure.hexCoords.row}`;
     tilesByHex.set(key, {
       ...(tilesByHex.get(key) ?? { col: structure.hexCoords.col, row: structure.hexCoords.row }),
@@ -84,9 +100,8 @@ const normalizeEntityId = (value: unknown): string | null => {
 };
 
 const HEX_SIZE = 7;
-const CAMERA_CIRCLE_SCREEN_RADIUS_PX = 60;
-const WORLD_CAMERA_DISTANCE_REFERENCE = 20;
 const TILE_WINDOW_STEP = HEX_SIZE * 8;
+/** The minimap's scale at the camera's default distance, for the classic look: the rule below scales it by the zoom. */
 const MINIMAP_SCALE_REFERENCE = 1.4;
 
 /**
@@ -203,14 +218,6 @@ const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
   };
 };
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-
-/** The minimap's zoom follows the world camera distance; unknown (not yet published) means the reference scale. */
-const resolveMinimapScaleForCameraDistance = (cameraDistance: number | null | undefined): number =>
-  cameraDistance
-    ? clamp((MINIMAP_SCALE_REFERENCE * WORLD_CAMERA_DISTANCE_REFERENCE) / cameraDistance, 0.4, 4)
-    : MINIMAP_SCALE_REFERENCE;
-
 /** Sites the world places with no entity of their own: the tile's occupier alone names them. */
 const SITE_MEANINGS: Partial<Record<number, MinimapMarker["name"]>> = {
   [TileOccupier.Spire]: "spire",
@@ -239,117 +246,166 @@ const resolveTileMarker = (tile: MinimapTile, markers: ReadonlyMap<string, Minim
   return null;
 };
 
+/**
+ * How the minimap draws. "classic" is the shipped look. "badges" (the HUD rework's) draws the hexes larger, so each
+ * occupant's painted badge fills its hex at a readable size, over terrain dimmed behind them.
+ */
+type MinimapLook = "classic" | "badges";
+
+/**
+ * `zoom` scales the minimap against the camera ("badges" draws closer, so each badge fills its hex at a readable size);
+ * `closest` is the largest scale, where a minimap about 320 px wide still shows some seven hexes across, more than the
+ * closest camera. "badges" dims its terrain behind the badges.
+ */
+const LOOKS: Record<MinimapLook, { zoom: number; closest: number; terrainOpacity: number }> = {
+  classic: { zoom: 1, closest: 4, terrainOpacity: 0.92 },
+  badges: { zoom: 1.75, closest: 3.5, terrainOpacity: 0.5 },
+};
+
+type Framing = { x: number; y: number; scale: number };
+
+/** Minimap pixels for a ground point of the camera's view (world units around the same origin as the tiles). */
+const groundToPixel = (point: GroundPoint) => ({ x: point.x * HEX_SIZE, y: point.z * HEX_SIZE });
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+/**
+ * The minimap's scale at a camera distance: it draws back as the camera does, so it shows more ground the farther the
+ * camera stands, scaled by the look and held at its closest.
+ */
+const scaleAt = (distance: number, look: MinimapLook) => {
+  const { zoom, closest } = LOOKS[look];
+  return clamp(
+    ((MINIMAP_SCALE_REFERENCE * WORLDMAP_CAMERA_ZOOM.defaultDistance) / distance) * zoom,
+    0.4 * zoom,
+    closest,
+  );
+};
+
+/** The minimap's framing for a camera view: on the point the camera looks at, at the scale of its distance. */
+const framingFor = (view: CameraView, look: MinimapLook): Framing => ({
+  ...groundToPixel(view.target),
+  scale: scaleAt(view.distance, look),
+});
+
+/** The minimap pixels a framing shows on a viewport. */
+const boxOf = (framing: Framing, viewport: { width: number; height: number }) => {
+  const width = viewport.width / framing.scale;
+  const height = viewport.height / framing.scale;
+  return { minX: framing.x - width / 2, minY: framing.y - height / 2, width, height };
+};
+
+/** The tiles drawn are those of a window around the view, grown once the view leaves it or shrinks well inside it. */
+type TileWindow = { minX: number; minY: number; maxX: number; maxY: number };
+const windowAround = (box: { minX: number; minY: number; width: number; height: number }): TileWindow => ({
+  minX: Math.floor((box.minX - box.width / 2) / TILE_WINDOW_STEP) * TILE_WINDOW_STEP - HEX_SIZE,
+  minY: Math.floor((box.minY - box.height / 2) / TILE_WINDOW_STEP) * TILE_WINDOW_STEP - HEX_SIZE,
+  maxX: Math.ceil((box.minX + box.width * 1.5) / TILE_WINDOW_STEP) * TILE_WINDOW_STEP + HEX_SIZE,
+  maxY: Math.ceil((box.minY + box.height * 1.5) / TILE_WINDOW_STEP) * TILE_WINDOW_STEP + HEX_SIZE,
+});
+const windowHolds = (window: TileWindow, box: { minX: number; minY: number; width: number; height: number }) =>
+  box.minX >= window.minX &&
+  box.minY >= window.minY &&
+  box.minX + box.width <= window.maxX &&
+  box.minY + box.height <= window.maxY &&
+  window.maxX - window.minX <= box.width * 4;
+
 interface HexMinimapProps {
   tiles: MinimapTile[];
   selectedHex: HexPosition | null;
   navigationTarget: HexPosition | null;
   cameraTargetHex: HexPosition | null;
+  look?: MinimapLook;
 }
 
-export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetHex }: HexMinimapProps) => {
+export const HexMinimap = ({
+  tiles,
+  selectedHex,
+  navigationTarget,
+  cameraTargetHex,
+  look = "classic",
+}: HexMinimapProps) => {
+  const { terrainOpacity } = LOOKS[look];
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 800, height: 600 });
   const markers = useFactView(minimapMarkersView);
-  const cameraDistance = useUIStore((state) => state.cameraDistance);
+  const viewportRef = useRef({ width: 320, height: 320 });
+  // The origin the camera's view is drawn around: the tiles are placed about the same one.
+  const [origin, setOrigin] = useState(() => originKey(readCameraView()));
+  const centeredIndex = useMemo(() => buildCenteredIndex(tiles), [tiles, origin]);
 
-  const centeredIndex = useMemo(() => buildCenteredIndex(tiles), [tiles]);
-
-  // Mount reads the camera's current state (position and distance); the store subscription carries updates.
-  const initialView = useMemo(() => {
-    const scale = resolveMinimapScaleForCameraDistance(cameraDistance);
-    if (!tiles.length) {
-      return { x: 0, y: 0, scale };
-    }
-
+  /** Before the camera first tells what it sees (another scene first, the lab): its hex, else a target, else the map. */
+  const fallback = useMemo((): Framing => {
     const targetHex = cameraTargetHex ?? navigationTarget ?? selectedHex;
     if (targetHex) {
-      const col = targetHex.col - FELT_CENTER();
-      const row = targetHex.row - FELT_CENTER();
-      const centerPixel = offsetToPixel(col, row);
-      return { x: centerPixel.x, y: centerPixel.y, scale };
+      const center = offsetToPixel(targetHex.col - FELT_CENTER(), targetHex.row - FELT_CENTER());
+      return { ...center, scale: scaleAt(WORLDMAP_CAMERA_ZOOM.defaultDistance, look) };
     }
-
+    const { bounds } = centeredIndex;
     return {
-      x: (centeredIndex.bounds.minX + centeredIndex.bounds.maxX) / 2,
-      y: (centeredIndex.bounds.minY + centeredIndex.bounds.maxY) / 2,
-      scale,
+      x: (bounds.minX + bounds.maxX) / 2,
+      y: (bounds.minY + bounds.maxY) / 2,
+      scale: scaleAt(WORLDMAP_CAMERA_ZOOM.defaultDistance, look),
     };
-  }, [tiles.length, cameraTargetHex, cameraDistance, navigationTarget, selectedHex, centeredIndex.bounds]);
+  }, [cameraTargetHex, navigationTarget, selectedHex, centeredIndex, look]);
+  const fallbackRef = useRef(fallback);
+  fallbackRef.current = fallback;
 
-  const [view, setView] = useState<{ x: number; y: number; scale: number }>(initialView);
-  const viewRef = useRef(view);
-  viewRef.current = view;
-  const isDraggingRef = useRef(false);
+  const framingRef = useRef<Framing>(fallback);
+  // The first render already draws the tiles about the camera's view (or the fallback), before any layout.
+  const [tileWindow, setTileWindow] = useState<TileWindow>(() => {
+    const view = readCameraView();
+    return windowAround(boxOf(view ? framingFor(view, look) : fallback, viewportRef.current));
+  });
+  const tileWindowRef = useRef(tileWindow);
 
-  const followTargetRef = useRef<{ x: number; y: number } | null>(null);
-  const followRafRef = useRef<number | null>(null);
+  /**
+   * Frames the minimap on the camera, written straight to the SVG so it moves in the frame the camera does; the tiles
+   * render again only once the framing leaves their window.
+   */
+  const draw = useCallback(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const view = readCameraView();
+    const viewport = viewportRef.current;
+    const framing = view ? framingFor(view, look) : fallbackRef.current;
+    framingRef.current = framing;
+    const box = boxOf(framing, viewport);
+    svg.setAttribute("viewBox", `${box.minX} ${box.minY} ${box.width} ${box.height}`);
+    if (!windowHolds(tileWindowRef.current, box)) {
+      const next = windowAround(box);
+      tileWindowRef.current = next;
+      setTileWindow(next);
+    }
+  }, [look]);
 
-  const startFollowAnimation = useCallback(() => {
-    if (followRafRef.current !== null) return;
-
-    let lastUpdate: number | null = null;
-    const tick = (now: number) => {
-      followRafRef.current = null;
-      const target = followTargetRef.current;
-      if (!target || isDraggingRef.current) return;
-
-      const elapsed = lastUpdate === null ? 1000 / 60 : now - lastUpdate;
-      if (elapsed < 1000 / 60) {
-        followRafRef.current = requestAnimationFrame(tick);
-        return;
-      }
-      lastUpdate = now;
-      const current = viewRef.current;
-      const lerp = 1 - Math.exp(-elapsed / 80);
-
-      const nextX = current.x + (target.x - current.x) * lerp;
-      const nextY = current.y + (target.y - current.y) * lerp;
-      const done = Math.hypot(target.x - nextX, target.y - nextY) < 0.5;
-
-      const updated = done
-        ? { x: target.x, y: target.y, scale: current.scale }
-        : { x: nextX, y: nextY, scale: current.scale };
-
-      setView(updated);
-      viewRef.current = updated;
-
-      if (done) {
-        followTargetRef.current = null;
-        return;
-      }
-
-      followRafRef.current = requestAnimationFrame(tick);
-    };
-
-    followRafRef.current = requestAnimationFrame(tick);
-  }, []);
-
-  const rafRef = useRef<number | null>(null);
-  const pendingViewRef = useRef<{ x: number; y: number; scale: number } | null>(null);
-  const scheduleViewUpdate = useCallback((next: { x: number; y: number; scale: number }) => {
-    pendingViewRef.current = next;
-    if (rafRef.current !== null) return;
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      if (pendingViewRef.current) {
-        setView(pendingViewRef.current);
-        pendingViewRef.current = null;
-      }
-    });
-  }, []);
+  useLayoutEffect(draw);
 
   useEffect(() => {
-    if (!cameraDistance) return;
-    const nextScale = resolveMinimapScaleForCameraDistance(cameraDistance);
-    const current = viewRef.current;
-    if (Math.abs(current.scale - nextScale) < 0.01) return;
-    scheduleViewUpdate({ ...current, scale: nextScale });
-  }, [cameraDistance, scheduleViewUpdate]);
+    return subscribeCameraView((view) => {
+      const key = originKey(view);
+      setOrigin((current) => (current === key ? current : key));
+      draw();
+    });
+  }, [draw]);
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      const rect = svg.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      viewportRef.current = { width: rect.width, height: rect.height };
+      draw();
+    });
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, [draw]);
 
   const dispatchCameraMove = useCallback((centerX: number, centerY: number) => {
     if (typeof window === "undefined") return;
     const { col, row } = pixelToOffset(centerX, centerY);
-    window.dispatchEvent(new CustomEvent("minimapCameraMove", { detail: { col, row } }));
+    // The minimap draws scene hexes: the map position it names is a normalized one.
+    window.dispatchEvent(new CustomEvent("minimapCameraMove", { detail: Position.fromNormalized({ x: col, y: row }) }));
   }, []);
 
   const cameraMoveRafRef = useRef<number | null>(null);
@@ -369,60 +425,9 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     [dispatchCameraMove],
   );
 
-  // Follow the camera by its hex, not its object: a new object for the same hex must not pull back a dragged view.
-  const cameraCol = cameraTargetHex?.col;
-  const cameraRow = cameraTargetHex?.row;
-  useEffect(() => {
-    if (cameraCol === undefined || cameraRow === undefined || isDraggingRef.current) return;
-    const col = cameraCol - FELT_CENTER();
-    const row = cameraRow - FELT_CENTER();
-    const centerPixel = offsetToPixel(col, row);
-    followTargetRef.current = centerPixel;
-    startFollowAnimation();
-  }, [cameraCol, cameraRow, startFollowAnimation]);
-
-  useEffect(() => {
-    const svg = svgRef.current;
-    if (!svg || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => {
-      const rect = svg.getBoundingClientRect();
-      if (rect.width && rect.height) {
-        setViewport({ width: rect.width, height: rect.height });
-      }
-    });
-    observer.observe(svg);
-    return () => observer.disconnect();
-  }, []);
-
-  const viewBox = useMemo(() => {
-    const width = viewport.width / view.scale;
-    const height = viewport.height / view.scale;
-    return {
-      minX: view.x - width / 2,
-      minY: view.y - height / 2,
-      width,
-      height,
-      value: `${view.x - width / 2} ${view.y - height / 2} ${width} ${height}`,
-    };
-  }, [viewport, view]);
-
-  const cameraCircle = useMemo(() => {
-    if (!cameraTargetHex) return null;
-    const col = cameraTargetHex.col - FELT_CENTER();
-    const row = cameraTargetHex.row - FELT_CENTER();
-    const centerPixel = offsetToPixel(col, row);
-    const radiusPx = CAMERA_CIRCLE_SCREEN_RADIUS_PX / view.scale;
-    return { centerPixel, radiusPx };
-  }, [cameraTargetHex, view.scale]);
-
-  // Keep the tile layer stable while the viewBox animates inside a small padded window.
-  const minX = Math.floor(viewBox.minX / TILE_WINDOW_STEP) * TILE_WINDOW_STEP - HEX_SIZE;
-  const maxX = Math.ceil((viewBox.minX + viewBox.width) / TILE_WINDOW_STEP) * TILE_WINDOW_STEP + HEX_SIZE;
-  const minY = Math.floor(viewBox.minY / TILE_WINDOW_STEP) * TILE_WINDOW_STEP - HEX_SIZE;
-  const maxY = Math.ceil((viewBox.minY + viewBox.height) / TILE_WINDOW_STEP) * TILE_WINDOW_STEP + HEX_SIZE;
-
   const visibleTiles = useMemo(() => {
     if (!tiles.length) return [] as CenteredTileEntry[];
+    const { minX, minY, maxX, maxY } = tileWindow;
 
     // The window is in minimap pixels relative to the world origin; tiles are indexed by normalized hex.
     const window = latticeHexBoundsForWorldRect({
@@ -453,7 +458,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     }
 
     return result;
-  }, [tiles.length, centeredIndex.byCol, minX, maxX, minY, maxY]);
+  }, [tiles.length, centeredIndex.byCol, tileWindow]);
 
   const getTileMarker = useCallback((tile: MinimapTile) => resolveTileMarker(tile, markers), [markers]);
 
@@ -465,7 +470,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
         const occupierColor = getOccupierColor(tile);
         return (
           <g key={`${tile.col}:${tile.row}`}>
-            <polygon points={points} fill={fill} stroke="#1f130a" strokeWidth={0.6} fillOpacity={0.92} />
+            <polygon points={points} fill={fill} stroke="#1f130a" strokeWidth={0.6} fillOpacity={terrainOpacity} />
             {occupierColor && !marker && (
               <circle
                 cx={pixel.x}
@@ -480,31 +485,30 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
           </g>
         );
       }),
-    [visibleTiles, getTileMarker],
+    [visibleTiles, getTileMarker, terrainOpacity],
   );
 
+  /** A drag moves the camera's target with the pointer; the minimap follows the camera as it moves. */
   const dragRef = useRef<{
     pointerId: number;
     startClientX: number;
     startClientY: number;
-    startView: { x: number; y: number; scale: number };
+    startTarget: { x: number; y: number };
+    scale: number;
     moved: boolean;
   } | null>(null);
 
   const handlePointerDown = useCallback((e: PointerEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
     svgRef.current.setPointerCapture(e.pointerId);
-    isDraggingRef.current = true;
-    if (followRafRef.current !== null) {
-      cancelAnimationFrame(followRafRef.current);
-      followRafRef.current = null;
-      followTargetRef.current = null;
-    }
+    const view = readCameraView();
+    const framing = framingRef.current;
     dragRef.current = {
       pointerId: e.pointerId,
       startClientX: e.clientX,
       startClientY: e.clientY,
-      startView: viewRef.current,
+      startTarget: view ? groundToPixel(view.target) : { x: framing.x, y: framing.y },
+      scale: framing.scale,
       moved: false,
     };
   }, []);
@@ -514,30 +518,22 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
       const drag = dragRef.current;
       if (!drag || drag.pointerId !== e.pointerId) return;
       e.preventDefault();
-      const dx = (e.clientX - drag.startClientX) / drag.startView.scale;
-      const dy = (e.clientY - drag.startClientY) / drag.startView.scale;
+      const dx = (e.clientX - drag.startClientX) / drag.scale;
+      const dy = (e.clientY - drag.startClientY) / drag.scale;
       if (!drag.moved && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
         drag.moved = true;
       }
-      const nextX = drag.startView.x - dx;
-      const nextY = drag.startView.y - dy;
-      scheduleViewUpdate({
-        ...drag.startView,
-        x: nextX,
-        y: nextY,
-      });
       if (drag.moved) {
-        scheduleCameraMove(nextX, nextY);
+        scheduleCameraMove(drag.startTarget.x - dx, drag.startTarget.y - dy);
       }
     },
-    [scheduleViewUpdate, scheduleCameraMove],
+    [scheduleCameraMove],
   );
 
   const endDrag = useCallback((e: PointerEvent<SVGSVGElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== e.pointerId) return;
     dragRef.current = null;
-    isDraggingRef.current = false;
     try {
       svgRef.current?.releasePointerCapture(e.pointerId);
     } catch {
@@ -554,29 +550,19 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     window.dispatchEvent(new CustomEvent("minimapZoom", { detail: { zoomOut: direction > 0 } }));
   }, []);
 
-  const handleDoubleClick = useCallback(() => {
-    scheduleViewUpdate({ ...initialView });
-  }, [initialView, scheduleViewUpdate]);
-
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    return () => {
       // StrictMode and Fast Refresh replay effects while preserving refs. A cancelled handle must not
       // keep the next effect from scheduling its animation.
-      for (const frameRef of [followRafRef, rafRef, cameraMoveRafRef]) {
-        if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
-      }
-      followTargetRef.current = null;
-      pendingViewRef.current = null;
+      if (cameraMoveRafRef.current !== null) cancelAnimationFrame(cameraMoveRafRef.current);
+      cameraMoveRafRef.current = null;
       pendingCameraMoveRef.current = null;
-    },
-    [],
-  );
+    };
+  }, []);
 
   return (
     <svg
       ref={svgRef}
-      viewBox={viewBox.value}
       className="absolute inset-0 h-full w-full touch-none select-none"
       onWheel={handleWheel}
       onPointerDown={handlePointerDown}
@@ -584,21 +570,14 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onPointerLeave={endDrag}
-      onDoubleClick={handleDoubleClick}
     >
       {tileElements}
-      {cameraCircle && (
-        <g pointerEvents="none">
-          <circle
-            cx={cameraCircle.centerPixel.x}
-            cy={cameraCircle.centerPixel.y}
-            r={cameraCircle.radiusPx}
-            fill="rgba(255,255,255,0.06)"
-            stroke="rgba(255,255,255,0.9)"
-            strokeWidth={1}
-          />
-        </g>
-      )}
     </svg>
   );
+};
+
+/** The floating origin a camera view is drawn around, as a key; the origin's own when the camera has not told yet. */
+const originKey = (view: CameraView | null): string => {
+  const origin = view?.origin ?? worldOrigin();
+  return `${origin.col}:${origin.row}`;
 };

@@ -1,11 +1,18 @@
 import { SvgIcon } from "./icon";
 import type { IconMeaning } from "./icon-meaning";
 export type MarkerOwner = "you" | "ally" | "enemy" | "neutral";
+/** Each side in the HUD sheet's side colours (HUD_SHEET own, ally, enemy, neutral), as on the plates. */
 const markerColors: Record<MarkerOwner, string> = {
-  you: "#66ddab",
-  ally: "#70bdff",
-  enemy: "#ff8176",
-  neutral: "#c8c4b8",
+  you: "var(--hud-own)",
+  ally: "var(--hud-ally)",
+  enemy: "var(--hud-enemy)",
+  neutral: "var(--hud-neutral)",
+};
+const realmEmblemLayout: Partial<Record<IconMeaning, { size: number; y: number }>> = {
+  "map-realm-0": { size: 25, y: -12.5 },
+  "map-realm-1": { size: 24.5, y: -12.75 },
+  "map-realm-2": { size: 22, y: -11 },
+  "map-realm-3": { size: 25.5, y: -13.75 },
 };
 const hexMarkerPoints = (radius: number, x = 0, y = 0) =>
   Array.from({ length: 6 }, (_, index) => {
@@ -28,11 +35,16 @@ export function HexMarker({
   radius?: number;
 }) {
   const color = markerColors[owner];
+  const emblem = realmEmblemLayout[name] ?? { size: 18, y: -10 };
   return (
     <g transform={`translate(${x} ${y}) scale(${radius / 15})`} data-marker={name} data-owner={owner}>
-      <polygon points={hexMarkerPoints(14)} fill="#17242b" stroke={color} strokeWidth={1.4} />
-      <SvgIcon name={name} x={-9} y={-10} size={18} />
-      <g transform="translate(-7 8)" fill={color} stroke="#17242b" strokeWidth={0.5}>
+      <polygon
+        points={hexMarkerPoints(14)}
+        style={{ fill: "var(--hud-surface-to)", stroke: color }}
+        strokeWidth={1.4}
+      />
+      <SvgIcon name={name} x={-emblem.size / 2} y={emblem.y} size={emblem.size} />
+      <g transform="translate(-7 8)" style={{ fill: color, stroke: "var(--hud-surface-to)" }} strokeWidth={0.5}>
         {owner === "you" ? (
           <circle r={2.3} />
         ) : owner === "ally" ? (
@@ -45,8 +57,15 @@ export function HexMarker({
       </g>
       {value !== undefined && (
         <g>
-          <rect x={-2} y={5} width={12} height={7} rx={2} fill="#10171c" />
-          <text x={4} y={10.6} textAnchor="middle" fill="#fff" fontSize={6} fontWeight={700}>
+          <rect x={-2} y={5} width={12} height={7} rx={2} style={{ fill: "var(--hud-surface-to)" }} />
+          <text
+            x={4}
+            y={10.6}
+            textAnchor="middle"
+            style={{ fill: "rgb(var(--hud-ink))" }}
+            fontSize={6}
+            fontWeight={700}
+          >
             {value}
           </text>
         </g>

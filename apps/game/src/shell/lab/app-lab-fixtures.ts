@@ -3,6 +3,11 @@ import { StructureType } from "@bibliothecadao/types";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { Session } from "@realms-world/identity";
 
+import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
+import type { DoorwayRealm } from "@/ui/features/game-entry/doorway/doorway-screen";
+import { type DoorwayView, doorwayView } from "@/ui/features/game-entry/doorway/doorway-view";
+import { DEVICE_LIMIT_REACHED } from "@/hooks/context/gameplay-account-sync";
+
 import type { DirectoryGame } from "../herald";
 
 import type { EntryTerms } from "../blitz/entry";
@@ -147,8 +152,20 @@ const eternum = game({
 export const LAB_SCREENS = {
   "first-visit": { signedIn: false, games: [frontier(false), liveBlitz(false), eternum] },
   home: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  // Play for a player with the longest name an account takes (packages/identity account-rules), with the install
+  // notice: the desktop bar must hold both at its narrowest width.
+  "long-name": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  // A player with no finished game yet (qa-app-1 P3-9), and a session that has claimed no name (qa-blitz-1 #3).
+  "no-games": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  // No Blitz anywhere, no slot open and no result left to open: Blitz's column says none is scheduled (live-qa-night-1
+  // P3-12: it vanished from Play).
+  "no-blitz": { signedIn: true, games: [frontier(true), eternum] },
+  unnamed: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "no-realm": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
   "blitz-seat": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  // The seat's Blitz leads, and the next slot's entry closes hours away: its row reads the longer clock QA met on dev
+  // ("Entry closes 12:55 · 10h 46m left"), which wraps on a phone.
+  "blitz-seat-late-slot": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-over": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
   // A seat in a game still being prepared: Play leads with its lobby, never Enter before the game opens.
   "blitz-preparing": { signedIn: true, games: [frontier(false), preparingBlitz, liveBlitz(false), eternum] },
@@ -179,6 +196,13 @@ export const LAB_SCREENS = {
   "season-claimed": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-out": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
 } as const;
+
+/** The player's name on each screen whose player is not Maelis. */
+export const LAB_NAMES: Partial<Record<keyof typeof LAB_SCREENS, string>> = {
+  "long-name": "WWWWWWWWWWWWWWWWWWWW",
+  // Identity names a new account by its id until a name is claimed.
+  unnamed: LAB_SESSION.user.id,
+};
 
 /** The payout wallet linked on each screen's session; a screen not named here has none. */
 export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string>> = {
@@ -249,6 +273,9 @@ const CLOSED_ENTRY: EntryTerms = {
 };
 
 /** Screens whose slot has closed: its lobby is reached by its address once the list no longer shows it. */
+/** A slot whose entry closes hours away, as QA met dev's 11:00Z slot: 10h 46m. */
+const LATE_SLOT_CLOSE = NOW + 10 * 3600 + 46 * 60;
+
 const CLOSED_SLOT_SCREENS: readonly LabScreen[] = ["entry-drawing", "entry-seated", "entry-unseated", "entry-refunded"];
 
 /** How many registered in the slot, as the ledger counts them. */
@@ -274,8 +301,9 @@ export type LabScreen = keyof typeof LAB_SCREENS;
 
 /** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */
 export const labSlots = (screen: LabScreen) => {
+  if (screen === "no-blitz") return { slots: [] };
   const closed = CLOSED_SLOT_SCREENS.includes(screen);
-  const closesAt = closed ? CLOSED_ENTRY.close : ENTRY.close;
+  const closesAt = closed ? CLOSED_ENTRY.close : screen === "blitz-seat-late-slot" ? LATE_SLOT_CLOSE : ENTRY.close;
   return {
     slots: [
       {
@@ -324,7 +352,7 @@ export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
     address,
     structure_id: String(index + 1),
     rank: index + 1,
-    sites_cleared: { total: sites, camps: 0, rifts: 0, ruins: 0, stragglers: 0 },
+    sites_cleared: { total: sites, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
     chests_earned: chests,
     rewards: { lords: String(lords), essence: "0", labor: "0" },
     deepest_depth: 2,
@@ -527,3 +555,66 @@ export const LAB_SEASON_PRIZES: Partial<Record<keyof typeof LAB_SCREENS, SeasonP
   },
   "season-out": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 } },
 };
+
+/**
+ * A new account at its one step (sign-in's name and portrait): the name suggested at sign-up, which passes the rule, or
+ * one too short to, so the field is drawn refused.
+ */
+export const LAB_NEW_ACCOUNTS = {
+  name: { ...LAB_SESSION, user: { ...LAB_SESSION.user, name: null, suggestedName: "Maelis" } },
+  "name-refused": { ...LAB_SESSION, user: { ...LAB_SESSION.user, name: null, suggestedName: "Ma" } },
+} as unknown as Record<"name" | "name-refused", Session>;
+
+/** The sign-in mail the code step names. */
+export const LAB_SIGN_IN_EMAIL = LAB_SESSION.user.email;
+
+/** When the lab's emailed code stops working: five minutes on, as the identity Worker gives it. */
+export const labCodeExpiry = () => Math.floor(Date.now() / 1000) + 300;
+
+/** How long the lab's awaited season is from starting: two hours, so the doorway's chip reads its clock time and the wait. */
+export const LAB_SEASON_WAIT = 2 * 3600 + 4 * 60;
+
+/**
+ * The doorway into Frontier: the map booting under the player's realm, the entry held for a sign-in before the realm
+ * is known, and the realm step with the entry's own chip: the season's start awaited, a Blitz roster filling.
+ */
+export const LAB_DOORWAYS = {
+  map: {
+    view: doorwayView({ source: "boot", phase: "initial_sync", audience: "player" }),
+    realm: { name: "Stolsli", emblem: orderEmblem(1) },
+  },
+  "sign-in": {
+    view: doorwayView({ source: "entry", phase: "account", audience: "player", signedIn: false }),
+    realm: null,
+  },
+  waiting: {
+    view: doorwayView({ source: "entry", phase: "settlement-waiting", audience: "player", signedIn: true }),
+    realm: null,
+  },
+  preparing: {
+    view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
+    realm: null,
+  },
+  // The holds with a step: the map failed with the realm to open, the device limit, a Blitz to watch, one ended.
+  "map-failed": {
+    view: doorwayView({ source: "boot", phase: "error", audience: "player", failedScene: "map", realmCanOpen: true }),
+    realm: { name: "Stolsli", emblem: orderEmblem(1) },
+  },
+  devices: {
+    view: doorwayView({
+      source: "boot",
+      phase: "reconnect_required",
+      audience: "player",
+      accountError: DEVICE_LIMIT_REACHED,
+    }),
+    realm: null,
+  },
+  watch: {
+    view: doorwayView({ source: "entry", phase: "spectate", audience: "player", signedIn: true }),
+    realm: null,
+  },
+  ended: {
+    view: doorwayView({ source: "boot", phase: "ready", audience: "player", ended: true }),
+    realm: null,
+  },
+} satisfies Record<string, { view: DoorwayView; realm: DoorwayRealm | null }>;

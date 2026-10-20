@@ -1,4 +1,4 @@
-import { mapAnimationTime as time } from "../effects/game-end-freeze";
+import { mapAnimationTime as time } from "../effects/endgame/state";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { Group, InstancedBufferAttribute, Matrix4, PlaneGeometry, Quaternion, Vector3 } from "three";
 import { MeshBasicNodeMaterial } from "three/webgpu";

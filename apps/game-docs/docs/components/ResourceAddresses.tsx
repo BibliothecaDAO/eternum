@@ -1,7 +1,7 @@
 import { getResourceAddresses } from "@/utils/addresses";
 import { ResourcesIds } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
-import { colors, section, table } from "./styles";
+import { colors, fonts, section, table } from "./styles";
 
 const RESOURCE_ORDER = [
   ResourcesIds.Wood,
@@ -56,8 +56,7 @@ const componentStyles = {
   addressCell: {
     ...table.cell,
     color: colors.secondary,
-    fontFamily: "monospace",
-    fontSize: "0.8rem",
+    fontFamily: fonts.mono,
   },
 };
 

@@ -129,6 +129,15 @@ pub mod MapState {
         write_occupancy(key, None);
     }
 
+    pub fn clear_expedition_site(site_key: crate::resources::ResourceKey) {
+        let site = crate::logic::expeditions::expedition_site(site_key).expect('missing expedition site');
+        assert!(site.clear.is_some(), "site not cleared");
+        let key = TileKey { game_id: site_key.game_id, alt: site.alt, col: site.col, row: site.row };
+        let previous = crate::logic::map::occupancy(key).expect('missing site blocker');
+        assert!(previous.is_structure && previous.entity_id == site_key.entity_id, "site blocker mismatch");
+        write_occupancy(key, None);
+    }
+
     fn write_terrain(key: TileKey, data: u128) {
         let state = crate::state::write();
         let storage_key = (key.game_id, key.alt, key.col, key.row);
@@ -375,6 +384,20 @@ pub mod MapLogic {
             };
             let day = crate::logic::expeditions::discovery(counter)
                 .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_found: false });
+            if !key.alt
+                && crate::rules::rule_enabled(context.rules.unbox(), crate::rules::DISCOVER_CHESTS)
+                && crate::discovery::frontier_chest(seed) {
+                let chest = crate::logic::lords_budget::common_candidate(key.game_id, context);
+                if crate::logic::lords_budget::try_reserve(key.game_id, chest, context) {
+                    let id = crate::entity_ids::allocate_home(key.game_id, home);
+                    crate::logic::lords_budget::store_site_chest(
+                        crate::resources::ResourceKey { game_id: key.game_id, entity_id: id }, chest,
+                    );
+                    crate::logic::map::MapState::occupy(key, id, crate::taxonomy::CHEST_OCCUPIER, false);
+                    crate::logic::expeditions::record_discovery(counter, crate::discovery::Discovery::Chest);
+                    return crate::discovery::Discovery::Chest;
+                }
+            }
             // A refused ruin still contributes its rolled tier, and leaves this Realm day free.
             let ruin = if day.ruin_found {
                 None
@@ -385,8 +408,8 @@ pub mod MapLogic {
                     .chest;
                 Some(crate::logic::lords_budget::candidate(key.game_id, odds, seed, context))
             };
-            let (camp, rift, stragglers) = crate::progression::scouting_bonus(progress);
-            let mut result = crate::discovery::frontier(rules, camp, rift, stragglers, day.empty_reveals, ruin, seed);
+            let (camp, rift, beasts) = crate::progression::scouting_bonus(progress);
+            let mut result = crate::discovery::frontier(rules, camp, rift, beasts, day.empty_reveals, ruin, seed);
             if let crate::discovery::Discovery::Ruin(chest) = result {
                 if !crate::logic::lords_budget::try_reserve(key.game_id, chest, context) {
                     result = crate::discovery::Discovery::None;
@@ -494,9 +517,7 @@ pub mod MapLogic {
                 crate::taxonomy::DORMANT_SPIRE_OCCUPIER,
                 false,
             );
-            let reward = crate::exploration_rewards::spire_reward(
-                explorer.troops, context.rules.unbox().troop_limit_config, context.timestamp,
-            );
+            let reward = crate::exploration_rewards::spire_reward(explorer.troops.boosts, context.timestamp);
             let paid = self.pay_reveal(game_id, explorer_id, explorer, coord, reward, context);
             self.record_story(game_id, actor, context.timestamp, paid, crate::ownership::Story::SpireDiscovered(paid));
         }

@@ -1,10 +1,10 @@
-import { Chip } from "@/ui/design-system/kit/chip";
-import { formatAmount } from "@/ui/design-system/kit/amount";
+import { BLITZ_WORDS } from "@/ui/design-system/kit/words";
+import { formatAmount } from "@bibliothecadao/types";
+import { AppChip } from "@/ui/design-system/kit/app-elements";
 
 import type { PlaytestSlot } from "../blitz-slot";
 
 import type { BlitzRow } from "../blitz-rows";
-import { BLITZ_WORDS } from "../words";
 import { useSlotRegistered } from "./entry";
 
 /**
@@ -15,17 +15,16 @@ export const SeatsChip = ({ row }: { row: BlitzRow }) =>
   row.kind === "slot" ? (
     <RegisteredChip slot={row.slot} />
   ) : (
-    <Chip icons={["person"]} value={`${row.seats.filled}/${row.seats.total}`} label={BLITZ_WORDS.seats} />
+    <AppChip icon="people">
+      <span aria-label={`${BLITZ_WORDS.seats} ${row.seats.filled}/${row.seats.total}`}>
+        {`${row.seats.filled}/${row.seats.total}`}
+      </span>
+    </AppChip>
   );
 
 const RegisteredChip = ({ slot }: { slot: PlaytestSlot }) => {
   const registered = useSlotRegistered(slot);
   return (
-    <Chip
-      icons={["person"]}
-      value={registered === undefined ? "—" : formatAmount(registered)}
-      label={BLITZ_WORDS.registered}
-      unit={BLITZ_WORDS.registeredUnit}
-    />
+    <AppChip icon="people">{`${registered === undefined ? "—" : formatAmount(registered)} ${BLITZ_WORDS.registeredUnit}`}</AppChip>
   );
 };

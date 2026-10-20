@@ -1,15 +1,15 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import clsx from "clsx";
+import { HudChip, HudIconButton, HudTierChip } from "@/ui/design-system/kit/hud-elements";
 import {
   BuildingType,
-  BuildingTypeToString,
+  buildingName,
   getBuildingFromResource,
   getProducedResource,
   isEconomyBuilding,
   ResourcesIds,
 } from "@bibliothecadao/types";
 
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { resourceMeaning, type IconMeaning } from "@/ui/design-system/icon-meaning";
 
 // Paladins (Stable) → Knights (Barracks) → Crossbowmen (Archery). Player
 // preference: heavier infantry / cavalry surface first in the military tab.
@@ -20,7 +20,7 @@ type MilitaryBuildingGroup = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 type RealmBuildingSummaryItem = {
   buildingId: BuildingType;
   label: string;
-  iconResource: string;
+  icon: IconMeaning;
   count: number;
 };
 
@@ -28,6 +28,8 @@ type BuildRealmBuildingSummaryOptions = {
   realmResourceIds: ResourcesIds[];
   allowedBuildingTypes: BuildingType[];
   getBuildingCount: (buildingType: BuildingType) => number;
+  /** Whether the realm plays Frontier, which names its own buildings (buildingName). */
+  frontier: boolean;
 };
 
 type RealmBuildingSummaryBuildAction = {
@@ -80,25 +82,19 @@ const resolveRealmBuildingSummaryOrder = (realmResourceIds: ResourcesIds[], allo
     ...resolveMilitaryBuildingTypes(allowedBuildingTypes),
   ]);
 
-const toSummaryLabel = (buildingType: BuildingType) => BuildingTypeToString[buildingType] ?? "Building";
-
-const toSummaryIconResource = (buildingType: BuildingType) => {
-  if (buildingType === BuildingType.WorkersHut) return "House";
-  if (buildingType === BuildingType.Storehouse) return "Silo";
-  if (buildingType === BuildingType.ResourceDonkey) return "Donkey";
-
+/** A building's painting in the summary: the resource it makes, else its own (a hut is a home, a storehouse a granary). */
+const toSummaryIcon = (buildingType: BuildingType): IconMeaning => {
+  if (buildingType === BuildingType.Storehouse) return "granary";
+  if (buildingType === BuildingType.ResourceDonkey) return resourceMeaning(ResourcesIds.Donkey);
   const producedResource = getProducedResource(buildingType);
-  if (producedResource !== undefined) {
-    return ResourcesIds[producedResource];
-  }
-
-  return "House";
+  return producedResource !== undefined ? resourceMeaning(producedResource) : "home";
 };
 
 export const buildRealmBuildingSummary = ({
   realmResourceIds,
   allowedBuildingTypes,
   getBuildingCount,
+  frontier,
 }: BuildRealmBuildingSummaryOptions): RealmBuildingSummaryItem[] =>
   resolveRealmBuildingSummaryOrder(realmResourceIds, allowedBuildingTypes).reduce<RealmBuildingSummaryItem[]>(
     (items, buildingType) => {
@@ -107,8 +103,8 @@ export const buildRealmBuildingSummary = ({
 
       items.push({
         buildingId: buildingType,
-        label: toSummaryLabel(buildingType),
-        iconResource: toSummaryIconResource(buildingType),
+        label: buildingName(buildingType, frontier),
+        icon: toSummaryIcon(buildingType),
         count,
       });
       return items;
@@ -116,76 +112,63 @@ export const buildRealmBuildingSummary = ({
     [],
   );
 
+/** What stands in the realm, a chip per building with its count and, where it can be built again, its "+". */
 export const RealmBuildingSummary = ({
   items,
-  className,
   headline = "Built here",
-  variant = "section",
   buildActions,
 }: {
   items: RealmBuildingSummaryItem[];
-  className?: string;
   headline?: string;
-  variant?: "section" | "card";
   buildActions?: Map<BuildingType, RealmBuildingSummaryBuildAction>;
 }) => {
   const totalBuildings = items.reduce((total, item) => total + item.count, 0);
-  const containerClassName =
-    variant === "card" ? "rounded border border-gold/20 bg-black/50 p-2" : "border-b border-gold/10 px-3 py-2";
 
   return (
-    <section className={clsx("realm-summary-selector", containerClassName, className)}>
+    <section className="flex flex-col gap-2 border-b border-hud-divider py-2">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-kit-muted">{headline}</p>
-        <p className="text-sm text-kit-muted">{totalBuildings > 0 ? `${totalBuildings} total` : "Empty realm"}</p>
+        <p className="text-hud-label text-hud-muted">{headline}</p>
+        <p className="text-hud-label text-hud-cue">{totalBuildings > 0 ? `${totalBuildings} total` : "Empty realm"}</p>
       </div>
 
       {items.length > 0 ? (
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {items.map((item) => {
             const buildAction = buildActions?.get(item.buildingId);
             const military = getMilitaryBuildingInfo(item.buildingId);
 
             return (
-              <div
+              <span
                 key={item.buildingId}
-                className={clsx(
-                  "group relative flex items-center gap-1.5 rounded-full border border-gold/20 bg-brown/30 px-2 py-1 text-sm text-gold/90",
-                  buildAction && "pr-8 max-lg:pr-12 max-lg:min-h-12",
-                )}
+                className="flex items-center gap-1"
                 title={item.label}
                 aria-label={`${item.label}: ${item.count}`}
               >
-                {military && (
-                  <span className="rounded border border-gold/30 bg-black/40 px-1 text-sm font-semibold text-gold/80">
-                    T{military.tier}
+                <HudChip>
+                  <span className="inline-flex items-center gap-1.5">
+                    {military && <HudTierChip tier={military.tier as 1 | 2 | 3} />}
+                    <SemanticIcon name={item.icon} size={16} className="h-4 w-4" />
+                    <span className="tabular-nums">{item.count}</span>
                   </span>
-                )}
-                <ResourceIcon resource={item.iconResource} size="xs" withTooltip={false} />
-                <span className="font-semibold tabular-nums text-gold">{item.count}</span>
+                </HudChip>
                 {buildAction && (
-                  <button
-                    type="button"
-                    onClick={buildAction.onBuild}
-                    disabled={buildAction.disabled || buildAction.loading}
+                  <HudIconButton
+                    icon="plus"
+                    label={`Build ${item.label}`}
                     title={buildAction.title}
-                    aria-label={`Build ${item.label}`}
-                    className={clsx(
-                      "absolute right-1 top-1/2 flex h-5 w-5 max-lg:h-11 max-lg:w-11 max-lg:opacity-100 -translate-y-1/2 items-center justify-center rounded-full border border-gold/40 bg-black/70 text-gold transition-opacity opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-gold",
-                      !(buildAction.disabled || buildAction.loading) && "hover:bg-gold/15",
-                      (buildAction.disabled || buildAction.loading) &&
-                        "cursor-not-allowed opacity-40 group-hover:opacity-40",
-                    )}
-                  >
-                    <SemanticIcon name="plus" className="h-3 w-3" />
-                  </button>
+                    kind="quiet"
+                    size="sm"
+                    aria-busy={buildAction.loading || undefined}
+                    disabled={buildAction.disabled || buildAction.loading}
+                    onClick={buildAction.onBuild}
+                  />
                 )}
-              </div>
+              </span>
             );
           })}
         </div>
       ) : (
-        <p className="mt-2 text-sm text-kit-muted">No buildings yet.</p>
+        <p className="text-hud-label italic text-hud-muted">No buildings yet.</p>
       )}
     </section>
   );

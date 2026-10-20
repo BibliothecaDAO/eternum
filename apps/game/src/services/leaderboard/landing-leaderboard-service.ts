@@ -1,6 +1,6 @@
 import type { HeraldLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 
-export interface LandingLeaderboardEntry {
+interface LandingLeaderboardEntry {
   rank: number;
   address: string;
   points: number;

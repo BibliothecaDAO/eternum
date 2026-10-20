@@ -9,7 +9,7 @@ const learned =
   (1n << 7n) + // Workshop uncommon, Tools
   (3n << 30n) + // Scouts' lodge epic
   (1n << 36n) + // ...first tier on rifts
-  (2n << 40n) + // ...third tier on stragglers
+  (2n << 40n) + // ...third tier on beasts
   (1n << 44n) + // Shrine
   (2n << 46n); // Ethereal II
 
@@ -35,7 +35,7 @@ describe("realm research", () => {
     expect([1, 2, 3].map((tier) => researchChoice(learned, research.ROW_SCOUTS_LODGE, tier))).toEqual([
       research.KIND_RIFTS,
       research.KIND_CAMPS,
-      research.KIND_STRAGGLERS,
+      research.KIND_BEASTS,
     ]);
     expect(() => researchChoice(learned, research.ROW_FARM, 3)).toThrow("has not learned tier 3");
     expect(() => researchChoice(learned, research.ROW_HUT, 1)).toThrow("has no choice");

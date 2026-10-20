@@ -5,3 +5,4 @@ export * from "./blitz-suggestions";
 export * from "./construction";
 export * from "./building-spots";
 export * from "./realm";
+export * from "./build-order";

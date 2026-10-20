@@ -4,15 +4,15 @@ import { useFactView } from "@/hooks/use-fact-view";
 import { seasonClockView } from "@/sync/fact-views";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import Button from "@/ui/design-system/atoms/button";
+import { HudButton, HudWindow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { hasFiniteSeasonEnd } from "@/ui/features/world/utils/season-timing";
-import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress } from "@bibliothecadao/types";
+import { ContractAddress, formatExact } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 
 interface EndSeasonButtonProps {
@@ -74,33 +74,33 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
 
   return (
     <>
-      <Button
-        variant="primary"
-        isLoading={isLoading}
-        disabled={!hasReachedFinalPoints || isSeasonOver}
-        className={className}
-        onMouseOver={() => {
-          setTooltip({
-            position: "bottom",
-            content: (
-              <span className="flex flex-col whitespace-nowrap pointer-events-none">
-                <span className="flex justify-center">
-                  {registeredPoints === null ? "—" : registeredPoints.toLocaleString()} /{" "}
-                  {pointsForWin.toLocaleString()}
+      <span className={className}>
+        <HudButton
+          kind="primary"
+          aria-busy={isLoading}
+          disabled={!hasReachedFinalPoints || isSeasonOver || isLoading}
+          onMouseOver={() => {
+            setTooltip({
+              position: "bottom",
+              content: (
+                <span className="flex flex-col whitespace-nowrap pointer-events-none">
+                  <span className="flex justify-center">
+                    {registeredPoints === null ? "—" : formatExact(registeredPoints)} / {formatExact(pointsForWin)}
+                  </span>
+                  {!hasReachedFinalPoints && <span>Not enough registered points to end the season</span>}
+                  {isSeasonOver && <span>Season is already over</span>}
                 </span>
-                {!hasReachedFinalPoints && <span>Not enough registered points to end the season</span>}
-                {isSeasonOver && <span>Season is already over</span>}
-              </span>
-            ),
-          });
-        }}
-        onMouseOut={() => {
-          setTooltip(null);
-        }}
-        onClick={endGame}
-      >
-        End season
-      </Button>
+              ),
+            });
+          }}
+          onMouseOut={() => {
+            setTooltip(null);
+          }}
+          onClick={endGame}
+        >
+          End season
+        </HudButton>
+      </span>
 
       {showCongratsPopup && (
         <PopoverPanel
@@ -110,19 +110,17 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
           className="w-auto p-0"
           onDismiss={() => setShowCongratsPopup(false)}
         >
-          <SurfaceFrame
-            title="🔥 Congratulations! 🔥"
-            onClose={() => setShowCongratsPopup(false)}
-            className="w-[500px] max-h-[calc(100vh-7rem)]"
-          >
-            <div className="flex flex-col items-center justify-center p-6 text-center space-y-4">
-              <div className="text-6xl">🏆</div>
-              <h2 className="text-2xl font-bold text-gold">You have conquered Eternum Season 1!</h2>
-              <Button variant="primary" onClick={() => setShowCongratsPopup(false)} className="mt-4">
-                Close
-              </Button>
+          <HudWindow title="🔥 Congratulations! 🔥" size="task" onClose={() => setShowCongratsPopup(false)}>
+            <div className="flex flex-col items-center justify-center text-center space-y-4">
+              <div className="text-hud-display">🏆</div>
+              <h2 className="text-hud-display text-hud-accent">You have conquered Eternum Season 1!</h2>
             </div>
-          </SurfaceFrame>
+            <HudWindowFoot>
+              <HudButton kind="primary" onClick={() => setShowCongratsPopup(false)}>
+                Close
+              </HudButton>
+            </HudWindowFoot>
+          </HudWindow>
         </PopoverPanel>
       )}
     </>

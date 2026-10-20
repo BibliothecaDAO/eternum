@@ -1,18 +1,19 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { realmLevelNumber } from "@/ui/lib/realm-level";
 import { StructureWorkspace } from "@/ui/design-system/molecules/structure-workspace";
+import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY_MUTED, HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
+import { HudLoading, HudTabs, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import {
   ExistingArmiesPanel,
   UnifiedArmyCreationBody,
 } from "@/ui/features/military/components/unified-army-creation-modal";
-import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { Direction, type ID } from "@bibliothecadao/types";
+import type { TroopStack } from "@/ui/features/military/components/unified-army-creation-modal/types";
 
 import { memo, useCallback, useEffect, useState } from "react";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -21,21 +22,20 @@ interface MilitaryModalProps {
   structureEntityId: ID;
 }
 
+const MILITARY_TABS = [
+  { key: "deploy", label: "Deploy" },
+  { key: "armies", label: "Existing armies" },
+] as const;
+
+/** The structure the form deploys from: its name and level. */
 const MilitaryDeployHeader = ({ focusedRealmId }: { focusedRealmId: ID }) => {
   const detail = useStructureEntityDetail({ structureEntityId: focusedRealmId });
-  if (!detail.structure) {
-    return (
-      <header className="border-b border-gold/15 px-5 py-3">
-        <p className={HUD_BODY_MUTED}>Loading structure...</p>
-      </header>
-    );
-  }
+  if (!detail.structure) return <HudLoading line="Loading structure..." />;
   return (
-    <header className="flex items-center gap-2 border-b border-gold/15 px-5 py-3">
-      <SemanticIcon name="military" className="h-4 w-4 text-gold" />
-      <span className={cn(HUD_LABEL_BRIGHT, "text-gold")}>{detail.structureName ?? "Structure"}</span>
-      <span className={cn(HUD_LABEL_BRIGHT, "text-kit-muted")}>· Level {detail.structure.base.level}</span>
-    </header>
+    <h3 className="flex items-center gap-2 border-b border-hud-divider pb-2 text-hud-title">
+      {detail.structureName ?? "Structure"}
+      <span className="text-hud-muted">· Level {realmLevelNumber(detail.structure.base.level)}</span>
+    </h3>
   );
 };
 
@@ -56,6 +56,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
   const [initialIsExplorer, setInitialIsExplorer] = useState<boolean>(true);
   const [initialDirection, setInitialDirection] = useState<Direction | undefined>(undefined);
   const [initialGuardSlot, setInitialGuardSlot] = useState<number | undefined>(undefined);
+  const [initialTroops, setInitialTroops] = useState<TroopStack | undefined>(undefined);
   const [bodyKey, setBodyKey] = useState(0);
   const [mobileTab, setMobileTab] = useState<"deploy" | "armies">("deploy");
 
@@ -76,6 +77,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
     setInitialIsExplorer(pendingMilitaryAction.isExplorer);
     setInitialDirection(pendingMilitaryAction.direction);
     setInitialGuardSlot(pendingMilitaryAction.initialGuardSlot);
+    setInitialTroops(pendingMilitaryAction.troops);
     setBodyKey((current) => current + 1);
     setPendingMilitaryAction(null);
   }, [pendingMilitaryAction, setPendingMilitaryAction]);
@@ -84,6 +86,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
     setFocusedRealmId(id);
     setInitialDirection(undefined);
     setInitialGuardSlot(undefined);
+    setInitialTroops(undefined);
     // Remount so the body refetches guards + balances + free directions for
     // the newly selected realm and snaps troop count to max for the new state.
     setBodyKey((current) => current + 1);
@@ -96,14 +99,13 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
     return occupied !== undefined && max > 0 && occupied < max;
   }, []);
 
+  // The desktop shows the form and the armies together; the phone shows the one its tab picks.
+  const compact = useCompactLane() !== null;
+  const showsDeploy = !compact || mobileTab === "deploy";
+  const showsArmies = !compact || mobileTab === "armies";
+
   return (
-    <SurfaceFrame
-      title="Military"
-      icon={"military" as const}
-      onClose={close}
-      className={SURFACE_WORKSPACE_CLASS}
-      bodyClassName="overflow-hidden"
-    >
+    <HudWindow title="Military" icon="military" size="workspace" onClose={close}>
       <StructureWorkspace
         sidebar={
           <StructureSidebar
@@ -116,49 +118,32 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
           />
         }
       >
-        <div className="hidden lg:block">
+        {compact ? (
+          <div className="shrink-0" aria-label="Military view">
+            <HudTabs tabs={MILITARY_TABS} value={mobileTab} onChange={setMobileTab} />
+          </div>
+        ) : (
           <MilitaryDeployHeader focusedRealmId={focusedRealmId} />
-        </div>
-        <div
-          className="flex shrink-0 gap-2 border-b border-gold/15 px-2 lg:hidden"
-          role="tablist"
-          aria-label="Military view"
-        >
-          {(["deploy", "armies"] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              role="tab"
-              aria-selected={mobileTab === tab}
-              onClick={() => setMobileTab(tab)}
-              className={cn("min-h-11 flex-1 rounded text-sm", mobileTab === tab && "bg-gold/15 text-gold")}
-            >
-              {tab === "deploy" ? "Deploy" : "Existing armies"}
-            </button>
-          ))}
-        </div>
-        <div
-          className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain", mobileTab !== "deploy" && "max-lg:hidden")}
-        >
+        )}
+        {/* The form stays mounted to keep its draft, and draws itself and its Deploy only where it is shown. */}
+        <div className={cn(showsDeploy && "min-h-0 flex-1 overflow-y-auto overscroll-contain")}>
           <UnifiedArmyCreationBody
             key={bodyKey}
-            embedded
+            shown={showsDeploy}
             structureId={safeInteger(focusedRealmId)}
             isExplorer={initialIsExplorer}
             direction={initialDirection}
             initialGuardSlot={initialGuardSlot}
+            initialTroops={initialTroops}
           />
         </div>
-        <div
-          className={cn(
-            "min-h-0 overflow-y-auto p-2 lg:max-h-[240px] lg:shrink-0",
-            mobileTab === "armies" ? "max-lg:flex-1" : "max-lg:hidden",
-          )}
-        >
-          <ExistingArmiesPanel structureId={focusedRealmId} />
-        </div>
+        {showsArmies && (
+          <div className={cn("min-h-0 overflow-y-auto pt-2", compact ? "flex-1" : "max-h-hud-section shrink-0")}>
+            <ExistingArmiesPanel structureId={focusedRealmId} />
+          </div>
+        )}
       </StructureWorkspace>
-    </SurfaceFrame>
+    </HudWindow>
   );
 });
 

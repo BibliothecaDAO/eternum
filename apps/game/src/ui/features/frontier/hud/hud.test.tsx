@@ -7,13 +7,15 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { dayOf } from "@bibliothecadao/eternum";
 
-import { canResearchNow } from "../research/research-plan";
+import { EARLY_REALM, MID_REALM } from "../research/progression-fixture";
+import { canResearchNow, readResearchTree } from "../research/research-tree";
 import { secondsUntilHeld } from "./army-order";
+import { ArmyRow } from "./army-row";
 import { ArmyToken, OpenSlot, xpLine } from "./army-token";
 import { useChatKey } from "./chat-key";
 import { dayClock } from "./day-clock";
 import { HudBands } from "./hud-bands";
-import { useHudSurface } from "./frontier-nav";
+import { useOnePanel } from "./one-panel";
 import { MenuSheet } from "./menu-sheet";
 import { OrderBar } from "./order-bar";
 import { PlaceNav } from "./place-nav";
@@ -63,10 +65,10 @@ describe("the day clock", () => {
 });
 
 describe("the status strip", () => {
-  it("says a store in one line: what it holds of its limit, its rate an hour and when it is full", () => {
+  it("says a store in one line: what it holds of its limit, its rate and when it is full", () => {
     const wheat: StoreReading = { kind: "wheat", amount: 1_771, limit: 6_000, tone: "calm", flyTarget: "wheat" };
     expect(storeLine({ ...wheat, perHour: 302, fullIn: 14 * 3_600 })).toBe(
-      "wheat 1,771 of 6,000 · +302 an hour · Full in 14h",
+      "wheat 1,771 of 6,000 · +5/min · Full in 14h",
     );
     expect(storeLine({ ...wheat, amount: 6_000, perHour: 302, fullIn: 0 })).toBe("wheat 6,000 of 6,000 · Full");
     // No building makes it: no rate to say, and no moment it fills.
@@ -84,6 +86,15 @@ describe("the status strip", () => {
     flyTarget: `test-${kind}`,
   });
 
+  it("reads a 24-hour day in hours, as Play does: never '1d' (live-qa-night-1 P3-8)", () => {
+    const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
+    const clock = { ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 };
+    const line = text(renderToStaticMarkup(<StatusStrip clock={clock} stores={[store("essence", 1)]} />));
+    expect(line).toContain("24h left");
+    expect(line).toContain("Tomorrow lasts 24h");
+    expect(line).not.toMatch(/\b1d\b/);
+  });
+
   it("shows each store with a limit bar where it has a limit, and dashes the unknown", () => {
     const clock = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
     const markup = renderToStaticMarkup(
@@ -99,7 +110,7 @@ describe("the status strip", () => {
     expect(markup).toContain('role="img" aria-label="labor 9,000 of 18,000"');
     expect(markup).toContain('role="img" aria-label="wheat — of 18,000"');
     expect(text(markup)).toContain("—");
-    expect(text(markup)).toContain("Tomorrow lasts16h");
+    expect(text(markup)).toContain("Tomorrow lasts 16h");
   });
 });
 
@@ -142,31 +153,34 @@ describe("the army token", () => {
     expect(markup).toContain('data-tip="XP 8 of 100 · buys an Uncommon attribute tier"');
   });
 
-  it("writes XP beside the number on the wide card, over a bar toward the next tier, with a pip for each tier reached", () => {
+  it("reads an army on a desktop's list in words: its troops, its stamina exact, its XP with what it buys next", () => {
+    const onPick = vi.fn();
     act(() =>
       root.render(
-        <ArmyToken
-          label="Army 1"
+        <ArmyRow
+          label="Army 2"
+          number={2}
           art={undefined}
           xp={25}
           xpGoal={{ price: 100, tier: 2 }}
-          tiers={[2, 1, 3, 1]}
           stamina={{ current: 90, max: 150 }}
-          troops={984}
-          canBuyTier={false}
-          selected={false}
-          wide={{ secondsToFull: undefined, returnsHome: 0 }}
+          troops={1}
+          canBuyTier
+          selected
+          onPick={onPick}
         />,
       ),
     );
-    const xp = host.querySelector('[data-tip^="XP 25 of 100"]')!;
-    expect(xp.textContent).toBe("25 XP");
-    expect(xp.querySelector<HTMLElement>("b")!.style.width).toBe("25%");
-    // Battle at uncommon is one pip, Scouting at rare two; the attributes still at common show none.
-    expect(host.querySelector('[aria-label="Battle Uncommon"]')!.querySelectorAll("i")).toHaveLength(1);
-    expect(host.querySelector('[aria-label="Scouting Rare"]')!.querySelectorAll("i")).toHaveLength(2);
-    expect(host.querySelector('[aria-label^="Logistics"]')).toBeNull();
-    expect(host.querySelector('[aria-label^="Homecoming"]')).toBeNull();
+    expect(host.textContent).toBe("22Army 225 XP1 troop90/150");
+    // The meter reads the stamina itself, as the phone's token does, never a rounded share of it.
+    const meter = host.querySelector('[role="meter"]')!;
+    expect([meter.getAttribute("aria-valuenow"), meter.getAttribute("aria-valuemax")]).toEqual(["90", "150"]);
+    expect(host.querySelector('[data-tip="XP 25 of 100 · buys an Uncommon attribute tier"]')).not.toBeNull();
+    // The button is named for the army alone, as a phone's token is, so a click by name finds it.
+    const row = host.querySelector<HTMLButtonElement>('button[aria-label="Army 2"]')!;
+    expect(row.getAttribute("aria-pressed")).toBe("true");
+    act(() => row.click());
+    expect(onPick).toHaveBeenCalled();
   });
 
   it("is picked with a tap, and an open slot opens Deploy", () => {
@@ -213,61 +227,54 @@ describe("an open slot whose army is being deployed", () => {
 });
 
 describe("the place bar", () => {
-  it("lights where the player is, dots Research when it can be bought, counts unread chat, and goes", () => {
+  it("lights where the player is, dots Research when it can be bought, counts new events and unread chat, and goes", () => {
     const onGo = vi.fn();
-    act(() => root.render(<PlaceNav place="map" onGo={onGo} researchDot unread={3} />));
+    act(() => root.render(<PlaceNav place="map" onGo={onGo} researchDot events={2} unread={3} />));
     const slots = [...host.querySelectorAll("button")];
-    expect(slots.map((slot) => slot.textContent)).toEqual(["Map", "Realm", "Research", "3Chat", "Menu"]);
+    expect(slots.map((slot) => slot.textContent)).toEqual(["Map", "Realm", "Research", "2Log", "3Chat", "Menu"]);
     expect(slots[0].getAttribute("aria-current")).toBe("page");
     expect(slots[2].querySelector("i")).not.toBeNull();
-    act(() => slots[4].click());
+    act(() => slots[3].click());
+    expect(onGo).toHaveBeenCalledWith("log");
+    act(() => slots[5].click());
     expect(onGo).toHaveBeenCalledWith("menu");
   });
 
   it("leaves Research out for a spectator, who has no realm to research", () => {
-    act(() => root.render(<PlaceNav place="realm" onGo={vi.fn()} unread={0} />));
+    act(() => root.render(<PlaceNav place="realm" onGo={vi.fn()} events={0} unread={0} />));
     const slots = [...host.querySelectorAll("button")].map((slot) => slot.textContent);
-    expect(slots).toEqual(["Map", "Realm", "Chat", "Menu"]);
+    expect(slots).toEqual(["Map", "Realm", "Log", "Chat", "Menu"]);
   });
 
-  it("dots Research only when an open node's Essence is held", () => {
-    const node = (state: "open" | "locked" | "learned", price: number) => ({
-      node: 1,
-      row: 10,
-      state,
-      price,
-      effect: { kind: "depth" as const, depth: 1 as const },
-    });
-    expect(canResearchNow({ essence: 500, types: [], nodes: [node("open", 400)] })).toBe(true);
-    expect(canResearchNow({ essence: 300, types: [], nodes: [node("open", 400), node("locked", 100)] })).toBe(false);
-    expect(canResearchNow({ essence: undefined, types: [], nodes: [node("open", 0)] })).toBe(false);
+  it("dots Research only while a node can be researched now", () => {
+    // The owner's realm is short of every price; some days in, a Farm tier, the War hall and the Well are in reach.
+    expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(false);
+    expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
     expect(canResearchNow(undefined)).toBe(false);
   });
 });
 
 describe("the Menu", () => {
-  it("opens Today, Season with the rank, Production, the guide's lines and Settings, and closes on Resume", () => {
+  it("opens Today, Season with the rank, Production and Settings, and closes on Resume", () => {
     const handlers = {
       onToday: vi.fn(),
       onSeason: vi.fn(),
       onProduction: vi.fn(),
-      onGuide: vi.fn(),
       onSettings: vi.fn(),
       onExit: vi.fn(),
       onClose: vi.fn(),
     };
-    const { onGuide, ...ways } = handlers;
-    act(() => root.render(<MenuSheet rank="#12" guide={{ on: true, onOpen: onGuide }} {...ways} />));
+    act(() => root.render(<MenuSheet rank="#12" {...handlers} />));
     const button = (word: string) =>
       [...document.querySelectorAll<HTMLButtonElement>("section[aria-label='Menu'] button")].find((candidate) =>
         candidate.textContent?.startsWith(word),
       )!;
-    expect(button("Season").textContent).toBe("Season#12");
+    // The rank sits beside the row's own button, in the row.
+    expect(button("Season").closest(".ui-row")?.textContent).toBe("Season#12");
     for (const [word, handler] of [
       ["Today", handlers.onToday],
       ["Season", handlers.onSeason],
       ["Production", handlers.onProduction],
-      ["Guide", handlers.onGuide],
       ["Settings", handlers.onSettings],
       ["Exit", handlers.onExit],
       ["Resume", handlers.onClose],
@@ -277,10 +284,12 @@ describe("the Menu", () => {
     }
   });
 
-  it("offers a spectator no Production and no guide", () => {
+  it("offers a spectator no Production", () => {
     const ways = { onToday: vi.fn(), onSeason: vi.fn(), onSettings: vi.fn(), onExit: vi.fn(), onClose: vi.fn() };
-    act(() => root.render(<MenuSheet rank="—" guide={null} onProduction={null} {...ways} />));
-    const words = [...document.querySelectorAll("section[aria-label='Menu'] nav button")].map((row) => row.textContent);
+    act(() => root.render(<MenuSheet rank="—" onProduction={null} {...ways} />));
+    const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .ui-row")].map(
+      (row) => row.textContent,
+    );
     expect(words).toEqual(["Today", "Season—", "Settings"]);
   });
 });
@@ -288,9 +297,9 @@ describe("the Menu", () => {
 describe("the HUD's surfaces", () => {
   it("lets go of the tapped plot when a surface opens, so one sheet stands at a time", () => {
     const Host = () => {
-      const [, setSurface] = useHudSurface();
+      const { openSurface } = useOnePanel(null);
       return (
-        <button type="button" onClick={() => setSurface("research")}>
+        <button type="button" onClick={() => openSurface("research")}>
           Research
         </button>
       );
@@ -322,7 +331,7 @@ describe("the order bar", () => {
       ),
     );
     expect(host.querySelector('[aria-label="Essence +500"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="labor +0"]')?.getAttribute("data-tone")).toBe("loss");
+    expect(host.querySelector('[aria-label="labor +0"]')?.getAttribute("data-tone")).toBe("bad");
   });
 
   it("shows what an order leaves and earns, then Cancel and the verb", () => {
@@ -345,12 +354,86 @@ describe("the order bar", () => {
       "stamina 90 → 60",
       "wheat −100",
       "Essence, labor +500",
-      "XP +2",
     ]);
+    expect(host.textContent).toContain("+2 XP");
     const buttons = [...host.querySelectorAll("button")].map((button) => button.textContent);
     expect(buttons).toEqual(["Cancel", "Explore"]);
     act(() => host.querySelectorAll("button")[1].click());
     expect(onGo).toHaveBeenCalled();
+  });
+
+  it("names a fractional wheat charge as charged, covered or short", () => {
+    const bar = (wheat: { cost: number; held: number }) =>
+      root.render(
+        <OrderBar
+          kind="move"
+          tiles={1}
+          stamina={covered}
+          wheat={{ ...wheat, wait: undefined }}
+          revealYield={null}
+          xp={undefined}
+          onCancel={() => {}}
+          onGo={() => {}}
+        />,
+      );
+    const wheatChip = () =>
+      [...host.querySelectorAll('[role="img"]')]
+        .map((chip) => chip.getAttribute("aria-label"))
+        .find((label) => label?.startsWith("wheat"));
+
+    // 30 troops' step at 0.02 wheat each.
+    act(() => bar({ cost: 0.6, held: 10 }));
+    expect(wheatChip()).toBe("wheat −<1");
+    // Short under a unit: what is held reads as held, below what is needed.
+    act(() => bar({ cost: 0.6, held: 0.5 }));
+    expect(wheatChip()).toBe("wheat 0.5 / 0.6");
+  });
+
+  describe("a cost on either side of its rounding", () => {
+    const explore = (wheat: { cost: number; held: number }, onGo = vi.fn()) => {
+      act(() =>
+        root.render(
+          <OrderBar
+            kind="explore"
+            tiles={1}
+            stamina={{ cost: 21, held: 120, wait: undefined }}
+            wheat={{ ...wheat, wait: undefined }}
+            revealYield={500}
+            xp={2}
+            onCancel={() => {}}
+            onGo={onGo}
+          />,
+        ),
+      );
+      return onGo;
+    };
+    const wheatChip = () => host.querySelector('[aria-label^="wheat "]')!.getAttribute("aria-label");
+    const buttons = () => [...host.querySelectorAll("button")].map((button) => button.textContent);
+
+    // QA's 28.15 wheat (563 troops at 0.05 a step) rounds to 28; held just under it must not read as 28 of 28.
+    it.each([
+      [28, "wheat 28 / 28.2"],
+      [28.1, "wheat 28.1 / 28.2"],
+      [28.149, "wheat 28.1 / 28.2"],
+    ])("never reads a short %s of 28.15 as met, and offers only Cancel", (held, chip) => {
+      const onGo = explore({ cost: 28.15, held });
+      expect(wheatChip()).toBe(chip);
+      expect(buttons()).toEqual(["Cancel"]);
+      act(() => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+      expect(onGo).not.toHaveBeenCalled();
+    });
+
+    it.each([28.15, 28.2, 28.99])("takes a covered %s of 28.15 at its rounded charge, once", (held) => {
+      const onGo = explore({ cost: 28.15, held });
+      expect(wheatChip()).toBe("wheat −28");
+      act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Explore")!.click());
+      expect(onGo).toHaveBeenCalledOnce();
+    });
+
+    it("tells a short compact cost from what is held", () => {
+      explore({ cost: 12_449, held: 12_440 });
+      expect(wheatChip()).toBe("wheat 12,440 / 12,449");
+    });
   });
 
   it("confirms on Enter and takes the key, but never while the player types", () => {
@@ -397,7 +480,7 @@ describe("the order bar", () => {
       ),
     );
     const wheat = host.querySelector('[aria-label="wheat 40 / 300"]');
-    expect(wheat?.getAttribute("data-tone")).toBe("loss");
+    expect(wheat?.getAttribute("data-tone")).toBe("bad");
     expect(host.querySelector('[aria-label="left 4m"]')).not.toBeNull();
     expect([...host.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Cancel"]);
   });

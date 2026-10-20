@@ -1,0 +1,202 @@
+/* The map plates (map-plates.tsx; map-labels rounds 2 to 6, the owner's pick) on the HUD sheet's tokens (tokens.ts
+   HUD_SHEET, HUD_MODES, HUD_TYPE): the age's panel surface, line and accent, the sheet's face. The side reads as the
+   plate's left bar and its player's name: yours, an ally's, an enemy's, nobody's. Every reading is at the body size
+   and every row the same height (owner, 17 October 2026: "it makes little sense to have the bottom row smaller"); a
+   place's name is told by its weight and the accent, a count by its weight, a label or a time by its colour. */
+.mp {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  overflow: hidden;
+  font-family: var(--hud-font);
+  color: rgb(var(--hud-ink));
+}
+/* No label ever takes a pointer (owner, 2026-10-20: "the label must not be clickable"): a click or hover lands on the
+   tile or unit beneath, whatever a token or plate is drawn from. The plate probe fails a page where one does. */
+.mp,
+.mp * {
+  pointer-events: none !important;
+}
+.mp [data-relation="own"] {
+  --mp-side: var(--hud-own);
+}
+.mp [data-relation="ally"] {
+  --mp-side: var(--hud-ally);
+}
+.mp [data-relation="enemy"] {
+  --mp-side: var(--hud-enemy);
+}
+.mp [data-relation="neutral"] {
+  --mp-side: var(--hud-neutral);
+}
+
+.mp-at {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+
+/* The plate: the HUD panel's surface at a plate's size; its rows, most important first. */
+.mp-plate {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  white-space: nowrap;
+  border: 1px solid var(--hud-line);
+  border-left: 3px solid var(--mp-side);
+  border-radius: var(--hud-radius-control);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+  padding: 3px 8px 3px 6px;
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-body);
+  line-height: var(--hud-leading-body);
+}
+.mp-plate__row {
+  display: flex;
+  height: 24px;
+  align-items: center;
+  gap: 6px;
+}
+/* An opened army's stamina, on its own row under its troops as at rest: the bar across the plate, then "84/150". */
+.mp-stamina {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+}
+.mp-plate__meter {
+  flex: 1;
+  min-width: 36px;
+  height: 4px;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
+}
+.mp-plate__meter > i {
+  display: block;
+  height: 100%;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-good);
+}
+
+/* An army at rest: its stamina as a tight bar under its troops, the plate's width, no number. */
+.mp-plate__stamina {
+  display: block;
+  height: 3px;
+  margin: 1px 0 2px;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
+}
+.mp-plate__stamina > i {
+  display: block;
+  height: 100%;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-good);
+}
+
+/* The readings: a player in the side's colour, a place's own name in the accent, a kind in words, a label or a time
+   in the muted colour, a count by its weight. */
+.mp-owner {
+  color: var(--mp-side);
+  font-weight: var(--hud-weight-title);
+}
+.mp-word {
+  font-weight: var(--hud-weight-title);
+}
+.mp-title {
+  font-weight: var(--hud-weight-title);
+  color: rgb(var(--hud-accent));
+}
+.mp-label,
+.mp-cue {
+  color: var(--hud-muted);
+}
+.mp-count {
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A troop stack: its painting (type and tier), the tier, the count. */
+.mp-troops {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+/* A guard slot's stamina, on a structure's opened plate: a tight bar under its stack, within the row. */
+.mp-troops__stamina {
+  position: absolute;
+  right: 0;
+  bottom: -2px;
+  left: 0;
+  margin: 0;
+}
+/* Between a name and what it holds, as the panel's dividers are. */
+.mp-divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 5px 0;
+  background: var(--hud-line-strong);
+}
+/* The order an attacker meets guard slots in, read left to right. */
+.mp-next {
+  margin: 0 2px;
+  color: var(--hud-muted);
+  font-weight: var(--hud-weight-strong);
+}
+
+/* Selected: a ring in the player's own colour. A plate that would sit under an opened one steps aside. */
+.mp [data-selected="true"] .mp-plate {
+  border-color: var(--hud-own);
+  box-shadow:
+    0 0 0 2px var(--hud-own),
+    var(--hud-shadow-panel);
+}
+.mp [data-yields="true"] {
+  opacity: 0;
+}
+
+/* A thing's token at rest (map-plate-token.tsx): its disk in its side's colour, its reading under it. */
+.mp-token {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* A token: the pin, and under it the tier chip and count (and a site's holding), an army's stamina under that. */
+.mp-token__disk {
+  display: flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--mp-side);
+  border-radius: var(--hud-radius-round);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-control);
+}
+.mp-token__disk[data-undefended="true"] {
+  border-style: dashed;
+}
+.mp-token__strip {
+  display: flex;
+  height: 18px;
+  align-items: center;
+  gap: 3px;
+  margin-top: -2px;
+  padding: 0 4px;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  font-size: var(--hud-text-label);
+  white-space: nowrap;
+}
+.mp-token__stamina {
+  width: 100%;
+  margin: 1px 0 0;
+}
+.mp [data-selected="true"] .mp-token__disk {
+  border-color: var(--hud-own);
+  box-shadow: 0 0 0 2px var(--hud-own);
+}

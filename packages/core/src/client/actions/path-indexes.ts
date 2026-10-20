@@ -38,7 +38,7 @@ export const buildArmyPathIndexes = (client: PathIndexSource, alt = false): Army
 
   const structureHexes: HexIndex<HexEntityInfo> = new Map();
   for (const structure of projection.getStructures(alt)) {
-    if (structure.reserved) continue;
+    if (structure.reserved || structure.clearedSite) continue;
     indexHex(structureHexes, structure.hexCoords, {
       id: structure.entityId,
       owner: structureOwner(structure.entityId),

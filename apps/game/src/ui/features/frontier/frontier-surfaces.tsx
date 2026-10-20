@@ -3,6 +3,7 @@ import { LeftView } from "@/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { DeploySheet } from "./deploy/deploy-sheet";
+import { closeDeployOrder } from "./hud/one-panel";
 
 /**
  * The workspace a Frontier game opens over its map for a deploy order (openArmyDeployment: the dock's open slot,
@@ -15,10 +16,4 @@ export const FrontierSurfaces = ({ realm }: { realm: NativeRows["Structure"] | n
   if (!ordersAllowed) return null;
   if (view === LeftView.MilitaryView && realm) return <DeploySheet realm={realm} onClose={closeDeployOrder} />;
   return null;
-};
-
-const closeDeployOrder = () => {
-  const ui = useUIStore.getState();
-  ui.setPendingMilitaryAction(null);
-  ui.setLeftNavigationView(LeftView.None);
 };

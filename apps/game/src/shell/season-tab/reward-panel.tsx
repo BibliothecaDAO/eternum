@@ -1,28 +1,24 @@
+import { rewardChestMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { REWARD_WORDS } from "@/ui/design-system/kit/words";
+import { formatExact, formatDate } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { lazy, type ReactNode, Suspense, useState } from "react";
 
-import { formatExact } from "@/ui/design-system/kit/amount";
-import { formatDate } from "@/ui/design-system/kit/time";
-import { Button } from "@/ui/design-system/kit/button";
+import { AppButton, AppChip, AppFigure, AppPanel } from "@/ui/design-system/kit/app-elements";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { getChestAssetFromAttributesRaw } from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
 
 import { Loading } from "../loading";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
 import type { ChestContent } from "@realms-world/value-ledger/codecs";
 import { type EnvironmentLedger, lordsOf, openChestCalls } from "../value/ledger";
-import { REWARD_WORDS } from "../words";
 import { entryMultipleOf, type PlayedGameKeys, type Reward, rewardState, useReward } from "./reward";
 
 const WalletSign = lazy(() =>
-  import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
+  import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletSign })),
 );
-
-/** Each rank band's chest, sealed or opened (0 the top 10 percent .. 4 the bottom 25). */
-const chestArt = (band: number, opened: boolean) =>
-  `/images/blitz-chests/band-${band}-${opened ? "opened" : "sealed"}.webp`;
 
 /**
  * After a paid Blitz: the rated game's MMR change with the sword or shield applied, and the mystery chest the result
@@ -69,20 +65,21 @@ const RatingChange = ({ reward }: { reward: Reward }) => {
     : reward.registration.shield && { icon: "defend" as const, word: "½" };
   return (
     <Plate icon="rating-conqueror" title={REWARD_WORDS.rating}>
-      <p className="flex items-center gap-3 font-body text-[32px] font-extrabold tabular-nums">
-        <span className="text-kit-muted">{formatExact(mmrBefore)}</span>
+      <p className="flex flex-wrap items-center gap-3 text-app-title">
+        <span className="text-app-muted">{formatExact(mmrBefore)}</span>
         <SemanticIcon name="arrow-right" size={22} />
-        <span className="text-kit-cream">{formatExact(mmrAfter)}</span>
-        <span className={cn("ml-auto text-[26px]", gain ? "text-kit-sage" : "text-kit-red")}>
-          {gain ? "+" : "−"}
-          {formatExact(Math.abs(mmrAfter - mmrBefore))}
+        <span className="text-app-ink">{formatExact(mmrAfter)}</span>
+        <span className="ml-auto flex items-center gap-2">
+          <AppChip tone={gain ? "good" : "bad"}>
+            {gain ? "+" : "−"}
+            {formatExact(Math.abs(mmrAfter - mmrBefore))}
+          </AppChip>
+          {flag && (
+            <AppChip icon={flag.icon} tone="gold">
+              {flag.word}
+            </AppChip>
+          )}
         </span>
-        {flag && (
-          <span className="inline-flex items-center gap-1 font-body text-lg text-kit-gold2">
-            <SemanticIcon name={flag.icon} size={26} />
-            {flag.word}
-          </span>
-        )}
       </p>
     </Plate>
   );
@@ -103,18 +100,19 @@ const ChestPlate = ({
   const now = useNowSeconds();
   const [signing, setSigning] = useState(false);
   const state = rewardState(reward, owner);
-  const band = reward.chest?.band ?? 0;
+  const band = reward.chest?.band;
+  const chestIcon = rewardChestMeaning(band, state === "opening" || state === "opened");
 
   if (state === "pending")
     return (
-      <Plate icon="chest" title={REWARD_WORDS.chest}>
+      <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
         <ChestArt band={band} dim />
-        <Line icon="hourglass">{REWARD_WORDS.arrives}</Line>
+        <RewardLine icon="hourglass">{REWARD_WORDS.arrives}</RewardLine>
       </Plate>
     );
   if (state === "opened")
     return (
-      <Plate icon="chest" title={REWARD_WORDS.chest}>
+      <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
         <Stage>
           {reward.content ? <Prize content={reward.content} entryFee={reward.token.entryFee} /> : <Loading />}
         </Stage>
@@ -122,18 +120,18 @@ const ChestPlate = ({
     );
   if (state === "opening")
     return (
-      <Plate icon="chest" title={REWARD_WORDS.chest}>
+      <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
         <Stage>
-          <img src={chestArt(band, true)} alt="" className="relative size-48 animate-pulse object-contain" />
-          <span className="relative font-body text-xl text-kit-gold2">{REWARD_WORDS.opening}</span>
+          <SemanticIcon name={chestIcon} size={192} className="relative animate-pulse" />
+          <span className="relative text-app-heading text-app-gold">{REWARD_WORDS.opening}</span>
         </Stage>
       </Plate>
     );
   if (state === "traded")
     return (
-      <Plate icon="chest" title={REWARD_WORDS.chest}>
+      <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
         <ChestArt band={band} dim />
-        <Line icon="chronicles">{REWARD_WORDS.traded}</Line>
+        <RewardLine icon="chronicles">{REWARD_WORDS.traded}</RewardLine>
       </Plate>
     );
   const open = signing ? (
@@ -150,14 +148,18 @@ const ChestPlate = ({
     </Suspense>
   ) : null;
   return (
-    <Plate icon="chest" title={REWARD_WORDS.chest}>
+    <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
       <ChestArt band={band} glow={state === "sealed"} />
       {reward.token.shares > 0 && (
         <p className="flex flex-wrap gap-2">
           <TokensUntil shares={reward.token.shares} seasonEnd={reward.seasonEnd} now={now} />
         </p>
       )}
-      {open ?? <Button role="primary" word={REWARD_WORDS.open} icon="chest" onClick={() => setSigning(true)} />}
+      {open ?? (
+        <AppButton kind="primary" size="lg" icon={chestIcon} step onClick={() => setSigning(true)}>
+          {REWARD_WORDS.open}
+        </AppButton>
+      )}
     </Plate>
   );
 };
@@ -168,9 +170,13 @@ const ChestPlate = ({
  */
 const TokensUntil = ({ shares, seasonEnd, now }: { shares: number; seasonEnd: number; now: number }) =>
   now < seasonEnd ? (
-    <Chip icon="lords" word={REWARD_WORDS.entryUntil(shares, formatDate(seasonEnd))} tone="text-kit-gold2" />
+    <AppChip tone="gold" icon="lords">
+      {REWARD_WORDS.entryUntil(shares, formatDate(seasonEnd))}
+    </AppChip>
   ) : (
-    <Chip icon="lords" word={REWARD_WORDS.noLords} tone="text-kit-muted" struck />
+    <AppChip icon="lords">
+      <s>{REWARD_WORDS.noLords}</s>
+    </AppChip>
   );
 
 /** What the chest delivered: an item, tokens as a multiple of the slot's entry with the sum sent, or a credit. */
@@ -179,14 +185,14 @@ const Prize = ({ content, entryFee }: { content: ChestContent; entryFee: bigint 
     const item = getChestAssetFromAttributesRaw(content.attributes);
     return (
       <Card>
-        {item && <img src={item.imagePath} alt="" className="size-40 rounded-xl object-cover" />}
-        <span className="rounded-full border border-kit-line2 px-3 py-1 font-body text-sm font-bold capitalize text-kit-gold2">
-          {item?.rarity ?? REWARD_WORDS.cosmetic}
-        </span>
-        <b className="font-body text-[30px] font-bold leading-tight text-kit-cream">
-          {item?.name ?? REWARD_WORDS.cosmetic}
-        </b>
-        <Chip icon="check" word={REWARD_WORDS.inCollection} tone="text-kit-sage" />
+        {item && <img src={item.imagePath} alt="" className="size-40 rounded-control object-cover" />}
+        <AppChip tone="gold">
+          <span className="capitalize">{item?.rarity ?? REWARD_WORDS.cosmetic}</span>
+        </AppChip>
+        <b className="text-app-title text-app-ink">{item?.name ?? REWARD_WORDS.cosmetic}</b>
+        <AppChip tone="good" icon="check">
+          {REWARD_WORDS.inCollection}
+        </AppChip>
       </Card>
     );
   }
@@ -194,10 +200,10 @@ const Prize = ({ content, entryFee }: { content: ChestContent; entryFee: bigint 
   return (
     <Card>
       <SemanticIcon name={content.kind === "sword" ? "attack" : "defend"} size={96} />
-      <b className="font-body text-[30px] font-bold leading-tight text-kit-cream">
+      <b className="text-app-title text-app-ink">
         {content.kind === "sword" ? REWARD_WORDS.swordCredit : REWARD_WORDS.shieldCredit}
       </b>
-      <Chip icon="lords" word={REWARD_WORDS.nextEntry} tone="text-kit-muted" />
+      <AppChip icon="lords">{REWARD_WORDS.nextEntry}</AppChip>
     </Card>
   );
 };
@@ -211,87 +217,58 @@ const TokenPrize = ({ amount, entryFee }: { amount: bigint; entryFee: bigint }) 
   const sum = formatExact(lordsOf(amount));
   return (
     <Card>
-      <SemanticIcon name="lords" size={96} />
-      <b className="font-body text-[60px] font-bold leading-none tabular-nums text-kit-gold2">
-        {multiple === null ? sum : `${multiple}×`}
-      </b>
-      <span className="font-body text-xl text-kit-muted">
-        {multiple === null ? REWARD_WORDS.lords : REWARD_WORDS.theEntry}
-      </span>
-      {multiple !== null && <Chip icon="lords" word={`${sum} ${REWARD_WORDS.lords}`} tone="text-kit-gold2" />}
-      <Chip icon="check" word={REWARD_WORDS.lordsSent} tone="text-kit-sage" />
+      <AppFigure
+        icon="lords"
+        tone="gold"
+        value={multiple === null ? sum : `${multiple}×`}
+        label={multiple === null ? REWARD_WORDS.lords : REWARD_WORDS.theEntry}
+      />
+      {multiple !== null && (
+        <AppChip tone="gold" icon="lords">
+          {`${sum} ${REWARD_WORDS.lords}`}
+        </AppChip>
+      )}
+      <AppChip tone="good" icon="check">
+        {REWARD_WORDS.lordsSent}
+      </AppChip>
     </Card>
   );
 };
 
-const ChestArt = ({ band, dim = false, glow = false }: { band: number; dim?: boolean; glow?: boolean }) => (
-  <div
-    className={cn(
-      "relative flex h-48 items-center justify-center rounded-xl",
-      glow && "bg-[radial-gradient(circle,theme(colors.kit.gold/30%),transparent_65%)]",
-    )}
-  >
-    <img src={chestArt(band, false)} alt="" className={cn("size-44 object-contain", dim && "opacity-40 grayscale")} />
+const ChestArt = ({ band, dim = false, glow = false }: { band?: number; dim?: boolean; glow?: boolean }) => (
+  <div className={cn("relative flex h-48 items-center justify-center rounded-control", glow && "bg-halo")}>
+    <SemanticIcon name={rewardChestMeaning(band)} size={176} className={cn(dim && "opacity-40 grayscale")} />
     <span className="absolute bottom-1 left-1">
-      <Chip icon="victory" word={REWARD_WORDS.band[band] ?? REWARD_WORDS.band[0]} tone="text-kit-muted" />
+      <AppChip icon="victory">{band === undefined ? REWARD_WORDS.chest : REWARD_WORDS.band[band]}</AppChip>
     </span>
   </div>
 );
 
 const Stage = ({ children }: { children: ReactNode }) => (
-  <div className="relative isolate flex min-h-[22rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-xl bg-kit-ink py-4">
+  <div className="relative isolate flex min-h-[22rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-control bg-app-well py-4">
     <span
       aria-hidden
-      className="absolute left-1/2 top-[45%] -z-10 size-[56rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[repeating-conic-gradient(theme(colors.kit.gold/18%)_0_6deg,transparent_6deg_18deg)] [mask-image:radial-gradient(circle,black,transparent_55%)]"
+      className="absolute left-1/2 top-[45%] -z-10 size-[56rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-rays [mask-image:radial-gradient(circle,black,transparent_55%)]"
     />
     {children}
   </div>
 );
 
 const Card = ({ children }: { children: ReactNode }) => (
-  <div className="relative flex w-[85%] flex-col items-center gap-2.5 rounded-2xl border-2 border-kit-gold bg-kit-plate/95 px-4 py-5 text-center">
-    {children}
-  </div>
+  <div className="relative flex w-[85%] flex-col items-center gap-3 px-4 py-5 text-center">{children}</div>
 );
 
+/** The reward's panels: its icon and title, then its parts one under another. */
 const Plate = ({ icon, title, children }: { icon: IconMeaning; title: string; children: ReactNode }) => (
-  <section className="plate flex flex-col gap-4 p-5">
-    <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-body text-lg text-kit-cream">
-      <SemanticIcon name={icon} size={26} />
-      {title}
-    </h2>
-    {children}
-  </section>
+  <AppPanel icon={icon} title={title}>
+    <div className="flex flex-col items-stretch gap-4">{children}</div>
+  </AppPanel>
 );
 
-const Line = ({ icon, children }: { icon: IconMeaning; children: ReactNode }) => (
-  <p className="flex items-center gap-2.5 font-body text-base text-kit-muted">
-    <SemanticIcon name={icon} size={24} />
-    {children}
+/** A line of where the reward stands, by its icon. */
+const RewardLine = ({ icon, children }: { icon: IconMeaning; children: ReactNode }) => (
+  <p className="flex items-center gap-2 text-app-body text-app-muted">
+    <SemanticIcon name={icon} size={22} />
+    <span>{children}</span>
   </p>
-);
-
-const Chip = ({
-  icon,
-  word,
-  tone,
-  struck = false,
-}: {
-  icon: IconMeaning;
-  word: string;
-  tone: string;
-  struck?: boolean;
-}) => (
-  <span
-    className={cn(
-      "inline-flex h-9 items-center gap-1.5 rounded-full border border-kit-line2 bg-kit-ink pl-2 pr-3 font-body text-base font-bold",
-      tone,
-    )}
-  >
-    <span className={cn("relative", struck && "opacity-60")}>
-      <SemanticIcon name={icon} size={20} />
-      {struck && <span aria-hidden className="absolute left-0 top-1/2 h-0.5 w-5 -rotate-45 bg-kit-red" />}
-    </span>
-    {word}
-  </span>
 );

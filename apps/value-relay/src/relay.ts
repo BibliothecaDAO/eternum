@@ -10,6 +10,7 @@ import type {
   ClaimOutcome,
 } from "./ports";
 import { RelayFailure, relayOperation } from "./ports";
+import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import type { RelayProgress, RelayStore } from "./state";
 
 /** Only confirmed blocks produce value obligations. A rewritten observed block stops this cursor permanently. */
@@ -22,7 +23,7 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
       return yield* haltRelay(store, `confirmed_head_regressed:${progress.page?.head ?? progress.nextBlock - 1}`);
     yield* verifyObservedHead(ports, store, progress);
     let more = false;
-    const end = progress.page?.head ?? Math.min(head, progress.nextBlock + 99);
+    const end = progress.page?.head ?? Math.min(head, progress.nextBlock + SHARD_PAGE_BLOCKS - 1);
     if (progress.nextBlock <= end) {
       const observed = yield* Effect.result(
         ports.shard.eventsPage(progress.nextBlock, end, progress.page?.token ?? null),

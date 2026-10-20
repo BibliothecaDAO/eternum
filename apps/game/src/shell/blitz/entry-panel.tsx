@@ -1,16 +1,23 @@
+import { DOORWAY_WORDS, ENTRY_WORDS, mintTestTokenWord, PROFILE_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { formatExact, formatCharge } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { lazy, type ReactNode, Suspense, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { formatExact } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
-
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import {
+  AppButton,
+  AppChip,
+  AppChoice,
+  AppEmpty,
+  AppFigure,
+  AppPanel,
+  AppRow,
+} from "@/ui/design-system/kit/app-elements";
 
 import type { DirectoryGame } from "../herald";
 import { Loading } from "../loading";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
 import {
   type EnvironmentLedger,
@@ -24,7 +31,6 @@ import {
 import { gameRowKey } from "../blitz-rows";
 import { linkWalletHref } from "../profile/settings-route";
 import { returnPathOf, useRequestSignIn } from "../sign-in/sign-in-route";
-import { DOORWAY_WORDS, ENTRY_WORDS, mintTestTokenWord, PROFILE_WORDS, WORDS } from "../words";
 import {
   entryCalls,
   entryCost,
@@ -38,7 +44,7 @@ import {
 import { lobbyId } from "./lobby";
 
 const WalletSign = lazy(() =>
-  import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
+  import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletSign })),
 );
 
 /**
@@ -131,16 +137,18 @@ const EntryPanel = ({
       <Plate
         icon="skull"
         title={terms.cancelled ? ENTRY_WORDS.cancelled : ENTRY_WORDS.notSeated}
-        right={<WalletChip address={owner} />}
+        aside={<WalletChip address={owner} />}
       >
         <Receipt rows={refundRows(terms)} />
         {sign || (
-          <Button role="primary" word={ENTRY_WORDS.takeRefund} icon="refresh" onClick={() => setSigning(true)} />
+          <AppButton kind="primary" size="lg" icon="refresh" step onClick={() => setSigning(true)}>
+            {ENTRY_WORDS.takeRefund}
+          </AppButton>
         )}
       </Plate>
     );
   return (
-    <Plate icon="lords" title={ENTRY_WORDS.entry} right={<WalletChip address={owner} />}>
+    <Plate icon="lords" title={ENTRY_WORDS.entry} aside={<WalletChip address={owner} />}>
       <div className="grid grid-cols-3 gap-2.5">
         <Tile
           icon="flag"
@@ -169,26 +177,27 @@ const EntryPanel = ({
           onToggle={() => setChoice({ ...choice, shield: !choice.shield })}
         />
       </div>
-      <div className="flex items-end justify-between">
-        <span className={cn("flex items-center gap-2", state === "short" ? "text-kit-red" : "text-kit-muted")}>
-          <SemanticIcon name="backpack" size={22} />
-          <Lords amount={terms.lords} size={20} />
-        </span>
-        <span className="flex flex-col items-end">
-          <span className="font-ui text-[14px] text-kit-muted">{ENTRY_WORDS.total}</span>
-          <Lords amount={cost.cash} size={28} tone={state === "short" ? "text-kit-red" : "text-kit-cream"} />
-        </span>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <AppChip icon="backpack" tone={state === "short" ? "bad" : undefined}>
+          {formatExact(lordsOf(terms.lords))}
+        </AppChip>
+        <AppFigure
+          icon="lords"
+          value={formatCharge(lordsOf(cost.cash))}
+          label={ENTRY_WORDS.total}
+          tone={state === "short" ? "bad" : "gold"}
+        />
       </div>
       {cost.cash > 0n && <SplitBar shares={entryShares(cost.cash, terms.split)} />}
       {sign ||
         (state === "short" ? (
-          <Button
-            role="primary"
-            word={ENTRY_WORDS.needMore(formatExact(lordsShortOf(cost.cash - terms.lords)))}
-            disabled
-          />
+          <AppButton kind="primary" size="lg" disabled>
+            {ENTRY_WORDS.needMore(formatCharge(lordsShortOf(cost.cash - terms.lords)))}
+          </AppButton>
         ) : (
-          <Button role="primary" word={ENTRY_WORDS.payAndJoin} icon="play" onClick={() => setSigning(true)} />
+          <AppButton kind="primary" size="lg" icon="play" step onClick={() => setSigning(true)}>
+            {ENTRY_WORDS.payAndJoin}
+          </AppButton>
         ))}
       {/* Asked of the build constant here, at this line: a production bundle holds neither the button nor its call. */}
       {import.meta.env.VITE_PUBLIC_ENVIRONMENT !== "production" && !signing && (
@@ -207,12 +216,9 @@ const MintTestToken = ({ token, owner, onMinted }: { token: string; owner: strin
   const [signing, setSigning] = useState(false);
   if (!signing)
     return (
-      <Button
-        role="outline"
-        word={mintTestTokenWord(formatExact(lordsOf(TEST_TOKEN_MINT)))}
-        icon="lords"
-        onClick={() => setSigning(true)}
-      />
+      <AppButton kind="quiet" icon="lords" onClick={() => setSigning(true)}>
+        {mintTestTokenWord(formatExact(lordsOf(TEST_TOKEN_MINT)))}
+      </AppButton>
     );
   return (
     <Suspense fallback={<Loading />}>
@@ -231,20 +237,16 @@ const MintTestToken = ({ token, owner, onMinted }: { token: string; owner: strin
 /** Where this entry's LORDS go when the game settles, as one line: the season pool, the season's chests, the treasury. */
 const SplitBar = ({ shares }: { shares: ReturnType<typeof entryShares> }) => {
   const parts = [
-    { key: "pool", icon: "victory" as const, amount: shares.pool, tone: "text-kit-gold2" },
-    { key: "chests", icon: "chest" as const, amount: shares.chests, tone: "text-kit-cream" },
-    { key: "treasury", icon: "final-seal" as const, amount: shares.treasury, tone: "text-kit-muted" },
+    { key: "pool", icon: "victory" as const, amount: shares.pool, tone: "gold" as const },
+    { key: "chests", icon: "reward-chest" as const, amount: shares.chests, tone: undefined },
+    { key: "treasury", icon: "final-seal" as const, amount: shares.treasury, tone: undefined },
   ].filter((part) => part.amount > 0n);
   return (
-    <p className="flex flex-wrap items-center gap-x-4 gap-y-1" aria-label={ENTRY_WORDS.whereItGoes}>
+    <p className="flex flex-wrap items-center gap-2" aria-label={ENTRY_WORDS.whereItGoes}>
       {parts.map((part) => (
-        <span
-          key={part.key}
-          className={cn("inline-flex items-center gap-1 font-body text-[14px] font-bold", part.tone)}
-        >
-          <SemanticIcon name={part.icon} size={18} />
-          {formatExact(lordsOf(part.amount))}
-        </span>
+        <AppChip key={part.key} icon={part.icon} tone={part.tone}>
+          {formatCharge(lordsOf(part.amount))}
+        </AppChip>
       ))}
     </p>
   );
@@ -256,12 +258,20 @@ const NoWallet = () => {
   const location = useLocation();
   return (
     <Plate icon="lords" title={ENTRY_WORDS.entry}>
-      <EntryLine icon="backpack" line={ENTRY_WORDS.paidFromWallet} />
-      <Button
-        role="primary"
-        word={PROFILE_WORDS.linkWallet}
+      <AppEmpty
         icon="backpack"
-        onClick={() => navigate(linkWalletHref(returnPathOf(location)))}
+        line={ENTRY_WORDS.paidFromWallet}
+        action={
+          <AppButton
+            kind="primary"
+            size="lg"
+            icon="backpack"
+            step
+            onClick={() => navigate(linkWalletHref(returnPathOf(location)))}
+          >
+            {PROFILE_WORDS.linkWallet}
+          </AppButton>
+        }
       />
     </Plate>
   );
@@ -272,26 +282,24 @@ export const SignInToJoin = () => {
   const requestSignIn = useRequestSignIn();
   return (
     <Plate icon="lords" title={ENTRY_WORDS.entry}>
-      <EntryLine icon="person" line={DOORWAY_WORDS.signInToPlay} />
-      <Button role="primary" word={WORDS.signIn} icon="person" onClick={() => requestSignIn()} />
+      <AppEmpty
+        icon="person"
+        line={DOORWAY_WORDS.signInToPlay}
+        action={
+          <AppButton kind="primary" size="lg" icon="person" step onClick={() => requestSignIn()}>
+            {WORDS.signIn}
+          </AppButton>
+        }
+      />
     </Plate>
   );
 };
-
-const EntryLine = ({ icon, line }: { icon: IconMeaning; line: string }) => (
-  <p className="flex min-h-16 items-center gap-3 rounded-[14px] border border-dashed border-kit-line2 px-3.5 font-body text-[15px] text-kit-muted">
-    <SemanticIcon name={icon} size={36} />
-    {line}
-  </p>
-);
 
 /** Paid, waiting for the close to draw the games, or past the close while they are being drawn. */
 const Registered = ({ terms, closed }: { terms: EntryTerms; closed: boolean }) => (
   <Plate icon="check" title={ENTRY_WORDS.registered}>
     <PaidReceipt terms={terms} />
-    <p className="font-body text-[15px] text-kit-muted">
-      {closed ? ENTRY_WORDS.drawingLine : ENTRY_WORDS.registeredLine}
-    </p>
+    <p className="text-app-label text-app-muted">{closed ? ENTRY_WORDS.drawingLine : ENTRY_WORDS.registeredLine}</p>
   </Plate>
 );
 
@@ -305,12 +313,15 @@ const Seated = ({ terms, game }: { terms: EntryTerms; game: DirectoryGame | unde
     <Plate icon="check" title={ENTRY_WORDS.seated}>
       <PaidReceipt terms={terms} />
       {game && (
-        <Button
-          role="primary"
-          word={ENTRY_WORDS.yourGame}
+        <AppButton
+          kind="primary"
+          size="lg"
           icon="play"
+          step
           onClick={() => navigate(`/blitz/${lobbyId({ key: gameRowKey(game.chainId, game.game_id) })}`)}
-        />
+        >
+          {ENTRY_WORDS.yourGame}
+        </AppButton>
       )}
     </Plate>
   );
@@ -322,7 +333,7 @@ const PaidReceipt = ({ terms }: { terms: EntryTerms }) => {
   return (
     <Receipt
       rows={[
-        { icon: "flag", word: ENTRY_WORDS.seat, value: <Lords amount={terms.prices.seat} size={18} /> },
+        { icon: "flag", word: ENTRY_WORDS.seat, value: <Lords amount={terms.prices.seat} /> },
         ...(registration.sword
           ? [
               {
@@ -350,25 +361,25 @@ const PaidReceipt = ({ terms }: { terms: EntryTerms }) => {
 /** Listed, and not on the ledger yet: nothing failed and nothing is asked of the player; the panel reads again itself. */
 const Opening = () => (
   <Plate icon="hourglass" title={ENTRY_WORDS.entry}>
-    <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.openingLine}</p>
+    <p className="text-app-body text-app-ink">{ENTRY_WORDS.openingLine}</p>
   </Plate>
 );
 
 const Closed = () => (
   <Plate icon="lock" title={ENTRY_WORDS.closed}>
-    <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.closedLine}</p>
+    <p className="text-app-body text-app-ink">{ENTRY_WORDS.closedLine}</p>
   </Plate>
 );
 
 const Refunded = ({ terms }: { terms: EntryTerms }) => (
   <Plate icon="check" title={ENTRY_WORDS.refunded}>
-    <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.refundedLine}</p>
-    <Lords amount={terms.lords} size={22} />
+    <p className="text-app-body text-app-ink">{ENTRY_WORDS.refundedLine}</p>
+    <Lords amount={terms.lords} />
   </Plate>
 );
 
 const refundRows = (terms: EntryTerms) => [
-  { icon: "lords" as const, word: ENTRY_WORDS.lords, value: <Lords amount={terms.registration.paid} size={18} /> },
+  { icon: "lords" as const, word: ENTRY_WORDS.lords, value: <Lords amount={terms.registration.paid} /> },
   ...(terms.registration.swordCredit
     ? [{ icon: "attack" as const, word: ENTRY_WORDS.swordCredit, value: <Back /> }]
     : []),
@@ -377,10 +388,9 @@ const refundRows = (terms: EntryTerms) => [
     : []),
 ];
 
-const flagValue = (fromCredit: boolean, price: bigint) =>
-  fromCredit ? <CreditChip /> : <Lords amount={price} size={18} />;
+const flagValue = (fromCredit: boolean, price: bigint) => (fromCredit ? <CreditChip /> : <Lords amount={price} />);
 
-/** Seat, sword or shield: what it does, its price, or the credit that pays for it. */
+/** Seat, sword or shield: what it does, its price, or the credit that pays for it. The seat is always taken. */
 const Tile = ({
   icon,
   word,
@@ -398,28 +408,18 @@ const Tile = ({
   on: boolean;
   onToggle?: () => void;
 }) => (
-  <button
-    type="button"
-    aria-pressed={on}
+  <AppChoice
+    icon={icon}
+    title={word}
+    detail={effect}
+    price={credit > 0 ? <CreditChip count={credit} /> : <Lords amount={price} />}
+    selected={on}
     disabled={!onToggle}
     onClick={onToggle}
-    className={cn(
-      "relative flex flex-col items-center gap-1 rounded-[14px] border-2 px-1 pb-2.5 pt-3",
-      on ? "border-kit-gold bg-kit-gold/10" : "border-kit-line opacity-75",
-    )}
-  >
-    {on && (
-      <span className="absolute -right-2 -top-2 flex size-[26px] items-center justify-center rounded-full border border-kit-gold bg-kit-ink">
-        <SemanticIcon name="check" size={16} />
-      </span>
-    )}
-    <SemanticIcon name={icon} size={44} />
-    <span className="font-ui text-[18px] text-kit-cream">{word}</span>
-    <span className="font-body text-[14px] font-bold text-kit-muted">{effect}</span>
-    {credit > 0 ? <CreditChip count={credit} /> : <Lords amount={price} size={18} />}
-  </button>
+  />
 );
 
+/** What was paid or comes back, a row each, and what was paid in all. */
 const Receipt = ({
   rows,
   total,
@@ -427,76 +427,48 @@ const Receipt = ({
   rows: { icon: IconMeaning; word: string; value: ReactNode }[];
   total?: bigint;
 }) => (
-  <div className="flex flex-col overflow-hidden rounded-xl border border-kit-line">
+  <div className="app-well">
     {rows.map(({ icon, word, value }) => (
-      <div
-        key={word}
-        className="flex h-12 items-center gap-3 border-b border-kit-line px-3.5 font-ui text-[17px] text-kit-cream last:border-b-0"
-      >
-        <SemanticIcon name={icon} size={24} />
-        {word}
-        <span className="ml-auto">{value}</span>
-      </div>
+      <AppRow key={word} lead={<SemanticIcon name={icon} size={24} />} title={word} trail={value} />
     ))}
-    {total !== undefined && (
-      <div className="flex h-12 items-center gap-3 bg-kit-gold/10 px-3.5 font-ui text-[17px] text-kit-cream">
-        {ENTRY_WORDS.paid}
-        <span className="ml-auto">
-          <Lords amount={total} size={20} />
-        </span>
-      </div>
-    )}
+    {total !== undefined && <AppRow title={ENTRY_WORDS.paid} trail={<Lords amount={total} />} own />}
   </div>
 );
 
-const Lords = ({ amount, size, tone = "text-kit-cream" }: { amount: bigint; size: number; tone?: string }) => (
-  <span
-    className={cn("inline-flex items-center gap-1.5 font-body font-extrabold tabular-nums", tone)}
-    style={{ fontSize: size }}
-  >
-    <SemanticIcon name="lords" size={size} />
-    {formatExact(lordsOf(amount))}
-  </span>
+/** An amount of LORDS, with its icon. */
+const Lords = ({ amount }: { amount: bigint }) => (
+  <AppChip icon="lords" tone="gold">
+    {formatCharge(lordsOf(amount))}
+  </AppChip>
 );
 
 const CreditChip = ({ count }: { count?: number }) => (
-  <span className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-full border border-kit-gold bg-kit-ink pl-1.5 pr-2.5 font-body text-[14px] font-bold text-kit-gold2">
-    <SemanticIcon name="chest" size={18} />
+  <AppChip tone="gold" icon="reward-chest">
     {count && count > 1 ? ENTRY_WORDS.credits(count) : ENTRY_WORDS.credit}
-  </span>
+  </AppChip>
 );
 
 const Back = () => (
-  <span className="inline-flex items-center gap-1 font-body text-[14px] font-bold text-kit-sage">
-    <SemanticIcon name="check" size={18} />
+  <AppChip tone="good" icon="check">
     {ENTRY_WORDS.back}
-  </span>
+  </AppChip>
 );
 
-const WalletChip = ({ address }: { address: string }) => (
-  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-kit-line2 bg-kit-ink pl-1.5 pr-3 font-body text-[14px] font-bold text-kit-muted">
-    <SemanticIcon name="backpack" size={20} />
-    {shortAddress(address)}
-  </span>
-);
+const WalletChip = ({ address }: { address: string }) => <AppChip icon="backpack">{shortAddress(address)}</AppChip>;
 
+/** The entry's panel: its icon and title, what it shows at its end (the wallet), then its parts, one under another. */
 const Plate = ({
   icon,
   title,
-  right,
+  aside,
   children,
 }: {
   icon: IconMeaning;
   title: string;
-  right?: ReactNode;
+  aside?: ReactNode;
   children: ReactNode;
 }) => (
-  <section className="flex flex-col gap-4">
-    <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-ui text-[19px] text-kit-cream">
-      <SemanticIcon name={icon} size={26} />
-      {title}
-      {right && <span className="ml-auto">{right}</span>}
-    </h2>
-    {children}
-  </section>
+  <AppPanel icon={icon} title={title} cue={aside}>
+    <div className="flex flex-col gap-4">{children}</div>
+  </AppPanel>
 );

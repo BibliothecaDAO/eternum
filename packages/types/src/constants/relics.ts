@@ -1,3 +1,4 @@
+import { formatCount } from "../words/count";
 import { ResourcesIds } from "./resource-ids";
 
 // Relic recipient type
@@ -23,12 +24,12 @@ export interface RelicInfo {
   /** The rate the contract applies, in basis points; zero for the reveal-radius relics. */
   rateBps: number;
   effect: string;
+  effectWords: RelicEffectWords;
   bonus: number;
-  duration?: string;
 }
 
 /** What a relic's rate does, in words, and the multiplier it applies. */
-type RelicEffectWords = (rateBps: number) => Pick<RelicInfo, "effect" | "bonus">;
+type RelicEffectWords = (rateBps: number, radius?: number) => Pick<RelicInfo, "effect" | "bonus">;
 
 const raises =
   (what: string): RelicEffectWords =>
@@ -38,7 +39,10 @@ const lowers =
   (rateBps) => ({ effect: `Reduces ${what} by ${rateBps / 100}%`, bonus: 1 - rateBps / 10000 });
 const revealsRadius =
   (radius: number, words: string): RelicEffectWords =>
-  () => ({ effect: `Instantly explores a ${words}-tile radius`, bonus: radius });
+  (_rateBps, recordedRadius) => ({
+    effect: `Instantly explores a ${recordedRadius === undefined ? words : recordedRadius}-tile radius`,
+    bonus: recordedRadius ?? radius,
+  });
 
 const explorerRelic = {
   recipientTypeParam: RelicRecipientTypeParam.Explorer,
@@ -54,10 +58,10 @@ const guardRelic = {
 };
 
 const relic = (
-  info: Omit<RelicInfo, "craftable" | "effect" | "bonus" | "rateBps">,
+  info: Omit<RelicInfo, "craftable" | "effect" | "effectWords" | "bonus" | "rateBps">,
   rateBps: number,
   words: RelicEffectWords,
-): RelicInfo => ({ ...info, craftable: false, rateBps, ...words(rateBps) });
+): RelicInfo => ({ ...info, craftable: false, rateBps, effectWords: words, ...words(rateBps) });
 
 /**
  * Every relic, the one source of its name, rate and effect: the presets read each rate from here (see
@@ -234,11 +238,6 @@ export const RELICS: RelicInfo[] = [
   ),
 ];
 
-export const RELIC_COST_PER_LEVEL = {
-  1: 250,
-  2: 500,
-};
-
 // Helper functions
 export const getRelicInfo = (relicId: ResourcesIds): RelicInfo | undefined => {
   return RELICS.find((relic) => relic.id === relicId);
@@ -256,10 +255,10 @@ export const isRelic = (resourceId: ResourcesIds): boolean => {
 };
 
 /** A relic's effect, the one every surface words. */
-export const relicEffect = (relicId: ResourcesIds): string => {
+export const relicEffect = (relicId: ResourcesIds, recorded?: { rateBps: number; radius: number }): string => {
   const relic = getRelicInfo(relicId);
   if (!relic) throw new Error(`Resource ${relicId} is not a relic`);
-  return relic.effect;
+  return recorded ? relic.effectWords(recorded.rateBps, recorded.radius).effect : relic.effect;
 };
 
 type RelicPackName = "War" | "Explore" | "Produce" | "Fortress";
@@ -299,9 +298,6 @@ interface RelicChestPack {
   lucky: boolean;
 }
 
-/** The chest's name, the one its panel and the game's history show: "War pack", or "War pack · lucky". */
-export const relicChestName = ({ pack, lucky }: RelicChestPack): string => `${pack} pack${lucky ? " · lucky" : ""}`;
-
 /** The relics a chest holds: its pack's, each a level up when the chest is lucky. */
 export const relicChestRelics = ({ pack, lucky }: RelicChestPack): ResourcesIds[] =>
   RELIC_PACKS[pack].relics.map((id) => (lucky ? ((id + 1) as ResourcesIds) : id));
@@ -322,20 +318,27 @@ export const relicChestPack = (value: unknown): RelicChestPack => {
   return { pack: pack as RelicPackName, lucky: fields.lucky };
 };
 
-const relicCount = (count: number): string => `${count} relic${count === 1 ? "" : "s"}`;
+const relicCount = (count: number): string => formatCount(count, "relic");
 
 /**
- * Where an opened chest's relics went, as the contract pays them: army relics stay with the army that opened it, the
- * rest go to its home ("3 relics to Stolsli", "1 relic to Stolsli T1 army, 2 to Stolsli").
+ * Where an opened chest's relics went, as the contract pays them, the army named first so it reads even when cut: army
+ * relics stay with the army that opened it, the rest go to its home ("3 relics to the army Stolsli T1", "1 relic to the
+ * army Stolsli T1, 2 to Stolsli", "3 relics to Stolsli"). `army` is the army's name ("Stolsli T1"), null when unknown.
  */
-export const relicChestDelivery = (relics: ResourcesIds[], to: { army: string; home: string }): string => {
+/** How an opened chest's relics divide: army relics to the army that opened it, the rest to that army's home. */
+export const relicChestShares = (relics: ResourcesIds[]): { toArmy: number; toHome: number } => {
   const toArmy = relics.filter((id) => {
     const relic = getRelicInfo(id);
     if (!relic) throw new Error(`Resource ${id} is not a relic`);
     return relic.recipientType === RelicRecipientType.Explorer;
   }).length;
-  const toHome = relics.length - toArmy;
-  if (toHome === 0) return `${relicCount(toArmy)} to ${to.army}`;
+  return { toArmy, toHome: relics.length - toArmy };
+};
+
+export const relicChestDelivery = (relics: ResourcesIds[], to: { army: string | null; home: string }): string => {
+  const { toArmy, toHome } = relicChestShares(relics);
+  const army = to.army ? `the army ${to.army}` : "the army";
+  if (toHome === 0) return `${relicCount(toArmy)} to ${army}`;
   if (toArmy === 0) return `${relicCount(toHome)} to ${to.home}`;
-  return `${relicCount(toArmy)} to ${to.army}, ${toHome} to ${to.home}`;
+  return `${relicCount(toArmy)} to ${army}, ${toHome} to ${to.home}`;
 };

@@ -1,3 +1,4 @@
+import { iconUrl } from "@/utils/icons";
 import { StartingResources, StructureType } from "@/components/eternum-components/StartingResources";
 import { StartingMilitary } from "@/components/StartingMilitary";
 import { RealmDefenseSlotsTable } from "@/components/eternum-components/DefendingArmies";
@@ -13,11 +14,7 @@ in Eternum can produce between one and seven different resources, depending on t
 and its associated Season Pass. This metadata also aligns each Realm to one of sixteen ancient Orders, however the
 meaning of this alignment has been lost to the mist… for now.
 
-<img
-  src="/images/buildings/construction/castleOne.png"
-  width="800"
-  style={{ margin: "0 auto", transform: "scale(1.2)" }}
-/>
+<img src={iconUrl("realm-1", 256)} width="256" alt="Realm" style={{ margin: "0 auto", display: "block" }} />
 
 ### Settling
 

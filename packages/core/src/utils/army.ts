@@ -166,24 +166,14 @@ export const spawnRing = (
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   structure: NativeRows["Structure"],
   occupierAt: (hex: { col: number; row: number }) => number | undefined,
-): { direction: Direction; open: boolean; explored: boolean }[] => {
+): { col: number; row: number; direction: Direction; open: boolean; explored: boolean }[] => {
   const home = structureMapPosition(store, structure);
   if (!home) return [];
-  return getLayerNeighborHexes(home.x, home.y, home.alt).map((hex) => {
-    const occupier = occupierAt(hex);
-    return { direction: hex.direction, open: isOpenSpawnHex(occupier), explored: occupier !== undefined };
+  return getLayerNeighborHexes(home.x, home.y, home.alt).map(({ col, row, direction }) => {
+    const occupier = occupierAt({ col, row });
+    return { col, row, direction, open: isOpenSpawnHex(occupier), explored: occupier !== undefined };
   });
 };
-
-/** The directions an army can be raised in from a structure, given the occupier of each explored neighbour. */
-export const openSpawnDirections = (
-  store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
-  structure: NativeRows["Structure"],
-  occupierAt: (hex: { col: number; row: number }) => number | undefined,
-): Direction[] =>
-  spawnRing(store, structure, occupierAt)
-    .filter((tile) => tile.open)
-    .map((tile) => tile.direction);
 
 export const getRemainingCapacityInKg = (weight: NativeRows["ResourceWeight"]) =>
   nanogramToKg(Number(weight.capacity - weight.weight));

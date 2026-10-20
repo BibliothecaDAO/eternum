@@ -1,2 +1,1 @@
-Subject: One sturdy triangular canvas campaign tent with folded entrance flap, thick brown canvas and wooden ridge pole. Warm cloth lit upper-left, dark inner opening, no ground, ropes sprawling outside or campfire.
-Old counterpart: apps/game/public/image-icons/kit/ui-camp.png.
+Render /models/outposts/camp.glb with scripts/icons/render-models.mjs through the client loader and building-thumbnail camera. Keep the actual building geometry and materials; do not add a terrain tile. Transparent 1024 px master. Tight subject crop through normalizeMaster and deliverIcon, about 90% of each final canvas.

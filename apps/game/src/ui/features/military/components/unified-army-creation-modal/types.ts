@@ -1,9 +1,9 @@
-import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
 export interface TroopTierAvailability {
   tier: TroopTier;
   available: number;
-  resourceTrait: string;
+  resourceId: ResourcesIds;
 }
 
 export interface TroopSelectionOption {
@@ -15,6 +15,11 @@ export interface TroopSelectionOption {
 export interface SelectedTroopCombo {
   type: TroopType;
   tier: TroopTier;
+}
+
+/** A troop stack: one type and tier (an army is of one) and how many whole troops, as Next up names it. */
+export interface TroopStack extends SelectedTroopCombo {
+  count: number;
 }
 
 export interface GuardSummary {

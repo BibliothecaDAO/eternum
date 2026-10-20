@@ -1,4 +1,4 @@
-import { mapAnimationTime as time } from "../effects/game-end-freeze";
+import { mapAnimationTime as time } from "../effects/endgame/state";
 import { AdditiveBlending, DoubleSide, NormalBlending } from "three";
 import type { Blending } from "three";
 import { MeshBasicNodeMaterial } from "three/webgpu";

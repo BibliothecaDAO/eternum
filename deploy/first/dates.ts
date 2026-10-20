@@ -29,6 +29,32 @@ export function validateDates(dates: SeasonDates) {
   }
 }
 
+/** Only production emails incidents: dev's alerts once spent the Resend quota its sign-in codes share. */
+const sendsAlerts = (target: Target) => target.environment === "production";
+
+/** What setup asks the owner, in order, for this environment. */
+export function setupQuestions(target: Target): [keyof Inputs, string][] {
+  return [
+    ["cloudflareToken", "Cloudflare token"],
+    ["rpc", "Alchemy mainnet URL"],
+    ["resend", "Resend key"],
+    ...(sendsAlerts(target)
+      ? [["alertEmail", "Alert email (where the status monitor reports incidents)"] as [keyof Inputs, string]]
+      : []),
+    ["amount", "Frontier deposit in whole tokens"],
+    ["frontierStart", "Frontier start, YYYY-MM-DDTHH:MM:SSZ"],
+    ["frontierEnd", "Frontier end, YYYY-MM-DDTHH:MM:SSZ"],
+    ["blitzStart", "Blitz start, YYYY-MM-DDTHH:MM:SSZ"],
+    ["blitzEnd", "Blitz end, YYYY-MM-DDTHH:MM:SSZ"],
+    ...(target.coldAdmin
+      ? ([
+          ["admin", "Public cold admin account address (never its key)"],
+          ["treasury", "Public treasury address"],
+        ] as [keyof Inputs, string][])
+      : []),
+  ];
+}
+
 export function validateInputs(input: Inputs, target: Target) {
   const rpc = new URL(input.rpc);
   if (
@@ -40,6 +66,10 @@ export function validateInputs(input: Inputs, target: Target) {
   )
     throw new PublicError("Use the Alchemy mainnet HTTPS endpoint");
   if (!input.cloudflareToken || !input.resend) throw new PublicError("Cloudflare and Resend credentials are required");
+  if (!sendsAlerts(target) && input.alertEmail !== undefined)
+    throw new PublicError("Dev sends no alert email; remove alertEmail from inputs.json");
+  if (sendsAlerts(target) && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.alertEmail ?? ""))
+    throw new PublicError("Production needs the alert email address");
   if (!/^[1-9][0-9]*$/.test(input.amount) || BigInt(input.amount) * WEI >= 1n << 128n)
     throw new PublicError("Deposit must be positive whole tokens fitting u128 wei");
   validateDates(input);

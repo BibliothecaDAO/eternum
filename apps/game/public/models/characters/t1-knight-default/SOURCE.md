@@ -1,22 +1,52 @@
 # T1 Knight Default
 
-The default skin of the T1 Knight with its sword and shield. Opt-in for now: the appearance is offered only in
-development builds opened with `?t1KnightDefault=1` (`procedural-character-review-capability.ts`).
+The production T1 Knight with its sword and shield. All land T1 Knights use it, without a query parameter or build flag.
+Ships retain their naval representation; other troop tiers retain their existing models.
+
+The world map loads only the visible skin LOD: near within 12 world units of the camera, mid beyond that, and icons at
+the far content band. Sword and shield are shared by both skins. A prepared skin stays cached until its runtime closes;
+returning to it does not fetch it again. Loading a replacement keeps the previous representation until it is ready. The
+map uses scale 1.67 to match the former T1 Knight's approximately 1.024-unit standing height.
 
 | File              | Triangles | Vertices | Maps        | Joints |
 | ----------------- | --------- | -------- | ----------- | ------ |
-| `near/skin.glb`   | 13,499    | 19,927   | 3 × 1024 px | 31     |
-| `mid/skin.glb`    | 4,498     | 8,064    | 3 × 512 px  | 31     |
+| `near/skin.glb`   | 13,499    | 19,954   | 3 × 1024 px | 31     |
+| `mid/skin.glb`    | 4,498     | 8,077    | 3 × 512 px  | 31     |
 | `near/sword.glb`  | 500       | 636      | 3 × 512 px  | none   |
-| `near/shield.glb` | 1,000     | 1,694    | 3 × 512 px  | none   |
+| `near/shield.glb` | 1,000     | 1,696    | 3 × 512 px  | none   |
 
 One figure with sword and shield is 14,999 triangles at near and 5,998 at mid, in three draws. The same sword and shield
 serve both levels.
 
+## Delivery sizes
+
+| File            | Original bytes | Delivered bytes | Reduction |
+| --------------- | -------------: | --------------: | --------: |
+| near/skin.glb   |      3,476,800 |       2,381,832 |     31.5% |
+| mid/skin.glb    |      1,169,232 |         725,968 |     37.9% |
+| near/sword.glb  |        426,340 |         402,980 |      5.5% |
+| near/shield.glb |        623,252 |         561,340 |      9.9% |
+| Total           |      5,695,624 |       4,072,120 |     28.5% |
+
+A cold mid view fetches 1,690,288 bytes of Knight assets; a cold near view fetches 3,346,152 bytes. These counts exclude
+the shared renderer/runtime and other asset families. The gear maps were already 512 px; they remain 512 px. Image
+payloads dominate these small rigid meshes, so Draco's reduction is smaller than on the skins.
+
+Use the same delivery pipeline as structures (position and generic precision are 20 bits for this rig to retain
+normalized weights):
+
+```sh
+node apps/game/scripts/optimize-structure-models.mjs characters/t1-knight-default/near/skin.glb characters/t1-knight-default/mid/skin.glb characters/t1-knight-default/near/sword.glb characters/t1-knight-default/near/shield.glb
+pnpm --dir apps/game verify:t1-knight-default
+```
+
+The verifier decodes Draco before checking joints, weights, inverse binds, triangle budgets and texture dimensions.
+Decoded vertex counts can increase at attribute seams; triangle counts and the 31-joint skin stay unchanged.
+
 ## What the files hold
 
-Every file is a plain GLB: one mesh, one primitive, one single-sided PBR material with base colour, normal and one ORM
-image (occlusion, roughness, metallic) as embedded KTX2 images (colour ETC1S, normal and ORM UASTC, from
+Every file is a Draco-compressed GLB: one mesh, one primitive, one single-sided PBR material with base colour, normal
+and one ORM image (occlusion, roughness, metallic) as embedded KTX2 images (colour ETC1S, normal and ORM UASTC, from
 `pnpm compress:models`). No animation clips. Axes are the game's: +Y up, +Z forward, +X the character's left, in metres,
 feet on y = 0. The figure stands about 0.61 to the top of the helmet.
 

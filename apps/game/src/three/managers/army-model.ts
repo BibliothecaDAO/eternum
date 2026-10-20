@@ -21,7 +21,6 @@ import {
   Scene,
   Vector3,
 } from "three";
-import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { createSlotDirtyRange, flushSlotDirtyRange, markSlotDirty } from "../utils/instance-update-ranges";
@@ -70,7 +69,7 @@ import {
   resolveSettlementOffset,
   resolvePathBankAngle,
   resolveTerrainSpeedMultiplier,
-  resolveRhythmicBob,
+  resolveRhythmicLean,
   resolveArrivalSlamScale,
 } from "../utils/spline-path";
 import { installArmyModelDebugHooks } from "./army-model-debug-hooks";
@@ -146,8 +145,6 @@ export class ArmyModel {
   private readonly movingInstances: Map<number, MovementData> = new Map();
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
   private readonly matrixIndexOwners: Map<number, number> = new Map();
-  private readonly labels: Map<number, { label: CSS2DObject; entityId: number }> = new Map();
-  private readonly labelsGroup: Group;
   private currentCameraView: CameraView = CameraView.Medium;
   private movementCompleteCallbacks: Map<number, () => void> = new Map();
 
@@ -165,7 +162,6 @@ export class ArmyModel {
   private readonly contactShadowMatrix: Matrix4 = new Matrix4();
   private readonly dummyEuler: Euler = new Euler();
   private readonly tempVector1: Vector3 = new Vector3();
-  private readonly tempVector2: Vector3 = new Vector3();
   private readonly tempVector3: Vector3 = new Vector3();
 
   // Animation and state management
@@ -189,8 +185,6 @@ export class ArmyModel {
   // Configuration constants
   private readonly SCALE_TRANSITION_SPEED = 5.0;
   private readonly MOVEMENT_SPEED = 3.75;
-  private readonly FLOAT_HEIGHT = 0.5;
-  private readonly FLOAT_TRANSITION_SPEED = 3.0;
   private readonly ROTATION_SPEED = 5.0;
   private readonly zeroScale = new Vector3(0, 0, 0);
   private readonly normalScale = new Vector3(1, 1, 1);
@@ -233,14 +227,12 @@ export class ArmyModel {
     scene: Scene,
     /** The biome an army stands on at contract coordinates: its tile's stored biome (see ArmyManager). */
     private readonly groundBiomeAt: (col: number, row: number) => BiomeType,
-    labelsGroup?: Group,
     cameraView?: CameraView,
     private readonly compilePipelines?: PipelineCompiler,
   ) {
     this.scene = scene;
     this.dummyObject = new Object3D();
     this.loadPromise = Promise.resolve();
-    this.labelsGroup = labelsGroup || new Group();
     this.currentCameraView = cameraView || CameraView.Medium;
     this.contactShadowsEnabled = this.currentCameraView !== CameraView.Close;
 
@@ -986,7 +978,6 @@ export class ArmyModel {
     this.activeCosmeticByEntity.delete(entityId);
     this.hiddenEntityRepresentations.delete(entityId);
     this.movementCompleteCallbacks.delete(entityId);
-    this.removeLabel(entityId);
   }
 
   /** Hard-clear a single slot across every renderable, drop its ownership, and pool it. */
@@ -1170,12 +1161,8 @@ export class ArmyModel {
         const instanceScale = Math.max(this.dummyObject.scale.x, this.dummyObject.scale.z);
         const finalScale = baseScale * instanceScale;
 
-        // Keep contact shadows grounded while units "float" during movement.
-        const movement = this.movingInstances.get(entityId);
-        const baseY = movement ? position.y - movement.floatingHeight : position.y;
-
         this.contactShadowMatrix.makeScale(finalScale, finalScale, finalScale);
-        this.contactShadowMatrix.setPosition(position.x, baseY + CONTACT_SHADOW_Y_OFFSET, position.z);
+        this.contactShadowMatrix.setPosition(position.x, position.y + CONTACT_SHADOW_Y_OFFSET, position.z);
         modelData.contactShadowMesh.setMatrixAt(index, this.contactShadowMatrix);
       }
     }
@@ -1530,7 +1517,6 @@ export class ArmyModel {
         spline,
         totalLength,
         journeyProgress: 0,
-        floatingHeight: 0,
         currentRotation,
         easingType,
         anticipationTimer: 0,
@@ -1582,7 +1568,6 @@ export class ArmyModel {
         endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
         currentPathIndex: 0,
-        floatingHeight: 0,
         currentRotation: this.dummyEuler.y,
         targetRotation: this.dummyEuler.y,
       });
@@ -1592,7 +1577,6 @@ export class ArmyModel {
         endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
         currentPathIndex: 0,
-        floatingHeight: 0,
         currentRotation: 0,
         targetRotation: 0,
       });
@@ -1620,64 +1604,20 @@ export class ArmyModel {
       const matrixIndex = instanceData.matrixIndex;
       if (matrixIndex === undefined) {
         // The slot was reassigned away without removing this movement entry.
-        // Tear the movement down directly — routing through stopMovement() could
-        // spin up a descent tween that can never progress without a live slot,
-        // stranding the entry forever.
+        // Tear the movement down directly: there is no live slot to finish it on.
         this.clearMovementState(entityId);
-        return;
-      }
-
-      if (movement.currentPathIndex === -1) {
-        this.handleDescent(movement, entityId, instanceData, matrixIndex, deltaTime);
         return;
       }
 
       // Use spline movement if available
       const splineData = this.splineMovingInstances.get(entityId);
       if (splineData) {
-        this.updateSplineMovement(splineData, movement, entityId, instanceData, matrixIndex, deltaTime);
+        this.updateSplineMovement(splineData, entityId, instanceData, matrixIndex, deltaTime);
         return;
       }
 
       this.updateMovingInstance(movement, entityId, instanceData, matrixIndex, deltaTime);
     });
-  }
-
-  private handleDescent(
-    movement: MovementData,
-    entityId: number,
-    instanceData: ArmyInstanceData,
-    matrixIndex: number,
-    deltaTime: number,
-  ): void {
-    const modelType = this.entityModelMap.get(entityId);
-    const isShip = isShipModel(modelType);
-
-    if (!isShip) {
-      movement.floatingHeight = Math.max(0, movement.floatingHeight - deltaTime * this.FLOAT_TRANSITION_SPEED);
-    }
-
-    // Use reusable vector instead of cloning
-    this.tempVector1.copy(movement.startPos);
-    if (!isShip) {
-      this.tempVector1.y += movement.floatingHeight;
-    }
-
-    this.updateRotation(movement, deltaTime);
-    this.updateInstance(
-      entityId,
-      matrixIndex,
-      this.tempVector1,
-      instanceData.scale,
-      this.dummyObject.rotation,
-      instanceData.color,
-    );
-
-    this.updateLabelPosition(entityId, this.tempVector1);
-
-    if (movement.floatingHeight <= 0 || isShip) {
-      this.movingInstances.delete(entityId);
-    }
   }
 
   private updateMovingInstance(
@@ -1687,16 +1627,6 @@ export class ArmyModel {
     matrixIndex: number,
     deltaTime: number,
   ): void {
-    const modelType = this.entityModelMap.get(entityId);
-    const isShip = isShipModel(modelType);
-
-    if (!isShip) {
-      movement.floatingHeight = Math.min(
-        this.FLOAT_HEIGHT,
-        movement.floatingHeight + deltaTime * this.FLOAT_TRANSITION_SPEED,
-      );
-    }
-
     this.updateRotation(movement, deltaTime);
     this.updateMovementProgress(movement, instanceData, deltaTime);
 
@@ -1704,22 +1634,14 @@ export class ArmyModel {
       this.updateModelTypeForPosition(entityId, instanceData.position, instanceData.category, instanceData.tier);
     }
 
-    // Use reusable vector instead of cloning
-    this.tempVector2.copy(instanceData.position);
-    if (!isShip) {
-      this.tempVector2.y += movement.floatingHeight;
-    }
-
     this.updateInstance(
       entityId,
       matrixIndex,
-      this.tempVector2,
+      instanceData.position,
       instanceData.scale,
       this.dummyObject.rotation,
       instanceData.color,
     );
-
-    this.updateLabelPosition(entityId, this.tempVector2);
   }
 
   private getSplineEasingType(_tier: TroopTier): EasingType {
@@ -1732,8 +1654,7 @@ export class ArmyModel {
   private static readonly OVERSHOOT_DISTANCE = 0.05;
   private static readonly MAX_BANK_RADIANS = 0.15;
   private static readonly SPEED_MULTIPLIER_LERP_RATE = 5.0;
-  private static readonly BOB_AMPLITUDE = 0.03;
-  private static readonly BOB_FREQUENCY = 1.8;
+  private static readonly LEAN_FREQUENCY = 1.8;
   private static readonly ARRIVAL_SLAM_DURATION = 0.2;
   // Pre-allocated vectors for spline sampling (avoid GC pressure)
   private readonly splinePositionTarget: Vector3 = new Vector3();
@@ -1741,7 +1662,6 @@ export class ArmyModel {
 
   private updateSplineMovement(
     splineData: SplineMovementData,
-    movement: MovementData,
     entityId: number,
     instanceData: ArmyInstanceData,
     matrixIndex: number,
@@ -1750,18 +1670,8 @@ export class ArmyModel {
     const modelType = this.entityModelMap.get(entityId);
     const isShip = isShipModel(modelType);
 
-    // Track elapsed time for rhythmic bob
+    // Track elapsed time for the rhythmic lean
     splineData.elapsedTime += deltaTime;
-
-    // Float up (same as existing)
-    if (!isShip) {
-      splineData.floatingHeight = Math.min(
-        this.FLOAT_HEIGHT,
-        splineData.floatingHeight + deltaTime * this.FLOAT_TRANSITION_SPEED,
-      );
-      // Sync to legacy movement data for descent phase
-      movement.floatingHeight = splineData.floatingHeight;
-    }
 
     // Anticipation — squash before launch
     if (splineData.isAnticipating) {
@@ -1775,19 +1685,14 @@ export class ArmyModel {
       }
 
       // During anticipation, don't advance progress — just render squash
-      this.tempVector2.copy(instanceData.position);
-      if (!isShip) {
-        this.tempVector2.y += splineData.floatingHeight;
-      }
       this.updateInstance(
         entityId,
         matrixIndex,
-        this.tempVector2,
+        instanceData.position,
         instanceData.scale,
         this.dummyObject.rotation,
         instanceData.color,
       );
-      this.updateLabelPosition(entityId, this.tempVector2);
       return;
     }
 
@@ -1867,19 +1772,14 @@ export class ArmyModel {
       }
 
       // Render during settlement
-      this.tempVector2.copy(instanceData.position);
-      if (!isShip) {
-        this.tempVector2.y += splineData.floatingHeight;
-      }
       this.updateInstance(
         entityId,
         matrixIndex,
-        this.tempVector2,
+        instanceData.position,
         instanceData.scale,
         this.dummyObject.rotation,
         instanceData.color,
       );
-      this.updateLabelPosition(entityId, this.tempVector2);
       return;
     }
 
@@ -1916,19 +1816,14 @@ export class ArmyModel {
       ArmyModel.MAX_BANK_RADIANS,
     );
 
-    // Rhythmic bob + forward lean (not for boats)
-    let bobYOffset = 0;
-    let pitchAngle = 0;
-    if (!isShip) {
-      const bob = resolveRhythmicBob({
-        elapsedTime: splineData.elapsedTime,
-        speed: currentSpeed,
-        amplitude: ArmyModel.BOB_AMPLITUDE,
-        baseFrequency: ArmyModel.BOB_FREQUENCY,
-      });
-      bobYOffset = bob.yOffset;
-      pitchAngle = bob.pitchAngle;
-    }
+    // Rhythmic forward lean (not for boats)
+    const pitchAngle = isShip
+      ? 0
+      : resolveRhythmicLean({
+          elapsedTime: splineData.elapsedTime,
+          speed: currentSpeed,
+          baseFrequency: ArmyModel.LEAN_FREQUENCY,
+        });
     this.dummyObject.rotation.set(pitchAngle, splineData.currentRotation, bankAngle);
 
     // Update model type based on current position (biome switching)
@@ -1936,22 +1831,14 @@ export class ArmyModel {
       this.updateModelTypeForPosition(entityId, instanceData.position, instanceData.category, instanceData.tier);
     }
 
-    // Apply floating height + rhythmic bob
-    this.tempVector2.copy(instanceData.position);
-    if (!isShip) {
-      this.tempVector2.y += splineData.floatingHeight + bobYOffset;
-    }
-
     this.updateInstance(
       entityId,
       matrixIndex,
-      this.tempVector2,
+      instanceData.position,
       instanceData.scale,
       this.dummyObject.rotation,
       instanceData.color,
     );
-
-    this.updateLabelPosition(entityId, this.tempVector2);
   }
 
   private updateRotation(movement: MovementData, deltaTime: number): void {
@@ -2073,18 +1960,11 @@ export class ArmyModel {
   private stopMovement(entityId: number): void {
     this.splineMovingInstances.delete(entityId);
 
-    const movement = this.movingInstances.get(entityId);
-    if (!movement) return;
+    if (!this.movingInstances.delete(entityId)) return;
 
     const instanceData = this.instanceData.get(entityId);
     if (instanceData?.matrixIndex !== undefined) {
       this.setAnimationState(instanceData.matrixIndex, false);
-    }
-
-    if (movement.floatingHeight > 0) {
-      this.initializeDescentAnimation(entityId, movement);
-    } else {
-      this.movingInstances.delete(entityId);
     }
 
     if (instanceData) {
@@ -2093,24 +1973,6 @@ export class ArmyModel {
     }
 
     this.invokeMovementComplete(entityId);
-  }
-
-  private initializeDescentAnimation(entityId: number, movement: MovementData): void {
-    const instanceData = this.instanceData.get(entityId);
-    if (!instanceData) {
-      this.movingInstances.delete(entityId);
-      return;
-    }
-
-    this.movingInstances.set(entityId, {
-      startPos: new Vector3().copy(instanceData.position), // Create once for descent
-      endPos: new Vector3().copy(instanceData.position), // Create once for descent
-      progress: 0,
-      currentPathIndex: -1,
-      floatingHeight: movement.floatingHeight,
-      currentRotation: movement.currentRotation,
-      targetRotation: movement.currentRotation,
-    });
   }
 
   /**
@@ -2194,11 +2056,8 @@ export class ArmyModel {
   // the caller also clears the previous slot (moveInstanceSlot -> clearInstanceSlot).
   // This only re-asserts the walking/idle animation flag on the new slot.
   public rebindMovementMatrixIndex(entityId: number, newMatrixIndex: number): void {
-    const movement = this.movingInstances.get(entityId);
-    if (!movement) return;
-
-    const isMoving = movement.currentPathIndex !== -1 || movement.floatingHeight > 0;
-    this.setAnimationState(newMatrixIndex, isMoving);
+    if (!this.movingInstances.has(entityId)) return;
+    this.setAnimationState(newMatrixIndex, true);
   }
 
   public isEntityMoving(entityId: number): boolean {
@@ -2221,9 +2080,6 @@ export class ArmyModel {
     const totalSegments = instanceData.path.length - 1;
     const completedSegments = movement.currentPathIndex;
     const currentSegmentProgress = movement.progress;
-
-    // During descent (currentPathIndex === -1), return 1 (complete)
-    if (completedSegments === -1) return 1;
 
     return (completedSegments + currentSegmentProgress) / totalSegments;
   }
@@ -2314,54 +2170,6 @@ export class ArmyModel {
         easing,
       })),
     };
-  }
-
-  // Label Management Methods
-  public addLabel(entityId: number, label: CSS2DObject): void {
-    this.removeLabel(entityId);
-    this.labels.set(entityId, { label, entityId });
-    this.labelsGroup.add(label);
-  }
-
-  public removeLabel(entityId: number): void {
-    const labelData = this.labels.get(entityId);
-    if (labelData) {
-      this.labelsGroup.remove(labelData.label);
-      if (labelData.label.element && labelData.label.element.parentNode) {
-        labelData.label.element.parentNode.removeChild(labelData.label.element);
-      }
-      this.labels.delete(entityId);
-    }
-  }
-
-  private updateLabelPosition(entityId: number, position: Vector3): void {
-    const labelData = this.labels.get(entityId);
-    if (labelData) {
-      labelData.label.position.copy(position);
-      labelData.label.position.y += 1.5;
-    }
-  }
-
-  public removeLabelsFromScene(): void {
-    this.labels.forEach((labelData) => {
-      this.labelsGroup.remove(labelData.label);
-    });
-  }
-
-  public removeLabelsExcept(entityId?: number): void {
-    this.labels.forEach((labelData) => {
-      if (labelData.entityId !== entityId) {
-        this.labelsGroup.remove(labelData.label);
-      }
-    });
-  }
-
-  public addLabelsToScene(): void {
-    this.labels.forEach((labelData) => {
-      if (!this.labelsGroup.children.includes(labelData.label)) {
-        this.labelsGroup.add(labelData.label);
-      }
-    });
   }
 
   // Instance Count Management Methods
@@ -2614,7 +2422,6 @@ export class ArmyModel {
     this.instanceData.clear();
     this.hiddenEntityRepresentations.clear();
     this.matrixIndexOwners.clear();
-    this.labels.clear();
     this.movementCompleteCallbacks.clear();
     this.idleWeightsBuffer = null;
     this.movingWeightsBuffer = null;

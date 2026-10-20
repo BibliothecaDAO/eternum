@@ -1,2 +1,1 @@
-Subject: A squat thick glass vial holding luminous deep violet essence, cork stopper, violet light contained inside glass. Broad silhouette and strong glass highlights. No pink particles or external sparkles, no rim decorations.
-Old counterpart: apps/game/public/images/resources/38.png.
+Restore the exact master from apps/game/asset-sources/rss-icons/selected/essence-shipped.png, verified against its catalog SHA-256. Historical provenance: 301ca1d55a2:apps/game/asset-sources/facets/masters/essence.png. Deliver through normalizeMaster and deliverIcon; the visible subject fills about 90% of each final canvas.

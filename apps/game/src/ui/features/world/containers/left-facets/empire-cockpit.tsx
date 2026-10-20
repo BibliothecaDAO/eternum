@@ -1,7 +1,7 @@
 import { AutomationPresetSwitch } from "@/ui/features/settlement/production/automation-preset-switch";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { useStructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
@@ -29,7 +29,7 @@ export const EmpireCockpit = memo(() => {
   return (
     // Title is the structure's own type (Realm / Village / Camp / …) rather than
     // a generic "Empire" — it names exactly what the token panel is showing.
-    <InfoBubble
+    <HudPanel
       title={typeLabel ?? "Structure"}
       icon={"production" as const}
       cue={
@@ -50,7 +50,7 @@ export const EmpireCockpit = memo(() => {
         isMine={isMine}
         activeRelicIds={activeRelicIds}
       />
-    </InfoBubble>
+    </HudPanel>
   );
 });
 

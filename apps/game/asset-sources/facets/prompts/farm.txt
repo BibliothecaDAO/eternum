@@ -1,1 +1,1 @@
-A compact timber farm barn beside three neat wheat rows, warm straw roof.
+Render /models/new-buildings-opt/farm.glb with scripts/icons/render-models.mjs through the client loader and building-thumbnail camera. Keep the actual building geometry and materials; do not add a terrain tile. Transparent 1024 px master. Tight subject crop through normalizeMaster and deliverIcon, about 90% of each final canvas.

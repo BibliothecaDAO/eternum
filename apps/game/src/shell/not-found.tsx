@@ -1,33 +1,24 @@
-import { useLayout } from "./frame/layout";
+import { APP_STATE_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { AppButton, AppPanel } from "@/ui/design-system/kit/app-elements";
+
 import { PageFrame } from "./frame/page-frame";
-import { StepVerb } from "./frame/step-verb";
-import { paintingSources } from "./paintings";
-import { GoButton } from "./play/go-button";
-import { APP_STATE_WORDS, WORDS } from "./words";
 
 /**
- * A page that does not exist, also drawn inside a page whose subject does not exist (a post, a player): on a phone the
- * storm above the line, on desktop one plate with Play on Enter.
+ * A page that does not exist, also drawn inside a page whose subject does not exist (a post, a player): the app sheet's
+ * panel on the storm, with Play on Enter.
  */
-export const NothingHere = () =>
-  useLayout() === "phone" ? (
-    <section className="flex flex-col gap-3 plate p-3.5">
-      <img {...paintingSources("stormy")} sizes="100vw" alt="" className="h-44 w-full rounded-xl object-cover" />
-      <p className="font-body text-lg font-bold text-kit-cream">{APP_STATE_WORDS.nothingHere}</p>
-      <GoButton role="primary" word={WORDS.play} icon="play" to="/" />
-    </section>
-  ) : (
-    <div className="flex justify-center">
-      <section className="plate flex w-[30rem] flex-col items-stretch gap-5 p-6">
-        <p className="text-center font-display text-[34px] leading-none text-kit-cream">
-          {APP_STATE_WORDS.nothingHere}
-        </p>
-        <StepVerb>
-          <GoButton role="primary" word={WORDS.play} icon="play" to="/" />
-        </StepVerb>
-      </section>
-    </div>
-  );
+export const NothingHere = () => (
+  <div className="flex justify-center">
+    <AppPanel className="w-full max-w-dialog">
+      <div className="flex flex-col items-stretch gap-5 text-center">
+        <p className="text-app-title text-app-ink">{APP_STATE_WORDS.nothingHere}</p>
+        <AppButton kind="primary" size="lg" icon="play" to="/" step>
+          {WORDS.play}
+        </AppButton>
+      </div>
+    </AppPanel>
+  </div>
+);
 
 /** The app's own 404: the storm across the desktop window behind the plate. */
 export const NotFoundPage = () => (

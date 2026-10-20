@@ -21,6 +21,11 @@ describe("allocateRunDirectory", () => {
 });
 
 describe("readPlaytestOptions", () => {
+  it("plays at 1920 by 1080 unless --viewport names another size", () => {
+    expect(readPlaytestOptions([]).viewport).toEqual({ width: 1920, height: 1080 });
+    expect(readPlaytestOptions(["--viewport", "1280x800"]).viewport).toEqual({ width: 1280, height: 800 });
+  });
+
   it("reads a spectator run with its defaults, paths taken from where the command was run", () => {
     expect(readPlaytestOptions(["--out", "runs", "--iterations", "2"], "/work")).toMatchObject({
       baseUrl: null,
@@ -44,8 +49,21 @@ describe("readPlaytestOptions", () => {
     expect(() => readPlaytestOptions(["--cpu-throttle", "0.5"])).toThrow(
       "--cpu-throttle must be an integer of at least 1",
     );
-    expect(() => readPlaytestOptions(["--steps", "burst"])).toThrow(
-      '--steps takes spectator, player, ownership-rings, blitz-orders, blitz-spectator, blitz-burst, still-map, still-map-frozen-sun, blitz-still-map, blitz-still-map-frozen-sun, not "burst"',
+    expect(() => readPlaytestOptions(["--viewport", "1440"])).toThrow(/--viewport takes <width>x<height>/);
+    // The refusal names every step list the runner can play, as STEP_SETS lists them: a list added there is named here.
+    const refusal = (() => {
+      try {
+        readPlaytestOptions(["--steps", "burst"]);
+      } catch (error) {
+        return error.message;
+      }
+      return null;
+    })();
+    expect(refusal).toMatch(/^--steps takes .*, not "burst"$/);
+    const named = refusal.slice("--steps takes ".length, refusal.lastIndexOf(", not ")).split(", ");
+    expect(named).toEqual(Object.keys(STEP_SETS));
+    expect(named).toEqual(
+      expect.arrayContaining(["blitz-plates", "blitz-plates-player", "frontier-plates", "frontier-plates-player"]),
     );
     expect(() => readPlaytestOptions(["--player", ".context/playtest-profiles/clientlane"])).toThrow(
       '--player takes an email, not ".context/playtest-profiles/clientlane"',
@@ -60,15 +78,24 @@ describe("the page a run opens", () => {
       buildRunUrl({ baseUrl: "https://127.0.0.1:4173", game, player, rendererMode: "webgpu-auto", stepSet }),
     ).searchParams.get("dev");
 
-  it("keeps the dev overlays off for every spectator list that does not play the dev tools", () => {
-    const ordinary = Object.keys(STEP_SETS).filter((stepSet) => !stepSet.endsWith("frozen-sun"));
+  const plateLists = ["blitz-plates", "blitz-plates-player", "frontier-plates", "frontier-plates-player"];
+
+  it("keeps the dev overlays off for every spectator list that needs no dev tools", () => {
+    const ordinary = Object.keys(STEP_SETS).filter(
+      (stepSet) => !stepSet.endsWith("frozen-sun") && !plateLists.includes(stepSet),
+    );
     expect(ordinary).toContain("blitz-still-map");
     for (const stepSet of ordinary) expect([stepSet, devOf(stepSet)]).toEqual([stepSet, "0"]);
   });
 
-  it("turns them on for the lists that hold the sun through the dev tools", () => {
+  it("turns them on for the lists that hold the sun through the dev tools, and for the plate lists", () => {
     expect(devOf("still-map-frozen-sun")).toBe("1");
     expect(devOf("blitz-still-map-frozen-sun")).toBe("1");
+    // The page then reports its world (window.__gameRenderer): every label is measured against its thing.
+    for (const stepSet of plateLists) expect([stepSet, devOf(stepSet)]).toEqual([stepSet, "1"]);
+    // A seated player's plates as well: the home page sets them, and the page keeps them into the game.
+    expect(devOf("frontier-plates-player", "a@b.c")).toBe("1");
+    expect(devOf("blitz-orders", "a@b.c")).toBe("0");
   });
 
   it("opens a player's home page, not the game", () => {

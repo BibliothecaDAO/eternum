@@ -1,44 +1,41 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import { AmountSlider } from "@/ui/design-system/kit/amount-slider";
-import { Button } from "@/ui/design-system/kit/button";
-import { Chip } from "@/ui/design-system/kit/chip";
-import { DayEnds } from "@/ui/design-system/kit/clock-line";
-import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
-import { Sheet } from "@/ui/design-system/kit/sheet";
-import { BUILD, DEPLOY, DEPLOY_FIGURES, DEPLOYING, TROOPS } from "@/ui/design-system/kit/words";
+import {
+  HudButton,
+  HudCost,
+  HudMeter,
+  HudNotice,
+  HudPortrait,
+  HudSheet,
+  HudTroopAmount,
+  HudWindowFoot,
+} from "@/ui/design-system/kit/hud-elements";
+import { costLine } from "@/ui/design-system/kit/price-faces";
+import { shortfallLine } from "@/ui/design-system/kit/reasons";
+import { BUILD, DEPLOY, DEPLOYING, marchLine, NO_TROOPS_AT_HOME, STAMINA, TROOPS } from "@/ui/design-system/kit/words";
+import {
+  type DeployTile,
+  RealmHexDeployMap,
+} from "@/ui/features/military/components/unified-army-creation-modal/realm-hex-deploy-map";
 import type { Direction } from "@bibliothecadao/types";
 
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
-
-import { AttributeMarks } from "../attributes/attribute-marks";
-import type { DayClock } from "../hud/day-clock";
-import { DeployRing } from "./deploy-ring";
-
-type RingTile = { direction: Direction; open: boolean; explored: boolean };
+import type { SlotStart } from "./deploy-plan";
+import { slotStartWords } from "./slot-start";
 
 /**
- * Deploy (wireframe 04), from its props: how many troops, the wheat they cost, the wheat left and how far it moves the
- * army, what each reveal sends home and the stamina it starts with, when it ends, and one Deploy carrying its wheat
- * price. The slider's ends are Minimum and Maximum; it stops where the wheat runs out. Every figure is an icon and a
- * number that names itself when asked. With no troops at home, Build is the step. Unknown is a dash.
+ * Deploy, from its props: the two choices a deploy makes and its one verb. How many troops go (the count typed, +500
+ * and Max beside it, out of how many can, a slider under them), the stamina the army starts on (its slot's bar),
+ * onto which tile beside the realm (the map selector), then Deploy in the foot with its wheat price and how far the
+ * wheat left lets the army march: the trade the count makes. With no troops at home, Build is the step.
  */
 export const DeployView = ({
-  slots,
   art,
   troopsAtHome,
   count,
-  troopsMax,
-  wheatStop,
+  amount,
   onCount,
-  equation,
-  rations = false,
-  revealYield,
-  startingStamina,
-  startingTiers,
-  clock,
+  start,
+  wheatCost,
+  march,
   ring,
   canDeploy,
   sending,
@@ -47,23 +44,25 @@ export const DeployView = ({
   onBuild,
   onClose,
 }: {
-  slots: { used: number; allowed: number } | undefined;
   art: IconMeaning | undefined;
   troopsAtHome: number | undefined;
   count: number | undefined;
-  troopsMax: number;
-  /** The count where the wheat runs out, when it runs out before the troops do. */
-  wheatStop: number | undefined;
+  /** The most that can go, and the troops it is counted from: more than the most reads "that fit". */
+  amount: { most: number; held: number };
   onCount: (count: number) => void;
-  equation: { wheatCost: number; wheatLeft: number; tiles: number } | null | undefined;
-  /** The Barracks took Rations: its mark sits on the wheat price. */
-  rations?: boolean;
-  revealYield: number | undefined;
-  startingStamina: number | undefined;
-  /** The tiers the realm's training buildings give a new army; unknown is undefined. */
-  startingTiers?: readonly [Tier, Tier, Tier, Tier];
-  clock: Pick<DayClock, "endsAt" | "secondsLeft" | "tone"> | undefined;
-  ring: { tiles: readonly RingTile[]; chosen: Direction | null; onPick: (direction: Direction) => void } | undefined;
+  /** The slot the army fills and the bar it starts on there; none while every slot holds an army or it is unknown. */
+  start: SlotStart | undefined;
+  wheatCost: number | undefined;
+  /** The tiles the wheat left at home lets the army march; unknown is undefined. */
+  march: number | undefined;
+  ring:
+    | {
+        center: { col: number; row: number };
+        tiles: readonly DeployTile[];
+        chosen: Direction | null;
+        onPick: (direction: Direction) => void;
+      }
+    | undefined;
   canDeploy: boolean;
   sending: boolean;
   onDeploy: () => void;
@@ -71,115 +70,66 @@ export const DeployView = ({
   wheatShort: { held: number; need: number; wait: number | undefined } | undefined;
   onBuild: () => void;
   onClose: () => void;
-}) => {
-  const noTroops = troopsAtHome === 0;
-  return (
-    <Sheet label={DEPLOY} onClose={onClose}>
-      <header className="flex items-center justify-between">
-        <h2 className="frontier-title !text-xl">{DEPLOY}</h2>
-        {slots && <SlotMarks used={slots.used} allowed={slots.allowed} />}
-      </header>
-      <Hero art={art} count={count} />
-      <AmountSlider
-        label={TROOPS}
-        icon="explore"
+}) => (
+  <HudSheet label={DEPLOY} onClose={onClose}>
+    <div className="flex items-center gap-2">
+      {art && <HudPortrait icon={art} label={TROOPS} />}
+      <HudTroopAmount
+        name={TROOPS}
         value={count ?? 0}
-        max={troopsMax}
-        stop={wheatStop}
-        disabled={noTroops}
+        most={amount.most}
+        held={amount.held}
+        disabled={amount.most === 0}
         onChange={onCount}
       />
-      {noTroops ? (
-        <ReasonPlate
-          reason={{ kind: "short", of: "troops", held: 0, need: 1 }}
-          step={<Button role="primary" word={BUILD} className="w-[140px]" onClick={onBuild} />}
+    </div>
+    {start && troopsAtHome !== 0 && <SlotStartReading start={start} />}
+    {troopsAtHome === 0 ? (
+      <>
+        <HudNotice tone="warn" line={NO_TROOPS_AT_HOME} />
+        <HudButton kind="primary" onClick={onBuild}>
+          {BUILD}
+        </HudButton>
+      </>
+    ) : (
+      ring && (
+        <RealmHexDeployMap
+          centerCol={ring.center.col}
+          centerRow={ring.center.row}
+          ring={ring.tiles}
+          selectedDirection={ring.chosen}
+          onSelect={ring.onPick}
         />
-      ) : (
-        <>
-          <Equation equation={equation} rations={rations} />
-          <div className="flex items-center justify-center gap-1.5">
-            {count === 1 ? (
-              <Chip icons={["explore"]} label={DEPLOY_FIGURES.scout} value="" />
-            ) : (
-              <Chip
-                icons={["essence", "labor"]}
-                label={DEPLOY_FIGURES.revealSends}
-                value={revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
-              />
-            )}
-            <Chip icons={["stamina"]} label={DEPLOY_FIGURES.startingStamina} value={formatAmount(startingStamina)} />
-            {startingTiers && <AttributeMarks tiers={startingTiers} />}
-          </div>
-          <DayEnds endsAt={clock?.endsAt} secondsLeft={clock?.secondsLeft} tone={clock?.tone ?? "calm"} />
-          {ring && <DeployRing ring={ring.tiles} chosen={ring.chosen} onChoose={ring.onPick} />}
-        </>
-      )}
-      {canDeploy && equation && (
-        <Button
-          role="primary"
-          word={DEPLOY}
-          prices={[{ of: "wheat", amount: equation.wheatCost }]}
-          loading={sending ? DEPLOYING : undefined}
-          onClick={onDeploy}
-        />
-      )}
-      {wheatShort && <ReasonPlate reason={{ kind: "short", of: "wheat", ...wheatShort }} />}
-    </Sheet>
+      )
+    )}
+    {wheatShort && <HudNotice tone="warn" line={shortfallLine({ kind: "short", of: "wheat", ...wheatShort })} />}
+    {canDeploy && wheatCost !== undefined && (
+      <HudWindowFoot note={<DeployPrice wheatCost={wheatCost} march={march} />}>
+        <HudButton kind="primary" icon="military" busy={sending ? DEPLOYING : undefined} onClick={onDeploy}>
+          {DEPLOY}
+        </HudButton>
+      </HudWindowFoot>
+    )}
+  </HudSheet>
+);
+
+/** The stamina the new army starts on: its slot's bar, as its card will show it once out, and why it is that bar. */
+const SlotStartReading = ({ start }: { start: SlotStart }) => {
+  const words = slotStartWords(start);
+  if (!words || !start.start) return null;
+  return (
+    <section aria-label={words.line} className="flex flex-col gap-1">
+      <span>{words.line}</span>
+      <HudMeter amount={start.start} tone="good" label={STAMINA} />
+      <span className="text-hud-muted">{words.why}</span>
+    </section>
   );
 };
 
-/** The wheat equation: what the troops cost, the wheat left, and the tiles that wheat moves the army. */
-const Equation = ({
-  equation,
-  rations,
-}: {
-  equation: { wheatCost: number; wheatLeft: number; tiles: number } | null | undefined;
-  rations: boolean;
-}) => (
-  <div className="flex items-center justify-center gap-1.5">
-    <Chip
-      icons={rations ? ["wheat", "rations"] : ["wheat"]}
-      label={DEPLOY_FIGURES.wheatToDeploy}
-      value={`−${formatExact(equation?.wheatCost)}`}
-    />
-    <span aria-hidden className="text-base text-kit-muted">
-      →
-    </span>
-    <Chip
-      icons={["wheat"]}
-      label={DEPLOY_FIGURES.wheatLeft}
-      value={formatExact(equation?.wheatLeft)}
-      ember={equation?.wheatLeft === 0}
-    />
-    <Chip
-      icons={["move"]}
-      label={DEPLOY_FIGURES.tilesPaid}
-      value={formatAmount(equation?.tiles)}
-      ember={equation?.tiles === 0}
-    />
-  </div>
-);
-
-/** The troops as their portrait, and the count large beside it. */
-const Hero = ({ art, count }: { art: IconMeaning | undefined; count: number | undefined }) => (
-  <div className="flex items-center justify-center gap-3.5">
-    <span className="size-16 overflow-hidden rounded-full border border-kit-line2 bg-kit-ground">
-      {art && <SemanticIcon name={art} alt="" className="size-full object-cover" />}
-    </span>
-    <span role="img" aria-label={`${TROOPS} ${formatExact(count)}`} className="frontier-hero tabular-nums">
-      {formatExact(count)}
-    </span>
-  </div>
-);
-
-/** The day's army slots: one mark each, lit where an army stands. */
-const SlotMarks = ({ used, allowed }: { used: number; allowed: number }) => (
-  <span role="img" aria-label={`${DEPLOY_FIGURES.slots} ${used} / ${allowed}`} className="flex gap-[3px]">
-    {Array.from({ length: allowed }, (_, index) => (
-      <i
-        key={index}
-        className={cn("h-[18px] w-3 rounded-b-md rounded-t-sm border-2 border-kit-gold", index < used && "bg-kit-gold")}
-      />
-    ))}
+/** The wheat Deploy takes, and under it how far the wheat left lets the army march (none reads as a warning). */
+const DeployPrice = ({ wheatCost, march }: { wheatCost: number; march: number | undefined }) => (
+  <span className="flex flex-col items-start">
+    <HudCost line={costLine([{ of: "wheat", amount: wheatCost }])} />
+    {march !== undefined && <span className={march === 0 ? "text-hud-warn" : undefined}>{marchLine(march)}</span>}
   </span>
 );

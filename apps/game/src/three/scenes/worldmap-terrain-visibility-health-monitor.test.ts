@@ -74,12 +74,36 @@ describe("WorldmapTerrainVisibilityHealthMonitor", () => {
       { isBoxVisible: vi.fn(() => true), getPresentedCellCount: vi.fn(() => 0) },
     );
 
-    // Tick 1 seeds the reference chunk; ticks 2-4 accumulate zero-terrain frames to the threshold.
+    // Tick 1 enters the chunk; ticks 2-4 count empty frames to the threshold.
     for (let i = 0; i < 4; i += 1) tick();
 
     expect(refresh(deps)).toHaveBeenCalledTimes(1);
     expect(refresh(deps)).toHaveBeenCalledWith(true, "terrain_self_heal");
     expect(deps.emitTelemetry).toHaveBeenCalledWith("self_heal_start", expect.objectContaining({ reason: "zero" }));
+  });
+
+  it("leaves a smaller window alone: fewer cells presented in the same chunk is the terrain's choice, not a loss", async () => {
+    // The live numbers (qa-blitz-2 #10, qa-frontier-1 #8): five 576-cell pages, then two, in one chunk.
+    let presented = 2880;
+    const { deps, tick, setNow } = createHarness(
+      {},
+      {
+        getPresentedCellCount: vi.fn(() => presented),
+        // A refresh settles, and the terrain presents the same smaller window again.
+        waitForRequestedChunkRefresh: vi.fn(() => Promise.resolve()),
+      },
+    );
+
+    tick();
+    presented = 1152;
+    // Ten seconds of frames, past the 1.5 s cooldown many times over.
+    for (let ms = 0; ms <= 10_000; ms += 100) {
+      setNow(100_000 + ms);
+      tick();
+      await Promise.resolve();
+    }
+
+    expect(refresh(deps)).not.toHaveBeenCalled();
   });
 
   it("does not re-trigger while a recovery is still in flight", () => {

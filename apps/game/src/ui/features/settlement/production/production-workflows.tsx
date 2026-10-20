@@ -1,11 +1,9 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { resolveCompactLane } from "@/hooks/helpers/use-compact-hud";
-import { type Building, type RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/types";
+import { type Building, type RealmInfo as RealmInfoType, ResourcesIds, resourceName } from "@bibliothecadao/types";
 
 import { useEffect, useRef, useState } from "react";
 
-import { Tabs } from "@/ui/design-system/atoms";
-import { HUD_BODY_MUTED } from "@/ui/design-system/atoms/hud-typography";
+import { HudSelect, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
@@ -60,26 +58,21 @@ export const ProductionWorkflows = ({
       content: (
         <div className="space-y-3">
           {!selectedResource && (
-            <p className={HUD_BODY_MUTED}>Pick a resource below to inspect its buildings and start production.</p>
+            <p className="text-hud-muted">Pick a resource below to inspect its buildings and start production.</p>
           )}
 
-          <label className="flex flex-col gap-1 text-sm text-gold lg:hidden">
-            Resource
-            <select
-              value={selectedResource ?? ""}
-              onChange={(event) =>
-                onSelectResource(event.target.value ? (Number(event.target.value) as ResourcesIds) : null)
-              }
-              className="min-h-11 w-full rounded border border-gold/30 bg-[#101c23] px-2 text-base"
-            >
-              <option value="">Select a resource</option>
-              {producedResources.map((resource) => (
-                <option key={resource} value={resource}>
-                  {ResourcesIds[resource]}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="flex flex-col gap-1 lg:hidden">
+            <span className="text-hud-label text-hud-muted">Resource</span>
+            <HudSelect
+              label="Resource"
+              value={selectedResource === null ? "" : String(selectedResource)}
+              options={[
+                { value: "", label: "Select a resource" },
+                ...producedResources.map((resource) => ({ value: String(resource), label: resourceName(resource) })),
+              ]}
+              onChange={(value) => onSelectResource(value ? (Number(value) as ResourcesIds) : null)}
+            />
+          </div>
           <div className="hidden lg:block">
             <BuildingsList
               realm={realm}
@@ -114,34 +107,20 @@ export const ProductionWorkflows = ({
   ];
 
   return (
-    <section className="space-y-3">
-      <Tabs selectedIndex={activeTab} onChange={handleTabChange} className="w-full" variant="default">
-        <Tabs.List className="flex flex-row items-stretch gap-1 rounded-lg border border-gold/15 bg-black/25 p-1">
-          {workflows.map((workflow, index) => {
-            const Icon = workflow.icon;
-            const isActive = activeTab === index;
-            const tabClass = `flex flex-1 items-center justify-center gap-2 rounded-md border !space-x-0 ${
-              isActive
-                ? "border-gold/60 bg-gold/15 text-gold"
-                : "border-transparent text-kit-muted hover:border-gold/40 hover:text-gold"
-            } !px-3 !py-1.5 min-h-11 text-center !transition-none`;
-            return (
-              <Tabs.Tab key={workflow.label} className={tabClass} title={workflow.description}>
-                <SemanticIcon name={Icon} className="h-4 w-4" />
-                <span className="text-sm font-semibold ">{workflow.label}</span>
-              </Tabs.Tab>
-            );
-          })}
-        </Tabs.List>
-
-        <Tabs.Panels className="mt-3">
-          {workflows.map((workflow) => (
-            <Tabs.Panel key={workflow.label} className="flex flex-col gap-3">
-              {workflow.content}
-            </Tabs.Panel>
-          ))}
-        </Tabs.Panels>
-      </Tabs>
+    <section className="flex flex-col gap-3">
+      <HudTabs
+        tabs={workflows.map((workflow, index) => ({
+          key: index,
+          label: workflow.label,
+          icon: workflow.icon,
+          title: workflow.description,
+        }))}
+        value={activeTab}
+        onChange={handleTabChange}
+      />
+      <div role="tabpanel" aria-label={workflows[activeTab]?.label} className="flex flex-col gap-3">
+        {workflows[activeTab]?.content}
+      </div>
     </section>
   );
 };

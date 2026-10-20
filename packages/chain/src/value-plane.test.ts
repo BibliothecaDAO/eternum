@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import dev from "../../../contracts/common/addresses/dev.json";
-import production from "../../../contracts/common/addresses/mainnet.json";
+import production from "../../../contracts/common/addresses/production.json";
 import { environmentL2, valuePlaneAddress } from "./value-plane";
 
 describe("environment address books", () => {
@@ -15,10 +15,22 @@ describe("environment address books", () => {
     }
   });
 
-  it.each(["ledger", "lords", "mmrToken", "lootChests", "cosmetics"] as const)(
-    "keeps the deployed %s addresses separate without falling back when absent",
+  it("runs production on dev's test LORDS until the LORDS launch, and only that contract is shared", () => {
+    expect(valuePlaneAddress("lords", "production")).toBe(dev.lords);
+    expect(valuePlaneAddress("lords", "staging")).toBe(dev.lords);
+  });
+
+  it.each(["ledger", "mmrToken", "lootChests", "cosmetics"] as const)(
+    "keeps each environment's own %s separate without falling back when absent",
     (contract) => {
-      const books = { staging: dev, production };
+      const books: Record<
+        "staging" | "production",
+        Partial<Record<typeof contract, string>>
+      > = {
+        staging: dev,
+        // Production's own contracts are published by its setup; until then its book names none of them.
+        production: production as Partial<Record<typeof contract, string>>,
+      };
       for (const environment of ["staging", "production"] as const) {
         const value = books[environment][contract];
         if (value && BigInt(value) !== BigInt(0)) {

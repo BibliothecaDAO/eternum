@@ -20,16 +20,13 @@ const SIZES = [
 ] as const;
 
 /**
- * The pages without Back: the three places, and a result after a match (spec 08); every other page is opened from
+ * The pages without Back: the app's four places (the fifth, Market, is another site), and a result after a match (spec 08); every other page is opened from
  * another and carries Back.
  */
-const TAB_PATHS = new Set(["/", "/season", "/profile", "/nothing-here", "/results/0x111"]);
+const TAB_PATHS = new Set(["/", "/season", "/scroll", "/profile", "/nothing-here", "/results/0x111"]);
 /** Full-screen steps: no tabs, the desktop's top bar keeps the lockup alone (sign-in, a Blitz lobby). */
 const STEP_PATHS = ["/sign-in", "/blitz/0x111"];
 const CONTROLS = "a[href], button, input, select, textarea";
-
-// jsdom lays nothing out, so it has no scrolling to do (the Scroll's address scrolls Play to its band).
-Element.prototype.scrollIntoView = () => {};
 
 /**
  * The app shell's pages (the route without a path), each with a sample for its parameters. Play's former addresses
@@ -89,6 +86,8 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
     for (const control of controlsIn(container))
       expect(control.closest("[data-band]"), control.outerHTML).not.toBeNull();
 
+    // Every page with the places ends on the footer; a full-screen step has neither.
+    expect(band(container, "footer") !== null).toBe(!isStep);
     // Back leads every page opened from another, and only those.
     const back = container.querySelectorAll('[data-role="back"]');
     expect(back.length).toBe(isTabPage ? 0 : 1);
@@ -96,23 +95,27 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
     if (layout === "phone") {
       // The top row holds the lockup, or Back and the title; nothing else there is to tap.
       expect(controlsIn(top).map((control) => control.dataset.role)).toEqual(isTabPage ? [] : ["back"]);
-      // The tabs are the foot, below the notice and the foot row; a page's footer closes its body.
-      if (band(container, "footer")) expect(band(container, "footer")!.closest('[data-band="body"]')).not.toBeNull();
+      // The tabs are the foot, below the notice and the foot row; a page's footer follows its body in the same scroll,
+      // as on the desktop.
+      if (band(container, "footer"))
+        expect(band(container, "footer")!.previousElementSibling).toBe(band(container, "body"));
       expect(bandOrder(container).filter((name) => name !== "body" && name !== "footer")).toEqual(
         ["top", "notice", "foot", "tabs"].filter((name) => band(container, name)),
       );
       expect(controlsIn(band(container, "tabs")).filter((control) => control.dataset.role === "tab")).toHaveLength(
-        isStep ? 0 : 3,
+        isStep ? 0 : 5,
       );
     } else {
-      // One bar across the top: the lockup as a mark, then the three places and nothing else, above every other band;
+      // One bar across the top: the lockup as a mark, then the five places and nothing else, above every other band;
       // Back sits in the title row under it.
       expect(top).toBeNull();
       const bar = band(container, "bar");
       expect(bandOrder(container)[0]).toBe("bar");
       expect(bar!.querySelector('[data-role="lockup"]')!.matches(CONTROLS)).toBe(false);
       const controls = controlsIn(bar);
-      expect(controls.map((control) => control.dataset.role)).toEqual(isStep ? [] : ["tab", "tab", "tab"]);
+      expect(controls.map((control) => control.dataset.role)).toEqual(
+        isStep ? [] : ["tab", "tab", "tab", "tab", "tab"],
+      );
       expect(band(container, "tabs")).toBeNull();
       if (!isTabPage) expect(back[0].closest('[data-band="title"]')).not.toBeNull();
     }
@@ -145,11 +148,31 @@ describe("a page's notice", () => {
     const notice = band(container, "notice")!;
     expect(notice.closest('[data-band="bar"]')).not.toBeNull();
     expect(notice.nextElementSibling!.textContent).toContain("You");
-    expect(bandOrder(container).filter((name) => name !== "notice")).toEqual(["bar", "body"]);
+    expect(bandOrder(container).filter((name) => name !== "notice")).toEqual(["bar", "body", "footer"]);
   });
 
   it("sits above the phone's foot, under the content", async () => {
     const container = await renderNotice(390);
-    expect(bandOrder(container)).toEqual(["top", "body", "notice", "tabs"]);
+    expect(bandOrder(container)).toEqual(["top", "body", "footer", "notice", "tabs"]);
+  });
+});
+
+describe.each(SIZES)("the current place at %i × %i", (width) => {
+  const current = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLElement>('[data-role="tab"][aria-current="page"]')].map(
+      (tab) => tab.textContent,
+    );
+
+  it.each(["/terms", "/privacy", "/credits"])(
+    "marks no place current on %s, read from the footer (qa-app-1 P3-3)",
+    async (path) => {
+      setViewportWidth(width);
+      expect(current(await renderPath(path))).toEqual([]);
+    },
+  );
+
+  it("marks What's new current on the patch notes", async () => {
+    setViewportWidth(width);
+    expect(current(await renderPath("/scroll")).join()).toMatch(/What.s new/);
   });
 });

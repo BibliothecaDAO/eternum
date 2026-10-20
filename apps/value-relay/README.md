@@ -25,6 +25,12 @@ payment authority, result commitments and shard conservation, and pauses only on
 verification makes health red. Later wallet changes cannot rewrite an earlier payment decision. It never uses the
 relay's queue as proof and never unpauses the ledger.
 
+Chest discovery and the monitor retain a ledger block hash through pagination and between ticks. A replaced or regressed
+checkpoint restarts enumeration from block zero; chest discovery discards orphaned pending requests and rebuilds them
+from canonical events. Old cursors without a hash also replay once. Each tick still reads at most one 100-event page. A
+head that changes during a read fails that tick without advancing its cursor. These checks recover event discovery; they
+do not make `ACCEPTED_ON_L2` irreversible or reconcile relay payments already acknowledged before an L2 rewrite.
+
 The ledger address and chain come from `contracts/common/addresses/dev.json` or `mainnet.json` through the shared
 environment reader. The ledger runtime settings are the secret `L2_RPC_URL`, `LEDGER_OPERATOR_ADDRESS` and the
 `LEDGER_OPERATOR_PRIVATE_KEY` secret. Labor uses the fixed relay bot account enrolled through
@@ -45,8 +51,12 @@ retained hash still matching the restored chain, checks that anchor again, drops
 already-paid claims from discarded blocks, and replays from fork + 1. If no anchor survives, replay starts at genesis. A
 changed anchor refuses reset. The ledger's claim identity prevents a second payment.
 
-`POST /api/operator/monitor/reset` requires `{row,reason}` and the operator token. It records the exact fault and
-advances past only that row. An availability reset retries its checkpoint. Neither reset unpauses the ledger.
+`POST /api/operator/monitor/reset` requires `{row,reason}` and the operator token. It waives the fault's exact fact,
+everything its check compared, and advances past only that row: a rewind that replays the same evidence stays cleared,
+and a rewritten row on the same claim or game is checked again. The answer's `waived` names that fact, or is `null` for
+a fault that recorded none (a roster check, or one written before facts were recorded): that reset clears the halt and
+the check runs again, halting once more, with its fact, if the evidence still disagrees. An availability reset retries
+its checkpoint. No reset unpauses the ledger.
 
 ## Season prizes and mystery chests
 

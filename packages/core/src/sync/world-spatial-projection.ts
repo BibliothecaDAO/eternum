@@ -4,7 +4,7 @@ import { TileOccupier } from "@bibliothecadao/types";
 import type { NativeFactChange, NativeFactStore } from "../client/native-fact-store";
 import { notifyEach } from "../utils/notify-each";
 import type { NativeKeys, NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { isExpeditionRealm, structureMapPosition } from "../utils/expeditions";
+import { isExpeditionRealm, siteKindOf, structureMapPosition } from "../utils/expeditions";
 import { isTileOccupierStructure } from "../utils/map/hex";
 import { tileFactsToTile } from "../utils/tile-facts";
 import { entityMapPosition } from "../utils/tile";
@@ -57,6 +57,7 @@ interface EntityStructureSpatialRenderable {
   readonly spatialId: `entity:${ID}`;
   readonly entityId: ID;
   readonly reserved: false;
+  readonly clearedSite?: true;
   /** Contract-space coordinates, matching TileOpt. */
   readonly hexCoords: WorldSpatialHex;
   readonly occupierType: number;
@@ -68,6 +69,7 @@ interface ReservedHyperstructureSpatialRenderable {
   /** Reserved construction sites have no Structure entity until construction starts. */
   readonly entityId: null;
   readonly reserved: true;
+  readonly clearedSite?: never;
   /** Contract-space coordinates, matching TileOpt. */
   readonly hexCoords: WorldSpatialHex;
   readonly occupierType: TileOccupier.ReservedHyperstructure;
@@ -178,6 +180,7 @@ const isSameChest = (left: ChestSpatialRenderable, right: ChestSpatialRenderable
 
 const isSameStructure = (left: StructureSpatialRenderable, right: StructureSpatialRenderable): boolean =>
   left.entityId === right.entityId &&
+  left.clearedSite === right.clearedSite &&
   left.occupierType === right.occupierType &&
   isSameHex(left.hexCoords, right.hexCoords);
 
@@ -221,12 +224,29 @@ const resolveChestRenderable = (tile: Tile | undefined): ChestSpatialRenderable 
   });
 };
 
-/** A Frontier realm has no tile of its own; it is raised on its day's region at the site the contract computes. */
-const resolveExpeditionRealmRenderable = (
+/** Cleared markers belong to the retained receipt, independently of structures and tile occupants. */
+const resolveClearedSiteRenderable = (
+  site: NativeRows["ExpeditionSite"] | undefined,
+): StructureSpatialRenderable | undefined => {
+  if (!site?.clear) return undefined;
+  return {
+    kind: "structure",
+    spatialId: `entity:${safeInteger(site.entity_id)}`,
+    entityId: safeInteger(site.entity_id),
+    reserved: false,
+    clearedSite: true,
+    hexCoords: { alt: site.alt, col: site.col, row: site.row },
+    occupierType: TileOccupier[siteKindOf(site.category)],
+  };
+};
+
+/** Realms follow their daily site without occupying it. */
+const resolveUnoccupiedStructureRenderable = (
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   structure: NativeRows["Structure"] | undefined,
 ): StructureSpatialRenderable | undefined => {
-  if (!structure || !isExpeditionRealm(store, structure)) return undefined;
+  if (!structure) return undefined;
+  if (!isExpeditionRealm(store, structure)) return undefined;
   const position = structureMapPosition(store, structure);
   if (!position) return undefined;
   const site = { col: position.x, row: position.y };
@@ -566,7 +586,13 @@ export class WorldSpatialProjection {
         }
       }
       if (change.model === "ExplorerTroops") this.applyExplorerTroopsUpdate([change.current, change.previous]);
-      if (change.model === "Structure") this.applyStructureUpdate([change.current, change.previous]);
+    }
+    for (const change of changes) {
+      if (change.model === "Structure" || change.model === "ExpeditionSite" || change.model === "TileOccupancy") {
+        for (const source of [change.previous, change.current]) {
+          if (source && source.entity_id !== 0n) this.applyStructureEntityUpdate(source);
+        }
+      }
     }
   }
 
@@ -618,8 +644,15 @@ export class WorldSpatialProjection {
     }
 
     for (const [, structure] of this.store.entries("Structure")) {
-      const realm = projectedRow("realm", () => resolveExpeditionRealmRenderable(this.store, structure));
-      if (realm) nextStructures.set(realm.spatialId, realm);
+      const retained = projectedRow("unoccupied structure", () =>
+        resolveUnoccupiedStructureRenderable(this.store, structure),
+      );
+      if (retained) nextStructures.set(retained.spatialId, retained);
+    }
+
+    for (const [, site] of this.store.entries("ExpeditionSite")) {
+      const marker = projectedRow("cleared site", () => resolveClearedSiteRenderable(site));
+      if (marker) nextStructures.set(marker.spatialId, marker);
     }
 
     this.chestIndex.replace(nextChests);
@@ -673,14 +706,14 @@ export class WorldSpatialProjection {
     );
   }
 
-  private applyStructureUpdate([current, previous]: [
-    NativeRows["Structure"] | undefined,
-    NativeRows["Structure"] | undefined,
-  ]): void {
-    const currentRealm = resolveExpeditionRealmRenderable(this.store, current);
-    const previousRealm = resolveExpeditionRealmRenderable(this.store, previous);
-    const spatialId = currentRealm?.spatialId ?? previousRealm?.spatialId;
-    if (spatialId) this.structureIndex.update(spatialId, currentRealm);
+  private applyStructureEntityUpdate(key: NativeKeys["Structure"]): void {
+    const structure = this.store.get("Structure", key);
+    const retained =
+      resolveClearedSiteRenderable(this.store.get("ExpeditionSite", key)) ??
+      resolveUnoccupiedStructureRenderable(this.store, structure);
+    const occupancy = this.store.entityOccupancy(key.game_id, key.entity_id);
+    const occupied = occupancy ? resolveStructureRenderable(this.tileAt(occupancy)) : undefined;
+    this.structureIndex.update(`entity:${safeInteger(key.entity_id)}`, retained ?? occupied);
   }
 
   private applyExplorerTroopsUpdate([currentExplorerTroops, previousExplorerTroops]: [

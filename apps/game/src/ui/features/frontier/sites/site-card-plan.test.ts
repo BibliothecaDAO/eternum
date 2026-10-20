@@ -11,32 +11,66 @@ describe("Frontier's tile card", () => {
   it("shows a camp's guard as troops and tier, its labor payout, and the exact fight from the army beside it", () => {
     const { store, site, structure, attack } = campBeside();
     const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
-    expect(plan.name).toBe("Camp");
+    expect(plan.name).toBe("Troll");
+    expect(plan.beast?.beast).toBe("troll");
     expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 1_100 });
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 550, fits: 550 });
     expect(plan.xp).toBe(82);
     expect(plan.attackStamina).toBe(preset.rules.troop_stamina_config.stamina_attack_req);
     // The fight takes two attacks. The figures are the one Attack sends now, as its result will show them: this
     // attack's losses and the guard it leaves standing, never the whole fight's total.
-    expect(plan.fight).toEqual({ outcome: "wins", exchanges: 2, troopsLost: 320, guardLeft: 492 });
+    expect(plan.fight).toEqual({
+      outcome: "wins",
+      exchanges: 2,
+      troopsLost: 320,
+      guardLeft: 492,
+      // Over both attacks: the whole guard killed, and what the army loses and spends doing it.
+      whole: { troopsLost: 476, guardKilled: 1_100, stamina: 94 },
+    });
   });
 
-  it("has no fight for an army out of reach or none selected, and an unknown guard until its slots arrive", () => {
+  it("counts the fight for an army short of the attack's stamina, as its Attack will send it once it can", () => {
+    const { store, site, structure, attack } = campBeside("Camp", true, 0n);
+    const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
+    // The one attack its stamina will then pay for. The guard has rested by then, so it costs more than now (320 above).
+    expect(plan.fight).toEqual({
+      outcome: "stalls",
+      exchanges: 1,
+      troopsLost: 457,
+      guardLeft: 492,
+      // One attack is the whole fight: its figures and the fight's are the same.
+      whole: { troopsLost: 457, guardKilled: 608, stamina: 50 },
+    });
+  });
+
+  it("has no fight for an army out of reach or none selected", () => {
     const { store, site, structure, attack } = campBeside();
     expect(
       readSiteCard(store, site, structure, SITE_TILE, attack({ col: 44, row: 12, alt: false })).fight,
     ).toBeUndefined();
     expect(readSiteCard(store, site, structure, SITE_TILE, null).fight).toBeUndefined();
-    const unknown = campBeside("Camp", false);
-    const plan = readSiteCard(unknown.store, unknown.site, unknown.structure, SITE_TILE, null);
-    expect(plan.guard).toBeUndefined();
+  });
+
+  it("distinguishes an unknown guard from an empty slot after the snapshot completes", () => {
+    const { store, site, structure, attack } = campBeside("Camp", false);
+    const army = attack({ col: 41, row: 12, alt: false });
+    store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
+    expect(readSiteCard(store, site, structure, SITE_TILE, army)).toMatchObject({
+      guard: undefined,
+      fight: undefined,
+    });
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
+    expect(readSiteCard(store, site, structure, SITE_TILE, army)).toMatchObject({
+      guard: null,
+      fight: undefined,
+    });
   });
 
   it("names a ruin by the beast its depth calls for, and pays its chest", () => {
     const { store, site, structure } = campBeside("Ruin");
-    // Row 12 of ten-row bands is the second band: Ethereal I, held by a wyvern.
+    // Row 12 of ten-row bands is the second band: Ethereal I, held by a basilisk.
     const plan = readSiteCard(store, site, structure, SITE_TILE, null);
-    expect(plan.name).toBe("Wyvern");
+    expect(plan.name).toBe("Basilisk");
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Lords, amount: 500, fits: 500 });
     expect(plan.chest).toEqual({ tier: 3, amount: 500 });
     expect(plan.xp).toBe(82);

@@ -1,5 +1,5 @@
 import devAddresses from "../../../contracts/common/addresses/dev.json";
-import productionAddresses from "../../../contracts/common/addresses/mainnet.json";
+import productionAddresses from "../../../contracts/common/addresses/production.json";
 
 export type ValuePlaneContract =
   | "ledger"
@@ -24,7 +24,7 @@ const addressBooks: Record<
   { path: string; addresses: AddressBook }
 > = {
   staging: { path: "dev.json", addresses: devAddresses },
-  production: { path: "mainnet.json", addresses: productionAddresses },
+  production: { path: "production.json", addresses: productionAddresses },
 };
 
 export class ValuePlaneAddressMissingError extends Error {

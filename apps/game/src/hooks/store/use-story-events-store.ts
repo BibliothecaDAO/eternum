@@ -1,5 +1,5 @@
-import { getPlayerName } from "@/hooks/use-player-profile";
-import { fetchHeraldGameHistory, requireShard } from "@bibliothecadao/eternum/game-client";
+import { type PlayerNames, usePlayerNames } from "@/hooks/use-player-profile";
+import { fetchHeraldGameHistory, requireShard, storyParticipants } from "@bibliothecadao/eternum/game-client";
 import { storyPayloadId } from "@/utils/native-id";
 import { getActiveGame } from "@/runtime/world";
 import { buildStoryEventPresentation, configManager, hasStoryPresentation } from "@bibliothecadao/eternum";
@@ -13,9 +13,10 @@ import {
   type StoryEventScope,
 } from "@bibliothecadao/eternum/game-sync";
 import { useGame } from "@/hooks/context/game-context";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { type UseQueryResult, useQueries, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { create } from "zustand";
+import { useAccountAddress } from "./use-account-store";
 import { useConnectionStore } from "./use-connection-store";
 
 /** Where a story's event sits on the chain; a pre-confirmed one has no block yet. */
@@ -32,6 +33,16 @@ interface StoryEventData {
   entity_id: number | null;
   event_id: string;
   owner: string | null;
+  /** Every player the story names (`storyParticipants`), the set Herald's history filters a player's read by. */
+  participants: string[];
+  /** Every entity the story names (`storyParticipants`), the set Herald's history filters an entity's read by. */
+  entities: string[];
+  /**
+   * The stream generation (the connection's last handshake) a streamed story arrived in; null when read from history.
+   * A reconnect or a replacement snapshot starts a new generation, so what an older stream delivered proves nothing
+   * about the facts the new one brings.
+   */
+  streamGeneration: number | null;
   story: string;
   storyPayload: Record<string, unknown>;
   timestamp: string;
@@ -113,11 +124,15 @@ const storyEventFromValue = (
     throw new Error(`${model} arrived without its transaction, chain position or timestamp`);
   }
   const owner = value.owner ?? value.player ?? asRecord(value.attacker)?.player;
+  const named = storyParticipants(value);
   return {
     scopeKey: storyEventScopeKey(scope),
     confirmation: confirmation ?? null,
     position: chainPosition,
     owner: owner === null || owner === undefined ? null : String(owner),
+    participants: named.owners,
+    entities: named.entities,
+    streamGeneration: null,
     entity_id: storyEntityId(value.entity_id ?? value.explorer_id ?? value.attacker_id),
     tx_hash: transactionHash,
     story: variant.type,
@@ -132,8 +147,12 @@ export const toStreamStoryEvent = (
   event: GameSyncEvent,
   scope: StoryEventScope,
   confirmation?: GameSyncEventConfirmation,
-): StreamStoryEvent | null =>
-  EVENT_MODELS.has(event.model) ? storyEventFromValue(event.model, event.value, scope, confirmation) : null;
+): StreamStoryEvent | null => {
+  const story = EVENT_MODELS.has(event.model)
+    ? storyEventFromValue(event.model, event.value, scope, confirmation)
+    : null;
+  return story && { ...story, streamGeneration: useConnectionStore.getState().lastGlobalHandshake };
+};
 
 const chainPositionOf = (position: Record<string, unknown>): ChainPosition | null => {
   const { block_number: block, transaction_index: transactionIndex, event_index: eventIndex } = position;
@@ -189,9 +208,12 @@ export const isPresentableStory = (event: Pick<StoryEventData, "story">): boolea
   return false;
 };
 
+/** A story as the viewer reads it: its words name the viewer "you" where it names them. */
 const processStoryEvent = (
   event: StoryEventData | StreamStoryEvent,
   store: Parameters<typeof buildStoryEventPresentation>[1],
+  viewerAddress: string | null,
+  playerName: PlayerNames["text"],
 ): ProcessedStoryEvent => {
   const timestampMs = Number(BigInt(event.timestamp)) * 1_000;
   const presentation = buildStoryEventPresentation(
@@ -204,20 +226,43 @@ const processStoryEvent = (
       storyType: event.story,
       storyPayload: event.storyPayload,
       rawStory: event.rawStory,
+      viewerAddress,
     },
     store,
-    getPlayerName,
+    playerName,
   );
   return { ...event, id: event.event_id, timestampMs, presentation };
 };
 
-/** What one story read asks for: its game's scope, and optionally one story and one owner. */
-type StoryRead = { scopeKey: string; story?: string; owner?: string };
+/**
+ * One read of the game's stories, as Herald's history filters it: the newest `limit`, optionally of one story, naming
+ * one player, or about one entity.
+ */
+export interface StoryRead {
+  limit: number;
+  story?: string;
+  owner?: string;
+  entityId?: number;
+  /**
+   * The read must hold every story through the block the store's facts were last read at (the connection store's
+   * snapshotBlock). An answer behind that block is read again once a newer snapshot or confirmed head than the one it
+   * was asked under arrives, so recovery belongs to the snapshot applied now, whatever order the two arrive in.
+   */
+  coverSnapshot?: boolean;
+}
 
-const matchesRead = (event: StoryEventData, read: StoryRead): boolean =>
-  event.scopeKey === read.scopeKey &&
+/**
+ * Whether a story belongs to a read, by the same rule Herald's history applies: a player read keeps every story naming
+ * them, an entity read every story naming it.
+ */
+const matchesRead = (event: StoryEventData, scopeKey: string, read: StoryRead): boolean =>
+  event.scopeKey === scopeKey &&
   (!read.story || event.story === read.story) &&
-  (!read.owner || (event.owner !== null && BigInt(event.owner) === BigInt(read.owner)));
+  (!read.owner || namesPlayer(event, BigInt(read.owner))) &&
+  (read.entityId === undefined || event.entities.includes(String(read.entityId)));
+
+const namesPlayer = (event: StoryEventData, player: bigint): boolean =>
+  [event.owner, ...event.participants].some((address) => address !== null && BigInt(address) === player);
 
 /**
  * Newest first by place on the chain: a pre-confirmed story (no block yet) above every block, then block, transaction
@@ -241,68 +286,214 @@ const latestStories = (events: StoryEventData[], limit: number): StoryEventData[
   return [...latest.values()].toSorted(newestOnChainFirst).slice(0, limit);
 };
 
+/** A read's stories, the block Herald's history held every story through when it answered (null: not known), and
+ * the recovery signals that stood when it was asked. */
+interface StoryReadPage {
+  stories: StoryEventData[];
+  completeThroughBlock: number | null;
+  askedUnder: RecoverySignals;
+}
+
+/** What can let history behind the snapshot catch up: a newer snapshot to cover, or a newer confirmed head Herald
+ * folded into its history. */
+interface RecoverySignals {
+  snapshotBlock: number | null;
+  confirmedHead: number | null;
+}
+
+const currentRecoverySignals = (): RecoverySignals => {
+  const { snapshotBlock, lastConfirmedBlock } = useConnectionStore.getState();
+  return { snapshotBlock, confirmedHead: lastConfirmedBlock };
+};
+
+/** A read that failed, and the handshake it was asked under: the next handshake asks it again, once. */
+class StoryReadFailed extends Error {
+  constructor(
+    readonly askedAtHandshake: number,
+    cause: unknown,
+  ) {
+    super("Herald's history did not answer a story read", { cause });
+  }
+}
+
 /**
- * Stories as the stream delivers them, recovered from Herald's history: a read fetches history at each handshake (the
- * first connect and every reconnect), never on a block, and keeps what the stream delivers for it, so a story outlives
- * the stream's mixed ring.
+ * Whether a read owes the handshake one attempt: it settled on a failure asked under an older handshake, whether it
+ * failed before the handshake came or was still pending when it came and failed after.
  */
-export const useStoryEvents = (limit: number = 100, story?: string, owner?: string) => {
+const owesAttempt = (query: UseQueryResult<StoryReadPage>, handshake: number): boolean =>
+  !query.isFetching && query.error instanceof StoryReadFailed && query.error.askedAtHandshake < handshake;
+
+/** A read's page of Herald's history, as stories. */
+const fetchStoryRead = async (
+  shard: ReturnType<typeof requireShard>,
+  scope: StoryEventScope,
+  { limit, story, owner, entityId }: StoryRead,
+): Promise<StoryReadPage> => {
+  const askedUnder = currentRecoverySignals();
+  const askedAtHandshake = useConnectionStore.getState().lastGlobalHandshake;
+  const page = await fetchHeraldGameHistory(shard, scope.gameId, {
+    limit,
+    ...(story ? (EVENT_MODELS.has(story) ? { model: story } : { model: "StoryEvent", story }) : {}),
+    owner,
+    entityId,
+  }).catch((cause: unknown) => {
+    throw new StoryReadFailed(askedAtHandshake, cause);
+  });
+  const stories = page.items.flatMap((event) => {
+    const story = historyStoryEvent(event, scope);
+    return story ? [story] : [];
+  });
+  return { stories, completeThroughBlock: page.complete_through_block, askedUnder };
+};
+
+/**
+ * A history answer as it replaces what its read holds: it decides every story up to the block its history was complete
+ * through, and none after. A confirmed story the read already holds beyond that block (the stream delivered it, maybe
+ * since gone from the stream's ring) stays; all of them stay when Herald does not know its coverage. A pre-confirmed one
+ * does not: only the stream can confirm it or let it go.
+ */
+const answerOverHeld = (answer: StoryReadPage, held: StoryReadPage | undefined, limit: number): StoryReadPage => {
+  const through = answer.completeThroughBlock;
+  const beyond = (held?.stories ?? []).filter(
+    ({ position: { block } }) => block !== null && (through === null || block > through),
+  );
+  return { ...answer, stories: latestStories([...beyond, ...answer.stories], limit) };
+};
+
+/** An answer that holds history through a block before the snapshot applied now: it cannot vouch for those facts. */
+const isBehindSnapshot = (page: StoryReadPage, snapshotBlock: number | null): boolean =>
+  snapshotBlock !== null && page.completeThroughBlock !== null && page.completeThroughBlock < snapshotBlock;
+
+const signalsMovedSince = (page: StoryReadPage, now: RecoverySignals): boolean =>
+  page.askedUnder.snapshotBlock !== now.snapshotBlock || page.askedUnder.confirmedHead !== now.confirmedHead;
+
+/**
+ * A settled answer behind the snapshot is worth reading again only under a signal it was not asked under: the same
+ * history asked again answers the same. A failed read waits for the next handshake; one whose coverage Herald does not
+ * know stays as it is, and the read stays incomplete.
+ */
+const shouldCatchUp = (query: UseQueryResult<StoryReadPage>, now: RecoverySignals): boolean =>
+  query.data !== undefined &&
+  !query.isFetching &&
+  !query.isError &&
+  isBehindSnapshot(query.data, now.snapshotBlock) &&
+  signalsMovedSince(query.data, now);
+
+/** Each read's query as it stands: React Query keeps the list the same object until one of them changes. */
+const sameResults = (results: UseQueryResult<StoryReadPage>[]) => results;
+
+/**
+ * Stories as the stream delivers them, recovered from Herald's history: each read fetches history at each handshake
+ * (the first connect and every reconnect), never on a block, and keeps what the stream delivers for it, so a story
+ * outlives the stream's mixed ring. Each read keeps its own newest `limit`, so what one leaves out never takes another's
+ * room; the reads' stories come back together, each once, newest on the chain first.
+ */
+export const useStoryReads = (reads: StoryRead[]) => {
   const {
     setup: { store },
   } = useGame();
   const streamed = useStoryEventsStore((state) => state.streamed);
+  // A story's words name its players by the one rule, so they are written again whenever a name may have changed.
+  const names = usePlayerNames();
+  const viewer = useAccountAddress();
+  const viewerAddress = viewer === null ? null : `0x${viewer.toString(16)}`;
   const shard = requireShard(getActiveGame()?.chainId);
-  const gameId = configManager.getActiveGameId();
-  const scope = { chainId: shard.chainId, worldAddress: shard.worldAddress, gameId };
+  const scope = { chainId: shard.chainId, worldAddress: shard.worldAddress, gameId: configManager.getActiveGameId() };
   const scopeKey = storyEventScopeKey(scope);
   const handshake = useConnectionStore((state) => state.lastGlobalHandshake);
   const queryClient = useQueryClient();
-  const queryKey = ["heraldStoryEvents", shard.url, scopeKey, limit, story, owner];
+  const queryKeys = reads.map(({ limit, story, owner, entityId }) => [
+    "heraldStoryEvents",
+    shard.url,
+    scopeKey,
+    limit,
+    story,
+    owner,
+    entityId,
+  ]);
+  const readsKey = JSON.stringify(queryKeys);
 
-  const query = useQuery({
-    queryKey,
-    queryFn: async (): Promise<StoryEventData[]> => {
-      const page = await fetchHeraldGameHistory(shard, gameId, {
-        limit,
-        ...(story ? (EVENT_MODELS.has(story) ? { model: story } : { model: "StoryEvent", story }) : {}),
-        owner,
-      });
-      return page.items.flatMap((event) => {
-        const story = historyStoryEvent(event, scope);
-        return story ? [story] : [];
-      });
-    },
-    staleTime: Number.POSITIVE_INFINITY,
-    ...(story ? { retry: false, retryOnMount: false, refetchOnWindowFocus: false, refetchOnReconnect: false } : {}),
+  const queries = useQueries({
+    queries: reads.map((read, index) => ({
+      queryKey: queryKeys[index],
+      queryFn: async () =>
+        answerOverHeld(
+          await fetchStoryRead(shard, scope, read),
+          queryClient.getQueryData<StoryReadPage>(queryKeys[index]),
+          read.limit,
+        ),
+      staleTime: Number.POSITIVE_INFINITY,
+      ...(read.story
+        ? { retry: false, retryOnMount: false, refetchOnWindowFocus: false, refetchOnReconnect: false }
+        : {}),
+    })),
+    combine: sameResults,
   });
 
-  const { refetch, isError } = query;
+  // Each handshake asks every read that holds an answer again.
   useEffect(() => {
-    if (!isError) void refetch({ cancelRefetch: false });
-  }, [handshake, refetch, isError]);
+    for (const query of queries) if (!query.isError) void query.refetch({ cancelRefetch: false });
+  }, [handshake, readsKey]);
+  // A failed read is asked once per handshake, as soon as it owes one: when the handshake comes, or when a request
+  // older than it fails after. One asked under this handshake owes nothing, so a remount, a render or a head asks it
+  // nothing, and a read that settles never makes its healthy peers ask again.
+  const owedKey = queries.map((query) => owesAttempt(query, handshake)).join();
+  useEffect(() => {
+    for (const query of queries) if (owesAttempt(query, handshake)) void query.refetch({ cancelRefetch: false });
+  }, [owedKey, readsKey]);
+
+  // A handshake that meets an older read in flight shares it, so a covering read's answer can land behind a snapshot
+  // that overtook it; it then catches up once per signal it was not asked under, and never on its own answer.
+  const snapshotBlock = useConnectionStore((state) => state.snapshotBlock);
+  const confirmedHead = useConnectionStore((state) => state.lastConfirmedBlock);
+  const catchUp = queries.map(
+    (query, index) => Boolean(reads[index].coverSnapshot) && shouldCatchUp(query, { snapshotBlock, confirmedHead }),
+  );
+  const catchUpKey = queries.map((query, index) => (catchUp[index] ? query.dataUpdatedAt : "-")).join();
+  useEffect(() => {
+    queries.forEach((query, index) => {
+      if (catchUp[index]) void query.refetch({ cancelRefetch: false });
+    });
+  }, [catchUpKey]);
 
   const delivered = useMemo(
-    () => streamed.filter((event) => matchesRead(event, { scopeKey, story, owner })),
-    [streamed, scopeKey, story, owner],
+    () => reads.map((read) => streamed.filter((event) => matchesRead(event, scopeKey, read))),
+    [streamed, scopeKey, readsKey],
   );
-  // The read's key follows the same filter, so a new delivery is the one thing that changes what it keeps.
+  // Each read's key follows the same filter, so a new delivery is the one thing that changes what it keeps.
   useEffect(() => {
-    if (delivered.length === 0) return;
-    queryClient.setQueryData<StoryEventData[]>(
-      queryKey,
-      (held) => held && latestStories([...delivered, ...held], limit),
-    );
+    reads.forEach((read, index) => {
+      if (delivered[index].length === 0) return;
+      queryClient.setQueryData<StoryReadPage>(
+        queryKeys[index],
+        (held) => held && { ...held, stories: latestStories([...delivered[index], ...held.stories], read.limit) },
+      );
+    });
   }, [delivered]);
 
   const data = useMemo(
     () =>
-      latestStories([...delivered, ...(query.data ?? [])], limit)
+      latestStories(
+        reads.flatMap((read, index) =>
+          latestStories([...delivered[index], ...(queries[index].data?.stories ?? [])], read.limit),
+        ),
+        Number.POSITIVE_INFINITY,
+      )
         .filter(isPresentableStory)
-        .map((event) => processStoryEvent(event, store)),
-    [store, limit, query.data, delivered],
+        .map((event) => processStoryEvent(event, store, viewerAddress, names.text)),
+    [store, queries, delivered, viewerAddress, names],
   );
 
-  return { ...query, data };
+  return { data, queries };
+};
+
+/** One story read: its stories, its query's status, and the block its history was complete through. */
+export const useStoryEvents = (limit: number = 100, story?: string, owner?: string, coverSnapshot = false) => {
+  const {
+    data,
+    queries: [query],
+  } = useStoryReads([{ limit, story, owner, coverSnapshot }]);
+  return { ...query, data, completeThroughBlock: query.data?.completeThroughBlock ?? null };
 };
 
 /** The season's winner once its SeasonEnded story is in history; null until then. */

@@ -36,6 +36,21 @@ function setup() {
   return { provider, calls: createSystemCalls({ provider }), submit, signer, wait, decoded };
 }
 describe("player command callers", () => {
+  it("sends the army sheet's Upgrade as the contract's BuyTier: the army, its attribute, a Scouting tier's kind", async () => {
+    const { calls, signer, submit, decoded } = setup();
+    await calls.buy_tier({ signer, explorerId: 90, attribute: "Battle" });
+    expect(submit.mock.calls.at(-1)![1]).toMatchObject({ entrypoint: "BuyTier" });
+    const battle = decoded();
+    expect(battle.explorer_id).toBe(90n);
+    expect(battle.attribute.activeVariant()).toBe("Battle");
+    expect(battle.kind.isNone()).toBe(true);
+
+    await calls.buy_tier({ signer, explorerId: 90, attribute: "Scouting", scoutingKind: "Rift" });
+    const scouting = decoded();
+    expect(scouting.attribute.activeVariant()).toBe("Scouting");
+    expect(scouting.kind.unwrap().activeVariant()).toBe("Rift");
+  });
+
   it("preserves exact contribution units through the compiled command ABI", async () => {
     const { calls, signer, decoded } = setup();
     const amount = 9_007_199_254_740_993n;

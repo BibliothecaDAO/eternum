@@ -1,12 +1,11 @@
 import { REALM_ASSETS } from "../structures/realm-design";
 import {
   ChestModelPath,
-  STRAGGLERS_MODEL_PATH,
   SHARED_BUILDING_MODEL_PATHS,
   SPIRE_MODEL_PATH,
   getStructureModelPaths,
 } from "@/three/constants/scene-constants";
-import { FALLEN_REALM_RUIN_PATH } from "../structures/fallen-realm";
+import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEAST_PATHS } from "../structures/frontier-beast";
 import { StructureType } from "@bibliothecadao/types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
 
@@ -28,7 +27,6 @@ const BUILDING_LABELS: Record<string, string> = {
   empire: "Realm · Empire",
   village: "Village · Canvas & Thatch",
   camp: "Camp · Canvas and stockade",
-  stragglers: "Stragglers · Stranded company",
   archerrange: "Archery range",
   castle1: "Hall / Holy site",
   fishery: "Fishery",
@@ -40,7 +38,7 @@ const BUILDING_LABELS: Record<string, string> = {
 export const TERRAIN_LAB_BUILDINGS = [
   ...new Set([
     ...SHARED_BUILDING_MODEL_PATHS,
-    STRAGGLERS_MODEL_PATH,
+    ...FRONTIER_BEAST_PATHS,
     FALLEN_REALM_RUIN_PATH,
     "/models/outposts/shrine.glb",
     "/models/outposts/well.glb",

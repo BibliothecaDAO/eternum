@@ -54,11 +54,15 @@ fn an_active_exploration_relic_boosts_a_pool_reveal_and_an_expired_one_does_not(
 }
 
 #[test]
-fn a_spire_pays_three_times_army_strength_in_essence() {
-    let reward = spire_reward(army(1, TroopTier::T1), limits(), 40);
+fn a_spire_pays_a_thousand_essence_with_only_an_active_exploration_relic_bonus() {
+    let reward = spire_reward(Default::default(), 40);
     assert_eq!(reward.resource_type, ESSENCE);
-    assert_eq!(reward.amount, 3000 * RESOURCE_PRECISION);
-    assert_eq!(spire_reward(army(5, TroopTier::T3), limits(), 40).amount, 135000 * RESOURCE_PRECISION);
+    assert_eq!(reward.amount, 1000 * RESOURCE_PRECISION);
+    let boosts = crate::troops::TroopBoosts {
+        incr_explore_reward_percent_num: 5000, incr_explore_reward_end_at: 100, ..Default::default(),
+    };
+    assert_eq!(spire_reward(boosts, 99).amount, 1500 * RESOURCE_PRECISION);
+    assert_eq!(spire_reward(boosts, 100).amount, 1000 * RESOURCE_PRECISION);
 }
 
 #[test]
@@ -160,7 +164,7 @@ fn a_blitz_explore_on_a_spire_root_raises_a_dormant_spire_and_pays_its_finder_on
         receiver: home.entity_id,
         coord: spire,
         resource_type: ESSENCE,
-        amount: 3 * RESOURCE_PRECISION,
+        amount: 1000 * RESOURCE_PRECISION,
     };
     assert_eq!(spire_stories(ref spy, d), array![grant]);
 }
@@ -295,9 +299,61 @@ fn a_blitz_explore_pays_on_at_most_three_thousand_strength() {
 }
 
 #[test]
-fn a_blitz_spire_pays_three_times_at_most_three_thousand_strength() {
-    let mut limits = limits();
-    limits.explore_reward_strength_cap = blitz_reward_cap();
-    assert_eq!(spire_reward(army(1, TroopTier::T1), limits, 40).amount, 3000 * RESOURCE_PRECISION);
-    assert_eq!(spire_reward(army(20, TroopTier::T1), limits, 40).amount, 9000 * RESOURCE_PRECISION);
+fn a_blitz_spire_pays_a_thousand_for_one_t1_or_a_t3_army_above_the_reveal_cap() {
+    assert_eq!(blitz_reward_cap(), 3000);
+    for (count, tier) in array![(1_u128, 0_u8), (334, 2)] {
+        let (d, home, explorer) = blitz_army_of(count, tier);
+        let origin = GameState { contract_address: d.games }.explorer(explorer).unwrap().coord;
+        let mut spy = snforge_std::spy_events();
+        assert!(explore(d, explorer, SPIRE_ROOT));
+        assert_eq!(
+            spire_stories(ref spy, d),
+            array![
+                ExtractedReward {
+                    explorer_id: explorer.explorer_id,
+                    receiver: home.entity_id,
+                    coord: neighbor(origin, 0),
+                    resource_type: ESSENCE,
+                    amount: 1000 * RESOURCE_PRECISION,
+                },
+            ],
+        );
+    }
+}
+
+#[test]
+fn an_applied_exploration_relic_boosts_the_flat_spire_jackpot() {
+    let (d, home, explorer) = blitz_army_of(1, 0);
+    super::resource_commands::grant(d, home, ESSENCE, 1000 * RESOURCE_PRECISION);
+    super::resource_commands::grant(
+        d, ResourceKey { game_id: 3, entity_id: explorer.explorer_id }, 47, RESOURCE_PRECISION,
+    );
+    assert!(
+        super::resource_commands::execute(
+            d,
+            Command::ApplyRelic(
+                crate::relics::ApplyRelic {
+                    entity_id: explorer.explorer_id, relic_id: 47, recipient: crate::relics::Recipient::Explorer,
+                },
+            ),
+            130,
+        ),
+    );
+    let army = GameState { contract_address: d.games }.explorer(explorer).unwrap();
+    assert_eq!(army.troops.boosts.incr_explore_reward_percent_num, 10000);
+    assert!(army.troops.boosts.incr_explore_reward_end_at > 140);
+    let mut spy = snforge_std::spy_events();
+    assert!(explore(d, explorer, SPIRE_ROOT));
+    assert_eq!(
+        spire_stories(ref spy, d),
+        array![
+            ExtractedReward {
+                explorer_id: explorer.explorer_id,
+                receiver: home.entity_id,
+                coord: neighbor(army.coord, 0),
+                resource_type: ESSENCE,
+                amount: 2000 * RESOURCE_PRECISION,
+            },
+        ],
+    );
 }

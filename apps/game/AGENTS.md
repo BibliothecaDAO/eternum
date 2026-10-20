@@ -1,46 +1,10 @@
 # Agent Instructions for Game Client
 
-## Documenting UX Changes and New Features
+## Patch notes
 
-Whenever you make a UX change or add a new feature in the client, you **must** add an entry to the latest features list
-at:
-
-```
-src/ui/features/world/latest-features.ts
-```
-
-### Entry Format
-
-Add a new object at the **top** of the `latestFeatures` array with the following structure:
-
-```typescript
-{
-  date: "YYYY-MM-DD",      // Today's date
-  title: "Feature Title",   // Short, descriptive title
-  description: "..."        // Brief description of what changed and how it benefits users
-}
-```
-
-### Example
-
-```typescript
-export const latestFeatures = [
-  {
-    date: "2025-01-13",
-    title: "Quick Resource Transfer",
-    description:
-      "Added a new quick transfer button to move resources between structures with a single click, reducing the number of steps needed for common operations.",
-  },
-  // ... existing entries
-];
-```
-
-### Guidelines
-
-- Keep the title concise (3-6 words)
-- Write the description from the user's perspective, focusing on the benefit
-- Use present tense ("Added", "Improved", "Fixed")
-- New entries go at the top of the array (most recent first)
+Players read what changed in What's new's patch notes, one file per release under `content/patch-notes/`, written by the
+patch notes' editor at each release (that folder's `AGENTS.md`). A change does not add an entry of its own: say what a
+player meets in its pull request, and the editor takes it from there.
 
 ## CRITICAL Git Rules for Parallel Agents CRITICAL
 
@@ -98,12 +62,19 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
 - **Cancelling.** SIGINT or SIGTERM stops a client build in progress at once, otherwise cancels at the next checkpoint,
   and unwinds through the same path as a normal end: the current step is kept with what it attempted and the error, the
   run's transcript and `summary.json` are written, and everything is released.
-- **As a spectator** (default), from a fresh browser profile (cold cache): realm view, open the map, map idle, pan
-  (WASD), zoom out and in, the menu, back to the realm and the map, then a minute of watching.
+- **The page's size.** 1920 by 1080 unless `--viewport <width>x<height>` asks for another (`390x844` plays a phone). On
+  the map, the `hud-layout` step reads every part the HUD draws and judges it as the lab's layout check does
+  (`scripts/client-playtest/hud-layout.mjs`): each part whole on the page, none over another, every control reachable,
+  at most seven parts in each region, and on a desktop the minimap.
+- **As a spectator** (default), from a fresh browser profile (cold cache): enter on the map (a Frontier session opens
+  there, the realm one press away), the HUD's layout, map idle, pan (WASD), zoom out and in, the season (a desktop's
+  Season place and its page; a phone's Menu), the realm and back to the map, then a minute of watching.
 - **As a player** (`--player <email>`), entering through the Frontier card's Resume or Play on the home page with the
-  browser's own click, and past a new day's summary (Continue): realm view, open the map, select the army with the most
-  stamina, open and close production, the next order's life (below), explore twice (tap a tile beside the army, Enter),
-  then the next order dropped by leaving the map. Orders use the map's default zoom; the army must be deployed.
+  browser's own click, and past a new day's summary (Continue): enter on the map, select the army with the most stamina,
+  open and close production, the next order's life (below), explore twice (tap a tile beside the army, Enter; on a
+  desktop, right-click the tile whose hover offers Explore), then the next order dropped by leaving the map. Orders use
+  the map's default zoom; the army must be deployed. The next order is a phone's: on a desktop an order goes from the
+  map at once, so its steps are blocked there; play them with `--viewport 390x844`.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
   every command (it relaunches on a temporary profile for a command that omits it). Each run opens the sign-in page
   first: it sends a signed-in player on at once, and a signed-out one signs in there as a player does: the email, Send
@@ -153,16 +124,26 @@ stood, and one deselected with Escape while its order is in flight is not select
 count come from the same report), `--steps blitz-burst` (a seated Blitz player's orders as fast as keys allow: each army
 Tab lands on gets a tile whose tooltip offers Move or Explore, then every army is taken with Tab and ordered with a
 right-click back to back through DevTools input, nothing held; each order is timed from the click the client recorded to
-its send's answer, Herald's status and its army moving, from `__armyMovementLatencyTraceEntries`; needs two armies that
-can act), `--steps blitz-spectator` (the spectator's map steps in a Blitz game: the world map, idle, pan, zoom, a minute
-of watching; the matched frame-time run for Blitz), `--steps still-map` (a Frontier spectator's map with nothing
-pressed, its frames recorded for 6 s at the default view and again at the closest, the camera distance read and required
-to be the closest, into `<step>-frames/` with `<step>-changes.png`, each pixel's share of frame pairs it changed in:
-what a still view shimmers with, to compare two builds on the same view; `--steps blitz-still-map` the same in a Blitz
-game; `--steps still-map-frozen-sun` and `--steps blitz-still-map-frozen-sun` first tick the dev tools' Override Time to
-hold the sun, and are the only lists that open the page with the dev overlays on), `--out <root>` (default
-`.context/playtest`), `--trace` (a Chrome trace per run), `--compare <summary.json>` (fails when boot regresses),
-`--headed`. Paths are taken from where the command is run.
+its send's answer, Herald's status and its army moving (a move) or its reveal rendered (an explore, which may leave the
+army in place), from `__armyMovementLatencyTraceEntries`; needs two armies that can act), `--steps blitz-spectator` (the
+spectator's map steps in a Blitz game: the world map, idle, pan, zoom, a minute of watching; the matched frame-time run
+for Blitz), `--steps blitz-plates` (the map's labels in a Blitz game as a spectator sees them, opened with the dev
+overlays so the page reports its world: read at the map's zoom, the farthest and the closest, the tiles round the centre
+hovered one by one, and at each zoom a click at each label in view, with the label layer shown then hidden, failing on
+any label that takes a pointer, a click on a token that does not select its thing's tile (clicked there with the labels
+hidden), a click on an open plate that selects another tile than with the labels hidden, any label whose foot reaches
+below its thing's model top or whose span is not over its thing, as the renderer places the thing, any token, plate or
+order line over or within 4px of another, or an opened plate that does not cover the token read for its thing before the
+hover; `--steps blitz-plates-player` takes the readiest army with Tab first, so each hovered tile shows its order line;
+`--steps frontier-plates` and `frontier-plates-player` the same in a Frontier game, entered on its map),
+`--steps still-map` (a Frontier spectator's map with nothing pressed, its frames recorded for 6 s at the default view
+and again at the closest, the camera distance read and required to be the closest, into `<step>-frames/` with
+`<step>-changes.png`, each pixel's share of frame pairs it changed in: what a still view shimmers with, to compare two
+builds on the same view; `--steps blitz-still-map` the same in a Blitz game; `--steps still-map-frozen-sun` and
+`--steps blitz-still-map-frozen-sun` first tick the dev tools' Override Time to hold the sun, and open the page with the
+dev overlays on, as the plate lists do), `--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each
+run's boot, from before the game page opens to the world being interactive), `--compare <summary.json>` (fails when boot
+regresses), `--headed`. Paths are taken from where the command is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 
@@ -209,6 +190,13 @@ path as shown above.
 
 2. Open a headed browser on the app shell (the home page) with a persistent profile. If the player is already logged in,
    continue immediately. If no wallet/account is visible, ask the user to log in themselves. Do not ask for credentials.
+
+   A test account on dev signs in with an emailed code once, then never again: every code spends the email quota real
+   players' codes share. After the first sign-in, enter a game once, then save the browser's state with Playwright's
+   `context.storageState({ path })` to a file outside the repository, and restore it in every new browser with
+   `context.setStorageState(path)` before opening the app (save it again at the end of a session, so its 30-day cookie
+   renews). The state holds the dev session cookie, host-only on the dev host so it never reaches production, and the
+   device key (`realms:device-key`), so the restored browser is the same signed-in device and no code is sent.
 
 ```bash
 mkdir -p .context/agent-browser-login-profile
@@ -310,8 +298,9 @@ npx -y agent-browser --session spectator-check errors
 
 Use `Icon` with an `IconMeaning`, `SvgIcon` inside SVG, and `iconUrl` only for texture or DOM APIs. Resource, troop,
 Order and building inputs resolve through the central meaning helpers. Action buttons derive their icon from the action
-ID. Do not choose an unrelated action's art: Transfer is the pack donkey, Move the boots, Production the forge, and
-Settings the wheel. Do not add icon paths or independent icon components.
+ID. Do not choose an unrelated action's art: Transfer is the Ivory pack donkey (`transfer`), distinct from the Donkey
+resource (`donkey`); Move is the boot, Production the anvil, and Settings the wheel. Do not add icon paths or
+independent icon components.
 
 Construction card artwork uses `BuildingThumbnail`: a render of the current building GLB, not a semantic icon. Its
 source and image hashes live in `asset-sources/building-thumbnails.json`; regenerate after a model changes with

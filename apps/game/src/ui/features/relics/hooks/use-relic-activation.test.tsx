@@ -1,32 +1,30 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
-import { configManager, formatTime } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { useRelicMetadata } from "./use-relic-activation";
 
-const facts = vi.hoisted(() => ({ seconds: 60n }));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({
-  useNativeRow: (model: string) =>
-    model === "SliceRules"
-      ? { tick_config: { armies_tick_in_seconds: facts.seconds } }
-      : { rules: Array.from({ length: 18 }, (_, index) => ({ uses: index < 2 ? 3 : 0, duration: index < 2 ? 0 : 3 })) },
-}));
+vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRow: () => ({ rules: [] }) }));
 afterEach(() => vi.restoreAllMocks());
 
-it("advertises the active preset's full duration for stamina and every timed relic family", () => {
+it("words a relic's effect, duration and cost from the game's relic rules, not a fixed table", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
-  const Caption = ({ id }: { id: number }) => <output>{useRelicMetadata(id).relicInfo?.duration}</output>;
+  const activation = vi.spyOn(configManager, "getRelicActivation");
+  const Caption = ({ id }: { id: number }) => {
+    const { relicInfo, essenceCost } = useRelicMetadata(id);
+    return <output>{`${relicInfo?.effectLine} · ${essenceCost}`}</output>;
+  };
   const host = document.createElement("div");
   const root = createRoot(host);
   try {
-    for (const seconds of [60n, 120n]) {
-      facts.seconds = seconds;
-      for (const id of [39, 41, 43, 47, 49, 51, 53, 55]) {
-        act(() => root.render(<Caption id={id} />));
-        expect(host.textContent).toBe(formatTime(Number(seconds) * 3));
-      }
-    }
+    activation.mockReturnValue({ durationSeconds: 180, essenceCost: 750 });
+    act(() => root.render(<Caption id={ResourcesIds.DamageRelic1} />));
+    expect(host.textContent).toBe("Increases damage by 20% for 3m · 750");
+    activation.mockReturnValue({ durationSeconds: 0, essenceCost: 1_000 });
+    act(() => root.render(<Caption id={ResourcesIds.DamageRelic2} />));
+    expect(host.textContent).toBe("Increases damage by 40% · 1000");
   } finally {
     act(() => root.unmount());
   }

@@ -56,11 +56,6 @@ interface MissingActionPathOwnershipDecisionInput {
   allowPendingLocalOwnership?: boolean;
 }
 
-interface ChunkSwitchSelectionClearDecisionInput {
-  reason: "default" | "shortcut";
-  isShortcutArmySelectionInFlight: boolean;
-}
-
 interface PendingChunkRefreshUiReasonInput {
   currentReason: "default" | "shortcut";
   isShortcutArmySelectionInFlight: boolean;
@@ -281,16 +276,8 @@ export function shouldClearEntitySelectionForEntityActionTransition(
 }
 
 /**
- * Shortcut tabbing should preserve selection even when a concurrent default
- * refresh overlaps the shortcut navigation window.
- */
-export function shouldClearEntitySelectionForChunkSwitch(input: ChunkSwitchSelectionClearDecisionInput): boolean {
-  return input.reason !== "shortcut" && !input.isShortcutArmySelectionInFlight;
-}
-
-/**
- * Queued refreshes should stay in shortcut mode until they are consumed so a
- * delayed scheduler flush cannot reintroduce selection flashes mid-tab cycle.
+ * Queued refreshes stay in shortcut mode until they are consumed, so a refresh
+ * queued during a shortcut's jump still switches chunk at once, as the jump does.
  */
 export function resolvePendingChunkRefreshUiReason(input: PendingChunkRefreshUiReasonInput): "default" | "shortcut" {
   if (input.currentReason === "shortcut" || input.isShortcutArmySelectionInFlight) {
@@ -301,8 +288,8 @@ export function resolvePendingChunkRefreshUiReason(input: PendingChunkRefreshUiR
 }
 
 /**
- * Keep shortcut selection protection alive until known chunk work has drained,
- * otherwise a late-running refresh can still clear the freshly-tabbed selection.
+ * Keep the shortcut's reason until known chunk work has drained, so a
+ * late-running refresh of the jump still switches as a shortcut, not as a pan.
  */
 export function shouldHoldShortcutArmySelectionProtection(input: ShortcutArmySelectionProtectionHoldInput): boolean {
   return input.hasPendingChunkRefreshTimer || input.isChunkRefreshRunning || input.hasGlobalChunkSwitchPromise;

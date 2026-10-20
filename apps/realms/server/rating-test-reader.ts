@@ -10,7 +10,11 @@ vi.mock("cloudflare:workers", () => ({
 }));
 import { RatingReader } from "./rating-reader";
 
-/** API tests use the real reader and budget storage; only the network is replaced. */
+/**
+ * API tests use the real reader and budget storage; only the network is replaced. They read dev's book ("staging"),
+ * which names a deployed rating token; production's book has none until its own setup deploys one, and it stays
+ * fail-closed meanwhile.
+ */
 export function testRatingReader(configuration: Partial<ConstructorParameters<typeof RatingReader>[1]> = {}) {
   const database = new DatabaseSync(":memory:");
   const values = new Map<string, unknown>();
@@ -29,7 +33,7 @@ export function testRatingReader(configuration: Partial<ConstructorParameters<ty
     },
   };
   const reader = new RatingReader(ctx as unknown as DurableObjectState, {
-    ENVIRONMENT: "production",
+    ENVIRONMENT: "staging",
     L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
     ...configuration,
   });

@@ -5,7 +5,7 @@ import type { Call } from "starknet";
 import { afterEach, expect, it, vi } from "vitest";
 
 const signed = vi.hoisted(() => ({ calls: [] as Call[][], owners: [] as string[] }));
-vi.mock("@/ui/modules/identity/wallet-actions", () => ({
+vi.mock("@/shell/value/wallet-actions", () => ({
   WalletSign: ({ owner, calls, onLanded }: { owner: string; calls: Call[]; onLanded: () => void }) => (
     <button
       type="button"
@@ -95,7 +95,7 @@ it("shows the sword's doubled gain and a sealed chest's band and token multiple,
   const panel = await mount(SEALED);
   expect(panel.textContent).toContain("+36");
   expect(panel.textContent).toContain("×2");
-  expect(panel.textContent).toContain("Top 10%");
+  expect(panel.textContent).toContain("Top 20%");
   // What it can pay is a multiple of the entry, never an amount.
   expect(panel.textContent).toContain("4× entry until");
   expect(panel.textContent).not.toContain("400");
@@ -143,7 +143,7 @@ it("reads and opens the chest of the seat's roster wallet, whatever the payout w
 
 it("says nothing of tokens on a sealed chest whose rank band draws none", async () => {
   const lowest = await mount({ ...SEALED, chest: { ...CHEST, band: 4 }, token: { shares: 0, entryFee: 100n * WEI } });
-  expect(lowest.textContent).toContain("Bottom 25%");
+  expect(lowest.textContent).toContain("Bottom 20%");
   expect(lowest.textContent).not.toMatch(/entry until|LORDS/);
   // After its season a token band's chest says it pays none now; a band that never drew any still says nothing.
   const late = await mount({
@@ -153,4 +153,30 @@ it("says nothing of tokens on a sealed chest whose rank band draws none", async 
     seasonEnd: 1,
   });
   expect(late.textContent).not.toContain("No LORDS now");
+});
+
+it.each([0, 1, 2, 3, 4])(
+  "keeps reward band %i on its title, art and Open button, then its opened art",
+  async (band) => {
+    const sealed = await mount({ ...SEALED, chest: { ...CHEST, band } });
+    const images = [...sealed.querySelectorAll(`img[data-icon="reward-chest-${band}"]`)];
+    expect(images).toHaveLength(3);
+    expect(images.map((image) => image.getAttribute("src"))).toEqual(
+      Array(3).fill(`/images/blitz-chests/band-${band}-sealed.webp`),
+    );
+    expect(sealed.querySelector('[data-icon="chest"]')).toBeNull();
+    const opening = await mount({ ...SEALED, chest: { ...OPENED, band, finished: false }, held: false });
+    const opened = [...opening.querySelectorAll(`img[data-icon="reward-chest-${band}-opened"]`)];
+    expect(opened).toHaveLength(2);
+    expect(opened.map((image) => image.getAttribute("src"))).toEqual(
+      Array(2).fill(`/images/blitz-chests/band-${band}-opened.webp`),
+    );
+    expect(opening.querySelector('[data-icon="chest"]')).toBeNull();
+  },
+);
+
+it("does not claim a rank band while the chest is pending", async () => {
+  const pending = await mount({ ...SEALED, result: { ...SEALED.result, rank: 0, chestId: 0n }, chest: null });
+  expect(pending.querySelectorAll('[data-icon="reward-chest"]')).toHaveLength(2);
+  expect(pending.textContent).not.toMatch(/Top 20%|Bottom 20%/);
 });

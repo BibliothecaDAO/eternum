@@ -1,124 +1,75 @@
-import { ReactNode } from "react";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { HudNotice, HudRelic, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { relicLine, relicShortName, ESSENCE } from "@/ui/design-system/kit/words";
+import { configManager } from "@bibliothecadao/eternum";
+import { RELIC_KIND } from "@/ui/features/world/components/entities/relic-kind";
+import { getRelicInfo, RelicRecipientType, ResourcesIds, formatCharge, formatAmount } from "@bibliothecadao/types";
+import { RelicInfoResult, useRelicMetadata } from "../hooks/use-relic-activation";
 
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
-import { RelicInfoResult } from "../hooks/use-relic-activation";
-
-interface RelicSummaryProps {
-  resourceKey: string;
-  title: string;
-  subtitle?: string;
-  description?: string;
-  layout?: "horizontal" | "vertical";
-  iconSize?: "md" | "lg" | "xl";
-  className?: string;
-  children?: ReactNode;
-}
-
-export const RelicSummary = ({
-  resourceKey,
-  title,
-  subtitle,
-  description,
-  layout = "horizontal",
-  iconSize = "lg",
-  className,
-  children,
-}: RelicSummaryProps) => {
-  const vertical = layout === "vertical";
-
+/** A held relic: its chip, how many are held, and what it does on hover once the game's relic rules have arrived. */
+export const HeldRelic = ({ relicId, held }: { relicId: ResourcesIds; held: string }) => {
+  const { relicInfo } = useRelicMetadata(relicId);
   return (
-    <div
-      className={cn(vertical ? "flex flex-col items-center gap-3 text-center" : "flex items-center gap-3", className)}
-    >
-      <ResourceIcon resource={resourceKey} size={iconSize} withTooltip={false} className="shrink-0" />
-      <div className={cn("space-y-1", vertical ? "max-w-[280px]" : "")}>
-        <p className="text-base font-semibold text-gold">{title}</p>
-        {subtitle && <p className="text-sm text-gold/70">{subtitle}</p>}
-        {description && <p className="text-sm text-kit-muted">{description}</p>}
-        {children}
-      </div>
-    </div>
+    <HudRelic
+      icon={resourceMeaning(relicId)}
+      kind={RELIC_KIND[getRelicInfo(relicId)!.type]}
+      gives={relicShortName(relicId)}
+      trail={`×${held}`}
+      state="held"
+      tip={relicInfo ? relicLine(relicId, configManager.getRelicActivation(relicId)) : undefined}
+    />
   );
 };
 
-interface RelicEssenceRequirementProps {
-  essenceCost: number;
-  /** Undefined while the balance is unknown. */
-  essenceBalance: number | undefined;
-  shortfall: string;
-  hasEnoughEssence: boolean;
-  className?: string;
-  costLabel?: string;
-  balanceLabel?: string;
-  showWarning?: boolean;
-}
-
+/** What activating costs in Essence against what its payer holds, and what is missing. */
 export const RelicEssenceRequirement = ({
   essenceCost,
   essenceBalance,
   shortfall,
   hasEnoughEssence,
-  className,
-  costLabel = "Activation Cost",
-  balanceLabel = "Essence Balance",
-  showWarning = !hasEnoughEssence,
-}: RelicEssenceRequirementProps) => {
-  return (
-    <div className={cn("rounded border border-gold/20 bg-dark-brown/30 p-4", className)}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold text-gold/80">{costLabel}:</span>
-        <div className="flex items-center gap-2">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Essence]} size="sm" withTooltip={false} />
-          <span className="text-sm font-bold">{essenceCost.toLocaleString()}</span>
-        </div>
-      </div>
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-gold/80">{balanceLabel}:</span>
-        <div className="flex items-center gap-2">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Essence]} size="sm" withTooltip={false} />
-          <span className={`text-sm font-bold ${hasEnoughEssence ? "text-emerald-300" : "text-red-400"}`}>
-            {essenceBalance?.toLocaleString() ?? "—"}
-          </span>
-        </div>
-      </div>
-      {showWarning && !hasEnoughEssence && (
-        <div className="mt-2 rounded border border-red-600/40 bg-red-900/30 p-2 text-center text-sm font-semibold text-red-300">
-          {shortfall}
-        </div>
-      )}
-    </div>
-  );
-};
+}: {
+  essenceCost: number;
+  /** Undefined while the balance is unknown. */
+  essenceBalance: number | undefined;
+  shortfall: string;
+  hasEnoughEssence: boolean;
+}) => (
+  <div className="flex flex-col gap-1">
+    <HudRow
+      title="Activation cost"
+      trail={
+        <span className="tabular-nums">
+          {formatCharge(essenceCost)} {ESSENCE}
+        </span>
+      }
+    />
+    <HudRow
+      title="Essence balance"
+      trail={
+        <span className={hasEnoughEssence ? "tabular-nums text-hud-good" : "tabular-nums text-hud-bad"}>
+          {formatAmount(essenceBalance) ?? "—"}
+        </span>
+      }
+    />
+    {!hasEnoughEssence && <HudNotice tone="bad" line={shortfall} />}
+  </div>
+);
 
-interface RelicIncompatibilityNoticeProps {
-  relicInfo: RelicInfoResult;
-  recipientType: RelicRecipientType;
-  className?: string;
-}
+const recipientWords = (recipientType: RelicRecipientType) =>
+  recipientType === RelicRecipientType.Explorer ? "explorers" : "structures";
 
+/** Why this holder cannot activate the relic: it works on the other kind of holder. */
 export const RelicIncompatibilityNotice = ({
   relicInfo,
   recipientType,
-  className,
-}: RelicIncompatibilityNoticeProps) => {
-  if (!relicInfo) {
-    return null;
-  }
-
-  return (
-    <div
-      className={cn("rounded border border-red-600/30 bg-red-900/20 p-3 text-center text-sm text-red-300", className)}
-    >
-      <p className="font-semibold text-red-400">
-        ⚠️ This relic cannot be activated by{" "}
-        {recipientType === RelicRecipientType.Explorer ? "explorers" : "structures"}
-      </p>
-      <p className="mt-1">
-        {relicInfo.recipientType} relics can only be activated by{" "}
-        {relicInfo.recipientType === RelicRecipientType.Explorer ? "explorers" : "structures"}
-      </p>
-    </div>
-  );
-};
+}: {
+  relicInfo: RelicInfoResult;
+  recipientType: RelicRecipientType;
+}) =>
+  relicInfo ? (
+    <HudNotice
+      tone="bad"
+      line={`This relic cannot be activated by ${recipientWords(recipientType)}`}
+      why={`${relicInfo.recipientType} relics can only be activated by ${recipientWords(relicInfo.recipientType)}`}
+    />
+  ) : null;

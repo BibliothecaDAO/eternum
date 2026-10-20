@@ -1,7 +1,8 @@
+import type { Position } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 
-/** A hex in the route's coordinates, or none: the entry has no realm to open. */
-type EntryDestination = { col: number; row: number } | null;
+/** The realm the entry opens on, in the space it was read in, or none: the entry has no realm to open. */
+type EntryDestination = Position | null;
 
 const useEntryDestinationStore = create<{ destination: EntryDestination | undefined }>(() => ({
   destination: undefined,

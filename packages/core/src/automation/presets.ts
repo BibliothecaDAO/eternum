@@ -19,14 +19,14 @@ const SMART_ARMY_T3: ResourcesIds[] = [ResourcesIds.KnightT3, ResourcesIds.Cross
 
 export type RealmPresetId = "smart" | "idle" | "custom";
 
-export const REALM_PRESETS: { id: RealmPresetId; label: string; description?: string }[] = [
-  {
-    id: "smart",
-    label: "Smart",
-    description: "Auto-allocate production across available buildings.",
-  },
-  { id: "custom", label: "Custom", description: "Manually tuned production allocations." },
-  { id: "idle", label: "Idle", description: "Pause automation (0%)." },
+/**
+ * The automation presets, the one place their words live: every surface that offers them (the realm card, the
+ * Production window) names and explains them from here. Idle reads as Off, since an idle realm's automation is off.
+ */
+export const REALM_PRESETS: { id: RealmPresetId; label: string; description: string }[] = [
+  { id: "smart", label: "Smart", description: "Production runs itself, spread across the realm's buildings." },
+  { id: "custom", label: "Custom", description: "Production follows the shares you set in Production." },
+  { id: "idle", label: "Off", description: "Nothing is produced automatically." },
 ];
 
 const clampPercent = (value: number): number => {

@@ -1,9 +1,10 @@
 import { configManager } from "@bibliothecadao/eternum";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import Button from "@/ui/design-system/atoms/button";
+import { useConfirmsLoss } from "@/hooks/helpers/use-confirm-for";
+import { HudButton, HudConfirm, HudNotice } from "@/ui/design-system/kit/hud-elements";
+import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { ConfirmationPopup } from "./confirmation-popup";
 import { LiquidityResourceRow } from "./liquidity-resource-row";
 import { LiquidityTableHeader } from "./liquidity-table";
 import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
@@ -21,7 +22,7 @@ import {
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, ID, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const {
@@ -47,6 +48,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
   const [lordsAmount, setLordsAmount] = useState(0);
   const [resourceAmount, setResourceAmount] = useState(0);
   const [openConfirmation, setOpenConfirmation] = useState(false);
+  const confirmsLoss = useConfirmsLoss();
 
   const marketManager = useMemo(
     () => new MarketManager(store, ContractAddress(account.address), resourceId),
@@ -91,7 +93,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
     if (!closestBank) return;
 
     setIsLoading(true);
-    systemCalls
+    return systemCalls
       .add_liquidity({
         signer: account,
         bank_entity_id: closestBank.bankId,
@@ -104,96 +106,81 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
           },
         ],
       })
+      .catch((error) => console.error("Failed to add liquidity", error))
       .finally(() => {
         setIsLoading(false);
         setOpenConfirmation(false);
       });
   };
 
-  const renderConfirmationPopup = useCallback(() => {
-    const isVillageAndMilitaryResource =
-      store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
-        StructureType.Village && isMilitaryResource(resourceId);
-
-    const resourcesToConfirm = [
-      { amount: resourceAmount, resourceId: Number(resourceId) },
-      { amount: lordsAmount, resourceId: ResourcesIds.Lords },
-    ];
-
-    return (
-      <ConfirmationPopup
-        title="Confirm Deposit"
-        isLoading={isLoading}
-        onConfirm={onAddLiquidity}
-        onCancel={() => setOpenConfirmation(false)}
-        disabled={isVillageAndMilitaryResource}
-      >
-        <div className="flex items-center justify-center space-x-2">
-          {isVillageAndMilitaryResource && (
-            <div className="mb-4 p-2 bg-red/20 text-red rounded-md">
-              Military resources cannot be traded from village structures.
-            </div>
-          )}
-          {resourcesToConfirm.map((resource, index) => (
-            <div key={index} className="flex items-center justify-center">
-              <ResourceCost withTooltip amount={resource.amount} resourceId={resource.resourceId} />
-            </div>
-          ))}
-        </div>
-      </ConfirmationPopup>
-    );
-  }, [isLoading, onAddLiquidity, resourceAmount, resourceId, lordsAmount]);
+  const isVillageAndMilitaryResource =
+    store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
+      StructureType.Village && isMilitaryResource(resourceId);
+  // A deposit acts at once; in Frontier it asks first, with what it deposits.
+  const pressAdd = () => (confirmsLoss ? setOpenConfirmation(true) : onAddLiquidity());
 
   return (
-    <>
-      <div className=" p-1 ">
-        <div className="p-2 mb-2 relative space-y-1">
-          <ResourceBar
-            entityId={entityId}
-            resources={resources.filter((r) => r.id === Number(ResourcesIds.Lords))}
-            amount={Math.floor(lordsAmount)}
-            lordsFee={0}
-            setAmount={setLordsAmount}
-            resourceId={ResourcesIds.Lords}
-            setResourceId={setResourceId}
-            max={lordsBalance === undefined ? 0 : divideByPrecision(lordsBalance)}
-          />
-
-          <ResourceBar
-            entityId={entityId}
-            resources={resources.filter((r) => r.id !== Number(ResourcesIds.Lords))}
-            amount={Math.floor(resourceAmount)}
-            lordsFee={0}
-            setAmount={setResourceAmount}
-            resourceId={resourceId}
-            setResourceId={setResourceId}
-            max={resourceBalance === undefined ? 0 : divideByPrecision(resourceBalance)}
-          />
-        </div>
-        <div className="p-2">
-          <LiquidityTableHeader />
-          <LiquidityResourceRow playerStructureIds={playerStructureIds} entityId={entityId} resourceId={resourceId} />
-          <div className="w-full flex flex-col justify-center mt-4">
-            <Button
-              variant="primary"
-              isLoading={false}
-              disabled={!canAdd}
-              className="text-brown bg-brown/90"
-              onClick={() => setOpenConfirmation(true)}
-            >
-              Add Liquidity
-            </Button>
-            {!canAdd && (
-              <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
-                {!isNotZero && <div>Warning: Amount must be greater than zero</div>}
-                {!hasEnough && <div>Warning: Not enough resources for this operation</div>}
-              </div>
-            )}
-          </div>
-        </div>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1">
+        <ResourceBar
+          entityId={entityId}
+          resources={resources.filter((r) => r.id === Number(ResourcesIds.Lords))}
+          amount={Math.floor(lordsAmount)}
+          lordsFee={0}
+          setAmount={setLordsAmount}
+          resourceId={ResourcesIds.Lords}
+          setResourceId={setResourceId}
+          max={lordsBalance === undefined ? 0 : divideByPrecision(lordsBalance)}
+        />
+        <ResourceBar
+          entityId={entityId}
+          resources={resources.filter((r) => r.id !== Number(ResourcesIds.Lords))}
+          amount={Math.floor(resourceAmount)}
+          lordsFee={0}
+          setAmount={setResourceAmount}
+          resourceId={resourceId}
+          setResourceId={setResourceId}
+          max={resourceBalance === undefined ? 0 : divideByPrecision(resourceBalance)}
+        />
       </div>
-      {openConfirmation && renderConfirmationPopup()}
-    </>
+      <div className="flex flex-col gap-2">
+        <LiquidityTableHeader />
+        <LiquidityResourceRow playerStructureIds={playerStructureIds} entityId={entityId} resourceId={resourceId} />
+      </div>
+      {isVillageAndMilitaryResource && (
+        <HudNotice tone="bad" line="Military resources cannot be traded from village structures." />
+      )}
+      {!isNotZero && <HudNotice tone="warn" line="Warning: Amount must be greater than zero" />}
+      {!hasEnough && <HudNotice tone="bad" line="Warning: Not enough resources for this operation" />}
+      <HudButton
+        kind="primary"
+        busy={isLoading ? "Depositing…" : undefined}
+        disabled={!canAdd || isVillageAndMilitaryResource}
+        onClick={pressAdd}
+      >
+        Add Liquidity
+      </HudButton>
+      {openConfirmation && (
+        <PopoverPanel
+          id="confirm"
+          ariaLabel="Confirm Deposit"
+          anchor="top-center"
+          onDismiss={() => setOpenConfirmation(false)}
+        >
+          <HudConfirm
+            question="Confirm Deposit"
+            verb="Add Liquidity"
+            onConfirm={onAddLiquidity}
+            onBack={() => setOpenConfirmation(false)}
+          >
+            <span className="flex items-center justify-center gap-2">
+              <ResourceCost withTooltip amount={resourceAmount} resourceId={Number(resourceId)} />
+              <ResourceCost withTooltip amount={lordsAmount} resourceId={ResourcesIds.Lords} />
+            </span>
+          </HudConfirm>
+        </PopoverPanel>
+      )}
+    </div>
   );
 };
 

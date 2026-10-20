@@ -33,11 +33,16 @@ it("asks before signing out, with Keep as the safe choice", async () => {
     const button = (word: string) =>
       [...document.querySelectorAll("button")].find((candidate) => candidate.textContent === word);
     expect(container.textContent).toContain("Discord · email");
+    // How the player signs in is not a way to Discord: no row of the account wears Discord's logo.
+    expect(container.querySelector('[data-icon="discord"]')).toBeNull();
+    expect(container.querySelector('[data-icon="lock"]')).not.toBeNull();
     await act(async () => button("Sign out")!.click());
-    expect(document.body.textContent).toContain("Sign out?");
-    // The question opens in the kit's sheet, which docks as a panel on a desktop: never a modal of its own.
-    expect(document.querySelector('[data-kit-sheet][aria-label="Sign out?"]')).not.toBeNull();
+    // The question is the app's dialog over the page: Keep is its way out, and so is Escape.
+    expect(document.querySelector('[role="dialog"][aria-label="Sign out?"]')).not.toBeNull();
     await act(async () => button("Keep")!.click());
+    expect(document.body.textContent).not.toContain("Sign out?");
+    await act(async () => button("Sign out")!.click());
+    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
     expect(document.body.textContent).not.toContain("Sign out?");
   } finally {
     await act(async () => root.unmount());
@@ -69,13 +74,15 @@ it("shows the linked payout wallet by its address, changed only with a code, and
     };
   };
   const payoutRow = (container: HTMLElement) =>
-    [...container.querySelectorAll("button")].find((button) => button.textContent?.includes("Payout wallet"))!;
+    [...container.querySelectorAll<HTMLElement>(".app-row")].find((row) =>
+      row.textContent?.startsWith("Payout wallet"),
+    )!;
 
   const account = await mount(linked);
   try {
     // The wallet receives at once: its row is its address, never a time to wait for.
     expect(payoutRow(account.container).textContent).toContain("0x04a1…9f3c");
-    await act(async () => payoutRow(account.container).click());
+    await act(async () => payoutRow(account.container).querySelector("button")!.click());
     const words = [...document.querySelectorAll("button")].map((button) => button.textContent);
     expect(words).toContain("Replace");
     expect(words).toContain("Unlink");
@@ -88,5 +95,92 @@ it("shows the linked payout wallet by its address, changed only with a code, and
     expect(payoutRow(unlinked.container).textContent).toContain("Link wallet");
   } finally {
     await unlinked.unmount();
+  }
+});
+
+it("offers Claim name only once the name differs from the one held (qa-app-1 P3-6)", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <AccountCard session={session} />
+      </MemoryRouter>,
+    ),
+  );
+  try {
+    const nameRow = [...container.querySelectorAll(".app-row")].find((row) => row.textContent === "NameMaelis")!;
+    await act(async () => nameRow.querySelector("button")!.click());
+    const claim = () =>
+      [...document.querySelectorAll<HTMLButtonElement>("button")].find(
+        (button) => button.textContent === "Claim name",
+      )!;
+    const field = document.querySelector<HTMLInputElement>("form input")!;
+    expect(field.value).toBe("Maelis");
+    expect(claim().disabled).toBe(true);
+    // A new name to claim: the step lights.
+    const type = (value: string) =>
+      act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, value);
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    await type("Maelis2");
+    expect(claim().disabled).toBe(false);
+    // Back to the name held: nothing to claim again.
+    await type("Maelis");
+    expect(claim().disabled).toBe(true);
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+  }
+});
+
+/** History moves a moment after it is asked to. */
+const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+
+it("closes Sign out's question on the system back without leaving Settings, and leaves no step behind when kept", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const previous = window.location.href;
+  window.history.replaceState({}, "", "/profile");
+  window.history.pushState({}, "", "/profile/settings");
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  const signOut = () =>
+    act(async () =>
+      [...container.querySelectorAll("button")].find((button) => button.textContent === "Sign out")!.click(),
+    );
+  const asking = () => container.querySelector('[role="dialog"][aria-label="Sign out?"]') !== null;
+  try {
+    await act(async () => root.render(<SignOut />));
+    await signOut();
+    await settle();
+    expect(asking()).toBe(true);
+    await act(async () => window.history.back());
+    await settle();
+    expect([window.location.pathname, asking()]).toEqual(["/profile/settings", false]);
+
+    // Kept with its button, then with Escape: each time the page's own back still leads to the page before.
+    await signOut();
+    await settle();
+    await act(async () =>
+      [...container.querySelectorAll("button")].find((button) => button.textContent === "Keep")!.click(),
+    );
+    await settle();
+    await signOut();
+    await settle();
+    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    await settle();
+    expect([window.location.pathname, asking()]).toEqual(["/profile/settings", false]);
+    await act(async () => window.history.back());
+    await settle();
+    expect(window.location.pathname).toBe("/profile");
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+    window.history.replaceState({}, "", previous);
   }
 });

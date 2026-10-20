@@ -3,8 +3,13 @@ import bindings from "../../../../contracts/l3/world-native/schema/bindings.json
 import { nativeModelDefinition } from "../client/native-models";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { GameFinalizedError, HeraldGameSyncTransport, type HeraldSocket } from "./herald-game-sync-transport";
-import { HERALD_GAME_FINALIZED_CLOSE } from "./herald-http-types";
+import {
+  GameFinalizedError,
+  HeraldGameSyncTransport,
+  type HeraldGameSyncTransportOptions,
+  type HeraldSocket,
+} from "./herald-game-sync-transport";
+import { HERALD_GAME_FINALIZED_CLOSE, HeraldHttpError, type HeraldGameSnapshot } from "./herald-http-types";
 import type {
   GameSyncEvent,
   GameSyncFact,
@@ -45,7 +50,7 @@ type Delivery =
   | { kind: "scope"; facts: GameSyncFact[]; expedition: boolean }
   | ({ kind: "facts" } & GameSyncFactBatch);
 
-const streamHarness = () => {
+const streamHarness = (options: Partial<HeraldGameSyncTransportOptions> = {}) => {
   const sockets: FakeSocket[] = [];
   const urls: string[] = [];
   const deliveries: Delivery[] = [];
@@ -87,6 +92,7 @@ const streamHarness = () => {
       return socket;
     },
     url: "wss://herald.test/games/54",
+    ...options,
   });
   const factBatches = () => deliveries.filter((delivery) => delivery.kind === "facts");
   return {
@@ -157,6 +163,299 @@ describe("HeraldGameSyncTransport", () => {
     await expect(subscribed).rejects.toBeInstanceOf(GameFinalizedError);
     await vi.advanceTimersByTimeAsync(1_000);
     expect(harness.sockets).toHaveLength(1);
+  });
+
+  it("reopens the store on a finalized game's final state, whole, when the stream ends while the game is shown", async () => {
+    const harness = streamHarness();
+    const gates: GameSyncSnapshotState[] = [];
+    harness.handlers.onSnapshotState = (state) => void gates.push(state);
+    const reads: number[] = [];
+    (harness.transport as unknown as { options: { finalState: () => Promise<unknown> } }).options.finalState =
+      async () => {
+        reads.push(1);
+        return {
+          confirmed_block: 40,
+          game_id: "0x36",
+          models: [{ model: "ExplorerTroops", rows: [{ key: "0x9", value: { game_id: "0x36", value: 7 } }] }],
+        };
+      };
+    const { socket } = await attached(harness);
+    snapshot("epoch-a", 1, "0x1", 1).forEach((message) => socket.receive(message));
+    // Herald ends the stream mid-way through a fresh snapshot, then closes it for good: the gate is shut.
+    socket.receive({ epoch: "epoch-a", model: "ExplorerTroops", rows: [], seq: 2, type: "snapshot" });
+    expect(gates.at(-1)).toMatchObject({ complete: false });
+    harness.deliveries.length = 0;
+    (socket.onclose as unknown as (event: { code: number }) => void)({ code: HERALD_GAME_FINALIZED_CLOSE });
+    await vi.waitFor(() => expect(gates.at(-1)).toMatchObject({ complete: true, actor: null }));
+    // The close shut the gate first; the final state opened it, at the stream's last chain time.
+    expect(gates.slice(-2).map(({ complete }) => complete)).toEqual([false, true]);
+    expect(reads).toEqual([1]);
+    expect(harness.deliveries).toEqual([
+      { kind: "snapshot-start" },
+      { kind: "snapshot-model", model: "ExplorerTroops", facts: [troops("0x9", 7)] },
+      { kind: "snapshot-end" },
+    ]);
+    expect(harness.sockets).toHaveLength(1);
+  });
+
+  it("retries a finalized game's final state until it answers, its gate shut meanwhile", async () => {
+    vi.useFakeTimers();
+    const harness = streamHarness();
+    const gates: GameSyncSnapshotState[] = [];
+    harness.handlers.onSnapshotState = (state) => void gates.push(state);
+    let reads = 0;
+    (harness.transport as unknown as { options: { finalState: () => Promise<unknown> } }).options.finalState =
+      async () => {
+        reads += 1;
+        if (reads < 3) throw new Error("review unavailable");
+        return {
+          confirmed_block: 40,
+          game_id: "0x36",
+          models: [{ model: "ExplorerTroops", rows: [{ key: "0x9", value: { game_id: "0x36", value: 7 } }] }],
+        };
+      };
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const { socket } = await attached(harness);
+    snapshot("epoch-a", 1, "0x1", 1).forEach((message) => socket.receive(message));
+    harness.deliveries.length = 0;
+    (socket.onclose as unknown as (event: { code: number }) => void)({ code: HERALD_GAME_FINALIZED_CLOSE });
+    await vi.advanceTimersByTimeAsync(0);
+    // Until the final state answers, nothing reads as known that the store cannot vouch for.
+    expect([reads, gates.at(-1)?.complete]).toEqual([1, false]);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect([reads, gates.at(-1)?.complete]).toEqual([2, false]);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect([reads, gates.at(-1)?.complete]).toEqual([3, true]);
+    expect(harness.deliveries).toEqual([
+      { kind: "snapshot-start" },
+      { kind: "snapshot-model", model: "ExplorerTroops", facts: [troops("0x9", 7)] },
+      { kind: "snapshot-end" },
+    ]);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(reads).toBe(3);
+    expect(harness.sockets).toHaveLength(1);
+    warn.mockRestore();
+  });
+
+  it("stops retrying a final state once its session is cancelled", async () => {
+    vi.useFakeTimers();
+    const harness = streamHarness();
+    const finalState = vi.fn(async () => Promise.reject(new Error("review unavailable")));
+    (harness.transport as unknown as { options: { finalState: () => Promise<unknown> } }).options.finalState =
+      finalState;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const { socket, writer } = await attached(harness);
+    snapshot("epoch-a", 1, "0x1", 1).forEach((message) => socket.receive(message));
+    (socket.onclose as unknown as (event: { code: number }) => void)({ code: HERALD_GAME_FINALIZED_CLOSE });
+    await vi.advanceTimersByTimeAsync(3_000);
+    const readsBeforeCancel = finalState.mock.calls.length;
+    expect(readsBeforeCancel).toBeGreaterThan(1);
+    writer.cancel();
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(finalState).toHaveBeenCalledTimes(readsBeforeCancel);
+    warn.mockRestore();
+  });
+
+  describe("a finalized game, watched", () => {
+    /** Game 54's review snapshot: its registry, ended at 1,792,400,000, and one realm. */
+    const REVIEW: HeraldGameSnapshot = {
+      confirmed_block: 640,
+      game_id: "54",
+      models: [
+        { model: "GameRegistry", rows: [{ key: "0x36", value: { game_id: "0x36", end_at: "0x6ad5da80" } }] },
+        { model: "Structure", rows: [{ key: "0x36:0x7", value: { entity_id: "0x7" } }] },
+      ],
+    };
+    const closeAsFinalized = (socket: FakeSocket) =>
+      (socket.onclose as unknown as (event: { code: number }) => void)({ code: HERALD_GAME_FINALIZED_CLOSE });
+
+    it("holds the game as it ended: its review snapshot, under the game's end as its one head, and nothing after", async () => {
+      vi.useFakeTimers();
+      const harness = streamHarness({ finalState: async () => REVIEW });
+      const gates: GameSyncSnapshotState[] = [];
+      harness.handlers.onSnapshotState = (state) => void gates.push(state);
+      const subscribed = harness.transport.subscribe(harness.handlers);
+      closeAsFinalized(harness.sockets.at(-1)!);
+      await subscribed;
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(harness.heads).toEqual([{ block: 640, preconfirmed: false, timestamp: 1_792_400_000 }]);
+      expect(harness.deliveries.map((delivery) => ("model" in delivery ? delivery.model : delivery.kind))).toEqual([
+        "snapshot-start",
+        "GameRegistry",
+        "Structure",
+        "snapshot-end",
+      ]);
+      expect(gates.at(-1)).toEqual({ gameId: 1, complete: true, actor: null, timestamp: 1_792_400_000 });
+      expect(harness.startFailures).toEqual([]);
+      expect(harness.sockets).toHaveLength(1);
+    });
+
+    /** A spectator's start on the final state, its gate open. */
+    const startedOnFinalState = async () => {
+      const finalState = vi.fn(async () => REVIEW);
+      const harness = streamHarness({ finalState });
+      const gates: GameSyncSnapshotState[] = [];
+      harness.handlers.onSnapshotState = (state) => void gates.push(state);
+      const subscribed = harness.transport.subscribe(harness.handlers);
+      closeAsFinalized(harness.sockets.at(-1)!);
+      const writer = await subscribed;
+      await vi.waitFor(() => expect(gates.at(-1)?.complete).toBe(true));
+      return { finalState, gates, harness, writer };
+    };
+
+    it.each([
+      { label: "an account connecting", actor: "0x123", visit: undefined, after: { actor: "0x123" } },
+      {
+        label: "a realm visited (Frontier watches the leader)",
+        actor: undefined,
+        visit: "0x222",
+        after: { actor: null, visit: "0x222" },
+      },
+    ])("keeps the finished game whole through $label: no stream, no second read", async ({ actor, visit, after }) => {
+      const { finalState, gates, harness } = await startedOnFinalState();
+      harness.transport.selectActor(actor, visit);
+      await Promise.resolve();
+      expect(gates.at(-1)).toEqual({ gameId: 1, complete: true, timestamp: 1_792_400_000, ...after });
+      // And back: the account leaves, the visit ends.
+      harness.transport.selectActor(undefined);
+      await Promise.resolve();
+      expect(gates.at(-1)).toEqual({ gameId: 1, complete: true, actor: null, timestamp: 1_792_400_000 });
+      expect(finalState).toHaveBeenCalledTimes(1);
+      expect(harness.sockets).toHaveLength(1);
+      expect(harness.sockets[0].sent.filter((message) => message.type === "select_actor")).toEqual([]);
+    });
+
+    it("opens the final state on the selection made while it was read", async () => {
+      let answer!: (snapshot: HeraldGameSnapshot) => void;
+      const harness = streamHarness({ finalState: () => new Promise((resolve) => (answer = resolve)) });
+      const gates: GameSyncSnapshotState[] = [];
+      harness.handlers.onSnapshotState = (state) => void gates.push(state);
+      const subscribed = harness.transport.subscribe(harness.handlers);
+      closeAsFinalized(harness.sockets.at(-1)!);
+      harness.transport.selectActor("0x123");
+      answer(REVIEW);
+      await subscribed;
+      await vi.waitFor(() => expect(gates.at(-1)?.complete).toBe(true));
+      expect(gates.at(-1)).toEqual({ gameId: 1, complete: true, actor: "0x123", timestamp: 1_792_400_000 });
+    });
+
+    it("takes nothing from a final state read after its session was cancelled", async () => {
+      let answer!: (snapshot: HeraldGameSnapshot) => void;
+      const harness = streamHarness({ finalState: () => new Promise((resolve) => (answer = resolve)) });
+      const { socket, writer } = await attached(harness);
+      snapshot("epoch-a", 1, "0x1", 1).forEach((message) => socket.receive(message));
+      harness.deliveries.length = 0;
+      closeAsFinalized(socket);
+      writer.cancel();
+      answer(REVIEW);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(harness.deliveries).toEqual([]);
+    });
+
+    it("ends a player's live game whole on its final state, under the stream's last chain time", async () => {
+      const harness = streamHarness({ finalState: async () => REVIEW, url: "wss://herald.test/games/54?actor=0x123" });
+      const gates: GameSyncSnapshotState[] = [];
+      harness.handlers.onSnapshotState = (state) => void gates.push(state);
+      const { socket } = await attached(harness);
+      snapshot("epoch-a", 1, "0x1", 1).forEach((message) => socket.receive(message));
+      socket.receive({ type: "head", epoch: "epoch-a", seq: 2, block: 13, preconfirmed: false, timestamp: 350 });
+      closeAsFinalized(socket);
+      await vi.waitFor(() => expect(gates.at(-1)?.complete).toBe(true));
+      expect(gates.at(-1)).toEqual({ gameId: 1, complete: true, actor: "0x123", timestamp: 350 });
+      // The player leaves the account: the finished game stays whole.
+      harness.transport.selectActor(undefined);
+      await Promise.resolve();
+      expect(gates.at(-1)).toEqual({ gameId: 1, complete: true, actor: null, timestamp: 350 });
+    });
+
+    it("never fails a replacement subscription with an earlier start's final-state failure", async () => {
+      let failOld!: (reason: Error) => void;
+      const harness = streamHarness({ finalState: () => new Promise((_resolve, reject) => (failOld = reject)) });
+      const old = harness.transport.subscribe(harness.handlers).then(
+        () => "ready",
+        () => "cancelled",
+      );
+      closeAsFinalized(harness.sockets[0]!);
+      const failures: Error[] = [];
+      const replacement = harness.transport
+        .subscribe({ ...harness.handlers, onStartFailure: (error) => failures.push(error) })
+        .then(
+          () => "ready",
+          () => "rejected",
+        );
+      failOld(new Error("the old read failed"));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      harness.sockets[1]!.receive(hello("epoch-b", 0));
+      expect(await replacement).toBe("ready");
+      expect(failures).toEqual([]);
+      // The replaced start is settled too, as cancelled, not left waiting.
+      expect(await old).toBe("cancelled");
+      harness.transport.dispose();
+    });
+
+    it("settles a spectator's start cancelled while its final state is still being read", async () => {
+      const harness = streamHarness({ finalState: () => new Promise<HeraldGameSnapshot>(() => {}) });
+      const outcome = harness.transport.subscribe(harness.handlers).then(
+        () => "ready",
+        () => "cancelled",
+      );
+      closeAsFinalized(harness.sockets[0]!);
+      harness.transport.dispose();
+      expect(await outcome).toBe("cancelled");
+      expect(harness.deliveries).toEqual([]);
+    });
+
+    it("still ends a player's start as finalized: a player's finished game leads to its results", async () => {
+      const finalState = vi.fn(async () => REVIEW);
+      const harness = streamHarness({ finalState, url: "wss://herald.test/games/54?actor=0x123" });
+      const subscribed = harness.transport.subscribe(harness.handlers);
+      closeAsFinalized(harness.sockets.at(-1)!);
+      await expect(subscribed).rejects.toBeInstanceOf(GameFinalizedError);
+      expect(finalState).not.toHaveBeenCalled();
+    });
+
+    it("ends the start as finalized when the review snapshot holds no end", async () => {
+      const harness = streamHarness({ finalState: async () => ({ ...REVIEW, models: REVIEW.models.slice(1) }) });
+      const subscribed = harness.transport.subscribe(harness.handlers);
+      closeAsFinalized(harness.sockets.at(-1)!);
+      await expect(subscribed).rejects.toBeInstanceOf(GameFinalizedError);
+      expect(harness.deliveries).toEqual([]);
+    });
+
+    it("ends the start as finalized after one read when Herald refuses the review snapshot", async () => {
+      vi.useFakeTimers();
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      // Herald froze no review for this game, and never will: its answer does not change on a retry.
+      const finalState = vi.fn(async (): Promise<HeraldGameSnapshot> => {
+        throw new HeraldHttpError("Herald review snapshot failed: 404 Not Found", 404);
+      });
+      const harness = streamHarness({ finalState });
+      const subscribed = harness.transport.subscribe(harness.handlers);
+      closeAsFinalized(harness.sockets.at(-1)!);
+      await expect(subscribed).rejects.toBeInstanceOf(GameFinalizedError);
+      await vi.advanceTimersByTimeAsync(120_000);
+      expect(finalState).toHaveBeenCalledTimes(1);
+      expect(harness.deliveries).toEqual([]);
+      warn.mockRestore();
+    });
+
+    it("starts on the final state once a review snapshot that did not answer does", async () => {
+      vi.useFakeTimers();
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      const finalState = vi
+        .fn<() => Promise<HeraldGameSnapshot>>()
+        .mockRejectedValueOnce(new HeraldHttpError("Herald review snapshot failed: 503 Service Unavailable", 503))
+        .mockResolvedValue(REVIEW);
+      const harness = streamHarness({ finalState });
+      const subscribed = harness.transport.subscribe(harness.handlers);
+      closeAsFinalized(harness.sockets.at(-1)!);
+      await vi.advanceTimersByTimeAsync(1_000);
+      await subscribed;
+      expect(finalState).toHaveBeenCalledTimes(2);
+      expect(harness.heads).toEqual([{ block: 640, preconfirmed: false, timestamp: 1_792_400_000 }]);
+      expect(harness.startFailures).toEqual([]);
+      warn.mockRestore();
+    });
   });
 
   it("uses streamed head time for absence scope and forgets it on disposal", async () => {

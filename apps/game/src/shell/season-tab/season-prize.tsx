@@ -1,22 +1,20 @@
+import { SEASON_PRIZE_WORDS } from "@/ui/design-system/kit/words";
+import { formatExact, formatDate, formatDuration } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { lazy, type ReactNode, Suspense, useState } from "react";
 
-import { formatExact } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
-
-import { formatDate, formatDuration } from "@/ui/design-system/kit/time";
+import { AppButton, AppFigure } from "@/ui/design-system/kit/app-elements";
 
 import { usePlayerHistory, useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { claimSeasonCall, environmentLedger, lordsOf } from "../value/ledger";
 import { useLedgerPaused } from "../value/use-ledger-paused";
 import { FailureLine } from "../sign-in/failure-line";
-import { SEASON_PRIZE_WORDS } from "../words";
 import { placeShares, type SeasonPrize, seasonSourcesOf, seasonState, useSeasonPrize } from "./blitz-season";
 
 const WalletSign = lazy(() =>
-  import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
+  import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletSign })),
 );
 
 /**
@@ -44,9 +42,9 @@ type BoardPrize = ReturnType<typeof useBoardPrize>;
 
 /** The board's figure at its title: the pool, and when the season ends, or Final. */
 export const PrizeHead = ({ prize, state }: { prize: SeasonPrize; state: BoardPrize["state"] }) => (
-  <span className="flex items-center gap-2 font-body text-sm font-normal text-kit-muted">
+  <span className="flex items-center gap-2 text-app-label text-app-muted">
     {SEASON_PRIZE_WORDS.pool}
-    <b className="inline-flex items-center gap-1 text-base tabular-nums text-kit-gold2">
+    <b className="inline-flex items-center gap-1 tabular-nums text-app-gold">
       <SemanticIcon name="lords" size={18} />
       {formatExact(lordsOf(prize.season.pool))}
     </b>
@@ -77,7 +75,7 @@ export const PrizeLines = ({
   if (!prize || !state) return null;
   if (shares)
     return (
-      <p className="flex justify-between px-1 pt-1 font-body text-sm text-kit-muted">
+      <p className="flex justify-between gap-3 py-2 text-app-label text-app-muted">
         <span>{SEASON_PRIZE_WORDS.paysToday}</span>
         <span>{shares.length ? SEASON_PRIZE_WORDS.placesPaid(shares.length) : SEASON_PRIZE_WORDS.noPlaces}</span>
       </p>
@@ -85,7 +83,7 @@ export const PrizeLines = ({
   return (
     <>
       <Share prize={prize} state={state} now={now} />
-      {state === "claim" && paused && <Line icon="lock">{SEASON_PRIZE_WORDS.paused}</Line>}
+      {state === "claim" && paused && <PrizeLine icon="lock">{SEASON_PRIZE_WORDS.paused}</PrizeLine>}
       {state === "claim" && !paused && prize.position !== null && <Claim prize={prize} onClaimed={onClaimed} />}
     </>
   );
@@ -95,7 +93,11 @@ export const PrizeLines = ({
 const Claim = ({ prize, onClaimed }: { prize: SeasonPrize; onClaimed: () => void }) => {
   const [signing, setSigning] = useState(false);
   if (!signing)
-    return <Button role="primary" word={SEASON_PRIZE_WORDS.claim} icon="victory" onClick={() => setSigning(true)} />;
+    return (
+      <AppButton kind="primary" size="lg" icon="victory" step onClick={() => setSigning(true)}>
+        {SEASON_PRIZE_WORDS.claim}
+      </AppButton>
+    );
   return (
     <Suspense fallback={<Loading />}>
       <WalletSign
@@ -112,32 +114,32 @@ const Claim = ({ prize, onClaimed }: { prize: SeasonPrize; onClaimed: () => void
 
 /** After the season: the player's share, and where the season stands with it. */
 const Share = ({ prize, state, now }: { prize: SeasonPrize; state: NonNullable<BoardPrize["state"]>; now: number }) => {
-  if (state === "out") return <Line icon="victory">{SEASON_PRIZE_WORDS.notPaid}</Line>;
+  if (state === "out") return <PrizeLine icon="victory">{SEASON_PRIZE_WORDS.notPaid}</PrizeLine>;
   const line: Record<string, ReactNode> = {
     review: (
-      <Line icon="hourglass">
-        {SEASON_PRIZE_WORDS.review} <b>{formatDuration(prize.season.reviewUntil - now)}</b>
-      </Line>
+      <PrizeLine icon="hourglass">
+        {SEASON_PRIZE_WORDS.review} <b>{formatDuration(prize.season.reviewUntil - now, { days: false })}</b>
+      </PrizeLine>
     ),
-    held: <Line icon="explore">{SEASON_PRIZE_WORDS.held}</Line>,
-    claimed: <Line icon="check">{SEASON_PRIZE_WORDS.claimed}</Line>,
+    held: <PrizeLine icon="explore">{SEASON_PRIZE_WORDS.held}</PrizeLine>,
+    claimed: <PrizeLine icon="check">{SEASON_PRIZE_WORDS.claimed}</PrizeLine>,
   };
   return (
-    <div className="flex flex-col gap-2 rounded-[14px] border border-kit-gold bg-kit-gold/5 px-4 py-3">
-      <span className="font-body text-base text-kit-muted">{SEASON_PRIZE_WORDS.yourShare}</span>
-      {prize.share !== null && (
-        <b className="inline-flex items-center gap-2 font-body text-[32px] font-extrabold tabular-nums text-kit-cream">
-          <SemanticIcon name="lords" size={30} />
-          {formatExact(lordsOf(prize.share))}
-        </b>
-      )}
+    <div className="flex flex-col gap-3 py-3">
+      <AppFigure
+        icon="lords"
+        tone="gold"
+        value={prize.share !== null ? formatExact(lordsOf(prize.share)) : "—"}
+        label={SEASON_PRIZE_WORDS.yourShare}
+      />
       {line[state]}
     </div>
   );
 };
 
-const Line = ({ icon, children }: { icon: IconMeaning; children: ReactNode }) => (
-  <p className="flex items-center gap-2.5 font-body text-base text-kit-cream">
+/** A line of where the season's prize stands, by its icon. */
+const PrizeLine = ({ icon, children }: { icon: IconMeaning; children: ReactNode }) => (
+  <p role="status" className="flex items-center gap-2 text-app-body text-app-ink">
     <SemanticIcon name={icon} size={22} />
     <span>{children}</span>
   </p>

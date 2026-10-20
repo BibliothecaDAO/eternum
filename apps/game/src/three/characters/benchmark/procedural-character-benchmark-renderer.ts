@@ -530,6 +530,10 @@ class ProceduralCharacterBenchmarkRuntime {
       await this.rebuildPopulation();
       return;
     }
+    await Promise.all(
+      [...this.actors.keys()].map((id) => this.unitRuntime.prepareAssets(resolveBenchmarkActorConfig(normalized, id))),
+    );
+    if (this.disposed || this.config !== normalized) return;
     this.actors.forEach((record, id) => {
       const { actor } = record;
       actor.object.scale.setScalar(normalized.characterScale);
@@ -564,6 +568,8 @@ class ProceduralCharacterBenchmarkRuntime {
     this.actors.clear();
 
     for (const agent of this.simulation.agents) {
+      if (this.disposed || generation !== this.populationGeneration) return;
+      await this.unitRuntime.prepareAssets(resolveBenchmarkActorConfig(this.config, agent.id));
       if (this.disposed || generation !== this.populationGeneration) return;
       this.addActor(agent);
       if (this.actors.size % ACTOR_BUILD_BATCH_SIZE === 0) {

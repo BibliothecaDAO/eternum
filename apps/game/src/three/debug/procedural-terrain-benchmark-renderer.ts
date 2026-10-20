@@ -1,5 +1,5 @@
 import { createRealmDensityFixture } from "./realm-density-fixture";
-import { updateGameEndFreeze } from "../effects/game-end-freeze";
+import { resetGameEnd } from "../effects/endgame/state";
 import {
   AmbientLight,
   Color,
@@ -56,6 +56,17 @@ export interface ProceduralTerrainBenchmarkRendererHandle {
   getSnapshot(): TerrainBenchmarkSnapshot;
   resetCamera(): void;
   startBenchmark(): Promise<TerrainBenchmarkSnapshot>;
+  /** The live scene, for a lab that stages its own objects on the benchmark's terrain and realms. */
+  stage: TerrainBenchmarkStage;
+}
+
+/** The benchmark's scene and view, and the placed realms' positions when it was mounted with them. */
+export interface TerrainBenchmarkStage {
+  camera: PerspectiveCamera;
+  controls: MapControls;
+  realmPositions: readonly Vector3[];
+  scene: Scene;
+  terrain: WorldmapProceduralTerrain;
 }
 
 interface MountProceduralTerrainBenchmarkRendererInput {
@@ -153,7 +164,7 @@ const ASSET_REQUEST_TIMELINE_CAPACITY = 4096;
 export async function mountProceduralTerrainBenchmarkRenderer(
   input: MountProceduralTerrainBenchmarkRendererInput,
 ): Promise<ProceduralTerrainBenchmarkRendererHandle> {
-  updateGameEndFreeze(0, false, 0);
+  resetGameEnd();
   const debugWindow = window as TerrainBenchmarkWindow;
   const runtime = await createBenchmarkRuntime(input);
   const resizeObserver = observeCanvas(input.canvas, runtime);
@@ -167,6 +178,13 @@ export async function mountProceduralTerrainBenchmarkRenderer(
     getSnapshot: () => readBenchmarkSnapshot(runtime),
     resetCamera: () => positionCamera(runtime, INITIAL_FOCUS, CAMERA_DISTANCE.medium),
     startBenchmark: () => startBenchmark(runtime),
+    stage: {
+      camera: runtime.camera,
+      controls: runtime.controls,
+      realmPositions: runtime.realms?.positions ?? [],
+      scene: runtime.scene,
+      terrain: runtime.terrain,
+    },
   };
 }
 

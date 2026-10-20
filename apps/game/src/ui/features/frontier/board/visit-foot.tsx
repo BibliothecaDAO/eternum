@@ -1,8 +1,8 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Button } from "@/ui/design-system/kit/button";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
-import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { OrderMark } from "./realm-marks";
 import { LEAVE, VISIT } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
@@ -25,14 +25,16 @@ export const VisitFoot = ({
   arriving: boolean;
   onLeave?: () => void;
 }) => (
-  <div
-    role="status"
-    aria-label={`${VISIT} ${label}`}
-    className="frontier-card pointer-events-auto flex items-center gap-2 !rounded-xl p-1.5 pl-2"
-  >
-    <SemanticIcon name="explore" size={24} />
-    {order !== undefined && <OrderEmblem order={order} />}
-    <span className={cn("min-w-0 flex-1 truncate text-base text-kit-cream", arriving && "animate-pulse")}>{name}</span>
-    {onLeave && <Button role="primary" icon="arrow-left" word={LEAVE} onClick={onLeave} className="w-[130px]" />}
+  <div role="status" aria-label={`${VISIT} ${label}`} className="pointer-events-auto">
+    <HudPanel collapsible={false} bodyClassName="flex items-center gap-2">
+      <SemanticIcon name="explore" size={24} />
+      {order !== undefined && <OrderMark order={order} />}
+      <span className={cn("min-w-0 flex-1 truncate text-hud-body", arriving && "animate-pulse")}>{name}</span>
+      {onLeave && (
+        <HudButton kind="primary" icon="arrow-left" onClick={onLeave}>
+          {LEAVE}
+        </HudButton>
+      )}
+    </HudPanel>
   </div>
 );

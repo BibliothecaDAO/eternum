@@ -1,17 +1,18 @@
+import { SIGN_IN_WORDS } from "@/ui/design-system/kit/words";
 import { IDENTITY_PORTRAITS, nameRuleViolation, type Session } from "@realms-world/identity";
 import { useState, type FormEvent } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
-import { Button } from "@/ui/design-system/kit/button";
+import { AppButton } from "@/ui/design-system/kit/app-elements";
 import { nameRefusal } from "@/ui/modules/identity/identity-failures";
 
-import { SIGN_IN_WORDS } from "../words";
 import { FailureLine } from "./failure-line";
 import { NameField, PortraitGrid } from "./fields";
 
 /**
  * A new account's one step (spec 02): the name suggested at sign-up (the Discord name or the email's local part),
- * ticked while it passes the identity service's rule, and a portrait already picked; Claim name saves both.
+ * with what the identity service's rule asks of it while it does not pass, and a portrait already picked; Claim name
+ * saves both.
  */
 export const ProfileStep = ({ session, onClaimed }: { session: Session; onClaimed: () => void }) => {
   const [name, setName] = useState(session.user.suggestedName ?? "");
@@ -39,7 +40,6 @@ export const ProfileStep = ({ session, onClaimed }: { session: Session; onClaime
     <form onSubmit={(event) => void claim(event)} className="flex flex-col gap-4">
       <NameField
         name={name}
-        valid={valid}
         onName={(value) => {
           setError(null);
           setName(value);
@@ -47,14 +47,16 @@ export const ProfileStep = ({ session, onClaimed }: { session: Session; onClaime
       />
       <FailureLine line={error} />
       <PortraitGrid chosen={portrait} onChoose={setPortrait} />
-      <Button
-        role="primary"
+      <AppButton
+        kind="primary"
+        size="lg"
         type="submit"
-        word={SIGN_IN_WORDS.claimName}
         icon="check"
         disabled={!valid}
-        loading={saving ? SIGN_IN_WORDS.saving : undefined}
-      />
+        busy={saving ? SIGN_IN_WORDS.saving : undefined}
+      >
+        {SIGN_IN_WORDS.claimName}
+      </AppButton>
     </form>
   );
 };

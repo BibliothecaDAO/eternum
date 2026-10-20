@@ -1,22 +1,23 @@
-import { Link } from "react-router-dom";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { AppLink } from "@/ui/design-system/kit/app-elements";
+import { FOOTER_WORDS } from "@/ui/design-system/kit/words";
 
 import { COMMUNITY } from "../community";
-import { FOOTER_WORDS } from "../words";
 
-type FooterLink = { word: string; to: string };
+/** A link of the footer: its word, where it leads, and a social's official mark before its word. */
+type FooterLink = { word: string; to: string; icon?: IconMeaning };
 
-/** Where realms.world's own sites live: the DAO, the token and trading stay there. */
+/** Where realms.world lives: the DAO and the token stay there; its marketplace is a place in the bar. */
 const REALMS_WORLD = "https://realms.world";
-const MARKETPLACE = "https://market.realms.world";
 
 const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
-  { title: FOOTER_WORDS.community, links: COMMUNITY.map((place) => ({ word: place.name, to: place.href })) },
+  {
+    title: FOOTER_WORDS.community,
+    links: COMMUNITY.map((place) => ({ word: place.name, to: place.href, icon: place.icon })),
+  },
   {
     title: FOOTER_WORDS.realms,
-    links: [
-      { word: "realms.world", to: REALMS_WORLD },
-      { word: FOOTER_WORDS.marketplace, to: MARKETPLACE },
-    ],
+    links: [{ word: "realms.world", to: REALMS_WORLD }],
   },
   {
     title: FOOTER_WORDS.legal,
@@ -29,17 +30,24 @@ const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
 ];
 
 /**
- * The footer at the end of What's new and the pages read from it: what the places do not hold. The community, Realms'
- * own sites and the legal pages live here and nowhere else; a phone stacks its columns.
+ * The footer at the end of every page of the app (not a full-screen step): what the places do not hold. The community
+ * with each social's mark, Realms' own site and the legal pages live here and nowhere else; a phone stacks its columns.
  */
 export const AppFooter = () => (
   <footer data-band="footer" className="mt-10 border-t border-kit-line pt-8 lg:mt-16 lg:pt-10">
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
       {COLUMNS.map((column) => (
         <nav key={column.title} aria-label={column.title} className="flex flex-col gap-2">
-          <b className="mb-1 font-body text-sm text-kit-gold">{column.title}</b>
+          <b className="mb-1 font-ui text-sm text-kit-gold">{column.title}</b>
           {column.links.map((link) => (
-            <FooterAnchor key={link.to} link={link} />
+            <AppLink
+              key={link.to}
+              to={link.to}
+              className="flex min-h-8 items-center gap-2 font-ui text-sm text-kit-cream hover:text-kit-gold2"
+            >
+              {link.icon && <Icon name={link.icon} size={18} />}
+              {link.word}
+            </AppLink>
           ))}
         </nav>
       ))}
@@ -47,17 +55,3 @@ export const AppFooter = () => (
     <p className="mt-10 border-t border-kit-line py-5 text-sm text-kit-muted">{FOOTER_WORDS.owner}</p>
   </footer>
 );
-
-/** The app's own pages open in place; other sites in a new tab. */
-const FooterAnchor = ({ link }: { link: FooterLink }) => {
-  const className = "flex min-h-8 items-center text-sm text-kit-cream hover:text-kit-gold2";
-  return link.to.startsWith("/") ? (
-    <Link to={link.to} className={className}>
-      {link.word}
-    </Link>
-  ) : (
-    <a href={link.to} target="_blank" rel="noopener noreferrer" className={className}>
-      {link.word}
-    </a>
-  );
-};

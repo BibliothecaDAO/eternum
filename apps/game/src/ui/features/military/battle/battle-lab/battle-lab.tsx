@@ -2,10 +2,10 @@ import { env } from "@/../env";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getPlayerDisplayName, usePlayerDisplayName } from "@/hooks/use-player-profile";
+import { usePlayerName, usePlayerNames } from "@/hooks/use-player-profile";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { HudCheck, HudNotice, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import {
   type Army,
@@ -81,7 +81,7 @@ export const BattleLab = ({
   } = useGame();
 
   const gameMode = useGameModeConfig();
-  const accountName = usePlayerDisplayName(account.address);
+  const names = usePlayerNames();
   const selectedHex = useUIStore((s) => s.selectedHex);
   const closeSurface = usePopoverStore((s) => s.closeSurface);
   const deselectEntity = useUIStore((s) => s.deselectEntity);
@@ -297,147 +297,140 @@ export const BattleLab = ({
     }
   };
 
-  const tweet = useMemo(() => {
-    if (mode !== "live" || !hasAttacker || !state.hasDefender || !target) return undefined;
+  // Both names are asked as the sheet draws, so they have landed by the time Share is pressed; the shared line is
+  // written then, from the live name reader: never a cached string.
+  usePlayerName(account.address);
+  usePlayerName(target?.addressOwner ?? null);
+  const shareLine = (defender: NonNullable<typeof target>) => {
     const attackerGuild = getGuildFromPlayerAddress(ContractAddress(account.address), store)?.name;
-    const defenderGuild = target.addressOwner
-      ? getGuildFromPlayerAddress(ContractAddress(target.addressOwner), store)?.name
+    const defenderGuild = defender.addressOwner
+      ? getGuildFromPlayerAddress(ContractAddress(defender.addressOwner), store)?.name
       : undefined;
     return formatSocialText(twitterTemplates.combat, {
-      attackerNameText: `${accountName || getPlayerDisplayName(account.address)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
+      attackerNameText: `${names.text(account.address)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
       attackerTroopsText: `${Math.floor(state.attacker.troopCount)} ${state.attacker.tier} ${state.attacker.troopType}`,
       defenderTroopsText: `${Math.floor(state.defender.troopCount)} ${state.defender.tier} ${state.defender.troopType}`,
-      defenderNameText: `${target.addressOwner ? getPlayerDisplayName(target.addressOwner) : "Bandits"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
+      defenderNameText: `${names.text(defender.addressOwner ?? 0n)} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
       url: env.VITE_SOCIAL_LINK,
     });
-  }, [
-    mode,
-    hasAttacker,
-    state.hasDefender,
-    target,
-    account.address,
-    accountName,
-    store,
-    state.attacker,
-    state.defender,
-  ]);
+  };
+  const share = mode === "live" && hasAttacker && state.hasDefender && target ? () => shareLine(target) : undefined;
 
   return (
-    <SurfaceFrame
-      title="Combat"
-      icon={"military" as const}
-      onClose={closeSurface}
-      className={SURFACE_WORKSPACE_CLASS}
-      bodyClassName="relative overflow-x-hidden"
-    >
-      <CombatParametersPanel parameters={parameters} onParametersChange={setParameters} show={showParameters} />
+    <HudWindow title="Combat" icon="military" size="workspace" onClose={closeSurface}>
+      <div className="relative overflow-x-hidden">
+        <CombatParametersPanel parameters={parameters} onParametersChange={setParameters} show={showParameters} />
 
-      {mode === "live" && isLoading ? (
-        <LoadingAnimation />
-      ) : raidActive ? (
-        <RaidContainer
-          attackerEntityId={attackerEntityId}
-          target={target!}
-          targetResources={targetResources}
-          attackerActiveRelicEffects={attackerRelicEffects}
-          targetActiveRelicEffects={targetRelicEffects}
-        />
-      ) : (
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
-          {configManager.rollsCombatDice(state.defenderAlt) && (
-            <p className="text-sm text-gold/70">
-              Each side rolls a d20 for +1% to +20% damage; ranges run from the attacker's worst roll to its best.
-            </p>
-          )}
-          <label className="flex items-center gap-2 text-sm text-gold/70">
-            <input
-              type="checkbox"
-              checked={state.defenderAlt}
-              onChange={(event) => dispatch({ type: "SET_DEFENDER_LAYER", alt: event.target.checked })}
-            />
-            Defender in ethereal layer
-          </label>
-          <BiomeEnvironmentBar
-            combatSimulator={combatSimulator}
-            biome={state.defenderAlt ? BiomeType.Underground : state.biome}
-            ethereal={state.defenderAlt}
-            onSelect={(biome) => dispatch({ type: "SET_BIOME", biome })}
+        {mode === "live" && isLoading ? (
+          <LoadingAnimation />
+        ) : raidActive ? (
+          <RaidContainer
+            attackerEntityId={attackerEntityId}
+            target={target!}
+            targetResources={targetResources}
+            attackerActiveRelicEffects={attackerRelicEffects}
+            targetActiveRelicEffects={targetRelicEffects}
           />
-
-          <div className="relative grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <ArmyColumn
-              key={`attacker-${seed}`}
-              label="Attacker"
-              side="attacker"
-              army={state.attacker}
-              onChange={(patch) => dispatch({ type: "PATCH_ATTACKER", patch })}
-              guards={snapshot?.attackerType === "structure" ? snapshot.guards : undefined}
-              selectedGuardSlot={state.selectedGuardSlot}
-              onSelectGuard={handleSelectGuard}
-              footer={
-                prediction && (
-                  <OutcomeStrip
-                    side={prediction.attacker}
-                    total={state.attacker.troopCount}
-                    staminaBefore={state.attacker.stamina}
-                    staminaAfter={prediction.newAttackerStamina}
-                  />
-                )
-              }
+        ) : (
+          <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
+            {configManager.rollsCombatDice(state.defenderAlt) && (
+              <p className="text-hud-body text-hud-muted">
+                Each side rolls a d20 for +1% to +20% damage; ranges run from the attacker's worst roll to its best.
+              </p>
+            )}
+            <label className="flex items-center gap-2 text-hud-body text-hud-muted">
+              <HudCheck
+                checked={state.defenderAlt}
+                label="Defender in ethereal layer"
+                onChange={(alt) => dispatch({ type: "SET_DEFENDER_LAYER", alt })}
+              />
+              Defender in ethereal layer
+            </label>
+            <BiomeEnvironmentBar
+              combatSimulator={combatSimulator}
+              biome={state.defenderAlt ? BiomeType.Underground : state.biome}
+              ethereal={state.defenderAlt}
+              onSelect={(biome) => dispatch({ type: "SET_BIOME", biome })}
             />
 
-            <ArmyColumn
-              key={`defender-${seed}`}
-              label="Defender"
-              side="defender"
-              army={state.defender}
-              onChange={(patch) => dispatch({ type: "PATCH_DEFENDER", patch })}
-              footer={
-                state.hasDefender && prediction ? (
-                  <OutcomeStrip
-                    side={prediction.defender}
-                    total={state.defender.troopCount}
-                    staminaBefore={state.defender.stamina}
-                    staminaAfter={prediction.newDefenderStamina}
-                  />
-                ) : null
-              }
-            />
+            <div className="relative grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <ArmyColumn
+                key={`attacker-${seed}`}
+                label="Attacker"
+                side="attacker"
+                army={state.attacker}
+                onChange={(patch) => dispatch({ type: "PATCH_ATTACKER", patch })}
+                guards={snapshot?.attackerType === "structure" ? snapshot.guards : undefined}
+                selectedGuardSlot={state.selectedGuardSlot}
+                onSelectGuard={handleSelectGuard}
+                footer={
+                  prediction && (
+                    <OutcomeStrip
+                      side={prediction.attacker}
+                      total={state.attacker.troopCount}
+                      staminaBefore={state.attacker.stamina}
+                      staminaAfter={prediction.newAttackerStamina}
+                    />
+                  )
+                }
+              />
 
-            <div className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:flex">
-              <span className="rounded-full border border-gold/30 bg-black/70 px-3 py-2 text-sm font-bold text-gold">
-                VS
-              </span>
+              <ArmyColumn
+                key={`defender-${seed}`}
+                label="Defender"
+                side="defender"
+                army={state.defender}
+                onChange={(patch) => dispatch({ type: "PATCH_DEFENDER", patch })}
+                footer={
+                  state.hasDefender && prediction ? (
+                    <OutcomeStrip
+                      side={prediction.defender}
+                      total={state.defender.troopCount}
+                      staminaBefore={state.defender.stamina}
+                      staminaAfter={prediction.newDefenderStamina}
+                    />
+                  ) : null
+                }
+              />
+
+              <div className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:flex">
+                <span className="rounded-full border border-hud-line bg-hud-well px-3 py-2 text-hud-strong text-hud-accent">
+                  VS
+                </span>
+              </div>
             </div>
+
+            {!state.hasDefender ? (
+              <HudNotice
+                tone="good"
+                line={
+                  rangedClaimBlocked
+                    ? "No defending troops — move adjacent to claim. Ranged attacks clear guards but cannot claim structures."
+                    : "No defending troops — this target can be claimed without a battle."
+                }
+              />
+            ) : (
+              prediction && <OutcomeBanner outcomes={prediction.outcomes} />
+            )}
+
+            <ActionFooter
+              mode={mode}
+              attackType={state.attackType}
+              showRaidToggle={showRaidToggle}
+              onSetAttackType={(attackType) => dispatch({ type: "SET_ATTACK_TYPE", attackType })}
+              isEdited={isEdited || nonDefaultParams}
+              onResetToLive={handleResetToLive}
+              actionLabel={actionLabel}
+              actionDisabled={actionDisabled}
+              loading={loading}
+              onAction={onAttack}
+              warning={warning}
+              share={share}
+              cooldownEnd={state.attacker.battle_cooldown_end}
+            />
           </div>
-
-          {!state.hasDefender ? (
-            <div className="rounded-lg border border-emerald-400/40 bg-emerald-900/20 px-4 py-3 text-center text-sm font-semibold text-emerald-200">
-              {rangedClaimBlocked
-                ? "No defending troops — move adjacent to claim. Ranged attacks clear guards but cannot claim structures."
-                : "No defending troops — this target can be claimed without a battle."}
-            </div>
-          ) : (
-            prediction && <OutcomeBanner outcomes={prediction.outcomes} />
-          )}
-
-          <ActionFooter
-            mode={mode}
-            attackType={state.attackType}
-            showRaidToggle={showRaidToggle}
-            onSetAttackType={(attackType) => dispatch({ type: "SET_ATTACK_TYPE", attackType })}
-            isEdited={isEdited || nonDefaultParams}
-            onResetToLive={handleResetToLive}
-            actionLabel={actionLabel}
-            actionDisabled={actionDisabled}
-            loading={loading}
-            onAction={onAttack}
-            warning={warning}
-            tweet={tweet}
-            cooldownEnd={state.attacker.battle_cooldown_end}
-          />
-        </div>
-      )}
-    </SurfaceFrame>
+        )}
+      </div>
+    </HudWindow>
   );
 };

@@ -24,7 +24,7 @@ it("leaves the visit stream and banner when navigating to an owned structure", a
   const visit = vi.fn();
   useAccountStore.setState({ account: { address: "0x111" } as never });
   installActiveGameClient({ setup, connect: vi.fn(), dispose: vi.fn(), visit } as unknown as GameClient);
-  startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true });
+  startRealmVisit({ player: "0x222", structureId: 8, opensOn: "realm" });
   useUIStore.setState({ structureEntityId: 8, isSpectating: true });
   const Probe = () => {
     const go = useGoToStructure(setup);

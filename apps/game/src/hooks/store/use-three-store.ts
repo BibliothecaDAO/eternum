@@ -8,8 +8,6 @@ export interface ThreeStore {
   setNavigationTarget: (hex: HexPosition | null) => void;
   cameraTargetHex: HexPosition | null;
   setCameraTargetHex: (hex: HexPosition | null) => void;
-  cameraDistance: number | null;
-  setCameraDistance: (distance: number | null) => void;
   hoveredHex: HexPosition | null;
   setHoveredHex: (hex: HexPosition | null) => void;
   entityActions: EntityActions;
@@ -56,8 +54,6 @@ interface EntityActions {
   nextOrder: NextOrder | null;
 }
 
-const CAMERA_DISTANCE_EPSILON = 0.5;
-
 const areHexesEqual = (left: HexPosition | null, right: HexPosition | null): boolean => {
   if (left === right) {
     return true;
@@ -90,18 +86,6 @@ const areBuildingHexesEqual = (left: SelectedBuildingHex | null, right: Selected
     left.innerCol === right.innerCol &&
     left.innerRow === right.innerRow);
 
-const areCameraDistancesEqual = (left: number | null, right: number | null): boolean => {
-  if (left === right) {
-    return true;
-  }
-
-  if (left === null || right === null) {
-    return false;
-  }
-
-  return Math.abs(left - right) < CAMERA_DISTANCE_EPSILON;
-};
-
 export const createThreeStoreSlice = (
   set: (partial: Partial<ThreeStore> | ((state: ThreeStore) => Partial<ThreeStore>)) => void,
   get: () => ThreeStore,
@@ -115,11 +99,6 @@ export const createThreeStoreSlice = (
   setCameraTargetHex: (hex: HexPosition | null) => {
     if (areHexesEqual(get().cameraTargetHex, hex)) return;
     set({ cameraTargetHex: hex });
-  },
-  cameraDistance: null,
-  setCameraDistance: (distance: number | null) => {
-    if (areCameraDistancesEqual(get().cameraDistance, distance)) return;
-    set({ cameraDistance: distance });
   },
   hoveredHex: null,
   setHoveredHex: (hoveredHex: HexPosition | null) => {

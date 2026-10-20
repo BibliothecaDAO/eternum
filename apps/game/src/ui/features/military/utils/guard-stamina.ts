@@ -89,10 +89,11 @@ const buildGuardTroopsForStaminaComputation = (
   };
 };
 
-export const getGuardStaminaSnapshot = (
-  troops: unknown,
-  timestamp: number,
-): { current: number; max: number } | null => {
+/**
+ * A guard's stamina at a chain second, from its resolved troops (`getGuardsByStructure`, or `inlineTroops` with its
+ * game's rules): a native Guard row's bar is still wrapped (`{ Inline }`) and carries no cap, so it is not accepted.
+ */
+export const getGuardStaminaSnapshot = (troops: Troops, timestamp: number): { current: number; max: number } | null => {
   const data = toGuardTroopsLike(troops);
   const category = data.category as TroopType | undefined | null;
   const tier = data.tier as TroopTier | undefined | null;

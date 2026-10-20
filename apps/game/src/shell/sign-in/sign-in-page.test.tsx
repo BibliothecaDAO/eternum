@@ -82,7 +82,7 @@ describe("the sign-in flow", () => {
       await ui.type('input[autocomplete="one-time-code"]', "481927");
       const name = () => ui.query<HTMLInputElement>('input[autocomplete="nickname"]')!;
       expect(name().value).toBe("Ysolde");
-      expect(name().getAttribute("aria-invalid")).toBe("false");
+      expect(name().getAttribute("aria-invalid")).toBeNull();
       const picked = ui.query('[role="radio"][aria-checked="true"]')!.getAttribute("aria-label")!;
       expect(IDENTITY_PORTRAITS.map((id) => `Portrait ${id}`)).toContain(picked);
 

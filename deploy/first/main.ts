@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { validateInputs } from "./dates";
+import { setupQuestions, validateInputs } from "./dates";
 import { deploymentRevision } from "./revision";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
@@ -28,6 +28,14 @@ import {
   type Assets,
 } from "./ledger";
 import { Platform, generateSecrets, workerSecrets, workers, type Secrets } from "./platform";
+import {
+  ADMIN_ACCESS,
+  ADMIN_ACCESS_LIST,
+  adminAccessListExample,
+  readAdminAccessList,
+  syncAdminAccess,
+  type AdminAccess,
+} from "./admin-access";
 import { command } from "./process";
 import { runSteps, type Step } from "./run";
 import { addressBookStep } from "./address-book";
@@ -100,20 +108,9 @@ async function prompt(label: string) {
   });
 }
 async function collectInputs(context: Deployment) {
-  const inputs: Inputs = {
-    cloudflareToken: await prompt("Cloudflare token"),
-    rpc: await prompt("Alchemy mainnet URL"),
-    resend: await prompt("Resend key"),
-    amount: await prompt("Frontier deposit in whole tokens"),
-    frontierStart: await prompt("Frontier start, YYYY-MM-DDTHH:MM:SSZ"),
-    frontierEnd: await prompt("Frontier end, YYYY-MM-DDTHH:MM:SSZ"),
-    blitzStart: await prompt("Blitz start, YYYY-MM-DDTHH:MM:SSZ"),
-    blitzEnd: await prompt("Blitz end, YYYY-MM-DDTHH:MM:SSZ"),
-  };
-  if (context.target.coldAdmin) {
-    inputs.admin = await prompt("Public cold admin account address (never its key)");
-    inputs.treasury = await prompt("Public treasury address");
-  }
+  const answers: Partial<Record<keyof Inputs, string>> = {};
+  for (const [name, question] of setupQuestions(context.target)) answers[name] = await prompt(question);
+  const inputs = answers as Inputs;
   validateInputs(inputs, context.target);
   context.store.write("inputs.json", inputs);
   reload(context);
@@ -241,11 +238,6 @@ export function preparationSteps(context: Deployment): Step[] {
         const admin = context.inputs!.admin ?? account.address;
         const treasury = context.inputs!.treasury ?? account.address;
         const assets = existingAssets(context.target);
-        if (
-          !context.target.freshAssets &&
-          ["lords", "mmr", "chests", "cosmetics"].some((name) => !assets[name as keyof Assets])
-        )
-          throw new PublicError("Production asset addresses must already exist in the public address book");
         for (const plan of assetPlans(
           context.target,
           admin,
@@ -358,6 +350,29 @@ export function preparationSteps(context: Deployment): Step[] {
       apply: async () => context.platform!.prepareResources(),
     },
     {
+      name: "Admin access",
+      payer: "none",
+      cost: "0 STRK; Cloudflare Access is free for up to 50 users",
+      inspect: async () => {
+        if (!context.platform) return waiting("Cloudflare token unavailable");
+        const list = readAdminAccessList(context.store, context.environment);
+        if (!list)
+          return waiting(
+            `Write ${ADMIN_ACCESS_LIST} (mode 0600) in the private directory, for example ${adminAccessListExample(context.environment)}`,
+          );
+        const { changed } = await syncAdminAccess(context.platform, context.store, context.environment, list, false);
+        return {
+          done: !changed,
+          detail: `one-time PIN login and the admin page's Access application with the private directory's operators${list.writers ? "; its writers go to the admin Worker" : ""}`,
+        };
+      },
+      apply: async () => {
+        const list = readAdminAccessList(context.store, context.environment);
+        if (!list) throw new PublicError(`Write ${ADMIN_ACCESS_LIST} in the private directory first`);
+        await syncAdminAccess(context.platform!, context.store, context.environment, list, true);
+      },
+    },
+    {
       name: "Worker secrets",
       payer: "none",
       cost: "0 STRK",
@@ -366,9 +381,13 @@ export function preparationSteps(context: Deployment): Step[] {
           return waiting("Private credentials unavailable");
         let complete = true;
         for (const worker of workers) {
+          if (worker.id === "admin" && !context.store.read<AdminAccess>(ADMIN_ACCESS)) {
+            complete = false;
+            continue;
+          }
           complete &&= await context.platform.secretsPresent(
             worker,
-            workerSecrets(worker, context.inputs, context.secrets, context.keys),
+            workerSecrets(worker, context.inputs, context.secrets, context.keys, context.store.read(ADMIN_ACCESS)),
           );
           if (worker.id === "guardian")
             complete &&= (await context.platform.secretNames(worker)).includes("GUARDIAN_PRIVATE_KEY");
@@ -384,7 +403,7 @@ export function preparationSteps(context: Deployment): Step[] {
         for (const worker of workers)
           await context.platform!.installSecrets(
             worker,
-            workerSecrets(worker, context.inputs!, context.secrets!, context.keys!),
+            workerSecrets(worker, context.inputs!, context.secrets!, context.keys!, context.store.read(ADMIN_ACCESS)),
           );
       },
     },

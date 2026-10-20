@@ -1,5 +1,12 @@
-import { formatTime, TROOP_RAISE_SHORT_REASON, type TroopRaiseCost } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { TROOP_RAISE_SHORT_REASON, type TroopRaiseCost } from "@bibliothecadao/eternum";
+import {
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  formatWait,
+  formatCharge,
+  formatFigure,
+  resourceName,
+} from "@bibliothecadao/types";
 
 import type { SelectedTroopCombo, TroopSelectionOption } from "./types";
 
@@ -37,7 +44,7 @@ interface ArmyCreationStatus extends TroopAvailabilityStatus {
   isLoading: boolean;
 }
 
-/** Why no troop can be chosen at all: the one reason the troop count controls are disabled. */
+/** Why no troop can be chosen at all, in a few words: the troop count is disabled and the order's button says why. */
 export function resolveTroopAvailabilityReason(status: TroopAvailabilityStatus): string | null {
   if (status.capacityRemaining === null) return "Army capacity is still loading.";
   if (status.capacityRemaining <= 0) return "Troop cap reached.";
@@ -61,29 +68,37 @@ export function resolveArmyCreationBlockedReason(status: ArmyCreationStatus): st
   return null;
 }
 
-/** What deploying the chosen troops costs beyond the troops, such as "Deploying costs 20 wheat."; null when nothing. */
-export function describeTroopRaiseCost(costs: TroopRaiseCost[] | undefined): string | null {
-  if (!costs?.length) return null;
-  const amounts = costs.map(
-    ({ resource, amount }) =>
-      `${Math.ceil(Number(amount) / RESOURCE_PRECISION).toLocaleString()} ${ResourcesIds[resource].toLowerCase()}`,
-  );
-  return `Deploying costs ${amounts.join(" and ")}.`;
+/**
+ * What deploying the chosen troops costs beyond the troops, as one compact line beside the Deploy verb ("20 wheat"),
+ * the way the map's order line writes a cost; empty while it costs nothing.
+ */
+export function troopRaiseLine(costs: TroopRaiseCost[] | undefined) {
+  return (costs ?? [])
+    .filter(({ amount }) => amount > 0n)
+    .map(
+      ({ resource, amount }) =>
+        `${formatCharge(Number(amount) / RESOURCE_PRECISION)} ${ResourcesIds[resource].toLowerCase()}`,
+    )
+    .join(" · ");
 }
 
-/** The training line while a barracks fills the next army; null when nothing trains the troop. */
-export function describeTroopTraining(supply: TroopSupply): string | null {
-  if (supply.perHour <= 0 || supply.secondsToFullArmy === null) return null;
-  const rate = `Training ${supply.perHour.toLocaleString()} ${supply.name} per hour`;
-  if (supply.secondsToFullArmy <= 0) return `${rate}; a full army is ready.`;
-  return `${rate}; a full army in ${formatTime(Math.ceil(supply.secondsToFullArmy)).trim()}.`;
+/**
+ * Where a troop comes from, for a realm that has none: "Knight T1 are trained by a Knight T1 barracks on the realm
+ * board, from 2 wheat each." The inputs are the troop's recipe, per troop: a unit price, as precise as it is read.
+ */
+export function describeTroopSource(name: string, inputs: readonly { resource: ResourcesIds; perTroop: number }[]) {
+  const from = inputs.length
+    ? `, from ${inputs.map(({ resource, perTroop }) => `${formatFigure(perTroop)} ${resourceName(resource).toLowerCase()}`).join(" and ")} each`
+    : "";
+  return `${name} are trained by a ${name} barracks on the realm board${from}.`;
 }
 
+/** None on hand: "No Knight T1 on hand.", or while a barracks trains them, when a full army is ready. */
 function describeEmptyTroop(supply: TroopSupply): string {
-  return (
-    describeTroopTraining(supply) ??
-    `No ${supply.name} troops. A ${supply.name} barracks on the realm board trains them.`
-  );
+  if (supply.perHour > 0 && supply.secondsToFullArmy !== null) {
+    return `No ${supply.name} yet: a full army in ${formatWait(Math.ceil(supply.secondsToFullArmy))}.`;
+  }
+  return `No ${supply.name} on hand.`;
 }
 
 /**

@@ -18,7 +18,7 @@ export async function checkConstructionImages() {
   return [
     {
       check: "every model represented",
-      ok: models.length === 14 && new Set(models.map((image) => image.src)).size === 14,
+      ok: models.length === 15 && new Set(models.map((image) => image.src)).size === 15,
     },
     {
       check: "construction art uses model renders",
@@ -51,7 +51,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         b.run("open", `${baseUrl}/lab/kit/construction`, "--ignore-https-errors");
         const record = {
           name,
-          ready: await waitFor(b, 'document.querySelectorAll("[data-building-thumbnail]").length === 14', 30000),
+          ready: await waitFor(b, 'document.querySelectorAll("[data-building-thumbnail]").length === 15', 30000),
           presses: [],
           checks: [],
         };
@@ -81,8 +81,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           name === "phone"
             ? `${selector} details button:nth-child(2)`
             : `${selector} button[aria-label="Destroy building"]`;
-        let destroyError = clickAsPlayer(b, destroy);
-        if (name === "phone" && !destroyError) destroyError = clickAsPlayer(b, destroy);
+        // Destroy acts at once on both cards: Blitz and Eternum ask no confirmation.
+        const destroyError = clickAsPlayer(b, destroy);
         const destroyed = b.evaluate(`document.querySelector('${selector}').textContent.includes("1 built")`);
         record.presses.push({
           action: "Destroy Farm",

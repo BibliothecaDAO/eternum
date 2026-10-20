@@ -3,7 +3,6 @@ import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { StructureSelect } from "@/ui/design-system/molecules/structure-select";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { StructureStatusRow } from "@/ui/features/world/components/structure-status-row/structure-status-row";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
@@ -112,8 +111,8 @@ export const StructureSidebar = memo(
     if (ordered.length === 0) {
       return (
         <div className="flex h-full flex-col gap-2 px-3 py-3">
-          <span className={HUD_LABEL}>{title}</span>
-          <p className={HUD_BODY_MUTED}>No matching structures.</p>
+          <span className="text-hud-label text-hud-muted">{title}</span>
+          <p className="text-hud-body text-hud-muted">No matching structures.</p>
         </div>
       );
     }
@@ -121,7 +120,7 @@ export const StructureSidebar = memo(
     return (
       <div className="flex h-full min-h-0 flex-col gap-2 px-2 py-3">
         <div className="flex items-center justify-between gap-2 px-1">
-          <span className={HUD_LABEL}>{title}</span>
+          <span className="text-hud-label text-hud-muted">{title}</span>
           {enableCategoryFilter && availableCategories.length > 1 && (
             <FilterChipsRow
               availableCategories={availableCategories}

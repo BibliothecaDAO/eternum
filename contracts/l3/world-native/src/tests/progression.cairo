@@ -49,10 +49,10 @@ fn each_scouting_tier_raises_the_kind_chosen_for_it_by_its_relative_increment() 
 }
 
 #[test]
-fn every_scouting_tier_may_raise_stragglers_once_they_exist() {
+fn every_scouting_tier_may_raise_beasts_once_they_exist() {
     let mut progress = ArmyProgress { xp: 1500, ..crate::progression::initial() };
     for _ in 0_u8..4 {
-        crate::progression::buy_tier(ref progress, rules(), scout(ScoutingKind::Stragglers));
+        crate::progression::buy_tier(ref progress, rules(), scout(ScoutingKind::Beasts));
     }
     assert_eq!(crate::progression::scouting_bonus(progress), (0, 0, 10000));
 }
@@ -261,7 +261,7 @@ fn battle_tiers_multiply_damage_by_the_ruled_table() {
 fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     let rules = frontier.rules.troop_stamina_config;
-    for (logistics, maximum) in array![(1_u8, 150_u64), (2, 170), (3, 200), (4, 240), (5, 300)] {
+    for (logistics, maximum) in array![(1_u8, 120_u64), (2, 140), (3, 170), (4, 210), (5, 270)] {
         let progress = ArmyProgress { logistics, ..crate::progression::initial() };
         assert_eq!(crate::progression::stamina_max(progress, crate::troops::TroopType::Knight, rules), maximum);
     }
@@ -274,14 +274,14 @@ fn added_stamina_stops_at_the_armys_own_maximum() {
     let maximum = crate::progression::stamina_max(
         ArmyProgress { logistics: 3, ..crate::progression::initial() }, crate::troops::TroopType::Knight, rules,
     );
-    assert_eq!(maximum, 200);
+    assert_eq!(maximum, 170);
     let mut boosts: crate::troops::TroopBoosts = Default::default();
-    // Past the troop's base of 150, up to the army's own 200, and never beyond it.
-    let mut bar = crate::troops::Stamina { amount: 140, settled_at: 5, remainder: 0 };
+    // Past the troop's base of 120, up to the army's own 170, and never beyond it.
+    let mut bar = crate::troops::Stamina { amount: 110, settled_at: 5, remainder: 0 };
     bar.add(ref boosts, maximum, rules, 25, 120, 5);
-    assert_eq!(bar.amount, 165);
+    assert_eq!(bar.amount, 135);
     bar.add(ref boosts, maximum, rules, 50, 120, 5);
-    assert_eq!(bar.amount, 200);
+    assert_eq!(bar.amount, 170);
 }
 
 #[test]
@@ -428,7 +428,7 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
 fn trained_scouting_carries_every_choice_from_the_lodge() {
     let mut learned = 0;
     for kind in array![
-        crate::research::KIND_RIFTS, crate::research::KIND_CAMPS, crate::research::KIND_STRAGGLERS,
+        crate::research::KIND_RIFTS, crate::research::KIND_CAMPS, crate::research::KIND_BEASTS,
         crate::research::KIND_RIFTS,
     ] {
         learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, kind);

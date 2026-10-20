@@ -38,12 +38,24 @@ jobs:
       - name: Validate painted icons
         run: pnpm icons:check
 
+      - name: Check the shell names its sizes, colours and radii through the tokens
+        run: pnpm shell:check
+
+      - name: Check the HUD adds no look of its own beside the sheet
+        run: pnpm hud:check
+
+      - name: Check every word, number, time and name goes through the words module
+        run: pnpm words:check
+
       - name: Typecheck game client
         run: pnpm --dir ./apps/game typecheck
 
-      - name: Check the scroll posts are rendered from their content
+      - name: Hold the client and its packages to the lint guards
+        run: pnpm --dir ./apps/game lint:guards
+
+      - name: Check the patch notes are rendered from their releases
         working-directory: apps/game
-        run: node scripts/generate-scroll-posts.mjs && git diff --exit-code src/shell/generated/scroll-posts.ts
+        run: node scripts/generate-patch-notes.mjs && git diff --exit-code src/shell/generated/patch-notes.ts
 
       - name: Run game client tests
         run: pnpm --dir ./apps/game test

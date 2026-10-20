@@ -68,6 +68,7 @@ describe("an attack's result, from the battle's own record", () => {
 
   it("says only that the army was lost when no record of the battle is known", () => {
     expect(lostArmyResult(SENT)).toEqual({
+      targetId: SITE,
       site: "Camp",
       verdict: "army-lost",
       armyArt: SENT.armyArt,
@@ -86,11 +87,11 @@ describe("the result card", () => {
         <FightResultCard result={fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]), paid)} onClose={onClose} />,
       ),
     );
-    const card = host.querySelector<HTMLButtonElement>('button[aria-label="Camp: Victory"]')!;
+    const card = host.querySelector<HTMLButtonElement>('button[aria-label="Troll: Victory"]')!;
     expect(card.querySelector('[aria-label="Army 1,498 → 1,318"]')).not.toBeNull();
     expect(card.querySelector('[aria-label="troops 1,100 → 0"]')).not.toBeNull();
     expect(card.textContent).toContain("+550");
-    expect(card.querySelector('[aria-label="XP +82"]')).not.toBeNull();
+    expect(card.textContent).toContain("+82 XP");
     act(() => card.click());
     expect(onClose).toHaveBeenCalled();
   });
@@ -102,12 +103,12 @@ describe("the result card", () => {
         <FightResultCard result={fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]), full)} onClose={() => {}} />,
       ),
     );
-    const card = host.querySelector('button[aria-label="Camp: Victory"]')!;
+    const card = host.querySelector('button[aria-label="Troll: Victory"]')!;
     // The figure is still the reward the record names; the mark says the store could not take all of it.
     expect(card.textContent).toContain("+550");
     const mark = card.querySelector('[aria-label="Store Full"]')!;
     expect(mark.getAttribute("data-tip")).toBe("The store is full: the rest did not fit");
-    expect(mark.getAttribute("data-tone")).toBe("loss");
+    expect(mark.getAttribute("data-tone")).toBe("bad");
   });
 
   it("carries no Full mark while the store has room", () => {
@@ -125,7 +126,7 @@ describe("the result card", () => {
         <FightResultCard result={fightResultOf(SENT, record([1_498, 0], [1_100, 1_028]), paid)} onClose={() => {}} />,
       ),
     );
-    const card = host.querySelector('button[aria-label="Camp: Army lost"]')!;
+    const card = host.querySelector('button[aria-label="Troll: Army lost"]')!;
     expect(card.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
     expect(card.querySelector('[aria-label="troops 1,100 → 1,028"]')).not.toBeNull();
     expect(card.querySelector('[aria-label^="XP"]')).toBeNull();
@@ -133,9 +134,21 @@ describe("the result card", () => {
 
   it("shows the lost army alone when nothing is known of the other side", () => {
     act(() => root.render(<FightResultCard result={lostArmyResult(SENT)} onClose={() => {}} />));
-    const card = host.querySelector('button[aria-label="Camp: Army lost"]')!;
+    const card = host.querySelector('button[aria-label="Troll: Army lost"]')!;
     expect(card.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
     expect(card.querySelector('[aria-label^="troops"]')).toBeNull();
     expect(card.textContent).not.toContain("+");
   });
+});
+
+it("keeps the Troll portrait and name through its result, including a guard cleared from the map", () => {
+  const sent = { ...SENT, guardIdentity: { name: "Troll", art: "beast-troll" as const } };
+  act(() =>
+    root.render(
+      <FightResultCard result={fightResultOf(sent, record([1000, 694], [1000, 572]), paid)} onClose={() => {}} />,
+    ),
+  );
+  expect(host.querySelector('button[aria-label="Troll: Guard holds"]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Troll 1,000 → 572"] img')?.getAttribute("data-icon")).toBe("beast-troll");
+  expect(host.querySelectorAll('[data-icon="beast-troll"]')).toHaveLength(2);
 });

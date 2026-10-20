@@ -1,11 +1,12 @@
 import { useRef, useState } from "react";
+import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
 import { validateAndParseAddress } from "starknet";
 import { configManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { StructureType } from "@bibliothecadao/types";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import Button from "@/ui/design-system/atoms/button";
+import { HudButton, HudField } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
 
 function recipientAddress(value: string): string | undefined {
@@ -26,7 +27,7 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
   const mode = useResolvedWorldGameMode();
   const key = { game_id: configManager.getActiveGameId(), entity_id: structureId };
   const structure = useNativeRow("Structure", key);
-  const [confirming, setConfirming] = useState(false);
+  const { confirming, ask, close } = useConfirmFor(structureId);
   const [recipient, setRecipient] = useState("");
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);
@@ -53,9 +54,8 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
         structure_id: structureId,
         new_owner: address,
       });
-      setConfirming(false);
+      close();
       setRecipient("");
-      toast.success("Structure ownership transferred");
     } catch (error) {
       toast.failed(error, "Could not transfer ownership");
     } finally {
@@ -65,41 +65,41 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
   };
 
   return (
-    <div className="mt-2 space-y-2 border-t border-gold/20 pt-2">
+    <div className="mt-2 space-y-2 border-t border-hud-divider pt-2">
       {confirming ? (
         <>
-          <label className="block text-sm">
-            Recipient gameplay account
-            <input
-              className="mt-1 w-full rounded border border-gold/30 bg-black/25 p-2"
+          <div className="flex flex-col gap-1">
+            <span className="text-hud-label text-hud-muted">Recipient gameplay account</span>
+            <HudField
+              aria-label="Recipient gameplay account"
               value={recipient}
-              onChange={(event) => setRecipient(event.target.value)}
+              onChange={setRecipient}
               placeholder="0x…"
               spellCheck={false}
               disabled={pending}
             />
-          </label>
-          <p className="text-sm">
+          </div>
+          <p className="text-hud-label text-hud-muted">
             Transfer this structure and its inventory to this gameplay account. This cannot be undone.
           </p>
           {recipient && !validRecipient && (
-            <p role="alert" className="text-sm text-red-300">
+            <p role="alert" className="text-hud-label text-hud-bad">
               Enter a valid, nonzero gameplay account other than your own.
             </p>
           )}
           <div className="flex gap-2">
-            <Button variant="danger" disabled={!validRecipient || pending} onClick={transfer}>
+            <HudButton kind="danger" disabled={!validRecipient || pending} onClick={transfer}>
               Confirm transfer
-            </Button>
-            <Button disabled={pending} onClick={() => setConfirming(false)}>
+            </HudButton>
+            <HudButton kind="quiet" disabled={pending} onClick={close}>
               Cancel
-            </Button>
+            </HudButton>
           </div>
         </>
       ) : (
-        <Button variant="outline" onClick={() => setConfirming(true)}>
+        <HudButton kind="secondary" size="sm" onClick={ask}>
           Transfer ownership
-        </Button>
+        </HudButton>
       )}
     </div>
   );

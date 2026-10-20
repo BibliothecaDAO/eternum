@@ -1,3 +1,5 @@
+import { constants } from "starknet";
+
 /**
  * GameLedger's structs as the views return them (infra-pr/ledger-interface.txt): felt arrays in the interface's field
  * order; u256 is low then high, bool is 0 or 1. The one decoder of each struct, for the client and the services.
@@ -270,9 +272,48 @@ export const decodeLedgerPreset = (fields: readonly string[]) => {
     decay: ledgerInteger(fields[5]!),
     swordPrice: ledgerU256(fields[6]!, fields[7]!),
     shieldPrice: ledgerU256(fields[8]!, fields[9]!),
+    /** Whether the preset's games are rated: mmr.enabled, the first of the six rating fields. */
+    rated: ledgerBool(fields[10]!),
     dayUnit: ledgerInteger(fields[16]!),
     claimWindow: ledgerInteger(fields[17]!),
   };
+};
+
+/** A wallet's rating if its game ended in the ranking asked: whole points before and after, and the signed change. */
+export interface MmrPreview {
+  wallet: string;
+  mmrBefore: number;
+  mmrAfter: number;
+  delta: number;
+}
+
+/** MmrPreview array (preview_mmr): its length, then wallet, mmr_before, mmr_after, delta (i32) per wallet, in input order. */
+export const decodeMmrPreviews = (fields: readonly string[]): MmrPreview[] => {
+  const count = ledgerInteger(fields[0] ?? "");
+  if (fields.length !== 1 + 4 * count) throw new Error("invalid_mmr_preview");
+  return Array.from({ length: count }, (_, index) => {
+    const [wallet, before, after, delta] = fields.slice(1 + 4 * index, 5 + 4 * index) as [
+      string,
+      string,
+      string,
+      string,
+    ];
+    return {
+      wallet: `0x${unsigned(wallet).toString(16)}`,
+      mmrBefore: ledgerInteger(before),
+      mmrAfter: ledgerInteger(after),
+      delta: ledgerI32(delta),
+    };
+  });
+};
+
+/** A signed i32 felt: a negative value arrives field-modulus encoded, as the prime minus its magnitude. */
+const ledgerI32 = (value: string): number => {
+  const felt = unsigned(value);
+  if (felt >= constants.PRIME) throw new Error("invalid_ledger_i32");
+  const signed = felt > constants.PRIME / 2n ? felt - constants.PRIME : felt;
+  if (signed < -(2n ** 31n) || signed >= 2n ** 31n) throw new Error("invalid_ledger_i32");
+  return Number(signed);
 };
 
 const unsigned = (value: string) => {

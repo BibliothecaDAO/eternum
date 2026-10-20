@@ -1,5 +1,6 @@
 import { resourceMeaning, iconUrl } from "@/ui/design-system/icon-meaning";
-import type { HexPosition } from "@bibliothecadao/types";
+import { formatCharge, ResourcesIds, type HexPosition } from "@bibliothecadao/types";
+import type { ChestReward } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { createWorldFxBackend, type WorldFxBackend, type WorldFxHandle } from "../fx/world-fx-backends";
 import type { RendererFxCapabilities } from "../renderer-fx-capabilities";
@@ -119,7 +120,7 @@ export class ResourceFXManager {
       floatHeight,
       floatRight: 0.9,
       fontSize: "18px",
-      text: amount > 0 ? `+${amount}` : `${amount}`,
+      text: amount > 0 ? `+${formatCharge(amount)}` : formatCharge(amount),
       x: x + 0.8,
       y: y + 0.2,
       z,
@@ -139,7 +140,7 @@ export class ResourceFXManager {
   }
 
   /** A crate burst: every relic rises from the hex at once, fanned out sideways and staggered by a beat. */
-  public async playRelicBurst(relicIds: number[], col: number, row: number): Promise<void> {
+  private async playRelicBurst(relicIds: number[], col: number, row: number): Promise<void> {
     const { getWorldPositionForHex } = await import("../utils/utils");
     const position = getWorldPositionForHex({ col, row } as HexPosition);
     placePositionOnTerrain(position, this.terrainSurface);
@@ -158,6 +159,15 @@ export class ResourceFXManager {
           }),
       ),
     );
+  }
+
+  public async playChestRewardBurst(reward: ChestReward, col: number, row: number): Promise<void> {
+    if (reward.kind === "relics") return this.playRelicBurst(reward.relics, col, row);
+    if (reward.amount === 0) return;
+    const { getWorldPositionForHex } = await import("../utils/utils");
+    const position = getWorldPositionForHex({ col, row } as HexPosition);
+    placePositionOnTerrain(position, this.terrainSurface);
+    await this.playResourceFxAtCoords(ResourcesIds.Lords, reward.amount, position.x, position.y + 2.5, position.z);
   }
 
   public destroy(): void {

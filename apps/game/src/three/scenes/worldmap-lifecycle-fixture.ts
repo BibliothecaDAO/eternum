@@ -98,6 +98,10 @@ export function createWorldmapLifecycleFixture(): WorldmapLifecycleFixture {
         getProceduralArmyProductionStats: () => ({
           activeRepresentationCount: 0,
           actorCount: 0,
+          nearKnightCount: 0,
+          midKnightCount: 0,
+          meshDrawsPerPass: 0,
+          trianglesPerPass: 0,
           collisionBodyCount: 0,
           collisionMaximumOffset: 0,
           collisionPairCount: 0,

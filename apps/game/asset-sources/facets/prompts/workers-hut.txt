@@ -1,1 +1,1 @@
-Simple small timber hut with thatched roof and a shovel propped at the door.
+Render /models/new-buildings-opt/workers_hut.glb with scripts/icons/render-models.mjs through the client loader and building-thumbnail camera. Keep the actual building geometry and materials; do not add a terrain tile. Transparent 1024 px master. Tight subject crop through normalizeMaster and deliverIcon, about 90% of each final canvas.

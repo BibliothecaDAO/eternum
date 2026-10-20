@@ -1,19 +1,30 @@
 use crate::rules::BiomeClimateConfig;
 use crate::troops::Coord;
 
-// A guarded site's kind is its structure category. The camp keeps its shared category (crate::camps).
+// A site retains its category and clear receipt after its structure and guards are removed.
 
 pub fn is_site_category(category: u8) -> bool {
     category == crate::taxonomy::CAMP_CATEGORY
         || category == crate::taxonomy::RIFT_CATEGORY
         || category == crate::taxonomy::RUIN_CATEGORY
-        || category == crate::taxonomy::STRAGGLERS_CATEGORY
+        || category == crate::taxonomy::BEASTS_CATEGORY
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ExpeditionSite {
+    pub category: u8,
     pub initial_guard_count: u128,
-    pub cleared: bool,
+    pub alt: bool,
+    pub col: u32,
+    pub row: u32,
+    pub clear: Option<SiteClear>,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct SiteClear {
+    pub explorer_id: u64,
+    pub home_id: u64,
+    pub reward: Option<crate::resources::ResourceAmount>,
 }
 
 #[starknet::interface]
@@ -30,7 +41,7 @@ pub struct SitePayout {
     pub reward: Option<crate::resources::ResourceAmount>,
 }
 
-// Stragglers pay only the clear's XP; a ruin pays the chest stored with it (crate::relics::SiteChest).
+// Beasts pay only the clear's XP; a ruin pays the chest stored with it (crate::relics::SiteChest).
 pub fn site_reward(category: u8, site: ExpeditionSite) -> Option<crate::resources::ResourceAmount> {
     use crate::resources::{ESSENCE, LABOR, ResourceAmount};
     if category == crate::taxonomy::CAMP_CATEGORY {
@@ -138,6 +149,10 @@ pub struct DepthRules {
     pub ruin_guard_lower: u32,
     pub ruin_guard_upper: u32,
     pub guard_step: u32,
+    pub beast_weak_lower: u16,
+    pub beast_weak_upper: u16,
+    pub beast_strong_lower: u16,
+    pub beast_strong_upper: u16,
 }
 
 #[starknet::interface]
@@ -148,7 +163,7 @@ pub trait IExpeditionRules<T> {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct FrontierDiscoveryRules {
-    pub stragglers_bps: u16,
+    pub beasts_bps: u16,
     pub camp_bps: u16,
     pub rift_bps: u16,
     pub ruin_bps: u16,

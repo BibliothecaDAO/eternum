@@ -1,17 +1,14 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { Link, useLocation } from "react-router-dom";
+import { formatAmount, formatClockTime, formatOrdinal } from "@bibliothecadao/types";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import { formatAmount } from "@/ui/design-system/kit/amount";
-
-import { formatClockTime } from "@/ui/design-system/kit/time";
 import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
-import { clockLine } from "../clock-chip";
+import { clockLine } from "@/ui/design-system/kit/clock-chip";
+import { AppChip, AppRow } from "@/ui/design-system/kit/app-elements";
+import { RowThumb } from "@/ui/design-system/kit/list-row";
 import { openedFrom } from "../frame/opened-from";
-import { ordinal } from "../format";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { type DirectoryGame, useLeaderboard } from "../herald";
-import { paintingSources } from "../paintings";
 import { ageOf, type AgeMode } from "../play/ages";
 import { resultsHref } from "./results-link";
 
@@ -39,29 +36,25 @@ const usePlace = (game: DirectoryGame, player: string) => {
 export const HistoryRow = ({ game, player, now }: { game: DirectoryGame; player: string; now: number }) => {
   const { rank, lords } = usePlace(game, player);
   const here = useLocation();
+  const navigate = useNavigate();
   return (
-    <li className="border-b border-kit-line last:border-b-0">
-      <Link to={resultsHref(game)} state={openedFrom(here)} className="flex min-h-14 items-center gap-3 px-1 py-2">
-        <img
-          {...paintingSources(ageOf(ageOfGame(game)).painting)}
-          sizes="48px"
-          alt=""
-          className="size-10 shrink-0 rounded-lg object-cover"
-        />
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate font-body text-base font-bold text-kit-cream">{gameTitle(game)}</span>
-          <span className="text-sm text-kit-muted">{clockLine(null, game.clock.end_at, now)}</span>
-        </span>
-        {lords !== undefined && (
-          <span className="flex items-center gap-1 font-body text-base font-bold tabular-nums text-kit-gold">
-            <SemanticIcon name="lords" size={18} />
-            {formatAmount(lords)}
+    <AppRow
+      lead={<RowThumb painting={ageOf(ageOfGame(game)).painting} size={10} />}
+      title={gameTitle(game)}
+      detail={clockLine(null, game.clock.end_at, now)}
+      onClick={() => navigate(resultsHref(game), { state: openedFrom(here) })}
+      trail={
+        <>
+          {lords !== undefined && (
+            <AppChip tone="gold" icon="lords">
+              {formatAmount(lords)}
+            </AppChip>
+          )}
+          <span className="w-12 text-right text-app-strong tabular-nums text-app-ink">
+            {rank === undefined ? "—" : formatOrdinal(rank)}
           </span>
-        )}
-        <span className="w-12 text-right font-body text-base font-extrabold tabular-nums text-kit-cream">
-          {rank === undefined ? "—" : ordinal(rank)}
-        </span>
-      </Link>
-    </li>
+        </>
+      }
+    />
   );
 };

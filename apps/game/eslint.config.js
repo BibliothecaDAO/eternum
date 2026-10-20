@@ -16,11 +16,11 @@ const NO_RETIRED_TOKENS = {
 };
 
 // A face named in a component is a second type system: the faces live in the token file (src/tokens.ts) and reach a
-// component as font-display (titles) or font-body (everything read).
-const NAMED_FONT = "/font-\\[|font-family:\\s*(?!var\\()[\"'a-zA-Z]/";
+// component as font-display, font-ui or font-body.
 const NO_NAMED_FONT = {
-  selector: `Literal[value=${NAMED_FONT}], TemplateElement[value.raw=${NAMED_FONT}], Property[key.name='fontFamily'][value.type='Literal']`,
-  message: "Faces come from the token file (src/tokens.ts): use font-display (titles) or font-body.",
+  selector:
+    "Literal[value=/font-\\[|font-family/], TemplateElement[value.raw=/font-\\[|font-family/], Property[key.name='fontFamily']",
+  message: "Faces come from the token file (src/tokens.ts): use font-display, font-ui or font-body.",
 };
 
 // The one readable type (decisions-1): no capitals, italics or added tracking, nothing under 14 px, and no gold text
@@ -42,8 +42,9 @@ const NO_CAPITALS_PHRASE = {
   message: "Readable type only: write the phrase in sentence case, not in capitals.",
 };
 
-// Every file keeps these; later blocks add to them.
-const BASE_RULES = [NO_MUTATING_SORT, NO_RETIRED_TOKENS, NO_NAMED_FONT, NO_UNREADABLE_TYPE, NO_CAPITALS_PHRASE];
+// The surfaces set in the one readable type (the shell, Frontier and the kit it draws with) keep it; Blitz and Eternum
+// in-game surfaces keep their own type, caps and sizes.
+const READABLE_RULES = [NO_NAMED_FONT, NO_UNREADABLE_TYPE, NO_CAPITALS_PHRASE];
 
 // A colour written into a shell component is a second palette; the shell's colours come from src/tokens.ts.
 const COLOUR_LITERAL = "/#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z])|rgba?\\(/";
@@ -83,7 +84,7 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
-      "no-restricted-syntax": ["error", ...BASE_RULES],
+      "no-restricted-syntax": ["error", NO_MUTATING_SORT, NO_RETIRED_TOKENS],
     },
   },
   {
@@ -93,7 +94,9 @@ export default tseslint.config(
     rules: {
       "no-restricted-syntax": [
         "error",
-        ...BASE_RULES,
+        NO_MUTATING_SORT,
+        NO_RETIRED_TOKENS,
+        ...READABLE_RULES,
         { selector: `Literal[value=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
         { selector: `TemplateElement[value.raw=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
         ...OWNED_FORMATS,
@@ -101,23 +104,25 @@ export default tseslint.config(
     },
   },
   {
-    // The failure owner is the one file that words a failure.
-    files: ["src/shell/service-failure.tsx"],
+    // The match HUD and the kit it draws with take their faces from the token file only.
+    files: ["src/ui/features/frontier/**/*.{ts,tsx}", "src/ui/design-system/kit/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": ["error", NO_MUTATING_SORT, NO_RETIRED_TOKENS, ...READABLE_RULES],
+    },
+  },
+  {
+    // The failure owner is the one file that words a failure; it comes after the kit's rules, which it narrows.
+    files: ["src/ui/design-system/kit/service-failure.tsx"],
     rules: {
       "no-restricted-syntax": [
         "error",
-        ...BASE_RULES,
+        NO_MUTATING_SORT,
+        NO_RETIRED_TOKENS,
+        ...READABLE_RULES,
         { selector: `Literal[value=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
         { selector: `TemplateElement[value.raw=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
         ...OWNED_FORMATS.slice(0, 2),
       ],
-    },
-  },
-  {
-    // The token file is where the faces are named.
-    files: ["src/tokens.ts"],
-    rules: {
-      "no-restricted-syntax": ["error", NO_MUTATING_SORT, NO_RETIRED_TOKENS, NO_UNREADABLE_TYPE, NO_CAPITALS_PHRASE],
     },
   },
   {

@@ -1,3 +1,5 @@
+import { PRODUCTION } from "@/ui/design-system/kit/words";
+import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
@@ -59,8 +61,6 @@ export function useStructureActions(): StructureAction[] | null {
   const openId = usePopoverStore((state) => state.openId);
   const closePopover = usePopoverStore((state) => state.close);
   const openSurface = usePopoverStore((state) => state.openSurface);
-  const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
-  const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -73,11 +73,10 @@ export function useStructureActions(): StructureAction[] | null {
     closePopover();
     setView(view === target ? LeftView.None : target);
   };
-  const openLogistics = () => {
-    // Anything in flight or ready lands the player on Arrivals, where the badge they clicked points.
-    setTransferPanelSourceId(safeInteger(structureEntityId));
-    setLogisticsActiveTab(arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0 ? "arrivals" : "transfer");
-    toggleView(LeftView.ResourceArrivals)();
+  // The one transfer window, from the selected holding; Arrivals, where the badges point, is a link in its header.
+  const openTransferWindow = () => {
+    if (openId === "transfer") closePopover();
+    else openTransfer({ sourceId: safeInteger(structureEntityId), destinationIds: [] });
   };
   const openProduction = () => {
     setView(LeftView.None);
@@ -104,7 +103,7 @@ export function useStructureActions(): StructureAction[] | null {
     },
     {
       id: "production",
-      label: "Production",
+      label: PRODUCTION,
       active: openId === "production",
       onClick: openProduction,
       refusal,
@@ -119,8 +118,8 @@ export function useStructureActions(): StructureAction[] | null {
     {
       id: "transfer",
       label: "Transfer",
-      active: view === LeftView.ResourceArrivals,
-      onClick: openLogistics,
+      active: openId === "transfer",
+      onClick: openTransferWindow,
       refusal,
       badges: [
         { count: arrivedArrivalsNumber, tone: "ready" },

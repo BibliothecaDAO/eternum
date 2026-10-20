@@ -1,7 +1,14 @@
 # Paintings
 
-Every painting the app draws, served at web widths. `src/shell/paintings.ts` lists them with their widths; a painting
-joins this folder only with the screen that draws it.
+Every painting the app draws, served at web widths. `src/ui/design-system/kit/paintings.ts` lists them with their
+widths; a painting joins this folder only with the screen that draws it.
+
+## App page additions
+
+`season-citadel` (Season) and `blitz-aftermath` (Blitz Results) extend the existing landscapes. The 1536 × 1024 masters,
+exact prompts, reference rationale, repeatable exporter and SHA-256 delivery manifest are in
+`asset-sources/app-backgrounds/`. Both use WebP quality 78 at 800 and 1536 pixels without upscaling. Compare them with
+`winter-fortress` and `blitz-spires` at `/lab/kit/app-art`. Both are wired to their real pages.
 
 ## The ages: the lore paintings
 

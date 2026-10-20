@@ -12,19 +12,26 @@ import { requireActiveGame } from "@/runtime/world/store";
 import { type EnvironmentLedger, environmentLedger } from "@/shell/value/ledger";
 import { useLedgerPaused } from "@/shell/value/use-ledger-paused";
 import { SETTINGS_PATH } from "@/shell/profile/settings-route";
-import { toast } from "@/ui/features/event-feed/notify";
+import { isDefinitelyNotApplied, type SentCommand, untilApplied } from "@/sync/action-outcome";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager } from "@bibliothecadao/eternum";
 import { type NativeRows, safeInteger } from "@bibliothecadao/eternum/game-client";
 
 import { useRealmLords } from "./use-realm-lords";
 import { WithdrawSheet } from "./withdraw-sheet";
-import { type SentWithdrawal, withdrawalRefusal, withdrawalsCloseAt, withdrawStepOf } from "./withdrawal";
+import {
+  type SentWithdrawal,
+  type WithdrawalOutcome,
+  withdrawalRefusal,
+  withdrawalsCloseAt,
+  withdrawStepOf,
+} from "./withdrawal";
 
 /**
  * Withdraw over the game's facts: the realm's LORDS, the account's payout wallet, and one withdrawal at a time. The
- * shard debits the realm and records the withdrawal; the ledger's payment of that claim, read until it lands, is the
- * relay's doing. Closing the sheet forgets a withdrawal on its way: the realm's count and the wallet are its record.
+ * shard debits the realm and records the withdrawal, followed to its outcome; the ledger's payment of an applied
+ * withdrawal's claim, read until it lands, is the relay's doing. Closing the sheet forgets a withdrawal on its way: the
+ * realm's count and the wallet are its record.
  */
 export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
   const { setup, account } = useGame();
@@ -33,9 +40,9 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
   const ledger = environmentLedger();
   const [amount, setAmount] = useState(0);
   const [sending, setSending] = useState<number | null>(null);
-  const [sent, setSent] = useState<SentWithdrawal | null>(null);
+  const [outcome, setOutcome] = useState<WithdrawalOutcome | null>(null);
   const paused = useLedgerPaused(ledger);
-  const paidIn = usePaymentTransaction(ledger, sent);
+  const paidIn = usePaymentTransaction(ledger, outcome?.kind === "applied" ? outcome : null);
   const refusal = withdrawalRefusal({
     closesAt: useWithdrawalsCloseAt(),
     now: useNowSeconds(),
@@ -46,22 +53,13 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
   if (!session) return null;
 
   const withdraw = async () => {
-    if (!account.account || !ledger) return;
+    const signer = account.account;
+    if (!signer || !ledger) return;
     setSending(amount);
-    try {
-      // The ledger's block now bounds the search for this claim's payment: it cannot be paid before it is made.
-      const fromBlock = await ledger.latestBlock();
-      const receipt = await setup.systemCalls.withdraw_lords({
-        signer: account.account,
-        structureId: safeInteger(realm.entity_id),
-        amount,
-      });
-      setSent({ amount, claimId: receipt.transaction_hash, fromBlock });
-    } catch (error) {
-      toast.failed(error, "The withdrawal could not be sent.");
-    } finally {
-      setSending(null);
-    }
+    setOutcome(null);
+    const send = () => setup.systemCalls.withdraw_lords({ signer, structureId: safeInteger(realm.entity_id), amount });
+    setOutcome(await sendWithdrawal(ledger, amount, send));
+    setSending(null);
   };
 
   return (
@@ -69,7 +67,7 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
       held={held}
       wallet={payoutAddressOf(session.user)}
       refusal={refusal}
-      step={withdrawStepOf({ sending, sent, paidIn, paused })}
+      step={withdrawStepOf({ sending, outcome, paidIn, paused })}
       amount={amount}
       onAmount={setAmount}
       onWithdraw={() => void withdraw()}
@@ -77,6 +75,32 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
       onClose={onClose}
     />
   );
+};
+
+/**
+ * One withdrawal sent and followed to the game's outcome (untilApplied): applied, with its claim and the ledger block
+ * that bounds the search for its payment; not applied, with the reason; or unknown, when no answer came, never sent
+ * again from here.
+ */
+const sendWithdrawal = async (
+  ledger: EnvironmentLedger,
+  amount: number,
+  send: () => Promise<SentCommand>,
+): Promise<WithdrawalOutcome> => {
+  let fromBlock: number;
+  try {
+    // The ledger's block now bounds the search for this claim's payment: it cannot be paid before it is made.
+    fromBlock = await ledger.latestBlock();
+  } catch (error) {
+    return { kind: "not-applied", reason: extractReadableErrorMessage(error) };
+  }
+  try {
+    return { kind: "applied", amount, claimId: await untilApplied(send()), fromBlock };
+  } catch (error) {
+    return isDefinitelyNotApplied(error)
+      ? { kind: "not-applied", reason: extractReadableErrorMessage(error) }
+      : { kind: "unknown", amount };
+  }
 };
 
 const CLOSE_MODELS = ["GameRegistry", "ChestRules"] as const;

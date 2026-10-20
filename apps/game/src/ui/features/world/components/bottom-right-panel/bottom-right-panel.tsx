@@ -1,11 +1,16 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
+import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { getMinePresentation } from "@bibliothecadao/types";
-import { HUD_COLUMN_WIDTH } from "@/ui/features/world/containers/hud-layout";
-import { RightHudColumn } from "@/ui/features/world/containers/right-hud-column";
+import {
+  formatCharge,
+  formatExact,
+  formatFigure,
+  getMinePresentation,
+  resourceName,
+  structureName,
+} from "@bibliothecadao/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -16,11 +21,14 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
 import { formatTilePanelTitle } from "./tile-panel-title";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY, HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import Button from "@/ui/design-system/atoms/button";
+import {
+  HudButton,
+  HudChip,
+  HudIconButton,
+  HudMinimapFrame,
+  HudNotice,
+  HudPanel,
+} from "@/ui/design-system/kit/hud-elements";
 import {
   configManager,
   divideByPrecision,
@@ -42,12 +50,11 @@ import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-fact
 import {
   BUILDINGS_CENTER,
   BuildingType,
-  BuildingTypeToString,
+  buildingName as nameOfBuilding,
   ID,
   ResourcesIds,
   StructureType,
   TileOccupier,
-  findResourceById,
 } from "@bibliothecadao/types";
 import { memo, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -56,36 +63,10 @@ import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-det
 import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/construction/realm-build-actions";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 
-import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, MINIMAP_SIZE } from "./constants";
+import { DestroyBuildingButton } from "./destroy-building-button";
 import { HexMinimap, readMinimapTiles, type MinimapTile } from "./hex-minimap";
 import { presentedMineKind } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-
-const compactResourceFormatter = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
-const formatResourceAmount = (value: number): string => {
-  const flooredValue = Math.floor(value);
-  if (flooredValue >= 1000) {
-    return compactResourceFormatter.format(flooredValue);
-  }
-  return flooredValue.toLocaleString();
-};
-
-interface PanelFrameProps {
-  title: string;
-  children: ReactNode;
-  headerAction?: ReactNode;
-  className?: string;
-  /**
-   * Optional pixel height. Defaults to BOTTOM_PANEL_HEIGHT (used by the tile
-   * details panel); minimap renders at a smaller height since it's a constant
-   * reference widget rather than a content panel.
-   */
-  height?: number | string;
-}
 
 interface ResourceAmountEntry {
   resource: number;
@@ -117,67 +98,6 @@ const normalizeResourceEntries = (value: unknown): ResourceAmountEntry[] => {
   return Object.values(value as Record<string, unknown>)
     .map(toEntry)
     .filter((entry): entry is ResourceAmountEntry => Boolean(entry));
-};
-
-const PanelFrame = ({ title, children, headerAction, className, height }: PanelFrameProps) => (
-  <section
-    className={cn(
-      "pointer-events-auto flex h-full flex-col overflow-hidden rounded-xl",
-      OVERLAY_SURFACE_BASE,
-      className,
-    )}
-    style={{ height: height ?? BOTTOM_PANEL_HEIGHT }}
-  >
-    <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-2 py-1 lg:px-3 lg:py-1.5">
-      <p className="min-w-0 flex-1 truncate text-sm font-semibold text-gold/70">{title}</p>
-      {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
-    </header>
-    <div className="flex-1 min-h-0 overflow-hidden px-1.5 py-1 lg:px-2.5 lg:py-2">{children}</div>
-  </section>
-);
-
-const MapTilePanel = () => {
-  const selectedHex = useUIStore((state) => state.selectedHex);
-
-  const tile = useTileAt(selectedHex?.col, selectedHex?.row) ?? null;
-
-  const hasOccupier = useMemo(() => {
-    if (!tile) return false;
-    return hasTileOccupier(tile.occupier_type);
-  }, [tile]);
-
-  const occupierType = useMemo(() => tile?.occupier_type ?? 0, [tile]);
-
-  const isSpire = useMemo(() => {
-    return occupierType === TileOccupier.Spire;
-  }, [occupierType]);
-
-  const isStructure = useMemo(() => {
-    return isTileOccupierStructure(occupierType);
-  }, [occupierType]);
-
-  const isReservedHyperstructure = useMemo(() => {
-    return isTileOccupierReservedHyperstructure(occupierType);
-  }, [occupierType]);
-
-  const isChest = useMemo(() => {
-    return isTileOccupierChest(occupierType);
-  }, [occupierType]);
-
-  const tileTypeLabel = useMemo(() => {
-    if (!tile) return "Hex Tile";
-    if (!hasOccupier) return "Biome";
-    if (isSpire) return "Spire Tile";
-    if (isReservedHyperstructure) return "Unconstructed Hyperstructure";
-    if (isStructure) return "Structure Tile";
-    if (isChest) return "Relic Tile";
-    if (isTileOccupierArmy(occupierType)) return "Army Tile";
-    return `${TileOccupier[occupierType]} Tile`;
-  }, [tile, hasOccupier, isSpire, isReservedHyperstructure, isStructure, isChest, occupierType]);
-
-  // Only shown for a selected hex: with none, useSelectedTileDetails shows no panel at all.
-  if (!selectedHex) return null;
-  return <SelectedWorldmapEntity coordsLabel={formatTilePanelTitle(tileTypeLabel, selectedHex)} />;
 };
 
 const LocalTilePanel = () => {
@@ -256,13 +176,13 @@ const LocalTilePanel = () => {
       if (selectedStructureCategory === StructureType.Realm) return "Castle";
       if (isVillageLikeStructureCategory(selectedStructureCategory)) return mode.labels.village;
       if (selectedStructureCategory === StructureType.Mine)
-        return getMinePresentation(presentedMineKind(liveStructure!)!).name;
+        return structureName(StructureType.Mine, presentedMineKind(liveStructure!));
       if (selectedStructureCategory === StructureType.Hyperstructure) return "Hyperstructure";
       if (selectedStructureCategory === StructureType.Bank) return "Bank";
       return "Structure";
     }
     if (hasBuilding) {
-      return BuildingTypeToString[buildingCategory as keyof typeof BuildingTypeToString] ?? "Building";
+      return nameOfBuilding(buildingCategory, mode.id === "frontier");
     }
     if (building) return "Empty Tile";
     return "Local Tile";
@@ -279,7 +199,7 @@ const LocalTilePanel = () => {
   }, [producedResource]);
 
   const producedResourceName = useMemo(() => {
-    return producedResource !== undefined ? (findResourceById(producedResource)?.trait ?? null) : null;
+    return producedResource !== undefined ? resourceName(producedResource) : null;
   }, [producedResource]);
 
   // Undefined when the recipe is unknown here: shown as "—", never as a free cost.
@@ -303,11 +223,6 @@ const LocalTilePanel = () => {
   const populationCapacity = populationConfig?.capacity_grant ?? 0;
   const isPaused = !!building?.paused;
   const [isActionLoading, setIsActionLoading] = useState(false);
-  const [showDestroyConfirm, setShowDestroyConfirm] = useState(false);
-
-  useEffect(() => {
-    setShowDestroyConfirm(false);
-  }, [selectedBuildingHex?.structureId, selectedBuildingHex?.innerCol, selectedBuildingHex?.innerRow]);
 
   const nextBuildCost =
     hasBuilding && buildingCategory !== null
@@ -365,10 +280,6 @@ const LocalTilePanel = () => {
   const handleDestroy = async () => {
     if (!selectedBuildingHex || !canManageBuilding || isActionLoading) return;
     if (isCastleTile) return;
-    if (!showDestroyConfirm) {
-      setShowDestroyConfirm(true);
-      return;
-    }
     setIsActionLoading(true);
     try {
       await requireActiveGameClient().actions.destroyBuilding({
@@ -379,7 +290,6 @@ const LocalTilePanel = () => {
       console.error("Failed to destroy building", error);
     } finally {
       setIsActionLoading(false);
-      setShowDestroyConfirm(false);
     }
   };
 
@@ -390,14 +300,9 @@ const LocalTilePanel = () => {
   // had five separate bubbles and felt over-atomized.
   if (!selectedBuildingHex) {
     return (
-      <div
-        className={cn(
-          "pointer-events-auto flex flex-col items-center justify-center rounded-xl px-4 py-6 text-center",
-          OVERLAY_SURFACE_BASE,
-        )}
-      >
-        <p className={HUD_BODY}>Tap a building tile to view its details.</p>
-      </div>
+      <HudPanel collapsible={false} bodyClassName="text-center">
+        <p className="text-hud-body text-hud-ink">Tap a building tile to view its details.</p>
+      </HudPanel>
     );
   }
 
@@ -407,53 +312,36 @@ const LocalTilePanel = () => {
   // resource breakdown.
   if (isCastleTile) {
     return (
-      <InfoBubble title={panelTitle} bodyClassName="pt-0">
+      <HudPanel title={panelTitle}>
         <RealmUpgradeCompact />
-      </InfoBubble>
+      </HudPanel>
     );
   }
 
   if (!hasBuilding) {
     return (
-      <InfoBubble title={panelTitle}>
-        <p className={HUD_BODY_MUTED}>
+      <HudPanel title={panelTitle}>
+        <p className="text-hud-body text-hud-muted">
           {canManageBuilding
             ? "Open building plot. Choose a building in the plot picker."
             : "Open building plot. Select a completed building to inspect its production."}
         </p>
-      </InfoBubble>
+      </HudPanel>
     );
   }
 
   const populationChips: Array<{ key: string; label: string }> = [];
-  if (populationCost !== 0) populationChips.push({ key: "cost", label: `Cost +${populationCost}` });
-  if (populationCapacity !== 0) populationChips.push({ key: "cap", label: `Capacity +${populationCapacity}` });
+  if (populationCost !== 0) populationChips.push({ key: "cost", label: `Cost +${formatCharge(populationCost)}` });
+  if (populationCapacity !== 0)
+    populationChips.push({ key: "cap", label: `Capacity +${formatExact(populationCapacity)}` });
 
   // Compact row helper used inside the consolidated building bubble.
   const SectionRow = ({ label, children }: { label: string; children: ReactNode }) => (
-    <div className="space-y-1">
-      <span className={HUD_LABEL}>{label}</span>
-      <div className="flex flex-wrap items-center gap-1.5">{children}</div>
+    <div className="flex items-center gap-2">
+      <span className="w-28 shrink-0 whitespace-nowrap text-hud-label text-hud-muted">{label}</span>
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5">{children}</div>
     </div>
   );
-
-  // One chip style for every section (produces / consumes / population /
-  // build cost). The variant just colors the value text — the wrapper is
-  // always the same etched-bronze chip so the rows read as one design.
-  const chipBase =
-    "flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-sm font-semibold tabular-nums";
-  const valueClassFor = (variant: "neutral" | "good" | "bad" | "warn") => {
-    switch (variant) {
-      case "good":
-        return "text-emerald-300";
-      case "bad":
-        return "text-red-300";
-      case "warn":
-        return "text-amber-200";
-      default:
-        return "text-gold";
-    }
-  };
 
   // "Build another" affordance — gated by owner + sufficient resources for
   // every cost entry + at least one open building tile inside the realm
@@ -487,87 +375,141 @@ const LocalTilePanel = () => {
         ? "Not enough resources to build another"
         : "";
 
+  // The building's actions sit in the bubble's header, so the building and what can be done with it read as one panel.
+  // A header cue must keep its clicks from collapsing the bubble.
+  const buildingActions = canManageBuilding ? (
+    <div className="flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
+      {buildingCategory !== null &&
+        (() => {
+          const isPreviewing =
+            previewBuilding?.type === buildingCategory && previewBuilding?.resource === producedResource;
+          return (
+            <HudIconButton
+              icon="pickaxe"
+              label={isPreviewing ? "Cancel build" : "Build another"}
+              kind={isPreviewing || !canBuildAnother ? "secondary" : "primary"}
+              size="sm"
+              onClick={() => {
+                if (isPreviewing) {
+                  // Toggle off — exit build mode and unstick clicks.
+                  setPreviewBuilding(null);
+                  return;
+                }
+                if (!canBuildAnother) return;
+                setPreviewBuilding({ type: buildingCategory, resource: producedResource });
+              }}
+              disabled={!isPreviewing && (!canBuildAnother || isActionLoading)}
+              title={
+                isPreviewing
+                  ? "Cancel build — click again to place a new building"
+                  : canBuildAnother
+                    ? "Build another — pick an empty tile to place it"
+                    : buildBlockedReason
+              }
+              aria-pressed={isPreviewing}
+            />
+          );
+        })()}
+      {buildingCategory !== BuildingType.WorkersHut &&
+        configManager.isCommandEnabled(isPaused ? "ResumeBuildingProduction" : "PauseBuildingProduction") && (
+          <HudIconButton
+            icon={isPaused ? "play" : "pause"}
+            label={isPaused ? "Resume" : "Stop"}
+            title={isPaused ? "Resume" : "Stop"}
+            size="sm"
+            onClick={handleToggleProduction}
+            disabled={isActionLoading}
+          />
+        )}
+      <DestroyBuildingButton
+        key={`${selectedBuildingHex.structureId}:${selectedBuildingHex.innerCol}:${selectedBuildingHex.innerRow}`}
+        busy={isActionLoading}
+        onDestroy={handleDestroy}
+      />
+    </div>
+  ) : undefined;
+
   return (
     <>
-      {/* Building bubble — merges the tile header with the type's stats. The
-          name + coords + Re-sync live in the bubble's title/cue. */}
-      <InfoBubble title={panelTitle} icon={"production" as const}>
-        <div className="flex flex-col gap-2.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-2.5">
+      {/* One bubble: the building's name and coordinates with its actions, then one line each for what it makes and
+          uses, its population, what another costs and its production. */}
+      <HudPanel title={panelTitle} icon={"production" as const} cue={buildingActions}>
+        <div className="flex flex-col gap-1.5 divide-y divide-hud-divider [&>*:not(:first-child)]:pt-1.5">
           {isPaused && (
-            <div className="flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red-900/25 px-2 py-1.5">
-              <span className="text-sm font-semibold text-red-200">⚠️ Production paused</span>
+            <div className="flex items-center justify-between gap-2">
+              <HudNotice tone="bad" line="Production paused" />
               {canManageBuilding && (
-                <Button
-                  size="xs"
-                  variant="outline"
+                <HudButton
+                  kind="secondary"
+                  size="sm"
+                  icon="play"
                   disabled={isActionLoading}
                   onClick={handleToggleProduction}
-                  className="h-7 border-green/50 bg-green/20 px-2 text-sm hover:bg-green/40"
                 >
-                  ▶ Resume
-                </Button>
+                  Resume
+                </HudButton>
               )}
             </div>
           )}
 
           {producedResource && producedResourceName && (
             <SectionRow label="Produces / sec">
-              <span className={chipBase} title={producedResourceName}>
-                <span className={valueClassFor("good")}>+{producedPerTick}</span>
-                <ResourceIcon withTooltip={false} resource={producedResourceName} size="xs" />
+              <span title={producedResourceName}>
+                <HudChip tone="good">
+                  +{producedPerTick}
+                  <ResourceIcon withTooltip={false} resource={producedResource} size="xs" />
+                </HudChip>
               </span>
-              <button
-                type="button"
+              <HudIconButton
                 onMouseEnter={() =>
                   setTooltip({
                     position: "right",
                     content: (
                       <div className="space-y-2">
-                        <p className="text-sm text-kit-muted">Consumed by</p>
+                        <p className="text-hud-label text-hud-muted">Consumed by</p>
                         {consumedBy.length > 0 ? (
                           <div className="grid grid-cols-3 gap-2">
                             {consumedBy.map((resourceId) => {
-                              const name = findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
+                              const name = resourceName(Number(resourceId));
                               return (
-                                <div
-                                  key={resourceId}
-                                  className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-2 py-1"
-                                >
-                                  <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                                  <span className="text-sm text-gold/80">{name}</span>
-                                </div>
+                                <HudChip key={resourceId}>
+                                  <ResourceIcon withTooltip={false} resource={Number(resourceId)} size="xs" />
+                                  {name}
+                                </HudChip>
                               );
                             })}
                           </div>
                         ) : (
-                          <p className="text-sm text-kit-muted">Not consumed by other buildings.</p>
+                          <p className="text-hud-label text-hud-muted">Not consumed by other buildings.</p>
                         )}
                       </div>
                     ),
                   })
                 }
                 onMouseLeave={() => setTooltip(null)}
-                aria-label="Show consumers"
-                className="inline-flex h-7 w-7 items-center justify-center rounded border border-gold/20 bg-black/40 text-gold/70 hover:text-gold"
-              >
-                <SemanticIcon name="info" className="h-3.5 w-3.5" />
-              </button>
+                icon="info"
+                label="Show consumers"
+                kind="quiet"
+                size="sm"
+              />
             </SectionRow>
           )}
 
           {ongoingCost === undefined && (
             <SectionRow label="Consumes / sec">
-              <span className="text-gold/70">—</span>
+              <span className="text-hud-muted">—</span>
             </SectionRow>
           )}
           {ongoingCost !== undefined && ongoingCost.length > 0 && (
             <SectionRow label="Consumes / sec">
               {ongoingCost.map((entry, index) => {
-                const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+                const name = resourceName(Number(entry.resource));
                 return (
-                  <span key={`${entry.resource}-${index}`} className={chipBase} title={name}>
-                    <span className={valueClassFor("bad")}>-{entry.amount}</span>
-                    <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                  <span key={`${entry.resource}-${index}`} title={name}>
+                    <HudChip tone="bad">
+                      -{formatFigure(entry.amount)}
+                      <ResourceIcon withTooltip={false} resource={entry.resource} size="xs" />
+                    </HudChip>
                   </span>
                 );
               })}
@@ -577,134 +519,52 @@ const LocalTilePanel = () => {
           {populationChips.length > 0 && (
             <SectionRow label="Population">
               {populationChips.map((chip) => (
-                <span key={chip.key} className={chipBase} title={chip.label}>
-                  <span className={valueClassFor("neutral")}>{chip.label}</span>
+                <span key={chip.key} title={chip.label}>
+                  <HudChip>{chip.label}</HudChip>
                 </span>
               ))}
             </SectionRow>
           )}
-        </div>
-      </InfoBubble>
 
-      {canManageBuilding && canAddProduction && producedResource !== undefined && (
-        <InfoBubble title="Production" icon={"production" as const}>
-          <InlineProduction entityId={structureEntityId} resource={producedResource} />
-        </InfoBubble>
-      )}
-
-      {/* Actions bubble — build cost + the live action buttons. Pickaxe
-          is always rendered (greyed out when constraints don't allow), so
-          the player knows it's a real affordance and gets a tooltip with
-          why it's disabled. */}
-      {canManageBuilding && (
-        <InfoBubble title="Actions" icon={"build" as const}>
-          <div className="flex flex-col gap-2.5">
-            {nextBuildCost === undefined && <SectionRow label="Build cost">—</SectionRow>}
-            {buildCost.length > 0 && (
-              <SectionRow label="Build cost">
-                {buildCost.map((entry, index) => {
-                  const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
-                  const balanceInfo = getBalance(structureEntityId, entry.resource, currentDefaultTick, setup.store);
-                  const balance = knownBalance(balanceInfo.balance);
-                  const hasEnough = balance !== undefined && balance >= entry.amount;
-                  return (
-                    <span key={`build-cost-${entry.resource}-${index}`} className={chipBase} title={name}>
-                      <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                      <span className={valueClassFor(hasEnough ? "neutral" : "bad")}>
-                        {balance === undefined ? "—" : formatResourceAmount(balance)}
+          {canManageBuilding && (
+            <>
+              {nextBuildCost === undefined && <SectionRow label="Build cost">—</SectionRow>}
+              {buildCost.length > 0 && (
+                <SectionRow label="Build cost">
+                  {buildCost.map((entry, index) => {
+                    const name = resourceName(Number(entry.resource));
+                    const balanceInfo = getBalance(structureEntityId, entry.resource, currentDefaultTick, setup.store);
+                    const balance = knownAmount(balanceInfo.balance);
+                    const hasEnough = balance !== undefined && balance >= entry.amount;
+                    return (
+                      <span key={`build-cost-${entry.resource}-${index}`} title={name}>
+                        <HudChip tone={hasEnough ? undefined : "bad"}>
+                          <ResourceIcon withTooltip={false} resource={entry.resource} size="xs" />
+                          {heldAgainstNeed(balance, entry.amount)}
+                        </HudChip>
                       </span>
-                      <span className={hasEnough ? "text-kit-muted" : "text-red-300/80"}>/ {entry.amount}</span>
-                    </span>
-                  );
-                })}
-              </SectionRow>
-            )}
+                    );
+                  })}
+                </SectionRow>
+              )}
+            </>
+          )}
 
-            <div className="flex items-center justify-center gap-1.5">
-              {buildingCategory !== null &&
-                (() => {
-                  const isPreviewing =
-                    previewBuilding?.type === buildingCategory && previewBuilding?.resource === producedResource;
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isPreviewing) {
-                          // Toggle off — exit build mode and unstick clicks.
-                          setPreviewBuilding(null);
-                          return;
-                        }
-                        if (!canBuildAnother) return;
-                        setPreviewBuilding({ type: buildingCategory, resource: producedResource });
-                      }}
-                      disabled={!isPreviewing && (!canBuildAnother || isActionLoading)}
-                      className={cn(
-                        "inline-flex h-7 w-7 items-center justify-center rounded-md border shadow transition",
-                        isPreviewing
-                          ? "border-emerald-400 bg-emerald-500/30 text-emerald-100 shadow-[0_0_10px_rgba(110,231,183,0.5)] animate-pulse"
-                          : canBuildAnother
-                            ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
-                            : "border-gold/20 bg-black/40 text-kit-muted cursor-not-allowed",
-                      )}
-                      title={
-                        isPreviewing
-                          ? "Cancel build — click again to place a new building"
-                          : canBuildAnother
-                            ? "Build another — pick an empty tile to place it"
-                            : buildBlockedReason
-                      }
-                      aria-label={isPreviewing ? "Cancel build" : "Build another"}
-                      aria-pressed={isPreviewing}
-                    >
-                      <SemanticIcon name="pickaxe" className="h-3.5 w-3.5" />
-                    </button>
-                  );
-                })()}
-              {buildingCategory !== BuildingType.WorkersHut &&
-                configManager.isCommandEnabled(isPaused ? "ResumeBuildingProduction" : "PauseBuildingProduction") && (
-                  <button
-                    type="button"
-                    onClick={handleToggleProduction}
-                    disabled={isActionLoading}
-                    className={cn(
-                      "inline-flex h-7 w-7 items-center justify-center rounded-md border text-white shadow transition disabled:cursor-not-allowed disabled:opacity-60",
-                      isPaused
-                        ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
-                        : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
-                    )}
-                    title={isPaused ? "Resume" : "Stop"}
-                    aria-label={isPaused ? "Resume" : "Stop"}
-                  >
-                    {isPaused ? (
-                      <SemanticIcon name="play" className="h-3.5 w-3.5" />
-                    ) : (
-                      <SemanticIcon name="pause" className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                )}
-              <button
-                type="button"
-                onClick={handleDestroy}
-                disabled={isActionLoading}
-                className={cn(
-                  "inline-flex h-7 items-center gap-1 rounded-md border border-red-700/80 bg-red-900/90 px-2 text-sm font-semibold text-white shadow transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60",
-                  !showDestroyConfirm && "w-7 justify-center px-0",
-                )}
-                title={showDestroyConfirm ? "Confirm delete" : "Delete"}
-                aria-label={showDestroyConfirm ? "Confirm delete" : "Delete"}
-              >
-                <SemanticIcon name="trash" className="h-3.5 w-3.5" />
-                {showDestroyConfirm && <span>OK</span>}
-              </button>
-            </div>
-          </div>
-        </InfoBubble>
-      )}
+          {canManageBuilding && canAddProduction && producedResource !== undefined && (
+            <InlineProduction entityId={structureEntityId} resource={producedResource} />
+          )}
+        </div>
+      </HudPanel>
     </>
   );
 };
 
-export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
+/**
+ * What a minimap draws: the active map layer's tiles with their occupants, the hex to keep in view and the hex to
+ * mark. In the realm view both stay on the active realm, so the player keeps a stable reference while zoomed into one
+ * keep; on the world map they follow the camera and the selection.
+ */
+export const useMinimapReading = () => {
   const {
     setup: { store },
   } = useGame();
@@ -718,9 +578,6 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const playerStructures = useFactView(playerStructuresView);
 
-  // Local mode: lock the minimap to the active realm's coords so the player
-  // keeps a stable reference while they're zoomed into one keep. World mode
-  // uses the camera/selected hex priority HexMinimap already implements.
   const activeRealmHex = useMemo(() => {
     if (isMapView) return null;
     const active = playerStructures.find((entry) => entry.entityId === structureEntityId);
@@ -730,8 +587,6 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
     return { col: position.x, row: position.y };
   }, [isMapView, playerStructures, store, structureEntityId]);
 
-  const focusHex = activeRealmHex ?? cameraTargetHex;
-  const focusSelectedHex = activeRealmHex ?? selectedHex;
   const mapLayer = useUIStore((state) => state.mapLayer);
 
   useEffect(() => {
@@ -756,27 +611,31 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
     };
   }, [mapLayer]);
 
+  const drawn = useMemo(
+    () => tiles.map((tile) => ({ ...tile, mineKind: mineKindOnTile(store, tile.occupier_id) })),
+    [tiles, store],
+  );
+
+  return {
+    tiles: drawn,
+    isLoading,
+    cameraTargetHex: activeRealmHex ?? cameraTargetHex,
+    selectedHex: activeRealmHex ?? selectedHex,
+    navigationTarget,
+  };
+};
+
+export const MinimapPanel = () => {
+  const { tiles, isLoading, cameraTargetHex, selectedHex, navigationTarget } = useMinimapReading();
   return (
-    <PanelFrame title="Minimap" height={compact ? "clamp(180px, 35dvh, 320px)" : MINIMAP_SIZE}>
-      <div className="relative flex h-full min-h-0 flex-col">
-        <div className="relative flex-1 min-h-0 overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
-          <HexMinimap
-            tiles={tiles.map((tile) => ({
-              ...tile,
-              mineKind: mineKindOnTile(store, tile.occupier_id),
-            }))}
-            selectedHex={focusSelectedHex}
-            navigationTarget={navigationTarget}
-            cameraTargetHex={focusHex}
-          />
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-              <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold/40 border-t-gold" />
-            </div>
-          )}
-        </div>
-      </div>
-    </PanelFrame>
+    <HudMinimapFrame loading={isLoading} className="h-hud-phone-minimap">
+      <HexMinimap
+        tiles={tiles}
+        selectedHex={selectedHex}
+        navigationTarget={navigationTarget}
+        cameraTargetHex={cameraTargetHex}
+      />
+    </HudMinimapFrame>
   );
 };
 
@@ -786,46 +645,9 @@ export const useSelectedTileDetails = (): ReactNode => {
   const selectedHex = useUIStore((state) => state.selectedHex);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   if (!isMapView && selectedBuildingHex) return <LocalTilePanel />;
-  if (selectedHex) return <MapTilePanel />;
+  if (selectedHex) return <SelectedWorldmapEntity />;
   return null;
 };
-
-/**
- * BottomRightPanel places the minimap at left and the feed, details and chat at right.
- * Independent widgets:
- *   - RightHudColumn: persistent feed and chat, with details when a tile is selected.
- *   - MinimapAtom: bottom-left, persistent in map view.
- * They no longer share a frame or tab strip.
- */
-export const BottomRightPanel = memo(() => {
-  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const tileDetails = useSelectedTileDetails();
-
-  if (showBlankOverlay) return null;
-  // Minimap + action row stay persistent in both map and local views — the
-  // player wants to keep an eye on activity near their realm even while they
-  // manage tiles up close.
-  const showMinimap = true;
-
-  return (
-    <>
-      {showMinimap && (
-        <>
-          <div
-            className={cn("pointer-events-auto fixed left-3 z-[25]", HUD_COLUMN_WIDTH)}
-            style={{ bottom: BOTTOM_PANEL_MARGIN }}
-            aria-label="Minimap"
-          >
-            <MinimapPanel />
-          </div>
-        </>
-      )}
-      <RightHudColumn>{tileDetails}</RightHudColumn>
-    </>
-  );
-});
-
-BottomRightPanel.displayName = "BottomRightPanel";
 
 /** The mine kind a minimap tile's occupier is drawn as, when it is a mine. */
 const mineKindOnTile = (store: NativeFactStore, occupierId: number | string | bigint | null | undefined) => {

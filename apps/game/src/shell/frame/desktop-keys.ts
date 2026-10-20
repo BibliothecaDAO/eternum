@@ -12,28 +12,23 @@ const isForTheApp = (event: KeyboardEvent): boolean => {
 const isFocusedControl = (target: EventTarget | null): boolean =>
   target instanceof Element && target.closest("a, button, summary, [role=button]") !== null;
 
-/** The screen's one step (its primary verb, marked by StepVerb), while it can be taken. */
+/** The screen's one step (its primary verb, an AppButton marked `step`), while it can be taken. */
 const stepButton = () => document.querySelector<HTMLButtonElement>("[data-role=step] button:enabled");
 
 /**
- * The desktop's keys: 1–3 open the three places, Esc leads Back, Enter takes the screen's step. An open sheet takes Esc
+ * The desktop's keys, each shown where it acts: Esc leads Back, Enter takes the screen's step. An open sheet takes Esc
  * and Enter first, so the page answers only when nothing is open over it.
  */
-export const useDesktopKeys = ({ places, back }: { places: readonly string[]; back: To | undefined }) => {
+export const useDesktopKeys = ({ back }: { back: To | undefined }) => {
   const navigate = useNavigate();
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!isForTheApp(event)) return;
-      const place = Number(event.key);
-      if (Number.isInteger(place) && place >= 1 && place <= places.length) {
-        navigate(places[place - 1]);
-        return;
-      }
       if (document.querySelector("[role=dialog]")) return;
       if (event.key === "Escape" && back !== undefined) navigate(back);
       if (event.key === "Enter" && !isFocusedControl(event.target)) stepButton()?.click();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [navigate, places, back]);
+  }, [navigate, back]);
 };

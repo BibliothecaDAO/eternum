@@ -1,4 +1,4 @@
-import { formatClockTime } from "@/ui/design-system/kit/time";
+import { formatClockTime } from "@bibliothecadao/types";
 
 import type { PlaytestSlot } from "../blitz-slot";
 

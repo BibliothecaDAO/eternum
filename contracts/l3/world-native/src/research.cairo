@@ -31,7 +31,7 @@ pub const CHOICE_RATIONS: u8 = 1;
 // The kind each Scouts' lodge tier finds more of.
 pub const KIND_CAMPS: u8 = 0;
 pub const KIND_RIFTS: u8 = 1;
-pub const KIND_STRAGGLERS: u8 = 2;
+pub const KIND_BEASTS: u8 = 2;
 
 // Building categories with a row; the four training buildings are unique on a realm board.
 pub const HUT: u8 = 1;

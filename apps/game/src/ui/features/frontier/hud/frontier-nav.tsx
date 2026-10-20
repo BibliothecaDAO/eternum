@@ -1,18 +1,17 @@
 import { useQuery } from "@/hooks/helpers/use-query";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useState } from "react";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { realmDot, useRealmStores } from "../realm-stores";
-import { canResearchNow } from "../research/research-plan";
-import { useResearchPlan } from "../research/research-reader";
+import { useResearchTree } from "../research/research-facts";
+import { canResearchNow } from "../research/research-tree";
 import { type Place, PlaceNav } from "./place-nav";
 
 /** What the HUD has open over the map: a nav page, the Menu, or a way the Menu opens. */
 export type HudSurface =
   | "research"
+  | "log"
   | "chat"
   | "menu"
   | "today"
@@ -21,26 +20,7 @@ export type HudSurface =
   | "season"
   | "army"
   | "withdraw"
-  | "realms"
-  | "guide";
-
-/**
- * What the HUD has open. Opening a surface lets go of the tile, plot or building the player had tapped, so one sheet
- * stands at a time.
- */
-export const useHudSurface = () => {
-  const [surface, setSurface] = useState<HudSurface | null>(null);
-  const closeSelectedTile = useUIStore((state) => state.closeSelectedTile);
-  const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
-  const open = (next: HudSurface | null) => {
-    if (next) {
-      closeSelectedTile();
-      setSelectedBuildingHex(null);
-    }
-    setSurface(next);
-  };
-  return [surface, open] as const;
-};
+  | "realms";
 
 /**
  * The place bar over the game: Map and Realm move the camera between the day's map and the realm board, the other
@@ -54,6 +34,7 @@ export const FrontierNav = ({
   board,
   surface,
   onSurface,
+  events,
   unread,
 }: {
   rules: ExpeditionRules;
@@ -63,11 +44,13 @@ export const FrontierNav = ({
   board: NativeRows["Structure"] | null;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
+  /** Events arrived since the Log was last read. */
+  events: number;
   unread: number;
 }) => {
   const { isMapView } = useQuery();
   const place: Place =
-    surface === "research" || surface === "chat" || surface === "menu"
+    surface === "research" || surface === "log" || surface === "chat" || surface === "menu"
       ? surface
       : surface === "season"
         ? "menu"
@@ -75,7 +58,7 @@ export const FrontierNav = ({
           ? "map"
           : "realm";
   const goToPlace = useGoToFrontierPlace(board);
-  const researchDot = canResearchNow(useResearchPlan(realm));
+  const researchDot = canResearchNow(useResearchTree(realm)?.nodes);
   const stores = useRealmStores(realm, rules);
   const go = (to: Place) => {
     if (to === "map" || to === "realm") {
@@ -91,6 +74,7 @@ export const FrontierNav = ({
       onGo={go}
       realmDot={stores ? realmDot([stores.wheat, stores.labor, stores.troops]) : undefined}
       researchDot={realm ? researchDot : undefined}
+      events={events}
       unread={unread}
     />
   );

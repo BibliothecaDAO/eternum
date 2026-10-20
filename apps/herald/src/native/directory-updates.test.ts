@@ -99,6 +99,7 @@ it("an army move does not notify directory clients; structure moves and empty-bl
       snapshot: (game, block, models) => fold.snapshot(game, block, models),
     },
     undecodableEventCount: () => 0,
+    nodeHealth: () => null,
     subscribeConfirmedChanges: (listener) => live.subscribeConfirmedChanges(listener),
   });
   const response = await handler(new Request("http://herald/games/updates"));

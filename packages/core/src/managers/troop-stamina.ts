@@ -97,8 +97,9 @@ export function resolveExplorerTroops(
   if (result.unknown) return undefined;
   if (!result.known) throw new Error("Missing occupied army slot: unused");
   if (result.known.explorer_id !== explorer.explorer_id) throw new Error("Army slot occupant mismatch");
-  const progress = store.require("ArmyProgress", { game_id: explorer.game_id, explorer_id: explorer.explorer_id });
-  const rules = store.require("SliceRules", { game_id: explorer.game_id });
+  const progress = store.get("ArmyProgress", { game_id: explorer.game_id, explorer_id: explorer.explorer_id });
+  const rules = store.get("SliceRules", { game_id: explorer.game_id });
+  if (!progress || !rules) return undefined;
   const base = troopStaminaLimits(rules.troop_stamina_config, explorer.troops.category, TroopTier.T1).staminaMax;
   return {
     ...explorer.troops,
@@ -154,17 +155,24 @@ export function openArmySlots(
 }
 
 /**
- * The bar a new army of this troop starts on in the slot, at the second, under the game's rules, when its realm has
- * trained Logistics to `trainedLogistics` tiers above common (the Supply yard's row).
+ * The bar a new army of this troop starts on, at the second, under the game's rules: the one rule both modes read
+ * before raising one. In a game with army slots (Frontier), in the slot, when its realm has trained Logistics to
+ * `trainedLogistics` tiers above common (the Supply yard's row). In a game without (`slot` null: Blitz, Eternum), the
+ * game's initial stamina under its own troop and tier's maximum, as the contract grants a new army (live-qa-night-2
+ * B-2: a Blitz army started at 30/120 and nothing said so).
  */
 export function musterStamina(
-  slot: OpenArmySlot,
+  slot: OpenArmySlot | null,
   troop: { category: TroopType; tier: TroopTier },
   timestamp: number,
   rules: TroopStaminaRules,
   trainedLogistics: number,
   tickSeconds: number,
 ): { amount: number; max: number } {
+  if (slot === null) {
+    const { staminaInitial, staminaMax } = troopStaminaLimits(rules, troop.category, troop.tier);
+    return { amount: Math.min(staminaInitial, staminaMax), max: staminaMax };
+  }
   // A new slot occupant starts at its realm's trained Logistics, regardless of its troop tier.
   const staminaMax =
     troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax + logisticsStamina(trainedLogistics + 1);

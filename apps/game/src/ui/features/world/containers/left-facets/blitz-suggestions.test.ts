@@ -4,8 +4,10 @@ import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import {
   buildBlitzRealmSuggestions,
+  parseBuildOrder,
   type BlitzBuildingCounts,
   type BlitzRealmSuggestionInput,
+  type BuildOrder,
 } from "@bibliothecadao/eternum/automation";
 
 const buildability: BlitzRealmSuggestionInput["buildability"] = {
@@ -28,322 +30,112 @@ const emptyCounts: BlitzBuildingCounts = {
   workerHut: 0,
 };
 
-const levelOneBuildout: BlitzBuildingCounts = {
-  ...emptyCounts,
-  copper: 2,
-  coal: 2,
-  wheat: 8,
-  wood: 2,
-};
-
 const baseInput = (overrides: Partial<BlitzRealmSuggestionInput> = {}): BlitzRealmSuggestionInput => ({
   realmId: 101,
-  realmName: "Test Realm",
+  realmName: "Egonal",
   realmLevel: 1,
   isBlitzActive: true,
   canAffordUpgrade: false,
   hasAvailableBuildingTile: true,
-  buildingTilesOccupied: 1,
   buildingCounts: emptyCounts,
   population: 1,
   populationCapacity: 10,
-  occupiedGuards: 0,
-  maxGuards: 0,
-  occupiedExplorers: 0,
-  maxExplorers: 0,
   buildability,
   ...overrides,
 });
 
-const actionsFor = (input: BlitzRealmSuggestionInput) =>
-  buildBlitzRealmSuggestions(input).map((suggestion) => suggestion.action);
+const counts = (built: Partial<BlitzBuildingCounts>) => ({ ...emptyCounts, ...built });
 
-describe("buildBlitzRealmSuggestions", () => {
-  it("does not suggest anything outside active blitz play", () => {
+/** The realm's next step, as the panel and Next up read it: its action and its reason. */
+const nextStep = (input: BlitzRealmSuggestionInput, order?: BuildOrder) =>
+  buildBlitzRealmSuggestions(input, order).map(({ action, reason }) => `${action} · ${reason}`);
+
+const order = (text: string): BuildOrder => {
+  const read = parseBuildOrder(text, "Mine");
+  if ("error" in read) throw new Error(read.error.message);
+  return read.order;
+};
+
+describe("a realm's next step on the default build order", () => {
+  it("offers nothing outside a running Blitz", () => {
     expect(buildBlitzRealmSuggestions(baseInput({ isBlitzActive: false }))).toEqual([]);
   });
 
-  it("only shows the first eligible hint per realm", () => {
-    const suggestions = buildBlitzRealmSuggestions(baseInput({ buildingTilesOccupied: 0 }));
-
-    expect(suggestions.map((suggestion) => suggestion.action)).toEqual(["build-wheat"]);
-    expect(suggestions[0]).toMatchObject({
+  it("starts a Settlement on its two farms, built as the construction window builds them", () => {
+    const [first] = buildBlitzRealmSuggestions(baseInput({ realmLevel: 0 }));
+    expect(first).toMatchObject({
+      action: "build-wheat",
+      reason: "Wheat farms: 0 of 2 built.",
       buildingTypeHint: BuildingType.ResourceWheat,
       resourceHint: ResourcesIds.Wheat,
     });
   });
 
-  it("prioritizes worker huts when available population is low", () => {
-    const [first] = buildBlitzRealmSuggestions(baseInput({ population: 7, populationCapacity: 10 }));
-
-    expect(first).toMatchObject({
-      action: "build-worker-hut",
-      buildingTypeHint: BuildingType.WorkersHut,
-    });
-  });
-
-  it("does not suggest worker huts while more than three population slots remain", () => {
-    expect(actionsFor(baseInput({ population: 46, populationCapacity: 54 }))).toEqual(["build-wheat"]);
-  });
-
-  it("keeps wood, coal, and copper suggestions in sync without suggesting markets", () => {
-    expect(
-      actionsFor(
-        baseInput({
-          buildingCounts: {
-            ...emptyCounts,
-            wheat: 8,
-          },
-        }),
-      ),
-    ).toEqual(["build-wood"]);
-
-    expect(
-      actionsFor(
-        baseInput({
-          buildingCounts: {
-            ...emptyCounts,
-            wheat: 8,
-            wood: 1,
-          },
-        }),
-      ),
-    ).toEqual(["build-coal"]);
-
-    expect(
-      actionsFor(
-        baseInput({
-          buildingCounts: {
-            ...emptyCounts,
-            coal: 1,
-            wheat: 8,
-            wood: 1,
-          },
-        }),
-      ),
-    ).toEqual(["build-copper"]);
-
-    expect(
-      actionsFor(
-        baseInput({
-          realmLevel: 2,
-          buildingCounts: {
-            ...emptyCounts,
-            copper: 1,
-            coal: 1,
-            wheat: 8,
-            wood: 2,
-          },
-        }),
-      ),
-    ).toEqual(["build-coal"]);
-
-    expect(
-      actionsFor(
-        baseInput({
-          realmLevel: 2,
-          buildingCounts: {
-            ...emptyCounts,
-            wheat: 8,
-            wood: 2,
-          },
-        }),
-      ),
-    ).toEqual(["build-coal"]);
-
-    expect(
-      actionsFor(
-        baseInput({
-          buildingCounts: {
-            ...levelOneBuildout,
-          },
-        }),
-      ),
-    ).toEqual([]);
-  });
-
-  it("prioritizes wheat before resource buildings until the realm-level target is met", () => {
-    expect(
-      actionsFor(
-        baseInput({
-          buildingCounts: {
-            ...emptyCounts,
-            wheat: 2,
-          },
-        }),
-      ),
-    ).toEqual(["build-wheat"]);
-  });
-
-  it("scales the wheat farm target with realm level (2/4/8/12)", () => {
-    const wheatReasonAt = (realmLevel: number, wheat: number) =>
-      buildBlitzRealmSuggestions(baseInput({ realmLevel, buildingCounts: { ...emptyCounts, wheat } }))[0];
-
-    // Target per level: L0=2, L1=4, L2=8, L3+=12.
-    const cases: Array<{ level: number; target: number }> = [
-      { level: 0, target: 2 },
-      { level: 1, target: 4 },
-      { level: 2, target: 8 },
-      { level: 3, target: 12 },
-      { level: 5, target: 12 }, // clamps to the last entry
-    ];
-
-    for (const { level, target } of cases) {
-      // One below target -> still suggests wheat, labelled against the level target.
-      expect(wheatReasonAt(level, target - 1)).toMatchObject({
-        action: "build-wheat",
-        reason: `${target - 1}/${target} farms.`,
-      });
-      // At target -> wheat is satisfied, no longer the top suggestion.
-      expect(wheatReasonAt(level, target)?.action).not.toBe("build-wheat");
-    }
-  });
-
-  it("stops the level-1 wheat target at 4 farms instead of jumping to 8", () => {
-    // Regression: at realm level 1, 4 farms completes wheat (was sprinting to 8).
-    expect(actionsFor(baseInput({ realmLevel: 1, buildingCounts: { ...emptyCounts, wheat: 4 } }))).not.toContain(
-      "build-wheat",
-    );
-    expect(actionsFor(baseInput({ realmLevel: 1, buildingCounts: { ...emptyCounts, wheat: 3 } }))).toEqual([
-      "build-wheat",
+  it("levels up first whenever the realm can, and builds a worker hut when population is 3 from full", () => {
+    expect(nextStep(baseInput({ canAffordUpgrade: true, population: 9 }))).toEqual(["upgrade · It can level up now."]);
+    expect(nextStep(baseInput({ population: 7, populationCapacity: 10 }))).toEqual([
+      "build-worker-hut · Population 7 of 10: a worker hut makes room for more.",
+    ]);
+    // With room to spare, the order: a City with no farm yet starts on the Settlement's two.
+    expect(nextStep(baseInput({ population: 6, populationCapacity: 10 }))).toEqual([
+      "build-wheat · Wheat farms: 0 of 2 built.",
     ]);
   });
 
-  it("does not emit build actions when autobuild cannot currently submit them", () => {
-    expect(
-      buildBlitzRealmSuggestions(
-        baseInput({
-          hasAvailableBuildingTile: false,
-          buildability: {
-            copper: { canBuild: false },
-            coal: { canBuild: false },
-            military: { canBuild: false },
-            wheat: { canBuild: false },
-            wood: { canBuild: false },
-            workerHut: { canBuild: false },
-          },
-        }),
-      ),
-    ).toEqual([]);
-  });
-
-  it("uses affordable level-ups as the highest-priority realm hint", () => {
-    expect(actionsFor(baseInput({ buildingCounts: levelOneBuildout, canAffordUpgrade: false }))).not.toContain(
-      "upgrade",
-    );
-
-    expect(actionsFor(baseInput({ canAffordUpgrade: true, population: 9, populationCapacity: 10 }))).toEqual([
-      "upgrade",
+  it("raises a City's wood, coal and copper together once its four farms stand", () => {
+    expect(nextStep(baseInput({ buildingCounts: counts({ wheat: 4 }) }))).toEqual([
+      "build-wood · Wood camps: 0 of 1 built.",
+    ]);
+    expect(nextStep(baseInput({ buildingCounts: counts({ wheat: 4, wood: 1 }) }))).toEqual([
+      "build-coal · Coal mines: 0 of 1 built.",
+    ]);
+    expect(nextStep(baseInput({ buildingCounts: counts({ wheat: 4, wood: 1, coal: 1, copper: 1 }) }))).toEqual([
+      "build-wood · Wood camps: 1 of 2 built.",
     ]);
   });
 
-  it("targets the recommended T1 military building by realm level", () => {
-    expect(
-      actionsFor(
-        baseInput({
-          realmLevel: 2,
-          buildingCounts: {
-            ...levelOneBuildout,
-            copper: 4,
-            coal: 4,
-            crossbowmanT1: 1,
-            wood: 4,
-          },
-          militaryTarget: {
-            buildingType: BuildingType.ResourceCrossbowmanT1,
-            count: 1,
-            label: "Crossbowman T1",
-            resource: ResourcesIds.Crossbowman,
-            bonusPercent: 30,
-          },
-        }),
-      ),
-    ).toEqual(["build-military"]);
-
-    expect(
-      actionsFor(
-        baseInput({
-          realmLevel: 0,
-          buildingCounts: levelOneBuildout,
-          militaryTarget: {
-            buildingType: BuildingType.ResourceCrossbowmanT1,
-            count: 0,
-            label: "Crossbowman T1",
-            resource: ResourcesIds.Crossbowman,
-            bonusPercent: 30,
-          },
-        }),
-      ),
-    ).toEqual([]);
-  });
-
-  it("suggests deploying explorers (after wheat) until two are on the map", () => {
-    // Wheat target met for level 1 (4), explorer slots available, none deployed.
-    const [first] = buildBlitzRealmSuggestions(
-      baseInput({
-        realmLevel: 1,
-        buildingCounts: { ...emptyCounts, wheat: 4 },
-        maxExplorers: 5,
-        occupiedExplorers: 0,
+  it("builds the realm's best T1 military for its biome last, and skips it where no troop has a biome edge", () => {
+    const builtOut = counts({ wheat: 4, wood: 2, coal: 2, copper: 2 });
+    const knights = {
+      buildingType: BuildingType.ResourceKnightT1,
+      count: 0,
+      label: "Knight T1",
+      resource: ResourcesIds.Knight,
+    };
+    expect(buildBlitzRealmSuggestions(baseInput({ buildingCounts: builtOut, militaryTarget: knights }))).toEqual([
+      expect.objectContaining({
+        action: "build-military",
+        label: "Build Knight T1",
+        reason: "Knight T1 buildings: 0 of 1 built.",
+        buildingTypeHint: BuildingType.ResourceKnightT1,
       }),
-    );
-    expect(first).toMatchObject({ action: "deploy-explorer", reason: "0/2 explorers deployed." });
-
-    // Explorers take priority over resource buildings once wheat is satisfied.
-    expect(
-      actionsFor(
-        baseInput({
-          realmLevel: 1,
-          buildingCounts: { ...emptyCounts, wheat: 4 },
-          maxExplorers: 5,
-          occupiedExplorers: 1,
-        }),
-      ),
-    ).toEqual(["deploy-explorer"]);
+    ]);
+    expect(buildBlitzRealmSuggestions(baseInput({ buildingCounts: builtOut, militaryTarget: null }))).toEqual([]);
   });
 
-  it("stops suggesting explorers once two are deployed", () => {
-    expect(
-      actionsFor(
-        baseInput({
-          realmLevel: 1,
-          buildingCounts: { ...emptyCounts, wheat: 4 },
-          maxExplorers: 5,
-          occupiedExplorers: 2,
-        }),
-      ),
-    ).not.toContain("deploy-explorer");
+  it("takes a Kingdom's farms to eight once the City's steps are done", () => {
+    const cityDone = counts({ wheat: 4, wood: 2, coal: 2, copper: 2 });
+    expect(nextStep(baseInput({ realmLevel: 2, buildingCounts: cityDone }))).toEqual([
+      "build-wheat · Wheat farms: 4 of 8 built.",
+    ]);
   });
 
-  it("does not suggest explorers when the realm has no explorer slots", () => {
-    expect(
-      actionsFor(
-        baseInput({
-          realmLevel: 1,
-          buildingCounts: { ...emptyCounts, wheat: 4 },
-          maxExplorers: 0,
-          occupiedExplorers: 0,
-        }),
-      ),
-    ).not.toContain("deploy-explorer");
+  it("offers a step only once it can be taken, and holds the steps after it: an order is a sequence", () => {
+    const noFarm = { ...buildability, wheat: { canBuild: false, reason: "Needs 30 wood" } };
+    expect(buildBlitzRealmSuggestions(baseInput({ buildability: noFarm }))).toEqual([]);
+    expect(buildBlitzRealmSuggestions(baseInput({ hasAvailableBuildingTile: false }))).toEqual([]);
   });
 
-  it("keeps wheat ahead of explorer deployment when the wheat target is unmet", () => {
-    expect(
-      actionsFor(
-        baseInput({
-          realmLevel: 1,
-          buildingCounts: { ...emptyCounts, wheat: 2 },
-          maxExplorers: 5,
-          occupiedExplorers: 0,
-        }),
-      ),
-    ).toEqual(["build-wheat"]);
-  });
-
-  it("gates garrison suggestions behind a foundation economy", () => {
-    expect(actionsFor(baseInput({ maxGuards: 10 }))).not.toContain("garrison");
-
-    expect(actionsFor(baseInput({ maxGuards: 10, buildingCounts: levelOneBuildout }))).toEqual(["garrison"]);
+  it("follows a player's own order instead, the two standing rules still first", () => {
+    const coalRush = order("City:\n2 coal\n4 farm");
+    expect(nextStep(baseInput(), coalRush)).toEqual(["build-coal · Coal mines: 0 of 2 built."]);
+    expect(nextStep(baseInput({ buildingCounts: counts({ coal: 2 }) }), coalRush)).toEqual([
+      "build-wheat · Wheat farms: 0 of 4 built.",
+    ]);
+    expect(nextStep(baseInput({ population: 8 }), coalRush)).toEqual([
+      "build-worker-hut · Population 8 of 10: a worker hut makes room for more.",
+    ]);
+    // Done with its order, the realm has no step.
+    expect(nextStep(baseInput({ buildingCounts: counts({ coal: 2, wheat: 4 }) }), coalRush)).toEqual([]);
   });
 });

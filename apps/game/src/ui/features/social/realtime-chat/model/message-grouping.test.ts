@@ -1,60 +1,52 @@
 // @vitest-environment node
-import { describe, it, expect } from "vitest";
+import { formatDate } from "@bibliothecadao/types";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { computeDateSeparators } from "./message-grouping";
 
+const at = (createdAt: string) => ({ id: createdAt, createdAt });
+/** How an older day reads: the words module's date of that UTC day. */
+const dayLine = (iso: string) => formatDate(Date.parse(`${iso}T12:00:00Z`) / 1000);
+
 describe("computeDateSeparators", () => {
-  it("inserts separator between messages from different calendar days", () => {
-    const msgs = [
-      { id: "1", createdAt: "2024-01-01T23:59:00Z" },
-      { id: "2", createdAt: "2024-01-02T00:01:00Z" },
-    ];
-    const separators = computeDateSeparators(msgs);
-    expect(separators.has(1)).toBe(true);
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-18T12:00:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("puts a day line above the oldest message and above each later day's first", () => {
+    const separators = computeDateSeparators([
+      at("2026-09-27T23:24:00Z"),
+      at("2026-09-28T02:12:00Z"),
+      at("2026-09-28T09:30:00Z"),
+      at("2026-10-12T22:02:00Z"),
+    ]);
+    expect([...separators]).toEqual([
+      [0, dayLine("2026-09-27")],
+      [1, dayLine("2026-09-28")],
+      [3, dayLine("2026-10-12")],
+    ]);
   });
 
-  it("does not insert separator for same-day messages", () => {
-    const msgs = [
-      { id: "1", createdAt: "2024-01-01T10:00:00Z" },
-      { id: "2", createdAt: "2024-01-01T23:59:00Z" },
-    ];
-    const separators = computeDateSeparators(msgs);
-    expect(separators.size).toBe(0);
+  it("puts one line above a single day's messages, at the start", () => {
+    const separators = computeDateSeparators([at("2026-10-01T10:00:00Z"), at("2026-10-01T23:59:00Z")]);
+    expect([...separators]).toEqual([[0, dayLine("2026-10-01")]]);
   });
 
-  it("does not insert separator at start of list", () => {
-    const msgs = [{ id: "1", createdAt: "2024-01-01T10:00:00Z" }];
-    const separators = computeDateSeparators(msgs);
-    expect(separators.size).toBe(0);
+  it("splits days at UTC midnight", () => {
+    const separators = computeDateSeparators([at("2026-10-01T23:59:00Z"), at("2026-10-02T00:01:00Z")]);
+    expect([...separators.keys()]).toEqual([0, 1]);
   });
 
-  it("returns empty map for empty input", () => {
+  it("names yesterday and today", () => {
+    const separators = computeDateSeparators([at("2026-10-17T08:00:00Z"), at("2026-10-18T08:00:00Z")]);
+    expect([...separators]).toEqual([
+      [0, "Yesterday"],
+      [1, "Today"],
+    ]);
+  });
+
+  it("has no line for no messages", () => {
     expect(computeDateSeparators([]).size).toBe(0);
-  });
-
-  it("labels today as 'Today'", () => {
-    const today = new Date();
-    const todayStr = today.toISOString();
-    const yesterdayDate = new Date(today);
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const msgs = [
-      { id: "1", createdAt: yesterdayDate.toISOString() },
-      { id: "2", createdAt: todayStr },
-    ];
-    const separators = computeDateSeparators(msgs);
-    expect(separators.get(1)).toBe("Today");
-  });
-
-  it("labels yesterday as 'Yesterday'", () => {
-    const today = new Date();
-    const twoDaysAgo = new Date(today);
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const msgs = [
-      { id: "1", createdAt: twoDaysAgo.toISOString() },
-      { id: "2", createdAt: yesterday.toISOString() },
-    ];
-    const separators = computeDateSeparators(msgs);
-    expect(separators.get(1)).toBe("Yesterday");
   });
 });

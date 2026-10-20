@@ -66,6 +66,8 @@ pub enum Story {
     TierBought: crate::progression::TierBought,
     SitePayout: crate::expeditions::SitePayout,
     SpireDiscovered: crate::exploration_rewards::ExtractedReward,
+    RewardChestOpened: crate::relics::RewardChestOpened,
+    RelicActivated: crate::relics::RelicActivated,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

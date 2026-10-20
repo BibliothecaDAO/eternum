@@ -1,11 +1,14 @@
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
-import { CairoCustomEnum } from "starknet";
+import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { createHeraldRequestHandler } from "../http";
 import { WorldFold } from "../world-fold";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildNativeDirectory, buildNativeLeaderboard, directoryFact } from "./read-models";
 import {
   structureValue,
+  explorerValue,
   pointsAward,
   manifest,
   seedDerivedRows,
@@ -14,6 +17,7 @@ import {
   rulesEvent,
   schema,
   setup,
+  shardManifest,
 } from "./fixtures";
 
 function gameEvent(game = "1", settled = "0", dev = "0", preset = "2", name = "Blitz") {
@@ -212,6 +216,80 @@ describe("native directory and leaderboard", () => {
     });
   });
 
+  it("keeps the player's directory and the clear receipt when a Frontier site and its guard are removed", () => {
+    const { fold, native, decoder } = world();
+    const site = {
+      category: 9,
+      initial_guard_count: 1_000_000_000_000n,
+      alt: false,
+      col: 1764,
+      row: 50,
+      clear: new CairoOption(CairoOptionVariant.None),
+    };
+    native.applyReceipt(
+      fold,
+      receipt([
+        ...seedDerivedRows(fold, decoder, [gameEvent("1", "0", "0", "101"), rulesEvent("1", "120")]),
+        structure("7", "1", "0x111"),
+        structure("6", "9", "0x0"),
+        rowEvent("ExpeditionSite", ["1", "6"], site),
+        rowEvent("Guard", ["1", "6", "0"], {
+          troops: explorerValue("6", site.initial_guard_count).troops,
+          destroyed_tick: 0,
+        }),
+        rowEvent("TileOccupancy", ["1", "0", "1764", "50"], { entity_id: "6", category: "42", is_structure: true }),
+      ]),
+      11,
+      0,
+    );
+    const input = { chain: "madara", confirmedBlock: 12, timestamp: 30, fold, playerAddress: "0x111" };
+    const before = buildNativeDirectory(input).games.find(({ game_id }) => game_id === 1)!.player_state;
+    const deleted = (model: string, keys: string[]) => ({
+      from_address: manifest.world.address,
+      keys: [
+        ...schema.games.events.find(({ name }) => name === "RowDeleted")!.prefix,
+        "1",
+        schema.models.find(({ name }) => name === model)!.identity,
+      ],
+      data: [String(keys.length), ...keys],
+    });
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("ExpeditionSite", ["1", "6"], {
+          ...site,
+          clear: new CairoOption(CairoOptionVariant.Some, {
+            explorer_id: 201n,
+            home_id: 7n,
+            reward: new CairoOption(CairoOptionVariant.Some, { resource_type: 38, amount: 3_000_000_000_000n }),
+          }),
+        }),
+        deleted("TileOccupancy", ["1", "0", "1764", "50"]),
+        deleted("Guard", ["1", "6", "0"]),
+        deleted("Structure", ["1", "6"]),
+      ]),
+      12,
+      0,
+    );
+    const after = buildNativeDirectory(input).games.find(({ game_id }) => game_id === 1)!.player_state;
+    expect(after).toEqual(before);
+    expect(after!.structures.map(({ entity_id }) => entity_id)).toEqual([7]);
+    expect(fold.modelRows("Structure").map(({ value }) => value.entity_id)).toEqual(["0x7"]);
+    expect(fold.structurePosition("1", "6")).toBeUndefined();
+    expect(fold.modelRows("Guard")).toEqual([]);
+    const retained = fold.modelRows("ExpeditionSite");
+    expect(retained).toHaveLength(1);
+    expect(retained[0]!.value).toMatchObject({ category: "0x9", col: "0x6e4", row: "0x32" });
+    const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
+    expect(restored.modelRows("ExpeditionSite")).toEqual(retained);
+    expect(buildNativeDirectory({ ...input, fold: restored })).toEqual(buildNativeDirectory(input));
+    native.applyReceipt(fold, receipt([gameEvent("1", "1", "0", "101")]), 13, 0);
+    fold.evictFinalizedGames();
+    expect(buildNativeDirectory(input).games.find(({ game_id }) => game_id === 1)!.player_state!.structures).toEqual(
+      after!.structures,
+    );
+  });
+
   it("publishes a structure level-up and invalidates the directory fact", () => {
     const { fold, native } = world();
     native.applyReceipt(
@@ -312,6 +390,84 @@ describe("native directory and leaderboard", () => {
     ]);
     // A chain name is not a player's name; the client resolves identity profiles by address.
     expect(result.entries.every((entry) => !("name" in entry))).toBe(true);
+  });
+
+  // The old-state dev incident: a clear deleted the site's TileOccupancy and the player took the site.
+  // The player's directory still answers; the tile-less site is listed without a position and reported.
+  it("answers a player who cleared a Frontier site, through the season's close", () => {
+    const { fold, native, decoder } = world();
+    native.applyReceipt(
+      fold,
+      receipt(
+        seedDerivedRows(fold, decoder, [
+          gameEvent("1", "0", "0", "101"),
+          rulesEvent("1", "120", BigInt(nativeRuleConstants.SEASON_CLOSE)),
+        ]),
+      ),
+      11,
+      0,
+    );
+    const RIFT = "9";
+    const site = (clear: CairoOption<unknown>) =>
+      rowEvent("ExpeditionSite", ["1", "6"], {
+        category: RIFT,
+        initial_guard_count: 1000n,
+        alt: false,
+        col: 1764n,
+        row: 50n,
+        clear,
+      });
+    const none = () => new CairoOption(CairoOptionVariant.None);
+    native.applyReceipt(
+      fold,
+      receipt([
+        structure("1", "1", "0x111"),
+        structure("6", RIFT, "0x0"),
+        site(none()),
+        rowEvent("TileOccupancy", ["1", "0", "1764", "50"], { entity_id: "6", category: RIFT, is_structure: true }),
+      ]),
+      12,
+      0,
+    );
+    const vacated = {
+      from_address: manifest.world.address,
+      keys: [
+        ...schema.games.events.find(({ name }) => name === "RowDeleted")!.prefix,
+        "1",
+        schema.models.find(({ name }) => name === "TileOccupancy")!.identity,
+      ],
+      data: ["4", "1", "0", "1764", "50"],
+    };
+    native.applyReceipt(
+      fold,
+      receipt([
+        structure("6", RIFT, "0x111"),
+        site(new CairoOption(CairoOptionVariant.Some, { explorer_id: 2n, home_id: 1n, reward: none() })),
+        vacated,
+      ]),
+      13,
+      0,
+    );
+
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const input = { chain: "madara", confirmedBlock: 13, timestamp: 30, fold, playerAddress: "0x111" };
+    const entry = buildNativeDirectory(input).games.find((game) => game.game_id === 1)!;
+    expect(entry.player_state?.structures).toContainEqual(
+      expect.objectContaining({ entity_id: 6, category: 9, coord_x: null, coord_y: null }),
+    );
+    expect(entry.player_state?.settled).toBe(true);
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({ event: "herald_directory_structure_unplaced", game_id: "1", entity_id: "6", category: 9 }),
+    );
+
+    // The season closes and its rows beyond the directory are evicted: the player's directory still answers.
+    native.applyReceipt(fold, receipt([gameEvent("1", "1", "0", "101")]), 14, 0);
+    expect(fold.finalizedGameIds()).toContain("1");
+    fold.evictFinalizedGames();
+    const closed = buildNativeDirectory({ ...input, confirmedBlock: 14 }).games.find((game) => game.game_id === 1)!;
+    expect(closed.player_state?.settled).toBe(true);
+    expect(closed.player_state?.structures).toContainEqual(expect.objectContaining({ entity_id: 6, coord_x: null }));
+    warn.mockRestore();
   });
 
   it("fails loudly for missing native rules instead of publishing guessed scores", () => {
@@ -511,3 +667,86 @@ it.each(["Frontier", "check-frontier-abc"])(
     expect(restored.snapshot("1", 12, ["LordsWithdrawal"]).models[0]!.rows).toHaveLength(2);
   },
 );
+
+describe("the player directory over HTTP", () => {
+  afterEach(() => vi.restoreAllMocks());
+  const handler = (fold: WorldFold) =>
+    createHeraldRequestHandler({
+      chain: "madara",
+      manifest: shardManifest,
+      schemas: {},
+      worldAddress: manifest.world.address,
+      confirmedBlock: () => 13,
+      chainTimestamp: () => 30,
+      decodedModelCount: 50,
+      // The fold's directory reads, as server.ts wires them; the directory reads no snapshot.
+      fold: {
+        modelRows: (model) => fold.modelRows(model),
+        structurePosition: (game, entity) => fold.structurePosition(game, entity),
+        directoryRevision: () => fold.directoryRevision(),
+        snapshot: () => {
+          throw new Error("the directory reads no snapshot");
+        },
+      },
+      undecodableEventCount: () => 0,
+      nodeHealth: () => null,
+    });
+  const RIFT = "9";
+
+  // A structure with no tile keeps its row without a position and is reported; the rest of the player's directory,
+  // other structures and other games, still answers.
+  it("isolates an owned structure it cannot place and answers the rest", async () => {
+    const { fold, native, decoder } = world();
+    native.applyReceipt(
+      fold,
+      receipt(seedDerivedRows(fold, decoder, [gameEvent("1", "0", "0", "101"), rulesEvent("1", "120")])),
+      11,
+      0,
+    );
+    native.applyReceipt(
+      fold,
+      receipt([
+        structure("1", "1", "0x111"),
+        structure("7", RIFT, "0x111"),
+        rowEvent("TileOccupancy", ["1", "0", "1800", "60"], { entity_id: "7", category: RIFT, is_structure: true }),
+        structure("8", RIFT, "0x111"),
+      ]),
+      12,
+      0,
+    );
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await handler(fold)(new Request("http://herald/games?player=0x111"));
+    expect(response.status).toBe(200);
+    const games = (await response.json()).games as {
+      game_id: number;
+      player_state: { settled: boolean; structures: unknown[] };
+    }[];
+    expect(games.map(({ game_id }) => game_id)).toEqual([2, 1]);
+    const state = games.find(({ game_id }) => game_id === 1)!.player_state;
+    expect(state.settled).toBe(true);
+    expect(state.structures).toEqual([
+      expect.objectContaining({ entity_id: 1, category: 1 }),
+      expect.objectContaining({ entity_id: 7, coord_x: 1800, coord_y: 60 }),
+      expect.objectContaining({ entity_id: 8, coord_x: null, coord_y: null }),
+    ]);
+    expect(warn.mock.calls.map(([line]) => JSON.parse(String(line)))).toContainEqual({
+      event: "herald_directory_structure_unplaced",
+      game_id: "1",
+      entity_id: "8",
+      category: 9,
+    });
+    expect(error).not.toHaveBeenCalled();
+
+    // A malformed player is the caller's error and logs nothing; a broken game is Herald's, logged and a 500.
+    expect((await handler(fold)(new Request("http://herald/games?player=nope"))).status).toBe(400);
+    expect(error).not.toHaveBeenCalled();
+    native.applyReceipt(fold, receipt([gameEvent("3")]), 13, 0);
+    const broken = await handler(fold)(new Request("http://herald/games?player=0x111"));
+    expect(broken.status).toBe(500);
+    expect(error.mock.calls.map(([line]) => JSON.parse(String(line)))).toContainEqual(
+      expect.objectContaining({ event: "herald_directory_failed", player: "0x111" }),
+    );
+  });
+});

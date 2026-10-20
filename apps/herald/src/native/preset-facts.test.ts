@@ -1,3 +1,7 @@
+import { NativeFactStore } from "../../../../packages/core/src/client/native-fact-store";
+import { TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
+import { ClientConfigManager } from "../../../../packages/core/src/managers/config-manager";
+import { affordableAt, musterStamina, staminaAt } from "../../../../packages/core/src/managers/troop-stamina";
 import { describe, expect, it, vi } from "vitest";
 import { CallData, CairoOption, CairoOptionVariant, hash, type Abi } from "starknet";
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
@@ -73,6 +77,81 @@ function applyRegistration(world: ReturnType<typeof setup>, preset: ReturnType<t
 }
 
 describe("verified preset configuration facts", () => {
+  it("projects both beast strength ranges and renamed discovery odds into client facts", () => {
+    const world = setup();
+    const preset = registration();
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    for (const model of ["DepthRules", "FrontierDiscoveryRules"] as const) {
+      store.applyFacts(world.fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })));
+    }
+    expect(store.require("FrontierDiscoveryRules", { game_id: 1 }).beasts_bps).toBe(600);
+    const ranges = [
+      [300, 350, 450, 550],
+      [900, 1050, 1350, 1650],
+      [2400, 2800, 3600, 4400],
+      [6000, 7000, 9000, 11000],
+    ];
+    for (const [depth, expected] of ranges.entries()) {
+      const rule = store.require("DepthRules", { game_id: 1, depth });
+      expect([rule.beast_weak_lower, rule.beast_weak_upper, rule.beast_strong_lower, rule.beast_strong_upper]).toEqual(
+        expected,
+      );
+    }
+  });
+
+  it("carries Frontier stamina from registration through facts to client costs and Logistics bars", () => {
+    const world = setup();
+    const preset = registration();
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    store.applyFacts(
+      world.fold.gameRows("SliceRules", "1").map(({ key, value }) => ({ model: "SliceRules", key, value })),
+    );
+    const manager = new ClientConfigManager();
+    manager.setActiveGame(1, preset.presetId);
+    manager.setStore(store);
+    const rules = store.require("SliceRules", { game_id: 1 });
+    const stamina = rules.troop_stamina_config;
+    const tick = Number(rules.tick_config.armies_tick_in_seconds);
+    expect(manager.getExploreStaminaCost()).toBe(20);
+    expect(manager.getCombatConfig().stamina_attack_req).toBe(30);
+    const troop = { category: TroopType.Knight, tier: TroopTier.T1 };
+    const empty: Troops = {
+      ...troop,
+      count: 1n,
+      stamina: { amount: 0n, settled_at: 100, remainder: 0 },
+      boosts: {
+        incr_damage_dealt_percent_num: 0,
+        incr_damage_dealt_end_at: 0,
+        decr_damage_gotten_percent_num: 0,
+        decr_damage_gotten_end_at: 0,
+        incr_stamina_regen_percent_num: 0,
+        incr_stamina_regen_seconds_left: 0,
+        incr_explore_reward_percent_num: 0,
+        incr_explore_reward_end_at: 0,
+      },
+      battle_cooldown_end: 0,
+    };
+    expect(staminaAt(empty, 3700, stamina, tick).amount).toBe(30n);
+    expect(affordableAt(empty, 100, stamina, tick, manager.getExploreStaminaCost())).toBe(2500);
+    expect(affordableAt(empty, 100, stamina, tick, manager.getCombatConfig().stamina_attack_req)).toBe(3700);
+    for (const [trained, maximum, explores, attacks] of [
+      [0, 120, 6, 4],
+      [1, 140, 7, 4],
+      [2, 170, 8, 5],
+      [3, 210, 10, 7],
+      [4, 270, 13, 9],
+    ] as const) {
+      const bar = musterStamina({ slot: 0, inherited: null }, troop, 100, stamina, trained, tick);
+      expect(bar).toEqual({ amount: maximum, max: maximum });
+      expect(Math.floor(bar.amount / manager.getExploreStaminaCost())).toBe(explores);
+      expect(Math.floor(bar.amount / manager.getCombatConfig().stamina_attack_req)).toBe(attacks);
+    }
+  });
+
   it("projects the ruin chest rules and each depth's five tier odds", () => {
     const world = setup();
     const preset = registration();
@@ -107,7 +186,7 @@ describe("verified preset configuration facts", () => {
     expect(depths.every((row) => !Object.hasOwn(row, "supply_multiplier"))).toBe(true);
     const discovery = world.fold.gameRows("FrontierDiscoveryRules", "1")[0]!.value;
     expect(
-      ["stragglers_bps", "camp_bps", "rift_bps", "ruin_bps", "empty_reveal_limit"].map((key) => Number(discovery[key])),
+      ["beasts_bps", "camp_bps", "rift_bps", "ruin_bps", "empty_reveal_limit"].map((key) => Number(discovery[key])),
     ).toEqual([600, 400, 400, 100, 7]);
     expect(depths.map((row) => [Number(row.ruin_guard_lower), Number(row.ruin_guard_upper)])).toEqual([
       [2000, 4000],

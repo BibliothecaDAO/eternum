@@ -10,8 +10,8 @@ import {
   type ProceduralCharacterMaterialProfile,
 } from "./procedural-character-appearance";
 import type { ProceduralCharacterRenderDetail, ProceduralCharacterTier } from "./procedural-character-config";
-import { loadT1KnightDefaultCharacterAssetTemplates } from "./t1-knight-default-character-assets";
-import { loadQuaterniusCharacterAssetTemplates } from "./quaternius-character-assets";
+import { loadT1KnightDefaultCharacterAssetTemplate } from "./t1-knight-default-character-assets";
+import { loadQuaterniusCharacterAssetTemplate } from "./quaternius-character-assets";
 import { disposeSkinnedSceneTemplates, instantiateSkinnedScene } from "./skinned-asset-resources";
 
 export interface ProceduralCharacterAssetDefinition {
@@ -44,11 +44,68 @@ export interface LoadedProceduralCharacterAsset {
  */
 export class ProceduralCharacterLibrary {
   private disposed = false;
-  private readonly templates: ReadonlyMap<ProceduralCharacterAssetId, LoadedProceduralCharacterAssetTemplate>;
+  private readonly pending = new Map<ProceduralCharacterAssetId, Promise<void>>();
+  private readonly templates: Map<ProceduralCharacterAssetId, LoadedProceduralCharacterAssetTemplate>;
 
   public constructor(templates: readonly LoadedProceduralCharacterAssetTemplate[]) {
     this.templates = new Map(templates.map((template) => [template.id, template]));
     if (this.templates.size !== templates.length) throw new Error("Procedural character asset ids must be unique");
+  }
+
+  public isReady(config: {
+    appearanceId: ProceduralCharacterAppearanceId;
+    tier: ProceduralCharacterTier;
+    renderDetail: ProceduralCharacterRenderDetail;
+  }): boolean {
+    return this.templates.has(
+      resolveProceduralCharacterAppearanceAssetId(config.appearanceId, config.tier, config.renderDetail),
+    );
+  }
+
+  public async prepare(config: {
+    appearanceId: ProceduralCharacterAppearanceId;
+    tier: ProceduralCharacterTier;
+    renderDetail: ProceduralCharacterRenderDetail;
+  }): Promise<void> {
+    if (this.disposed) throw new Error("Cannot prepare a disposed character library");
+    if (this.isReady(config)) return;
+    const id = resolveProceduralCharacterAppearanceAssetId(config.appearanceId, config.tier, config.renderDetail);
+    await this.prepareTemplate(id, config.renderDetail);
+  }
+
+  private async prepareTemplate(
+    id: ProceduralCharacterAssetId,
+    detail: ProceduralCharacterRenderDetail,
+  ): Promise<void> {
+    if (this.templates.has(id)) return;
+    let pending = this.pending.get(id);
+    if (!pending) {
+      pending = this.loadTemplate(id, detail)
+        .then((template) => {
+          if (this.disposed) {
+            disposeSkinnedSceneTemplates([template.gltf.scene]);
+            throw new Error("Character library closed during loading");
+          }
+          this.templates.set(id, template);
+        })
+        .finally(() => this.pending.delete(id));
+      this.pending.set(id, pending);
+    }
+    await pending;
+  }
+
+  private async loadTemplate(
+    id: ProceduralCharacterAssetId,
+    detail: ProceduralCharacterRenderDetail,
+  ): Promise<LoadedProceduralCharacterAssetTemplate> {
+    if (id === "t1-knight-default-near" || id === "t1-knight-default-mid") {
+      return loadT1KnightDefaultCharacterAssetTemplate(detail);
+    }
+    if (id !== "base") {
+      await this.prepareTemplate("base", detail);
+      if (this.disposed) throw new Error("Character library closed during loading");
+    }
+    return loadQuaterniusCharacterAssetTemplate(id, this.templates.get("base"));
   }
 
   public instantiate(
@@ -85,16 +142,6 @@ export class ProceduralCharacterLibrary {
   }
 }
 
-export async function loadProceduralCharacterLibrary(
-  options: { includeT1KnightDefault?: boolean } = {},
-): Promise<ProceduralCharacterLibrary> {
-  const base = await loadQuaterniusCharacterAssetTemplates();
-  const optional: LoadedProceduralCharacterAssetTemplate[] = [];
-  try {
-    if (options.includeT1KnightDefault) optional.push(...(await loadT1KnightDefaultCharacterAssetTemplates()));
-    return new ProceduralCharacterLibrary([...base, ...optional]);
-  } catch (error) {
-    disposeSkinnedSceneTemplates([...base, ...optional].map(({ gltf }) => gltf.scene));
-    throw error;
-  }
+export async function loadProceduralCharacterLibrary(): Promise<ProceduralCharacterLibrary> {
+  return new ProceduralCharacterLibrary([]);
 }

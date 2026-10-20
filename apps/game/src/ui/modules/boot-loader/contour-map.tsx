@@ -1,4 +1,4 @@
-import clsx from "clsx";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useId, useMemo } from "react";
 
 // ─── Simplex 2D noise (self-contained, zero deps) ───────────────────────────
@@ -202,16 +202,16 @@ export const ContourMap = ({ className }: ContourMapProps) => {
   const lines = useMemo(() => generateFlowField(217), []);
 
   return (
-    <div className={clsx("boot-loader-contours absolute inset-0 overflow-hidden", className)} aria-hidden="true">
+    <div className={cn("ui-contours absolute inset-0 overflow-hidden", className)} aria-hidden="true">
       <svg className="h-full w-full" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" focusable="false">
         <defs>
           <radialGradient id={vignetteId} cx="50%" cy="48%" r="70%">
-            <stop offset="0%" stopColor="rgba(0,0,0,0)" />
-            <stop offset="100%" stopColor="rgba(0,0,0,0.72)" />
+            <stop offset="0%" stopOpacity={0} />
+            <stop offset="100%" className="ui-contours__vignette" />
           </radialGradient>
           <radialGradient id={glowId} cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(201,169,96,0.06)" />
-            <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+            <stop offset="0%" className="ui-contours__glow" />
+            <stop offset="100%" stopOpacity={0} />
           </radialGradient>
         </defs>
 
@@ -222,7 +222,8 @@ export const ContourMap = ({ className }: ContourMapProps) => {
           <g key={index}>
             <path
               d={line.path}
-              className={clsx("boot-loader-contour-line", line.isShort && "boot-loader-contour-particle")}
+              className="ui-contours__line"
+              data-short={line.isShort || undefined}
               style={{
                 opacity: line.opacity,
                 strokeWidth: line.strokeWidth,
@@ -231,7 +232,8 @@ export const ContourMap = ({ className }: ContourMapProps) => {
             {!line.isShort && (
               <path
                 d={line.path}
-                className="boot-loader-contour-line boot-loader-contour-line-echo"
+                className="ui-contours__line"
+                data-echo
                 style={{
                   transform: `translateY(${6 + srand(index * 13) * 10}px)`,
                   opacity: line.opacity * 0.35,
@@ -244,7 +246,7 @@ export const ContourMap = ({ className }: ContourMapProps) => {
 
         <rect x="0" y="0" width="1440" height="900" fill={`url(#${vignetteId})`} />
       </svg>
-      <div className="boot-loader-grid absolute inset-0" />
+      <div className="ui-contours__grid absolute inset-0" />
     </div>
   );
 };

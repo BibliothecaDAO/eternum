@@ -1,23 +1,14 @@
+import { formatExact, formatPercent, formatRate } from "@bibliothecadao/types";
 import { useGame } from "@/hooks/context/game-context";
-import Button from "@/ui/design-system/atoms/button";
+import { HudButton, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { buildWonderFaithDetail, type WonderFaithDetail } from "@/services/leaderboard/faith-leaderboard-service";
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
-import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models";
+import type { WonderFaithDetail } from "@/services/leaderboard/faith-leaderboard-service";
+import { useWonderFaithDetail } from "@/services/leaderboard/use-faith-leaderboard";
 import { displayAddress } from "@/ui/utils/utils";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useMemo, useState } from "react";
-
-const formatInt = (value: number): string => value.toLocaleString("en-US");
-
-const formatBigInt = (value: bigint): string => {
-  const sign = value < 0n ? "-" : "";
-  const digits = (value < 0n ? -value : value).toString();
-  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `${sign}${grouped}`;
-};
+import { useState } from "react";
 
 const isZeroAddress = (address: string): boolean => /^0x0+$/i.test(address.trim());
 
@@ -64,113 +55,116 @@ export const WonderFaithDetailPanel = ({
       setClaiming(false);
     }
   };
-  const readModels = useFaithReadModels();
-  const wonderDetail = useMemo(() => buildWonderFaithDetail(readModels, wonderId), [readModels, wonderId]);
+  const wonderDetail = useWonderFaithDetail(wonderId);
 
   if (!wonderDetail) {
     return (
-      <div className={cn("rounded-lg border border-gold/20 bg-black/25 p-3 text-sm text-gold/70", className)}>
+      <div className={cn("rounded-lg border border-hud-line bg-hud-well p-3 text-hud-label text-hud-muted", className)}>
         No wonder faith details found.
       </div>
     );
   }
 
   const followers = wonderDetail.followers;
-  const wonderName = wonderDetail.wonderName || fallbackWonderName || `Wonder #${wonderDetail.wonderId.toString()}`;
+  const wonderName = wonderDetail.wonderName || fallbackWonderName || "Wonder";
 
   if (compact) {
     return (
-      <div className={cn("grid grid-cols-2 gap-2 text-sm", className)}>
+      <div className={cn("grid grid-cols-2 gap-2 text-hud-label", className)}>
         <StatCard
           label="Total FP"
-          value={formatBigInt(wonderDetail.totalFaithPoints)}
+          value={formatExact(wonderDetail.totalFaithPoints)}
           mono
           compact
           className="col-span-2"
         />
-        <StatCard label="FP/s" value={formatInt(wonderDetail.totalFaithPointsPerSec)} mono compact />
-        <StatCard label="Followers" value={formatInt(wonderDetail.followerCount)} mono compact />
+        <StatCard label="FP/s" value={formatExact(wonderDetail.totalFaithPointsPerSec)} mono compact />
+        <StatCard label="Followers" value={formatExact(wonderDetail.followerCount)} mono compact />
       </div>
     );
   }
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col gap-3", className)}>
-      <div className="rounded-lg border border-gold/25 bg-black/30 p-3">
+      <div className="rounded-lg border border-hud-line bg-hud-well p-3">
         <div className="flex flex-col gap-1">
-          <span className="text-sm text-kit-muted">Wonder</span>
-          <span className="text-sm font-semibold text-gold">{wonderName}</span>
-          <span className="text-sm text-gold/70">Owner: {getOwnerLabel(wonderDetail)}</span>
+          <span className="text-hud-label uppercase text-hud-muted">Wonder</span>
+          <span className="text-hud-strong text-hud-accent">{wonderName}</span>
+          <span className="text-hud-label text-hud-muted">Owner: {getOwnerLabel(wonderDetail)}</span>
         </div>
       </div>
 
       {ordersAllowed && (
         <div className="flex flex-wrap gap-2">
-          <Button disabled={claiming} onClick={() => void claim("wonder")}>
+          <HudButton kind="secondary" disabled={claiming} onClick={() => claim("wonder")}>
             Update wonder points
-          </Button>
-          <Button disabled={claiming} onClick={() => void claim("player")}>
+          </HudButton>
+          <HudButton kind="secondary" disabled={claiming} onClick={() => claim("player")}>
             Claim faith points
-          </Button>
+          </HudButton>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        <StatCard label="Total FP" value={formatBigInt(wonderDetail.totalFaithPoints)} mono />
-        <StatCard label="Total FP/sec" value={formatInt(wonderDetail.totalFaithPointsPerSec)} mono />
-        <StatCard label="Own Baseline" value={formatInt(wonderDetail.ownBaselinePerSec)} mono />
-        <StatCard label="Followers FP/sec" value={formatInt(wonderDetail.followersContributionPerSec)} mono />
+      <div className="grid grid-cols-2 gap-2 text-hud-label">
+        <StatCard label="Total FP" value={formatExact(wonderDetail.totalFaithPoints)} mono />
+        <StatCard label="Total FP/sec" value={formatExact(wonderDetail.totalFaithPointsPerSec)} mono />
+        <StatCard label="Own Baseline" value={formatExact(wonderDetail.ownBaselinePerSec)} mono />
+        <StatCard label="Followers FP/sec" value={formatExact(wonderDetail.followersContributionPerSec)} mono />
       </div>
 
-      <div className="rounded-lg border border-gold/20 bg-gold/5 p-3">
-        <div className="flex items-center justify-between text-sm text-gold/70">
+      <div className="rounded-lg border border-hud-line bg-hud-hover p-3">
+        <div className="flex items-center justify-between text-hud-label uppercase text-hud-muted">
           <span>Per-Pledge Split</span>
           <span>
-            {wonderDetail.ownerSharePercent}% / {wonderDetail.followerSharePercent}%
+            {formatPercent(wonderDetail.ownerSharePercent / 100)} /{" "}
+            {formatPercent(wonderDetail.followerSharePercent / 100)}
           </span>
         </div>
-        <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-gold/85">
-          <div className="rounded border border-gold/20 bg-black/20 px-2 py-1">
+        <div className="mt-2 grid grid-cols-2 gap-2 text-hud-label text-hud-accent">
+          <div className="rounded border border-hud-line bg-hud-well px-2 py-1">
             Wonder owner share
-            <div className="font-mono text-sm text-gold">
-              {formatInt(wonderDetail.ownerSharePerSecFromFollowers)}/sec
+            <div className="font-mono text-hud-body text-hud-accent">
+              {formatRate(wonderDetail.ownerSharePerSecFromFollowers)}
             </div>
           </div>
-          <div className="rounded border border-gold/20 bg-black/20 px-2 py-1">
+          <div className="rounded border border-hud-line bg-hud-well px-2 py-1">
             Followers share
-            <div className="font-mono text-sm text-gold">{formatInt(wonderDetail.followersSharePerSec)}/sec</div>
+            <div className="font-mono text-hud-body text-hud-accent">
+              {formatRate(wonderDetail.followersSharePerSec)}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-gold/20 bg-black/20">
-        <div className="flex items-center justify-between border-b border-gold/15 px-3 py-2">
-          <span className="text-sm text-gold/70">Faithful Followers</span>
-          <span className="text-sm text-gold/70">{wonderDetail.followerCount}</span>
+      <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-hud-line bg-hud-well">
+        <div className="flex items-center justify-between border-b border-hud-divider px-3 py-2">
+          <span className="text-hud-label uppercase text-hud-muted">Faithful Followers</span>
+          <span className="text-hud-label text-hud-muted">{wonderDetail.followerCount}</span>
         </div>
         {followers.length === 0 ? (
-          <div className="px-3 py-4 text-sm text-kit-muted">No faithful Realms or Villages yet.</div>
+          <div className="px-3 py-4 text-hud-label text-hud-muted">No faithful Realms or Villages yet.</div>
         ) : (
           <div className="min-h-0 flex-1 overflow-auto">
             <div className="flex flex-col">
               {followers.map((follower) => (
-                <div
-                  key={follower.structureId.toString()}
-                  className="grid grid-cols-[minmax(0,1fr)_96px_96px] gap-2 border-b border-gold/10 px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-gold">{follower.structureLabel}</div>
-                    <div className="truncate text-sm text-kit-muted">
+                <div key={follower.structureId.toString()} className="flex gap-2 border-b border-hud-divider px-3 py-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-hud-label text-hud-accent">{follower.structureLabel}</div>
+                    <div className="truncate text-hud-label text-hud-muted">
                       {follower.structureTypeLabel} ·{" "}
                       {follower.ownerName?.trim() || displayAddress(follower.ownerAddress)}
                     </div>
                   </div>
-                  <div className="text-right text-sm text-gold/70">
+                  <div className="w-24 text-right text-hud-label text-hud-muted">
                     30% owner
-                    <div className="font-mono text-sm text-gold">{formatInt(follower.fpToWonderOwnerPerSec)}</div>
+                    <div className="font-mono text-hud-label text-hud-accent">
+                      {formatExact(follower.fpToWonderOwnerPerSec)}
+                    </div>
                   </div>
-                  <div className="text-right text-sm text-gold/70">
+                  <div className="w-24 text-right text-hud-label text-hud-muted">
                     70% follower
-                    <div className="font-mono text-sm text-gold">{formatInt(follower.fpToFollowerOwnerPerSec)}</div>
+                    <div className="font-mono text-hud-label text-hud-accent">
+                      {formatExact(follower.fpToFollowerOwnerPerSec)}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -196,15 +190,19 @@ const StatCard = ({
   className?: string;
 }) => (
   <div
-    className={cn("min-w-0 rounded-md border border-gold/20 bg-black/25", compact ? "px-1 py-1.5" : "p-2", className)}
+    className={cn("min-w-0 rounded-md border border-hud-line bg-hud-well", compact ? "px-1 py-1.5" : "p-2", className)}
   >
-    <div className={cn(compact ? "text-sm font-medium leading-tight text-gold/70" : "text-sm text-kit-muted")}>
+    <div
+      className={cn(
+        compact ? "text-hud-label leading-tight text-hud-muted" : "text-hud-label uppercase text-hud-muted",
+      )}
+    >
       {label}
     </div>
     <div
       className={cn(
-        "mt-1 font-semibold text-gold",
-        compact ? "text-sm leading-tight" : "text-sm",
+        "mt-1 text-hud-strong text-hud-accent",
+        compact ? "text-hud-body leading-tight" : "text-hud-body",
         mono && "font-mono tabular-nums",
       )}
     >
@@ -221,15 +219,8 @@ interface WonderFaithDetailModalProps {
 
 export const WonderFaithDetailModal = ({ wonderId, fallbackWonderName, onClose }: WonderFaithDetailModalProps) => {
   return (
-    <SurfaceFrame
-      title="Wonder Faith Details"
-      onClose={onClose}
-      className="max-h-[calc(100vh-7rem)] w-[980px]"
-      bodyClassName="overflow-auto"
-    >
-      <div className="p-4">
-        <WonderFaithDetailPanel wonderId={wonderId} fallbackWonderName={fallbackWonderName} />
-      </div>
-    </SurfaceFrame>
+    <HudWindow title="Wonder Faith Details" size="page" onClose={onClose}>
+      <WonderFaithDetailPanel wonderId={wonderId} fallbackWonderName={fallbackWonderName} />
+    </HudWindow>
   );
 };

@@ -2,13 +2,7 @@ import type { GameRef } from "@bibliothecadao/eternum/game-client";
 
 import { gameKey } from "@/runtime/world/store";
 import { resolveSpectateIntent } from "@/utils/spectator-session";
-import {
-  buildEntryHref,
-  buildPlayHref,
-  parseEntryRoute,
-  parsePlayRoute,
-  type PlayScene,
-} from "@/play/navigation/play-route";
+import { buildEntryHref, parseEntryRoute, parsePlayRoute } from "@/play/navigation/play-route";
 
 export type EntryIntent = "play" | "settle" | "spectate";
 
@@ -26,23 +20,7 @@ interface LandingSelectionEntryContextInput {
   autoSettle?: boolean;
 }
 
-interface BuildPlayRouteFromEntryContextInput {
-  context: ResolvedEntryContext;
-  scene?: PlayScene;
-  col?: number | null;
-  row?: number | null;
-  spectate?: boolean;
-}
-
 export const resolveEntryContextCacheKey = (context: GameRef): string => gameKey(context);
-
-const resolveFallbackScene = (intent: EntryIntent): PlayScene => {
-  return intent === "spectate" ? "map" : "hex";
-};
-
-const resolveSpectateFlag = (intent: EntryIntent): boolean => {
-  return intent === "spectate";
-};
 
 export const resolveEntryContextFromLandingSelection = ({
   selection,
@@ -94,22 +72,5 @@ export const buildEntryHrefFromEntryContext = (context: ResolvedEntryContext): s
     gameId: context.gameId,
     intent: context.intent,
     autoSettle: context.autoSettle,
-  });
-};
-
-export const buildPlayRouteFromEntryContext = ({
-  context,
-  scene = resolveFallbackScene(context.intent),
-  col = null,
-  row = null,
-  spectate = resolveSpectateFlag(context.intent),
-}: BuildPlayRouteFromEntryContextInput): string => {
-  return buildPlayHref({
-    chainId: context.chainId,
-    gameId: context.gameId,
-    scene,
-    col,
-    row,
-    spectate,
   });
 };

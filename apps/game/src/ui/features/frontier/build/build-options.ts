@@ -18,6 +18,7 @@ import {
 import { BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import { LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+import { buildingOutputPerSecond } from "@/ui/shared/lib/building-output";
 
 /**
  * What Frontier's build sheet needs for one plot, read from facts with no UI of its own: each building the realm may
@@ -124,51 +125,41 @@ export const readBuildOptions = (
 
 /**
  * What one building of a type gives at the realm with the given research, as the contract's board_output and
- * hut_bonus compute it: each Fields, Tools or Drill pick adds a share of the base output, each hut tier a share of a
- * hut's population. The one reading of it, for the build sheet and research's gains.
+ * hut_bonus compute it: each Fields, Tools or Drill pick adds a share of the base output; one more Hut adds what
+ * nextHutGrant says. The one reading of it, for the build sheet and research's gains.
  */
-export const readBuildingEffect = (
+const readBuildingEffect = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   category: BuildingType,
   learned: bigint,
 ): BuildEffect => {
-  const rule = store.require("BuildingRule", { game_id: realm.game_id, category });
-  const board = store.require("BoardRules", { game_id: realm.game_id });
   const row = researchRowOf(category);
   const tier = row === undefined ? 0 : researchTier(learned, row);
   const trains = TRAINS[category];
   if (trains) return { kind: "trains", attribute: trains };
-  if (category === BuildingType.WorkersHut)
-    return {
-      kind: "population",
-      amount: rule.capacity_grant + (rule.capacity_grant * tier * board.population_step_bps) / 10_000,
-    };
+  if (category === BuildingType.WorkersHut) return { kind: "population", amount: nextHutGrant(store, realm, learned) };
   const resource = getProducedResource(category);
   if (!isProduct(resource)) throw new Error(`Building ${category} makes nothing a Frontier realm stores`);
   let makes = 0;
   for (let at = 1; at <= tier; at++) if (researchChoice(learned, row!, at) === 0) makes++;
-  return { kind: "produces", resource, perHour: outputPerHour(store, realm, category, makes) };
+  return { kind: "produces", resource, perHour: buildingOutputPerSecond(store, realm, category, makes) * 3600 };
 };
 
 /**
- * What one building of a producing type makes an hour with `makes` Fields, Tools or Drill picks, as the contract's
- * board_output adds a share of the base output for each.
+ * The population one more Hut grants the realm, as the contract applies it (construction.cairo's
+ * change_board_building, buildings.cairo's hut_bonus): its rule's capacity_grant, plus the change in the realm's whole
+ * Hut bonus from the Huts standing to one more. That bonus is every standing Hut's grant × the Hut row's tier × the
+ * board's step, rounded down over them all, so the next Hut's share alternates (+8, then +7 at the first tier).
  */
-export const outputPerHour = (
-  store: NativeFactStore,
-  realm: NativeRows["Structure"],
-  category: BuildingType,
-  makes: number,
-): number => {
-  const resource = getProducedResource(category);
-  if (resource === undefined) throw new Error(`Building ${category} produces nothing`);
+export const nextHutGrant = (store: NativeFactStore, realm: NativeRows["Structure"], learned: bigint): number => {
+  const rule = store.require("BuildingRule", { game_id: realm.game_id, category: BuildingType.WorkersHut });
   const board = store.require("BoardRules", { game_id: realm.game_id });
-  const perSecond =
-    category === BuildingType.ResourceLabor
-      ? board.workshop_rate
-      : store.require("ResourceRule", { game_id: realm.game_id, resource_type: resource }).realm_rate;
-  return ((Number(perSecond) / RESOURCE_PRECISION) * 3600 * (10_000 + makes * board.output_step_bps)) / 10_000;
+  const tier = researchTier(learned, nativeResearchConstants.ROW_HUT);
+  const huts = getBuildingQuantity(safeInteger(realm.entity_id), BuildingType.WorkersHut, store);
+  const bonus = (standing: number) =>
+    Math.floor((standing * rule.capacity_grant * tier * board.population_step_bps) / 10_000);
+  return rule.capacity_grant + bonus(huts + 1) - bonus(huts);
 };
 
 /** A farm adds its wheat; nothing a building produces consumes any (armies pay theirs when they deploy). */

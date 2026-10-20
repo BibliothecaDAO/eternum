@@ -50,6 +50,10 @@ import { doorwayView } from "@/ui/features/game-entry/doorway/doorway-view";
 beforeEach(async () => {
   const account = await import("../../../../../packages/core/src/account/realms-account");
   joinRealmsAccount.mockImplementation(account.joinRealmsAccount);
+  // A device change is numbered by the account's gameplay queue, which reads the nonce and sees inclusion through the
+  // account itself.
+  vi.spyOn(Account.prototype, "getNonce").mockResolvedValue("0x7");
+  vi.spyOn(Account.prototype, "getTransactionStatus").mockResolvedValue({ finality_status: "PRE_CONFIRMED" } as never);
 });
 
 async function openAt(path: string) {

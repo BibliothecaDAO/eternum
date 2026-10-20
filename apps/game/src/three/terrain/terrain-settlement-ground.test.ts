@@ -11,25 +11,22 @@ import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 import { TERRAIN_WATER_LEVEL } from "./terrain-water";
 
 describe("settlement ground", () => {
-  it.each([
-    StructureType.Camp,
-    StructureType.Village,
-    StructureType.Realm,
-    StructureType.Ruin,
-    StructureType.Stragglers,
-  ])("reclaims an island for structure %s and preserves surrounding water", (structureType) => {
-    const cells = getLocalHexDisk({ col: 0, row: 0 }, 2).map(({ col, row }) => cell(col, row, BiomeType.DeepOcean));
-    const source = request(cells, structureType);
-    const original = structuredClone(source);
-    const page = prepareTerrainPage(source);
-    const field = new TerrainField(page.request);
-    expect(field.sampleSurface(0, 0).biome).toBe(BiomeType.Beach);
-    expect(field.sampleSurface(0, 0).height).toBeGreaterThan(TERRAIN_WATER_LEVEL);
-    expect(page.request.cells.filter((cell) => cell.biome === BiomeType.Beach)).toHaveLength(1);
-    expect(page.waterBuffers?.positions.length).toBeGreaterThan(0);
-    expect(source).toEqual(original);
-    expect(prepareTerrainPage({ ...source, settlementAnchors: [] }).request.cells).toEqual(cells);
-  });
+  it.each([StructureType.Camp, StructureType.Village, StructureType.Realm, StructureType.Ruin, StructureType.Beasts])(
+    "reclaims an island for structure %s and preserves surrounding water",
+    (structureType) => {
+      const cells = getLocalHexDisk({ col: 0, row: 0 }, 2).map(({ col, row }) => cell(col, row, BiomeType.DeepOcean));
+      const source = request(cells, structureType);
+      const original = structuredClone(source);
+      const page = prepareTerrainPage(source);
+      const field = new TerrainField(page.request);
+      expect(field.sampleSurface(0, 0).biome).toBe(BiomeType.Beach);
+      expect(field.sampleSurface(0, 0).height).toBeGreaterThan(TERRAIN_WATER_LEVEL);
+      expect(page.request.cells.filter((cell) => cell.biome === BiomeType.Beach)).toHaveLength(1);
+      expect(page.waterBuffers?.positions.length).toBeGreaterThan(0);
+      expect(source).toEqual(original);
+      expect(prepareTerrainPage({ ...source, settlementAnchors: [] }).request.cells).toEqual(cells);
+    },
+  );
 
   it.each([StructureType.Camp, StructureType.Village, StructureType.Realm])(
     "preserves biome materials beneath structure %s while clearing props",

@@ -162,3 +162,11 @@ pub struct SlotKey {
     pub shard: felt252,
     pub slot_id: u32,
 }
+
+#[derive(Copy, Drop, Serde, PartialEq, Debug)]
+pub struct MmrPreview {
+    pub wallet: ContractAddress,
+    pub mmr_before: u128,
+    pub mmr_after: u128,
+    pub delta: i32,
+}

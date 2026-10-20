@@ -8,6 +8,7 @@ import {
   Material,
   Mesh,
   MeshStandardMaterial,
+  type Object3D,
   Quaternion,
   Skeleton,
   SkeletonHelper,
@@ -824,8 +825,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   }
 
   private readBonePositionInCharacterSpace(bone: Bone, target: Vector3): void {
-    bone.getWorldPosition(target);
-    this.group.worldToLocal(target);
+    readCharacterSpacePosition(this.group, bone, target);
   }
 
   private measureArmLengths(side: HumanoidSide): {
@@ -1306,14 +1306,14 @@ function measureSourceBody(
 ): CharacterSourceBodyMeasurements {
   const bones = model.diagnosticBones;
   const chest = resolveSourceBodyChestPosition(model, chestBetween);
-  const distance = (left: Bone, right: Bone) =>
-    left.getWorldPosition(new Vector3()).distanceTo(right.getWorldPosition(new Vector3()));
+  const at = (bone: Bone) => readCharacterSpacePosition(model.scene.parent, bone, new Vector3());
+  const distance = (left: Bone, right: Bone) => at(left).distanceTo(at(right));
   return {
     shoulderWidth: distance(bones.shoulderLeft, bones.shoulderRight),
     hipWidth: distance(bones.hipLeft, bones.hipRight),
-    pelvisToChest: bones.pelvis.getWorldPosition(new Vector3()).distanceTo(chest),
+    pelvisToChest: at(bones.pelvis).distanceTo(chest),
     pelvisHeight: resolveRestPelvisHeight(model),
-    chestToNeck: model.bindings.head.bone.getWorldPosition(new Vector3()).distanceTo(chest),
+    chestToNeck: at(model.bindings.head.bone).distanceTo(chest),
     headRadius: headRadius * model.scene.scale.x,
   };
 }
@@ -1321,16 +1321,26 @@ function measureSourceBody(
 /** The pelvis above the soles: the ankles stand their foot's ankle height above the floor. */
 function resolveRestPelvisHeight(model: PreparedCharacterModel): number {
   const { left } = model.feet;
-  const pelvisY = model.diagnosticBones.pelvis.getWorldPosition(new Vector3()).y;
-  const soleY = left.ankle.getWorldPosition(new Vector3()).y - left.geometry.ankleHeight * model.scene.scale.x;
+  const pelvisY = readCharacterSpacePosition(model.scene.parent, model.diagnosticBones.pelvis, new Vector3()).y;
+  const ankleY = readCharacterSpacePosition(model.scene.parent, left.ankle, new Vector3()).y;
+  const soleY = ankleY - left.geometry.ankleHeight * model.scene.scale.x;
   return pelvisY - soleY;
 }
 
 function resolveSourceBodyChestPosition(model: PreparedCharacterModel, between: readonly [string, string]): Vector3 {
   const [first, second] = between.map((name) =>
-    requireRigBone(model.scene, model.adapter, name).getWorldPosition(new Vector3()),
+    readCharacterSpacePosition(model.scene.parent, requireRigBone(model.scene, model.adapter, name), new Vector3()),
   );
   return first.add(second).multiplyScalar(0.5);
+}
+
+/**
+ * A bone's position in the avatar's own space, the space the pose is solved in. The world adds wherever and however
+ * large the avatar is drawn, so a body measured there would be posed at that size.
+ */
+function readCharacterSpacePosition(characterSpace: Object3D | null, bone: Bone, target: Vector3): Vector3 {
+  bone.getWorldPosition(target);
+  return characterSpace ? characterSpace.worldToLocal(target) : target;
 }
 
 function measureSourceHeadRadius(model: PreparedCharacterModel): number {

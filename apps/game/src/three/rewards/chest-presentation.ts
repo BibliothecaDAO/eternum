@@ -1,4 +1,4 @@
-import { Color, Group, Material, Matrix4, Mesh, MeshStandardMaterial, Vector3 } from "three";
+import { Color, Group, Material, Matrix4, Mesh, MeshStandardMaterial, Vector3, type Object3D } from "three";
 import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
 import { color, texture, uniform, vec3 } from "three/tsl";
 
@@ -12,11 +12,14 @@ export class ChestPresentation {
   private readonly materials = new Map<Material, Material>();
   private readonly bodyBrightness = uniform(0.62);
   private readonly bodyGlow = uniform(0.025);
+  private readonly orbit?: Object3D;
 
   constructor(
     private readonly object: Group,
     private readonly shellColor = "#bc9de8",
   ) {
+    this.orbit = object.getObjectByName("OrbitGems");
+    this.setOpening(false);
     object.getObjectByName("ChestBody")?.scale.multiplyScalar(CHEST_BODY_SCALE);
     for (const name of ["ChestBody", "OrbitGems"]) {
       const part = object.getObjectByName(name);
@@ -29,6 +32,10 @@ export class ChestPresentation {
       const replacements = originals.map((original) => this.brightenSurface(original));
       part.material = Array.isArray(part.material) ? replacements : replacements[0];
     });
+  }
+
+  setOpening(opening: boolean): void {
+    if (this.orbit) this.orbit.visible = opening;
   }
 
   faceCamera(cameraPosition: Vector3, placement?: Matrix4): void {

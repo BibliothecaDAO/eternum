@@ -37,7 +37,13 @@ export const frontierPreset: NativePreset = {
   gameType: "frontier",
   environmentGameType: "frontier",
   settlementMode: "Single",
-  modeRules: rule.HOME_REWARDS | rule.UNOWNED_TARGETS | rule.DEPTH_CONTENTS | rule.REVEAL_SUPPLIES | rule.SEASON_CLOSE,
+  modeRules:
+    rule.HOME_REWARDS |
+    rule.UNOWNED_TARGETS |
+    rule.DEPTH_CONTENTS |
+    rule.REVEAL_SUPPLIES |
+    rule.SEASON_CLOSE |
+    rule.DISCOVER_CHESTS,
   entryRule: rule.ENTRY_OPEN,
   commandMask: (
     [
@@ -54,6 +60,7 @@ export const frontierPreset: NativePreset = {
       "EnterDepth",
       "BuyTier",
       "InteractSite",
+      "OpenRelicChest",
       "RefillStamina",
       "WithdrawLords",
       "SetEntityName",
@@ -92,7 +99,7 @@ export const frontierPreset: NativePreset = {
     })),
   ],
   discovery: {
-    stragglersBps: 600,
+    beastsBps: 600,
     campBps: 400,
     riftBps: 400,
     ruinBps: 100,
@@ -116,6 +123,10 @@ export const frontierPreset: NativePreset = {
       ruinGuardLower: 2000,
       ruinGuardUpper: 4000,
       guardStep: 100,
+      beastWeakLower: 300,
+      beastWeakUpper: 350,
+      beastStrongLower: 450,
+      beastStrongUpper: 550,
       revealSiteNeighbors: false,
       entryStamina: 0,
       chest: { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
@@ -127,6 +138,10 @@ export const frontierPreset: NativePreset = {
       ruinGuardLower: 6000,
       ruinGuardUpper: 10500,
       guardStep: 100,
+      beastWeakLower: 900,
+      beastWeakUpper: 1050,
+      beastStrongLower: 1350,
+      beastStrongUpper: 1650,
       revealSiteNeighbors: false,
       entryStamina: 30,
       chest: { common: 4000, uncommon: 3000, rare: 1700, epic: 900, legendary: 400 },
@@ -138,6 +153,10 @@ export const frontierPreset: NativePreset = {
       ruinGuardLower: 18000,
       ruinGuardUpper: 22500,
       guardStep: 100,
+      beastWeakLower: 2400,
+      beastWeakUpper: 2800,
+      beastStrongLower: 3600,
+      beastStrongUpper: 4400,
       revealSiteNeighbors: false,
       entryStamina: 40,
       chest: { common: 3000, uncommon: 3000, rare: 2200, epic: 1200, legendary: 600 },
@@ -149,6 +168,10 @@ export const frontierPreset: NativePreset = {
       ruinGuardLower: 52500,
       ruinGuardUpper: 76000,
       guardStep: 100,
+      beastWeakLower: 6000,
+      beastWeakUpper: 7000,
+      beastStrongLower: 9000,
+      beastStrongUpper: 11000,
       revealSiteNeighbors: false,
       entryStamina: 50,
       chest: { common: 2000, uncommon: 3000, rare: 2500, epic: 1600, legendary: 900 },

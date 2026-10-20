@@ -17,6 +17,7 @@ import type {
 
 import { normalizeFelt, toJsonValue } from "./model-registry";
 import type { DecodedRecord, DecodedWorldEvent } from "./types";
+import { FRONTIER_REWARD_STORIES } from "./native/frontier-rewards";
 
 export interface HistoryCodec {
   storyModels: readonly string[];
@@ -352,9 +353,9 @@ export class HistoryStore {
               model, transaction_hash, value
        FROM herald_history_events
        WHERE chain = $1 AND world_address = $2 AND game_id = $3 AND block_number <= $4
-         AND model = 'StoryEvent' AND value->'story' ?| ARRAY['SitePayout','ExplorationReward']
+         AND model = 'StoryEvent' AND value->'story' ?| $5::text[]
        ORDER BY block_number, transaction_index, event_index`,
-      [this.chain, this.worldAddress, gameId, confirmedBlock],
+      [this.chain, this.worldAddress, gameId, confirmedBlock, FRONTIER_REWARD_STORIES],
     );
     return result.rows;
   }
@@ -416,6 +417,10 @@ export class HistoryStore {
       );
 
     const where = filters.join(" AND ");
+    // The marker first, then the rows: a writer appends a block's stories and its progress in one transaction, so every
+    // story through the marker read here is already committed when the rows are read. Read after, it could certify
+    // stories committed between the two reads that the rows never saw.
+    const completeThroughBlock = await this.historyProgress();
     const countResult = await this.pool.query<{ total: string }>(
       `SELECT COUNT(*) AS total FROM herald_history_events WHERE ${where}`,
       values,
@@ -439,7 +444,7 @@ export class HistoryStore {
     );
 
     return {
-      complete_through_block: await this.historyProgress(),
+      complete_through_block: completeThroughBlock,
       items: rows.rows.map((row) => ({
         ...row,
         block_number: Number(row.block_number),

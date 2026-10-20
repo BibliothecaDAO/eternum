@@ -1,6 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ReactNode, useEffect, useState } from "react";
-import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
+import { GLOBAL_CHAT_CHANNEL_ID, formatClockTime, formatMoment } from "@bibliothecadao/types";
 
 import {
   useRealtimeChatActions,
@@ -106,7 +106,7 @@ export function RealtimeChatShell({
     if (!activeTab) return;
 
     let content = `Chat Export - ${activeTab.label}\n`;
-    content += `Exported at: ${new Date().toLocaleString()}\n\n`;
+    content += `Exported at: ${formatMoment(Date.now() / 1000)}\n\n`;
 
     // Get messages based on tab type
     const state = useRealtimeChatStore.getState();
@@ -115,7 +115,7 @@ export function RealtimeChatShell({
       if (zone) {
         zone.messages.forEach((msg) => {
           const time = msg.createdAt instanceof Date ? msg.createdAt : new Date(msg.createdAt);
-          const timeStr = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+          const timeStr = formatClockTime(time.getTime() / 1000);
           const senderName = msg.sender.displayName?.trim() || msg.sender.playerId || "Unknown";
           content += `[${timeStr}] <${senderName}> ${msg.content}\n`;
         });
@@ -125,7 +125,7 @@ export function RealtimeChatShell({
       if (thread) {
         thread.messages.forEach((msg) => {
           const time = msg.createdAt instanceof Date ? msg.createdAt : new Date(msg.createdAt);
-          const timeStr = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+          const timeStr = formatClockTime(time.getTime() / 1000);
           content += `[${timeStr}] <${msg.senderId}> ${msg.content}\n`;
         });
       }
@@ -150,14 +150,14 @@ export function RealtimeChatShell({
           // Embedded inside the bronze surface frame — stay transparent and
           // square so the shell's warm gradient + frame show through (the flat
           // black box read as a different surface from the rest of the HUD).
-          isEmbedded ? "rounded-none bg-transparent" : "rounded-2xl bg-black/70",
+          isEmbedded ? "rounded-none bg-transparent" : "rounded-2xl bg-hud-well",
           isEmbedded
             ? "h-full min-h-0"
             : isExpanded
               ? isHeightExpanded
                 ? isEmbedded
                   ? "h-full"
-                  : "h-[600px]"
+                  : "h-hud-chat-height"
                 : isEmbedded
                   ? "h-64"
                   : "h-72"
@@ -166,9 +166,9 @@ export function RealtimeChatShell({
                   ? "h-16"
                   : "h-14"
                 : "h-0 min-h-0 pointer-events-none",
-          isEmbedded ? "w-full" : "w-[800px] max-lg:w-screen lg:max-w-[45vw]",
+          isEmbedded ? "w-full" : "w-hud-chat-width max-lg:w-screen lg:max-w-hud-chat-cap",
           !isExpanded && !showInlineToggle && "w-0 max-w-0 max-lg:w-0",
-          isExpanded && !isEmbedded ? "bg-black/80" : "bg-transparent",
+          isExpanded && !isEmbedded ? "bg-hud-well" : "bg-transparent",
         )}
       >
         {/* Header - Only shown when not expanded */}
@@ -181,13 +181,15 @@ export function RealtimeChatShell({
         {isExpanded && (
           <>
             {gameZoneId && (
-              <div className="flex gap-1 border-b border-gold/10 px-3 py-2" role="group" aria-label="Chat channel">
+              <div className="flex gap-1 border-b border-hud-divider px-3 py-2" role="group" aria-label="Chat channel">
                 <button
                   type="button"
                   aria-pressed={activeZoneId === GLOBAL_CHAT_CHANNEL_ID}
                   className={cn(
-                    "rounded px-3 py-1 text-sm max-lg:min-h-11",
-                    activeZoneId === GLOBAL_CHAT_CHANNEL_ID ? "bg-gold/20 text-gold" : "text-kit-muted hover:text-gold",
+                    "rounded px-3 py-1 text-hud-body max-lg:min-h-11",
+                    activeZoneId === GLOBAL_CHAT_CHANNEL_ID
+                      ? "bg-hud-chosen text-hud-accent"
+                      : "text-hud-muted hover:text-hud-accent",
                   )}
                   onClick={() => selectWorldChannel(GLOBAL_CHAT_CHANNEL_ID)}
                 >
@@ -201,8 +203,10 @@ export function RealtimeChatShell({
                     hasGameChat ? "Chat with players in this game" : "Game chat requires registration in this game"
                   }
                   className={cn(
-                    "rounded px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40 max-lg:min-h-11",
-                    activeZoneId === gameZoneId ? "bg-gold/20 text-gold" : "text-kit-muted hover:text-gold",
+                    "rounded px-3 py-1 text-hud-body disabled:cursor-not-allowed disabled:opacity-40 max-lg:min-h-11",
+                    activeZoneId === gameZoneId
+                      ? "bg-hud-chosen text-hud-accent"
+                      : "text-hud-muted hover:text-hud-accent",
                   )}
                   onClick={() => selectWorldChannel(gameZoneId)}
                 >
@@ -243,7 +247,7 @@ export function RealtimeChatShell({
               ) : activeTab?.type === "dm" ? (
                 <DirectMessagesPanel threadId={activeTab.targetId} />
               ) : (
-                <div className="flex items-center justify-center h-full text-kit-muted text-sm">
+                <div className="flex items-center justify-center h-full text-hud-cue text-hud-body">
                   No chat selected. Click "+ DM" to start a conversation.
                 </div>
               )}

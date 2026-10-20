@@ -1,15 +1,13 @@
-import clsx from "clsx";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudLoading, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
 
 import { ContourMap } from "./contour-map";
-import { SegmentedBracketLoader, type LoaderProgressMode } from "./segmented-bracket-loader";
 
 type BootLoaderShellProps = {
   className?: string;
-  panelClassName?: string;
-  mode?: LoaderProgressMode;
+  /** How far along, 0 to 100; without it the loader says it is working without a figure. */
   progress?: number;
-  segments?: number;
   title?: string;
   subtitle?: string;
   caption?: string;
@@ -17,46 +15,43 @@ type BootLoaderShellProps = {
   showBackdrop?: boolean;
 };
 
+/**
+ * What the screen shows while the world loads: the age's contour backdrop on the dark ground, and a sheet panel
+ * saying what is happening, with its progress as a meter when it is known and the loading line when it is not.
+ */
 export const BootLoaderShell = ({
   className,
-  panelClassName,
-  mode = "indeterminate",
-  progress = 0,
-  segments = 8,
+  progress,
   title,
   subtitle,
   caption,
   detail,
   showBackdrop = true,
-}: BootLoaderShellProps) => {
-  return (
-    <div
-      className={clsx(
-        "boot-loader-surface z-[110] isolate overflow-hidden text-gold",
-        showBackdrop ? "fixed inset-0 bg-black/95" : "absolute inset-0 bg-black/90",
-        className,
-      )}
-    >
-      <ContourMap />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(201,169,96,0.08),transparent_54%)]" />
-      <div className="relative z-10 flex min-h-full items-center justify-center px-6 py-10">
-        <div
-          className={clsx(
-            "w-full max-w-[34rem] rounded-2xl border border-gold/20 bg-[rgba(7,10,12,0.75)] px-6 py-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.55),0_0_1px_rgba(201,169,96,0.15)]",
-            panelClassName,
+}: BootLoaderShellProps) => (
+  <div
+    className={cn(
+      "ui isolate z-hud-loading overflow-hidden bg-hud-dark",
+      showBackdrop ? "fixed inset-0" : "absolute inset-0",
+      className,
+    )}
+  >
+    <ContourMap />
+    <div className="relative flex min-h-full items-center justify-center px-6 py-10">
+      <HudPanel collapsible={false} className="w-full max-w-lg">
+        <div className="flex flex-col items-center gap-3 p-4 text-center">
+          {caption && <span className="text-hud-label text-hud-muted">{caption}</span>}
+          {title && <h2 className="text-hud-display text-hud-ink">{title}</h2>}
+          {subtitle && <p className="text-hud-body text-hud-muted">{subtitle}</p>}
+          {progress !== undefined && progress > 0 ? (
+            <span className="w-full pt-2">
+              <HudMeter share={Math.min(100, progress) / 100} label={title ?? "Loading"} />
+            </span>
+          ) : (
+            <HudLoading line={caption ?? "Loading"} />
           )}
-        >
-          {caption ? <div className="mb-2 text-sm text-kit-muted sm:text-sm">{caption}</div> : null}
-          {title ? <h2 className="text-lg font-semibold text-gold/90 sm:text-xl">{title}</h2> : null}
-          {subtitle ? (
-            <p className="mx-auto mt-3 max-w-[28rem] text-sm text-[rgba(236,224,194,0.72)] sm:text-base">{subtitle}</p>
-          ) : null}
-
-          <SegmentedBracketLoader className="mt-6" mode={mode} progress={progress} segments={segments} />
-
-          {detail ? <div className="mt-6">{detail}</div> : null}
+          {detail && <div className="w-full pt-3">{detail}</div>}
         </div>
-      </div>
+      </HudPanel>
     </div>
-  );
-};
+  </div>
+);

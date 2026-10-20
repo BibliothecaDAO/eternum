@@ -10,69 +10,54 @@ const SAFE_AREA: CSSProperties = {
 };
 
 /**
- * The HUD's slots over the stage, in two compositions of the same parts. On a phone, three bands: the strip on top,
- * the map (or a nav page) in the middle, and the foot rows read upward from the nav: the dock, the action bar, the
- * notices, the guide. On desktop, the corners: the strip top left with the armies down the left, the nav top right
- * with a nav page or a sheet as the right panel under it (the season's board is one, opened from the Menu), the action
- * bar and notices bottom centre, and chat docked bottom left with the guide above it, beside the armies' column so a
- * long dock never covers it. A nav page is as tall as its content. Sheets and moments render beside the slots and
- * place themselves; a desktop sheet docks where the page stands, so while one is open the guide and the page wait out
- * of its way (a sheet opened from the page takes the page's place).
+ * Frontier's HUD on a phone, in three bands: the strip on top, the map (or a nav page) in the middle, and the foot rows
+ * read upward from the nav: the dock, the action bar, the notices, Next up. A docked sheet hides Next up. Sheets
+ * and moments render beside the bands and place themselves. A desktop has the HUD every mode shares
+ * (FrontierDesktop).
  */
 export const HudBands = ({
   strip,
   stage,
   page,
-  guide,
+  nextUp,
   notices,
   action,
   dock,
   nav,
-  chat,
   children,
 }: {
   strip: ReactNode;
   /** What floats over the map itself (the last hour's bubble). */
   stage?: ReactNode;
-  /** A nav page: the middle band on a phone, the right panel on desktop. */
+  /** A nav page: the middle band. */
   page?: ReactNode;
-  guide?: ReactNode;
+  nextUp?: ReactNode;
   notices?: ReactNode;
   action?: ReactNode;
   dock?: ReactNode;
   nav?: ReactNode;
-  /** Desktop only: chat docked open. */
-  chat?: ReactNode;
   children?: ReactNode;
 }) => (
   <div
     aria-label="Frontier HUD"
-    className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans lg:block [&:has([data-kit-sheet])_[data-guide]]:hidden lg:[&:has([data-kit-sheet])_[data-page]]:invisible"
+    className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-next-up]]:hidden"
     style={SAFE_AREA}
   >
-    <div className="relative lg:absolute lg:left-2 lg:top-2 lg:w-[560px]">{strip}</div>
+    <div className="relative">{strip}</div>
     {page ? (
-      <div
-        data-page
-        className="flex min-h-0 flex-1 flex-col lg:absolute lg:right-2 lg:top-[76px] lg:max-h-[calc(100%-84px)] lg:w-[440px]"
-      >
+      <div data-page className="flex min-h-0 flex-1 flex-col">
         <OpenedFromPanel.Provider value>{page}</OpenedFromPanel.Provider>
       </div>
     ) : (
-      <div className="relative min-h-0 flex-1 lg:absolute lg:inset-x-[240px] lg:bottom-[140px] lg:top-[150px]">
-        {stage}
-      </div>
+      <div className="relative min-h-0 flex-1">{stage}</div>
     )}
-    <div data-guide className="lg:absolute lg:bottom-[300px] lg:left-[236px] lg:w-[380px]">
-      {guide}
-    </div>
-    <div className="flex flex-col gap-1.5 lg:absolute lg:bottom-2 lg:left-1/2 lg:w-[520px] lg:-translate-x-1/2">
+    <div data-next-up>{nextUp}</div>
+    <div className="flex flex-col gap-1.5">
       {notices}
       {action}
     </div>
-    <div className="lg:absolute lg:left-2 lg:top-[150px] lg:w-[220px]">{dock}</div>
-    <div className="lg:absolute lg:right-2 lg:top-2 lg:w-[460px]">{nav}</div>
-    {chat && <div className="hidden lg:absolute lg:bottom-2 lg:left-2 lg:block lg:w-[380px]">{chat}</div>}
+    <div>{dock}</div>
+    <div>{nav}</div>
     {children}
   </div>
 );

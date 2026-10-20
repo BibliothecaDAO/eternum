@@ -12,6 +12,7 @@ import { hudFor } from "@/ui/layouts/hud-for";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import type { Direction } from "@bibliothecadao/types";
 import { ArmyDeploymentPicker } from "../components/army-deployment-picker";
+import type { TroopStack } from "../components/unified-army-creation-modal/types";
 
 export interface ArmyDeploymentTarget {
   structureId: number;
@@ -19,6 +20,8 @@ export interface ArmyDeploymentTarget {
   direction?: Direction;
   initialGuardSlot?: number;
   maxDefenseSlots?: number;
+  /** The troop stack the order named (Next up's "1,000 troops on hand"): the form opens on that troop at that count. */
+  troops?: TroopStack;
 }
 
 /** Where on screen an order to deploy was given: the tile or the slot the shared HUD hangs its picker from. */

@@ -13,7 +13,8 @@ interface Signer extends Connection {
 }
 
 export const chestLedgerReads = (connection: Connection): Omit<ChestPorts, "finish"> => ({
-  changes: (fromBlock, cursor) => ledgerChestChanges(connection.rpcUrl, connection.contractAddress, fromBlock, cursor),
+  changes: (fromBlock, cursor, anchor) =>
+    ledgerChestChanges(connection.rpcUrl, connection.contractAddress, fromBlock, cursor, anchor),
   head: () =>
     relayOperation("read chest head", async () => {
       return (await readConfirmedLedgerHead(rpcAt(connection.rpcUrl))).number;

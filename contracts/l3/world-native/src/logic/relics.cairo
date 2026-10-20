@@ -73,7 +73,11 @@ pub mod RelicState {
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
             let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.map.read() }
                 .consume_relic_chest(game_id, command.coord);
-            self.pay_chest(game_id, actor, command, chest_id, explorer.owner, context);
+            if context.rules.unbox().day_unit_seconds != 0 {
+                self.pay_reward_chest(game_id, actor, command, chest_id, explorer.owner, context);
+            } else {
+                self.pay_chest(game_id, actor, command, chest_id, explorer.owner, context);
+            }
             ()
         }
         fn apply_relic(
@@ -111,6 +115,7 @@ pub mod RelicState {
                     context.timestamp,
                     crate::commands::resource_context(context),
                 );
+            self.record_activation(game_id, actor, command, rule, context);
         }
     }
     #[embeddable_as(ArmyProgressionImpl)]
@@ -480,6 +485,40 @@ pub mod RelicState {
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
         }
 
+        fn pay_reward_chest(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: OpenChest,
+            chest_id: u64,
+            home: u64,
+            context: ExecutionContext,
+        ) {
+            let reward = crate::logic::lords_budget::pay(ResourceKey { game_id, entity_id: chest_id }, context);
+            self
+                .resources(game_id)
+                .grant_resource(
+                    ResourceKey { game_id, entity_id: home },
+                    reward.resource_type,
+                    reward.amount,
+                    context.timestamp,
+                    crate::commands::resource_context(context),
+                );
+            crate::logic::stories::emit_entity_story(
+                ResourceKey { game_id, entity_id: command.explorer_id },
+                actor,
+                crate::ownership::Story::RewardChestOpened(
+                    crate::relics::RewardChestOpened {
+                        explorer_id: command.explorer_id,
+                        structure_id: home,
+                        coord: command.coord,
+                        amount: reward.amount / crate::rules::RESOURCE_PRECISION,
+                    },
+                ),
+                context.timestamp,
+            );
+        }
+
         fn pay_chest(
             ref self: ComponentState<TContractState>,
             game_id: u32,
@@ -570,6 +609,38 @@ pub mod RelicState {
                         story: crate::ownership::Story::RelicCrafted(relic),
                     },
                 );
+        }
+        fn record_activation(
+            self: @ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: ApplyRelic,
+            rule: RelicRule,
+            context: ExecutionContext,
+        ) {
+            let ticks: u64 = match command.relic_id {
+                39 | 40 => rule.uses.into(),
+                45 | 46 => 0,
+                _ => rule.duration.into(),
+            };
+            crate::logic::stories::emit_entity_story(
+                ResourceKey { game_id, entity_id: command.entity_id },
+                actor,
+                crate::ownership::Story::RelicActivated(
+                    crate::relics::RelicActivated {
+                        relic_id: command.relic_id,
+                        recipient: command.recipient,
+                        rate_bps: rule.rate_bps,
+                        duration_seconds: ticks * context.rules.unbox().tick_config.armies_tick_in_seconds,
+                        radius: if command.relic_id == 45 || command.relic_id == 46 {
+                            rule.uses
+                        } else {
+                            0
+                        },
+                    },
+                ),
+                context.timestamp,
+            );
         }
         fn record_chest_opened(
             ref self: ComponentState<TContractState>,

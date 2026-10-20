@@ -1,7 +1,15 @@
 import { safeInteger } from "./safe-integer";
 import { entityMapPosition } from "./tile";
 import { structureMapPosition } from "./expeditions";
-import { CapacityConfig, ContractAddress, ID, StructureType } from "@bibliothecadao/types";
+import {
+  armyName,
+  CapacityConfig,
+  ContractAddress,
+  ID,
+  NEUTRAL_OWNER_NAME,
+  StructureType,
+  siteName,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { shortString } from "starknet";
@@ -9,17 +17,11 @@ import knownAddressesJSONData from "../data/known-addresses.json";
 import { configManager } from "../managers/config-manager";
 import { getHyperstructureName } from "./hyperstructure";
 import { getRealmNameById } from "./realm";
-import { getStructureTypeName, presentedMineKind } from "./structure";
 import { isViewerOwner } from "./viewer";
 
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
 
-export const getEntityInfo = (
-  entityId: ID,
-  playerAccount: ContractAddress | null,
-  store: NativeFactStore,
-  isBlitz: boolean,
-) => {
+export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress | null, store: NativeFactStore) => {
   const game_id = configManager.getActiveGameId();
 
   const explorer = store.get("ExplorerTroops", { game_id, explorer_id: entityId });
@@ -34,7 +36,7 @@ export const getEntityInfo = (
     };
   } else {
     if (structure) {
-      name = getStructureName(structure, isBlitz);
+      name = getStructureName(structure);
     }
   }
 
@@ -78,7 +80,7 @@ export const getEntityInfo = (
 
 export const getArmyName = (armyEntityId: ID, store: NativeFactStore) => {
   const named = store.get("EntityName", { game_id: configManager.getActiveGameId(), entity_id: armyEntityId });
-  return named && named.name !== 0n ? shortString.decodeShortString(named.name.toString()) : `Army ${armyEntityId}`;
+  return named && named.name !== 0n ? shortString.decodeShortString(named.name.toString()) : armyName(armyEntityId);
 };
 
 const getRealmName = (structure: NativeRows["Structure"]) => {
@@ -86,21 +88,37 @@ const getRealmName = (structure: NativeRows["Structure"]) => {
   return structure.metadata.has_wonder ? `WONDER - ${baseName}` : baseName;
 };
 
-export const getStructureName = (structure: NativeRows["Structure"], isBlitz: boolean) => {
-  const cachedName = getEntityNameFromLocalStorage(safeInteger(structure.entity_id));
-  let originalName = undefined;
+/**
+ * A site's name (every structure but a realm and a Hyperstructure), the one its map plate, its card, every list and
+ * every story read: the name its holder gave it, else its generated name ("Gloomsgrasp"). It needs only the site's id,
+ * so a site whose Structure is gone (a cleared site's receipt) or not yet synced is named by the same rule.
+ */
+export const siteDisplayName = (entityId: ID): string => getEntityNameFromLocalStorage(entityId) || siteName(entityId);
 
-  if (structure.base.category === StructureType.Realm) {
-    originalName = getRealmName(structure);
-  } else if (structure.base.category === StructureType.Hyperstructure) {
-    originalName = getHyperstructureName(structure);
-  } else {
-    const structureTypeName =
-      getStructureTypeName(structure.base.category as StructureType, presentedMineKind(structure)) || "Structure";
-    originalName = `${structureTypeName} ${structure.entity_id}`;
+/**
+ * A structure's name, and the name it had before its holder renamed it (originalName, which the rename control shows).
+ * A site is named by siteDisplayName, the rule every reader of a site shares.
+ */
+export const getStructureName = (structure: NativeRows["Structure"]) => {
+  const entityId = safeInteger(structure.entity_id);
+  if (structure.base.category !== StructureType.Realm && structure.base.category !== StructureType.Hyperstructure) {
+    return { name: siteDisplayName(entityId), originalName: siteName(entityId) };
   }
+  const originalName =
+    structure.base.category === StructureType.Realm ? getRealmName(structure) : getHyperstructureName(structure);
+  return { name: getEntityNameFromLocalStorage(entityId) || originalName, originalName };
+};
 
-  return { name: cachedName || originalName, originalName };
+/**
+ * The one name a player reads for an army or a structure, on the map and in event text: its given name; else an army's
+ * generated name (armyName, "Iron Wardens") and a site's (siteName, "Gloomsgrasp"), never its entity id, which is a
+ * storage key, not a name. Undefined when the store holds neither (an army already gone): the caller words that.
+ */
+export const getEntityName = (entityId: ID, store: NativeFactStore): string | undefined => {
+  const game_id = configManager.getActiveGameId();
+  if (store.get("ExplorerTroops", { game_id, explorer_id: entityId })) return getArmyName(entityId, store);
+  const structure = store.get("Structure", { game_id, entity_id: entityId });
+  return structure ? getStructureName(structure).name : undefined;
 };
 
 export const setEntityNameLocalStorage = (entityId: ID, name: string) => {
@@ -118,14 +136,17 @@ const getEntityNameFromLocalStorage = (entityId: ID) => {
 export const unclaimedPlayerName = (address: ContractAddress | string): string =>
   `Lord ${BigInt(address).toString(16).padStart(4, "0").slice(-4)}`;
 
-/** The one display rule for a player: the claimed name, else the unclaimed one, never an address. */
+/**
+ * The one display rule for an owner: the Vanguard for the zero address, which holds what no player does; else the
+ * player's claimed name, else the unclaimed one; never an address.
+ */
 export const displayPlayerName = (address: ContractAddress | string, name: string | null | undefined): string =>
-  name || unclaimedPlayerName(address);
+  BigInt(address) === 0n ? NEUTRAL_OWNER_NAME : name || unclaimedPlayerName(address);
 
 /**
- * A player's name, from the one place names live: the player's Realms profile, looked up by the client that owns the
- * store (a headless client may name no one). Null when the player has not chosen a name; `displayPlayerName` then
- * shows the fallback.
+ * The name to show for a player, from the client that owns the store and its one name rule: a claimed name, the
+ * unclaimed one, or that the name is waiting or unavailable (the game client's readPlayerName). Null where the client
+ * names no one (a headless client); `displayPlayerName` then shows the unclaimed rule.
  */
 export type PlayerNameResolver = (address: ContractAddress | string) => string | null;
 

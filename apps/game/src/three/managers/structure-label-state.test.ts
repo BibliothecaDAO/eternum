@@ -11,7 +11,6 @@ vi.mock("../utils/combat-directions", () => ({
 }));
 
 import {
-  buildStructureLabelDataKey,
   filterPendingIncomingTroopArrivals,
   resolveStructureIncomingTroopArrivals,
   resolveTimedStructureLabelState,
@@ -92,31 +91,5 @@ describe("structure label state", () => {
       incomingTroopArrivals: [{ resourceId: 1, troopTier: 2, count: 20, arrivesAt: 140 }],
       isActive: true,
     });
-  });
-
-  it("builds a stable label data key from the structure fields that affect label rendering", () => {
-    const baseStructure = {
-      isMine: false,
-      owner: { ownerName: "Alice" },
-      guardArmies: [{ slot: 1, category: "infantry", tier: 1, count: 10 }],
-      battleTimerLeft: 15,
-      attackedFromDegrees: 30,
-      attackedTowardDegrees: 120,
-      activeProductions: [{ buildingType: 2, buildingCount: 3 }],
-      incomingTroopArrivals: [{ resourceId: 1, troopTier: 1, count: 10, arrivesAt: 120 }],
-      level: 4,
-      stage: 2,
-    } as any;
-
-    const first = buildStructureLabelDataKey(baseStructure, 100);
-    const second = buildStructureLabelDataKey(
-      {
-        ...baseStructure,
-        activeProductions: [{ buildingType: 2, buildingCount: 4 }],
-      },
-      100,
-    );
-
-    expect(first).not.toBe(second);
   });
 });

@@ -177,6 +177,31 @@ describe("authored spire animation", () => {
     expect(portals(model)).toHaveLength(0);
     model.dispose();
   });
+  it("contracts the actual orb about its authored centre without moving the spire or mutating the asset", () => {
+    const { model, core } = fixture();
+    const placement = new Matrix4().makeTranslation(4, 2, 7);
+    model.setMatrixAt(0, placement);
+    model.setCount(1);
+    const body = matrixAt(model, 1);
+    const original = new Matrix4();
+    expect(model.getOrbTransform(0, original)).toBe(true);
+    const surface = portals(model)[0].getObjectByName("core") as Mesh;
+    const centre = new Vector3().setFromMatrixPosition(surface.matrix);
+    const beforeScale = new Vector3().setFromMatrixScale(surface.matrix);
+    model.setOrbScale(0, 0.06);
+    expect(new Vector3().setFromMatrixPosition(surface.matrix).distanceTo(centre)).toBeLessThan(1e-10);
+    expect(new Vector3().setFromMatrixScale(surface.matrix).x).toBeCloseTo(beforeScale.x * 0.06);
+    expect(matrixAt(model, 1).elements).toEqual(body.elements);
+    const after = new Matrix4();
+    model.getOrbTransform(0, after);
+    expect(after.elements).toEqual(original.elements);
+    expect(core.parent!.position.y).toBe(0.53);
+    expect(model.getOrbTransform(3, after)).toBe(false);
+    expect(() => model.setOrbScale(0, 0)).toThrow("positive");
+    model.setOrbScale(0, 1);
+    expect(new Vector3().setFromMatrixScale(surface.matrix).x).toBeCloseTo(beforeScale.x);
+    model.dispose();
+  });
   it("keeps labels and conservative bounds above every hovering pose", () => {
     const { model } = fixture();
     model.setMatrixAt(0, new Matrix4().makeTranslation(4, 2, 7));

@@ -5,13 +5,11 @@ import {
   getBalance,
   getRealmInfo,
   getBuildingCount,
-  getGuardsByStructure,
   getBlockTimestamp,
   storedBiomeAt,
   type TileManager,
 } from "../index";
 import type { NativeFactStore } from "../client/index";
-import { liveHomeArmies } from "../utils/expeditions";
 import { BuildingType, type ID, ResourcesIds, StructureType, TroopType, BUILDINGS_CENTER } from "@bibliothecadao/types";
 import {
   buildBlitzRealmSuggestions,
@@ -146,15 +144,13 @@ export function readBlitzRealmSuggestions(input: {
   realmId: ID;
   realmName: string;
   isBlitzActive: boolean;
-  tiles: Pick<TileManager, "isHexOccupied" | "existingBuildings">;
+  tiles: Pick<TileManager, "isHexOccupied">;
   mode?: ConstructionBuildabilityInput["mode"];
 }): BlitzSuggestionDraft[] {
   const { store, realmId, realmName, isBlitzActive, tiles, mode } = input;
   const game_id = configManager.getActiveGameId();
   const structure = store.require("Structure", { game_id, entity_id: realmId });
   if (structure.base.category !== StructureType.Realm) return [];
-  const guards = getGuardsByStructure(structure, store);
-  if (!guards) return [];
   const buildings = store.require("StructureBuildings", { game_id, entity_id: realmId });
   const counts = [buildings.packed_counts_1, buildings.packed_counts_2, buildings.packed_counts_3];
   const count = (type: BuildingType) => getBuildingCount(type, counts);
@@ -186,14 +182,9 @@ export function readBlitzRealmSuggestions(input: {
       getBlockTimestamp().currentDefaultTick,
     ),
     hasAvailableBuildingTile,
-    buildingTilesOccupied: tiles.existingBuildings().length,
     buildingCounts,
     population: buildings.population.current,
     populationCapacity: buildings.population.max + configManager.getBasePopulationCapacity(),
-    occupiedGuards: guards.filter((guard) => guard.troops.count > 0n).length,
-    maxGuards: structure.base.troop_max_guard_count,
-    occupiedExplorers: liveHomeArmies(store, realmId, game_id).length,
-    maxExplorers: structure.base.troop_max_explorer_count,
     militaryTarget,
     buildability: resolveBlitzBuildability(
       { entityId: realmId, store, realm, mode, useSimpleCost: false, hasAvailableBuildingTile },

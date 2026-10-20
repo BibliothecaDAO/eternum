@@ -1,2 +1,1 @@
-Subject: A closed treasure chest in three-quarter view, heavy reddish oak boards, dark forged-iron straps and a simple square iron latch. Domed lid, believable wood and iron, no gold trim or spilling coins.
-Old counterpart: apps/game/public/image-icons/kit/ui-chest.png.
+Render /models/reward-tiles/chest-c2.glb with scripts/icons/render-models.mjs through the client loader and building-thumbnail camera. Render ChestBody only with the runtime material presentation. Exclude terrain, pedestal, seal rings and orbit gems. Transparent 1024 px master. Tight subject crop through normalizeMaster and deliverIcon, about 90% of each final canvas.

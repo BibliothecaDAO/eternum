@@ -1,2 +1,1 @@
-Subject: Two cut oak logs in one compact stack, one visible growth-ring end, thick bark and convincing split fibres. Coherent single timber bundle, not scattered pieces.
-Old counterpart: apps/game/public/images/resources/3.png.
+Restore the exact master from apps/game/asset-sources/lab/rss-icons/history/wood.png, verified against its catalog SHA-256. Historical provenance: 638fd7fb410:apps/game/public/images/resources/3.png. Deliver through normalizeMaster and deliverIcon; the visible subject fills about 90% of each final canvas.

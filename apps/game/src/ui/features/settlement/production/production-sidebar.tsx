@@ -4,17 +4,13 @@ import { configManager, getStructureRelicEffects, ResourceManager } from "@bibli
 import { useBuildings } from "@/hooks/helpers/use-buildings";
 import { useNativeRowOrAbsent } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { getProducedResource, ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
-import clsx from "clsx";
-import { HUD_BODY, HUD_HEADLINE, HUD_LABEL, HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { getProducedResource, ID, RealmInfo, ResourcesIds, formatCount } from "@bibliothecadao/types";
+import { HudButton, HudChip, HudRow, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import Button from "@/ui/design-system/atoms/button";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { REALM_PRESETS, RealmPresetId } from "@bibliothecadao/eternum/automation";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ProductionStatusBadge } from "@/ui/shared";
-import { formatTimeRemaining } from "../../economy/resources/entity-resource-table/utils";
 
 interface ProductionSidebarProps {
   realms: RealmInfo[];
@@ -129,95 +125,52 @@ const SidebarRealm = ({
   if (!productionBoostBonus) return <p>Loading production…</p>;
 
   return (
-    <div
-      className={clsx(
-        "cursor-pointer rounded-xl px-2.5 py-2 transition",
-        isSelected
-          ? "border border-gold/65 ring-1 ring-gold/30 bg-gradient-to-b from-[#231913]/97 to-[#2c2018]/97 shadow-[0_0_18px_rgba(223,170,84,0.3),inset_0_1px_0_rgba(255,214,102,0.28)]"
-          : clsx(OVERLAY_SURFACE_BASE, "hover:border-gold/50"),
-      )}
-      onClick={onSelect}
-      aria-selected={isSelected}
-    >
-      <div className="flex flex-col gap-2">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className={clsx(HUD_HEADLINE, "truncate")}>{mode.structure.getName(realm.structure).name}</h3>
-            <p className={HUD_BODY}>
-              {hasProduction
-                ? `${buildingsData.length} buildings · ${activeProductionBuildings}/${totalProductionBuildings} producing`
-                : `${buildingsData.length} buildings · no production`}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {activeRelics.length > 0 && (
-              <div className="flex gap-1 shrink-0">
-                {activeRelics.length > 0 && (
-                  <div className="bg-relic-activated/20 p-1 rounded" title={`${activeRelics.length} Active Relics`}>
-                    <span className="text-sm font-bold text-relic-activated">{activeRelics.length}</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5 px-1 pt-1">
-          {hasProduction ? (
-            resourceProductionSummary
-              .toSorted((a, b) => {
-                // Wheat first, then by resource id ascending
-                if (a.resourceId === ResourcesIds.Wheat && b.resourceId !== ResourcesIds.Wheat) return -1;
-                if (b.resourceId === ResourcesIds.Wheat && a.resourceId !== ResourcesIds.Wheat) return 1;
-                return a.resourceId - b.resourceId;
-              })
-              .map((summary) => {
-                const resourceLabel = ResourcesIds[summary.resourceId];
-                const effectiveRemainingSeconds = summary.timeRemainingSeconds;
-                const formattedRemaining =
-                  summary.isProducing && effectiveRemainingSeconds !== null
-                    ? formatTimeRemaining(Math.ceil(effectiveRemainingSeconds))
-                    : null;
-                const tooltipParts = summary.isProducing
-                  ? [
-                      resourceLabel,
-                      `${summary.activeBuildings}/${summary.totalBuildings} producing`,
-                      formattedRemaining ? `${formattedRemaining} left` : null,
-                    ]
-                  : [
-                      resourceLabel,
-                      `Idle (${summary.totalBuildings} building${summary.totalBuildings !== 1 ? "s" : ""})`,
-                    ];
-
-                return (
-                  <ProductionStatusBadge
-                    key={summary.resourceId}
-                    resourceLabel={resourceLabel}
-                    tooltipText={tooltipParts.filter(Boolean).join(" • ")}
-                    isProducing={summary.isProducing}
-                    timeRemainingSeconds={effectiveRemainingSeconds}
-                    totalCount={summary.totalBuildings}
-                    size="xs"
-                    onClick={() => onSelectResource(realm.entityId, summary.resourceId)}
-                  />
-                );
-              })
-          ) : (
-            <span className={HUD_BODY}>No production buildings</span>
-          )}
-        </div>
+    <div className="flex flex-col gap-1">
+      <HudRow
+        title={mode.structure.getName(realm.structure).name}
+        detail={
+          hasProduction
+            ? `${formatCount(buildingsData.length, "building")} · ${activeProductionBuildings}/${totalProductionBuildings} producing`
+            : `${formatCount(buildingsData.length, "building")} · no production`
+        }
+        trail={
+          activeRelics.length > 0 ? (
+            <span title={`${activeRelics.length} Active Relics`}>
+              <HudChip>{activeRelics.length}</HudChip>
+            </span>
+          ) : undefined
+        }
+        selected={isSelected}
+        onClick={onSelect}
+      />
+      <div className="flex flex-wrap items-center gap-2.5 px-1 pt-1">
+        {hasProduction ? (
+          resourceProductionSummary
+            .toSorted((a, b) => {
+              // Wheat first, then by resource id ascending
+              if (a.resourceId === ResourcesIds.Wheat && b.resourceId !== ResourcesIds.Wheat) return -1;
+              if (b.resourceId === ResourcesIds.Wheat && a.resourceId !== ResourcesIds.Wheat) return 1;
+              return a.resourceId - b.resourceId;
+            })
+            .map((summary) => (
+              <ProductionStatusBadge
+                key={summary.resourceId}
+                resource={summary.resourceId}
+                isProducing={summary.isProducing}
+                timeRemainingSeconds={summary.timeRemainingSeconds}
+                buildings={summary.totalBuildings}
+                onClick={() => onSelectResource(realm.entityId, summary.resourceId)}
+              />
+            ))
+        ) : (
+          <span className="text-hud-muted">No production buildings</span>
+        )}
       </div>
     </div>
   );
 };
 
 type AutomationTab = "realm" | "village";
-
-type PendingPresetAction = {
-  presetId: RealmPresetId;
-  realmIds: string[];
-  tab: AutomationTab;
-};
 
 export const ProductionSidebar = memo(
   ({ realms, selectedRealmEntityId, onSelectRealm, onSelectResource }: ProductionSidebarProps) => {
@@ -238,14 +191,6 @@ export const ProductionSidebar = memo(
       });
 
       return { realm: realmStructures, village: campStructures };
-    }, [realms]);
-
-    const structureMap = useMemo(() => {
-      const map = new Map<string, RealmInfo>();
-      realms.forEach((realm) => {
-        map.set(realm.entityId.toString(), realm);
-      });
-      return map;
     }, [realms]);
 
     const realmStructures = structuresByType.realm;
@@ -269,7 +214,6 @@ export const ProductionSidebar = memo(
       }
       return realmCount > 0 ? "realm" : "village";
     });
-    const [pendingPreset, setPendingPreset] = useState<PendingPresetAction | null>(null);
     const selectionRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -277,23 +221,11 @@ export const ProductionSidebar = memo(
       if (activeStructures.length === 0) {
         if (activeTab === "realm" && villageCount > 0) {
           setActiveTab("village");
-          setPendingPreset(null);
         } else if (activeTab === "village" && realmCount > 0) {
           setActiveTab("realm");
-          setPendingPreset(null);
         }
       }
     }, [activeTab, realmStructures, villageStructures, realmCount, villageCount]);
-
-    useEffect(() => {
-      if (!pendingPreset) return;
-      if (pendingPreset.tab === "realm" && realmCount === 0) {
-        setPendingPreset(null);
-      }
-      if (pendingPreset.tab === "village" && villageCount === 0) {
-        setPendingPreset(null);
-      }
-    }, [pendingPreset, realmCount, villageCount]);
 
     const autoSelectionKey = useMemo(
       () => `${selectedRealmEntityId}-${selectedEntityType}-${villageCount > 0 ? 1 : 0}-${realmCount > 0 ? 1 : 0}`,
@@ -309,14 +241,12 @@ export const ProductionSidebar = memo(
       if (selectedEntityType === "village") {
         if (villageCount > 0 && activeTab !== "village") {
           setActiveTab("village");
-          setPendingPreset(null);
         }
         return;
       }
 
       if (realmCount > 0 && activeTab !== "realm") {
         setActiveTab("realm");
-        setPendingPreset(null);
       }
     }, [activeTab, autoSelectionKey, selectedEntityType, villageCount, realmCount]);
 
@@ -327,123 +257,54 @@ export const ProductionSidebar = memo(
       { key: "village", label: mode.labels.villages, count: villageCount },
     ];
 
-    const handleChangeTab = (tab: AutomationTab) => {
-      setActiveTab(tab);
-      setPendingPreset(null);
-    };
-
-    const handleStagePreset = (presetId: RealmPresetId) => {
-      if (activeStructures.length === 0) return;
-      const realmIds = activeStructures.map((realm) => realm.entityId.toString());
-      setPendingPreset({ presetId, realmIds, tab: activeTab });
-    };
-
-    const handleUndoPreset = () => {
-      setPendingPreset(null);
-    };
-
-    const handleSavePreset = () => {
-      if (!pendingPreset || pendingPreset.realmIds.length === 0) return;
-
-      pendingPreset.realmIds.forEach((realmId) => {
-        const realmInfo = structureMap.get(realmId);
-        if (!realmInfo) return;
-
+    // A preset applies to every holding of the tab at once: setting another one undoes it, so there is nothing to confirm.
+    const applyPreset = (presetId: RealmPresetId) => {
+      activeStructures.forEach((realmInfo) => {
+        const realmId = realmInfo.entityId.toString();
         const entityType = isVillageLikeStructureCategory(realmInfo.structure?.base.category) ? "village" : "realm";
         const realmName = mode.structure.getName(realmInfo.structure).name;
         upsertRealm(realmId, { realmName, entityType });
-        setRealmPreset(realmId, pendingPreset.presetId);
+        setRealmPreset(realmId, presetId);
       });
-
-      setPendingPreset(null);
     };
 
-    const pendingPresetLabel = pendingPreset
-      ? (REALM_PRESETS.find((preset) => preset.id === pendingPreset.presetId)?.label ?? "Preset")
-      : null;
-
     return (
-      <div className="space-y-3">
-        <div className="space-y-2">
-          <div className="flex gap-1.5">
-            {tabButtons.map((tab) => {
-              const isActive = activeTab === tab.key;
-              const disabled = tab.count === 0;
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => handleChangeTab(tab.key)}
-                  className={clsx(
-                    "rounded-md border px-2.5 py-1 transition",
-                    HUD_LABEL_BRIGHT,
-                    disabled
-                      ? "cursor-not-allowed border-gold/10 text-kit-muted"
-                      : isActive
-                        ? "border-gold/60 bg-gold/15 text-gold"
-                        : "border-gold/15 bg-black/20 text-kit-muted hover:border-gold/40 hover:text-gold",
-                  )}
-                >
-                  {tab.label} ({tab.count})
-                </button>
-              );
-            })}
-          </div>
+      <div className="flex flex-col gap-3">
+        <HudTabs
+          tabs={tabButtons.map((tab) => ({
+            key: tab.key,
+            label: tab.label,
+            count: tab.count,
+            disabled: tab.count === 0,
+          }))}
+          value={activeTab}
+          onChange={setActiveTab}
+        />
 
-          {activeStructures.length > 0 && (
-            <div className="space-y-1.5 rounded-lg border border-gold/15 bg-black/20 px-2.5 py-2">
-              <div className={HUD_LABEL}>Apply preset to all {activeLabel.toLowerCase()}</div>
-              <div className="flex flex-wrap gap-1.5">
-                {REALM_PRESETS.filter((preset) => preset.id !== "custom").map((preset) => {
-                  const isPending =
-                    pendingPreset?.presetId === preset.id && pendingPreset?.tab === activeTab && !!pendingPreset;
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() => handleStagePreset(preset.id)}
-                      className={clsx(
-                        "rounded-md border px-2 py-0.5 text-sm font-semibold transition-colors",
-                        activeStructures.length === 0
-                          ? "cursor-not-allowed border-gold/10 text-kit-muted"
-                          : isPending
-                            ? "border-gold text-gold bg-gold/10"
-                            : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold",
-                      )}
-                      disabled={activeStructures.length === 0}
-                      title={preset.description}
-                    >
-                      {preset.label}
-                    </button>
-                  );
-                })}
-              </div>
-              {pendingPreset && pendingPreset.tab === activeTab && (
-                <div className="flex flex-wrap items-center gap-2 rounded-md border border-gold/20 bg-black/20 px-2 py-1.5">
-                  <span className={HUD_BODY}>
-                    Pending {pendingPresetLabel} for {pendingPreset.realmIds.length} {activeLabel.toLowerCase()}.
-                  </span>
-                  <div className="flex gap-2">
-                    <Button variant="gold" size="xs" onClick={handleSavePreset}>
-                      Save Changes
-                    </Button>
-                    <Button variant="outline" size="xs" onClick={handleUndoPreset}>
-                      Undo
-                    </Button>
-                  </div>
-                </div>
-              )}
+        {activeStructures.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <div className="text-hud-label text-hud-muted">Apply preset to all {activeLabel.toLowerCase()}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {REALM_PRESETS.filter((preset) => preset.id !== "custom").map((preset) => (
+                <HudButton
+                  key={preset.id}
+                  kind="secondary"
+                  title={preset.description}
+                  onClick={() => applyPreset(preset.id)}
+                >
+                  {preset.label}
+                </HudButton>
+              ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {activeStructures.length === 0 ? (
-          <div className={clsx(HUD_BODY, "rounded-lg border border-gold/15 bg-black/20 p-3")}>
+          <p className="text-hud-muted">
             {activeTab === "realm"
               ? `You do not control any ${mode.labels.realms.toLowerCase()} yet.`
               : `You do not control any ${mode.labels.villages.toLowerCase()} yet.`}
-          </div>
+          </p>
         ) : (
           activeStructures.map((realm) => (
             <SidebarRealm

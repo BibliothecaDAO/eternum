@@ -41,10 +41,11 @@ export interface RealmVisit {
   player: string;
   structureId: number;
   /**
-   * The realm opens once its rows arrive: a visit the player asked for (the season board's Visit), or a spectator's
-   * watch on an address that names no place. A page loaded on a map hex stays there.
+   * Where the realm opens once its rows arrive: its board, for a visit the player asked for (the season board's
+   * Visit); the world map on it, for a spectator's watch on an address that names no place (a session opens on the
+   * map). Null: the page stays where it is, as one loaded on a map hex does.
    */
-  opensOnArrival: boolean;
+  opensOn: "realm" | "map" | null;
 }
 
 const useRealmVisitStore = create<{ visit: RealmVisit | null }>(() => ({ visit: null }));

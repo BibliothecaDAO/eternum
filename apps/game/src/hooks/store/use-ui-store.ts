@@ -1,4 +1,5 @@
 import { BattleViewInfo, LeftView } from "@/types";
+import type { TroopStack } from "@/ui/features/military/components/unified-army-creation-modal/types";
 import { useTooltipStore } from "./use-tooltip-store";
 import { ContextMenuState } from "@/types/context-menu";
 import { clampCycleProgress, type DebugCycleProgressOverride } from "@/utils/cycle-progress";
@@ -28,6 +29,7 @@ type PendingMilitaryAction = {
   isExplorer: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
+  troops?: TroopStack;
 };
 
 interface UIStore {
@@ -80,16 +82,8 @@ interface UIStore {
   setHasAcceptedToS: (accepted: boolean) => void;
   showToS: boolean;
   setShowToS: (show: boolean) => void;
-  transferPanelSourceId: number | null;
-  setTransferPanelSourceId: (entityId: number | null) => void;
-  // Default tab to open inside the unified Logistics view (Arrivals / Transfer /
-  // Automation / All Balances). WalletPill's swap sets this to "transfer" so the
-  // panel opens straight to the send flow; the sidebar pill defaults to arrivals.
-  logisticsActiveTab: "arrivals" | "transfer" | "automation" | "balances";
-  setLogisticsActiveTab: (tab: "arrivals" | "transfer" | "automation" | "balances") => void;
-  // Cross-component signal: when a non-null id is set, the StructureEditPopup
-  // (mounted inside LeftCommandSidebar) opens for that structure. The picker
-  // popover writes this from the top-zone pills without needing prop-drilling.
+  // Cross-component signal: when a non-null id is set, the StructureEditPopup (mounted by LeftViewSurfaces) opens for
+  // that structure. The holding card's rename and the structure list's pencil write it.
   pendingRenameStructureEntityId: number | null;
   setPendingRenameStructureEntityId: (entityId: number | null) => void;
   // Force-refresh counter bumped after a rename writes to localStorage. Consumers
@@ -99,8 +93,6 @@ interface UIStore {
   pendingMilitaryAction: PendingMilitaryAction | null;
   setPendingMilitaryAction: (action: PendingMilitaryAction | null) => void;
   /** A suggestion's selection intent, consumed when the world map is ready. */
-  suggestedArmyDeploymentStructureId: number | null;
-  setSuggestedArmyDeploymentStructureId: (structureId: number | null) => void;
   // Bumped whenever a military mutation lands (create / disband) so the deploy
   // map can re-fetch tile occupancy. Plain native store-side state isn't enough — the
   militaryMapVersion: number;
@@ -211,7 +203,7 @@ export const useUIStore = create(
     leftNavigationView: LeftView.EntityView,
     setLeftNavigationView: (view: LeftView) => {
       useTooltipStore.getState().setTooltip(null);
-      // Every way into a workspace (Build, Logistics, Military) comes through here: before play opens it stays shut.
+      // Every way into a workspace (Build, Military) comes through here: before play opens it stays shut.
       if (resolveLeftViewSurface(view) !== null && refusedBeforePlay()) return;
       set({ leftNavigationView: view });
     },
@@ -242,10 +234,6 @@ export const useUIStore = create(
     },
     showToS: false,
     setShowToS: (show: boolean) => set({ showToS: show }),
-    transferPanelSourceId: null,
-    setTransferPanelSourceId: (entityId: number | null) => set({ transferPanelSourceId: entityId }),
-    logisticsActiveTab: "arrivals",
-    setLogisticsActiveTab: (tab) => set({ logisticsActiveTab: tab }),
     pendingRenameStructureEntityId: null,
     setPendingRenameStructureEntityId: (entityId: number | null) => set({ pendingRenameStructureEntityId: entityId }),
     structureNameVersion: 0,
@@ -253,9 +241,6 @@ export const useUIStore = create(
       set((state: AppStore) => ({ structureNameVersion: state.structureNameVersion + 1 })),
     pendingMilitaryAction: null,
     setPendingMilitaryAction: (action: PendingMilitaryAction | null) => set({ pendingMilitaryAction: action }),
-    suggestedArmyDeploymentStructureId: null,
-    setSuggestedArmyDeploymentStructureId: (suggestedArmyDeploymentStructureId) =>
-      set({ suggestedArmyDeploymentStructureId }),
     militaryMapVersion: 0,
     bumpMilitaryMapVersion: () => set((state: AppStore) => ({ militaryMapVersion: state.militaryMapVersion + 1 })),
     ...createThreeStoreSlice(set, get),

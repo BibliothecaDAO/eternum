@@ -1,1 +1,1 @@
-A split dark stone monolith surrounding a luminous violet crack, compact silhouette.
+Render /models/reward-tiles/rift.glb with scripts/icons/render-models.mjs through the client loader and building-thumbnail camera. Exclude the Earth terrain surface. Transparent 1024 px master. Tight subject crop through normalizeMaster and deliverIcon, about 90% of each final canvas.

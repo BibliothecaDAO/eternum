@@ -12,7 +12,7 @@ const PROOF = vi.hoisted(() => ({
   uri: "https://realms.test",
   signTypedData: async () => ["0x1", "0x2"],
 }));
-vi.mock("@/ui/modules/identity/wallet-actions", () => ({
+vi.mock("@/shell/value/wallet-actions", () => ({
   WalletPicker: ({ onProof }: { onProof: (proof: typeof PROOF) => void }) => (
     <button type="button" onClick={() => onProof(PROOF)}>
       Pick wallet

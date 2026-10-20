@@ -9,7 +9,7 @@ import {
   resolveSettlementOffset,
   resolvePathBankAngle,
   resolveTerrainSpeedMultiplier,
-  resolveRhythmicBob,
+  resolveRhythmicLean,
   resolveArrivalSlamScale,
   resolveAfterimagePositions,
 } from "./spline-path";
@@ -272,86 +272,30 @@ describe("resolveTerrainSpeedMultiplier", () => {
   });
 });
 
-describe("resolveRhythmicBob", () => {
-  it("returns yOffset=0 at elapsedTime=0", () => {
-    const result = resolveRhythmicBob({
-      elapsedTime: 0,
-      speed: 1,
-      amplitude: 0.03,
-      baseFrequency: 3.0,
-    });
-    expect(result.yOffset).toBeCloseTo(0);
-  });
-
-  it("yOffset oscillates between -amplitude and +amplitude", () => {
-    const amplitude = 0.03;
-    let minY = Infinity;
-    let maxY = -Infinity;
-    for (let t = 0; t <= 2; t += 0.001) {
-      const result = resolveRhythmicBob({
-        elapsedTime: t,
-        speed: 1,
-        amplitude,
-        baseFrequency: 3.0,
-      });
-      minY = Math.min(minY, result.yOffset);
-      maxY = Math.max(maxY, result.yOffset);
-    }
-    expect(minY).toBeCloseTo(-amplitude, 2);
-    expect(maxY).toBeCloseTo(amplitude, 2);
-  });
-
-  it("pitchAngle is always negative when speed > 0 (leaning forward)", () => {
+describe("resolveRhythmicLean", () => {
+  it("leans forward whenever the army moves", () => {
     for (let t = 0; t <= 2; t += 0.05) {
-      const result = resolveRhythmicBob({
-        elapsedTime: t,
-        speed: 1,
-        amplitude: 0.03,
-        baseFrequency: 1.8,
-      });
-      expect(result.pitchAngle).toBeLessThanOrEqual(0);
+      expect(resolveRhythmicLean({ elapsedTime: t, speed: 1, baseFrequency: 1.8 })).toBeLessThanOrEqual(0);
     }
   });
 
-  it("pitchAngle is approximately -0.07 radians (±0.02) at speed=1", () => {
+  it("leans about -0.07 radians (±0.02) at speed=1", () => {
     for (let t = 0; t <= 2; t += 0.1) {
-      const result = resolveRhythmicBob({
-        elapsedTime: t,
-        speed: 1,
-        amplitude: 0.03,
-        baseFrequency: 1.8,
-      });
-      expect(result.pitchAngle).toBeGreaterThanOrEqual(-0.08 - 0.02);
-      expect(result.pitchAngle).toBeLessThanOrEqual(-0.06 + 0.02);
+      const pitch = resolveRhythmicLean({ elapsedTime: t, speed: 1, baseFrequency: 1.8 });
+      expect(pitch).toBeGreaterThanOrEqual(-0.08 - 0.02);
+      expect(pitch).toBeLessThanOrEqual(-0.06 + 0.02);
     }
   });
 
-  it("pitchAngle is ~0 when speed is 0 (no lean at rest)", () => {
-    const result = resolveRhythmicBob({
-      elapsedTime: 0.5,
-      speed: 0,
-      amplitude: 0.03,
-      baseFrequency: 1.8,
-    });
-    expect(Math.abs(result.pitchAngle)).toBeLessThan(0.02);
+  it("is ~0 when speed is 0 (no lean at rest)", () => {
+    expect(Math.abs(resolveRhythmicLean({ elapsedTime: 0.5, speed: 0, baseFrequency: 1.8 }))).toBeLessThan(0.02);
   });
 
-  it("higher speed increases oscillation frequency", () => {
-    const elapsed = 0.1;
-    const slow = resolveRhythmicBob({
-      elapsedTime: elapsed,
-      speed: 1,
-      amplitude: 0.03,
-      baseFrequency: 3.0,
-    });
-    const fast = resolveRhythmicBob({
-      elapsedTime: elapsed,
-      speed: 3,
-      amplitude: 0.03,
-      baseFrequency: 3.0,
-    });
-    // Different speeds produce different yOffset at same time (different frequency)
-    expect(slow.yOffset).not.toBeCloseTo(fast.yOffset, 3);
+  it("higher speed increases the rhythm's frequency", () => {
+    const slow = resolveRhythmicLean({ elapsedTime: 0.1, speed: 1.25, baseFrequency: 3.0 });
+    const fast = resolveRhythmicLean({ elapsedTime: 0.1, speed: 3, baseFrequency: 3.0 });
+    // Both are at full lean, so only the rhythm's phase differs.
+    expect(slow).not.toBeCloseTo(fast, 3);
   });
 });
 

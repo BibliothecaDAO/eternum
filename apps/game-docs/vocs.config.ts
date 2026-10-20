@@ -1,18 +1,17 @@
-import path from "path";
 import { defineConfig } from "vocs";
+import { docsAliases, publicDir } from "./docs/utils/paths";
 import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 
 export default defineConfig({
   vite: {
-    publicDir: path.resolve(__dirname, "../game/public"),
+    // `vocs dev` serves the pages' images from here; `vocs build` ignores it, and scripts/ship-referenced-assets.mjs
+    // ships the files the built pages name.
+    publicDir,
     server: {
       allowedHosts: true,
     },
     resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "./docs"),
-        "@config": path.resolve(__dirname, "../../config/utils/utils"),
-      },
+      alias: docsAliases,
     },
     plugins: [llmTxtPlugin()],
     css: {
@@ -24,48 +23,6 @@ export default defineConfig({
   iconUrl: "/images/logos/eternum-new.svg",
   logoUrl: "/images/logos/eternum-new.svg",
   ogImageUrl: "https://docs.eternum.realms.world/images/covers/og-image.png?4362984380",
-  head: {
-    link: [
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Cinzel:wght@400;600;700&family=MedievalSharp&family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap",
-      },
-      {
-        rel: "stylesheet",
-        href: "/styles.css",
-      },
-    ],
-    script: [
-      {
-        children: `
-(function () {
-  function bindSidebarToggles() {
-    const headers = document.querySelectorAll('.vocs_Sidebar_sectionHeader');
-    headers.forEach((header) => {
-      const chevron = header.querySelector('.vocs_Sidebar_sectionCollapse');
-      const toggleBtn = header.querySelector('div[role="button"]');
-      if (!chevron || !toggleBtn) return;
-
-      header.addEventListener('click', (e) => {
-        // If user clicked the chevron button itself, let Vocs handle it.
-        if (e.target.closest('.vocs_Sidebar_sectionCollapse')) return;
-        // Toggle instead of navigating for collapsible sections.
-        e.preventDefault();
-        toggleBtn.click();
-      });
-    });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindSidebarToggles);
-  } else {
-    bindSidebarToggles();
-  }
-})();
-        `.trim(),
-      },
-    ],
-  },
   theme: {
     colorScheme: "dark",
     variables: {
@@ -106,10 +63,6 @@ export default defineConfig({
       },
     },
   },
-  font: {
-    google: "Exo 2",
-  },
-
   title: "Realms Docs",
   sidebar: [
     {
@@ -188,7 +141,7 @@ export default defineConfig({
         },
         { text: "World Structures", link: "/blitz/world-structures" },
         { text: "Victory", link: "/blitz/victory" },
-        { text: "Game Results", link: "/blitz/prize-pool" },
+        { text: "Prizes and Ratings", link: "/blitz/prize-pool" },
         { text: "Achievements", link: "/blitz/achievements" },
       ],
     },
@@ -259,17 +212,7 @@ export default defineConfig({
     },
     {
       text: "Changelog",
-      collapsed: true,
-      items: [
-        { text: "5 June 2026", link: "/changelog/5-june-2026" },
-        { text: "28 March 2026", link: "/changelog/28-march-2026" },
-        { text: "18 February 2026", link: "/changelog/18-february-2026" },
-        { text: "31 January 2026", link: "/changelog/31-january-2026" },
-        { text: "8 December 2025", link: "/changelog/8-december-2025" },
-        { text: "14 November 2025", link: "/changelog/14-november-2025" },
-        { text: "7 November 2025", link: "/changelog/7-november-2025" },
-        { text: "3 September 2025", link: "/changelog/3-september-2025" },
-      ],
+      link: "/changelog",
     },
   ],
 });

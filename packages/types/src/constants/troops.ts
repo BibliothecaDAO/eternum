@@ -16,8 +16,9 @@ export const getTroopAttackRange = (troopType: TroopCategory): number => {
   return DEFAULT_TROOP_ATTACK_RANGE;
 };
 
-// Shared NPC ownership label for structures with owner address 0x0.
-export const BANDITS_NAME = "The Vanguard";
+// The name of the zero address, the owner of every structure and army no player holds (camps, rifts, hyperstructures,
+// sites): every surface that names an owner reads it through displayPlayerName.
+export const NEUTRAL_OWNER_NAME = "The Vanguard";
 
 // Native guard IDs; each structure unlocks a contiguous prefix.
 export enum GuardSlot {

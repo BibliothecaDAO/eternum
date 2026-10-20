@@ -1,35 +1,36 @@
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { DAY_PHASES, resolveDayPhase, type DayPhaseName } from "@/utils/cycle-progress";
 import { useFactView } from "@/hooks/use-fact-view";
 import { seasonClockView } from "@/sync/fact-views";
-import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { memo, useEffect } from "react";
 
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { TOP_PILL } from "./top-pill";
+import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { GameFinishedPill } from "./game-finished-pill";
-import { formatGameClockDuration, resolveGameClock } from "./game-clock-policy";
+import { resolveGameClock } from "./game-clock-policy";
 
-const URGENCY_CLASSES = ["urgency-border-warning", "urgency-border-critical", "urgency-border-final"];
-const PHASE_ICONS: Record<DayPhaseName, IconMeaning> = {
-  Night: "moon" as const,
-  Dawn: "sun" as const,
-  Morning: "sun" as const,
-  Day: "sun" as const,
-  Dusk: "sun" as const,
-  Evening: "moon" as const,
-};
-
-export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
-  const dayPhase = resolveDayPhase(useUIStore((state) => state.cycleProgress));
+/** The game's clock as the top bar reads it: its phase (not started, live, finished), its end and now. */
+const useGameClockReading = () => {
   const { gameStartMainAt: startAt, gameEndAt: endAt } = useFactView(seasonClockView);
   const now = useCurrentBlockTimestamp();
   const armyTickSeconds = configManager.getTick(TickIds.Armies);
   const clock = resolveGameClock({ startAt, endAt, now, armyTickSeconds, gameOver: configManager.isGameOver() });
+  return { clock, endAt, now };
+};
+
+/** Whether the game has finished, as the top bar's clock says it (its Game finished pill). */
+export const useGameFinished = (): boolean => useGameClockReading().clock.phase === "finished";
+
+const URGENCY_CLASSES = ["urgency-border-warning", "urgency-border-critical", "urgency-border-final"];
+
+/**
+ * The game's time left, with a hairline of the game spent. No rule reads the time of day (the renderer's six-tick day
+ * only lights the scene), so the clock carries no day phase.
+ */
+export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
+  const { clock, endAt, now } = useGameClockReading();
   const remaining = clock.phase === "live" && endAt ? endAt - now : Infinity;
   const urgency = remaining <= 30 ? "final" : remaining <= 120 ? "critical" : remaining <= 300 ? "warning" : null;
   useEffect(() => {
@@ -38,57 +39,36 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
     return () => document.body.classList.remove(...URGENCY_CLASSES);
   }, [urgency]);
   if (clock.phase === "finished") return <GameFinishedPill />;
-  const PhaseIcon = PHASE_ICONS[dayPhase.name];
-  const phaseSecondsLeft = Math.round(((100 - dayPhase.progress) / 100) * armyTickSeconds);
-  const daySecondsLeft = phaseSecondsLeft + (DAY_PHASES.length - 1 - dayPhase.index) * armyTickSeconds;
-  // The title never carries the live countdown: a changing title attribute closes the native tooltip every second.
-  const breakdown = [
-    `${dayPhase.name} · phase ${dayPhase.index + 1} of ${DAY_PHASES.length}`,
-    `Day length ${formatGameClockDuration(armyTickSeconds * DAY_PHASES.length)}`,
-    "Countdown to the next day",
-  ].join("\n");
   return (
-    <div
-      className={cn(TOP_PILL, "relative overflow-hidden", compact && "flex-col items-start justify-center gap-0 px-2")}
-      aria-label="Game clock"
-      title={compact ? `${clock.label}\n${breakdown}` : breakdown}
+    <HudPill
+      label="Game clock"
+      title={compact ? clock.label : undefined}
+      className={cn("pointer-events-auto relative overflow-hidden", compact && "px-2")}
     >
-      <span className="flex items-center gap-1.5" aria-label={compact ? clock.label : undefined}>
-        <SemanticIcon name="hourglass" className="h-3.5 w-3.5 shrink-0" />
-        <span className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap tabular-nums", compact && "text-sm")}>
-          {compact ? clock.compactLabel : clock.label}
-        </span>
-      </span>
-      {!compact && <span aria-hidden className="h-4 w-px bg-gold/25" />}
-      <span className="flex items-center gap-1.5">
-        <SemanticIcon name={PhaseIcon} className="h-3.5 w-3.5 shrink-0" aria-label={dayPhase.name} />
-        <span className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap tabular-nums", compact && "text-sm text-gold/75")}>
-          {formatGameClockDuration(daySecondsLeft)}
-        </span>
-      </span>
-      {clock.remainingRatio !== null && (
-        <div
-          role="progressbar"
-          aria-label={`${dayPhase.name} progress`}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(dayPhase.progress)}
-          className="absolute bottom-0 left-0 right-0 flex h-0.5 gap-px"
-        >
-          {DAY_PHASES.map((phase, index) => (
-            <span key={phase.name} className="relative flex-1 bg-gold/20">
-              {index < dayPhase.index && <span className="absolute inset-0 bg-gold/60" />}
-              {index === dayPhase.index && (
-                <span
-                  className="absolute inset-y-0 left-0 bg-gold"
-                  style={{ width: `${Math.round(dayPhase.progress)}%` }}
-                />
-              )}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
+      {[
+        <span key="time" className="flex items-center gap-1.5" aria-label={compact ? clock.label : undefined}>
+          <SemanticIcon name="hourglass" className="h-3.5 w-3.5 shrink-0" />
+          <span className={cn("whitespace-nowrap tabular-nums", compact && "text-hud-label")}>
+            {compact ? clock.compactLabel : clock.label}
+          </span>
+          {clock.remainingRatio !== null && <ClockSpent label="Game spent" share={1 - clock.remainingRatio} />}
+        </span>,
+      ]}
+    </HudPill>
   );
 });
 GameClock.displayName = "GameClock";
+
+/** The time spent of what a clock counts (the game, a Frontier day), as a hairline along the clock's foot. */
+export const ClockSpent = ({ label, share }: { label: string; share: number }) => (
+  <div
+    role="progressbar"
+    aria-label={label}
+    aria-valuemin={0}
+    aria-valuemax={100}
+    aria-valuenow={Math.round(share * 100)}
+    className="absolute bottom-0 left-0 right-0 h-0.5 bg-hud-divider"
+  >
+    <span className="absolute inset-y-0 left-0 bg-hud-accent" style={{ width: `${Math.round(share * 100)}%` }} />
+  </div>
+);

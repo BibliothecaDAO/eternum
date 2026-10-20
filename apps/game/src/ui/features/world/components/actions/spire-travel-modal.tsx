@@ -6,7 +6,7 @@ import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { getTileAt, configManager, entityMapPosition } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import type { ID } from "@bibliothecadao/types";
+import { formatCharge, type ID } from "@bibliothecadao/types";
 import { resolveSpireCrossing } from "./spire-crossing";
 
 export const SpireTravelModal = ({
@@ -55,9 +55,9 @@ export const SpireTravelModal = ({
             <SemanticIcon name="relics" className="mt-0.5 h-4 w-4 text-cyan-200" />
             <div className="flex flex-col gap-1">
               <p className="text-sm font-semibold text-cyan-100">Your hex on {sideName} is clear</p>
-              <p className="text-sm text-gold/70">
+              <p className="text-xs text-gold/70">
                 The army crosses to the same hex on {sideName}. It keeps its position and its stamina. The crossing
-                costs {essenceCost} Essence from its home structure, on the way back too.
+                costs {formatCharge(essenceCost)} Essence from its home structure, on the way back too.
               </p>
             </div>
           </div>
@@ -69,7 +69,7 @@ export const SpireTravelModal = ({
                 {crossing.by === "army" ? "An army holds your hex on " : "A structure holds your hex on "}
                 {sideName}
               </p>
-              <p className="text-sm text-gold/70">
+              <p className="text-xs text-gold/70">
                 A crossing needs that hex free. Move one hex along the spire and try again, or clear it first.
               </p>
             </div>
@@ -77,6 +77,7 @@ export const SpireTravelModal = ({
         )}
         <Button
           size="md"
+          forceUppercase={false}
           disabled={crossing.kind !== "clear"}
           className="w-full border-cyan-300/50 bg-cyan-400/15 text-cyan-100 hover:bg-cyan-400/25 disabled:opacity-50"
           onClick={handleTravel}

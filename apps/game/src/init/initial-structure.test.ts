@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const ui = {
   structureEntityId: 0,
@@ -12,24 +12,35 @@ const ui = {
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: { getState: () => ui } }));
 const spectateSession = vi.fn(() => false);
 vi.mock("@/utils/spectator-session", () => ({ isExplicitSpectateSession: () => spectateSession() }));
+// The signed-in player as the session and the guardian name them: none until a test signs one in.
+const signedIn = { player: null as string | null, listeners: new Set<() => void>() };
+const signIn = (player: string | null) => {
+  signedIn.player = player;
+  signedIn.listeners.forEach((listener) => listener());
+};
+vi.mock("@/shell/herald", () => ({
+  readRealmsPlayer: () => signedIn.player,
+  followRealmsPlayer: (listener: () => void) => {
+    signedIn.listeners.add(listener);
+    return () => signedIn.listeners.delete(listener);
+  },
+}));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   Position: (await importOriginal<typeof import("@bibliothecadao/eternum")>()).Position,
-  configManager: { getActiveGameId: () => 1, getMapCenter: () => 0 },
+  // The real map centre: a site's contract hex and the hex the map shows differ by it.
+  configManager: { getActiveGameId: () => 1, getMapCenter: () => 2147483646 },
   structureMapPosition: (_store: unknown, structure: { entity_id: number }) => ({
     x: structure.entity_id,
     y: 8850,
   }),
 }));
 
-// The route's hex needs the map's centre from a synchronized config; here it is the contract position as it stands.
-vi.mock("@/play/navigation/play-route", () => ({
-  mapRouteHex: (position: { getContract: () => { x: number; y: number } }) => {
-    const { x, y } = position.getContract();
-    return { col: x, row: y };
-  },
-}));
-
 const { followInitialStructure } = await import("./initial-structure");
+// Position reads the centre from the package's own config: the same real centre as above.
+const actual = await vi.importActual<typeof import("@bibliothecadao/eternum")>("@bibliothecadao/eternum");
+vi.spyOn(actual.configManager, "getMapCenter").mockReturnValue(2147483646);
+const { cameraHexOf } = await import("@/three/scenes/worldmap-camera-target");
+type Position = import("@bibliothecadao/eternum").Position;
 const { whenEntryDestinationSettled } = await import("@/game-entry/entry-destination");
 const { useAccountStore } = await import("@/hooks/store/use-account-store");
 const setAccount = (account: { address: string } | null) => useAccountStore.setState({ account: account as never });
@@ -96,7 +107,7 @@ describe("initial structure", () => {
     stop();
   });
 
-  it("keeps a session entered to spectate off the signed-in player's realm", () => {
+  it("keeps a session entered to spectate a spectator, with an account held and no player signed in", () => {
     Object.assign(ui, { structureEntityId: 0, isSpectating: false });
     spectateSession.mockReturnValue(true);
     setAccount({ address: PLAYER });
@@ -109,6 +120,59 @@ describe("initial structure", () => {
     spectateSession.mockReturnValue(false);
   });
 
+  describe("a signed-in player watching a game they played (Results, See the end map; live-qa-night P3-10)", () => {
+    let stopFollowing = () => {};
+    const enterToSpectate = () => {
+      Object.assign(ui, { structureEntityId: 0, isSpectating: false });
+      spectateSession.mockReturnValue(true);
+      setAccount(null);
+      const store = factStore();
+      stopFollowing = followInitialStructure({ store } as never);
+      return { store };
+    };
+    afterEach(() => {
+      stopFollowing();
+      signIn(null);
+      spectateSession.mockReturnValue(false);
+    });
+
+    it("opens on their own realm, still a spectator", () => {
+      signIn(PLAYER);
+      const { store } = enterToSpectate();
+      store.land([structure(5, "0x99"), structure(2790, PLAYER)]);
+
+      expect(ui).toMatchObject({ structureEntityId: 2790, isSpectating: true });
+    });
+
+    it("moves the first realm it opened to their own once the session names them", () => {
+      const { store } = enterToSpectate();
+      store.land([structure(5, "0x99"), structure(2790, PLAYER)]);
+      expect(ui).toMatchObject({ structureEntityId: 5, isSpectating: true });
+
+      signIn(PLAYER);
+
+      expect(ui).toMatchObject({ structureEntityId: 2790, isSpectating: true });
+    });
+
+    it("keeps a realm they chose", () => {
+      const { store } = enterToSpectate();
+      store.land([structure(5, "0x99"), structure(9, "0x98"), structure(2790, PLAYER)]);
+      ui.setStructureEntityId(9, { spectator: true });
+
+      signIn(PLAYER);
+
+      expect(ui).toMatchObject({ structureEntityId: 9, isSpectating: true });
+    });
+
+    it("opens on the first realm for a player with none here", () => {
+      signIn("0x5555");
+      const { store } = enterToSpectate();
+      store.land([structure(5, "0x99"), structure(2790, PLAYER)]);
+
+      expect(ui).toMatchObject({ structureEntityId: 5, isSpectating: true });
+    });
+  });
+
   describe("the map's entry destination", () => {
     const settled = async () => {
       let destination: unknown = "waiting";
@@ -116,7 +180,9 @@ describe("initial structure", () => {
       await Promise.resolve();
       return destination;
     };
-    const siteOf = (entityId: number) => ({ col: entityId, row: 8850 });
+    // The realm's site as the camera takes it: its contract hex (structureMapPosition) minus the map centre.
+    const siteOf = (entityId: number) => ({ col: entityId - 2147483646, row: 8850 - 2147483646 });
+    const shown = (destination: unknown) => cameraHexOf(destination as Position);
 
     it("is the player's realm once their own scope brings it", async () => {
       Object.assign(ui, { structureEntityId: 0, isSpectating: false });
@@ -129,7 +195,7 @@ describe("initial structure", () => {
 
       store.applyScope({ actor: PLAYER, expedition: {} }, [structure(2790, PLAYER)]);
 
-      expect(await settled()).toEqual(siteOf(2790));
+      expect(shown(await settled())).toEqual(siteOf(2790));
       stop();
     });
 
@@ -155,7 +221,7 @@ describe("initial structure", () => {
 
       store.applyScope({ visit: "0x99", expedition: {} }, [structure(5, "0x99")]);
 
-      expect(await settled()).toEqual(siteOf(5));
+      expect(shown(await settled())).toEqual(siteOf(5));
       stop();
     });
   });

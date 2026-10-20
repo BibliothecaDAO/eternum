@@ -539,6 +539,28 @@ export class WorldFold {
     return scope ? rows.filter(([, row]) => rowInGameSyncScope(name, { ...row.key, ...row.value }, scope)) : rows;
   }
 
+  /**
+   * The rows of these scope models with any of these index keys: what a scope's added or removed keys reach, found
+   * through the scope index, so a scope change costs the rows it changes. Only scope models are indexed.
+   */
+  public scopeKeyRows(
+    gameId: string,
+    spacing: number,
+    keys: ReadonlySet<string>,
+    models: readonly string[],
+  ): FoldSet[] {
+    this.refuseEvictedModels(BigInt(gameId).toString(), models);
+    if (keys.size === 0) return [];
+    return this.snapshotDefinitions(models).flatMap((definition) => {
+      if (!isScopedGameSyncModel(definition.name, true)) throw new Error(`${definition.name} is not a scope model`);
+      const owner = definition.scope === "deployment" ? DEPLOYMENT_ROWS : BigInt(gameId).toString();
+      return [...this.scopeEntityIds(definition.name, owner, spacing, keys)].map((key) => {
+        const row = this.storedRow(definition.name, key)!;
+        return { key, model: definition.name, value: asJsonRecord({ ...row.key, ...row.value }) };
+      });
+    });
+  }
+
   /** The game's rows of a scope model matching any of these index keys. */
   private scopeRows(model: string, gameId: string, spacing: number, keys: readonly string[]): FoldRow[] {
     return [...this.scopeEntityIds(model, gameId, spacing, new Set(keys))].map((key) => {

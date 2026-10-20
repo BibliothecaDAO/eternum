@@ -1,3 +1,4 @@
+import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
@@ -11,7 +12,6 @@ import { IdentityRequestError } from "@realms-world/identity";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { DOORWAY_WORDS } from "@/shell/words";
 
 // The account is joined when a player enters a game to play: its deploy happens at game entry, not in the first click,
 // and never for a shard the player only opens or spectates. This is the root of every game route, so it is where the

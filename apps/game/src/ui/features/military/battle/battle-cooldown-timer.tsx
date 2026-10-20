@@ -1,6 +1,6 @@
+import { formatWait } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
-import { formatTime } from "@bibliothecadao/eternum";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 
 interface BattleCooldownTimerProps {
@@ -17,7 +17,7 @@ export const BattleCooldownTimer = ({ cooldownEnd, className = "" }: BattleCoold
   return (
     <div className={`flex items-center gap-2 ${className}`} role="timer" aria-live="polite">
       <SemanticIcon name="hourglass" className="w-4 h-4 animate-pulse" />
-      <span className="text-red-400 font-semibold">Battle Cooldown: {formatTime(timeRemaining)}</span>
+      <span className="text-hud-bad text-hud-strong">Battle Cooldown: {formatWait(timeRemaining)}</span>
     </div>
   );
 };

@@ -8,10 +8,13 @@ import {
   judgeBurst,
   judgeExplore,
   judgeNextOrder,
+  judgePlateStamina,
   refusalErrors,
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
+import { judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
+import { judgeHudLayout } from "./hud-layout.mjs";
 
 /**
  * The playtest's steps. Each plays through the controls a player uses, then checks what a player would see, and is
@@ -43,6 +46,8 @@ const ZOOM_IN_NOTCHES = 15;
 // a test. A distance within the tolerance has arrived there.
 export const CLOSEST_CAMERA_DISTANCE = 10;
 const CLOSEST_DISTANCE_TOLERANCE = 0.05;
+// The map's farthest camera distance with labels drawn: WORLDMAP_CAMERA_ZOOM.maxDistance, held equal by a test.
+export const FARTHEST_CAMERA_DISTANCE = 45;
 // A still map's frames: long enough to span several of the sun's shadow steps, few enough to keep as evidence.
 const BURST_ARMIES_MAX = 6;
 const BURST_SELECT_WAIT_MS = 5_000;
@@ -68,14 +73,17 @@ const NEIGHBOUR_RING = [
 const FRONTIER = { mode: "frontier", card: { heading: "Frontier", enter: "^(Resume|Play)" } };
 const BLITZ = { mode: "blitz", card: { heading: null, enter: "^Enter$" } };
 
-/** What a spectator does: look at the realm, open the map, move the camera, read the menu, switch scenes, watch. */
+/**
+ * What a spectator does: enter on the map (every Frontier session opens there), move the camera, read the season,
+ * switch scenes, watch.
+ */
 export const SPECTATOR_STEPS = [
-  { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
-  { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
+  { name: "enter-on-map", settleMs: 8_000, verify: inScene("map") },
+  { name: "hud-layout", play: readTheHudLayout, settleMs: 0, verify: hudLaidOut(inScene("map")) },
   { name: "map-idle", play: keepTheViewBefore, settleMs: 10_000, verify: idledOn(inScene("map")) },
   { name: "pan", play: panTheMap, settleMs: 17_000, verify: panned(inScene("map")) },
   { name: "zoom", play: zoomOutAndIn, settleMs: 1_000, verify: zoomedOutAndIn(inScene("map")) },
-  { name: "menu", play: readTheSeasonInTheMenu, settleMs: 1_000, verify: sheetOpenedAndClosed("Menu") },
+  { name: "season", play: readTheSeason, settleMs: 1_000, verify: seasonReadAndClosed },
   { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 8_000, verify: inScene("hex") },
   { name: "return-to-map", play: goTo("Map", "map"), settleMs: 8_000, verify: inScene("map") },
   { name: "steady", settleMs: 60_000, verify: inScene("map") },
@@ -105,10 +113,7 @@ const frozenSunStillMapSteps = ({ opening, onMap }) => [
 ];
 
 const FRONTIER_MAP = {
-  opening: [
-    { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
-    { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
-  ],
+  opening: [{ name: "enter-on-map", settleMs: 8_000, verify: inScene("map") }],
   onMap: inScene("map"),
 };
 const BLITZ_MAP = {
@@ -121,8 +126,8 @@ const BLITZ_MAP = {
  * while its order is in flight (its next order) in each way that order can leave, and two explores.
  */
 const PLAYER_STEPS = [
-  { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
-  { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
+  { name: "enter-on-map", settleMs: 8_000, verify: inScene("map") },
+  { name: "hud-layout", play: readTheHudLayout, settleMs: 0, verify: hudLaidOut(inScene("map")) },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 3_000, verify: armySelected },
   { name: "production", play: openAndCloseProduction, settleMs: 1_000, verify: sheetOpenedAndClosed("Production") },
   ...nextOrderSteps(),
@@ -144,7 +149,7 @@ function goTo(place, scene) {
   return async ({ browser }) => {
     const startedOn = browser.observe().timeOrigin;
     for (let presses = 1; presses <= PLACE_PRESSES; presses += 1) {
-      browser.click(place);
+      pressPlace(browser, place);
       if (await arrives(browser, place, scene)) {
         return { presses, reloaded: browser.observe().timeOrigin !== startedOn };
       }
@@ -174,7 +179,37 @@ function inScene(scene) {
 
 /** The route, the scene drawn and the lit place agree: a route on the map over a realm still drawn is not the map. */
 const isIn = (seen, place, scene) =>
-  seen.scene === scene && seen.rendered === scene && Boolean(seen.place?.startsWith(place));
+  seen.scene === scene &&
+  seen.rendered === scene &&
+  [place, PLACE_TABS[place]].some((name) => Boolean(name && seen.place?.startsWith(name)));
+
+/**
+ * A place as the top bar's Realm / World names it: a desktop's HUD, every mode's, moves between the map and the realm
+ * there; a phone's Frontier HUD has its own place bar's Map and Realm.
+ */
+const PLACE_TABS = { Map: "World", Realm: "Realm" };
+
+/** Presses the place bar's button where there is one (a phone), else the top bar's tab (a desktop). */
+function pressPlace(browser, place) {
+  try {
+    browser.click(place);
+  } catch {
+    browser.clickTab(PLACE_TABS[place]);
+  }
+}
+
+/** Where the HUD's standing parts sit on the map at rest. */
+async function readTheHudLayout({ browser }) {
+  return { layout: browser.hudLayout() };
+}
+
+/** The HUD laid out on the map (judgeHudLayout): its parts drawn, whole on the page, apart, each control reachable. */
+function hudLaidOut(onMap) {
+  return ({ seen, played }) => {
+    const scene = onMap({ seen });
+    return scene.status === "completed" ? judgeHudLayout(played.layout) : scene;
+  };
+}
 
 /** WASD round trip of 16 s; the view before and after are kept to prove the camera moved over the map. */
 async function panTheMap({ browser, extraScreenshot }) {
@@ -256,18 +291,33 @@ async function zoomAllTheWayIn({ browser }) {
   return { distance: browser.observe().worldmapDistance };
 }
 
+async function zoomAllTheWayOut({ browser }) {
+  browser.run(["eval", `void window.__playtest.wheel(100, ${ZOOM_IN_NOTCHES})`]);
+  await sleep(ZOOM_SETTLE_MS);
+  return { distance: browser.observe().worldmapDistance };
+}
+
 /** On the map at the closest camera distance, read after the wheel: a missing or other distance is not the closest view. */
 function zoomedAllTheWayIn(onMap) {
+  return zoomedTo(onMap, CLOSEST_CAMERA_DISTANCE, "closest");
+}
+
+/** On the map at the farthest camera distance the wheel reaches, where labels are still drawn. */
+function zoomedAllTheWayOut(onMap) {
+  return zoomedTo(onMap, FARTHEST_CAMERA_DISTANCE, "farthest");
+}
+
+function zoomedTo(onMap, target, name) {
   return ({ seen, played }) => {
     const scene = onMap({ seen });
     if (scene.status !== "completed") return scene;
     const distance = played?.distance;
     if (typeof distance !== "number" || !Number.isFinite(distance)) {
-      return failed(`no camera distance was read after zooming in (${distance})`, played);
+      return failed(`no camera distance was read after zooming (${distance})`, played);
     }
-    return Math.abs(distance - CLOSEST_CAMERA_DISTANCE) <= CLOSEST_DISTANCE_TOLERANCE
+    return Math.abs(distance - target) <= CLOSEST_DISTANCE_TOLERANCE
       ? completed(played)
-      : failed(`the camera stopped at distance ${distance}, not the closest (${CLOSEST_CAMERA_DISTANCE})`, played);
+      : failed(`the camera stopped at distance ${distance}, not the ${name} (${target})`, played);
   };
 }
 
@@ -307,6 +357,30 @@ function recordedStill(onMap) {
       ? completed(played)
       : failed(`only ${played.frames} frames in ${STILL_FRAMES_MS} ms (< ${STILL_FRAMES_MIN})`, played);
   };
+}
+
+/**
+ * The season's board as a player reads it: on a desktop its round place opens it as a page and a second press closes
+ * it; a phone has it in the Menu, closed with Escape.
+ */
+async function readTheSeason(input) {
+  if (!onADesktop()) return { desktop: false, ...(await readTheSeasonInTheMenu(input)) };
+  const { browser } = input;
+  browser.click("Season");
+  await sleep(2_000);
+  const opened = browser.observe();
+  browser.click("Season");
+  await sleep(1_000);
+  return { desktop: true, opened, closed: browser.observe() };
+}
+
+/** A desktop's Season page drew with its place pressed, then closed; a phone's Menu sheet opened, then closed. */
+function seasonReadAndClosed({ played, ...rest }) {
+  if (!played.desktop) return sheetOpenedAndClosed("Menu")({ played, ...rest });
+  if (!played.opened.page || !played.opened.pressed.includes("Season"))
+    return failed("the Season place opened no page", { played });
+  if (played.closed.page) return failed("the Season page did not close", { played });
+  return completed(played);
 }
 
 async function readTheSeasonInTheMenu({ browser }) {
@@ -366,10 +440,23 @@ function armySelected({ seen, played }) {
     : failed(`${played.army} is not selected (pressed: ${seen.pressed.join(", ") || "none"})`);
 }
 
-/** Centres the army, taps its neighbours until one offers Explore, and confirms it; other offers are cancelled. */
+/**
+ * Centres the army and explores a tile beside it as a player does: on a desktop, hovers its neighbours until one's
+ * tooltip offers Explore and right-clicks it (the map's own order, as in Blitz); on a phone, taps them until one offers
+ * Explore on the order bar and confirms it, other offers cancelled.
+ */
 async function exploreBesideArmy({ browser, extraScreenshot }) {
   const army = await focusTheReadiestArmy(browser);
   if (!army) return { offered: [], army };
+  if (onADesktop()) {
+    const { target, scanned } = await findOrderTile(browser, "Explore");
+    const offered = scanned.map(({ verb }) => verb);
+    if (!target) return { army, offered };
+    const before = extraScreenshot("before");
+    const pressedAt = browser.observe().now;
+    browser.rightClick(target.offset);
+    return { army, offered, pressedAt, before, target: target.offset };
+  }
   const offered = [];
   // The army's paths are planned once it is selected; a pass where no tile pins anything is tried once more.
   for (let pass = 1; pass <= TAP_PASSES; pass += 1) {
@@ -391,10 +478,13 @@ async function exploreBesideArmy({ browser, extraScreenshot }) {
   return { army, offered };
 }
 
-/** The client's record of the explore, and the screen around the explored tile before Enter against after settling. */
-async function explored({ played, actionLatency, screenshot }) {
+/**
+ * The client's record of the explore, the screen around the explored tile before Enter against after settling, and the
+ * army's plate read while it settled.
+ */
+async function explored({ played, actionLatency, screenshot, probe }) {
   const tileChange = played.before ? await meanViewChange(played.before, screenshot, tileRegion(played.target)) : null;
-  return judgeExplore({ ...played, tileChange }, actionLatency.clientActions);
+  return judgeExplore({ ...played, tileChange, plateStamina: probe.plateStamina }, actionLatency.clientActions);
 }
 
 /** A 120×100 patch centred on a tile tapped at `offset` from the screen centre. */
@@ -408,8 +498,7 @@ function tileRegion([dx, dy]) {
  * centre once the map opens on it.
  */
 const OWNERSHIP_RING_STEPS = [
-  { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
-  { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
+  { name: "enter-on-map", settleMs: 8_000, verify: inScene("map") },
   { name: "unselected-idle", play: clearTheSelection, settleMs: 10_000, verify: nothingSelected },
   { name: "select-realm", play: tapTheCentre, settleMs: 5_000, verify: ownRealmSelected },
   { name: "selected-idle", settleMs: 10_000, verify: ownRealmSelected },
@@ -444,7 +533,7 @@ const BLITZ_BURST_STEPS = [
     name: "burst",
     play: orderEveryArmyAtOnce,
     settleMs: 15_000,
-    verify: ({ played, actionLatency }) => judgeBurst(played, actionLatency.armyMovement),
+    verify: ({ played, actionLatency }) => judgeBurst(played, actionLatency),
   },
 ];
 
@@ -456,6 +545,131 @@ const BLITZ_SPECTATOR_STEPS = [
   { name: "zoom", play: zoomOutAndIn, settleMs: 1_000, verify: zoomedOutAndIn(drawn("map")) },
   { name: "steady", settleMs: 60_000, verify: drawn("map") },
 ];
+
+/**
+ * The map's labels in a live Blitz or Frontier game, opened with the dev overlays (the page then reports its world, so
+ * each label is measured against its thing as the renderer places it) (map labels, owner 2026-10-19: "the label placement on the map need
+ * work"): read at the map's own zoom, then with each tile round the centre hovered (its plate opens in its token's
+ * place), then the same at the farthest zoom and at the closest. No reading may hold a label on its thing or away from
+ * it (owner, 2026-10-20), a token, plate or order line over or crowding another, or an opened plate away from its token. A seated player's list first takes the readiest army with Tab, so each hovered
+ * tile also shows the army's order line beside it.
+ */
+const plateSteps = ({ opening, onMap }, { selectArmy }) => {
+  const selectTheArmy = selectArmy
+    ? [{ name: "select-army", play: selectTheArmyByTab, settleMs: 2_000, verify: armyOfferedOrders }]
+    : [];
+  // A click at each label, then the readiest army taken again for a seated player's next hovers.
+  const clickThrough = (name) => [
+    { name, play: clickThroughTheLabels, settleMs: 0, verify: clicksLandedBeneath },
+    ...selectTheArmy.map((step) => ({ ...step, name: `${name}-select-army` })),
+  ];
+  return [
+    ...opening,
+    ...selectTheArmy,
+    { name: "plates", play: readThePlates({ hover: false }), settleMs: 0, verify: platesClear },
+    { name: "plates-hovered", play: readThePlates({ hover: true }), settleMs: 0, verify: platesClear },
+    ...clickThrough("labels-click-through"),
+    { name: "zoom-out", play: zoomAllTheWayOut, settleMs: 1_000, verify: zoomedAllTheWayOut(onMap) },
+    { name: "plates-far", play: readThePlates({ hover: false }), settleMs: 0, verify: platesClear },
+    { name: "plates-far-hovered", play: readThePlates({ hover: true }), settleMs: 0, verify: platesClear },
+    ...clickThrough("labels-click-through-far"),
+    { name: "zoom-in", play: zoomAllTheWayIn, settleMs: 1_000, verify: zoomedAllTheWayIn(onMap) },
+    { name: "plates-close", play: readThePlates({ hover: false }), settleMs: 0, verify: platesClear },
+    { name: "plates-close-hovered", play: readThePlates({ hover: true }), settleMs: 0, verify: platesClear },
+    ...clickThrough("labels-click-through-close"),
+  ];
+};
+
+/** Long enough for a frame to place the plates after the view or the hovered tile changed. */
+const PLATES_SETTLE_MS = 1_500;
+
+/**
+ * The labels as drawn, once on the still view, or once per tile of the ring round the centre with it hovered, after a
+ * reading before any hover: each opened plate is measured against its token there.
+ */
+const readThePlates =
+  ({ hover }) =>
+  async ({ browser, extraScreenshot }) => {
+    const before = hover ? browser.read(PLATES_EXPRESSION) : null;
+    const readings = [];
+    for (const offset of hover ? NEIGHBOUR_RING : [null]) {
+      if (offset) browser.hover(offset);
+      await sleep(PLATES_SETTLE_MS);
+      readings.push({ offset, seen: browser.read(PLATES_EXPRESSION) });
+      if (offset) extraScreenshot(`hover-${offset.join("_")}`);
+    }
+    return { before, readings };
+  };
+
+/** How many labels in view a click-through step clicks at, and how long a click's selection takes to land. */
+const LABEL_CLICKS = 6;
+const CLICK_SETTLE_MS = 1_200;
+
+/**
+ * A real click at the middle of each label in view (owner, 2026-10-20: "a click on a token selects its thing"; an open
+ * plate stays click-through), then the click it must equal, with the label layer hidden: for a resting token, a click
+ * on its thing's own tile, as the renderer places it; for an open plate, the same point. Each pair must select the same
+ * tile.
+ */
+async function clickThroughTheLabels({ browser, extraScreenshot }) {
+  const seen = browser.read(PLATES_EXPRESSION);
+  const page = browser.read("JSON.stringify({ width: innerWidth, height: innerHeight })");
+  const layer = (visibility) =>
+    browser.run(["eval", `void document.querySelector(".mp")?.style.setProperty("visibility", "${visibility}")`]);
+  const offsetOf = ({ x, y }) => [Math.round(x - page.width / 2), Math.round(y - page.height / 2)];
+  const clicks = [];
+  for (const [index, label] of (seen?.things ?? [])
+    .filter((thing) => thing.kind !== "order line")
+    .slice(0, LABEL_CLICKS)
+    .entries()) {
+    const middle = offsetOf({ x: label.x + label.w / 2, y: label.y + label.h / 2 });
+    const token = label.kind === "token";
+    if (token && !label.over) continue;
+    // From no selection: with one standing, a hovered tile shows the order line, and a token under it steps aside.
+    for (let press = 0; press < ESCAPES_TO_DESELECT; press += 1) browser.press("Escape");
+    browser.tap(middle);
+    await sleep(CLICK_SETTLE_MS);
+    const shown = browser.observe().selection?.hex ?? null;
+    extraScreenshot(`click-${index}`);
+    const expected = token ? offsetOf(label.over.tile) : middle;
+    layer("hidden");
+    try {
+      browser.tap(expected);
+      await sleep(CLICK_SETTLE_MS);
+    } finally {
+      layer("");
+    }
+    clicks.push({
+      label: label.text || label.kind,
+      kind: label.kind,
+      at: middle,
+      expectedAt: expected,
+      shown,
+      expected: browser.observe().selection?.hex ?? null,
+    });
+  }
+  browser.press("Escape");
+  return { clicks };
+}
+
+/** A click on a token selected its thing's tile, and a click on an open plate the tile beneath, as checked. */
+function clicksLandedBeneath({ played }) {
+  if (played.clicks.length === 0) return blocked("no map label is drawn in view to click at");
+  const same = (a, b) => a !== null && b !== null && a.col === b.col && a.row === b.row;
+  const off = played.clicks.filter((click) => !same(click.shown, click.expected));
+  return off.length === 0
+    ? completed({ clicks: played.clicks })
+    : failed(`${off.length} clicks at a label did not select its thing's tile, or the tile beneath a plate`, {
+        clicks: played.clicks,
+        off,
+      });
+}
+
+/** Every reading of the step clear: the first that is not names the step's failure, with what it saw. */
+function platesClear({ played }) {
+  const verdicts = played.readings.map(({ offset, seen }) => ({ offset, ...judgePlates(seen, played.before) }));
+  return verdicts.find((verdict) => verdict.status !== "completed") ?? completed({ readings: verdicts });
+}
 
 /** Blitz switches between the world map and the realm's tiles with V (the header's Local / World). */
 async function toTheWorldMap({ browser }) {
@@ -621,15 +835,19 @@ async function pollDevTools(read, timeoutMs) {
   return null;
 }
 
-/** Hovers tiles around the army until one's tooltip offers it a move or an explore, as a player reads it. */
-async function findOrderTile(browser) {
+/**
+ * Hovers tiles around the army until one's tooltip offers it one of `verbs` (a move or an explore), as a player reads
+ * it.
+ */
+async function findOrderTile(browser, ...verbs) {
+  const wanted = verbs.length > 0 ? verbs : ["Move", "Explore"];
   const scanned = [];
   for (const offset of ORDER_TILE_CANDIDATES) {
     browser.hover(offset);
     await sleep(HOVER_SETTLE_MS);
     const verb = browser.read(ORDER_TOOLTIP_TITLE);
     scanned.push({ offset, verb });
-    if (verb === "Move" || verb === "Explore") return { target: { offset, verb }, scanned };
+    if (wanted.includes(verb)) return { target: { offset, verb }, scanned };
   }
   return { target: null, scanned };
 }
@@ -650,7 +868,7 @@ const ORDER_TOOLTIP_TITLE = `JSON.stringify((() => {
  * while the order was in flight, and after it, offered orders from the tile the order took it to; the order sent and
  * confirmed.
  */
-function keptThroughItsOutcome({ seen, played, actionLatency, window }) {
+function keptThroughItsOutcome({ seen, played, actionLatency, window, probe }) {
   const sent = judgeSentOrder(played);
   if (sent) return sent;
   const orders = describeOrders({ armyTrace: actionLatency.armyMovement, ...window });
@@ -665,6 +883,9 @@ function keptThroughItsOutcome({ seen, played, actionLatency, window }) {
   if (!(after.orders > 0)) return failed("the army was offered no orders after its outcome", { before, after });
   const reported = selectionOffTheArmy(seen, after);
   if (reported) return reported;
+  // The army walked to its order's tile with its plate open: the plate reads its bar through the walk.
+  const stale = judgePlateStamina(probe.plateStamina ?? [], window.from, { before, after });
+  if (stale) return stale;
   return completed({ before, inFlight: played.inFlight, after, target: played.target, orders });
 }
 
@@ -737,14 +958,104 @@ function judgeSentOrder(played) {
 
 const sameHex = (left, right) => left?.col === right?.col && left?.row === right?.row;
 
+/** Read the production renderer after user camera controls have requested each skin LOD. */
+const knightSteps = ({ opening, onMap }) => [
+  ...opening,
+  { name: "knight-gameplay", play: readKnightPresentation, settleMs: 0, verify: knightPresented(onMap) },
+  { name: "knight-zoom-close", play: zoomAllTheWayIn, settleMs: 3000, verify: zoomedAllTheWayIn(onMap) },
+  { name: "knight-close", play: readKnightPresentation, settleMs: 0, verify: knightPresented(onMap) },
+];
+
+async function readKnightPresentation({ browser }) {
+  await sleep(3000);
+  return {
+    stats: browser.read("window.getProceduralArmyProductionStats?.() ?? null"),
+    assets: browser.read("JSON.parse(window.__playtest.read()).models"),
+  };
+}
+
+function knightPresented(onMap) {
+  return ({ seen, played }) => {
+    const scene = onMap({ seen });
+    if (scene.status !== "completed") return scene;
+    const unrelated = played.assets.filter(
+      ({ url }) => isProceduralUnitAsset(url) && !url.includes("/t1-knight-default/"),
+    );
+    if (unrelated.length) return failed("Knight view fetched unrelated unit families", played);
+    const stats = played.stats;
+    if (!stats) return failed("production character report missing");
+    if (stats.loadState === "failed") return failed("Knight asset loading failed", played);
+    if (stats.visibleArmyCount === 0) return blocked("no T1 Knights in this camera's view", played);
+    if (stats.fallbackRepresentationCount !== 0)
+      return failed("a visible Knight is still using the replaced model", played);
+    if (stats.nearKnightCount + stats.midKnightCount !== stats.actorCount)
+      return failed("Knight LOD count does not match actors", played);
+    const triangles = stats.nearKnightCount * 14999 + stats.midKnightCount * 5998;
+    return stats.meshDrawsPerPass === stats.actorCount * 3 && stats.trianglesPerPass === triangles
+      ? completed(played)
+      : failed("Knight render budget does not match the delivered meshes", played);
+  };
+}
+
+async function openEmptyMap({ browser, devTools }) {
+  const target = new URL(browser.run(["get", "url"]));
+  target.pathname = target.pathname.replace(/\/hex$/, "/map");
+  target.searchParams.set("col", String(Number(target.searchParams.get("col")) + 24));
+  target.searchParams.set("row", String(Number(target.searchParams.get("row")) + 24));
+  target.searchParams.set("boot", "direct");
+  target.searchParams.delete("resumeScene");
+  await devTools.send("Network.clearBrowserCache");
+  browser.run(["open", target.href]);
+  await waitFor(browser, (seen) => seen.playable && isIn(seen, "Map", "map"), PLAYABLE_WAIT_MS);
+  return readKnightPresentation({ browser });
+}
+
+function noOffscreenUnitDownloads({ seen, played }) {
+  const scene = inScene("map")({ seen });
+  if (scene.status !== "completed") return scene;
+  if (!played.stats || played.stats.visibleArmyCount !== 0)
+    return failed("expected a map without visible Knights", played);
+  const families = played.assets.filter(({ url }) => isProceduralUnitAsset(url));
+  return families.length === 0 ? completed(played) : failed("off-screen unit families were fetched", played);
+}
+
+function noHiddenUnitDownloads({ seen, played }) {
+  const scene = inScene("hex")({ seen });
+  if (scene.status !== "completed") return scene;
+  const families = played.assets.filter(({ url }) => isProceduralUnitAsset(url));
+  return families.length === 0 ? completed(played) : failed("hidden map fetched unit families", played);
+}
+
+function isProceduralUnitAsset(url) {
+  return url.startsWith("/models/characters/") || url.startsWith("/models/boats/");
+}
+
 /** The step lists a run can play, by name, each with its game; a run plays its role's list unless it names another. */
 export const STEP_SETS = {
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
+  "unit-assets-spectator": {
+    game: FRONTIER,
+    steps: [
+      { name: "no-knight-realm", play: readKnightPresentation, settleMs: 0, verify: noHiddenUnitDownloads },
+      ...knightSteps({ opening: [FRONTIER_MAP.opening[1]], onMap: FRONTIER_MAP.onMap }),
+      { name: "no-knight-map", play: openEmptyMap, settleMs: 0, verify: noOffscreenUnitDownloads },
+    ],
+  },
+  "knight-spectator": { game: FRONTIER, steps: knightSteps(FRONTIER_MAP) },
+  "knight-blitz-spectator": { game: BLITZ, steps: knightSteps(BLITZ_MAP) },
   player: { game: FRONTIER, steps: PLAYER_STEPS },
   "ownership-rings": { game: FRONTIER, steps: OWNERSHIP_RING_STEPS },
   "blitz-orders": { game: BLITZ, steps: BLITZ_ORDER_STEPS },
   "blitz-spectator": { game: BLITZ, steps: BLITZ_SPECTATOR_STEPS },
   "blitz-burst": { game: BLITZ, steps: BLITZ_BURST_STEPS },
+  "blitz-plates": { game: BLITZ, steps: plateSteps(BLITZ_MAP, { selectArmy: false }), devOverlays: true },
+  "blitz-plates-player": { game: BLITZ, steps: plateSteps(BLITZ_MAP, { selectArmy: true }), devOverlays: true },
+  "frontier-plates": { game: FRONTIER, steps: plateSteps(FRONTIER_MAP, { selectArmy: false }), devOverlays: true },
+  "frontier-plates-player": {
+    game: FRONTIER,
+    steps: plateSteps(FRONTIER_MAP, { selectArmy: true }),
+    devOverlays: true,
+  },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },
@@ -831,18 +1142,30 @@ function nextOrderSteps() {
 }
 
 function nextOrderStep(name, whileInFlight, expected, { refuse = false, needsOther = false } = {}) {
+  const play = withOrderInFlight(whileInFlight, { refuse, needsOther });
   return {
     name,
-    play: withOrderInFlight(whileInFlight, { refuse, needsOther }),
+    play: (input) => (onADesktop() ? { desktop: true } : play(input)),
     settleMs: 8_000,
     verify: ({ played, actionLatency, window }) =>
-      judgeNextOrder({
-        expected,
-        played,
-        orders: describeOrders({ armyTrace: actionLatency.armyMovement, ...window }),
-      }),
+      played.desktop
+        ? blocked(DESKTOP_ORDERS)
+        : judgeNextOrder({
+            expected,
+            played,
+            orders: describeOrders({ armyTrace: actionLatency.armyMovement, ...window }),
+          }),
   };
 }
+
+/** A desktop's HUD orders from the map itself, as Blitz's does: a right-click sends at once, nothing is queued. */
+const DESKTOP_ORDERS = "a desktop orders from the map at once: the queued next order is a phone's";
+
+/** The run plays at a desktop's width (the HUD's left column and contextual orders). */
+const onADesktop = () => VIEWPORT.width >= DESKTOP_MIN_WIDTH;
+
+/** The desktop width the HUD composes for (DESKTOP_MIN_PX). */
+const DESKTOP_MIN_WIDTH = 1024;
 
 /**
  * Centres the army, finds tiles beside it that offer an order, taps and confirms the first (the first order) and, once

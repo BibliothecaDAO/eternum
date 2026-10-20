@@ -1,7 +1,9 @@
 import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import type { RendererFxCapabilities } from "../renderer-fx-capabilities";
-import { FONTS } from "@/tokens";
+
+// The Blitz and Eternum HUD's label face where it is defined (html.classic-hud), the body face in every other mode.
+const HUD_LABEL_FACE = "var(--font-ui, var(--font-body))";
 
 const DOT_SUFFIXES = ["", ".", "..", "..."];
 const WORLD_FX_RENDER_ORDER = 10_000;
@@ -120,7 +122,7 @@ abstract class BaseIconWorldFxEffect implements ManagedWorldFxEffect, IconFxAnim
       div.className = "fx-label";
       div.textContent = spec.labelText;
       div.style.color = "rgb(223 170 84)";
-      div.style.fontFamily = FONTS.body;
+      div.style.fontFamily = HUD_LABEL_FACE;
       div.style.fontSize = "16px";
       div.style.fontWeight = "bold";
       div.style.textShadow = "0 0 5px black";
@@ -390,7 +392,7 @@ class TextWorldFxEffect implements ManagedWorldFxEffect {
     div.className = "troop-diff-fx";
     div.textContent = spec.text;
     div.style.color = spec.color;
-    div.style.fontFamily = FONTS.body;
+    div.style.fontFamily = HUD_LABEL_FACE;
     div.style.fontSize = spec.fontSize ?? "36px";
     div.style.fontWeight = "bold";
     div.style.textShadow = "0 0 12px black, 0 0 6px black, 2px 2px 4px black";

@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { Vector3 } from "three";
+import { Mesh, Vector3 } from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -15,7 +15,11 @@ import {
   type ProceduralCharacterAppearanceId,
 } from "./procedural-character-appearance";
 import type { ProceduralCharacterRenderDetail } from "./procedural-character-config";
-import { createDefaultProceduralUnitConfig, type ProceduralUnitConfig } from "./procedural-unit-config";
+import {
+  applyProceduralUnitConfigPatch,
+  createDefaultProceduralUnitConfig,
+  type ProceduralUnitConfig,
+} from "./procedural-unit-config";
 import { ProceduralUnitRuntime } from "./procedural-unit-runtime";
 
 vi.mock("./horse/procedural-horse-runtime", () => ({
@@ -46,7 +50,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** Every loadout the gym offers a knight with the review flag on: gear without a fitted rig fits every rig. */
+/** Every loadout the gym offers a knight with compatible gear: gear without a fitted rig fits every rig. */
 function listOfferedKnightLoadouts(): ProceduralUnitConfig[] {
   return APPEARANCES.flatMap((appearanceId) => {
     const { rigAdapterId } = resolveProceduralCharacterAppearance(appearanceId);
@@ -78,9 +82,39 @@ async function withRealGlbs(run: () => Promise<void>): Promise<void> {
 }
 
 describe("T1 Knight Default loadouts", () => {
+  it("renders a full equipped army representation in three draws at both LODs", async () => {
+    await withRealGlbs(async () => {
+      const runtime = await ProceduralUnitRuntime.create();
+      try {
+        for (const renderDetail of ["hero", "crowd"] as const) {
+          const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), {
+            kind: "knight",
+            humanoid: { tier: 1, renderDetail },
+          });
+          await runtime.prepareAssets(config);
+          const actor = runtime.createActor(config);
+          try {
+            let draws = 0,
+              triangles = 0;
+            actor.object.traverseVisible((object) => {
+              if (!(object instanceof Mesh)) return;
+              draws++;
+              triangles += (object.geometry.index?.count ?? object.geometry.attributes.position.count) / 3;
+            });
+            expect(draws).toBe(3);
+            expect(triangles).toBe(renderDetail === "hero" ? 14999 : 5998);
+          } finally {
+            actor.dispose();
+          }
+        }
+      } finally {
+        runtime.dispose();
+      }
+    });
+  });
   it("make every attack of every weapon and offhand the gym offers without throwing, the Knight's gear with plain gear too", async () => {
     await withRealGlbs(async () => {
-      const runtime = await ProceduralUnitRuntime.create({ includeT1KnightDefault: true });
+      const runtime = await ProceduralUnitRuntime.create();
       const loadouts = listOfferedKnightLoadouts();
       const mixed = loadouts.filter(
         ({ humanoid, melee }) =>
@@ -91,6 +125,7 @@ describe("T1 Knight Default loadouts", () => {
       try {
         for (const config of loadouts) {
           const label = `${config.humanoid.appearanceId} ${config.melee.weaponId} ${config.melee.offhandId} ${config.humanoid.renderDetail}`;
+          await runtime.prepareAssets(config);
           const actor = runtime.createActor(config);
           try {
             for (const [index, attackVariant] of resolveProceduralMeleeAttackVariants(

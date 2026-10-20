@@ -1,16 +1,27 @@
 import { configManager } from "@bibliothecadao/eternum";
+import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useUISound } from "@/audio";
-import Button from "@/ui/design-system/atoms/button";
-import { HUD_BODY_MUTED, HUD_CUE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { NumberInput } from "@/ui/design-system/atoms/number-input";
-import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
-import { REQUIREMENT_CHIP } from "@/ui/design-system/molecules/requirement-chips";
+import { useConfirmsLoss } from "@/hooks/helpers/use-confirm-for";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import {
+  HudButton,
+  HudChip,
+  HudConfirm,
+  HudEmpty,
+  HudNotice,
+  HudNumberField,
+  HudPanel,
+  HudRow,
+  HudTableHead,
+  HudTableRow,
+  HudWindow,
+  HudWindowFoot,
+} from "@/ui/design-system/kit/hud-elements";
+import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ConfirmationPopup } from "@/ui/features/economy/banking";
-import { currencyFormat, formatNumber, knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
   divideByPrecision,
@@ -20,16 +31,31 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { findResourceById, ResourcesIds, StructureType, type ID, type MarketInterface } from "@bibliothecadao/types";
+import {
+  ResourcesIds,
+  StructureType,
+  type ID,
+  type MarketInterface,
+  formatAmount,
+  formatCharge,
+  formatExact,
+  formatMoment,
+  LORDS,
+  resourceName,
+  formatFigure,
+} from "@bibliothecadao/types";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { resolveBestPrice } from "./best-prices";
 
 const ONE_MONTH = 2628000;
-/** Keep in step with the `h-9 max-lg:h-11` on `OrderRow`; the virtualizer positions rows from these numbers. */
+/** A table row's height, the sheet's control on the desk and its touch target on a phone (HUD_SHEET, HUD_PHONE): the
+ * virtualizer positions rows from these numbers. */
 const ORDER_ROW_HEIGHT_PX = { desktop: 36, compact: 44 } as const;
-const ORDER_GRID = "grid grid-cols-[1.2fr_1fr_1fr_auto] items-center gap-2";
-const COMPACT_NUMBER_INPUT = "h-8 rounded-md text-sm";
+/** An offer's columns: how much, the price, the Lords total, and its verb. */
+const ORDER_COLS = "1.2fr 1fr 1fr auto";
+/** Text in a book side's tone: what buying gets green, what selling gets red. */
+const sideTone = (good: boolean) => (good ? "text-hud-good" : "text-hud-bad");
 
 /** The selected resource's two book sides in display order: the best offer leads each side. */
 export const useSelectedResourceOffers = (
@@ -70,7 +96,7 @@ export const MarketOrderPanel = memo(
     const { asks, bids } = useSelectedResourceOffers(resourceId, resourceAskOffers, resourceBidOffers);
 
     return (
-      <div className="order-book-selector grid min-h-0 flex-1 grid-cols-2 gap-3 p-3">
+      <div className="grid min-h-0 flex-1 grid-cols-2 gap-3">
         <MarketOrders offers={asks} resourceId={resourceId} entityId={entityId} />
         <MarketOrders offers={bids} resourceId={resourceId} entityId={entityId} isBuy />
       </div>
@@ -103,7 +129,9 @@ export const VirtualizedOrderList = memo(
     });
 
     // The row estimate is not one of the virtualizer's memo keys, so a lane change re-measures explicitly.
-    useEffect(() => virtualizer.measure(), [virtualizer, rowHeightPx]);
+    useEffect(() => {
+      virtualizer.measure();
+    }, [virtualizer, rowHeightPx]);
 
     return (
       <div ref={parentRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -163,15 +191,8 @@ const MarketOrders = memo(
     const [updateBalance, setUpdateBalance] = useState(false);
 
     return (
-      <div className="flex min-h-0 flex-col gap-2">
-        <OrderBookSideHeader resourceId={resourceId} isBuy={isBuy} offers={offers} />
-
-        <div
-          className={cn(
-            "flex min-h-0 flex-1 flex-col rounded-md border border-gold/15 bg-black/25",
-            isBuy ? "order-buy-selector" : "order-sell-selector",
-          )}
-        >
+      <OrderBookSide resourceId={resourceId} isBuy={isBuy} offers={offers}>
+        <div className="flex min-h-0 flex-1 flex-col">
           <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
           {offers.length === 0 ? (
             <EmptyBookSide isBuy={isBuy} />
@@ -185,79 +206,74 @@ const MarketOrders = memo(
             />
           )}
         </div>
-
         <OrderCreation resourceId={resourceId} entityId={entityId} isBuy={isBuy} />
-      </div>
+      </OrderBookSide>
     );
   },
 );
 
-/** One book side's headline: the resource, the best price on that side, and how deep the side is. */
-export const OrderBookSideHeader = ({
+/**
+ * One book side: its headline (the best price on that side and how deep it is) over its offers. On a phone it folds,
+ * and starts folded where the screen is shortest.
+ */
+export const OrderBookSide = ({
   resourceId,
   isBuy,
   offers,
-  className,
-  trailing,
+  collapsible = false,
+  defaultCollapsed = false,
+  children,
 }: {
   resourceId: ResourcesIds;
   isBuy: boolean;
   offers: MarketInterface[];
-  className?: string;
-  trailing?: ReactNode;
+  collapsible?: boolean;
+  defaultCollapsed?: boolean;
+  children: ReactNode;
 }) => {
-  const trait = findResourceById(resourceId)?.trait ?? "";
   // Asks: the cheapest one is the best buy. Bids: the highest one pays the most.
   const bestPrice = resolveBestPrice(offers, isBuy ? "bid" : "ask");
-
   return (
-    <div
-      className={cn(
-        "flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border px-3 py-1.5",
-        isBuy ? "border-red/30 bg-red/5" : "border-green/30 bg-green/5",
-        className,
-      )}
-    >
-      <span className="flex items-center gap-2">
-        <ResourceIcon withTooltip={false} size="sm" resource={trait} />
-        <span className={HUD_LABEL}>{isBuy ? "Sell to" : "Buy from"}</span>
-        <span className={cn(HUD_VALUE, isBuy ? "text-red" : "text-green")}>{formatNumber(bestPrice, 4)}</span>
-        <span className={HUD_CUE}>Lords each</span>
-      </span>
-      <span className="flex items-center gap-2">
-        <span className={HUD_CUE}>
-          {offers.length} {isBuy ? "bids" : "asks"}
+    <HudPanel
+      kind="section"
+      icon={resourceMeaning(resourceId)}
+      title={
+        <span>
+          {isBuy ? "Sell to" : "Buy from"} <span className={sideTone(!isBuy)}>{formatFigure(bestPrice)}</span> {LORDS}
+          each
         </span>
-        {trailing}
-      </span>
-    </div>
+      }
+      cue={`${offers.length} ${isBuy ? "bids" : "asks"}`}
+      collapsible={collapsible}
+      defaultCollapsed={defaultCollapsed}
+      className="flex min-h-0 flex-1 shrink flex-col"
+      bodyClassName="flex min-h-0 flex-1 flex-col gap-2"
+    >
+      {children}
+    </HudPanel>
   );
 };
 
 export const EmptyBookSide = ({ isBuy }: { isBuy: boolean }) => (
-  <div className="flex flex-1 items-center justify-center py-8">
-    <span className={HUD_BODY_MUTED}>No {isBuy ? "buy" : "sell"} orders yet</span>
-  </div>
+  <HudEmpty icon="trade" line={`No ${isBuy ? "buy" : "sell"} orders yet`} />
 );
 
-export const OrderRowHeader = memo(({ resourceId, isBuy }: { resourceId?: number; isBuy: boolean }) => {
-  return (
-    <div className={cn(ORDER_GRID, "border-b border-gold/15 px-2 py-1.5", HUD_LABEL)}>
-      <span>Qty</span>
-      <span className="flex items-center justify-center gap-0.5">
-        {resourceId && (
-          <>
-            <ResourceIcon size="xs" resource="Lords" withTooltip={false} />
-            <span>/</span>
-            <ResourceIcon size="xs" resource={resourceId} withTooltip={false} />
-          </>
-        )}
-      </span>
-      <span className="text-center">{isBuy ? "Gain" : "Cost"}</span>
-      <span className="w-14" />
-    </div>
-  );
-});
+export const OrderRowHeader = memo(({ resourceId, isBuy }: { resourceId?: number; isBuy: boolean }) => (
+  <HudTableHead cols={ORDER_COLS}>
+    <span>Qty</span>
+    <span className="flex items-center justify-center gap-0.5">
+      {resourceId && (
+        <>
+          <ResourceIcon size="xs" resource={ResourcesIds.Lords} withTooltip={false} />
+          <span>/</span>
+          <ResourceIcon size="xs" resource={resourceId} withTooltip={false} />
+        </>
+      )}
+    </span>
+    <span className="text-center">{isBuy ? "Gain" : "Cost"}</span>
+    <span className="w-14" />
+  </HudTableHead>
+));
 
 export const OrderRow = memo(
   ({
@@ -292,6 +308,7 @@ export const OrderRow = memo(
     );
 
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
+    const confirmsLoss = useConfirmsLoss();
 
     const [loading, setLoading] = useState(false);
 
@@ -300,7 +317,9 @@ export const OrderRow = memo(
     }, [entityId, offer.makerId]);
 
     const getsDisplay = useMemo(() => {
-      return isBuy ? currencyFormat(offer.makerGets[0].amount, 3) : currencyFormat(offer.takerGets[0].amount, 3);
+      return isBuy
+        ? formatCharge(knownAmount(offer.makerGets[0].amount))
+        : formatCharge(knownAmount(offer.takerGets[0].amount));
     }, [isBuy, offer.makerGets[0].amount, offer.takerGets[0].amount]);
 
     const getsDisplayNumber = useMemo(() => {
@@ -343,13 +362,13 @@ export const OrderRow = memo(
       );
     }, [resourceBalanceRatio, lordsBalanceRatio]);
 
-    const calculatedResourceAmount = useMemo(() => {
-      return multiplyByPrecision(inputValue);
-    }, [inputValue, getsDisplay, getTotalLords]);
+    const calculatedResourceAmount = useMemo(() => multiplyByPrecision(inputValue), [inputValue]);
 
-    const calculatedLords = useMemo(() => {
-      return Math.ceil((inputValue / parseFloat(getsDisplay.replace(/,/g, ""))) * getTotalLords);
-    }, [inputValue, getsDisplay, getTotalLords]);
+    // The Lords this fill takes: its share of the offer's total.
+    const calculatedLords = useMemo(
+      () => Math.ceil((inputValue / divideByPrecision(getsDisplayNumber, false)) * getTotalLords),
+      [inputValue, getsDisplayNumber, getTotalLords],
+    );
 
     const orderWeightKg = useMemo(() => {
       // divide by precision because getTotalResourceWeightKg is without precision
@@ -367,7 +386,7 @@ export const OrderRow = memo(
     }, [orderWeightKg]);
 
     const donkeyBalance = useMemo(() => {
-      return knownBalance(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey)?.balance);
+      return knownAmount(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey)?.balance);
     }, [resourceManager, currentDefaultTick]);
 
     const onAccept = async () => {
@@ -407,66 +426,80 @@ export const OrderRow = memo(
     };
 
     const actionLabel = isSelf ? "Cancel" : isBuy ? "Sell" : "Buy";
+    // Taking an offer asks how much; cancelling your own acts at once, but in Frontier, where a loss asks first.
+    const pressAction = () => (isSelf && !confirmsLoss ? onCancel() : setConfirmOrderModal(true));
 
     return (
-      <div
-        className={cn(
-          ORDER_GRID,
-          "h-9 border-b border-gold/10 px-2 text-sm tabular-nums transition-colors hover:bg-gold/10 max-lg:h-11",
-          isSelf && "bg-blueish/10",
-        )}
-        title={`Expires ${new Date(offer.expiresAt * 1000).toLocaleString()}`}
+      <HudTableRow
+        cols={ORDER_COLS}
+        label={`${actionLabel} ${getsDisplay} at ${formatFigure(offer.perLords)} ${LORDS} each`}
+        title={`Expires ${formatMoment(offer.expiresAt)}`}
+        selected={isSelf}
       >
-        <span className={cn("flex items-center gap-1", isBuy ? "text-red" : "text-green")}>
+        <span className={`flex items-center gap-1 tabular-nums ${sideTone(!isBuy)}`}>
           <ResourceIcon withTooltip={false} size="xs" resource={getDisplayResource} />
           {getsDisplay}
         </span>
-        <span className="text-center text-gold">{formatNumber(offer.perLords, 4)}</span>
-        <span className={cn("flex items-center justify-center gap-1", isBuy ? "text-green" : "text-red")}>
-          <ResourceIcon withTooltip={false} size="xs" resource="Lords" />
-          {currencyFormat(getTotalLords, 0)}
+        <span className="text-center tabular-nums">{formatFigure(offer.perLords)}</span>
+        <span className={`flex items-center justify-center gap-1 tabular-nums ${sideTone(isBuy)}`}>
+          <ResourceIcon withTooltip={false} size="xs" resource={ResourcesIds.Lords} />
+          {formatCharge(knownAmount(getTotalLords))}
         </span>
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => setConfirmOrderModal(true)}
-          className={cn(
-            HUD_PILL_BUTTON,
-            "w-14 px-0 py-0.5 text-center max-lg:min-h-11",
-            isSelf && "text-red hover:border-red/60",
-          )}
+        <HudButton
+          kind={isSelf ? "danger" : "secondary"}
+          size="sm"
+          busy={loading ? "…" : undefined}
+          onClick={pressAction}
         >
-          {loading ? "…" : actionLabel}
-        </button>
-        {confirmOrderModal && (
-          <ConfirmOrderPopup
-            isSelf={isSelf}
-            isBuy={isBuy}
-            onConfirm={isSelf ? onCancel : onAccept}
-            onCancel={() => setConfirmOrderModal(false)}
-            loading={loading}
-            inputValue={inputValue}
-            setInputValue={setInputValue}
-            maxInputValue={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
-            getDisplayResource={getDisplayResource}
-            calculatedLords={calculatedLords}
-            donkeysNeeded={donkeysNeeded}
-            donkeyBalance={donkeyBalance}
-            isVillageAndMilitaryResource={
-              game.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base
-                .category === StructureType.Village &&
-              (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId))
-            }
-          />
-        )}
-      </div>
+          {actionLabel}
+        </HudButton>
+        {confirmOrderModal &&
+          (isSelf ? (
+            <OrderDialog title="Cancel this order?" onCancel={() => setConfirmOrderModal(false)}>
+              <HudConfirm
+                question="Cancel this order?"
+                verb="Cancel order"
+                back="Keep it"
+                tone="bad"
+                onConfirm={() => onCancel().finally(() => setConfirmOrderModal(false))}
+                onBack={() => setConfirmOrderModal(false)}
+              />
+            </OrderDialog>
+          ) : (
+            <TakeOfferForm
+              isBuy={isBuy}
+              onConfirm={onAccept}
+              onCancel={() => setConfirmOrderModal(false)}
+              loading={loading}
+              inputValue={inputValue}
+              setInputValue={setInputValue}
+              maxInputValue={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
+              getDisplayResource={getDisplayResource}
+              calculatedLords={calculatedLords}
+              donkeysNeeded={donkeysNeeded}
+              donkeyBalance={donkeyBalance}
+              isVillageAndMilitaryResource={
+                game.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })
+                  ?.base.category === StructureType.Village &&
+                (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId))
+              }
+            />
+          ))}
+      </HudTableRow>
     );
   },
 );
 
-const ConfirmOrderPopup = memo(
+/** A market dialog over the window: centred, and gone when dismissed. */
+const OrderDialog = ({ title, onCancel, children }: { title: string; onCancel: () => void; children: ReactNode }) => (
+  <PopoverPanel id="confirm" ariaLabel={title} anchor="top-center" onDismiss={onCancel}>
+    {children}
+  </PopoverPanel>
+);
+
+/** Taking an offer: how much of it (up to what this structure can pay or deliver), what it costs, and its donkeys. */
+const TakeOfferForm = memo(
   ({
-    isSelf,
     isBuy,
     onConfirm,
     onCancel,
@@ -480,7 +513,6 @@ const ConfirmOrderPopup = memo(
     donkeyBalance,
     isVillageAndMilitaryResource,
   }: {
-    isSelf: boolean;
     isBuy: boolean;
     onConfirm: () => void;
     onCancel: () => void;
@@ -494,47 +526,60 @@ const ConfirmOrderPopup = memo(
     donkeyBalance: number | undefined;
     isVillageAndMilitaryResource: boolean;
   }) => {
+    const verb = isBuy ? "Sell" : "Buy";
+    const name = resourceName(getDisplayResource);
+    const shortOfDonkeys = donkeyBalance === undefined || donkeysNeeded > donkeyBalance;
     return (
-      <ConfirmationPopup
-        title={isSelf ? "Confirm Cancel Order" : `Confirm ${isBuy ? "Sell" : "Buy"}`}
-        onConfirm={onConfirm}
-        onCancel={onCancel}
-        isLoading={loading}
-        disabled={
-          isSelf
-            ? false
-            : (!isBuy && (donkeyBalance === undefined || donkeysNeeded > donkeyBalance)) ||
-              inputValue === 0 ||
-              isVillageAndMilitaryResource
-        }
-      >
-        {isSelf ? (
-          <div className="p-4 text-center">
-            <p>Are you sure you want to cancel this order?</p>
-          </div>
-        ) : (
-          <div className="p-4 text-center">
-            <div className="flex gap-3 mb-4">
-              <NumberInput value={inputValue} className="w-full" onChange={setInputValue} max={maxInputValue} />
-              <Button onClick={() => setInputValue(maxInputValue)}>Max</Button>
+      <OrderDialog title={`${verb} ${name}`} onCancel={onCancel}>
+        <HudWindow title={`${verb} ${name}`} icon={resourceMeaning(getDisplayResource)} size="task" onClose={onCancel}>
+          <HudWindowFoot>
+            <HudButton kind="quiet" onClick={onCancel}>
+              Cancel
+            </HudButton>
+            <HudButton
+              kind="primary"
+              busy={loading ? "Trading…" : undefined}
+              disabled={(!isBuy && shortOfDonkeys) || inputValue === 0 || isVillageAndMilitaryResource}
+              onClick={onConfirm}
+            >
+              {verb}
+            </HudButton>
+          </HudWindowFoot>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <HudNumberField
+                label={`${name} to ${verb.toLowerCase()}`}
+                value={inputValue}
+                max={maxInputValue}
+                onChange={setInputValue}
+              />
+              <HudButton kind="secondary" onClick={() => setInputValue(maxInputValue)}>
+                Max
+              </HudButton>
             </div>
-            <p className="mb-2">
-              <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
-              <span className="">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
-              <span className="">{currencyFormat(calculatedLords, 2)}</span> Lords
+            <p>
+              <span className={sideTone(!isBuy)}>{verb}</span> {formatCharge(inputValue)} {name} for{" "}
+              {formatCharge(knownAmount(calculatedLords))} {LORDS}
             </p>
-            <div className="flex justify-between mt-4">
-              <div>Donkeys Required</div>
-              <div className={donkeyBalance === undefined || donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}>
-                {donkeysNeeded} [{donkeyBalance ?? "—"}]
-              </div>
-            </div>
+            <HudRow
+              title="Donkeys Required"
+              trail={
+                <span className={`tabular-nums ${sideTone(!shortOfDonkeys)}`}>
+                  {heldAgainstNeed(donkeyBalance, donkeysNeeded)}
+                </span>
+              }
+            />
+            {isVillageAndMilitaryResource && <HudNotice tone="bad" line={VILLAGE_MILITARY_REFUSAL} />}
           </div>
-        )}
-      </ConfirmationPopup>
+        </HudWindow>
+      </OrderDialog>
     );
   },
 );
+
+/** Why a village's order for troops is refused, wherever the market says so. */
+const VILLAGE_MILITARY_REFUSAL =
+  "Villages cannot buy or sell military resources. You can only transfer them with your connected realm.";
 
 /** How the form lays out: three inputs in a row on the desk, two inputs plus a computed total on a phone. */
 type OrderCreationLayout = "desktop" | "compact";
@@ -709,110 +754,103 @@ export const OrderCreation = memo(
       return donkeyBalance !== undefined && donkeyBalance >= donkeysNeeded;
     }, [donkeyBalance, donkeysNeeded, resourceId]);
 
-    const renderConfirmationPopupCreateOrder = useCallback(() => {
-      const isVillageAndMilitaryResource =
-        store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
-          StructureType.Village && isMilitaryResource(resourceId);
+    const isVillageAndMilitaryResource =
+      store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
+        StructureType.Village && isMilitaryResource(resourceId);
+    const confirmsLoss = useConfirmsLoss();
+    const name = resourceName(resourceId);
+    // Placing an order acts at once; in Frontier it asks first, with the order spelled out.
+    const placeOrder = () => (confirmsLoss ? setShowConfirmation(true) : createOrder());
 
-      return (
-        <ConfirmationPopup
-          title={`Confirm ${isBuy ? "Buy" : "Sell"} Order`}
+    const confirmPlaceOrder = (
+      <OrderDialog title={`Place this ${isBuy ? "buy" : "sell"} order?`} onCancel={() => setShowConfirmation(false)}>
+        <HudConfirm
+          question={`Place this ${isBuy ? "buy" : "sell"} order?`}
+          verb={`${isBuy ? "Buy" : "Sell"} ${formatCharge(resource)} ${name}`}
           onConfirm={createOrder}
-          onCancel={() => setShowConfirmation(false)}
-          isLoading={loading}
-          disabled={isVillageAndMilitaryResource}
+          onBack={() => setShowConfirmation(false)}
         >
-          <div className="p-4 text-center">
-            <p className="mb-4">
-              Villages cannot buy or sell military resources. You can only transfer them with your connected realm.
-            </p>
-            <div className="flex flex-col gap-2">
-              <div>
-                Amount: {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
-              </div>
-              <div>Price: {lords.toLocaleString()} Lords</div>
-              <div>
-                Rate: {Number(bid).toFixed(4)} Lords/{findResourceById(resourceId)?.trait}
-              </div>
-            </div>
-          </div>
-        </ConfirmationPopup>
-      );
-    }, [isBuy, createOrder, loading, setShowConfirmation]);
-
-    const trait = findResourceById(resourceId)?.trait ?? "";
+          <span>
+            {formatCharge(resource)} {name} for {formatCharge(lords)} {LORDS}, at {formatFigure(Number(bid))} {LORDS}{" "}
+            each.
+          </span>
+        </HudConfirm>
+      </OrderDialog>
+    );
 
     const amountField = (
-      <OrderField label={isBuy ? "Buy" : "Sell"} icon={trait} available={currencyFormat(resourceBalance, 0)}>
-        <NumberInput
+      <OrderField
+        label={isBuy ? "Buy" : "Sell"}
+        icon={resourceId}
+        available={formatAmount(knownAmount(resourceBalance))}
+      >
+        <HudNumberField
+          label={`${name} to ${isBuy ? "buy" : "sell"}`}
           value={resource}
-          className={COMPACT_NUMBER_INPUT}
-          onChange={(value) => setResource(Number(value))}
-          max={!isBuy ? (knownBalance(resourceBalance) ?? 0) : Infinity}
+          onChange={setResource}
+          max={!isBuy ? (knownAmount(resourceBalance) ?? 0) : Infinity}
         />
       </OrderField>
     );
     const priceField = (
-      <OrderField label={`Lords / ${trait}`} icon="Lords">
-        <NumberInput
-          allowDecimals={true}
+      <OrderField label={`${LORDS} / ${name}`} icon={ResourcesIds.Lords}>
+        <HudNumberField
+          label={`${LORDS} per ${name}`}
           value={Number(bid)}
           onChange={typePrice}
-          className={COMPACT_NUMBER_INPUT}
           max={Infinity}
+          decimals
         />
       </OrderField>
     );
     const lordsField = (
-      <OrderField label={isBuy ? "Cost" : "Gain"} icon="Lords" available={currencyFormat(lordsBalance, 0)}>
-        <NumberInput
+      <OrderField
+        label={isBuy ? "Cost" : "Gain"}
+        icon={ResourcesIds.Lords}
+        available={formatAmount(knownAmount(lordsBalance))}
+      >
+        <HudNumberField
+          label={`${LORDS} to ${isBuy ? "pay" : "gain"}`}
           value={lords}
-          className={COMPACT_NUMBER_INPUT}
-          onChange={(value) => setLords(Number(value))}
-          max={isBuy ? (knownBalance(lordsBalance) ?? 0) : Infinity}
+          onChange={setLords}
+          max={isBuy ? (knownAmount(lordsBalance) ?? 0) : Infinity}
         />
       </OrderField>
     );
     const logisticsChips = (
       <div className="flex items-center gap-1.5">
-        <span
-          className={cn("donkeys-used-selector", REQUIREMENT_CHIP, enoughDonkeys ? "text-gold" : "text-red")}
-          title="Donkeys needed / available"
-        >
-          <ResourceIcon resource="Donkey" size="xs" withTooltip={false} />
-          {donkeysNeeded.toLocaleString()} / {currencyFormat(donkeyBalance, 0)}
+        <span title="Donkeys available / needed">
+          <HudChip tone={enoughDonkeys ? undefined : "bad"}>
+            <ResourceIcon resource={ResourcesIds.Donkey} size="xs" withTooltip={false} />
+            {heldAgainstNeed(knownAmount(donkeyBalance), donkeysNeeded)}
+          </HudChip>
         </span>
-        <span className={cn(REQUIREMENT_CHIP, "text-gold/70")} title="Weight">
-          {orderWeightKg.toLocaleString()} kg
+        <span title="Weight">
+          <HudChip>{formatExact(orderWeightKg)} kg</HudChip>
         </span>
       </div>
     );
     const submitButton = (
-      <button
-        type="button"
-        disabled={!enoughDonkeys || !canBuy || loading}
-        onClick={() => setShowConfirmation(true)}
-        className={cn(HUD_PILL_BUTTON, "border-gold/60 bg-gold/15", layout === "compact" && "min-h-11 w-full")}
+      <HudButton
+        kind="primary"
+        busy={loading ? "…" : undefined}
+        disabled={!enoughDonkeys || !canBuy || isVillageAndMilitaryResource}
+        onClick={placeOrder}
       >
-        {loading ? "…" : `${isBuy ? "Buy" : "Sell"} ${resource.toLocaleString()} ${trait}`}
-      </button>
+        {`${isBuy ? "Buy" : "Sell"} ${formatCharge(resource)} ${name}`}
+      </HudButton>
     );
 
     return (
-      <div
-        className={cn(
-          "flex flex-col gap-2 rounded-md border border-gold/15 border-l-2 bg-black/25 px-3 py-2",
-          isBuy ? "order-create-buy-selector border-l-red" : "order-create-sell-selector border-l-green",
-        )}
-      >
+      <div className="flex flex-col gap-2 border-t border-hud-divider pt-2">
         {layout === "compact" ? (
           <>
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {amountField}
               {priceField}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <LordsTotal isBuy={isBuy} lords={lords} available={currencyFormat(lordsBalance, 0)} />
+              <LordsTotal isBuy={isBuy} lords={lords} available={formatAmount(knownAmount(lordsBalance))} />
               {logisticsChips}
             </div>
             {submitButton}
@@ -830,7 +868,8 @@ export const OrderCreation = memo(
             </div>
           </>
         )}
-        {showConfirmation && renderConfirmationPopupCreateOrder()}
+        {isVillageAndMilitaryResource && <HudNotice tone="bad" line={VILLAGE_MILITARY_REFUSAL} />}
+        {showConfirmation && confirmPlaceOrder}
       </div>
     );
   },
@@ -838,11 +877,11 @@ export const OrderCreation = memo(
 
 /** The compact form's third value as a line instead of an input: the Lords the order costs or gains. */
 const LordsTotal = ({ isBuy, lords, available }: { isBuy: boolean; lords: number; available: string }) => (
-  <span className="flex items-center gap-1" title={`${isBuy ? "Cost" : "Gain"} / Lords available`}>
-    <ResourceIcon withTooltip={false} size="xs" resource="Lords" />
-    <span className={HUD_LABEL}>{isBuy ? "Cost" : "Gain"}</span>
-    <span className={HUD_VALUE}>{lords.toLocaleString()}</span>
-    <span className={HUD_CUE}>/ {available}</span>
+  <span className="flex items-center gap-1 text-hud-label" title={`${isBuy ? "Cost" : "Gain"} / Lords available`}>
+    <ResourceIcon withTooltip={false} size="xs" resource={ResourcesIds.Lords} />
+    <span className="text-hud-muted">{isBuy ? "Cost" : "Gain"}</span>
+    <span className="text-hud-strong">{formatCharge(lords)}</span>
+    <span className="text-hud-muted">/ {available}</span>
   </span>
 );
 
@@ -853,16 +892,16 @@ const OrderField = ({
   children,
 }: {
   label: string;
-  icon: string;
+  icon: ResourcesIds;
   available?: string;
   children: ReactNode;
 }) => (
   <div className="flex flex-col gap-1">
-    <span className={cn(HUD_LABEL, "flex items-center gap-1")}>
+    <span className="flex items-center gap-1 text-hud-label text-hud-muted">
       <ResourceIcon withTooltip={false} size="xs" resource={icon} />
       {label}
     </span>
     {children}
-    {available !== undefined && <span className={HUD_CUE}>{available} avail.</span>}
+    {available !== undefined && <span className="text-hud-label text-hud-muted">{available} avail.</span>}
   </div>
 );

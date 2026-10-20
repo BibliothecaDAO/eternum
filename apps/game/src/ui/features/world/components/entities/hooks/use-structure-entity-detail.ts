@@ -6,22 +6,20 @@ import { realmMeaning, structureMeaning, mineMeaning } from "@/ui/design-system/
 import {
   Position,
   configManager,
-  displayPlayerName,
   getGuardsByStructure,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
-  getRealmCountPerHyperstructure,
+  getHyperstructureRates,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
   structureMapPosition,
   isViewerOwner,
 } from "@bibliothecadao/eternum";
-import { hyperstructurePointsPerSecond as sharedPointsPerSecond } from "@bibliothecadao/eternum/game-sync";
-import { usePlayerProfile } from "@/hooks/use-player-profile";
+import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ContractAddress, ID, BANDITS_NAME, RelicEffect, StructureType, wholePoints } from "@bibliothecadao/types";
+import { ContractAddress, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { presentedMineKind } from "@bibliothecadao/eternum";
@@ -29,11 +27,6 @@ import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface UseStructureEntityDetailOptions {
   structureEntityId: ID;
-}
-
-interface AlignmentBadge {
-  label: string;
-  className: string;
 }
 
 export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEntityDetailOptions) => {
@@ -64,8 +57,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const guards = structure ? getGuardsByStructure(structure, store) : [];
   const isMine = isViewerOwner(structure?.owner, userAddress);
   const isAlly = isMine || Boolean(playerGuild && userGuild && playerGuild.entityId === userGuild.entityId);
-  const ownerProfile = usePlayerProfile(structure?.owner);
-  const addressName = structure?.owner ? (ownerProfile.name ?? undefined) : BANDITS_NAME;
+  const ownerDisplayName = usePlayerDisplayName(structure?.owner ?? 0n) ?? "";
   const timestamp = useCurrentDefaultTick();
   const relicEffects: RelicEffect[] = useMemo(() => {
     const effects: RelicEffect[] = [];
@@ -78,25 +70,16 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     return effects;
   }, [productionBoostBonus, structure, store, revision, timestamp]);
   const structureDetails = structure
-    ? { structure, resources, playerGuild, guards, isAlly, addressName, isMine, relicEffects }
+    ? { structure, resources, playerGuild, guards, isAlly, isMine, relicEffects }
     : null;
-  const hyperstructureRealmCount =
-    structure?.base.category === StructureType.Hyperstructure
-      ? getRealmCountPerHyperstructure(store).get(structureEntityId)
-      : undefined;
-  // The realm count only feeds the multiplier at claim time, so the panel reads the multiplier the chain holds. A
-  // hyperstructure with no share allocation yet grants nothing and shows no rate.
-  const hyperstructurePointsPerSecond =
-    structure?.base.category === StructureType.Hyperstructure && shares
-      ? wholePoints(
-          sharedPointsPerSecond(
-            store.require("SliceRules", { game_id: keys.game_id }).victory_points_grant_config.hyp_points_per_second,
-            shares.multiplier,
-          ),
-        )
-      : undefined;
-
-  const ownerDisplayName = structure?.owner ? displayPlayerName(structure.owner, ownerProfile.name) : BANDITS_NAME;
+  // The rate the map's label shows too: what it pays its holder, or what taking it would pay.
+  const hyperstructureRate = useMemo(
+    () =>
+      structure?.base.category === StructureType.Hyperstructure
+        ? getHyperstructureRates(store).get(structureEntityId)
+        : undefined,
+    [structure, store, structureEntityId, shares, revision],
+  );
 
   const isHyperstructure = structure?.base.category === StructureType.Hyperstructure;
 
@@ -121,39 +104,6 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const guardSlotsUsed = structure && guards ? guards.filter((guard) => guard.troops.count > 0n).length : undefined;
   const guardSlotsMax =
     structure?.base.troop_max_guard_count !== undefined ? Number(structure?.base?.troop_max_guard_count) : undefined;
-
-  const alignmentBadge: AlignmentBadge | undefined = useMemo(() => {
-    if (!structure) return undefined;
-
-    const ownerValue = structure.owner;
-    const isUnclaimed = ownerValue === 0n;
-
-    if (isMine) {
-      return {
-        label: "Your Structure",
-        className: "bg-gold/20 border border-gold/40 text-gold",
-      };
-    }
-
-    if (isAlly && !isUnclaimed) {
-      return {
-        label: "Ally Controlled",
-        className: "bg-order-protection/20 border border-order-protection/40 text-order-protection",
-      };
-    }
-
-    if (isUnclaimed) {
-      return {
-        label: "Unclaimed",
-        className: "bg-blueish/20 border border-blueish/40 text-blueish",
-      };
-    }
-
-    return {
-      label: "Enemy Controlled",
-      className: "bg-danger/20 border border-danger/40 text-danger",
-    };
-  }, [structure, isMine, isAlly]);
 
   const progress = useMemo(() => {
     return isHyperstructure && structure
@@ -181,16 +131,13 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     guards,
     guardSlotsUsed,
     guardSlotsMax,
-    addressName,
     ownerDisplayName,
     isMine,
     isAlly,
-    hyperstructureRealmCount,
-    hyperstructurePointsPerSecond,
+    hyperstructureRate,
     isHyperstructure,
     typeLabel,
     backgroundImage,
-    alignmentBadge,
     progress,
     structureName,
     isLoadingStructure: false,

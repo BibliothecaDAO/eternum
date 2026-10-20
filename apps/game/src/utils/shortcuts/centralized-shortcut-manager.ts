@@ -1,5 +1,6 @@
 import { useShortcutStore, KeyboardShortcut, KeyModifiers, createShortcutKey } from "@/hooks/store/use-shortcut-store";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
+import { isKeyForFocused } from "./typing-target";
 
 /**
  * Centralized Shortcut Manager - Singleton class that manages keyboard shortcuts
@@ -38,10 +39,8 @@ export class CentralizedShortcutManager {
    * Handle keyboard events and execute matching shortcuts
    */
   private handleKeyDown(event: KeyboardEvent): void {
-    // Check if the event target is an input element
-    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-      return;
-    }
+    // A key typed into a field, or the Enter or Space that presses a focused control, is theirs, never a shortcut.
+    if (isKeyForFocused(event)) return;
     // A key an open surface already took (a sheet closing on Escape) is one step, not also the map's.
     if (event.defaultPrevented) return;
 

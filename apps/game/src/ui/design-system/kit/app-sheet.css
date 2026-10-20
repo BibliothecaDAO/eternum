@@ -1,0 +1,1005 @@
+/*
+ * The app sheet: every element of the pages outside a game (app-elements.tsx), built only from the app scope of
+ * src/tokens.ts (APP_TYPE, APP_SHEET), which tailwind.config.js writes as --app-* under [data-surface="shell"].
+ * A state the lab forces is data-state on the element (hover, pressed, focus); disabled is the attribute.
+ */
+
+/* ── Button: primary (the page's one verb), secondary (beside it), quiet (a way out). ── */
+.app-button {
+  display: inline-flex;
+  height: var(--app-control);
+  align-items: center;
+  justify-content: center;
+  gap: theme(spacing.2);
+  border: 1px solid transparent;
+  border-radius: var(--app-radius-control);
+  padding: 0 theme(spacing.5);
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-strong);
+  line-height: var(--app-leading-strong);
+  font-weight: var(--app-weight-strong);
+  white-space: nowrap;
+  transition:
+    background-color var(--app-fast) var(--app-ease),
+    border-color var(--app-fast) var(--app-ease),
+    transform var(--app-fast) var(--app-ease);
+}
+.app-button[data-size="lg"] {
+  height: var(--app-control-lg);
+  padding: 0 theme(spacing.8);
+  font-size: var(--app-text-heading);
+}
+.app-button[data-kind="primary"] {
+  background: rgb(var(--app-gold));
+  color: var(--app-dark);
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.35);
+}
+.app-button[data-kind="primary"]:is(:hover, [data-state="hover"]):not(:disabled) {
+  background: color-mix(in srgb, rgb(var(--app-gold)) 88%, white);
+}
+.app-button[data-kind="secondary"] {
+  border-color: var(--app-line-strong);
+  background: var(--app-surface-2);
+  color: var(--app-ink);
+}
+.app-button[data-kind="secondary"]:is(:hover, [data-state="hover"]):not(:disabled) {
+  border-color: rgb(var(--app-accent));
+}
+.app-button[data-kind="quiet"] {
+  background: transparent;
+  color: var(--app-muted);
+}
+.app-button[data-kind="quiet"]:is(:hover, [data-state="hover"]):not(:disabled) {
+  background: var(--app-hover);
+  color: var(--app-ink);
+}
+.app-button[data-tone="bad"] {
+  color: var(--app-bad);
+}
+.app-button[data-kind="secondary"][data-tone="bad"] {
+  border-color: color-mix(in srgb, var(--app-bad) 55%, transparent);
+}
+.app-button:is(:active, [data-state="pressed"]):not(:disabled) {
+  transform: translateY(1px);
+}
+.app-button:is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+  box-shadow: var(--app-focus);
+}
+.app-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.app-button[aria-busy="true"] {
+  opacity: 0.8;
+  cursor: progress;
+}
+
+/* ── Field: label, value, a helping or failing line. ── */
+.app-field {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing[1.5]);
+}
+.app-field__label,
+.app-field__line {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  line-height: var(--app-leading-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-muted);
+}
+.app-field__box {
+  display: flex;
+  height: var(--app-control);
+  align-items: center;
+  gap: theme(spacing.2);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: 0 theme(spacing.4);
+  color: var(--app-muted);
+}
+.app-field__box:is(:hover, [data-state="hover"]) {
+  border-color: var(--app-line-strong);
+}
+.app-field__box:focus-within,
+.app-field[data-state="focus"] .app-field__box {
+  border-color: rgb(var(--app-accent));
+  box-shadow: var(--app-focus);
+}
+.app-field input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-family: var(--app-face-body);
+  font-size: var(--app-text-body);
+  color: var(--app-ink);
+}
+.app-field input::placeholder {
+  color: var(--app-muted);
+}
+.app-field input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.app-field[data-invalid] .app-field__box {
+  border-color: var(--app-bad);
+}
+.app-field[data-invalid] .app-field__line {
+  color: var(--app-bad);
+}
+
+/* ── Code: a code sent by email, its boxes over one real input; the next box lit, a refused code in the bad tone. ── */
+.app-code {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  gap: theme(spacing.2);
+}
+.app-code > input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  cursor: text;
+  opacity: 0;
+}
+.app-code__box {
+  display: flex;
+  width: 48px;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  color: var(--app-ink);
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-title);
+  font-weight: var(--app-weight-strong);
+  transition: border-color var(--app-fast) var(--app-ease);
+}
+.app-code__box[data-at] {
+  border-color: rgb(var(--app-accent));
+}
+.app-code[data-refused] .app-code__box {
+  border-color: var(--app-bad);
+}
+.app-code:has(> input:disabled) .app-code__box {
+  opacity: 0.5;
+}
+
+/* ── Frame (the desktop's PageFrame): the painting, the bar across the top, then the page, no wider than a page runs. ── */
+.app-frame {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 100vh;
+  min-width: 0;
+  flex-direction: column;
+}
+/* The page's painting stays behind the window while the page scrolls, graded: light enough at the top to read as the
+   page's place, dark where the panels sit. */
+.app-frame__painting {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 40%;
+}
+.app-frame::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--app-ground) 35%, transparent) 0%,
+      color-mix(in srgb, var(--app-ground) 72%, transparent) 30%,
+      color-mix(in srgb, var(--app-ground) 90%, transparent) 65%,
+      var(--app-ground) 100%
+    ),
+    radial-gradient(ellipse at center, transparent 40%, color-mix(in srgb, var(--app-ground) 60%, transparent) 100%);
+}
+.app-frame__page {
+  display: flex;
+  width: 100%;
+  max-width: var(--app-page);
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: theme(spacing.6);
+  margin: 0 auto;
+  padding: theme(spacing.10);
+}
+
+/* A stage (the first visit) keeps more of its painting lit. */
+.app-frame[data-stage]::before {
+  opacity: 0.7;
+}
+
+/* ── Top bar: the app's mark, its places, the player at its end; the current one in the accent. ── */
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  height: var(--app-bar);
+  flex: none;
+  align-items: center;
+  gap: theme(spacing.8);
+  border-bottom: 1px solid var(--app-line);
+  background: color-mix(in srgb, var(--app-ground) 72%, transparent);
+  backdrop-filter: blur(12px);
+  padding: 0 theme(spacing.12);
+}
+/* The mark and the places keep their size; what shares the rest is the end: the notice's line and the player's name
+   give way first, each to an ellipsis, so the bar holds from the desktop's narrowest width up. */
+.app-bar > [data-role="lockup"],
+.app-bar__places {
+  flex: none;
+}
+.app-bar__places {
+  display: flex;
+  gap: theme(spacing.1);
+}
+.app-bar__place {
+  display: flex;
+  height: var(--app-control);
+  align-items: center;
+  gap: theme(spacing.3);
+  border-radius: var(--app-radius-control);
+  padding: 0 theme(spacing.4);
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-strong);
+  font-weight: var(--app-weight-strong);
+  color: var(--app-muted);
+}
+.app-bar__place:is(:hover, [data-state="hover"]) {
+  background: var(--app-hover);
+  color: var(--app-ink);
+}
+.app-bar__place[aria-current="page"] {
+  background: var(--app-chosen);
+  color: rgb(var(--app-accent));
+}
+.app-bar__place:is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+  box-shadow: var(--app-focus);
+}
+.app-bar__end {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: theme(spacing.3);
+}
+/* The notice keeps one line in the bar: its words shorten, its buttons stay whole. */
+.app-bar__end > [data-band="notice"] {
+  min-width: 0;
+}
+/* In the bar a notice keeps to the bar's height: its frame closer around its line and its verbs. */
+.app-bar__end > [data-band="notice"] > .app-notice {
+  gap: theme(spacing.2);
+  padding: theme(spacing.1) theme(spacing.1) theme(spacing.1) theme(spacing.3);
+}
+.app-bar__end > [data-band="notice"] .app-notice__words > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-bar__end > .app-bar__player {
+  min-width: 0;
+}
+.app-bar__name {
+  min-width: 0;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 1279px) {
+  .app-bar {
+    gap: theme(spacing.4);
+    padding: 0 theme(spacing.6);
+  }
+  .app-bar__name {
+    max-width: 8rem;
+  }
+}
+.app-bar__player {
+  padding-right: theme(spacing.1);
+}
+
+/* ── Tabs: views of one thing; the chosen one raised. ── */
+/* Tabs never run past their column: each word stays on one line, and the side padding narrows on a phone. */
+.app-tabs {
+  display: inline-flex;
+  max-width: 100%;
+  gap: theme(spacing.1);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: theme(spacing.1);
+}
+.app-tabs__tab {
+  position: relative;
+  height: calc(var(--app-control) - 10px);
+  border-radius: calc(var(--app-radius-control) - 4px);
+  padding: 0 clamp(theme(spacing.2), 3vw, theme(spacing.5));
+  white-space: nowrap;
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-strong);
+  color: var(--app-muted);
+}
+.app-tabs__tab:is(:hover, [data-state="hover"]) {
+  color: var(--app-ink);
+}
+.app-tabs__tab[aria-selected="true"] {
+  background: var(--app-surface-2);
+  color: var(--app-ink);
+  box-shadow: inset 0 0 0 1px var(--app-line-strong);
+}
+.app-tabs__dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--app-radius-round);
+  background: rgb(var(--app-accent));
+}
+
+/* ── Panel: the app's one surface; its name over a rule, then its body. ── */
+.app-panel {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-panel);
+  background: color-mix(in srgb, var(--app-surface) 88%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--app-shadow-panel);
+}
+.app-panel__head {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[2.5]);
+  border-bottom: 1px solid var(--app-line);
+  padding: theme(spacing.4) theme(spacing.5);
+  color: var(--app-ink);
+}
+.app-panel__head h2 {
+  font-family: var(--app-face-heading);
+  font-size: var(--app-text-heading);
+  line-height: var(--app-leading-heading);
+  font-weight: var(--app-weight-heading);
+}
+/* A head about one game or mode: its painting behind the name, faded into the panel. */
+.app-panel__head[data-painted] {
+  position: relative;
+  isolation: isolate;
+  min-height: 104px;
+  align-items: flex-end;
+  overflow: hidden;
+  border-radius: var(--app-radius-panel) var(--app-radius-panel) 0 0;
+}
+.app-panel__painting {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+}
+.app-panel__head[data-painted]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(0deg, var(--app-surface) 4%, transparent 90%);
+}
+.app-panel__cue {
+  margin-left: auto;
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-muted);
+}
+.app-panel__body {
+  flex: 1;
+  padding: theme(spacing.5);
+}
+.app-panel[data-flush] .app-panel__body {
+  padding: theme(spacing.1) 0;
+}
+
+/* ── Age column: an age, tall on its painting, its games in its well. ── */
+.app-age-column {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 22rem;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-panel);
+  box-shadow: var(--app-shadow-panel);
+}
+.app-age-column__painting {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.app-age-column__body {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.3);
+  margin-top: auto;
+  background: linear-gradient(0deg, var(--app-age-to) 70%, transparent);
+  padding: theme(spacing.24) theme(spacing.5) theme(spacing.5);
+}
+/* A phone stacks the columns: each keeps a band of its painting, short, so its games come up into the first screen.
+   It follows the rules it narrows, so it wins at their specificity. */
+@media (max-width: 1023px) {
+  .app-age-column {
+    min-height: 0;
+  }
+  .app-age-column__body {
+    padding-top: theme(spacing.16);
+  }
+}
+.app-age-column__name {
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-title);
+  line-height: var(--app-leading-title);
+  color: var(--app-ink);
+}
+
+/* ── Well: a list's recess inside a painted surface. ── */
+.app-well {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+}
+
+/* ── Game card: a game on its age's painting, in its age's accent. ── */
+.app-game-card {
+  position: relative;
+  display: flex;
+  min-height: 220px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, rgb(var(--app-age)) 35%, transparent);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-age-to);
+  box-shadow: var(--app-shadow-panel);
+}
+.app-game-card[data-size="lead"] {
+  min-height: 360px;
+}
+.app-game-card__painting {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.85;
+}
+.app-game-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    0deg,
+    var(--app-age-to) 8%,
+    color-mix(in srgb, var(--app-age-to) 40%, transparent) 55%,
+    transparent
+  );
+}
+.app-game-card__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: theme(spacing.2);
+  padding: theme(spacing.6);
+}
+.app-game-card__title {
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-title);
+  line-height: var(--app-leading-title);
+  color: var(--app-ink);
+  text-shadow: 0 2px 0 rgb(0 0 0 / 0.6);
+}
+.app-game-card[data-size="lead"] .app-game-card__title {
+  font-size: var(--app-text-display);
+  line-height: var(--app-leading-display);
+}
+.app-game-card__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: theme(spacing.2);
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-ink);
+}
+.app-game-card__verb {
+  display: flex;
+  gap: theme(spacing.2);
+  margin-top: theme(spacing.2);
+}
+
+/* ── Row: one thing of a list; the player's own lit. ── */
+/* A row in a narrow list (a phone, an age's column) gives its words the width; what follows them wraps under, at the
+   right. */
+.app-row {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 56px;
+  align-items: center;
+  gap: theme(spacing.3);
+  border-left: 3px solid transparent;
+  padding: theme(spacing.2) theme(spacing.4);
+  color: var(--app-ink);
+}
+.app-row + .app-row {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--app-line) 70%, transparent);
+}
+.app-row:has(> :is(button, a).app-row__words):is(:hover, [data-state="hover"]) {
+  background: var(--app-hover);
+}
+.app-row[data-own] {
+  border-left-color: rgb(var(--app-accent));
+  background: var(--app-chosen);
+}
+.app-row__lead {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: theme(spacing.2);
+}
+.app-row__words {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 12rem;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+/* A trail of one (a board row's points), or a setting's value: it keeps its place on the row and the words give way, so
+   a phone's board or setting is a line a row, never a name over its points or its value (qa-app-1 P3-11). */
+.app-row:has(> .app-row__trail > :only-child) > .app-row__words,
+.app-row:has(> .app-row__trail > .app-setting__value) > .app-row__words {
+  flex-basis: 6rem;
+}
+.app-row__title {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--app-face-body);
+  font-size: var(--app-text-body);
+  line-height: var(--app-leading-body);
+  font-weight: var(--app-weight-strong);
+}
+.app-row__detail {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  line-height: var(--app-leading-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-muted);
+}
+.app-row__trail {
+  display: flex;
+  max-width: 100%;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
+  align-items: center;
+  gap: theme(spacing.2) theme(spacing.3);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-strong);
+  font-weight: var(--app-weight-strong);
+}
+.app-setting__value {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-muted);
+}
+.app-rank {
+  display: inline-grid;
+  min-width: 2.25rem;
+  place-items: center;
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-strong);
+  font-weight: var(--app-weight-strong);
+  font-variant-numeric: tabular-nums;
+  color: var(--app-muted);
+}
+.app-rank[data-top] {
+  color: rgb(var(--app-gold));
+}
+
+/* ── Chip: a state in its tone, a count, an amount. ── */
+.app-chip {
+  display: inline-flex;
+  height: 28px;
+  flex: none;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-chip);
+  background: rgb(0 0 0 / 0.3);
+  padding: 0 theme(spacing[2.5]);
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--app-ink);
+}
+.app-chip[data-tone="good"] {
+  border-color: color-mix(in srgb, var(--app-good) 50%, transparent);
+  color: var(--app-good);
+}
+.app-chip[data-tone="bad"] {
+  border-color: color-mix(in srgb, var(--app-bad) 50%, transparent);
+  color: var(--app-bad);
+}
+.app-chip[data-tone="warn"] {
+  border-color: color-mix(in srgb, var(--app-warn) 50%, transparent);
+  color: var(--app-warn);
+}
+.app-chip[data-tone="gold"] {
+  border-color: rgb(var(--app-gold) / 0.5);
+  color: rgb(var(--app-gold));
+}
+.app-chip__live {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--app-radius-round);
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 25%, transparent);
+}
+
+/* ── Figure: the point of its panel, with what it counts under it. ── */
+.app-figure {
+  display: inline-flex;
+  flex-direction: column;
+  gap: theme(spacing.1);
+}
+.app-figure__value {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.2);
+  font-family: var(--app-face-figure);
+  font-size: var(--app-text-figure);
+  line-height: var(--app-leading-figure);
+  font-weight: var(--app-weight-figure);
+  font-variant-numeric: tabular-nums;
+  color: var(--app-ink);
+}
+.app-figure[data-tone="gold"] .app-figure__value {
+  color: rgb(var(--app-gold));
+}
+.app-figure[data-tone="good"] .app-figure__value {
+  color: var(--app-good);
+}
+.app-figure[data-tone="bad"] .app-figure__value {
+  color: var(--app-bad);
+}
+.app-figure[data-tone="warn"] .app-figure__value {
+  color: var(--app-warn);
+}
+.app-figure__label {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-muted);
+}
+
+/* ── Notice: what the page must say, Try again where it helps. ── */
+.app-notice {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.4);
+  border: 1px solid var(--app-line);
+  border-left: 3px solid rgb(var(--app-accent));
+  border-radius: var(--app-radius-control);
+  background: var(--app-surface);
+  padding: theme(spacing.3) theme(spacing.4);
+  color: var(--app-ink);
+  font-family: var(--app-face-body);
+  font-size: var(--app-text-body);
+}
+.app-notice[data-tone="good"] {
+  border-left-color: var(--app-good);
+}
+.app-notice[data-tone="bad"] {
+  border-left-color: var(--app-bad);
+}
+.app-notice[data-tone="warn"] {
+  border-left-color: var(--app-warn);
+}
+.app-notice__words {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.app-notice__why {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  color: var(--app-muted);
+}
+
+/* ── Switch: on or off. ── */
+.app-switch {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  flex: none;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-round);
+  background: var(--app-well);
+  transition: background-color var(--app-fast) var(--app-ease);
+}
+.app-switch > i {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--app-radius-round);
+  background: var(--app-muted);
+  transition: transform var(--app-fast) var(--app-ease);
+}
+.app-switch[aria-checked="true"] {
+  border-color: rgb(var(--app-gold));
+  background: rgb(var(--app-gold) / 0.3);
+}
+.app-switch[aria-checked="true"] > i {
+  transform: translateX(20px);
+  background: rgb(var(--app-gold));
+}
+.app-switch:is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+  box-shadow: var(--app-focus);
+}
+.app-switch:disabled {
+  opacity: 0.45;
+}
+
+/* ── Choice: a tile among a few; the chosen one in the gold, ticked. ── */
+.app-choice {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.1);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-surface-2);
+  padding: theme(spacing.4) theme(spacing.3);
+  color: var(--app-ink);
+}
+.app-choice:is(:hover, [data-state="hover"]):not(:disabled) {
+  border-color: var(--app-line-strong);
+}
+.app-choice[aria-pressed="true"] {
+  border-color: rgb(var(--app-gold));
+  box-shadow: inset 0 0 0 1px rgb(var(--app-gold));
+}
+.app-choice:disabled {
+  opacity: 0.45;
+}
+/* A choice that is always taken (the entry's seat) stays lit: fixed, not unavailable. */
+.app-choice[aria-pressed="true"]:disabled {
+  opacity: 1;
+}
+.app-choice__tick {
+  position: absolute;
+  top: theme(spacing.2);
+  right: theme(spacing.2);
+}
+/* What a choice holds stays inside it: a price or a credit wraps its words in a narrow choice, never shortened. */
+.app-choice > * {
+  max-width: 100%;
+}
+.app-choice .app-chip {
+  height: auto;
+  min-height: 28px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: theme(spacing[0.5]) theme(spacing[1.5]);
+  white-space: normal;
+  text-align: center;
+}
+.app-choice__title {
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-strong);
+  font-weight: var(--app-weight-strong);
+}
+.app-choice__detail,
+.app-choice__price {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-muted);
+}
+.app-choice__price {
+  color: rgb(var(--app-gold));
+}
+
+/* ── Portrait: a player in a ring; the player's own in the accent. ── */
+.app-portrait {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid var(--app-line-strong);
+  border-radius: var(--app-radius-round);
+  background: var(--app-surface-2);
+  color: var(--app-muted);
+  font-family: var(--app-face-strong);
+  font-weight: var(--app-weight-strong);
+}
+.app-portrait[data-size="sm"] {
+  width: 32px;
+  height: 32px;
+}
+.app-portrait[data-size="md"] {
+  width: 44px;
+  height: 44px;
+}
+.app-portrait[data-size="lg"] {
+  width: 96px;
+  height: 96px;
+  font-size: var(--app-text-title);
+}
+/* A portrait that fills its cell: a picker's square. */
+.app-portrait[data-size="fill"] {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+.app-portrait[data-own] {
+  border-color: rgb(var(--app-accent));
+}
+.app-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Page head: Back, the title, what it does at its end. ── */
+.app-page-head {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.4);
+}
+.app-page-head h1 {
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-title);
+  line-height: var(--app-leading-title);
+  color: var(--app-ink);
+}
+.app-page-head__back {
+  display: inline-flex;
+  height: var(--app-control);
+  align-items: center;
+  gap: theme(spacing.2);
+  border-radius: var(--app-radius-control);
+  padding: 0 theme(spacing.3);
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-strong);
+  font-weight: var(--app-weight-strong);
+  color: var(--app-muted);
+}
+.app-page-head__back:is(:hover, [data-state="hover"]) {
+  background: var(--app-hover);
+  color: var(--app-ink);
+}
+.app-page-head__aside {
+  margin-left: auto;
+}
+
+/* ── Empty, loading. ── */
+.app-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.3);
+  padding: theme(spacing.8);
+  text-align: center;
+  font-family: var(--app-face-body);
+  font-size: var(--app-text-body);
+  color: var(--app-muted);
+}
+.app-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.3);
+}
+.app-skeleton > i {
+  display: block;
+  height: 14px;
+  border-radius: var(--app-radius-chip);
+  background: linear-gradient(90deg, var(--app-surface-2), var(--app-line), var(--app-surface-2));
+  background-size: 200% 100%;
+  animation: app-shimmer 1.4s linear infinite;
+}
+@keyframes app-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ── Dialog: a question before what cannot be undone. ── */
+.app-dialog {
+  display: flex;
+  width: 30rem;
+  max-width: 100%;
+  flex-direction: column;
+  gap: theme(spacing.4);
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-surface);
+  padding: theme(spacing.6);
+  box-shadow: var(--app-shadow-dialog);
+  color: var(--app-ink);
+}
+.app-dialog h2 {
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-title);
+  line-height: var(--app-leading-title);
+}
+.app-dialog__body {
+  font-family: var(--app-face-body);
+  font-size: var(--app-text-body);
+  color: var(--app-muted);
+}
+.app-dialog__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: theme(spacing.2);
+}
+/* A dialog over the page: the page dimmed behind it, the dialog in its middle. */
+.app-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: theme(spacing.4);
+  background: rgb(0 0 0 / 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-skeleton > i {
+    animation: none;
+  }
+}

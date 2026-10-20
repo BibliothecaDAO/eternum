@@ -20,6 +20,7 @@ export const SCOPE_INPUT_MODELS = new Set([
   "Structure",
   "ExplorerTroops",
   "TileOccupancy",
+  "ExpeditionSite",
 ]);
 
 /** The scope-input keys whose rows this scope was taken from, or would be taken from. */
@@ -32,6 +33,7 @@ export function scopeInputInterest(scope: GameSyncScope): Set<string> {
     ...[...expedition.owners].map(scopeLookup.structuresOf),
     ...[...expedition.realms].map(scopeLookup.armiesOf),
     ...[...expedition.regions].map(scopeLookup.occupancyIn),
+    ...[...expedition.regions].map(scopeLookup.sitesIn),
     ...[...expedition.entities].flatMap((entity) => [
       scopeLookup.structure(entity),
       scopeLookup.army(entity),

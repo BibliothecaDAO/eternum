@@ -16,6 +16,8 @@
  * - `--at-rest`, at desktop and phone: the map and the realm view as they open, nothing pressed, each with a screenshot
  *   and what a first-time viewer meets there (scripts/live-sample.mjs), so a change to the HUD is counted the same way
  *   before and after.
+ * - `--watch`: the map and realm addresses as a spectator's (`?spectate=true`), so `--at-rest` shows a live game's
+ *   HUD that the profile holds no seat in, nothing sent.
  * - `--tasks <task,task>`: each task from its view at rest, pressed as a player would, one press at a time with a
  *   screenshot after each, until its end state shows; its presses are its clicks (scripts/game-tasks.mjs).
  *
@@ -41,11 +43,12 @@ const AT_REST_SETTLE_MS = 8_000;
 const CRATE_SEARCH = { radius: 240, step: 40 };
 
 /** The game's own addresses: its doorway, its map, and its Results page. */
-export const gameAddresses = (spec) => {
+export const gameAddresses = (spec, { watch = false } = {}) => {
   const [chain, game] = spec.split(":");
   if (!chain || !/^\d+$/.test(game ?? "")) throw new Error(`--game expects <chain>:<game>, got ${spec}`);
   const doorway = `/g/${chain}/${game}`;
-  return { doorway, map: `${doorway}/map`, realm: `${doorway}/hex`, results: `/results/${chain}-${game}` };
+  const as = watch ? "?spectate=true" : "";
+  return { doorway, map: `${doorway}/map${as}`, realm: `${doorway}/hex${as}`, results: `/results/${chain}-${game}` };
 };
 
 const PACK_NAME = /^\S+ pack( · lucky)?$/;
@@ -133,7 +136,7 @@ const pressButton = (b, word, within = "body") => {
   return true;
 };
 
-/** The right column's **Log** button (`QuickFeed`'s `LogToggle`) and the history its panel opens on. */
+/** The right column's **All** button in `EventsCard`, labelled Log, and the history its panel opens on. */
 export const LOG_BUTTON = 'button[aria-label="Log"]';
 export const HISTORY = 'section[aria-label="World history"]';
 
@@ -309,8 +312,12 @@ const proveEndedEntrance = async (b, base, addresses, entrance, layout, out) => 
  * The game's steps in order: the views at rest, the tasks, the crate while the game runs, its end, then its ended entrances at both sizes. Each step
  * is judged with every error raised from its start to its end, however far it got.
  */
-export const proveGame = async (b, { baseUrl, game, crate, untilEndMinutes, ended, atRest, tasks = [] }, out) => {
-  const addresses = gameAddresses(game);
+export const proveGame = async (
+  b,
+  { baseUrl, game, crate, untilEndMinutes, ended, atRest, watch, tasks = [] },
+  out,
+) => {
+  const addresses = gameAddresses(game, { watch });
   const steps = [];
   if (atRest)
     for (const layout of Object.keys(VIEWPORTS))

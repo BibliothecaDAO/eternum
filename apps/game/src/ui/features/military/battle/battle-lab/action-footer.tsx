@@ -1,7 +1,4 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import Button from "@/ui/design-system/atoms/button";
-import { HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudButton, HudNotice, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 
 import { BattleCooldownTimer } from "../battle-cooldown-timer";
@@ -19,7 +16,8 @@ interface ActionFooterProps {
   loading: boolean;
   onAction: () => void;
   warning?: string | null;
-  tweet?: string;
+  /** Writes the battle's shared line when Share is pressed; none, no Share. */
+  share?: () => string;
   cooldownEnd?: number;
 }
 
@@ -35,39 +33,26 @@ export const ActionFooter = ({
   loading,
   onAction,
   warning,
-  tweet,
+  share,
   cooldownEnd,
 }: ActionFooterProps) => {
   return (
     <div className="flex flex-col items-center gap-3">
       {showRaidToggle && (
-        <div className="flex overflow-hidden rounded-md border border-gold/30">
-          {(["attack", "raid"] as const).map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => onSetAttackType(option)}
-              className={cn(
-                "px-6 py-1.5 text-sm font-semibold transition-colors",
-                attackType === option ? "bg-gold/20 text-gold" : "bg-black/30 text-kit-muted hover:text-gold",
-              )}
-              aria-pressed={attackType === option}
-            >
-              {option === "attack" ? "⚔️ Combat" : "💰 Raid"}
-            </button>
-          ))}
-        </div>
+        <HudTabs
+          tabs={[
+            { key: "attack", label: "⚔️ Combat" },
+            { key: "raid", label: "💰 Raid" },
+          ]}
+          value={attackType}
+          onChange={onSetAttackType}
+        />
       )}
 
       {mode === "live" && isEdited && (
-        <button
-          type="button"
-          onClick={onResetToLive}
-          className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-black/30 px-3 py-1 text-sm font-semibold text-gold/80 transition hover:border-gold hover:text-gold"
-        >
-          <SemanticIcon name="refresh" className="h-3 w-3" />
+        <HudButton kind="quiet" size="sm" icon="refresh" onClick={onResetToLive}>
           Reset to live
-        </button>
+        </HudButton>
       )}
 
       {mode === "live" && cooldownEnd !== undefined && cooldownEnd > Math.floor(Date.now() / 1000) && (
@@ -75,24 +60,14 @@ export const ActionFooter = ({
       )}
 
       {mode === "live" && (
-        <Button
-          variant="primary"
-          className="min-w-[200px] px-6 py-3 text-base font-bold"
-          isLoading={loading}
-          disabled={actionDisabled}
-          onClick={onAction}
-        >
+        <HudButton kind="primary" busy={loading ? actionLabel : undefined} disabled={actionDisabled} onClick={onAction}>
           {actionLabel}
-        </Button>
+        </HudButton>
       )}
 
-      {warning && (
-        <div className={cn("text-center text-red-300", HUD_CUE)} role="alert">
-          {warning}
-        </div>
-      )}
+      {warning && <HudNotice tone="bad" line={warning} />}
 
-      {tweet && <TwitterShareButton text={tweet} callToActionText="Share your Battle" variant="outline" />}
+      {share && <TwitterShareButton text={share} callToActionText="Share your Battle" />}
     </div>
   );
 };

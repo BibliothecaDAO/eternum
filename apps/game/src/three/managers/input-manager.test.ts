@@ -1,7 +1,16 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
+import { MapControls } from "three/addons/controls/MapControls.js";
+import { CONTROL_CONFIG } from "../constants/rendering";
+import { HEX_SIZE } from "../constants/scene-constants";
 import type { SceneManager } from "../scene-manager";
+import {
+  resolveWorldmapCameraFieldOfViewDegrees,
+  resolveWorldmapCameraPitchRadians,
+} from "../scenes/worldmap-camera-view-profile";
+import { groundUnderCursor, zoomTowardCursor } from "../scenes/worldmap-zoom/worldmap-zoom-anchor";
+import { WorldmapZoomCoordinator } from "../scenes/worldmap-zoom/worldmap-zoom-coordinator";
 import { SceneName } from "../types";
 
 vi.mock("@/hooks/store/use-ui-store", () => ({
@@ -11,6 +20,7 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
     }),
   },
 }));
+vi.mock("@/ui/config", () => ({ IS_FLAT_MODE: false }));
 
 const { InputManager } = await import("./input-manager");
 
@@ -45,6 +55,7 @@ function createSubject(currentScene: SceneName = SceneName.WorldMap) {
     sceneManager,
     raycaster,
     mouse,
+    camera,
     surface,
   };
 }
@@ -121,6 +132,24 @@ describe("InputManager lifecycle", () => {
     expect(addSpy).not.toHaveBeenCalledWith("mousedown", expect.any(Function));
     expect(removeSpy).not.toHaveBeenCalledWith("mousedown", expect.any(Function));
     expect(removeSpy).not.toHaveBeenCalledWith("click", expect.any(Function));
+  });
+
+  it("tells its listeners the pointer left the surface, and drops a move still waiting for its frame", () => {
+    const frameHarness = installAnimationFrameHarness();
+    const moved = vi.fn();
+    const left = vi.fn();
+    const fixture = createSubject();
+
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
+    fixture.manager.addListener("mousemove", moved);
+    fixture.manager.addListener("mouseleave", left);
+    fixture.surface.dispatchEvent(new MouseEvent("mousemove", { clientX: 150, clientY: 250 }));
+    fixture.surface.dispatchEvent(new MouseEvent("mouseleave", { clientX: 99, clientY: 250 }));
+    frameHarness.flushNextFrame();
+
+    expect(left).toHaveBeenCalledTimes(1);
+    expect(moved).not.toHaveBeenCalled();
   });
 
   it("processes many mousemoves once on the next frame using the latest coordinates", () => {
@@ -252,21 +281,6 @@ describe("InputManager lifecycle", () => {
 
     expect(callback).not.toHaveBeenCalled();
     expect(fixture.raycaster.setFromCamera).not.toHaveBeenCalled();
-  });
-
-  it("suppresses click callback after drag threshold is exceeded", () => {
-    const callback = vi.fn();
-    const fixture = createSubject();
-
-    fixture.manager.setSurface(fixture.surface);
-    fixture.manager.activate();
-    fixture.manager.addListener("click", callback);
-
-    fixture.surface.dispatchEvent(new MouseEvent("mousedown", { clientX: 10, clientY: 10 }));
-    window.dispatchEvent(new MouseEvent("mousemove", { clientX: 40, clientY: 40 }));
-    fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 40, clientY: 40 }));
-
-    expect(callback).not.toHaveBeenCalled();
   });
 
   it("is idempotent and skips duplicate destroy cleanup", () => {
@@ -466,5 +480,185 @@ describe("InputManager touch", () => {
     expect(nativeMenu.defaultPrevented).toBe(true);
     expect(order).toHaveBeenCalledTimes(1);
     fixture.manager.destroy();
+  });
+});
+
+/**
+ * The world map as a player drives it: its MapControls with the game's damping, its wheel zoom easing the distance,
+ * both stepped once per animation frame as the renderer does.
+ */
+function createWorldMap() {
+  const camera = new THREE.PerspectiveCamera(resolveWorldmapCameraFieldOfViewDegrees(), 1440 / 900, 0.1, 200);
+  const surface = document.createElement("div");
+  Object.defineProperty(surface, "clientWidth", { value: 1440 });
+  Object.defineProperty(surface, "clientHeight", { value: 900 });
+  surface.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1440, height: 900 }) as DOMRect;
+  surface.setPointerCapture = vi.fn();
+  surface.releasePointerCapture = vi.fn();
+  document.body.append(surface);
+
+  const controls = new MapControls(camera, surface);
+  controls.enableRotate = CONTROL_CONFIG.enableRotate;
+  controls.enableDamping = CONTROL_CONFIG.enableDamping;
+  controls.dampingFactor = CONTROL_CONFIG.dampingFactor;
+  controls.panSpeed = CONTROL_CONFIG.panSpeed;
+  const placeAt = (distance: number) => {
+    const pitch = resolveWorldmapCameraPitchRadians(distance);
+    const target = controls.target;
+    camera.position.set(target.x, target.y + Math.sin(pitch) * distance, target.z + Math.cos(pitch) * distance);
+  };
+  placeAt(20);
+  controls.update();
+  const zoom = new WorldmapZoomCoordinator({ initialDistance: 20, minDistance: 10, maxDistance: 40 });
+  let zoomCursor: THREE.Vector2 | null = null;
+
+  const manager = new InputManager(
+    SceneName.WorldMap,
+    { getCurrentScene: () => SceneName.WorldMap } as unknown as SceneManager,
+    new THREE.Raycaster(),
+    new THREE.Vector2(),
+    camera,
+  );
+  manager.setSurface(surface);
+  manager.activate();
+  const clicked = vi.fn();
+  manager.addListener("click", clicked);
+
+  const frames = (count: number) => {
+    for (let frame = 0; frame < count; frame += 1) {
+      controls.update();
+      const zoomFrame = zoom.tick({
+        actualDistance: camera.position.distanceTo(controls.target),
+        deltaMs: 1000 / 60,
+        nowMs: 0,
+      });
+      if (zoomFrame.didMove) {
+        zoomTowardCursor(camera, controls.target, zoomCursor, () => placeAt(zoomFrame.snapshot.actualDistance));
+      }
+    }
+  };
+  // What the browser sends for the left button: the pointer event, then its mouse event.
+  const send = (target: EventTarget, pointer: string, mouse: string, x: number, y: number) => {
+    const init = { clientX: x, clientY: y, button: 0, buttons: 1, bubbles: true };
+    target.dispatchEvent(new PointerEvent(pointer, { ...init, pointerId: 1, pointerType: "mouse" }));
+    target.dispatchEvent(new MouseEvent(mouse, init));
+  };
+  const press = (x: number, y: number) => send(surface, "pointerdown", "mousedown", x, y);
+  const moveTo = (x: number, y: number) => send(document, "pointermove", "mousemove", x, y);
+  const release = (x: number, y: number) => {
+    send(document, "pointerup", "mouseup", x, y);
+    surface.dispatchEvent(new MouseEvent("click", { clientX: x, clientY: y, button: 0, bubbles: true }));
+  };
+  /** A drag from (x, y) by (dx, dy), about two pixels a frame. */
+  const drag = (x: number, y: number, dx: number, dy: number) => {
+    press(x, y);
+    const steps = Math.max(Math.abs(dx), Math.abs(dy)) / 2;
+    for (let step = 1; step <= steps; step += 1) {
+      moveTo(x + (dx * step) / steps, y + (dy * step) / steps);
+      frames(1);
+    }
+    release(x + dx, y + dy);
+  };
+  /** The wheel turned in at (x, y): the zoom eases toward the closest distance over the next frames. */
+  const wheelIn = (x: number, y: number) => {
+    zoomCursor = new THREE.Vector2((x / 1440) * 2 - 1, -(y / 900) * 2 + 1);
+    zoom.applyIntent({ type: "snap_to_distance", distance: 10 });
+  };
+
+  /** The ground under a screen point, where the camera stands now. */
+  const groundAt = (x: number, y: number) =>
+    groundUnderCursor(camera, controls.target, new THREE.Vector2((x / 1440) * 2 - 1, -(y / 900) * 2 + 1))!;
+
+  return {
+    camera,
+    clicked,
+    frames,
+    groundAt,
+    press,
+    moveTo,
+    release,
+    drag,
+    wheelIn,
+    destroy: () => {
+      manager.destroy();
+      controls.dispose();
+      surface.remove();
+    },
+  };
+}
+
+describe("InputManager on the world map's damped, easing camera", () => {
+  it.each([1, 3, 5, 9])("takes a press %i s after a pan for a click, while the pan still drifts", (seconds) => {
+    const map = createWorldMap();
+    map.drag(400, 400, 200, 0);
+    expect(map.clicked).not.toHaveBeenCalled();
+
+    map.frames(seconds * 60);
+    const drifting = map.camera.position.clone();
+    map.frames(1);
+    expect(map.camera.position.equals(drifting)).toBe(false);
+
+    // A 100 ms press whose hand trembles by a pixel: the map controls follow the pointer by that pixel.
+    map.press(700, 500);
+    map.frames(3);
+    map.moveTo(701, 500);
+    map.frames(3);
+    map.release(701, 500);
+
+    expect(map.clicked).toHaveBeenCalledTimes(1);
+    map.destroy();
+  });
+
+  it("takes a still press for a click while the wheel's zoom still eases", () => {
+    const map = createWorldMap();
+    map.wheelIn(900, 300);
+    map.frames(6);
+
+    const cameraAtPress = map.camera.position.clone();
+    map.press(900, 300);
+    map.frames(6); // a 100 ms press, the mouse held still
+    map.release(900, 300);
+
+    expect(map.camera.position.distanceTo(cameraAtPress)).toBeGreaterThan(0.1);
+    expect(map.clicked).toHaveBeenCalledTimes(1);
+    map.destroy();
+  });
+
+  it.each([4, 6, 8])(
+    "selects the tile a press went down on in one click, though the hand travels %i px, and holds the map still",
+    (travel) => {
+      const map = createWorldMap();
+      const pressedGround = map.groundAt(900, 500);
+      const before = map.camera.position.clone();
+
+      // A player's press: the button goes down, the hand drifts over two frames, the button comes up.
+      map.press(900, 500);
+      map.frames(2);
+      map.moveTo(900 + travel / 2, 500);
+      map.frames(2);
+      map.moveTo(900 + travel, 500);
+      map.frames(2);
+      map.release(900 + travel, 500);
+      map.frames(30);
+
+      expect(map.clicked).toHaveBeenCalledTimes(1);
+      expect(map.camera.position.distanceTo(before)).toBe(0);
+      // The click picks the ground the press went down on: the tile the player pressed.
+      const [, raycaster] = map.clicked.mock.calls[0] as [MouseEvent, THREE.Raycaster];
+      const picked = raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3())!;
+      expect(picked.distanceTo(pressedGround)).toBeLessThan(HEX_SIZE / 2);
+      map.destroy();
+    },
+  );
+
+  it("takes a six-pixel drag that pans the map for a pan, not a click", () => {
+    const map = createWorldMap();
+    const before = map.camera.position.clone();
+    map.drag(400, 400, 6, 6);
+    map.frames(60);
+
+    expect(map.camera.position.distanceTo(before)).toBeGreaterThan(0.01);
+    expect(map.clicked).not.toHaveBeenCalled();
+    map.destroy();
   });
 });

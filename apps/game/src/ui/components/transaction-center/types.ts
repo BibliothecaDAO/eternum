@@ -1,194 +1,81 @@
 import { TransactionType } from "@bibliothecadao/provider";
 
-export const getTxMessage = (type: TransactionType): string => {
-  switch (type) {
-    // Exploration & Movement
-    case TransactionType.EXPLORE:
-      return "Scouts sent to explore new lands";
-    case TransactionType.TRAVEL_HEX:
-      return "Journeyed to distant lands";
-    case TransactionType.EXPLORER_CREATE:
-      return "Created new explorer";
-    case TransactionType.EXPLORER_ADD:
-      return "Added troops to explorer";
-    case TransactionType.EXPLORER_DELETE:
-      return "Disbanded explorer";
-      return "Explorer moved";
-      return "Extracted exploration rewards";
-    case TransactionType.EXPLORER_EXPLORER_SWAP:
-      return "Swapped troops between explorers";
-    case TransactionType.EXPLORER_GUARD_SWAP:
-      return "Swapped troops from explorer to guard";
-    case TransactionType.GUARD_EXPLORER_SWAP:
-      return "Swapped troops from guard to explorer";
-
-    // Guards
-    case TransactionType.GUARD_ADD:
-      return "Added guard to structure";
-    case TransactionType.GUARD_DELETE:
-      return "Removed guard from structure";
-
-    // Troops & Transfers
-    case TransactionType.TROOP_TROOP_ADJACENT_TRANSFER:
-      return "Transferred troops between units";
-    case TransactionType.TROOP_STRUCTURE_ADJACENT_TRANSFER:
-      return "Transferred troops to structure";
-    case TransactionType.STRUCTURE_TROOP_ADJACENT_TRANSFER:
-      return "Transferred troops from structure";
-
-    // Combat
-    case TransactionType.ATTACK_EXPLORER_VS_EXPLORER:
-      return "Explorer attacked explorer";
-    case TransactionType.ATTACK_EXPLORER_VS_GUARD:
-      return "Explorer attacked guard";
-    case TransactionType.ATTACK_GUARD_VS_EXPLORER:
-      return "Guard attacked explorer";
-    case TransactionType.RAID_EXPLORER_VS_GUARD:
-      return "Explorer raided structure";
-      return "Commenced battle";
-      return "Battle resolved";
-      return "Forced battle to commence";
-      return "Joined the fray";
-      return "Retreated from battle";
-      return "Claimed spoils of war";
-
-      // Legacy Army
-      return "Raised a new army";
-      return "Disbanded troops";
-      return "Recruited soldiers";
-      return "Combined battalions";
-
-    // Buildings
-    case TransactionType.CREATE_BUILDING:
-      return "Constructed new building";
-      return "Demolished building";
-    case TransactionType.PAUSE_BUILDING_PRODUCTION:
-      return "Paused building production";
-    case TransactionType.RESUME_BUILDING_PRODUCTION:
-      return "Resumed building production";
-    case TransactionType.LEVEL_UP:
-      return "Upgraded building level";
-
-    // Resources & Production
-    case TransactionType.SEND:
-      return "Sent resources";
-      return "Collected resources";
-    case TransactionType.ARRIVALS_OFFLOAD:
-      return "Offloaded arrivals";
-    case TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION:
-      return "Converted resources";
-    case TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION:
-      return "Used labor for production";
-      return "Minted tokens";
-      return "Minted test LORDS";
-
-      // Banking & Trading
-      return "Opened ledger with the royal bank";
-      return "Established royal treasury";
-      return "Adjusted bank fees";
-      return "Adjusted bridge fees";
-    case TransactionType.BUY:
-      return "Purchased from the market";
-    case TransactionType.SELL:
-      return "Sold on the market";
-      return "Added liquidity";
-    case TransactionType.REMOVE:
-      return "Withdrew liquidity";
-      return "Deposited tokens";
-      return "Withdrew tokens";
-
-    // Orders & Marketplace
-    case TransactionType.CREATE_ORDER:
-      return "Posted trade decree";
-      return "Accepted trade decree";
-      return "Accepted portion of trade decree";
-      return "Cancelled order";
-    case TransactionType.CREATE:
-      return "Created marketplace order";
-      return "Accepted marketplace order";
-      return "Cancelled marketplace order";
-      return "Edited marketplace order";
-
-    // Guilds
-    case TransactionType.CREATE_GUILD:
-      return "Created new tribe";
-    case TransactionType.JOIN_GUILD:
-      return "Joined tribe";
-    case TransactionType.LEAVE_GUILD:
-      return "Left tribe";
-      return "Removed member from tribe";
-    case TransactionType.UPDATE_WHITELIST:
-      return "Updated tribe whitelist";
-    case TransactionType.REMOVE_GUILD_MEMBER:
-      return "Expelled member from tribe";
-      return "Removed player from whitelist";
-      return "Transferred tribe ownership";
-      return "Added player to whitelist";
-
-      // Structures & Ownership
-      return "Transferred structure ownership";
-      return "Burned structure";
-    case TransactionType.SET_ENTITY_NAME:
-      return "Named entity";
-      return "Set address name";
-
-    // Hyperstructures
-    case TransactionType.CONTRIBUTE:
-      return "Contributed to hyperstructure";
-      return "Updated construction access";
-      return "Claimed construction points";
-      return "Claimed wonder production bonus";
-
-    // Realms & Settlement
-    case TransactionType.SETTLE:
-      return "Settled realm";
-      return "Registered in the realm";
-      return "Locked tokens";
-
-      // Lords & Approvals
-      return "Pledged LORDS tokens";
-      return "Withdrew LORDS tokens";
-      return "Authorized resource transfer";
-      return "Set approval for all tokens";
-      return "Updated shareholders";
-    case TransactionType.SET_ACCESS:
-      return "Access rights updated";
-
-      // Season & Leaderboard
-      return "Season closed";
-      return "Claimed season prize";
-      return "Claimed leaderboard rewards";
-    case TransactionType.END_GAME:
-      return "Game has ended";
-
-      // Blitz
-      return "Submitted blitz rankings";
-
-    // Chests & Relics
-    case TransactionType.OPEN_CHEST:
-      return "Opened treasure chest";
-    case TransactionType.BURN_RESEARCH_FOR_RELIC:
-      return "Crafted relic from research";
-      return "Applied relic";
-
-    // Config (Admin)
-    case TransactionType.INITIALIZE:
-      return "Initialized configuration";
-      return "Granted role";
-      return "Updated game configuration";
-
-      // Legacy
-      return "Resumed production";
-      return "Paused production";
-      return "Destroyed building";
-      return "Upgraded level";
-      return "Created marketplace orders";
-      return "Accepted marketplace order";
-      return "Cancelled marketplace order";
-      return "Edited marketplace order";
-      return "Contributed to construction";
-
-    default:
-      return "Royal decree executed";
-  }
+/**
+ * What each command reads as in the feed and its notices, in the player's words. Every command has its line: a new one
+ * is a type error here until it does, so none reaches the feed as a placeholder.
+ */
+const TX_MESSAGES: Record<TransactionType, string> = {
+  [TransactionType.PROVISION_REALM]: "Realm provisioned",
+  [TransactionType.BITCOIN_MINE_CONTRIBUTE_LABOR]: "Labor sent to the mine",
+  [TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD]: "Mine reward claimed",
+  [TransactionType.BITCOIN_MINE_CLOSE_PHASE]: "Mining phase closed",
+  [TransactionType.BITCOIN_MINE_BIND_PHASE]: "Mine joined the mining phase",
+  [TransactionType.EXPLORE]: "Scouts sent to explore new lands",
+  [TransactionType.TRAVEL_HEX]: "Army on the move",
+  [TransactionType.TOGGLE_ALTERNATE]: "Army passed through a spire",
+  [TransactionType.ENTER_DEPTH]: "Army went deeper",
+  [TransactionType.RESEARCH]: "Research started",
+  [TransactionType.BUY_TIER]: "Upgrade bought",
+  [TransactionType.REFILL_STAMINA]: "Stamina refilled",
+  [TransactionType.WITHDRAW_LORDS]: "LORDS withdrawn",
+  [TransactionType.EXPLORER_CREATE]: "Army raised",
+  [TransactionType.EXPLORER_ADD]: "Army reinforced",
+  [TransactionType.EXPLORER_DELETE]: "Army disbanded",
+  [TransactionType.EXPLORER_EXPLORER_SWAP]: "Troops moved between armies",
+  [TransactionType.EXPLORER_GUARD_SWAP]: "Troops moved into the guard",
+  [TransactionType.GUARD_EXPLORER_SWAP]: "Troops moved out of the guard",
+  [TransactionType.GUARD_ADD]: "Guard reinforced",
+  [TransactionType.GUARD_DELETE]: "Guard dismissed",
+  [TransactionType.TROOP_TROOP_ADJACENT_TRANSFER]: "Resources or relics passed between armies",
+  [TransactionType.TROOP_STRUCTURE_ADJACENT_TRANSFER]: "Resources or relics handed from an army to a structure",
+  [TransactionType.STRUCTURE_TROOP_ADJACENT_TRANSFER]: "Resources or relics handed from a structure to an army",
+  [TransactionType.ATTACK_EXPLORER_VS_EXPLORER]: "Army attacked an army",
+  [TransactionType.ATTACK_EXPLORER_VS_GUARD]: "Army attacked a structure",
+  [TransactionType.ATTACK_GUARD_VS_EXPLORER]: "Guard attacked an army",
+  [TransactionType.RAID_EXPLORER_VS_GUARD]: "Army raided a structure",
+  [TransactionType.CREATE_BUILDING]: "Building built",
+  [TransactionType.DESTROY_BUILDING]: "Building demolished",
+  [TransactionType.PAUSE_BUILDING_PRODUCTION]: "Production paused",
+  [TransactionType.RESUME_BUILDING_PRODUCTION]: "Production resumed",
+  [TransactionType.LEVEL_UP]: "Realm levelled up",
+  [TransactionType.SEND]: "Resources sent",
+  [TransactionType.ARRIVALS_OFFLOAD]: "Arrivals unloaded",
+  [TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION]: "Resources turned into production",
+  [TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION]: "Labor turned into production",
+  [TransactionType.BUY]: "Bought at the market",
+  [TransactionType.SELL]: "Sold at the market",
+  [TransactionType.REMOVE]: "Liquidity withdrawn",
+  [TransactionType.ADD_LIQUIDITY]: "Liquidity added",
+  [TransactionType.BRIDGE_DEPOSIT]: "Resources bridged in",
+  [TransactionType.BRIDGE_WITHDRAW]: "Resources bridged out",
+  [TransactionType.CREATE_ORDER]: "Trade posted",
+  [TransactionType.ACCEPT_ORDER]: "Trade accepted",
+  [TransactionType.CANCEL_ORDER]: "Trade cancelled",
+  [TransactionType.CREATE]: "Market order posted",
+  [TransactionType.CREATE_GUILD]: "Tribe founded",
+  [TransactionType.JOIN_GUILD]: "Joined a tribe",
+  [TransactionType.LEAVE_GUILD]: "Left the tribe",
+  [TransactionType.UPDATE_WHITELIST]: "Tribe invitations updated",
+  [TransactionType.REMOVE_GUILD_MEMBER]: "Member removed from the tribe",
+  [TransactionType.SET_ENTITY_NAME]: "Renamed",
+  [TransactionType.TRANSFER_STRUCTURE_OWNERSHIP]: "Structure ownership transferred",
+  [TransactionType.STRUCTURE_BURN]: "Resources burned",
+  [TransactionType.CREATE_HYPERSTRUCTURE]: "Hyperstructure founded",
+  [TransactionType.INITIALIZE_HYPERSTRUCTURE]: "Hyperstructure construction started",
+  [TransactionType.CONTRIBUTE]: "Resources given to the hyperstructure",
+  [TransactionType.CLAIM_WONDER_POINTS]: "Wonder points claimed",
+  [TransactionType.CLAIM_PLAYER_FAITH_POINTS]: "Faith points claimed",
+  [TransactionType.PLEDGE_FAITH]: "Faith pledged",
+  [TransactionType.REMOVE_FAITH]: "Faith withdrawn",
+  [TransactionType.UPDATE_WONDER_OWNERSHIP]: "Wonder shares updated",
+  [TransactionType.UPDATE_STRUCTURE_OWNERSHIP]: "Structure shares updated",
+  [TransactionType.SETTLE]: "Realm settled",
+  [TransactionType.SET_ACCESS]: "Access updated",
+  [TransactionType.END_GAME]: "Game ended",
+  [TransactionType.OPEN_CHEST]: "Crate opened",
+  [TransactionType.INTERACT_SITE]: "Site visited",
+  [TransactionType.BURN_RESEARCH_FOR_RELIC]: "Relic crafted",
+  [TransactionType.APPLY_RELIC]: "Relic activated",
 };
+
+export const getTxMessage = (type: TransactionType): string => TX_MESSAGES[type];

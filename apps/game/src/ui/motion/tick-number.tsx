@@ -1,3 +1,4 @@
+import { formatExact } from "@bibliothecadao/types";
 import { animate } from "framer-motion";
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { EASE, tickDurationMs } from "./motion-scale";
@@ -9,7 +10,7 @@ import { useReducedMotion } from "./motion-settings";
  */
 export const TickNumber = ({
   value,
-  format = (amount) => Math.round(amount).toLocaleString(),
+  format = (amount) => formatExact(Math.round(amount)),
   speed = 1,
   nudge = 0,
   className,
