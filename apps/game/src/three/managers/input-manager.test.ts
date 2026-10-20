@@ -45,6 +45,7 @@ function createSubject(currentScene: SceneName = SceneName.WorldMap) {
     sceneManager,
     raycaster,
     mouse,
+    camera,
     surface,
   };
 }
@@ -287,6 +288,36 @@ describe("InputManager lifecycle", () => {
     expect(callback).not.toHaveBeenCalled();
   });
 
+  it("takes a short drag that pans the map for a pan, not a click that clears the selection", () => {
+    const callback = vi.fn();
+    const fixture = createSubject();
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
+    fixture.manager.addListener("click", callback);
+
+    // Six pixels each way: under the old ten-pixel axis threshold, yet the map controls pan the camera with it.
+    fixture.surface.dispatchEvent(new MouseEvent("mousedown", { clientX: 10, clientY: 10 }));
+    window.dispatchEvent(new MouseEvent("mousemove", { clientX: 16, clientY: 16 }));
+    fixture.camera.position.x += 0.4;
+    fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 16, clientY: 16 }));
+
+    expect(callback).not.toHaveBeenCalled();
+  });
+
+  it("still clicks when the press leaves the map where it was", () => {
+    const callback = vi.fn();
+    const fixture = createSubject();
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
+    fixture.manager.addListener("click", callback);
+
+    fixture.surface.dispatchEvent(new MouseEvent("mousedown", { clientX: 10, clientY: 10 }));
+    window.dispatchEvent(new MouseEvent("mousemove", { clientX: 12, clientY: 11 }));
+    fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 12, clientY: 11 }));
+
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
+
   it("is idempotent and skips duplicate destroy cleanup", () => {
     const removeSpy = vi.spyOn(window, "removeEventListener");
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -343,6 +374,24 @@ describe("InputManager touch", () => {
     expect(fixture.mouse.x).toBeCloseTo(-0.74);
     expect(moveCallback).not.toHaveBeenCalled();
     expect(frameHarness.requestAnimationFrame).not.toHaveBeenCalled();
+  });
+
+  it("taps on touch however the map moved since the last mouse press", () => {
+    const clickCallback = vi.fn();
+    const fixture = createSubject();
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
+    fixture.manager.addListener("click", clickCallback);
+
+    // A mouse press released off the map sends no click; then a finger pans the map and taps.
+    fixture.surface.dispatchEvent(new MouseEvent("mousedown", { clientX: 10, clientY: 10 }));
+    window.dispatchEvent(new MouseEvent("mouseup", { clientX: 10, clientY: 10 }));
+    fixture.camera.position.x += 3;
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointerdown", 1, 150, 260));
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointerup", 1, 150, 260));
+
+    expect(clickCallback).toHaveBeenCalledTimes(1);
+    fixture.manager.destroy();
   });
 
   it("cancels the touch's end so the browser sends no click to whatever the tap put under the finger", () => {

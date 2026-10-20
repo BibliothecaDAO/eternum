@@ -22,6 +22,8 @@ interface InputListener {
 export class InputManager {
   private listeners: InputListener[] = [];
   private isDragged = false;
+  /** Where the camera stood when the mouse button went down: a press that ends with the map moved was a pan. */
+  private cameraAtPress: THREE.Vector3 | null = null;
   private currentDragListener: ((e: MouseEvent) => void) | null = null;
   private currentMouseUpListener: ((e: MouseEvent) => void) | null = null;
   private mouseDownHandler: (e: MouseEvent) => void;
@@ -131,9 +133,12 @@ export class InputManager {
 
     this.updatePointerRaycaster(mouseEvent);
 
-    if (event === "click" && this.isDragged) {
+    if (event === "click") {
+      const pressed = (mouseEvent as PointerEvent).pointerType !== "touch" ? this.cameraAtPress : null;
+      const panned = this.isDragged || (pressed !== null && !this.camera.position.equals(pressed));
       this.isDragged = false;
-      return;
+      this.cameraAtPress = null;
+      if (panned) return;
     }
 
     callback(mouseEvent, this.raycaster);
@@ -327,6 +332,7 @@ export class InputManager {
     const mouseX = e.clientX;
     const mouseY = e.clientY;
     this.isDragged = false;
+    this.cameraAtPress = this.camera.position.clone();
 
     this.currentDragListener = (e: MouseEvent) => {
       if (Math.abs(mouseX - e.clientX) > 10 || Math.abs(mouseY - e.clientY) > 10) {
