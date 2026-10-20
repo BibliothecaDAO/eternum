@@ -2036,7 +2036,7 @@ import { REALMS_X_URL } from "../../../../../packages/chain/src/community";
 
 * [Realms World](https://realms.world/) - The DAO behind Eternum
 * [Discord](https://discord.gg/realmsworld) - Join our Discord
-* <a href={REALMS_X_URL}>X</a> - Follow Realms, {REALMS_X_URL}
+* <a href={REALMS_X_URL}>X</a> - Follow Realms, https\://x.com/LootRealms
 
 
 
