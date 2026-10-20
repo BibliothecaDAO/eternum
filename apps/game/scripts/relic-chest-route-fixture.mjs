@@ -104,22 +104,8 @@ export function stageFrontierChest() {
   return {
     hex,
     position,
-    reset,
     fund,
     missing: () => write("SiteChest", chestKey, null),
-    expire: () => {
-      if (day.index === 0) {
-        useChainTimeStore.getState().anchor({ timestamp: day.end * 1000 });
-        return;
-      }
-      write("SiteChest", chestKey, {
-        game_id: gameId,
-        entity_id: chestId,
-        tier: 0,
-        amount: 17,
-        reservation_day: day.index - 1,
-      });
-    },
     get sends() {
       return sends;
     },

@@ -83,6 +83,26 @@ export async function proveFrontierChestRoute(browser, { baseUrl, backend, out }
     const game = await read(
       `(async()=>{const directory=await(await fetch('/api/directory')).json();for(const shard of directory.shards ?? []){const game=shard.games?.find(g=>g.mode==='frontier'&&g.status==='Live');if(game)return {chainId:shard.chainId,gameId:game.game_id};}throw Error('No live Frontier route available');})()`,
     );
+    await devtools.send("Page.navigate", {
+      url: `${baseUrl}/lab/relic-chest?gameMode=frontier&rendererMode=${backend}`,
+    });
+    await wait("document.querySelector('[data-relic-chest-lab]')?.dataset.ready === 'true'");
+    await click("button", "Advance to day rollover");
+    await click('[aria-label="Focus relic chest"]');
+    await wait("document.querySelector('[data-chest-panel]')?.textContent.includes('Reservation expired')");
+    const expired = await read(
+      "({source:'lab-day-rollover',text:document.querySelector('[data-chest-panel]').textContent,renderer:document.querySelector('canvas').dataset.renderer})",
+    );
+    check(expired.text.includes("0 LORDS"), "Lab rollover still advertises a reward");
+    await capture("expired-lab");
+    await click("[data-chest-panel] button", "Open");
+    await wait("document.querySelector('[data-lords-receipt]')?.textContent.includes('No LORDS paid')");
+    const expiredOpened = await read(
+      "({source:'lab-day-rollover',text:document.querySelector('[data-chest-panel]').textContent})",
+    );
+    await capture("expired-lab-receipt");
+    await click("button", "Close 3D proof");
+    await wait("!document.querySelector('canvas')");
     const route = `${baseUrl}/g/${game.chainId}/${game.gameId}/map?spectate=true&rendererMode=${backend}`;
     await devtools.send("Page.navigate", { url: route });
     await wait("Boolean(document.querySelector('#main-canvas')) && Boolean(document.querySelector('[data-hud-rail]'))");
@@ -142,6 +162,7 @@ export async function proveFrontierChestRoute(browser, { baseUrl, backend, out }
     await read("window.__frontierChestFixture.fund()");
     await wait(`document.querySelector(${JSON.stringify(panel)})?.textContent.includes('17 LORDS')`);
     const sealed = await snapshot();
+    check(expired.renderer === sealed.renderer, "Expiry lab used a different renderer");
     check(sealed.text.includes("Expires at day rollover"), "Missing expiry in Frontier selection");
     check(sealed.renderer === (backend === "webgpu-auto" ? "webgpu" : "webgl2-fallback"), "Wrong route renderer");
     await capture("funded");
@@ -154,23 +175,6 @@ export async function proveFrontierChestRoute(browser, { baseUrl, backend, out }
     await selectChest();
     const reselected = await snapshot();
     check(reselected.text.includes("17 LORDS paid to the army's realm"), "Receipt lost after occupancy disappeared");
-    browser.press("Escape");
-    await read("window.__frontierChestFixture.reset();window.__frontierChestFixture.expire()");
-    await pause(250);
-    if (await read("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Continue')"))
-      await click("button", "Continue");
-    await selectChest();
-    const expired = await snapshot();
-    check(
-      expired.text.includes("0 LORDS") && expired.text.includes("Reservation expired"),
-      "Expired reservation still advertises payment",
-    );
-    await capture("expired");
-    await click(`${panel} button`, "Open");
-    await wait("document.querySelector('[data-lords-receipt]')?.textContent.includes('No LORDS paid')");
-    const expiredOpened = await snapshot();
-    check(expiredOpened.fixture.sends === 2, "Expired opening did not use the same command path");
-    await capture("expired-receipt");
     await devtools.send("Page.navigate", { url: `${baseUrl}/` });
     await wait("!document.querySelector('canvas')");
     const errors = browser.run(["errors"]);

@@ -26,8 +26,7 @@ it("frames the exact fixture hex through the minimap's real Position contract be
     const fixture = stageFrontierChest();
     expect(requested).toBeInstanceOf(Position);
     expect((requested as Position).getContract()).toEqual({ x: fixture.hex.col, y: fixture.hex.row });
-    fixture.expire();
-    expect(useChainTimeStore.getState().getNowSeconds()).toBeGreaterThanOrEqual(400);
+    expect(useChainTimeStore.getState().getNowSeconds()).toBeLessThan(400);
   } finally {
     window.removeEventListener("minimapCameraMove", hear);
   }
