@@ -116,6 +116,8 @@ export const EARLY_ARMY: ArmyDetailFacts = {
   troops: 1_500,
   xp: 12,
   stamina: { current: 4, max: 120 },
+  secondsToFull: 4 * 3_600,
+  revealYield: 75,
   progress: { battle: 1, logistics: 1, scouting: 1, homecoming: 1, scoutingKinds: [] },
   ...ARMY_RULES,
 };
@@ -127,6 +129,8 @@ export const VETERAN_ARMY: ArmyDetailFacts = {
   troops: 1_240,
   xp: 260,
   stamina: { current: 96, max: 170 },
+  secondsToFull: 2 * 3_600,
+  revealYield: 120,
   progress: { battle: 2, logistics: 3, scouting: 2, homecoming: 1, scoutingKinds: ["rift"] },
   ...ARMY_RULES,
 };

@@ -7,7 +7,8 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { scoutingKindsOf, type ScoutingKind } from "@bibliothecadao/eternum";
 import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
-import { useDockArmies } from "../hud/dock-armies";
+import { useArmyRevealYield } from "../frontier-reveal-yield";
+import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { type ArmyDetailFacts, readArmyDetail, type AttributeKey, type ScoutKind } from "./army-detail";
 import { ArmyDetail } from "./army-panel";
 import { ArmyRefill } from "./army-refill";
@@ -24,25 +25,40 @@ const KIND_KEYS: Record<ScoutingKind, ScoutKind> = { Camp: "camp", Rift: "rift",
 const KIND_OF: Record<ScoutKind, ScoutingKind> = { camp: "Camp", rift: "Rift", beasts: "Beasts" };
 
 /**
- * The selected army's detail over the game's facts, the one army panel: opened from its row in the Armies panel and
- * from the selected army's bar. Level up buys a level (buy_tier), held until its outcome. None while the army or its
- * progress is unknown.
+ * The selected army's detail over the game's facts, the one army panel: opened by selecting the army, on the map or
+ * from its row in the Armies panel. None while no army of the realm is selected.
  */
 export const FrontierArmy = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
-  const { setup, account } = useGame();
-  useNativeRevision(PROGRESS_MODELS);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
   const army = useDockArmies(realm).find(({ explorerId }) => explorerId === selectedId);
-  const sending = useInFlight("tier", selectedId) !== undefined;
-  const progress = army && setup.store.get("ArmyProgress", { game_id: realm.game_id, explorer_id: army.explorerId });
+  return army ? <ArmyPanel key={army.explorerId} realm={realm} army={army} onClose={onClose} /> : null;
+};
+
+/** One army's panel: Level up buys a level (buy_tier), held until its outcome. None while its progress is unknown. */
+const ArmyPanel = ({
+  realm,
+  army,
+  onClose,
+}: {
+  realm: NativeRows["Structure"];
+  army: DockArmy;
+  onClose: () => void;
+}) => {
+  const { setup, account } = useGame();
+  useNativeRevision(PROGRESS_MODELS);
+  const sending = useInFlight("tier", army.explorerId) !== undefined;
+  const revealYield = useArmyRevealYield(army);
+  const progress = setup.store.get("ArmyProgress", { game_id: realm.game_id, explorer_id: army.explorerId });
   const rules = setup.store.get("ArmyProgressionRules", { game_id: realm.game_id });
-  if (!army || !progress || !rules || !army.stamina) return null;
+  if (!progress || !rules || !army.stamina) return null;
   const facts: ArmyDetailFacts = {
     name: army.label,
     art: army.art,
     troops: army.troops,
     xp: progress.xp,
     stamina: army.stamina,
+    secondsToFull: army.secondsToFull,
+    revealYield,
     progress: {
       battle: progress.battle,
       logistics: progress.logistics,
@@ -76,7 +92,6 @@ export const FrontierArmy = ({ realm, onClose }: { realm: NativeRows["Structure"
   return (
     <HudSheet label={army.label} onClose={onClose}>
       <ArmyDetail
-        key={army.explorerId}
         army={readArmyDetail(facts)}
         refill={<ArmyRefill army={army} realm={realm} />}
         sending={sending}

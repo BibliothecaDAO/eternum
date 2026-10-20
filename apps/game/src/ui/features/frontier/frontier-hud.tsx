@@ -22,7 +22,7 @@ import { FrontierArmy } from "./army/frontier-army";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useRealmStores } from "./realm-stores";
 import { FrontierSurfaces } from "./frontier-surfaces";
-import { SelectedArmyBar, useArmyRevealYield } from "./hud/action-bar";
+import { useArmyRevealYield } from "./frontier-reveal-yield";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
 import { useChatKey } from "./hud/chat-key";
@@ -97,6 +97,11 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   useEffect(() => {
     if (surface !== "research") setResearchPick(undefined);
   }, [surface]);
+  // Selecting one of the realm's armies, on the map or from its row, opens its panel, as Blitz opens a selection's detail.
+  const selectedArmy = useSelectedOwnArmy(visit ? null : realm);
+  useEffect(() => {
+    if (selectedArmy !== null) setSurface("army");
+  }, [selectedArmy]);
   const seasonRank = useSeasonRank();
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
@@ -137,9 +142,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   );
   const action = (
     <>
-      {dockRealm && (
-        <ArmyAction rules={rules} realm={dockRealm} desktop={desktop} onOpenArmy={() => setSurface("army")} />
-      )}
+      {dockRealm && !desktop && <ArmyAction rules={rules} realm={dockRealm} />}
       <RealmVisitFoot home={realm} />
     </>
   );
@@ -334,37 +337,26 @@ const FrontierPhoneHud = ({
 };
 
 /**
- * The action bar's army row: on a phone, with an order pending, its costs and verb; otherwise the selected army's
- * status, a tap opening the army. A full realm's phone board adds its Buildings row. A desktop shows the status alone:
- * its orders go from the map.
+ * A phone's action row: with an order pending, its costs and verb; with the next order queued, its bar; otherwise a
+ * full realm's Buildings row. A desktop has none: its orders go from the map, and the army's state is its panel's.
  */
-const ArmyAction = ({
-  rules,
-  realm,
-  desktop,
-  onOpenArmy,
-}: {
-  rules: ExpeditionRules;
-  realm: NativeRows["Structure"];
-  /** A desktop orders from the map itself, as Blitz does: no order bar, the selected army's state alone. */
-  desktop: boolean;
-  onOpenArmy: () => void;
-}) => {
+const ArmyAction = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Structure"] }) => {
   const armies = useDockArmies(realm);
   const order = useArmyOrder();
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
   const nextOrder = useUIStore((state) => state.entityActions.nextOrder);
   const selected = armies.find((army) => army.explorerId === selectedId);
-  if (desktop) return selected ? <SelectedArmyBar army={selected} onOpen={onOpenArmy} /> : null;
   if (order && selected) return <PendingOrder rules={rules} realm={realm} order={order} army={selected} />;
   if (selected && nextOrder?.entityId === selected.explorerId)
     return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
-  return (
-    <>
-      <RealmBuildingsRow realm={realm} />
-      {selected && <SelectedArmyBar army={selected} onOpen={onOpenArmy} />}
-    </>
-  );
+  return <RealmBuildingsRow realm={realm} />;
+};
+
+/** The realm's army the map has selected, by its id; null while none of the realm's armies is. */
+const useSelectedOwnArmy = (realm: NativeRows["Structure"] | null): number | null => {
+  const armies = useDockArmies(realm);
+  const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
+  return armies.some(({ explorerId }) => explorerId === selectedId) ? selectedId : null;
 };
 
 /** The dock over the realm's armies today; on a phone a pending order takes the foot in its place. */

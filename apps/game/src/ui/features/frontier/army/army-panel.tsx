@@ -11,9 +11,10 @@ import {
   UPGRADING,
   XP,
 } from "@/ui/design-system/kit/words";
-import { formatExact, formatFigure } from "@bibliothecadao/types";
+import { formatAmount, formatExact, formatFigure } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
+import { FullIn } from "../full-in";
 import type { ArmyView, AttributeKey, AttributeView, ScoutKind } from "./army-detail";
 
 const KINDS: { key: ScoutKind; icon: IconMeaning }[] = [
@@ -24,7 +25,8 @@ const KINDS: { key: ScoutKind; icon: IconMeaning }[] = [
 
 /**
  * An army's detail (the owner's pick, 20 October: "For the army C is best"), in two steps in one place. First its
- * figures: troops and stamina (with the refill), what each attribute gives as a plain table, its XP against its next
+ * figures: troops and stamina (with the refill, when it is full again and what each tile explored sends home), what
+ * each attribute gives as a plain table, its XP against its next
  * level-up and how XP is earned, then Level up: the primary once the XP buys a level, else a way to see what it will
  * buy. Level up turns the same place to the four choices, each with what it gives next and its XP, Scouting's kind, and
  * the verb, with a way back.
@@ -89,6 +91,7 @@ export const ArmyDetail = ({
             </span>
             {`${formatExact(army.stamina.current)}/${formatExact(army.stamina.max)}`}
           </span>
+          <StaminaReadings army={army} />
         </div>
         {refill}
       </div>
@@ -108,6 +111,22 @@ export const ArmyDetail = ({
         </HudButton>
       </div>
     </div>
+  );
+};
+
+/** When the stamina is full again, and what each tile explored sends home (none in a game whose reveals pay none). */
+const StaminaReadings = ({ army }: { army: ArmyView }) => {
+  const filling = army.secondsToFull !== undefined && army.secondsToFull > 0;
+  if (!filling && army.revealYield === null) return null;
+  return (
+    <span className="flex flex-wrap items-center gap-1.5">
+      {filling && <FullIn seconds={army.secondsToFull} />}
+      {army.revealYield !== null && (
+        <HudChip icons={["essence", "labor"]} label={ARMY_DETAIL.revealPaysLabel}>
+          {army.revealYield === undefined ? "—" : ARMY_DETAIL.revealPays(formatAmount(army.revealYield))}
+        </HudChip>
+      )}
+    </span>
   );
 };
 

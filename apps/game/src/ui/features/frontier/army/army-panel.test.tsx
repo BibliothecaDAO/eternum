@@ -57,3 +57,28 @@ it("refills nothing for a full army buying any other attribute, whose maximum it
   expect(readArmyDetail(full).refill).toBe(0);
   expect(footFor(full, "battle")).toContain("100 XP · refills 0 stamina");
 });
+
+it("reads on its first step when the stamina is full again and what each tile explored sends home", () => {
+  act(() => root.render(<ArmyDetail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={() => undefined} />));
+  const stats = host.querySelector('[data-army-step="stats"]')!;
+  expect(stats.textContent).toContain("Full in 4h");
+  expect(stats.textContent).toContain("+75 a tile");
+
+  // A full army in a game whose reveals pay nothing reads neither.
+  act(() =>
+    root.render(
+      <ArmyDetail
+        army={readArmyDetail({
+          ...EARLY_ARMY,
+          stamina: { current: 120, max: 120 },
+          secondsToFull: 0,
+          revealYield: null,
+        })}
+        sending={false}
+        onLevelUp={() => undefined}
+      />,
+    ),
+  );
+  expect(host.textContent).not.toContain("Full in");
+  expect(host.textContent).not.toMatch(/\+\S+ a tile/);
+});

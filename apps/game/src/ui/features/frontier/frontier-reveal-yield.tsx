@@ -1,8 +1,17 @@
 import { useGame } from "@/hooks/context/game-context";
 import type { Fix } from "@/ui/design-system/kit/refusal";
 import { ESSENCE, exploreFor, LABOR } from "@/ui/design-system/kit/words";
-import { configManager, readRevealPercent, revealYield } from "@bibliothecadao/eternum";
-import { ResourcesIds, type TroopTier } from "@bibliothecadao/types";
+import {
+  configManager,
+  entityMapPosition,
+  expeditionDepth,
+  readRevealPercent,
+  revealYield,
+} from "@bibliothecadao/eternum";
+import { RESOURCE_PRECISION, ResourcesIds, type TroopTier } from "@bibliothecadao/types";
+
+import { useExpeditionRules } from "./frontier-home";
+import type { DockArmy } from "./hud/dock-armies";
 
 /**
  * An army's per-reveal payout at a depth, scaled, from the game's own depth rules: undefined where the depth has none,
@@ -18,6 +27,16 @@ export const useRevealYield = (
   return percent === undefined
     ? undefined
     : revealYield(troops, configManager.getTroopConfig().troop_limit_config, percent);
+};
+
+/** What the army's next reveal sends home at the depth it stands on, in whole units. */
+export const useArmyRevealYield = (army: DockArmy): number | undefined | null => {
+  const { setup } = useGame();
+  const rules = useExpeditionRules();
+  const coord = entityMapPosition(setup.store, configManager.getActiveGameId(), army.explorerId);
+  const scaled = useRevealYield(army.troopsFact, rules ? expeditionDepth(rules, coord) : 0);
+  if (scaled === null || scaled === undefined) return scaled;
+  return Number(scaled / BigInt(RESOURCE_PRECISION));
 };
 
 /** What a reveal pays, by its glossary word: Essence or labor, where a game's reveals pay supplies at all. */

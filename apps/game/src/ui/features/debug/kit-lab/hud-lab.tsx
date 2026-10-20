@@ -13,7 +13,6 @@ import {
   WORKSHOP,
   YOU,
 } from "@/ui/design-system/kit/words";
-import { ArmyStatusBar } from "@/ui/features/frontier/hud/action-bar";
 import { ArmyList, ArmyRow } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
@@ -405,7 +404,8 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
 const STATES = {
   ...FIGHT_STATES,
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
-  selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0 },
+  // An army picked opens its panel, as the game opens it on a selection.
+  selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: {} },
   full: { clock: CLOCK, stores: FULL_STORES, armies: ARMIES, realmDot: "ember" as const },
   offline: { clock: UNKNOWN_CLOCK, stores: UNKNOWN_STORES, armies: UNKNOWN_ARMIES, offline: true },
   menu: { clock: CLOCK, stores: STORES, armies: ARMIES, menu: true },
@@ -603,7 +603,6 @@ const STATES = {
   castle: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle" },
   "castle-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle-short" },
   "realm-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "full" },
-  "army-cheap": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: {} },
   "army-refill": {
     clock: CLOCK,
     stores: STORES,
@@ -937,9 +936,6 @@ export const HudLab = () => {
                 onCancel={noop}
                 onGo={noop}
               />
-            )}
-            {selected && (desktop || !lab.order) && (
-              <ArmyStatusBar stamina={selected.stamina} secondsToFull={2 * HOUR} revealYield={500} />
             )}
             {lab.visiting && <VisitFoot label="Aldric" order={2} name="Aldric" arriving={false} onLeave={noop} />}
           </>

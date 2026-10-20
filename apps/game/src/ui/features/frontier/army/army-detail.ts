@@ -20,6 +20,10 @@ export interface ArmyDetailFacts {
   troops: number;
   xp: number;
   stamina: { current: number; max: number };
+  /** Seconds until the stamina is full; 0 or undefined once it is. */
+  secondsToFull: number | undefined;
+  /** What each tile explored sends home, in whole Essence and labor: unknown at a depth with no rule, null in a game whose reveals pay none. */
+  revealYield: number | undefined | null;
   progress: Record<AttributeKey, number> & { scoutingKinds: readonly ScoutKind[] };
   /** The XP each level above common costs: uncommon, rare, epic, legendary. */
   levelXp: readonly [number, number, number, number];
@@ -47,6 +51,8 @@ export interface ArmyView {
   troops: number;
   xp: number;
   stamina: { current: number; max: number };
+  secondsToFull: number | undefined;
+  revealYield: number | undefined | null;
   attributes: AttributeView[];
   /** The cheapest level the XP goes to next, and how much of it is held (0 to 1). */
   goal?: { xp: number; share: number };
@@ -109,6 +115,8 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
     troops: army.troops,
     xp: army.xp,
     stamina: army.stamina,
+    secondsToFull: army.secondsToFull,
+    revealYield: army.revealYield,
     attributes,
     goal: cheapest === undefined ? undefined : { xp: cheapest, share: Math.min(1, army.xp / cheapest) },
     affordable: attributes.filter(({ next }) => next?.affordable).length,

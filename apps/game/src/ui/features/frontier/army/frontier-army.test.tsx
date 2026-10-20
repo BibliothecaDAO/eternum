@@ -54,6 +54,7 @@ vi.mock("../deploy/open-slots", () => ({ useOpenArmySlots: () => [] }));
 vi.mock("../sites/well-refill", () => ({ useWellRefill: (_id: number, ratio: number) => ({ shown: ratio }) }));
 vi.mock("../hud/dock-armies", () => ({ useDockArmies: () => [army] }));
 vi.mock("./army-refill", () => ({ ArmyRefill: () => null }));
+vi.mock("../frontier-reveal-yield", () => ({ useArmyRevealYield: () => 75 }));
 
 const { FrontierArmy } = await import("./frontier-army");
 const { ArmyDock } = await import("../hud/army-dock");

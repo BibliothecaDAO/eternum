@@ -1048,6 +1048,9 @@ export const ARMY_DETAIL = {
     shrine: "Visit a Shrine",
     clear: `Clear a ${structureName(StructureType.Camp, undefined, "frontier")}: more for a stronger guard`,
   },
+  /** What each tile the army explores sends home, on its stamina row. */
+  revealPays: (amount: string) => `+${amount} a tile`,
+  revealPaysLabel: `${ESSENCE} and ${LABOR} each tile explored sends home`,
   ready: (count: number) => `${formatCount(count, "level-up")} ready`,
   toNext: (xp: string) => `${xp} ${XP} to the next level-up`,
   allLegendary: "Every attribute is legendary",
