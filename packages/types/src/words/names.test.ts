@@ -44,6 +44,15 @@ describe("an army's generated name, read off its id", () => {
     expect(new Set(secondArmies.map(armyName)).size).toBeGreaterThan(50);
   });
 
+  it("names apart the armies of one serial in homes 1, 2, 3 and 12,001, which once all shared a name", () => {
+    // The whole-PR review's ids: serials 2, 3 and 9 were "Rage Reavers", "Titan Host" and "Moon Guard" in every home.
+    for (const serial of [2, 3, 9]) {
+      const names = [1, 2, 3, 12_001].map((home) => armyName(home * 2 ** 32 + serial));
+      expect(new Set(names).size).toBe(4);
+    }
+    expect(armyName(51_543_902_519_298)).toBe(armyName(12_001 * 2 ** 32 + 2));
+  });
+
   it("never gives an army and a place of one id the same first word", () => {
     const shared = ids.filter(
       (id) => armyName(id).split(" ")[0] === siteName(id).match(/^[A-Z][a-z]+?(?=[a-z]*$)/)?.[0],
