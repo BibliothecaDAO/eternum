@@ -1,4 +1,4 @@
-import { formatExact, LORDS } from "@bibliothecadao/types";
+import { formatCharge, formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { CANCEL, REFILL, REFILLING, STAMINA, heldAgainstNeed, refillShort } from "@/ui/design-system/kit/words";
@@ -20,7 +20,7 @@ export const RefillButton = ({
   onRefill: () => void;
 }) =>
   held !== undefined && held < price ? (
-    <span role="img" aria-label={refillShort(formatExact(held), formatExact(price))} className="flex shrink-0">
+    <span role="img" aria-label={refillShort(formatExact(held), formatCharge(price))} className="flex shrink-0">
       <HudPanel collapsible={false} bodyClassName="flex items-center gap-1.5">
         <SemanticIcon name="lords" size={18} />
         <span className="flex min-w-14 flex-col gap-1">
