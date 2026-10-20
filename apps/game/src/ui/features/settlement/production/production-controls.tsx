@@ -1,6 +1,7 @@
 import { isMilitaryResource } from "@bibliothecadao/eternum";
 import { RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
+import type { RunSizing } from "./production-run";
 import { useProductionBonuses } from "./use-production-bonuses";
 import { ResourceProductionControls } from "./resource-production-controls";
 
@@ -15,16 +16,16 @@ export const ProductionControls = ({
 }) => {
   const bonuses = useProductionBonuses(realm.entityId);
   const [useRawResources, setUseRawResources] = useState(true);
-  const [productionAmount, setProductionAmount] = useState(1);
+  const [sizing, setSizing] = useState<RunSizing>({ by: "output", amount: 1 });
 
   if (!bonuses) return <p>Loading production…</p>;
-  const { laborBonus, productionBonus, troopsBonus } = bonuses;
-  const resourceProductionBonus =
+  // The bonus the chain adds to this resource's output: labor's for labor, troops' for troops, else resources'.
+  const bonusPercent =
     selectedResource === ResourcesIds.Labor
-      ? laborBonus
+      ? bonuses.labor
       : isMilitaryResource(selectedResource)
-        ? troopsBonus
-        : productionBonus;
+        ? bonuses.troops
+        : bonuses.production;
 
   return (
     <ResourceProductionControls
@@ -32,10 +33,10 @@ export const ProductionControls = ({
       selectedResource={selectedResource}
       useRawResources={useRawResources}
       setUseRawResources={setUseRawResources}
-      productionAmount={productionAmount}
-      setProductionAmount={setProductionAmount}
+      sizing={sizing}
+      setSizing={setSizing}
       realm={realm}
-      bonus={resourceProductionBonus}
+      bonusPercent={bonusPercent}
     />
   );
 };

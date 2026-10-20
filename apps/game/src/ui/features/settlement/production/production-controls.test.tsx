@@ -13,15 +13,24 @@ vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true, useActN
 
 import { GameProvider } from "@/hooks/context/game-context";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
-import { setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds, StructureType, type RealmInfo } from "@bibliothecadao/types";
 import { ProductionControls } from "./production-controls";
 
 const units = (amount: number) => String(BigInt(Math.round(amount * RESOURCE_PRECISION)));
+const balance = (key: string, resource_type: number, amount: number) => ({
+  model: "ResourceBalance",
+  key,
+  value: { game_id: 1, entity_id: 7, resource_type, balance: units(amount) },
+});
 
-/** QA's Egonal: Blitz Crossbowman T1 makes ten a cycle from 2 wheat and 0.8 copper; the realm holds 40K wheat. */
-const egonal = (copper: number) => {
+/**
+ * QA's Egonal: Blitz Crossbowman T1 makes ten a cycle from 2 wheat and 0.8 copper. Its labor recipe, where a case turns
+ * it on, makes six a cycle from 30 labor and 0.8 copper; a troop bonus, where a case runs one, adds a fifth (2,000 of
+ * 10,000) to the total output, rounded down as the chain rounds it.
+ */
+const egonal = ({ copper, labor = 0, troopBonus = 0 }: { copper: number; labor?: number; troopBonus?: number }) => {
   const { store } = frontierDay();
   store.applyFacts([
     {
@@ -30,8 +39,11 @@ const egonal = (copper: number) => {
       value: {
         game_id: 1,
         resource_type: ResourcesIds.Crossbowman,
-        simple_output: "0",
-        simple_inputs: [],
+        simple_output: units(6),
+        simple_inputs: [
+          { resource_type: ResourcesIds.Labor, amount: units(30) },
+          { resource_type: ResourcesIds.Copper, amount: units(0.8) },
+        ],
         complex_output: units(10),
         complex_inputs: [
           { resource_type: ResourcesIds.Wheat, amount: units(2) },
@@ -39,16 +51,9 @@ const egonal = (copper: number) => {
         ],
       },
     },
-    {
-      model: "ResourceBalance",
-      key: "0xc",
-      value: { game_id: 1, entity_id: 7, resource_type: ResourcesIds.Wheat, balance: units(40_000) },
-    },
-    {
-      model: "ResourceBalance",
-      key: "0xc04",
-      value: { game_id: 1, entity_id: 7, resource_type: ResourcesIds.Copper, balance: units(copper) },
-    },
+    balance("0xc", ResourcesIds.Wheat, 40_000),
+    balance("0xc04", ResourcesIds.Copper, copper),
+    balance("0xc23", ResourcesIds.Labor, labor),
     {
       model: "ProductionBonus",
       key: "0xb07",
@@ -59,8 +64,8 @@ const egonal = (copper: number) => {
         incr_resource_rate_end_at: 0,
         incr_labor_rate_percent_num: 0,
         incr_labor_rate_end_at: 0,
-        incr_troop_rate_percent_num: 0,
-        incr_troop_rate_end_at: 0,
+        incr_troop_rate_percent_num: troopBonus,
+        incr_troop_rate_end_at: troopBonus > 0 ? 1_000_000 : 0,
       },
     },
   ] as never);
@@ -69,13 +74,18 @@ const egonal = (copper: number) => {
 
 const realm = { entityId: 7, category: StructureType.Realm } as RealmInfo;
 
-const mount = (copper: number) => {
+const mount = (holdings: Parameters<typeof egonal>[0], { laborEnabled = false } = {}) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const store = egonal(copper);
-  const burn = vi.fn(async () => {});
+  const store = egonal(holdings);
+  const isCommandEnabled = configManager.isCommandEnabled.bind(configManager);
+  vi.spyOn(configManager, "isCommandEnabled").mockImplementation((command) =>
+    command === "BurnLaborForResourceProduction" ? laborEnabled : isCommandEnabled(command),
+  );
+  const burnResources = vi.fn(async () => {});
+  const burnLabor = vi.fn(async () => {});
   const setup = {
     store,
-    systemCalls: { burn_resource_for_resource_production: burn, burn_labor_for_resource_production: vi.fn() },
+    systemCalls: { burn_resource_for_resource_production: burnResources, burn_labor_for_resource_production: burnLabor },
   } as unknown as GameClientSetup;
   const host = document.createElement("div");
   document.body.append(host);
@@ -87,36 +97,40 @@ const mount = (copper: number) => {
       </GameProvider>,
     ),
   );
+  const button = (name: string) => [...host.querySelectorAll("button")].find((each) => each.textContent === name)!;
   const input = (name: string) =>
-    host.querySelector(`[role="group"][aria-label="${name} for this run"]`)?.textContent?.trim();
+    host.querySelector(`[role="group"][aria-label="${name} for this run"] span.tabular-nums`)?.textContent?.trim();
   const start = () => [...host.querySelectorAll("button")].at(-1)!;
-  const type = (amount: string) => {
-    const field = host.querySelector<HTMLInputElement>('input[aria-label="Amount of Crossbowman T1"]')!;
+  const type = (label: string, amount: string) => {
+    const field = host.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
     act(() => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, amount);
       field.dispatchEvent(new Event("input", { bubbles: true }));
     });
   };
+  const press = async (control: Element) => act(async () => (control as HTMLElement).click());
   const unmount = () => {
     act(() => root.unmount());
     host.remove();
   };
-  return { host, burn, input, start, type, unmount };
+  return { host, burnResources, burnLabor, button, input, start, type, press, unmount };
 };
 
-afterEach(() => setBlockTimestampSource(null));
+afterEach(() => {
+  setBlockTimestampSource(null);
+  vi.restoreAllMocks();
+});
 
 it("quotes one whole cycle for an output of one, never zero inputs, and starts it while stocked", async () => {
-  const view = mount(20);
+  const view = mount({ copper: 20 });
   try {
-    view.type("1");
+    view.type("Amount of Crossbowman T1", "1");
     expect(view.host.textContent).toContain("10 Crossbowman T1");
     expect(view.start().textContent).toBe("Start production");
-    expect(view.start().disabled).toBe(false);
     expect(view.input("Wheat")).toBe("40K / 2");
     expect(view.input("Copper")).toBe("20 / 0.8");
-    await act(async () => view.start().click());
-    expect(view.burn).toHaveBeenCalledWith(
+    await view.press(view.start());
+    expect(view.burnResources).toHaveBeenCalledWith(
       expect.objectContaining({ produced_resource_types: [ResourcesIds.Crossbowman], production_cycles: [1] }),
     );
   } finally {
@@ -125,38 +139,85 @@ it("quotes one whole cycle for an output of one, never zero inputs, and starts i
 });
 
 it("quotes and sends the whole cycles an output between two takes", async () => {
-  const view = mount(20);
+  const view = mount({ copper: 20 });
   try {
-    view.type("15");
+    view.type("Amount of Crossbowman T1", "15");
     expect(view.host.textContent).toContain("20 Crossbowman T1");
     expect(view.input("Wheat")).toBe("40K / 4");
-    expect(view.input("Copper")).toBe("20 / 2");
-    await act(async () => view.start().click());
-    expect(view.burn).toHaveBeenCalledWith(expect.objectContaining({ production_cycles: [2] }));
+    await view.press(view.start());
+    expect(view.burnResources).toHaveBeenCalledWith(expect.objectContaining({ production_cycles: [2] }));
   } finally {
     view.unmount();
   }
 });
 
-it("refuses for missing resources only when the run's inputs are short", async () => {
-  const view = mount(0.5);
+it("runs Max on exactly the copper three cycles burn, as the chain counts it unit for unit", async () => {
+  const view = mount({ copper: 2.4 });
   try {
-    view.type("1");
+    await view.press(view.button("Max"));
+    expect(view.host.textContent).toContain("30 Crossbowman T1");
+    expect(view.start().textContent).toBe("Start production");
+    expect(view.start().disabled).toBe(false);
+    await view.press(view.start());
+    expect(view.burnResources).toHaveBeenCalledWith(expect.objectContaining({ production_cycles: [3] }));
+  } finally {
+    view.unmount();
+  }
+});
+
+it("refuses a run its copper falls a unit short of", async () => {
+  const view = mount({ copper: 2.399_999_999 });
+  try {
+    view.type("Amount of Crossbowman T1", "30");
     expect(view.start().textContent).toBe("Not enough resources");
     expect(view.start().disabled).toBe(true);
-    expect(view.input("Copper")).toBe("0.5 / 0.8");
+    await view.press(view.button("Max"));
+    expect(view.host.textContent).toContain("20 Crossbowman T1");
+    expect(view.start().disabled).toBe(false);
   } finally {
     view.unmount();
   }
 });
 
-it("sizes Max to the whole cycles the holdings cover", () => {
-  const view = mount(2);
+it("sizes the run from an input's budget, in whole cycles, and shows the burn they take", async () => {
+  const view = mount({ copper: 100 });
   try {
-    const max = [...view.host.querySelectorAll("button")].find((button) => button.textContent === "Max")!;
-    act(() => max.click());
-    expect(view.host.textContent).toContain("20 Crossbowman T1");
+    view.type("Wheat to spend", "101");
+    expect(view.host.textContent).toContain("500 Crossbowman T1");
+    expect(view.input("Wheat")).toBe("40K / 100");
+    expect(view.input("Copper")).toBe("100 / 40");
+    expect(view.host.querySelector<HTMLInputElement>('input[aria-label="Wheat to spend"]')!.value).toBe("101");
+    await view.press(view.start());
+    expect(view.burnResources).toHaveBeenCalledWith(expect.objectContaining({ production_cycles: [50] }));
+    view.type("Wheat to spend", "1");
+    expect(view.start().textContent).toBe("Spend at least 2 Wheat");
+    expect(view.start().disabled).toBe(true);
+  } finally {
+    view.unmount();
+  }
+});
+
+it("runs the labor recipe on its own inputs and output, with the troop bonus on the total", async () => {
+  const view = mount({ copper: 2.4, labor: 100, troopBonus: 2_000 }, { laborEnabled: true });
+  try {
+    const laborTab = [...view.host.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === "Labor Production");
+    await view.press(laborTab!);
+    view.type("Amount of Crossbowman T1", "10");
+    // One cycle makes 6 + 1.2 = 7.2, short of 10; two make 12 + 2.4 = 14.4.
+    expect(view.host.textContent).toContain("14 Crossbowman T1");
+    expect(view.host.textContent).toContain("+20% bonus");
+    expect(view.input("Labor")).toBe("100 / 60");
     expect(view.input("Copper")).toBe("2 / 2");
+    expect(view.input("Wheat")).toBeUndefined();
+    // 100 labor covers three cycles, and 2.4 copper exactly three of 0.8.
+    await view.press(view.button("Max"));
+    expect(view.input("Labor")).toBe("100 / 90");
+    expect(view.start().textContent).toBe("Start production");
+    await view.press(view.start());
+    expect(view.burnLabor).toHaveBeenCalledWith(
+      expect.objectContaining({ produced_resource_types: [ResourcesIds.Crossbowman], production_cycles: [3] }),
+    );
+    expect(view.burnResources).not.toHaveBeenCalled();
   } finally {
     view.unmount();
   }

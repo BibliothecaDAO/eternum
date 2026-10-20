@@ -127,6 +127,21 @@ export class ClientConfigManager {
     if (!recipe) return missingRule(`production recipe for resource ${resourceId}`);
     return this.divideByPrecision(Number(simple ? recipe.simple_output : recipe.complex_output));
   }
+  /**
+   * A recipe in the chain's own integer units, as refill_from_recipes spends and makes it: what each cycle burns and
+   * makes. The simple recipe is labor's, the complex one resources'.
+   */
+  getRecipeUnits(resourceId: ResourcesIds, simple: boolean) {
+    const recipe = this.facts().get("ProductionRecipe", { game_id: this.gameId, resource_type: resourceId });
+    if (!recipe) return missingRule(`production recipe for resource ${resourceId}`);
+    return {
+      inputs: (simple ? recipe.simple_inputs : recipe.complex_inputs).map(({ resource_type, amount }) => ({
+        resource: resource_type as ResourcesIds,
+        units: BigInt(amount),
+      })),
+      outputUnits: BigInt(simple ? recipe.simple_output : recipe.complex_output),
+    };
+  }
   /** The upgrade recipes this game defines, by the level they unlock. */
   realmUpgradeRecipes() {
     return [...this.facts().inGame("UpgradeRecipe", this.gameId)]

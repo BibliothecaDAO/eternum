@@ -169,7 +169,7 @@ const heldBetween = (typed: number | null, min: number, max: number): number | n
  * The one amount input every amount element types into: whole units, formatted, blank while cleared. A decimal one keeps
  * what is typed on screen while it has focus, so a fraction can be typed one digit at a time ("0." stays "0.").
  */
-const AmountInput = ({
+export const AmountInput = ({
   label,
   value,
   min = 0,
