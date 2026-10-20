@@ -66,7 +66,7 @@ export async function proveSiteStudies(b, out, records, baseUrl) {
 
 /** Six alternating runs on the same 100-ruin scene; retain every sample and machine-load bound. */
 export async function proveMistCost(b, out, records, baseUrl) {
-  const record = { name: "mist-cost", ready: false, checks: [], loadBefore: loadavg() };
+  const record = { name: "mist-cost", ready: false, presses: [], checks: [], loadBefore: loadavg() };
   records.push(record);
   if (record.loadBefore[0] > 12) {
     record.error = "Machine load exceeds 12; frame measurements would be invalid";

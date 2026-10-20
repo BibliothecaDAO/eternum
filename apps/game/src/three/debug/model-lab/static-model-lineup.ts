@@ -186,6 +186,7 @@ export async function mountStaticLineup(
     update(settings);
     const render = () => {
       if (signal.aborted || disposed) return;
+      renderer.info.reset();
       const now = performance.now();
       const delta = Math.min((now - last) / 1000, 0.1);
       last = now;
@@ -202,7 +203,7 @@ export async function mountStaticLineup(
           const extension = sampling.gl.getExtension("WEBGL_debug_renderer_info");
           sampling.resolve({
             frames: sampling.frames,
-            calls: renderer.info.render.calls,
+            calls: renderer.info.render.drawCalls,
             triangles: renderer.info.render.triangles,
             gpu: String(sampling.gl.getParameter(extension?.UNMASKED_RENDERER_WEBGL ?? sampling.gl.RENDERER)),
           });
@@ -221,7 +222,7 @@ export async function mountStaticLineup(
           drawnAssets: [...drawnAssets],
           drawnParts: [...drawnParts],
           cameraDistance: camera.position.distanceTo(controls.target),
-          calls: renderer.info.render.calls,
+          calls: renderer.info.render.drawCalls,
         });
         capturePending = false;
       }
