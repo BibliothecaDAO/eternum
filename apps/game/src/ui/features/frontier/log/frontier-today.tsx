@@ -1,6 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type ProcessedStoryEvent, useStoryEvents } from "@/hooks/store/use-story-events-store";
 import type { readExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -14,12 +13,13 @@ import { type LogLine, TodaySheet } from "./today-sheet";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 
-/** How many of the player's own stories the log reads: a few days of play. */
+/** How many of the realm's owner's stories the log reads: a few days of play. */
 const OWN_STORIES = 350;
 
 /**
- * Today over the player's own stories: today's totals (the ruin's LORDS among them) and log, stepping back through
- * earlier days, and today's armies with a tier their XP can buy, the row opening the first of them.
+ * Today over the stories of the realm's owner: the player's own realm, or the one a spectator watches. Today's totals
+ * (the ruin's LORDS among them) and log, stepping back through earlier days, and, for the player's own realm, today's
+ * armies with a tier their XP can buy, the row opening the first of them.
  */
 export const FrontierToday = ({
   rules,
@@ -28,14 +28,15 @@ export const FrontierToday = ({
   onClose,
 }: {
   rules: ExpeditionRules;
+  /** The realm whose day this is: the player's own, or the one watched. */
   realm: NativeRows["Structure"] | null;
-  /** Opens an army's sheet, for the row of armies with a tier to buy. */
-  onOpenArmy: (explorerId: number) => void;
+  /** Opens an army's sheet, for the row of armies with a tier to buy; none for a realm that is not the player's. */
+  onOpenArmy?: (explorerId: number) => void;
   onClose: () => void;
 }) => {
   const { setup } = useGame();
   const now = useNowSeconds();
-  const player = useAccountStore((state) => state.account?.address ?? null);
+  const player = realm ? `0x${BigInt(realm.owner).toString(16)}` : null;
   const stories = useStoryEvents(OWN_STORIES, undefined, player ?? undefined);
   const today = dayClock(rules, now).day;
   const [chosen, setChosen] = useState<number | null>(null);
@@ -46,15 +47,15 @@ export const FrontierToday = ({
   // Unknown until the stories answer: every total shows as a dash, never a zero.
   const totals = player && span && !stories.isPending ? totalToday(stories.data, player, span) : undefined;
   const step = (to: number) => setChosen(to === today ? null : to);
-  const buyers = useDockArmies(realm).filter(({ canBuyTier }) => canBuyTier);
+  const buyers = useDockArmies(onOpenArmy ? realm : null).filter(({ canBuyTier }) => canBuyTier);
   return (
     <TodaySheet
       day={day}
       today={day === today}
       totals={{ ...unknownTotals, ...totals }}
       lines={logLines(own, setup.store)}
-      armiesToUpgrade={day === today ? buyers.length : undefined}
-      onArmies={buyers[0] ? () => onOpenArmy(buyers[0]!.explorerId) : undefined}
+      armiesToUpgrade={onOpenArmy && day === today ? buyers.length : undefined}
+      onArmies={onOpenArmy && buyers[0] ? () => onOpenArmy(buyers[0]!.explorerId) : undefined}
       failed={stories.isError}
       onRetry={() => void stories.refetch()}
       onEarlier={day !== undefined && day > 1 ? () => step(day - 1) : undefined}

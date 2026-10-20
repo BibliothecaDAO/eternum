@@ -162,7 +162,14 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           <SettingsPanel />
         </HudSheet>
       )}
-      {surface === "today" && <FrontierToday rules={rules} realm={realm} onOpenArmy={openArmy} onClose={close} />}
+      {surface === "today" && (
+        <FrontierToday
+          rules={rules}
+          realm={realm ?? visited}
+          onOpenArmy={realm && !visit ? openArmy : undefined}
+          onClose={close}
+        />
+      )}
       {/* The card covers the HUD: the season's board and Withdraw each open in its place. */}
       {surface !== "season" && surface !== "withdraw" && (
         <SeasonOver
