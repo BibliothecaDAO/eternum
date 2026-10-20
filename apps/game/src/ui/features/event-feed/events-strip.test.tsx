@@ -151,6 +151,19 @@ it("brings the player's opened crate into Events among every battle, without the
   expect(renderToStaticMarkup(<Ids />)).toBe("battle,crate");
 });
 
+it("says so under Important before anything important has happened, and stops once something has", () => {
+  world.filter = "important";
+  history.push(...routineStories(2, 1_000));
+  draw();
+  expect(rows()).toEqual([]);
+  expect(host.textContent).toBe("Nothing here yet.");
+
+  history.push(fight("mine", 2_000, PLAYER));
+  draw();
+  expect(rows()).toEqual(["mine"]);
+  expect(host.textContent).not.toContain("Nothing here yet.");
+});
+
 it("shows the game's three newest stories, newest on top, however long the clock runs on", () => {
   history.push(fight("r0", 99_000), fight("r1", 98_000), fight("r2", 97_000), fight("r3", 96_000));
   draw();

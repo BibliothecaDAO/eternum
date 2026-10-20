@@ -96,6 +96,10 @@ export const BUILD_ORDER_WORDS = {
   levelUp: "Level up",
   nothingNow: "Nothing to build now",
 } as const;
+export const EVENTS_WORDS = {
+  /** What Events and its Log say while the player's filter holds no story. */
+  nothingYet: "Nothing here yet.",
+} as const;
 export const SETTINGS_WORDS = {
   shortcuts: "Keyboard shortcuts",
   show: "Show",

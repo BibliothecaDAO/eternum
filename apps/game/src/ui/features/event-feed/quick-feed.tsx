@@ -1,4 +1,5 @@
 import { HudButton, HudChip, HudEventRow } from "@/ui/design-system/kit/hud-elements";
+import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
 import { useGame } from "@/hooks/context/game-context";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -21,7 +22,10 @@ import { FeedRowLine, headlineIcon, ToastRow } from "./feed-row-line";
 /** How many rows the Events strip shows: the owner's three. */
 const STRIP_ROWS = 3;
 
-/** The strip: the client's toasts, then the game's three newest stories through the player's filter. */
+/**
+ * The strip: the client's toasts, then the game's three newest stories through the player's filter. With neither it
+ * says so, so a filter the player picks answers even before anything it holds has happened.
+ */
 export const QuickFeedRows = () => {
   const { stories } = useEventsFeed();
   return (
@@ -30,6 +34,9 @@ export const QuickFeedRows = () => {
       {stories.slice(0, STRIP_ROWS).map((event) => (
         <FeedRowLine key={event.id} event={event} />
       ))}
+      {stories.length === 0 && (
+        <p className="hidden text-hud-label text-hud-muted only:block">{EVENTS_WORDS.nothingYet}</p>
+      )}
     </>
   );
 };

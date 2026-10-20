@@ -1,5 +1,6 @@
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { HudEmpty, HudNotice, HudPanel, HudWindow } from "@/ui/design-system/kit/hud-elements";
+import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
 import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { FeedRowLine } from "./feed-row-line";
 import { EventsFilterSwitch } from "./events-filter-switch";
@@ -38,7 +39,7 @@ export const EventLogPanel = ({
         <div className="flex w-hud-column flex-col gap-2">
           <EventsFilterSwitch />
           {failed && <HudNotice tone="bad" line="Event history could not load." retry={retry} />}
-          {!failed && events.stories.length === 0 && <HudEmpty icon="chronicles" line="Nothing here yet." />}
+          {!failed && events.stories.length === 0 && <HudEmpty icon="chronicles" line={EVENTS_WORDS.nothingYet} />}
           <div className="flex flex-col">
             {events.stories.map((event) => (
               <FeedRowLine key={event.id} event={event} />

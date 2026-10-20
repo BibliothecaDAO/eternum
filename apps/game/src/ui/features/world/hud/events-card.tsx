@@ -7,7 +7,7 @@ import { forwardRef, type ReactNode, useRef } from "react";
 /**
  * The rail's events: the client's toasts (offline, notices, the clock's milestones), then the game's three newest
  * stories through the player's filter (Important by default, Mine or All, the Log's own filter too). With nothing to
- * show it is its header band alone. "Log" opens the full history, with what arrived since it was read.
+ * show it says so in one line. "Log" opens the full history, with what arrived since it was read.
  */
 export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogToggle: () => void }) => {
   const { stories } = useEventsFeed();
