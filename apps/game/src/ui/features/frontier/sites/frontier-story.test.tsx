@@ -142,3 +142,10 @@ it("does not print a Frontier realm's off-map founding coordinates", () => {
   );
   expect(presentation.description).toBe("Settled by clientlane");
 });
+
+it("does not invent a Vanguard opponent when an older encounter is outside the synced scope", () => {
+  const store = encounter("Camp");
+  expect(buildStoryEventPresentation(battle(694, 572, 999), store, names).title).toBe(
+    "clientlane vs Beast guard · Guard holds",
+  );
+});

@@ -253,11 +253,12 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   BattleEvent: (event, payload, store, resolvePlayerName) => {
     const attacker = payload.attacker as Record<string, unknown>;
     const defender = payload.defender as Record<string, unknown>;
-    const attackerName =
-      fightBeast(payload.attacker_id, store)?.name ?? nameOwner(attacker.player, store, resolvePlayerName);
-    const defenderName =
-      fightBeast(payload.defender_id, store)?.name ?? nameOwner(defender.player, store, resolvePlayerName);
     const frontier = store && readExpeditionRules(store, configManager.getActiveGameId()) !== null;
+    const participant = (side: Record<string, unknown>, id: unknown) =>
+      fightBeast(id, store)?.name ??
+      (frontier && toBigIntSafe(side.player) === 0n ? "Beast guard" : nameOwner(side.player, store, resolvePlayerName));
+    const attackerName = participant(attacker, payload.attacker_id);
+    const defenderName = participant(defender, payload.defender_id);
     const outcome = frontier
       ? VERDICT_WORDS[fightVerdict({ army: BigInt(String(attacker.after)), guard: BigInt(String(defender.after)) })]
       : battleOutcome(
