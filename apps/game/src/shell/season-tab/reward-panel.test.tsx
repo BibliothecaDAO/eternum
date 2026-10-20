@@ -95,7 +95,7 @@ it("shows the sword's doubled gain and a sealed chest's band and token multiple,
   const panel = await mount(SEALED);
   expect(panel.textContent).toContain("+36");
   expect(panel.textContent).toContain("×2");
-  expect(panel.textContent).toContain("Top 10%");
+  expect(panel.textContent).toContain("Top 20%");
   // What it can pay is a multiple of the entry, never an amount.
   expect(panel.textContent).toContain("4× entry until");
   expect(panel.textContent).not.toContain("400");
@@ -143,7 +143,7 @@ it("reads and opens the chest of the seat's roster wallet, whatever the payout w
 
 it("says nothing of tokens on a sealed chest whose rank band draws none", async () => {
   const lowest = await mount({ ...SEALED, chest: { ...CHEST, band: 4 }, token: { shares: 0, entryFee: 100n * WEI } });
-  expect(lowest.textContent).toContain("Bottom 25%");
+  expect(lowest.textContent).toContain("Bottom 20%");
   expect(lowest.textContent).not.toMatch(/entry until|LORDS/);
   // After its season a token band's chest says it pays none now; a band that never drew any still says nothing.
   const late = await mount({
@@ -178,5 +178,5 @@ it.each([0, 1, 2, 3, 4])(
 it("does not claim a rank band while the chest is pending", async () => {
   const pending = await mount({ ...SEALED, result: { ...SEALED.result, rank: 0, chestId: 0n }, chest: null });
   expect(pending.querySelectorAll('[data-icon="reward-chest"]')).toHaveLength(2);
-  expect(pending.textContent).not.toMatch(/Top 10%|Bottom 25%/);
+  expect(pending.textContent).not.toMatch(/Top 20%|Bottom 20%/);
 });

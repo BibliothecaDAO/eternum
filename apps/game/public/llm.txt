@@ -46,34 +46,50 @@ meta: {}
 file: docs/pages/blitz/game-entry.mdx
 meta: {
   "title": "Game Entry",
-  "description": "Join a free Regular Blitz slot"
+  "description": "Pay into a Blitz slot, take your seat, and play"
 }
 
 # Game Entry
 
-Free Blitz slots close every day at 11:00 and 20:00 UTC. The next slot opens as soon as the previous one closes, so
-there is always one to register for. Sign in with your Realms identity and register before the slot closes; no token
-payment or season pass is needed, and nobody schedules the slot by hand.
+## Slots
 
-When the slot closes, its roster is fixed and split into Regular Blitz games of up to 24 players. For example, 25
-players form games of 13 and 12. Each player belongs to one game; registration order determines grouping.
+A Blitz slot opens every day for games that start at 11:00 and 20:00 UTC, while the season runs. Join a slot from Play:
+entry is paid in LORDS from your linked payout wallet, at the season's entry fee (500 LORDS this season), shown on every
+slot. Link a payout wallet in Settings first; the slot's **Link wallet** takes you there and back.
 
-## Automatic settlement
+Entry closes five minutes before the games start. There is no cap on a slot: at the close, everyone seated is split into
+games of up to 24 players, as even as can be and in the order they joined. For example, 25 players form games of 13
+and 12. A game opens at its start time once its whole roster is seated, and ends at its scheduled end.
 
-The game shuffles its fixed roster and settles three realms per player, with provisions and a starting Delta guard.
-There is no manual settlement race. Play starts only after every player's realms are ready; everyone gets the same
-scheduled game duration. Realm names come from their realm IDs.
+## Your entry
 
-Your slot shows your assigned game until the next slot closes. Opening the game before it is ready shows your realms
-being prepared, with the roster's progress; a player who is not on the roster can only spectate. A one-player slot
-creates a one-player game; an empty slot creates no game. Duel has no free slot flow.
+Your entry reads **Registered** once paid, then **Seated** when your seat is drawn. A paid entry is **Not seated** when
+the wallet that paid was not the payout wallet of your Realms account, or when your account already holds a seat in that
+slot: the earlier entry keeps it. A slot that is cancelled leaves every entry unseated.
 
-## Results
+An unseated entry is refunded in full, with any sword or shield you paid for, to the wallet that paid. Press **Take
+refund** on the slot in Play once it shows.
 
-At the end, the game finishes hyperstructure point settlement and records every player's final victory points and rank.
-Ties share a competition rank: scores of 100, 100 and 50 rank 1, 1 and 3. Players with zero VP tie last.
+## The lobby
 
-Free slots award no chests or token payouts.
+Registered players write in their slot's lobby chat; anyone can read it. On a desktop, the roster shows each seat's
+Blitz rating.
+
+## Sword and shield
+
+At entry you can add a sword, which doubles your rating gain in that game, and a shield, which halves your rating loss.
+Each costs one entry. A sword or shield credit won from a chest is used before LORDS. See
+[Prizes and ratings](/blitz/prize-pool).
+
+## When the game starts
+
+The game shuffles its roster and settles three realms per player, with provisions and a starting guard. There is no
+settlement race. Each realm is dealt one troop type, Knights, Crossbowmen or Paladins, one realm of each, in an order
+drawn for each player ([Armies](/blitz/military/armies)). Play starts only once every player's realms are ready, and
+everyone gets the same scheduled game duration. Realm names come from their realm IDs.
+
+Opening the game before it is ready shows your realms being prepared, with the roster's progress. A player who is not on
+the roster can watch.
 
 
 
@@ -96,9 +112,10 @@ players strategically manage resources, explore territories, and engage in high-
 Blitz's streamlined mechanics and accelerated gameplay require swift decision-making and adaptability, resulting in a
 high skill ceiling that rewards skill and experience. Both human and AI agent players compete under the same ruleset.
 
-Blitz runs in free slots: one closes every day at 11:00 UTC and one at 20:00 UTC. Register during the window, and when
-the slot closes the roster is split into games of up to 24 players, realms are settled for everyone automatically, and
-the game starts once every player's realms are ready. See [Game Entry](/blitz/game-entry).
+Blitz runs in paid slots, for games that start every day at 11:00 and 20:00 UTC. Pay your entry from your payout wallet;
+when entry closes, five minutes before the start, the slot is split into games of up to 24 players, realms are settled
+for everyone automatically, and each game starts once every player's realms are ready. See
+[Game Entry](/blitz/game-entry).
 
 ## Rule Summary
 
@@ -196,8 +213,8 @@ and control World Structures. Victory Points are awarded for:
 ### Victory
 
 Victory Points (VP) determine leaderboard ranking. When the 60 minutes end, every player's final rank and VP are
-recorded on chain and shown on the results tab and the game review. Free slots have no entry fee and no prize pool. See
-[Game Results](/blitz/prize-pool).
+recorded on chain and shown on the game's Results. Every player gets a chest, ratings move, and the season's best share
+its prize pool: see [Prizes and Ratings](/blitz/prize-pool).
 
 
 
@@ -205,22 +222,60 @@ recorded on chain and shown on the results tab and the game review. Free slots h
 
 file: docs/pages/blitz/prize-pool.mdx
 meta: {
-  "title": "Game Results",
-  "description": "Final ranks and victory points in free Blitz playtests"
+  "title": "Prizes and Ratings",
+  "description": "Where an entry goes, the chest every player earns, ratings, and the season prize"
 }
 
-# Game Results
+# Prizes and Ratings
 
-Free Blitz slots have no entry fee or prize pool. After the game ends, hyperstructure points are settled in bounded
-batches and the final result records every roster member's rank and victory points.
+## Where an entry goes
 
-Equal scores share a competition rank. A tie for first takes ranks 1 and 1; the next player is rank 3. Players who
-finish with zero points share last place, including registered players who never acted.
+Every entry, and every sword and shield bought, is split three ways: 80% to the season's prize pool, 10% to the chest
+reserve and 10% to the treasury. Games pay no prizes of their own; the season prize pays the season's best.
 
-The result becomes final only when the complete roster has been recorded. Interrupted finalization resumes from its
-recorded progress. The leaderboard and game review show these native results.
+## Results
 
-There are no chest awards or token payouts in the free slot flow. Results show player names.
+At the end, the game settles its hyperstructure points and records every player's final victory points and rank. Equal
+scores share a rank: scores of 100, 100 and 50 rank 1, 1 and 3. Players with zero points share last place, including
+registered players who never acted.
+
+Results, ratings, chests and season prizes all go to the wallet your seat was played with, even if you change your
+payout wallet afterwards.
+
+## A chest for every player
+
+Every player of a settled game gets a chest, sealed until opened. Its band is your finishing place, in five equal fifths
+of the game: the top 20%, then 20–40%, 40–60%, 60–80% and the bottom 20%. Ties share the average of their places, and a
+player alone is in the top band.
+
+| Band       | Chance of LORDS | LORDS, in entries |
+| ---------- | --------------- | ----------------- |
+| Top 20%    | 5%              | 4                 |
+| 20–40%     | 10%             | 2                 |
+| 40–60%     | 10%             | 1                 |
+| 60–80%     | none            | —                 |
+| Bottom 20% | none            | —                 |
+
+The rest of a chest is a cosmetic or a sword or shield credit, which pays for that at your next entry. A chest pays
+LORDS only while the chest reserve holds the whole amount; otherwise it draws again among the other rewards. Opening
+takes two steps: **Open**, then the reveal a few blocks later. At the season's end, what is left of the chest reserve
+joins the prize pool.
+
+## Ratings
+
+Every Blitz game is rated, however many play; only a game of one leaves ratings as they were. Ratings average 1,500 and
+move at most 45 in a game, less in a small game. A sword doubles your gain and a shield halves your loss, in the game
+you bought them for. In a rated game, the leaderboard shows each player's rating change if the game ended now, worked
+out as the result will be.
+
+## The season prize
+
+When the season ends, ratings freeze. The best 20% of the season's players by rating share the prize pool, the top place
+the largest share and each place after it 96% of the share above. The Season page shows, while the season runs, what
+each place would take if it ended now.
+
+Once the season's list is posted and its one-hour challenge window has passed, a winner presses **Claim** on the Season
+page, from the wallet their seats were played with.
 
 
 
@@ -2073,6 +2128,7 @@ meta: {}
 
 import { BlitzWorldStructureDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
 import "@/styles.css";
+import { startingForcesOf } from "@/utils/config";
 
 # Armies
 
@@ -2080,6 +2136,17 @@ import "@/styles.css";
 
 Individual armies consist of a single troop type and tier. Each hex can host only one army, so Lords must carefully
 manage their positioning and engagement opportunities.
+
+## Starting forces
+
+Each of your three realms is dealt one troop type, one realm Knights, one Crossbowmen and one Paladins, in an order
+drawn for you. Each starts with **1,000** T1 troops of its type garrisoned and
+**1,000** in reserve. No army stands on the map at the start: create one from the reserve.
+
+## Merging armies
+
+Select an army, then an adjacent army or realm of yours: the transfer panel moves troops between them, across your
+realms too. Both sides must hold the same troop type and tier.
 
 ## Structure Guards and Claims
 
@@ -2847,9 +2914,8 @@ are defined in the table below:
 
 <RelicTable />
 
-Each Relic Crate holds one themed pack of three relics, chosen when the crate appears, so a crate's tile names its pack
-before anyone opens it. The army that opens the crate keeps the army relics; the Realm relics go to that army's home
-Realm.
+Each Relic Crate holds one themed pack of three relics, chosen when the crate appears and revealed only when an army
+opens it. The army that opens the crate keeps the army relics; the Realm relics go to that army's home Realm.
 
 <RelicPackTable />
 
@@ -3497,8 +3563,9 @@ and strategy of their Lord.
 
 ## Registration
 
-Lords register for a free slot before it closes at 11:00 or 20:00 UTC. The roster fixed at that moment sets the number
-of players in each game and the size of its world. Each Realms account registers once per slot.
+Lords pay their entry into a slot before it closes, five minutes before its games start at 11:00 or 20:00 UTC. The
+roster seated at that moment sets the number of players in each game and the size of its world. Each Realms account
+holds one seat per slot.
 
 ## Settling
 

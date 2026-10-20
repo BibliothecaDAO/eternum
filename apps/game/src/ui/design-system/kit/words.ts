@@ -669,8 +669,11 @@ export const REWARD_WORDS = {
   swordCredit: "Sword credit",
   shieldCredit: "Shield credit",
   nextEntry: "Used at your next entry",
-  /** A chest's rank band (0 best .. 4), the one fact it shows sealed. */
-  band: ["Top 10%", "Top 25%", "Top half", "Top 75%", "Bottom 25%"],
+  /**
+   * A chest's rank band (0 best .. 4), the one fact it shows sealed: the ledger's five equal fifths of the game's
+   * finishing order (contracts/l2/ledger/src/chests.cairo `rank_band`).
+   */
+  band: ["Top 20%", "Top 40%", "Top 60%", "Top 80%", "Bottom 20%"],
   opening: "Opening…",
   /** A sealed chest's token reward, as a multiple of its slot's entry: what it can pay, and until when. */
   entryUntil: (shares: number, date: string) => `${shares}× entry until ${date}`,

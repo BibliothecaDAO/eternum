@@ -160,8 +160,46 @@ const frontierPhrases = (config, preset) => {
   ];
 };
 
+const CHEST_BANDS = ["Top 20%", "20–40%", "40–60%", "60–80%", "Bottom 20%"];
+const lordsOf = (amount) => n(Number(BigInt(amount.low) + (BigInt(amount.high) << 128n)) / 1e18);
+
+/**
+ * Blitz's entry and prizes, from the ledger preset production registers (config/deployer/clean/ledger/economics.ts)
+ * and its chest preset (contracts/l2/ledger/scripts/chest-preset.js), as the entry, prize and armies pages state them.
+ */
+const blitzLedgerPhrases = (blitz, ledger, chests) => {
+  const prize = 100 - (ledger.protocol_cut_bps + ledger.chest_lords_bps) / 100;
+  const reserve = blitz.startingResources.find((stack) => stack.resource === 26).amount;
+  return [
+    {
+      page: "blitz/game-entry",
+      phrases: [`at the season's entry fee (${lordsOf(ledger.entry_fee)} LORDS this season)`],
+    },
+    {
+      page: "blitz/prize-pool",
+      phrases: [
+        `${prize}% to the season's prize pool, ${ledger.chest_lords_bps / 100}% to the chest reserve and ${ledger.protocol_cut_bps / 100}% to the treasury`,
+        ...chests.bands.map((band, index) =>
+          band.lords_shares === 0
+            ? `${CHEST_BANDS[index]} none —`
+            : `${CHEST_BANDS[index]} ${pct(band.odds.lords)} ${band.lords_shares}`,
+        ),
+        `Ratings average ${n(ledger.mmr.mean)} and move at most ${ledger.mmr.max_delta} in a game`,
+        `The best ${pct(ledger.paid_fraction_bps)} of the season's players`,
+        `each place after it ${pct(ledger.decay_bps)} of the share above`,
+      ],
+    },
+    {
+      page: "blitz/military/armies",
+      phrases: [
+        `Each starts with ${n(blitz.troop.limit.startingGuard)} T1 troops of its type garrisoned and ${n(reserve)} in reserve`,
+      ],
+    },
+  ];
+};
+
 /** The phrases every rules page that states a stamina, guard, chest or points number must show. */
-export const expectedPhrases = (blitz, eternum, frontier, frontierPreset) => [
+export const expectedPhrases = (blitz, eternum, frontier, frontierPreset, ledger, chests) => [
   ...staminaPhrases("blitz", blitz),
   ...staminaPhrases("eternum", eternum),
   {
@@ -169,10 +207,12 @@ export const expectedPhrases = (blitz, eternum, frontier, frontierPreset) => [
     phrases: [`${n(Number(blitz.victoryPoints.pointsForRelicDiscovery) / POINTS_PRECISION)} victory points`],
   },
   ...frontierPhrases(frontier, frontierPreset),
+  ...blitzLedgerPhrases(blitz, ledger, chests),
 ];
 
 /**
- * The relic table, the Blitz preset's relic rules, Frontier's native preset and the text export's path, read from
+ * The relic table, the Blitz preset's relic rules, Frontier's native preset, the text export's path and Blitz's
+ * ledger and chest presets, read from
  * their TypeScript sources through Vite.
  */
 const loadBalanceSources = async () => {
@@ -185,12 +225,22 @@ const loadBalanceSources = async () => {
     const { blitzPreset } = await server.ssrLoadModule(join(here, "../../../config/source/blitz/native.ts"));
     const { frontierPreset } = await server.ssrLoadModule(join(here, "../../../config/source/frontier/native.ts"));
     const { llmTxtFile } = await server.ssrLoadModule(join(here, "../docs/utils/paths.ts"));
+    const { buildLedgerEconomicPreset } = await server.ssrLoadModule(
+      join(here, "../../../config/deployer/clean/ledger/economics.ts"),
+    );
+    const { buildMysteryChestPreset } = await server.ssrLoadModule(
+      join(here, "../../../contracts/l2/ledger/scripts/chest-preset.js"),
+    );
+    const ledger = buildLedgerEconomicPreset("blitz");
+    const chests = buildMysteryChestPreset();
     return {
       relics: RELICS,
       rules: blitzPreset.relics,
       firstRelicId: ResourcesIds.StaminaRelic1,
       frontierPreset,
       llmTxtFile,
+      ledger,
+      chests,
     };
   } finally {
     await server.close();
@@ -306,9 +356,16 @@ export const missingRuns = (dist, pages) =>
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] ?? join(here, "../dist"));
-  const { relics, rules, firstRelicId, frontierPreset, llmTxtFile } = await loadBalanceSources();
+  const { relics, rules, firstRelicId, frontierPreset, llmTxtFile, ledger, chests } = await loadBalanceSources();
   const llm = readFileSync(llmTxtFile, "utf8");
-  const phrases = expectedPhrases(configOf("blitz"), configOf("eternum"), configOf("frontier"), frontierPreset);
+  const phrases = expectedPhrases(
+    configOf("blitz"),
+    configOf("eternum"),
+    configOf("frontier"),
+    frontierPreset,
+    ledger,
+    chests,
+  );
   const missing = [
     ...missingRuns(dist, [
       ...expectedRuns(configOf("blitz"), configOf("eternum")),

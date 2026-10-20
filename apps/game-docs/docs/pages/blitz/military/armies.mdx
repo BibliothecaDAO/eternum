@@ -1,5 +1,6 @@
 import { BlitzWorldStructureDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
 import "@/styles.css";
+import { startingForcesOf } from "@/utils/config";
 
 # Armies
 
@@ -7,6 +8,17 @@ import "@/styles.css";
 
 Individual armies consist of a single troop type and tier. Each hex can host only one army, so Lords must carefully
 manage their positioning and engagement opportunities.
+
+## Starting forces
+
+Each of your three realms is dealt one troop type, one realm Knights, one Crossbowmen and one Paladins, in an order
+drawn for you. Each starts with **{startingForcesOf("blitz").garrison}** T1 troops of its type garrisoned and
+**{startingForcesOf("blitz").reserve}** in reserve. No army stands on the map at the start: create one from the reserve.
+
+## Merging armies
+
+Select an army, then an adjacent army or realm of yours: the transfer panel moves troops between them, across your
+realms too. Both sides must hold the same troop type and tier.
 
 ## Structure Guards and Claims
 
