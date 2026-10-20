@@ -10,19 +10,11 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { playerAvatarUrl, usePlayerProfile } from "@/hooks/use-player-profile";
 import {
-  readGraphicsPreferences,
-  writeGraphicsPreferences,
-  type GraphicsPreferences,
-} from "@/three/graphics-preferences";
-import { readRenderMode, RENDER_MODE_OPTIONS, type RenderMode, writeRenderMode } from "@/three/render-profile";
-import { buildRendererDebugUrl } from "@/three/renderer-build-mode";
-import { RENDERER_MODES, requestedRendererMode } from "@/ui/debug/renderer-debug-control";
-import {
   HudButton,
   HudField,
+  HudIconButton,
   HudNotice,
   HudPortrait,
-  HudSelect,
   HudSetting,
   HudSlider,
   HudSwitch,
@@ -40,6 +32,7 @@ import { shortAddress } from "@/ui/design-system/kit/address";
 import { InstallSetting } from "./install-setting";
 import { KeyboardShortcuts, KeyboardShortcutsSetting } from "./keyboard-shortcuts";
 import { NotificationSettings } from "./notification-settings";
+import { VideoSettings } from "./video-settings";
 
 export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
@@ -56,7 +49,9 @@ export const SettingsPanel = () => {
     <div className="flex flex-col gap-4 p-1">
       <ProfileHeader />
       <AudioSettings />
-      <VideoSettings />
+      <SettingsSection title="Video & Graphics">
+        <VideoSettings />
+      </SettingsSection>
       <NextUpSettings />
       <SettingsSection title={PROFILE_WORDS.notifications}>
         <NotificationSettings />
@@ -92,18 +87,20 @@ function ProfileHeader() {
     spectating && name && `as ${name}`,
   ].filter(Boolean);
 
+  // Who, then where they stand, then the address to copy: two lines beside the portrait.
   return (
-    <header className="flex items-center gap-3 border-b border-hud-divider pb-3">
+    <header className="flex items-center gap-3 border-b border-hud-divider pb-2">
       {address && <HudPortrait src={playerAvatarUrl(address, profile)} label={name ?? "Player"} />}
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          {session && !spectating ? (
-            <UsernameEditor name={name} />
-          ) : (
-            <p className="truncate text-hud-title text-hud-ink">
-              {spectating ? "Spectating" : (name ?? "Not signed in")}
-            </p>
-          )}
+        {session && !spectating ? (
+          <UsernameEditor name={name} />
+        ) : (
+          <p className="truncate text-hud-title text-hud-ink">
+            {spectating ? "Spectating" : (name ?? "Not signed in")}
+          </p>
+        )}
+        <p className="flex min-w-0 items-center gap-1 text-hud-body text-hud-muted">
+          {facts.length > 0 && <span className="truncate">{facts.join(" · ")} ·</span>}
           {address && (
             <HudButton
               kind="quiet"
@@ -114,8 +111,7 @@ function ProfileHeader() {
               {shortAddress(address)} ⧉
             </HudButton>
           )}
-        </div>
-        {facts.length > 0 && <p className="truncate text-hud-body text-hud-muted">{facts.join(" · ")}</p>}
+        </p>
         {error && <HudNotice tone="bad" line={error} />}
       </div>
     </header>
@@ -154,9 +150,10 @@ function UsernameEditor({ name }: { name: string | null }) {
 
   if (!editing) {
     return (
-      <HudButton kind="quiet" icon="edit" aria-label="Change username" onClick={startEditing}>
-        {name ?? "Choose a username"}
-      </HudButton>
+      <div className="flex min-w-0 items-center gap-1">
+        <p className="truncate text-hud-title text-hud-ink">{name ?? "Choose a username"}</p>
+        <HudIconButton kind="quiet" size="sm" icon="edit" label="Change username" onClick={startEditing} />
+      </div>
     );
   }
   return (
@@ -202,68 +199,12 @@ function SettingsSection({ title, children }: { title: string; children: ReactNo
   );
 }
 
-const QUALITY_OPTIONS = [
-  { value: "balanced", label: "Balanced" },
-  { value: "high", label: "High" },
-] as const;
-
-function VideoSettings() {
-  const preferences = readGraphicsPreferences(localStorage);
-  const renderMode = readRenderMode(localStorage);
-  const { reducedMotion, setReducedMotion, haptics, setHaptics } = useWorldAppearanceStore();
-  const changeGraphics = (change: Partial<GraphicsPreferences>) => {
-    writeGraphicsPreferences(localStorage, { ...preferences, ...change });
-    window.location.reload();
-  };
-  const changeRenderMode = (mode: RenderMode) => {
-    writeRenderMode(localStorage, mode);
-    window.location.reload();
-  };
-  return (
-    <SettingsSection title="Video & Graphics">
-      <HudSetting name="Quality" about="The game reloads to apply it">
-        <HudSelect
-          label="Quality"
-          value={preferences.quality}
-          options={QUALITY_OPTIONS}
-          onChange={(quality) => changeGraphics({ quality })}
-        />
-      </HudSetting>
-      <HudSetting name="Frame rate" about="The game reloads to apply it">
-        <HudSelect
-          label="Frame rate"
-          value={renderMode}
-          options={RENDER_MODE_OPTIONS.map((option) => ({ value: option.mode, label: option.label }))}
-          onChange={changeRenderMode}
-        />
-      </HudSetting>
-      <HudSetting name="Renderer" about="The game reloads to apply it">
-        <HudSelect
-          label="Renderer"
-          value={requestedRendererMode()}
-          options={RENDERER_MODES.map((option) => ({ value: option.mode, label: option.label }))}
-          onChange={(mode) => window.location.assign(buildRendererDebugUrl(window.location.href, mode))}
-        />
-      </HudSetting>
-      <HudSetting name="Shadows" about="The game reloads to apply it">
-        <HudSwitch on={preferences.shadows} label="Shadows" onChange={(shadows) => changeGraphics({ shadows })} />
-      </HudSetting>
-      <HudSetting name="Reduced motion">
-        <HudSwitch on={reducedMotion} label="Reduced motion" onChange={setReducedMotion} />
-      </HudSetting>
-      <HudSetting name="Haptics">
-        <HudSwitch on={haptics} label="Haptics" onChange={setHaptics} />
-      </HudSetting>
-    </SettingsSection>
-  );
-}
-
 /** One switch for Next up's tips: off, Next up shows only alerts (attacks, arrivals), and nothing without one. */
 function NextUpSettings() {
   const { nextUpTips, setNextUpTips } = useWorldAppearanceStore();
   return (
     <SettingsSection title="Next up">
-      <HudSetting name="Tips" about="The coach's steps; alerts always show">
+      <HudSetting name="Tips">
         <HudSwitch on={nextUpTips} label="Next up tips" onChange={setNextUpTips} />
       </HudSetting>
     </SettingsSection>

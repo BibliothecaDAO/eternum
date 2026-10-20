@@ -1590,13 +1590,10 @@ export const HudCheck = ({
   </button>
 );
 
-/** A setting: what it sets and what that does, its control at the end. */
-export const HudSetting = ({ name, about, children }: { name: string; about?: string; children: ReactNode }) => (
+/** A setting: what it sets, its control at the end. */
+export const HudSetting = ({ name, children }: { name: string; children: ReactNode }) => (
   <div className="ui-setting">
-    <span className="ui-setting__words">
-      <span className="ui-setting__name">{name}</span>
-      {about && <span className="ui-setting__about">{about}</span>}
-    </span>
+    <span className="ui-setting__name">{name}</span>
     {children}
   </div>
 );

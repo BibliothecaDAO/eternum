@@ -664,19 +664,19 @@ const SettingsSection = () => {
   return (
     <Element
       name="Switch, checkbox and settings"
-      rule="On or off at once (a switch), one of several chosen together (a checkbox); a setting row names what it sets and what that does."
+      rule="On or off at once (a switch), one of several chosen together (a checkbox); a setting row names what it sets."
       sheet={
         <div className="flex max-w-md flex-col">
-          <HudSetting name="Next up tips" about="The coach's steps; alerts always show">
+          <HudSetting name="Next up tips">
             <HudSwitch on={tips} label="Next up tips" onChange={setTips} />
           </HudSetting>
           <HudSetting name="Music">
             <HudSwitch on={music} label="Music" onChange={setMusic} state="focus" />
           </HudSetting>
-          <HudSetting name="Show armies" about="On the minimap">
+          <HudSetting name="Show armies">
             <HudCheck checked={checked} label="Show armies" onChange={setChecked} />
           </HudSetting>
-          <HudSetting name="Sound" about="Unavailable in this browser">
+          <HudSetting name="Sound">
             <HudSwitch on={false} label="Sound" disabled onChange={() => undefined} />
           </HudSetting>
         </div>

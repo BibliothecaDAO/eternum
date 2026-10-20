@@ -158,9 +158,11 @@ export const WindowsLab = () => {
   useDocumentClass("classic-hud");
   const [store] = useState(() => {
     const fixture = installFixtureGame();
-    // What the windows read that the fixture leaves out: the research a relic costs, and each building's rule.
+    // What the windows read that the fixture leaves out: the research a relic costs, each building's rule, and the
+    // player's points, which Settings' card ranks.
     fixture.applyFacts([
       { model: "ArtificerCost", key: "0xa", value: { game_id: 1, research: 500n } },
+      { model: "PlayerPoints", key: "0xc", value: { game_id: 1, address: BigInt(PLAYER), points: 35_000_000n } },
       ...preset.buildings.map(({ category, rule }) => ({
         model: "BuildingRule",
         key: `0xb${category}`,

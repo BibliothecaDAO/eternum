@@ -1462,20 +1462,10 @@ button.ui-relic:focus-visible {
   border-bottom: 1px solid var(--hud-divider);
   padding: theme(spacing.2) 0;
 }
-.ui-setting__words {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-}
 .ui-setting__name {
+  flex: 1;
   color: rgb(var(--hud-ink));
   font-weight: var(--hud-weight-title);
-}
-.ui-setting__about {
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
-  font-weight: var(--hud-weight-label);
 }
 
 /* ── Confirm: a question that stops the task, what it costs, the way back and the verb. ── */

@@ -24,7 +24,7 @@ export const NotificationSettings = () => {
   const level = shownLevel(preferences.saved?.level);
   return (
     <>
-      <HudSetting name={PROFILE_WORDS.notifications} about={level ? LEVEL_WORDS[level].line : undefined}>
+      <HudSetting name={PROFILE_WORDS.notifications}>
         <HudSelect<Level | "">
           label={PROFILE_WORDS.notifications}
           value={level ?? ""}
