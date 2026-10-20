@@ -95,13 +95,10 @@ const HoldingSearch = ({ holdings }: { holdings: Holdings }) =>
     />
   ) : null;
 
-/** Why the list is empty: nothing matches what was searched, or the player holds no realm and is out of the game. */
+/** Why the list is empty: nothing matches what was searched, or nothing is held. */
 const EmptyHoldings = ({ searched }: { searched: boolean }) => (
-  <p className="px-2 py-3 text-hud-body text-hud-muted">{searched ? "No holding matches." : HOLDS_NOTHING}</p>
+  <p className="px-2 py-3 text-hud-body text-hud-muted">{searched ? "No holding matches." : "You hold nothing."}</p>
 );
-
-/** A player whose last holding was taken: out of the game, watching it to its end. */
-const HOLDS_NOTHING = "You hold no realm. Watch until the end.";
 
 /**
  * The holdings panel: the kinds held as tabs (from the second kind), each its painting and count, the lit kind's

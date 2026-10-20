@@ -77,6 +77,12 @@ export const watchFactView = <T>(
 
 const activeGameId = () => configManager.getActiveGameId();
 
+/** Herald's scope for this player has applied: every fact of their own (their structures, their entry) is in the store. */
+export const playerScopeApplied = (store: NativeFactStore, viewer: bigint): boolean => {
+  const scope = store.subscriptionScope().known;
+  return scope?.actor !== undefined && BigInt(scope.actor) === viewer;
+};
+
 const readPlayerStructures = (store: NativeFactStore, viewer: ContractAddress | null): Structure[] =>
   viewer === null ? [] : readStructures(store, viewer, viewer, getPlayerDisplayName);
 

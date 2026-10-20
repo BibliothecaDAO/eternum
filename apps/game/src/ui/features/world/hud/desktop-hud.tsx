@@ -12,6 +12,7 @@ import { HoldingsList, useHoldings } from "./holdings";
 import { useHudKeys } from "./hud-keys";
 import { useIdleArmies } from "./idle-armies";
 import { HudMinimap } from "./minimap";
+import { OutOfGameLine } from "./out-of-game";
 import { RealmCard } from "./realm-card";
 import type { ReactNode } from "react";
 
@@ -21,7 +22,8 @@ import type { ReactNode } from "react";
  *   - left, one column: the holdings (one kind at a time under tabs, starred first, each row with its Provision or Level
  *     up), sized to their rows; the selected holding's card (name, population, tiles, automation, resources, relics);
  *     the minimap pinned to the bottom-left corner, a square that gives way down to its least height when the column
- *     runs short. A spectator sees the standings and the minimap;
+ *     runs short. A spectator sees the standings and the minimap. A player whose last realm fell is told so over
+ *     either;
  *   - right, the guided rail: Next up, the Build order panel, the events, the picked tile's details, chat;
  *   - the four orders as round bubbles at the foot, between the columns;
  *   - its keys (`useHudKeys`): B P M T open the workspaces, Space takes Next up's step, I selects the next idle army.
@@ -81,6 +83,7 @@ export const LeftColumn = () => {
   if (ordersAllowed && !account) return null;
   return (
     <HudColumn label="Holdings">
+      <OutOfGameLine />
       {ordersAllowed ? (
         <HoldingsAndCard />
       ) : (

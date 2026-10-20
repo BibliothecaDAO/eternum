@@ -33,6 +33,7 @@ import { useStructureActions } from "./left-facets/use-structure-actions";
 import { resolveLeftViewSurface } from "./left-view-policy";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { SpectatorStandingsBody } from "./spectator-standings";
+import { OutOfGameLine } from "@/ui/features/world/hud/out-of-game";
 
 type CompactTab = "empire" | "map" | "log" | "chat" | "details";
 
@@ -294,13 +295,18 @@ const SheetContent = ({
     );
   if (tab === "details") return tileDetails;
   if (tab === "empire")
-    return ordersAllowed ? (
-      <EmpireColumn />
-    ) : (
-      // The sheet's head names it; the panel under it is its frame and table alone.
-      <HudPanel kind="section" label="Standings" collapsible={false}>
-        <SpectatorStandingsBody />
-      </HudPanel>
+    return (
+      <>
+        <OutOfGameLine />
+        {ordersAllowed ? (
+          <EmpireColumn />
+        ) : (
+          // The sheet's head names it; the panel under it is its frame and table alone.
+          <HudPanel kind="section" label="Standings" collapsible={false}>
+            <SpectatorStandingsBody />
+          </HudPanel>
+        )}
+      </>
     );
   return null;
 };
