@@ -18,10 +18,12 @@ lab proof. Both renderer backends are checked. The route waits for the mounted G
 chest through the minimap's Position bridge before clicking its tile. `/lab/relic-chest?gameMode=frontier` holds its
 clock until **Advance to day rollover**; **Reset chest** restores the funded time.
 
-Frontier fight cards and Events share **Victory**, **Army lost** and **Guard holds**, with the encounter's beast
-species. A roaming beast's card is titled by its species; the fight result retains that species' portrait after the
-guard clears. Events names Trolls, rifts and roaming beasts found on the revealed tile. A Frontier founding line names
-the settler without the realm's off-map settlement coordinate.
+Frontier fight cards and Events share **Victory**, **Army lost** and **Guard holds**. Events, the Log and Today name a
+site by its one name, the map label's (and a rename): "clientlane2 vs Ashford · Victory", "Ashford: Victory, lost 84,
+guard 154 to 0", "Ashford cleared", "Ashford found"; its guard's species is the fight's forces ("507 T1 Knight vs 154
+Wraith") and a find's kind. A roaming beast's card is titled by its species; the fight result retains that species'
+portrait after the guard clears. A Frontier founding line names the settler without the realm's off-map settlement
+coordinate.
 
 ## Cleared-site standard
 
@@ -166,7 +168,7 @@ the foot.
 | Boot diagnostics: the loading screen's timeline and renderer switch, verbose logs                                                                                                                       | `/g/:chain/:game/...?logs=1`                                   | Add `?logs=1` to a game's address; without it no screen shows them                                                                                                      |
 | Action timeline: the last actions and sends, each with its send stages (release ready, left the queue, nonce, answered and included with their source, settled) and stream phases, timed from the click | `/g/:chain/:game/map?logs=1`                                   | Bottom right of the world map; always recorded in `window.__clientActionLatencyMeasurements`                                                                            |
 | A finished game's results and review                                                                                                                                                                    | `/results/:chainId-:gameId`                                    | Play, **Results**; a finished game on You or a player's page; in the game, **Game finished** → **See the results**; an ended game's doorway or map address, **Results** |
-| A finished game's end map, watched (its state as it ended, from Herald's review snapshot)                                                                                                               | `/g/:chain/:game?spectate=true`                                | Results, **See the end map**                                                                                                                                            |
+| A finished game's end map, watched (its state as it ended, from Herald's review snapshot), open on the player's own realm                                                                               | `/g/:chain/:game?spectate=true`                                | Results, **See the end map**                                                                                                                                            |
 | Install the app (PWA)                                                                                                                                                                                   | —                                                              | Play's notice, **Install**                                                                                                                                              |
 
 ### Season, You and Results
@@ -214,8 +216,9 @@ the foot.
 ## Blitz and Eternum in a match (`/g/:chain/:game/map` or `/hex`)
 
 A match opens from the lobby (**Your game**) or from home (**Enter**), on the world map in every mode (Frontier too: its
-realm is one press of **Realm** away; a spectator's map opens on the season leader's realm). Add `?spectate=true` to
-watch a running game, or a finished one as it ended. Both modes show one desktop HUD
+realm is one press of **Realm** away; a spectator's map opens on their own realm when the signed-in player has one in
+the game, else on the season leader's realm in Frontier and the first realm in Blitz). Add `?spectate=true` to watch a
+running game, or a finished one as it ended. Both modes show one desktop HUD
 (`src/ui/features/world/hud/desktop-hud.tsx`): your holdings, the selected one's card and the minimap down the left;
 Next up, the events, the picked tile and chat down the right; the orders as round bubbles between them. Below 1024 px
 wide the panels open from one tab bar (Empire, Map, Log, Chat, Details), with the actions in a row above it (a rail on
@@ -662,12 +665,12 @@ receipt over native fixture facts.
 
 ## Frontier beast guards
 
-Standing sites share one species identity between model, plate, selected card and history. Roaming Beasts show Cyclops
-for the lowly encounter and Wraith for the stronger encounter. Their inclusive count bands, Knight T1 combat and
-immutable initial-count classification are unchanged. Camps show Troll alone at every depth. Rifts show Dark fey
-hovering and moving its wings above the rift. Ruins show Ammit / Basilisk / Wyvern / Hydra from surface through depth
-III. All beasts have subtle GPU idle motion: planted breathing, a drifting Wraith shroud and the fey's hover/wings.
-Instance phases differ; clearing a site removes its guard and standing effects.
+Standing sites share one species identity between model, plate, selected card and a fight's forces in history. Roaming
+Beasts show Cyclops for the lowly encounter and Wraith for the stronger encounter. Their inclusive count bands, Knight
+T1 combat and immutable initial-count classification are unchanged. Camps show Troll alone at every depth. Rifts show
+Dark fey hovering and moving its wings above the rift. Ruins show Ammit / Basilisk / Wyvern / Hydra from surface through
+depth III. All beasts have subtle GPU idle motion: planted breathing, a drifting Wraith shroud and the fey's
+hover/wings. Instance phases differ; clearing a site removes its guard and standing effects.
 
 `/lab/models?family=beasts&group=site-map` opens the final eight encounter contexts on their tiles. View focuses a tile;
 Turn and Light inspect it. The sidebar shows the selected concepts and a recorded screenshot of the previous production
