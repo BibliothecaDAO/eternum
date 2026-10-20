@@ -13,6 +13,12 @@ import type { TouchNavigation } from "./touch-camera-navigation";
 type ListenerTypes = "click" | "mousemove" | "mouseleave" | "contextmenu" | "dblclick" | "mousedown";
 type InputCallback = (event: MouseEvent, raycaster: THREE.Raycaster) => void;
 
+/**
+ * A mouse press is a click unless the pointer travelled further than this while held. The map controls pan by the
+ * pointer's travel alone, so the press decides it, whatever else moves the camera (damping, the zoom, keys, flights).
+ */
+const CLICK_SLOP_PX = 3;
+
 interface InputListener {
   callback: InputCallback;
   event: ListenerTypes;
@@ -22,8 +28,6 @@ interface InputListener {
 export class InputManager {
   private listeners: InputListener[] = [];
   private isDragged = false;
-  /** Where the camera stood when the mouse button went down: a press that ends with the map moved was a pan. */
-  private cameraAtPress: THREE.Vector3 | null = null;
   private currentDragListener: ((e: MouseEvent) => void) | null = null;
   private currentMouseUpListener: ((e: MouseEvent) => void) | null = null;
   private mouseDownHandler: (e: MouseEvent) => void;
@@ -133,12 +137,9 @@ export class InputManager {
 
     this.updatePointerRaycaster(mouseEvent);
 
-    if (event === "click") {
-      const pressed = (mouseEvent as PointerEvent).pointerType !== "touch" ? this.cameraAtPress : null;
-      const panned = this.isDragged || (pressed !== null && !this.camera.position.equals(pressed));
+    if (event === "click" && this.isDragged) {
       this.isDragged = false;
-      this.cameraAtPress = null;
-      if (panned) return;
+      return;
     }
 
     callback(mouseEvent, this.raycaster);
@@ -332,10 +333,9 @@ export class InputManager {
     const mouseX = e.clientX;
     const mouseY = e.clientY;
     this.isDragged = false;
-    this.cameraAtPress = this.camera.position.clone();
 
     this.currentDragListener = (e: MouseEvent) => {
-      if (Math.abs(mouseX - e.clientX) > 10 || Math.abs(mouseY - e.clientY) > 10) {
+      if (Math.hypot(mouseX - e.clientX, mouseY - e.clientY) > CLICK_SLOP_PX) {
         this.isDragged = true;
         // Clear tooltip when dragging starts
         useTooltipStore.getState().setTooltip(null);
