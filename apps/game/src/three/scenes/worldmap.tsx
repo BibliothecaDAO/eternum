@@ -2,6 +2,7 @@ import { gameEndIsNear, type endgameFrame } from "../effects/endgame/sequence";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
+import { publishCameraView } from "./worldmap-camera-view";
 import { followArmyLayerChange } from "./worldmap-layer-follow";
 import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
 import { TileOccupier } from "@bibliothecadao/types";
@@ -867,7 +868,6 @@ export default class WorldmapScene extends WarpTravel {
   }
   private handleTransactionProgress?: (...args: any[]) => void;
   private readonly cameraTargetHexUpdateIntervalMs = 100;
-  private readonly cameraDistanceUpdateEpsilon = 0.5;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
   private structureManager!: StructureManager;
   private memoryMonitor?: MemoryMonitor;
@@ -895,21 +895,7 @@ export default class WorldmapScene extends WarpTravel {
   private updateCameraTargetHex = () => {
     const normalizedHex = this.getCameraTargetHex();
     const contractHex = Position.fromNormalized({ x: normalizedHex.col, y: normalizedHex.row }).getContract();
-    const nextHex = { col: Number(contractHex.x), row: Number(contractHex.y) };
-    const state = useUIStore.getState();
-    const currentHex = state.cameraTargetHex;
-    const hexChanged = !currentHex || currentHex.col !== nextHex.col || currentHex.row !== nextHex.row;
-    const nextCameraDistance = Math.round(this.controls.object.position.distanceTo(this.controls.target) * 100) / 100;
-    const distanceChanged =
-      state.cameraDistance === null ||
-      Math.abs(state.cameraDistance - nextCameraDistance) >= this.cameraDistanceUpdateEpsilon;
-
-    if (!hexChanged && !distanceChanged) return;
-
-    const nextState: { cameraTargetHex?: typeof nextHex; cameraDistance?: number } = {};
-    if (hexChanged) nextState.cameraTargetHex = nextHex;
-    if (distanceChanged) nextState.cameraDistance = nextCameraDistance;
-    useUIStore.setState(nextState);
+    useUIStore.getState().setCameraTargetHex({ col: Number(contractHex.x), row: Number(contractHex.y) });
   };
   private minimapCameraMoveTarget: Position | null = null;
   private minimapCameraMoveThrottled?: ReturnType<typeof throttle>;
@@ -951,6 +937,8 @@ export default class WorldmapScene extends WarpTravel {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     // The flight tween is leaving this scene: no target-hex, terrain-window or chunk-refresh churn on its way out.
     if (this.cameraOwnedByFlight) return;
+    // The minimap draws what the camera sees in this same frame.
+    publishCameraView(this.camera, this.controls.target);
     // The line follows its tile across the screen.
     this.pointerOrderTip.refresh();
     this.updateCameraTargetHexThrottled?.();
@@ -1850,8 +1838,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private bindWorldmapSceneUiLifecycle(): void {
-    // Legacy canvas minimap has been replaced by the React minimap (HexMinimap).
-    // We keep only the "minimapCameraMove" event bridge + cameraTargetHex updates for the UI.
+    // The minimap follows the camera through publishCameraView; it moves the camera through "minimapCameraMove".
     this.updateCameraTargetHexThrottled = throttle(this.updateCameraTargetHex, this.cameraTargetHexUpdateIntervalMs);
     this.refreshVisualTerrainWindowThrottled = throttle(() => {
       void this.refreshVisualTerrainWindowFromCamera();
@@ -1873,6 +1860,7 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     window.addEventListener("resize", this.handleTerrainViewportResize);
+    publishCameraView(this.camera, this.controls.target);
     this.updateCameraTargetHexThrottled();
     this.refreshVisualTerrainWindowThrottled();
   }
