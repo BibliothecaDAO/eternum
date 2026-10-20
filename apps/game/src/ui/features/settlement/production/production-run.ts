@@ -26,7 +26,7 @@ export interface ProductionRun {
 const BONUS_SCALE = 10_000n;
 
 /** An amount a player typed, in resource units: the precision every balance and charge settles to. */
-export const toUnits = (amount: number): bigint => BigInt(Math.round(amount * RESOURCE_PRECISION));
+const toUnits = (amount: number): bigint => BigInt(Math.round(amount * RESOURCE_PRECISION));
 /** Resource units as the amount a player reads. */
 export const fromUnits = (units: bigint): number => Number(units) / RESOURCE_PRECISION;
 
