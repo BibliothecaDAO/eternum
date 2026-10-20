@@ -8,17 +8,18 @@ import { TopHeader } from "@/ui/features/world/containers/top-header/top-header"
 import { DesktopHud } from "@/ui/features/world/hud/desktop-hud";
 import { readExpeditionRules, structureMapPosition } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { ActorType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { ActorType, RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 import ROW_SET from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import { PLAYER } from "./fixture-game";
 import { LabGame } from "./lab-game";
 
 /**
  * The views the lab draws: each mode's player (Blitz's, its Build order panel read from the lab realm, and its army's
- * attack forecast on an enemy army beside it, or stocked for its build steps; Frontier's, and with an army out whose XP buys a tier), and a spectator
- * of a game running and of one finished.
+ * attack forecast on an enemy army beside it, or stocked for its build steps; Frontier's, and with an army out whose XP buys a tier), a spectator
+ * of a game running and of one finished, and a Blitz player whose last realm fell, still holding a Hyperstructure, then watching.
  */
 const VIEWS = {
   blitz: { preset: 2, spectating: false, finished: false, army: false, attack: false },
@@ -28,13 +29,16 @@ const VIEWS = {
   "frontier-army": { preset: 5, spectating: false, finished: false, army: true, attack: false },
   "blitz-spectator": { preset: 2, spectating: true, finished: false, army: false, attack: false },
   "blitz-finished": { preset: 2, spectating: true, finished: true, army: false, attack: false },
+  "blitz-out": { preset: 2, spectating: false, finished: false, army: false, attack: false, out: true },
+  "blitz-out-watching": { preset: 2, spectating: true, finished: false, army: false, attack: false, out: true },
 } as const;
 
 type View = keyof typeof VIEWS;
 
 /**
  * Dev only: the in-game HUD on a desktop as the game mounts it, every mode's, on the lab's game, at
- * /lab/kit/unified/<view>: blitz, blitz-attack, blitz-build, frontier, frontier-army, blitz-spectator, blitz-finished. Frontier's states on the same
+ * /lab/kit/unified/<view>: blitz, blitz-attack, blitz-build, frontier, frontier-army, blitz-spectator, blitz-finished,
+ * blitz-out, blitz-out-watching. Frontier's states on the same
  * HUD are the Frontier HUD lab's, /lab/kit/hud/<state>.
  */
 export const UnifiedHudLab = () => {
@@ -46,6 +50,7 @@ export const UnifiedHudLab = () => {
 const ViewLab = ({ view }: { view: View }) => {
   const { preset, spectating, finished, army, attack } = VIEWS[view];
   const stocked = "stocked" in VIEWS[view];
+  const out = "out" in VIEWS[view];
   const frontier = preset === VIEWS.frontier.preset;
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
   useHudMode(frontier ? "frontier" : "blitz");
@@ -64,7 +69,9 @@ const ViewLab = ({ view }: { view: View }) => {
             ? (store) => [...armyOut(store), ...(attack ? enemyArmyBeside(store) : [])]
             : stocked
               ? stockedRealm
-              : undefined
+              : out
+                ? lastRealmLost
+                : undefined
         }
         systemCalls={army ? (store) => ({ buy_tier: recordTierBought(store) }) : undefined}
       >
@@ -102,6 +109,41 @@ const stockedRealm = (): unknown[] =>
       balance: String(50_000n * BigInt(RESOURCE_PRECISION)),
     },
   }));
+
+/**
+ * The lab player entered the game and lost the lab realm to a rival, and still holds a Hyperstructure: the HUD says
+ * they are out.
+ */
+const lastRealmLost = (store: NativeFactStore): unknown[] => {
+  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+  return [
+    { model: "PlayerEntry", key: "0xe1", value: { game_id: 1, owner: PLAYER, player: PLAYER } },
+    { model: "Structure", key: "0x7", value: { ...realm, owner: "0x222" } },
+    {
+      model: "Structure",
+      key: "0x50",
+      value: {
+        ...realm,
+        entity_id: 50,
+        owner: PLAYER,
+        base: { ...realm.base, category: StructureType.Hyperstructure },
+      },
+    },
+    {
+      model: "TileOccupancy",
+      key: "0x51",
+      value: {
+        game_id: 1,
+        alt: false,
+        col: 40,
+        row: 40,
+        entity_id: 50,
+        category: TileOccupier.Hyperstructure,
+        is_structure: true,
+      },
+    },
+  ];
+};
 
 /** The lab realm's army out today: beside the realm's site, 5,000 Knights, 90 stamina, and 260 XP, which buys a tier. */
 const ARMY_ID = 90;
