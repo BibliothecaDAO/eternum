@@ -78,6 +78,8 @@ export async function mountStaticLineup(
   };
   const drawnAssets = new Set<string>();
   const drawnParts = new Set<number>();
+  let beastCalls = 0,
+    beastTriangles = 0;
   let current = settings;
   let frame = 0;
   let last = performance.now();
@@ -88,7 +90,14 @@ export async function mountStaticLineup(
         remaining: number;
         gl: WebGL2RenderingContext;
         frames: number[];
-        resolve: (value: { frames: number[]; calls: number; triangles: number; gpu: string }) => void;
+        resolve: (value: {
+          frames: number[];
+          calls: number;
+          triangles: number;
+          beastCalls: number;
+          beastTriangles: number;
+          gpu: string;
+        }) => void;
         reject: (reason: Error) => void;
       }
     | undefined;
@@ -167,6 +176,11 @@ export async function mountStaticLineup(
             const afterRender = mesh.onAfterRender;
             mesh.onAfterRender = (...args) => {
               afterRender.apply(mesh, args);
+              if (kind && kind !== "ruin") {
+                beastCalls++;
+                const indices = mesh.geometry.index?.count ?? mesh.geometry.getAttribute("position").count;
+                beastTriangles += (Math.min(indices, mesh.geometry.drawRange.count) / 3) * mesh.count;
+              }
               drawnAssets.add(part.path);
               active.parts.forEach((index) => drawnParts.add(index));
             };
@@ -197,6 +211,8 @@ export async function mountStaticLineup(
       controls.update();
       drawnAssets.clear();
       drawnParts.clear();
+      beastCalls = 0;
+      beastTriangles = 0;
       renderer.render(scene, camera);
       if (sampling) {
         sampling.gl.finish();
@@ -207,6 +223,8 @@ export async function mountStaticLineup(
             frames: sampling.frames,
             calls: renderer.info.render.drawCalls ?? renderer.info.render.calls,
             triangles: renderer.info.render.triangles,
+            beastCalls,
+            beastTriangles,
             gpu: String(sampling.gl.getParameter(extension?.UNMASKED_RENDERER_WEBGL ?? sampling.gl.RENDERER)),
           });
           sampling = undefined;
@@ -249,7 +267,14 @@ export async function mountStaticLineup(
         const gl = backend.getContext?.();
         if (!gl?.finish) return Promise.reject(new Error("Synchronized frame measurement requires the WebGL renderer"));
         if (sampling) return Promise.reject(new Error("A frame measurement is already running"));
-        return new Promise<{ frames: number[]; calls: number; triangles: number; gpu: string }>((resolve, reject) => {
+        return new Promise<{
+          frames: number[];
+          calls: number;
+          triangles: number;
+          beastCalls: number;
+          beastTriangles: number;
+          gpu: string;
+        }>((resolve, reject) => {
           sampling = { remaining: count, gl, frames: [], resolve, reject };
         });
       },

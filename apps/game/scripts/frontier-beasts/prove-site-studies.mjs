@@ -160,8 +160,9 @@ export async function proveEffectCost(b, out, records, baseUrl, effect) {
           ok:
             summary.medianDelta <= 0.5 &&
             summary.p95Delta <= 1 &&
-            new Set([...off.calls, ...on.calls]).size === 1 &&
-            new Set([...off.triangles, ...on.triangles]).size === 1,
+            new Set([...off.beastCalls, ...on.beastCalls]).size === 1 &&
+            off.beastCalls.every((calls) => calls === 8) &&
+            new Set([...off.beastTriangles, ...on.beastTriangles]).size === 1,
           actual: summary,
         });
     }
@@ -215,5 +216,7 @@ function summarizeFrames(runs) {
     ),
     calls: runs.map((run) => run.calls),
     triangles: runs.map((run) => run.triangles),
+    beastCalls: runs.map((run) => run.beastCalls),
+    beastTriangles: runs.map((run) => run.beastTriangles),
   };
 }
