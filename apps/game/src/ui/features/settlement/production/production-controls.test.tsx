@@ -200,6 +200,18 @@ it("sizes the run from an input's budget, in whole cycles, and shows the burn th
   }
 });
 
+it("names the least budget of an input a cycle burns under one unit of as it is typed, never <1", () => {
+  const view = mount({ copper: 100 });
+  try {
+    view.type("Copper to spend", "0.5");
+    expect(view.start().textContent).toBe("Spend at least 0.8 Copper");
+    expect(view.start().disabled).toBe(true);
+    expect(view.burnResources).not.toHaveBeenCalled();
+  } finally {
+    view.unmount();
+  }
+});
+
 it("runs the labor recipe on its own inputs and output, with the troop bonus on the total", async () => {
   const view = mount({ copper: 2.4, labor: 100, troopBonus: 2_000 }, { laborEnabled: true });
   try {

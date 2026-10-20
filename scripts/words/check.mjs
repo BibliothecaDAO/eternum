@@ -33,6 +33,8 @@ const CATEGORIES = {
     "a cost, price or fee written by formatAmount or formatExact: every charge reads rounded, by formatCharge",
   "number.bare":
     "an amount written into text as it is (`${resource.amount} wheat`): raw, ungrouped and unrounded; a writer writes it (formatCharge)",
+  "number.threshold":
+    'a least amount to type written by a charge or amount writer (`at least ${formatCharge(x)}`): it reads "<1" under one; write it as typed (formatTypedNumber)',
   "number.pair":
     "a cost held against what is held, written as two figures (`${formatAmount(held)} / ${formatCharge(cost)}`): formatHeldAgainst writes the pair, so a shortfall never reads as met",
   "number.plural":
@@ -375,6 +377,20 @@ const bareAmountText = (node, file) => {
     writtenAlternatives(node.expression).some((each) => ts.isPropertyAccessExpression(each) && bareAmount(each, file))
   );
 };
+
+// A least amount the player is told to type ("Spend at least 0.8 Copper") is an amount to type, not a charge: through
+// formatCharge or formatAmount it reads "<1" under one unit and says nothing. Read here: "at least" before a writer.
+const AT_LEAST = /\bat least\s*$/i;
+const thresholdByChargeWriter = (node) =>
+  ts.isTemplateExpression(node) &&
+  node.templateSpans.some((span, index) => {
+    const before = index === 0 ? node.head.text : node.templateSpans[index - 1].literal.text;
+    return (
+      AT_LEAST.test(before) &&
+      ts.isCallExpression(span.expression) &&
+      /^(formatCharge|formatAmount)$/.test(calleeName(span.expression))
+    );
+  });
 
 // A cost beside what is held, each side rounded alone, can read as met while short ("28 / 28" for 28.10 of 28.15); the
 // pair is one writer's (formatHeldAgainst). Read here: two writer calls joined by a slash, one of them a charge.
@@ -721,6 +737,7 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
     if (chargeByOtherWriter(node)) hit("number.charge", node);
     if (handPair(node)) hit("number.pair", node);
     if (bareAmountText(node, file)) hit("number.bare", node);
+    if (thresholdByChargeWriter(node)) hit("number.threshold", node);
     if (writtenTwice(node)) hit("words.doubled", node);
     if (handPluralText(node)) hit("number.plural", node);
     if (handPopulation(node)) hit("number.population", node);

@@ -257,3 +257,14 @@ test("finds an amount put into text as it is, and passes text, nodes and words t
     "8 number.bare",
   ]);
 });
+
+test("finds a least amount to type written as a charge, and passes it written as typed", () => {
+  const source = [
+    // 1: the production minimum as it shipped in 16e0f6e6a76 and 8ca6d70a7e7, which read "Spend at least <1 Copper"
+    "const story = { reason: `Spend at least ${formatCharge(fromUnits(least))} ${resourceName(resource)}` };",
+    "const story = { reason: `Needs at least ${formatAmount(least)} wheat` };", // 2
+    "const story = { reason: `Spend at least ${formatTypedNumber(fromUnits(least))} ${resourceName(resource)}` };",
+    "const story = { reason: `Needs ${formatCharge(cost)} wheat` };",
+  ].join("\n");
+  assert.deepEqual(scan(source), ["1 number.threshold", "2 number.threshold"]);
+});

@@ -16,6 +16,7 @@ import {
   resourceName,
   formatPercent,
   formatCharge,
+  formatTypedNumber,
 } from "@bibliothecadao/types";
 import { useEffect, useState } from "react";
 import {
@@ -276,10 +277,13 @@ const runVerdict = (
   return coversRun(run, balances) ? null : "Not enough resources";
 };
 
-/** Why a sizing came to no whole cycle: a budget under one cycle's burn, nothing asked for, or holdings under it. */
+/**
+ * Why a sizing came to no whole cycle: a budget under one cycle's burn, nothing asked for, or holdings under it. The
+ * least budget is an amount to type, written as a field shows it ("0.8 Copper"), never rounded as a charge is.
+ */
 const noCycleReason = (recipe: ProductionRecipe, sizing: RunSizing): string => {
   if (sizing.by === "input")
-    return `Spend at least ${formatCharge(fromUnits(oneCycleOf(recipe, sizing.resource)))} ${resourceName(sizing.resource)}`;
+    return `Spend at least ${formatTypedNumber(fromUnits(oneCycleOf(recipe, sizing.resource)))} ${resourceName(sizing.resource)}`;
   if (sizing.by === "output") return "Enter an amount to make";
   return "Not enough resources";
 };
