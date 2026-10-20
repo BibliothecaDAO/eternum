@@ -1,6 +1,11 @@
 import { BiomeType, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { SiteKind } from "@bibliothecadao/eternum";
-import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import {
+  nativeFactModels,
+  nativeRuleConstants,
+  type NativeModelName,
+} from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { frontierDay } from "../deploy/deploy-fixture";
@@ -15,6 +20,18 @@ const troops = (count: bigint, stamina: bigint) => ({
   count: String(count * PRECISION),
   stamina: { Inline: { amount: String(stamina), settled_at: "360", remainder: 0 } },
 });
+
+/** Reload only surviving wire facts into a fresh store, without any prior entity state. */
+export const reloadSiteFacts = (store: NativeFactStore): NativeFactStore => {
+  const snapshot = (Object.keys(nativeFactModels) as NativeModelName[]).flatMap((model) =>
+    [...store.entries(model)].map(([key, value]) => ({ model, key, value })),
+  );
+  const restored = new NativeFactStore();
+  restored.applyFacts(
+    JSON.parse(JSON.stringify(snapshot, (_, value) => (typeof value === "bigint" ? value.toString() : value))),
+  );
+  return restored;
+};
 
 /**
  * The deploy fixture's Frontier day with a camp guarded by 1,100 T1 knights on row 12 and the realm's 1,498-knight army beside

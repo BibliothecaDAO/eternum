@@ -1,13 +1,9 @@
-import {
-  nativeFactModels,
-  type NativeModelName,
-} from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { TileOccupier } from "@bibliothecadao/types";
-import { campBeside, SITE, SITE_TILE } from "./site-fixture";
+import { campBeside, reloadSiteFacts, SITE, SITE_TILE } from "./site-fixture";
 import { readClearedSite, SiteReceipt } from "./site-receipt";
 
 const clear = (store: NativeFactStore, amount: bigint | null, resourceType = 23) => {
@@ -108,14 +104,7 @@ describe("the marker and receipt survive occupancy and snapshots", () => {
     expect(projection.getStructuresAtHex(SITE_TILE).map((site) => site.entityId)).toEqual([SITE]);
     const receipt = readClearedSite(store, 1, SITE_TILE)!;
     expect(receipt.site.clear?.reward?.amount).toBe(10_000_000_000n);
-    const restored = new NativeFactStore();
-    let wireKey = 1;
-    const snapshot = (Object.keys(nativeFactModels) as NativeModelName[]).flatMap((model) =>
-      [...store.rows(model)].map((value) => ({ model, key: `0x${(wireKey++).toString(16)}`, value })),
-    );
-    restored.applyFacts(
-      JSON.parse(JSON.stringify(snapshot, (_, value) => (typeof value === "bigint" ? value.toString() : value))),
-    );
+    const restored = reloadSiteFacts(store);
     const reloaded = new WorldSpatialProjection({ store: restored });
     reloaded.start();
     expect(reloaded.getStructure(SITE)?.clearedSite).toBe(true);

@@ -3,13 +3,14 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { tiles } = vi.hoisted(() => ({
-  tiles: { current: [] as { occupierType: number; occupierId?: number; hexCoords: object }[] },
+  tiles: {
+    current: [] as { occupierType: number; occupierId?: number; occupierIsStructure?: boolean; hexCoords: object }[],
+  },
 }));
 vi.mock("@/hooks/use-world-spatial-tiles", () => ({ useWorldSpatialTiles: () => tiles.current }));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("./build/build-sheet", () => ({ BuildSheet: () => null, useOpenPlot: () => null }));
 vi.mock("./sites/map-site-card", () => ({ MapSiteCard: () => null, useSelectedMapSite: () => null }));
-vi.mock("./sites/tile-card", () => ({ TileCard: () => null, useSelectedTarget: () => null }));
 vi.mock("./upgrade/castle-upgrade", () => ({ CastleUpgrade: () => null, useKeepSelected: () => null }));
 vi.mock("@/ui/features/military/chest/use-adjacent-own-explorer", () => ({ useAdjacentOwnExplorer: () => 201 }));
 vi.mock("./research/selected-building", () => ({ useSelectedBuildingRow: () => null }));
@@ -20,7 +21,7 @@ import { useChestOpeningStore } from "@/hooks/store/use-chest-opening-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { onChestOpenRequest } from "@/three/scenes/worldmap-chest-open-request";
 import { ChestOpenings } from "@/ui/features/military/chest/chest-openings";
-import { campBeside, SITE_TILE } from "./sites/site-fixture";
+import { campBeside, reloadSiteFacts, SITE, SITE_TILE } from "./sites/site-fixture";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { expeditionSpireTile, readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
@@ -34,7 +35,17 @@ afterEach(() => setBlockTimestampSource(null));
 
 const sheetFor = (occupierType: number | null) => {
   const { store } = campBeside();
-  tiles.current = occupierType === null ? [] : [{ occupierType, hexCoords: { col: 4, row: 5, alt: false } }];
+  useAccountStore.setState({ account: { address: "0x111" } as never });
+  tiles.current =
+    occupierType === null
+      ? []
+      : [
+          {
+            occupierType,
+            occupierId: occupierType === TileOccupier.ExplorerKnightT1 ? 201 : 0,
+            hexCoords: { col: 4, row: 5, alt: false },
+          },
+        ];
   const host = document.createElement("div");
   const root = createRoot(host);
   act(() =>
@@ -46,54 +57,107 @@ const sheetFor = (occupierType: number | null) => {
   );
   const sheet = host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
   act(() => root.unmount());
+  useAccountStore.setState({ account: null });
   return sheet;
 };
 
 describe("Frontier's selection sheet", () => {
-  it("opens and closes a cleared site's receipt after its structure and guard are removed", async () => {
-    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-    const { store, site } = campBeside();
-    store.applyFacts([
-      {
-        model: "ExpeditionSite",
-        key: "0x72",
-        value: {
-          ...site,
-          clear: {
-            explorer_id: 201n,
-            home_id: 7n,
-            reward: { resource_type: 23, amount: 550_000_000_000n },
+  it.each([
+    { reload: false, occupied: false },
+    { reload: false, occupied: true },
+    { reload: true, occupied: false },
+    { reload: true, occupied: true },
+  ])(
+    "opens the cleared receipt after deletion (reload: $reload, own army: $occupied)",
+    async ({ reload, occupied }) => {
+      Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+      const fixture = campBeside();
+      fixture.store.applyFacts([
+        {
+          model: "TileOccupancy",
+          key: "0x90",
+          value: { game_id: 1, ...SITE_TILE, entity_id: SITE, category: TileOccupier.Camp, is_structure: true },
+        },
+      ]);
+      fixture.store.applyFacts([
+        {
+          model: "ExpeditionSite",
+          key: "0x72",
+          value: {
+            ...fixture.site,
+            clear: {
+              explorer_id: 201n,
+              home_id: 7n,
+              reward: { resource_type: 23, amount: 550_000_000_000n },
+            },
           },
         },
-      },
-      { model: "Structure", key: "0x71", value: null },
-      { model: "Guard", key: "0x73", value: null },
-    ]);
-    tiles.current = [];
-    useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE });
-    const host = document.createElement("div");
-    const root = createRoot(host);
-    try {
-      await act(async () =>
-        root.render(
-          <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
-            <FrontierSelectionSheet rules={RULES} realm={null} onResearch={() => undefined} />
-          </GameProvider>,
-        ),
-      );
-      expect(host.querySelector('[data-kit-sheet][aria-label="Camp"]')).not.toBeNull();
-      expect(host.textContent).toContain("Cleared · Camp");
-      expect(host.textContent).toContain("550 Labor");
-      expect(host.textContent).toContain("82 XP");
-      const close = host.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
-      expect(close).not.toBeNull();
-      await act(async () => close!.click());
-      expect(host.querySelector("[data-kit-sheet]")).toBeNull();
-    } finally {
-      act(() => root.unmount());
-      useUIStore.getState().selectOnMap(null);
-    }
-  });
+        { model: "Structure", key: "0x71", value: null },
+        { model: "Guard", key: "0x73", value: null },
+        { model: "TileOccupancy", key: "0x90", value: null },
+      ]);
+      if (occupied)
+        fixture.store.applyFacts([
+          { model: "TileOccupancy", key: "0x75", value: null },
+          {
+            model: "TileOccupancy",
+            key: "0x91",
+            value: {
+              game_id: 1,
+              ...SITE_TILE,
+              entity_id: 201,
+              category: TileOccupier.ExplorerKnightT1,
+              is_structure: false,
+            },
+          },
+        ]);
+      const store = reload ? reloadSiteFacts(fixture.store) : fixture.store;
+      expect(store.get("Structure", { game_id: 1, entity_id: SITE })).toBeUndefined();
+      expect(store.get("Guard", { game_id: 1, structure_id: SITE, slot: 0 })).toBeUndefined();
+      expect(store.entityOccupancy(1, SITE)).toBeUndefined();
+      if (occupied) expect(store.entityOccupancy(1, 201)).toMatchObject(SITE_TILE);
+      tiles.current = occupied
+        ? [
+            {
+              occupierType: TileOccupier.ExplorerKnightT1,
+              occupierId: 201,
+              occupierIsStructure: false,
+              hexCoords: SITE_TILE,
+            },
+          ]
+        : [];
+      useAccountStore.setState({ account: { address: "0x111" } as never });
+      useUIStore.getState().setMapLayer(false);
+      useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE });
+      const host = document.createElement("div");
+      const root = createRoot(host);
+      try {
+        await act(async () =>
+          root.render(
+            <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+              <FrontierSelectionSheet rules={RULES} realm={null} onResearch={() => undefined} />
+            </GameProvider>,
+          ),
+        );
+        expect(host.querySelector('[data-kit-sheet][aria-label="Camp"]')).not.toBeNull();
+        expect(host.textContent).toContain("Cleared · Camp");
+        expect(host.textContent).toContain("550 Labor");
+        expect(host.textContent).toContain("82 XP");
+        const close = host.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
+        expect(close).not.toBeNull();
+        await act(async () => close!.click());
+        expect(host.querySelector("[data-kit-sheet]")).toBeNull();
+        await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
+        expect(host.querySelector('[data-kit-sheet][aria-label="Camp"]')).not.toBeNull();
+        expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor82 XP");
+      } finally {
+        act(() => root.unmount());
+        useUIStore.getState().selectOnMap(null);
+        useAccountStore.setState({ account: null });
+        tiles.current = [];
+      }
+    },
+  );
 
   it("opens a Frontier card for a spire, and nothing for a tile without one", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
