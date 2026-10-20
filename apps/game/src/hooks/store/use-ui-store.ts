@@ -1,4 +1,5 @@
 import { BattleViewInfo, LeftView } from "@/types";
+import type { TroopStack } from "@/ui/features/military/components/unified-army-creation-modal/types";
 import { useTooltipStore } from "./use-tooltip-store";
 import { ContextMenuState } from "@/types/context-menu";
 import { clampCycleProgress, type DebugCycleProgressOverride } from "@/utils/cycle-progress";
@@ -28,7 +29,7 @@ type PendingMilitaryAction = {
   isExplorer: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
-  troopCount?: number;
+  troops?: TroopStack;
 };
 
 interface UIStore {

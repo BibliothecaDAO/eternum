@@ -1,4 +1,5 @@
 import { expect, it } from "vitest";
+import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { type CoachArmy, type CoachTarget, coachSteps } from "./coach";
 
 const grants = { exploreTile: 5, openRelicCrate: 250, claimCampFromBandits: 250, claimHyperstructureFromBandits: 1000 };
@@ -15,7 +16,11 @@ const target = (kind: CoachTarget["kind"], name: string, col: number): CoachTarg
   name,
   hex: { col, row: 0 },
 });
-const troops = { realmId: 9, realmName: "'oak Leukue", troops: 1_000 };
+const troops = {
+  realmId: 9,
+  realmName: "'oak Leukue",
+  stack: { type: TroopType.Knight, tier: TroopTier.T1, count: 1_000 },
+};
 const steps = (
   armies: CoachArmy[],
   targets: CoachTarget[] = [],
@@ -28,8 +33,8 @@ it("raises the first army at the realm with troops on hand, or asks for a barrac
       key: "coach:raise",
       line: "Raise an army at 'oak Leukue (1,000 troops on hand): it explores for +5 points a tile.",
       verb: "Raise an army",
-      // Military opens at the count the line names.
-      act: { kind: "raise", realmId: 9, troops: 1_000 },
+      // Military opens on the stack the line names: its troop and its count.
+      act: { kind: "raise", realmId: 9, troops: { type: TroopType.Knight, tier: TroopTier.T1, count: 1_000 } },
     },
   ]);
   expect(steps([], [], { troopsOnHand: null })).toEqual([

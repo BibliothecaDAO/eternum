@@ -1,4 +1,5 @@
 import { getHexDistance, formatExact } from "@bibliothecadao/types";
+import type { TroopStack } from "@/ui/features/military/components/unified-army-creation-modal/types";
 import type { PointsGrants } from "./points-goal";
 
 /** A hex in contract space, as the map and its facts give it. */
@@ -26,11 +27,11 @@ export interface CoachTarget {
   hex: CoachHex;
 }
 
-/** The player's realm with the most troops on hand, where an army can be raised now. */
+/** The player's realm with the largest troop stack on hand, where an army can be raised now, and that stack. */
 export interface TroopsOnHand {
   realmId: number;
   realmName: string;
-  troops: number;
+  stack: TroopStack;
 }
 
 /** What the coach reads: the player's armies and troops, what scores on the map, and the game's rules. */
@@ -51,7 +52,7 @@ interface CoachState {
  * realm up, or select an army on the map with the card of the target it should go for open (none for exploring).
  */
 export type CoachAct =
-  | { kind: "raise"; realmId: number; troops: number }
+  | { kind: "raise"; realmId: number; troops: TroopStack }
   | { kind: "build" }
   | { kind: "open-crate"; armyId: number; hex: CoachHex }
   | { kind: "level-up"; realmId: number; name: string }
@@ -92,9 +93,9 @@ export const raiseStep = ({ troopsOnHand, grants }: Pick<CoachState, "troopsOnHa
   troopsOnHand
     ? {
         key: "coach:raise",
-        line: `Raise an army at ${troopsOnHand.realmName} (${formatExact(troopsOnHand.troops)} troops on hand): it explores for +${formatExact(grants.exploreTile)} points a tile.`,
+        line: `Raise an army at ${troopsOnHand.realmName} (${formatExact(troopsOnHand.stack.count)} troops on hand): it explores for +${formatExact(grants.exploreTile)} points a tile.`,
         verb: "Raise an army",
-        act: { kind: "raise", realmId: troopsOnHand.realmId, troops: troopsOnHand.troops },
+        act: { kind: "raise", realmId: troopsOnHand.realmId, troops: troopsOnHand.stack },
       }
     : {
         key: "coach:barracks",

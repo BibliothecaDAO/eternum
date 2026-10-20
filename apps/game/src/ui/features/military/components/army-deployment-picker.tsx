@@ -22,7 +22,7 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
   const close = () => usePopoverStore.getState().close("army-deployment");
   const form = useArmyCreation({
     ...target,
-    initialTroopCount: target.troopCount,
+    initialTroops: target.troops,
     fixedContext: true,
     onSubmit: close,
   });

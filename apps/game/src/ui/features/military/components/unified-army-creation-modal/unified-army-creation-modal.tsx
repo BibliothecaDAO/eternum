@@ -8,6 +8,7 @@ import { ArmyTypeToggle } from "./army-type-toggle";
 import { DefenseSlotSelection } from "./defense-slot-selection";
 import { RealmHexDeployMap } from "./realm-hex-deploy-map";
 import { DeployTroops, DeployVerb } from "./deploy-form";
+import type { TroopStack } from "./types";
 import { useArmyCreation } from "./use-army-creation";
 
 interface UnifiedArmyCreationProps {
@@ -16,8 +17,8 @@ interface UnifiedArmyCreationProps {
   isExplorer?: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
-  /** The troop count an order named; the form opens on it, within what the structure can raise. */
-  initialTroopCount?: number;
+  /** The troop stack an order named; the form opens on that troop at that count, within what can be raised. */
+  initialTroops?: TroopStack;
   followSelectedStructure?: boolean;
 }
 
@@ -35,7 +36,7 @@ export const UnifiedArmyCreationBody = ({
   isExplorer = true,
   direction,
   initialGuardSlot,
-  initialTroopCount,
+  initialTroops,
   followSelectedStructure,
   shown = true,
 }: UnifiedArmyCreationBodyProps) => {
@@ -111,7 +112,7 @@ export const UnifiedArmyCreationBody = ({
     isExplorer,
     direction,
     initialGuardSlot,
-    initialTroopCount,
+    initialTroops,
   });
   if (!shown) return null;
 

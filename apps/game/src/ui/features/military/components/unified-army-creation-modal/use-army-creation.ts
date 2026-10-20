@@ -40,7 +40,7 @@ import {
   MAX_GUARD_SLOT_COUNT,
 } from "../../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";
-import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption } from "./types";
+import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption, TroopStack } from "./types";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
@@ -70,8 +70,8 @@ interface ArmyCreationOptions {
   isExplorer?: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
-  /** The troop count an order named; the form opens on it, within what the structure can raise. */
-  initialTroopCount?: number;
+  /** The troop stack an order named; the form opens on that troop at that count, within what can be raised. */
+  initialTroops?: TroopStack;
   fixedContext?: boolean;
   onSubmit?: () => void;
 }
@@ -85,7 +85,7 @@ export const useArmyCreation = ({
   isExplorer = true,
   direction,
   initialGuardSlot,
-  initialTroopCount = 0,
+  initialTroops,
   fixedContext = false,
   onSubmit,
 }: ArmyCreationOptions) => {
@@ -98,7 +98,7 @@ export const useArmyCreation = ({
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(
     direction !== undefined ? direction : null,
   );
-  const [troopCount, setTroopCount] = useState(initialTroopCount);
+  const [troopCount, setTroopCount] = useState(initialTroops?.count ?? 0);
   const [guardSlot, setGuardSlot] = useState(initialGuardSlot ?? 0);
   const [armyType, setArmyType] = useState(isExplorer);
   const currentDefaultTick = useCurrentDefaultTick();
@@ -147,7 +147,10 @@ export const useArmyCreation = ({
   // The form opens on a troop this structure can deploy, and on a new structure's when the structure changes; the
   // game's own cost and capacity reads never see a troop the game does not raise.
   const openingTroop = () => resolveOpeningTroop(troopOptions, mode);
-  const [selectedTroopCombo, setSelectedTroopCombo] = useState<SelectedTroopCombo>(openingTroop);
+  // An order that named a troop opens on it; otherwise the form's own opening troop.
+  const [selectedTroopCombo, setSelectedTroopCombo] = useState<SelectedTroopCombo>(() =>
+    initialTroops ? { type: initialTroops.type, tier: initialTroops.tier } : openingTroop(),
+  );
   const [troopStructureId, setTroopStructureId] = useState(activeStructureId);
   if (troopStructureId !== activeStructureId) {
     setTroopStructureId(activeStructureId);
@@ -292,9 +295,9 @@ export const useArmyCreation = ({
   }, [direction]);
 
   useEffect(() => {
-    setTroopCount(initialTroopCount);
+    setTroopCount(initialTroops?.count ?? 0);
     setGuardSlot(initialGuardSlot ?? 0);
-  }, [activeStructureId, initialGuardSlot, initialTroopCount]);
+  }, [activeStructureId, initialGuardSlot, initialTroops?.count]);
 
   const freeDirections = useMemo(
     () => deployRing.filter((tile) => tile.open).map((tile) => tile.direction),

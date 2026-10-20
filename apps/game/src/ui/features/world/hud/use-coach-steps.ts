@@ -22,6 +22,7 @@ import {
   getGuardsByStructure,
   getBalance,
   getTileAt,
+  getTroopResourceId,
   lostArmyLine,
   Position,
   structureMapPosition,
@@ -29,7 +30,7 @@ import {
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
-import { BiomeType, ResourcesIds, StructureType, formatExact } from "@bibliothecadao/types";
+import { BiomeType, StructureType, TroopTier, TroopType, formatExact } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import {
   type CoachAct,
@@ -41,6 +42,7 @@ import {
   type TroopsOnHand,
 } from "./coach";
 import type { NextStep } from "./next-step";
+import type { TroopStack } from "@/ui/features/military/components/unified-army-creation-modal/types";
 
 /** How long a lost army stays Next up's alert: long enough to be read after the fight, not for the rest of the game. */
 const LOST_ARMY_ALERT_MS = 5 * 60_000;
@@ -89,7 +91,7 @@ export const useLostArmyAlert = (): NextStep[] => {
   if (!lost?.line || inTheField || !holds) return [];
   const raise = raiseStep({ troopsOnHand, grants: configManager.getVictoryPointGrants() });
   const next = troopsOnHand
-    ? `Raise another at ${troopsOnHand.realmName} (${formatExact(troopsOnHand.troops)} troops on hand).`
+    ? `Raise another at ${troopsOnHand.realmName} (${formatExact(troopsOnHand.stack.count)} troops on hand).`
     : raise.line;
   return [toNextStep({ ...raise, key: `lost:${lost.battle.id}`, line: `${lost.line}. ${next}` }, act)];
 };
@@ -113,7 +115,7 @@ const toNextStep = (step: CoachStep, act: (action: ButtonAct) => void): NextStep
 const coachPlace = (hex: { col: number; row: number }): Position => Position.fromContract({ x: hex.col, y: hex.row });
 
 /**
- * What a coach step's button does: open Military on the realm it names, at the troop count it named, open Build, open a crate beside an army (on
+ * What a coach step's button does: open Military on the realm it names, on the troop stack it named, open Build, open a crate beside an army (on
  * the map; from another view the army is shown there first), or select the army on the map with its target's card
  * open.
  */
@@ -123,7 +125,7 @@ const useCoachAct = () => {
   return (action: ButtonAct) => {
     switch (action.kind) {
       case "raise":
-        openArmyDeployment({ structureId: action.realmId, isExplorer: true, troopCount: action.troops });
+        openArmyDeployment({ structureId: action.realmId, isExplorer: true, troops: action.troops });
         return;
       case "build":
         useUIStore.getState().setLeftNavigationView(LeftView.ConstructionView);
@@ -181,21 +183,14 @@ const useCoachArmies = (): CoachArmy[] => {
 };
 
 /** The troops a realm can raise an army from: every troop type and tier. */
-const TROOP_RESOURCES = [
-  ResourcesIds.Knight,
-  ResourcesIds.KnightT2,
-  ResourcesIds.KnightT3,
-  ResourcesIds.Crossbowman,
-  ResourcesIds.CrossbowmanT2,
-  ResourcesIds.CrossbowmanT3,
-  ResourcesIds.Paladin,
-  ResourcesIds.PaladinT2,
-  ResourcesIds.PaladinT3,
-];
+const TROOP_KINDS = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin].flatMap((type) =>
+  [TroopTier.T1, TroopTier.T2, TroopTier.T3].map((tier) => ({ type, tier })),
+);
 
 /**
- * The player's holding with the most troops on hand, where an army can be raised now; null when none holds any. On
- * hand is what Military offers: the stored troops and what the barracks trained since, within storage, at chain time.
+ * The player's holding with the largest troop stack on hand, and that stack, where an army can be raised now; null when
+ * none holds any. On hand is what Military offers: the stored troops and what the barracks trained since, within
+ * storage, at chain time.
  */
 const useTroopsOnHand = (): TroopsOnHand | null => {
   const { setup } = useGame();
@@ -209,21 +204,26 @@ const useTroopsOnHand = (): TroopsOnHand | null => {
         .map((structure) => ({
           realmId: structure.entityId,
           realmName: mode.structure.getName(structure.structure).name,
-          troops: troopsOnHand(setup.store, structure.entityId, tick),
+          stack: largestStack(setup.store, structure.entityId, tick),
         }))
-        .reduce<TroopsOnHand | null>((most, realm) => (realm.troops > (most?.troops ?? 0) ? realm : most), null),
+        .reduce<TroopsOnHand | null>(
+          (most, realm) => (realm.stack.count > (most?.stack.count ?? 0) ? realm : most),
+          null,
+        ),
     [structures, setup.store, mode, tick, facts],
   );
 };
 
 /**
- * The most whole troops a holding can raise one army from now, as Military counts them: an army is of one type and
- * tier, so its largest stack, not every stack together.
+ * The largest stack a holding can raise one army from now, as Military counts it: an army is of one type and tier, so
+ * its largest stack (the troop and its whole count), not every stack together.
  */
-const troopsOnHand = (store: NativeFactStore, entityId: number, tick: number): number =>
-  Math.floor(
-    Math.max(...TROOP_RESOURCES.map((troop) => knownAmount(getBalance(entityId, troop, tick, store).balance) ?? 0)),
-  );
+const largestStack = (store: NativeFactStore, entityId: number, tick: number): TroopStack =>
+  TROOP_KINDS.map(({ type, tier }) => ({
+    type,
+    tier,
+    count: Math.floor(knownAmount(getBalance(entityId, getTroopResourceId(type, tier), tick, store).balance) ?? 0),
+  })).reduce((largest, stack) => (stack.count > largest.count ? stack : largest));
 
 /**
  * Whether an army attacking a target's first guard, as both stand now on the target's tile, is wiped out at any roll:

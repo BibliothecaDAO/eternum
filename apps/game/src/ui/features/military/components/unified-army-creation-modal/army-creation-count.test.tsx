@@ -15,6 +15,7 @@ import { HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
+import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { UnifiedArmyCreationBody } from "./unified-army-creation-modal";
 
 afterEach(() => setBlockTimestampSource(null));
@@ -81,11 +82,15 @@ it("opens on the troop count an order named (Next up's troops on hand), within w
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
-  const openAt = (initialTroopCount: number) =>
+  const openAt = (count: number) =>
     act(() =>
       root.render(
         <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-          <UnifiedArmyCreationBody key={initialTroopCount} structureId={7} initialTroopCount={initialTroopCount} />
+          <UnifiedArmyCreationBody
+            key={count}
+            structureId={7}
+            initialTroops={{ type: TroopType.Knight, tier: TroopTier.T1, count }}
+          />
         </GameProvider>,
       ),
     );
