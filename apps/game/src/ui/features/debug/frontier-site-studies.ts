@@ -70,7 +70,11 @@ export const SITE_CONCEPTS = ["wraith", "ammit", "basilisk", "dark-fey"] as cons
 export const FACING_SITES: readonly LineupAsset[] = SITE_STUDIES.flatMap((entry, index) => {
   const tileRotation = (Math.floor(hashCoordinates(index + 2, index + 7) * 6) * Math.PI) / 3;
   const before = entry.structureType === StructureType.Camp ? 0 : tileRotation;
-  return [before, resolveStructureRotationY(entry, tileRotation)].map((rotationY, side) => ({
+  const after = resolveStructureRotationY(
+    entry.parts.map((part) => part.path),
+    tileRotation,
+  );
+  return [before, after].map((rotationY, side) => ({
     ...entry,
     label: `${side === 0 ? "Before" : "After"} · ${entry.frontierBeast.name}`,
     rotationY,

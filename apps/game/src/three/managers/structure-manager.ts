@@ -1443,7 +1443,12 @@ export class StructureManager {
 
     const rotationSeed = hashCoordinates(structure.hexCoords.col, structure.hexCoords.row);
     const rotationIndex = Math.floor(rotationSeed * 6);
-    return resolveStructureRotationY(structure, (rotationIndex * Math.PI) / 3);
+    const modelPaths = this.hasCosmeticSkin(structure)
+      ? structure.cosmeticAssetPaths!
+      : this.getStructureModelIndices(structure).map(
+          (index) => this.structureModelPaths[String(structure.structureType)][index],
+        );
+    return resolveStructureRotationY(modelPaths, (rotationIndex * Math.PI) / 3);
   }
 
   private syncVisibleStructurePresentation(

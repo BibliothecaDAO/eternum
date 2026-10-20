@@ -1,11 +1,11 @@
-import { isRealmOrVillageLikeStructureCategory } from "@/lib/structure-type-utils";
-import { StructureType } from "@bibliothecadao/types";
-import type { FrontierBeast } from "@bibliothecadao/eternum";
+import { isSettlementModelPath } from "../constants/scene-constants";
+import { FRONTIER_BEAST_PATHS } from "./frontier-beast";
 
-/** Entrances and beasts are authored toward +Z, facing the map camera's fixed azimuth at every zoom. */
-export function resolveStructureRotationY(
-  structure: { structureType: StructureType | undefined; frontierBeast?: Pick<FrontierBeast, "beast"> },
-  rotationY: number,
-): number {
-  return structure.frontierBeast || isRealmOrVillageLikeStructureCategory(structure.structureType) ? 0 : rotationY;
+/** Entrances, standards and beasts are authored toward +Z, facing the map camera's fixed azimuth at every zoom. */
+export function resolveStructureRotationY(modelPaths: readonly string[], rotationY: number): number {
+  return modelPaths.some(
+    (path) => isSettlementModelPath(path) || FRONTIER_BEAST_PATHS.some((beastPath) => beastPath === path),
+  )
+    ? 0
+    : rotationY;
 }

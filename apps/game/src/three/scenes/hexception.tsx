@@ -1512,11 +1512,9 @@ export default class HexceptionScene extends HexagonScene {
     instance.applyMatrix4(building.matrix);
     if (selection.group === BUILDINGS_GROUPS.REALMS || selection.group === BUILDINGS_GROUPS.VILLAGE) {
       // Apply after the template and tile transforms so neither can turn the entrance away.
-      instance.rotation.set(
-        0,
-        resolveStructureRotationY({ structureType: this.tileManager.structureType() }, instance.rotation.y),
-        0,
-      );
+      const categoryPaths: Readonly<Record<string, string>> = this.mode.assets.buildingModelPaths[selection.group];
+      const modelPath = selection.tierPath ?? categoryPaths[selection.type];
+      instance.rotation.set(0, resolveStructureRotationY([modelPath], instance.rotation.y), 0);
     }
     if (selection.tierPath && isWonderModelPath(selection.tierPath)) {
       const aura = new RealmLivingAura(buildingData.model);
