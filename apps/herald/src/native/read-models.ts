@@ -40,8 +40,8 @@ import { integer, number, address, record, gameRows, required, type Row } from "
 interface DirectoryRows {
   structures: FoldRow[];
   position: DirectoryInput["fold"]["structurePosition"];
-  /** A site a player cleared, which keeps its discovery tile without occupying it; read only when a position needs it. */
-  clearedSite: (gameId: unknown, entityId: unknown) => Row | undefined;
+  /** An expedition site's discovery tile, which it keeps once its clear vacates TileOccupancy; read only when needed. */
+  site: (gameId: unknown, entityId: unknown) => Row | undefined;
   rules: FoldRow[];
   settlementRules: FoldRow[];
   progress: FoldRow[];
@@ -89,10 +89,8 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
   return {
     structures: rows("Structure"),
     position: (gameId, entityId) => input.fold.structurePosition(gameId, entityId),
-    clearedSite: (gameId, entityId) =>
-      gameRows(rows("ExpeditionSite"), gameId).find(
-        (site) => integer(site.entity_id) === integer(entityId) && site.clear != null,
-      ),
+    site: (gameId, entityId) =>
+      gameRows(rows("ExpeditionSite"), gameId).find((site) => integer(site.entity_id) === integer(entityId)),
     rules: rows("SliceRules"),
     settlementRules: rows("SettlementRules"),
     progress: rows("SettlementProgress"),
@@ -268,13 +266,22 @@ function structurePosition(
       timestamp,
     );
   }
+  // One rule for a structure off the day's realm sites: its tile, else its expedition site's discovery tile (a clear
+  // deletes the site's TileOccupancy so armies can walk onto it), as the client's map places it.
   const tile = facts.position(integer(row.game_id).toString(), integer(row.entity_id).toString());
   if (tile) return { col: number(tile.col), row: number(tile.row) };
-  // Clearing a site deletes its TileOccupancy so armies can walk onto it (clear_expedition_site); the site keeps the
-  // tile it was discovered on, as the client's map places it.
-  const cleared = facts.clearedSite(row.game_id, row.entity_id);
-  if (cleared) return { col: number(cleared.col), row: number(cleared.row) };
-  throw new Error(`Missing native position for entity ${row.game_id}:${row.entity_id}`);
+  const site = facts.site(row.game_id, row.entity_id);
+  if (site) return { col: number(site.col), row: number(site.row) };
+  // A structure no rule places keeps its row without a position, never the player's whole directory; it is reported.
+  console.warn(
+    JSON.stringify({
+      event: "herald_directory_structure_unplaced",
+      game_id: integer(row.game_id).toString(),
+      entity_id: integer(row.entity_id).toString(),
+      category: number(record(row.base).category),
+    }),
+  );
+  return null;
 }
 
 export function buildNativeLeaderboard(

@@ -155,14 +155,19 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
     }
 
     if (request.method === "GET" && url.pathname === directoryPath) {
+      let player: string | undefined;
       try {
-        return jsonResponse({
-          ...directory.read(requestedPlayer(url)),
-          world_address: state.worldAddress,
-        });
+        player = requestedPlayer(url);
       } catch (error) {
+        return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 400);
+      }
+      try {
+        return jsonResponse({ ...directory.read(player), world_address: state.worldAddress });
+      } catch (error) {
+        // Herald's own failure, not the caller's: logged, and answered as a server error.
         const message = error instanceof Error ? error.message : String(error);
-        return jsonResponse({ error: message }, 400);
+        console.error(JSON.stringify({ event: "herald_directory_failed", error: message, player: player ?? null }));
+        return jsonResponse({ error: message }, 500);
       }
     }
 

@@ -2,8 +2,9 @@ import { buildNativePreset } from "../../../../config/deployer/clean/config/nati
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { createHeraldRequestHandler } from "../http";
 import { WorldFold } from "../world-fold";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildNativeDirectory, buildNativeLeaderboard, directoryFact } from "./read-models";
 import {
   structureValue,
@@ -15,6 +16,7 @@ import {
   rulesEvent,
   schema,
   setup,
+  shardManifest,
 } from "./fixtures";
 
 function gameEvent(game = "1", settled = "0", dev = "0", preset = "2", name = "Blitz") {
@@ -579,3 +581,98 @@ it.each(["Frontier", "check-frontier-abc"])(
     expect(restored.snapshot("1", 12, ["LordsWithdrawal"]).models[0]!.rows).toHaveLength(2);
   },
 );
+
+describe("the player directory over HTTP", () => {
+  afterEach(() => vi.restoreAllMocks());
+  const handler = (fold: WorldFold) =>
+    createHeraldRequestHandler({
+      chain: "madara",
+      manifest: shardManifest,
+      schemas: {},
+      worldAddress: manifest.world.address,
+      confirmedBlock: () => 13,
+      chainTimestamp: () => 30,
+      decodedModelCount: 50,
+      // The fold's directory reads, as server.ts wires them; the directory reads no snapshot.
+      fold: {
+        modelRows: (model) => fold.modelRows(model),
+        structurePosition: (game, entity) => fold.structurePosition(game, entity),
+        directoryRevision: () => fold.directoryRevision(),
+        snapshot: () => {
+          throw new Error("the directory reads no snapshot");
+        },
+      },
+      undecodableEventCount: () => 0,
+      nodeHealth: () => null,
+    });
+  const RIFT = "9";
+  const site = (id: string, col: bigint, row: bigint) =>
+    rowEvent("ExpeditionSite", ["1", id], {
+      initial_guard_count: 1000n,
+      alt: false,
+      col,
+      row,
+      clear: new CairoOption(CairoOptionVariant.None),
+    });
+
+  // Every owned structure off the realm sites takes its tile, else its site's discovery tile; one no rule places
+  // keeps its row without a position and is reported, and the rest of the player's directory still answers.
+  it("places each owned structure by one rule and isolates one it cannot place", async () => {
+    const { fold, native, decoder } = world();
+    native.applyReceipt(
+      fold,
+      receipt(seedDerivedRows(fold, decoder, [gameEvent("1", "0", "0", "101"), rulesEvent("1", "120")])),
+      11,
+      0,
+    );
+    native.applyReceipt(
+      fold,
+      receipt([
+        structure("1", "1", "0x111"),
+        structure("6", RIFT, "0x111"),
+        site("6", 1764n, 50n),
+        structure("7", RIFT, "0x111"),
+        site("7", 1764n, 51n),
+        rowEvent("TileOccupancy", ["1", "0", "1800", "60"], { entity_id: "7", category: RIFT, is_structure: true }),
+        structure("8", RIFT, "0x111"),
+      ]),
+      12,
+      0,
+    );
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await handler(fold)(new Request("http://herald/games?player=0x111"));
+    expect(response.status).toBe(200);
+    const games = (await response.json()).games as {
+      game_id: number;
+      player_state: { settled: boolean; structures: unknown[] };
+    }[];
+    expect(games.map(({ game_id }) => game_id)).toEqual([2, 1]);
+    const state = games.find(({ game_id }) => game_id === 1)!.player_state;
+    expect(state.settled).toBe(true);
+    expect(state.structures).toEqual([
+      expect.objectContaining({ entity_id: 1, category: 1 }),
+      expect.objectContaining({ entity_id: 6, coord_x: 1764, coord_y: 50 }),
+      expect.objectContaining({ entity_id: 7, coord_x: 1800, coord_y: 60 }),
+      expect.objectContaining({ entity_id: 8, coord_x: null, coord_y: null }),
+    ]);
+    expect(warn.mock.calls.map(([line]) => JSON.parse(String(line)))).toContainEqual({
+      event: "herald_directory_structure_unplaced",
+      game_id: "1",
+      entity_id: "8",
+      category: 9,
+    });
+    expect(error).not.toHaveBeenCalled();
+
+    // A malformed player is the caller's error and logs nothing; a broken game is Herald's, logged and a 500.
+    expect((await handler(fold)(new Request("http://herald/games?player=nope"))).status).toBe(400);
+    expect(error).not.toHaveBeenCalled();
+    native.applyReceipt(fold, receipt([gameEvent("3")]), 13, 0);
+    const broken = await handler(fold)(new Request("http://herald/games?player=0x111"));
+    expect(broken.status).toBe(500);
+    expect(error.mock.calls.map(([line]) => JSON.parse(String(line)))).toContainEqual(
+      expect.objectContaining({ event: "herald_directory_failed", player: "0x111" }),
+    );
+  });
+});
