@@ -38,7 +38,6 @@ import { fightEnded } from "./sites/fight-result";
 const FrontierSelectionSheet = (props: Parameters<typeof useSelectionCard>[0]) =>
   useSelectionCard(props)?.sheet ?? null;
 
-
 afterEach(() => setBlockTimestampSource(null));
 
 const sheetFor = (occupierType: number | null) => {
@@ -257,7 +256,6 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
         account={{ address: "0x111" } as never}
       >
         <FrontierSelectionSheet
-
           realm={store.require("Structure", { game_id: 1, entity_id: 7 })}
           onResearch={() => undefined}
         />
