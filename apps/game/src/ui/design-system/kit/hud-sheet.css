@@ -313,6 +313,15 @@ button.ui-panel__name {
   font-size: var(--hud-text-body);
   line-height: var(--hud-line-body);
 }
+/* A phone's sheet is narrower than a full-size strip: each tab at the body's size, closer together. The phone layout's
+ * width, not a container's: a strip that sizes to its tabs (the top bar's) cannot also be sized by them. */
+@media (max-width: 1023px) {
+  .ui-tab {
+    padding: 0 theme(spacing.2);
+    font-size: var(--hud-text-body);
+    line-height: var(--hud-line-body);
+  }
+}
 .ui-tab:is(:hover, [data-state="hover"]) {
   background: var(--hud-hover);
   color: var(--hud-muted);
@@ -1214,6 +1223,30 @@ button.ui-relic:focus-visible {
 .ui-transfer .ui-field input {
   width: 100%;
   text-align: right;
+}
+/* A phone's sheet is narrower than the four columns: each row on two lines, the resource beside its amount, then the
+ * slider beside the quick shares. */
+@media (max-width: 1023px) {
+  .ui-transfer__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "what amount"
+      "slider steps";
+    row-gap: theme(spacing.1);
+  }
+  .ui-transfer__row > :nth-child(1) {
+    grid-area: what;
+  }
+  .ui-transfer__row > :nth-child(2) {
+    grid-area: slider;
+  }
+  .ui-transfer__row > :nth-child(3) {
+    grid-area: steps;
+  }
+  .ui-transfer__row > :nth-child(4) {
+    grid-area: amount;
+    width: 6.5rem;
+  }
 }
 
 /* ── Select and its list: a choice opened from its trigger. As wide as its choice, never wider than where it sits: in
