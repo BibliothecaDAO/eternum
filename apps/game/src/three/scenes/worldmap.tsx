@@ -148,11 +148,7 @@ import {
 } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import { Box3, Group, Plane, Raycaster, Sphere, Vector2, Vector3 } from "three";
-import {
-  groundUnderCursor,
-  holdGroundUnderCursor,
-  type WorldmapZoomAnchor,
-} from "./worldmap-zoom/worldmap-zoom-anchor";
+import { zoomTowardCursor } from "./worldmap-zoom/worldmap-zoom-anchor";
 import { openMapArea } from "../utils/labels/hud-clearance";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
@@ -714,8 +710,8 @@ export default class WorldmapScene extends WarpTravel {
   private activePrefetches = 0;
   private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
-  /** What the wheel zooms toward while its zoom eases: the ground under the cursor when it turned. */
-  private zoomAnchor: WorldmapZoomAnchor | null = null;
+  /** Where the wheel last turned, which its zoom goes toward while it eases. */
+  private zoomCursor: Vector2 | null = null;
   private zoomInputTarget: HTMLElement | null = null;
   private readonly zoomCoordinator = new WorldmapZoomCoordinator({
     initialDistance: this.getCurrentCameraDistance(),
@@ -1972,12 +1968,10 @@ export default class WorldmapScene extends WarpTravel {
       event.preventDefault();
       event.stopPropagation();
       const surface = (event.currentTarget as HTMLElement).getBoundingClientRect();
-      const cursor = new Vector2(
+      this.zoomCursor = new Vector2(
         ((event.clientX - surface.left) / surface.width) * 2 - 1,
         -((event.clientY - surface.top) / surface.height) * 2 + 1,
       );
-      const ground = groundUnderCursor(this.camera, this.controls.target, cursor);
-      this.zoomAnchor = ground && { cursor, ground };
       this.applyWorldmapZoomIntent({ type: "continuous_delta", delta: normalizedWheelDelta.normalizedDelta });
     };
 
@@ -2012,7 +2006,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private applyDirectionalZoomIntent(zoomOut: boolean) {
-    this.zoomAnchor = null;
+    this.zoomCursor = null;
     const delta = zoomOut ? MINIMAP_ZOOM_STEP_DELTA : -MINIMAP_ZOOM_STEP_DELTA;
     this.applyWorldmapZoomIntent({ type: "continuous_delta", delta });
   }
@@ -2022,7 +2016,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected override beginTouchNavigation(): void {
-    this.zoomAnchor = null;
+    this.zoomCursor = null;
     this.publishWorldmapZoomSnapshot(this.zoomCoordinator.beginDirectManipulation(this.getCurrentCameraDistance()));
   }
 
@@ -7906,11 +7900,12 @@ export default class WorldmapScene extends WarpTravel {
       nowMs: performance.now(),
     });
     if (zoomFrame.didMove) {
-      this.positionWorldmapCameraAtDistance(zoomFrame.snapshot.actualDistance);
-      if (this.zoomAnchor) holdGroundUnderCursor(this.camera, this.controls.target, this.zoomAnchor);
+      zoomTowardCursor(this.camera, this.controls.target, this.zoomCursor, () =>
+        this.positionWorldmapCameraAtDistance(zoomFrame.snapshot.actualDistance),
+      );
       this.notifyControlsChanged();
     } else if (zoomFrame.snapshot.status === "idle") {
-      this.zoomAnchor = null;
+      this.zoomCursor = null;
     }
 
     this.publishWorldmapZoomSnapshot(zoomFrame.snapshot);
