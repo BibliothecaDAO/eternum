@@ -18,7 +18,7 @@ describe("what a held hyperstructure earns", () => {
       grant: "x/s",
       rule:
         "Hold a Hyperstructure: 1 point every second for each realm settled on the six sites around it, split by " +
-        "share among its holders; a realm settled later counts once it is next taken",
+        "share among its holders; a realm settled later counts from its next capture or share allocation",
     });
   });
 
