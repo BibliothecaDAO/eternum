@@ -23,6 +23,15 @@ export const TipLine = ({ line }: { line: string }) => <span className="ui-tip__
 
 const squeezed = (words: string) => words.replace(/\s+/g, "").toLowerCase();
 
+/** Whether the element already shows these words. */
+const shows = (anchor: HTMLElement, words: string) => squeezed(anchor.textContent ?? "").includes(squeezed(words));
+
+/** Whether any of the element's words are cut off at its edge, so a line that repeats them still says something. */
+const cutOff = (anchor: HTMLElement) =>
+  [anchor, ...anchor.querySelectorAll<HTMLElement>("*")].some(
+    (node) => node.scrollWidth > node.clientWidth || node.scrollHeight > node.clientHeight,
+  );
+
 /** A meter says its reading with its name: "stamina 81 / 150". */
 const meterLine = (meter: HTMLElement, name: string) => {
   const now = meter.getAttribute("aria-valuenow");
@@ -31,16 +40,17 @@ const meterLine = (meter: HTMLElement, name: string) => {
 };
 
 /**
- * The line an element under the pointer shows: its own `data-tip`, else its accessible name. A name the element
- * already shows in words (a button reading "Deploy") is not said twice.
+ * The line an element under the pointer shows: its own `data-tip`, else its accessible name. Words the element
+ * already shows whole (a button reading "Deploy", an event row's own sentence) are not said twice; words cut off at
+ * its edge are.
  */
 const namedAt = (target: EventTarget | null): Named | null => {
   const anchor = target instanceof Element ? target.closest<HTMLElement>(NAMED) : null;
   if (!anchor) return null;
   const own = anchor.dataset.tip;
-  if (own !== undefined) return own === "" ? null : { anchor, line: own };
+  if (own !== undefined) return own === "" || (shows(anchor, own) && !cutOff(anchor)) ? null : { anchor, line: own };
   const name = anchor.getAttribute("aria-label") ?? "";
-  if (name === "" || squeezed(anchor.textContent ?? "").includes(squeezed(name))) return null;
+  if (name === "" || shows(anchor, name)) return null;
   return { anchor, line: anchor.getAttribute("role") === "meter" ? meterLine(anchor, name) : name };
 };
 

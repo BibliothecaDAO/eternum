@@ -82,6 +82,28 @@ describe("a name on the one tooltip", () => {
     expect(tip()).toBeNull();
   });
 
+  it("never repeats words a row already shows whole, and says them where they are cut off at its edge", () => {
+    act(() =>
+      root.render(
+        <>
+          <Tooltip />
+          <span data-testid="row" data-tip="Explored: +150 Labor">
+            Explored: +150 Labor
+          </span>
+          <p data-testid="plain">plain</p>
+        </>,
+      ),
+    );
+    const row = host.querySelector<HTMLElement>('[data-testid="row"]')!;
+    pointer("pointerover", row, "mouse");
+    expect(tip()).toBeNull();
+    pointer("pointerover", host.querySelector('[data-testid="plain"]')!, "mouse");
+    Object.defineProperty(row, "scrollWidth", { configurable: true, value: 240 });
+    Object.defineProperty(row, "clientWidth", { configurable: true, value: 120 });
+    pointer("pointerover", row, "mouse");
+    expect(tip()).toBe("Explored: +150 Labor");
+  });
+
   it("shows the name after a press-and-hold on a touch screen, and the hold is not a tap", () => {
     const onClick = vi.fn();
     mount(onClick);

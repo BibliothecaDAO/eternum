@@ -4,6 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 
 import { dayOf } from "@bibliothecadao/eternum";
 
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
+import { Tooltip } from "@/ui/design-system/molecules/tooltip";
+
 import { dayBounds } from "../hud/day-clock";
 import { TodaySheet } from "./today-sheet";
 
@@ -17,16 +20,19 @@ const render = (props: Partial<Parameters<typeof TodaySheet>[0]>) => {
   const root = createRoot(host);
   act(() =>
     root.render(
-      <TodaySheet
-        day={12}
-        today
-        totals={totals}
-        lines={[{ id: "a", at: 0, text: "Army 1 cleared a camp" }]}
-        failed={false}
-        onRetry={vi.fn()}
-        onClose={vi.fn()}
-        {...props}
-      />,
+      <>
+        <Tooltip />
+        <TodaySheet
+          day={12}
+          today
+          totals={totals}
+          lines={[{ id: "a", at: 0, text: "Army 1 cleared a camp" }]}
+          failed={false}
+          onRetry={vi.fn()}
+          onClose={vi.fn()}
+          {...props}
+        />
+      </>,
     ),
   );
   return { host, unmount: () => act(() => root.unmount()) };
@@ -59,6 +65,18 @@ describe("Today", () => {
     expect(later.disabled).toBe(true);
     act(() => host.querySelector<HTMLButtonElement>("button[aria-label='Day 11']")!.click());
     expect(onEarlier).toHaveBeenCalled();
+    unmount();
+  });
+
+  it("puts no tooltip over a line that already reads whole", () => {
+    const { host, unmount } = render({});
+    const line = [...host.querySelectorAll("li")].find((row) => row.textContent?.includes("Army 1 cleared a camp"))!;
+    act(() => {
+      const event = new MouseEvent("pointerover", { bubbles: true });
+      Object.defineProperty(event, "pointerType", { value: "mouse" });
+      line.querySelector(".ui-event__text")!.dispatchEvent(event);
+    });
+    expect(useTooltipStore.getState().tooltip).toBeNull();
     unmount();
   });
 

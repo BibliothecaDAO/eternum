@@ -22,7 +22,7 @@ export const headlineIcon = (type: HeadlineType): IconMeaning => HEADLINE_ICONS[
 
 /**
  * One story's row, in the strip or the Log: its kind's painting, the Log's own sentence for it (with what came of it),
- * whole on hover, and its time; it opens where the story happened (its army, for an opened crate).
+ * and its time; it opens where the story happened (its army, for an opened crate).
  */
 export const FeedRowLine = ({ event }: { event: ProcessedStoryEvent }) => {
   const open = useStoryOpener(event);
@@ -31,7 +31,6 @@ export const FeedRowLine = ({ event }: { event: ProcessedStoryEvent }) => {
     <HudEventRow
       time={formatClockTime(event.timestampMs / 1000)}
       icon={storyIcon(event.story)}
-      tip={text}
       onOpen={open ?? undefined}
     >
       {text}

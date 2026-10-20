@@ -56,9 +56,7 @@ export const TodaySheet = ({
         <ol className="flex max-h-hud-list flex-col overflow-y-auto">
           {lines.map((line) => (
             <li key={line.id}>
-              <HudEventRow time={formatClockTime(line.at)} tip={line.text}>
-                {line.text}
-              </HudEventRow>
+              <HudEventRow time={formatClockTime(line.at)}>{line.text}</HudEventRow>
             </li>
           ))}
         </ol>
