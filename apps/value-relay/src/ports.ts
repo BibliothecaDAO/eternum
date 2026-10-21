@@ -37,8 +37,7 @@ export interface ChestPorts {
   chest(
     tokenId: string,
   ): RelayEffect<{ requested: boolean; finished: boolean; requester: string; requestBlock: number }>;
-  /** Finished, or a finish already sent whose outcome is not known yet ("in_flight"): nothing is sent then. */
-  finish(tokenId: string): RelayEffect<"finished" | "in_flight">;
+  finish(tokenId: string): RelayEffect<void>;
 }
 export interface BlitzResult extends BlitzCommitment {
   blockNumber?: number;

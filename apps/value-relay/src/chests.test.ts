@@ -36,7 +36,7 @@ const fixture = () => {
       }),
     head: () => Effect.succeed(110),
     chest: () => Effect.succeed({ requested: true, finished: false, requester: "0x123", requestBlock: 100 }),
-    finish: vi.fn(() => Effect.succeed("finished" as const)),
+    finish: vi.fn(() => Effect.void),
   };
   return { ports, store, request };
 };
@@ -203,13 +203,4 @@ it("finishes a player's chest the moment its draw is readable, and only then", a
   f.ports.chest = () => Effect.succeed({ requested: false, finished: false, requester: "0x0", requestBlock: 0 });
   expect(await Effect.runPromise(finishChestNow(f.ports, "8"))).toEqual({ status: "not_requested" });
   expect(f.ports.finish).toHaveBeenCalledOnce();
-});
-
-it("keeps a chest queued while the finish it sent is still in flight, and tells the page it is finishing", async () => {
-  const f = fixture();
-  f.ports.head = () => Effect.succeed(111);
-  f.ports.finish = vi.fn(() => Effect.succeed("in_flight" as const));
-  expect(await Effect.runPromise(finishRequestedChests(f.ports, f.store))).toMatchObject({ finished: 0, pending: 1 });
-  expect(await f.store.pending()).toHaveLength(1);
-  expect(await Effect.runPromise(finishChestNow(f.ports, "7"))).toEqual({ status: "finishing" });
 });
