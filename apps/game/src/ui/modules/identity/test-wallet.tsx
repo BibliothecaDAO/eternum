@@ -6,8 +6,10 @@ import { vi } from "vitest";
 
 const SN_MAIN = "0x534e5f4d41494e";
 
-// The L2 answers what a send reads: the wallet's STRK for the fee, then the sent call's receipt.
+// The L2 answers what a link and a send read: the wallet's class (deployed), its STRK for the fee, then the sent call's
+// receipt.
 const chain = Object.assign(new RpcProvider({ nodeUrl: "https://identity-rpc.realms.test" }), {
+  getClassHashAt: async () => "0x1",
   callContract: async () => ["1", "0"],
   waitForTransaction: async () => ({ isReverted: () => false }),
 });
@@ -27,14 +29,15 @@ type Asked = { type: string; params?: { silent_mode?: boolean; calls?: object[] 
 
 /**
  * A wallet extension as the page meets one: the account it shares, silently too unless `locked` (a connection prompt
- * then unlocks it), and whether its owner approves a transaction. Cleared with `vi.unstubAllGlobals`.
+ * then unlocks it), whether its owner approves a transaction, and whether its connection prompt ever answers (`answers:
+ * false`: its window was closed, or the browser blocked it). Cleared with `vi.unstubAllGlobals`.
  */
 export const installWallet = (
   extension: "argentX" | "braavos",
-  wallet: { account: string; locked?: boolean; approves?: boolean },
+  wallet: { account: string; locked?: boolean; approves?: boolean; answers?: boolean },
 ) => {
   const asked: Asked[] = [];
-  let locked = wallet.locked ?? false;
+  let locked = (wallet.locked ?? false) || wallet.answers === false;
   vi.stubGlobal(`starknet_${extension}`, {
     id: extension,
     on: () => {},
@@ -48,6 +51,7 @@ export const installWallet = (
       }
       if (call.type !== "wallet_requestAccounts") throw new Error(`unexpected ${call.type}`);
       if (call.params?.silent_mode && locked) return [];
+      if (wallet.answers === false) return new Promise<never>(() => {});
       locked = false;
       return [wallet.account];
     },

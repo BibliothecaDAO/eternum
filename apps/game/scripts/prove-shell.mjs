@@ -269,8 +269,8 @@ const FIND = (step, mark) => `(() => {
   // A view of one thing: a switch's option, or a tab of the app sheet's tabs.
   if (step.kind === "view") found = [...document.querySelectorAll('[role="radio"], [role="tab"]')].find((el) => text(el) === step.word);
   if (step.kind === "toggle") found = document.querySelector('[role="switch"][aria-label="' + step.word + '"]');
-  // A board's first place: the row ranked 1, opened by its words.
-  if (step.kind === "first-row") found = controls(body, ".app-row").find((row) => row.querySelector(".app-rank")?.innerText.trim() === "1")?.querySelector("button");
+  // A board's first place: the row ranked 1, itself the button that opens it.
+  if (step.kind === "first-row") found = controls(body, "button.app-row").find((row) => row.querySelector(".app-rank")?.innerText.trim() === "1");
   if (step.kind === "finished-game") {
     const games = controls(body, 'a[href^="/results/"]');
     found = games[1] ?? games[0];
