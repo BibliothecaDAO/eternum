@@ -1,6 +1,7 @@
 import { formatContentDay } from "@bibliothecadao/types";
 
 import { patchNotes } from "../../../game/src/shell/generated/patch-notes";
+import type { PatchChange, PatchNote } from "../../../game/src/shell/news/patch-note";
 import { iconUrl } from "../../../game/src/ui/design-system/icon-meaning";
 import { colors, fonts } from "./styles";
 
@@ -17,9 +18,6 @@ const KINDS = [
   ["fix", "Fixes"],
 ] as const;
 
-type Note = (typeof patchNotes)[number];
-type Change = Note["modes"][(typeof SECTIONS)[number][0]][number];
-
 /**
  * The changelog: every release's patch notes, newest first, read from the same files as the game's What's new. Each
  * release shows the sections it changed, each change with its icon, its name, its line and a moved number's old and new.
@@ -32,7 +30,7 @@ export const PatchNotes = () => (
   </div>
 );
 
-const Release = ({ note }: { note: Note }) => (
+const Release = ({ note }: { note: PatchNote }) => (
   <section id={note.date} style={{ marginBottom: "2.5rem" }}>
     <h2 style={{ fontFamily: fonts.heading, color: colors.text.light, marginBottom: "0.25rem" }}>{note.title}</h2>
     <p style={{ color: colors.primary, margin: 0 }}>{formatContentDay(note.date)}</p>
@@ -56,7 +54,7 @@ const Release = ({ note }: { note: Note }) => (
   </section>
 );
 
-const ChangeRow = ({ change }: { change: Change }) => (
+const ChangeRow = ({ change }: { change: PatchChange }) => (
   <div
     style={{
       display: "flex",

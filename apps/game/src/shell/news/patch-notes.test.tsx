@@ -2,7 +2,8 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it } from "vitest";
 
-import { type PatchChange, PatchChanges } from "./patch-notes";
+import type { PatchChange } from "./patch-note";
+import { PatchChanges } from "./patch-notes";
 
 let unmount: (() => Promise<void>) | null = null;
 afterEach(async () => {

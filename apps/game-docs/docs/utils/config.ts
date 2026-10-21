@@ -1,3 +1,4 @@
+import type { Config } from "@bibliothecadao/types";
 import { getConfigFromNetwork, type GameType } from "@config";
 import { DOCS_CHAIN } from "../../env";
 
@@ -6,7 +7,7 @@ import { DOCS_CHAIN } from "../../env";
  * Blitz's or Eternum's, and a shared component takes its page's mode, so a Blitz page never reads Eternum's numbers.
  * A missing mode fails the build at prerender instead of falling back to one.
  */
-export const ETERNUM_CONFIG = (gameType: GameType) => {
+export const ETERNUM_CONFIG = (gameType: GameType): Config => {
   if (!gameType) throw new Error("ETERNUM_CONFIG needs the page's game mode");
   return strict(getConfigFromNetwork(DOCS_CHAIN, gameType), gameType);
 };
@@ -17,9 +18,9 @@ export const ETERNUM_CONFIG = (gameType: GameType) => {
  */
 const PROBES = new Set(["toJSON", "then", "$$typeof"]);
 
-const strict = (value: unknown, path: string): any => {
+const strict = <T>(value: T, path: string): T => {
   if (value === null || typeof value !== "object") return value;
-  return new Proxy(value as object, {
+  return new Proxy(value, {
     get(target, key, receiver) {
       if (typeof key === "symbol") return Reflect.get(target, key, receiver);
       if (key in target) return strict(Reflect.get(target, key, receiver), `${path}.${key}`);
