@@ -34,13 +34,13 @@ class CommitAttribution(unittest.TestCase):
         self.git("commit", "-q", "--allow-empty", "-m", message, **people)
         return self.git("rev-parse", "HEAD")
 
-    def check(self, after=None) -> tuple[int, str]:
+    def check(self, *accepted: str) -> tuple[int, str]:
         output = StringIO()
         cwd = os.getcwd()
         os.chdir(self.directory.name)
         try:
             with redirect_stdout(output):
-                code = main(after or self.base, "HEAD")
+                code = main("HEAD", *(accepted or [self.base]))
         finally:
             os.chdir(cwd)
         return code, output.getvalue()
@@ -53,16 +53,31 @@ class CommitAttribution(unittest.TestCase):
         self.commit("Earlier work\n\nCo-Authored-By: Claude Opus <noreply@anthropic.com>")
         previous = self.git("rev-parse", "HEAD")
         self.commit("New work")
-        self.assertEqual(self.check(after=previous), (0, ""))
+        self.assertEqual(self.check(previous), (0, ""))
 
     def test_checks_the_head_alone_when_the_previous_head_is_unknown(self):
         self.commit("Earlier work\n\nCo-Authored-By: Claude Opus <noreply@anthropic.com>")
         head = self.commit("Plain message", author=("Claude", "noreply@anthropic.com"))
-        code, output = self.check(after="0" * 40)
+        code, output = self.check("0" * 40)
         self.assertEqual(code, 1)
         self.assertIn("only HEAD is checked", output)
         self.assertEqual(output.count("carries"), 1)
         self.assertIn(f"{head[:11]} carries author", output)
+
+    def test_does_not_judge_again_the_commits_already_on_next(self):
+        # A pull request from next into main: next carries commits from before the rule, and adds nothing new.
+        self.commit("Old work\n\nCo-Authored-By: Claude Opus <noreply@anthropic.com>")
+        self.git("branch", "next")
+        self.assertEqual(self.check(self.base, "next"), (0, ""))
+
+    def test_still_refuses_a_new_commit_on_top_of_next(self):
+        self.commit("Old work\n\nCo-Authored-By: Claude Opus <noreply@anthropic.com>")
+        self.git("branch", "next")
+        self.commit("Plain work")
+        new = self.commit("New work\n\nCo-Authored-By: Claude Opus <noreply@anthropic.com>")
+        code, output = self.check(self.base, "next")
+        self.assertEqual(code, 1)
+        self.assertEqual(output, f"::error title=AI attribution::{new[:11]} carries trailer Co-Authored-By: Claude Opus <noreply@anthropic.com>\n")
 
     def test_refuses_each_kind_of_ai_attribution(self):
         cases = {

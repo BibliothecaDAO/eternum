@@ -72,8 +72,9 @@ jobs:
           print(json.dumps(selected, sort_keys=True))
           PYTHON
       # Only the commits a pull request's event adds: a push to it adds those after its previous head, a new pull
-      # request all of its own. Commits already on a branch are not judged again, and the landing push to next carries
-      # only commits its pull request already passed.
+      # request all of its own. Commits already on next are accepted history and are not judged again, so a pull
+      # request from next into main adds none. The landing push to next carries only commits its pull request
+      # already passed.
       - name: Refuse AI authorship and trailers in the commits a pull request adds
         if: github.event_name == 'pull_request' && github.event.action != 'reopened' && steps.paths.outputs.base != ''
         env:
@@ -81,7 +82,8 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           git fetch --quiet --no-tags --filter=blob:none origin "$ADDED_AFTER" || true
-          python3 .github/scripts/check_commit_attribution.py "$ADDED_AFTER" "$HEAD_SHA"
+          git fetch --quiet --no-tags --filter=blob:none origin +refs/heads/next:refs/remotes/origin/next
+          python3 .github/scripts/check_commit_attribution.py "$HEAD_SHA" "$ADDED_AFTER" origin/next
 
   static:
     uses: ./.github/workflows/static.yml
