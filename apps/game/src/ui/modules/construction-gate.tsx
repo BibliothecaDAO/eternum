@@ -29,7 +29,7 @@ export const ConstructionGate = () => (
           <HudButton kind="secondary" icon="twitter" onClick={open(communityPlace("X").href)}>
             Twitter
           </HudButton>
-          <HudButton kind="secondary" onClick={open("https://docs.realms.world/")}>
+          <HudButton kind="secondary" onClick={open("https://docs.realms.party/")}>
             Docs
           </HudButton>
         </div>

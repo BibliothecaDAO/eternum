@@ -22,6 +22,9 @@ To build for production:
 pnpm run build
 ```
 
+The site lives at [docs.realms.party](https://docs.realms.party). `deploy/first`'s Cloudflare command builds and
+publishes it with the client from the same commit (dev: docs.dev-realms.party); see `deploy/first/README.md`.
+
 ## Architecture
 
 The documentation site follows a structured organization to provide clear and accessible game information:

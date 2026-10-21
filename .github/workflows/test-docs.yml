@@ -4,8 +4,8 @@ on:
   workflow_call:
 
 jobs:
-  # The docs site's own build, as Vercel deploys it: its tests, every page, links and images, and the balance check
-  # that holds each stated number to the config it comes from. Then the pages' typecheck.
+  # The docs site's own build, as deploy/first publishes it to docs.realms.party: its tests, every page, links and
+  # images, and the balance check that holds each stated number to the config it comes from. Then the pages' typecheck.
   docs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -14,25 +14,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      # Vercel's pnpm is not the repository's: it picks pnpm 9 for this lockfile on eternum-docs. So vercel.json fetches
-      # package.json's pnpm with npm for both commands, and this job runs them with an old pnpm 9 first on PATH.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Put an old pnpm 9 first on PATH, as Vercel may
-        run: npm install --global pnpm@9.0.0
-      - name: Check vercel.json runs the pnpm package.json names, with this job's commands
-        run: |
-          pnpm=$(jq -r .packageManager package.json)
-          test "$(jq -r .installCommand vercel.json)" = "npx --yes $pnpm install --frozen-lockfile"
-          test "$(jq -r .buildCommand vercel.json)" = "npx --yes $pnpm run build:docs"
-          grep -qxF "        run: $(jq -r .installCommand vercel.json)" .github/workflows/test-docs.yml
-          grep -qxF "        run: $(jq -r .buildCommand vercel.json)" .github/workflows/test-docs.yml
+          cache: pnpm
       - name: Install dependencies
-        run: npx --yes pnpm@10.25.0 install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Build the docs
-        run: npx --yes pnpm@10.25.0 run build:docs
+        run: pnpm run build:docs
       # After the build, which builds @bibliothecadao/types: the pages read its built declarations.
       - name: Typecheck the docs
-        run: npx --yes pnpm@10.25.0 --dir apps/game-docs typecheck
+        run: pnpm --dir apps/game-docs typecheck

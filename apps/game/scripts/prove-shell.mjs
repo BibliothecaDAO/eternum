@@ -77,7 +77,7 @@ const END = {
   important: `document.querySelector('[role="radio"][aria-checked="true"]')?.innerText.trim() === "Important"`,
   musicOn: `document.querySelector('[role="switch"][aria-label="Music"]')?.getAttribute("aria-checked") === "true"`,
   signOutAsked: `[...document.querySelectorAll("[data-kit-sheet]")].some((sheet) => sheet.innerText.includes("Sign out?"))`,
-  docs: `[...document.querySelectorAll("a[href]")].some((a) => a.href.startsWith("https://docs.realms.world") && a.target === "_blank")`,
+  docs: `[...document.querySelectorAll("a[href]")].some((a) => a.href.startsWith("https://docs.realms.party") && a.target === "_blank")`,
   // Realms' marketplace, a place of the bar (a phone's tabs) that opens its own site in a new tab.
   market: `[...document.querySelectorAll('[data-role="tab"]')].some((a) => a.href === "https://market.realms.world/" && a.target === "_blank")`,
   // What's new under its place, a section's tab chosen and that section's changes shown under its name.
