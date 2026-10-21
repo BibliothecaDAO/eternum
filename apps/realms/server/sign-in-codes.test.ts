@@ -8,7 +8,8 @@ it("sends the Realms sign-in email: the code first in the subject, its ten-minut
   vi.stubGlobal("fetch", send);
   await resendSignInCodes("test-key", "https://play.realms.test")("player@realms.test", "123456");
   expect(send).toHaveBeenCalledOnce();
-  const body = JSON.parse(send.mock.calls[0]![1]!.body as string);
+  const [, init] = send.mock.calls[0] ?? [];
+  const body = JSON.parse(init?.body as string) as { html: string; attachments: unknown[] };
   expect(body).toMatchObject({
     from: "Realms <no-reply@realms.party>",
     to: ["player@realms.test"],

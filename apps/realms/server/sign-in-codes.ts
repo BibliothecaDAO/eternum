@@ -1,4 +1,5 @@
-import { sendEmail, signInCodeEmail, type Email } from "@bibliothecadao/notifications";
+import { sendEmail, signInCodeEmail } from "@bibliothecadao/notifications";
+import type { Email } from "@bibliothecadao/notifications";
 import { SIGN_IN_CODE_SECONDS } from "@realms-world/identity";
 
 /** Delivers a one-time sign-in code to an email address; the provider sits behind this one call. */
