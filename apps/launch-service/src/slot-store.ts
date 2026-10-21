@@ -1,10 +1,16 @@
 import { launchFailure } from "./errors";
 import { BLITZ_SLOT_PREPARATION_SECONDS } from "@realms-world/value-ledger";
-import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import { SlotCancelled, type BlitzValuePort, type SlotResolver } from "./paid-blitz";
 import { nativePresetIdFor } from "../../../config/source/native";
 import type { D1LaunchStore } from "./store";
-import { SlotConflict, SlotNotFound, type PlaytestSlot, type SlotStore, type SlotFreezeFailure } from "./slots";
+import {
+  blitzSlotWindow,
+  SlotConflict,
+  SlotNotFound,
+  type PlaytestSlot,
+  type SlotStore,
+  type SlotFreezeFailure,
+} from "./slots";
 
 const SELECT_SLOTS = "SELECT * FROM playtest_slots";
 /** How long a slot whose freeze failed waits before the registrar tries it again. */
@@ -51,13 +57,9 @@ export class D1SlotStore implements SlotStore {
       throw error;
     });
     if (Date.parse(slot.closesAt) !== closes) throw new SlotConflict("Slot schedule is immutable");
-    const duration = loadNativePresetConfiguration("madara.blitz", nativePresetIdFor("blitz")).season.durationSeconds;
     const key = { chainId: slot.chainId, slotId: slot.slotId };
     try {
-      await this.value.openSlot(key, {
-        start: closes / 1000,
-        end: closes / 1000 + BLITZ_SLOT_PREPARATION_SECONDS + duration,
-      });
+      await this.value.openSlot(key, blitzSlotWindow(slot.closesAt));
     } catch (error) {
       // A lost receipt or unavailable read must preserve the key for recovery.
       const recorded = await this.value.slot(key).catch(() => {

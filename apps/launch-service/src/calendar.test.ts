@@ -27,7 +27,7 @@ const stores = () => {
     vi.spyOn(Date, "now").mockReturnValue(now.getTime());
     return Effect.runPromise(runLaunchSchedule(launches, slots, calendar));
   };
-  return { launches, slots, calendar, tick };
+  return { launches, slots, calendar, tick, value };
 };
 
 test.each([1, 2, 21, 30])(
@@ -66,8 +66,89 @@ test("Blitz slots are scheduled only inside the Blitz window, and none outside i
   await tick(day(7, 12));
   await tick(day(9, 12));
   await tick(day(11, 12));
-  expect((await slots.list()).map(({ name }) => name)).toEqual([blitzSlotName(day(9, 20))]);
-  expect((await slots.list())[0]!.closesAt).toBe(day(9, 19, 55).toISOString());
+  expect((await slots.list()).map(({ name }) => name)).toEqual([blitzSlotName(day(9, 13, 30))]);
+  expect((await slots.list())[0]!.closesAt).toBe(day(9, 13, 25).toISOString());
+});
+
+test("the timetable covers all sixteen UTC starts, including half hours and midnight rollover", async () => {
+  const { slots, calendar, tick } = stores();
+  await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(3).toISOString() }, Date.now());
+  const times = [
+    "0000",
+    "0130",
+    "0300",
+    "0430",
+    "0600",
+    "0730",
+    "0900",
+    "1030",
+    "1200",
+    "1330",
+    "1500",
+    "1630",
+    "1800",
+    "1930",
+    "2100",
+    "2230",
+  ];
+  const starts = times.map((time) => day(1, Number(time.slice(0, 2)), Number(time.slice(2))));
+  for (const start of starts) await tick(new Date(start.getTime() - 6 * 60_000));
+  const date = day(1).toISOString().slice(0, 10).replaceAll("-", "");
+  expect((await slots.list()).map(({ name, closesAt }) => ({ name, closesAt }))).toEqual(
+    times.map((time, i) => ({
+      name: `blitz-${date}-${time}`,
+      closesAt: new Date(starts[i]!.getTime() - 5 * 60_000).toISOString(),
+    })),
+  );
+});
+
+test("at the exact close it schedules the next start; duplicate ticks keep the same slot identity", async () => {
+  const { slots, calendar, tick, value } = stores();
+  await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(2).toISOString() }, Date.now());
+  const open = vi.spyOn(value, "openSlot");
+  await tick(new Date(day(0, 1, 25).getTime() - 1));
+  const first = await slots.list();
+  expect(first).toMatchObject([{ name: blitzSlotName(day(0, 1, 30)), closesAt: day(0, 1, 25).toISOString() }]);
+  await tick(new Date(day(0, 1, 25).getTime() - 1));
+  expect(await slots.list()).toEqual(first);
+  expect(open.mock.calls[0]).toEqual(open.mock.calls[1]);
+  expect(open).toHaveBeenCalledWith(
+    { chainId: first[0]!.chainId, slotId: first[0]!.slotId },
+    { start: day(0, 1, 25).getTime() / 1000, end: day(0, 2, 30).getTime() / 1000 },
+  );
+  await tick(day(0, 1, 25));
+  expect((await slots.list()).map(({ name }) => name)).toEqual([
+    blitzSlotName(day(0, 1, 30)),
+    blitzSlotName(day(0, 3)),
+  ]);
+});
+
+test.each([
+  ["close equals season start", day(0, 1, 25), day(0, 2, 40, 1), true],
+  ["close precedes season start", day(0, 1, 25, 1), day(0, 2, 40, 1), false],
+  ["only 600 seconds remain after play", day(0), day(0, 2, 40), false],
+  ["less than 600 seconds remain after play", day(0), day(0, 2, 39, 59), false],
+  ["play itself crosses season end", day(0), day(0, 2, 29, 59), false],
+] as const)("a complete slot window: %s", async (_, start, end, allowed) => {
+  const { slots, calendar, tick, value } = stores();
+  await calendar.set({ phase: "blitz", startsAt: start.toISOString(), endsAt: end.toISOString() }, Date.now());
+  const open = vi.spyOn(value, "openSlot");
+  await tick(day(0, 1));
+  expect((await slots.list()).map(({ name }) => name)).toEqual(allowed ? [blitzSlotName(day(0, 1, 30))] : []);
+  expect(open).toHaveBeenCalledTimes(allowed ? 1 : 0);
+});
+
+test("the last legal grid slot survives but the following midnight cannot cross the season's end", async () => {
+  const { slots, calendar, tick } = stores();
+  await calendar.set(
+    { phase: "blitz", startsAt: day(0, 0, 40).toISOString(), endsAt: day(7, 0, 40).toISOString() },
+    Date.now(),
+  );
+  await tick(day(6, 22));
+  await tick(day(6, 23));
+  expect((await slots.list()).map(({ name, closesAt }) => ({ name, closesAt }))).toEqual([
+    { name: blitzSlotName(day(6, 22, 30)), closesAt: day(6, 22, 25).toISOString() },
+  ]);
 });
 
 test("a phase moves until it starts; a started Frontier season keeps its start and its end", async () => {
@@ -139,7 +220,7 @@ test("a malformed stored Frontier season cannot stop Blitz slot creation", async
     .run();
   await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(31).toISOString() }, Date.now());
   await tick(day(1));
-  expect((await slots.list()).map(({ name }) => name)).toContain(blitzSlotName(day(1, 11)));
+  expect((await slots.list()).map(({ name }) => name)).toContain(blitzSlotName(day(1, 1, 30)));
 });
 
 const enteredWindow = {
@@ -160,7 +241,7 @@ test("opening both phases after their start schedules Frontier and the next Blit
     { request: { gameStartTime: enteredWindow.startsAt, durationSeconds: 160 * 3600 } },
   ]);
   expect(await slots.list()).toMatchObject([
-    { name: "blitz-20000101-2000", closesAt: "2000-01-01T19:55:00.000Z", closed: false },
+    { name: "blitz-20000101-1930", closesAt: "2000-01-01T19:25:00.000Z", closed: false },
   ]);
 });
 

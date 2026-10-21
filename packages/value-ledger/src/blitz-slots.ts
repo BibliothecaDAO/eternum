@@ -10,6 +10,13 @@ import {
 /** Registration freezes before the common game clock starts, leaving time to create and seat every group. */
 export const BLITZ_SLOT_PREPARATION_SECONDS = 300;
 
+/** The ledger requires strictly more than ten minutes after a game's end to settle its result. */
+const BLITZ_SETTLEMENT_MARGIN_SECONDS = 600;
+
+/** Whole-second slot bounds, checked identically for the launch calendar and the confirmed ledger season. */
+export const blitzSlotFitsSeason = (close: number, end: number, season: { start: number; end: number }): boolean =>
+  close >= season.start && close < end && end + BLITZ_SETTLEMENT_MARGIN_SECONDS < season.end;
+
 export interface LedgerSlotKey {
   chainId: string;
   slotId: number;

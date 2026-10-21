@@ -111,7 +111,18 @@ it("encodes refunds with the committed SlotKey and wallet array", async () => {
   );
 });
 
-it("fails when the ledger refuses the window after finding the season by slot start", async () => {
+it.each([
+  ["close before season start", 59, 160, false],
+  ["close at season start and 601 seconds to settle", 60, 399, true],
+  ["exactly 600 seconds to settle", 100, 400, false],
+  ["only 599 seconds to settle", 100, 401, false],
+  ["game crosses season end", 100, 1001, false],
+] as const)("checks the confirmed ledger window before signing: %s", async (_, close, end, allowed) => {
+  let opened = false;
+  rpc.execute.mockImplementation(async () => {
+    opened = true;
+    return { transaction_hash: "0xabc" };
+  });
   rpc.events.mockResolvedValue({
     events: [
       { from_address: "0x10", ...ledgerEvent("SeasonOpened", { season_id: 3, preset_id: 9, start: 60, end: 1000 }) },
@@ -120,13 +131,23 @@ it("fails when the ledger refuses the window after finding the season by slot st
   rpc.call.mockImplementation(async ({ entrypoint }) =>
     entrypoint === "get_season"
       ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "1000", "0", "0"]
-      : absentLedgerSlot(),
+      : opened
+        ? ["3", "1", "9", String(close), String(end), "0", "0", "0", "0"]
+        : absentLedgerSlot(),
   );
-  rpc.execute.mockRejectedValueOnce(new Error("Ledger: slot outside season"));
-  await expect(Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 999 }))).rejects.toMatchObject({
-    operation: "open ledger Blitz registration",
-  });
-  expect(rpc.execute).toHaveBeenCalledOnce();
+  const result = Effect.runPromise(openSlotOnLedger(credentials, key, { start: close, end }));
+  if (allowed) {
+    await result;
+    expect(rpc.execute).toHaveBeenCalledExactlyOnceWith({
+      contractAddress: "0x10",
+      entrypoint: "open_slot",
+      calldata: ["0x1", "7", "3", "9", String(close), String(end)],
+    });
+  } else {
+    await expect(result).rejects.toMatchObject({ operation: "open ledger Blitz registration" });
+    expect(rpc.execute).not.toHaveBeenCalled();
+  }
+  expect(rpc.call).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "get_season" }), 10);
 });
 
 it("does not submit an open or refund when the slot view fails", async () => {

@@ -361,14 +361,14 @@ const setWorkerClock = (now: string | null) => {
   return mf.dispatchFetch(`${ORIGIN}/__clock`, { method: "POST", body: JSON.stringify(workerNow) });
 };
 
-it.each([1, 2, 25])(
+it.each([0, 1, 2, 25])(
   "creates and seats balanced Blitz games for %i paid registrations through workerd",
   async (count) => {
     createdGames.length = 0;
     receipts.clear();
     openSeat = null;
     await (await mf.getWorker("directory")).fetch("https://fixture/roster", { method: "POST", body: String(count) });
-    const sizes = count <= 24 ? [count] : [13, 12];
+    const sizes = count === 0 ? [] : count <= 24 ? [count] : [13, 12];
     playBlitzFixture = true;
     await setWorkerClock("2000-01-01T10:00:00Z");
     const window = {
@@ -385,7 +385,7 @@ it.each([1, 2, 25])(
     const slots = (await (await mf.dispatchFetch(`${ORIGIN}/api/slots`)).json()) as { slots: { name: string }[] };
     expect(slots.slots).toHaveLength(1);
     const waiting = await db.prepare("SELECT name FROM playtest_slots").first<{ name: string }>();
-    expect(waiting?.name).toBe("blitz-20000101-1100");
+    expect(waiting?.name).toBe("blitz-20000101-1030");
     expect(await db.prepare("SELECT COUNT(*) AS count FROM launch_runs").first("count")).toBe(0);
 
     expect(await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()).toMatchObject({
@@ -401,23 +401,26 @@ it.each([1, 2, 25])(
       revision: "abc1234",
     });
 
-    await setWorkerClock("2000-01-01T10:55:00Z");
+    await setWorkerClock("2000-01-01T10:25:00Z");
 
     await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
     const deadline = Date.now() + 10_000;
     const completed = () =>
       db.prepare("SELECT COUNT(*) AS count FROM launch_runs WHERE kind='game' AND status='complete'").first("count");
-    while (Date.now() < deadline && (await completed()) !== sizes.length) {
+    const frozen = () =>
+      db.prepare("SELECT frozen_at FROM playtest_slots WHERE name=?").bind(waiting!.name).first("frozen_at");
+    while (Date.now() < deadline && ((await completed()) !== sizes.length || !(await frozen()))) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
     expect(await completed()).toBe(sizes.length);
-    expect(classReads).toBe(1);
+    expect(await frozen()).not.toBeNull();
+    expect(classReads).toBe(count === 0 ? 0 : 1);
     const orderedGames = [...createdGames].sort((a, b) => (a.name < b.name ? -1 : 1));
     expect(orderedGames.map((game) => game.roster.length)).toEqual(sizes);
     // One seat transaction per player. The last seat is still in the open block, so the launch found its game ready
     // only by reading at the state its seats settle on.
     expect(orderedGames.map(({ seated, seats }) => [seated, seats])).toEqual(sizes.map((size) => [size, size]));
-    expect(sum(orderedGames.map(({ seated, closedSeated }) => seated - closedSeated))).toBe(1);
+    expect(sum(orderedGames.map(({ seated, closedSeated }) => seated - closedSeated))).toBe(count === 0 ? 0 : 1);
     expect(orderedGames.flatMap((game) => game.roster.map((player) => player.wallet))).toEqual(
       Array.from({ length: count }, (_, i) => BigInt(i + 1)),
     );
@@ -427,9 +430,9 @@ it.each([1, 2, 25])(
     expect(jobs.results.map(({ request }) => JSON.parse(request))).toMatchObject(
       sizes.map((_, groupIndex) => ({
         environment: "madara.blitz",
-        gameName: `blitz-20000101-1100-${groupIndex + 1}`,
+        gameName: `blitz-20000101-1030-${groupIndex + 1}`,
         groupIndex,
-        gameStartTime: "2000-01-01T11:00:00.000Z",
+        gameStartTime: "2000-01-01T10:30:00.000Z",
         durationSeconds: 3600,
       })),
     );

@@ -14,6 +14,7 @@ export {
 export { rpcAt } from "./rpc";
 export {
   BLITZ_SLOT_PREPARATION_SECONDS,
+  blitzSlotFitsSeason,
   readLedgerSlot,
   readLedgerRegistration,
   readRegistrationPage,
