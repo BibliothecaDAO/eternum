@@ -20,20 +20,32 @@ export const chestLedgerReads = (connection: Connection & LedgerContract): Omit<
     }),
   chest: (tokenId) => relayOperation("read requested chest", () => readChest(connection, tokenId)),
 });
+/**
+ * open_finish for a requested chest. The page's ask and the minute tick may both send one; the ledger finishes a chest
+ * once and refuses the other ("Ledger: chest already finished"), which costs a fee and delivers nothing twice. So a send
+ * that fails while the chest now reads finished has done its job: the chest is finished.
+ */
 export const finishChestOnLedger = (signer: Signer, tokenId: string) =>
   relayOperation("finish requested chest", async () => {
-    const chest = await readChest(signer, tokenId);
-    if (chest.finished) return;
-    const provider = rpcAt(signer.rpcUrl);
-    const account = new Account({ provider, address: signer.accountAddress, signer: signer.privateKey });
-    const transaction = await account.execute({
-      contractAddress: signer.contractAddress,
-      entrypoint: "open_finish",
-      calldata: tokenLimbs(tokenId),
-    });
-    const receipt = await provider.waitForTransaction(transaction.transaction_hash);
-    if (receipt.isReverted()) throw new Error("chest_finish_reverted");
+    if ((await readChest(signer, tokenId)).finished) return;
+    try {
+      await sendFinish(signer, tokenId);
+    } catch (error) {
+      if ((await readChest(signer, tokenId)).finished) return;
+      throw error;
+    }
   });
+const sendFinish = async (signer: Signer, tokenId: string) => {
+  const provider = rpcAt(signer.rpcUrl);
+  const account = new Account({ provider, address: signer.accountAddress, signer: signer.privateKey });
+  const transaction = await account.execute({
+    contractAddress: signer.contractAddress,
+    entrypoint: "open_finish",
+    calldata: tokenLimbs(tokenId),
+  });
+  const receipt = await provider.waitForTransaction(transaction.transaction_hash);
+  if (receipt.isReverted()) throw new Error("chest_finish_reverted");
+};
 const readChest = async (connection: Connection, tokenId: string) => {
   const fields = await rpcAt(connection.rpcUrl).callContract(
     { contractAddress: connection.contractAddress, entrypoint: "get_chest", calldata: tokenLimbs(tokenId) },

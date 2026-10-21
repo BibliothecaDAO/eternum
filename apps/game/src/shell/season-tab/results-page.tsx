@@ -184,7 +184,7 @@ const shareLine = (game: DirectoryGame | undefined, own: HeraldLeaderboardEntry 
  */
 const ShareButton = ({ gameRef, line }: { gameRef: GameRef; line: string }) => {
   const [done, setDone] = useState<"copied" | "shown" | null>(null);
-  const url = new URL(resultsHref({ chainId: gameRef.chainId, game_id: gameRef.gameId }), window.location.origin).href;
+  const url = new URL(resultsHref(gameRef), window.location.origin).href;
   const share = async () => {
     if (navigator.share) {
       const shared = await navigator.share({ title: WORDS.results, text: line, url }).then(

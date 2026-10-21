@@ -8,7 +8,7 @@ never runs, belong to STATIC. A file under .github that none of these name fails
 import fnmatch
 
 # A change to any of these runs every area: every area's checks install from them.
-SHARED = ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
+SHARED = ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc"]
 # CI files the static job owns. Static runs on every run, so a change to one selects no further area: static tests the
 # scripts and this map, and the deploy and publish workflows run only when dispatched, pushed to next or tagged.
 STATIC = [

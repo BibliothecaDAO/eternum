@@ -3,7 +3,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { saveGameProfile, setActiveGame } from "@/runtime/world";
+import { setActiveGame } from "@/runtime/world";
 import { HUD_SHEET, SEAT_COLOURS } from "@/tokens";
 import { onSidesChanged, seatOrder, setOpenGameSeats, watchedSide } from "./entity-ownership";
 import { overrideSpectateIntent } from "./spectator-session";
@@ -12,10 +12,9 @@ import { overrideSpectateIntent } from "./spectator-session";
 const A = { chainId: "SHARD_A", gameId: 1 };
 const B = { chainId: "SHARD_B", gameId: 1 };
 
-/** Enters a game as the client does (its profile, then the active game), watching it, on its own native store. */
+/** Enters a game as the client does (its profile as the active game), watching it, on its own native store. */
 const enter = (game: typeof A) => {
-  saveGameProfile({ ...game, presetId: 5, name: game.chainId, fetchedAt: Date.now() });
-  setActiveGame(game);
+  setActiveGame({ ...game, presetId: 5, name: game.chainId });
   configManager.setActiveGame(game.gameId, 5);
   overrideSpectateIntent(true);
   return new NativeFactStore();
@@ -24,7 +23,6 @@ const enter = (game: typeof A) => {
 afterEach(() => {
   setOpenGameSeats({ chainId: "", gameId: 0 }, []);
   overrideSpectateIntent(false);
-  localStorage.clear();
 });
 
 describe("an open game's seats are its own (review-side-colours-4 P2)", () => {

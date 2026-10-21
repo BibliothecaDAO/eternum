@@ -20,6 +20,9 @@ export interface DirectoryGame extends DirectoryEntry {
   chainId: string;
 }
 
+/** A directory entry's game identity: its shard's chain id and its id there. */
+export const gameRefOf = (game: DirectoryGame): GameRef => ({ chainId: game.chainId, gameId: game.game_id });
+
 interface ShardDirectory {
   /** Live and upcoming games; a settled game lives in the history instead. */
   games: DirectoryGame[];

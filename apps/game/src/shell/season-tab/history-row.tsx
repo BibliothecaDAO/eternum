@@ -8,7 +8,7 @@ import { AppChip, AppRow } from "@/ui/design-system/kit/app-elements";
 import { RowThumb } from "@/ui/design-system/kit/list-row";
 import { openedFrom } from "../frame/opened-from";
 import { isSameStarknetAddress } from "@realms-world/identity";
-import { type DirectoryGame, useLeaderboard } from "../herald";
+import { type DirectoryGame, gameRefOf, useLeaderboard } from "../herald";
 import { ageOf, type AgeMode } from "../play/ages";
 import { resultsHref } from "./results-link";
 
@@ -20,7 +20,7 @@ export const gameTitle = (game: DirectoryGame) =>
 
 /** The player's place in a finished game ("3rd"), and for a Frontier season the LORDS its Ruin chests paid. */
 const usePlace = (game: DirectoryGame, player: string) => {
-  const board = useLeaderboard({ chainId: game.chainId, gameId: game.game_id });
+  const board = useLeaderboard(gameRefOf(game));
   if (board.data?.mode === "frontier") {
     const own = findOwnEntry(board.data.entries, player);
     return { rank: own?.rank, lords: own && wholeLords(own.rewards.lords) };
@@ -42,7 +42,7 @@ export const HistoryRow = ({ game, player, now }: { game: DirectoryGame; player:
       lead={<RowThumb painting={ageOf(ageOfGame(game)).painting} size={10} />}
       title={gameTitle(game)}
       detail={clockLine(null, game.clock.end_at, now)}
-      onClick={() => navigate(resultsHref(game), { state: openedFrom(here) })}
+      onClick={() => navigate(resultsHref(gameRefOf(game)), { state: openedFrom(here) })}
       trail={
         <>
           {lords !== undefined && (

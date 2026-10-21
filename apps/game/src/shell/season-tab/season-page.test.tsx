@@ -9,7 +9,8 @@ const reads = vi.hoisted(() => ({ directory: {} as unknown, board: {} as unknown
 
 // Blitz's board has its own test; this page test reads Frontier's board and the switch.
 vi.mock("./blitz-board", () => ({ BlitzBoard: () => <p>Blitz board</p> }));
-vi.mock("../herald", () => ({
+vi.mock("../herald", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../herald")>()),
   useDirectory: () => reads.directory,
   useLeaderboard: () => reads.board,
   useRealmsPlayer: () => ({ data: null }),

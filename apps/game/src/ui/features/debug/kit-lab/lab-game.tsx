@@ -2,7 +2,7 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { GameChatConnection } from "@/ui/features/world/containers/hud-chat-window";
-import { saveGameProfile, setActiveGame } from "@/runtime/world/store";
+import { setActiveGame } from "@/runtime/world/store";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { openShard } from "@bibliothecadao/eternum/shard";
 import { type ReactNode, useEffect, useState } from "react";
@@ -86,8 +86,7 @@ const useLabShard = (preset: number) => {
       guardianPublicKey: "0x1",
       l2GasBound: "0x1",
     }).then(() => {
-      saveGameProfile({ chainId: LAB_CHAIN, gameId: 1, presetId: preset, name: "Lab", fetchedAt: 0 });
-      setActiveGame({ chainId: LAB_CHAIN, gameId: 1 });
+      setActiveGame({ chainId: LAB_CHAIN, gameId: 1, presetId: preset, name: "Lab" });
       setOpen(true);
     });
   }, [preset]);

@@ -33,6 +33,9 @@ class CiFileOwnership(unittest.TestCase):
     def test_a_package_manifest_still_selects_every_area(self):
         self.assertEqual(areas_run_by("pnpm-lock.yaml"), set(selected_areas([], True)))
 
+    def test_the_install_settings_select_every_area(self):
+        self.assertEqual(areas_run_by(".npmrc"), set(selected_areas([], True)))
+
     def test_committed_contract_schemas_select_all_consuming_areas(self):
         for path in (
             "contracts/l2/ledger/schema/abi.json",
@@ -114,6 +117,12 @@ class WorkflowCommands(unittest.TestCase):
     def test_a_pnpm_script_runs_the_files_its_package_names(self):
         scripts = {".": {"words:check": "node --test scripts/words/*.test.mjs && node scripts/words/check.mjs --check"}}
         ran = ran_files(".", "pnpm words:check", lambda directory: scripts.get(directory, {}))
+        self.assertIn("scripts/words/check.mjs", ran)
+        self.assertIn("scripts/words/check.test.mjs", ran)
+
+    def test_a_pnpm_fetched_by_npx_runs_the_files_its_package_names(self):
+        scripts = {".": {"words:check": "node --test scripts/words/*.test.mjs && node scripts/words/check.mjs --check"}}
+        ran = ran_files(".", "npx --yes pnpm@10.25.0 run words:check", lambda directory: scripts.get(directory, {}))
         self.assertIn("scripts/words/check.mjs", ran)
         self.assertIn("scripts/words/check.test.mjs", ran)
 

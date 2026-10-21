@@ -3,6 +3,7 @@ import { expect, it } from "vitest";
 
 import {
   decodeChest,
+  chestDrawBlocksLeft,
   decodeChestBand,
   decodeChestContent,
   decodeCredits,
@@ -270,4 +271,12 @@ it("reads each wallet's rating change from preview_mmr, a loss as a negative num
   expect(decodeMmrPreviews(["0"])).toEqual([]);
   expect(() => decodeMmrPreviews(fields.slice(0, -1))).toThrow("invalid_mmr_preview");
   expect(() => decodeMmrPreviews(["1", "0xa1", "1000", "1000", String(2n ** 31n)])).toThrow("invalid_ledger_i32");
+});
+
+it("counts a chest's draw down to the block where open_finish may run: the request's block plus 11", () => {
+  // The draw reads block 101's hash; Starknet serves it from block 111.
+  expect(chestDrawBlocksLeft(100, 100)).toBe(11);
+  expect(chestDrawBlocksLeft(100, 110)).toBe(1);
+  expect(chestDrawBlocksLeft(100, 111)).toBe(0);
+  expect(chestDrawBlocksLeft(100, 140)).toBe(0);
 });

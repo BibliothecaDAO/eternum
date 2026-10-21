@@ -1,6 +1,7 @@
 import { response } from "../../../packages/value-ledger/test-support/abi";
 import { ledgerAbi, ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
+import { finishChestNow } from "./chests";
 import { beforeEach, expect, it, vi } from "vitest";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { ledgerChestChanges } from "./ledger";
@@ -126,4 +127,27 @@ it("fails a missing chest read and never submits its finish", async () => {
     operation: "finish requested chest",
   });
   expect(rpc.execute).not.toHaveBeenCalled();
+});
+
+/** The page's ask and the tick's, as the Worker composes them: the ledger's reads and this finish. */
+const finishPorts = () => ({
+  ...chestLedgerReads(connection),
+  finish: (id: string) => finishChestOnLedger(connection, id),
+});
+
+it("shows a duplicate finish's 'already finished' revert as the chest finished, with no error or retry", async () => {
+  // The tick's finish landed first; the page's, read before it, lands second and the ledger refuses it.
+  rpc.call.mockResolvedValueOnce(chest(false)).mockResolvedValueOnce(chest(false)).mockResolvedValue(chest(true));
+  rpc.wait.mockResolvedValue({
+    isReverted: () => true,
+    revert_reason: "Execution failed. Failure reason: ('Ledger: chest already finished').",
+  });
+  expect(await Effect.runPromise(finishChestNow(finishPorts(), "7"))).toEqual({ status: "finished" });
+  expect(rpc.execute).toHaveBeenCalledOnce();
+});
+
+it("takes the ledger refusing a duplicate at its fee estimate as the chest finished", async () => {
+  rpc.call.mockResolvedValueOnce(chest(false)).mockResolvedValueOnce(chest(false)).mockResolvedValue(chest(true));
+  rpc.execute.mockRejectedValue(new Error("RPC: starknet_estimateFee: Ledger: chest already finished"));
+  expect(await Effect.runPromise(finishChestNow(finishPorts(), "7"))).toEqual({ status: "finished" });
 });

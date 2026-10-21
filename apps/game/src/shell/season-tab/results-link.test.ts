@@ -4,7 +4,7 @@ import { gameOfResults, resultsHref } from "./results-link";
 
 describe("a Results address", () => {
   it("names a game by its chain and id", () => {
-    expect(resultsHref({ chainId: "0xa", game_id: 7 })).toBe("/results/0xa-7");
+    expect(resultsHref({ chainId: "0xa", gameId: 7 })).toBe("/results/0xa-7");
     expect(gameOfResults("0xa-7")).toEqual({ chainId: "0xa", gameId: 7 });
   });
 

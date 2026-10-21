@@ -21,6 +21,7 @@ it("waits for the results, offers a held chest, waits on the draw after the requ
     chest,
     held: true,
     content: null,
+    drawBlocksLeft: null,
     seasonEnd: 0,
     token: { shares: 4, entryFee: 100n * WEI },
     registration: {

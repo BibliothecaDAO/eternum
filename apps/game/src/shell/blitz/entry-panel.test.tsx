@@ -181,10 +181,18 @@ it("reads Seated for the whole game, from the roster the shard froze, with the w
   expect(drawing).toContain("Registered");
   expect(drawing).toContain("Entry has closed. Your seat is being drawn.");
 
-  // Settled: the ledger names the game, which has left the directory, so there is no lobby to lead to.
-  const settled = await mount({ ...closed, registration: { ...during, gameId: 9 } });
+  // Settled: the ledger names the game, which the lobby reads among the player's finished games: its own Results.
+  const settled = await mount({ ...closed, registration: { ...during, gameId: 9 } }, WALLET, {
+    ...game,
+    status: "Settled",
+  });
   expect(settled.textContent).toContain("Seated");
-  expect([...settled.querySelectorAll("button")].map((button) => button.textContent)).toEqual([]);
+  await press(settled, "Results");
+  expect(whereOf(settled)).toBe("/results/0x52-9");
+
+  // A settled game the lobby could not read leaves no way to a game that is not this one.
+  const unread = await mount({ ...closed, registration: { ...during, gameId: 9 } });
+  expect([...unread.querySelectorAll("button")].map((button) => button.textContent)).toEqual([]);
 });
 
 it("lets a linked payout wallet pay at once: nothing waits on a link", async () => {

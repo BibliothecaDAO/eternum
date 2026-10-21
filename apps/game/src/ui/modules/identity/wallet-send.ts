@@ -31,13 +31,19 @@ export const sendFromWallet = async (
   const { transaction_hash: hash } = await account.execute(calls);
   onSigned();
   try {
-    const receipt = await provider.waitForTransaction(hash);
+    const receipt = await provider.waitForTransaction(hash, { retryInterval: RECEIPT_POLL_MS });
     return receipt.isReverted() ? { kind: "refused", reason: refusalOf(receipt) } : { kind: "landed" };
   } catch (error) {
     console.error("l2_send_unconfirmed", { hash, error: error instanceof Error ? error.message : error });
     return { kind: "refused", reason: VALUE_WORDS.unconfirmed };
   }
 };
+
+/**
+ * How often a sent call's receipt is asked for: under a Starknet block (about 1.7 s on mainnet), so a landed call shows
+ * within a second rather than starknet.js's default 5 s.
+ */
+const RECEIPT_POLL_MS = 1_000;
 
 /** The wallet's STRK, the token the network fee is paid in on the build's L2. */
 const feeBalanceOf = async (provider: ProviderInterface, owner: string): Promise<bigint> => {

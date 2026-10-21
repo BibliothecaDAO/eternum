@@ -779,6 +779,10 @@ export const REWARD_WORDS = {
    */
   band: ["Top 20%", "Top 40%", "Top 60%", "Top 80%", "Bottom 20%"],
   opening: "Opening…",
+  /** A requested chest's draw, waiting for new Starknet blocks before it can be finished. */
+  draw: "Draw",
+  blocksLeft: (blocks: number) => (blocks === 1 ? "1 block to go" : `${blocks} blocks to go`),
+  drawFair: "The draw waits for new blocks, so nobody can know or pick what's inside in advance.",
   /** A sealed chest's token reward, as a multiple of its slot's entry: what it can pay, and until when. */
   entryUntil: (shares: number, date: string) => `${shares}× entry until ${date}`,
   /** Under an opened chest's multiple: "4×" of the entry. */

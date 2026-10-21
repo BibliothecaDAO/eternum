@@ -56,6 +56,13 @@ describe("a Blitz lobby", () => {
     expect(lobbyStep(gameRow("spectate", 1_000))).toEqual({ kind: "watch" });
   });
 
+  it("leads an ended game to its own Results, for a player on it and one who watched alike", () => {
+    for (const status of ["Ended", "Settled"] as const) {
+      const ended = gameRow("spectate", null);
+      expect(lobbyStep({ ...ended, game: { ...game(), status } } as BlitzRow)).toEqual({ kind: "results" });
+    }
+  });
+
   it("opens a slot, which draws no seats", () => {
     expect(lobbyStep(slotRow())).toEqual({ kind: "open" });
   });

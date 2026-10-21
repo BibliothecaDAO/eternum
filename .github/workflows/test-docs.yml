@@ -14,18 +14,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      # Vercel's pnpm is not the repository's: it picks pnpm 9 for this lockfile on eternum-docs. So vercel.json fetches
+      # package.json's pnpm with npm for both commands, and this job runs them with an old pnpm 9 first on PATH.
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
-      - name: Check Vercel runs the commands this job runs
+      - name: Put an old pnpm 9 first on PATH, as Vercel may
+        run: npm install --global pnpm@9.0.0
+      - name: Check vercel.json runs the pnpm package.json names, with this job's commands
         run: |
-          test "$(jq -r .installCommand vercel.json)" = "pnpm install --frozen-lockfile"
-          test "$(jq -r .buildCommand vercel.json)" = "pnpm run build:docs"
+          pnpm=$(jq -r .packageManager package.json)
+          test "$(jq -r .installCommand vercel.json)" = "npx --yes $pnpm install --frozen-lockfile"
+          test "$(jq -r .buildCommand vercel.json)" = "npx --yes $pnpm run build:docs"
+          grep -qxF "        run: $(jq -r .installCommand vercel.json)" .github/workflows/test-docs.yml
+          grep -qxF "        run: $(jq -r .buildCommand vercel.json)" .github/workflows/test-docs.yml
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npx --yes pnpm@10.25.0 install --frozen-lockfile
       - name: Build the docs
-        run: pnpm run build:docs
+        run: npx --yes pnpm@10.25.0 run build:docs

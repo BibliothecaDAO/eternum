@@ -22,9 +22,8 @@ export const GameFinishedPill = () => {
   const watching = useIsWatching();
   const navigate = useNavigate();
   const goToResults = useCallback(() => {
-    const game = requireActiveGame();
     skipGameEnd();
-    navigate(resultsHref({ chainId: game.chainId, game_id: game.gameId }));
+    navigate(resultsHref(requireActiveGame()));
   }, [navigate]);
 
   return (

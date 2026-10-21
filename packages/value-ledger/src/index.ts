@@ -6,6 +6,7 @@ export {
   decodeFrontierSeason,
   decodeWithdrawalPayment,
   decodeChest,
+  chestDrawBlocksLeft,
   decodeSeasonWinner,
   decodeLedgerPreset,
   decodeBlitzSeason,

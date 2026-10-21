@@ -15,7 +15,9 @@ import {
   AppRow,
 } from "@/ui/design-system/kit/app-elements";
 
-import type { DirectoryGame } from "../herald";
+import { type DirectoryGame, gameRefOf } from "../herald";
+import { isGameOver } from "@/runtime/world/directory";
+import { resultsHref } from "../season-tab/results-link";
 import { Loading } from "../loading";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
@@ -301,27 +303,30 @@ const Registered = ({ terms, closed }: { terms: EntryTerms; closed: boolean }) =
   </Plate>
 );
 
-/**
- * Drawn into a game at close: what was paid, and the way to that game's lobby while the directory lists the game (a
- * settled game has left it, and its results are among the player's games on You).
- */
-const Seated = ({ terms, game }: { terms: EntryTerms; game: DirectoryGame | undefined }) => {
+/** Drawn into a game at close: what was paid, and the way to that game: its lobby, then its Results once it is over. */
+const Seated = ({ terms, game }: { terms: EntryTerms; game: DirectoryGame | undefined }) => (
+  <Plate icon="check" title={ENTRY_WORDS.seated}>
+    <PaidReceipt terms={terms} />
+    {game && <SeatedGameStep game={game} />}
+  </Plate>
+);
+
+const SeatedGameStep = ({ game }: { game: DirectoryGame }) => {
   const navigate = useNavigate();
-  return (
-    <Plate icon="check" title={ENTRY_WORDS.seated}>
-      <PaidReceipt terms={terms} />
-      {game && (
-        <AppButton
-          kind="primary"
-          size="lg"
-          icon="play"
-          step
-          onClick={() => navigate(`/blitz/${lobbyId({ key: gameRowKey(game.chainId, game.game_id) })}`)}
-        >
-          {ENTRY_WORDS.yourGame}
-        </AppButton>
-      )}
-    </Plate>
+  return isGameOver(game) ? (
+    <AppButton kind="primary" size="lg" icon="leaderboard" step onClick={() => navigate(resultsHref(gameRefOf(game)))}>
+      {WORDS.results}
+    </AppButton>
+  ) : (
+    <AppButton
+      kind="primary"
+      size="lg"
+      icon="play"
+      step
+      onClick={() => navigate(`/blitz/${lobbyId({ key: gameRowKey(game.chainId, game.game_id) })}`)}
+    >
+      {ENTRY_WORDS.yourGame}
+    </AppButton>
   );
 };
 

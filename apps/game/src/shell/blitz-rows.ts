@@ -77,8 +77,8 @@ export const gameSlotKeyOf = (game: DirectoryGame): SlotKey | null =>
 
 /**
  * The launched game of a slot that seats a wallet: the shard froze its roster at the slot's close, and Herald names the
- * wallet frozen for the reader's own seat. Undefined before the close, for a wallet the close left unseated, and once
- * the game has left the directory.
+ * wallet frozen for the reader's own seat. Undefined before the close, for a wallet the close left unseated, and for a
+ * game among none of the `games` read (the directory's, and the player's finished ones once it has settled).
  */
 export const seatedGameOf = (
   games: readonly DirectoryGame[],

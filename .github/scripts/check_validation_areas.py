@@ -122,6 +122,11 @@ def ran_files(directory, command, scripts_of=package_scripts, depth=0):
             continue
         if words[0] == "cd" and len(words) > 1:
             directory = os.path.normpath(os.path.join(directory, words[1]))
+        elif words[0] == "npx":
+            # npx [flags] pnpm@<version> ... runs that pnpm like a pnpm on PATH.
+            rest = [word for word in words[1:] if not word.startswith("-")]
+            if rest and re.fullmatch(r"pnpm(@\S+)?", rest[0]) and depth < 5:
+                found |= pnpm_ran(directory, rest[1:], scripts_of, depth)
         elif words[0] == "pnpm" and depth < 5:
             found |= pnpm_ran(directory, words[1:], scripts_of, depth)
         elif words[0] in RUNNERS:

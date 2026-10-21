@@ -25,7 +25,7 @@ import { publishFrontierPools } from "./frontier-pools";
 import { frontierReceiptBindings } from "./frontier-binding";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
-import { DurableChestStore, finishRequestedChests } from "./chests";
+import { DurableChestStore, finishChestNow, finishRequestedChests } from "./chests";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerResultAdapter, postVerifiedResult } from "./ledger";
@@ -129,6 +129,15 @@ export class ValueRelay extends DurableObject<RelayEnv> {
           yield* relayOperation("publish relay health", () => relay.ctx.storage.put("lastTick", observation));
           return observation;
         }),
+      ),
+    );
+  }
+  /** A player's chest, finished now if its draw is readable: the page asks rather than wait for the next tick. */
+  finishChest(tokenId: string) {
+    return Effect.runPromise(
+      finishChestNow(
+        chestPortsOf(this.env, (effect) => this.ledgerPermit(effect)),
+        tokenId,
       ),
     );
   }
@@ -547,6 +556,9 @@ export default {
       }
     }
 
+    if (new URL(request.url).pathname === "/api/value/chests/finish" && request.method === "POST")
+      return finishChestResponse(request, env);
+
     if (new URL(request.url).pathname === "/api/value/labor" && request.method === "POST") {
       const chainId = new URL(request.url).searchParams.get("chainId");
       if (!chainId || !/^0x[0-9a-f]+$/i.test(chainId))
@@ -582,6 +594,27 @@ export default {
       }
     }
   },
+};
+
+/**
+ * POST /api/value/chests/finish?tokenId=N, from a signed-in player's page on our origin: the relay sends open_finish
+ * only for a requested chest whose draw is readable, once. The answer is the chest's state: drawing with its blocks
+ * left, or finished.
+ */
+const finishChestResponse = async (request: Request, env: RelayEnv) => {
+  if (request.headers.get("origin") !== new URL(env.BASE_URL).origin)
+    return Response.json({ error: "invalid_origin" }, { status: 403 });
+  if (!(await env.IDENTITY.authenticate(request.headers.get("cookie") ?? "")))
+    return Response.json({ error: "unauthenticated" }, { status: 401 });
+  const tokenId = new URL(request.url).searchParams.get("tokenId");
+  if (!tokenId || !/^[0-9]{1,78}$/.test(tokenId) || BigInt(tokenId) >= 2n ** 256n)
+    return Response.json({ error: "chest_token_required" }, { status: 400 });
+  try {
+    return Response.json(await ledgerOf(env).finishChest(tokenId), { headers: { "cache-control": "no-store" } });
+  } catch {
+    console.error("chest_finish_unavailable", { tokenId });
+    return Response.json({ error: "chest_finish_unavailable" }, { status: 503 });
+  }
 };
 
 const relayEffect = <A, E>(operation: string, make: () => Effect.Effect<A, E>) =>

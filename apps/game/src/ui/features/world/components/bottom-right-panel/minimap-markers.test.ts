@@ -12,7 +12,6 @@ afterEach(() => {
   setBlockTimestampSource(null);
   overrideSpectateIntent(false);
   setOpenGameSeats({ chainId: "", gameId: 0 }, []);
-  localStorage.clear();
 });
 
 describe("minimap icon meanings from game facts", () => {
@@ -61,7 +60,7 @@ describe("the minimap to a watching viewer (side-colours-4)", () => {
   it("marks each player's things in their seat, nobody's neutral, whatever the viewer's account", () => {
     const { store } = campBeside();
     // The open game's players in the order they joined it: 0x111 holds realm 7 and army 201.
-    setActiveGame({ chainId: "SHARD", gameId: 1 });
+    setActiveGame({ chainId: "SHARD", gameId: 1, presetId: 1, name: "SHARD" });
     setOpenGameSeats({ chainId: "SHARD", gameId: 1 }, [ContractAddress("0x111"), ContractAddress("0x222")]);
     overrideSpectateIntent(true);
     for (const viewer of [null, ContractAddress("0x111"), ContractAddress("0x222")]) {

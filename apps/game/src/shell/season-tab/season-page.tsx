@@ -7,7 +7,7 @@ import { boardRows, findOwnEntry, wholeLords } from "@/ui/features/frontier/boar
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
-import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer } from "../herald";
+import { type DirectoryGame, gameRefOf, useDirectory, useLeaderboard, useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
 import { ageOf } from "../play/ages";
 import { chooseSeason, directoryDay, seasonTitle } from "../season";
@@ -88,7 +88,7 @@ const useSeason = (): { season: DirectoryGame | undefined; directory: ReturnType
 const Standing = () => {
   const { season } = useSeason();
   const { data: player } = useRealmsPlayer();
-  const board = useLeaderboard(season ? { chainId: season.chainId, gameId: season.game_id } : null);
+  const board = useLeaderboard(season ? gameRefOf(season) : null);
   const entries = board.data?.mode === "frontier" ? board.data.entries : [];
   const own = findOwnEntry(entries, player);
   if (!own) return null;
@@ -141,7 +141,7 @@ const FrontierPanel = ({ rowsShown }: { rowsShown: number }) => {
 const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
   const { season, directory } = useSeason();
   const { data: player } = useRealmsPlayer();
-  const board = useLeaderboard(season ? { chainId: season.chainId, gameId: season.game_id } : null);
+  const board = useLeaderboard(season ? gameRefOf(season) : null);
   if (directory.isError || board.isError)
     return (
       <ServiceFailure

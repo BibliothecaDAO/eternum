@@ -27,6 +27,7 @@ vi.mock("../play/play-facts", () => ({
     slots: { isSuccess: true, data: { slots: SLOTS } },
     now: 1_000,
     games: [],
+    finished: [],
     blitz: [],
     refunds: found.refunds,
     signedIn: true,

@@ -171,7 +171,7 @@ export const decodeWithdrawalPayment = (fields: readonly string[]) => {
 /**
  * Chest: exists, season_id, band, requested, finished, requester, request_block. A mystery chest carries only its season
  * and rank band (0 best .. 4); its holder's open request burns it and fixes a future block, and the draw is finished
- * from that block's hash about ten blocks later, by anyone, delivering to the requester.
+ * from that block's hash once Starknet serves it (`CHEST_DRAW_BLOCKS`), by anyone, delivering to the requester.
  */
 export const decodeChest = (fields: readonly string[]) => {
   if (fields.length !== 7 || !ledgerBool(fields[0]!)) throw new Error("invalid_chest");
@@ -184,6 +184,17 @@ export const decodeChest = (fields: readonly string[]) => {
     requestBlock: ledgerInteger(fields[6]!),
   };
 };
+
+/**
+ * Blocks from a chest's request until its draw can be finished: the draw reads the hash of the block after the request,
+ * and Starknet serves a block's hash only from ten blocks later (the protocol's STORED_BLOCK_HASH_BUFFER), the bound the
+ * ledger's open_finish asserts.
+ */
+export const CHEST_DRAW_BLOCKS = 11;
+
+/** Blocks left before a requested chest's draw can be finished at `head`; 0 once open_finish may be sent. */
+export const chestDrawBlocksLeft = (requestBlock: number, head: number): number =>
+  Math.max(0, requestBlock + CHEST_DRAW_BLOCKS - head);
 
 /**
  * ChestBandPreset: metadata, odds (common, uncommon, rare, epic, legendary, lords, sword, shield), lords_shares. A rank
