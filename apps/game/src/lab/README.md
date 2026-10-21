@@ -227,7 +227,8 @@ lightning through the weather runtime. The set lives in `src/lab/studio/`; nothi
 - **Camera:** drag pans, right-drag orbits, the wheel zooms; W/A/S/D move, Q/E turn, R/F tilt, Z/X zoom; Lens sets the
   field of view. Mark key adds the current view to a path, Play runs it, Copy the path puts it on the clipboard as JSON.
 - **Clean frame:** H, or `clean=1&capture=1`, hides the lab's header and the panel.
-- **Light:** World (Blitz or Frontier light, `gameMode=frontier`), time of day, weather, world speed (0.25× to 2×).
+- **Light:** World (Blitz or Frontier light, `gameMode=frontier`), time of day, weather, world speed (0.25× to 2×). A
+  take runs on the world's clock, camera included: at 0.25× it plays every moment, four times as long, as slow motion.
 - **Script:** `window.__studio` makes the panel's calls: `take(name)` and `path({keys, cues})` return a promise that
   settles when they end; `trigger(name, args)` plays `rise` (`{progress}`), `attack`, `defeat`, `explore`, `realm`
   (`{level}`) or `strike`; `pose(partial)` reads or moves the camera (`{target, distance, tilt, turn, fov}`, tilt 0

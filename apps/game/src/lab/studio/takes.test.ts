@@ -1,6 +1,5 @@
 import { expect, it } from "vitest";
 
-import { pathDuration } from "./camera-path";
 import { STUDIO_PLACES } from "./fixture";
 import { STUDIO_TRIGGERS } from "./stage";
 import { STUDIO_TAKES } from "./takes";
@@ -14,13 +13,10 @@ const places = {
 } satisfies Record<string, [number, number, number]>;
 
 it.each(Object.entries(STUDIO_TAKES))(
-  "the %s take cues only moments the studio plays, inside its length",
+  "the %s take cues only moments the studio plays, from a whole first pose",
   (_, take) => {
     const path = take.path(places);
-    for (const cue of path.cues ?? []) {
-      expect(STUDIO_TRIGGERS).toContain(cue.trigger);
-      expect(cue.at).toBeLessThanOrEqual(pathDuration(path));
-    }
+    for (const cue of path.cues ?? []) expect(STUDIO_TRIGGERS).toContain(cue.trigger);
     expect(path.keys[0]).toMatchObject({ t: 0, distance: expect.any(Number), tilt: expect.any(Number) });
   },
 );

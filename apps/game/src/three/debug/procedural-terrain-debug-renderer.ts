@@ -138,8 +138,8 @@ export interface ProceduralTerrainDebugStats {
 export interface LabStage {
   readonly request: TerrainPageRequest;
   prepare(context: LabStageContext): Promise<void>;
-  /** `worldDelta` runs at the world clock's speed; `frameDelta` is the frame's own, for what must keep real time. */
-  update(worldDelta: number, frameDelta: number): void;
+  /** Advances by the world clock: a slowed world slows everything the stage plays. */
+  update(delta: number): void;
   dispose(): void;
 }
 
@@ -771,7 +771,7 @@ function startAnimation(runtime: TerrainDebugRuntime, input: MountProceduralTerr
       runtime.terrain.update(deltaSeconds);
       runtime.weather.update(deltaSeconds, runtime.atmosphere);
       runtime.interaction?.update(deltaSeconds, runtime.weather.getWind());
-      runtime.stage?.update(deltaSeconds, frameSeconds);
+      runtime.stage?.update(deltaSeconds);
     }
     runtime.mapSheet?.update(deltaSeconds, runtime.camera, input.canvas.clientWidth, input.canvas.clientHeight);
     const submittedAt = performance.now();

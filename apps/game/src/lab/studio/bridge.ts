@@ -42,12 +42,19 @@ export function createStudioBridge(
     if (name === "strike") renderer.strike();
     else stage.trigger(name, args);
   };
-  const playTake = async (name: string) => {
+  // The view shows what is rolling. Only the playback started last, on a stage still up, may say it has ended: one a
+  // take, a path or a reset replaced, or one the page left behind, settles without a word.
+  let rolling = 0;
+  const roll = async (label: string, path: StudioPath) => {
+    const playback = ++rolling;
+    view.setTake(label);
+    const live = await stage.play(path);
+    if (live && playback === rolling) view.setTake(null);
+  };
+  const playTake = (name: string) => {
     if (!isStudioTake(name)) throw new Error(`Unknown studio take: ${name}`);
     stage.reset();
-    view.setTake(name);
-    await stage.play(STUDIO_TAKES[name].path(stage.places()));
-    view.setTake(null);
+    return roll(name, STUDIO_TAKES[name].path(stage.places()));
   };
   return {
     version: 1,
@@ -56,7 +63,7 @@ export function createStudioBridge(
     takes: () => Object.keys(STUDIO_TAKES),
     triggers: () => [...STUDIO_TRIGGERS],
     /** Plays a camera path from where the camera is, its cues on time. */
-    path: (path: StudioPath) => stage.play(path),
+    path: (path: StudioPath) => roll("path", path),
     stop: () => stage.stop(),
     reset: () => stage.reset(),
     /** Reads the camera, or moves it at once to the given pose (what it leaves out stays). */

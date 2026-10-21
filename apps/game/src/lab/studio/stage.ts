@@ -65,8 +65,9 @@ export class StudioStage implements LabStage {
     start: StudioPose;
     elapsed: number;
     fired: number;
-    resolve: () => void;
+    resolve: (live: boolean) => void;
   } | null = null;
+  private disposed = false;
 
   constructor(private readonly onCue: (trigger: string, args: Record<string, unknown>) => void) {}
 
@@ -158,8 +159,11 @@ export class StudioStage implements LabStage {
     applyPose(camera, controls, pose);
   }
 
-  /** Plays a path from the current pose; resolves when its last key or cue has played. */
-  play(path: StudioPath): Promise<void> {
+  /**
+   * Plays a path from the current pose. Settles when it ends, is stopped or replaced: true while the stage is still up,
+   * false when the stage was taken down under it (the page left, or another world mounted).
+   */
+  play(path: StudioPath): Promise<boolean> {
     this.stop();
     const { controls } = this.requireContext();
     controls.enabled = false;
@@ -175,7 +179,7 @@ export class StudioStage implements LabStage {
     if (!take) return;
     this.take = null;
     this.requireContext().controls.enabled = true;
-    take.resolve();
+    take.resolve(!this.disposed);
   }
 
   status() {
@@ -185,21 +189,27 @@ export class StudioStage implements LabStage {
       realmLevel: this.realmLevel,
       hyperstructureProgress: this.hyperstructureProgress,
       explored: this.explored,
+      walking: this.walk !== null,
       defenderDown: this.defenderDown,
       troops: this.troops,
     };
   }
 
-  update(worldDelta: number, frameDelta: number): void {
-    this.advanceTake(frameDelta);
-    this.advanceWalk(worldDelta);
-    this.armies?.sync(this.presentations(), worldDelta);
-    this.combat?.update(worldDelta);
-    this.hyperstructure?.updateAnimations(worldDelta);
-    for (const realm of this.realms) if (realm.group.visible) realm.updateAnimations(worldDelta);
+  /**
+   * One clock for the take and the world: a path's cues and the moments they start keep their order at any world
+   * speed, and a slowed world films as slow motion, camera and all.
+   */
+  update(delta: number): void {
+    this.advanceTake(delta);
+    this.advanceWalk(delta);
+    this.armies?.sync(this.presentations(), delta);
+    this.combat?.update(delta);
+    this.hyperstructure?.updateAnimations(delta);
+    for (const realm of this.realms) if (realm.group.visible) realm.updateAnimations(delta);
   }
 
   dispose(): void {
+    this.disposed = true;
     this.stop();
     this.combatBridge?.dispose();
     this.combat?.dispose();
@@ -276,10 +286,10 @@ export class StudioStage implements LabStage {
     this.realms.forEach((realm, index) => (realm.group.visible = index === this.realmLevel));
   }
 
-  private advanceTake(frameDelta: number): void {
+  private advanceTake(delta: number): void {
     const take = this.take;
     if (!take) return;
-    take.elapsed += frameDelta;
+    take.elapsed += delta;
     const cues = (take.path.cues ?? []).toSorted((a, b) => a.at - b.at);
     while (take.fired < cues.length && cues[take.fired].at <= take.elapsed) {
       const cue = cues[take.fired++];
