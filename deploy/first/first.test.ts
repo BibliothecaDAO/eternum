@@ -53,6 +53,8 @@ const input: Inputs = {
   cloudflareToken: "fake-cloudflare",
   rpc: "https://starknet-mainnet.g.alchemy.com/v2/throwaway",
   resend: "fake-resend",
+  discordClientId: "",
+  discordClientSecret: "",
   amount: "1000000",
   frontierStart: "2027-01-01T00:00:00Z",
   frontierEnd: "2027-01-21T00:00:00Z",
@@ -496,6 +498,8 @@ test("setup asks for an alert email on production only, and dev's inputs can nev
     "cloudflareToken",
     "rpc",
     "resend",
+    "discordClientId",
+    "discordClientSecret",
     "amount",
     "frontierStart",
     "frontierEnd",
@@ -510,6 +514,30 @@ test("setup asks for an alert email on production only, and dev's inputs can nev
   expect(() => validateInputs({ ...production, alertEmail: "not-an-address" }, environments.production)).toThrow(
     "Production needs the alert email",
   );
+});
+
+test("every environment chooses Discord sign-in, and the identity Worker gets exactly that choice", () => {
+  const discord = { discordClientId: "fake-discord-id", discordClientSecret: "fake-discord-secret" };
+  for (const environment of ["dev", "production"] as const) {
+    const asked = setupQuestions(environments[environment]).map(([name]) => name);
+    expect(asked).toContain("discordClientId");
+    expect(asked).toContain("discordClientSecret");
+  }
+  const { discordClientId: _id, discordClientSecret: _secret, ...unchosen } = input;
+  expect(() => validateInputs(unchosen as Inputs, environments.dev)).toThrow("Choose Discord sign-in");
+  for (const half of [
+    { ...discord, discordClientSecret: "" },
+    { ...discord, discordClientId: "" },
+  ])
+    expect(() => validateInputs({ ...input, ...half }, environments.dev)).toThrow("both its client ID and secret");
+  expect(() => validateInputs({ ...input, ...discord }, environments.dev)).not.toThrow();
+  const identity = workers.find((worker) => worker.id === "identity")!;
+  expect(workerSecrets(identity, { ...input, ...discord }, secrets, keys, undefined)).toMatchObject({
+    DISCORD_CLIENT_ID: "fake-discord-id",
+    DISCORD_CLIENT_SECRET: "fake-discord-secret",
+  });
+  const none = workerSecrets(identity, input, secrets, keys, undefined);
+  expect(Object.keys(none).filter((name) => name.startsWith("DISCORD_"))).toEqual([]);
 });
 
 test("the status monitor emails incidents through the identity Worker's Resend key, to the address setup recorded", () => {

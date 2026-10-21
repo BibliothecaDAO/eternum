@@ -129,7 +129,7 @@ export function preparationSteps(context: Deployment): Step[] {
       inspect: async () => ({
         done: !!context.inputs,
         detail:
-          "three credentials, deposit and four explicit season dates saved privately; production also needs two public account addresses",
+          "three credentials, the Discord sign-in choice, deposit and four explicit season dates saved privately; production also needs two public account addresses",
       }),
       apply: () => collectInputs(context),
     },

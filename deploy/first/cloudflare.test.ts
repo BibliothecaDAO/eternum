@@ -315,6 +315,8 @@ const inputs: Inputs = {
   cloudflareToken: "fake-cloudflare",
   rpc: "https://starknet-mainnet.g.alchemy.com/v2/throwaway",
   resend: "fake-resend",
+  discordClientId: "",
+  discordClientSecret: "",
   amount: "1000000",
   frontierStart: "2027-01-01T00:00:00Z",
   frontierEnd: "2027-01-21T00:00:00Z",

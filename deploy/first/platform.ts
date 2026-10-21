@@ -67,6 +67,9 @@ export function workerSecrets(
         OPERATOR_TOKEN: secrets.operator,
         WEB_PUSH_VAPID_PUBLIC_KEY: secrets.vapidPublic,
         WEB_PUSH_VAPID_PRIVATE_KEY: secrets.vapidPrivate,
+        ...(inputs.discordClientId
+          ? { DISCORD_CLIENT_ID: inputs.discordClientId, DISCORD_CLIENT_SECRET: inputs.discordClientSecret }
+          : {}),
       };
     case "launch":
       return { LAUNCH_DEPLOYER_PRIVATE_KEY: keys.launcher, OPERATOR_TOKEN: secrets.operator };
