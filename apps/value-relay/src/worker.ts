@@ -607,7 +607,8 @@ const finishChestResponse = async (request: Request, env: RelayEnv) => {
   if (!(await env.IDENTITY.authenticate(request.headers.get("cookie") ?? "")))
     return Response.json({ error: "unauthenticated" }, { status: 401 });
   const tokenId = new URL(request.url).searchParams.get("tokenId");
-  if (!tokenId || !/^[0-9]{1,78}$/.test(tokenId) || BigInt(tokenId) >= 2n ** 256n)
+  // Canonical decimal only: one token has one spelling at the door too.
+  if (!tokenId || !/^(0|[1-9][0-9]{0,77})$/.test(tokenId) || BigInt(tokenId) >= 2n ** 256n)
     return Response.json({ error: "chest_token_required" }, { status: 400 });
   try {
     return Response.json(await ledgerOf(env).finishChest(tokenId), { headers: { "cache-control": "no-store" } });

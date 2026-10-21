@@ -14,6 +14,8 @@ const rpc = vi.hoisted(() => ({
   number: vi.fn(),
   classAt: vi.fn(),
   status: vi.fn(),
+  nonce: vi.fn(),
+  spent: vi.fn(),
 }));
 vi.mock("starknet", async (original) => ({
   ...(await original<typeof import("starknet")>()),
@@ -26,10 +28,11 @@ vi.mock("starknet", async (original) => ({
       getBlockNumber: rpc.number,
       getClassHashAt: rpc.classAt,
       getTransactionStatus: rpc.status,
+      getNonceForAddress: rpc.spent,
     };
   }),
   Account: vi.fn(function () {
-    return { execute: rpc.execute };
+    return { execute: rpc.execute, getNonce: rpc.nonce };
   }),
 }));
 const connection = {
@@ -77,14 +80,20 @@ beforeEach(() => {
   rpc.wait.mockResolvedValue({ isReverted: () => false });
   rpc.number.mockResolvedValue(111);
   rpc.block.mockResolvedValue({ block_number: 111, block_hash: "0xa", timestamp: 699, status: "ACCEPTED_ON_L2" });
+  // The relay account signs its next send with nonce 5; none of it is spent in an accepted block yet.
+  rpc.nonce.mockResolvedValue("0x5");
+  rpc.spent.mockResolvedValue("0x5");
 });
 it("finishes the original token with no caller-supplied draw or recipient and makes retry harmless", async () => {
   await Effect.runPromise(finishChestOnLedger(connection, String(2n ** 128n + 7n), finishes));
-  expect(rpc.execute).toHaveBeenCalledWith({
-    contractAddress: "0x10",
-    entrypoint: "open_finish",
-    calldata: ledgerCall("open_finish", { token_id: { low: 7, high: 1 } }),
-  });
+  expect(rpc.execute).toHaveBeenCalledWith(
+    {
+      contractAddress: "0x10",
+      entrypoint: "open_finish",
+      calldata: ledgerCall("open_finish", { token_id: { low: 7, high: 1 } }),
+    },
+    { nonce: "0x5" },
+  );
   expect(rpc.wait).toHaveBeenCalledWith("0xabc");
   expect(rpc.call).toHaveBeenCalledExactlyOnceWith(
     {
@@ -168,20 +177,54 @@ it("does not send a finish again while the one sent is in flight, after its rece
   expect(rpc.execute).toHaveBeenCalledOnce();
 });
 
-it("sends again only once the kept finish reverted, or the node dropped it more than a minute ago", async () => {
+it("sends again only once the kept finish reverted, or its nonce is spent by another transaction", async () => {
   const ports = finishPorts();
-  finishes.kept.set("7", { hash: "0xreverted", sentAt: Date.now() });
+  finishes.kept.set("7", { hash: "0xreverted", nonce: "0x4" });
   rpc.status.mockResolvedValue({ finality_status: "ACCEPTED_ON_L2", execution_status: "REVERTED" });
   expect(await Effect.runPromise(ports.finish("7"))).toBe("finished");
   expect(rpc.execute).toHaveBeenCalledOnce();
 
+  // Unknown to the node, its nonce not spent: still in flight, however long ago it was sent.
   rpc.status.mockRejectedValue(new Error("RPC: starknet_getTransactionStatus: 29: Transaction hash not found"));
-  finishes.kept.set("7", { hash: "0xrecent", sentAt: Date.now() - 5_000 });
+  finishes.kept.set("7", { hash: "0xunknown", nonce: "0x5" });
   expect(await Effect.runPromise(ports.finish("7"))).toBe("in_flight");
   expect(rpc.execute).toHaveBeenCalledOnce();
-  finishes.kept.set("7", { hash: "0xdropped", sentAt: Date.now() - 61_000 });
+  // Its nonce spent in an accepted block by another transaction: it can never land.
+  rpc.spent.mockResolvedValue("0x6");
   expect(await Effect.runPromise(ports.finish("7"))).toBe("finished");
   expect(rpc.execute).toHaveBeenCalledTimes(2);
+});
+
+it("keeps a finish the node knew in flight when a later read cannot find it (re-review 1)", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  try {
+    const sent = Date.now();
+    const ports = finishPorts();
+    rpc.wait.mockRejectedValueOnce(new Error("receipt temporarily unavailable"));
+    await expect(Effect.runPromise(ports.finish("7"))).rejects.toThrow();
+    // +70 s: the node reports it received; +71 s: a lagging read cannot find it. No outcome either time.
+    vi.setSystemTime(sent + 70_000);
+    rpc.status.mockResolvedValueOnce({ finality_status: "RECEIVED" });
+    expect(await Effect.runPromise(ports.finish("7"))).toBe("in_flight");
+    vi.setSystemTime(sent + 71_000);
+    rpc.status.mockRejectedValueOnce(new Error("RPC: starknet_getTransactionStatus: 29: Transaction hash not found"));
+    expect(await Effect.runPromise(ports.finish("7"))).toBe("in_flight");
+    expect(rpc.execute).toHaveBeenCalledOnce();
+    expect(finishes.kept.get("7")?.hash).toBe("0xabc");
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it("meets the same kept finish under every spelling of the token (re-review 2)", async () => {
+  const ports = finishPorts();
+  rpc.wait.mockRejectedValueOnce(new Error("receipt temporarily unavailable"));
+  await expect(Effect.runPromise(ports.finish("7"))).rejects.toThrow();
+  rpc.status.mockResolvedValue({ finality_status: "RECEIVED" });
+  expect(await Effect.runPromise(ports.finish("007"))).toBe("in_flight");
+  expect(await Effect.runPromise(finishChestNow(ports, "0x7"))).toEqual({ status: "finishing" });
+  expect(rpc.execute).toHaveBeenCalledOnce();
+  expect([...finishes.kept.keys()]).toEqual(["7"]);
 });
 
 it("sends once for two page asks at the same moment", async () => {
