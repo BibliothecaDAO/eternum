@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { Account, CallData, hash, num, type RpcProvider } from "starknet";
 import { PrivateStore } from "./private-store";
 import { runSteps, type Step } from "./run";
-import { addressBook, environments, ACCOUNT_CLASS, WEI, root, type Inputs } from "./settings";
+import { addressBook, environments, ACCOUNT_CLASS, WEI, root, type Inputs, type Target } from "./settings";
 import { accountIdentity, classAt, prepareAccounts, send, type Keys } from "./chain";
 import {
   assetPlans,
@@ -15,6 +15,8 @@ import {
   setupCalls,
   setupPresenceReader,
   verifyLedgerAccounts,
+  publishAssets,
+  recordedLedgerBlock,
   type AssetPlan,
 } from "./ledger";
 import { Platform, workerSecrets, workers, type Secrets } from "./platform";
@@ -826,4 +828,23 @@ test("resuming an existing ledger refuses different saved accounts", async () =>
   expect(calls).toHaveLength(2);
   allowed = false;
   await expect(verifyLedgerAccounts(provider, assets.ledger, "0x30", "0x31")).rejects.toThrow("different accounts");
+});
+
+test("publishes the ledger's deployment block beside its address, the same on a rerun, and refuses a different one", () => {
+  const book = `.publish-test-${process.pid}.json`;
+  const path = join(root, "contracts/common/addresses", book);
+  writeFileSync(path, JSON.stringify({ l2Chain: "SN_MAIN" }));
+  try {
+    const target = { ...environments.dev, book } as unknown as Target;
+    const assets = { ledger: "0x1", lords: "0x2", mmr: "0x3", chests: "0x4", cosmetics: "0x5" };
+    expect(recordedLedgerBlock(target)).toBeUndefined();
+    publishAssets(target, assets, 1234);
+    expect(addressBook(target)).toMatchObject({ ledger: "0x1", ledgerDeploymentBlock: 1234 });
+    publishAssets(target, assets, 1234);
+    expect(recordedLedgerBlock(target)).toBe(1234);
+    expect(() => publishAssets(target, assets, 1235)).toThrow("another ledger deployment block");
+    expect(recordedLedgerBlock(target)).toBe(1234);
+  } finally {
+    rmSync(path, { force: true });
+  }
 });

@@ -3,8 +3,11 @@ import { expect, it, vi } from "vitest";
 import { DurableChestStore, finishRequestedChests } from "./chests";
 import { RelayFailure, type ChestPorts, type ChestPage, type ChestRequest } from "./ports";
 
+/** The block the fake ledger reader starts a scan at, as the real one starts at the ledger's deployment block. */
+const DEPLOYED = 90;
+
 const fixture = () => {
-  let cursor: { fromBlock: number; page: string | null } = { fromBlock: 0, page: null };
+  let cursor: { fromBlock?: number; page: string | null } = { page: null };
   const requests = new Map<string, ChestRequest>();
   const request = { tokenId: "7", requester: "0x123", requestBlock: 100 };
   const store = {
@@ -14,7 +17,7 @@ const fixture = () => {
         if (row.kind === "requested") requests.set(row.request.tokenId, row.request);
         else requests.delete(row.tokenId);
       }
-      cursor = { fromBlock: page.next === null ? page.head + 1 : cursor.fromBlock, page: page.next };
+      cursor = { fromBlock: page.next === null ? page.head + 1 : page.fromBlock, page: page.next };
     },
     pending: async () => [...requests.values()],
     complete: async (id: string) => {
@@ -24,11 +27,12 @@ const fixture = () => {
   const ports: ChestPorts = {
     changes: (from) =>
       Effect.succeed({
-        rows: from === 0 ? [{ kind: "requested", request }] : [],
+        rows: from === undefined ? [{ kind: "requested", request }] : [],
         head: 110,
         anchor: { number: 110, hash: "0xa" },
         rewind: false,
         next: null,
+        fromBlock: from ?? DEPLOYED,
       }),
     head: () => Effect.succeed(110),
     chest: () => Effect.succeed({ requested: true, finished: false, requester: "0x123", requestBlock: 100 }),
@@ -69,6 +73,7 @@ it("completed historical events leave no pending work", async () => {
       anchor: { number: 111, hash: "0xa" },
       rewind: false,
       next: null,
+      fromBlock: DEPLOYED,
     });
   await Effect.runPromise(finishRequestedChests(f.ports, f.store));
   expect(f.ports.finish).not.toHaveBeenCalled();
@@ -77,7 +82,7 @@ it("finishes two pages across a restart without losing queued requests or reread
   const { data, storage } = storageFixture();
   const f = fixture();
   f.ports.head = () => Effect.succeed(111);
-  f.ports.changes = vi.fn((_from, token) =>
+  f.ports.changes = vi.fn((from, token) =>
     Effect.succeed({
       rows: Array.from({ length: 20 }, (_, index) => ({
         kind: "requested" as const,
@@ -87,6 +92,7 @@ it("finishes two pages across a restart without losing queued requests or reread
       anchor: { number: 111, hash: "0xa" },
       rewind: false,
       next: token ? null : "next-page",
+      fromBlock: from ?? DEPLOYED,
     }),
   );
   await Effect.runPromise(
@@ -97,7 +103,7 @@ it("finishes two pages across a restart without losing queued requests or reread
   await Effect.runPromise(
     finishRequestedChests(f.ports, new DurableChestStore(storage as unknown as DurableObjectStorage)),
   );
-  expect(f.ports.changes).toHaveBeenLastCalledWith(0, "next-page", { number: 111, hash: "0xa" });
+  expect(f.ports.changes).toHaveBeenLastCalledWith(DEPLOYED, "next-page", { number: 111, hash: "0xa" });
   expect(f.ports.finish).toHaveBeenCalledTimes(40);
   expect(new Set(vi.mocked(f.ports.finish).mock.calls.map(([id]) => id)).size).toBe(40);
   expect([...data.keys()].some((key) => key.startsWith("chests:request:"))).toBe(false);
@@ -154,13 +160,15 @@ it("rebuilds the pending queue from canonical events after a rewrite, across a r
   data.set("chests:request:orphan", { ...f.request, tokenId: "orphan" });
   data.set("chests:queue-cursor", "chests:request:orphan");
   f.ports.head = () => Effect.succeed(111);
-  f.ports.changes = vi.fn((_from, page) =>
+  f.ports.changes = vi.fn((from, page) =>
     Effect.succeed({
       rows: [{ kind: "requested" as const, request: { ...f.request, tokenId: page ? "8" : "7" } }],
       head: 111,
       anchor: { number: 111, hash: "0xa" },
       rewind: page === null,
       next: page === null ? "canonical-page2" : null,
+      // A rewind rescans from the ledger's deployment block.
+      fromBlock: page === null ? DEPLOYED : from!,
     }),
   );
   await Effect.runPromise(
@@ -168,7 +176,7 @@ it("rebuilds the pending queue from canonical events after a rewrite, across a r
   );
   expect(data.has("chests:request:orphan")).toBe(false);
   expect(data.get("chests:cursor")).toEqual({
-    fromBlock: 0,
+    fromBlock: DEPLOYED,
     page: "canonical-page2",
     anchor: { number: 111, hash: "0xa" },
   });

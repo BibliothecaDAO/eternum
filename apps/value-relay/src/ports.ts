@@ -32,7 +32,7 @@ export interface ChestRequest {
 export type ChestChange = { kind: "requested"; request: ChestRequest } | { kind: "finished"; tokenId: string };
 export type ChestPage = LedgerPage<ChestChange>;
 export interface ChestPorts {
-  changes(fromBlock: number, cursor: string | null, anchor?: LedgerAnchor): RelayEffect<ChestPage>;
+  changes(fromBlock: number | undefined, cursor: string | null, anchor?: LedgerAnchor): RelayEffect<ChestPage>;
   head(): RelayEffect<number>;
   chest(
     tokenId: string,
@@ -112,6 +112,8 @@ export interface LedgerPage<A> {
   head: number;
   anchor: LedgerAnchor;
   rewind: boolean;
+  /** Where this page's scan runs from: the saved block, or the ledger's deployment block when starting or rewound. */
+  fromBlock: number;
 }
 export interface LedgerAnchor {
   number: number;
@@ -190,6 +192,7 @@ export const relayOperation = <A>(operation: string, run: () => Promise<A>): Rel
 
 export const relayServiceErrors = [
   "ledger_head_behind_anchor",
+  "ledger_deployment_block_wrong",
   "shard_abi_unavailable",
   "frontier_funding_missing",
   "frontier_funding_differs_from_game",

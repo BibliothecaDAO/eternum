@@ -8,9 +8,9 @@ import {
   readConfirmedLedgerHead,
 } from "@realms-world/value-ledger";
 import type { SeasonPorts } from "./season-tops";
-interface Ledger {
+import { ledgerHistoryFrom, type LedgerContract } from "./ledger";
+interface Ledger extends LedgerContract {
   rpcUrl: string;
-  contractAddress: string;
 }
 /** Both Workers enumerate the cohort independently; rankings always read the ledger's frozen season snapshot. */
 export const seasonLedgerReads = (target: Ledger): Omit<SeasonPorts, "post" | "challenge"> => {
@@ -104,14 +104,15 @@ export const challengeSeason = async (
 
 const readSeasonEventPage = async (
   target: Ledger,
-  from: number,
+  saved: number | undefined,
   cursor: string | null,
   head: number,
   postsOnly: boolean,
 ) => {
   const provider = rpcAt(target.rpcUrl);
   const names = postsOnly ? ["SeasonTopPosted"] : ["SeasonOpened", "ChestMinted"];
-  if (from > head) return { rows: [], head, next: null };
+  const from = await ledgerHistoryFrom(provider, target, saved);
+  if (from > head) return { rows: [], head, next: null, from };
   const page = await provider.getEvents({
     address: target.contractAddress,
     from_block: { block_number: from },
@@ -147,5 +148,5 @@ const readSeasonEventPage = async (
       });
     }
   }
-  return { rows, head, next: page.continuation_token || null };
+  return { rows, head, next: page.continuation_token || null, from };
 };

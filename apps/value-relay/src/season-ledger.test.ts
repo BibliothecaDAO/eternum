@@ -2,10 +2,23 @@ import { hash } from "starknet";
 import { ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { beforeEach, expect, it, vi } from "vitest";
 import { seasonLedgerReads, postSeasonTop, challengeSeason } from "./season-ledger";
-const rpc = vi.hoisted(() => ({ block: vi.fn(), events: vi.fn(), call: vi.fn(), execute: vi.fn(), wait: vi.fn() }));
+const rpc = vi.hoisted(() => ({
+  block: vi.fn(),
+  events: vi.fn(),
+  call: vi.fn(),
+  execute: vi.fn(),
+  wait: vi.fn(),
+  classAt: vi.fn(),
+}));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
-  rpcAt: () => ({ getBlock: rpc.block, getEvents: rpc.events, callContract: rpc.call, waitForTransaction: rpc.wait }),
+  rpcAt: () => ({
+    getBlock: rpc.block,
+    getEvents: rpc.events,
+    callContract: rpc.call,
+    waitForTransaction: rpc.wait,
+    getClassHashAt: rpc.classAt,
+  }),
 }));
 vi.mock("starknet", async (original) => ({
   ...(await original<typeof import("starknet")>()),
@@ -13,7 +26,14 @@ vi.mock("starknet", async (original) => ({
     execute = rpc.execute;
   },
 }));
-const target = { rpcUrl: "https://ledger.test", contractAddress: "0x10", accountAddress: "0x20", privateKey: "unused" };
+// The ledger first exists at block 50, as its address book says.
+const target = {
+  rpcUrl: "https://ledger.test",
+  contractAddress: "0x10",
+  deploymentBlock: 50,
+  accountAddress: "0x20",
+  privateKey: "unused",
+};
 const season = ["0", "0", "3", "2", "1", "0", "3700", "0", "0", "0", "1", "1", "0", "100", "0", "0"];
 beforeEach(() => {
   vi.clearAllMocks();
@@ -29,6 +49,10 @@ beforeEach(() => {
   );
   rpc.execute.mockResolvedValue({ transaction_hash: "0xaa" });
   rpc.wait.mockResolvedValue({ isReverted: () => false });
+  rpc.classAt.mockImplementation(async (_address: string, block: number) => {
+    if (block < 50) throw Object.assign(new Error("Contract not found"), { code: 20 });
+    return "0xc1a55";
+  });
 });
 it("reads the participant and posted streams independently at the pinned confirmed head", async () => {
   rpc.events.mockResolvedValue({
@@ -48,11 +72,13 @@ it("reads the participant and posted streams independently at the pinned confirm
     continuation_token: "more",
   });
   const read = seasonLedgerReads(target);
-  expect(await read.changes(0, null, 100)).toEqual({
+  expect(await read.changes(undefined, null, 100)).toEqual({
     rows: [{ kind: "participant", id: 1, wallet: "0x2" }],
     head: 100,
     next: "more",
+    from: 50,
   });
+  expect(rpc.events.mock.calls[0]![0].from_block).toEqual({ block_number: 50 });
   expect(await read.season(1, 100)).toMatchObject({
     participantCount: 3,
     topCount: 2,
@@ -76,7 +102,10 @@ it("reads the participant and posted streams independently at the pinned confirm
       },
     ],
   });
-  expect(await read.posts(0, null, 100)).toMatchObject({ rows: [{ kind: "posted", id: 1, reviewUntil: 3700 }] });
+  expect(await read.posts(90, null, 100)).toMatchObject({
+    rows: [{ kind: "posted", id: 1, reviewUntil: 3700 }],
+    from: 90,
+  });
 });
 it("confirms the published post_season_top call and rejects a provisional source head", async () => {
   await postSeasonTop(target, 1, ["0x2", "0x3"]);
@@ -117,7 +146,7 @@ it("enumerates only season openings and participants from the committed event la
       },
     ],
   });
-  expect((await seasonLedgerReads(target).changes(0, null, 100)).rows).toEqual([{ kind: "opened", id: 1 }]);
+  expect((await seasonLedgerReads(target).changes(undefined, null, 100)).rows).toEqual([{ kind: "opened", id: 1 }]);
   expect(rpc.events.mock.calls[0]![0].keys).toEqual([
     [hash.getSelectorFromName("SeasonOpened"), hash.getSelectorFromName("ChestMinted")],
   ]);
@@ -144,4 +173,12 @@ it.each([
         : read.season(1, 100);
   await expect(result).rejects.toBe(error);
   expect(rpc.execute).not.toHaveBeenCalled();
+});
+
+it("refuses to scan the season history from an address-book block where the ledger does not first exist", async () => {
+  rpc.classAt.mockResolvedValue("0xc1a55");
+  await expect(seasonLedgerReads(target).changes(undefined, null, 100)).rejects.toThrow(
+    "ledger_deployment_block_wrong",
+  );
+  expect(rpc.events).not.toHaveBeenCalled();
 });

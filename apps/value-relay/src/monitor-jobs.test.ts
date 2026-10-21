@@ -148,7 +148,14 @@ describe.each(["paidClaims", "postedResults"] as const)(
     };
     const pause = vi.fn(() => Effect.void);
     const page = <A>(rows: A[]) =>
-      Effect.succeed({ rows, head: 10, anchor: { number: 10, hash: ledger.anchor }, rewind: true, next: null });
+      Effect.succeed({
+        rows,
+        head: 10,
+        anchor: { number: 10, hash: ledger.anchor },
+        rewind: true,
+        fromBlock: 1,
+        next: null,
+      });
     const ports: MonitorPorts = {
       // The check always disagrees: neither identity nor the shard matches the ledger.
       identity: { matchesPayDecision: () => Effect.succeed(false) },

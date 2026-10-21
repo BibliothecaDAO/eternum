@@ -29,9 +29,17 @@ const fixture = () => {
           head: 1000,
           anchor: { number: 1000, hash: "0xa" },
           rewind: false,
+          fromBlock: 1,
         }),
       postedResults: () =>
-        Effect.succeed({ rows: [], next: null, head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false }),
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 1000,
+          anchor: { number: 1000, hash: "0xa" },
+          rewind: false,
+          fromBlock: 1,
+        }),
       pause: vi.fn(() => Effect.void),
     },
   };

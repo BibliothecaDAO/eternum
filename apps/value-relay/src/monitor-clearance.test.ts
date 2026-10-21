@@ -30,7 +30,14 @@ const auditedRow = (stream: Stream) => {
   };
   const posted = { chainId: "0x1", gameId: 1, commitment: "0x11" };
   const page = <A>(rows: A[]) =>
-    Effect.succeed({ rows, head: 10, next: null, anchor: { number: 10, hash: anchor }, rewind: anchor !== "0xa" });
+    Effect.succeed({
+      rows,
+      head: 10,
+      next: null,
+      anchor: { number: 10, hash: anchor },
+      rewind: anchor !== "0xa",
+      fromBlock: 1,
+    });
   const ports: MonitorPorts = {
     identity: { matchesPayDecision: () => Effect.succeed(shard.decision) },
     shard: {

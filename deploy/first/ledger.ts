@@ -135,9 +135,14 @@ export async function verifyLedgerAccounts(provider: RpcProvider, ledger: string
       throw new PublicError("Existing ledger belongs to different accounts; restore its original private directory");
   }
 }
-export function publishAssets(target: Target, assets: Assets) {
+/** The block the address book says the ledger was deployed in; the relay starts every ledger history scan there. */
+export function recordedLedgerBlock(target: Target): number | undefined {
+  const block = (addressBook(target) as Record<string, unknown>).ledgerDeploymentBlock;
+  return typeof block === "number" ? block : undefined;
+}
+export function publishAssets(target: Target, assets: Assets, ledgerDeploymentBlock: number) {
   const path = join(root, "contracts/common/addresses", target.book);
-  const book = addressBook(target);
+  const book: Record<string, string | number> = addressBook(target);
   for (const [key, value] of Object.entries({
     ledger: assets.ledger,
     lords: assets.lords,
@@ -149,6 +154,10 @@ export function publishAssets(target: Target, assets: Assets) {
       throw new PublicError("Address book already names another deployment");
     book[key] = value;
   }
+  const recorded = recordedLedgerBlock(target);
+  if (recorded !== undefined && recorded !== ledgerDeploymentBlock)
+    throw new PublicError("Address book already names another ledger deployment block");
+  book.ledgerDeploymentBlock = ledgerDeploymentBlock;
   const temporary = `${path}.${process.pid}.tmp`;
   writeFileSync(temporary, JSON.stringify({ ...book, l2Chain: "SN_MAIN" }, null, 2) + "\n", { flag: "wx" });
   renameSync(temporary, path);
@@ -192,7 +201,7 @@ export function setupCalls(
   ];
 }
 /** Find the first block containing this contract; only code 20 means it did not exist yet. */
-async function deploymentBlock(provider: RpcProvider, address: string, head: number) {
+export async function deploymentBlock(provider: RpcProvider, address: string, head: number) {
   await provider.getClassHashAt(address, head);
   let low = 0;
   let high = head;

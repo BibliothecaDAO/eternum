@@ -1,11 +1,16 @@
 import { afterEach, expect, it, vi } from "vitest";
 
-import { environmentL2, valuePlaneAddress } from "./value-plane";
+import {
+  environmentL2,
+  ledgerDeploymentBlock,
+  valuePlaneAddress,
+} from "./value-plane";
 
 const books = vi.hoisted(() => ({
   dev: {
     l2Chain: "SN_MAIN",
     ledger: "0x11",
+    ledgerDeploymentBlock: 101 as number | undefined,
     lords: "0x12",
     mmrToken: "0x13",
     lootChests: "0x14",
@@ -14,6 +19,7 @@ const books = vi.hoisted(() => ({
   production: {
     l2Chain: "SN_MAIN",
     ledger: "0x21",
+    ledgerDeploymentBlock: 201 as number | undefined,
     lords: "0x22",
     mmrToken: "0x23",
     lootChests: "0x24",
@@ -80,4 +86,16 @@ it("refuses a dev book naming a different chain", () => {
   books.dev.l2Chain = "SN_SEPOLIA";
   expect(() => environmentL2("staging")).toThrow("must name SN_MAIN");
   expect(environmentL2("production").chain).toBe("SN_MAIN");
+});
+
+it("reads each environment's own ledger deployment block, and refuses a ledger named without one", () => {
+  expect(ledgerDeploymentBlock("staging")).toBe(101);
+  expect(ledgerDeploymentBlock("production")).toBe(201);
+  books.dev.ledgerDeploymentBlock = undefined;
+  expect(() => ledgerDeploymentBlock("staging")).toThrow(
+    "contracts/common/addresses/dev.json names a ledger without its deployment block",
+  );
+  expect(ledgerDeploymentBlock("production")).toBe(201);
+  books.production.ledger = "0x0";
+  expect(() => ledgerDeploymentBlock("production")).toThrow("not deployed yet");
 });

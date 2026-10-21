@@ -1,6 +1,7 @@
 vi.mock("./environment", async (original) => ({
   ...(await original<typeof import("./environment")>()),
   ledgerAddress: () => "0x10",
+  ledgerContractOf: () => ({ contractAddress: "0x10", deploymentBlock: 1 }),
 }));
 import { Effect } from "effect";
 import { expect, it, vi } from "vitest";

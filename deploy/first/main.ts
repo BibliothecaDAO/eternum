@@ -6,7 +6,7 @@ import { existsSync } from "node:fs";
 import { Account, RpcProvider, logger } from "starknet";
 import { PrivateStore } from "./private-store";
 import { environments, root, ACCOUNT_CLASS, type Environment, type Inputs } from "./settings";
-import { accountIdentity, classAt, newKey, prepareAccounts, type Keys } from "./chain";
+import { accountIdentity, classAt, isDeploymentBlock, newKey, prepareAccounts, type Keys } from "./chain";
 import {
   artifactsReady,
   boxRead,
@@ -20,6 +20,8 @@ import {
   configureLedger,
   deployAsset,
   existingAssets,
+  deploymentBlock,
+  recordedLedgerBlock,
   loadArtifact,
   publishAssets,
   setupCalls,
@@ -230,6 +232,9 @@ export function preparationSteps(context: Deployment): Step[] {
           context.inputs.admin ?? accountIdentity(context.keys.deployer).address,
           accountIdentity(context.keys.relay).address,
         );
+        const block = recordedLedgerBlock(context.target);
+        if (block === undefined || !(await isDeploymentBlock(context.provider, assets.ledger!, block)))
+          return { done: false, detail: "record the ledger's deployment block beside its address" };
         context.assets = assets as Assets;
         return { done: true, detail: "all public addresses resolve to deployed contracts" };
       },
@@ -269,7 +274,8 @@ export function preparationSteps(context: Deployment): Step[] {
           context.store,
           context.output,
         );
-        publishAssets(context.target, assets as Assets);
+        const head = await context.provider!.getBlockNumber();
+        publishAssets(context.target, assets as Assets, await deploymentBlock(context.provider!, assets.ledger, head));
         context.assets = assets as Assets;
       },
     },

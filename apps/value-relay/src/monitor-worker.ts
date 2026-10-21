@@ -1,6 +1,6 @@
 import { decodeMonitorSettings, type MonitorSettings } from "./monitor-env";
 import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
-import { ledgerAddress } from "./environment";
+import { ledgerAddress, ledgerContractOf } from "./environment";
 import { activeShards, isDevShardChain, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, challengeSeason } from "./season-ledger";
@@ -48,13 +48,13 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
                     {
                       ...seasonLedgerReads({
                         rpcUrl: monitor.env.L2_RPC_URL,
-                        contractAddress: ledgerAddress(monitor.env.ENVIRONMENT),
+                        ...ledgerContractOf(monitor.env.ENVIRONMENT),
                       }),
                       challenge: (id, omitted) =>
                         challengeSeason(
                           {
                             rpcUrl: monitor.env.L2_RPC_URL,
-                            contractAddress: ledgerAddress(monitor.env.ENVIRONMENT),
+                            ...ledgerContractOf(monitor.env.ENVIRONMENT),
                             accountAddress: monitor.env.PAUSER_ACCOUNT_ADDRESS,
                             privateKey: monitor.env.PAUSER_PRIVATE_KEY,
                           },
@@ -211,8 +211,8 @@ const legacyFault = async (
   if (!stream) {
     throw new Error("fault_row_unavailable");
   }
-  const cursor = previous.cursors?.[stream] ?? { fromBlock: 0, page: null };
-  const reads = ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT));
+  const cursor = previous.cursors?.[stream] ?? { page: null };
+  const reads = ledgerMonitorReads(env.L2_RPC_URL, ledgerContractOf(env.ENVIRONMENT));
   const page =
     stream === "paidClaims"
       ? await Effect.runPromise(
@@ -252,7 +252,7 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
     return { reader, shard };
   };
   // Resolved per read: a missing ledger fails that read, never the whole tick.
-  const ledgerReads = () => ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT));
+  const ledgerReads = () => ledgerMonitorReads(env.L2_RPC_URL, ledgerContractOf(env.ENVIRONMENT));
   return {
     identity: {
       matchesPayDecision: (decision: import("@realms-world/identity").LedgerPayDecision) =>

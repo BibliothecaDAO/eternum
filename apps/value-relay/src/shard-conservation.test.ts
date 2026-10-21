@@ -214,9 +214,23 @@ const monitorFixture = () => {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
       pause: vi.fn(() => Effect.void),
       paidClaims: () =>
-        Effect.succeed({ rows: [], next: null, head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false }),
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 1000,
+          anchor: { number: 1000, hash: "0xa" },
+          rewind: false,
+          fromBlock: 1,
+        }),
       postedResults: () =>
-        Effect.succeed({ rows: [], next: null, head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false }),
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 1000,
+          anchor: { number: 1000, hash: "0xa" },
+          rewind: false,
+          fromBlock: 1,
+        }),
     },
   };
   const store = {
@@ -245,6 +259,7 @@ it("still detects a posted-result mismatch when conservation and paid-claim read
       head: 1000,
       anchor: { number: 1000, hash: "0xa" },
       rewind: false,
+      fromBlock: 1,
     });
   expect(await Effect.runPromise(runMonitor(f.ports, f.store))).toMatchObject({ halted: "blitz_result_mismatch:8" });
   expect(f.ports.ledger.pause).toHaveBeenCalledOnce();

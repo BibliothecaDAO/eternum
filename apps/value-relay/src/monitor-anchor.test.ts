@@ -10,6 +10,8 @@ const ledger = vi.hoisted(() => ({
 vi.mock("./environment", async (original) => ({
   ...(await original<typeof import("./environment")>()),
   ledgerAddress: () => "0x10",
+  // The address book's deployment block: the fake ledger first exists at block 5.
+  ledgerContractOf: () => ({ contractAddress: "0x10", deploymentBlock: 5 }),
 }));
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
@@ -24,6 +26,10 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
   rpcAt: () => ({
     getChainId: async () => "0x1",
+    getClassHashAt: async (_address: string, block: number) => {
+      if (block < 5) throw Object.assign(new Error("Contract not found"), { code: 20 });
+      return "0xc1a55";
+    },
     getBlock: async (number: number | "latest") => {
       const block = number === "latest" ? ledger.head : number;
       return { block_number: block, block_hash: `0x${block.toString(16)}`, status: "ACCEPTED_ON_L2", timestamp: block };
@@ -80,13 +86,13 @@ const auditStarts = () =>
 it("audits only new blocks on the tick after a finished pass, through the worker's own ledger reads", async () => {
   const monitor = monitorWithStorage();
   expect((await monitor.tick()).value_error).toBeNull();
-  // Both streams read their whole history once.
-  expect(auditStarts()).toEqual([0, 0]);
+  // Both streams read their whole history once, from the ledger's deployment block.
+  expect(auditStarts()).toEqual([5, 5]);
 
   ledger.head = 51;
   ledger.reads = [];
   expect((await monitor.tick()).value_error).toBeNull();
-  // No new events since block 50: the saved anchor still matches, so neither stream rewinds to block 0.
+  // No new events since block 50: the saved anchor still matches, so neither stream rescans its history.
   expect(auditStarts()).toEqual([51, 51]);
 });
 

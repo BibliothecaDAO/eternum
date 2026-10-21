@@ -4,6 +4,7 @@ const address = vi.hoisted(() => vi.fn(() => "0x10"));
 vi.mock("./environment", async (original) => ({
   ...(await original<typeof import("./environment")>()),
   ledgerAddress: address,
+  ledgerContractOf: () => ({ contractAddress: address(), deploymentBlock: 1 }),
 }));
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";

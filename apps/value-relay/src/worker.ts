@@ -1,5 +1,5 @@
 import { joinShardOperator } from "./shard-account";
-import { decodeRelaySettings, ledgerAddress, type RelaySettings } from "./environment";
+import { decodeRelaySettings, ledgerAddress, ledgerContractOf, type RelaySettings } from "./environment";
 import {
   relayAccountAddress,
   activeShards,
@@ -437,13 +437,13 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
 };
 const ledgerCredentialsOf = (env: RelayEnv) => ({
   rpcUrl: env.L2_RPC_URL,
-  contractAddress: ledgerAddress(env.ENVIRONMENT),
+  ...ledgerContractOf(env.ENVIRONMENT),
   accountAddress: env.LEDGER_OPERATOR_ADDRESS,
   privateKey: env.LEDGER_OPERATOR_PRIVATE_KEY,
 });
 
 const chestPortsOf = (env: RelayEnv, permit: LedgerPermit) => ({
-  ...chestLedgerReads({ rpcUrl: env.L2_RPC_URL, contractAddress: ledgerAddress(env.ENVIRONMENT) }),
+  ...chestLedgerReads({ rpcUrl: env.L2_RPC_URL, ...ledgerContractOf(env.ENVIRONMENT) }),
   finish: (tokenId: string) => permit(finishChestOnLedger(ledgerCredentialsOf(env), tokenId)),
 });
 

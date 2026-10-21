@@ -1,8 +1,13 @@
-import { environmentL2, valuePlaneAddress, type ValueEnvironment } from "@realms-world/chain";
+import { environmentL2, ledgerDeploymentBlock, valuePlaneAddress, type ValueEnvironment } from "@realms-world/chain";
 import { Schema } from "effect";
 
 /** Relay and monitor use the same deployed address book as the client. */
 export const ledgerAddress = (environment: ValueEnvironment) => valuePlaneAddress("ledger", environment);
+/** The ledger for its history scans: its address and its deployment block, both from the same address book. */
+export const ledgerContractOf = (environment: ValueEnvironment) => ({
+  contractAddress: ledgerAddress(environment),
+  deploymentBlock: ledgerDeploymentBlock(environment),
+});
 
 const RelayVars = Schema.Struct({
   ENVIRONMENT: Schema.Literals(["staging", "production"]),

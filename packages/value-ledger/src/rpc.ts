@@ -48,3 +48,23 @@ export function isContractRevert(error: unknown, reason: string): boolean {
   const felts: string[] = detail.match(/0x[0-9a-f]+/gi) ?? [];
   return reason.length <= 31 && felts.includes(shortString.encodeShortString(reason));
 }
+
+/** Starknet's CONTRACT_NOT_FOUND, here or in a wrapped cause. */
+const isContractMissing = (error: unknown): boolean =>
+  typeof error === "object" &&
+  error !== null &&
+  ((error as { code?: number }).code === 20 || isContractMissing((error as { cause?: unknown }).cause));
+
+/** Whether a contract first exists at this block: present there and absent one block before. */
+export async function isDeploymentBlock(provider: RpcProvider, address: string, block: number): Promise<boolean> {
+  const presentAt = async (number: number) => {
+    try {
+      await provider.getClassHashAt(address, number);
+      return true;
+    } catch (error) {
+      if (isContractMissing(error)) return false;
+      throw error;
+    }
+  };
+  return block > 0 && (await presentAt(block)) && !(await presentAt(block - 1));
+}
