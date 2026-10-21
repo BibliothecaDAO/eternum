@@ -1,7 +1,6 @@
 import { Fragment } from "react";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import type { GameType } from "@config";
-import { Fragment } from "react";
 import { colors, icon, modifiers, section, table } from "./styles";
 
 // Biome types enum to match the provided code

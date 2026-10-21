@@ -1,44 +1,16 @@
 import { formatContentDay } from "@bibliothecadao/types";
 
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon } from "@/ui/design-system/icon";
 import { AppPanel, AppRow } from "@/ui/design-system/kit/app-elements";
 import type { Painting } from "@/ui/design-system/kit/paintings";
 import { NEWS_WORDS } from "@/ui/design-system/kit/words";
 
 import { ageOf } from "../play/ages";
-
-type PatchKind = keyof typeof NEWS_WORDS.kinds;
-
-/** A release's sections in the order it lists them: what touches every mode, then each mode. */
-const PATCH_MODES = ["all", "frontier", "blitz", "eternum"] as const;
-type PatchMode = (typeof PATCH_MODES)[number];
+import { PATCH_KINDS, PATCH_MODES, type PatchChange, type PatchMode, type PatchNote } from "./patch-note";
 
 /** A section's name and painting: All modes on the app's landscape, a mode on its age's. */
 export const patchSection = (mode: PatchMode): { name: string; painting: Painting } =>
   mode === "all" ? { name: NEWS_WORDS.allModes, painting: "brooding-plains" } : ageOf(mode);
-
-/**
- * One change as a player reads it: its picture (the troop, resource or action it touches), its name in a few words, the
- * line that says it whole, and for a number that moved, where it was and where it is.
- */
-export type PatchChange = {
-  kind: PatchKind;
-  icon: IconMeaning;
-  title: string;
-  line: string;
-  from?: string;
-  to?: string;
-};
-
-/** A release's notes: its name and day, its one-line summary, and each mode's changes. */
-export type PatchNote = {
-  date: string;
-  title: string;
-  summary: string;
-  modes: Record<PatchMode, readonly PatchChange[]>;
-};
-
-const KINDS: readonly PatchKind[] = ["new", "balance", "fix"];
 
 /** The sections a release changed, in their order. */
 export const changedSections = (note: PatchNote): PatchMode[] =>
@@ -56,7 +28,7 @@ export const PatchHead = ({ note }: { note: PatchNote }) => (
 /** A section's changes, grouped New, Balance, Fixes. */
 export const PatchChanges = ({ changes }: { changes: readonly PatchChange[] }) => (
   <>
-    {KINDS.map((kind) => {
+    {PATCH_KINDS.map((kind) => {
       const ofKind = changes.filter((change) => change.kind === kind);
       return ofKind.length === 0 ? null : (
         <section key={kind} aria-label={NEWS_WORDS.kinds[kind]}>

@@ -199,8 +199,7 @@ AREAS = {
         "apps/game/asset-sources/facets/**",
         "apps/game/src/ui/design-system/icon-meaning.ts",
         "apps/game/src/shell/generated/patch-notes.ts",
-        "apps/game/src/shell/news/patch-notes.tsx",
-        "apps/game/src/shell/play/ages.ts"
+        "apps/game/src/shell/news/patch-note.ts"
     ],
     "contract_scripts": [
         ".github/workflows/test-contract-scripts.yml",

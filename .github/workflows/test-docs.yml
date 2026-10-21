@@ -5,7 +5,7 @@ on:
 
 jobs:
   # The docs site's own build, as deploy/first publishes it to docs.realms.party: its tests, every page, links and
-  # images, and the balance check that holds each stated number to the config it comes from.
+  # images, and the balance check that holds each stated number to the config it comes from. Then the pages' typecheck.
   docs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -25,3 +25,6 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build the docs
         run: pnpm run build:docs
+      # After the build, which builds @bibliothecadao/types: the pages read its built declarations.
+      - name: Typecheck the docs
+        run: pnpm --dir apps/game-docs typecheck
