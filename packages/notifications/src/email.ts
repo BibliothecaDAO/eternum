@@ -1,4 +1,4 @@
-/** An image the email carries itself, drawn by its `cid:` reference: no host to reach, nothing for a client to block. */
+/** An image the email carries itself, drawn by its `cid:` reference: it needs no host, though a client may still hide it. */
 export interface InlineImage {
   id: string;
   filename: string;
