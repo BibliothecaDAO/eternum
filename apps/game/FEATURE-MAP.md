@@ -70,17 +70,19 @@ sheet; `prove:app <base-url> <out-dir> end-map`, on the live stack, opens the ne
 Share on Results, a release picked on What's new, a legal page's places, a Season row's chips, Settings' Name, You with
 no finished game (`/lab/app/no-games`) and a session with no name (`/lab/app/unnamed`), the phone's own card and a
 Results board row on one line. The pages: Play (`/`) the lead widest and each age as a painted column, Blitz's always:
-with no Blitz anywhere it says none is scheduled and that the next shows there when it opens (`/lab/app/no-blitz`); a
-Blitz lobby (`/blitz/:id`) who is in, the entry and the chat side by side; Season (`/season`) the player's figures over
-Frontier's and Blitz's boards; Results (`/results/:id`, with **See the end map**) the player's place and points, the
-game's board, points by kind and the chest at its tier; What's new (`/scroll`) a release's patch notes, a tab per
-section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a
-fixture realm. `/lab/kit/unified/<view>` the in-game desktop HUD every mode shares, as the game mounts it on the lab's
-game: `blitz` (the Build order panel under Next up, read from the lab realm, which has nothing to build now),
-`blitz-attack` (the lab army's attack forecast on an enemy army beside it, opened as the map opens it), `frontier`,
-`frontier-army` (an army out whose XP buys a level; its panel's Level up sends buy_tier, recorded on the page as
-`window.__labTierBought`), `blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab player's
-last realm lost, a Hyperstructure still held, playing then watching);
+with no Blitz open it shows the season calendar's next ranked game, its start and when its entry opens, in the player's
+local time (`nextBlitz` from the launch service's `/api/factory/calendar`, the schedule's own; `/lab/app/blitz-next`),
+and says none is scheduled only when the season has no next game (`/lab/app/no-blitz`); a Blitz lobby (`/blitz/:id`) who
+is in, the entry and the chat side by side; Season (`/season`) the player's figures over Frontier's and Blitz's boards;
+Results (`/results/:id`, with **See the end map**) the player's place and points, the game's board, points by kind and
+the chest at its tier; What's new (`/scroll`) a release's patch notes, a tab per section, and every release.
+`/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture realm.
+`/lab/kit/unified/<view>` the in-game desktop HUD every mode shares, as the game mounts it on the lab's game: `blitz`
+(the Build order panel under Next up, read from the lab realm, which has nothing to build now), `blitz-attack` (the lab
+army's attack forecast on an enemy army beside it, opened as the map opens it), `frontier`, `frontier-army` (an army out
+whose XP buys a level; its panel's Level up sends buy_tier, recorded on the page as `window.__labTierBought`),
+`blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab player's last realm lost, a
+Hyperstructure still held, playing then watching);
 `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
 1280, 1440 and 1920 px (every part whole on the page, none over another, every control reachable, at most seven parts a
 region). `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with
@@ -380,18 +382,25 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   (`src/three/scenes/worldmap-selection-follow.ts`).
 - **Map labels**: every realm, structure and army carries its label at gameplay zoom (the near and mid bands; none when
   zoomed out, `worldmap-content-ladder.ts`), and at rest the label is its token, standing on its thing's label point
-  just over the model's top, never on the thing, at every zoom (`src/three/map-plates/map-plate-token.tsx`): a disk in
-  its side's colour, then the tier chip and count of its troops or guard (a camp's or rift's guard alone: what it holds
-  is on its plate), an army's stamina bar; an undefended one shows a dashed ring. No label element takes the pointer
-  (`map-plates.css`): a hover or a click, on a token or an open plate, lands on the tile under the pointer, on desktop
-  and phone (owner, 2026-10-20: "we click the tile and that's it"). Hover a tile and its full plate opens where its
-  token was drawn: on the token's foot (hung from the top bar's edge only where it would reach under the bar), slid
-  aside but always covering the token's middle (`map-plate-layout.ts`). Select it and it goes back to rest, its token
-  ringed in gold: its detail is the HUD's panel; selected while hovered, it rests until the pointer leaves it, and opens
-  again when it comes back. The open plate and the order line are placed together, clear of each other, the screen's
-  edges and the HUD; where the hovered plate cannot fit beside the line, it stays its token. The plate, on the HUD
-  panel's surface, has at most three rows (`map-plate-rows.ts`) and never an id. An army: "player | home realm" as its
-  realm's plate writes them, then its troops, then its stamina bar and exact "84/150". A realm or hyperstructure:
+  just over the model's top, never on the thing, at every zoom (`src/three/map-plates/map-plate-token.tsx`): a disk,
+  then its plate, the tier chip and count of its troops or guard (a camp's or rift's guard alone: what it holds is on
+  its plate), and an army's stamina bar, all three in its side's colour: yours green, an ally's (a tribe member's, in
+  Eternum only: `arePlayersAllied`) blue, anyone else's red, nobody's too (owner, 2026-10-21; `HUD_SHEET` own, ally,
+  enemy). A watching viewer (`?spectate=true`, or a spectating HUD) has no side: each player's labels take their seat's
+  colour, with their initial on the disk, and nobody's are grey (owner, 2026-10-21: "a diff color for every player";
+  `watchedSide`, `src/utils/entity-ownership.ts`: a Blitz roster's order, else the open game's players in the order each
+  first had a realm created (its `RealmCreatedStory` history on Herald), for that shard's game alone; 24 colours,
+  `SEAT_COLOURS`, again from the first past the 24th); the minimap marks and the standings (Blitz's **Standings**,
+  Frontier's **Season**) carry the same colour and initial. An undefended one shows a dashed ring. No label element
+  takes the pointer (`map-plates.css`): a hover or a click, on a token or an open plate, lands on the tile under the
+  pointer, on desktop and phone (owner, 2026-10-20: "we click the tile and that's it"). Hover a tile and its full plate
+  opens where its token was drawn: on the token's foot (hung from the top bar's edge only where it would reach under the
+  bar), slid aside but always covering the token's middle (`map-plate-layout.ts`). Select it and it goes back to rest,
+  its token ringed in gold: its detail is the HUD's panel; selected while hovered, it rests until the pointer leaves it,
+  and opens again when it comes back. The open plate and the order line are placed together, clear of each other, the
+  screen's edges and the HUD; where the hovered plate cannot fit beside the line, it stays its token. The plate, on the
+  HUD panel's surface, has at most three rows (`map-plate-rows.ts`) and never an id. An army: "player | home realm" as
+  its realm's plate writes them, then its troops, then its stamina bar and exact "84/150". A realm or hyperstructure:
   "player | name", its guard slots in the order an attacker meets them, each with its stamina bar under it (read at the
   chain's tick, following regeneration), or "Undefended"; in Frontier, whose realms have no guard slots and are never
   attacked, "player | name" alone; then the troops on their way, each time before its troops ("Arriving 13m T2 300"). A
@@ -405,13 +414,15 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   whatever order they arrive in, and the others yield to them. Elsewhere an unnamed army or structure is called by its
   kind, never by its entity id (`getEntityName`, `packages/core/src/utils/entities.ts`). The dev build's lab draws the
   same labels over a fixture world, `/lab/map-labels` (`zoom` play, close or far, `hover`, `select`, `battle`, `focus`,
-  `busy=1`, `game=frontier`, `panel=0` in the address; with a thing selected, the hovered tile shows the order line). In
-  a live game, `playtest --steps blitz-plates` or `frontier-plates` (a spectator), or `blitz-plates-player` or
+  `busy=1`, `game=frontier`, `panel=0`, `spectate=1` in the address, or the panel's **Viewer · Playing | Spectating**: a
+  watching viewer over the fixture's 24 seats, the seats listed; with a thing selected, the hovered tile shows the order
+  line). In a live game, `playtest --steps blitz-plates` or `frontier-plates` (a spectator), or `blitz-plates-player` or
   `frontier-plates-player` (a seated player, the readiest army selected), reads every drawn token, plate and order line
   at the map's zoom, the farthest and the closest, the tiles round the centre hovered one by one, clicks at the labels
-  in view, and fails on any label that takes a pointer, a click at a token or an open plate that selects another tile
-  than the same click with the labels hidden, a label on its thing or off it, any pair that overlaps or stands closer
-  than 4px, or an opened plate that does not cover the token read for its thing before the hover
+  in view, and fails on any label not drawn in its side's colour (to a spectator, its seat's: one colour per seat, no
+  two seats alike, nobody's grey), any label that takes a pointer, a click at a token or an open plate that selects
+  another tile than the same click with the labels hidden, a label on its thing or off it, any pair that overlaps or
+  stands closer than 4px, or an opened plate that does not cover the token read for its thing before the hover
   (`scripts/client-playtest/plates.mjs`).
 
 ## Outposts

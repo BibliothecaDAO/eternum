@@ -1,6 +1,8 @@
 import { Effect } from "effect";
 import { expect, it, vi } from "vitest";
 import { processSeasonTops, type SeasonPorts } from "./season-tops";
+/** The block the fake ledger reader starts a scan at, as the real one starts at the ledger's deployment block. */
+const DEPLOYED = 50;
 const fixture = (count = 3) => {
   const data = new Map<string, unknown>();
   const storage = {
@@ -35,7 +37,7 @@ const fixture = (count = 3) => {
     }),
     head: async () => ({ number: 100, hash: "0xa", time: 101 }),
     blockHash: async () => "0xa",
-    changes: vi.fn(async (_from, cursor) => {
+    changes: vi.fn(async (from, cursor) => {
       const all = [
         { kind: "opened" as const, id: 1 },
         ...players.map((wallet) => ({ kind: "participant" as const, id: 1, wallet })),
@@ -45,12 +47,14 @@ const fixture = (count = 3) => {
         rows: all.slice(offset, offset + 100),
         head: 100,
         next: offset + 100 < all.length ? String(offset + 100) : null,
+        from: from ?? DEPLOYED,
       };
     }),
-    posts: vi.fn(async () => ({
+    posts: vi.fn(async (from) => ({
       rows: season.posted ? [{ kind: "posted" as const, id: 1, reviewUntil: season.reviewUntil }] : [],
       head: 100,
       next: null,
+      from: from ?? DEPLOYED,
     })),
     season: async () => season,
     mmr: vi.fn(async (_id, wallet) => (BigInt(wallet) === 1n ? "100" : "200")),
@@ -95,7 +99,7 @@ it("checks every participant independently and leaves a matching season alone", 
 });
 it("waits for the complete history before computing a list", async () => {
   const f = fixture();
-  f.ports.posts = async () => ({ rows: [], head: 100, next: "later-posts" });
+  f.ports.posts = async () => ({ rows: [], head: 100, next: "later-posts", from: DEPLOYED });
   expect(await f.tick("audit")).toBe("season_history_pending");
   expect(f.ports.mmr).not.toHaveBeenCalled();
   expect(f.ports.challenge).not.toHaveBeenCalled();
@@ -144,6 +148,7 @@ it("keeps health pending while a second posted season has not been checked", asy
     ],
     head: 100,
     next: null,
+    from: DEPLOYED,
   }));
   f.ports.season = async (id) => ({ ...f.season, id });
   for (const wallet of ["0x1", "0x2", "0x3"]) f.data.set(`season:participant:2:${wallet}`, wallet);
@@ -159,4 +164,15 @@ it("an unreadable posted season stays pending across checks of other seasons", a
   };
   await expect(f.tick("audit")).rejects.toThrow();
   expect(f.data.get("season:review:1")).toBe(1);
+});
+
+it("lets the reader choose where the season history starts, and continues from the block it reported", async () => {
+  const f = fixture(150);
+  await f.tick("audit");
+  expect(vi.mocked(f.ports.changes).mock.calls[0]![0]).toBeUndefined();
+  expect(vi.mocked(f.ports.posts).mock.calls[0]![0]).toBeUndefined();
+  expect(f.data.get("season:events:changes")).toMatchObject({ from: DEPLOYED, token: "100" });
+  await f.tick("audit");
+  expect(vi.mocked(f.ports.changes).mock.calls[1]!.slice(0, 2)).toEqual([DEPLOYED, "100"]);
+  expect(f.data.get("season:events:changes")).toMatchObject({ from: 101, token: null });
 });

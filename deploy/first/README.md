@@ -13,11 +13,12 @@ creates no directory, key, contract, secret, release, calendar or transaction. I
 than guessing their values. A fresh dry run cannot inspect Alchemy or Cloudflare until their credentials have been
 entered; it reports those steps as unavailable. Later dry runs use the saved credentials and inspect remote results.
 
-The first apply asks for the Cloudflare token, one Alchemy mainnet URL, the Resend key, the whole-token Frontier
-deposit, and four UTC dates: Frontier start/end and Blitz start/end. Dates use `YYYY-MM-DDTHH:MM:SSZ`; none has a
-default. The Frontier start must be on its army tick and its duration must contain whole day bags. An invalid end prints
-its two nearest valid alternatives without changing it. All four dates and the deposit are shown before transactions.
-Production additionally asks for the **public** cold-admin and treasury addresses. It never asks for their keys.
+The first apply asks for the Cloudflare token, one Alchemy mainnet URL, the Resend key, the Discord application's client
+ID and secret (every environment offers Discord sign-in), the whole-token Frontier deposit, and four UTC dates: Frontier
+start/end and Blitz start/end. Dates use `YYYY-MM-DDTHH:MM:SSZ`; none has a default. The Frontier start must be on its
+army tick and its duration must contain whole day bags. An invalid end prints its two nearest valid alternatives without
+changing it. All four dates and the deposit are shown before transactions. Production additionally asks for the
+**public** cold-admin and treasury addresses. It never asks for their keys.
 
 The first account step prints one deployer address to fund with about **250 STRK**, then stops. Run the same apply
 command after funding it. The command deploys that account, transfers 30 STRK to the relay and 1 STRK to the monitor,

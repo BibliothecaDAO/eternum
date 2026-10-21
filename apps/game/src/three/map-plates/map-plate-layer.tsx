@@ -385,6 +385,7 @@ const LabelSlot = memo(function LabelSlot({
   selected: boolean;
   register: (key: string, element: HTMLDivElement | null) => void;
 }) {
+  const watched = entry.plate.watched;
   return (
     <div
       ref={(element) => register(entry.key, element)}
@@ -392,8 +393,10 @@ const LabelSlot = memo(function LabelSlot({
       data-key={entry.key}
       data-view={view}
       data-relation={entry.plate.relation}
+      data-seat={watched ? (watched.seat ?? "none") : undefined}
       data-selected={selected}
-      style={{ display: "none", zIndex: view === "token" ? 1 : 5 }}
+      // A watching viewer's side is its player's seat colour, in place of the relation's (map-plates.css).
+      style={{ display: "none", zIndex: view === "token" ? 1 : 5, ...(watched ? { "--mp-side": watched.colour } : {}) }}
     >
       {view === "token" ? <Token plate={entry.plate} /> : <Plate plate={entry.plate} />}
     </div>

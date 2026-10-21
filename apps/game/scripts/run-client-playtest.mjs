@@ -286,7 +286,7 @@ async function playRun(context) {
     // The trace is the boot's: from before the game page opens to the world being interactive. A longer one is not
     // kept whole (the browser records into a ring buffer, and the boot is overwritten first) and costs gigabytes.
     if (context.trace) browser.run(["trace", "start"]);
-    // A player is signed in first, on the sign-in page, then opens the home page.
+    // A player is signed in first, through Connect on the home page, then opens the run's page.
     if (player) record.signIn = await signInAsPlayer({ ...context, browser, url: record.url });
     else browser.run(["open", record.url]);
     const entered = player ? await enterAsPlayer(browser, owner, timeoutMs, { card: stepsGame.card, game }) : null;
@@ -432,7 +432,7 @@ function playerProfile(email) {
   return profile;
 }
 
-/** A profile whose session was lost signs in again, through the sign-in page, and the home page opens once more. */
+/** A profile whose session was lost signs in again, through Connect, and the run's page opens once more. */
 async function signInAsPlayer({ baseUrl, browser, owner, player, runDir, url }) {
   const signIn = await signInIfSignedOut({
     browser,

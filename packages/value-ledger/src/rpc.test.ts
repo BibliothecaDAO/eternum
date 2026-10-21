@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { rpcBatch, SHARD_RPC_MAX_BATCH_CALLS } from "./rpc";
+import { isDeploymentBlock, rpcBatch, SHARD_RPC_MAX_BATCH_CALLS, type ClassHashReader } from "./rpc";
 
 const URL = "https://shard.test/rpc";
 
@@ -53,4 +53,26 @@ it("refuses a batch larger than the shard's public RPC accepts, before sending i
   const calls = Array.from({ length: SHARD_RPC_MAX_BATCH_CALLS + 1 }, () => ({}));
   await expect(rpcBatch(URL, "starknet_getBlockWithTxHashes", calls)).rejects.toThrow("rpc_batch_too_large");
   expect(sent).toHaveLength(0);
+});
+
+/** A node on which the contract exists from block `first` on; Starknet answers code 20 before that. */
+const chainFrom = (first: number, failure?: Error): ClassHashReader => ({
+  getClassHashAt: vi.fn(async (_address: string, block: number) => {
+    if (failure) throw failure;
+    if (block < first) throw Object.assign(new Error("Contract not found"), { code: 20 });
+    return "0xc1a55";
+  }),
+});
+
+it("names a contract's deployment block only where it exists and did not one block before", async () => {
+  expect(await isDeploymentBlock(chainFrom(100), "0x10", 100)).toBe(true);
+  expect(await isDeploymentBlock(chainFrom(100), "0x10", 101)).toBe(false);
+  expect(await isDeploymentBlock(chainFrom(100), "0x10", 99)).toBe(false);
+  expect(await isDeploymentBlock(chainFrom(0), "0x10", 0)).toBe(false);
+});
+
+it("fails, rather than answering, when the node fails for another reason", async () => {
+  await expect(isDeploymentBlock(chainFrom(100, new Error("rate limited")), "0x10", 100)).rejects.toThrow(
+    "rate limited",
+  );
 });

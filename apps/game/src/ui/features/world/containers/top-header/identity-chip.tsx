@@ -4,7 +4,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
 import { AccountStatePrompt } from "@/shell/account-state";
 import { useRealmsPlayer } from "@/shell/herald";
-import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
+import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { usePlayers } from "@/hooks/use-player-profile";

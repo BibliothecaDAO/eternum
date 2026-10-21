@@ -4,7 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Vector3 } from "three";
 
-import { createMapLabelFixture, PLATE_CLEARANCE, type MapLabelEntity } from "@/three/debug/map-label-lab-fixture";
+import {
+  createMapLabelFixture,
+  PLATE_CLEARANCE,
+  SEATS,
+  type MapLabelEntity,
+} from "@/three/debug/map-label-lab-fixture";
 import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
 import {
   mountProceduralTerrainBenchmarkRenderer,
@@ -16,6 +21,8 @@ import { PointerOrderTip } from "@/three/scenes/worldmap-order-tip";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { buildArmyPlate, buildStructurePlate, guardsToTell, type MapPlate } from "@/three/map-plates/map-plate-model";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terrain-props";
+import { seatSide } from "@/tokens";
+import { SeatMark } from "@/ui/design-system/seat-mark";
 
 type MapZoom = "play" | "close" | "far";
 type World = { stage: TerrainBenchmarkStage; entities: MapLabelEntity[] };
@@ -28,8 +35,9 @@ type World = { stage: TerrainBenchmarkStage; entities: MapLabelEntity[] };
  * `select` an entity by its id, `battle` one to put it in battle, `focus` one to centre the camera on it (a hovered one is
  * centred too), `busy=1` for an army beside every realm (a full Blitz in one view), `game=frontier` for a Frontier world
  * (no guard slots: a realm holds no guard and nothing marches home to it), `panel=0` to hide the lab's panel (for a
- * phone), and
- * `rendererMode=webgpu-force-webgl` for WebGL. Pointer hover on a tile and click work too; Escape clears the selection.
+ * phone), `spectate=1` for a watching viewer (each player in their seat's colour with their initial, the seats listed
+ * in the panel: the game's rule, `seatSide`, over the fixture's 24 seats), and `rendererMode=webgpu-force-webgl` for
+ * WebGL. Pointer hover on a tile and click work too; Escape clears the selection.
  * With a thing selected, the hovered tile shows the map's order line ("Attack", or "Transfer troops" on the player's
  * own), said and placed as the world map says and places it.
  */
@@ -48,9 +56,20 @@ export const MapLabelLabView = () => {
   const forceWebGL = params.get("rendererMode") === "webgpu-force-webgl";
   const frontier = params.get("game") === "frontier";
   const panel = params.get("panel") !== "0";
+  const spectate = params.get("spectate") === "1";
   useMapWorld(canvasRef, busy, forceWebGL, setWorld, setError);
   useZoom(world, zoom, params.get("focus") ?? params.get("hover"));
-  const layer = usePlates(world, frontier, params.get("battle"), overlayRef, canvasRef, hovered, selected, setCounts);
+  const layer = usePlates(
+    world,
+    frontier,
+    spectate,
+    params.get("battle"),
+    overlayRef,
+    canvasRef,
+    hovered,
+    selected,
+    setCounts,
+  );
   useOrderLine(world, layer, overlayRef, hovered, selected);
   const set = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
@@ -98,6 +117,30 @@ export const MapLabelLabView = () => {
             </button>
           ))}
         </div>
+        <div className="mb-1.5 flex items-center gap-1.5">
+          <span className="w-16 opacity-80">Viewer</span>
+          {([false, true] as const).map((watching) => (
+            <button
+              key={String(watching)}
+              type="button"
+              aria-pressed={watching === spectate}
+              onClick={() => set("spectate", watching ? "1" : null)}
+              className="rounded border border-white/25 px-2 py-0.5 aria-pressed:border-amber-300 aria-pressed:bg-amber-300/15"
+            >
+              {watching ? "Spectating" : "Playing"}
+            </button>
+          ))}
+        </div>
+        {spectate && (
+          <ol data-role="seats" className="mb-2 grid grid-cols-2 gap-x-3 gap-y-0.5">
+            {SEATS.map((name, seat) => (
+              <li key={name} className="flex items-center gap-1.5">
+                <SeatMark side={seatSide(seat)} name={name} />
+                {name}
+              </li>
+            ))}
+          </ol>
+        )}
         <p className="leading-snug opacity-90">
           Every thing is its token; hover a tile to open its plate in the token's place, click to select it.
         </p>
@@ -177,6 +220,7 @@ const useMapWorld = (
 const usePlates = (
   world: World | null,
   frontier: boolean,
+  spectate: boolean,
   battle: string | null,
   overlayRef: React.RefObject<HTMLDivElement | null>,
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
@@ -214,9 +258,12 @@ const usePlates = (
         entityId: entity.entityId,
         position: entity.anchor,
         // `battle` puts one thing in battle, as a battle cooldown does in the game: the map keeps it in view.
-        plate: { ...plateOf(entity, frontier), ...(String(entity.entityId) === battle ? { inBattle: true } : {}) },
+        plate: {
+          ...plateOf(entity, frontier, spectate),
+          ...(String(entity.entityId) === battle ? { inBattle: true } : {}),
+        },
       });
-  }, [layer, world, frontier, battle]);
+  }, [layer, world, frontier, spectate, battle]);
   // The world the plate probe measures each label against (scripts/client-playtest/plates.mjs), as the game reports its
   // own through window.__gameRenderer: the camera, the canvas, each thing's tile, its model's top and its label point.
   useEffect(() => {
@@ -304,11 +351,13 @@ const CATEGORY = { crossbowman: "Crossbowman", knight: "Knight", paladin: "Palad
  * A fixture thing as the world map's managers would hand it to the layer: their own builders, their own fields. In a
  * Frontier world a realm or a hyperstructure holds no guard and no troops march home; its sites keep their guards.
  */
-const plateOf = (entity: MapLabelEntity, frontier: boolean): MapPlate => {
+const plateOf = (entity: MapLabelEntity, frontier: boolean, spectate: boolean): MapPlate => {
   const settled = frontier && (entity.kind === "realm" || entity.kind === "hyperstructure");
   const owner = { address: entity.owner === null ? 0n : 1n, ownerName: entity.owner ?? "", guildName: "" };
   const isMine = entity.relation === "own";
   const isAlly = entity.relation === "ally";
+  // A watching viewer's side, as the game's managers read it (`watchedSide`): the owner's seat among the fixture's.
+  const watched = spectate ? seatSide(entity.owner === null ? null : SEATS.indexOf(entity.owner)) : null;
   if (entity.kind === "army" && entity.army) {
     const { troops, stamina, staminaMax } = entity.army;
     return buildArmyPlate(
@@ -316,6 +365,7 @@ const plateOf = (entity: MapLabelEntity, frontier: boolean): MapPlate => {
         entityId: entity.entityId,
         isMine,
         isAlly,
+        watched,
         owner,
         category: CATEGORY[troops.type],
         tier: `T${troops.tier}`,
@@ -334,6 +384,7 @@ const plateOf = (entity: MapLabelEntity, frontier: boolean): MapPlate => {
       mineKind: entity.kind === "rift" ? 1 : undefined,
       isMine,
       isAlly,
+      watched,
       owner,
       guardArmies: guardsToTell(
         (settled ? [] : entity.guards).map((slot, index) => ({

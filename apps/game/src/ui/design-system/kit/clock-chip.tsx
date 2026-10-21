@@ -3,10 +3,10 @@ import { AppChip } from "./app-elements";
 import { Pill } from "./pill";
 import { CLOCK_WORDS, LEFT } from "./words";
 
-type ClockPrefix = "starts" | "opens" | "ends" | "expires" | "closes";
+type ClockPrefix = "starts" | "opens" | "entryOpens" | "ends" | "expires" | "closes";
 
 const DAY = 86_400;
-const BEGINS: readonly ClockPrefix[] = ["starts", "opens"];
+const BEGINS: readonly ClockPrefix[] = ["starts", "opens", "entryOpens"];
 
 /** Within a day, the clock time and the time left ("Starts 16:30 · in 2h 4m", "Ends 17:30 · 38m left"). */
 const isWithinADay = (at: number, now: number) => at >= now && at - now < DAY;
@@ -22,10 +22,13 @@ const countdown = (prefix: ClockPrefix, seconds: number) =>
 export const clockLine = (prefix: ClockPrefix | null, at: number | undefined, now: number): string => {
   if (prefix === null) return formatDate(at, now);
   const word = CLOCK_WORDS[prefix];
-  if (at === undefined) return `${word} ${formatClockTime(undefined)}`;
-  if (isWithinADay(at, now)) return `${word} ${formatClockTime(at)} · ${countdown(prefix, at - now)}`;
-  return `${word} ${formatDate(at, now)}, ${formatClockTime(at)}`;
+  if (at !== undefined && isWithinADay(at, now)) return `${word} ${clockAt(at, now)} · ${countdown(prefix, at - now)}`;
+  return `${word} ${clockAt(at, now)}`;
 };
+
+/** A moment alone, with no time left: its local clock time within a day ("16:30"), else its date too ("14 Oct, 18:00"). */
+export const clockAt = (at: number | undefined, now: number): string =>
+  at === undefined || isWithinADay(at, now) ? formatClockTime(at) : `${formatDate(at, now)}, ${formatClockTime(at)}`;
 
 type ClockMoment = { prefix: ClockPrefix | null; at: number | undefined; now: number };
 

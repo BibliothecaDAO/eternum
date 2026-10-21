@@ -15,18 +15,13 @@ import { PageFrame } from "../frame/page-frame";
 import { useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
-import { useRequestSignIn } from "../sign-in/sign-in-route";
+import { useRequestSignIn } from "../sign-in/connect";
 import { AccountCard, SignOut } from "./account-card";
 import { DevicesCard } from "./devices-page";
 import { NotificationsCard } from "./notifications";
 import { PlayerCard, ProfileView, RecentGames } from "./profile-view";
 import { SETTINGS_PATH } from "./settings-route";
-
-/**
- * How to play: the Blitz guide's first page on the docs site (apps/game-docs), the rules a new player reads before a
- * game. The site's front page is about the Realms at large and teaches no game.
- */
-export const HOW_TO_PLAY = "https://docs.realms.world/blitz/key-concepts";
+import { HOW_TO_PLAY } from "../community";
 
 /**
  * You (spec 10, the place): the player's page as others see it, their finished games, then two rows: Settings and How

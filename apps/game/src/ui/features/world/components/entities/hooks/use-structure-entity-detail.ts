@@ -54,10 +54,8 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     "Structure",
   ]);
   const playerGuild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), store) : undefined;
-  const userGuild = userAddress === null ? undefined : getGuildFromPlayerAddress(userAddress, store);
   const guards = structure ? getGuardsByStructure(structure, store) : [];
   const isMine = isViewerOwner(structure?.owner, userAddress);
-  const isAlly = isMine || Boolean(playerGuild && userGuild && playerGuild.entityId === userGuild.entityId);
   const ownerDisplayName = usePlayerDisplayName(structure?.owner ?? 0n) ?? "";
   const timestamp = useCurrentDefaultTick();
   const relicEffects: RelicEffect[] = useMemo(() => {
@@ -70,9 +68,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     if (productionBoostBonus) effects.push(...getStructureRelicEffects(productionBoostBonus, timestamp));
     return effects;
   }, [productionBoostBonus, structure, store, revision, timestamp]);
-  const structureDetails = structure
-    ? { structure, resources, playerGuild, guards, isAlly, isMine, relicEffects }
-    : null;
+  const structureDetails = structure ? { structure, resources, playerGuild, guards, isMine, relicEffects } : null;
   // The rate the map's label shows too: what it pays its holder, or what taking it would pay.
   const hyperstructureRate = useMemo(
     () =>
@@ -131,7 +127,6 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     guardSlots,
     ownerDisplayName,
     isMine,
-    isAlly,
     hyperstructureRate,
     isHyperstructure,
     typeLabel,

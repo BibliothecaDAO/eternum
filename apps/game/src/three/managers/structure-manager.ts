@@ -20,7 +20,7 @@ import { resolveStructureRotationY } from "../structures/structure-orientation";
 import { SettlementModel } from "../structures/settlement-model";
 import { resolveSettlementRelationship } from "../structures/settlement-appearance";
 import { RiftModelPath, isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
-import { arePlayersAllied } from "@/utils/entity-ownership";
+import { arePlayersAllied, onSidesChanged, watchedSide } from "@/utils/entity-ownership";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
@@ -434,6 +434,15 @@ export class StructureManager {
 
   private subscribeToStructurePresentationComponents(): void {
     if (!this.store) return;
+    // Whose a structure is may read otherwise (the seats arrive, the viewer starts watching): every plate says it again.
+    this.storeUnsubscribes.push(
+      onSidesChanged(() => {
+        for (const entityId of this.compactLabelIds) {
+          const structure = this.resolveStructureInfoByEntityId(entityId);
+          if (structure) this.refreshStructurePlate(structure);
+        }
+      }),
+    );
     this.storeUnsubscribes.push(
       this.store.subscribe((changes) => {
         const touched = new Set<number>();
@@ -1783,7 +1792,7 @@ export class StructureManager {
       entityId: structure.entityId,
       position,
       plate: buildStructurePlate(
-        this.withGuardStamina(structure),
+        { ...this.withGuardStamina(structure), watched: watchedSide(this.store, structure.owner.address) },
         useChainTimeStore.getState().getNowSeconds(),
         this.store && readPlateReward(this.store, structure),
       ),

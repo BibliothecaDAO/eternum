@@ -12,7 +12,8 @@ import type {
 import { RelayFailure, relayOperation } from "./ports";
 
 interface AuditCursor {
-  fromBlock: number;
+  /** Absent until the first page: the ledger's deployment block, as the reader reports it. */
+  fromBlock?: number;
   page: string | null;
   offset?: number;
   anchor?: LedgerAnchor;
@@ -149,9 +150,9 @@ const checkLedgerPage = <A>(
 ) =>
   Effect.gen(function* () {
     const progress = yield* relayOperation("read ledger audit cursor", () => store.load());
-    const cursor = progress.cursors?.[stream] ?? { fromBlock: 0, page: null };
+    const cursor: AuditCursor = progress.cursors?.[stream] ?? { page: null };
     const page = yield* read(cursor.page, cursor.fromBlock, cursor.anchor);
-    const fromBlock = page.rewind ? 0 : cursor.fromBlock;
+    const fromBlock = page.fromBlock;
     if (
       !Number.isSafeInteger(page.head) ||
       page.head < fromBlock - 1 ||

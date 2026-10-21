@@ -1,7 +1,7 @@
 import { launchFailure } from "./errors";
 import { BLITZ_SLOT_PREPARATION_SECONDS, blitzSlotFitsSeason } from "@realms-world/value-ledger";
 import { Effect, Result } from "effect";
-import { isRunning, type CalendarStore, type SeasonPhase } from "./calendar";
+import { isRunning, type CalendarStore, type NextBlitzGame, type SeasonPhase } from "./calendar";
 import { frontierSeasonRequest } from "./schemas";
 import { blitzSlotWindow, type SlotStore } from "./slots";
 import { databaseOperation, type LaunchServiceStore } from "./store";
@@ -19,9 +19,9 @@ export const runLaunchSchedule = (store: LaunchServiceStore, slots: SlotStore, c
       const frontier = calendarResult.success.find(({ phase }) => phase === "frontier");
       if (frontier && isRunning(frontier, now.getTime()))
         yield* runScheduleStep("schedule frontier season", () => scheduleFrontierSeason(store, frontier));
-      const blitz = calendarResult.success.find(({ phase }) => phase === "blitz");
-      const slot = nextBlitzSlot(now);
-      if (blitz && fitsInside(blitz, slot.closesAt))
+      // The next game opens at its tick: the timetable's next start, when it fits the window (`nextBlitzGame`).
+      const slot = nextBlitzGame(calendarResult.success, now.getTime());
+      if (slot && Date.parse(slot.opensAt) <= now.getTime())
         yield* runScheduleStep("schedule blitz slot", () => slots.create(slot.name, slot.closesAt));
     } else {
       console.error("launch_schedule_step_failed", {
@@ -55,14 +55,38 @@ export const scheduleFrontierSeason = (store: LaunchServiceStore, season: Season
 
 /** Ninety minutes divides the UTC day: 00:00, 01:30, ... 22:30. */
 const BLITZ_SLOT_INTERVAL_MS = 90 * 60 * 1000;
+const PREPARATION_MS = BLITZ_SLOT_PREPARATION_SECONDS * 1000;
 
-/** The next timetable start whose registration is still open; its start time also names the slot. */
-const nextBlitzSlot = (now: Date): { name: string; closesAt: string } => {
-  const after = now.getTime() + BLITZ_SLOT_PREPARATION_SECONDS * 1000;
-  const startsAt = new Date((Math.floor(after / BLITZ_SLOT_INTERVAL_MS) + 1) * BLITZ_SLOT_INTERVAL_MS);
-  const iso = startsAt.toISOString();
+/**
+ * The timetable's slot starting at `startsAt`: its start names it. Its entry closes the preparation before its start,
+ * and the schedule opens it at the tick that reaches it (`nextBlitzSlot`): when the start before it closes its entry.
+ */
+const slotStartingAt = (startsAt: number): NextBlitzGame => {
+  const iso = new Date(startsAt).toISOString();
   return {
     name: `blitz-${iso.slice(0, 10).replaceAll("-", "")}-${iso.slice(11, 16).replace(":", "")}`,
-    closesAt: new Date(startsAt.getTime() - BLITZ_SLOT_PREPARATION_SECONDS * 1000).toISOString(),
+    startsAt: iso,
+    closesAt: new Date(startsAt - PREPARATION_MS).toISOString(),
+    opensAt: new Date(startsAt - BLITZ_SLOT_INTERVAL_MS - PREPARATION_MS).toISOString(),
   };
+};
+
+/** The next timetable start whose registration is still open; its start time also names the slot. */
+const nextBlitzSlot = (now: Date): NextBlitzGame =>
+  slotStartingAt((Math.floor((now.getTime() + PREPARATION_MS) / BLITZ_SLOT_INTERVAL_MS) + 1) * BLITZ_SLOT_INTERVAL_MS);
+
+/**
+ * The next Blitz game the schedule will open, as the cron tick decides it: the first timetable start from now whose
+ * preparation, play and settlement fit inside the Blitz window. Null when the calendar has no Blitz window, or none of
+ * its starts is left.
+ */
+export const nextBlitzGame = (phases: readonly SeasonPhase[], now: number): NextBlitzGame | null => {
+  const blitz = phases.find(({ phase }) => phase === "blitz");
+  if (!blitz) return null;
+  const end = Date.parse(blitz.endsAt);
+  for (let slot = nextBlitzSlot(new Date(now)); Date.parse(slot.closesAt) < end; ) {
+    if (fitsInside(blitz, slot.closesAt)) return slot;
+    slot = slotStartingAt(Date.parse(slot.startsAt) + BLITZ_SLOT_INTERVAL_MS);
+  }
+  return null;
 };

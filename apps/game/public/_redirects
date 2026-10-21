@@ -1,16 +1,16 @@
 # Only application routes use the SPA shell. Missing assets must remain 404s.
 # src/app-hosting.test.ts holds this list to exactly the router's routes in src/app.tsx.
-# Play's former pages, shared publicly, lead to Play (RETIRED_PLAY_PATHS in src/app.tsx).
+# Former pages lead to Play (RETIRED_PATHS in src/app.tsx).
 /blitz / 301
 /frontier / 301
 /eternum / 301
 /dominion / 301
+/sign-in / 301
 /blitz/:id / 200
 /season / 200
 /results/:id / 200
 /profile / 200
 /profile/settings / 200
-/sign-in / 200
 /scroll / 200
 /scroll/:post https://realms.world/scroll/:post 301
 /terms / 200

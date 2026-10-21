@@ -25,6 +25,7 @@ vi.mock("./relic-chest/view", () => ({ RelicChestLab: () => <Tool name="relic-ch
 vi.mock("../ui/features/debug/terrain-prop-debug-view", () => ({ TerrainPropDebugView: () => <Tool name="props" /> }));
 vi.mock("./endgame-mist/view", () => ({ EndgameMistLabView: () => <Tool name="endgame" /> }));
 vi.mock("../ui/features/debug/world-fx-gym-view", () => ({ WorldFxGymView: () => <Tool name="fx" /> }));
+vi.mock("./studio/view", () => ({ StudioLabView: () => <Tool name="studio" /> }));
 vi.mock("../ui/features/debug/procedural-character-gym-view", () => ({
   ProceduralCharacterGymView: () => <Tool name="characters" />,
 }));
@@ -92,6 +93,7 @@ it.each([
   ["/lab/relic-chest", "relic-chest"],
   ["/lab/terrain-props", "props"],
   ["/lab/world-fx", "fx"],
+  ["/lab/studio?take=battle&gameMode=frontier", "studio"],
   ["/lab/endgame?variation=tide&gameMode=frontier", "endgame"],
   ["/lab/characters", "characters"],
   ["/lab/character-benchmark", "benchmark"],

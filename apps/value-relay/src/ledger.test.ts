@@ -13,6 +13,7 @@ const rpc = vi.hoisted(() => ({
   events: vi.fn(),
   head: vi.fn(),
   block: vi.fn(),
+  classAt: vi.fn(),
 }));
 vi.mock("starknet", async (importOriginal) => ({
   ...(await importOriginal<typeof import("starknet")>()),
@@ -24,12 +25,20 @@ vi.mock("starknet", async (importOriginal) => ({
       getEvents: rpc.events,
       getBlockNumber: rpc.head,
       getBlock: rpc.block,
+      getClassHashAt: rpc.classAt,
     };
   }),
   Account: vi.fn(function () {
     return { execute: rpc.execute };
   }),
 }));
+/** The ledger under test first exists at block 500, as its address book says. */
+const ledger = { contractAddress: "0x10", deploymentBlock: 500 };
+const existsFrom = (first: number) =>
+  rpc.classAt.mockImplementation(async (_address: string, block: number) => {
+    if (block < first) throw Object.assign(new Error("Contract not found"), { code: 20 });
+    return "0xc1a55";
+  });
 const credentials = {
   rpcUrl: "https://ledger.test",
   contractAddress: "0x10",
@@ -55,6 +64,7 @@ beforeEach(() => {
   }));
   rpc.wait.mockResolvedValue({ isReverted: () => false });
   rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
+  existsFrom(500);
 });
 
 it("submits the published ranked result and completes an identical retry without a second write", async () => {
@@ -103,7 +113,7 @@ it("decodes confirmed payments and pins the event head across pagination", async
       continuation_token: "next",
     })
     .mockResolvedValueOnce({ events: [], continuation_token: undefined });
-  const reads = ledgerMonitorReads("https://ledger.test", "0x10");
+  const reads = ledgerMonitorReads("https://ledger.test", ledger);
   const page = await Effect.runPromise(reads.paidClaims(null));
   expect(page.rows).toEqual([
     {
@@ -121,7 +131,7 @@ it("decodes confirmed payments and pins the event head across pagination", async
   expect(rpc.events.mock.calls[1]![0]).toMatchObject({ to_block: { block_number: 1000 }, continuation_token: "next" });
 });
 it("decodes result commitments and refuses malformed payment events", async () => {
-  const reads = ledgerMonitorReads("https://ledger.test", "0x10");
+  const reads = ledgerMonitorReads("https://ledger.test", ledger);
   expect(rpc.call).not.toHaveBeenCalled();
   rpc.events.mockResolvedValueOnce({
     events: [
@@ -175,16 +185,16 @@ it("reads the funded deposit through the committed ledger ABI at a confirmed hea
       seed: 153,
     }),
   );
-  expect(
-    await Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, credentials.contractAddress).frontierPool("0x1", 7)),
-  ).toBe(String(pool));
+  expect(await Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, ledger).frontierPool("0x1", 7))).toBe(
+    String(pool),
+  );
   expect(rpc.call).toHaveBeenCalledWith(
     { contractAddress: "0x10", entrypoint: "get_frontier", calldata: ["0x1", "7"] },
     1000,
   );
   rpc.call.mockRejectedValue(new Error("Ledger: unknown Frontier season"));
   await expect(
-    Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, credentials.contractAddress).frontierPool("0x1", 7)),
+    Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, ledger).frontierPool("0x1", 7)),
   ).rejects.toMatchObject({ operation: "read ledger Frontier pool" });
 });
 
@@ -228,7 +238,7 @@ it("rediscovers a chest request inserted behind the cursor by an L2 rewrite", as
     events: from_block.block_number <= 1000 ? [request] : [],
   }));
   const page = await Effect.runPromise(
-    ledgerChestChanges("https://ledger.test", "0x10", 1001, null, { number: 1000, hash: "0xdead" }),
+    ledgerChestChanges("https://ledger.test", ledger, 1001, null, { number: 1000, hash: "0xdead" }),
   );
   expect(page.rows).toEqual([{ kind: "requested", request: { tokenId: "7", requester: "0x123", requestBlock: 1000 } }]);
   expect(page.rewind).toBe(true);
@@ -237,11 +247,11 @@ it("rediscovers a chest request inserted behind the cursor by an L2 rewrite", as
 it("fails the read, without a rewind, when the RPC answers a head below the anchor", async () => {
   rpc.events.mockResolvedValue({ events: [] });
   await expect(
-    Effect.runPromise(ledgerChestChanges("https://ledger.test", "0x10", 1002, null, { number: 1001, hash: "0xa" })),
+    Effect.runPromise(ledgerChestChanges("https://ledger.test", ledger, 1002, null, { number: 1001, hash: "0xa" })),
   ).rejects.toMatchObject({ operation: "ledger_head_behind_anchor" });
   expect(rpc.events).not.toHaveBeenCalled();
   const caughtUp = await Effect.runPromise(
-    ledgerChestChanges("https://ledger.test", "0x10", 1000, null, { number: 1000, hash: "0xa" }),
+    ledgerChestChanges("https://ledger.test", ledger, 1000, null, { number: 1000, hash: "0xa" }),
   );
   expect(caughtUp).toMatchObject({ rewind: false, head: 1000 });
 });
@@ -251,11 +261,11 @@ it("refuses a ledger event page whose head changes while it is read", async () =
     rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 1000, block_hash: "0xb", timestamp: 1000 });
     return { events: [] };
   });
-  await expect(Effect.runPromise(ledgerChestChanges("https://ledger.test", "0x10", 0, null))).rejects.toThrow();
+  await expect(Effect.runPromise(ledgerChestChanges("https://ledger.test", ledger, undefined, null))).rejects.toThrow();
 });
 
 it("restarts pagination on a replaced checkpoint and anchors an old cursor by replaying it once", async () => {
-  const reads = ledgerMonitorReads("https://ledger.test", "0x10");
+  const reads = ledgerMonitorReads("https://ledger.test", ledger);
   rpc.events.mockResolvedValue({ events: [], continuation_token: "next" });
   const first = await Effect.runPromise(reads.postedResults(null));
   rpc.block.mockImplementation(async (number) => ({
@@ -264,14 +274,50 @@ it("restarts pagination on a replaced checkpoint and anchors an old cursor by re
     block_hash: "0xb",
     timestamp: 1001,
   }));
-  const replay = await Effect.runPromise(reads.postedResults(first.next, 0, first.anchor));
+  const replay = await Effect.runPromise(reads.postedResults(first.next, first.fromBlock, first.anchor));
   expect(replay).toMatchObject({ rewind: true, head: 1001, anchor: { number: 1001, hash: "0xb" } });
   expect(rpc.events.mock.calls[1]![0]).not.toHaveProperty("continuation_token");
-  expect(rpc.events.mock.calls[1]![0].from_block).toEqual({ block_number: 0 });
+  expect(rpc.events.mock.calls[1]![0].from_block).toEqual({ block_number: 500 });
   const legacy = await Effect.runPromise(reads.postedResults(JSON.stringify({ head: 999, token: "old" }), 900));
   expect(legacy.rewind).toBe(true);
   rpc.events.mockResolvedValue({ events: [] });
-  const resumed = await Effect.runPromise(reads.postedResults(legacy.next, 0, legacy.anchor));
+  const resumed = await Effect.runPromise(reads.postedResults(legacy.next, legacy.fromBlock, legacy.anchor));
   expect(resumed.rewind).toBe(false);
   expect(rpc.events.mock.calls.at(-1)![0].continuation_token).toBe("next");
+});
+
+it("starts a fresh scan of the ledger's history at its deployment block, never block 0", async () => {
+  rpc.events.mockResolvedValue({ events: [] });
+  const reads = ledgerMonitorReads("https://ledger.test", ledger);
+  const claims = await Effect.runPromise(reads.paidClaims(null));
+  const results = await Effect.runPromise(reads.postedResults(null));
+  const chests = await Effect.runPromise(ledgerChestChanges("https://ledger.test", ledger, undefined, null));
+  expect(rpc.events.mock.calls.map(([query]) => query.from_block)).toEqual([
+    { block_number: 500 },
+    { block_number: 500 },
+    { block_number: 500 },
+  ]);
+  expect([claims.fromBlock, results.fromBlock, chests.fromBlock]).toEqual([500, 500, 500]);
+});
+
+it.each([
+  ["after the ledger's first block, which would skip its earliest events", 499],
+  ["before the ledger existed", 501],
+])("refuses an address-book deployment block %s", async (_case, first) => {
+  existsFrom(first);
+  rpc.events.mockResolvedValue({ events: [] });
+  await expect(
+    Effect.runPromise(ledgerMonitorReads("https://ledger.test", ledger).paidClaims(null)),
+  ).rejects.toMatchObject({ operation: "ledger_deployment_block_wrong" });
+  expect(rpc.events).not.toHaveBeenCalled();
+});
+
+it("continues an anchored scan from its saved block, even one saved below the deployment block", async () => {
+  rpc.events.mockResolvedValue({ events: [] });
+  const page = await Effect.runPromise(
+    ledgerMonitorReads("https://ledger.test", ledger).postedResults(null, 100, { number: 1000, hash: "0xa" }),
+  );
+  expect(page).toMatchObject({ rewind: false, fromBlock: 100 });
+  expect(rpc.events.mock.calls[0]![0].from_block).toEqual({ block_number: 100 });
+  expect(rpc.classAt).not.toHaveBeenCalled();
 });

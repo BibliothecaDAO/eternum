@@ -9,10 +9,10 @@ import {
   type LedgerSlotKey,
 } from "@realms-world/value-ledger";
 import { relayOperation } from "./ports";
+import { ledgerHistoryFrom, type LedgerContract } from "./ledger";
 
-interface Credentials {
+interface Credentials extends LedgerContract {
   rpcUrl: string;
-  contractAddress: string;
   accountAddress: string;
   privateKey: string;
 }
@@ -34,7 +34,7 @@ export const openSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey, w
     }
     if (window.start <= head.time || window.end <= window.start)
       throw new Error("paid_registration_must_open_before_start");
-    const season = await containingSeason(provider, credentials.contractAddress, window, head.number);
+    const season = await containingSeason(provider, credentials, window, head.number);
     await submit(credentials, "open_slot", [
       key.chainId,
       String(key.slotId),
@@ -78,14 +78,16 @@ export const markSlotRefundable = (credentials: Credentials, key: LedgerSlotKey,
       ]);
   });
 
-const containingSeason = async (provider: RpcProvider, address: string, window: Window, head: number) => {
+const containingSeason = async (provider: RpcProvider, ledger: LedgerContract, window: Window, head: number) => {
+  const address = ledger.contractAddress;
+  const from = await ledgerHistoryFrom(provider, ledger);
   const matches: { id: number; presetId: number }[] = [];
   let token: string | undefined;
   const seen = new Set<string>();
   do {
     const page = await provider.getEvents({
       address,
-      from_block: { block_number: 0 },
+      from_block: { block_number: from },
       to_block: { block_number: head },
       keys: [[hash.getSelectorFromName("SeasonOpened")]],
       chunk_size: 100,

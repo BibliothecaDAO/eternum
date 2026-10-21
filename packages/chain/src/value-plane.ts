@@ -16,6 +16,8 @@ export type ValueEnvironment = "staging" | "production";
 
 type AddressBook = Partial<Record<ValuePlaneContract, string>> & {
   l2Chain: string;
+  /** The block the ledger was deployed in, written with its address by setup. */
+  ledgerDeploymentBlock?: number;
 };
 
 /** Dev and production share mainnet, but never select contracts by network. */
@@ -47,6 +49,23 @@ export const valuePlaneAddress = (
   if (value === null)
     throw new ValuePlaneAddressMissingError(contract, environment);
   return value;
+};
+
+/**
+ * The block the environment's ledger was deployed in. No ledger event is older, so every scan of its history starts
+ * here; a book naming a ledger without it is refused.
+ */
+export const ledgerDeploymentBlock = (
+  environment: ValueEnvironment,
+): number => {
+  valuePlaneAddress("ledger", environment);
+  const { addresses, path } = addressBook(environment);
+  const block = addresses.ledgerDeploymentBlock;
+  if (typeof block !== "number" || !Number.isSafeInteger(block) || block <= 0)
+    throw new Error(
+      `contracts/common/addresses/${path} names a ledger without its deployment block (ledgerDeploymentBlock)`,
+    );
+  return block;
 };
 
 /** One environment book supplies every build and Worker's L2 and ledger; absence never selects another book. */

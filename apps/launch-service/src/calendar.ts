@@ -13,6 +13,17 @@ export interface SeasonPhase {
   endsAt: string;
 }
 
+/**
+ * The next Blitz game the schedule opens (`nextBlitzGame`, schedule.ts): its slot's name, its start, when its entry
+ * closes, and when the schedule opens it for entry, every one an ISO instant. The client shows it until it is opened.
+ */
+export interface NextBlitzGame {
+  name: string;
+  startsAt: string;
+  closesAt: string;
+  opensAt: string;
+}
+
 export interface CalendarStore {
   list(): Promise<SeasonPhase[]>;
   /** Sets a phase's dates: a phase not running moves freely; a running one keeps its start, and Frontier its end. */

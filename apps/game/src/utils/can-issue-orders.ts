@@ -9,7 +9,7 @@ import { configManager, getBlockTimestamp } from "@bibliothecadao/eternum";
  * Whether this viewer watches the game rather than plays it: the HUD spectates, or the session was entered to spectate
  * (`?spectate=true`) whatever the account owns. A watcher has nothing of their own in the game.
  */
-const isWatching = (state: { isSpectating: boolean } = useUIStore.getState()): boolean =>
+export const isWatching = (state: { isSpectating: boolean } = useUIStore.getState()): boolean =>
   state.isSpectating || isExplicitSpectateSession();
 
 /** The same, for a rendered surface. */

@@ -41,6 +41,9 @@ export const saveGameProfile = (profile: GameProfile) => {
 
 export const setActiveGame = (game: GameRef) => writeStorageValue(ACTIVE_KEY, gameKey(game));
 
+/** The active game's key (`gameKey`), as `setActiveGame` wrote it: its shard's chain id and its id there. */
+export const getActiveGameKey = (): string | null => readStorageValue(ACTIVE_KEY);
+
 export const getActiveGame = (): GameProfile | null => {
   const key = readStorageValue(ACTIVE_KEY);
   return key ? (readGameProfiles()[key] ?? null) : null;

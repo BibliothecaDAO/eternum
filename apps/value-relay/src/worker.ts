@@ -1,5 +1,6 @@
 import { joinShardOperator } from "./shard-account";
-import { decodeRelaySettings, ledgerAddress, type RelaySettings } from "./environment";
+import { decodeRelaySettings, ledgerAddress, ledgerContractOf, type RelaySettings } from "./environment";
+import { bindLedgerState, ledgerOrNull, ledgerStateName } from "./ledger-state";
 import {
   relayAccountAddress,
   activeShards,
@@ -70,6 +71,21 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     return Effect.runPromise(
       this.ingesting.withPermit(
         Effect.gen(function* () {
+          const bound = yield* Effect.result(
+            relayOperation("bind ledger state", () =>
+              bindLedgerState(
+                relay.ctx.storage,
+                ledgerOrNull(() => ledgerAddress(relay.env.ENVIRONMENT)),
+              ),
+            ),
+          );
+          if (Result.isFailure(bound)) {
+            const reason = bound.failure.operation;
+            const refused = { seasons: { error: reason }, checked_at: Math.floor(Date.now() / 1000), chests: null };
+            const observation = { ...refused, chest_error: reason };
+            yield* relayOperation("publish relay health", () => relay.ctx.storage.put("lastTick", observation));
+            return observation;
+          }
           const seasons = yield* Effect.result(
             onIdentityChain(
               relay.env.L2_RPC_URL,
@@ -437,19 +453,27 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
 };
 const ledgerCredentialsOf = (env: RelayEnv) => ({
   rpcUrl: env.L2_RPC_URL,
-  contractAddress: ledgerAddress(env.ENVIRONMENT),
+  ...ledgerContractOf(env.ENVIRONMENT),
   accountAddress: env.LEDGER_OPERATOR_ADDRESS,
   privateKey: env.LEDGER_OPERATOR_PRIVATE_KEY,
 });
 
 const chestPortsOf = (env: RelayEnv, permit: LedgerPermit) => ({
-  ...chestLedgerReads({ rpcUrl: env.L2_RPC_URL, contractAddress: ledgerAddress(env.ENVIRONMENT) }),
+  ...chestLedgerReads({ rpcUrl: env.L2_RPC_URL, ...ledgerContractOf(env.ENVIRONMENT) }),
   finish: (tokenId: string) => permit(finishChestOnLedger(ledgerCredentialsOf(env), tokenId)),
 });
 
 const relayOf = (env: RelayEnv, chainId: string) =>
   env.RELAY.get(env.RELAY.idFromName(`0x${BigInt(chainId).toString(16)}`));
-const ledgerOf = (env: RelayEnv) => env.RELAY.get(env.RELAY.idFromName("ledger"));
+const ledgerOf = (env: RelayEnv) =>
+  env.RELAY.get(
+    env.RELAY.idFromName(
+      ledgerStateName(
+        "ledger",
+        ledgerOrNull(() => ledgerAddress(env.ENVIRONMENT)),
+      ),
+    ),
+  );
 const heldOf = async (env: RelayEnv) =>
   (await Promise.all((await env.IDENTITY.shards()).map((shard) => relayOf(env, shard.chainId).shardHeld()))).flat();
 const healthOf = async (env: RelayEnv) => {

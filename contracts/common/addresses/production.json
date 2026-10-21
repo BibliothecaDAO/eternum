@@ -5,5 +5,6 @@
   "mmrToken": "0x203f682884764e0fb9f6dd00bc7c631df4e8cef9ba9feb19aff008f60c229bb",
   "lootChests": "0x611399a1f9d8cf4aed3dc05ca4b6f685b3cbd9a11ead2c71e5298a14e357d36",
   "cosmetics": "0x3f766fb2a59dc2a52401530ace02db47513fb68e0bb4ea5ad3ea75edf1e5cd9",
-  "ledger": "0x46ce2227913f9935ca977c499c51ff128162f0569955eafb0a8b40234f179f2"
+  "ledger": "0x46ce2227913f9935ca977c499c51ff128162f0569955eafb0a8b40234f179f2",
+  "ledgerDeploymentBlock": 16705306
 }

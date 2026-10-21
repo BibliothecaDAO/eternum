@@ -1,4 +1,5 @@
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
+import { useOpenGameSeats } from "@/hooks/use-watched-side";
 import { SentryUserSync } from "@/observability/sentry-user-sync";
 import { Leva } from "leva";
 import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overlay";
@@ -123,6 +124,7 @@ const HUD = () => {
   const mode = useGameModeConfig().id;
   useHudMode(hudModeOf(mode));
   const hud = hudFor(mode, expeditionRules !== null);
+  useOpenGameSeats();
   return (
     <>
       <GameChatConnection />

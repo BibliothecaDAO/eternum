@@ -1,5 +1,5 @@
 import { useIdentitySession } from "@/hooks/context/identity-session";
-import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
+import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";

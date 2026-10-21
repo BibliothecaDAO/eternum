@@ -439,7 +439,8 @@ describe("the HUD's layout on the map", () => {
 
 describe("the plate steps (a live Blitz's map plates, read as drawn)", () => {
   const verify = STEP_SETS["blitz-plates"].steps.find((step) => step.name === "plates-hovered").verify;
-  const clear = { labels: 34, opened: 1, tokens: 33, orderLine: null, overlaps: [], crowded: [], things: [] };
+  const sides = { own: "rgb(102, 221, 171)", ally: "rgb(106, 168, 255)", enemy: "rgb(255, 123, 107)" };
+  const clear = { labels: 34, opened: 1, tokens: 33, orderLine: null, overlaps: [], crowded: [], sides, things: [] };
 
   it("completes when no reading holds a token, plate or order line over or crowding another", () => {
     const played = {

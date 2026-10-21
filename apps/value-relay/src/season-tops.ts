@@ -24,12 +24,14 @@ interface Page {
   rows: readonly Change[];
   head: number;
   next: string | null;
+  /** Where the scan runs from: the saved block, or the ledger's deployment block on the first page. */
+  from: number;
 }
 export interface SeasonPorts {
   head(): Promise<Head>;
   blockHash(number: number): Promise<string>;
-  changes(from: number, cursor: string | null, head: number): Promise<Page>;
-  posts(from: number, cursor: string | null, head: number): Promise<Page>;
+  changes(from: number | undefined, cursor: string | null, head: number): Promise<Page>;
+  posts(from: number | undefined, cursor: string | null, head: number): Promise<Page>;
   season(id: number, head: number): Promise<Season>;
   mmr(id: number, wallet: string, head: number): Promise<string>;
   winner(id: number, index: number, head: number): Promise<string>;
@@ -43,7 +45,8 @@ interface Store {
   list<A>(options: { prefix: string; limit: number; startAfter?: string }): Promise<Map<string, A>>;
 }
 interface Cursor {
-  from: number;
+  /** Absent until the first page is read. */
+  from?: number;
   token: string | null;
   head: number;
   hash: string;
@@ -164,8 +167,8 @@ async function ingestSeasonEvents(
   const saved = await store.get<Cursor>(key);
   if (saved && (head.number < saved.head || BigInt(await ports.blockHash(saved.head)) !== BigInt(saved.hash)))
     throw new Error("season_event_anchor_changed");
-  const cursor = saved ?? { from: 0, token: null, head: head.number, hash: head.hash };
-  if (cursor.from > head.number) return true;
+  const cursor: Cursor = saved ?? { token: null, head: head.number, hash: head.hash };
+  if (cursor.from !== undefined && cursor.from > head.number) return true;
   const pin = cursor.token ? cursor.head : head.number;
   if (cursor.token && BigInt(await ports.blockHash(pin)) !== BigInt(cursor.hash))
     throw new Error("season_event_anchor_changed");
@@ -182,7 +185,7 @@ async function ingestSeasonEvents(
     }
   }
   await store.put(key, {
-    from: page.next ? cursor.from : pin + 1,
+    from: page.next ? page.from : pin + 1,
     token: page.next,
     head: pin,
     hash: cursor.token ? cursor.hash : head.hash,

@@ -4,9 +4,11 @@ const address = vi.hoisted(() => vi.fn(() => "0x10"));
 vi.mock("./environment", async (original) => ({
   ...(await original<typeof import("./environment")>()),
   ledgerAddress: address,
+  ledgerContractOf: () => ({ contractAddress: address(), deploymentBlock: 1 }),
 }));
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
+import { ValuePlaneAddressMissingError } from "@realms-world/chain";
 import worker, { ValueRelay } from "./worker";
 
 vi.mock("cloudflare:workers", () => ({
@@ -71,7 +73,7 @@ beforeEach(() => {
 });
 it("records unavailable ledger work while shard ingestion and owned Realm labor continue", async () => {
   address.mockImplementation(() => {
-    throw new Error("ledger not deployed");
+    throw new ValuePlaneAddressMissingError("ledger", "production");
   });
   const data = new Map<string, unknown>();
   const storage = {

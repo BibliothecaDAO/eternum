@@ -1,5 +1,5 @@
 import { Account } from "starknet";
-import { ledgerChestChanges } from "./ledger";
+import { ledgerChestChanges, type LedgerContract } from "./ledger";
 import { relayOperation, type ChestPorts } from "./ports";
 import { rpcAt, readConfirmedLedgerHead, decodeChest } from "@realms-world/value-ledger";
 
@@ -12,9 +12,8 @@ interface Signer extends Connection {
   privateKey: string;
 }
 
-export const chestLedgerReads = (connection: Connection): Omit<ChestPorts, "finish"> => ({
-  changes: (fromBlock, cursor, anchor) =>
-    ledgerChestChanges(connection.rpcUrl, connection.contractAddress, fromBlock, cursor, anchor),
+export const chestLedgerReads = (connection: Connection & LedgerContract): Omit<ChestPorts, "finish"> => ({
+  changes: (fromBlock, cursor, anchor) => ledgerChestChanges(connection.rpcUrl, connection, fromBlock, cursor, anchor),
   head: () =>
     relayOperation("read chest head", async () => {
       return (await readConfirmedLedgerHead(rpcAt(connection.rpcUrl))).number;

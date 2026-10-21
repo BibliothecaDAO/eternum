@@ -5,6 +5,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type PlayerNames, usePlayerDisplayName, usePlayerNames } from "@/hooks/use-player-profile";
 import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
+import { PlayerSeatMark } from "@/hooks/use-watched-side";
 import { LordName } from "./realm-marks";
 import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -137,7 +138,12 @@ const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow 
   key: entry.address,
   rank: entry.rank,
   order: entry.order,
-  name: <LordName account={entry.address} you={own} />,
+  name: (
+    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
+      <PlayerSeatMark account={entry.address} name={names.text(entry.address)} />
+      <LordName account={entry.address} you={own} />
+    </span>
+  ),
   label: names.text(entry.address),
   sitesCleared: entry.sites_cleared.total,
   lords: wholeLords(entry.rewards.lords),

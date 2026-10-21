@@ -4,7 +4,7 @@ import { HudTierChip } from "@/ui/design-system/kit/hud-elements";
 import { UNDEFENDED } from "@/ui/design-system/kit/words";
 
 import { chipWidth, labelWidth } from "./map-plate-layout";
-import { type MapPlate, type PlateTroops } from "./map-plate-model";
+import { type MapPlate, type PlateTroops, type PlateWatched } from "./map-plate-model";
 
 /**
  * What a token says: whose, what kind, how strong (tier and count, or undefended), an army's stamina. Never what a site
@@ -23,6 +23,8 @@ interface TokenReading {
   undefended: boolean;
   /** An army's stamina, 0 to 1. */
   stamina: number | null;
+  /** To a watching viewer, its player's initial on the disk, in their seat's colour. */
+  mark: PlateWatched["mark"];
 }
 
 export const tokenReading = (plate: MapPlate): TokenReading => {
@@ -33,6 +35,7 @@ export const tokenReading = (plate: MapPlate): TokenReading => {
       beast: null,
       undefended: false,
       stamina: plate.stamina ? plate.stamina.current / plate.stamina.max : null,
+      mark: plate.watched?.mark ?? null,
     };
   const guards = plate.guards ?? [];
   return {
@@ -49,6 +52,7 @@ export const tokenReading = (plate: MapPlate): TokenReading => {
     beast: plate.beast ?? null,
     undefended: plate.guards !== null && guards.length === 0,
     stamina: null,
+    mark: plate.watched?.mark ?? null,
   };
 };
 
@@ -82,6 +86,11 @@ const TokenView = ({ reading }: { reading: TokenReading }) => (
   <div className="mp-token" role="img" aria-label={tokenWords(reading)}>
     <span className="mp-token__disk" data-undefended={reading.undefended}>
       <Icon name={reading.icon} size={20} />
+      {reading.mark && (
+        <span className="ui-seat mp-token__seat" data-ink={reading.mark.ink} aria-hidden>
+          {reading.mark.letter}
+        </span>
+      )}
     </span>
     {reading.strength && (
       <span className="mp-token__strip">

@@ -5,7 +5,7 @@ import { signOutIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { forgetDeviceKey } from "@bibliothecadao/eternum";
 
-import { useRequestSignIn } from "./sign-in/sign-in-route";
+import { useRequestSignIn } from "./sign-in/connect";
 
 const buttonClass =
   "rounded-thumb border border-kit-gold/40 px-3 py-2 font-body text-sm text-kit-gold hover:bg-kit-gold/10 disabled:opacity-50";

@@ -2,7 +2,7 @@
  * The app sheet's captures: the app's real pages over the app lab's fixtures (/lab/app/<screen>/<page>), each element of
  * the app sheet (/lab/kit/app, by its `data-sheet-element`). The pages the sheet has moved (Play, the Blitz lobby,
  * Season, Results sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844, and checked; so are
- * the account's pages (`account`: sign-in's steps, You, Settings and what its rows open) and the doorway into a game at
+ * the account's pages (`account`: Connect's steps, You, Settings and what its rows open) and the doorway into a game at
  * each of its holds (`doorway`).
  *
  *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1] [--state <signed-in.json>]
@@ -104,13 +104,14 @@ const entryChecks = (b) => {
 };
 
 /**
- * The account's pages (sign-in's steps, You, Settings), each at its fixture state and, where a row opens a step, with
+ * The account's pages (Connect's steps, You, Settings), each at its fixture state and, where a row opens a step, with
  * that row pressed as a player presses it: shot on the desktop and on a phone, and checked as a page on the app sheet.
- * Sign-in is a full-screen step, with no places.
+ * Connect's steps open in its window over Play, whose place stays lit.
  */
 const ACCOUNT_PAGES = {
   you: { path: "home/profile", place: "You" },
-  "you-signed-out": { path: "first-visit/profile", place: "You" },
+  // Signed out, You's place reads Connect, and it is the one lit on You's page.
+  "you-signed-out": { path: "first-visit/profile", place: "Connect" },
   "you-unnamed": { path: "unnamed/profile", place: "You" },
   settings: { path: "home/profile/settings", place: "You" },
   "settings-name": { path: "home/profile/settings", place: "You", press: "Name" },
@@ -118,10 +119,11 @@ const ACCOUNT_PAGES = {
   "settings-wallet-none": { path: "wallet-none/profile/settings", place: "You", press: "Payout wallet" },
   "settings-wallet-linked": { path: "wallet-ready/profile/settings", place: "You", press: "Payout wallet" },
   "settings-sign-out": { path: "home/profile/settings", place: "You", press: "Sign out" },
-  "sign-in-start": { path: "first-visit/sign-in/start", place: null },
-  "sign-in-code": { path: "first-visit/sign-in/code", place: null },
-  "sign-in-name": { path: "first-visit/sign-in/name", place: null },
-  "sign-in-name-refused": { path: "first-visit/sign-in/name-refused", place: null },
+  "connect-start": { path: "first-visit/connect/start", place: "Play" },
+  "connect-code": { path: "first-visit/connect/code", place: "Play" },
+  "connect-discord": { path: "first-visit/connect/discord", place: "Play" },
+  "connect-name": { path: "first-visit/connect/name", place: "Play" },
+  "connect-name-refused": { path: "first-visit/connect/name-refused", place: "Play" },
 };
 
 /** What holds for a page drawn whole: it did not fall to the error boundary, and it does not scroll sideways. */
@@ -198,12 +200,15 @@ const sheetPageChecks = (page) => (b) => {
       broken: [...document.querySelectorAll("img")]
         .filter((image) => !(image.complete && image.naturalWidth > 0))
         .map((image) => image.currentSrc || image.src),
-      goldVerbs: document.querySelectorAll('.app-button[data-kind="primary"], .frontier-primary').length,
+      // The gold verbs the player can press now: a layer over the page (a dialog, Connect) leaves the page under it inert.
+      goldVerbs: [...document.querySelectorAll('.app-button[data-kind="primary"], .frontier-primary')].filter((verb) => !verb.closest("[inert]")).length,
       // Each age column's band of painting above its games, as computed.
       ageBands: [...document.querySelectorAll(".app-age-column__body")].map((body) => getComputedStyle(body).paddingTop),
-      // A phone's first screen ends where its notice or foot row begins: a control straddling that edge is half hidden.
+      // A phone's first screen loses what its notice or foot row covers: a control straddling the top of either is half
+      // hidden by it. The tab bar ends every phone screen, as a window's edge does, so a list folding there is cut by
+      // neither.
       cutAtEdge: (() => {
-        const bands = ["notice", "foot", "tabs"].map((name) => document.querySelector('[data-band="' + name + '"]')).filter(Boolean);
+        const bands = ["notice", "foot"].map((name) => document.querySelector('[data-band="' + name + '"]')).filter(Boolean);
         if (!body || bands.length === 0) return [];
         const edge = Math.min(...bands.map((band) => band.getBoundingClientRect().top));
         return [...document.querySelectorAll('[data-band="body"] :is(a[href], button), [data-band="footer"] a[href]')]

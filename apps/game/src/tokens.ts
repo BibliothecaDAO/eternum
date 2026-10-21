@@ -432,11 +432,17 @@ export const HUD_SHEET = {
   dark: channels(HUD_COLORS.ink),
   /** An input's or a map's recess. */
   well: "rgb(0 0 0 / 0.4)",
-  /** Whose a thing is: yours, an ally's, an enemy's, nobody's. */
-  own: HUD_COLORS.gold2,
-  ally: "#7fd6cf",
+  /**
+   * Whose a thing is, in three sides (owner, 2026-10-21: "red for everything thats not me, blue for allies ... and green
+   * for me"): yours green, an ally's (a tribe member's) blue, anyone else's red, nobody's too. A watching viewer has no
+   * side: each player takes their seat's colour (SEAT_COLOURS) and nobody's things `neutral`.
+   */
+  own: "#66ddab",
+  ally: "#6aa8ff",
   enemy: "#ff7b6b",
   neutral: "#b9b1a1",
+  /** The ring round the selected thing on the map, whoever's it is. */
+  selected: HUD_COLORS.gold2,
   /** How a thing stands: good (ready, gained), bad (refused, lost), warn (costly, waiting). */
   good: "#66ddab",
   bad: "#ff7b6b",
@@ -629,6 +635,63 @@ export const hudModeVariables = (mode: HudMode): Record<string, string> => ({
   ...Object.fromEntries(Object.entries(HUD_MODES[mode]).map(([name, value]) => [`--hud-${name}`, value])),
   ...Object.fromEntries(Object.entries(HUD_DERIVED).map(([name, value]) => [`--hud-${name}`, value])),
 });
+
+/**
+ * A watching viewer's colour for each player's seat (owner, 2026-10-21: "when you're spectating maybe a diff color for
+ * every player"; "yeah the labels are great now"). 24 colours picked in OKLab, each the farthest from those before it and
+ * from the map's desert and grass, so the first N are the best N for an N-player game; each keeps a plate's count
+ * readable on its tint (4.5:1) and its ring off the dark disk (3:1). A seat past the 24th takes the colours again, from
+ * the first: its player's initial and name still tell it apart.
+ */
+export const SEAT_COLOURS = [
+  "#fd7562",
+  "#4aea7d",
+  "#3fa0fa",
+  "#b954cf",
+  "#30a100",
+  "#eaaef8",
+  "#f0c12a",
+  "#54dcf2",
+  "#5f6fa1",
+  "#a79d62",
+  "#b88ab3",
+  "#de4181",
+  "#1eb39e",
+  "#f5b6a0",
+  "#7370fa",
+  "#118659",
+  "#acd5a3",
+  "#bf6e3e",
+  "#f57bec",
+  "#a5bf36",
+  "#94b2e4",
+  "#955e78",
+  "#767700",
+  "#ab81ef",
+] as const;
+
+/** A side told by seat: the seat's colour and the ink its initial is written in; nobody's (no seat) in neutral grey. */
+export type SeatSide = { seat: number; colour: string; ink: "dark" | "light" } | { seat: null; colour: string };
+
+/** The seat's side: its colour (SEAT_COLOURS, again from the first past the 24th), or grey for nobody's. */
+export const seatSide = (seat: number | null): SeatSide => {
+  if (seat === null || seat < 0) return { seat: null, colour: HUD_SHEET.neutral };
+  const colour = SEAT_COLOURS[seat % SEAT_COLOURS.length];
+  // The initial is written in whichever of the HUD's dark ink and its cream reads better on the colour (WCAG contrast).
+  const own = luminance(colour);
+  const onDark = (own + 0.05) / (luminance(HUD_COLORS.ink) + 0.05);
+  const onCream = (luminance(HUD_COLORS.cream) + 0.05) / (own + 0.05);
+  return { seat, colour, ink: onDark >= onCream ? "dark" : "light" };
+};
+
+/** A #rrggbb colour's relative luminance (WCAG 2). */
+const luminance = (colour: string): number => {
+  const [r, g, b] = [1, 3, 5].map((at) => {
+    const channel = parseInt(colour.slice(at, at + 2), 16) / 255;
+    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
 
 /** Map scope: appearance only. Live managers keep their shipped presentation until approval. */
 export const MAP_SHEET = {

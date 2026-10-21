@@ -18,9 +18,8 @@ import { PlayPage } from "./shell/play/play-page";
 import { PlayerPage, ProfilePage, SettingsPage } from "./shell/profile/profile-pages";
 import { ResultsPage } from "./shell/season-tab/results-page";
 import { SeasonPage } from "./shell/season-tab/season-page";
-import { SignInPage } from "./shell/sign-in/sign-in-page";
 import { FirstFrame } from "./shell/first-frame";
-import { SIGN_IN_PATH } from "./shell/sign-in/sign-in-route";
+import { ConnectFlow } from "./shell/sign-in/connect-flow";
 
 const LabApp = lazy(() => import("./lab/lab-app").then((module) => ({ default: module.LabApp })));
 // Reading matter loads on demand, so the cold path carries no post or legal text.
@@ -32,11 +31,12 @@ const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({
 const AppFallback = FirstFrame;
 
 /**
- * Play's former pages, shared publicly before Play took them in: each still leads to Play. `public/_redirects` answers a
- * full load with a permanent redirect; these routes answer the app's own navigation and the dev server, which serve
- * the shell for every path.
+ * Former pages: Play's, shared publicly before Play took them in, and the sign-in page Connect replaced (a link to it,
+ * or a Discord return started before it went): each leads to Play. `public/_redirects` answers a full load with a
+ * permanent redirect; these routes answer the app's own navigation and the dev server, which serve the shell for every
+ * path.
  */
-export const RETIRED_PLAY_PATHS = ["/blitz", "/frontier", "/eternum", "/dominion"] as const;
+export const RETIRED_PATHS = ["/blitz", "/frontier", "/eternum", "/dominion", "/sign-in"] as const;
 
 const LazyRoute = ({ children }: { children: ReactNode }) => <Suspense fallback={<AppFallback />}>{children}</Suspense>;
 
@@ -48,7 +48,7 @@ export const appRoutes = (
   <>
     <Route element={<AppShell />}>
       <Route index element={<PlayPage />} />
-      {RETIRED_PLAY_PATHS.map((path) => (
+      {RETIRED_PATHS.map((path) => (
         <Route key={path} path={path.slice(1)} element={<Navigate to="/" replace />} />
       ))}
       <Route path="blitz/:id" element={<BlitzLobbyPage />} />
@@ -84,7 +84,6 @@ export const appRoutes = (
       />
       <Route path="*" element={<NotFoundPage />} />
     </Route>
-    <Route path={SIGN_IN_PATH} element={<SignInPage />} />
     <Route
       path="/g/:chain/:game/*"
       element={
@@ -117,6 +116,7 @@ function App() {
         <PwaUpdateRuntime />
         <PwaInstallRuntime />
         <Routes>{appRoutes}</Routes>
+        <ConnectFlow />
       </QueryClientProvider>
     </BrowserRouter>
   );

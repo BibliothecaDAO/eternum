@@ -11,6 +11,7 @@ const rpc = vi.hoisted(() => ({
   block: vi.fn(),
   events: vi.fn(),
   number: vi.fn(),
+  classAt: vi.fn(),
 }));
 vi.mock("starknet", async (original) => ({
   ...(await original<typeof import("starknet")>()),
@@ -21,6 +22,7 @@ vi.mock("starknet", async (original) => ({
       getBlock: rpc.block,
       getEvents: rpc.events,
       getBlockNumber: rpc.number,
+      getClassHashAt: rpc.classAt,
     };
   }),
   Account: vi.fn(function () {
@@ -30,6 +32,8 @@ vi.mock("starknet", async (original) => ({
 const connection = {
   rpcUrl: "https://ledger.test",
   contractAddress: "0x10",
+  // The ledger first exists at block 50, as its address book says.
+  deploymentBlock: 50,
   accountAddress: "0x20",
   privateKey: "unused-test-key",
 };
@@ -97,13 +101,18 @@ it.each([
       },
     ],
   });
-  const page = await Effect.runPromise(ledgerChestChanges(connection.rpcUrl, connection.contractAddress, 90, null));
+  rpc.classAt.mockImplementation(async (_address: string, block: number) => {
+    if (block < 50) throw Object.assign(new Error("Contract not found"), { code: 20 });
+    return "0xc1a55";
+  });
+  // A saved block without its anchor cannot continue: the scan restarts at the ledger's deployment block.
+  const page = await Effect.runPromise(ledgerChestChanges(connection.rpcUrl, connection, 90, null));
   expect(page.rows).toEqual([
     { kind: "requested", request: { tokenId: "7", requester: "0x123", requestBlock: 100 } },
     { kind: "finished", tokenId: "7" },
   ]);
   expect(rpc.events.mock.calls[0]![0]).toMatchObject({
-    from_block: { block_number: 0 },
+    from_block: { block_number: 50 },
     to_block: { block_number: 111 },
   });
 });

@@ -1,13 +1,7 @@
 {
-"version": 2,
-"rewrites": [
-    {
-    "source": "/trade/:collection*",
-    "destination": "/index.html"
-    },
-    {
-    "source": "/(.*)",
-    "destination": "/index.html"
-    }
-]
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm run build:docs",
+  "outputDirectory": "apps/game-docs/dist",
+  "ignoreCommand": "case \"$VERCEL_URL\" in eternum-docs-*) exit 1 ;; *) exit 0 ;; esac",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }

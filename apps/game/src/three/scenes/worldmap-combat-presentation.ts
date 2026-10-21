@@ -5,11 +5,21 @@ import type { ProceduralMeleeContactEvent, ProceduralRangedReleaseEvent } from "
 import type { ProceduralImpactAuthority } from "@/three/characters/collision/procedural-impact";
 import type { CombatPresentationCoordinator } from "@/three/combat/combat-presentation-coordinator";
 import type { ArmyManager } from "@/three/managers/army-manager";
+import type { ArmyData } from "@/three/types/common";
 
 import { getWorldPositionForHex } from "../utils";
 
+/** What the bridge asks of the armies on the map: the world map's army manager, or a lab's character layer. */
+type CombatPresentationArmies = Pick<
+  ArmyManager,
+  | "onProceduralRangedRelease"
+  | "onProceduralMeleeContact"
+  | "presentProceduralProjectileImpact"
+  | "playProceduralAttack"
+> & { getArmy(entityId: ID): Pick<ArmyData, "category" | "tier"> | undefined };
+
 export interface WorldmapCombatPresentationDeps {
-  armyManager: ArmyManager;
+  armyManager: CombatPresentationArmies;
   getCombatPresentation: () => CombatPresentationCoordinator | undefined;
   getArmyDisplayPosition: (entityId: ID) => HexPosition | undefined;
   getStructureHexPosition: (entityId: ID) => HexPosition | undefined;

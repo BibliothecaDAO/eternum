@@ -13,7 +13,7 @@ const fixture = vi.hoisted(() => ({
   zone: {} as Record<string, unknown>,
 }));
 vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ status: fixture.status }) }));
-vi.mock("@/shell/sign-in/sign-in-route", () => ({ useRequestSignIn: () => fixture.signIn }));
+vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => fixture.signIn }));
 const NAMES = vi.hoisted(() => ({ text: () => "Ada", reading: () => ({ state: "waiting" as const, text: "…" }) }));
 vi.mock("@/hooks/use-player-profile", () => ({ resolveChatSenderName: () => "Ada", usePlayerNames: () => NAMES }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => null }));

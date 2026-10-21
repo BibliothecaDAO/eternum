@@ -38,6 +38,8 @@ export function setupQuestions(target: Target): [keyof Inputs, string][] {
     ["cloudflareToken", "Cloudflare token"],
     ["rpc", "Alchemy mainnet URL"],
     ["resend", "Resend key"],
+    ["discordClientId", "Discord client ID"],
+    ["discordClientSecret", "Discord client secret"],
     ...(sendsAlerts(target)
       ? [["alertEmail", "Alert email (where the status monitor reports incidents)"] as [keyof Inputs, string]]
       : []),
@@ -66,6 +68,8 @@ export function validateInputs(input: Inputs, target: Target) {
   )
     throw new PublicError("Use the Alchemy mainnet HTTPS endpoint");
   if (!input.cloudflareToken || !input.resend) throw new PublicError("Cloudflare and Resend credentials are required");
+  if (!input.discordClientId || !input.discordClientSecret)
+    throw new PublicError("Discord sign-in needs its client ID and secret in inputs.json");
   if (!sendsAlerts(target) && input.alertEmail !== undefined)
     throw new PublicError("Dev sends no alert email; remove alertEmail from inputs.json");
   if (sendsAlerts(target) && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.alertEmail ?? ""))

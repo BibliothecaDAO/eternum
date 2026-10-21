@@ -83,15 +83,32 @@ export const PLATES_EXPRESSION = `JSON.stringify((() => {
     }
     return null;
   };
+  // A label's side colour as drawn: a token's ring and plate, an opened plate's left bar, every stamina bar. A selected
+  // label's ring and bar are the selection's gold, not its side's.
+  const colour = (node, property) => (node ? getComputedStyle(node)[property] : null);
+  const coloursOf = (at, plate, selected) => {
+    const bars = [...at.querySelectorAll(".mp-plate__stamina > i, .mp-plate__meter > i")].map((bar) => colour(bar, "backgroundColor"));
+    const edges = selected
+      ? []
+      : plate
+        ? [colour(plate, "borderLeftColor")]
+        : [colour(at.querySelector(".mp-token__disk"), "borderTopColor"), colour(at.querySelector(".mp-token__strip"), "borderTopColor")];
+    return [...edges, ...bars].filter(Boolean);
+  };
   const things = [...document.querySelectorAll(".mp-at")]
     .filter((at) => at.firstElementChild && shown(at))
     .map((at) => {
       const plate = at.querySelector(".mp-plate");
+      const selected = at.dataset.selected === "true";
       return {
         kind: plate ? "plate" : "token",
         key: at.dataset.key,
         open: plate?.dataset.open === "true",
-        selected: at.dataset.selected === "true",
+        selected,
+        side: at.dataset.relation,
+        // To a watching viewer, the player's seat ("none" for nobody's), told by its colour in place of the side's.
+        seat: at.dataset.seat,
+        colours: coloursOf(at, plate, selected),
         text: words(at),
         over: thingOf(at.dataset.key),
         ...box(at.firstElementChild.getBoundingClientRect()),
@@ -112,6 +129,17 @@ export const PLATES_EXPRESSION = `JSON.stringify((() => {
   // What takes a pointer in the label layer: any element not set to let it through, and each label (the order line
   // too) that a click at its middle would land on.
   const layer = document.querySelector(".mp");
+  // The page's three side colours (HUD_SHEET own, ally, enemy), and nobody's to a watching viewer, resolved as a drawn
+  // colour is.
+  const sides = {};
+  if (layer)
+    for (const side of ["own", "ally", "enemy", "neutral"]) {
+      const probe = document.createElement("i");
+      probe.style.color = \`var(--hud-\${side})\`;
+      layer.append(probe);
+      sides[side] = getComputedStyle(probe).color;
+      probe.remove();
+    }
   const takers = layer ? [layer, ...layer.querySelectorAll("*")].filter((element) => getComputedStyle(element).pointerEvents !== "none").length : 0;
   const caught = things.flatMap((thing) => {
     const hit = document.elementFromPoint(thing.x + thing.w / 2, thing.y + thing.h / 2);
@@ -121,6 +149,7 @@ export const PLATES_EXPRESSION = `JSON.stringify((() => {
     takers,
     caught,
     world: Boolean((world?.camera && canvas) || lab),
+    sides,
     labels: things.filter((thing) => thing.kind !== "order line").length,
     opened: things.filter((thing) => thing.open).length,
     tokens: things.filter((thing) => thing.kind === "token").length,
@@ -189,8 +218,54 @@ const againstTheirThings = (seen) => {
 };
 
 /**
+ * The labels not drawn in their side's colour. A playing viewer sees three sides (owner, 2026-10-21: "red for everything
+ * thats not me, blue for allies ... and green for me"), so an enemy's and nobody's are both the enemy's red; `alike` when
+ * the page's three side colours are not three. A watching viewer sees each player's seat (side-colours-4): every label of
+ * one seat in one colour, two seats in view never in the same one (seats 24 apart share it by design), nobody's grey;
+ * `mixed` when some labels are watched and others not.
+ */
+const SEAT_COLOURS = 24;
+const offSide = (seen, sides) => {
+  const labels = seen.things.filter((thing) => thing.kind !== "order line");
+  const watched = labels.filter((thing) => thing.seat !== undefined);
+  if (watched.length > 0) {
+    const mixed = watched.length < labels.length;
+    const colourOf = new Map();
+    const off = [];
+    for (const thing of watched) {
+      const drawn = new Set(thing.colours ?? []);
+      const colour = [...drawn][0];
+      const wanted =
+        thing.seat === "none" ? sides.neutral : (colourOf.get(Number(thing.seat) % SEAT_COLOURS) ?? colour);
+      if (thing.seat !== "none") colourOf.set(Number(thing.seat) % SEAT_COLOURS, wanted);
+      if (drawn.size > 1 || (colour !== undefined && colour !== wanted))
+        off.push({ label: thing.text || thing.key, seat: thing.seat, colours: thing.colours, wanted });
+    }
+    const seatsOfColour = new Map();
+    for (const [seatIndex, colour] of colourOf)
+      seatsOfColour.set(colour, [...(seatsOfColour.get(colour) ?? []), seatIndex]);
+    const shared = [...seatsOfColour]
+      .filter(([, seats]) => seats.length > 1)
+      .map(([colour, seats]) => ({ colour, seats }));
+    return { alike: false, mixed, off, shared, watched: true };
+  }
+  const alike = new Set([sides.own, sides.ally, sides.enemy]).size < 3 || !sides.own || !sides.ally || !sides.enemy;
+  const wanted = (side) => sides[side === "own" || side === "ally" ? side : "enemy"];
+  const off = labels
+    .filter((thing) => (thing.colours ?? []).some((drawn) => drawn !== wanted(thing.side)))
+    .map((thing) => ({
+      label: thing.text || thing.key,
+      side: thing.side,
+      colours: thing.colours,
+      wanted: wanted(thing.side),
+    }));
+  return { alike, mixed: false, off, shared: [], watched: false };
+};
+
+/**
  * A reading's verdict: no label takes a pointer (owner, 2026-10-20: "the label must not be clickable"); every label
- * stands above its thing, over it, never on it nor away from it; no token, plate or
+ * is drawn in its side's colour, one of three, or to a watching viewer in its player's seat colour; every label stands
+ * above its thing, over it, never on it nor away from it; no token, plate or
  * order line overlaps or crowds another; and, given the reading before anything opened, every opened plate covers where
  * its token was. A view with no label drawn (zoomed out, or off the world) has nothing to judge: blocked, not passed.
  */
@@ -200,6 +275,18 @@ export const judgePlates = (seen, before = null) => {
     return failed(`labels take pointer input: ${seen.takers} elements, a click caught on ${seen.caught?.length ?? 0}`, {
       seen,
     });
+  const sided = offSide(seen, seen.sides ?? {});
+  if (sided.alike) return failed("the page's three side colours are not three", { seen, sides: seen.sides });
+  if (sided.mixed) return failed("some labels are told by seat and others by side", { seen });
+  if (sided.off.length > 0)
+    return failed(
+      sided.watched
+        ? `${sided.off.length} labels not drawn in their seat's colour`
+        : `${sided.off.length} labels not drawn in their side's colour`,
+      { seen, offSide: sided.off },
+    );
+  if (sided.shared.length > 0)
+    return failed(`${sided.shared.length} colours drawn for more than one seat`, { seen, shared: sided.shared });
   const { standing, off, unmeasured } = againstTheirThings(seen);
   if (off.length > 0) return failed(`${off.length} labels stand on their thing or away from it`, { seen, off });
   const { measured, far } = before ? awayFromTokens(seen, before) : { measured: [], far: [] };

@@ -5,6 +5,7 @@ vi.mock("./environment", async (original) => ({
 }));
 import { Effect } from "effect";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ValuePlaneAddressMissingError } from "@realms-world/chain";
 import worker, { ValueMonitor } from "./monitor-worker";
 import { runMonitor, type MonitorProgress } from "./monitor";
 import type { MonitorPorts } from "./ports";
@@ -148,7 +149,14 @@ describe.each(["paidClaims", "postedResults"] as const)(
     };
     const pause = vi.fn(() => Effect.void);
     const page = <A>(rows: A[]) =>
-      Effect.succeed({ rows, head: 10, anchor: { number: 10, hash: ledger.anchor }, rewind: true, next: null });
+      Effect.succeed({
+        rows,
+        head: 10,
+        anchor: { number: 10, hash: ledger.anchor },
+        rewind: true,
+        fromBlock: 1,
+        next: null,
+      });
     const ports: MonitorPorts = {
       // The check always disagrees: neither identity nor the shard matches the ledger.
       identity: { matchesPayDecision: () => Effect.succeed(false) },
@@ -205,7 +213,7 @@ describe.each(["paidClaims", "postedResults"] as const)(
 
 it("records the missing ledger after running shard conservation", async () => {
   address.mockImplementation(() => {
-    throw new Error("ledger not deployed");
+    throw new ValuePlaneAddressMissingError("ledger", "production");
   });
   const f = fixture();
   for (let tick = 0; tick < 5; tick++) {

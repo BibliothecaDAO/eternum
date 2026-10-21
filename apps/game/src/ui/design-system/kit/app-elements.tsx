@@ -1,6 +1,15 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { type AnchorHTMLAttributes, type ButtonHTMLAttributes, type KeyboardEvent, type ReactNode, useId } from "react";
+import {
+  type AnchorHTMLAttributes,
+  type ButtonHTMLAttributes,
+  type KeyboardEvent,
+  type ReactNode,
+  type RefObject,
+  useEffect,
+  useId,
+  useRef,
+} from "react";
 import { Link, type To, useNavigate } from "react-router-dom";
 
 import { BACK } from "./words";
@@ -166,6 +175,8 @@ export const AppLink = ({ to, ...rest }: { to: string } & Omit<AnchorHTMLAttribu
 /** One place of the app's bar: where it leads, its word, its icon (or the player's portrait), and whether it is here. */
 type AppBarPlace = {
   to: string;
+  /** A place that opens over the page instead of leading anywhere (Connect), lit when it stands in the page's place. */
+  onSelect?: () => void;
   label: string;
   icon?: IconMeaning;
   /** The player's portrait: the place shows the player (their name and portrait) instead of its word and icon. */
@@ -205,29 +216,42 @@ export const AppTopBar = ({
   </header>
 );
 
-const AppBarLink = ({ place }: { place: AppBarPlace }) => (
-  <AppLink
-    to={place.to}
-    data-role="tab"
-    aria-current={place.current ? "page" : undefined}
-    aria-label={place.place !== undefined ? `${place.place}: ${place.label}` : undefined}
-    className={cn("app-bar__place", place.portrait !== undefined && "app-bar__player")}
-  >
-    {place.portrait !== undefined ? (
-      <>
-        <span className="app-bar__name" title={place.label}>
+const AppBarLink = ({ place }: { place: AppBarPlace }) =>
+  place.onSelect ? (
+    <button
+      type="button"
+      data-role="tab"
+      aria-current={place.current ? "page" : undefined}
+      onClick={place.onSelect}
+      className="app-bar__place"
+    >
+      {place.icon && <Icon name={place.icon} size={24} />}
+      {place.label}
+    </button>
+  ) : (
+    <AppLink
+      to={place.to}
+      data-role="tab"
+      aria-current={place.current ? "page" : undefined}
+      aria-label={place.place !== undefined ? `${place.place}: ${place.label}` : undefined}
+      data-player={place.portrait !== undefined || undefined}
+      className={cn("app-bar__place", place.portrait !== undefined && "app-bar__player")}
+    >
+      {place.portrait !== undefined ? (
+        <>
+          <span className="app-bar__name" title={place.label}>
+            {place.label}
+          </span>
+          <AppPortrait src={place.portrait} name={place.label} size="sm" own />
+        </>
+      ) : (
+        <>
+          {place.icon && <Icon name={place.icon} size={24} />}
           {place.label}
-        </span>
-        <AppPortrait src={place.portrait} name={place.label} size="sm" own />
-      </>
-    ) : (
-      <>
-        {place.icon && <Icon name={place.icon} size={24} />}
-        {place.label}
-      </>
-    )}
-  </AppLink>
-);
+        </>
+      )}
+    </AppLink>
+  );
 
 /** The keys that move between tabs, by where each sends the choice from the chosen tab's index. */
 const TAB_KEYS: Record<string, (index: number, count: number) => number> = {
@@ -687,14 +711,49 @@ export const AppDialog = ({
       <footer className="app-dialog__foot">{actions}</footer>
     </section>
   );
-  return onClose ? <OverThePage onClose={onClose}>{dialog}</OverThePage> : dialog;
+  return onClose ? <AppModalLayer onClose={onClose}>{dialog}</AppModalLayer> : dialog;
 };
 
-const OverThePage = ({ onClose, children }: { onClose: () => void; children: ReactNode }) => {
+/**
+ * The one layer that opens over the page (a dialog, Connect): the page dimmed behind it and inert while it is open, so
+ * neither a pointer nor the keyboard reaches the page until it closes. It closes as a sheet does: a press beside it,
+ * Escape, or the system back. `sheet` rises from the foot, as wide as the screen, instead of standing in the middle.
+ */
+export const AppModalLayer = ({
+  onClose,
+  sheet = false,
+  children,
+}: {
+  onClose: () => void;
+  sheet?: boolean;
+  children: ReactNode;
+}) => {
   useSheetCloses(onClose);
+  const layer = useRef<HTMLDivElement>(null);
+  useInertOutside(layer);
   return (
-    <div className="app-scrim" onClick={(event) => event.target === event.currentTarget && onClose()}>
+    <div
+      ref={layer}
+      data-surface="shell"
+      className={cn("app-scrim", sheet && "app-scrim--sheet")}
+      onClick={(event) => event.target === event.currentTarget && onClose()}
+    >
       {children}
     </div>
   );
+};
+
+/** Makes everything outside the layer inert while it is mounted: its siblings, and its ancestors' up to the body. */
+const useInertOutside = (layer: RefObject<HTMLElement | null>) => {
+  useEffect(() => {
+    const made: Element[] = [];
+    for (let node = layer.current; node?.parentElement && node !== document.body; node = node.parentElement) {
+      for (const sibling of node.parentElement.children) {
+        if (sibling === node || sibling.hasAttribute("inert")) continue;
+        sibling.setAttribute("inert", "");
+        made.push(sibling);
+      }
+    }
+    return () => made.forEach((element) => element.removeAttribute("inert"));
+  }, [layer]);
 };

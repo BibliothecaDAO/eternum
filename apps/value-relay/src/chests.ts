@@ -9,7 +9,8 @@ import {
 } from "./ports";
 
 interface ChestCursor {
-  fromBlock: number;
+  /** Absent until the first page: the ledger's deployment block, as the reader reports it. */
+  fromBlock?: number;
   page?: string | null;
   anchor?: LedgerAnchor;
 }
@@ -22,7 +23,7 @@ interface ChestStore {
 export class DurableChestStore implements ChestStore {
   constructor(private readonly storage: DurableObjectStorage) {}
   async cursor(): Promise<ChestCursor> {
-    return (await this.storage.get<ChestCursor>("chests:cursor")) ?? { fromBlock: 0 };
+    return (await this.storage.get<ChestCursor>("chests:cursor")) ?? {};
   }
   async observe(page: ChestPage): Promise<void> {
     const cursor = await this.cursor();
@@ -40,7 +41,7 @@ export class DurableChestStore implements ChestStore {
         else await tx.delete(`chests:request:${change.tokenId}`);
       }
       await tx.put("chests:cursor", {
-        fromBlock: page.next === null ? page.head + 1 : page.rewind ? 0 : cursor.fromBlock,
+        fromBlock: page.next === null ? page.head + 1 : page.fromBlock,
         page: page.next,
         anchor: page.anchor,
       });
@@ -68,7 +69,7 @@ const observeRequests = (ports: Omit<ChestPorts, "finish">, store: ChestStore) =
     const cursor = yield* relayOperation("read chest cursor", () => store.cursor());
     const page = yield* ports.changes(cursor.fromBlock, cursor.page ?? null, cursor.anchor);
     if (
-      (!page.rewind && page.head < cursor.fromBlock - 1) ||
+      (!page.rewind && page.head < page.fromBlock - 1) ||
       page.rows.length > 100 ||
       (!page.rewind && page.next !== null && page.next === cursor.page)
     )

@@ -663,14 +663,14 @@ describe("assertInTargetGame", () => {
 
   it("reads the game a route is in", () => {
     expect(gameOfPath("/g/0x4445/4/map")).toEqual({ chainId: "0x4445", gameId: 4 });
-    expect(gameOfPath("/sign-in")).toBeNull();
+    expect(gameOfPath("/profile")).toBeNull();
   });
 
   it("refuses to play when the home page's call to action led to another game than the target", () => {
     expect(() => assertInTargetGame("/g/0x4445/4/hex", frontier)).toThrow(
       "entered game 4 on 0x4445, not the target game 1 on 0x4445: no order was sent",
     );
-    expect(() => assertInTargetGame("/sign-in", frontier)).toThrow("entered /sign-in, not the target game 1");
+    expect(() => assertInTargetGame("/profile", frontier)).toThrow("entered /profile, not the target game 1");
     expect(assertInTargetGame("/g/0x004445/1/map", frontier)).toEqual({ chainId: "0x004445", gameId: 1 });
   });
 });

@@ -342,6 +342,26 @@ button.ui-panel__name {
   opacity: 0.45;
 }
 
+/* ── Seat: a player's seat to a watching viewer (side-colours-3): their initial on their seat's colour (`--seat`), the
+   cue that does not need colour vision. The same on a map token's disk and in the standings. ── */
+.ui-seat {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  border-radius: var(--hud-radius-round);
+  background: var(--seat);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.55);
+  color: rgb(var(--hud-dark));
+  font-size: 10px;
+  font-weight: var(--hud-weight-strong);
+  line-height: 15px;
+  text-align: center;
+}
+.ui-seat[data-ink="light"] {
+  color: rgb(var(--hud-ink));
+}
+
 /* ── Chip: a small tag: a count, a state, a troop tier. ── */
 .ui-chip {
   display: inline-flex;

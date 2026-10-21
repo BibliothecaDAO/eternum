@@ -10,6 +10,7 @@ const rpc = vi.hoisted(() => ({
   call: vi.fn(),
   execute: vi.fn(),
   wait: vi.fn(),
+  classAt: vi.fn(),
 }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
@@ -19,6 +20,7 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
     getEvents: rpc.events,
     callContract: rpc.call,
     waitForTransaction: rpc.wait,
+    getClassHashAt: rpc.classAt,
   }),
 }));
 vi.mock("starknet", async (original) => ({
@@ -30,6 +32,8 @@ vi.mock("starknet", async (original) => ({
 const credentials = {
   rpcUrl: "https://ledger.test",
   contractAddress: "0x10",
+  // The ledger first exists at block 5, as its address book says.
+  deploymentBlock: 5,
   accountAddress: "0x20",
   privateKey: "unused-test-key",
 };
@@ -41,6 +45,10 @@ beforeEach(() => {
   rpc.number.mockResolvedValue(11);
   rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
   rpc.wait.mockResolvedValue({ isReverted: () => false });
+  rpc.classAt.mockImplementation(async (_address: string, block: number) => {
+    if (block < 5) throw Object.assign(new Error("Contract not found"), { code: 20 });
+    return "0xc1a55";
+  });
 });
 it("opens the created shard key under the containing season's economic preset, then recognizes an identical retry", async () => {
   let opened = false;
@@ -62,6 +70,8 @@ it("opens the created shard key under the containing season's economic preset, t
   );
   const open = () => Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 160 }));
   await open();
+  // The season lookup reads the ledger's history from its deployment block, not block 0.
+  expect(rpc.events.mock.calls[0]![0].from_block).toEqual({ block_number: 5 });
   expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
     ledgerCall("open_slot", {
       key: { shard: key.chainId, slot_id: key.slotId },

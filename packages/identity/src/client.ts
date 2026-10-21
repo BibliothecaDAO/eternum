@@ -260,8 +260,20 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
   };
 
   /**
+   * Signs in with the code a Discord sign-in finished in another browser showed; only the browser that started it can.
+   */
+  const claimDiscordHandoff = async (code: string): Promise<Session> => {
+    await readJson(
+      await request("/auth/discord-handoff", { method: "POST", body: JSON.stringify({ code }) }),
+      decode(Schema.Struct({ success: Schema.Literal(true) })),
+    );
+    return requireSession();
+  };
+
+  /**
    * Where to send the player to sign in with Discord; Discord returns them to `returnTo`, signed in, or with an
-   * `error` query parameter when sign-in did not complete.
+   * `error` query parameter when sign-in did not complete. Finished in another browser, it shows a code there for
+   * `claimDiscordHandoff`.
    */
   const discordSignInUrl = async (returnTo: string): Promise<string> => {
     const started = await readJson(
@@ -341,6 +353,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
       ).providers,
     sendSignInCode,
     signInWithCode,
+    claimDiscordHandoff,
     discordSignInUrl,
     approveDeviceChange,
     signOut,

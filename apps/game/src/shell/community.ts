@@ -19,3 +19,9 @@ export const communityPlace = (name: Place["name"]): Place => COMMUNITY.find((pl
 
 /** The realm's X account as a post tags it. */
 export const X_HANDLE = REALMS_X_TAG;
+
+/**
+ * How to play: the Blitz guide's first page on the docs site (apps/game-docs), the rules a new player reads before a
+ * game. The site's front page is about the Realms at large and teaches no game.
+ */
+export const HOW_TO_PLAY = "https://docs.realms.world/blitz/key-concepts";

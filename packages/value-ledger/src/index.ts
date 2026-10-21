@@ -11,7 +11,7 @@ export {
   decodeBlitzSeason,
   readConfirmedLedgerHead,
 } from "./codecs";
-export { rpcAt } from "./rpc";
+export { rpcAt, isDeploymentBlock } from "./rpc";
 export {
   BLITZ_SLOT_PREPARATION_SECONDS,
   blitzSlotFitsSeason,

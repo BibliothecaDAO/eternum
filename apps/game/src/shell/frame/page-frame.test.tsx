@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { createRoutesFromChildren, MemoryRouter, Routes, type RouteObject } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { appRoutes, RETIRED_PLAY_PATHS } from "@/app";
+import { appRoutes, RETIRED_PATHS } from "@/app";
 
 import { PageFrame } from "./page-frame";
 import { setViewportWidth } from "./test-viewport";
@@ -24,17 +24,17 @@ const SIZES = [
  * another and carries Back.
  */
 const TAB_PATHS = new Set(["/", "/season", "/scroll", "/profile", "/nothing-here", "/results/0x111"]);
-/** Full-screen steps: no tabs, the desktop's top bar keeps the lockup alone (sign-in, a Blitz lobby). */
-const STEP_PATHS = ["/sign-in", "/blitz/0x111"];
+/** Full-screen steps: no tabs, the desktop's top bar keeps the lockup alone (a Blitz lobby). */
+const STEP_PATHS = ["/blitz/0x111"];
 const CONTROLS = "a[href], button, input, select, textarea";
 
 /**
- * The app shell's pages (the route without a path), each with a sample for its parameters. Play's former addresses
+ * The app shell's pages (the route without a path), each with a sample for its parameters. Former addresses
  * only lead to Play (app-hosting.test.ts holds them), so they draw no page of their own.
  */
 const shellPaths = (): string[] => {
   const shell = createRoutesFromChildren(appRoutes).find((route) => route.path === undefined) as RouteObject;
-  const retired: readonly string[] = RETIRED_PLAY_PATHS;
+  const retired: readonly string[] = RETIRED_PATHS;
   return (shell.children ?? [])
     .map((route) => (route.index ? "/" : `/${route.path}`.replace("*", "nothing-here").replace(/:\w+/, "0x111")))
     .filter((path) => !retired.includes(path));

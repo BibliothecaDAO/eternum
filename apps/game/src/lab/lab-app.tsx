@@ -69,6 +69,13 @@ const TOOLS = [
     ),
   },
   {
+    group: "Film",
+    label: "Studio",
+    path: "/lab/studio",
+    route: "studio",
+    View: lazy(() => import("./studio/view").then((module) => ({ default: module.StudioLabView }))),
+  },
+  {
     group: "Characters",
     label: "Character review",
     path: "/lab/characters",

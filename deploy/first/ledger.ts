@@ -1,8 +1,8 @@
 import { readFileSync, writeFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { Account, byteArray, CallData, hash, json, num, type Call, type RpcProvider } from "starknet";
-import { buildLedgerEconomicPreset } from "../../config/deployer/clean/ledger/economics";
-import { awardableCosmetics, chestPresets } from "../../contracts/l2/ledger/scripts/chest-preset.js";
+import { buildLedgerEconomicPreset, chestPresetFor } from "../../config/deployer/clean/ledger/economics";
+import { awardableCosmetics } from "../../contracts/l2/ledger/scripts/chest-preset.js";
 import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
 import { classAt, isMissing, isContractRevert, confirm, send } from "./chain";
 import { seconds } from "./dates";
@@ -135,9 +135,14 @@ export async function verifyLedgerAccounts(provider: RpcProvider, ledger: string
       throw new PublicError("Existing ledger belongs to different accounts; restore its original private directory");
   }
 }
-export function publishAssets(target: Target, assets: Assets) {
+/** The block the address book says the ledger was deployed in; the relay starts every ledger history scan there. */
+export function recordedLedgerBlock(target: Target): number | undefined {
+  const block = (addressBook(target) as Record<string, unknown>).ledgerDeploymentBlock;
+  return typeof block === "number" ? block : undefined;
+}
+export function publishAssets(target: Target, assets: Assets, ledgerDeploymentBlock: number) {
   const path = join(root, "contracts/common/addresses", target.book);
-  const book = addressBook(target);
+  const book: Record<string, string | number> = addressBook(target);
   for (const [key, value] of Object.entries({
     ledger: assets.ledger,
     lords: assets.lords,
@@ -149,6 +154,10 @@ export function publishAssets(target: Target, assets: Assets) {
       throw new PublicError("Address book already names another deployment");
     book[key] = value;
   }
+  const recorded = recordedLedgerBlock(target);
+  if (recorded !== undefined && recorded !== ledgerDeploymentBlock)
+    throw new PublicError("Address book already names another ledger deployment block");
+  book.ledgerDeploymentBlock = ledgerDeploymentBlock;
   const temporary = `${path}.${process.pid}.tmp`;
   writeFileSync(temporary, JSON.stringify({ ...book, l2Chain: "SN_MAIN" }, null, 2) + "\n", { flag: "wx" });
   renameSync(temporary, path);
@@ -158,12 +167,6 @@ const call = (contractAddress: string, entrypoint: string, values: Parameters<ty
   entrypoint,
   calldata: CallData.compile(values),
 });
-/** The chest rewards an environment registers; an unknown name refuses rather than falling back. */
-function chestPresetOf(target: Target) {
-  const build = chestPresets[target.chests as keyof typeof chestPresets];
-  if (!build) throw new PublicError(`Unknown chest preset ${target.chests}`);
-  return build();
-}
 export function setupCalls(
   target: Target,
   assets: Assets,
@@ -172,7 +175,7 @@ export function setupCalls(
   end: number,
   seasonId: number,
 ) {
-  const chests = chestPresetOf(target);
+  const chests = chestPresetFor(target.environment as Environment);
   const metadata = (collection: string, attributes: number) =>
     call(collection, "set_attrs_raw_to_ipfs_cid", [attributes, byteArray.byteArrayFromString(target.picture), false]);
   return [
@@ -198,7 +201,7 @@ export function setupCalls(
   ];
 }
 /** Find the first block containing this contract; only code 20 means it did not exist yet. */
-async function deploymentBlock(provider: RpcProvider, address: string, head: number) {
+export async function deploymentBlock(provider: RpcProvider, address: string, head: number) {
   await provider.getClassHashAt(address, head);
   let low = 0;
   let high = head;

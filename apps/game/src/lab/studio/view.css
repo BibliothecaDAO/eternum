@@ -1,0 +1,89 @@
+.studio-lab {
+  position: relative;
+  height: var(--lab-viewport-height);
+  overflow: hidden;
+  background: #191b1e;
+  color: #ead9b7;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+}
+.studio-lab > canvas {
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.studio-panel {
+  z-index: 2;
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 248px;
+  max-height: calc(100% - 32px);
+  overflow: auto;
+  padding: 14px;
+  background: rgba(20, 17, 12, 0.94);
+  border: 1px solid #79613c;
+  border-radius: 8px;
+  box-shadow: 0 10px 35px #0008;
+}
+.studio-panel h1 {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-size: 22px;
+}
+.studio-panel h2 {
+  margin: 0 0 6px;
+  color: #c0af90;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.studio-panel p {
+  margin: 6px 0;
+  color: #f0d79f;
+}
+.studio-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 14px;
+}
+.studio-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.studio-row {
+  display: flex;
+  gap: 5px;
+}
+.studio-row button {
+  flex: 1;
+}
+.studio-lab select,
+.studio-lab button {
+  padding: 6px 8px;
+  background: #252016;
+  color: #f1ddb4;
+  border: 1px solid #79613c;
+  border-radius: 4px;
+  font-size: 13px;
+  text-align: left;
+}
+.studio-lab button {
+  cursor: pointer;
+}
+.studio-lab button:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+.studio-lab .primary {
+  background: #70501f;
+  color: #fff0cd;
+}
+.studio-panel .studio-help {
+  margin-top: 14px;
+  color: #c0af90;
+  line-height: 1.45;
+}

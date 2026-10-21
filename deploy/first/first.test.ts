@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { Account, CallData, hash, num, type RpcProvider } from "starknet";
 import { PrivateStore } from "./private-store";
 import { runSteps, type Step } from "./run";
-import { addressBook, environments, ACCOUNT_CLASS, WEI, root, type Inputs } from "./settings";
+import { addressBook, environments, ACCOUNT_CLASS, WEI, root, type Inputs, type Target } from "./settings";
 import { accountIdentity, classAt, prepareAccounts, send, type Keys } from "./chain";
 import {
   assetPlans,
@@ -15,6 +15,8 @@ import {
   setupCalls,
   setupPresenceReader,
   verifyLedgerAccounts,
+  publishAssets,
+  recordedLedgerBlock,
   type AssetPlan,
 } from "./ledger";
 import { Platform, workerSecrets, workers, type Secrets } from "./platform";
@@ -53,6 +55,8 @@ const input: Inputs = {
   cloudflareToken: "fake-cloudflare",
   rpc: "https://starknet-mainnet.g.alchemy.com/v2/throwaway",
   resend: "fake-resend",
+  discordClientId: "fake-discord-id",
+  discordClientSecret: "fake-discord-secret",
   amount: "1000000",
   frontierStart: "2027-01-01T00:00:00Z",
   frontierEnd: "2027-01-21T00:00:00Z",
@@ -496,6 +500,8 @@ test("setup asks for an alert email on production only, and dev's inputs can nev
     "cloudflareToken",
     "rpc",
     "resend",
+    "discordClientId",
+    "discordClientSecret",
     "amount",
     "frontierStart",
     "frontierEnd",
@@ -510,6 +516,22 @@ test("setup asks for an alert email on production only, and dev's inputs can nev
   expect(() => validateInputs({ ...production, alertEmail: "not-an-address" }, environments.production)).toThrow(
     "Production needs the alert email",
   );
+});
+
+test("every environment offers Discord sign-in: setup asks for it, requires it and gives it to the identity Worker", () => {
+  for (const environment of ["dev", "production"] as const) {
+    const asked = setupQuestions(environments[environment]).map(([name]) => name);
+    expect(asked).toContain("discordClientId");
+    expect(asked).toContain("discordClientSecret");
+  }
+  const { discordClientId: _id, discordClientSecret: _secret, ...unset } = input;
+  for (const missing of [unset, { ...input, discordClientId: "" }, { ...input, discordClientSecret: "" }])
+    expect(() => validateInputs(missing as Inputs, environments.dev)).toThrow("Discord sign-in needs");
+  const identity = workers.find((worker) => worker.id === "identity")!;
+  expect(workerSecrets(identity, input, secrets, keys, undefined)).toMatchObject({
+    DISCORD_CLIENT_ID: "fake-discord-id",
+    DISCORD_CLIENT_SECRET: "fake-discord-secret",
+  });
 });
 
 test("the status monitor emails incidents through the identity Worker's Resend key, to the address setup recorded", () => {
@@ -773,6 +795,7 @@ mock.module(${JSON.stringify(join(root, "deploy/first/process.ts"))}, () => ({..
     input.cloudflareToken,
     input.rpc,
     input.resend,
+    input.discordClientSecret,
     secrets.auth,
     secrets.operator,
     ...Object.values(keys),
@@ -805,4 +828,23 @@ test("resuming an existing ledger refuses different saved accounts", async () =>
   expect(calls).toHaveLength(2);
   allowed = false;
   await expect(verifyLedgerAccounts(provider, assets.ledger, "0x30", "0x31")).rejects.toThrow("different accounts");
+});
+
+test("publishes the ledger's deployment block beside its address, the same on a rerun, and refuses a different one", () => {
+  const book = `.publish-test-${process.pid}.json`;
+  const path = join(root, "contracts/common/addresses", book);
+  writeFileSync(path, JSON.stringify({ l2Chain: "SN_MAIN" }));
+  try {
+    const target = { ...environments.dev, book } as unknown as Target;
+    const assets = { ledger: "0x1", lords: "0x2", mmr: "0x3", chests: "0x4", cosmetics: "0x5" };
+    expect(recordedLedgerBlock(target)).toBeUndefined();
+    publishAssets(target, assets, 1234);
+    expect(addressBook(target)).toMatchObject({ ledger: "0x1", ledgerDeploymentBlock: 1234 });
+    publishAssets(target, assets, 1234);
+    expect(recordedLedgerBlock(target)).toBe(1234);
+    expect(() => publishAssets(target, assets, 1235)).toThrow("another ledger deployment block");
+    expect(recordedLedgerBlock(target)).toBe(1234);
+  } finally {
+    rmSync(path, { force: true });
+  }
 });

@@ -52,6 +52,7 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
       beast: null,
       undefended: false,
       stamina: null,
+      mark: null,
     });
   });
 
@@ -75,6 +76,16 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
     const open = renderToStaticMarkup(<Token plate={{ ...realm, guards: [] }} />);
     expect(open).toContain('data-undefended="true"');
     expect(words(open)).toBe("");
+  });
+
+  it("carries its player's initial on its disk to a watching viewer, in the ink its seat colour reads in", () => {
+    const watched = { ...army, watched: { seat: 8, colour: "#5f6fa1", mark: { letter: "T", ink: "light" as const } } };
+    expect(renderToStaticMarkup(<Token plate={watched} />)).toContain(
+      '<span class="ui-seat mp-token__seat" data-ink="light" aria-hidden="true">T</span>',
+    );
+    const nobody = { ...rift, watched: { seat: null, colour: "#b9b1a1", mark: null } };
+    expect(renderToStaticMarkup(<Token plate={nobody} />)).not.toContain("ui-seat");
+    expect(renderToStaticMarkup(<Token plate={army} />)).not.toContain("ui-seat");
   });
 
   it("says its reading in words: strength, stamina; undefended", () => {

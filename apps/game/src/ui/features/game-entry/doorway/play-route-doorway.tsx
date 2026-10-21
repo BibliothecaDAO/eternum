@@ -9,7 +9,7 @@ import { useGameEntry } from "@/hooks/use-game-entry";
 import { parsePlayRoute } from "@/play/navigation/play-route";
 import { gamePainting, modeLabel } from "@/shell/game-links";
 import { resultsHref } from "@/shell/season-tab/results-link";
-import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
+import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { BootDebugPanel } from "@/ui/debug/boot-debug-panel";
 
 import { doorwayRealmOf } from "./doorway-realm";

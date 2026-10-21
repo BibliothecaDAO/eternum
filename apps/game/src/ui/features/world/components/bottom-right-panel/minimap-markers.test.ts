@@ -1,11 +1,19 @@
-// @vitest-environment node
+// @vitest-environment jsdom
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { ContractAddress, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
+import { setActiveGame } from "@/runtime/world";
+import { setOpenGameSeats } from "@/utils/entity-ownership";
+import { overrideSpectateIntent } from "@/utils/spectator-session";
 import { minimapMarkersView } from "./minimap-markers";
 
-afterEach(() => setBlockTimestampSource(null));
+afterEach(() => {
+  setBlockTimestampSource(null);
+  overrideSpectateIntent(false);
+  setOpenGameSeats({ chainId: "", gameId: 0 }, []);
+  localStorage.clear();
+});
 
 describe("minimap icon meanings from game facts", () => {
   it("changes the realm emblem with its native level while retaining ownership and the value badge", () => {
@@ -46,5 +54,21 @@ describe("minimap icon meanings from game facts", () => {
     const markers = minimapMarkersView.read(store, ContractAddress("0x222"));
     expect(markers.get(String(SITE))?.name).toBe("map-village");
     expect(markers.get("201")).toEqual({ name: "map-army", owner: "ally", value: "•••" });
+  });
+});
+
+describe("the minimap to a watching viewer (side-colours-4)", () => {
+  it("marks each player's things in their seat, nobody's neutral, whatever the viewer's account", () => {
+    const { store } = campBeside();
+    // The open game's players in the order they joined it: 0x111 holds realm 7 and army 201.
+    setActiveGame({ chainId: "SHARD", gameId: 1 });
+    setOpenGameSeats({ chainId: "SHARD", gameId: 1 }, [ContractAddress("0x111"), ContractAddress("0x222")]);
+    overrideSpectateIntent(true);
+    for (const viewer of [null, ContractAddress("0x111"), ContractAddress("0x222")]) {
+      const markers = minimapMarkersView.read(store, viewer);
+      expect(markers.get("7")?.owner).toBe("seat-0");
+      expect(markers.get("201")?.owner).toBe("seat-0");
+      expect(markers.get(String(SITE))?.owner).toBe("neutral");
+    }
   });
 });

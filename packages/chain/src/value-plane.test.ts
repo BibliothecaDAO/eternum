@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import dev from "../../../contracts/common/addresses/dev.json";
 import production from "../../../contracts/common/addresses/production.json";
-import { environmentL2, valuePlaneAddress } from "./value-plane";
+import {
+  environmentL2,
+  ledgerDeploymentBlock,
+  valuePlaneAddress,
+} from "./value-plane";
 
 describe("environment address books", () => {
   it("runs both environments on mainnet with the real Realms collection", () => {
@@ -47,4 +51,9 @@ describe("environment address books", () => {
       }
     },
   );
+});
+
+it("names, beside every published ledger, the block it was deployed in", () => {
+  for (const environment of ["staging", "production"] as const)
+    expect(ledgerDeploymentBlock(environment)).toBeGreaterThan(0);
 });

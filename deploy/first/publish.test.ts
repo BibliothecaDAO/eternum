@@ -13,6 +13,8 @@ const input = {
   rpc: "https://starknet-mainnet.g.alchemy.com/v2/throwaway",
   cloudflareToken: "test-cloudflare",
   resend: "test-resend",
+  discordClientId: "test-discord-id",
+  discordClientSecret: "test-discord-secret",
 } as Inputs;
 const temporary: string[] = [];
 const originalFetch = globalThis.fetch;

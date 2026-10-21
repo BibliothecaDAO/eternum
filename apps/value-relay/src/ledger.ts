@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 import {
   decodeFrontierSeason,
+  isDeploymentBlock,
   rpcAt,
   ledgerInteger,
   ledgerU256,
@@ -21,12 +22,28 @@ import {
   type MonitorPorts,
 } from "./ports";
 
+/** The ledger as its history readers need it: its address and the block it was deployed in. */
+export interface LedgerContract {
+  contractAddress: string;
+  deploymentBlock: number;
+}
 interface LedgerCredentials {
   rpcUrl: string;
   contractAddress: string;
   accountAddress: string;
   privateKey: string;
 }
+/**
+ * The block a scan of the ledger's history runs from: a saved block as it is, else the ledger's deployment block, which
+ * no event of it predates. The address book names that block; one where the ledger does not first exist is refused,
+ * since starting after it would skip events.
+ */
+export const ledgerHistoryFrom = async (provider: RpcProvider, ledger: LedgerContract, saved?: number) => {
+  if (saved !== undefined) return saved;
+  if (!(await isDeploymentBlock(provider, ledger.contractAddress, ledger.deploymentBlock)))
+    throw new Error("ledger_deployment_block_wrong");
+  return ledger.deploymentBlock;
+};
 /** Replay-safe result delivery: an already finalized matching result is complete, a different one is refused. */
 export const ledgerResultAdapter =
   (credentials: LedgerCredentials, slotId: number): RelayPorts["ledger"]["postResult"] =>
@@ -92,8 +109,9 @@ const resultCommitment = async (provider: RpcProvider, address: string, result: 
 /** Confirmed ledger events are the monitor's enumeration; each cursor pins the head across all pages. */
 export const ledgerMonitorReads = (
   rpcUrl: string,
-  address: string,
+  ledger: LedgerContract,
 ): Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults" | "frontierPool"> => {
+  const address = ledger.contractAddress;
   return {
     frontierPool: (chainId, gameId) =>
       relayOperation("read ledger Frontier pool", async () => {
@@ -110,13 +128,13 @@ export const ledgerMonitorReads = (
           ),
         ).pool;
       }),
-    paidClaims: (cursor, fromBlock = 0, anchor) =>
+    paidClaims: (cursor, fromBlock, anchor) =>
       relayOperation("read ledger paid claims", async () => {
         const provider = rpcAt(rpcUrl);
         const times = new Map<number, number>();
         return ledgerEventPage(
           provider,
-          address,
+          ledger,
           ["WithdrawalPaid"],
           cursor,
           fromBlock,
@@ -135,27 +153,28 @@ export const ledgerMonitorReads = (
           anchor,
         );
       }),
-    postedResults: (cursor, fromBlock = 0, anchor) =>
+    postedResults: (cursor, fromBlock, anchor) =>
       relayOperation("read ledger posted results", () =>
-        ledgerEventPage(rpcAt(rpcUrl), address, ["ResultsApplied"], cursor, fromBlock, decodeResult, anchor),
+        ledgerEventPage(rpcAt(rpcUrl), ledger, ["ResultsApplied"], cursor, fromBlock, decodeResult, anchor),
       ),
   };
 };
 
 const ledgerEventPage = async <A>(
   provider: RpcProvider,
-  address: string,
+  ledger: LedgerContract,
   names: readonly string[],
   after: string | null,
-  fromBlock: number,
+  saved: number | undefined,
   decode: (event: EmittedEvent, index: number, position: string) => A | Promise<A>,
   previous?: LedgerAnchor,
 ): Promise<LedgerPage<A>> => {
+  const address = ledger.contractAddress;
   const selectors = names.map((name) => hash.getSelectorFromName(name));
-  const { cursor, rewind } = await eventCheckpoint(provider, after, fromBlock, previous);
-  if (rewind) fromBlock = 0;
+  const { cursor, rewind } = await eventCheckpoint(provider, after, saved, previous);
+  const fromBlock = await ledgerHistoryFrom(provider, ledger, rewind ? undefined : saved);
   const anchor = { number: cursor.head, hash: cursor.hash };
-  if (fromBlock > cursor.head) return { rows: [], head: cursor.head, next: null, anchor, rewind };
+  if (fromBlock > cursor.head) return { rows: [], head: cursor.head, next: null, anchor, rewind, fromBlock };
   const page = await provider.getEvents({
     address,
     from_block: { block_number: fromBlock },
@@ -181,28 +200,30 @@ const ledgerEventPage = async <A>(
     head: cursor.head,
     anchor,
     rewind,
+    fromBlock,
     next: page.continuation_token ? JSON.stringify({ ...cursor, token: page.continuation_token }) : null,
   };
 };
 const eventCheckpoint = async (
   provider: RpcProvider,
   after: string | null,
-  fromBlock: number,
+  saved: number | undefined,
   previous?: LedgerAnchor,
 ) => {
   const latest = await readConfirmedLedgerHead(provider);
   const page = after === null ? null : readCursor(after);
-  const saved = previous ?? (page?.hash ? { number: page.head, hash: page.hash } : undefined);
+  const pinned = previous ?? (page?.hash ? { number: page.head, hash: page.hash } : undefined);
   const fresh = { head: latest.number, hash: latest.hash, token: "" };
-  if (!saved) return { cursor: fresh, rewind: fromBlock > 0 || page !== null };
+  // A saved block or page without its anchor cannot be trusted to continue: scan again from the start.
+  if (!pinned) return { cursor: fresh, rewind: saved !== undefined || page !== null };
   // A head below the anchor proves nothing: a load-balanced RPC can answer from a node a block behind. Only a different
   // hash at the anchored block is a rewrite.
-  if (saved.number > latest.number) throw new Error("ledger_head_behind_anchor");
-  if (BigInt((await readConfirmedLedgerHead(provider, saved.number)).hash) !== BigInt(saved.hash))
+  if (pinned.number > latest.number) throw new Error("ledger_head_behind_anchor");
+  if (BigInt((await readConfirmedLedgerHead(provider, pinned.number)).hash) !== BigInt(pinned.hash))
     return { cursor: fresh, rewind: true };
   if (!page) return { cursor: fresh, rewind: false };
-  if (page.head !== saved.number || page.hash !== saved.hash) throw new Error("ledger_cursor_anchor_differs");
-  return { cursor: { head: page.head, hash: saved.hash, token: page.token }, rewind: false };
+  if (page.head !== pinned.number || page.hash !== pinned.hash) throw new Error("ledger_cursor_anchor_differs");
+  return { cursor: { head: page.head, hash: pinned.hash, token: page.token }, rewind: false };
 };
 const readCursor = (value: string): { head: number; token: string; hash?: string } => {
   const cursor = JSON.parse(value) as { head?: unknown; token?: unknown; hash?: unknown };
@@ -241,8 +262,8 @@ const decodeResult = (event: EmittedEvent): BlitzCommitment => {
 /** Requested and opened events share one ordered cursor, so historical completed chests leave no polling debt. */
 export const ledgerChestChanges = (
   rpcUrl: string,
-  address: string,
-  fromBlock: number,
+  ledger: LedgerContract,
+  fromBlock: number | undefined,
   cursor: string | null,
   anchor?: LedgerAnchor,
 ) =>
@@ -251,7 +272,7 @@ export const ledgerChestChanges = (
     (): Promise<ChestPage> =>
       ledgerEventPage(
         rpcAt(rpcUrl),
-        address,
+        ledger,
         ["ChestRequested", "ChestOpened"],
         cursor,
         fromBlock,

@@ -28,10 +28,10 @@ interface IdentityServices {
 }
 
 const identityServicesOf = (
-  env: Pick<IdentityEnv, "ENVIRONMENT" | "L2_RPC_URL" | "RESEND_API_KEY">,
+  env: Pick<IdentityEnv, "ENVIRONMENT" | "L2_RPC_URL" | "RESEND_API_KEY" | "BASE_URL">,
 ): IdentityServices => ({
   verifyWalletSignature: verifyWalletOnL2(env),
-  sendSignInCode: resendSignInCodes(env.RESEND_API_KEY),
+  sendSignInCode: resendSignInCodes(env.RESEND_API_KEY, env.BASE_URL),
 });
 
 /**
@@ -101,6 +101,9 @@ export const createIdentityAuth = (
     // Other realms.party services set better-auth's default cookie names for the whole domain; a browser sends that
     // older cookie first, and it would hide this service's session. Our cookies carry their own name.
     advanced: { cookiePrefix: "realms-identity" },
+    // Discord's return is held to the browser that started it by discord-handoff.ts, which a phone's switch to another
+    // browser does not break; better-auth's own check refused that switch outright.
+    account: { skipStateCookieCheck: true },
     user: {
       additionalFields: {
         realmsId: { type: "string", unique: true, required: false, input: false },
@@ -136,7 +139,7 @@ export const createIdentityAuth = (
         db: env.DB,
         checkCode: (context, email, otp) =>
           emailCodes.endpoints.checkVerificationOTP({ context, body: { email, otp, type: "sign-in" } }),
-        sendNotice: services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY),
+        sendNotice: services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY, env.BASE_URL),
       }),
     ],
   });

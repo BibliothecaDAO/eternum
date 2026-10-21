@@ -6,7 +6,7 @@ import { AppButton, AppField } from "@/ui/design-system/kit/app-elements";
 import { FailureLine } from "./failure-line";
 
 /**
- * The first step (spec 02): Discord as the primary, then an emailed code; the first sign-in by either creates the
+ * Connect's first step (spec 02): Discord as the primary, then an emailed code; the first sign-in by either creates the
  * player's Realms account.
  */
 export const StartStep = ({

@@ -14,17 +14,19 @@ it("keeps checked-through block and page continuation across ticks without rerea
     confirmedAt: 1,
   };
   const withdrawal = vi.fn(() => Effect.succeed(receipt));
-  const paidClaims = vi.fn((cursor: string | null, fromBlock = 0) =>
+  // The reader starts a fresh scan at the ledger's deployment block, 5 here, and reports it.
+  const paidClaims = vi.fn((cursor: string | null, fromBlock?: number) =>
     Effect.succeed(
-      cursor === null && fromBlock === 0
+      cursor === null && fromBlock === undefined
         ? {
             rows: [{ ...receipt, paymentTransactionHash: "0xdef", paidAt: 1, wallet: "0x123" }],
             next: "pinned-page2",
             head: 10,
             anchor: { number: 10, hash: "0xa" },
             rewind: false,
+            fromBlock: 5,
           }
-        : { rows: [], next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false },
+        : { rows: [], next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, fromBlock: fromBlock! },
     ),
   );
   const ports: MonitorPorts = {
@@ -34,7 +36,14 @@ it("keeps checked-through block and page continuation across ticks without rerea
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
       paidClaims,
       postedResults: () =>
-        Effect.succeed({ rows: [], next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false }),
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 10,
+          anchor: { number: 10, hash: "0xa" },
+          rewind: false,
+          fromBlock: 1,
+        }),
       pause: () => Effect.void,
     },
   };
@@ -46,8 +55,10 @@ it("keeps checked-through block and page continuation across ticks without rerea
   };
   await Effect.runPromise(runMonitor(ports, store));
   expect(paidClaims).toHaveBeenCalledTimes(1);
+  expect(paidClaims.mock.calls[0]![1]).toBeUndefined();
+  expect(progress.cursors?.paidClaims).toMatchObject({ fromBlock: 5, page: "pinned-page2" });
   await Effect.runPromise(runMonitor(ports, store));
-  expect(paidClaims.mock.calls[1]![0]).toBe("pinned-page2");
+  expect(paidClaims.mock.calls[1]!.slice(0, 2)).toEqual(["pinned-page2", 5]);
   expect(withdrawal).toHaveBeenCalledOnce();
   await Effect.runPromise(runMonitor(ports, store));
   expect(paidClaims.mock.calls[2]).toEqual([null, 11, { number: 10, hash: "0xa" }]);
@@ -78,9 +89,23 @@ it("an exact row reset skips only that claim, still faults on the next unchecked
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
       paidClaims: () =>
-        Effect.succeed({ rows, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, next: null }),
+        Effect.succeed({
+          rows,
+          head: 10,
+          anchor: { number: 10, hash: "0xa" },
+          rewind: false,
+          fromBlock: 1,
+          next: null,
+        }),
       postedResults: () =>
-        Effect.succeed({ rows: [], head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, next: null }),
+        Effect.succeed({
+          rows: [],
+          head: 10,
+          anchor: { number: 10, hash: "0xa" },
+          rewind: false,
+          fromBlock: 1,
+          next: null,
+        }),
       pause: () => Effect.void,
     },
   };
@@ -98,7 +123,7 @@ it("an exact row reset skips only that claim, still faults on the next unchecked
   expect(checked.mock.calls.map((call) => call[1])).toEqual(["0xabc", "0xdef"]);
   progress = resetMonitorRow(progress, "paidClaims:0x1:0xdef");
   ports.ledger.paidClaims = () =>
-    Effect.succeed({ rows, head: 10, next: null, anchor: { number: 10, hash: "0xb" }, rewind: true });
+    Effect.succeed({ rows, head: 10, next: null, anchor: { number: 10, hash: "0xb" }, rewind: true, fromBlock: 1 });
   const pause = vi.fn(() => Effect.void);
   ports.ledger.pause = pause;
   await Effect.runPromise(runMonitor(ports, store));
@@ -116,7 +141,7 @@ it("keeps every cleared conservation row cleared, not only the last one", async 
     { chainId: "0x1", gameId: 2, confirmedBlock: 5, receipts: "3", netIssued: "1", pool: "0" },
   ];
   const pause = vi.fn(() => Effect.void);
-  const page = { rows: [], head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, next: null };
+  const page = { rows: [], head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, fromBlock: 1, next: null };
   const ports: MonitorPorts = {
     identity: { matchesPayDecision: () => Effect.succeed(true) },
     shard: {
@@ -191,6 +216,7 @@ describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (s
         head: 10,
         anchor: { number: 10, hash: ledger.anchor },
         rewind: ledger.rewind,
+        fromBlock: 1,
         next: null,
       });
     const ports: MonitorPorts = {

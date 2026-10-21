@@ -173,15 +173,36 @@ const flagPrices = (ledger) => {
     : `A sword costs ${sword} LORDS and a shield ${shield} LORDS.`;
 };
 
-const CHEST_BANDS = ["Top 20%", "20–40%", "40–60%", "60–80%", "Bottom 20%"];
 const lordsOf = (amount) => n(Number(BigInt(amount.low) + (BigInt(amount.high) << 128n)) / 1e18);
 
+/** Where an entry goes, as the page states it: all of it to the chest reserve and the treasury. */
+const entrySplit = (ledger) => {
+  if (ledger.chest_lords_bps + ledger.protocol_cut_bps !== 10_000)
+    throw new Error("Blitz's entry also funds the prize pool: the prize page states a two-way split");
+  return `split two ways: ${pct(ledger.chest_lords_bps)} to the chest reserve and ${pct(ledger.protocol_cut_bps)} to the treasury`;
+};
+
 /**
- * Blitz's entry and prizes, from the ledger preset production registers (config/deployer/clean/ledger/economics.ts)
- * and its chest preset (contracts/l2/ledger/scripts/chest-preset.js), as the entry, prize and armies pages state them.
+ * The one chest every band draws, as the page states it. The page has no band table and names no cosmetic, so chests
+ * whose bands differ, or that can draw a cosmetic, fail here rather than let the page go stale.
+ */
+const chestDraw = (chests) => {
+  const [band] = chests.bands;
+  const same = chests.bands.every(
+    (each) => JSON.stringify(each) === JSON.stringify({ ...band, metadata: each.metadata }),
+  );
+  if (!same) throw new Error("Blitz's chest bands differ: the prize page states one chest for every band");
+  if (TIERS.some((tier) => band.odds[tier] > 0))
+    throw new Error("Blitz's chests can draw a cosmetic: the prize page names none");
+  const worth = band.lords_shares === 1 ? "one entry's worth" : `${n(band.lords_shares)} entries' worth`;
+  return `${worth} of LORDS (${pct(band.odds.lords)}), a sword credit (${pct(band.odds.sword)}) or a shield credit (${pct(band.odds.shield)})`;
+};
+
+/**
+ * Blitz's entry and prizes, from the ledger and chest presets production registers (config/deployer/clean/ledger/
+ * economics.ts, chestPresetFor), as the entry, prize and armies pages state them.
  */
 const blitzLedgerPhrases = (blitz, ledger, chests) => {
-  const prize = 100 - (ledger.protocol_cut_bps + ledger.chest_lords_bps) / 100;
   const reserve = blitz.startingResources.find((stack) => stack.resource === 26).amount;
   return [
     {
@@ -191,12 +212,8 @@ const blitzLedgerPhrases = (blitz, ledger, chests) => {
     {
       page: "blitz/prize-pool",
       phrases: [
-        `${prize}% to the season's prize pool, ${ledger.chest_lords_bps / 100}% to the chest reserve and ${ledger.protocol_cut_bps / 100}% to the treasury`,
-        ...chests.bands.map((band, index) =>
-          band.lords_shares === 0
-            ? `${CHEST_BANDS[index]} none —`
-            : `${CHEST_BANDS[index]} ${pct(band.odds.lords)} ${band.lords_shares}`,
-        ),
+        entrySplit(ledger),
+        chestDraw(chests),
         `Ratings are measured against a reference mean of ${n(ledger.mmr.mean)}`,
         `A game's base rating change is capped at ${ledger.mmr.max_delta}, less in a small game; then a sword doubles a gain and a shield halves a loss`,
         `The best ${pct(ledger.paid_fraction_bps)} of the season's players`,
@@ -239,14 +256,12 @@ const loadBalanceSources = async () => {
     const { blitzPreset } = await server.ssrLoadModule(join(here, "../../../config/source/blitz/native.ts"));
     const { frontierPreset } = await server.ssrLoadModule(join(here, "../../../config/source/frontier/native.ts"));
     const { llmTxtFile } = await server.ssrLoadModule(join(here, "../docs/utils/paths.ts"));
-    const { buildLedgerEconomicPreset } = await server.ssrLoadModule(
+    const { buildLedgerEconomicPreset, chestPresetFor } = await server.ssrLoadModule(
       join(here, "../../../config/deployer/clean/ledger/economics.ts"),
     );
-    const { buildMysteryChestPreset } = await server.ssrLoadModule(
-      join(here, "../../../contracts/l2/ledger/scripts/chest-preset.js"),
-    );
-    const ledger = buildLedgerEconomicPreset("blitz");
-    const chests = buildMysteryChestPreset();
+    // The pages describe production: its chests and ledger preset, as setup registers them.
+    const chests = chestPresetFor("production");
+    const ledger = buildLedgerEconomicPreset("blitz", { environment: "production", chests });
     return {
       relics: RELICS,
       rules: blitzPreset.relics,

@@ -76,11 +76,11 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   the map's default zoom; the army must be deployed. The next order is a phone's: on a desktop an order goes from the
   map at once, so its steps are blocked there; play them with `--viewport 390x844`.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
-  every command (it relaunches on a temporary profile for a command that omits it). Each run opens the sign-in page
-  first: it sends a signed-in player on at once, and a signed-out one signs in there as a player does: the email, Send
-  code, then the code. The runner reads no mail: it prints `{"signInCode": {"email", "writeTo"}}` on stderr and waits up
-  to 10 minutes for the code from the sign-in mail in that file, which it deletes once read. An account that asks to
-  claim a name is refused: a run never sets up an account.
+  every command (it relaunches on a temporary profile for a command that omits it). Each run opens the home page first:
+  a signed-in player's bar shows them and the run goes on at once; a signed-out one presses Connect and signs in as a
+  player does: the email, Send code, then the code. The runner reads no mail: it prints
+  `{"signInCode": {"email", "writeTo"}}` on stderr and waits up to 10 minutes for the code from the sign-in mail in that
+  file, which it deletes once read. An account that asks to claim a name is refused: a run never sets up an account.
 - **The next order's life**, each step with the army's first order held in flight at the network (DevTools pauses its
   `starknet_addInvokeTransaction` send while the step acts, then lets it reach the node or, for refused, answers it as
   the node refusing the transaction, a JSON-RPC validation failure, without it reaching the node): a tile tapped beside
@@ -130,20 +130,21 @@ spectator's map steps in a Blitz game: the world map, idle, pan, zoom, a minute 
 for Blitz), `--steps blitz-plates` (the map's labels in a Blitz game as a spectator sees them, opened with the dev
 overlays so the page reports its world: read at the map's zoom, the farthest and the closest, the tiles round the centre
 hovered one by one, and at each zoom a click at each label in view, with the label layer shown then hidden, failing on
-any label that takes a pointer, a click at a token or an open plate that selects another tile than the same click with
-the labels hidden, any label whose foot reaches below its thing's model top or whose span is not over its thing, as the
-renderer places the thing, any token, plate or order line over or within 4px of another, or an opened plate that does
-not cover the token read for its thing before the hover; `--steps blitz-plates-player` takes the readiest army with Tab
-first, so each hovered tile shows its order line; `--steps frontier-plates` and `frontier-plates-player` the same in a
-Frontier game, entered on its map), `--steps still-map` (a Frontier spectator's map with nothing pressed, its frames
-recorded for 6 s at the default view and again at the closest, the camera distance read and required to be the closest,
-into `<step>-frames/` with `<step>-changes.png`, each pixel's share of frame pairs it changed in: what a still view
-shimmers with, to compare two builds on the same view; `--steps blitz-still-map` the same in a Blitz game;
-`--steps still-map-frozen-sun` and `--steps blitz-still-map-frozen-sun` first tick the dev tools' Override Time to hold
-the sun, and open the page with the dev overlays on, as the plate lists do), `--out <root>` (default
-`.context/playtest`), `--trace` (a Chrome trace of each run's boot, from before the game page opens to the world being
-interactive), `--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are taken from where the command
-is run.
+any label not drawn in its side's colour (the page's own green, blue and red; to a spectator, each player's seat colour,
+one per seat, no two alike, nobody's grey), any label that takes a pointer, a click at a token or an open plate that
+selects another tile than the same click with the labels hidden, any label whose foot reaches below its thing's model
+top or whose span is not over its thing, as the renderer places the thing, any token, plate or order line over or within
+4px of another, or an opened plate that does not cover the token read for its thing before the hover;
+`--steps blitz-plates-player` takes the readiest army with Tab first, so each hovered tile shows its order line;
+`--steps frontier-plates` and `frontier-plates-player` the same in a Frontier game, entered on its map),
+`--steps still-map` (a Frontier spectator's map with nothing pressed, its frames recorded for 6 s at the default view
+and again at the closest, the camera distance read and required to be the closest, into `<step>-frames/` with
+`<step>-changes.png`, each pixel's share of frame pairs it changed in: what a still view shimmers with, to compare two
+builds on the same view; `--steps blitz-still-map` the same in a Blitz game; `--steps still-map-frozen-sun` and
+`--steps blitz-still-map-frozen-sun` first tick the dev tools' Override Time to hold the sun, and open the page with the
+dev overlays on, as the plate lists do), `--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each
+run's boot, from before the game page opens to the world being interactive), `--compare <summary.json>` (fails when boot
+regresses), `--headed`. Paths are taken from where the command is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 

@@ -30,7 +30,8 @@ import {
 } from "../value/ledger";
 import { gameRowKey } from "../blitz-rows";
 import { linkWalletHref } from "../profile/settings-route";
-import { returnPathOf, useRequestSignIn } from "../sign-in/sign-in-route";
+import { returnPathOf } from "../return-path";
+import { useRequestSignIn } from "../sign-in/connect";
 import {
   entryCalls,
   entryCost,
