@@ -7,8 +7,7 @@ import {
   StaminaManager,
   storedBiomeAt,
 } from "@bibliothecadao/eternum";
-import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import {
   BiomeType,
   DISPLAYED_SLOT_NUMBER_MAP,
@@ -48,10 +47,7 @@ export const useBattleLabLiveData = (
   targetHex: { x: number; y: number },
   alt = false,
 ): BattleLabLiveData => {
-  const {
-    setup: { store },
-  } = useGame();
-  const revision = useNativeRevision(["ArmySlot", "Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
+  const facts = useNativeFacts(["ArmySlot", "Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
   const staminaTimestamp = useCurrentDefaultTick();
 
   const { attackerRelicEffects, targetRelicEffects, target, targetResources, isLoading } = useAttackTargetData(
@@ -66,10 +62,13 @@ export const useBattleLabLiveData = (
   const snapshot = useMemo<LiveSnapshot | null>(() => {
     if (!enabled) return null;
 
-    const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: attackerEntityId });
+    const structure = facts.store.get("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: attackerEntityId,
+    });
     const biome = alt
       ? BiomeType.Underground
-      : (storedBiomeAt(store, false, targetHex.x, targetHex.y) ?? BiomeType.None);
+      : (storedBiomeAt(facts.store, false, targetHex.x, targetHex.y) ?? BiomeType.None);
 
     // Attacker: structure (guard slots) vs explorer army.
     let attackerType: "structure" | "army" = "army";
@@ -78,7 +77,7 @@ export const useBattleLabLiveData = (
 
     if (structure) {
       attackerType = "structure";
-      const knownGuards = getGuardsByStructure(structure, store);
+      const knownGuards = getGuardsByStructure(structure, facts.store);
       if (!knownGuards) return null;
       guards = knownGuards
         .filter((guard) => guard.troops.count > 0n)
@@ -98,11 +97,11 @@ export const useBattleLabLiveData = (
           return { slot: guard.slot, label: `Slot ${slotNumber}`, army };
         });
     } else {
-      const army = store.get("ExplorerTroops", {
+      const army = facts.store.get("ExplorerTroops", {
         game_id: configManager.getActiveGameId(),
         explorer_id: attackerEntityId,
       });
-      const troops = army ? resolveExplorerTroops(store, army) : undefined;
+      const troops = army ? resolveExplorerTroops(facts.store, army) : undefined;
       if (army && troops) {
         const stamina = StaminaManager.getStamina(troops, staminaTimestamp).amount;
         armyAttacker = {
@@ -158,8 +157,7 @@ export const useBattleLabLiveData = (
   }, [
     alt,
     enabled,
-    revision,
-    store,
+    facts,
     attackerEntityId,
     targetHex.x,
     targetHex.y,

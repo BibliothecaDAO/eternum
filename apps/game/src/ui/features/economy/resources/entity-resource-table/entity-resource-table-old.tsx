@@ -10,9 +10,8 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useGame } from "@/hooks/context/game-context";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeRowOrAbsent, useNativeRow, useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { BuildingType, getBuildingFromResource, ID, ResourcesIds } from "@bibliothecadao/types";
 import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -43,22 +42,21 @@ export const EntityResourceTableOld = React.memo(
       }
     });
 
-    const { setup } = useGame();
     const mode = useGameModeConfig();
 
     const keys = entityId ? { game_id: configManager.getActiveGameId(), entity_id: entityId } : undefined;
     const structureBuildings = useNativeRow("StructureBuildings", keys);
     const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", keys);
-    const guardRevision = useNativeRevision(["Guard"]);
+    const guards = useNativeFacts(["Guard"]);
     const now = useCurrentDefaultTick();
 
     const activeRelicEffects = useMemo(() => {
-      const structureArmyRelicEffects = [...setup.store.inGame("Guard", configManager.getActiveGameId())]
+      const structureArmyRelicEffects = [...guards.store.inGame("Guard", configManager.getActiveGameId())]
         .filter((guard) => entityId !== undefined && guard.structure_id === BigInt(entityId))
         .flatMap((guard) => getStructureArmyRelicEffects(guard, now));
       const structureRelicEffects = productionBoostBonus ? getStructureRelicEffects(productionBoostBonus, now) : [];
       return [...structureRelicEffects, ...structureArmyRelicEffects];
-    }, [now, productionBoostBonus, guardRevision, entityId, setup.store]);
+    }, [now, productionBoostBonus, guards, entityId]);
 
     const resourceManager = useResourceManager(entityId);
 

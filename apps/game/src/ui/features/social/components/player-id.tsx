@@ -1,7 +1,6 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { useGame } from "@/hooks/context/game-context";
 import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useFactView } from "@/hooks/use-fact-view";
 import { gameStructuresView } from "@/sync/fact-views";
@@ -196,13 +195,10 @@ const HyperstructureRow = ({ holding }: { holding: HyperstructurePaying }) => {
 
 /** The hyperstructures paying the player now: their current shares at each allocation's rate, not what has accrued. */
 const useHyperstructuresPaying = (player: ContractAddress): HyperstructurePaying[] => {
-  const {
-    setup: { store },
-  } = useGame();
-  const revision = useNativeRevision(["HyperstructureShares", "SliceRules", "GameRegistry", "Structure"]);
+  const facts = useNativeFacts(["HyperstructureShares", "SliceRules", "GameRegistry", "Structure"]);
   const now = useCoarseNowSeconds(30);
   return useMemo(() => {
-    void revision;
+    const store = facts.store;
     void now;
     return LeaderboardManager.instance(store)
       .getPlayerHyperstructuresPaying(player)
@@ -220,7 +216,7 @@ const useHyperstructuresPaying = (player: ContractAddress): HyperstructurePaying
           position: at ? Position.fromContract({ x: at.x, y: at.y }) : null,
         };
       });
-  }, [player, store, revision, now]);
+  }, [player, facts, now]);
 };
 
 const Avatar = ({ address }: { address: ContractAddress }) => {

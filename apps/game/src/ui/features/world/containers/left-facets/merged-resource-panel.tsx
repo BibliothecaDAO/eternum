@@ -90,20 +90,23 @@ export const MergedResourcePanel = memo(
 
     // Limit the accrual animation to one sweep per minute as confirmed production arrives.
     const accrualSweeps = useRef(new Map<ResourcesIds, { label: string | undefined; at: number; key: number }>());
-    const resolveAccrualKey = (resourceId: ResourcesIds, label: string | undefined): number => {
-      const previous = accrualSweeps.current.get(resourceId);
-      if (!previous) {
-        accrualSweeps.current.set(resourceId, { label, at: currentTime, key: 0 });
-        return 0;
-      }
-      if (label === previous.label || currentTime - previous.at < ACCRUAL_SWEEP_INTERVAL_MS) {
-        previous.label = label;
-        return previous.key;
-      }
-      const next = { label, at: currentTime, key: previous.key + 1 };
-      accrualSweeps.current.set(resourceId, next);
-      return next.key;
-    };
+    const resolveAccrualKey = useCallback(
+      (resourceId: ResourcesIds, label: string | undefined): number => {
+        const previous = accrualSweeps.current.get(resourceId);
+        if (!previous) {
+          accrualSweeps.current.set(resourceId, { label, at: currentTime, key: 0 });
+          return 0;
+        }
+        if (label === previous.label || currentTime - previous.at < ACCRUAL_SWEEP_INTERVAL_MS) {
+          previous.label = label;
+          return previous.key;
+        }
+        const next = { label, at: currentTime, key: previous.key + 1 };
+        accrualSweeps.current.set(resourceId, next);
+        return next.key;
+      },
+      [currentTime],
+    );
 
     const balanceMap = useMemo(() => {
       const map = new Map<number, number>();
@@ -137,14 +140,8 @@ export const MergedResourcePanel = memo(
       return false;
     }, [balanceMap]);
 
-    const hasAvailableBuildingTile = useMemo(() => {
-      if (!realm?.position) return true;
-      return resolveRealmHasAvailableBuildingTile({
-        entityId,
-        realmPosition: realm.position,
-      });
-      // the clock keeps this fresh as synced building occupancy changes.
-    }, [realm?.position, entityId, currentTime]);
+    // Read on every render, which the clock brings at least once a second, as building occupancy syncs.
+    const hasAvailableBuildingTile = resolveRealmHasAvailableBuildingTile({ entityId, realmPosition: realm?.position });
 
     const handleAutoBuild = useCallback(
       async (buildingType: BuildingType, resourceId: ResourcesIds) => {
@@ -230,7 +227,7 @@ export const MergedResourcePanel = memo(
         balanceMap,
         canBuild,
         store,
-        currentTime,
+        resolveAccrualKey,
         entityId,
         handleAutoBuild,
         hasAvailableBuildingTile,

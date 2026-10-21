@@ -1,6 +1,5 @@
-import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useMemo } from "react";
 
@@ -24,13 +23,12 @@ const DEPLOY_MODELS = [
  * and the bar each starts an army on. Undefined while any of it is unknown.
  */
 export const useDeployPlan = (realm: NativeRows["Structure"] | null | undefined) => {
-  const { setup } = useGame();
   const defaultTick = useCurrentDefaultTick();
-  const revision = useNativeRevision(DEPLOY_MODELS);
+  const facts = useNativeFacts(DEPLOY_MODELS);
   const rules = useExpeditionRules();
   const now = useNowSeconds();
   return useMemo(
-    () => (realm && rules ? readDeployPlan(setup.store, realm, rules, { now, defaultTick }) : undefined),
-    [defaultTick, now, realm, revision, rules, setup.store],
+    () => (realm && rules ? readDeployPlan(facts.store, realm, rules, { now, defaultTick }) : undefined),
+    [defaultTick, now, realm, facts, rules],
   );
 };

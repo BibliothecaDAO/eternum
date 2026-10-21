@@ -21,7 +21,9 @@ vi.mock("@/hooks/context/game-context", () => ({
     setup: { store: { get: () => undefined }, systemCalls: { buy_resources: vi.fn(), sell_resources: vi.fn() } },
   }),
 }));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("@/hooks/helpers/use-native-facts", async () =>
+  (await import("@/hooks/helpers/native-facts-mock")).nativeFactsMock(),
+);
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
   const eternum = await importOriginal<typeof import("@bibliothecadao/eternum")>();
   class MarketManager {

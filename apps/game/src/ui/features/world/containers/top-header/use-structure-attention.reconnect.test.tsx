@@ -27,7 +27,9 @@ vi.mock("@bibliothecadao/eternum", () => ({
   configManager: { getActiveGameId: () => 1 },
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowMs: () => world.now * 1000 }));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => world.revision }));
+vi.mock("@/hooks/helpers/use-native-facts", async () =>
+  (await import("@/hooks/helpers/native-facts-mock")).nativeFactsMock(() => world.revision),
+);
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (select: (state: unknown) => unknown) => select({ account: { address: "0xabc" } }),
   useAccountAddress: () => 0xabcn,

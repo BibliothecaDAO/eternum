@@ -49,6 +49,11 @@ const UNUSED = {
   "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", ignoreRestSiblings: true }],
 };
 
+// A memo, callback or effect that leaves out a value it reads keeps the old one (a name that never updates, a quote on
+// the last market); one that lists a value it never reads hides the input it does read. A memo over the native store
+// lists useNativeFacts' `facts` and reads `facts.store`; an effect that runs on its own trigger reads useLatest.
+const HOOK_DEPENDENCIES = { "react-hooks/exhaustive-deps": "error" };
+
 const eslint = new ESLint({
   cwd: REPO,
   overrideConfigFile: true,
@@ -59,6 +64,10 @@ const eslint = new ESLint({
       linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
       plugins: { "react-hooks": reactHooks, "@typescript-eslint": tseslint.plugin },
       rules: { "no-restricted-syntax": ["error", ...NO_BITWISE_ID], ...HOOK_ORDER, ...UNUSED },
+    },
+    {
+      files: ["apps/game/src/**/*.{ts,tsx}"],
+      rules: HOOK_DEPENDENCIES,
     },
     {
       files: ["apps/game/src/**/*.{ts,tsx}"],

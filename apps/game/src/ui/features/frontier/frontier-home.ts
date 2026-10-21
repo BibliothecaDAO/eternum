@@ -1,5 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
@@ -26,21 +26,19 @@ const HOME_MODELS = ["Structure"] as const;
 
 /** The expedition rules as a subscription: non-null exactly when this game is Frontier. */
 export const useExpeditionRules = () => {
-  const { setup } = useGame();
-  const revision = useNativeRevision(RULE_MODELS);
-  return useMemo(() => readExpeditionRules(setup.store, configManager.getActiveGameId()), [revision, setup.store]);
+  const facts = useNativeFacts(RULE_MODELS);
+  return useMemo(() => readExpeditionRules(facts.store, configManager.getActiveGameId()), [facts]);
 };
 
 /** The signed-in player's expedition realm, or null for a spectator or before the realm is founded. */
 export const useFrontierRealm = (): NativeRows["Structure"] | null => {
-  const { setup } = useGame();
   const address = useAccountStore((state) => state.account?.address ?? null);
-  const revision = useNativeRevision(HOME_MODELS);
+  const facts = useNativeFacts(HOME_MODELS);
   return useMemo(() => {
     if (!address) return null;
-    const owned = setup.store.structuresOwnedBy(configManager.getActiveGameId(), BigInt(address));
-    return [...owned].find((structure) => isExpeditionRealm(setup.store, structure)) ?? null;
-  }, [address, revision, setup.store]);
+    const owned = facts.store.structuresOwnedBy(configManager.getActiveGameId(), BigInt(address));
+    return [...owned].find((structure) => isExpeditionRealm(facts.store, structure)) ?? null;
+  }, [address, facts]);
 };
 
 /**

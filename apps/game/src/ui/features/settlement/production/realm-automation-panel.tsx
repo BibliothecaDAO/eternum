@@ -477,7 +477,6 @@ export const RealmAutomationPanel = ({
     draftPresetId,
     draftPercentages,
     realmResources,
-    entityType,
     createBaselinePercentages,
     resolveDraftPercentages,
     realmEntityId,

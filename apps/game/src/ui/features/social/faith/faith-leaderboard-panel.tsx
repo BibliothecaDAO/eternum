@@ -45,7 +45,7 @@ export const FaithLeaderboardPanel = () => {
         ),
       });
     },
-    [openSurface],
+    [openSurface, closeSurface],
   );
 
   return (

@@ -3,8 +3,7 @@ import { HudField, HudTableHead } from "@/ui/design-system/kit/hud-elements";
 import { resolveBestPrices } from "./best-prices";
 import { MarketResourceRow } from "./market-resource-row";
 import { MarketManager } from "@bibliothecadao/eternum";
-import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { ID, MarketInterface, ResourcesIds, resourceName } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
@@ -24,9 +23,8 @@ export const MarketResourceSidebar = ({
   resourceAskOffers: MarketInterface[];
   resourceBidOffers: MarketInterface[];
 }) => {
-  const game = useGame();
   const mode = useGameModeConfig();
-  const revision = useNativeRevision(["Market"]);
+  const facts = useNativeFacts(["Market"]);
   const [search, setSearch] = useState("");
 
   const tradableResources = useMemo(
@@ -40,10 +38,10 @@ export const MarketResourceSidebar = ({
   const ammPrices = useMemo(() => {
     const prices = new Map<number, number>();
     for (const resourceId of tradableResources) {
-      prices.set(resourceId, new MarketManager(game.setup.store, 0n, resourceId).getMarketPrice() || 0);
+      prices.set(resourceId, new MarketManager(facts.store, 0n, resourceId).getMarketPrice() || 0);
     }
     return prices;
-  }, [tradableResources, game.setup.store, revision]);
+  }, [tradableResources, facts]);
 
   // Indexed once per offer set instead of once per row.
   const bestPrices = useMemo(

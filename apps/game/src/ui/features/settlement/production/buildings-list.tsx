@@ -50,7 +50,7 @@ export const BuildingsList = ({
         };
       })
       .filter((production) => production !== null);
-  }, [producedResources, productionBuildings, resourceManager, currentDefaultTick]);
+  }, [producedResources, productionBuildings, resourceManager]);
 
   const selectedProduction =
     selectedResource !== null ? productions.find((p) => p.resource === selectedResource) : null;

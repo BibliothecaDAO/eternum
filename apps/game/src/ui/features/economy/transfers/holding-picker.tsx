@@ -1,5 +1,4 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useGame } from "@/hooks/context/game-context";
 import { realmLevelNumber } from "@/ui/lib/realm-level";
 import type { LeftListFilter } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
@@ -30,8 +29,7 @@ export const HoldingPicker = ({
   onPick: (id: number) => void;
   note: (id: number) => ReactNode;
 }) => {
-  const { setup } = useGame();
-  const metadata = useStructuresWithMetadata({ structures: useFactView(playerStructuresView), store: setup.store });
+  const metadata = useStructuresWithMetadata({ structures: useFactView(playerStructuresView) });
   // The other end by value: its array is new on every render.
   const otherEndKey = otherEnd.join(",");
   const holdings = useMemo(() => {

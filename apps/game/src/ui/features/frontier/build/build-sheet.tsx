@@ -4,7 +4,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useAllInFlight, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -118,11 +118,11 @@ export const BuildSheet = ({
   const realmId = safeInteger(realm.entity_id);
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
-  const revision = useNativeRevision(BUILD_MODELS);
+  const facts = useNativeFacts(BUILD_MODELS);
   const tick = useCurrentDefaultTick();
   const options = useMemo(
-    () => readBuildOptions(setup.store, realm, useSimpleCost, tick),
-    [realm, revision, setup.store, tick, useSimpleCost],
+    () => readBuildOptions(facts.store, realm, useSimpleCost, tick),
+    [realm, facts, tick, useSimpleCost],
   );
   const [chosen, setChosen] = useState(0);
   const option = options?.[chosen];
@@ -131,8 +131,8 @@ export const BuildSheet = ({
   const mode = useGameModeConfig();
   const names = usePlayerNames();
   const realmInfo = useMemo(
-    () => getRealmInfo(safeInteger(realm.entity_id), setup.store, names.text),
-    [realm.entity_id, revision, setup.store, names],
+    () => getRealmInfo(safeInteger(realm.entity_id), facts.store, names.text),
+    [realm.entity_id, facts, names],
   );
   useBuildingGhost(option?.category, plot);
   const stillShowing = useStillShowing(plot);

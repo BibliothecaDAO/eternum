@@ -21,7 +21,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import {
   getBuildingFromResource,
@@ -167,19 +167,18 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     return craftableStructureIds;
   }, [store, structureColumns]);
 
-  // The resources revision is the recompute signal; only the columns' own rows are read, never every Resource row.
-  const resourcesRevision = useNativeRevision(RESOURCE_FACTS);
+  // Only the columns' own rows are read, never every Resource row.
+  const resourceFacts = useNativeFacts(RESOURCE_FACTS);
 
   const resourcesByStructure = useMemo(() => {
     const map = new Map<number, ResourceManager>();
-    void resourcesRevision;
     structureIdSet.forEach((structureEntityId) => {
-      const resourceValue = new ResourceManager(store, structureEntityId);
+      const resourceValue = new ResourceManager(resourceFacts.store, structureEntityId);
       if (resourceValue.hasResources()) map.set(structureEntityId, resourceValue);
     });
 
     return map;
-  }, [resourcesRevision, structureIdSet, store]);
+  }, [resourceFacts, structureIdSet]);
 
   const resourceSummaries = useMemo(() => {
     const summaries = new Map<ResourcesIds, ResourceSummary>();

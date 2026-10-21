@@ -1,7 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import {
@@ -42,11 +41,10 @@ const whole = (amount: number) => Math.floor(amount / RESOURCE_PRECISION);
  * included: a realm sends them to a rift), each end's role and name, and the donkeys' road.
  */
 export const useTransferSides = (sourceId: number | null, destinationIds: number[]): TransferSides | null => {
-  const { setup } = useGame();
   const mode = useGameModeConfig();
   const tick = useCurrentDefaultTick();
   const holdings = useFactView(playerStructuresView);
-  const revision = useNativeRevision(["ResourceBalance", "ResourceProduction"]);
+  const facts = useNativeFacts(["ResourceBalance", "ResourceProduction"]);
   // The destinations by value: their array is new on every render.
   const destinationKey = destinationIds.join(",");
 
@@ -67,7 +65,7 @@ export const useTransferSides = (sourceId: number | null, destinationIds: number
             destination: destination.structure,
           }),
       );
-    const held = new ResourceManager(setup.store, source.entityId).balances(tick) ?? [];
+    const held = new ResourceManager(facts.store, source.entityId).balances(tick) ?? [];
     const carried = held
       .filter(({ resourceId }) => troopsTravel || !isMilitaryResource(resourceId))
       .map(({ resourceId, amount }) => ({
@@ -87,5 +85,5 @@ export const useTransferSides = (sourceId: number | null, destinationIds: number
       donkeysHave: whole(held.find(({ resourceId }) => resourceId === ResourcesIds.Donkey)?.amount ?? 0),
       donkeyCapacityKg: configManager.getCapacityConfigKg(CapacityConfig.Donkey),
     };
-  }, [holdings, sourceId, destinationKey, setup.store, tick, mode, revision]);
+  }, [holdings, sourceId, destinationKey, tick, mode, facts]);
 };

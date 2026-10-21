@@ -12,7 +12,7 @@ import { useInGameLeaderboard } from "./use-in-game-leaderboard";
 import { useMmrForecast } from "./mmr-forecast";
 import { configManager, getGuildFromPlayerAddress, isViewerOwner } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { createEmptyActivityBreakdown } from "@bibliothecadao/eternum/game-sync";
 import { ContractAddress, PlayerInfo, samePoints } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
@@ -51,7 +51,7 @@ export const PlayersPanel = ({
     account: { account },
   } = useGame();
 
-  const revision = useNativeRevision(["Structure", "Guild", "GuildMember", "GuildWhitelist"]);
+  const facts = useNativeFacts(["Structure", "Guild", "GuildMember", "GuildWhitelist"]);
 
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address), store);
   const { isFinalized, standingsByAddress } = useInGameLeaderboard();
@@ -70,10 +70,10 @@ export const PlayersPanel = ({
       // filter out players with no address
       .filter((player) => player.address !== 0n)
       .map((player) => {
-        const guild = getGuildFromPlayerAddress(player.address, store);
+        const guild = getGuildFromPlayerAddress(player.address, facts.store);
 
         const isInvited = userGuild
-          ? (store.get("GuildWhitelist", {
+          ? (facts.store.get("GuildWhitelist", {
               game_id: configManager.getActiveGameId(),
               guild_id: userGuild.entityId,
               player: player.address,
@@ -86,7 +86,7 @@ export const PlayersPanel = ({
             createEmptyActivityBreakdown())
           : undefined;
 
-        // Finalized games rank by the on-chain final standings; live games by the native store's standing: registered
+        // Finalized games rank by the on-chain final standings; live games by the native facts.store's standing: registered
         // points plus the hold points accruing since each hyperstructure's last checkpoint. The row's columns are the
         // registered points by activity with those accruing hold points under HS held, so Points is their sum.
         const liveRank = standing?.rank ?? player.rank;
@@ -110,17 +110,7 @@ export const PlayersPanel = ({
         };
       });
     return leaderboardPlayers;
-  }, [
-    revision,
-    account.address,
-    activityBreakdownsByAddress,
-    store,
-    isFinalized,
-    mmr,
-    players,
-    standingsByAddress,
-    userGuild,
-  ]);
+  }, [facts, account.address, activityBreakdownsByAddress, isFinalized, mmr, players, standingsByAddress, userGuild]);
 
   const whitelistPlayer = (address: ContractAddress) => {
     if (!canIssueOrders()) return;

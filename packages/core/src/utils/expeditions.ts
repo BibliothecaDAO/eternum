@@ -101,19 +101,21 @@ export const isCurrentExpeditionArmy = (
  * A structure's living field armies: troops left and, in a game with expeditions, standing in today's region. An army
  * from an earlier day is dead by rule: every command refuses it, and the contract destroys it before checking the army
  * cap when the realm next musters. So it never counts toward that cap or shows as the realm's army, even while its row
- * is still a fact. Today is judged at the execution floor, the time the next command will run at.
+ * is still a fact. Today is judged at the execution floor, the time the next command will run at, unless a caller that
+ * follows the clock passes the floor it read.
  */
 export const liveHomeArmies = (
   store: Pick<NativeFactStore, "get" | "require" | "armiesAtHome" | "entityOccupancy">,
   structureId: number,
   gameId: number,
+  floorSeconds?: number,
 ): NativeRows["ExplorerTroops"][] => {
   const armies = [...store.armiesAtHome(gameId, structureId)].filter((army) => army.troops.count > 0n);
   const rules = readExpeditionRules(store, gameId);
   if (!rules) return armies;
-  const floorSeconds = getBlockTimestamp().currentDefaultTick;
+  const floor = floorSeconds ?? getBlockTimestamp().currentDefaultTick;
   return armies.filter((army) =>
-    isCurrentExpeditionArmy(rules, entityMapPosition(store, gameId, army.explorer_id), floorSeconds),
+    isCurrentExpeditionArmy(rules, entityMapPosition(store, gameId, army.explorer_id), floor),
   );
 };
 

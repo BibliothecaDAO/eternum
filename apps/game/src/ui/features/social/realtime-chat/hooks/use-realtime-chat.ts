@@ -1,3 +1,4 @@
+import { useLatest } from "@/hooks/use-latest";
 import { useCallback, useEffect, useMemo } from "react";
 
 import { useRealtimeChatStore } from "../model/store";
@@ -143,14 +144,18 @@ export const useDirectMessageControls = (threadId?: string, recipientId?: string
 
 export const useRealtimeChatInitializer = (config?: InitializeRealtimeClientParams | null) => {
   const actions = useRealtimeChatActions();
+  // The client starts again only for another server or other zones, with the config as it stands then.
+  const startedWith = useLatest(config);
+  const clientKey = config ? `${config.baseUrl} ${JSON.stringify(config.joinZones ?? [])}` : null;
 
   useEffect(() => {
-    if (!config) return;
-    actions.initializeClient(config);
+    const current = startedWith.current;
+    if (!clientKey || !current) return;
+    actions.initializeClient(current);
     return () => {
       actions.resetClient();
     };
-  }, [actions, config?.baseUrl, JSON.stringify(config?.joinZones ?? [])]);
+  }, [actions, clientKey, startedWith]);
 };
 
 export const useRealtimeChatSelector = <T>(

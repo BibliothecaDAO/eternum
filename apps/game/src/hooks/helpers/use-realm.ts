@@ -2,17 +2,16 @@ import { readStructureIds } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "./use-native-facts";
+import { useNativeFacts } from "./use-native-facts";
 
 const useOwnedStructureIds = (category: StructureType) => {
   const {
-    setup: { store },
     account: { account },
   } = useGame();
-  const revision = useNativeRevision(["Structure"]);
+  const facts = useNativeFacts(["Structure"]);
   return useMemo(
-    () => readStructureIds(store, BigInt(account.address), category),
-    [store, account.address, category, revision],
+    () => readStructureIds(facts.store, BigInt(account.address), category),
+    [facts, account.address, category],
   );
 };
 export const usePlayerOwnedVillageEntities = () => useOwnedStructureIds(StructureType.Village);

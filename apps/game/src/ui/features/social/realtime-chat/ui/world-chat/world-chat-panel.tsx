@@ -89,6 +89,9 @@ const CoordinateNavButton = ({
   );
 };
 
+/** A room or thread not read yet has no messages: the same empty list each render. */
+const NO_MESSAGES: WorldChatMessage[] = [];
+
 const formatWorldMessageTime = (message: WorldChatMessage) => {
   const created = message.createdAt instanceof Date ? message.createdAt : new Date(message.createdAt);
   if (created instanceof Date && !Number.isNaN(created.getTime())) {
@@ -113,7 +116,7 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
   const actions = useRealtimeChatActions();
   const { zone, isActive } = useRealtimeWorldZone(resolvedZoneId);
   const { sendMessage, loadHistory, markAsRead } = useWorldChatControls(resolvedZoneId);
-  const messages = zone?.messages ?? [];
+  const messages = zone?.messages ?? NO_MESSAGES;
   const presence = useRealtimePresence();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -176,7 +179,7 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
     ) {
       loadHistory(undefined);
     }
-  }, [hasChannelAccess, resolvedZoneId, zone, messages.length]);
+  }, [hasChannelAccess, resolvedZoneId, zone, messages.length, loadHistory]);
 
   // Auto-scroll to bottom on new messages. Once we've ever pinned to bottom we
   // mark the panel as "anchored" so the history-loading observer can start.
@@ -257,7 +260,7 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [zone?.hasMoreHistory, zone?.isFetchingHistory, zone?.lastFetchedCursor, loadHistory]);
+  }, [zone?.hasMoreHistory, zone?.isFetchingHistory, zone?.lastFetchedCursor, zone?.historyError, loadHistory]);
 
   const dateSeparators = useMemo(() => computeDateSeparators(messages), [messages]);
 

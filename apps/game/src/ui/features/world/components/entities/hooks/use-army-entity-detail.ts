@@ -11,7 +11,7 @@ import {
   isViewerOwner,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeRow, useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ID } from "@bibliothecadao/types";
 import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
@@ -59,16 +59,16 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     explorer ? { game_id: configManager.getActiveGameId(), entity_id: explorer.owner } : undefined,
   );
   const structureResources = useResourceManager(explorer ? safeInteger(explorer.owner) : 0);
-  const ownershipRevision = useNativeRevision(["GuildMember", "Guild", "EntityName"]);
-  const slotRevision = useNativeRevision(["ArmySlot"]);
+  const ownershipFacts = useNativeFacts(["GuildMember", "Guild", "EntityName"]);
+  const slotFacts = useNativeFacts(["ArmySlot"]);
   const owner = explorer ? getExplorerOwner(store, explorer) : 0n;
 
   const staminaSnapshot = useMemo(() => {
     return getExplorerStaminaSnapshot({
       timestamp,
-      liveTroops: explorer ? resolveExplorerTroops(store, explorer) : undefined,
+      liveTroops: explorer ? resolveExplorerTroops(slotFacts.store, explorer) : undefined,
     });
-  }, [armyEntityId, timestamp, explorer, store, slotRevision]);
+  }, [timestamp, explorer, slotFacts]);
 
   const currentTroops = staminaSnapshot?.troops ?? null;
   const relicEffects = useMemo(
@@ -91,7 +91,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
         })
       : null;
 
-    const guild = owner ? getGuildFromPlayerAddress(owner, store) : undefined;
+    const guild = owner ? getGuildFromPlayerAddress(owner, ownershipFacts.store) : undefined;
     const isMine = isViewerOwner(owner, userAddress);
 
     const structureOwnerName = structure ? mode.structure.getName(structure).name : undefined;
@@ -105,19 +105,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
       isMine: Boolean(isMine),
       structureOwnerName,
     };
-  }, [
-    armyEntityId,
-    store,
-    owner,
-    ownershipRevision,
-    timestamp,
-    explorer,
-    mode,
-    addressName,
-    staminaSnapshot,
-    structure,
-    userAddress,
-  ]);
+  }, [owner, ownershipFacts, timestamp, explorer, mode, addressName, staminaSnapshot, structure, userAddress]);
 
   const handleDeleteExplorer = useCallback(async () => {
     setIsLoadingDelete(true);

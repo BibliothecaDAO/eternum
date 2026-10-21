@@ -2,7 +2,7 @@ import { HexMarker } from "@/ui/design-system/hex-marker";
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { minimapMarkersView, type MinimapMarker } from "./minimap-markers";
 import { latticeHexAt, latticeHexBoundsForWorldRect, latticeToWorld } from "@/three/utils/hex-lattice";
-import { fromRenderHex, toRenderHex, worldOrigin } from "@/three/world-origin";
+import { fromRenderHex, worldOrigin } from "@/three/world-origin";
 import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
 import {
   readCameraView,
@@ -108,9 +108,8 @@ const MINIMAP_SCALE_REFERENCE = 1.4;
  * Minimap pixels for a normalized hex: the world map's lattice at minimap scale, drawn relative to the floating world
  * origin so SVG coordinates stay small wherever the map is looked at.
  */
-const offsetToPixel = (col: number, row: number) => {
-  const render = toRenderHex(col, row);
-  const { x, z } = latticeToWorld(render.col, render.row);
+const offsetToPixel = (col: number, row: number, origin: HexPosition = worldOrigin()) => {
+  const { x, z } = latticeToWorld(col - origin.col, row - origin.row);
   return { x: x * HEX_SIZE, y: z * HEX_SIZE };
 };
 
@@ -159,7 +158,7 @@ type CenteredIndex = {
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 };
 
-const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
+const buildCenteredIndex = (tiles: MinimapTile[], origin: HexPosition): CenteredIndex => {
   const center = FELT_CENTER();
   const byCol = new Map<number, CenteredTileEntry[]>();
   let minX = Infinity;
@@ -170,7 +169,7 @@ const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
   for (const tile of tiles) {
     const centeredCol = tile.col - center;
     const centeredRow = tile.row - center;
-    const pixel = offsetToPixel(centeredCol, centeredRow);
+    const pixel = offsetToPixel(centeredCol, centeredRow, origin);
     const corners = hexCorners(pixel);
     const points = corners.map((corner) => `${corner.x},${corner.y}`).join(" ");
     const tileMinX = Math.min(...corners.map((c) => c.x));
@@ -330,8 +329,8 @@ export const HexMinimap = ({
   const markers = useFactView(minimapMarkersView);
   const viewportRef = useRef({ width: 320, height: 320 });
   // The origin the camera's view is drawn around: the tiles are placed about the same one.
-  const [origin, setOrigin] = useState(() => originKey(readCameraView()));
-  const centeredIndex = useMemo(() => buildCenteredIndex(tiles), [tiles, origin]);
+  const [origin, setOrigin] = useState(() => viewOrigin(readCameraView()));
+  const centeredIndex = useMemo(() => buildCenteredIndex(tiles, origin), [tiles, origin]);
 
   /** Before the camera first tells what it sees (another scene first, the lab): its hex, else a target, else the map. */
   const fallback = useMemo((): Framing => {
@@ -382,8 +381,8 @@ export const HexMinimap = ({
 
   useEffect(() => {
     return subscribeCameraView((view) => {
-      const key = originKey(view);
-      setOrigin((current) => (current === key ? current : key));
+      const next = viewOrigin(view);
+      setOrigin((current) => (current.col === next.col && current.row === next.row ? current : next));
       draw();
     });
   }, [draw]);
@@ -576,8 +575,5 @@ export const HexMinimap = ({
   );
 };
 
-/** The floating origin a camera view is drawn around, as a key; the origin's own when the camera has not told yet. */
-const originKey = (view: CameraView | null): string => {
-  const origin = view?.origin ?? worldOrigin();
-  return `${origin.col}:${origin.row}`;
-};
+/** The floating origin a camera view is drawn around; the origin's own when the camera has not told yet. */
+const viewOrigin = (view: CameraView | null): HexPosition => view?.origin ?? worldOrigin();

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useLatest } from "@/hooks/use-latest";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import { GameFinalizedError, SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
 import {
@@ -202,9 +203,11 @@ export const useGameEntryBootstrapController = ({
     runBootstrap();
   }, [runBootstrap]);
 
+  // A new game starts over from the context as it stands then; the same game's context changing starts nothing.
+  const enteredContext = useLatest(context);
   useEffect(() => {
-    refreshReadyState(context);
-  }, [contextKey, refreshReadyState]);
+    refreshReadyState(enteredContext.current);
+  }, [contextKey, refreshReadyState, enteredContext]);
 
   useEffect(() => {
     if (!enabled) {

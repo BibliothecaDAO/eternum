@@ -85,16 +85,7 @@ const typeInto = (label: string, text: string) =>
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
 
-const ownOrder = () =>
-  render(
-    <OrderRow
-      offer={ask(STRUCTURE)}
-      entityId={STRUCTURE}
-      isBuy={false}
-      updateBalance={false}
-      setUpdateBalance={() => {}}
-    />,
-  );
+const ownOrder = () => render(<OrderRow offer={ask(STRUCTURE)} entityId={STRUCTURE} isBuy={false} />);
 
 describe("cancelling your own order", () => {
   it.each(["blitz", "eternum"] as const)("acts at once in %s", async (mode) => {
@@ -122,9 +113,7 @@ describe("cancelling your own order", () => {
 describe("taking an offer", () => {
   it("asks how much in every mode, and takes the typed whole amount", async () => {
     world.mode = "blitz";
-    render(
-      <OrderRow offer={ask(3)} entityId={STRUCTURE} isBuy={false} updateBalance={false} setUpdateBalance={() => {}} />,
-    );
+    render(<OrderRow offer={ask(3)} entityId={STRUCTURE} isBuy={false} />);
     await press("Buy");
     expect(world.calls.accept_order).not.toHaveBeenCalled();
     typeInto("Wheat to buy", "4.9");
@@ -238,9 +227,7 @@ describe("a market send in flight", () => {
 
   it("takes an offer once while its send waits", async () => {
     world.mode = "blitz";
-    render(
-      <OrderRow offer={ask(3)} entityId={STRUCTURE} isBuy={false} updateBalance={false} setUpdateBalance={() => {}} />,
-    );
+    render(<OrderRow offer={ask(3)} entityId={STRUCTURE} isBuy={false} />);
     const answer = held(world.calls.accept_order);
     await press("Buy");
     const take = [...host.querySelector('[role="dialog"]')!.querySelectorAll("button")].find(

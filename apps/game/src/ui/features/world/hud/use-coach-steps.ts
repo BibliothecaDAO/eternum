@@ -2,12 +2,13 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick, useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
+import { useSpatialProjection } from "@/hooks/use-spatial-projection";
 import { gameStructuresView, playerStructuresView, selectableArmiesView } from "@/sync/fact-views";
 import { requestChestOpening } from "@/three/scenes/worldmap-chest-open-request";
 import { LeftView } from "@/types";
@@ -28,10 +29,9 @@ import {
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { BiomeType, StructureType, TroopTier, TroopType, formatCount } from "@bibliothecadao/types";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   type CoachAct,
   type CoachArmy,
@@ -111,6 +111,9 @@ const toNextStep = (step: CoachStep, act: (action: ButtonAct) => void): NextStep
   };
 };
 
+/** The coach follows armies and crates as they move on the map. */
+const COACH_LAYERS = ["armies", "chests"] as const;
+
 /** A coach hex is the projection's, in contract coordinates: the place the map is asked to show. */
 const coachPlace = (hex: { col: number; row: number }): Position => Position.fromContract({ x: hex.col, y: hex.row });
 
@@ -150,20 +153,20 @@ const useCoachArmies = (): CoachArmy[] => {
   const mode = useGameModeConfig();
   const armies = useFactView(selectableArmiesView);
   const timestamp = useCurrentDefaultTick();
-  const facts = useNativeRevision(["ExplorerTroops", "ResourceBalance", "ResourceProduction"]);
+  const facts = useNativeFacts(["ExplorerTroops", "ResourceBalance", "ResourceProduction"]);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
-  const { projection, revision } = useProjectionRevision();
+  const spatial = useSpatialProjection(COACH_LAYERS);
   return useMemo(
     () =>
       armies.flatMap(({ entityId }) => {
-        const placed = projection?.getArmy(entityId);
-        const explorer = setup.store.get("ExplorerTroops", {
+        const placed = spatial.projection?.getArmy(entityId);
+        const explorer = facts.store.get("ExplorerTroops", {
           game_id: configManager.getActiveGameId(),
           explorer_id: entityId,
         });
         if (!placed || !explorer) return [];
         const homeId = Number(explorer.owner);
-        const home = setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: homeId });
+        const home = facts.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: homeId });
         return [
           {
             entityId,
@@ -173,12 +176,12 @@ const useCoachArmies = (): CoachArmy[] => {
               name: home ? mode.structure.getName(home).name : "its realm",
               canLevelUp: home ? home.base.level < configManager.getMaxLevel(home.base.category) : false,
             },
-            canExplore: new ArmyActionManager(setup.store, setup.systemCalls, entityId).canExplore(timestamp),
+            canExplore: new ArmyActionManager(facts.store, setup.systemCalls, entityId).canExplore(timestamp),
             selected: selectedId === entityId,
           },
         ];
       }),
-    [armies, setup.store, setup.systemCalls, mode, timestamp, facts, selectedId, projection, revision],
+    [armies, setup.systemCalls, mode, timestamp, facts, selectedId, spatial],
   );
 };
 
@@ -193,24 +196,23 @@ const TROOP_KINDS = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin]
  * storage, at chain time.
  */
 const useTroopsOnHand = (): TroopsOnHand | null => {
-  const { setup } = useGame();
   const mode = useGameModeConfig();
   const structures = useFactView(playerStructuresView);
   const tick = useCurrentDefaultTick();
-  const facts = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight"]);
+  const facts = useNativeFacts(["ResourceBalance", "ResourceProduction", "ResourceWeight"]);
   return useMemo(
     () =>
       structures
         .map((structure) => ({
           realmId: structure.entityId,
           realmName: mode.structure.getName(structure.structure).name,
-          stack: largestStack(setup.store, structure.entityId, tick),
+          stack: largestStack(facts.store, structure.entityId, tick),
         }))
         .reduce<TroopsOnHand | null>(
           (most, realm) => (realm.stack.count > (most?.stack.count ?? 0) ? realm : most),
           null,
         ),
-    [structures, setup.store, mode, tick, facts],
+    [structures, mode, tick, facts],
   );
 };
 
@@ -230,21 +232,20 @@ const largestStack = (store: NativeFactStore, entityId: number, tick: number): T
  * the attack preview's own forecast. A target with no guard standing is no loss.
  */
 const useCertainLoss = () => {
-  const { setup } = useGame();
   const timestamp = useCurrentDefaultTick();
-  const facts = useNativeRevision(["ExplorerTroops", "Guard", "ArmySlot", "Structure", "TileOccupancy"]);
+  const facts = useNativeFacts(["ExplorerTroops", "Guard", "ArmySlot", "Structure", "TileOccupancy"]);
   return useMemo(() => {
     const gameId = configManager.getActiveGameId();
     return (army: CoachArmy, target: CoachTarget): boolean => {
-      const tile = getTileAt(setup.store, false, target.hex.col, target.hex.row);
-      const structure = tile && setup.store.get("Structure", { game_id: gameId, entity_id: Number(tile.occupier_id) });
+      const tile = getTileAt(facts.store, false, target.hex.col, target.hex.row);
+      const structure = tile && facts.store.get("Structure", { game_id: gameId, entity_id: Number(tile.occupier_id) });
       const guard = structure
-        ? (getGuardsByStructure(structure, setup.store) ?? [])
+        ? (getGuardsByStructure(structure, facts.store) ?? [])
             .filter((slot) => slot.troops.count > 0n)
             .toSorted((left, right) => left.slot - right.slot)[0]
         : undefined;
-      const explorer = setup.store.get("ExplorerTroops", { game_id: gameId, explorer_id: army.entityId });
-      const troops = explorer ? resolveExplorerTroops(setup.store, explorer) : undefined;
+      const explorer = facts.store.get("ExplorerTroops", { game_id: gameId, explorer_id: army.entityId });
+      const troops = explorer ? resolveExplorerTroops(facts.store, explorer) : undefined;
       if (!guard || !troops) return false;
       const biome = tile && tile.biome !== 0 ? biomeTypeOf(tile.biome) : BiomeType.None;
       const circumstances = {
@@ -258,7 +259,7 @@ const useCertainLoss = () => {
       const rules = { rules: activeCombatRules(), rollsDice: configManager.rollsCombatDice(false) };
       return forecastAttack(troops, guard.troops, circumstances, rules).certainLoss;
     };
-  }, [setup.store, timestamp, facts]);
+  }, [timestamp, facts]);
 };
 
 /** Sites a camp or rift's capture pays for: what The Vanguard holds that is not a realm, village or Hyperstructure. */
@@ -269,10 +270,10 @@ const useCoachTargets = (): CoachTarget[] => {
   const { setup } = useGame();
   const mode = useGameModeConfig();
   const structures = useFactView(gameStructuresView);
-  const { projection, revision } = useProjectionRevision();
+  const spatial = useSpatialProjection(COACH_LAYERS);
   const mapLayer = useUIStore((state) => state.mapLayer);
   return useMemo(() => {
-    const crates: CoachTarget[] = (projection?.getChests(mapLayer) ?? []).map((chest) => ({
+    const crates: CoachTarget[] = (spatial.projection?.getChests(mapLayer) ?? []).map((chest) => ({
       kind: "crate",
       name: "the relic crate",
       hex: chest.hexCoords,
@@ -285,7 +286,7 @@ const useCoachTargets = (): CoachTarget[] => {
         : [];
     });
     return [...crates, ...held];
-  }, [projection, revision, mapLayer, structures, setup.store, mode]);
+  }, [spatial, mapLayer, structures, setup.store, mode]);
 };
 
 /**
@@ -296,21 +297,4 @@ const targetKind = (category: number, owner: bigint): CoachTarget["kind"] | null
   if (owner !== 0n) return null;
   if (category === StructureType.Hyperstructure) return "hyperstructure";
   return SITE_CATEGORIES.has(category) ? "site" : null;
-};
-
-/** The world's spatial projection, and a revision that moves whenever an army or a chest moves on it. */
-const useProjectionRevision = () => {
-  const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection() ?? null;
-  const [revision, setRevision] = useState(0);
-  useEffect(() => {
-    if (!projection) return;
-    const bump = () => setRevision((current) => current + 1);
-    const armies = projection.subscribeArmies(bump);
-    const chests = projection.subscribeChests(bump);
-    return () => {
-      armies();
-      chests();
-    };
-  }, [projection]);
-  return { projection, revision };
 };

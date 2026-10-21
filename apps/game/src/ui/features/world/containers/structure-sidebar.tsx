@@ -11,7 +11,6 @@ import {
   useStructureCategoryFilter,
 } from "@/ui/features/world/containers/left-facets/structure-category-filter";
 import { sortStructures } from "@/ui/features/world/containers/structure-list-utils";
-import { useGame } from "@/hooks/context/game-context";
 import { type ID, StructureType } from "@bibliothecadao/types";
 import { memo, useMemo } from "react";
 import type { StructureWithMetadata } from "./top-header/structure-picker/chip";
@@ -62,9 +61,6 @@ export const StructureSidebar = memo(
     enableCategoryFilter = false,
   }: StructureSidebarProps) => {
     const lane = useCompactLane();
-    const {
-      setup: { store },
-    } = useGame();
     const playerStructures = useFactView(playerStructuresView);
     const structureNameVersion = useUIStore((state) => state.structureNameVersion);
     const leftListSort = useUIStore((state) => state.leftListSort);
@@ -72,7 +68,6 @@ export const StructureSidebar = memo(
 
     const allMetadata = useStructuresWithMetadata({
       structures: playerStructures,
-      store,
       nameUpdateVersion: structureNameVersion,
     });
 

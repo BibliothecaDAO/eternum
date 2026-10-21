@@ -41,7 +41,6 @@ export const useHoldings = () => {
 
   const structures = useStructuresWithMetadata({
     structures: playerStructures,
-    store: setup.store,
     nameUpdateVersion: nameVersion,
   });
 

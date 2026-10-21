@@ -1,6 +1,5 @@
-import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { knownAmount } from "@/ui/utils/utils";
 import {
   getBalance,
@@ -52,19 +51,18 @@ class PricePending extends Error {}
 export const useResearchTree = (
   realm: NativeRows["Structure"] | null,
 ): { nodes: TreeNode[]; essence: number; labor: number } | undefined => {
-  const { setup } = useGame();
   const tick = useCurrentDefaultTick();
-  const revision = useNativeRevision(RESEARCH_MODELS);
+  const facts = useNativeFacts(RESEARCH_MODELS);
   return useMemo(() => {
-    const facts = realm ? readResearchFacts(setup.store, realm, tick) : undefined;
-    if (!facts) return undefined;
+    const research = realm ? readResearchFacts(facts.store, realm, tick) : undefined;
+    if (!research) return undefined;
     try {
-      return { nodes: readResearchTree(facts), essence: facts.essence, labor: facts.labor };
+      return { nodes: readResearchTree(research), essence: research.essence, labor: research.labor };
     } catch (error) {
       if (error instanceof PricePending) return undefined;
       throw error;
     }
-  }, [realm, revision, setup.store, tick]);
+  }, [realm, facts, tick]);
 };
 
 /**

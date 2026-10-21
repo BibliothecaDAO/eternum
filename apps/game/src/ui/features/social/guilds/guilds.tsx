@@ -4,6 +4,7 @@ import { LORDS_PRIZE_POOL, STRK_PRIZE_POOL } from "@/ui/constants";
 import { CreateGuildButton } from "./create-guild-button";
 import { GuildListHeader, GuildRow } from "./guild-list";
 import { useSocialStore } from "../components/use-social-store";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { sortItems } from "@/ui/utils/utils";
 import {
   calculateGuildLordsPrize,
@@ -49,9 +50,10 @@ export const Guilds = ({
   // The guilds slice is the subscription; the bridge publishes it once per ingest slice and on account change.
   const guilds = useFactView(guildsView);
   const guildInvites = usePlayerWhitelist(ContractAddress(account.address));
+  const membership = useNativeFacts(["GuildMember"]);
   const playerGuild = useMemo(
-    () => getGuildFromPlayerAddress(ContractAddress(account.address), store),
-    [account.address, store, isLoading],
+    () => getGuildFromPlayerAddress(ContractAddress(account.address), membership.store),
+    [account.address, membership],
   );
 
   // Aggregate player data per guild

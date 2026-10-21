@@ -18,6 +18,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { ActorType, BiomeType, ContractAddress, getLayeredAttackDistance, ID } from "@bibliothecadao/types";
 
 import { useEffect, useMemo, useState } from "react";
+import { useLatest } from "@/hooks/use-latest";
 
 import {
   buildAttackStaminaRequirementLabel,
@@ -112,13 +113,13 @@ export const BattleLab = ({
   }, []);
 
   // Seed working values from chain once data resolves; never clobber a what-if.
+  const edited = useLatest(isEdited);
   useEffect(() => {
-    if (mode === "live" && snapshot && !isEdited) {
+    if (mode === "live" && snapshot && !edited.current) {
       dispatch({ type: "INIT_LIVE", snapshot });
       setSeed((s) => s + 1);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, snapshot]);
+  }, [mode, snapshot, dispatch, edited]);
 
   const combatSimulator = useMemo(() => new CombatSimulator(parameters), [parameters]);
 

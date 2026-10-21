@@ -152,7 +152,7 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
         />
       ),
     });
-  }, [structureEntityId, structureName, openSurface]);
+  }, [structureEntityId, structureName, openSurface, closeSurface]);
 
   const currentWonderId = devotionStatus?.wonderId ?? null;
   const openCurrentWonderDetailModal = useCallback(() => {
@@ -170,7 +170,7 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
         />
       ),
     });
-  }, [currentWonderId, currentWonderLabel, openSurface]);
+  }, [currentWonderId, currentWonderLabel, openSurface, closeSurface]);
 
   if (!isEternumMode) {
     return null;
@@ -260,7 +260,6 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
   );
 };
 const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotionModalProps) => {
-  const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
   const faithReadModels = useFaithReadModels();
   const {
@@ -305,7 +304,7 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
 
   const closeModal = useCallback(() => {
     closeSurface();
-  }, [openSurface]);
+  }, [closeSurface]);
 
   const confirmDevotion = useCallback(async () => {
     if (!selectedWonderId) {

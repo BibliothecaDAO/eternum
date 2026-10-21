@@ -19,7 +19,7 @@ import {
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
 import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
@@ -72,10 +72,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         attack_explorer_vs_guard_and_garrison,
         attack_guard_vs_explorer,
       },
-      store,
     },
   } = useGame();
-  const revision = useNativeRevision([
+  const facts = useNativeFacts([
     "ArmySlot",
     "Structure",
     "Guard",
@@ -109,19 +108,25 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const rollsDice = useMemo(() => configManager.rollsCombatDice(ethereal), [ethereal]);
 
   const attackerType = useMemo(() => {
-    const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: attacker.id });
+    const structure = facts.store.get("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: attacker.id,
+    });
     return structure ? AttackerType.Structure : AttackerType.Army;
-  }, [attacker.id, store, revision]);
+  }, [attacker.id, facts]);
 
   const structureGuards = useMemo(() => {
     if (attackerType !== AttackerType.Structure) return [];
-    const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: attacker.id });
+    const structure = facts.store.get("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: attacker.id,
+    });
     return structure
-      ? getGuardsByStructure(structure, store)
+      ? getGuardsByStructure(structure, facts.store)
           ?.filter((guard) => guard.troops.count > 0n)
           .toSorted((a, b) => a.slot - b.slot)
       : [];
-  }, [attackerType, attacker.id, store, revision]);
+  }, [attackerType, attacker.id, facts]);
 
   // Hex distance from the attacker to the target. Crossbowmen can poke at range 2; everything else
   // is adjacency-only, so this drives which guards may fire and whether a structure can be claimed.
@@ -143,10 +148,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {
     if (attackerType === AttackerType.Structure) return activeGuard ? { troops: activeGuard.troops } : null;
-    const army = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: attacker.id });
-    const troops = army ? resolveExplorerTroops(store, army) : undefined;
+    const army = facts.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: attacker.id,
+    });
+    const troops = army ? resolveExplorerTroops(facts.store, army) : undefined;
     return troops ? { troops } : null;
-  }, [store, revision, attacker.id, attackerType, activeGuard]);
+  }, [facts, attacker.id, attackerType, activeGuard]);
   const attackerStamina = attackerArmyData
     ? StaminaManager.getStamina(attackerArmyData.troops, executionSecond).amount
     : undefined;
@@ -217,16 +225,15 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const certainLoss = fight?.certainLoss ?? false;
   // What would survive it, within what the player can raise.
   const survivalAdvice = useMemo(() => {
-    void revision;
     if (!fight?.extraToSurvive || !attackerArmyData) return null;
     const armyId = attackerType === AttackerType.Army ? attacker.id : null;
     return readSurvivalAdvice(
-      store,
+      facts.store,
       { id: armyId, troops: attackerArmyData.troops },
       fight.extraToSurvive,
       executionSecond,
     );
-  }, [fight, attackerArmyData, attackerType, attacker.id, store, revision, executionSecond]);
+  }, [fight, attackerArmyData, attackerType, attacker.id, facts, executionSecond]);
 
   // Capture and garrison are judged on the attacker's worst roll, so the atomic claim never counts on luck.
   const attackerRemaining = attackerSide ? attackerSide.worst.remaining : attackerTroopsTotal;

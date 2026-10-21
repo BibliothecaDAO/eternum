@@ -17,6 +17,9 @@ interface DirectMessagesPanelProps {
   className?: string;
 }
 
+/** A room or thread not read yet has no messages: the same empty list each render. */
+const NO_MESSAGES: DirectMessage[] = [];
+
 const toDisplayTime = (message: DirectMessage) => {
   const created = message.createdAt instanceof Date ? message.createdAt : new Date(message.createdAt);
   if (created instanceof Date && !Number.isNaN(created.getTime())) {
@@ -137,7 +140,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
     );
   }, [resolvedThreadId, typingIndicators]);
 
-  const dmMessages = thread?.messages ?? [];
+  const dmMessages = thread?.messages ?? NO_MESSAGES;
   const dateSeparators = useMemo(() => computeDateSeparators(dmMessages), [dmMessages]);
 
   useEffect(() => {

@@ -23,7 +23,7 @@ import {
   isMilitaryResource,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
   ContractAddress,
   ID,
@@ -56,16 +56,11 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const [withdrawalPercentage, setWithdrawalPercentage] = useState(100);
 
-  const market = useNativeRow("Market", { game_id: configManager.getActiveGameId(), resource_type: resourceId });
-  const liquidity = useNativeRow("Liquidity", {
-    game_id: configManager.getActiveGameId(),
-    owner: BigInt(gameContext.account.account.address),
-    resource_type: resourceId,
-  });
-
+  const facts = useNativeFacts(["Market", "Liquidity"]);
+  const playerAddress = gameContext.account.account.address;
   const marketManager = useMemo(
-    () => new MarketManager(gameContext.setup.store, ContractAddress(gameContext.account.account.address), resourceId),
-    [gameContext, resourceId, market, liquidity],
+    () => new MarketManager(facts.store, ContractAddress(playerAddress), resourceId),
+    [facts, playerAddress, resourceId],
   );
 
   const resource = useMemo(() => resources.find((r) => r.id === resourceId), [resourceId]);
@@ -78,7 +73,7 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
         {resource && <ResourceIcon resource={resourceId} size="md" />}
       </span>
     ),
-    [resource],
+    [resource, resourceId],
   );
 
   const [totalLords, totalResource] = marketManager.getReserves();
@@ -88,6 +83,25 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
   const canWithdraw = useMemo(
     () => (myLiquidity?.shares || 0) > 0 && (totalLords > 0 || totalResource > 0),
     [myLiquidity, totalLords, totalResource],
+  );
+
+  const calculateWithdrawAmounts = useCallback(
+    (percentage: number) => {
+      const sharesUnscaled = marketManager.getSharesUnscaled();
+      const totalLiquidityUnscaled = marketManager.getTotalLiquidityUnscaled();
+      const maxShares = sharesUnscaled > totalLiquidityUnscaled ? totalLiquidityUnscaled : sharesUnscaled;
+      const withdrawShares = (maxShares * BigInt(percentage)) / BigInt(100);
+
+      const lordsToReceive = (lordsAmount * percentage) / 100;
+      const resourceToReceive = (resourceAmount * percentage) / 100;
+
+      return {
+        withdrawShares: withdrawShares,
+        lords: lordsToReceive,
+        resource: resourceToReceive,
+      };
+    },
+    [marketManager, lordsAmount, resourceAmount],
   );
 
   const onWithdraw = useCallback(
@@ -113,29 +127,10 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
           setOpenConfirmation(false);
         });
     },
-    [gameContext, entityId, resourceId, marketManager],
+    [gameContext, entityId, resourceId, calculateWithdrawAmounts],
   );
 
-  const calculateWithdrawAmounts = useCallback(
-    (percentage: number) => {
-      const sharesUnscaled = marketManager.getSharesUnscaled();
-      const totalLiquidityUnscaled = marketManager.getTotalLiquidityUnscaled();
-      const maxShares = sharesUnscaled > totalLiquidityUnscaled ? totalLiquidityUnscaled : sharesUnscaled;
-      const withdrawShares = (maxShares * BigInt(percentage)) / BigInt(100);
-
-      const lordsToReceive = (lordsAmount * percentage) / 100;
-      const resourceToReceive = (resourceAmount * percentage) / 100;
-
-      return {
-        withdrawShares: withdrawShares,
-        lords: lordsToReceive,
-        resource: resourceToReceive,
-      };
-    },
-    [marketManager, lordsAmount, resourceAmount],
-  );
-
-  const renderWithdrawForm = useCallback(() => {
+  const renderWithdrawForm = () => {
     const { lords, resource } = calculateWithdrawAmounts(withdrawalPercentage);
 
     const isVillageAndMilitaryResource =
@@ -199,18 +194,7 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
         </HudWindow>
       </PopoverPanel>
     );
-  }, [
-    withdrawalPercentage,
-    lordsAmount,
-    resourceAmount,
-    canCarry,
-    isLoading,
-    onWithdraw,
-    resourceId,
-    entityId,
-    setCanCarry,
-    calculateWithdrawAmounts,
-  ]);
+  };
 
   return (
     <HudTableRow cols={LIQUIDITY_COLS} label={`${LORDS} / ${resourceName(resourceId)} pool`}>
@@ -229,8 +213,6 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
         playerStructureIds={playerStructureIds}
         lordsAmount={lordsAmount}
         resourceAmount={resourceAmount}
-        totalLords={totalLords}
-        totalResource={totalResource}
         marketManager={marketManager}
       />
       <HudButton kind="secondary" size="sm" onClick={() => setOpenConfirmation(true)} disabled={!canWithdraw}>
@@ -269,15 +251,11 @@ const MyLiquidity = ({
   playerStructureIds,
   lordsAmount,
   resourceAmount,
-  totalLords,
-  totalResource,
   marketManager,
 }: {
   playerStructureIds: ID[];
   lordsAmount: number;
   resourceAmount: number;
-  totalLords: number;
-  totalResource: number;
   marketManager: MarketManager;
 }) => {
   const resourceId = marketManager.resourceId;
@@ -309,7 +287,7 @@ const MyLiquidity = ({
       Number(playerLiquidityInfo.lords_amount) + previousResourcePrice * Number(playerLiquidityInfo.resource_amount);
 
     return divideByPrecision(currentTotalValue - previousTotalValue);
-  }, [playerLiquidityInfo, totalLords, totalResource, marketManager]);
+  }, [playerLiquidityInfo, lordsAmount, resourceAmount, marketManager]);
 
   return (
     <div className="flex flex-col tabular-nums">

@@ -136,6 +136,24 @@ type ResourceProductionStatus = {
   activeBuildings: number;
 };
 
+/** Each building category the realm has, and whether every one of it is paused. */
+const pausedCategories = (existingBuildings: { category: BuildingType; paused: boolean }[]) => {
+  const counts = new Map<BuildingType, { total: number; paused: number }>();
+  existingBuildings.forEach((building) => {
+    const entry = counts.get(building.category) ?? { total: 0, paused: 0 };
+    entry.total += 1;
+    if (building.paused) entry.paused += 1;
+    counts.set(building.category, entry);
+  });
+
+  const map = new Map<BuildingType, boolean>();
+  counts.forEach((entry, category) => {
+    map.set(category, entry.paused === entry.total);
+  });
+
+  return map;
+};
+
 export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) => {
   const game = useGame();
   useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building", "RealmKnowledge"]);
@@ -176,15 +194,13 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
   const names = usePlayerNames();
   const realm = getRealmInfo(entityId, game.setup.store, names.text);
 
-  const existingBuildings = useMemo(
-    () => (realm?.position ? requireActiveGameClient().views.buildingTiles(entityId).existingBuildings() : []),
-    [entityId, realm?.position, structureBuildings],
-  );
+  // The realm is read again on every render, so what is read from it is too.
+  const existingBuildings = realm?.position
+    ? requireActiveGameClient().views.buildingTiles(entityId).existingBuildings()
+    : [];
   const isDestroyLocked = pendingAction === "destroy";
   const isProductionLocked = pendingAction === "production";
-  const hasAvailableBuildingTile = useMemo(() => {
-    return resolveRealmHasAvailableBuildingTile({ entityId, realmPosition: realm?.position });
-  }, [entityId, realm?.position?.x, realm?.position?.y, structure?.base?.level, structureBuildings]);
+  const hasAvailableBuildingTile = resolveRealmHasAvailableBuildingTile({ entityId, realmPosition: realm?.position });
   const getBuildingCountFor = useCallback(
     (buildingType: BuildingType) => {
       if (!structureBuildings) return 0;
@@ -221,7 +237,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
         setIsBuildPending(false);
       }
     },
-    [entityId, realm, realm?.position, setPreviewBuilding, setSelectedBuildingHex, useSimpleCost, mode],
+    [entityId, realm, setPreviewBuilding, setSelectedBuildingHex, useSimpleCost, mode],
   );
 
   // One rule for a card click: the world view has no tile picker, so the click builds on the first free tile
@@ -324,22 +340,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
     [entityId, isProductionLocked, realm?.position],
   );
 
-  const pausedByCategory = useMemo(() => {
-    const counts = new Map<BuildingType, { total: number; paused: number }>();
-    existingBuildings.forEach((building) => {
-      const entry = counts.get(building.category) ?? { total: 0, paused: 0 };
-      entry.total += 1;
-      if (building.paused) entry.paused += 1;
-      counts.set(building.category, entry);
-    });
-
-    const map = new Map<BuildingType, boolean>();
-    counts.forEach((entry, category) => {
-      map.set(category, entry.paused === entry.total);
-    });
-
-    return map;
-  }, [existingBuildings]);
+  const pausedByCategory = pausedCategories(existingBuildings);
 
   const realmBiome =
     useStoredBiome(
@@ -575,403 +576,382 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
     [getSummaryBuildState, handleAutoBuild, isBuildPending, realmBuildingSummary],
   );
 
-  const tabs = useMemo(
-    () => [
-      {
-        key: "resources",
-        label: "Resources",
-        component: () => {
-          const ownedResources = new Set(realm?.resources ?? []);
-          return (
-            <div className="flex flex-col gap-3">
-              {RESOURCE_TIER_GROUPS.map((group) => {
-                const slots = group.slots.filter((slot) => ownedResources.has(slot.resourceId));
-                if (slots.length === 0) return null;
-                return (
-                  <HudPanel key={group.tier} kind="section" title={group.label} collapsible={false}>
-                    <div className={CARD_GRID}>
-                      {slots.map(({ resourceId, troopHint }) => {
-                        const building = getBuildingFromResource(resourceId);
-                        const productionStatus = productionStatusByResourceRef.current.get(resourceId as ResourcesIds);
+  const tabs = [
+    {
+      key: "resources",
+      label: "Resources",
+      component: () => {
+        const ownedResources = new Set(realm?.resources ?? []);
+        return (
+          <div className="flex flex-col gap-3">
+            {RESOURCE_TIER_GROUPS.map((group) => {
+              const slots = group.slots.filter((slot) => ownedResources.has(slot.resourceId));
+              if (slots.length === 0) return null;
+              return (
+                <HudPanel key={group.tier} kind="section" title={group.label} collapsible={false}>
+                  <div className={CARD_GRID}>
+                    {slots.map(({ resourceId, troopHint }) => {
+                      const building = getBuildingFromResource(resourceId);
+                      const productionStatus = productionStatusByResourceRef.current.get(resourceId as ResourcesIds);
 
-                        const buildability = resolveConstructionBuildability({
-                          entityId,
-                          buildingType: building,
-                          useSimpleCost,
-                          store: game.setup.store,
-                          realm,
-                          mode,
-                          hasAvailableBuildingTile,
-                        });
-                        const canBuild = buildability.canSubmit;
-                        const disabledReason = buildability.reason;
-                        const disabled = !canBuild;
-                        const count = getBuildingCountFor(building);
-                        const destroyPending = isDestroyLocked;
-                        const destroyDisabled = count <= 0 || destroyPending;
-
-                        const pauseResumePending = isProductionLocked;
-                        const allPausedState = pausedByCategory.get(building);
-
-                        return (
-                          <BuildingCard
-                            canPlaceOnMap={!isMapView}
-                            buildLoading={isBuildPending}
-                            key={`${entityId}:${resourceId}`}
-                            buildingId={building}
-                            gives={givesOf(building)}
-                            requirements={resolveBuildingRequirements(
-                              entityId,
-                              game.setup.store,
-                              building,
-                              useSimpleCost,
-                              currentDefaultTick,
-                            )}
-                            onClick={() => {
-                              if (!canBuild) return;
-                              selectBuildingCard({ type: building, resource: resourceId }, () =>
-                                playResourceSound(resourceId),
-                              );
-                            }}
-                            active={previewBuilding?.resource === resourceId}
-                            buildingName={resourceName(resourceId)}
-                            resource={resourceId}
-                            productionStatus={productionStatus}
-                            troopHint={troopHint}
-                            entityId={entityId}
-                            useSimpleCost={useSimpleCost}
-                            disabled={disabled}
-                            disabledReason={disabledReason}
-                            count={count}
-                            onBuild={() => handleAutoBuild({ type: building, resource: resourceId })}
-                            buildDisabled={!canBuild}
-                            onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
-                            destroyDisabled={destroyDisabled}
-                            destroyLoading={destroyPending}
-                            onPauseResumeAll={() => handlePauseResumeAll({ type: building, resource: resourceId })}
-                            pauseResumeAllDisabled={count <= 0 || pauseResumePending}
-                            pauseResumeAllLoading={pauseResumePending}
-                            allPaused={allPausedState ?? false}
-                          />
-                        );
-                      })}
-                    </div>
-                  </HudPanel>
-                );
-              })}
-              {/* Fallback for any owned resource we didn't slot — render under
-                  an "Other" group so non-blitz worlds still see them. */}
-              {(() => {
-                const slottedIds = new Set(
-                  RESOURCE_TIER_GROUPS.flatMap((group) => group.slots.map((slot) => slot.resourceId)),
-                );
-                const others = (realm?.resources ?? []).filter((id) => !slottedIds.has(id));
-                if (others.length === 0) return null;
-                return (
-                  <HudPanel kind="section" title="Other" collapsible={false}>
-                    <div className={CARD_GRID}>
-                      {others.map((resourceId) => {
-                        const building = getBuildingFromResource(resourceId);
-                        const productionStatus = productionStatusByResourceRef.current.get(resourceId as ResourcesIds);
-                        const buildability = resolveConstructionBuildability({
-                          entityId,
-                          buildingType: building,
-                          useSimpleCost,
-                          store: game.setup.store,
-                          realm,
-                          mode,
-                          hasAvailableBuildingTile,
-                        });
-                        const canBuild = buildability.canSubmit;
-                        const disabledReason = buildability.reason;
-                        const disabled = !canBuild;
-                        const count = getBuildingCountFor(building);
-                        const destroyPending = isDestroyLocked;
-                        const destroyDisabled = count <= 0 || destroyPending;
-                        const pauseResumePending = isProductionLocked;
-                        const allPausedState = pausedByCategory.get(building);
-                        return (
-                          <BuildingCard
-                            canPlaceOnMap={!isMapView}
-                            buildLoading={isBuildPending}
-                            key={`${entityId}:${resourceId}`}
-                            buildingId={building}
-                            gives={givesOf(building)}
-                            requirements={resolveBuildingRequirements(
-                              entityId,
-                              game.setup.store,
-                              building,
-                              useSimpleCost,
-                              currentDefaultTick,
-                            )}
-                            onClick={() => {
-                              if (!canBuild) return;
-                              selectBuildingCard({ type: building, resource: resourceId }, () =>
-                                playResourceSound(resourceId),
-                              );
-                            }}
-                            active={previewBuilding?.resource === resourceId}
-                            buildingName={resourceName(resourceId)}
-                            resource={resourceId}
-                            productionStatus={productionStatus}
-                            entityId={entityId}
-                            useSimpleCost={useSimpleCost}
-                            disabled={disabled}
-                            disabledReason={disabledReason}
-                            count={count}
-                            onBuild={() => handleAutoBuild({ type: building, resource: resourceId })}
-                            buildDisabled={!canBuild}
-                            onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
-                            destroyDisabled={destroyDisabled}
-                            destroyLoading={destroyPending}
-                            onPauseResumeAll={() => handlePauseResumeAll({ type: building, resource: resourceId })}
-                            pauseResumeAllDisabled={count <= 0 || pauseResumePending}
-                            pauseResumeAllLoading={pauseResumePending}
-                            allPaused={allPausedState ?? false}
-                          />
-                        );
-                      })}
-                    </div>
-                  </HudPanel>
-                );
-              })()}
-            </div>
-          );
-        },
-      },
-      {
-        key: "economic",
-        label: "Economic",
-        component: () => (
-          <div className={CARD_GRID}>
-            {buildingTypes
-              .filter((a) => isEconomyBuilding(BuildingType[a as keyof typeof BuildingType]))
-              .toSorted((a, b) => {
-                const buildingA = BuildingType[a as keyof typeof BuildingType];
-                const buildingB = BuildingType[b as keyof typeof BuildingType];
-
-                if (buildingA === BuildingType.ResourceWheat) return -1;
-                if (buildingB === BuildingType.ResourceWheat) return 1;
-                if (buildingA === BuildingType.ResourceFish) return -1;
-                if (buildingB === BuildingType.ResourceFish) return 1;
-                return 0;
-              })
-              .map((buildingType, index) => {
-                const building = BuildingType[buildingType as keyof typeof BuildingType];
-
-                const isWorkersHut = building === BuildingType.WorkersHut;
-                const producedResourceId = configManager.getResourceBuildingProduced(building) as
-                  | ResourcesIds
-                  | undefined;
-                const productionStatus = producedResourceId
-                  ? productionStatusByResourceRef.current.get(producedResourceId as ResourcesIds)
-                  : undefined;
-
-                const buildability = resolveConstructionBuildability({
-                  entityId,
-                  buildingType: building,
-                  useSimpleCost,
-                  store: game.setup.store,
-                  realm,
-                  mode,
-                  hasAvailableBuildingTile,
-                });
-                const canBuild = buildability.canSubmit;
-                const disabledReason = buildability.reason;
-                const disabled = !canBuild;
-                const count = getBuildingCountFor(building);
-                const destroyPending = isDestroyLocked;
-                const destroyDisabled = count <= 0 || destroyPending;
-
-                const pauseResumePending = isProductionLocked;
-                const allPausedState = pausedByCategory.get(building);
-                const showPauseResume = !isWorkersHut;
-
-                return (
-                  <BuildingCard
-                    canPlaceOnMap={!isMapView}
-                    buildLoading={isBuildPending}
-                    key={`${entityId}:${index}`}
-                    buildingId={building}
-                    gives={givesOf(building)}
-                    requirements={resolveBuildingRequirements(
-                      entityId,
-                      game.setup.store,
-                      building,
-                      useSimpleCost,
-                      currentDefaultTick,
-                    )}
-                    onClick={() => {
-                      if (!canBuild) return;
-                      selectBuildingCard({ type: building }, () => {
-                        if (building === BuildingType.ResourceWheat) playResourceSound(ResourcesIds.Wheat);
-                        if (building === BuildingType.ResourceFish) playResourceSound(ResourcesIds.Fish);
+                      const buildability = resolveConstructionBuildability({
+                        entityId,
+                        buildingType: building,
+                        useSimpleCost,
+                        store: game.setup.store,
+                        realm,
+                        mode,
+                        hasAvailableBuildingTile,
                       });
-                    }}
-                    active={previewBuilding?.type === building}
-                    buildingName={buildingName(building, mode.id === "frontier")}
-                    resource={configManager.getResourceBuildingProduced(building)}
-                    isWorkersHut={isWorkersHut}
-                    productionStatus={productionStatus}
-                    entityId={entityId}
-                    useSimpleCost={useSimpleCost}
-                    disabled={disabled}
-                    disabledReason={disabledReason}
-                    count={count}
-                    onBuild={() => handleAutoBuild({ type: building })}
-                    buildDisabled={!canBuild}
-                    onDestroy={() => handleDestroyBuilding({ type: building })}
-                    destroyDisabled={destroyDisabled}
-                    destroyLoading={destroyPending}
-                    onPauseResumeAll={showPauseResume ? () => handlePauseResumeAll({ type: building }) : undefined}
-                    pauseResumeAllDisabled={count <= 0 || pauseResumePending}
-                    pauseResumeAllLoading={pauseResumePending}
-                    allPaused={allPausedState ?? false}
-                  />
-                );
-              })}
-          </div>
-        ),
-      },
-      {
-        key: "military",
-        label: "Military",
-        component: () => {
-          if (armyGroups.length === 0) {
-            return <p className="text-hud-label text-hud-muted">No military buildings available.</p>;
-          }
+                      const canBuild = buildability.canSubmit;
+                      const disabledReason = buildability.reason;
+                      const disabled = !canBuild;
+                      const count = getBuildingCountFor(building);
+                      const destroyPending = isDestroyLocked;
+                      const destroyDisabled = count <= 0 || destroyPending;
 
-          // With the wider Build modal all three tiers fit in one row, so we
-          // drop the troop-type filter entirely. Each army group renders with
-          // its bonus next to the group label so the player still sees
-          // biome-bonus info without an extra filter click.
-          return (
-            <div className="flex flex-col gap-3">
-              {armyGroups.map((group) => {
-                const bonusMultiplier = group.bonus ?? 1;
-                const bonusLabel = formatPercent(bonusMultiplier - 1, { signed: true });
-                return (
-                  <HudPanel
-                    key={group.armyType}
-                    kind="section"
-                    title={group.armyType}
-                    collapsible={false}
-                    cue={
-                      <span className="flex items-center gap-1" title="Biome combat bonus for this army type">
-                        {group.isRecommended && <HudChip tone="good">Recommended</HudChip>}
-                        <HudChip tone={bonusMultiplier > 1 ? "good" : bonusMultiplier < 1 ? "bad" : undefined}>
-                          {bonusLabel}
-                        </HudChip>
-                      </span>
-                    }
-                  >
-                    <div className={CARD_GRID}>
-                      {group.buildings
-                        .toSorted((a, b) => {
-                          const buildingA = BuildingType[a as keyof typeof BuildingType];
-                          const buildingB = BuildingType[b as keyof typeof BuildingType];
-                          const infoA = getMilitaryBuildingInfo(buildingA);
-                          const infoB = getMilitaryBuildingInfo(buildingB);
-                          return (infoA?.tier || 0) - (infoB?.tier || 0);
-                        })
-                        .map((buildingType, index) => {
-                          const building = BuildingType[buildingType as keyof typeof BuildingType];
-                          const producedResourceId = configManager.getResourceBuildingProduced(building) as
-                            | ResourcesIds
-                            | undefined;
-                          const productionStatus = producedResourceId
-                            ? productionStatusByResourceRef.current.get(producedResourceId as ResourcesIds)
-                            : undefined;
+                      const pauseResumePending = isProductionLocked;
+                      const allPausedState = pausedByCategory.get(building);
 
-                          const buildability = resolveConstructionBuildability({
+                      return (
+                        <BuildingCard
+                          canPlaceOnMap={!isMapView}
+                          buildLoading={isBuildPending}
+                          key={`${entityId}:${resourceId}`}
+                          buildingId={building}
+                          gives={givesOf(building)}
+                          requirements={resolveBuildingRequirements(
                             entityId,
-                            buildingType: building,
+                            game.setup.store,
+                            building,
                             useSimpleCost,
-                            store: game.setup.store,
-                            realm,
-                            mode,
-                            hasAvailableBuildingTile,
-                          });
-                          const canBuild = buildability.canSubmit;
-                          const disabledReason = buildability.reason;
-                          const count = getBuildingCountFor(building);
-                          const destroyPending = isDestroyLocked;
-                          const destroyDisabled = count <= 0 || destroyPending;
-
-                          const pauseResumePending = isProductionLocked;
-                          const allPausedState = pausedByCategory.get(building);
-
-                          return (
-                            <BuildingCard
-                              canPlaceOnMap={!isMapView}
-                              buildLoading={isBuildPending}
-                              key={`${entityId}:${index}`}
-                              buildingId={building}
-                              gives={givesOf(building)}
-                              requirements={resolveBuildingRequirements(
-                                entityId,
-                                game.setup.store,
-                                building,
-                                useSimpleCost,
-                                currentDefaultTick,
-                              )}
-                              onClick={() => {
-                                if (!canBuild) return;
-                                selectBuildingCard({ type: building }, () => {});
-                              }}
-                              active={previewBuilding?.type === building}
-                              buildingName={buildingName(building, mode.id === "frontier")}
-                              resource={configManager.getResourceBuildingProduced(building)}
-                              productionStatus={productionStatus}
-                              entityId={entityId}
-                              useSimpleCost={useSimpleCost}
-                              disabled={!canBuild}
-                              disabledReason={disabledReason}
-                              count={count}
-                              onBuild={() => handleAutoBuild({ type: building })}
-                              buildDisabled={!canBuild}
-                              onDestroy={() => handleDestroyBuilding({ type: building })}
-                              destroyDisabled={destroyDisabled}
-                              destroyLoading={destroyPending}
-                              onPauseResumeAll={() => handlePauseResumeAll({ type: building })}
-                              pauseResumeAllDisabled={count <= 0 || pauseResumePending}
-                              pauseResumeAllLoading={pauseResumePending}
-                              allPaused={allPausedState ?? false}
-                            />
-                          );
-                        })}
-                    </div>
-                  </HudPanel>
-                );
-              })}
-            </div>
-          );
-        },
+                            currentDefaultTick,
+                          )}
+                          onClick={() => {
+                            if (!canBuild) return;
+                            selectBuildingCard({ type: building, resource: resourceId }, () =>
+                              playResourceSound(resourceId),
+                            );
+                          }}
+                          active={previewBuilding?.resource === resourceId}
+                          buildingName={resourceName(resourceId)}
+                          resource={resourceId}
+                          productionStatus={productionStatus}
+                          troopHint={troopHint}
+                          entityId={entityId}
+                          useSimpleCost={useSimpleCost}
+                          disabled={disabled}
+                          disabledReason={disabledReason}
+                          count={count}
+                          onBuild={() => handleAutoBuild({ type: building, resource: resourceId })}
+                          buildDisabled={!canBuild}
+                          onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
+                          destroyDisabled={destroyDisabled}
+                          destroyLoading={destroyPending}
+                          onPauseResumeAll={() => handlePauseResumeAll({ type: building, resource: resourceId })}
+                          pauseResumeAllDisabled={count <= 0 || pauseResumePending}
+                          pauseResumeAllLoading={pauseResumePending}
+                          allPaused={allPausedState ?? false}
+                        />
+                      );
+                    })}
+                  </div>
+                </HudPanel>
+              );
+            })}
+            {/* Fallback for any owned resource we didn't slot — render under
+                  an "Other" group so non-blitz worlds still see them. */}
+            {(() => {
+              const slottedIds = new Set(
+                RESOURCE_TIER_GROUPS.flatMap((group) => group.slots.map((slot) => slot.resourceId)),
+              );
+              const others = (realm?.resources ?? []).filter((id) => !slottedIds.has(id));
+              if (others.length === 0) return null;
+              return (
+                <HudPanel kind="section" title="Other" collapsible={false}>
+                  <div className={CARD_GRID}>
+                    {others.map((resourceId) => {
+                      const building = getBuildingFromResource(resourceId);
+                      const productionStatus = productionStatusByResourceRef.current.get(resourceId as ResourcesIds);
+                      const buildability = resolveConstructionBuildability({
+                        entityId,
+                        buildingType: building,
+                        useSimpleCost,
+                        store: game.setup.store,
+                        realm,
+                        mode,
+                        hasAvailableBuildingTile,
+                      });
+                      const canBuild = buildability.canSubmit;
+                      const disabledReason = buildability.reason;
+                      const disabled = !canBuild;
+                      const count = getBuildingCountFor(building);
+                      const destroyPending = isDestroyLocked;
+                      const destroyDisabled = count <= 0 || destroyPending;
+                      const pauseResumePending = isProductionLocked;
+                      const allPausedState = pausedByCategory.get(building);
+                      return (
+                        <BuildingCard
+                          canPlaceOnMap={!isMapView}
+                          buildLoading={isBuildPending}
+                          key={`${entityId}:${resourceId}`}
+                          buildingId={building}
+                          gives={givesOf(building)}
+                          requirements={resolveBuildingRequirements(
+                            entityId,
+                            game.setup.store,
+                            building,
+                            useSimpleCost,
+                            currentDefaultTick,
+                          )}
+                          onClick={() => {
+                            if (!canBuild) return;
+                            selectBuildingCard({ type: building, resource: resourceId }, () =>
+                              playResourceSound(resourceId),
+                            );
+                          }}
+                          active={previewBuilding?.resource === resourceId}
+                          buildingName={resourceName(resourceId)}
+                          resource={resourceId}
+                          productionStatus={productionStatus}
+                          entityId={entityId}
+                          useSimpleCost={useSimpleCost}
+                          disabled={disabled}
+                          disabledReason={disabledReason}
+                          count={count}
+                          onBuild={() => handleAutoBuild({ type: building, resource: resourceId })}
+                          buildDisabled={!canBuild}
+                          onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
+                          destroyDisabled={destroyDisabled}
+                          destroyLoading={destroyPending}
+                          onPauseResumeAll={() => handlePauseResumeAll({ type: building, resource: resourceId })}
+                          pauseResumeAllDisabled={count <= 0 || pauseResumePending}
+                          pauseResumeAllLoading={pauseResumePending}
+                          allPaused={allPausedState ?? false}
+                        />
+                      );
+                    })}
+                  </div>
+                </HudPanel>
+              );
+            })()}
+          </div>
+        );
       },
-    ],
-    [
-      realm,
-      entityId,
-      previewBuilding,
-      playResourceSound,
-      useSimpleCost,
-      armyGroups,
-      isDestroyLocked,
-      isProductionLocked,
-      pausedByCategory,
-      mode,
-      handleAutoBuild,
-      isBuildPending,
-      isMapView,
-      selectBuildingCard,
-      handleDestroyBuilding,
-      handlePauseResumeAll,
-      getBuildingCountFor,
-    ],
-  );
+    },
+    {
+      key: "economic",
+      label: "Economic",
+      component: () => (
+        <div className={CARD_GRID}>
+          {buildingTypes
+            .filter((a) => isEconomyBuilding(BuildingType[a as keyof typeof BuildingType]))
+            .toSorted((a, b) => {
+              const buildingA = BuildingType[a as keyof typeof BuildingType];
+              const buildingB = BuildingType[b as keyof typeof BuildingType];
 
+              if (buildingA === BuildingType.ResourceWheat) return -1;
+              if (buildingB === BuildingType.ResourceWheat) return 1;
+              if (buildingA === BuildingType.ResourceFish) return -1;
+              if (buildingB === BuildingType.ResourceFish) return 1;
+              return 0;
+            })
+            .map((buildingType, index) => {
+              const building = BuildingType[buildingType as keyof typeof BuildingType];
+
+              const isWorkersHut = building === BuildingType.WorkersHut;
+              const producedResourceId = configManager.getResourceBuildingProduced(building) as
+                | ResourcesIds
+                | undefined;
+              const productionStatus = producedResourceId
+                ? productionStatusByResourceRef.current.get(producedResourceId as ResourcesIds)
+                : undefined;
+
+              const buildability = resolveConstructionBuildability({
+                entityId,
+                buildingType: building,
+                useSimpleCost,
+                store: game.setup.store,
+                realm,
+                mode,
+                hasAvailableBuildingTile,
+              });
+              const canBuild = buildability.canSubmit;
+              const disabledReason = buildability.reason;
+              const disabled = !canBuild;
+              const count = getBuildingCountFor(building);
+              const destroyPending = isDestroyLocked;
+              const destroyDisabled = count <= 0 || destroyPending;
+
+              const pauseResumePending = isProductionLocked;
+              const allPausedState = pausedByCategory.get(building);
+              const showPauseResume = !isWorkersHut;
+
+              return (
+                <BuildingCard
+                  canPlaceOnMap={!isMapView}
+                  buildLoading={isBuildPending}
+                  key={`${entityId}:${index}`}
+                  buildingId={building}
+                  gives={givesOf(building)}
+                  requirements={resolveBuildingRequirements(
+                    entityId,
+                    game.setup.store,
+                    building,
+                    useSimpleCost,
+                    currentDefaultTick,
+                  )}
+                  onClick={() => {
+                    if (!canBuild) return;
+                    selectBuildingCard({ type: building }, () => {
+                      if (building === BuildingType.ResourceWheat) playResourceSound(ResourcesIds.Wheat);
+                      if (building === BuildingType.ResourceFish) playResourceSound(ResourcesIds.Fish);
+                    });
+                  }}
+                  active={previewBuilding?.type === building}
+                  buildingName={buildingName(building, mode.id === "frontier")}
+                  resource={configManager.getResourceBuildingProduced(building)}
+                  isWorkersHut={isWorkersHut}
+                  productionStatus={productionStatus}
+                  entityId={entityId}
+                  useSimpleCost={useSimpleCost}
+                  disabled={disabled}
+                  disabledReason={disabledReason}
+                  count={count}
+                  onBuild={() => handleAutoBuild({ type: building })}
+                  buildDisabled={!canBuild}
+                  onDestroy={() => handleDestroyBuilding({ type: building })}
+                  destroyDisabled={destroyDisabled}
+                  destroyLoading={destroyPending}
+                  onPauseResumeAll={showPauseResume ? () => handlePauseResumeAll({ type: building }) : undefined}
+                  pauseResumeAllDisabled={count <= 0 || pauseResumePending}
+                  pauseResumeAllLoading={pauseResumePending}
+                  allPaused={allPausedState ?? false}
+                />
+              );
+            })}
+        </div>
+      ),
+    },
+    {
+      key: "military",
+      label: "Military",
+      component: () => {
+        if (armyGroups.length === 0) {
+          return <p className="text-hud-label text-hud-muted">No military buildings available.</p>;
+        }
+
+        // With the wider Build modal all three tiers fit in one row, so we
+        // drop the troop-type filter entirely. Each army group renders with
+        // its bonus next to the group label so the player still sees
+        // biome-bonus info without an extra filter click.
+        return (
+          <div className="flex flex-col gap-3">
+            {armyGroups.map((group) => {
+              const bonusMultiplier = group.bonus ?? 1;
+              const bonusLabel = formatPercent(bonusMultiplier - 1, { signed: true });
+              return (
+                <HudPanel
+                  key={group.armyType}
+                  kind="section"
+                  title={group.armyType}
+                  collapsible={false}
+                  cue={
+                    <span className="flex items-center gap-1" title="Biome combat bonus for this army type">
+                      {group.isRecommended && <HudChip tone="good">Recommended</HudChip>}
+                      <HudChip tone={bonusMultiplier > 1 ? "good" : bonusMultiplier < 1 ? "bad" : undefined}>
+                        {bonusLabel}
+                      </HudChip>
+                    </span>
+                  }
+                >
+                  <div className={CARD_GRID}>
+                    {group.buildings
+                      .toSorted((a, b) => {
+                        const buildingA = BuildingType[a as keyof typeof BuildingType];
+                        const buildingB = BuildingType[b as keyof typeof BuildingType];
+                        const infoA = getMilitaryBuildingInfo(buildingA);
+                        const infoB = getMilitaryBuildingInfo(buildingB);
+                        return (infoA?.tier || 0) - (infoB?.tier || 0);
+                      })
+                      .map((buildingType, index) => {
+                        const building = BuildingType[buildingType as keyof typeof BuildingType];
+                        const producedResourceId = configManager.getResourceBuildingProduced(building) as
+                          | ResourcesIds
+                          | undefined;
+                        const productionStatus = producedResourceId
+                          ? productionStatusByResourceRef.current.get(producedResourceId as ResourcesIds)
+                          : undefined;
+
+                        const buildability = resolveConstructionBuildability({
+                          entityId,
+                          buildingType: building,
+                          useSimpleCost,
+                          store: game.setup.store,
+                          realm,
+                          mode,
+                          hasAvailableBuildingTile,
+                        });
+                        const canBuild = buildability.canSubmit;
+                        const disabledReason = buildability.reason;
+                        const count = getBuildingCountFor(building);
+                        const destroyPending = isDestroyLocked;
+                        const destroyDisabled = count <= 0 || destroyPending;
+
+                        const pauseResumePending = isProductionLocked;
+                        const allPausedState = pausedByCategory.get(building);
+
+                        return (
+                          <BuildingCard
+                            canPlaceOnMap={!isMapView}
+                            buildLoading={isBuildPending}
+                            key={`${entityId}:${index}`}
+                            buildingId={building}
+                            gives={givesOf(building)}
+                            requirements={resolveBuildingRequirements(
+                              entityId,
+                              game.setup.store,
+                              building,
+                              useSimpleCost,
+                              currentDefaultTick,
+                            )}
+                            onClick={() => {
+                              if (!canBuild) return;
+                              selectBuildingCard({ type: building }, () => {});
+                            }}
+                            active={previewBuilding?.type === building}
+                            buildingName={buildingName(building, mode.id === "frontier")}
+                            resource={configManager.getResourceBuildingProduced(building)}
+                            productionStatus={productionStatus}
+                            entityId={entityId}
+                            useSimpleCost={useSimpleCost}
+                            disabled={!canBuild}
+                            disabledReason={disabledReason}
+                            count={count}
+                            onBuild={() => handleAutoBuild({ type: building })}
+                            buildDisabled={!canBuild}
+                            onDestroy={() => handleDestroyBuilding({ type: building })}
+                            destroyDisabled={destroyDisabled}
+                            destroyLoading={destroyPending}
+                            onPauseResumeAll={() => handlePauseResumeAll({ type: building })}
+                            pauseResumeAllDisabled={count <= 0 || pauseResumePending}
+                            pauseResumeAllLoading={pauseResumePending}
+                            allPaused={allPausedState ?? false}
+                          />
+                        );
+                      })}
+                  </div>
+                </HudPanel>
+              );
+            })}
+          </div>
+        );
+      },
+    },
+  ];
+
+  const currentKey = tabs[selectedTab]?.key;
   useEffect(() => {
-    const currentKey = tabs[selectedTab]?.key;
     if (!currentKey) return;
     setVisitedTabs((prev) => {
       if (prev.has(currentKey)) return prev;
@@ -979,7 +959,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
       next.add(currentKey);
       return next;
     });
-  }, [selectedTab, tabs]);
+  }, [currentKey]);
 
   return (
     <div>

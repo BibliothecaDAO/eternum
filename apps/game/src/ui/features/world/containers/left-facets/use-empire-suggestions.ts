@@ -4,12 +4,12 @@ import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView, seasonClockView } from "@/sync/fact-views";
 
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
 import { configManager, TileManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import {
@@ -71,18 +71,18 @@ const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestion => {
  */
 export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const {
-    setup: { store, systemCalls },
+    setup: { systemCalls },
   } = useGame();
   const mode = useGameModeConfig();
-  const revision = useNativeRevision(["Guard", "ResourceBalance", "ResourceProduction", "ResourceWeight"]);
+  const facts = useNativeFacts(["Guard", "ResourceBalance", "ResourceProduction", "ResourceWeight"]);
   const resolvedWorldGameMode = useResolvedWorldGameMode();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
+  const tick = useCurrentDefaultTick();
   const playerStructures = useFactView(playerStructuresView);
   const structureNameVersion = useUIStore((state) => state.structureNameVersion);
   const { gameStartMainAt, devModeOn } = useFactView(seasonClockView);
   const metadata = useStructuresWithMetadata({
     structures: playerStructures,
-    store,
     nameUpdateVersion: structureNameVersion,
   });
 
@@ -100,15 +100,16 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
         if (structure.category !== StructureType.Realm) return [];
 
         return readBlitzRealmSuggestions({
-          store,
+          store: facts.store,
           realmId: structure.entityId,
           realmName: structure.displayName,
           isBlitzActive,
-          tiles: TileManager.forStructure(store, systemCalls, structure.entityId),
+          tiles: TileManager.forStructure(facts.store, systemCalls, structure.entityId),
           mode,
+          tick,
         });
       })
       .toSorted(compareSuggestionDrafts)
       .map(decorateSuggestion);
-  }, [metadata, store, systemCalls, mode, isBlitzActive, revision, currentBlockTimestamp]);
+  }, [metadata, systemCalls, mode, isBlitzActive, facts, tick]);
 };

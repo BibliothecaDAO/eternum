@@ -12,7 +12,7 @@ import {
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeRow, useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
   ActorType,
@@ -128,7 +128,7 @@ export const TransferTroopsContainer = ({
   const [loading, setLoading] = useState(false);
   const [troopAmount, setTroopAmount] = useState<number>(0);
   const [guardSlot, setGuardSlot] = useState<GuardSelection>(null);
-  const guardRevision = useNativeRevision(["Guard"]);
+  const guardFacts = useNativeFacts(["Guard"]);
   const actorTypes = useMemo(() => getActorTypes(transferDirection), [transferDirection]);
   const selectedStructure = useNativeRow("Structure", {
     game_id: configManager.getActiveGameId(),
@@ -285,13 +285,26 @@ export const TransferTroopsContainer = ({
     (!selectedStructure || getGuardsByStructure(selectedStructure, store)),
   );
   const targetGuards = useMemo(
-    () => guardSlotsOf(targetStructure, targetStructureGuardSlots, store, currentDefaultTick, currentBlockTimestamp),
-    [store, guardRevision, targetStructure, targetStructureGuardSlots, currentDefaultTick, currentBlockTimestamp],
+    () =>
+      guardSlotsOf(
+        targetStructure,
+        targetStructureGuardSlots,
+        guardFacts.store,
+        currentDefaultTick,
+        currentBlockTimestamp,
+      ),
+    [guardFacts, targetStructure, targetStructureGuardSlots, currentDefaultTick, currentBlockTimestamp],
   );
   const selectedGuards = useMemo(
     () =>
-      guardSlotsOf(selectedStructure, selectedStructureGuardSlots, store, currentDefaultTick, currentBlockTimestamp),
-    [store, guardRevision, selectedStructure, selectedStructureGuardSlots, currentDefaultTick, currentBlockTimestamp],
+      guardSlotsOf(
+        selectedStructure,
+        selectedStructureGuardSlots,
+        guardFacts.store,
+        currentDefaultTick,
+        currentBlockTimestamp,
+      ),
+    [guardFacts, selectedStructure, selectedStructureGuardSlots, currentDefaultTick, currentBlockTimestamp],
   );
 
   const selectedTroop = useMemo(() => {
@@ -595,11 +608,9 @@ export const TransferTroopsContainer = ({
     structureBalanceCount,
     isStructureOwnerOfExplorer,
     targetExplorerTroops,
-    availableGuards,
     selectedGuards,
     selectedExplorerTroops,
     targetGuards,
-    currentBlockTimestamp,
   ]);
 
   useEffect(() => {

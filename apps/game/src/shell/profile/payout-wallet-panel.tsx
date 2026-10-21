@@ -1,7 +1,7 @@
 import { WALLET_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { SIGN_IN_CODE_LENGTH, type SignInOptions } from "@realms-world/identity";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
@@ -209,7 +209,7 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const send = async () => {
+  const send = useCallback(async () => {
     setSent(false);
     setError(null);
     try {
@@ -218,12 +218,11 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
     } catch (cause) {
       setError(failureSentence("send-code", cause));
     }
-  };
+  }, [email]);
+  // Sent when the step opens; New code sends again.
   useEffect(() => {
     void send();
-    // Sent once when the step opens; New code sends again.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [send]);
 
   const spend = async (entered: string) => {
     setBusy(true);

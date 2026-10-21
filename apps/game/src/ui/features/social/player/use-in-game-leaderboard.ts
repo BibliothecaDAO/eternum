@@ -3,8 +3,7 @@ import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-conf
 import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { configManager, LeaderboardManager, type PlayerStanding } from "@bibliothecadao/eternum";
-import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, wholePoints } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { normalizeLeaderboardAddress, readFinalBlitzResult } from "./finalized-blitz-leaderboard";
@@ -61,24 +60,19 @@ const LEADERBOARD_FACTS = [
 ] as const;
 
 export const useInGameLeaderboard = (): InGameLeaderboard => {
-  const {
-    setup: { store },
-  } = useGame();
   const isBlitz = useResolvedWorldGameMode() === "blitz";
   const leaderboardTick = useCoarseCurrentDefaultTick(LEADERBOARD_UPDATE_INTERVAL / 1_000);
-  const leaderboardRevision = useNativeRevision(LEADERBOARD_FACTS);
+  const facts = useNativeFacts(LEADERBOARD_FACTS);
 
   return useMemo(() => {
-    // Both are recompute signals, not inputs: the revision for leaderboard writes reaching the native store, the tick for
-    // shareholder points accruing over time. The standings themselves are read from the native store here.
-    void leaderboardRevision;
+    // The tick is a recompute signal, not an input: shareholder points accrue over time.
     void leaderboardTick;
 
     if (isBlitz) {
-      const finalizedLeaderboard = buildFinalizedBlitzLeaderboard(store);
+      const finalizedLeaderboard = buildFinalizedBlitzLeaderboard(facts.store);
       if (finalizedLeaderboard) return finalizedLeaderboard;
     }
 
-    return buildLiveLeaderboard(store);
-  }, [store, isBlitz, leaderboardRevision, leaderboardTick]);
+    return buildLiveLeaderboard(facts.store);
+  }, [facts, isBlitz, leaderboardTick]);
 };

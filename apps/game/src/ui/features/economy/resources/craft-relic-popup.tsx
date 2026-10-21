@@ -17,7 +17,7 @@ import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager, getEntityName } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ID, ResourcesIds, StructureType, formatCharge, formatAmount } from "@bibliothecadao/types";
 import { hash } from "starknet";
@@ -195,7 +195,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
     account: { account },
   } = useGame();
   const mode = useGameModeConfig();
-  const revision = useNativeRevision(["Structure"]);
+  const facts = useNativeFacts(["Structure"]);
 
   const currentDefaultTick = useBlockTimestampStore((state) => state.currentDefaultTick);
   const nowSeconds = useNowSeconds();
@@ -208,8 +208,8 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
 
   const viewer = useAccountAddress();
   const structureInfo = useMemo(
-    () => mode.structure.getEntityInfo(structureId, viewer, store),
-    [viewer, store, mode.structure, structureId, revision],
+    () => mode.structure.getEntityInfo(structureId, viewer, facts.store),
+    [viewer, mode.structure, structureId, facts],
   );
 
   const structureCategory = structureInfo.structureCategory;

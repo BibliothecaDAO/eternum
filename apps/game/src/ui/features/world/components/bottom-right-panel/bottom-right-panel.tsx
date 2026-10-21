@@ -221,13 +221,12 @@ const LocalTilePanel = () => {
   // different tile. Otherwise the preview from one building leaks into the
   // next click and ghost-places a new building on an occupied tile, which
   // the player reads as the panel being broken.
+  const selectedTile = selectedBuildingHex
+    ? `${selectedBuildingHex.structureId}:${selectedBuildingHex.innerCol}:${selectedBuildingHex.innerRow}`
+    : null;
   useEffect(() => {
     setPreviewBuilding(null);
-    // We intentionally only run on tile changes — the preview is local to a
-    // building selection, and resetting on every render would block the
-    // pickaxe toggle below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBuildingHex?.structureId, selectedBuildingHex?.innerCol, selectedBuildingHex?.innerRow]);
+  }, [selectedTile, setPreviewBuilding]);
 
   const canAddProduction =
     producedResource !== undefined &&

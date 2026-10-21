@@ -8,6 +8,7 @@ import type { SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
 import type { Connector } from "@starknet-react/core";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLatest } from "@/hooks/use-latest";
 import type { AccountInterface, Call, ProviderInterface } from "starknet";
 
 import { Loading } from "@/shell/loading";
@@ -73,18 +74,19 @@ const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; o
     else setOutcome(sent);
   };
   const wallet = useWalletAction("pay", send);
+  // Asked once, for the wallet this send was opened for.
+  const opening = useLatest({ owner, connectors, wallet });
   const asked = useRef(false);
   useEffect(() => {
     // Development replays effects on mount: the wallet is still prompted once.
     if (asked.current) return;
     asked.current = true;
-    void connectorHolding(owner, connectors).then((found) => {
+    const opened = opening.current;
+    void connectorHolding(opened.owner, opened.connectors).then((found) => {
       setHolder(found ?? null);
-      if (found) void wallet.open(found);
+      if (found) void opened.wallet.open(found);
     });
-    // Asked once, for the wallet this send was opened for.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [opening]);
 
   if (holder === undefined) return <Loading />;
   const confirming = outcome?.kind === "confirming";

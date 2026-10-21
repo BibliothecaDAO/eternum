@@ -16,7 +16,9 @@ vi.mock("@/hooks/context/game-context", () => ({
     account: { account: { address: "0x1" } },
   }),
 }));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("@/hooks/helpers/use-native-facts", async () =>
+  (await import("@/hooks/helpers/native-facts-mock")).nativeFactsMock(),
+);
 vi.mock("@/hooks/use-fact-view", () => ({ useFactView: () => [] }));
 vi.mock("@/audio", () => ({ useUISound: () => () => {} }));
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({

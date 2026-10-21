@@ -77,7 +77,6 @@ const OffersDisclosure = ({
   lane: CompactLane;
 }) => {
   const [reveal, setReveal] = useState<OffersReveal>("top");
-  const [updateBalance, setUpdateBalance] = useState(false);
   const hasMore = offers.length > TOP_OFFER_COUNT;
 
   return (
@@ -94,27 +93,12 @@ const OffersDisclosure = ({
         <EmptyBookSide isBuy={isBuy} />
       ) : reveal === "all" ? (
         <div className="flex max-h-hud-list flex-col">
-          <VirtualizedOrderList
-            offers={offers}
-            entityId={entityId}
-            isBuy={isBuy}
-            updateBalance={updateBalance}
-            setUpdateBalance={setUpdateBalance}
-          />
+          <VirtualizedOrderList offers={offers} entityId={entityId} isBuy={isBuy} />
         </div>
       ) : (
         offers
           .slice(0, TOP_OFFER_COUNT)
-          .map((offer) => (
-            <OrderRow
-              key={offer.tradeId}
-              offer={offer}
-              entityId={entityId}
-              isBuy={isBuy}
-              updateBalance={updateBalance}
-              setUpdateBalance={setUpdateBalance}
-            />
-          ))
+          .map((offer) => <OrderRow key={offer.tradeId} offer={offer} entityId={entityId} isBuy={isBuy} />)
       )}
       {hasMore && (
         <HudButton kind="quiet" size="sm" onClick={() => setReveal(reveal === "all" ? "top" : "all")}>

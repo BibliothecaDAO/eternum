@@ -112,15 +112,7 @@ describe("filling an offer: what it takes, on the book and in the confirmation",
   ])(
     "selling into a bid for $wheat Wheat takes $lords LORDS, rounded as every charge reads",
     ({ wheat, lords, shown }) => {
-      const host = render(
-        <OrderRow
-          offer={offer(wheat, lords)}
-          entityId={1}
-          isBuy
-          updateBalance={false}
-          setUpdateBalance={() => undefined}
-        />,
-      );
+      const host = render(<OrderRow offer={offer(wheat, lords)} entityId={1} isBuy />);
       const [amount, , total] = [...host.querySelector('[role="row"]')!.children].map((cell) => cell.textContent);
       expect([amount, total]).toEqual(shown);
 

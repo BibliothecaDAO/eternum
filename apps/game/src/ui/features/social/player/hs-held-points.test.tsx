@@ -26,7 +26,9 @@ vi.mock("@/config/game-modes/use-game-mode-config", () => ({
   useGameModeConfig: () => ({ ui: { showGuildsTab: false, showEndSeasonButton: false } }),
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCoarseCurrentDefaultTick: () => 0 }));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("@/hooks/helpers/use-native-facts", async () =>
+  (await import("@/hooks/helpers/native-facts-mock")).nativeFactsMock(),
+);
 vi.mock("@/hooks/use-player-profile", () => ({ playerAvatarUrl: () => null }));
 vi.mock("./use-leaderboard-effects", () => ({ useLeaderboardEffects: () => held.effects }));
 // Herald's history as the panel's reader holds it: the last answer it has, while a newer one may be on its way.

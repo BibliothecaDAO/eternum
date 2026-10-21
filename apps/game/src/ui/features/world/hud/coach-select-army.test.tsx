@@ -16,7 +16,9 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentDefaultTick: () => 1000,
   useNowMs: () => 1_000_000,
 }));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("@/hooks/helpers/use-native-facts", async () =>
+  (await import("@/hooks/helpers/native-facts-mock")).nativeFactsMock(),
+);
 vi.mock("@/hooks/use-fact-view", () => ({ useFactView: () => [] }));
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => ({}) }));
 vi.mock("@bibliothecadao/eternum/game-sync", async (importOriginal) => ({
