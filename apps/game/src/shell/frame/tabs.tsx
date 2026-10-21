@@ -47,6 +47,12 @@ const TABS: readonly Place[] = [
 const matchesPath = (pathname: string, match: string) =>
   match === "/" ? pathname === "/" : pathname.startsWith(match);
 
+/** You reads Connect while no one is signed in: the bar's way in. */
+const usePlaceWord = (tab: Place): string => {
+  const { status, session } = useIdentitySession();
+  return tab === YOU_TAB && status !== "loading" && !session ? WORDS.connect : tab.word;
+};
+
 const useActiveTab = (): string | undefined => {
   const pathname = usePageAddress();
   return TABS.find((tab) => tab.matches.some((match) => matchesPath(pathname, match)))?.to;
@@ -84,6 +90,8 @@ const TabIcon = ({ tab, current, size }: { tab: Place; current: boolean; size: n
   return <SemanticIcon name={Icon} size={size} className={current ? undefined : "brightness-[.8] grayscale-[.6]"} />;
 };
 
+const PlaceWord = ({ tab }: { tab: Place }) => <>{usePlaceWord(tab)}</>;
+
 /** The phone's foot: the places in thumb reach, each as wide as its word and the rest shared, so no word wraps. */
 export const TabBar = () => {
   const active = useActiveTab();
@@ -106,7 +114,7 @@ export const TabBar = () => {
             )}
           >
             <TabIcon tab={tab} current={current} size={28} />
-            {tab.word}
+            <PlaceWord tab={tab} />
           </AppLink>
         );
       })}
@@ -117,12 +125,13 @@ export const TabBar = () => {
 /**
  * The desktop's bar (the app sheet's AppTopBar): the lockup as the app's mark, then Play, Season, What's new and Market
  * with their icons, the page's notice if it has one, and the player at the bar's far end (their name and portrait once
- * signed in, else You). It stays quiet (no gold fill) so the page's one gold step keeps the weight; a full-screen step
+ * signed in, else Connect). It stays quiet (no gold fill) so the page's one gold step keeps the weight; a full-screen step
  * keeps the lockup and the notice alone.
  */
 export const DesktopBar = ({ places, notice }: { places: boolean; notice: ReactNode }) => {
   const active = useActiveTab();
   const player = useSignedInPlayer();
+  const youWord = usePlaceWord(YOU_TAB);
   const placeOf = (tab: Place) => ({
     to: tab.to,
     label: tab.word,
@@ -135,7 +144,11 @@ export const DesktopBar = ({ places, notice }: { places: boolean; notice: ReactN
       places={places ? TABS.filter((tab) => tab !== YOU_TAB).map(placeOf) : []}
       player={
         places
-          ? { ...placeOf(YOU_TAB), ...(player && { label: player.name, portrait: player.url, place: YOU_TAB.word }) }
+          ? {
+              ...placeOf(YOU_TAB),
+              label: youWord,
+              ...(player && { label: player.name, portrait: player.url, place: YOU_TAB.word }),
+            }
           : null
       }
       notice={notice}

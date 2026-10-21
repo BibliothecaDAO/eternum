@@ -45,7 +45,7 @@ import {
   labSlots,
   type LabScreen,
 } from "./app-lab-fixtures";
-import { LabDoorway, LabSignIn } from "./app-lab-flows";
+import { LabConnect, LabDoorway, LabSignIn } from "./app-lab-flows";
 
 /**
  * The dev build's app lab: the real pages over one fixture state per screen, for the painted pass's captures of states
@@ -100,6 +100,7 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="credits" element={<CreditsPage />} />
         <Route path="sign-in/:step" element={<LabSignIn />} />
+        <Route path="connect/:option/:step" element={<LabConnect />} />
         <Route path="doorway/:state" element={<LabDoorway />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

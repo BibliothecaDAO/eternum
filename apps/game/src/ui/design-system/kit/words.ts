@@ -466,6 +466,8 @@ export const WORDS = {
   market: "Market",
   /** The player's own place: their card, their finished games, Settings. */
   you: "You",
+  /** You while signed out: the bar's way in. */
+  connect: "Connect",
   signIn: SIGN_IN,
   dev: "Dev",
   /** Start Frontier on a first visit; entry is free. */

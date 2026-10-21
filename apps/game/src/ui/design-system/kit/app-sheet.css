@@ -1002,6 +1002,90 @@
   padding: theme(spacing.4);
   background: rgb(0 0 0 / 0.6);
 }
+/* On a phone the window rises from the foot, as wide as the screen. */
+.app-scrim--sheet {
+  align-items: flex-end;
+  padding: 0;
+}
+
+/* ── Connect: signing in over the page, its painting at the head. ── */
+.app-connect {
+  display: flex;
+  width: 30rem;
+  max-width: 100%;
+  max-height: calc(100dvh - theme(spacing.8));
+  flex-direction: column;
+  overflow-y: auto;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-dialog);
+  color: var(--app-ink);
+}
+.app-connect[data-layout="phone"] {
+  width: 100%;
+  max-height: 92dvh;
+  border-bottom: 0;
+  border-radius: var(--app-radius-panel) var(--app-radius-panel) 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.app-connect__head {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 168px;
+  flex-shrink: 0;
+  align-items: flex-end;
+  overflow: hidden;
+  padding: theme(spacing.5) theme(spacing.6);
+}
+.app-connect[data-layout="phone"] .app-connect__head {
+  min-height: 132px;
+  padding: theme(spacing.4) theme(spacing.5);
+}
+.app-connect__painting {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+}
+.app-connect__head::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(0deg, var(--app-surface) 2%, transparent 85%);
+}
+.app-connect__head h2 {
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-title);
+  line-height: var(--app-leading-title);
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.6);
+}
+.app-connect__close {
+  position: absolute;
+  top: theme(spacing.3);
+  right: theme(spacing.3);
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: var(--app-radius-round);
+  background: rgb(0 0 0 / 0.45);
+  color: var(--app-ink);
+}
+.app-connect__body {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.5);
+  padding: theme(spacing.2) theme(spacing.6) theme(spacing.6);
+}
+.app-connect[data-layout="phone"] .app-connect__body {
+  padding: theme(spacing.2) theme(spacing.5) theme(spacing.5);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .app-skeleton > i {
