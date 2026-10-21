@@ -55,7 +55,7 @@ export const routeIdentityRequest = async (
     return returnFromDiscord(request, auth, env);
   if (pathname === "/api/auth/discord-handoff" && request.method === "POST") {
     if (!(await withinPublicBudget(env, "sign-in-code", request))) return json({ error: "too_many_attempts" }, 429);
-    return claimDiscordHandoff(request, auth, env);
+    return claimDiscordHandoff(request, env);
   }
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {

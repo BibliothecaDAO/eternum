@@ -20,9 +20,6 @@ const START_COOKIE = "realms-identity.discord_start";
 const START_SECONDS = 10 * 60;
 const HANDOFF_SECONDS = 10 * 60;
 const HANDOFF_ATTEMPTS = 3;
-const handoffKey = (state: string) => `discord-handoff:${state}`;
-
-type Handoff = { codeHash: string; cookies: string[]; attempts: number };
 
 /** Starts a social sign-in and marks this browser as the one it belongs to. */
 export const startSocialSignIn = async (request: Request, auth: IdentityAuth, env: IdentityEnv) => {
@@ -44,49 +41,63 @@ export const returnFromDiscord = async (request: Request, auth: IdentityAuth, en
   const cookies = returned.headers.getSetCookie();
   if (!cookies.some(isSessionCookie)) return returned;
   const code = sixDigits();
-  await holdHandoff(auth, state, { codeHash: await sha256(code), cookies, attempts: 0 });
+  await holdHandoff(env.DB, state, await sha256(code), cookies);
   return handoffPage(code);
 };
 
-/** The starting browser trades the code for the session Discord gave the player in another browser. */
-export const claimDiscordHandoff = async (request: Request, auth: IdentityAuth, env: IdentityEnv) => {
+/**
+ * The starting browser trades the code for the session Discord gave the player in another browser. Each claim is one
+ * statement, so concurrent claims cannot both take the session or share a try: a right code takes the row while it has
+ * tries left, a wrong one spends a try on the row as it stands, and nothing ever writes a taken row back.
+ */
+export const claimDiscordHandoff = async (request: Request, env: IdentityEnv) => {
   const state = startStateOf(request, env);
   if (!state) return json({ code: "HANDOFF_NOT_STARTED" }, 400);
-  const held = await heldHandoff(auth, state);
-  if (!held) return json({ code: "OTP_EXPIRED" }, 400);
   const { code } = (await request.json().catch(() => ({}))) as { code?: unknown };
-  if (typeof code === "string" && (await sha256(code.trim())) === held.codeHash) {
-    await releaseHandoff(auth, state);
-    return withCookies(json({ success: true }), [...held.cookies, startCookie(env, "", 0)]);
-  }
-  const attempts = held.attempts + 1;
-  if (attempts >= HANDOFF_ATTEMPTS) {
-    await releaseHandoff(auth, state);
-    return json({ code: "TOO_MANY_ATTEMPTS" }, 400);
-  }
-  await holdHandoff(auth, state, { ...held, attempts });
-  return json({ code: "INVALID_OTP" }, 400);
+  const codeHash = await sha256(typeof code === "string" ? code.trim() : "");
+  const taken = await takeHandoff(env.DB, state, codeHash);
+  if (taken) return withCookies(json({ success: true }), [...taken, startCookie(env, "", 0)]);
+  const attempts = await spendHandoffTry(env.DB, state);
+  if (attempts === null) return json({ code: "OTP_EXPIRED" }, 400);
+  if (attempts < HANDOFF_ATTEMPTS) return json({ code: "INVALID_OTP" }, 400);
+  await env.DB.prepare("DELETE FROM discord_handoffs WHERE state = ?1").bind(state).run();
+  return json({ code: "TOO_MANY_ATTEMPTS" }, 400);
 };
 
-const holdHandoff = async (auth: IdentityAuth, state: string, handoff: Handoff) => {
-  const { internalAdapter } = await auth.$context;
-  await internalAdapter.deleteVerificationByIdentifier(handoffKey(state));
-  await internalAdapter.createVerificationValue({
-    identifier: handoffKey(state),
-    value: JSON.stringify(handoff),
-    expiresAt: new Date(Date.now() + HANDOFF_SECONDS * 1000),
-  });
+/** Holds Discord's session for the starting browser; a held one long expired is cleared on the way. */
+const holdHandoff = async (db: D1Database, state: string, codeHash: string, cookies: readonly string[]) => {
+  const now = Date.now();
+  await db.batch([
+    db.prepare("DELETE FROM discord_handoffs WHERE expires_at < ?1").bind(now),
+    db
+      .prepare(
+        "INSERT OR REPLACE INTO discord_handoffs (state, code_hash, cookies, attempts, expires_at) VALUES (?1, ?2, ?3, 0, ?4)",
+      )
+      .bind(state, codeHash, JSON.stringify(cookies), now + HANDOFF_SECONDS * 1000),
+  ]);
 };
 
-const heldHandoff = async (auth: IdentityAuth, state: string): Promise<Handoff | null> => {
-  const { internalAdapter } = await auth.$context;
-  const row = await internalAdapter.findVerificationValue(handoffKey(state));
-  if (!row || row.expiresAt.getTime() < Date.now()) return null;
-  return JSON.parse(row.value) as Handoff;
+/** The held session's cookies, taken by the right code while the hold has tries and time left; null otherwise. */
+const takeHandoff = async (db: D1Database, state: string, codeHash: string): Promise<string[] | null> => {
+  const row = await db
+    .prepare(
+      "DELETE FROM discord_handoffs WHERE state = ?1 AND code_hash = ?2 AND attempts < ?3 AND expires_at > ?4 RETURNING cookies",
+    )
+    .bind(state, codeHash, HANDOFF_ATTEMPTS, Date.now())
+    .first<{ cookies: string }>();
+  return row ? (JSON.parse(row.cookies) as string[]) : null;
 };
 
-const releaseHandoff = async (auth: IdentityAuth, state: string) =>
-  (await auth.$context).internalAdapter.deleteVerificationByIdentifier(handoffKey(state));
+/** Spends one try on a live hold and returns the tries spent; null when there is no live hold to spend it on. */
+const spendHandoffTry = async (db: D1Database, state: string): Promise<number | null> => {
+  const row = await db
+    .prepare(
+      "UPDATE discord_handoffs SET attempts = attempts + 1 WHERE state = ?1 AND attempts < ?2 AND expires_at > ?3 RETURNING attempts",
+    )
+    .bind(state, HANDOFF_ATTEMPTS, Date.now())
+    .first<{ attempts: number }>();
+  return row?.attempts ?? null;
+};
 
 /** better-auth's session cookie, under our prefix and its `__Secure-` form. */
 const isSessionCookie = (cookie: string) => /^(?:__Secure-)?realms-identity\.session_token=[^;]/.test(cookie);

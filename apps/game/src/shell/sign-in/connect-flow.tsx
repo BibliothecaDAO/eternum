@@ -15,6 +15,7 @@ import { returnPathOf } from "../return-path";
 import { CodeStep } from "./code-step";
 import { useConnectStore } from "./connect";
 import { ConnectWindow } from "./connect-window";
+import { forgetDiscordStart, pendingDiscordStart, rememberDiscordStart, type DiscordPending } from "./discord-pending";
 import { HandoffStep } from "./handoff-step";
 import { ProfileStep } from "./profile-step";
 import { StartStep } from "./start-step";
@@ -36,7 +37,16 @@ export const ConnectFlow = () => {
   const returned = useReturnedFailure();
   const refresh = useIdentitySessionStore((state) => state.refresh);
   const named = session !== null && identityUsername(session) !== null;
-  useGoOnOnceNamed(named);
+  const [pending, setPending] = useState(pendingDiscordStart);
+  const endPending = useCallback(() => {
+    forgetDiscordStart();
+    setPending(null);
+  }, []);
+  // A Discord sign-in that came back failed is over: Connect starts again with the reason.
+  useEffect(() => {
+    if (returned.line) endPending();
+  }, [returned.line, endPending]);
+  useGoOnOnceNamed(named, pending, endPending);
 
   if (status === "loading" || named) return null;
   if (session) {
@@ -47,13 +57,17 @@ export const ConnectFlow = () => {
       </ConnectWindow>
     );
   }
-  if (!request && !returned.line) return null;
+  if (!request && !returned.line && !pending) return null;
+  const resumeDiscord = pending !== null && !returned.line;
   return (
     <AnonymousConnect
-      next={request?.next ?? null}
+      key={resumeDiscord ? "discord" : "start"}
+      next={request?.next ?? pending?.next ?? null}
+      resumeDiscord={resumeDiscord}
       returnedFailure={returned.line}
       onClose={() => {
         returned.clear();
+        endPending();
         close();
       }}
     />
@@ -62,20 +76,25 @@ export const ConnectFlow = () => {
 
 type Step = { kind: "start" } | { kind: "code"; email: string; expiresAt: number | undefined } | { kind: "discord" };
 
-/** Before a session: Discord, or an email and then its code; after Discord, the code another browser shows. */
+/**
+ * Before a session: Discord, or an email and then its code; after Discord, the code another browser shows, also after
+ * the page reloaded while Discord was out (`resumeDiscord`).
+ */
 const AnonymousConnect = ({
   next,
+  resumeDiscord,
   returnedFailure,
   onClose,
 }: {
   next: string | null;
+  resumeDiscord: boolean;
   returnedFailure: string | null;
   onClose: () => void;
 }) => {
   const location = useLocation();
   const providers = useSignInProviders();
   const applySession = useIdentitySessionStore((state) => state.applySession);
-  const [step, setStep] = useState<Step>({ kind: "start" });
+  const [step, setStep] = useState<Step>({ kind: resumeDiscord ? "discord" : "start" });
   const { run, running, error, setError } = useIdentityAction(returnedFailure);
   useRefreshOnReturn(step.kind === "discord");
 
@@ -83,6 +102,7 @@ const AnonymousConnect = ({
   const continueWithDiscord = () =>
     void run("discord", async () => {
       const url = await identityClient.discordSignInUrl(next ?? returnPathOf(location));
+      rememberDiscordStart(next);
       setStep({ kind: "discord" });
       window.location.assign(url);
     });
@@ -199,16 +219,22 @@ const useRefreshOnReturn = (waiting: boolean) => {
   }, [refresh, waiting]);
 };
 
-/** Once the account carries a name, the asker's `next` opens and the request ends. */
-const useGoOnOnceNamed = (named: boolean) => {
+/**
+ * Once the account carries a name, the request ends and the player goes on to where the asker, or the Discord sign-in
+ * that brought them back, was taking them.
+ */
+const useGoOnOnceNamed = (named: boolean, pending: DiscordPending | null, endPending: () => void) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const request = useConnectStore((state) => state.request);
   const close = useConnectStore((state) => state.close);
   useEffect(() => {
-    if (!named || !request) return;
+    if (!named || (!request && !pending)) return;
+    const next = request?.next ?? pending?.next ?? null;
     close();
-    if (request.next) navigate(request.next);
-  }, [close, named, navigate, request]);
+    endPending();
+    if (next && next !== `${location.pathname}${location.search}${location.hash}`) navigate(next);
+  }, [close, endPending, location, named, navigate, pending, request]);
 };
 
 /**

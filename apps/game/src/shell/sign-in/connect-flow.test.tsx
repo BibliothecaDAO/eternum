@@ -12,6 +12,7 @@ import { setViewportWidth } from "../frame/test-viewport";
 import { useRequestSignIn, useConnectStore } from "./connect";
 import { TabBar } from "../frame/tabs";
 import { ConnectFlow } from "./connect-flow";
+import { forgetDiscordStart, pendingDiscordStart, rememberDiscordStart } from "./discord-pending";
 
 const NEXT = "/g/0x5245414c4d53/1/map?col=4&row=9&spectate=true";
 
@@ -74,6 +75,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   useIdentitySessionStore.setState({ status: "anonymous", session: null });
   useConnectStore.setState({ request: null, nameDismissed: false });
+  forgetDiscordStart();
 });
 
 describe("Connect", () => {
@@ -267,7 +269,9 @@ describe("Connect with Discord", () => {
     } finally {
       await asked.unmount();
     }
+    // Another visit, the first attempt abandoned.
     useConnectStore.setState({ request: null });
+    forgetDiscordStart();
     const here = await mount("/season?tab=frontier");
     try {
       await pressDiscord(here);
@@ -302,6 +306,67 @@ describe("Connect with Discord", () => {
       expect(ui.where()).toBe(NEXT);
     } finally {
       await ui.unmount();
+    }
+  });
+
+  it("comes back on the Discord step after the page reloads while Discord is out, and the code finishes that attempt", async () => {
+    useIdentitySessionStore.setState({ status: "anonymous", session: null });
+    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["discord"]);
+    const start = vi.spyOn(identityClient, "discordSignInUrl").mockResolvedValue(DISCORD);
+    navigations();
+    const claim = vi
+      .spyOn(identityClient, "claimDiscordHandoff")
+      .mockResolvedValue(sessionOf({ name: "Ysolde", image: "04" }));
+    const before = await mount("/", NEXT);
+    await pressDiscord(before);
+    await before.unmount();
+    // A reload: the page and its memory are gone; only what the browser keeps is left.
+    useConnectStore.setState({ request: null, nameDismissed: false });
+    const after = await mount("/");
+    try {
+      expect(after.window()?.getAttribute("aria-label")).toBe("Discord");
+      await after.type('input[autocomplete="one-time-code"]', "482913");
+      await act(async () => {});
+      expect(claim).toHaveBeenCalledWith("482913");
+      expect(start).toHaveBeenCalledTimes(1);
+      expect(after.window()).toBeNull();
+      expect(after.where()).toBe(NEXT);
+      expect(pendingDiscordStart()).toBeNull();
+    } finally {
+      await after.unmount();
+    }
+  });
+
+  it("ends a pending Discord sign-in when it comes back failed, when Connect is closed, or once it is too old", async () => {
+    useIdentitySessionStore.setState({ status: "anonymous", session: null });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    rememberDiscordStart(NEXT);
+    const failed = await mount("/?error=access_denied");
+    try {
+      await act(async () => {});
+      expect(failed.window()?.getAttribute("aria-label")).toBe("Connect");
+      expect(failed.container.textContent).toContain("Discord sign-in was cancelled.");
+      expect(pendingDiscordStart()).toBeNull();
+    } finally {
+      await failed.unmount();
+    }
+
+    rememberDiscordStart(NEXT);
+    const closed = await mount("/");
+    try {
+      await act(async () => closed.query<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+      expect(closed.window()).toBeNull();
+      expect(pendingDiscordStart()).toBeNull();
+    } finally {
+      await closed.unmount();
+    }
+
+    rememberDiscordStart(NEXT, Date.now() - 11 * 60_000);
+    const old = await mount("/");
+    try {
+      expect(old.window()).toBeNull();
+    } finally {
+      await old.unmount();
     }
   });
 
