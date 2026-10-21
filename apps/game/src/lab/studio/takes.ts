@@ -23,6 +23,7 @@ const between = (a: [number, number, number], b: [number, number, number]): [num
 /**
  * The studio's ready-made takes, in the docs lane's order of need (reports/lab-studio-shots.md). Each starts from the
  * world as it stood before any moment played, so a take replays the same; its cues land at the seconds written here.
+ * Each films its action from the front, the south (`turn` near 0), where the map's camera stands and its structures face.
  */
 export const STUDIO_TAKES = {
   "hyperstructure-rise": {
@@ -31,9 +32,9 @@ export const STUDIO_TAKES = {
     cast: ["hyperstructure"],
     path: ({ hyperstructure }) => ({
       keys: [
-        { t: 0, target: above(hyperstructure, 1.2), distance: 9, tilt: 74, turn: 200, fov: 30 },
-        { t: 5.2, target: above(hyperstructure, 1.8), distance: 10, tilt: 70, turn: 245, ease: "in" },
-        { t: 8, target: above(hyperstructure, 2.4), distance: 14, tilt: 58, turn: 262, ease: "out" },
+        { t: 0, target: above(hyperstructure, 1.2), distance: 9, tilt: 74, turn: -35, fov: 30 },
+        { t: 5.2, target: above(hyperstructure, 1.8), distance: 10, tilt: 70, turn: 5, ease: "in" },
+        { t: 8, target: above(hyperstructure, 2.4), distance: 14, tilt: 58, turn: 15, ease: "out" },
       ],
       cues: [
         { at: 0.8, trigger: "rise", args: { progress: 30 } },
@@ -49,8 +50,8 @@ export const STUDIO_TAKES = {
     cast: ["battle"],
     path: ({ attacker, defender }) => ({
       keys: [
-        { t: 0, target: above(between(attacker, defender), 0.5), distance: 15, tilt: 68, turn: 160, fov: 25 },
-        { t: 5, distance: 9, turn: 175, ease: "out" },
+        { t: 0, target: above(between(attacker, defender), 0.5), distance: 15, tilt: 68, turn: -12, fov: 25 },
+        { t: 5, distance: 9, turn: 4, ease: "out" },
       ],
       cues: [
         { at: 1, trigger: "attack" },
@@ -64,7 +65,7 @@ export const STUDIO_TAKES = {
     cast: ["explorer"],
     path: ({ exploreStart }) => ({
       keys: [
-        { t: 0, target: exploreStart, distance: 34, tilt: 28, turn: 20, fov: 38 },
+        { t: 0, target: exploreStart, distance: 34, tilt: 28, turn: 10, fov: 38 },
         { t: 6.4, target: [exploreStart[0] - 1, exploreStart[1], exploreStart[2] + 4.5], distance: 11, tilt: 58 },
       ],
       cues: [
@@ -80,8 +81,8 @@ export const STUDIO_TAKES = {
     cast: ["realm"],
     path: ({ realm }) => ({
       keys: [
-        { t: 0, target: above(realm, 0.7), distance: 7.5, tilt: 64, turn: 140, fov: 30 },
-        { t: 6, turn: 165, ease: "linear" },
+        { t: 0, target: above(realm, 0.7), distance: 7.5, tilt: 64, turn: -12, fov: 30 },
+        { t: 6, turn: 12, ease: "linear" },
       ],
       cues: [1.5, 3, 4.5].map((at, index) => ({ at, trigger: "realm", args: { level: index + 1 } })),
     }),
@@ -92,8 +93,8 @@ export const STUDIO_TAKES = {
     cast: ["realm", "hyperstructure", "battle", "explorer"],
     path: ({ realm, hyperstructure }) => ({
       keys: [
-        { t: 0, target: above(realm, 0.5), distance: 12, tilt: 62, turn: 120, fov: 38 },
-        { t: 8, target: between(realm, hyperstructure), distance: 40, tilt: 48, turn: 165 },
+        { t: 0, target: above(realm, 0.5), distance: 12, tilt: 62, turn: -20, fov: 38 },
+        { t: 8, target: between(realm, hyperstructure), distance: 40, tilt: 48, turn: 10 },
       ],
       cues: [{ at: 6.5, trigger: "strike" }],
     }),

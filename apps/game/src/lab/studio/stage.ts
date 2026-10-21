@@ -7,7 +7,9 @@ import type { MapControls } from "three/addons/controls/MapControls.js";
 import { CombatPresentationCoordinator } from "@/three/combat/combat-presentation-coordinator";
 import type { LabStage, LabStageContext } from "@/three/debug/procedural-terrain-debug-renderer";
 import { WorldmapCombatPresentation } from "@/three/scenes/worldmap-combat-presentation";
+import { HYPERSTRUCTURE_MODEL_PATH } from "@/three/structures/hyperstructure-design";
 import { HyperstructureModel } from "@/three/structures/hyperstructure-model";
+import { resolveStructureRotationY } from "@/three/structures/structure-orientation";
 import { REALM_ASSETS } from "@/three/structures/realm-design";
 import { SettlementModel } from "@/three/structures/settlement-model";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
@@ -81,7 +83,7 @@ export class StudioStage implements LabStage {
     for (const asset of REALM_ASSETS.filter((entry) => !entry.wonder).toSorted((a, b) => a.level - b.level)) {
       const realm = new SettlementModel(await gltfLoader.loadAsync(asset.path), 1, "realm");
       realm.setCount(1);
-      realm.setMatrixAt(0, this.placementMatrix("realm", 0.6));
+      realm.setMatrixAt(0, this.placementMatrix("realm", facingTheMapCamera(asset.path)));
       realm.setRelationshipAt(0, "owned");
       realm.setOrderAt(0, 5);
       realm.setWonderEntityAt(0, 1001);
@@ -238,7 +240,7 @@ export class StudioStage implements LabStage {
     model.setCount(0);
     model.setCount(1);
     model.group.visible = this.cast.has("hyperstructure");
-    model.setMatrixAt(0, this.placementMatrix("hyperstructure", 0.4));
+    model.setMatrixAt(0, this.placementMatrix("hyperstructure", facingTheMapCamera(HYPERSTRUCTURE_MODEL_PATH)));
     model.setConstructionAt(0, { entityId: HYPERSTRUCTURE_DESIGN, progress: 0, completed: false });
   }
 
@@ -367,6 +369,15 @@ export class StudioStage implements LabStage {
     if (!this.context) throw new Error("The studio stage is not prepared");
     return this.context;
   }
+}
+
+/**
+ * A structure's yaw as the map turns it (`resolveStructureRotationY`): a realm always faces the map's camera; any other
+ * structure takes one of the map's six turns, here the one that faces the camera too. The camera faces a structure
+ * from the south (`turn` 0), where every take films its action from.
+ */
+function facingTheMapCamera(modelPath: string): number {
+  return resolveStructureRotationY([modelPath], 0);
 }
 
 /** The yaw that turns a model on hex `from` to face hex `to`. */

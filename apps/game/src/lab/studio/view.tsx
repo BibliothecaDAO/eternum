@@ -58,6 +58,8 @@ export function StudioLabView() {
     let renderer: ProceduralTerrainDebugRendererHandle | null = null;
     setReady(false);
     setError(null);
+    // A new world is a new stage: a take that rolled on the old one ended with it, and says nothing as it goes.
+    setTake(null);
     const stage = new StudioStage((name, args) => studio.current?.bridge.trigger(name, args));
     void mountProceduralTerrainDebugRenderer({
       canvas: canvas.current!,
