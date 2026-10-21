@@ -5,7 +5,10 @@ import { NEUTRAL_OWNER_NAME, StructureType, structureName, frontierSiteName, for
 
 import type { ArmyData, StructureInfo } from "../types";
 
-/** How the viewer stands to a thing's owner: it colours the plate's side bar and a player's name. */
+/**
+ * How the viewer stands to a thing's owner. It sets the label's side colour (map-plates.css: nobody's is drawn as an
+ * enemy's) and, still four ways, which label yields when they crowd (`RELATION_PRIORITY`, map-plate-layer).
+ */
 export type PlateRelation = "own" | "ally" | "enemy" | "neutral";
 
 /** A troop stack: a guard slot, or an army's troops. Its painting is its type and tier (`knight-t2`). */

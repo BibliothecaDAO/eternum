@@ -1,5 +1,5 @@
 .beast-proof {
-  --mp-side: var(--hud-neutral);
+  --mp-side: var(--hud-enemy);
   display: flex;
   align-items: center;
   justify-content: center;

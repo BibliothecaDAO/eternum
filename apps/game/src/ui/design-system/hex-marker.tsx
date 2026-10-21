@@ -1,7 +1,7 @@
 import { SvgIcon } from "./icon";
 import type { IconMeaning } from "./icon-meaning";
 export type MarkerOwner = "you" | "ally" | "enemy" | "neutral";
-/** Each side in the HUD sheet's side colours (HUD_SHEET own, ally, enemy, neutral), as on the plates. */
+/** Each side in the HUD sheet's side colours (HUD_SHEET own, ally, enemy), as on the plates; `neutral` tells no side. */
 const markerColors: Record<MarkerOwner, string> = {
   you: "var(--hud-own)",
   ally: "var(--hud-ally)",

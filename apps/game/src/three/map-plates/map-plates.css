@@ -1,6 +1,7 @@
 /* The map plates (map-plates.tsx; map-labels rounds 2 to 6, the owner's pick) on the HUD sheet's tokens (tokens.ts
-   HUD_SHEET, HUD_MODES, HUD_TYPE): the age's panel surface, line and accent, the sheet's face. The side reads as the
-   plate's left bar and its player's name: yours, an ally's, an enemy's, nobody's. Every reading is at the body size
+   HUD_SHEET, HUD_MODES, HUD_TYPE): the age's panel surface, line and accent, the sheet's face. A thing's side is one of
+   three colours (HUD_SHEET own, ally, enemy): yours green, an ally's blue, anyone else's red, nobody's too. It reads as
+   a token's ring and plate, a plate's left bar and its player's name, and every stamina bar. Every reading is at the body size
    and every row the same height (owner, 17 October 2026: "it makes little sense to have the bottom row smaller"); a
    place's name is told by its weight and the accent, a count by its weight, a label or a time by its colour. */
 .mp {
@@ -23,11 +24,9 @@
 .mp [data-relation="ally"] {
   --mp-side: var(--hud-ally);
 }
-.mp [data-relation="enemy"] {
-  --mp-side: var(--hud-enemy);
-}
+.mp [data-relation="enemy"],
 .mp [data-relation="neutral"] {
-  --mp-side: var(--hud-neutral);
+  --mp-side: var(--hud-enemy);
 }
 
 .mp-at {
@@ -77,10 +76,11 @@
   display: block;
   height: 100%;
   border-radius: var(--hud-radius-round);
-  background: var(--hud-good);
+  background: var(--mp-side);
 }
 
-/* An army at rest: its stamina as a tight bar under its troops, the plate's width, no number. */
+/* An army at rest: its stamina as a tight bar under its troops, the plate's width, no number. A stamina bar is in its
+   side's colour, filled to its level. */
 .mp-plate__stamina {
   display: block;
   height: 3px;
@@ -92,7 +92,7 @@
   display: block;
   height: 100%;
   border-radius: var(--hud-radius-round);
-  background: var(--hud-good);
+  background: var(--mp-side);
 }
 
 /* The readings: a player in the side's colour, a place's own name in the accent, a kind in words, a label or a time
@@ -146,11 +146,11 @@
   font-weight: var(--hud-weight-strong);
 }
 
-/* Selected: a ring in the player's own colour. A plate that would sit under an opened one steps aside. */
+/* Selected: a gold ring, whoever's it is. A plate that would sit under an opened one steps aside. */
 .mp [data-selected="true"] .mp-plate {
-  border-color: var(--hud-own);
+  border-color: var(--hud-selected);
   box-shadow:
-    0 0 0 2px var(--hud-own),
+    0 0 0 2px var(--hud-selected),
     var(--hud-shadow-panel);
 }
 .mp [data-yields="true"] {
@@ -164,7 +164,7 @@
   flex-direction: column;
   align-items: center;
 }
-/* A token: the pin, and under it the tier chip and count (and a site's holding), an army's stamina under that. */
+/* A token: the pin, and under it its plate, the tier chip and count, in its side's colour, an army's stamina under that. */
 .mp-token__disk {
   display: flex;
   width: 30px;
@@ -186,9 +186,13 @@
   gap: 3px;
   margin-top: -2px;
   padding: 0 4px;
-  border: 1px solid var(--hud-line);
+  border: 1px solid var(--mp-side);
   border-radius: var(--hud-radius-control);
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--mp-side) 42%, var(--hud-surface-from)),
+    color-mix(in srgb, var(--mp-side) 32%, var(--hud-surface-to))
+  );
   font-size: var(--hud-text-label);
   white-space: nowrap;
 }
@@ -197,6 +201,6 @@
   margin: 1px 0 0;
 }
 .mp [data-selected="true"] .mp-token__disk {
-  border-color: var(--hud-own);
-  box-shadow: 0 0 0 2px var(--hud-own);
+  border-color: var(--hud-selected);
+  box-shadow: 0 0 0 2px var(--hud-selected);
 }

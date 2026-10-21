@@ -432,11 +432,17 @@ export const HUD_SHEET = {
   dark: channels(HUD_COLORS.ink),
   /** An input's or a map's recess. */
   well: "rgb(0 0 0 / 0.4)",
-  /** Whose a thing is: yours, an ally's, an enemy's, nobody's. */
-  own: HUD_COLORS.gold2,
-  ally: "#7fd6cf",
+  /**
+   * Whose a thing is, in three sides (owner, 2026-10-21: "red for everything thats not me, blue for allies ... and green
+   * for me"): yours green, an ally's (a tribe member's) blue, anyone else's red, nobody's too. `neutral` is no side: a
+   * mark that does not tell whose it is (the minimap's).
+   */
+  own: "#66ddab",
+  ally: "#6aa8ff",
   enemy: "#ff7b6b",
   neutral: "#b9b1a1",
+  /** The ring round the selected thing on the map, whoever's it is. */
+  selected: HUD_COLORS.gold2,
   /** How a thing stands: good (ready, gained), bad (refused, lost), warn (costly, waiting). */
   good: "#66ddab",
   bad: "#ff7b6b",

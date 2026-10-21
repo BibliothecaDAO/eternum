@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { judgePlates } from "./plates.mjs";
 
+/** The page's three side colours as the probe resolves them: yours green, an ally's blue, anyone else's red. */
+const SIDES = { own: "rgb(102, 221, 171)", ally: "rgb(106, 168, 255)", enemy: "rgb(255, 123, 107)" };
 /** A reading of one view as the probe returns it: every label's rectangle, and its thing as the renderer placed it. */
 const reading = (things, fields = {}) => ({
   world: true,
@@ -13,6 +15,7 @@ const reading = (things, fields = {}) => ({
   crowded: [],
   takers: 0,
   caught: [],
+  sides: SIDES,
   things,
   ...fields,
 });
@@ -62,5 +65,37 @@ describe("the live anchor gate (review-token-anchor-1: missing evidence never pa
   it("still fails a real fault before it blocks on missing evidence", () => {
     const overlapping = reading([token("army:1", null)], { overlaps: [{ a: "T1 500", b: "T2 300", gap: -4 }] });
     expect(judgePlates(overlapping).status).toBe("failed");
+  });
+});
+
+describe("the side colours (owner, 2026-10-21: three sides, red for everything that is not yours or an ally's)", () => {
+  const sided = (side, colours, extra = {}) => ({ ...token("army:1", army), side, colours, ...extra });
+
+  it("passes labels drawn in their side's colour, nobody's in the enemy's red", () => {
+    for (const [side, colour] of [
+      ["own", SIDES.own],
+      ["ally", SIDES.ally],
+      ["enemy", SIDES.enemy],
+      ["neutral", SIDES.enemy],
+    ])
+      expect(judgePlates(reading([sided(side, [colour, colour, colour])])).status).toBe("completed");
+  });
+
+  it("fails a label with any part off its side's colour, naming what it drew and wanted", () => {
+    const greenBar = judgePlates(reading([sided("enemy", [SIDES.enemy, SIDES.enemy, SIDES.own])]));
+    expect(greenBar).toMatchObject({ status: "failed", reason: "1 labels not drawn in their side's colour" });
+    expect(greenBar.offSide).toEqual([
+      { label: "T1 500", side: "enemy", colours: [SIDES.enemy, SIDES.enemy, SIDES.own], wanted: SIDES.enemy },
+    ]);
+    const grey = "rgb(185, 177, 161)";
+    expect(judgePlates(reading([sided("neutral", [grey, grey])])).status).toBe("failed");
+  });
+
+  it("fails a page whose side colours are not three, or were not read", () => {
+    const alike = { ...SIDES, ally: SIDES.own };
+    expect(judgePlates(reading([sided("own", [SIDES.own])], { sides: alike })).reason).toBe(
+      "the page's three side colours are not three",
+    );
+    expect(judgePlates(reading([sided("own", [SIDES.own])], { sides: {} })).status).toBe("failed");
   });
 });
