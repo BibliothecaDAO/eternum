@@ -26,7 +26,7 @@ export const STUDIO_TRIGGERS = ["rise", "attack", "defeat", "explore", "realm", 
 export type StudioTrigger = (typeof STUDIO_TRIGGERS)[number];
 
 /** What the set can hold. A take puts on it only the subjects it films; between takes all of them stand. */
-export const STUDIO_SUBJECTS = ["realm", "hyperstructure", "battle", "explorer"] as const;
+const STUDIO_SUBJECTS = ["realm", "hyperstructure", "battle", "explorer"] as const;
 export type StudioSubject = (typeof STUDIO_SUBJECTS)[number];
 
 const ATTACKER = 1;
