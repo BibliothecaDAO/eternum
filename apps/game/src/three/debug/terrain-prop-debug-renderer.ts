@@ -84,10 +84,10 @@ export async function mountTerrainPropDebugRenderer(
     const runtime = await createTerrainPropDebugRuntime(input);
     const resizeObserver = observeCanvas(input.canvas, runtime);
     const stopAnimation = startAnimation(runtime);
-    const stats = readStats(runtime, input.forceWebGL);
+    const stats = readStats(runtime);
     debugWindow.__terrainPropDebug = {
       status: "ready",
-      getSnapshot: () => readStats(runtime, input.forceWebGL),
+      getSnapshot: () => readStats(runtime),
     };
     input.onReady(stats);
 
@@ -229,7 +229,7 @@ function startAnimation(runtime: TerrainPropDebugRuntime): () => void {
   return () => runtime.renderer.setAnimationLoop(null);
 }
 
-function readStats(runtime: TerrainPropDebugRuntime, forceWebGL: boolean): TerrainPropDebugStats {
+function readStats(runtime: TerrainPropDebugRuntime): TerrainPropDebugStats {
   const renderInfo = runtime.renderer.info.render;
   return {
     activeMode: resolveWebGpuRendererActiveMode(runtime.renderer),

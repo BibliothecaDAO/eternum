@@ -11,7 +11,6 @@ import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
 import { HudPanel, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { playerReadings } from "@/ui/features/world/containers/top-header/identity-chip";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { NextUpView } from "@/ui/features/world/hud/next-up";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { type CoachArmy, type CoachStep, type CoachTarget, coachSteps } from "@/ui/features/world/hud/coach";

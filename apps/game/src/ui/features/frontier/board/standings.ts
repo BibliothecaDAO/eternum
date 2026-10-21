@@ -1,10 +1,8 @@
 import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-leaderboard-service";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
-import { RESOURCE_PRECISION, scaledToUnits } from "@bibliothecadao/types";
+import { scaledToUnits } from "@bibliothecadao/types";
 
 type Entry = HeraldFrontierLeaderboardEntry;
-
-const PRECISION = BigInt(RESOURCE_PRECISION);
 
 /** The viewer's own row, matched by canonical address; none for a spectator or a player without a settled realm. */
 export const findOwnEntry = (entries: readonly Entry[], viewer: string | null): Entry | undefined => {

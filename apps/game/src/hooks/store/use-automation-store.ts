@@ -31,13 +31,6 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-enum ProductionType {
-  ResourceToResource = "resource-to-resource",
-  LaborToResource = "labor-to-resource",
-  ResourceToLabor = "resource-to-labor",
-  Transfer = "transfer",
-}
-
 type RealmAutomationInput = Partial<
   Omit<RealmAutomationConfig, "realmId" | "customPercentages" | "createdAt" | "updatedAt">
 >;
@@ -105,7 +98,6 @@ const normalizePresetId = (preset?: RealmPresetId | string | null): RealmPresetI
 
 const sanitizeCustomPercentages = (
   percentages: Record<number, ResourceAutomationPercentages> | undefined,
-  entityType: RealmEntityType = "realm",
 ): Record<number, ResourceAutomationPercentages> => {
   if (!percentages) return {};
 
@@ -114,7 +106,7 @@ const sanitizeCustomPercentages = (
   Object.entries(percentages).forEach(([key, value]) => {
     if (!value) return;
     const resourceId = Number(key) as ResourcesIds;
-    if (isAutomationResourceBlocked(resourceId, entityType)) return;
+    if (isAutomationResourceBlocked(resourceId)) return;
 
     sanitized[resourceId] = normalizePercentages(
       value as Partial<ResourceAutomationPercentages> & { resourceToLabor?: number },
@@ -146,7 +138,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
             const sanitizedExisting: RealmAutomationConfig = {
               ...existing,
               presetId: normalizePresetId(existing.presetId),
-              customPercentages: sanitizeCustomPercentages(existing.customPercentages, existing.entityType),
+              customPercentages: sanitizeCustomPercentages(existing.customPercentages),
             };
             const nextRealm: RealmAutomationConfig = metadataChanged
               ? {
@@ -211,10 +203,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               [realmId]: {
                 ...target,
                 ...metadata,
-                customPercentages: sanitizeCustomPercentages(
-                  target.customPercentages,
-                  metadata.entityType ?? target.entityType,
-                ),
+                customPercentages: sanitizeCustomPercentages(target.customPercentages),
                 updatedAt: Date.now(),
               },
             },
@@ -224,7 +213,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
         set((state) => {
           const realm = state.realms[realmId];
           if (!realm) return state;
-          if (isAutomationResourceBlocked(resourceId, realm.entityType)) {
+          if (isAutomationResourceBlocked(resourceId)) {
             return state;
           }
 
@@ -245,13 +234,10 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           const nextRealm: RealmAutomationConfig = {
             ...realm,
             presetId: "custom",
-            customPercentages: sanitizeCustomPercentages(
-              {
-                ...realm.customPercentages,
-                [resourceId]: updatedPercentages,
-              },
-              realm.entityType,
-            ),
+            customPercentages: sanitizeCustomPercentages({
+              ...realm.customPercentages,
+              [resourceId]: updatedPercentages,
+            }),
             updatedAt: Date.now(),
           };
           const nextState: Partial<ProductionAutomationState> = {
@@ -304,7 +290,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
               [realmId]: {
                 ...realm,
                 lastExecution: summary,
-                customPercentages: sanitizeCustomPercentages(realm.customPercentages, realm.entityType),
+                customPercentages: sanitizeCustomPercentages(realm.customPercentages),
                 updatedAt: Date.now(),
               },
             },
@@ -423,7 +409,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
 
           let customPercentages: Record<number, ResourceAutomationPercentages> = {};
           if (incomingCustom && typeof incomingCustom === "object") {
-            customPercentages = sanitizeCustomPercentages(incomingCustom, entityType);
+            customPercentages = sanitizeCustomPercentages(incomingCustom);
           } else if (legacyResources && typeof legacyResources === "object") {
             const legacyPercentages: Record<number, ResourceAutomationPercentages> = {};
             Object.entries(legacyResources).forEach(([key, settings]) => {
@@ -436,7 +422,7 @@ export const useAutomationStore = create<ProductionAutomationState>()(
                 laborToResource: Number((percentages as any).laborToResource ?? 0),
               };
             });
-            customPercentages = sanitizeCustomPercentages(legacyPercentages, entityType);
+            customPercentages = sanitizeCustomPercentages(legacyPercentages);
           }
 
           const { resources: _deprecatedResources, customPercentages: _deprecatedCustom, ...restRealm } = realm;

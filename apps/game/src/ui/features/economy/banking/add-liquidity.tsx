@@ -14,7 +14,6 @@ import {
   divideByPrecision,
   getBalance,
   getClosestBank,
-  getEntityIdFromKeys,
   isMilitaryResource,
   MarketManager,
   multiplyByPrecision,

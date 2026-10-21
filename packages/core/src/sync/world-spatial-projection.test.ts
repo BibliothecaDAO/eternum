@@ -406,7 +406,7 @@ describe("WorldSpatialProjection", () => {
   it.each(["destination-first", "origin-first"] as const)(
     "converges to the current native store position when the %s update lands first",
     (updateOrder) => {
-      const { projection, removeTile, source, writeTile } = createHarness();
+      const { projection, removeTile, writeTile } = createHarness();
       writeTile("destination", { col: 20, row: 21, occupierId: 0, occupierType: TileOccupier.None });
       writeTile("origin", { col: 10, row: 11, occupierId: 7 });
       projection.start();
@@ -467,7 +467,7 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("restores missed updates and deletions from a full rebuild", () => {
-    const { projection, removeTile, source, writeTile } = createHarness();
+    const { projection, removeTile, writeTile } = createHarness();
     writeTile("chest", { col: 10, row: 11, occupierId: 7 });
     projection.start();
 
@@ -480,7 +480,7 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("does not return an offscreen deletion when its bounds are queried later", () => {
-    const { projection, removeTile, source, writeTile } = createHarness();
+    const { projection, removeTile, writeTile } = createHarness();
     writeTile("offscreen-chest", { col: 200, row: 201, occupierId: 7 });
     projection.start();
 
@@ -528,7 +528,7 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("publishes structure variant, move, and reserved-site removal changes", () => {
-    const { projection, removeTile, source, writeTile } = createHarness();
+    const { projection, removeTile, writeTile } = createHarness();
     writeTile("realm", {
       col: 10,
       row: 11,
@@ -579,7 +579,7 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("publishes army create, move, variant, and removal changes incrementally", () => {
-    const { projection, removeArmy, source, writeArmy } = createHarness();
+    const { projection, removeArmy, writeArmy } = createHarness();
     projection.start();
     const listener = vi.fn();
     projection.subscribeArmies(listener);
@@ -695,7 +695,7 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("updates a changed structure incrementally without rescanning TileOpt", () => {
-    const { projection, removeTile, source, writeTile } = createHarness();
+    const { projection, source, writeTile } = createHarness();
     writeTile("realm", {
       col: 10,
       row: 11,
@@ -720,7 +720,7 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("restores missed army updates and deletions from a full rebuild", () => {
-    const { projection, removeArmy, source, writeArmy } = createHarness();
+    const { projection, removeArmy, writeArmy } = createHarness();
     writeArmy("army", { explorerId: 7, col: 10, row: 11 });
     projection.start();
 
@@ -835,7 +835,7 @@ describe("WorldSpatialProjection", () => {
   });
 
   it("publishes nothing for rows that end the slice where they started", () => {
-    const { projection, removeArmy, removeTile, source, writeArmy, writeTile } = createHarness();
+    const { projection, removeArmy, removeTile, writeArmy, writeTile } = createHarness();
     writeArmy("returning-army", { explorerId: 9, col: 30, row: 31 });
     projection.start();
     const listener = vi.fn();

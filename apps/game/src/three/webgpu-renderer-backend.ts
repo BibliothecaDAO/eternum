@@ -369,7 +369,6 @@ export function createWebGPURendererBackend(
   } satisfies WebGPURendererBackendDependencies;
   let renderer: RendererSurfaceLike | undefined;
   let cleanupDeviceDiagnostics: (() => void) | undefined;
-  let disposed = false;
 
   const startRendererLane = async (forceWebGL: boolean): Promise<InitializedRendererLane> => {
     const startupTimeoutMs = forceWebGL ? WEBGL2_BACKEND_STARTUP_TIMEOUT_MS : WEBGPU_BACKEND_STARTUP_TIMEOUT_MS;
@@ -474,7 +473,6 @@ export function createWebGPURendererBackend(
       renderer.setSize(input.width, input.height);
     },
     dispose() {
-      disposed = true;
       cleanupDeviceDiagnostics?.();
       cleanupDeviceDiagnostics = undefined;
       renderer?.dispose();

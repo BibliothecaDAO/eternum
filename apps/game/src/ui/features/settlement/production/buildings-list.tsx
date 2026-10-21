@@ -1,12 +1,10 @@
-import { usePlayerNames } from "@/hooks/use-player-profile";
 import { HudButton, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 
-import { configManager, getRealmInfo, getStructureRelicEffects } from "@bibliothecadao/eternum";
-import { useGame } from "@/hooks/context/game-context";
-import { useNativeRowOrAbsent, useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { configManager, getStructureRelicEffects } from "@bibliothecadao/eternum";
+import { useNativeRowOrAbsent } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { Building, RealmInfo, ResourcesIds, formatCount, resourceName } from "@bibliothecadao/types";
 import { useMemo } from "react";
@@ -25,18 +23,10 @@ export const BuildingsList = ({
   productionBuildings: Building[];
 }) => {
   const currentDefaultTick = useCurrentDefaultTick();
-  const { setup } = useGame();
 
   const resourceManager = useResourceManager(realm.entityId);
   const keys = { game_id: configManager.getActiveGameId(), entity_id: realm.entityId };
-  const structureBuildings = useNativeRow("StructureBuildings", keys);
   const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", keys);
-  const names = usePlayerNames();
-  const realmInfo = useMemo(
-    () => getRealmInfo(realm.entityId, setup.store, names.text),
-    [realm.entityId, setup.store, structureBuildings, resourceManager, names],
-  );
-
   const activeRelicEffects = useMemo(() => {
     if (!productionBoostBonus) return [];
     return getStructureRelicEffects(productionBoostBonus, currentDefaultTick);
@@ -104,8 +94,6 @@ export const BuildingsList = ({
                   resourceId={production.resource}
                   resourceManager={resourceManager}
                   showTransfer={false}
-                  storageCapacity={realmInfo?.storehouses?.capacityKg}
-                  storageCapacityUsed={realmInfo?.storehouses?.capacityUsedKg}
                   activeRelicEffects={activeRelicEffects}
                   canOpenProduction={production.buildings.length > 0}
                   onManageProduction={(resource) => onSelectProduction(resource)}

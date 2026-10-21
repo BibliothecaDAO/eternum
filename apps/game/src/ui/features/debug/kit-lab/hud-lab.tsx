@@ -1,18 +1,6 @@
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import {
-  BARRACKS,
-  CASTLE,
-  FARM,
-  HUT,
-  OFFLINE,
-  PAYOUTS_PAUSED,
-  TRAINING_BUILDINGS,
-  TRY_AGAIN,
-  WITHDRAWALS_CLOSED,
-  WORKSHOP,
-  YOU,
-} from "@/ui/design-system/kit/words";
+import { OFFLINE, PAYOUTS_PAUSED, TRAINING_BUILDINGS, WITHDRAWALS_CLOSED, YOU } from "@/ui/design-system/kit/words";
 import { ArmyList, ArmyRow } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
@@ -892,7 +880,6 @@ const noop = () => undefined;
 export const HudLab = () => {
   const { state = "idle" } = useParams();
   const lab: LabState = STATES[state as keyof typeof STATES] ?? STATES.idle;
-  const selected = lab.selected === undefined ? undefined : lab.armies[lab.selected];
   const desktop = useLayout() === "desktop";
   // The game wears Frontier's age (world.tsx's useHudMode); the lab draws it the same.
   useHudMode("frontier");

@@ -1,6 +1,6 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
-import { TroopTier, TroopType, formatCharge, formatExact } from "@bibliothecadao/types";
+import { TroopTier, TroopType, formatExact } from "@bibliothecadao/types";
 
 import { TroopBadge } from "./transfer-troop-badge";
 

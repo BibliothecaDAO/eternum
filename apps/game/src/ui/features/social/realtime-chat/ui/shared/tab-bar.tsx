@@ -1,6 +1,6 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
-import React, { useState } from "react";
+import React from "react";
 import type { ChatTab } from "../../model/types";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 

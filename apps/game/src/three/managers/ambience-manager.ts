@@ -406,7 +406,7 @@ export class AmbienceManager {
           activeSound.sources.forEach((source) => {
             try {
               this.audioManager.stop(source);
-            } catch (e) {
+            } catch {
               // Ignore errors
             }
           });
@@ -622,7 +622,7 @@ export class AmbienceManager {
       activeSound.sources.forEach((source) => {
         try {
           this.audioManager.stop(source);
-        } catch (e) {
+        } catch {
           // Ignore errors
         }
       });

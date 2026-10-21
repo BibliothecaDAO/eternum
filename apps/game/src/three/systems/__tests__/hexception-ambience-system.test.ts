@@ -1,7 +1,6 @@
 import {
   AdditiveBlending,
   BackSide,
-  BufferGeometry,
   DataTexture,
   Mesh,
   MeshBasicMaterial,

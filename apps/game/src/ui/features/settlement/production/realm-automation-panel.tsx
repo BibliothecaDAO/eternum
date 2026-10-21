@@ -96,25 +96,21 @@ export const RealmAutomationPanel = ({
   const [lastSavedSnapshot, setLastSavedSnapshot] = useState<Snapshot | null>(null);
 
   const realmResources = useMemo(
-    () =>
-      uniqueResources(producedResources.filter((resourceId) => !isAutomationResourceBlocked(resourceId, entityType))),
-    [entityType, producedResources],
+    () => uniqueResources(producedResources.filter((resourceId) => !isAutomationResourceBlocked(resourceId))),
+    [producedResources],
   );
 
   const savedPresetId = useMemo(() => inferRealmPreset(realmAutomation), [realmAutomation]);
   const activePresetId = draftPresetId ?? savedPresetId;
 
-  const smartPresetAllocations = useMemo(
-    () => calculatePresetAllocations(realmResources, "smart", entityType),
-    [realmResources, entityType],
-  );
+  const smartPresetAllocations = useMemo(() => calculatePresetAllocations(realmResources, "smart"), [realmResources]);
 
   const presetAllocations = useMemo(() => {
     if (activePresetId === "custom") {
       return new Map<number, ResourceAutomationPercentages>();
     }
-    return calculatePresetAllocations(realmResources, activePresetId, entityType);
-  }, [activePresetId, realmResources, entityType]);
+    return calculatePresetAllocations(realmResources, activePresetId);
+  }, [activePresetId, realmResources]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -214,7 +210,7 @@ export const RealmAutomationPanel = ({
     const presetId = inferRealmPreset(realmAutomation);
 
     if (presetId === "custom") {
-      const smartDefaults = calculatePresetAllocations(realmResources, "smart", entityType);
+      const smartDefaults = calculatePresetAllocations(realmResources, "smart");
       realmResources.forEach((resourceId) => {
         snapshotPercentages[resourceId] =
           realmAutomation.customPercentages?.[resourceId] ??
@@ -222,7 +218,7 @@ export const RealmAutomationPanel = ({
           createBaselinePercentages(resourceId);
       });
     } else {
-      const allocations = calculatePresetAllocations(realmResources, presetId, entityType);
+      const allocations = calculatePresetAllocations(realmResources, presetId);
       realmResources.forEach((resourceId) => {
         snapshotPercentages[resourceId] = allocations.get(resourceId) ?? createBaselinePercentages(resourceId);
       });
@@ -236,7 +232,7 @@ export const RealmAutomationPanel = ({
     setLastSavedSnapshot(snapshot);
     setDraftPercentages(snapshotPercentages);
     setDraftPresetId(presetId);
-  }, [realmAutomation, realmResources, createBaselinePercentages, hydrated, hasLocalChanges, entityType]);
+  }, [realmAutomation, realmResources, createBaselinePercentages, hydrated, hasLocalChanges]);
 
   const automationRows = useMemo(() => {
     // A resource whose recipe this game does not define cannot be automated, so it has no row.
@@ -250,15 +246,12 @@ export const RealmAutomationPanel = ({
 
   const aggregatedUsageMap = useMemo(() => {
     const totals = new Map<number, number>();
-    const effectiveEntityType = realmAutomation?.entityType ?? entityType;
-
     automationRows.forEach((row) => {
-      const { resourceId, percentages, complexInputs, simpleInputs } = row;
+      const { percentages, complexInputs, simpleInputs } = row;
 
       if (percentages.resourceToResource > 0) {
         complexInputs.forEach((input) => {
           if (input.resource === ResourcesIds.Wheat) return;
-          if (isAutomationResourceBlocked(input.resource, effectiveEntityType, "input")) return;
           totals.set(input.resource, (totals.get(input.resource) ?? 0) + percentages.resourceToResource);
         });
       }
@@ -266,14 +259,13 @@ export const RealmAutomationPanel = ({
       if (percentages.laborToResource > 0) {
         simpleInputs.forEach((input) => {
           if (input.resource === ResourcesIds.Wheat) return;
-          if (isAutomationResourceBlocked(input.resource, effectiveEntityType, "input")) return;
           totals.set(input.resource, (totals.get(input.resource) ?? 0) + percentages.laborToResource);
         });
       }
     });
 
     return totals;
-  }, [automationRows, entityType, realmAutomation]);
+  }, [automationRows]);
 
   const aggregatedUsageList = useMemo(() => {
     return Array.from(aggregatedUsageMap.entries())
@@ -374,7 +366,7 @@ export const RealmAutomationPanel = ({
         return;
       }
 
-      const allocations = calculatePresetAllocations(realmResources, presetId, entityType);
+      const allocations = calculatePresetAllocations(realmResources, presetId);
 
       setDraftPercentages((prev) => {
         const updated: Record<number, ResourceAutomationPercentages> = { ...prev };
@@ -388,7 +380,7 @@ export const RealmAutomationPanel = ({
 
       setDraftPresetId(presetId);
     },
-    [realmResources, entityType],
+    [realmResources],
   );
 
   const handleSliderChange = useCallback(
@@ -428,7 +420,7 @@ export const RealmAutomationPanel = ({
     const buildPercentagesForPreset = (presetId: RealmPresetId) => {
       const next: Record<number, ResourceAutomationPercentages> = {};
       if (presetId === "custom") {
-        const smartDefaults = calculatePresetAllocations(realmResources, "smart", entityType);
+        const smartDefaults = calculatePresetAllocations(realmResources, "smart");
         realmResources.forEach((resourceId) => {
           next[resourceId] =
             realmAutomation.customPercentages?.[resourceId] ??
@@ -438,17 +430,11 @@ export const RealmAutomationPanel = ({
         return next;
       }
 
-      const allocations = calculatePresetAllocations(realmResources, presetId, entityType);
+      const allocations = calculatePresetAllocations(realmResources, presetId);
       realmResources.forEach((resourceId) => {
         next[resourceId] = allocations.get(resourceId) ?? createBaselinePercentages(resourceId);
       });
       return next;
-    };
-
-    const snapshotPercentages = lastSavedSnapshot?.percentages ?? buildPercentagesForPreset(savedPreset);
-    const snapshot: Snapshot = {
-      presetId: savedPreset,
-      percentages: snapshotPercentages,
     };
 
     if (targetPreset !== "custom") {

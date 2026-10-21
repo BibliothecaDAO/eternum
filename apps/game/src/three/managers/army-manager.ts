@@ -452,7 +452,6 @@ export class ArmyManager {
     if (variantChanged) this.refreshArmyPositionPresentation(existing);
 
     const projectedPosition = Position.fromContract({ x: renderable.hexCoords.col, y: renderable.hexCoords.row });
-    const projectedNormalized = projectedPosition.getNormalized();
     await this.moveArmy(renderable.entityId, projectedPosition);
   }
 
@@ -2979,7 +2978,7 @@ ${
    */
   private recomputeBattleTimersForAllArmies(): void {
     // Update all army data with active battle timers
-    this.armyPresentations.forEach((army, entityId) => {
+    this.armyPresentations.forEach((army) => {
       if (army.battleCooldownEnd) {
         const newBattleTimerLeft = getBattleTimerLeft(army.battleCooldownEnd);
 

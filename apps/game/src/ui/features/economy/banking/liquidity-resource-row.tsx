@@ -14,7 +14,7 @@ import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { LIQUIDITY_COLS } from "./liquidity-table";
 import { TravelInfo } from "@/ui/features/economy/resources";
-import { getEntityIdFromKeys, knownAmount } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import {
   MarketManager,
   configManager,

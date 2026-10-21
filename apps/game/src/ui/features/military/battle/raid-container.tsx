@@ -12,7 +12,6 @@ import {
   configManager,
   divideByPrecision,
   getArmy,
-  getEntityIdFromKeys,
   getRemainingCapacityInKg,
   RaidSimulator,
   StaminaManager,
@@ -30,11 +29,9 @@ import {
   ResourcesIds,
   TroopTier,
   TroopType,
-  formatCharge,
   formatCount,
   formatPercent,
   resourceName,
-  resources,
   formatExact,
 } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";

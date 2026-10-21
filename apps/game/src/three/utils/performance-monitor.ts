@@ -333,33 +333,3 @@ class PerformanceMonitorImpl {
 }
 
 export const PerformanceMonitor = PerformanceMonitorImpl.getInstance();
-
-// Export helper for wrapping methods
-function instrumentMethod<T extends (...args: any[]) => any>(name: string, fn: T): T {
-  return PerformanceMonitor.wrap(name, fn);
-}
-
-// Export decorator for class methods
-function instrument(name?: string) {
-  return function (_target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-    const originalMethod = descriptor.value;
-    const metricName = name || propertyKey;
-
-    descriptor.value = function (...args: any[]) {
-      PerformanceMonitor.begin(metricName);
-      try {
-        const result = originalMethod.apply(this, args);
-        if (result instanceof Promise) {
-          return result.finally(() => PerformanceMonitor.end(metricName));
-        }
-        PerformanceMonitor.end(metricName);
-        return result;
-      } catch (e) {
-        PerformanceMonitor.end(metricName);
-        throw e;
-      }
-    };
-
-    return descriptor;
-  };
-}

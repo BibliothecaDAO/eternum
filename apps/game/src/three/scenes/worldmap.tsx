@@ -164,7 +164,6 @@ import { structureMarkerKind } from "./worldmap-structure-marker-kind";
 import { playerColorManager } from "@/three/systems/player-colors";
 import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "./worldmap-content-ladder";
 import type { TerrainUploadMetrics } from "@/three/terrain/procedural-terrain";
-import { hexCellKey } from "@/three/terrain/hex-cell-key";
 import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
@@ -1084,7 +1083,7 @@ export default class WorldmapScene extends WarpTravel {
     this.hoverLabelRaycaster = raycaster;
     this.logWorldmapSceneConstruction();
     this.registerWorldmapRecoveryHandle();
-    this.initializeWorldmapSceneServices(gameContext);
+    this.initializeWorldmapSceneServices();
     this.bindTransactionFailureLifecycle(gameContext);
     this.initializeWorldmapManagers();
     this.configureWorldmapRecoveryLifecycle();
@@ -1130,7 +1129,7 @@ export default class WorldmapScene extends WarpTravel {
     return false;
   }
 
-  private initializeWorldmapSceneServices(gameContext: SetupResult): void {
+  private initializeWorldmapSceneServices(): void {
     this.fxManager = new FXManager(this.scene, 1);
     this.proceduralTerrain = new WorldmapProceduralTerrain(getGameModeId());
     this.refreshTerrainPropOccupancy();
@@ -2979,7 +2978,6 @@ export default class WorldmapScene extends WarpTravel {
 
     const isTravelAction = actionType === ActionType.Move || actionType === ActionType.SpireTravel;
     if (actionPath.length > 0) {
-      const selectedArmy = this.armyManager.getArmy(selectedEntityId);
       playUnitCommandSoundForWorldmapAction(actionType);
 
       // Get the target position for the effect
@@ -7562,7 +7560,6 @@ export default class WorldmapScene extends WarpTravel {
         return handleWorldmapRefreshCommitRuntime({
           chunkKey,
           commitPreparedTerrain: (nextPreparedTerrain) => {
-            const preparedTerrain = nextPreparedTerrain as PreparedTerrainChunk;
             return this.schedulePreparedTerrainCommit("critical", () => {
               commitWorldmapPreparedTerrainPresentation({
                 applyPreparedTerrain: (preparedTerrain) => {

@@ -8,7 +8,6 @@ import { IS_MOBILE } from "@/ui/config";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { env } from "../../env";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
-import { SceneName } from "./types";
 import { configureGltfTextureSupport, transitionDB } from "./utils/";
 import { trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import {

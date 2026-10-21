@@ -118,7 +118,7 @@ export type BUILDINGS_CATEGORIES_TYPES =
   | StructureType.Village
   | StructureType.Camp;
 
-export const buildingModelPaths = (isBlitz: boolean) => {
+export const buildingModelPaths = () => {
   return {
     [BUILDINGS_GROUPS.BUILDINGS]: {
       [BuildingType.None]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
@@ -165,9 +165,6 @@ export const buildingModelPaths = (isBlitz: boolean) => {
     },
   };
 };
-
-const PROGRESS_HALF_THRESHOLD = 50;
-const PROGRESS_FINAL_THRESHOLD = 100;
 
 export function getStructureModelPaths(): Record<StructureType, string[]> {
   return {

@@ -1,7 +1,6 @@
 import { useGame } from "@/hooks/context/game-context";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useActNowRefusal } from "@/utils/can-issue-orders";
-import { extractReadableErrorMessage } from "@/utils/error-message";
 import type { ID } from "@bibliothecadao/types";
 import { sendRealmLevelUp, sendRealmProvision } from "../realm-castle-sends";
 import { useBlitzRealmProvision } from "./use-blitz-realm-provision";

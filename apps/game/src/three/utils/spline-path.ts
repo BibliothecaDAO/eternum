@@ -102,8 +102,6 @@ export function resolveSettlementOffset(timer: number, duration: number, oversho
 const _tangent0 = new Vector3();
 const _tangent1 = new Vector3();
 const _cross = new Vector3();
-const _splinePoint = new Vector3();
-const _splineTangent = new Vector3();
 
 /**
  * Compute z-axis bank angle from path curvature at parameter t.

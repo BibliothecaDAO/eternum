@@ -87,7 +87,7 @@ const BASE_BUILDING_EXCLUSIONS = new Set<string>([
 const BLITZ_BUILDING_EXCLUSIONS = new Set<keyof typeof BuildingType>(["ResourceFish", "ResourceResearch"]);
 
 function resolveBuildingModelPaths(isBlitz: boolean) {
-  const paths = buildingModelPaths(isBlitz);
+  const paths = buildingModelPaths();
   const buildings: Partial<Record<BuildingType, string>> = { ...paths[BUILDINGS_GROUPS.BUILDINGS] };
   if (isBlitz) {
     for (const building of BLITZ_BUILDING_EXCLUSIONS) delete buildings[BuildingType[building]];

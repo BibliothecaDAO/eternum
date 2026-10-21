@@ -8,8 +8,6 @@ import type { CentralizedVisibilityManager } from "../utils/centralized-visibili
 interface PointLabelConfig {
   entityId: ID;
   position: THREE.Vector3;
-  size?: number; // Relative size multiplier (default: 1.0)
-  colorIndex?: number; // Index for color palette (default: 0)
 }
 
 const sharedSpriteTextureReferences = new WeakMap<THREE.Texture, number>();
@@ -163,7 +161,7 @@ export class PointsLabelRenderer {
    * Add or update a point label
    */
   public setPoint(config: PointLabelConfig): void {
-    const { entityId, position, size: _size = 1.0, colorIndex: _colorIndex = 0 } = config;
+    const { entityId, position } = config;
 
     // Check if point already exists
     let index = this.entityIdToIndex.get(entityId);

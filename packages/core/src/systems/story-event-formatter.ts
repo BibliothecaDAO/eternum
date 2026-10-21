@@ -755,7 +755,7 @@ function formatNumber(value: unknown): string | null {
     if (value.startsWith("0x")) {
       try {
         return BigInt(value).toString();
-      } catch (error) {
+      } catch {
         return value;
       }
     }
@@ -765,7 +765,7 @@ function formatNumber(value: unknown): string | null {
     }
     try {
       return BigInt(value).toString();
-    } catch (error) {
+    } catch {
       return value;
     }
   }
@@ -779,7 +779,7 @@ function toNumber(value: unknown): number | null {
     if (value.startsWith("0x")) {
       try {
         return Number(BigInt(value));
-      } catch (error) {
+      } catch {
         return null;
       }
     }
@@ -803,7 +803,7 @@ function amountToBigInt(value: unknown): bigint | null {
   if (typeof value === "string") {
     try {
       return value.startsWith("0x") ? BigInt(value) : BigInt(value);
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -820,14 +820,14 @@ function toBigIntSafe(value: unknown): bigint | null {
   if (typeof value === "number") {
     try {
       return BigInt(Math.trunc(value));
-    } catch (error) {
+    } catch {
       return null;
     }
   }
   if (typeof value === "string") {
     try {
       return BigInt(value);
-    } catch (error) {
+    } catch {
       return null;
     }
   }

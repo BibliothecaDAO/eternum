@@ -1,6 +1,6 @@
 import type { LeftListFilter, LeftListSort } from "@/hooks/store/use-ui-store";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
-import { type ID, StructureType } from "@bibliothecadao/types";
+import { type ID } from "@bibliothecadao/types";
 
 /**
  * Returns structures matching `filter`. `"all"` keeps everything (only used
@@ -59,10 +59,3 @@ export const sortStructures = (
     return compareNames(a, b);
   });
 };
-
-const SORT_OPTIONS: Array<{ value: LeftListSort; label: string }> = [
-  { value: "favorites", label: "Favorites" },
-  { value: "level", label: "Level" },
-  { value: "population", label: "Population" },
-  { value: "name", label: "Name" },
-];

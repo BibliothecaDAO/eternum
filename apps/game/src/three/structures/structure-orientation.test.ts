@@ -81,8 +81,8 @@ describe("cosmetic skins inherit the facing of their model family", () => {
     }
   });
 
-  it.each([true, false])("faces every local settlement model in mode blitz=%s", (blitz) => {
-    const paths = buildingModelPaths(blitz);
+  it("faces every local settlement model", () => {
+    const paths = buildingModelPaths();
     for (const group of [BUILDINGS_GROUPS.REALMS, BUILDINGS_GROUPS.VILLAGE]) {
       for (const path of Object.values(paths[group])) {
         expect(resolveStructureRotationY([path], 1.25)).toBe(0);

@@ -1,6 +1,5 @@
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { HEX_SIZE } from "@/three/constants";
-import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { Aura } from "@/three/managers/aura";
 import { HoverHexManager, type HoverVisualMode } from "@/three/managers/hover-hex-manager";
 import { interactiveHexMaterial } from "@/three/shaders/border-hex-material";
@@ -221,7 +220,7 @@ export class InteractiveHexManager {
     }
 
     const hexagonGeometry = this.hexGeometryPool.getGeometry("interactive");
-    hexGeometryDebugger.trackSharedGeometryUsage("interactive", "InteractiveHexManager.ensureInstanceMeshCapacity");
+    hexGeometryDebugger.trackSharedGeometryUsage();
 
     const mesh = createInstancedMesh(hexagonGeometry, this.instanceMaterial, requiredCapacity);
     mesh.instanceMatrix.needsUpdate = true;

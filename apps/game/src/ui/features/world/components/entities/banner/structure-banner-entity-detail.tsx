@@ -12,13 +12,11 @@ import { HyperstructureConstruction } from "@/ui/features/world/components/hyper
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { ID, StructureType, formatWait } from "@bibliothecadao/types";
 import { configManager, toHexString } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
-import { LeftView } from "@/types";
 
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
@@ -83,7 +81,6 @@ export const StructureBannerEntityDetail = memo(
     const resolvedWorldMode = useResolvedWorldGameMode();
     const isEternumMode = resolvedWorldMode === "eternum";
     const currentBlockTimestamp = useCurrentBlockTimestamp();
-    const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
 
     const productionSummary = useStructureProductionSummary(structure, resources);
     const ownerAddress =

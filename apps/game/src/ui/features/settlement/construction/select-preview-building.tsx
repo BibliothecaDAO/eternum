@@ -1,5 +1,4 @@
 import { usePlayerNames } from "@/hooks/use-player-profile";
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { CompactBuildingCard } from "./compact-building-card";
@@ -32,7 +31,6 @@ import {
 
 import {
   configManager,
-  divideByPrecision,
   getBuildingCount,
   getRealmInfo,
   ResourceManager,
@@ -47,7 +45,6 @@ import {
   BuildingType,
   buildingName,
   getBuildingFromResource,
-  ID,
   isEconomyBuilding,
   ResourcesIds,
   TroopType,
@@ -522,7 +519,6 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
     setSelectedArmyType(recommendedArmyType ?? armyGroups[0].armyType);
   }, [armyGroups, entityId, recommendedArmyType, selectedArmyType]);
 
-  const activeArmyType = selectedArmyType ?? recommendedArmyType ?? armyGroups[0]?.armyType ?? null;
   const getSummaryBuildState = useCallback(
     (buildingId: BuildingType) => {
       const buildability = resolveConstructionBuildability({
@@ -1128,12 +1124,6 @@ export const BuildingCard = ({
       ? formatAmount(effectiveOutputRemaining)
       : undefined;
   const totalProductionBuildings = count;
-  const activeProductionBuildings =
-    productionStatus?.isProducing && productionStatus.activeBuildings > 0
-      ? productionStatus.activeBuildings
-      : productionStatus?.isProducing
-        ? totalProductionBuildings
-        : 0;
   const formattedRemaining =
     productionStatus?.isProducing && effectiveRemainingSeconds !== null
       ? productionTimeLeft(Math.ceil(effectiveRemainingSeconds))

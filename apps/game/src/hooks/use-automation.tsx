@@ -369,11 +369,7 @@ export const useAutomation = () => {
                   );
 
                   const effectivePercentages: Record<number, ResourceAutomationPercentages> = {};
-                  const smartDefaults = calculatePresetAllocations(
-                    resourceIdsForCheck,
-                    "smart",
-                    activeRealmConfig.entityType,
-                  );
+                  const smartDefaults = calculatePresetAllocations(resourceIdsForCheck, "smart");
                   resourceIdsForCheck.forEach((resourceId) => {
                     const stored = activeRealmConfig.customPercentages?.[resourceId];
                     const smartDefault = smartDefaults.get(resourceId);
@@ -384,10 +380,7 @@ export const useAutomation = () => {
                     effectivePercentages[resourceId] = stored ?? smartDefault ?? baseline;
                   });
 
-                  const { resourceOver, laborOver } = getAutomationOverallocation(
-                    effectivePercentages,
-                    activeRealmConfig.entityType,
-                  );
+                  const { resourceOver, laborOver } = getAutomationOverallocation(effectivePercentages);
 
                   if (resourceOver || laborOver) {
                     runStatusNote = "Custom allocation over budget; used Smart for this run";

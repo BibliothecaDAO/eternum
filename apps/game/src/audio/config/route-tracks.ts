@@ -37,11 +37,6 @@ const createStartsWithMatcher = (prefix: string) => {
   };
 };
 
-const createExactMatcher = (target: string) => {
-  const normalized = normalizePathname(target);
-  return ({ pathname }: RouteMatchContext) => normalizePathname(pathname) === normalized;
-};
-
 // Curated route → playlist mapping. Higher priority wins when multiple definitions match.
 const ROUTE_TRACK_DEFINITIONS: RouteTrackDefinition[] = [
   {

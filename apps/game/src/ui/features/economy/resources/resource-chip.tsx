@@ -39,8 +39,6 @@ export const ResourceChip = ({
   resourceManager,
   hideZeroBalance = false,
   showTransfer = true,
-  storageCapacity = 0,
-  storageCapacityUsed = 0,
   activeRelicEffects,
   canOpenProduction = false,
   disableButtons = false,
@@ -50,8 +48,6 @@ export const ResourceChip = ({
   resourceManager: ResourceManager;
   hideZeroBalance?: boolean;
   showTransfer?: boolean;
-  storageCapacity?: number;
-  storageCapacityUsed?: number;
   activeRelicEffects: RelicEffect[];
   canOpenProduction?: boolean;
   disableButtons?: boolean;

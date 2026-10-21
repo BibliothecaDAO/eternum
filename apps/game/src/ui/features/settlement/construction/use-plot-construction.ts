@@ -33,7 +33,6 @@ export interface PlotConstructionTarget {
 export function usePlotConstruction(target: PlotConstructionTarget) {
   const {
     setup: { store },
-    account: { account },
   } = useGame();
   const viewer = useAccountAddress();
   const mode = useGameModeConfig();

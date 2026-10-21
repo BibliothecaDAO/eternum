@@ -272,12 +272,6 @@ export const SurfaceHost = () => {
   );
 };
 
-interface PopoverHeaderProps {
-  title: ReactNode;
-  icon?: IconMeaning;
-  onClose: () => void;
-}
-
 /**
  * A large surface's frame, in the HUD sheet's window: its bar (title, painting, close; dragging it moves the surface)
  * over a scrolling body, with an optional foot. It is a full modal, and the panel draws no box of its own around it.

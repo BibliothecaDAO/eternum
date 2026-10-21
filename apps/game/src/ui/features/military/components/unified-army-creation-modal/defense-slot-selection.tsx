@@ -1,4 +1,3 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { DISPLAYED_SLOT_NUMBER_MAP, TroopTier, formatExact, guardSlotName, GuardSlot } from "@bibliothecadao/types";

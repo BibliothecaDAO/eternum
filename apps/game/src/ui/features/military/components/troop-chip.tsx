@@ -2,7 +2,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { TierChip } from "../utils/tier-chip";
 import { knownAmount } from "@/ui/utils/utils";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
-import { resources, Troops, TroopTier, TroopType, formatAmount } from "@bibliothecadao/types";
+import { Troops, TroopTier, TroopType, formatAmount } from "@bibliothecadao/types";
 
 export const TroopChip = ({
   troops,

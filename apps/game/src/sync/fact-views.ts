@@ -1,4 +1,3 @@
-import { entityMapPosition, structureMapPosition } from "@bibliothecadao/eternum";
 import { getActiveGameStore } from "@/sync/active-game-client";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -12,7 +11,6 @@ import {
   formatArrivals,
   formatGuilds,
   readStructures,
-  ResourceManager,
   summarizeIncomingTroopArrivals,
 } from "@bibliothecadao/eternum";
 import {
@@ -21,7 +19,7 @@ import {
   type NativeModelName,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { ContractAddress, EntityType, type Player, ResourcesIds, type Structure } from "@bibliothecadao/types";
+import { ContractAddress, type Player, type Structure } from "@bibliothecadao/types";
 
 /**
  * What the client shows of the native store, derived on read and never copied into another store. Each view names
@@ -90,8 +88,6 @@ const readSelectableArmies = (store: NativeFactStore, viewer: ContractAddress | 
   formatArmies(store.inGame("ExplorerTroops", activeGameId()), viewer, store, getPlayerDisplayName)
     .filter((army) => army.isMine)
     .map((army) => ({ entityId: army.entityId }));
-
-const RELIC_RESOURCES = { first: ResourcesIds.StaminaRelic1, last: ResourcesIds.TroopProductionRelic2 };
 
 const readSeasonClock = () => {
   const config = ClientConfigManager.instance();

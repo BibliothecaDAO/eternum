@@ -185,7 +185,7 @@ export class MemoryMonitor {
       }
 
       return 0;
-    } catch (error) {
+    } catch {
       return 0;
     }
   }

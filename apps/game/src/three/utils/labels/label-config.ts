@@ -1,6 +1,3 @@
-import { playerColorManager, PlayerColorProfile } from "../../systems/player-colors";
-import type { CameraView } from "../../scenes/camera-view";
-import { resolveCameraView } from "./label-view";
 import { LabelConfig, LabelStyle } from "./label-types";
 
 /**
@@ -82,31 +79,6 @@ const BASE_LABEL_CONFIG: LabelConfig = {
 };
 
 /**
- * Camera view specific configurations
- */
-const CAMERA_VIEW_CONFIGS: Record<number, Partial<LabelConfig>> = {
-  1: {
-    // CameraView.Close
-    transitions: {
-      collapseBehavior: "never",
-    },
-  },
-  2: {
-    // CameraView.Medium
-    transitions: {
-      collapseBehavior: "delayed",
-      collapseDelay: 2000,
-    },
-  },
-  3: {
-    // CameraView.Far
-    transitions: {
-      collapseBehavior: "immediate",
-    },
-  },
-};
-
-/**
  * Predefined label type configurations
  */
 export const LABEL_TYPE_CONFIGS = {
@@ -125,14 +97,6 @@ export const LABEL_TYPE_CONFIGS = {
 };
 
 /**
- * Transition class sets for label visibility
- */
-const TRANSITION_CLASSES = {
-  EXPANDED: ["max-w-[1000px]", "ml-2", "opacity-100"],
-  COLLAPSED: ["max-w-0", "ml-0", "opacity-0"],
-};
-
-/**
  * Get the appropriate style based on ownership and state
  */
 export function getOwnershipStyle(isMine: boolean): { default: LabelStyle; hover: LabelStyle } {
@@ -146,119 +110,4 @@ export function getOwnershipStyle(isMine: boolean): { default: LabelStyle; hover
     default: LABEL_STYLES[styleKey],
     hover: HOVER_STYLES[styleKey],
   };
-}
-
-/**
- * Get player-specific ownership style that uses unique colors for each enemy player
- * This provides visual distinction between different enemy players on the battlefield
- *
- * @param isMine - Is this the current player's unit/structure?
- * @param isAlly - Is this an ally's unit/structure?
- * @param ownerAddress - Owner's wallet address for enemy color assignment
- */
-function getPlayerOwnershipStyle(
-  isMine: boolean,
-  isAlly: boolean,
-  ownerAddress?: bigint | string,
-): { default: LabelStyle; hover: LabelStyle; profile: PlayerColorProfile } {
-  const profile = playerColorManager.getProfileForUnit(isMine, isAlly, ownerAddress);
-
-  // Self and allies use predefined styles.
-  if (isMine || isAlly) {
-    let styleKey = "ENEMY";
-    if (isMine) {
-      styleKey = "MINE";
-    } else if (isAlly) {
-      styleKey = "ALLY";
-    }
-
-    return {
-      default: LABEL_STYLES[styleKey],
-      hover: HOVER_STYLES[styleKey],
-      profile,
-    };
-  }
-
-  // For enemies - use player-specific colors from the color profile
-  const defaultStyle: LabelStyle = {
-    backgroundColor: profile.backgroundColor,
-    textColor: profile.textColor,
-    borderColor: profile.borderColor,
-  };
-
-  // Create a slightly brighter hover version
-  const hoverStyle: LabelStyle = {
-    backgroundColor: profile.backgroundColor.replace("0.3", "0.4"),
-  };
-
-  return {
-    default: defaultStyle,
-    hover: hoverStyle,
-    profile,
-  };
-}
-
-/**
- * Get camera view configuration safely
- */
-function getCameraViewConfig(cameraView: CameraView): Partial<LabelConfig> {
-  const effectiveView = resolveCameraView(cameraView);
-  return CAMERA_VIEW_CONFIGS[effectiveView as number] || {};
-}
-
-/**
- * Merge multiple label configurations with proper deep merging
- */
-function mergeConfigs(...configs: Partial<LabelConfig>[]): LabelConfig {
-  const result: LabelConfig = {
-    baseClasses: [],
-    transitions: {},
-    positionOffset: { x: 0, y: 0, z: 0 },
-  };
-
-  for (const config of configs) {
-    if (config.baseClasses) {
-      result.baseClasses = [...(result.baseClasses || []), ...config.baseClasses];
-    }
-
-    if (config.dynamicClasses) {
-      result.dynamicClasses = config.dynamicClasses;
-    }
-
-    if (config.styles) {
-      result.styles = {
-        ...result.styles,
-        ...config.styles,
-      };
-    }
-
-    if (config.transitions) {
-      result.transitions = {
-        ...result.transitions,
-        ...config.transitions,
-      };
-    }
-
-    if (config.positionOffset) {
-      result.positionOffset = {
-        ...result.positionOffset,
-        ...config.positionOffset,
-      };
-    }
-
-    if (config.renderOrder !== undefined) {
-      result.renderOrder = config.renderOrder;
-    }
-
-    if (config.updatable !== undefined) {
-      result.updatable = config.updatable;
-    }
-  }
-
-  // Remove duplicate classes
-  if (result.baseClasses) {
-    result.baseClasses = [...new Set(result.baseClasses)];
-  }
-
-  return result;
 }

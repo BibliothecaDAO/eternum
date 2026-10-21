@@ -3,19 +3,16 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatCharge, resourceName, formatHeldAgainst } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-const SIZES = ["xs", "sm", "md", "lg"] as const;
-const LAYOUT_TYPES = ["horizontal", "vertical"] as const;
-
 type ResourceCostProps = {
   resourceId: number;
   /** Undefined when the amount is not known here; it shows as "—", never as zero. */
   amount: number | undefined;
   balance?: number;
-  type?: (typeof LAYOUT_TYPES)[number];
+  type?: "horizontal" | "vertical";
   className?: string;
   withTooltip?: boolean;
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
-  size?: (typeof SIZES)[number];
+  size?: "xs" | "sm" | "md" | "lg";
 };
 
 /**

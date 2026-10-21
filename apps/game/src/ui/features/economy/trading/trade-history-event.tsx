@@ -1,16 +1,7 @@
 import { HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { divideByPrecision } from "@bibliothecadao/eternum";
-import { useGame } from "@/hooks/context/game-context";
-import {
-  ContractAddress,
-  Resource,
-  ResourcesIds,
-  formatAmount,
-  formatMoment,
-  formatAgo,
-  formatFigure,
-} from "@bibliothecadao/types";
+import { Resource, ResourcesIds, formatAmount, formatMoment, formatAgo, formatFigure } from "@bibliothecadao/types";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 
 export interface TradeEvent {
@@ -40,10 +31,6 @@ export const TradeHistoryRowHeader = () => (
 );
 
 export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
-  const {
-    setup: { store },
-  } = useGame();
-
   const taker = usePlayerDisplayName(trade.event.takerAddress);
   const resourceTaken = trade.event.resourceTaken;
   const resourceGiven = trade.event.resourceGiven;

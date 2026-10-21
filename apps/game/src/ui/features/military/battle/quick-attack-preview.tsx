@@ -24,7 +24,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
-import { combatTitle, describeFightCost, forecastAttack, wholeTroops } from "./fight-forecast";
+import { combatTitle, describeFightCost, forecastAttack } from "./fight-forecast";
 import { readSurvivalAdvice } from "./survival-advice";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
@@ -35,7 +35,6 @@ import {
   getLayeredAttackDistance,
   getTroopAttackRange,
   RESOURCE_PRECISION,
-  resources,
   type ActorType,
   type ID,
   type Troops,

@@ -21,7 +21,6 @@ import {
   ID,
   RELICS,
   ResourcesIds,
-  StructureType,
   TroopTier,
   TroopType,
   formatWait,

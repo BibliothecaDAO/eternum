@@ -348,7 +348,6 @@ export const BattleLab = ({
               Defender in ethereal layer
             </label>
             <BiomeEnvironmentBar
-              combatSimulator={combatSimulator}
               biome={state.defenderAlt ? BiomeType.Underground : state.biome}
               ethereal={state.defenderAlt}
               onSelect={(biome) => dispatch({ type: "SET_BIOME", biome })}

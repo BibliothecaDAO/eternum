@@ -20,7 +20,6 @@ import {
   ID,
   isRelic,
   RelicRecipientType,
-  resources as resourceDefs,
   ResourcesIds,
   formatAmount,
   resourceName,

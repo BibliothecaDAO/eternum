@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { SETTINGS_PATH } from "@/shell/profile/settings-route";
 import { REALM_NOT_CLAIMED } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
-import { extractReadableErrorMessage } from "@/utils/error-message";
 
 import { RealmsSheet } from "./realms-sheet";
 import type { useRealmLabor } from "./use-realm-labor";

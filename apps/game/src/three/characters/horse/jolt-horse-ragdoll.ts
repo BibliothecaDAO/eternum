@@ -105,7 +105,6 @@ export function createHorseRagdollProfile(
   const colliderScale = resolveJoltColliderScale(coordinateSpace);
   const bodyQuaternion = new Quaternion(...pose.bodyRotation);
   const bodyPosition = new Vector3(...rig.bodyCenter).add(new Vector3(...pose.rootOffset));
-  const saddle = new Vector3(...pose.saddlePosition);
   const head = new Vector3(...pose.headPosition);
   const chestPosition = new Vector3(...rig.chestPosition);
   const bodyPose = createWorldPose(bodyPosition, bodyQuaternion, bodyPosition, coordinateSpace);

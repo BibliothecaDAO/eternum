@@ -6,7 +6,6 @@ import {
   useRealtimeChatActions,
   useRealtimeChatInitializer,
   useRealtimeChatSelector,
-  useRealtimeConnection,
   useRealtimePresence,
 } from "../hooks/use-realtime-chat";
 import { useRealtimeChatStore } from "../model/store";
@@ -21,7 +20,6 @@ interface RealtimeChatShellProps {
   initializer?: InitializeRealtimeClientParams | null;
   defaultZoneId?: string;
   gameZoneId?: string;
-  threadId?: string;
   className?: string;
   children?: ReactNode;
   displayMode?: "floating" | "embedded";
@@ -33,7 +31,6 @@ export function RealtimeChatShell({
   initializer,
   defaultZoneId,
   gameZoneId,
-  threadId,
   className,
   children,
   displayMode = "floating",
@@ -51,7 +48,6 @@ export function RealtimeChatShell({
     Boolean(gameZoneId && state.joinedZoneIds.includes(gameZoneId)),
   );
   useRealtimeChatInitializer(autoInitializeClient ? initializer : null);
-  const { connectionStatus, lastConnectionError } = useRealtimeConnection();
   const presence = useRealtimePresence();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [isHeightExpanded, setIsHeightExpanded] = useState(true);
@@ -243,7 +239,7 @@ export function RealtimeChatShell({
             {/* Single Active Panel */}
             <div className="flex-1 min-h-0 overflow-hidden">
               {activeTab?.type === "world" || activeTab?.type === "zone" ? (
-                <WorldChatPanel zoneId={activeTab.targetId} zoneLabel={activeTab.label} />
+                <WorldChatPanel zoneId={activeTab.targetId} />
               ) : activeTab?.type === "dm" ? (
                 <DirectMessagesPanel threadId={activeTab.targetId} />
               ) : (

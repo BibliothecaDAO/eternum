@@ -3,24 +3,14 @@ import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import {
-  formatCharge,
-  formatExact,
-  formatFigure,
-  getMinePresentation,
-  resourceName,
-  structureName,
-} from "@bibliothecadao/types";
+import { formatCharge, formatExact, formatFigure, resourceName, structureName } from "@bibliothecadao/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
-import { formatTilePanelTitle } from "./tile-panel-title";
 import {
   HudButton,
   HudChip,
@@ -35,11 +25,6 @@ import {
   getConsumedBy,
   getBuildingCosts,
   getBalance,
-  hasTileOccupier,
-  isTileOccupierArmy,
-  isTileOccupierChest,
-  isTileOccupierReservedHyperstructure,
-  isTileOccupierStructure,
   structureMapPosition,
   resolveUseSimpleCost,
 } from "@bibliothecadao/eternum";
@@ -51,12 +36,10 @@ import {
   BUILDINGS_CENTER,
   BuildingType,
   buildingName as nameOfBuilding,
-  ID,
   ResourcesIds,
   StructureType,
-  TileOccupier,
 } from "@bibliothecadao/types";
-import { memo, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";

@@ -1,7 +1,6 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import clsx from "clsx";
 import { TierChip } from "../../utils/tier-chip";
 
 const troopResource = (category?: TroopType | string, tier?: TroopTier | string) =>

@@ -10,7 +10,6 @@ import {
   createIdleProceduralArcherShotState,
   startProceduralArcherShot,
   type ProceduralArcherShotPhase,
-  type ProceduralArcherShotState,
 } from "./procedural-archer-shot-cycle";
 
 const APPROXIMATE_PROJECTILE_ORIGIN_HEIGHT = 1.35;

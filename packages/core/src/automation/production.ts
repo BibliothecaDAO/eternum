@@ -110,17 +110,12 @@ const compareAutomationResources = (left: ResourcesIds, right: ResourcesIds): nu
 const isResourceActiveInSnapshot = (snapshot: RealmResourceSnapshot, resourceId: ResourcesIds): boolean =>
   snapshot.get(resourceId)?.hasActiveProduction === true;
 
-type AutomationEntityType = RealmAutomationConfig["entityType"];
-
 /**
  * Producers run inputs before their consumers. Recipes are cyclic by design (Coal, Wood and Copper each consume the
  * other two), so when every remaining resource waits on another, the smallest one by planning order goes next and its
  * dependants follow; the acyclic edges (troops after Copper) still hold.
  */
-export const buildResourceDependencyOrder = (
-  resourceIds: ResourcesIds[],
-  entityType: AutomationEntityType,
-): ResourcesIds[] => {
+export const buildResourceDependencyOrder = (resourceIds: ResourcesIds[]): ResourcesIds[] => {
   if (!resourceIds.length) return [];
 
   const idSet = new Set<ResourcesIds>(resourceIds);
@@ -141,9 +136,10 @@ export const buildResourceDependencyOrder = (
 
   // A resource depends on the inputs of both its recipes: resource-to-resource and labor.
   const collectInputs = (resourceId: ResourcesIds): ResourcesIds[] =>
-    [...configManager.requireRecipeInputs(resourceId, false), ...configManager.requireRecipeInputs(resourceId, true)]
-      .map((input) => input.resource)
-      .filter((input) => !isAutomationResourceBlocked(input, entityType, "input"));
+    [
+      ...configManager.requireRecipeInputs(resourceId, false),
+      ...configManager.requireRecipeInputs(resourceId, true),
+    ].map((input) => input.resource);
 
   for (const resourceId of resourceIds) {
     for (const input of collectInputs(resourceId)) {
@@ -307,8 +303,6 @@ export const buildRealmProductionPlan = ({
     return { ...ZERO_PLAN };
   }
 
-  const entityType = realmConfig.entityType ?? "realm";
-
   const producedResourceIds: ResourcesIds[] = [];
   snapshot.forEach((entry) => {
     if (entry.hasActiveProduction) {
@@ -338,10 +332,10 @@ export const buildRealmProductionPlan = ({
     };
   }
 
-  const smartDefaults = calculatePresetAllocations(resourceIdsToEvaluate, "smart", entityType);
+  const smartDefaults = calculatePresetAllocations(resourceIdsToEvaluate, "smart");
   const presetAllocations =
     presetId === "smart" || presetId === "idle"
-      ? calculatePresetAllocations(resourceIdsToEvaluate, presetId, entityType)
+      ? calculatePresetAllocations(resourceIdsToEvaluate, presetId)
       : new Map<number, ResourceAutomationPercentages>();
 
   const baselinePercentages = (resourceId: ResourcesIds): ResourceAutomationPercentages => {
@@ -354,9 +348,9 @@ export const buildRealmProductionPlan = ({
   // Automation settings persist across games; only resources this game can produce are planned.
   const producible = new Set(configManager.producibleResources());
   const filteredResourceIds = resourceIdsToEvaluate.filter(
-    (resourceId) => producible.has(resourceId) && !isAutomationResourceBlocked(resourceId, entityType),
+    (resourceId) => producible.has(resourceId) && !isAutomationResourceBlocked(resourceId),
   );
-  const orderedResourceIds = buildResourceDependencyOrder(filteredResourceIds, entityType);
+  const orderedResourceIds = buildResourceDependencyOrder(filteredResourceIds);
   const resourceDefinitions = orderedResourceIds.map((resourceId) => {
     const customPercentages = realmConfig.customPercentages?.[resourceId];
     const presetPercentages = presetAllocations.get(resourceId);
@@ -400,20 +394,12 @@ export const buildRealmProductionPlan = ({
 
     if (resourceToResource > 0) {
       const inputs = configManager.requireRecipeInputs(resourceId, false);
-      inputs.forEach((input) => {
-        if (!isAutomationResourceBlocked(input.resource, entityType, "input")) {
-          resourcesToTrack.add(input.resource);
-        }
-      });
+      inputs.forEach((input) => resourcesToTrack.add(input.resource));
     }
 
     if (laborToResource > 0) {
       const inputs = configManager.requireRecipeInputs(resourceId, true);
-      inputs.forEach((input) => {
-        if (!isAutomationResourceBlocked(input.resource, entityType, "input")) {
-          resourcesToTrack.add(input.resource);
-        }
-      });
+      inputs.forEach((input) => resourcesToTrack.add(input.resource));
     }
   }
 
@@ -449,7 +435,6 @@ export const buildRealmProductionPlan = ({
       const inputs = configManager.requireRecipeInputs(resourceId, false);
       for (const input of inputs) {
         if (input.amount <= 0) continue;
-        if (isAutomationResourceBlocked(input.resource, entityType, "input")) continue;
         addDemand(input.resource, percentages.resourceToResource);
       }
     }
@@ -458,7 +443,6 @@ export const buildRealmProductionPlan = ({
       const inputs = laborConfig?.inputResources ?? [];
       for (const input of inputs) {
         if (input.amount <= 0) continue;
-        if (isAutomationResourceBlocked(input.resource, entityType, "input")) continue;
         addDemand(input.resource, percentages.laborToResource);
       }
     }

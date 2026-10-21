@@ -60,9 +60,6 @@ const isAlreadyDrawn = (
   descriptors.length === drawn.size &&
   descriptors.every((descriptor) => looksTheSame(drawn.get(hexKey(descriptor)), descriptor));
 
-const createColorForAction = (actionType: ActionType): Color =>
-  new Color(resolveHighlightLayerPalette(actionType).routeColor);
-
 const createMesh = (
   geometry: InstancedMesh["geometry"],
   material: MeshBasicMaterial,
@@ -104,7 +101,7 @@ export class HighlightHexManager {
     this.hexGeometryPool = HexGeometryPool.getInstance();
 
     const hexagonGeometry = this.hexGeometryPool.getGeometry("highlight");
-    hexGeometryDebugger.trackSharedGeometryUsage("highlight", "HighlightHexManager.constructor");
+    hexGeometryDebugger.trackSharedGeometryUsage();
 
     this.routeLayer = this.createLayer(hexagonGeometry, {
       color: 0xffffff,
@@ -162,7 +159,7 @@ export class HighlightHexManager {
       toneMapped: config.toneMapped ?? false,
       vertexColors: true,
     });
-    hexGeometryDebugger.trackMaterialClone("HighlightHexManager.createLayer");
+    hexGeometryDebugger.trackMaterialClone();
 
     const mesh = createMesh(geometry, material, config.renderOrder);
     this.scene.add(mesh);

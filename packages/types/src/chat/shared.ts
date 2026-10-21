@@ -65,7 +65,7 @@ const metadataDepth = (value: unknown, depth = 0): number => {
   return children.reduce((maximum, child) => Math.max(maximum, metadataDepth(child, depth + 1)), depth);
 };
 
-export const chatRecordSchema = Schema.declare((value): value is Record<string, unknown> => {
+const chatRecordSchema = Schema.declare((value): value is Record<string, unknown> => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const constructor = value.constructor;
   return (

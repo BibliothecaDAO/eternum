@@ -21,7 +21,6 @@ import { UserAvatar } from "../shared/user-avatar";
 
 interface WorldChatPanelProps {
   zoneId?: string;
-  zoneLabel?: string;
   className?: string;
 }
 
@@ -102,7 +101,7 @@ const formatWorldMessageTime = (message: WorldChatMessage) => {
 const formatSenderName = (names: PlayerNames, message: WorldChatMessage) =>
   resolveChatSenderName(names, message.sender.playerId, message.sender.displayName) || "Unknown adventurer";
 
-export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelProps) {
+export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
   // Select value directly to prevent infinite re-renders
   const fallbackZoneId = useRealtimeChatSelector((state) => state.activeZoneId ?? Object.keys(state.worldZones)[0]);
   const resolvedZoneId = zoneId ?? fallbackZoneId;
@@ -113,7 +112,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   const reconnecting = useRealtimeChatSelector((state) => state.connectionStatus === "reconnecting");
   const actions = useRealtimeChatActions();
   const { zone, isActive } = useRealtimeWorldZone(resolvedZoneId);
-  const { sendMessage, loadHistory, markAsRead, setActive } = useWorldChatControls(resolvedZoneId);
+  const { sendMessage, loadHistory, markAsRead } = useWorldChatControls(resolvedZoneId);
   const messages = zone?.messages ?? [];
   const presence = useRealtimePresence();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -261,12 +260,6 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   }, [zone?.hasMoreHistory, zone?.isFetchingHistory, zone?.lastFetchedCursor, loadHistory]);
 
   const dateSeparators = useMemo(() => computeDateSeparators(messages), [messages]);
-
-  const displayLabel = useMemo(() => {
-    if (zoneLabel) return zoneLabel;
-    if (resolvedZoneId) return `Zone ${resolvedZoneId}`;
-    return "World Chat";
-  }, [resolvedZoneId, zoneLabel]);
 
   return (
     <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>

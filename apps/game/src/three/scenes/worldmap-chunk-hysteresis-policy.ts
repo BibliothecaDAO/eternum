@@ -6,7 +6,7 @@
  * Once the focus exits the hold band we switch to the target chunk.
  */
 
-import { getChunkCenter, getRenderBounds } from "../utils/chunk-geometry";
+import { getRenderBounds } from "../utils/chunk-geometry";
 import { resolveChunkKeyFromHex } from "./worldmap-chunk-selection-policy";
 
 // ── public interfaces ───────────────────────────────────────────────────────

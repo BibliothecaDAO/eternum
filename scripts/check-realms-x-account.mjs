@@ -23,13 +23,14 @@ const ALLOWED = [
   },
 ];
 
-/** The current and retired handles, as the canonical file writes them. */
+/** Handles Realms posted from before; a surface naming one is out of date. */
+const RETIRED_HANDLES = ["realmsgg"];
+
+/** The current handle, as the canonical file writes it, and the retired ones. */
 const handlesOf = (canonical) => {
   const current = canonical.match(/const REALMS_X_HANDLE = "([^"]+)"/)?.[1];
-  const retired = canonical.match(/RETIRED_REALMS_X_HANDLES = \[([^\]]*)\]/)?.[1];
-  if (!current || retired === undefined)
-    throw new Error(`${CANONICAL} does not name the account and its retired handles`);
-  return [current, ...[...retired.matchAll(/"([^"]+)"/g)].map((match) => match[1])];
+  if (!current) throw new Error(`${CANONICAL} does not name the account`);
+  return [current, ...RETIRED_HANDLES];
 };
 
 /** A profile link to the handle (not one of its posts), or a tag of it. */
