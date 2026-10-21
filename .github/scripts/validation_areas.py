@@ -180,6 +180,29 @@ AREAS = {
         ".github/actions/fetch-cairo-dependencies/**",
         "contracts/l2/season_pass/**"
     ],
+    "docs": [
+        ".github/workflows/test-docs.yml",
+        "vercel.json",
+        "apps/game-docs/**",
+        "packages/**",
+        "config/**",
+        "deploy/first/environments.json",
+        "contracts/l2/ledger/scripts/chest-preset.js",
+        "contracts/l2/ledger/schema/**",
+        "contracts/l3/world-native/schema/**",
+        "contracts/l3/world-native/tests/fixtures/**",
+        "contracts/common/addresses/**",
+        "contracts/utils/**",
+        "apps/herald/src/native/schema.ts",
+        "apps/herald/src/shard-manifest.ts",
+        # The game files the docs draw on: its icon set and meanings, and the patch notes the changelog page shows.
+        "apps/game/public/**",
+        "apps/game/asset-sources/facets/**",
+        "apps/game/src/ui/design-system/icon-meaning.ts",
+        "apps/game/src/shell/generated/patch-notes.ts",
+        "apps/game/src/shell/news/patch-notes.tsx",
+        "apps/game/src/shell/play/ages.ts"
+    ],
     "contract_scripts": [
         ".github/workflows/test-contract-scripts.yml",
         "contracts/scripts-runtime/**",

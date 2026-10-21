@@ -31,6 +31,7 @@ jobs:
       mmr: ${{ steps.paths.outputs.mmr }}
       season_pass: ${{ steps.paths.outputs.season_pass }}
       contract_scripts: ${{ steps.paths.outputs.contract_scripts }}
+      docs: ${{ steps.paths.outputs.docs }}
     steps:
       # One shallow commit holding only the scripts: diff-base.sh fetches the history its measurement needs.
       - uses: actions/checkout@v4
@@ -145,6 +146,11 @@ jobs:
     if: needs.scope.outputs.contract_scripts == 'true'
     uses: ./.github/workflows/test-contract-scripts.yml
 
+  docs:
+    needs: scope
+    if: needs.scope.outputs.docs == 'true'
+    uses: ./.github/workflows/test-docs.yml
+
   validation:
     name: validation
     if: always()
@@ -164,6 +170,7 @@ jobs:
         mmr,
         season_pass,
         contract_scripts,
+        docs,
       ]
     runs-on: ubuntu-latest
     steps:

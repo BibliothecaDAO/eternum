@@ -42,7 +42,13 @@ class CiFileOwnership(unittest.TestCase):
             "contracts/l3/world-native/schema/fixtures/row-set.json",
         ):
             with self.subTest(path=path):
-                self.assertEqual(areas_run_by(path), {"client", "herald", "services", "native", "runtime"})
+                self.assertEqual(areas_run_by(path), {"client", "herald", "services", "native", "runtime", "docs"})
+
+    def test_docs_build_runs_when_a_number_it_states_changes(self):
+        # The production Blitz price lives here; changing it once broke the docs build unseen.
+        self.assertIn("docs", areas_run_by("deploy/first/environments.json"))
+        self.assertEqual(areas_run_by("apps/game-docs/docs/pages/blitz/game-entry.mdx"), {"docs"})
+        self.assertEqual(areas_run_by("vercel.json"), {"docs"})
 
     def test_client_publisher_inputs_select_both_deployment_areas(self):
         self.assertEqual(areas_run_by("apps/game/package.json"), {"client", "native", "runtime"})
