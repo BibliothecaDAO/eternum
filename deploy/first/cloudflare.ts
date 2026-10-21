@@ -7,6 +7,7 @@ import { environments, root, type Inputs } from "./settings";
 import { deploymentEnvironment, reportFailure } from "./deploy";
 import { PublicError, deploymentStage } from "./errors";
 import { ADMIN_ACCESS, type AdminAccess } from "./admin-access";
+import type { Platform } from "./platform";
 
 /**
  * Where a commit is exported, installed and built: several GB, so on the checkout's own disk. The system temp directory
@@ -27,6 +28,15 @@ export function setUpDirectory(directory: string) {
   return { store, inputs };
 }
 
+/**
+ * Every resource setup creates for this environment, the docs' Pages site among them, before any Worker is replaced: a
+ * site added to the deployment reaches an existing environment through setup, never through a failed publish.
+ */
+export async function requireCloudflareResources(platform: Platform) {
+  if (!(await platform.resourcesPresent()))
+    throw new PublicError("Cloudflare resources are missing; run setup with --apply before publishing Cloudflare");
+}
+
 async function publish(environment: string | undefined, directory: string | undefined, revision: string | undefined) {
   const target = deploymentEnvironment(environment);
   deploymentStage("publish Cloudflare");
@@ -40,6 +50,7 @@ async function publish(environment: string | undefined, directory: string | unde
   const unlock = store.lock();
   try {
     console.log(`Cloudflare deployment commit ${revision}.`);
+    await requireCloudflareResources(platform);
     await deployWorkers(platform, revision);
     await deployClient(platform, revision);
     await deployDocs(platform, revision);
