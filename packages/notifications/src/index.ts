@@ -6,3 +6,5 @@ export * from "./story-notification";
 export * from "./direct-message-notification";
 export * from "./army-rested";
 export * from "./day-end-reminder";
+export * from "./email";
+export * from "./player-emails";

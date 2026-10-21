@@ -28,10 +28,10 @@ interface IdentityServices {
 }
 
 const identityServicesOf = (
-  env: Pick<IdentityEnv, "ENVIRONMENT" | "L2_RPC_URL" | "RESEND_API_KEY">,
+  env: Pick<IdentityEnv, "ENVIRONMENT" | "L2_RPC_URL" | "RESEND_API_KEY" | "BASE_URL">,
 ): IdentityServices => ({
   verifyWalletSignature: verifyWalletOnL2(env),
-  sendSignInCode: resendSignInCodes(env.RESEND_API_KEY),
+  sendSignInCode: resendSignInCodes(env.RESEND_API_KEY, env.BASE_URL),
 });
 
 /**
@@ -136,7 +136,7 @@ export const createIdentityAuth = (
         db: env.DB,
         checkCode: (context, email, otp) =>
           emailCodes.endpoints.checkVerificationOTP({ context, body: { email, otp, type: "sign-in" } }),
-        sendNotice: services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY),
+        sendNotice: services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY, env.BASE_URL),
       }),
     ],
   });

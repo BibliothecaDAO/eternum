@@ -1,3 +1,4 @@
+import { sendEmail } from "@bibliothecadao/notifications";
 import type { Incident, StatusDocument } from "./model";
 
 /**
@@ -183,20 +184,18 @@ function noticeOf(
 
 async function sendNotice(notice: Notice, apiKey: string, network: typeof fetch): Promise<boolean> {
   try {
-    const response = await network("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-        "idempotency-key": notice.key,
-      },
-      body: JSON.stringify({
-        from: "Realms status <no-reply@realms.party>",
-        to: [notice.to],
+    // On-call reads it as plain text.
+    const response = await sendEmail(
+      apiKey,
+      {
+        sender: "Realms status",
+        to: notice.to,
         subject: notice.subject,
         text: notice.text,
-      }),
-    });
+        idempotencyKey: notice.key,
+      },
+      network,
+    );
     if (response.ok) return true;
     // A 409 is the same key still in flight elsewhere: the notice stays recorded and is retried next minute.
     console.error(JSON.stringify({ event: "status_alert_unconfirmed", key: notice.key, status: response.status }));

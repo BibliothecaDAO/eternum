@@ -21,7 +21,7 @@ export default {
   },
   async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>): Promise<void> {
     const env = decodeIdentityEnv(rawEnv);
-    await Effect.runPromise(deliverWalletNotices(env.DB, resendWalletNotices(env.RESEND_API_KEY)));
+    await Effect.runPromise(deliverWalletNotices(env.DB, resendWalletNotices(env.RESEND_API_KEY, env.BASE_URL)));
     await superviseNotifiers(env.DB, env.SHARD_NOTIFIER);
   },
 };

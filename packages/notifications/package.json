@@ -12,6 +12,7 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --target es2022 --format esm,cjs --dts",
+    "build:email-art": "node scripts/build-email-art.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

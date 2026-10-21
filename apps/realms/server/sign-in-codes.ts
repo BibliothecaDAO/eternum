@@ -1,34 +1,17 @@
+import { sendEmail, signInCodeEmail, type Email } from "@bibliothecadao/notifications";
 import { SIGN_IN_CODE_SECONDS } from "@realms-world/identity";
 
 /** Delivers a one-time sign-in code to an email address; the provider sits behind this one call. */
 export type SendSignInCode = (email: string, code: string) => Promise<void>;
 
-/** Resend's transactional email API, with the environment's RESEND_API_KEY. */
+/** The sign-in code email, sent with the environment's RESEND_API_KEY; its button and footer open the app at appUrl. */
 export const resendSignInCodes =
-  (apiKey: string): SendSignInCode =>
+  (apiKey: string, appUrl: string): SendSignInCode =>
   (email, code) =>
-    sendIdentityEmail(
-      apiKey,
-      email,
-      `${code} is your Realms sign-in code`,
-      `Your Realms sign-in code is ${code}. It expires in ${SIGN_IN_CODE_SECONDS / 60} minutes. If you did not ask for it, you can ignore this email.`,
-    );
+    sendIdentityEmail(apiKey, signInCodeEmail({ to: email, code, minutes: SIGN_IN_CODE_SECONDS / 60, appUrl }));
 
-export async function sendIdentityEmail(
-  apiKey: string,
-  email: string,
-  subject: string,
-  text: string,
-  id?: string,
-): Promise<void> {
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${apiKey}`,
-      "content-type": "application/json",
-      ...(id ? { "idempotency-key": id } : {}),
-    },
-    body: JSON.stringify({ from: "Realms <no-reply@realms.party>", to: [email], subject, text }),
-  });
+/** An identity email the caller must know was accepted: a refusal throws, so the code or notice is not lost silently. */
+export async function sendIdentityEmail(apiKey: string, email: Email): Promise<void> {
+  const response = await sendEmail(apiKey, email);
   if (!response.ok) throw new Error(`Identity email delivery refused: ${response.status}`);
 }

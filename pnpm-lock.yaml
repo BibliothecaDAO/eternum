@@ -842,6 +842,9 @@ importers:
 
   apps/status-monitor:
     dependencies:
+      '@bibliothecadao/notifications':
+        specifier: workspace:*
+        version: link:../../packages/notifications
       '@realms-world/chain':
         specifier: workspace:*
         version: link:../../packages/chain
