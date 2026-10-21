@@ -14,10 +14,7 @@ export interface Inputs extends SeasonDates {
   cloudflareToken: string;
   rpc: string;
   resend: string;
-  /**
-   * The Discord application players sign in with, for every environment. Both empty means the environment offers no
-   * Discord sign-in: an explicit choice, so a deployment never drops a sign-in method by leaving it out.
-   */
+  /** The Discord application players sign in with: every environment offers Discord sign-in. */
   discordClientId: string;
   discordClientSecret: string;
   /** Where the status monitor emails incidents: production's only, required there and refused on dev. */

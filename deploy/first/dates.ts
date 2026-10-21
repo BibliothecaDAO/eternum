@@ -38,8 +38,8 @@ export function setupQuestions(target: Target): [keyof Inputs, string][] {
     ["cloudflareToken", "Cloudflare token"],
     ["rpc", "Alchemy mainnet URL"],
     ["resend", "Resend key"],
-    ["discordClientId", "Discord client ID (empty for no Discord sign-in)"],
-    ["discordClientSecret", "Discord client secret (empty for no Discord sign-in)"],
+    ["discordClientId", "Discord client ID"],
+    ["discordClientSecret", "Discord client secret"],
     ...(sendsAlerts(target)
       ? [["alertEmail", "Alert email (where the status monitor reports incidents)"] as [keyof Inputs, string]]
       : []),
@@ -57,16 +57,6 @@ export function setupQuestions(target: Target): [keyof Inputs, string][] {
   ];
 }
 
-/** Discord sign-in is chosen in every environment: both values, or both empty for none. */
-function validateDiscord(input: Inputs) {
-  if (typeof input.discordClientId !== "string" || typeof input.discordClientSecret !== "string")
-    throw new PublicError(
-      "Choose Discord sign-in: set discordClientId and discordClientSecret in inputs.json, both empty for none",
-    );
-  if (!input.discordClientId !== !input.discordClientSecret)
-    throw new PublicError("Discord sign-in needs both its client ID and secret, or neither");
-}
-
 export function validateInputs(input: Inputs, target: Target) {
   const rpc = new URL(input.rpc);
   if (
@@ -78,7 +68,8 @@ export function validateInputs(input: Inputs, target: Target) {
   )
     throw new PublicError("Use the Alchemy mainnet HTTPS endpoint");
   if (!input.cloudflareToken || !input.resend) throw new PublicError("Cloudflare and Resend credentials are required");
-  validateDiscord(input);
+  if (!input.discordClientId || !input.discordClientSecret)
+    throw new PublicError("Discord sign-in needs its client ID and secret in inputs.json");
   if (!sendsAlerts(target) && input.alertEmail !== undefined)
     throw new PublicError("Dev sends no alert email; remove alertEmail from inputs.json");
   if (sendsAlerts(target) && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.alertEmail ?? ""))
