@@ -94,8 +94,8 @@ pnpm dev        # https://localhost:5173
 **The docs site:** `pnpm dev:docs` (http://localhost:5173).
 
 **The world contracts** need the Scarb and Starknet Foundry versions pinned in
-[`.tool-versions`](./contracts/l3/world-native/.tool-versions). This installs them in their own directory, leaving any
-other toolchain alone:
+[`.tool-versions`](./contracts/l3/world-native/.tool-versions). On Linux (x86_64 or aarch64), this installs them in
+their own directory, leaving any other toolchain alone; the installer supports no other platform:
 
 ```bash
 bash deploy/athanor/scripts/install-native-tools.sh "$HOME/.local/share/eternum-native-tools"
