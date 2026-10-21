@@ -397,15 +397,13 @@ export const patchNotes = [
           "kind": "new",
           "icon": "lords",
           "title": "Where an entry goes",
-          "line": "80% of every entry funds the season's prize pool, 10% the reward chests and 10% the treasury. Games no longer pay prizes one by one, and sponsorship is gone.",
-          "from": "70%",
-          "to": "80%"
+          "line": "90% of every entry funds the season's reward chests and 10% the treasury; what the chests leave at the season's end joins the season prize. Games no longer pay prizes one by one, and sponsorship is gone."
         },
         {
           "kind": "new",
           "icon": "chest",
           "title": "LORDS in chests",
-          "line": "A chest from the top three rank bands may hold 4, 2 or 1 entries' worth of LORDS."
+          "line": "Every player's chest holds one entry's worth of LORDS while the chest reserve can pay it, and a sword or shield credit otherwise."
         },
         {
           "kind": "new",

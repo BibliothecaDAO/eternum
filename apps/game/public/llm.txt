@@ -230,8 +230,8 @@ meta: {
 
 ## Where an entry goes
 
-Every entry, and every sword and shield bought, is split three ways: 80% to the season's prize pool, 10% to the chest
-reserve and 10% to the treasury. Games pay no prizes of their own; the season prize pays the season's best.
+Every entry, and every sword and shield bought, is split two ways: 90% to the chest reserve and 10% to the treasury.
+Games pay no prizes of their own; what the chests leave at the season's end pays the season's best.
 
 ## Results
 
@@ -244,22 +244,10 @@ payout wallet afterwards.
 
 ## A chest for every player
 
-Every player of a settled game gets a chest, sealed until opened. Its band is your finishing place, in five equal fifths
-of the game: the top 20%, then 20–40%, 40–60%, 60–80% and the bottom 20%. Ties share the average of their places, and a
-player alone is in the top band.
-
-| Band       | Chance of LORDS | LORDS, in entries |
-| ---------- | --------------- | ----------------- |
-| Top 20%    | 5%              | 4                 |
-| 20–40%     | 10%             | 2                 |
-| 40–60%     | 10%             | 1                 |
-| 60–80%     | none            | —                 |
-| Bottom 20% | none            | —                 |
-
-The rest of a chest is a cosmetic or a sword or shield credit, which pays for that at your next entry. A chest pays
-LORDS only while the chest reserve holds the whole amount; otherwise it draws again among the other rewards. Opening
-takes two steps: **Open**, then the reveal a few blocks later. At the season's end, what is left of the chest reserve
-joins the prize pool.
+Every player of a settled game gets a chest, sealed until opened. It holds one entry's worth of LORDS, paid while the
+chest reserve holds the whole amount; otherwise it holds a sword or shield credit, which pays for that at your next
+entry. Opening takes two steps: **Open**, then the reveal a few blocks later. At the season's end, what is left of the
+chest reserve joins the prize pool.
 
 ## Ratings
 
