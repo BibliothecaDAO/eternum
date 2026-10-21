@@ -350,7 +350,7 @@ export function preparationSteps(context: Deployment): Step[] {
         context.platform
           ? {
               done: await context.platform.resourcesPresent(),
-              detail: "identity/launch D1, status R2, Pages project and client domain",
+              detail: "identity/launch D1, status R2, and the client's and docs' Pages sites with their hostnames",
             }
           : waiting("Cloudflare token unavailable"),
       apply: async () => context.platform!.prepareResources(),
