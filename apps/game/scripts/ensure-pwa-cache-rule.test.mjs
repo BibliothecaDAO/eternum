@@ -18,8 +18,13 @@ function fixture(initialRules = []) {
         return ruleset ? Response.json({ success: true, result: ruleset }) : new Response(null, { status: 404 });
       if (url.endsWith("/rulesets"))
         ruleset = { id: "ruleset", rules: body.rules.map((rule) => ({ ...rule, id: "managed" })) };
+      else if (options.method === "DELETE")
+        ruleset.rules = ruleset.rules.filter((rule) => rule.id !== url.split("/").at(-1));
       else {
         const id = options.method === "PATCH" ? url.split("/").at(-1) : "managed";
+        // Like Cloudflare (error 20142), a rule keeps the ref it was created with.
+        const existing = ruleset.rules.find((rule) => rule.id === id);
+        if (options.method === "PATCH" && existing?.ref !== body.ref) return new Response(null, { status: 400 });
         const rule = { ...body, id };
         delete rule.position;
         ruleset.rules = [...ruleset.rules.filter((rule) => rule.id !== id), rule];
@@ -58,10 +63,10 @@ test("repairs and reorders only its own rule after a later override", async () =
   assert.deepEqual(f.rules()[0], other);
 });
 
-test("keeps each host's rule apart and adopts the zone-wide rule written for the same host", async () => {
+test("keeps each host's rule apart and replaces the zone-wide rule written for the same host", async () => {
   const production =
     '(http.host eq "play.realms.party" and http.request.uri.path in {"/sw.js" "/manifest.webmanifest" "/offline.html"})';
-  const legacy = { id: "legacy", ref: "realms_pwa_revalidation", expression: production, enabled: false };
+  const legacy = { id: "legacy", ref: "realms_pwa_revalidation", expression: production, enabled: true };
   const sibling = fixture([legacy]);
   assert.equal(
     (await ensurePwaCacheRule({ ...sibling.input, origin: "https://app.realms.party" })).action,
@@ -69,13 +74,28 @@ test("keeps each host's rule apart and adopts the zone-wide rule written for the
   );
   assert.deepEqual(sibling.rules()[0], legacy);
   const f = fixture([legacy]);
-  assert.equal((await ensurePwaCacheRule(f.input)).action, "updated-rule");
-  assert.equal(f.calls.at(-1).method, "PATCH");
-  assert.ok(f.calls.at(-1).url.endsWith("/rules/legacy"));
+  assert.equal((await ensurePwaCacheRule(f.input)).action, "replaced-legacy-rule");
   assert.deepEqual(
-    f.rules().map((rule) => rule.ref),
-    ["realms_pwa_revalidation_play_realms_party"],
+    f.calls.filter((call) => call.method !== "GET").map((call) => `${call.method} ${call.url.split("/").at(-1)}`),
+    ["POST rules", "DELETE legacy"],
   );
+  assert.deepEqual(
+    f.rules().map((rule) => [rule.ref, rule.expression]),
+    [["realms_pwa_revalidation_play_realms_party", production]],
+  );
+  assert.equal((await ensurePwaCacheRule(f.input)).action, "unchanged");
+});
+
+test("finishes a replacement interrupted after the host's rule was written", async () => {
+  const production =
+    '(http.host eq "play.realms.party" and http.request.uri.path in {"/sw.js" "/manifest.webmanifest" "/offline.html"})';
+  const legacy = { id: "legacy", ref: "realms_pwa_revalidation", expression: production, enabled: true };
+  const f = fixture([legacy]);
+  await ensurePwaCacheRule(f.input);
+  const interrupted = fixture([legacy, f.rules()[0]]);
+  assert.equal((await ensurePwaCacheRule(interrupted.input)).action, "replaced-legacy-rule");
+  assert.deepEqual(interrupted.rules(), f.rules());
+  assert.equal((await ensurePwaCacheRule(interrupted.input)).action, "unchanged");
 });
 
 test("creates an entrypoint only when missing and fails closed on permission errors", async () => {
