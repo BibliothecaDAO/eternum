@@ -3,6 +3,8 @@ import { beastMeaning, mineMeaning, structureMeaning } from "@/ui/design-system/
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { NEUTRAL_OWNER_NAME, StructureType, structureName, frontierSiteName, formatExact } from "@bibliothecadao/types";
 
+import type { SeatSide } from "@/tokens";
+
 import type { ArmyData, StructureInfo } from "../types";
 
 /**
@@ -10,6 +12,17 @@ import type { ArmyData, StructureInfo } from "../types";
  * enemy's) and, still four ways, which label yields when they crowd (`RELATION_PRIORITY`, map-plate-layer).
  */
 export type PlateRelation = "own" | "ally" | "enemy" | "neutral";
+
+/**
+ * To a watching viewer, whose a thing is in place of its relation's colour (`watchedSide`, entity-ownership.ts): its
+ * player's seat colour and initial, written in `ink`; nobody's in grey, with no initial.
+ */
+export interface PlateWatched {
+  /** The player's seat in the game's order; null for nobody's. */
+  seat: number | null;
+  colour: string;
+  mark: { letter: string; ink: "dark" | "light" } | null;
+}
 
 /** A troop stack: a guard slot, or an army's troops. Its painting is its type and tier (`knight-t2`). */
 export interface PlateTroops {
@@ -32,6 +45,8 @@ export interface ArmyPlate {
   stamina?: { current: number; max: number };
   /** It fought and is on its battle cooldown: the map keeps its label in view (`keep`, map-plate-layout). */
   inBattle?: boolean;
+  /** Whose it is to a watching viewer; absent while the viewer plays. */
+  watched?: PlateWatched;
 }
 
 /**
@@ -66,6 +81,8 @@ export interface StructurePlate {
   inBattle?: boolean;
   /** Its kind's painting, drawn only as the pin of a plate with no room. */
   icon: IconMeaning;
+  /** Whose it is to a watching viewer; absent while the viewer plays. */
+  watched?: PlateWatched;
 }
 
 /**
@@ -92,6 +109,19 @@ const ownerOf = (owner: { address: bigint; ownerName: string }) =>
 
 const relationOf = (thing: { isMine: boolean; isAlly?: boolean; owner: { address: bigint } }): PlateRelation =>
   thing.isMine ? "own" : thing.isAlly ? "ally" : thing.owner.address === 0n ? "neutral" : "enemy";
+
+/** A watched side as the plate draws it: the seat's colour, and its player's initial where the seat and a name are known. */
+const watchedOf = (side: SeatSide | null | undefined, owner: string): { watched?: PlateWatched } => {
+  if (!side) return {};
+  const letter = owner.trim().charAt(0).toUpperCase();
+  return {
+    watched: {
+      seat: side.seat,
+      colour: side.colour,
+      mark: side.seat === null || !letter ? null : { letter, ink: side.ink },
+    },
+  };
+};
 
 const troopType = (category: string | null | undefined): PlateTroops["type"] => {
   switch (category) {
@@ -127,7 +157,7 @@ export const buildStructurePlate = (
     | "incomingTroopArrivals"
     | "frontierBeast"
     | "battleTimerLeft"
-  >,
+  > & { watched?: SeatSide | null },
   nowSeconds = 0,
   reward?: PlateReward,
 ): StructurePlate => {
@@ -169,6 +199,7 @@ export const buildStructurePlate = (
           : structureMeaning(structure.structureType),
     guards: structure.clearedSite ? null : guards,
     ...(inBattle(structure.battleTimerLeft) ? { inBattle: true } : {}),
+    ...watchedOf(structure.watched, ownerOf(structure.owner)),
     arrivals: (structure.incomingTroopArrivals ?? [])
       .map((arrival) => ({
         troops: { type: troopType(arrival.troopType), tier: tierOf(arrival.troopTier), count: arrival.count },
@@ -191,7 +222,7 @@ export const buildArmyPlate = (
     | "currentStamina"
     | "maxStamina"
     | "battleTimerLeft"
-  > & { isAlly?: boolean },
+  > & { isAlly?: boolean; watched?: SeatSide | null },
   homeName: string,
 ): ArmyPlate => ({
   kind: "army",
@@ -204,6 +235,7 @@ export const buildArmyPlate = (
       ? undefined
       : { current: Math.max(0, Math.min(army.maxStamina, army.currentStamina)), max: army.maxStamina },
   ...(inBattle(army.battleTimerLeft) ? { inBattle: true } : {}),
+  ...watchedOf(army.watched, ownerOf(army.owner)),
 });
 
 /**

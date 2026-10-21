@@ -1,7 +1,8 @@
 /* The map plates (map-plates.tsx; map-labels rounds 2 to 6, the owner's pick) on the HUD sheet's tokens (tokens.ts
    HUD_SHEET, HUD_MODES, HUD_TYPE): the age's panel surface, line and accent, the sheet's face. A thing's side is one of
    three colours (HUD_SHEET own, ally, enemy): yours green, an ally's blue, anyone else's red, nobody's too. It reads as
-   a token's ring and plate, a plate's left bar and its player's name, and every stamina bar. Every reading is at the body size
+   a token's ring and plate, a plate's left bar and its player's name, and every stamina bar. To a watching viewer the
+   side is the player's seat colour instead, set on each label (map-plate-layer, `watchedSide`). Every reading is at the body size
    and every row the same height (owner, 17 October 2026: "it makes little sense to have the bottom row smaller"); a
    place's name is told by its weight and the accent, a count by its weight, a label or a time by its colour. */
 .mp {
@@ -166,6 +167,7 @@
 }
 /* A token: the pin, and under it its plate, the tier chip and count, in its side's colour, an army's stamina under that. */
 .mp-token__disk {
+  position: relative;
   display: flex;
   width: 30px;
   height: 30px;
@@ -178,6 +180,13 @@
 }
 .mp-token__disk[data-undefended="true"] {
   border-style: dashed;
+}
+/* To a watching viewer, the player's seat mark (.ui-seat) on the disk's corner, in the label's side colour. */
+.mp-token__seat {
+  --seat: var(--mp-side);
+  position: absolute;
+  top: -6px;
+  left: -6px;
 }
 .mp-token__strip {
   display: flex;

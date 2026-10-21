@@ -1,6 +1,9 @@
 import { ContractAddress } from "@bibliothecadao/types";
 import { configManager, isViewerOwner, nativeGameModeOf } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { seatSide, type SeatSide } from "@/tokens";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { isWatching } from "./can-issue-orders";
 
 // Addresses reach this comparison in every felt spelling the stack produces — padded from the gameplay account
 // (`addAddressPadding`), unpadded from herald rows, bigint from native facts — so equality is numeric, never textual.
@@ -45,3 +48,69 @@ export function arePlayersAllied(
   if (!playerGuild) return false;
   return store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: owner })?.guild_id === playerGuild;
 }
+
+/** An open game's players in seat order as Herald lists them (`useOpenGameSeats`), for the game it lists. */
+let openGameSeats: { game: number; order: bigint[] } | null = null;
+let seatsRevision = 0;
+const seatListeners = new Set<() => void>();
+
+/** For a rendered surface (useSyncExternalStore): a count that moves whenever the seats change, and how to hear it. */
+export const readSeatsRevision = (): number => seatsRevision;
+export const subscribeSeats = (listener: () => void): (() => void) => {
+  seatListeners.add(listener);
+  return () => seatListeners.delete(listener);
+};
+
+/**
+ * Sets an open game's seat order (a Frontier or Eternum game has no roster on the chain): its players as Herald lists
+ * every one of them, ordered as `useOpenGameSeats` orders them. Labels and marks drawn by seat are told again.
+ */
+export const setOpenGameSeats = (game: number, order: bigint[]): void => {
+  const same =
+    openGameSeats?.game === game &&
+    openGameSeats.order.length === order.length &&
+    openGameSeats.order.every((player, index) => player === order[index]);
+  if (same) return;
+  openGameSeats = { game, order };
+  seatsRevision += 1;
+  for (const listener of [...seatListeners]) listener();
+};
+
+/** Calls `listener` when whose a thing is may read otherwise: the seats change, or the viewer starts or stops watching. */
+export const onSidesChanged = (listener: () => void): (() => void) => {
+  const stopSeats = subscribeSeats(listener);
+  const stopWatching = useUIStore.subscribe((state, previous) => {
+    if (state.isSpectating !== previous.isSpectating) listener();
+  });
+  return () => {
+    stopSeats();
+    stopWatching();
+  };
+};
+
+/**
+ * The game's players in seat order, the same on every client and through the game: a Blitz or Duel game's roster, fixed
+ * before play; else an open game's players as Herald lists them all (a spectator's own facts hold only the rows in
+ * view). Empty until known.
+ */
+export const seatOrder = (store: NativeFactStore): bigint[] => {
+  const game = configManager.getActiveGameId();
+  const roster = store.get("BlitzRoster", { game_id: game });
+  if (roster) return roster.players.map((player) => ContractAddress(player.account));
+  return openGameSeats?.game === game ? openGameSeats.order : [];
+};
+
+/**
+ * Whose a thing is to a watching viewer (owner, 2026-10-21: "when you're spectating maybe a diff color for every
+ * player"): there is no "yours", so each player is told by their seat's colour, the same on the map's labels, the
+ * minimap and the standings; nobody's things are grey. Null while the viewer plays: the three sides tell it
+ * (`arePlayersAllied`, map-plates.css).
+ */
+export const watchedSide = (
+  store: NativeFactStore | null | undefined,
+  owner: bigint | string | null | undefined,
+): SeatSide | null => {
+  if (!isWatching()) return null;
+  const address = toAddress(owner);
+  return seatSide(store && address ? seatOrder(store).indexOf(address) : null);
+};

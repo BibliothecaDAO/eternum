@@ -53,8 +53,35 @@ const LOCAL_RANGE = 2 ** 32;
 const HEX_WIDTH = Math.sqrt(3);
 const ROW_HEIGHT = 1.5;
 
-const PLAYERS = ["Ravero", "Kestrel", "Moonhand", "Lord 3f2a", "Tamsin", "Orrin", "Vexa", "Bran"] as const;
+// A full 24-seat game: the viewer and 23 others, some sharing an initial (as players do).
+const PLAYERS = [
+  "Ravero",
+  "Kestrel",
+  "Moonhand",
+  "Lord 3f2a",
+  "Tamsin",
+  "Orrin",
+  "Vexa",
+  "Bran",
+  "Aldric",
+  "Brisa",
+  "Calder",
+  "Dovane",
+  "Elowen",
+  "Fenrik",
+  "Galen",
+  "Hesper",
+  "Isolde",
+  "Jory",
+  "Kaela",
+  "Mireth",
+  "Nyx",
+  "Pell",
+  "Sable",
+] as const;
 const OWN = "djizus";
+/** Every player in the fixture, in seat order. */
+export const SEATS: readonly string[] = [OWN, ...PLAYERS];
 
 /** A realm's plate height above its ground (the realm models are placed by the benchmark, not here). */
 const REALM_PLATE_HEIGHT = 2.5;

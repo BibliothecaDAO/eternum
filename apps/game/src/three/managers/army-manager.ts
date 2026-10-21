@@ -2,7 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
-import { arePlayersAllied } from "@/utils/entity-ownership";
+import { arePlayersAllied, onSidesChanged, watchedSide } from "@/utils/entity-ownership";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { watchPlayerNames } from "@/hooks/use-player-profile";
@@ -220,6 +220,7 @@ export class ArmyManager {
   private unsubscribeExplorerTroopsPresentation?: () => void;
   private unsubscribeStructureOwnership?: () => void;
   private unsubscribeGuildMembership?: () => void;
+  private unsubscribeSides?: () => void;
   private readonly armyProjectionSyncs = new Map<ID, Promise<void>>();
   private attachmentManager: CosmeticAttachmentManager;
   private readonly proceduralArmyCharacterLayer: ProceduralArmyCharacterLayer;
@@ -302,6 +303,10 @@ export class ArmyManager {
     this.subscribeToExplorerTroopsPresentation();
     this.subscribeToStructureOwnership();
     this.subscribeToGuildMembership();
+    // Whose an army is may read otherwise (the seats arrive, the viewer starts watching): every plate says it again.
+    this.unsubscribeSides = onSidesChanged(() =>
+      this.armyPresentations.forEach((army) => this.refreshArmyCompactLabel(army)),
+    );
 
     // Initialize memory monitor for tracking army operations
     if (MEMORY_MONITORING_ENABLED) {
@@ -1295,7 +1300,11 @@ export class ArmyManager {
       entityId: army.entityId,
       position: labelPosition,
       plate: buildArmyPlate(
-        { ...army, isAlly: arePlayersAllied(this.store, accountAddress(), army.owner.address) },
+        {
+          ...army,
+          isAlly: arePlayersAllied(this.store, accountAddress(), army.owner.address),
+          watched: watchedSide(this.store, army.owner.address),
+        },
         this.resolveHomeRealmName(army),
       ),
     });
@@ -3090,6 +3099,8 @@ ${
     this.unsubscribeExplorerTroopsPresentation = undefined;
     this.unsubscribeGuildMembership?.();
     this.unsubscribeGuildMembership = undefined;
+    this.unsubscribeSides?.();
+    this.unsubscribeSides = undefined;
     this.unsubscribeStructureOwnership?.();
     this.unsubscribeStructureOwnership = undefined;
     this.armyProjectionSyncs.clear();

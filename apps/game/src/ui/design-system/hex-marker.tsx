@@ -1,13 +1,19 @@
+import { seatSide } from "@/tokens";
 import { SvgIcon } from "./icon";
 import type { IconMeaning } from "./icon-meaning";
-export type MarkerOwner = "you" | "ally" | "enemy" | "neutral";
-/** Each side in the HUD sheet's side colours (HUD_SHEET own, ally, enemy), as on the plates; `neutral` tells no side. */
-const markerColors: Record<MarkerOwner, string> = {
+/** Whose a mark is: a side to a playing viewer, a player's seat to a watching one (`watchedSide`); `neutral` is nobody's. */
+export type MarkerOwner = "you" | "ally" | "enemy" | "neutral" | `seat-${number}`;
+/** Each side in the HUD sheet's side colours (HUD_SHEET own, ally, enemy), as on the plates; a seat in its seat colour. */
+const markerColors: Record<"you" | "ally" | "enemy" | "neutral", string> = {
   you: "var(--hud-own)",
   ally: "var(--hud-ally)",
   enemy: "var(--hud-enemy)",
   neutral: "var(--hud-neutral)",
 };
+const markerColor = (owner: MarkerOwner): string =>
+  owner.startsWith("seat-")
+    ? seatSide(Number(owner.slice(5))).colour
+    : markerColors[owner as keyof typeof markerColors];
 const realmEmblemLayout: Partial<Record<IconMeaning, { size: number; y: number }>> = {
   "map-realm-0": { size: 25, y: -12.5 },
   "map-realm-1": { size: 24.5, y: -12.75 },
@@ -34,7 +40,7 @@ export function HexMarker({
   y?: number;
   radius?: number;
 }) {
-  const color = markerColors[owner];
+  const color = markerColor(owner);
   const emblem = realmEmblemLayout[name] ?? { size: 18, y: -10 };
   return (
     <g transform={`translate(${x} ${y}) scale(${radius / 15})`} data-marker={name} data-owner={owner}>
@@ -45,7 +51,7 @@ export function HexMarker({
       />
       <SvgIcon name={name} x={-emblem.size / 2} y={emblem.y} size={emblem.size} />
       <g transform="translate(-7 8)" style={{ fill: color, stroke: "var(--hud-surface-to)" }} strokeWidth={0.5}>
-        {owner === "you" ? (
+        {owner === "you" || owner.startsWith("seat-") ? (
           <circle r={2.3} />
         ) : owner === "ally" ? (
           <rect x={-2.2} y={-2.2} width={4.4} height={4.4} />

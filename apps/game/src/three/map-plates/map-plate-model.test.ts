@@ -2,6 +2,8 @@ import { plateRows } from "./map-plate-rows";
 import { StructureType, siteName } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
+import { HUD_SHEET, SEAT_COLOURS, seatSide } from "@/tokens";
+
 import { attackOrder, buildArmyPlate, buildStructurePlate, guardsToTell } from "./map-plate-model";
 
 const structure = (fields: Partial<Parameters<typeof buildStructurePlate>[0]> = {}) => ({
@@ -177,4 +179,23 @@ it("names a Frontier guard by its beast while retaining its combat stack and sit
     [{ kind: "title", text: "Wyvern" }],
   ]);
   expect(plate.guards).toEqual([{ type: "knight", tier: 1, count: 2800, beast: "wyvern" }]);
+});
+
+describe("a watched plate (side-colours-4: a watching viewer sees each player's seat)", () => {
+  it("carries the player's seat colour and initial, nobody's grey with none, and nothing while the viewer plays", () => {
+    const seat = seatSide(3);
+    expect(buildStructurePlate({ ...structure(), watched: seat }).watched).toEqual({
+      seat: 3,
+      colour: SEAT_COLOURS[3],
+      mark: { letter: "T", ink: (seat as { ink: "dark" | "light" }).ink },
+    });
+    const nobody = structure({ owner: { address: 0n, ownerName: "", guildName: "" } });
+    expect(buildStructurePlate({ ...nobody, watched: seatSide(null) }).watched).toEqual({
+      seat: null,
+      colour: HUD_SHEET.neutral,
+      mark: null,
+    });
+    expect(buildStructurePlate({ ...structure(), watched: null }).watched).toBeUndefined();
+    expect(buildStructurePlate(structure()).watched).toBeUndefined();
+  });
 });

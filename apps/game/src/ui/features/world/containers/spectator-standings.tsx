@@ -5,6 +5,7 @@ import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGame } from "@/hooks/context/game-context";
 import { useFactView } from "@/hooks/use-fact-view";
+import { PlayerSeatMark } from "@/hooks/use-watched-side";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import { gameStructuresView } from "@/sync/fact-views";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
@@ -74,7 +75,10 @@ function StandingsRows() {
             }}
           >
             <span>{row.rank}</span>
-            <span className="truncate text-left">{shown}</span>
+            <span className="flex min-w-0 items-center gap-1.5 text-left">
+              <PlayerSeatMark account={address} name={name} />
+              <span className="truncate">{shown}</span>
+            </span>
             <span className="text-right tabular-nums">{formatExact(Math.floor(row.totalPoints))}</span>
           </HudTableRow>
         );

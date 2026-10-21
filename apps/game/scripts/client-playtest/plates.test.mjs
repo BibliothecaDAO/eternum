@@ -99,3 +99,69 @@ describe("the side colours (owner, 2026-10-21: three sides, red for everything t
     expect(judgePlates(reading([sided("own", [SIDES.own])], { sides: {} })).status).toBe("failed");
   });
 });
+
+describe("the seat colours (side-colours-4: a watching viewer sees each player's seat)", () => {
+  const GREY = "rgb(185, 177, 161)";
+  const sides = { ...SIDES, neutral: GREY };
+  /** A token and its army moved across by `step` token widths, so labels in one view stand apart, each over its army. */
+  const across = (step) => {
+    const dx = step * 90;
+    const at = (point) => ({ x: point.x + dx, y: point.y });
+    return { x: 100 + dx, over: { tile: at(army.tile), top: at(army.top), point: at(army.point) } };
+  };
+  const seated = (key, seat, colours) => ({
+    ...token(key, army),
+    side: "enemy",
+    seat,
+    colours,
+    ...across(key.length - 7),
+  });
+  const watching = (things) => reading(things, { sides });
+
+  it("passes each seat in one colour, two seats in two, and nobody's grey", () => {
+    const view = watching([
+      seated("army:1", "0", ["rgb(253, 117, 98)", "rgb(253, 117, 98)"]),
+      seated("army:12", "0", ["rgb(253, 117, 98)"]),
+      seated("army:123", "1", ["rgb(74, 234, 125)"]),
+      seated("army:1234", "none", [GREY, GREY]),
+    ]);
+    expect(judgePlates(view).status).toBe("completed");
+  });
+
+  it("lets seats 24 apart share a colour: the palette starts again past the 24th", () => {
+    const view = watching([
+      seated("army:1", "2", ["rgb(63, 160, 250)"]),
+      seated("army:12", "26", ["rgb(63, 160, 250)"]),
+    ]);
+    expect(judgePlates(view).status).toBe("completed");
+  });
+
+  it("fails a seat drawn in two colours, or a label of two colours", () => {
+    const split = watching([
+      seated("army:1", "0", ["rgb(253, 117, 98)"]),
+      seated("army:12", "0", ["rgb(74, 234, 125)"]),
+    ]);
+    expect(judgePlates(split).reason).toBe("1 labels not drawn in their seat's colour");
+    const torn = watching([seated("army:1", "0", ["rgb(253, 117, 98)", SIDES.enemy])]);
+    expect(judgePlates(torn).reason).toBe("1 labels not drawn in their seat's colour");
+  });
+
+  it("fails two seats drawn in one colour, and nobody's not grey", () => {
+    const same = watching([
+      seated("army:1", "0", ["rgb(253, 117, 98)"]),
+      seated("army:12", "1", ["rgb(253, 117, 98)"]),
+    ]);
+    expect(judgePlates(same)).toMatchObject({ status: "failed", reason: "1 colours drawn for more than one seat" });
+    expect(judgePlates(watching([seated("army:1", "none", [SIDES.enemy])])).reason).toBe(
+      "1 labels not drawn in their seat's colour",
+    );
+  });
+
+  it("fails a page telling some labels by seat and others by side", () => {
+    const mixed = watching([
+      seated("army:1", "0", ["rgb(253, 117, 98)"]),
+      { ...token("army:12", army), ...across(1), side: "enemy", colours: [SIDES.enemy] },
+    ]);
+    expect(judgePlates(mixed).reason).toBe("some labels are told by seat and others by side");
+  });
+});
