@@ -4,9 +4,9 @@ import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 
 /**
  * The site's paths on this machine, given to Vite by a plugin hook. Vocs ships its whole config in the site's bundle,
- * so a path written in it would publish this checkout's location and change every asset's hash with the directory the
- * build runs in; a hook ships as its source text, the same everywhere. Only `vocs dev` serves the game's public folder
- * (the pages' images); a build copies none of it, and scripts/ship-referenced-assets.mjs ships the files its pages name.
+ * so a value that only means something on the building machine stays out of it: a hook ships as its source text
+ * (scripts/vocs-config-boundary.test.mjs holds the shipped config to this). Only `vocs dev` serves the game's public
+ * folder (the pages' images); a build copies none of it, and scripts/ship-referenced-assets.mjs ships what pages name.
  */
 const docsPaths = {
   name: "docs-paths",
