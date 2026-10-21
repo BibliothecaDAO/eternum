@@ -4,7 +4,7 @@ import { EndgameFixtureScene } from "@/lab/endgame-mist/fixture-scene";
 import { createEndgameFixture } from "@/lab/endgame-mist/fixture";
 import type { EndgameLabSettings } from "@/lab/endgame-mist/fixture";
 import type { GameModeId } from "@/config/game-modes";
-import { createPipelineCompiler } from "@/three/pipeline-compiler";
+import { createPipelineCompiler, type PipelineCompiler } from "@/three/pipeline-compiler";
 import { WeatherLabRuntime } from "./weather-lab-runtime";
 import { resetGameEnd } from "@/three/effects/endgame/state";
 import { GameMapMaterialLibrary } from "@/three/effects/game-map-material-library";
@@ -38,7 +38,7 @@ import InstancedModel from "@/three/managers/instanced-model";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { TerrainQualityTier } from "@/three/terrain/terrain-quality";
-import type { PreparedTerrainPage } from "@/three/terrain/terrain-types";
+import type { PreparedTerrainPage, TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { TERRAIN_SHALLOW_WATER_DEPTH } from "@/three/terrain/terrain-water";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
 import {
@@ -131,6 +131,32 @@ export interface ProceduralTerrainDebugStats {
   waterVertices: number;
 }
 
+/**
+ * A lab's own world on this renderer's land, light and weather: the land it asks for, and what it places and plays on
+ * it each frame. It owns the land once given, so the terrain lab's tile picking stays off.
+ */
+export interface LabStage {
+  readonly request: TerrainPageRequest;
+  prepare(context: LabStageContext): Promise<void>;
+  /** `worldDelta` runs at the world clock's speed; `frameDelta` is the frame's own, for what must keep real time. */
+  update(worldDelta: number, frameDelta: number): void;
+  dispose(): void;
+}
+
+export interface LabStageContext {
+  scene: Scene;
+  terrain: ProceduralTerrain;
+  camera: PerspectiveCamera;
+  controls: MapControls;
+  compile: PipelineCompiler;
+}
+
+/** How fast the world runs: `scale` slows or speeds it; `fixedStep` advances every frame by 1/60 s, whatever it took. */
+export interface LabClock {
+  scale: number;
+  fixedStep: boolean;
+}
+
 export interface ProceduralTerrainDebugRendererHandle {
   dispose(): void;
   getStats(): ProceduralTerrainDebugStats;
@@ -152,6 +178,7 @@ export interface ProceduralTerrainDebugRendererHandle {
   skipEndgame(): void;
   focusEndgameSpire(): void;
   setMoonEnabled(enabled: boolean): void;
+  setClock(clock: LabClock): void;
   setWeather(type: WeatherType): void;
   setWeatherEvolving(enabled: boolean): void;
   strike(): void;
@@ -160,6 +187,7 @@ export interface ProceduralTerrainDebugRendererHandle {
 interface MountProceduralTerrainDebugRendererInput {
   mapSheet?: { chapter: MapChapter; overlay: HTMLDivElement };
   endgame?: EndgameLabSettings;
+  stage?: LabStage;
   gameMode?: GameModeId;
   canvas: HTMLCanvasElement;
   captureMode: boolean;
@@ -178,6 +206,7 @@ interface TerrainDebugRendererSurface extends RendererSurfaceLike {
   init(): Promise<void>;
   setAnimationLoop(callback: ((time: number) => void) | null): void;
   setClearColor(color: Color, alpha?: number): void;
+  setSize(width: number, height: number, updateStyle?: boolean): void;
 }
 
 type TerrainDebugRendererConstructor = new (options: {
@@ -189,6 +218,8 @@ type TerrainDebugRendererConstructor = new (options: {
 interface TerrainDebugRuntime {
   mapSheet: MapSheetPresentation | null;
   endgame: EndgameFixtureScene | null;
+  stage: LabStage | null;
+  clock: LabClock;
   renderSubmissionMs: number[];
   gameMode: GameModeId;
   atmosphere: WorldAtmosphereController;
@@ -197,7 +228,7 @@ interface TerrainDebugRuntime {
   camera: PerspectiveCamera;
   cameraFrame: TerrainDebugCameraFrame;
   controls: MapControls;
-  interaction: TerrainLabInteraction;
+  interaction: TerrainLabInteraction | null;
   firstRenderMs: number;
   frameSamplesMs: number[];
   renderer: TerrainDebugRendererSurface;
@@ -241,7 +272,7 @@ export async function mountProceduralTerrainDebugRenderer(
     const stats = readStats(runtime, input.forceWebGL, input.texturedGround);
     Object.assign(verification, {
       getSnapshot: () => readStats(runtime, input.forceWebGL, input.texturedGround),
-      getInteraction: () => runtime.interaction.getState(),
+      getInteraction: () => runtime.interaction?.getState(),
       status: "ready",
       version: 1,
     });
@@ -252,9 +283,10 @@ export async function mountProceduralTerrainDebugRenderer(
         stopAnimation();
         resizeObserver.disconnect();
         runtime.controls.dispose();
-        runtime.interaction.dispose();
+        runtime.interaction?.dispose();
         runtime.mapSheet?.dispose();
         runtime.endgame?.dispose();
+        runtime.stage?.dispose();
         runtime.realmModel?.dispose();
         runtime.terrain.dispose();
         runtime.weather.dispose();
@@ -267,11 +299,11 @@ export async function mountProceduralTerrainDebugRenderer(
       },
       getStats: () => readStats(runtime, input.forceWebGL, input.texturedGround),
       resetCamera: () => positionCamera(runtime.camera, runtime.controls, runtime.cameraFrame),
-      previewExploration: (entryEdge) => runtime.interaction.previewExploration(entryEdge),
-      placeBuilding: (path, yaw, id, progress, dormant) =>
-        runtime.interaction.placeBuilding(path, yaw, id, progress, dormant),
-      removeBuilding: (clearAll) => runtime.interaction.removeBuilding(clearAll),
-      setPreview: (preview) => runtime.interaction.configure(preview),
+      previewExploration: async (entryEdge) => runtime.interaction?.previewExploration(entryEdge),
+      placeBuilding: async (path, yaw, id, progress, dormant) =>
+        runtime.interaction?.placeBuilding(path, yaw, id, progress, dormant),
+      removeBuilding: async (clearAll) => runtime.interaction?.removeBuilding(clearAll),
+      setPreview: async (preview) => runtime.interaction?.configure(preview),
       setWeatherEvolving: (enabled) => runtime.weather.setEvolving(enabled),
       playEndgame: () => runtime.endgame?.play(),
       resetEndgame: () => runtime.endgame?.reset(),
@@ -289,11 +321,15 @@ export async function mountProceduralTerrainDebugRenderer(
       setMoonEnabled: (enabled) => {
         runtime.atmosphere.params.moonEnabled = enabled;
       },
+      setClock: (clock) => {
+        runtime.clock = clock;
+      },
       setCycleProgress: (progress) => {
         runtime.cycleProgress = progress;
       },
       focusSelection: () => {
-        const target = runtime.interaction.getSelectedPosition();
+        const target = runtime.interaction?.getSelectedPosition();
+        if (!target) return;
         positionCamera(runtime.camera, runtime.controls, {
           target,
           position: target.clone().addScaledVector(CAMERA_DIRECTION, 8),
@@ -331,9 +367,11 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     ? createMapSheetFixture(input.mapSheet.chapter)
     : input.endgame
       ? createEndgameFixture(input.endgame).request
-      : input.localRadius === undefined
-        ? createTerrainVerificationRequest(input.sceneId)
-        : createLocalTerrainLabRequest(input.localRadius);
+      : input.stage
+        ? input.stage.request
+        : input.localRadius === undefined
+          ? createTerrainVerificationRequest(input.sceneId)
+          : createLocalTerrainLabRequest(input.localRadius);
   const camera = new PerspectiveCamera(36, 1, 0.1, 300);
   const controls = new MapControls(camera, input.canvas);
   controls.enableDamping = false;
@@ -434,16 +472,14 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const weather = new WeatherLabRuntime(scene, sun, controls, (x, z) => terrain.sampleSurface(x, z).height);
   atmosphere.update(50, controls.target, { snap: true });
   terrain.setGroundTextureDetailEnabled(input.texturedGround);
-  if (endgame) {
+  if (endgame || input.stage) {
+    const compile = createPipelineCompiler({ getRenderer: () => renderer, getCamera: () => camera });
     try {
-      await endgame.prepare(
-        scene,
-        terrain,
-        camera,
-        createPipelineCompiler({ getRenderer: () => renderer, getCamera: () => camera }),
-      );
+      await endgame?.prepare(scene, terrain, camera, compile);
+      await input.stage?.prepare({ scene, terrain, camera, controls, compile });
     } catch (error) {
-      endgame.dispose();
+      endgame?.dispose();
+      input.stage?.dispose();
       terrain.dispose();
       weather.dispose();
       atmosphere.dispose();
@@ -460,21 +496,25 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   renderer.render(scene, camera);
   const firstRenderMs = performance.now() - firstRenderStartedAt;
 
-  const interaction = new TerrainLabInteraction(
-    input.canvas,
-    camera,
-    scene,
-    terrain,
-    request,
-    input.onError,
-    (page, duration) => updateTerrainVerification(terrain, page, duration, realmGeometry),
-    createPipelineCompiler({ getRenderer: () => renderer, getCamera: () => camera }),
-    input.localRadius !== undefined,
-  );
-  if (input.mapSheet) await interaction.configure({ ...DEFAULT_TERRAIN_LAB_PREVIEW, selection: false });
+  const interaction = input.stage
+    ? null
+    : new TerrainLabInteraction(
+        input.canvas,
+        camera,
+        scene,
+        terrain,
+        request,
+        input.onError,
+        (page, duration) => updateTerrainVerification(terrain, page, duration, realmGeometry),
+        createPipelineCompiler({ getRenderer: () => renderer, getCamera: () => camera }),
+        input.localRadius !== undefined,
+      );
+  if (input.mapSheet) await interaction?.configure({ ...DEFAULT_TERRAIN_LAB_PREVIEW, selection: false });
   return {
     mapSheet,
     endgame,
+    stage: input.stage ?? null,
+    clock: { scale: 1, fixedStep: false },
     renderSubmissionMs: [],
     atmosphere,
     weather,
@@ -697,7 +737,8 @@ function resizeRenderer(canvas: HTMLCanvasElement, runtime: TerrainDebugRuntime)
   const bounds = canvas.getBoundingClientRect();
   const width = Math.max(1, Math.floor(bounds.width));
   const height = Math.max(1, Math.floor(bounds.height));
-  runtime.renderer.setSize(width, height);
+  // The canvas takes its size from its page; writing it back inline would pin it and hide every later resize.
+  runtime.renderer.setSize(width, height, false);
   runtime.camera.aspect = width / height;
   runtime.camera.updateProjectionMatrix();
   if (runtime.mapSheet) {
@@ -714,10 +755,10 @@ function startAnimation(runtime: TerrainDebugRuntime, input: MountProceduralTerr
       if (runtime.frameSamplesMs.length > 240) runtime.frameSamplesMs.shift();
     }
     previousFrameTime = time;
-    const deltaSeconds =
-      input.captureMode && input.sceneId === "fog-reveal"
-        ? 0
-        : Math.min(0.05, Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1_000));
+    const frameSeconds = runtime.clock.fixedStep
+      ? 1 / 60
+      : Math.min(0.05, Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1_000));
+    const deltaSeconds = input.captureMode && input.sceneId === "fog-reveal" ? 0 : frameSeconds * runtime.clock.scale;
     const endgameFrozen = runtime.endgame?.getSnapshot().finished === true;
     runtime.controls.update();
     runtime.atmosphere.update(
@@ -729,7 +770,8 @@ function startAnimation(runtime: TerrainDebugRuntime, input: MountProceduralTerr
     if (!endgameFrozen) {
       runtime.terrain.update(deltaSeconds);
       runtime.weather.update(deltaSeconds, runtime.atmosphere);
-      runtime.interaction.update(deltaSeconds, runtime.weather.getWind());
+      runtime.interaction?.update(deltaSeconds, runtime.weather.getWind());
+      runtime.stage?.update(deltaSeconds, frameSeconds);
     }
     runtime.mapSheet?.update(deltaSeconds, runtime.camera, input.canvas.clientWidth, input.canvas.clientHeight);
     const submittedAt = performance.now();
@@ -764,7 +806,7 @@ function readStats(
       : {}),
     gameMode: runtime.gameMode,
     wildlife: runtime.terrain.getWildlifeStats(),
-    buildingInstances: runtime.interaction.getState().buildings.length,
+    buildingInstances: runtime.interaction?.getState().buildings.length ?? 0,
     propInstances: runtime.terrain.getPropStats().instances,
     fogMaskBytes: runtime.terrain.getShroudStats().maskBytes,
     fogMaskHeight: runtime.terrain.getShroudStats().maskHeight,

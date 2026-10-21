@@ -20,7 +20,7 @@ each page link to see the painting on its real component with local app fixtures
 `pnpm --dir apps/game prove:app-art --port 4199 --out <fresh-dir>` for comparison and page screenshots, loaded-image
 assertions and browser errors; the command owns and closes its server and browser.
 
-Open `/lab` in the dev environment. The Tool selector groups 14 tools by their users' work. Switching tools unmounts the
+Open `/lab` in the dev environment. The Tool selector groups 17 tools by their users' work. Switching tools unmounts the
 previous view and remembers its full URL for the next visit. The Eternum Lab link exits to the game home page.
 `capture=1` keeps the tool's full viewport and removes the shared header.
 
@@ -41,6 +41,7 @@ former `/debug` tools now live under `/lab`. Their runners and links use the new
 | Terrain props       | `/lab/terrain-props`       | Art: biome prop and material review                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Endgame mist        | `/lab/endgame`             | World: production end trigger, orb event, spared realm and busy-map cost proof                                                                                                                                                                                                                                                                                                                                                      |
 | World FX            | `/lab/world-fx`            | Art: world effects and capture controls                                                                                                                                                                                                                                                                                                                                                                                             |
+| Studio              | `/lab/studio`              | Film: the reels' shots on the real terrain, models and effects, a free camera, replayable camera paths and takes (see Film studio below)                                                                                                                                                                                                                                                                                            |
 | Character review    | `/lab/characters`          | Character art and animation: frame inspector, smoke checks and animation captures                                                                                                                                                                                                                                                                                                                                                   |
 | Character benchmark | `/lab/character-benchmark` | Performance: character benchmark smoke and performance runners                                                                                                                                                                                                                                                                                                                                                                      |
 | World integration   | `/lab/world`               | Performance and character integration: world gym smoke runner                                                                                                                                                                                                                                                                                                                                                                       |
@@ -210,3 +211,35 @@ The runner stops its own server and browser, and never removes evidence. For a s
 `--base-url https://127.0.0.1:4199`. It drives visible controls, checks specimen counts and native terrain, and records
 screenshots and a JSON transcript. It uses the existing isolated browser driver when the shared browser is occupied.
 `inventory.mjs <fresh-json-path>` records the 20 source files' hex-literal colour counts and hashes.
+
+## Film studio
+
+`/lab/studio` is a set for shooting the reels with the game's own renderer: the terrain lab's land, light and weather, a
+realm, a Hyperstructure foundation, two armies facing each other and an explorer on the edge of the fog. Every moment
+plays through the production code: the tower through `HyperstructureModel.setConstructionAt`, the attack through the
+world map's combat bridge (`WorldmapCombatPresentation.replayIndexed`, as a confirmed battle replays), the fall through
+the character layer's defeat, the explore through the terrain's shroud reveal, the tiers through the realm models, the
+lightning through the weather runtime. The set lives in `src/lab/studio/`; nothing in it ships to players.
+
+- **Takes:** Hyperstructure rising, Battle up close, Exploration, Realm through its tiers, Wide establisher. Each resets
+  the set and plays its camera path with its cues on time, so every take replays the same. `?take=<name>` plays one when
+  the set is up; `[data-take]` on the page reads `idle` again when it ends.
+- **Camera:** drag pans, right-drag orbits, the wheel zooms; W/A/S/D move, Q/E turn, R/F tilt, Z/X zoom; Lens sets the
+  field of view. Mark key adds the current view to a path, Play runs it, Copy the path puts it on the clipboard as JSON.
+- **Clean frame:** H, or `clean=1&capture=1`, hides the lab's header and the panel.
+- **Light:** World (Blitz or Frontier light, `gameMode=frontier`), time of day, weather, world speed (0.25× to 2×).
+- **Script:** `window.__studio` makes the panel's calls: `take(name)` and `path({keys, cues})` return a promise that
+  settles when they end; `trigger(name, args)` plays `rise` (`{progress}`), `attack`, `defeat`, `explore`, `realm`
+  (`{level}`) or `strike`; `pose(partial)` reads or moves the camera (`{target, distance, tilt, turn, fov}`, tilt 0
+  looks straight down, turn 0 looks north); `places()`, `troops({attacker, defender})`, `time({scale, fixedStep})`,
+  `light(name)`, `weather(name)`, `clean(on)`, `reset()`, `status()`.
+
+Start the client, drive the camera with the keys and mouse, replay a path and roll the takes, with one recording, stills
+and a transcript of every check, in a new directory (the port must be free):
+
+```sh
+pnpm --dir apps/game prove:studio --port 4199 --out <fresh-evidence-directory>
+```
+
+`--base-url https://127.0.0.1:<port>` drives a client already served by you; `--size 1080x1920` films vertical;
+`--game frontier` uses Frontier's light; `--takes battle,explore` rolls only those.
