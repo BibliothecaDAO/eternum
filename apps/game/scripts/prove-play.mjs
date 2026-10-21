@@ -51,9 +51,15 @@ const gamePath = (item) => `/g/${gameOfItem(item).chain}/${gameOfItem(item).game
 const lobbyPath = (item) => `/blitz/${item.replaceAll(":", "-")}`;
 const resultsPath = (item) => `/results/${gameOfItem(item).chain}-${gameOfItem(item).game}`;
 
-/** Where each verb leads from its item: the exact address of that item's own game, lobby or results. */
+/** What a press that signs the player in reaches: the Connect window over the page, the address unchanged. */
+export const CONNECT = "Connect window";
+
+/**
+ * Where each verb leads from its item: the exact address of that item's own game, lobby or results; signed out, Play
+ * free opens Connect over Play first.
+ */
 const DESTINATIONS = {
-  "Play free": (item) => `/sign-in?next=${gamePath(item)}`,
+  "Play free": () => CONNECT,
   Play: gamePath,
   Resume: gamePath,
   Enter: gamePath,
@@ -65,11 +71,11 @@ const DESTINATIONS = {
 };
 
 /**
- * The exact address a press must reach: its item's own destination, or for a lobby's Sign in, sign-in returning to the
- * lobby it was pressed from. Null for a word this proof does not know, which fails the press rather than passing it.
+ * The exact address a press must reach: its item's own destination, or for a lobby's Sign in, Connect over the lobby
+ * it was pressed from. Null for a word this proof does not know, which fails the press rather than passing it.
  */
 export const destinationOf = (word, { item, from }) => {
-  if (word === "Sign in") return from ? `/sign-in?next=${from}` : null;
+  if (word === "Sign in") return from ? CONNECT : null;
   return item && DESTINATIONS[word] ? DESTINATIONS[word](item) : null;
 };
 
@@ -175,16 +181,29 @@ const press = async (b, { selector, word, expected }) => {
   if (missed) return { word, status: "failed", reason: missed };
   const until = Date.now() + PRESS_TIMEOUT_MS;
   let after = b.url();
-  while (after === before && Date.now() < until) {
+  let connect = false;
+  while (after === before && !connect && Date.now() < until) {
     await sleep(200);
     after = b.url();
+    connect = b.evaluate(CONNECT_OPEN) === true;
   }
-  return judge(word, expected, before, after);
+  return judge(word, expected, before, after, connect);
 };
 
-/** A press's verdict from the addresses before and after it: led to the address it must reach, or failed and why. */
-export const judge = (word, expected, before, after) => {
+const CONNECT_OPEN = `document.querySelector('[role="dialog"][aria-label="Connect"]') !== null`;
+
+/**
+ * A press's verdict from the addresses before and after it, and whether Connect opened: led to the address it must
+ * reach (or, for Connect, the window open over an unchanged address), or failed and why.
+ */
+export const judge = (word, expected, before, after, connect = false) => {
   const led = pathOf(after);
+  if (expected === CONNECT) {
+    if (after !== before)
+      return { word, status: "failed", reason: "left the page instead of opening Connect", expected, led };
+    if (!connect) return { word, status: "failed", reason: "Connect did not open", expected, led };
+    return { word, status: "led", expected, led: CONNECT };
+  }
   if (after === before) return { word, status: "failed", reason: "no navigation", expected, led };
   if (expected === null) return { word, status: "failed", reason: "no known destination", expected, led };
   if (led !== expected) return { word, status: "failed", reason: "unexpected destination", expected, led };

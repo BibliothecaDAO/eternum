@@ -64,6 +64,9 @@ const boardShown = (title, rows) =>
 const placeLit = (word) =>
   `[...document.querySelectorAll('[data-role="tab"][aria-current="page"]')].some((tab) => tab.innerText.trim() === ${JSON.stringify(word)})`;
 
+/** The Connect window, open (shell/sign-in/connect-window.tsx). */
+const CONNECT_OPEN = `document.querySelector('[role="dialog"][aria-label="Connect"]') !== null`;
+
 /** Each flow's end, checked in the page. */
 const END = {
   // A board is shown when its panel holds its first place, or says it has no one on it yet.
@@ -81,9 +84,10 @@ const END = {
   news: `location.pathname === "/scroll" && ${placeLit("What's new")} && [...document.querySelectorAll('[role="tab"][aria-selected="true"]')].some((tab) => tab.innerText.trim() === "Blitz") && [...document.querySelectorAll(".app-panel h2")].some((name) => name.innerText.trim() === "Blitz")`,
   // The terms, read from the footer: a page no place holds, so none is lit (qa-app-1 P3-3).
   terms: `location.pathname === "/terms" && document.querySelectorAll('[data-role="tab"][aria-current="page"]').length === 0`,
-  signIn: `location.pathname === "/sign-in" && new URLSearchParams(location.search).get("next") === "/profile"`,
+  // Connect, open over the page it was asked from: Play from the bar, the lobby from its Sign in.
+  connect: `location.pathname === "/" && ${CONNECT_OPEN}`,
   lobby: `location.pathname.startsWith("/blitz/") && document.querySelector('[data-band="body"]')`,
-  lobbySignIn: `location.pathname === "/sign-in" && (new URLSearchParams(location.search).get("next") ?? "").startsWith("/blitz/")`,
+  lobbyConnect: `location.pathname.startsWith("/blitz/") && ${CONNECT_OPEN}`,
 };
 
 /** Season's rating board, as it says its service did not answer (ui/design-system/kit/service-failure.tsx). */
@@ -96,7 +100,6 @@ const flows = (layout, persona) => {
     standing: { steps: [tab("Season")], end: END.frontierBoard },
     blitzboard: { steps: blitz, end: END.blitzBoard, outage: RATINGS_DOWN },
     rival: { steps: [tab("Season"), firstRow()], end: END.player },
-    guide: { steps: [tab("You"), link("How to play")], end: END.docs },
     market: { steps: [link("Market")], end: END.market },
     news: { steps: [tab("What's new"), view("Blitz")], end: END.news },
     terms: { steps: [tab("What's new"), link("Terms of Service")], end: END.terms },
@@ -104,11 +107,14 @@ const flows = (layout, persona) => {
   if (persona === "new-visitor")
     return {
       ...shared,
-      signin: { steps: [tab("You"), press("Sign in")], end: END.signIn },
-      join: { steps: [joinSlot(), press("Sign in")], end: END.lobbySignIn },
+      // Signed out, You is Connect, and How to play is the footer's.
+      guide: { steps: [link("How to play")], end: END.docs },
+      signin: { steps: [tab("Connect")], end: END.connect },
+      join: { steps: [joinSlot(), press("Sign in")], end: END.lobbyConnect },
     };
   return {
     ...shared,
+    guide: { steps: [tab("You"), link("How to play")], end: END.docs },
     older: { steps: [tab("You"), finishedGame()], end: END.results },
     alerts: { steps: [tab("You"), press("Settings"), view("Important")], end: END.important, setting: "level" },
     music: { steps: [tab("You"), press("Settings"), toggle("Music")], end: END.musicOn, setting: "music" },
@@ -119,7 +125,7 @@ const flows = (layout, persona) => {
 
 /**
  * The pages the live stack cannot show at will (a running Blitz season, a claim, a sealed chest, a paid entry, a
- * signed-in player without an emailed code, sign-in's later steps, the doorway's holds), opened in the app lab over its
+ * signed-in player without an emailed code, Connect's steps, the doorway's holds), opened in the app lab over its
  * fixtures (`?capture=1`: the lab's own header off) and measured at rest, with the reading pages and an unknown path's.
  */
 const LAB_GAME = "0x5245414c4d53-7";
@@ -136,10 +142,11 @@ const LAB_PAGES = [
   ["first-visit", "terms"],
   ["first-visit", "privacy"],
   ["first-visit", "credits"],
-  ["first-visit", "sign-in/start"],
-  ["first-visit", "sign-in/code"],
-  ["first-visit", "sign-in/name"],
-  ["first-visit", "sign-in/name-refused"],
+  ["first-visit", "connect/start"],
+  ["first-visit", "connect/code"],
+  ["first-visit", "connect/discord"],
+  ["first-visit", "connect/name"],
+  ["first-visit", "connect/name-refused"],
   ["home", "doorway/map"],
   ["first-visit", "doorway/sign-in"],
   ["home", "doorway/waiting"],
@@ -187,7 +194,7 @@ export const MEASURE = `(() => {
   // card's painting is the card) under the frame's edge, the desktop's bar or the phone's top row, so a spacer or a
   // band that moves the whole body down counts as space; and the body's left edge in the window (a column left for a
   // rail would be a gutter). A page's background is never content, wherever it is drawn: a picture hidden from
-  // assistive technology, or held to the window (fixed) rather than to a card, as sign-in's painting is inside its body.
+  // assistive technology, or held to the window (fixed) rather than to a card, as a step's window-wide painting is.
   const frame = band("bar") ?? band("top");
   const frameEdge = frame ? frame.getBoundingClientRect().bottom : 0;
   const isBackground = (el) => {

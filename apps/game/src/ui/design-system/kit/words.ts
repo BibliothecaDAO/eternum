@@ -524,6 +524,10 @@ export const SIGN_IN_WORDS = {
   claimName: "Claim name",
   saving: "Saving…",
   portrait: "Portrait",
+  /** After Discord, when it finished in another browser (a phone's Safari view, the Discord app's browser). */
+  handoff: "Discord finished in another window? Enter the code it shows.",
+  handoffCode: "Discord code",
+  discordAgain: "Try Discord again",
 } as const;
 
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */

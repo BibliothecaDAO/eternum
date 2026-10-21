@@ -166,6 +166,8 @@ export const AppLink = ({ to, ...rest }: { to: string } & Omit<AnchorHTMLAttribu
 /** One place of the app's bar: where it leads, its word, its icon (or the player's portrait), and whether it is here. */
 type AppBarPlace = {
   to: string;
+  /** A place that opens over the page instead of leading anywhere (Connect): pressed, never current. */
+  onSelect?: () => void;
   label: string;
   icon?: IconMeaning;
   /** The player's portrait: the place shows the player (their name and portrait) instead of its word and icon. */
@@ -205,29 +207,36 @@ export const AppTopBar = ({
   </header>
 );
 
-const AppBarLink = ({ place }: { place: AppBarPlace }) => (
-  <AppLink
-    to={place.to}
-    data-role="tab"
-    aria-current={place.current ? "page" : undefined}
-    aria-label={place.place !== undefined ? `${place.place}: ${place.label}` : undefined}
-    className={cn("app-bar__place", place.portrait !== undefined && "app-bar__player")}
-  >
-    {place.portrait !== undefined ? (
-      <>
-        <span className="app-bar__name" title={place.label}>
+const AppBarLink = ({ place }: { place: AppBarPlace }) =>
+  place.onSelect ? (
+    <button type="button" data-role="tab" onClick={place.onSelect} className="app-bar__place">
+      {place.icon && <Icon name={place.icon} size={24} />}
+      {place.label}
+    </button>
+  ) : (
+    <AppLink
+      to={place.to}
+      data-role="tab"
+      aria-current={place.current ? "page" : undefined}
+      aria-label={place.place !== undefined ? `${place.place}: ${place.label}` : undefined}
+      data-player={place.portrait !== undefined || undefined}
+      className={cn("app-bar__place", place.portrait !== undefined && "app-bar__player")}
+    >
+      {place.portrait !== undefined ? (
+        <>
+          <span className="app-bar__name" title={place.label}>
+            {place.label}
+          </span>
+          <AppPortrait src={place.portrait} name={place.label} size="sm" own />
+        </>
+      ) : (
+        <>
+          {place.icon && <Icon name={place.icon} size={24} />}
           {place.label}
-        </span>
-        <AppPortrait src={place.portrait} name={place.label} size="sm" own />
-      </>
-    ) : (
-      <>
-        {place.icon && <Icon name={place.icon} size={24} />}
-        {place.label}
-      </>
-    )}
-  </AppLink>
-);
+        </>
+      )}
+    </AppLink>
+  );
 
 /** The keys that move between tabs, by where each sends the choice from the chosen tab's index. */
 const TAB_KEYS: Record<string, (index: number, count: number) => number> = {

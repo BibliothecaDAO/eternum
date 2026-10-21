@@ -91,9 +91,10 @@ const renderLab = async (path: string) => {
 };
 
 it.each([
-  ["sign-in/start", "Send code"],
-  ["sign-in/code", "maelis@realms.test"],
-  ["sign-in/name", "Claim name"],
+  ["connect/start", "Send code"],
+  ["connect/code", "maelis@realms.test"],
+  ["connect/discord", "Discord finished in another window?"],
+  ["connect/name", "Claim name"],
   ["doorway/sign-in", "Sign in to play."],
   ["doorway/map", "Stolsli"],
   ["doorway/waiting", "Starts"],
@@ -114,7 +115,7 @@ it("draws a new account's refused name as refused", async () => {
     "fetch",
     vi.fn(async () => new Response("{}")),
   );
-  const lab = await renderLab("/lab/app/first-visit/sign-in/name-refused");
+  const lab = await renderLab("/lab/app/first-visit/connect/name-refused");
   expect(lab.querySelector('input[aria-invalid="true"]')).not.toBeNull();
 });
 

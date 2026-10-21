@@ -89,7 +89,10 @@ it.each([390, 1440])(
     expect(outcome.textContent).toContain("3rd of 3");
     expect(outcome.textContent).toContain("352 points");
     // Continue (the gold, with no chest to open), the end map and Share are the page's own.
-    const buttons = [...page.querySelectorAll("button")].map((button) => [button.textContent, button.dataset.kind]);
+    const buttons = [...page.querySelectorAll('button:not([data-role="tab"])')].map((button) => [
+      button.textContent,
+      (button as HTMLElement).dataset.kind,
+    ]);
     expect(buttons).toEqual([
       ["Share", "quiet"],
       ["See the end map", "secondary"],

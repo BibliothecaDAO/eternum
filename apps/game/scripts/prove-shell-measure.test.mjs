@@ -27,11 +27,11 @@ const contentTop = (measured) =>
   layoutChecks(measured, "desktop").find((check) => check.check === "content at the top");
 
 /**
- * Sign-in's desktop name step as DesktopSplit draws it (src/shell/sign-in/sign-in-page.tsx): inside the body, the
- * painting held to the window behind everything (an aria-hidden wrapper, from the window's top edge, above the 72 px
- * bar), the lore line fixed at the window's foot, and the panel fixed under the bar with its title and the name field.
+ * A desktop step over a window-wide painting: inside the body, the painting held to the window behind everything (an
+ * aria-hidden wrapper, from the window's top edge, above the 72 px bar), a line fixed at the window's foot, and a panel
+ * fixed under the bar with its title and a name field.
  */
-const signInName = ({ title, field }) => `
+const paintedStep = ({ title, field }) => `
   <div data-layout="desktop">
     <header data-band="bar" data-box="0 72 0 1440"></header>
     <main data-band="body" data-box="72 828 0 1440">
@@ -47,14 +47,14 @@ const signInName = ({ title, field }) => `
   </div>`;
 
 describe("where a page's content starts", () => {
-  it("holds sign-in's name step, its title under the bar, its window-wide painting never counted", () => {
-    const measured = measure(signInName({ title: 112, field: 172 }));
+  it("holds a painted step, its title under the bar, its window-wide painting never counted", () => {
+    const measured = measure(paintedStep({ title: 112, field: 172 }));
     expect(measured.contentTop).toBe(40);
     expect(contentTop(measured).ok).toBe(true);
   });
 
   it("rejects the same step moved 200 px down: the painting above the bar cannot stand for the content", () => {
-    const measured = measure(signInName({ title: 312, field: 372 }));
+    const measured = measure(paintedStep({ title: 312, field: 372 }));
     expect(measured.contentTop).toBe(240);
     expect(contentTop(measured).ok).toBe(false);
   });

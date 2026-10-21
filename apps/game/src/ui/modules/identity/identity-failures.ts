@@ -2,7 +2,7 @@ import { IdentityRequestError } from "@realms-world/identity";
 import { L2_CHAIN } from "@/runtime/l2-rpc";
 
 /** What the player asked for; each names its own failure. */
-export type IdentityAction = "discord" | "send-code" | "code" | "link" | "unlink" | "portrait";
+export type IdentityAction = "discord" | "handoff" | "send-code" | "code" | "link" | "unlink" | "portrait";
 
 export class WrongNetworkError extends Error {}
 
@@ -16,10 +16,14 @@ const NAMED_REFUSALS: Record<string, string> = {
   email_not_verified: "Your Discord email is not verified. Verify it in Discord, or sign in with an email code.",
   email_not_found: "Your Discord account has no email. Add one in Discord, or sign in with an email code.",
   account_not_linked: "This email already has a Realms account. Sign in with an email code.",
+  access_denied: "Discord sign-in was cancelled. Try again when you are ready.",
+  please_restart_the_process: "Discord took too long to answer. Try again.",
+  HANDOFF_NOT_STARTED: "Press Discord here first, then enter the code it shows.",
 };
 
 const FALLBACK: Record<IdentityAction, string> = {
   discord: "Discord sign-in did not complete. Try again.",
+  handoff: "That code did not sign you in. Try again in a moment.",
   "send-code": "The code was not sent. Check the address and try again.",
   code: "Sign-in did not complete. Try again in a moment.",
   link: "The wallet was not linked. Try again in a moment.",

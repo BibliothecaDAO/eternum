@@ -1,4 +1,4 @@
-import { BLITZ_WORDS, LORE_LINE, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { BLITZ_WORDS, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 
@@ -6,29 +6,27 @@ import { gamePainting } from "@/shell/game-links";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
 
-import { AppPanel } from "@/ui/design-system/kit/app-elements";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 
-import { PageFrame } from "../frame/page-frame";
 import { PlayPage } from "../play/play-page";
 import { ConnectWindow } from "../sign-in/connect-window";
+import { HandoffStep } from "../sign-in/handoff-step";
 import { NotFoundPage } from "../not-found";
 import { CodeStep } from "../sign-in/code-step";
 import { ProfileStep } from "../sign-in/profile-step";
-import { SignInFrame } from "../sign-in/sign-in-page";
 import { StartStep } from "../sign-in/start-step";
 import { useNowSeconds } from "../use-now";
 import { LAB_DOORWAYS, LAB_NEW_ACCOUNTS, LAB_SIGN_IN_EMAIL, LAB_SEASON_WAIT, labCodeExpiry } from "./app-lab-fixtures";
 
 const noop = () => undefined;
 
-/** Sign-in's lab steps, by name: each step's title and its body over the fixtures; the real flow reaches the later
- * steps only through the identity service. */
-const labSignInStep = (step: string | undefined): { title: string; body: ReactNode } | null => {
+/** Connect's steps over the fixtures, by name: each step's title and its body; the real flow reaches the later steps
+ * only through the identity service. */
+const labConnectStep = (step: string | undefined): { title: string; body: ReactNode } | null => {
   switch (step) {
     case "start":
       return {
-        title: WORDS.signIn,
+        title: WORDS.connect,
         body: <StartStep sending={false} error={null} onDiscord={noop} onEmail={noop} />,
       };
     case "code":
@@ -48,6 +46,11 @@ const labSignInStep = (step: string | undefined): { title: string; body: ReactNo
           />
         ),
       };
+    case "discord":
+      return {
+        title: SIGN_IN_WORDS.discord,
+        body: <HandoffStep checking={false} error={null} onCode={async () => false} onDiscord={noop} onTyping={noop} />,
+      };
     case "name":
     case "name-refused":
       return {
@@ -60,51 +63,22 @@ const labSignInStep = (step: string | undefined): { title: string; body: ReactNo
 };
 
 /**
- * Sign-in's steps one at a time, each in the flow's own frame (/lab/app/<screen>/sign-in/<step>): the start, the
- * emailed code, and a new account's name and portrait, with the suggested name passing the rule or refused.
- */
-export const LabSignIn = () => {
-  const { step } = useParams();
-  const shown = labSignInStep(step);
-  if (!shown) return <NotFoundPage />;
-  return (
-    <SignInFrame next="/" title={shown.title} hero={step === "start"}>
-      {shown.body}
-    </SignInFrame>
-  );
-};
-
-/**
- * Connect's two options, each at every step (/lab/app/<screen>/connect/<option>/<step>): `window`, the steps in a
- * window over Play (a sheet from the foot on a phone); `you`, the steps on You itself.
+ * Connect's steps one at a time (/lab/app/<screen>/connect/<step>), each in the window over the screen's Play: the
+ * start, the emailed code, the code a Discord sign-in finished in another browser shows, and a new account's name and
+ * portrait, with the suggested name passing the rule or refused.
  */
 export const LabConnect = () => {
-  const { option, step } = useParams();
-  const shown = labSignInStep(step);
+  const { step } = useParams();
+  const shown = labConnectStep(step);
   if (!shown) return <NotFoundPage />;
-  if (option === "window")
-    return (
-      <>
-        <PlayPage />
-        <ConnectWindow title={shown.title === WORDS.signIn ? WORDS.connect : shown.title} onClose={noop}>
-          {shown.body}
-        </ConnectWindow>
-      </>
-    );
-  if (option === "you")
-    return (
-      <PageFrame title={WORDS.connect}>
-        <div className="flex max-w-column flex-col gap-4">
-          <AppPanel title={LORE_LINE} painting="winter-fortress">
-            <div className="flex flex-col gap-4">
-              {step !== "start" && <h2 className="text-app-title text-app-ink">{shown.title}</h2>}
-              {shown.body}
-            </div>
-          </AppPanel>
-        </div>
-      </PageFrame>
-    );
-  return <NotFoundPage />;
+  return (
+    <>
+      <PlayPage />
+      <ConnectWindow title={shown.title} onClose={noop}>
+        {shown.body}
+      </ConnectWindow>
+    </>
+  );
 };
 
 /** The doorway into Frontier at one of its holds (/lab/app/<screen>/doorway/<state>), as entering a game draws it. */

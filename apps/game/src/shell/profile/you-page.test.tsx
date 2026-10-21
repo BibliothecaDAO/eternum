@@ -15,7 +15,8 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
 vi.mock("../herald", () => ({ useRealmsPlayer: () => ({ data: null }) }));
 
 import { setViewportWidth } from "../frame/test-viewport";
-import { HOW_TO_PLAY, ProfilePage } from "./profile-pages";
+import { HOW_TO_PLAY } from "../community";
+import { ProfilePage } from "./profile-pages";
 
 let unmount: (() => Promise<void>) | null = null;
 afterEach(async () => {

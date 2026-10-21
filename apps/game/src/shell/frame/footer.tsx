@@ -1,8 +1,8 @@
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { AppLink } from "@/ui/design-system/kit/app-elements";
-import { FOOTER_WORDS } from "@/ui/design-system/kit/words";
+import { FOOTER_WORDS, PROFILE_WORDS } from "@/ui/design-system/kit/words";
 
-import { COMMUNITY } from "../community";
+import { COMMUNITY, HOW_TO_PLAY } from "../community";
 
 /** A link of the footer: its word, where it leads, and a social's official mark before its word. */
 type FooterLink = { word: string; to: string; icon?: IconMeaning };
@@ -17,7 +17,11 @@ const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
   },
   {
     title: FOOTER_WORDS.realms,
-    links: [{ word: "realms.world", to: REALMS_WORLD }],
+    // How to play is also You's row; signed out, You is Connect, so the footer is where a new visitor finds it.
+    links: [
+      { word: PROFILE_WORDS.howToPlay, to: HOW_TO_PLAY },
+      { word: "realms.world", to: REALMS_WORLD },
+    ],
   },
   {
     title: FOOTER_WORDS.legal,
@@ -31,7 +35,7 @@ const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
 
 /**
  * The footer at the end of every page of the app (not a full-screen step): what the places do not hold. The community
- * with each social's mark, Realms' own site and the legal pages live here and nowhere else; a phone stacks its columns.
+ * with each social's mark, How to play, Realms' own site and the legal pages; a phone stacks its columns.
  */
 export const AppFooter = () => (
   <footer data-band="footer" className="mt-10 border-t border-kit-line pt-8 lg:mt-16 lg:pt-10">

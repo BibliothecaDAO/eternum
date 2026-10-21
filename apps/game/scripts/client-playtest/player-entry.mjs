@@ -1,8 +1,9 @@
 import { existsSync, readFileSync, rmSync } from "node:fs";
 
 /**
- * How a player gets into the steps' game: signed in through the sign-in page as a player is (their email, Send code,
- * the code from the mail), then through the home page's card, with the browser's own click on its call to action.
+ * How a player gets into the steps' game: signed in through Connect as a player is (the bar's Connect, their email,
+ * Send code, the code from the mail), then through the home page's card, with the browser's own click on its call to
+ * action.
  */
 
 const POLL_MS = 500;
@@ -16,14 +17,17 @@ const CODE_FIELD = 'input[autocomplete="one-time-code"]';
 const ENTRY_BUTTON = "[data-playtest-entry]";
 
 /**
- * Signs the profile in on the sign-in page, which knows the session: a signed-in player is sent on from it at once, a
- * signed-out one is asked for an email. The runner reads no mail: it asks for the code on stderr and waits for whoever
- * runs it to write the code to `codeFile`. Returns "kept" or "signed in"; the home page is to be opened again after.
+ * Signs the profile in from the home page, which shows the session in its bar: a signed-in player's place shows them,
+ * a signed-out one's reads Connect, which opens the Connect window and its email field. The runner reads no mail: it
+ * asks for the code on stderr and waits for whoever runs it to write the code to `codeFile`. Returns "kept" or
+ * "signed in"; the home page is to be opened again after.
  */
 export async function signInIfSignedOut({ browser, owner, email, baseUrl, codeFile }) {
-  browser.run(["open", new URL("/sign-in", baseUrl).href]);
+  browser.run(["open", new URL("/", baseUrl).href]);
   const before = await signInState(browser, owner, email, ["signed-in", "signed-out"]);
   if (before === "signed-in") return "kept";
+  browser.run(["click", CONNECT_PLACE]);
+  await waitUntil(owner, () => browser.read(isShown(EMAIL_FIELD)), "Connect opened no email field");
   browser.run(["fill", EMAIL_FIELD, email]);
   browser.click("Send code");
   await waitUntil(owner, () => browser.read(isShown(CODE_FIELD)), `no code field after sending a code to ${email}`);
@@ -33,24 +37,26 @@ export async function signInIfSignedOut({ browser, owner, email, baseUrl, codeFi
 }
 
 /**
- * Waits for the sign-in page to answer with one of `awaited`: it sends a signed-in player on, asks a signed-out one for
- * an email. A test account is never set up by a run: one the page asks to claim a name is refused.
+ * Waits for the home page to answer with one of `awaited`: its bar shows the signed-in player, or Connect. A test
+ * account is never set up by a run: one Connect asks to claim a name is refused.
  */
 async function signInState(browser, owner, email, awaited) {
   let state = null;
   const answered = () => (state = browser.read(SIGN_IN_STATE)) === "claim-name" || awaited.includes(state);
-  await waitUntil(owner, answered, `the sign-in page gave ${email} none of ${awaited.join(", ")}`);
-  if (state === "claim-name")
-    throw new Error(`${email} has no name: the sign-in asks to claim one, not a test account`);
+  await waitUntil(owner, answered, `the home page gave ${email} none of ${awaited.join(", ")}`);
+  if (state === "claim-name") throw new Error(`${email} has no name: Connect asks to claim one, not a test account`);
   return state;
 }
 
+/** The bar's Connect: the You place while no one is signed in (src/shell/frame/tabs.tsx). */
+const CONNECT_PLACE = 'button[data-role="tab"]';
+
 const SIGN_IN_STATE = `JSON.stringify(
-  location.pathname !== "/sign-in"
-    ? "signed-in"
-    : [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Claim name")
-      ? "claim-name"
-      : document.querySelector(${JSON.stringify(EMAIL_FIELD)})
+  [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Claim name")
+    ? "claim-name"
+    : document.querySelector('[data-role="tab"][data-player]')
+      ? "signed-in"
+      : [...document.querySelectorAll(${JSON.stringify(CONNECT_PLACE)})].some((tab) => tab.textContent.trim() === "Connect")
         ? "signed-out"
         : null,
 )`;

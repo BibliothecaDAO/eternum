@@ -101,6 +101,9 @@ export const createIdentityAuth = (
     // Other realms.party services set better-auth's default cookie names for the whole domain; a browser sends that
     // older cookie first, and it would hide this service's session. Our cookies carry their own name.
     advanced: { cookiePrefix: "realms-identity" },
+    // Discord's return is held to the browser that started it by discord-handoff.ts, which a phone's switch to another
+    // browser does not break; better-auth's own check refused that switch outright.
+    account: { skipStateCookieCheck: true },
     user: {
       additionalFields: {
         realmsId: { type: "string", unique: true, required: false, input: false },

@@ -2,7 +2,7 @@
  * The app sheet's captures: the app's real pages over the app lab's fixtures (/lab/app/<screen>/<page>), each element of
  * the app sheet (/lab/kit/app, by its `data-sheet-element`). The pages the sheet has moved (Play, the Blitz lobby,
  * Season, Results sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844, and checked; so are
- * the account's pages (`account`: sign-in's steps, You, Settings and what its rows open) and the doorway into a game at
+ * the account's pages (`account`: Connect's steps, You, Settings and what its rows open) and the doorway into a game at
  * each of its holds (`doorway`).
  *
  *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1] [--state <signed-in.json>]
@@ -104,9 +104,9 @@ const entryChecks = (b) => {
 };
 
 /**
- * The account's pages (sign-in's steps, You, Settings), each at its fixture state and, where a row opens a step, with
+ * The account's pages (Connect's steps, You, Settings), each at its fixture state and, where a row opens a step, with
  * that row pressed as a player presses it: shot on the desktop and on a phone, and checked as a page on the app sheet.
- * Sign-in is a full-screen step, with no places.
+ * Connect's steps open in its window over Play, whose place stays lit.
  */
 const ACCOUNT_PAGES = {
   you: { path: "home/profile", place: "You" },
@@ -118,10 +118,11 @@ const ACCOUNT_PAGES = {
   "settings-wallet-none": { path: "wallet-none/profile/settings", place: "You", press: "Payout wallet" },
   "settings-wallet-linked": { path: "wallet-ready/profile/settings", place: "You", press: "Payout wallet" },
   "settings-sign-out": { path: "home/profile/settings", place: "You", press: "Sign out" },
-  "sign-in-start": { path: "first-visit/sign-in/start", place: null },
-  "sign-in-code": { path: "first-visit/sign-in/code", place: null },
-  "sign-in-name": { path: "first-visit/sign-in/name", place: null },
-  "sign-in-name-refused": { path: "first-visit/sign-in/name-refused", place: null },
+  "connect-start": { path: "first-visit/connect/start", place: "Play" },
+  "connect-code": { path: "first-visit/connect/code", place: "Play" },
+  "connect-discord": { path: "first-visit/connect/discord", place: "Play" },
+  "connect-name": { path: "first-visit/connect/name", place: "Play" },
+  "connect-name-refused": { path: "first-visit/connect/name-refused", place: "Play" },
 };
 
 /** What holds for a page drawn whole: it did not fall to the error boundary, and it does not scroll sideways. */

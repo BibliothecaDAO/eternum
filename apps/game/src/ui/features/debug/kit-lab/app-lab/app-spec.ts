@@ -46,7 +46,7 @@ export const APP_SPEC: readonly SpecPage[] = [
     page: "You",
     route: "/profile",
     job: "The player's card and finished games, then the ways to Settings, How to play and What's new.",
-    primary: "None while signed in (its rows); Sign in when signed out.",
+    primary: "None while signed in (its rows); signed out, the bar's You is Connect.",
     verdict: "keep",
     why: "Takes in another player's page: the same card and games.",
   },
@@ -82,10 +82,10 @@ export const APP_SPEC: readonly SpecPage[] = [
     why: "Three pages of one kind: one Legal page with its three documents as tabs.",
   },
   {
-    page: "Sign in",
-    route: "/sign-in",
-    job: "Discord or an emailed code, then a new account's name and portrait; back to where the player was.",
-    primary: "Continue with Discord, or Send code.",
+    page: "Connect",
+    route: "A window over any page: the bar's Connect, and every Sign in",
+    job: "Discord or an emailed code, then a new account's name and portrait, without leaving the page.",
+    primary: "Discord, or Send code.",
     verdict: "keep",
   },
   {

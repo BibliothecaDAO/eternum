@@ -293,6 +293,25 @@ const signInWithDiscord = async (
   return browser.request(`/api/auth/callback/discord?code=${code}&state=${state}`);
 };
 
+/** Starts Discord sign-in in one browser and returns from Discord in another, as a phone's browser switch does. */
+const returnInAnotherBrowser = async (
+  starter: ReturnType<typeof createBrowser>,
+  finisher: ReturnType<typeof createBrowser>,
+  profile: { id: string; username: string; email: string; verified: boolean },
+) => {
+  const started = (await (
+    await starter.request("/api/auth/sign-in/social", { body: { provider: "discord", callbackURL: "/" } })
+  ).json()) as { url: string };
+  const code = `code-${profile.id}`;
+  discordProfiles.set(code, profile);
+  const state = new URL(started.url).searchParams.get("state");
+  return finisher.request(`/api/auth/callback/discord?code=${code}&state=${state}`);
+};
+
+/** The six digits the other browser's page shows. */
+const handoffCodeOf = (page: string) => /class="code">(\d{6})</.exec(page)?.[1] ?? "";
+const otherCode = (code: string) => String((Number(code) + 1) % 1_000_000).padStart(6, "0");
+
 const userCount = async () =>
   ((await proxy.env.DB.prepare('SELECT count(*) AS n FROM "user"').first()) as { n: number }).n;
 
@@ -487,6 +506,67 @@ describe("identity Worker", () => {
     } finally {
       discord.mockRestore();
     }
+  });
+
+  it("keeps a Discord sign-in finished in another browser for the browser that started it, behind a one-time code", async () => {
+    const discord = fakeDiscord();
+    try {
+      const profile = { id: "80351110224670001", username: "maelis", email: "maelis@discord.test", verified: true };
+      // An iPhone's home-screen app starts; Discord answers in Safari, which keeps its own cookies.
+      const app = createBrowser();
+      const safari = createBrowser();
+      const shown = await returnInAnotherBrowser(app, safari, profile);
+      expect(shown.status).toBe(200);
+      expect(shown.headers.getSetCookie()).toEqual([]);
+      const code = handoffCodeOf(await shown.text());
+      expect(await safari.session()).toBeNull();
+
+      const notStarted = await safari.request("/api/auth/discord-handoff", { body: { code } });
+      expect(await notStarted.json()).toEqual({ code: "HANDOFF_NOT_STARTED" });
+      const wrong = await app.request("/api/auth/discord-handoff", { body: { code: otherCode(code) } });
+      expect(await wrong.json()).toEqual({ code: "INVALID_OTP" });
+      expect(await app.session()).toBeNull();
+
+      expect((await app.request("/api/auth/discord-handoff", { body: { code } })).status).toBe(200);
+      expect((await app.session())?.user.email).toBe(profile.email);
+      const spent = await app.request("/api/auth/discord-handoff", { body: { code } });
+      expect(await spent.json()).toEqual({ code: "HANDOFF_NOT_STARTED" });
+    } finally {
+      discord.mockRestore();
+    }
+  });
+
+  it("drops a Discord sign-in held for another browser after three wrong codes", async () => {
+    const discord = fakeDiscord();
+    try {
+      const profile = { id: "80351110224670002", username: "orrin", email: "orrin@discord.test", verified: true };
+      const app = createBrowser();
+      const code = handoffCodeOf(await (await returnInAnotherBrowser(app, createBrowser(), profile)).text());
+      const tries = [];
+      for (let attempt = 0; attempt < 3; attempt += 1)
+        tries.push(await (await app.request("/api/auth/discord-handoff", { body: { code: otherCode(code) } })).json());
+      expect(tries).toEqual([{ code: "INVALID_OTP" }, { code: "INVALID_OTP" }, { code: "TOO_MANY_ATTEMPTS" }]);
+      const late = await app.request("/api/auth/discord-handoff", { body: { code } });
+      expect(await late.json()).toEqual({ code: "OTP_EXPIRED" });
+      expect(await app.session()).toBeNull();
+    } finally {
+      discord.mockRestore();
+    }
+  });
+
+  it("sends a Discord refusal finished in another browser back to the flow there, holding nothing", async () => {
+    const app = createBrowser();
+    const started = (await (
+      await app.request("/api/auth/sign-in/social", {
+        body: { provider: "discord", callbackURL: "/season", errorCallbackURL: "/season" },
+      })
+    ).json()) as { url: string };
+    const state = new URL(started.url).searchParams.get("state");
+    const refused = await createBrowser().request(`/api/auth/callback/discord?error=access_denied&state=${state}`);
+    expect(refused.status).toBe(302);
+    expect(refused.headers.get("location")).toBe("/season?error=access_denied");
+    const claim = await app.request("/api/auth/discord-handoff", { body: { code: "000000" } });
+    expect(await claim.json()).toEqual({ code: "OTP_EXPIRED" });
   });
 
   it("refuses a device approval without a session", async () => {

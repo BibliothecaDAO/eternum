@@ -45,13 +45,13 @@ import {
   labSlots,
   type LabScreen,
 } from "./app-lab-fixtures";
-import { LabConnect, LabDoorway, LabSignIn } from "./app-lab-flows";
+import { LabConnect, LabDoorway } from "./app-lab-flows";
 
 /**
  * The dev build's app lab: the real pages over one fixture state per screen, for the painted pass's captures of states
  * the dev stack cannot hold (Day 12 of a season, a full lobby, a season just over). Opened as /lab/app/<screen>/<page>;
  * the lab answers the app's own /api reads and seeds the shard boards, so nothing leaves the tab. Beside the pages:
- * sign-in's steps, the doorway's holds (app-lab-flows.tsx), the reading pages and an unknown path's.
+ * Connect's steps, the doorway's holds (app-lab-flows.tsx), the reading pages and an unknown path's.
  */
 export const AppLabView = () => {
   const { screen } = useParams();
@@ -99,8 +99,7 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="terms" element={<TermsPage />} />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="credits" element={<CreditsPage />} />
-        <Route path="sign-in/:step" element={<LabSignIn />} />
-        <Route path="connect/:option/:step" element={<LabConnect />} />
+        <Route path="connect/:step" element={<LabConnect />} />
         <Route path="doorway/:state" element={<LabDoorway />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

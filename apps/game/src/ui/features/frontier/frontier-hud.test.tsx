@@ -24,7 +24,7 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
     session: { user: { id: "u1", realmsId: "", name: "uxplay", email: "uxplay@example.com", address: "0x7" } },
   }),
 }));
-vi.mock("@/shell/sign-in/sign-in-route", () => ({ useRequestSignIn: () => vi.fn() }));
+vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => vi.fn() }));
 vi.mock("@/ui/features/social", async () => ({
   ...(await import("@/ui/features/social/realtime-chat/hooks/use-realtime-chat")),
   RealtimeChatShell: () => <input aria-label="Message" />,

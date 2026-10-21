@@ -1,3 +1,5 @@
+import "@/ui/design-system/kit/app-sheet.css";
+
 import { Icon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useSheetCloses } from "@/ui/design-system/kit/sheet-closes";

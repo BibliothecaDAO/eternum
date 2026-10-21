@@ -24,11 +24,12 @@ import { gameTitle } from "../season-tab/history-row";
 import { resultsHref } from "../season-tab/results-link";
 import { directoryDay } from "../season";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
-import { signInHref } from "../sign-in/sign-in-route";
+import { useRequestSignIn } from "../sign-in/connect";
 import { ageOf } from "./ages";
 import type { PlayItem } from "./play-board";
 
-type ItemVerb = { word: string; icon: IconMeaning; to: string };
+/** An item's verb: where it leads, or, for a signed-out player's Play free, Connect first and then there. */
+type ItemVerb = { word: string; icon: IconMeaning; to: string; connectFirst?: true };
 
 /** The directory game an item stands for; a slot still taking players has none. */
 const gameOf = (item: PlayItem): DirectoryGame | undefined =>
@@ -37,7 +38,7 @@ const gameOf = (item: PlayItem): DirectoryGame | undefined =>
 const lobbyHref = (item: PlayItem) => (item.source === "row" ? `/blitz/${lobbyId(item.row)}` : "/");
 
 /**
- * An item's verb as a route. Signed out, Play free opens sign-in directly, which then enters the season: the doorway
+ * An item's verb as a route. Signed out, Play free opens Connect over Play, which then enters the season: the doorway
  * would only stop to ask for it.
  */
 const verbOf = (item: PlayItem, signedIn: boolean): ItemVerb | null => {
@@ -52,7 +53,7 @@ const verbOf = (item: PlayItem, signedIn: boolean): ItemVerb | null => {
       const entry = entryHref(game, "play");
       return signedIn
         ? { word: WORDS.play, icon: "play", to: entry }
-        : { word: WORDS.playFree, icon: "play", to: signInHref(entry) };
+        : { word: WORDS.playFree, icon: "play", to: entry, connectFirst: true };
     }
     case "watch":
       return game ? { word: WORDS.watch, icon: "watch", to: entryHref(game, "spectate") } : null;
@@ -134,14 +135,16 @@ const SeasonDay = ({ game, now, withPlayers }: { game: DirectoryGame; now: numbe
 const ItemVerbButton = ({ item, signedIn, lead }: { item: PlayItem; signedIn: boolean; lead: boolean }) => {
   const game = gameOf(item);
   if (game?.error) return <ServiceFailure service="directory" error={game.error} />;
+  const requestSignIn = useRequestSignIn();
   const verb = verbOf(item, signedIn);
   if (!verb) return null;
+  const press = verb.connectFirst ? { onClick: () => requestSignIn(verb.to) } : { to: verb.to };
   return lead ? (
-    <AppButton kind="primary" size="lg" icon={verb.icon} to={verb.to} step>
+    <AppButton kind="primary" size="lg" icon={verb.icon} {...press} step>
       {verb.word}
     </AppButton>
   ) : (
-    <AppButton kind="secondary" icon={verb.icon} to={verb.to}>
+    <AppButton kind="secondary" icon={verb.icon} {...press}>
       {verb.word}
     </AppButton>
   );

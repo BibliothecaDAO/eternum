@@ -12,7 +12,7 @@ import { RealmNumberPicker } from "./realm-number-picker";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { identityUsername, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
+import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { resolvePlayerNameFelt } from "@/services/identity/player-name";

@@ -3,6 +3,7 @@ import { presentsOperatorToken } from "@realms-world/identity";
 import type { IdentityAuth } from "./auth";
 import { routeChat } from "./chat/routes";
 import { handleBotDeviceApproval, handleDeviceChange } from "./devices";
+import { claimDiscordHandoff, returnFromDiscord, startSocialSignIn } from "./discord-handoff";
 import {
   handleAdmitShard,
   handleDirectory,
@@ -48,6 +49,14 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/auth/get-session" && request.method === "GET") return accountSession(request, auth);
   if (pathname === "/api/auth/providers" && request.method === "GET")
     return json({ providers: Object.keys(socialProvidersOf(env)) });
+  if (pathname === "/api/auth/sign-in/social" && request.method === "POST")
+    return startSocialSignIn(request, auth, env);
+  if (pathname === "/api/auth/callback/discord" && request.method === "GET")
+    return returnFromDiscord(request, auth, env);
+  if (pathname === "/api/auth/discord-handoff" && request.method === "POST") {
+    if (!(await withinPublicBudget(env, "sign-in-code", request))) return json({ error: "too_many_attempts" }, 429);
+    return claimDiscordHandoff(request, auth, env);
+  }
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
     return json({ error: "invalid_origin" }, 403);

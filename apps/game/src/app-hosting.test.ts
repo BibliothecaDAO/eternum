@@ -5,7 +5,7 @@ import { createRoutesFromChildren, matchRoutes, Navigate, type RouteObject } fro
 import { describe, expect, it } from "vitest";
 
 import { parseShellRoutes } from "../scripts/shell-routes.mjs";
-import { appRoutes, RETIRED_PLAY_PATHS } from "./app";
+import { appRoutes, RETIRED_PATHS } from "./app";
 
 /**
  * Cloudflare Pages answers a full page load, such as an OAuth return, with the app shell only where `_redirects`
@@ -49,7 +49,7 @@ const routerPaths = (children: RouteObject[], parent = ""): string[] =>
     return [...own, ...routerPaths(route.children ?? [], path)];
   });
 
-const retired: readonly string[] = RETIRED_PLAY_PATHS;
+const retired: readonly string[] = RETIRED_PATHS;
 
 /** The router's pages: not its not-found catch-all, and not Play's former pages, which only lead to Play. */
 const pagePaths = [...new Set(routerPaths(routes))].filter(

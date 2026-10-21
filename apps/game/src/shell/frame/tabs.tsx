@@ -12,6 +12,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { AppLink, AppTopBar } from "@/ui/design-system/kit/app-elements";
 import { Portrait } from "@/ui/design-system/kit/portrait";
 import { Lockup } from "./lockup";
+import { useRequestSignIn } from "../sign-in/connect";
 import { usePageAddress } from "./page-address";
 
 type Place = { to: string; word: string; icon: IconMeaning; matches: readonly string[] };
@@ -47,10 +48,11 @@ const TABS: readonly Place[] = [
 const matchesPath = (pathname: string, match: string) =>
   match === "/" ? pathname === "/" : pathname.startsWith(match);
 
-/** You reads Connect while no one is signed in: the bar's way in. */
-const usePlaceWord = (tab: Place): string => {
+/** While no one is signed in, You is Connect: pressed, it opens the Connect window over the page. */
+const useConnect = (): (() => void) | undefined => {
   const { status, session } = useIdentitySession();
-  return tab === YOU_TAB && status !== "loading" && !session ? WORDS.connect : tab.word;
+  const requestSignIn = useRequestSignIn();
+  return status !== "loading" && !session ? () => requestSignIn() : undefined;
 };
 
 const useActiveTab = (): string | undefined => {
@@ -90,11 +92,14 @@ const TabIcon = ({ tab, current, size }: { tab: Place; current: boolean; size: n
   return <SemanticIcon name={Icon} size={size} className={current ? undefined : "brightness-[.8] grayscale-[.6]"} />;
 };
 
-const PlaceWord = ({ tab }: { tab: Place }) => <>{usePlaceWord(tab)}</>;
+const PHONE_TAB =
+  "flex min-h-12 flex-auto flex-col items-center justify-center gap-[3px] whitespace-nowrap font-ui text-sm font-semibold";
 
 /** The phone's foot: the places in thumb reach, each as wide as its word and the rest shared, so no word wraps. */
 export const TabBar = () => {
   const active = useActiveTab();
+  const connect = useConnect();
+  const player = useSignedInPlayer();
   return (
     <nav
       aria-label="Tabs"
@@ -102,19 +107,25 @@ export const TabBar = () => {
     >
       {TABS.map((tab) => {
         const current = active === tab.to;
+        const look = cn(PHONE_TAB, current ? "text-kit-peach" : "text-kit-muted");
+        if (tab === YOU_TAB && connect)
+          return (
+            <button key={tab.to} type="button" data-role="tab" onClick={connect} className={look}>
+              <TabIcon tab={tab} current={false} size={28} />
+              {WORDS.connect}
+            </button>
+          );
         return (
           <AppLink
             key={tab.to}
             to={tab.to}
             data-role="tab"
+            data-player={(tab === YOU_TAB && player !== undefined) || undefined}
             aria-current={current ? "page" : undefined}
-            className={cn(
-              "flex min-h-12 flex-auto flex-col items-center justify-center gap-[3px] whitespace-nowrap font-ui text-sm font-semibold",
-              current ? "text-kit-peach" : "text-kit-muted",
-            )}
+            className={look}
           >
             <TabIcon tab={tab} current={current} size={28} />
-            <PlaceWord tab={tab} />
+            {tab.word}
           </AppLink>
         );
       })}
@@ -131,7 +142,7 @@ export const TabBar = () => {
 export const DesktopBar = ({ places, notice }: { places: boolean; notice: ReactNode }) => {
   const active = useActiveTab();
   const player = useSignedInPlayer();
-  const youWord = usePlaceWord(YOU_TAB);
+  const connect = useConnect();
   const placeOf = (tab: Place) => ({
     to: tab.to,
     label: tab.word,
@@ -146,7 +157,7 @@ export const DesktopBar = ({ places, notice }: { places: boolean; notice: ReactN
         places
           ? {
               ...placeOf(YOU_TAB),
-              label: youWord,
+              ...(connect && { label: WORDS.connect, onSelect: connect }),
               ...(player && { label: player.name, portrait: player.url, place: YOU_TAB.word }),
             }
           : null

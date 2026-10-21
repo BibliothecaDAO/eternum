@@ -20,7 +20,7 @@ const pages = [
   ["account", "/lab/app/home/profile?capture=1", "[data-layout]"],
   ["settings", "/lab/app/home/profile/settings?capture=1", "[data-layout]"],
   ["news", "/lab/app/home/scroll?capture=1", "[data-layout]"],
-  ["sign-in", "/lab/app/first-visit/sign-in/code?capture=1", "[data-icon=mail]"],
+  ["connect", "/lab/app/first-visit/connect/code?capture=1", "[data-icon=mail]"],
   ["legal", "/lab/app/home/terms?capture=1", "[data-layout]"],
 ];
 

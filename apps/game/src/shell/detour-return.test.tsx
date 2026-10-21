@@ -23,6 +23,7 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { PaidEntry, SignInToJoin } from "./blitz/entry-panel";
 import { AccountCard } from "./profile/account-card";
 import { SettingsPage } from "./profile/profile-pages";
+import { useConnectStore } from "./sign-in/connect";
 import { environmentLedger } from "./value/ledger";
 
 const LOBBY = "/blitz/slot-blitz-1";
@@ -46,6 +47,7 @@ afterEach(async () => {
   await cleanup?.();
   cleanup = null;
   identity.session = null;
+  useConnectStore.setState({ request: null, nameDismissed: false });
 });
 
 /** Renders `page` at `path` among the routes a detour can reach, and returns a re-render. */
@@ -80,10 +82,11 @@ const mount = async (path: string, page: () => ReactNode) => {
 const press = (word: string) =>
   act(async () => [...document.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
 
-it("asks a signed-out player in a lobby to sign in, and brings them back to that lobby", async () => {
+it("asks a signed-out player in a lobby to sign in over that lobby, which they never leave", async () => {
   await mount(LOBBY, () => <SignInToJoin />);
   await press("Sign in");
-  expect(where).toBe(`/sign-in?next=${encodeURIComponent(LOBBY)}`);
+  expect(useConnectStore.getState().request).toEqual({ next: null });
+  expect(where).toBe(LOBBY);
 });
 
 it("sends a player with no payout wallet to link one, carrying the lobby to return to", async () => {
@@ -114,9 +117,10 @@ it("keeps a player on Settings when their wallet was already linked as they arri
   expect(where).toBe(`/profile/settings?next=${encodeURIComponent(LOBBY)}`);
 });
 
-it("returns a player who signs in from Settings to Settings, with where it was sending them", async () => {
+it("keeps a player who signs in from Settings on Settings, with where it was sending them", async () => {
   const settings = `/profile/settings?next=${encodeURIComponent(LOBBY)}`;
   await mount(settings, () => <SettingsPage />);
   await press("Sign in");
-  expect(where).toBe(`/sign-in?next=${encodeURIComponent(settings)}`);
+  expect(useConnectStore.getState().request).toEqual({ next: null });
+  expect(where).toBe(settings);
 });

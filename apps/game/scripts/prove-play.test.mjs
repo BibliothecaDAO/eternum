@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { destinationOf, judge, playRecordWhere } from "./prove-play.mjs";
+import { CONNECT, destinationOf, judge, playRecordWhere } from "./prove-play.mjs";
 import { problemsOf } from "./prove-run.mjs";
 
 const BASE = "https://127.0.0.1:4176";
@@ -10,14 +10,14 @@ describe("where a press must lead", () => {
     expect(destinationOf("Watch", { item: "game:0xa:3" })).toBe("/g/0xa/3?spectate=true");
     expect(destinationOf("Enter", { item: "game:0xa:3" })).toBe("/g/0xa/3");
     expect(destinationOf("Resume", { item: "0xa:1" })).toBe("/g/0xa/1");
-    expect(destinationOf("Play free", { item: "0xa:1" })).toBe("/sign-in?next=/g/0xa/1");
+    expect(destinationOf("Play free", { item: "0xa:1" })).toBe(CONNECT);
     expect(destinationOf("Lobby", { item: "game:0xa:8" })).toBe("/blitz/game-0xa-8");
     expect(destinationOf("Join", { item: "slot:blitz-1630" })).toBe("/blitz/slot-blitz-1630");
     expect(destinationOf("Results", { item: "0xa:7" })).toBe("/results/0xa-7");
   });
 
-  it("is sign-in returning to the lobby a lobby's Sign in was pressed from", () => {
-    expect(destinationOf("Sign in", { from: "/blitz/slot-blitz-1630" })).toBe("/sign-in?next=/blitz/slot-blitz-1630");
+  it("is Connect over the lobby a lobby's Sign in was pressed from", () => {
+    expect(destinationOf("Sign in", { from: "/blitz/slot-blitz-1630" })).toBe(CONNECT);
   });
 
   it("is unknown for a word the proof does not know", () => {
@@ -35,9 +35,7 @@ describe("a press's verdict", () => {
       expected: "/g/0xa/3?spectate=true",
       led: "/g/0xa/3?spectate=true",
     });
-    expect(
-      judge("Play free", "/sign-in?next=/g/0xa/1", `${BASE}/`, `${BASE}/sign-in?next=%2Fg%2F0xa%2F1`),
-    ).toMatchObject({ status: "led", led: "/sign-in?next=/g/0xa/1" });
+    expect(judge("Play free", CONNECT, `${BASE}/`, `${BASE}/`, true)).toMatchObject({ status: "led", led: CONNECT });
   });
 
   it("fails a press that opens another game with the same verb", () => {
@@ -51,11 +49,16 @@ describe("a press's verdict", () => {
     });
   });
 
-  it("fails a Sign in that returns somewhere other than its lobby", () => {
+  it("fails a Sign in that leaves its lobby, or opens no Connect window", () => {
     const expected = destinationOf("Sign in", { from: "/blitz/slot-blitz-1630" });
-    expect(judge("Sign in", expected, `${BASE}/blitz/slot-blitz-1630`, `${BASE}/sign-in?next=/`)).toMatchObject({
+    const lobby = `${BASE}/blitz/slot-blitz-1630`;
+    expect(judge("Sign in", expected, lobby, `${BASE}/`, true)).toMatchObject({
       status: "failed",
-      reason: "unexpected destination",
+      reason: "left the page instead of opening Connect",
+    });
+    expect(judge("Sign in", expected, lobby, lobby, false)).toMatchObject({
+      status: "failed",
+      reason: "Connect did not open",
     });
   });
 
