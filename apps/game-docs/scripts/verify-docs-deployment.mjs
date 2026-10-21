@@ -1,9 +1,10 @@
 /**
  * Proves a docs deployment serves this build: `node verify-docs-deployment.mjs <dist> <origin> <result.json>`.
  *
- * Every bundled asset (hashed per build, so only this build's names exist) must come back byte for byte, and every
- * page the build wrote must answer 200 as HTML at the address Pages serves it from (`a/b/index.html` at `/a/b/`).
- * A fresh upload can take a few seconds to reach every edge, so the check is retried before it fails.
+ * Every file the build wrote under `assets/` and every page must come back byte for byte as this build wrote it, each
+ * page at the address Pages serves it from (`a/b/index.html` at `/a/b/`). A status alone proves nothing: a fallback or
+ * an older build answers 200 too. A fresh upload can take a few seconds to reach every edge, so the check is retried
+ * before it fails.
  */
 import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
@@ -29,36 +30,25 @@ async function filesUnder(directory) {
     .map((entry) => relative(directory, join(entry.parentPath, entry.name)));
 }
 
-async function checkAsset(dist, origin, file) {
-  const path = `/assets/${file}`;
+/** One built file, fetched from the address the site serves it at: it passes only as these exact bytes. */
+async function checkServed(dist, origin, file, path) {
   try {
     const response = await fetch(new URL(path, origin), { signal: AbortSignal.timeout(30_000) });
     const served = Buffer.from(await response.arrayBuffer());
-    const built = await readFile(join(dist, "assets", file));
+    const built = await readFile(join(dist, file));
     return { path, status: response.status, ok: response.status === 200 && digest(served) === digest(built) };
   } catch (error) {
     return { path, ok: false, error: error.message };
   }
 }
 
-async function checkPage(origin, path) {
-  try {
-    const response = await fetch(new URL(path, origin), { signal: AbortSignal.timeout(30_000) });
-    const type = response.headers.get("content-type") ?? "";
-    await response.arrayBuffer();
-    return { path, status: response.status, ok: response.status === 200 && type.includes("text/html") };
-  } catch (error) {
-    return { path, ok: false, error: error.message };
-  }
-}
-
 export async function verifyDocsDeployment(dist, origin) {
-  const assets = await filesUnder(join(dist, "assets"));
+  const assets = (await filesUnder(join(dist, "assets"))).map((file) => join("assets", file));
   if (!assets.length) throw new Error("Docs build has no assets");
-  const pages = (await filesUnder(dist)).filter((file) => file.endsWith(".html")).map(pagePath);
+  const pages = (await filesUnder(dist)).filter((file) => file.endsWith(".html"));
   const checks = [];
-  for (const file of assets) checks.push(await checkAsset(dist, origin, file));
-  for (const path of pages) checks.push(await checkPage(origin, path));
+  for (const file of assets) checks.push(await checkServed(dist, origin, file, `/${file.split(sep).join("/")}`));
+  for (const file of pages) checks.push(await checkServed(dist, origin, file, pagePath(file)));
   return { origin, ok: checks.every((check) => check.ok), assets: assets.length, pages: pages.length, checks };
 }
 

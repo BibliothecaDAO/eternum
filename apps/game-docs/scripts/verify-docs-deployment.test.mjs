@@ -36,13 +36,23 @@ test("a page's address is its folder for an index page", () => {
   assert.equal(pagePath(join("overview", "links.html")), "/overview/links");
 });
 
-test("a site serving this build's assets and every page passes", async () => {
-  const origin = await serve({
-    "/assets/index-abc123.js": script("console.log('this build')"),
-    "/": page("<html>home</html>"),
-    "/blitz/key-concepts/": page("<html>key concepts</html>"),
-  });
-  const result = await verifyDocsDeployment(dist, origin);
+/** This build as the site should serve it: each built file at its address, with these exact bytes. */
+const THIS_BUILD = {
+  "/assets/index-abc123.js": script("console.log('this build')"),
+  "/": page("<html>home</html>"),
+  "/blitz/key-concepts/": page("<html>key concepts</html>"),
+};
+
+/** The checks a site answering `routes` fails, as [path, status]. */
+async function failedAgainst(routes) {
+  const result = await verifyDocsDeployment(dist, await serve(routes));
+  const failed = result.checks.filter((check) => !check.ok).map((check) => [check.path, check.status]);
+  assert.equal(result.ok, failed.length === 0);
+  return failed;
+}
+
+test("a site serving this build's assets and every page as built passes", async () => {
+  const result = await verifyDocsDeployment(dist, await serve(THIS_BUILD));
   assert.deepEqual(
     { ok: result.ok, assets: result.assets, pages: result.pages, failed: result.checks.filter((c) => !c.ok) },
     { ok: true, assets: 1, pages: 2, failed: [] },
@@ -50,28 +60,26 @@ test("a site serving this build's assets and every page passes", async () => {
 });
 
 test("a site still serving another build's asset bytes fails on that asset", async () => {
-  const origin = await serve({
-    "/assets/index-abc123.js": script("console.log('an older build')"),
-    "/": page("<html>home</html>"),
-    "/blitz/key-concepts/": page("<html>key concepts</html>"),
-  });
-  const result = await verifyDocsDeployment(dist, origin);
-  assert.equal(result.ok, false);
-  assert.deepEqual(
-    result.checks.filter((check) => !check.ok).map((check) => check.path),
-    ["/assets/index-abc123.js"],
-  );
+  const routes = { ...THIS_BUILD, "/assets/index-abc123.js": script("console.log('an older build')") };
+  assert.deepEqual(await failedAgainst(routes), [["/assets/index-abc123.js", 200]]);
+});
+
+test("a fallback page answering 200 at an asset's address fails on that asset", async () => {
+  const routes = { ...THIS_BUILD, "/assets/index-abc123.js": page("<html>home</html>") };
+  assert.deepEqual(await failedAgainst(routes), [["/assets/index-abc123.js", 200]]);
+});
+
+test("a not-found page answering 200 at a page's address fails on that page, though every asset is this build's", async () => {
+  const routes = { ...THIS_BUILD, "/blitz/key-concepts/": page("<html>Page Not Found</html>") };
+  assert.deepEqual(await failedAgainst(routes), [["/blitz/key-concepts/", 200]]);
+});
+
+test("an older build's page answering 200 fails on that page, though every asset is this build's", async () => {
+  const routes = { ...THIS_BUILD, "/": page("<html>home, as the last build wrote it</html>") };
+  assert.deepEqual(await failedAgainst(routes), [["/", 200]]);
 });
 
 test("a page the build wrote but the site does not serve fails on that page", async () => {
-  const origin = await serve({
-    "/assets/index-abc123.js": script("console.log('this build')"),
-    "/": page("<html>home</html>"),
-  });
-  const result = await verifyDocsDeployment(dist, origin);
-  assert.equal(result.ok, false);
-  assert.deepEqual(
-    result.checks.filter((check) => !check.ok).map((check) => [check.path, check.status]),
-    [["/blitz/key-concepts/", 404]],
-  );
+  const { "/blitz/key-concepts/": _missing, ...routes } = THIS_BUILD;
+  assert.deepEqual(await failedAgainst(routes), [["/blitz/key-concepts/", 404]]);
 });
