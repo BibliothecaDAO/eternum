@@ -120,6 +120,12 @@ class WorkflowCommands(unittest.TestCase):
         self.assertIn("scripts/words/check.mjs", ran)
         self.assertIn("scripts/words/check.test.mjs", ran)
 
+    def test_a_pnpm_fetched_by_npx_runs_the_files_its_package_names(self):
+        scripts = {".": {"words:check": "node --test scripts/words/*.test.mjs && node scripts/words/check.mjs --check"}}
+        ran = ran_files(".", "npx --yes pnpm@10.25.0 run words:check", lambda directory: scripts.get(directory, {}))
+        self.assertIn("scripts/words/check.mjs", ran)
+        self.assertIn("scripts/words/check.test.mjs", ran)
+
     def test_a_step_runs_from_its_working_directory_and_cd(self):
         workflow = """jobs:
   client:
