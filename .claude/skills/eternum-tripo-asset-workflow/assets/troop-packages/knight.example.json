@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "family": "knight",
+  "count": 1,
+  "requestedActions": ["idle", "walk", "run", "attack"],
+  "skin": {
+    "id": "synthetic-knight-skin-example",
+    "family": "knight",
+    "rigContract": "synthetic-humanoid-v1",
+    "armorMode": "integrated",
+    "capabilities": ["gripRight", "forearmShieldLeft"]
+  },
+  "controller": {
+    "id": "synthetic-knight-controller-example",
+    "family": "knight",
+    "rigContract": "synthetic-humanoid-v1",
+    "supportedActions": ["idle", "walk", "run", "attack"],
+    "supportedMotionClasses": ["melee", "guard"]
+  },
+  "items": {
+    "primary": {
+      "id": "synthetic-knight-sword-example",
+      "family": "knight",
+      "role": "weapon",
+      "requiredCapabilities": ["gripRight"],
+      "motionClass": "melee"
+    },
+    "secondary": {
+      "id": "synthetic-knight-shield-example",
+      "family": "knight",
+      "role": "shield",
+      "requiredCapabilities": ["forearmShieldLeft"],
+      "motionClass": "guard"
+    }
+  }
+}

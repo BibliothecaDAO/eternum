@@ -1,0 +1,245 @@
+{
+ "note": "Pose-library joint limits in degrees (see SCHEMA.md for sign conventions). 'rom' is the approximate healthy adult active range (AAOS/Kapandji-style reference values, rounded). 'use' is the range poses may use on the family skeleton; it is narrower where linear blend skinning or armour makes the extreme pointless. The deformation harness tests every joint to the 'use' range.",
+ "pelvis": {
+  "yaw": {
+   "use": [
+    -180,
+    180
+   ]
+  },
+  "pitch": {
+   "use": [
+    -30,
+    60
+   ]
+  },
+  "roll": {
+   "use": [
+    -20,
+    20
+   ]
+  },
+  "height": {
+   "use": [
+    0.25,
+    1.05
+   ]
+  }
+ },
+ "spine": {
+  "flex": {
+   "rom": [
+    -30,
+    80
+   ],
+   "use": [
+    -25,
+    60
+   ]
+  },
+  "twist": {
+   "rom": [
+    -45,
+    45
+   ],
+   "use": [
+    -45,
+    45
+   ]
+  },
+  "side": {
+   "rom": [
+    -35,
+    35
+   ],
+   "use": [
+    -30,
+    30
+   ]
+  }
+ },
+ "head": {
+  "yaw": {
+   "rom": [
+    -80,
+    80
+   ],
+   "use": [
+    -75,
+    75
+   ]
+  },
+  "pitch": {
+   "rom": [
+    -60,
+    50
+   ],
+   "use": [
+    -45,
+    45
+   ]
+  },
+  "roll": {
+   "rom": [
+    -45,
+    45
+   ],
+   "use": [
+    -30,
+    30
+   ]
+  }
+ },
+ "arm": {
+  "plane": {
+   "use": [
+    -40,
+    130
+   ],
+   "use_at_low_elev": {
+    "elev_at_most": 50,
+    "range": [
+     -90,
+     130
+    ]
+   },
+   "note": "Plane of elevation below -40 (the arm going straight back: shoulder extension, about 50 degrees in a healthy adult) is allowed only while elevation is at most 50. Without it an arm cannot swing back in a walk or a run, or hold a hilt beside the hip with the elbow behind the body. Added 2026-10-07."
+  },
+  "elev": {
+   "rom": [
+    0,
+    180
+   ],
+   "use": [
+    0,
+    170
+   ]
+  },
+  "rot": {
+   "rom": [
+    -90,
+    90
+   ],
+   "use": [
+    -80,
+    80
+   ]
+  },
+  "elbow": {
+   "rom": [
+    0,
+    150
+   ],
+   "use": [
+    0,
+    140
+   ]
+  },
+  "pron": {
+   "rom": [
+    -85,
+    80
+   ],
+   "use": [
+    -80,
+    80
+   ]
+  },
+  "wrist_flex": {
+   "rom": [
+    -70,
+    80
+   ],
+   "use": [
+    -30,
+    30
+   ]
+  },
+  "wrist_dev": {
+   "rom": [
+    -30,
+    20
+   ],
+   "use": [
+    -25,
+    20
+   ]
+  }
+ },
+ "clavicle": {
+  "elev": {
+   "use": [
+    -10,
+    45
+   ]
+  },
+  "protract": {
+   "use": [
+    -20,
+    30
+   ]
+  }
+ },
+ "leg": {
+  "hip_flex": {
+   "rom": [
+    -20,
+    120
+   ],
+   "use": [
+    -20,
+    110
+   ]
+  },
+  "hip_abd": {
+   "rom": [
+    -25,
+    45
+   ],
+   "use": [
+    -20,
+    45
+   ]
+  },
+  "hip_rot": {
+   "rom": [
+    -45,
+    40
+   ],
+   "use": [
+    -40,
+    35
+   ]
+  },
+  "knee": {
+   "rom": [
+    0,
+    140
+   ],
+   "use": [
+    0,
+    135
+   ]
+  },
+  "ankle": {
+   "rom": [
+    -45,
+    20
+   ],
+   "use": [
+    -40,
+    20
+   ]
+  },
+  "toe": {
+   "rom": [
+    0,
+    70
+   ],
+   "use": [
+    0,
+    60
+   ]
+  }
+ }
+}
