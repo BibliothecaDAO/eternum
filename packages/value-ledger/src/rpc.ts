@@ -55,8 +55,16 @@ const isContractMissing = (error: unknown): boolean =>
   error !== null &&
   ((error as { code?: number }).code === 20 || isContractMissing((error as { cause?: unknown }).cause));
 
+/**
+ * The one node read a deployment-block check makes. The relay (Starknet 9) and setup (Starknet 8) both pass their own
+ * provider, so the check names only this method, not either client's class.
+ */
+export interface ClassHashReader {
+  getClassHashAt(address: string, block: number): Promise<string>;
+}
+
 /** Whether a contract first exists at this block: present there and absent one block before. */
-export async function isDeploymentBlock(provider: RpcProvider, address: string, block: number): Promise<boolean> {
+export async function isDeploymentBlock(provider: ClassHashReader, address: string, block: number): Promise<boolean> {
   const presentAt = async (number: number) => {
     try {
       await provider.getClassHashAt(address, number);
