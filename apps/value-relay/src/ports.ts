@@ -193,6 +193,7 @@ export const relayOperation = <A>(operation: string, run: () => Promise<A>): Rel
 export const relayServiceErrors = [
   "ledger_head_behind_anchor",
   "ledger_deployment_block_wrong",
+  "ledger_state_belongs_to_another_ledger",
   "shard_abi_unavailable",
   "frontier_funding_missing",
   "frontier_funding_differs_from_game",

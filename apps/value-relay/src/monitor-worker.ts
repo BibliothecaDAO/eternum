@@ -1,6 +1,7 @@
 import { decodeMonitorSettings, type MonitorSettings } from "./monitor-env";
 import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
 import { ledgerAddress, ledgerContractOf } from "./environment";
+import { bindLedgerState, ledgerOrNull, ledgerStateName } from "./ledger-state";
 import { activeShards, isDevShardChain, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, challengeSeason } from "./season-ledger";
@@ -37,6 +38,21 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
     return Effect.runPromise(
       this.checking.withPermit(
         Effect.gen(function* () {
+          const bound = yield* Effect.result(
+            relayOperation("bind monitor state", () =>
+              bindLedgerState(
+                monitor.ctx.storage,
+                ledgerOrNull(() => ledgerAddress(monitor.env.ENVIRONMENT)),
+              ),
+            ),
+          );
+          if (Result.isFailure(bound)) {
+            const reason = bound.failure.operation;
+            const checked_at = Math.floor(Date.now() / 1000);
+            const observation = { checked_at, value: null, season_error: reason, value_error: reason, held: null };
+            yield* relayOperation("publish value monitor", () => monitor.ctx.storage.put("observation", observation));
+            return observation;
+          }
           const seasonAudit = yield* Effect.result(
             onIdentityChain(
               monitor.env.L2_RPC_URL,
@@ -172,6 +188,10 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
     return Effect.runPromise(
       this.checking.withPermit(
         relayOperation("reset monitor halt", async () => {
+          await bindLedgerState(
+            this.ctx.storage,
+            ledgerOrNull(() => ledgerAddress(this.env.ENVIRONMENT)),
+          );
           const snapshot = await this.status();
           const fault = snapshot.fault ?? (await legacyFault(this.env, snapshot, row));
           return this.ctx.storage.transaction(async (tx) => {
@@ -315,7 +335,15 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
   };
 };
 
-const monitorOf = (env: MonitorEnv) => env.MONITOR.get(env.MONITOR.idFromName("monitor"));
+const monitorOf = (env: MonitorEnv) =>
+  env.MONITOR.get(
+    env.MONITOR.idFromName(
+      ledgerStateName(
+        "monitor",
+        ledgerOrNull(() => ledgerAddress(env.ENVIRONMENT)),
+      ),
+    ),
+  );
 export default {
   async fetch(request: Request, raw: MonitorEnv): Promise<Response> {
     const env = { ...raw, ...decodeMonitorSettings(raw) };
