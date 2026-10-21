@@ -13,6 +13,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import { env } from "../../../../../env";
 import { HudButton, HudTabs } from "@/ui/design-system/kit/hud-elements";
+import { toast } from "@/ui/features/event-feed/notify";
 
 interface GuildMembersProps {
   players: PlayerInfo[];
@@ -99,7 +100,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
       try {
         await join_guild({ guild_entity_id: guildEntityId, signer: account });
       } catch (error) {
-        console.error(error);
+        toast.failed(error, "Could not join the tribe.");
       } finally {
         setIsLoading(false);
       }

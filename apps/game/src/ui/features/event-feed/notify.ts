@@ -1,3 +1,4 @@
+import { ActionRefusedError, wasReported } from "@bibliothecadao/types";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 
 import { type FeedNoticeKind, useEventFeedStore } from "./event-feed-store";
@@ -19,6 +20,24 @@ const push = (kind: FeedNoticeKind, title: string, options?: NoticeOptions): str
     location: options?.location,
   });
 
+/** An action that did not happen, as the player is told: `refused` (the game takes no action yet: news) or failed. */
+export interface ActionFailure {
+  refused: boolean;
+  reason: string;
+}
+
+/**
+ * What an action's failure says, the one reading every failure handler makes: an action the game does not take yet
+ * (ActionRefusedError: "Starts in 2m 33s") is `refused`, its reason kept and never logged; any other failure gives the
+ * reason its error names (the shard's refusal, the game's revert), `fallback` when it names none. A failure is logged
+ * once: the system call logs its own (with its report), and this logs only one that never reached it.
+ */
+export const actionFailure = (error: unknown, fallback: string): ActionFailure => {
+  if (error instanceof ActionRefusedError) return { refused: true, reason: error.message };
+  if (!wasReported(error)) console.error(fallback, error);
+  return { refused: false, reason: extractReadableErrorMessage(error, fallback) };
+};
+
 /**
  * The one way to say something happened: a notice in the event feed (ticker + panel), in words. The call shape follows
  * the toast library it replaced so every call site reads the same; nothing renders outside the feed.
@@ -31,12 +50,11 @@ export const toast = Object.assign((title: string, options?: NoticeOptions) => p
    */
   success: (title: string, options?: NoticeOptions) => push("success", title, options),
   error: (title: string, options?: NoticeOptions) => push("error", title, options),
-  /**
-   * An action that failed, the one way every failure handler says so: the reason its error names (the shard's refusal,
-   * the game's revert, the client's own gate), and `fallback` only when it names none.
-   */
-  failed: (error: unknown, fallback: string, options?: NoticeOptions) =>
-    toast.error(extractReadableErrorMessage(error, fallback), options),
+  /** An action that failed, as actionFailure reads it: a refusal told as news, a failure as an error. */
+  failed: (error: unknown, fallback: string, options?: NoticeOptions) => {
+    const { refused, reason } = actionFailure(error, fallback);
+    return refused ? toast.info(reason, options) : toast.error(reason, options);
+  },
   warning: (title: string, options?: NoticeOptions) => push("warning", title, options),
   dismiss: (id?: string) => useEventFeedStore.getState().dismiss(id),
 });

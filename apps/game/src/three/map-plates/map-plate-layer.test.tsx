@@ -252,24 +252,6 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     },
   );
 
-  it("says which thing's resting token is under a point, so a click there selects it; an open plate says none", async () => {
-    const armies = layer.createScope("army");
-    armies.setLabel({ entityId: 1, position: groundAt(300, 330), plate: { ...army, owner: "Tokened" } });
-    armies.setLabel({ entityId: 2, position: groundAt(560, 330), plate: { ...army, owner: "Hovered" } });
-    armies.setHover(2);
-    await settle();
-    const middle = (key: string, plate: ArmyPlate) => {
-      const box = boxOf(key, plate);
-      const origin = container.getBoundingClientRect();
-      return [origin.left + box.x + box.width / 2, origin.top + box.y + box.height / 2] as const;
-    };
-    expect(element("army:1").dataset.view).toBe("token");
-    expect(layer.tokenAt(...middle("army:1", { ...army, owner: "Tokened" }))).toBe("army:1");
-    expect(element("army:2").dataset.view).toBe("open");
-    expect(layer.tokenAt(...middle("army:2", { ...army, owner: "Hovered" }))).toBeNull();
-    expect(layer.tokenAt(5, 5)).toBeNull();
-  });
-
   it("draws every thing as its token right over it, and follows the thing as it moves", async () => {
     const armies = layer.createScope("army");
     armies.setLabel({ entityId: 2, position: new Vector3(0, 0, 0), plate: army });

@@ -1,6 +1,5 @@
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   DEFAULT_COORD_ALT,
@@ -14,10 +13,10 @@ import {
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { STEALABLE_RESOURCES, type ID, type RelicEffect, type StructureType } from "@bibliothecadao/types";
+import { STEALABLE_RESOURCES, type ID, type RelicEffect } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
-import { getStructureDefenseSlotLimit, MAX_GUARD_SLOT_COUNT } from "../../utils/defense-slot-utils";
+import { structureGuardSlots } from "../../utils/defense-slot-utils";
 import { AttackTarget, TargetType } from "../types";
 
 const orderResourcesByPriority = (resourceBalances: Array<{ resourceId: number; amount: number }>) => {
@@ -35,30 +34,6 @@ interface UseAttackTargetResult {
   targetResources: Array<{ resourceId: number; amount: number }>;
   isLoading: boolean;
 }
-
-type StructureValue = NativeRows["Structure"];
-
-const resolveStructureGuardSlotLimit = (structure: StructureValue) => {
-  const limits: number[] = [];
-  const derivedLimit = getStructureDefenseSlotLimit(
-    structure.base.category as StructureType | undefined,
-    structure.base?.level,
-  );
-  if (typeof derivedLimit === "number" && Number.isFinite(derivedLimit)) {
-    limits.push(derivedLimit);
-  }
-
-  const baseLimit = Number(structure.base?.troop_max_guard_count);
-  if (Number.isFinite(baseLimit)) {
-    limits.push(baseLimit);
-  }
-
-  if (limits.length === 0) {
-    return null;
-  }
-
-  return Math.max(0, Math.min(Math.min(...limits), MAX_GUARD_SLOT_COUNT));
-};
 
 export const useAttackTargetData = (
   attackerEntityId: ID,
@@ -145,7 +120,7 @@ export const useAttackTargetData = (
         targetType: TargetType.Structure,
         structureCategory: targetStructure.base.category,
         structureLevel: targetStructure.base.level,
-        guardSlotLimit: resolveStructureGuardSlotLimit(targetStructure),
+        guardSlots: structureGuardSlots(targetStructure),
         hex: { x: targetTile.col, y: targetTile.row },
         addressOwner: targetStructure.owner,
       };

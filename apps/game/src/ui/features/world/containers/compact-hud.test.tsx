@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 // A player in a game whose play is open, on a phone held upright, with no tile chosen. What the panels hold is not this
 // test's business, only the tab bar and the Details tab's empty state.
-const viewer = vi.hoisted(() => ({ ordersAllowed: true }));
+const viewer = vi.hoisted(() => ({ ordersAllowed: true, outOfGame: false }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => viewer.ordersAllowed }));
 vi.mock("@/ui/features/world/components/bottom-right-panel", () => ({
   MinimapPanel: () => <svg data-minimap />,
@@ -24,6 +24,10 @@ vi.mock("./left-facets/empire-cockpit", () => ({ EmpireCockpit: () => null }));
 vi.mock("./left-facets/structure-list-column", () => ({ StructureListColumn: () => null }));
 vi.mock("./left-facets/use-structure-actions", () => ({ useStructureActions: () => null }));
 vi.mock("./spectator-standings", () => ({ SpectatorStandingsBody: () => null }));
+// The line for a player whose last realm fell (its reading is out-of-game.test.tsx's); here, only where it shows.
+vi.mock("@/ui/features/world/hud/out-of-game", () => ({
+  OutOfGameLine: () => (viewer.outOfGame ? <p>You hold no realm. Watch until the end.</p> : null),
+}));
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { CompactHud } from "./compact-hud";
@@ -39,6 +43,7 @@ beforeEach(() => {
   // The game has loaded: the blank overlay that covers the boot is gone.
   useUIStore.setState({ showBlankOverlay: false });
   viewer.ordersAllowed = true;
+  viewer.outOfGame = false;
   view("map");
   act(() => root.render(<CompactHud lane="portrait" />));
 });
@@ -87,6 +92,18 @@ it("names a spectator's Standings sheet once, in its head", () => {
   const sheet = host.querySelector('section[aria-label="HUD sheet"]')!;
   expect(sheet.textContent?.match(/Standings/g)).toEqual(["Standings"]);
   expect(sheet.querySelector('section[aria-label="Standings"]')).not.toBeNull();
+});
+
+it("tells a player out of the game so in the Empire sheet, and again in Standings once the HUD watches", () => {
+  viewer.outOfGame = true;
+  act(() => useUIStore.setState({}));
+  act(() => tab("Empire").click());
+  const sheet = () => host.querySelector('section[aria-label="HUD sheet"]')!;
+  expect(sheet().textContent).toContain("You hold no realm. Watch until the end.");
+  viewer.ordersAllowed = false;
+  act(() => useUIStore.setState({}));
+  expect(sheet().querySelector('section[aria-label="Standings"]')).not.toBeNull();
+  expect(sheet().textContent).toContain("You hold no realm. Watch until the end.");
 });
 
 it("offers the minimap on the world map only: the realm view has no Map tab, and an open Map sheet closes there", () => {

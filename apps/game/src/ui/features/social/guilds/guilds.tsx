@@ -17,6 +17,7 @@ import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 
 import { useMemo, useState } from "react";
 import { HudButton, HudField } from "@/ui/design-system/kit/hud-elements";
+import { toast } from "@/ui/features/event-feed/notify";
 
 export const Guilds = ({
   viewGuildMembers,
@@ -288,7 +289,7 @@ export const Guilds = ({
       setGuildName(""); // Reset form state
       setIsPublic(true); // Reset form state
     } catch (error) {
-      console.error("Failed to create guild:", error);
+      toast.failed(error, "The tribe could not be created.");
       // On error, form remains open, isLoading will become false.
     } finally {
       setIsLoading(false);

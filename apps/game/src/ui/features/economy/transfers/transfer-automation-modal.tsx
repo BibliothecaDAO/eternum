@@ -87,7 +87,6 @@ export const TransferAutomationAdvancedModal = () => {
 
         update(entry.id, { lastRunAt: Date.now() });
       } catch (e) {
-        console.error(e);
         toast.failed(e, "Execution failed.");
       }
     },

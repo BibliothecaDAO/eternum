@@ -145,13 +145,9 @@ const SelectedWorldmapEntityContent = ({
       occupant: (
         <StructureBannerEntityDetail
           structureEntityId={occupierEntityId}
-          maxInventory={14}
-          showButtons={false}
           className={scrollableEntityDetailClass}
           coordsLabel={title("Structure Tile")}
           headerAction={headerAction}
-          compact
-          layoutVariant="banner"
         />
       ),
       biome: <StructureBiomeCard structureEntityId={occupierEntityId} biomeCard={biomeCard} />,
@@ -226,13 +222,14 @@ const TileChrome = ({
 );
 
 const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition }) => {
-  const { canCreate, createHyperstructure, isCreating } = useBlitzHyperstructureCreation({ contractHex: selectedHex });
+  const { canCreate, refusal, createHyperstructure, isCreating } = useBlitzHyperstructureCreation({
+    contractHex: selectedHex,
+  });
 
   const handleCreateHyperstructure = useCallback(async () => {
     try {
       await createHyperstructure();
     } catch (error) {
-      console.error("[ReservedHyperstructurePanel] Failed to create reserved hyperstructure", error);
       toast.failed(error, "Failed to create the hyperstructure.", {
         location: { x: selectedHex.col, y: selectedHex.row },
       });
@@ -256,6 +253,7 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
           Create here
         </HudButton>
       </div>
+      {refusal !== null && <p className="text-hud-label text-hud-muted">{refusal}</p>}
     </div>
   );
 };

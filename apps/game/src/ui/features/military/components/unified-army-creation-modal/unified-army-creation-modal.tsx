@@ -13,7 +13,6 @@ import { useArmyCreation } from "./use-army-creation";
 
 interface UnifiedArmyCreationProps {
   structureId?: number;
-  maxDefenseSlots?: number;
   isExplorer?: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
@@ -32,7 +31,6 @@ type UnifiedArmyCreationBodyProps = UnifiedArmyCreationProps & {
 
 export const UnifiedArmyCreationBody = ({
   structureId,
-  maxDefenseSlots = 4,
   isExplorer = true,
   direction,
   initialGuardSlot,
@@ -108,7 +106,6 @@ export const UnifiedArmyCreationBody = ({
 
   const form = useArmyCreation({
     structureId: activeStructureId,
-    maxDefenseSlots,
     isExplorer,
     direction,
     initialGuardSlot,
@@ -128,13 +125,12 @@ export const UnifiedArmyCreationBody = ({
           currentExplorersCount={form.currentExplorersCount}
           maxExplorers={form.maxExplorers}
           currentGuardsCount={form.currentGuardsCount}
-          maxGuards={form.resolvedMaxDefenseSlots}
+          maxGuards={form.guardSlotCount}
           onSelect={form.handleArmyTypeSelect}
         />
         {!form.armyType && (
           <DefenseSlotSelection
             guardSlot={form.guardSlot}
-            maxDefenseSlots={form.resolvedMaxDefenseSlots}
             guardsBySlot={form.guardsBySlot}
             availableSlots={form.availableGuardSlots}
             selectedTroopCombo={form.selectedTroopCombo}

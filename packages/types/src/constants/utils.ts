@@ -11,3 +11,7 @@ const POINTS_PRECISION = 1_000_000;
 
 /** Whole victory points from an on-chain amount. */
 export const wholePoints = (amount: bigint | number): number => Number(amount) / POINTS_PRECISION;
+
+/** Whether two whole-points values are the same on-chain amount, however each was summed from six-decimal parts. */
+export const samePoints = (left: number, right: number): boolean =>
+  Math.round(left * POINTS_PRECISION) === Math.round(right * POINTS_PRECISION);

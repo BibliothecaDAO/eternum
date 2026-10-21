@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { ActionRefusedError, createSystemCalls } from "./create-system-calls";
+import { ActionRefusedError, createSystemCalls, wasReported } from "./create-system-calls";
 
 const signer = { address: "0x1" };
 
@@ -30,5 +30,16 @@ describe("a system call", () => {
       transaction_hash: "0xa",
     });
     expect(provider.burn_resource_for_resource_production).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a failure to its handler once, and marks it reported so its caller logs nothing more", async () => {
+    const failure = new Error("Insufficient wheat");
+    const provider = { burn_resource_for_resource_production: vi.fn().mockRejectedValue(failure) };
+    const onError = vi.fn();
+    const calls = createSystemCalls({ provider, authHandler: { onError } });
+    expect(wasReported(failure)).toBe(false);
+    await expect(calls.burn_resource_for_resource_production({ signer } as never)).rejects.toBe(failure);
+    expect(onError.mock.calls).toEqual([[failure]]);
+    expect(wasReported(failure)).toBe(true);
   });
 });

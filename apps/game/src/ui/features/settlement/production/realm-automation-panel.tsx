@@ -549,8 +549,8 @@ export const RealmAutomationPanel = ({
         </div>
         {hasLocalChanges && <HudNotice tone="warn" line="Unsaved changes pending. Save to apply automation updates." />}
 
-        <section className="flex flex-col gap-2">
-          <h5 className="text-hud-label text-hud-muted">Resource usage</h5>
+        {/* The usage and each resource's allocation are HUD panels: cards, as the Transfer window draws its columns. */}
+        <HudPanel label="Resource usage" title="Resource usage" collapsible={false}>
           {usageDisplayList.length === 0 ? (
             <p className="text-hud-label text-hud-muted">No resources allocated yet.</p>
           ) : (
@@ -574,11 +574,11 @@ export const RealmAutomationPanel = ({
               })}
             </ul>
           )}
-        </section>
+        </HudPanel>
 
         {/* The sliders are always in reach: moving one turns the preset into Custom. */}
         {
-          <section aria-label="Automation allocations" className="grid grid-cols-4 gap-3">
+          <section aria-label="Automation allocations" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {automationRows.map(({ resourceId, percentages, complexInputs, simpleInputs }) => {
               const label = resolveResourceLabel(resourceId);
               const complexImpacted = gatherImpactedResources(complexInputs.map((input) => input.resource));
@@ -650,7 +650,7 @@ export const RealmAutomationPanel = ({
               return (
                 <HudPanel
                   key={`automation-row-${resourceId}`}
-                  kind="section"
+                  label={`${label} automation`}
                   collapsible={false}
                   title={
                     <span className="flex items-center gap-2">

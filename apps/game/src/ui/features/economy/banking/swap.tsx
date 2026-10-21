@@ -35,6 +35,7 @@ import {
   formatFigure,
 } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "@/ui/features/event-feed/notify";
 
 export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const mode = useGameModeConfig();
@@ -122,7 +123,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     };
 
     await performSwap()
-      .catch((error) => console.error("Failed to swap", error))
+      .catch((error) => toast.failed(error, "The swap failed."))
       .finally(() => {
         playTradeExecuteSound();
         setIsLoading(false);

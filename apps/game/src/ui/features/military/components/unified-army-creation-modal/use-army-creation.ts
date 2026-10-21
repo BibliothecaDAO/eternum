@@ -25,7 +25,6 @@ import {
   getBuildingFromResource,
   ID,
   ResourcesIds,
-  StructureType,
   TickIds,
   TroopTier,
   TroopType,
@@ -34,11 +33,7 @@ import {
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  getStructureDefenseSlotLimit,
-  getUnlockedGuardSlots,
-  MAX_GUARD_SLOT_COUNT,
-} from "../../utils/defense-slot-utils";
+import { structureGuardSlots } from "../../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";
 import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption, TroopStack } from "./types";
 import { requireActiveGameClient } from "@/sync/active-game-client";
@@ -62,11 +57,11 @@ import {
   readFieldArmyRoom,
 } from "./field-army-room";
 import { useDeployRing } from "./use-deploy-ring";
+import { toast } from "@/ui/features/event-feed/notify";
 
 interface ArmyCreationOptions {
   /** The structure raising the army; undefined while the player has none to raise from. */
   structureId: ID | undefined;
-  maxDefenseSlots?: number;
   isExplorer?: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
@@ -81,7 +76,6 @@ const TROOP_TIERS: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
 
 export const useArmyCreation = ({
   structureId: activeStructureId,
-  maxDefenseSlots = 4,
   isExplorer = true,
   direction,
   initialGuardSlot,
@@ -163,38 +157,9 @@ export const useArmyCreation = ({
       structureComponent ? readFieldArmyRoom(store, structureComponent, selectedTroopCombo, currentDefaultTick) : null,
     [store, structureComponent, selectedTroopCombo, revision, currentDefaultTick],
   );
-  const structureBase = structureComponent?.base;
-  const structureCategory = structureBase?.category as StructureType | undefined;
-  const structureLevel = structureBase?.level ?? null;
   const troopCapacityLimit = fieldRoom?.cap ?? null;
-  const guardCapacityFromStructureRaw = structureBase?.troop_max_guard_count ?? null;
-  const guardCapacityFromStructure =
-    guardCapacityFromStructureRaw !== null && guardCapacityFromStructureRaw !== undefined
-      ? Number(guardCapacityFromStructureRaw)
-      : null;
-
-  const structureDefenseSlotLimit = useMemo(
-    () => getStructureDefenseSlotLimit(structureCategory, structureLevel),
-    [structureCategory, structureLevel],
-  );
-
-  const fallbackDefenseSlotLimit = maxDefenseSlots ?? MAX_GUARD_SLOT_COUNT;
-
-  const resolvedMaxDefenseSlots = useMemo(() => {
-    const candidates: number[] = [Math.max(0, fallbackDefenseSlotLimit)];
-
-    if (typeof guardCapacityFromStructure === "number" && Number.isFinite(guardCapacityFromStructure)) {
-      candidates.push(Math.max(0, guardCapacityFromStructure));
-    }
-
-    if (structureDefenseSlotLimit !== null && structureDefenseSlotLimit !== undefined) {
-      candidates.push(Math.max(0, structureDefenseSlotLimit));
-    }
-
-    return Math.min(...candidates);
-  }, [fallbackDefenseSlotLimit, guardCapacityFromStructure, structureDefenseSlotLimit]);
-
-  const availableGuardSlots = useMemo(() => getUnlockedGuardSlots(resolvedMaxDefenseSlots), [resolvedMaxDefenseSlots]);
+  const availableGuardSlots = useMemo(() => structureGuardSlots(structureComponent), [structureComponent]);
+  const guardSlotCount = availableGuardSlots.length;
   const availableGuardSlotSet = useMemo(() => new Set(availableGuardSlots), [availableGuardSlots]);
 
   const guardsData = useMemo(
@@ -210,7 +175,7 @@ export const useArmyCreation = ({
   const maxExplorers = fieldRoom?.maxArmies;
 
   const canCreateAttackArmy = fieldRoom !== null && hasFreeFieldArmySlot(fieldRoom);
-  const canCreateDefenseArmy = currentGuardsCount !== undefined && currentGuardsCount < resolvedMaxDefenseSlots;
+  const canCreateDefenseArmy = currentGuardsCount !== undefined && currentGuardsCount < guardSlotCount;
   const hasDefenseArmies = currentGuardsCount !== undefined && currentGuardsCount > 0;
   const canInteractWithDefense = canCreateDefenseArmy || hasDefenseArmies;
 
@@ -462,7 +427,7 @@ export const useArmyCreation = ({
     try {
       await submitArmyCreation(activeStructureId, selectedTroopCombo, troopCount, target);
     } catch (error) {
-      console.error("Failed to create army:", error);
+      toast.failed(error, "The army could not be raised.");
     } finally {
       submittingRef.current = false;
       setIsLoading(false);
@@ -500,7 +465,7 @@ export const useArmyCreation = ({
     currentExplorersCount,
     maxExplorers,
     currentGuardsCount,
-    resolvedMaxDefenseSlots,
+    guardSlotCount,
     handleArmyTypeSelect,
     guardSlot,
     guardsBySlot,

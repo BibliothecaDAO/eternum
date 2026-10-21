@@ -1,38 +1,19 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 
 import { ARMY_DEPLOYMENT_SURFACE_ID, openArmyDeployment } from "../utils/open-army-deployment";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { TierChip } from "../utils/tier-chip";
 import { knownAmount } from "@/ui/utils/utils";
-import {
-  getGuardSlotCooldownRemaining,
-  configManager,
-  getGuardsByStructure,
-  getTroopResourceId,
-} from "@bibliothecadao/eternum";
-import { useNativeRow } from "@/hooks/helpers/use-native-facts";
-import {
-  DISPLAYED_SLOT_NUMBER_MAP,
-  GuardSlot,
-  StructureType,
-  TroopTier,
-  TroopType,
-  formatAmount,
-  guardSlotName,
-} from "@bibliothecadao/types";
-import type { KeyboardEvent } from "react";
-import { useMemo, useState } from "react";
+import { getGuardSlotCooldownRemaining, getGuardsByStructure, getTroopResourceId } from "@bibliothecadao/eternum";
+import { DISPLAYED_SLOT_NUMBER_MAP, GuardSlot, TroopTier, TroopType, formatAmount } from "@bibliothecadao/types";
+import { useState } from "react";
 
-import { EntityDetailLayoutVariant } from "@/ui/features/world/components/entities/layout";
-
-import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { GuardStaminaBar } from "./guard-stamina-bar";
 import { GuardCooldownBadge } from "./guard-cooldown-badge";
@@ -46,330 +27,140 @@ type DefenseTroop = NonNullable<ReturnType<typeof getGuardsByStructure>>[number]
 const GUARD_SLOT_ROW = "grid w-full grid-cols-4 justify-items-stretch gap-2 pb-1";
 
 interface CompactDefenseDisplayProps {
-  troops: DefenseTroop[];
-  className?: string;
-  slotsUsed?: number;
-  slotsMax?: number;
-  structureId?: number;
-  canManageDefense?: boolean;
-  variant?: EntityDetailLayoutVariant;
-  /**
-   * Hide the slots-used / total-troops summary row. The right-panel header
-   * already shows the slot count, and summing mixed troop tiers is misleading.
-   */
-  hideSlotSummary?: boolean;
+  /** The structure's guards: a slot none of them holds is empty. */
+  guards: DefenseTroop[];
+  /** Every slot the structure has (structureGuardSlots). */
+  slots: GuardSlot[];
+  structureId: number;
+  canManageDefense: boolean;
 }
 
-export const CompactDefenseDisplay = ({
-  troops,
-  className = "",
-  slotsUsed,
-  slotsMax,
-  structureId,
-  canManageDefense = false,
-  variant = "default",
-  hideSlotSummary = false,
-}: CompactDefenseDisplayProps) => {
+/**
+ * The structure's guard slots, filled and empty, the slot an attacker meets first on the left. Its owner presses a slot
+ * to deploy into it (owner, 20 October 2026: "I wanna see the empty slots here so I can click on it to fill them").
+ */
+export const CompactDefenseDisplay = ({ guards, slots, structureId, canManageDefense }: CompactDefenseDisplayProps) => {
   const ordersAllowed = useUIStore(canIssueOrders);
-  const staminaTimestamp = useCurrentDefaultTick();
-  const currentBlockTimestamp = useCurrentBlockTimestamp();
-  const isBanner = variant === "banner";
-  const canOpenPicker = Boolean(canManageDefense && structureId && structureId > 0 && ordersAllowed);
+  const canOpenPicker = canManageDefense && structureId > 0 && ordersAllowed;
   // The slot whose picker is open stays lit until the picker closes.
   const [pickerSlot, setPickerSlot] = useState<GuardSlot | null>(null);
   const isPickerOpen = usePopoverStore((state) => state.openId === ARMY_DEPLOYMENT_SURFACE_ID);
-  const highlightedSlot = isPickerOpen ? pickerSlot : null;
-  const structureComponent = useNativeRow(
-    "Structure",
-    structureId ? { game_id: configManager.getActiveGameId(), entity_id: structureId } : undefined,
-  );
+  const guardBySlot = new Map(guards.map((guard) => [guard.slot as GuardSlot, guard]));
 
-  const structureCategory = structureComponent?.base?.category as StructureType | undefined;
-  const structureLevel = structureComponent?.base?.level as number | bigint | undefined;
-
-  const structureSlotLimit = useMemo(() => {
-    return getStructureDefenseSlotLimit(structureCategory, structureLevel ?? null);
-  }, [structureCategory, structureLevel]);
-
-  const fallbackSlotLimit = slotsMax ?? undefined;
-  const resolvedSlotLimit = useMemo(() => {
-    if (structureSlotLimit === null || structureSlotLimit === undefined) {
-      return fallbackSlotLimit ?? MAX_GUARD_SLOT_COUNT;
-    }
-    if (fallbackSlotLimit === undefined || fallbackSlotLimit === null) {
-      return structureSlotLimit;
-    }
-    return Math.min(structureSlotLimit, fallbackSlotLimit);
-  }, [structureSlotLimit, fallbackSlotLimit]);
-
-  const unlockedSlots = useMemo(() => getUnlockedGuardSlots(resolvedSlotLimit), [resolvedSlotLimit]);
-  const unlockedSlotSet = useMemo(() => new Set(unlockedSlots), [unlockedSlots]);
-
-  const displayedTroops = useMemo(
-    () => troops.filter((defense) => unlockedSlotSet.has(Number(defense.slot ?? -1))),
-    [troops, unlockedSlotSet],
-  );
-
-  const totalTroopCount = useMemo(
-    () => displayedTroops.reduce((total, defense) => total + Number(defense.troops.count), 0),
-    [displayedTroops],
-  );
-
-  const unlockedActiveSlotCount = useMemo(() => {
-    return troops.filter((defense) => {
-      const slotId = Number(defense.slot ?? -1);
-      const troopCount = Number(defense.troops.count);
-      return unlockedSlotSet.has(slotId) && troopCount > 0;
-    }).length;
-  }, [troops, unlockedSlotSet]);
-
-  const effectiveSlotsUsed = slotsUsed !== undefined ? Math.min(slotsUsed, resolvedSlotLimit) : unlockedActiveSlotCount;
-  const hasAvailableDefenseSlot = effectiveSlotsUsed < resolvedSlotLimit;
-
-  const slotCapForDisplay = resolvedSlotLimit ?? slotsMax;
-  const hasSlotInfo = slotCapForDisplay !== undefined;
-  const showHeaderRow = hasSlotInfo || totalTroopCount > 0;
-
-  const labelTextClass = isBanner ? "text-hud-label" : "text-hud-label";
-  const valueTextClass = isBanner ? "text-hud-label" : "text-hud-label";
-  const slotWidthClass = "w-full";
-  const slotGapClass = isBanner ? "gap-0" : "gap-1.5";
-  const slotHeightClass = isBanner ? "min-h-9" : "min-h-12";
-  const baseSlotClasses = cn(
-    "flex items-center rounded-md px-1 transition-colors",
-    isBanner ? "py-0.5" : "py-1",
-    slotGapClass,
-    slotHeightClass,
-  );
-
-  const handleSlotOpen = (slot: GuardSlot, element: Element) => {
-    if (!canOpenPicker || !structureId) return;
+  const openSlot = (slot: GuardSlot, element: Element) => {
     setPickerSlot(slot);
     openArmyDeployment(
-      {
-        structureId,
-        isExplorer: false,
-        maxDefenseSlots: resolvedSlotLimit,
-        initialGuardSlot: Number(slot),
-      },
+      { structureId, isExplorer: false, initialGuardSlot: slot },
       { anchor: surfaceAnchorFrom(element), placement: "beside" },
     );
   };
 
-  const renderSlot = (defense: DefenseTroop) => {
-    const troopCount = Number(defense.troops.count);
-    const staminaSnapshot = getGuardStaminaSnapshot(defense.troops, staminaTimestamp);
-    const staminaCurrent = staminaSnapshot?.current;
-    const staminaMax = staminaSnapshot?.max;
-    const rawSlot = defense.slot;
-    const guardSlotKey = rawSlot as GuardSlot;
-    const slotDisplayNumber = DISPLAYED_SLOT_NUMBER_MAP[guardSlotKey];
-    const slotName = guardSlotName(guardSlotKey);
-    const isEmptySlot = troopCount === 0;
-    const cooldownSeconds = getGuardSlotCooldownRemaining(defense, currentBlockTimestamp);
-    const isSlotUnlocked = unlockedSlotSet.has(rawSlot);
-    if (!isSlotUnlocked) {
-      return null;
-    }
-
-    const isSlotInteractive = isEmptySlot
-      ? canOpenPicker && hasAvailableDefenseSlot && cooldownSeconds === 0
-      : canOpenPicker;
-    const interactiveClasses = isSlotInteractive
-      ? "cursor-pointer hover:border-hud-line-strong hover:bg-hud-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hud-line-strong"
-      : "cursor-default";
-    const onSlotClick = (event: { currentTarget: HTMLDivElement }) => {
-      if (!isSlotInteractive) return;
-      handleSlotOpen(guardSlotKey, event.currentTarget);
-    };
-    const onSlotKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-      if (!isSlotInteractive) return;
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        onSlotClick(event);
-      }
-    };
-
-    const slotBadge = (
-      <div
-        className={cn(
-          baseSlotClasses,
-          isEmptySlot
-            ? "justify-center border border-dashed border-hud-line bg-hud-well"
-            : "border border-hud-line bg-hud-well whitespace-nowrap",
-          interactiveClasses,
-          "w-full",
-          // The slot whose picker is open, chosen as the sheet marks a chosen thing.
-          highlightedSlot === guardSlotKey && "border-hud-line-strong bg-hud-chosen",
-        )}
-        data-picker-open={highlightedSlot === guardSlotKey ? "true" : undefined}
-        title={
-          cooldownSeconds > 0
-            ? `Defense Slot ${slotDisplayNumber} is rebuilding`
-            : isEmptySlot
-              ? `Defense Slot ${slotDisplayNumber} is empty`
-              : `Defense Slot ${slotDisplayNumber}`
-        }
-        role={isSlotInteractive ? "button" : undefined}
-        tabIndex={isSlotInteractive ? 0 : undefined}
-        onClick={isSlotInteractive ? onSlotClick : undefined}
-        onKeyDown={isSlotInteractive ? onSlotKeyDown : undefined}
-      >
-        {cooldownSeconds > 0 ? (
-          <GuardCooldownBadge seconds={cooldownSeconds} />
-        ) : isEmptySlot ? (
-          <>
-            {isSlotInteractive && <SemanticIcon name="plus" className="h-3.5 w-3.5 text-hud-accent" />}
-            <span
-              className={cn(
-                labelTextClass,
-                isSlotInteractive ? "text-hud-accent" : "text-hud-muted",
-                "text-hud-strong uppercase tracking-wide",
-              )}
-            >
-              {isSlotInteractive ? "Add" : isBanner ? "Empty" : "Empty Slot"}
-            </span>
-          </>
-        ) : (
-          // A quarter of the row each: the tier and the troop over the count, then the stamina.
-          <div className="flex min-w-0 w-full flex-col items-center gap-0.5">
-            <div className="flex items-center gap-1">
-              <TierChip tier={defense.troops.tier} />
-              <ResourceIcon
-                withTooltip={false}
-                resource={getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier)}
-                size={isBanner ? "xs" : "sm"}
-                className="shrink-0"
-              />
-            </div>
-            <span className={cn(valueTextClass, "text-hud-accent tabular-nums")}>
-              {formatAmount(knownAmount(troopCount))}
-            </span>
-            <GuardStaminaBar current={staminaCurrent} max={staminaMax} />
-          </div>
-        )}
-      </div>
-    );
-
-    return (
-      <div key={`${rawSlot}-${guardSlotKey}`} className={cn("flex flex-col items-center", slotWidthClass)}>
-        {slotBadge}
-        {!isBanner && (
-          <div className="flex items-center gap-1">
-            <SemanticIcon name="defend" size={32} />
-            <span className={cn(labelTextClass, "text-hud-strong text-hud-accent")}>{slotDisplayNumber}</span>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const containerGapClass = isBanner ? "gap-1" : "gap-2";
-
-  if (isBanner) {
-    return (
-      <div className={cn("flex flex-col", containerGapClass, className)}>
-        {showHeaderRow && !hideSlotSummary && (
-          <div className="flex items-center gap-2 w-full">
-            {hasSlotInfo && (
-              <div
-                className={cn(
-                  "flex items-center justify-between bg-hud-well border border-hud-line rounded-md px-2 py-0.5 gap-1",
-                  slotWidthClass,
-                )}
-              >
-                <span className={cn(labelTextClass, "uppercase tracking-wide text-hud-muted text-hud-strong")}>
-                  Slots
-                </span>
-                <span className={cn(valueTextClass, "text-hud-accent text-hud-strong")}>
-                  {effectiveSlotsUsed}/{slotCapForDisplay}
-                </span>
-              </div>
-            )}
-            {totalTroopCount > 0 && (
-              <div
-                className={cn(
-                  "flex items-center justify-between bg-hud-well border border-hud-line rounded-md px-2 py-0.5 gap-1",
-                  slotWidthClass,
-                )}
-              >
-                <span className={cn(labelTextClass, "uppercase tracking-wide text-hud-muted text-hud-strong")}>
-                  Total
-                </span>
-                <span className={cn(valueTextClass, "text-hud-accent text-hud-strong")}>
-                  {formatAmount(knownAmount(totalTroopCount))}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-        <div className={GUARD_SLOT_ROW}>
-          {displayedTroops.toSorted((a, b) => b.slot - a.slot).map((defense) => renderSlot(defense))}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={cn("flex flex-col overflow-x-auto scrollbar-hide", containerGapClass, className)}>
-      {showHeaderRow && (
-        <div className="grid grid-cols-2 gap-2 w-full flex-shrink-0">
-          {hasSlotInfo && (
-            <div
-              className={cn(
-                "flex items-center justify-between bg-hud-well border border-hud-line rounded-md px-2 py-0.5 gap-1",
-                slotWidthClass,
-              )}
-            >
-              <span className={cn(labelTextClass, "uppercase tracking-wide text-hud-muted text-hud-strong")}>
-                {isBanner ? "Slots" : "Defense Slots"}
-              </span>
-              <span className={cn(valueTextClass, "text-hud-accent text-hud-strong")}>
-                {effectiveSlotsUsed}/{slotCapForDisplay}
-              </span>
-            </div>
-          )}
-          {totalTroopCount > 0 && (
-            <div
-              className={cn(
-                "flex items-center justify-between bg-hud-well border border-hud-line rounded-md px-2 py-0.5 gap-1",
-                slotWidthClass,
-              )}
-            >
-              <span className={cn(labelTextClass, "uppercase tracking-wide text-hud-muted text-hud-strong")}>
-                {isBanner ? "Total" : "Total Troops"}
-              </span>
-              <span className={cn(valueTextClass, "text-hud-accent text-hud-strong")}>
-                {formatAmount(knownAmount(totalTroopCount))}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-      <div className={GUARD_SLOT_ROW}>
-        {displayedTroops.toSorted((a, b) => b.slot - a.slot).map((defense) => renderSlot(defense))}
-        {!isBanner && (
-          <div
-            className={cn(
-              "flex flex-col items-center text-center flex-shrink-0 col-span-2 sm:col-span-1",
-              slotGapClass,
-              slotWidthClass,
-            )}
-          >
-            <span className={cn(labelTextClass, "uppercase tracking-wide text-hud-muted")}>Incoming</span>
-            <div
-              className="rounded-full border border-hud-line-strong flex items-center justify-center bg-hud-well"
-              style={{
-                width: isBanner ? "36px" : "40px",
-                height: isBanner ? "36px" : "40px",
-              }}
-            >
-              <SemanticIcon name="arrow-left" className={cn(isBanner ? "w-4 h-4" : "w-5 h-5", "text-hud-accent")} />
-            </div>
-            <span className={cn(isBanner ? "text-hud-label" : "text-hud-label", "text-hud-muted")}>Enemy</span>
-          </div>
-        )}
-      </div>
+    <div className={GUARD_SLOT_ROW}>
+      {slots.toReversed().map((slot) => (
+        <GuardSlotTile
+          key={slot}
+          slot={slot}
+          guard={guardBySlot.get(slot)}
+          canOpenPicker={canOpenPicker}
+          chosen={isPickerOpen && pickerSlot === slot}
+          onOpen={openSlot}
+        />
+      ))}
     </div>
   );
 };
+
+interface GuardSlotTileProps {
+  slot: GuardSlot;
+  guard: DefenseTroop | undefined;
+  canOpenPicker: boolean;
+  chosen: boolean;
+  onOpen: (slot: GuardSlot, element: Element) => void;
+}
+
+/** One slot: its guard, the wait before a wiped slot takes troops again, or an empty place to add one. */
+const GuardSlotTile = ({ slot, guard, canOpenPicker, chosen, onOpen }: GuardSlotTileProps) => {
+  const currentBlockTimestamp = useCurrentBlockTimestamp();
+  const troopCount = guard ? Number(guard.troops.count) : 0;
+  const cooldownSeconds = guard ? getGuardSlotCooldownRemaining(guard, currentBlockTimestamp) : 0;
+  const isEmpty = troopCount === 0;
+  // A slot that still holds troops never cools down, so this reads alike for a guard and for an empty slot.
+  const isInteractive = canOpenPicker && cooldownSeconds === 0;
+  const slotNumber = DISPLAYED_SLOT_NUMBER_MAP[slot];
+
+  const className = cn(
+    "flex min-h-9 w-full items-center gap-0 rounded-md border border-hud-line bg-hud-well px-1 py-0.5 transition-colors",
+    isEmpty ? "justify-center border-dashed" : "whitespace-nowrap",
+    isInteractive
+      ? "cursor-pointer hover:border-hud-line-strong hover:bg-hud-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hud-line-strong"
+      : "cursor-default",
+    // The slot whose picker is open, chosen as the sheet marks a chosen thing.
+    chosen && "border-hud-line-strong bg-hud-chosen",
+  );
+  const title =
+    cooldownSeconds > 0
+      ? `Defense Slot ${slotNumber} is rebuilding`
+      : isEmpty
+        ? `Defense Slot ${slotNumber} is empty`
+        : `Defense Slot ${slotNumber}`;
+  const content =
+    cooldownSeconds > 0 ? (
+      <GuardCooldownBadge seconds={cooldownSeconds} />
+    ) : guard && !isEmpty ? (
+      <GuardStack guard={guard} troopCount={troopCount} />
+    ) : (
+      <EmptySlot canAdd={isInteractive} />
+    );
+
+  return isInteractive ? (
+    <button
+      type="button"
+      className={className}
+      title={title}
+      data-picker-open={chosen ? "true" : undefined}
+      onClick={(event) => onOpen(slot, event.currentTarget)}
+    >
+      {content}
+    </button>
+  ) : (
+    <div className={className} title={title}>
+      {content}
+    </div>
+  );
+};
+
+/** A quarter of the row: the tier and the troop over the count, then the stamina. */
+const GuardStack = ({ guard, troopCount }: { guard: DefenseTroop; troopCount: number }) => {
+  const staminaTimestamp = useCurrentDefaultTick();
+  const stamina = getGuardStaminaSnapshot(guard.troops, staminaTimestamp);
+  return (
+    <div className="flex min-w-0 w-full flex-col items-center gap-0.5">
+      <div className="flex items-center gap-1">
+        <TierChip tier={guard.troops.tier} />
+        <ResourceIcon
+          withTooltip={false}
+          resource={getTroopResourceId(guard.troops.category as TroopType, guard.troops.tier as TroopTier)}
+          size="xs"
+          className="shrink-0"
+        />
+      </div>
+      <span className="text-hud-label text-hud-accent tabular-nums">{formatAmount(knownAmount(troopCount))}</span>
+      <GuardStaminaBar current={stamina?.current} max={stamina?.max} />
+    </div>
+  );
+};
+
+const EmptySlot = ({ canAdd }: { canAdd: boolean }) => (
+  <>
+    {canAdd && <SemanticIcon name="plus" className="h-3.5 w-3.5 text-hud-accent" />}
+    <span
+      className={cn(
+        "text-hud-label text-hud-strong uppercase tracking-wide",
+        canAdd ? "text-hud-accent" : "text-hud-muted",
+      )}
+    >
+      {canAdd ? "Add" : "Empty"}
+    </span>
+  </>
+);

@@ -606,10 +606,9 @@ const LABEL_CLICKS = 6;
 const CLICK_SETTLE_MS = 1_200;
 
 /**
- * A real click at the middle of each label in view (owner, 2026-10-20: "a click on a token selects its thing"; an open
- * plate stays click-through), then the click it must equal, with the label layer hidden: for a resting token, a click
- * on its thing's own tile, as the renderer places it; for an open plate, the same point. Each pair must select the same
- * tile.
+ * A real click at the middle of each label in view, then the same click with the label layer hidden: labels never take
+ * a click, so each pair must select the same tile, the one under the pointer (owner, 2026-10-20: "I wanna remove the
+ * clicking the label select the structure/army [...] we click the tile and that's it").
  */
 async function clickThroughTheLabels({ browser, extraScreenshot }) {
   const seen = browser.read(PLATES_EXPRESSION);
@@ -623,18 +622,15 @@ async function clickThroughTheLabels({ browser, extraScreenshot }) {
     .slice(0, LABEL_CLICKS)
     .entries()) {
     const middle = offsetOf({ x: label.x + label.w / 2, y: label.y + label.h / 2 });
-    const token = label.kind === "token";
-    if (token && !label.over) continue;
     // From no selection: with one standing, a hovered tile shows the order line, and a token under it steps aside.
     for (let press = 0; press < ESCAPES_TO_DESELECT; press += 1) browser.press("Escape");
     browser.tap(middle);
     await sleep(CLICK_SETTLE_MS);
     const shown = browser.observe().selection?.hex ?? null;
     extraScreenshot(`click-${index}`);
-    const expected = token ? offsetOf(label.over.tile) : middle;
     layer("hidden");
     try {
-      browser.tap(expected);
+      browser.tap(middle);
       await sleep(CLICK_SETTLE_MS);
     } finally {
       layer("");
@@ -643,7 +639,6 @@ async function clickThroughTheLabels({ browser, extraScreenshot }) {
       label: label.text || label.kind,
       kind: label.kind,
       at: middle,
-      expectedAt: expected,
       shown,
       expected: browser.observe().selection?.hex ?? null,
     });
@@ -652,14 +647,14 @@ async function clickThroughTheLabels({ browser, extraScreenshot }) {
   return { clicks };
 }
 
-/** A click on a token selected its thing's tile, and a click on an open plate the tile beneath, as checked. */
+/** Every click at a label selected the tile beneath it, as the same click with the labels hidden did. */
 function clicksLandedBeneath({ played }) {
   if (played.clicks.length === 0) return blocked("no map label is drawn in view to click at");
   const same = (a, b) => a !== null && b !== null && a.col === b.col && a.row === b.row;
   const off = played.clicks.filter((click) => !same(click.shown, click.expected));
   return off.length === 0
     ? completed({ clicks: played.clicks })
-    : failed(`${off.length} clicks at a label did not select its thing's tile, or the tile beneath a plate`, {
+    : failed(`${off.length} clicks at a label did not select the tile beneath it`, {
         clicks: played.clicks,
         off,
       });

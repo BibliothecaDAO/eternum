@@ -12,6 +12,9 @@ import {
   HudWindow,
 } from "@/ui/design-system/kit/hud-elements";
 import { useGame } from "@/hooks/context/game-context";
+import { ActionFailureNotice } from "@/ui/features/event-feed/action-failure-notice";
+import { type ActionFailure, actionFailure } from "@/ui/features/event-feed/notify";
+import { useActNowRefusal } from "@/utils/can-issue-orders";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { EntityType, ID, RelicRecipientType, Troops, formatAmount } from "@bibliothecadao/types";
 
@@ -61,7 +64,7 @@ type RelicActivationHolderCardProps = {
   essenceCost: number;
   onActivate: (request: ActivationRequest) => Promise<void>;
   isActivating: boolean;
-  activationError?: string | null;
+  failure?: ActionFailure | null;
 };
 
 const RelicActivationHolderCard = ({
@@ -70,13 +73,15 @@ const RelicActivationHolderCard = ({
   essenceCost,
   onActivate,
   isActivating,
-  activationError,
+  failure,
 }: RelicActivationHolderCardProps) => {
   const { essenceBalance, hasEnoughEssence, shortfall } = useRelicEssenceStatus(holder.entityOwnerId, essenceCost);
   const compatible = isRelicCompatible(relicInfo, holder.recipientType);
   const isArmyHolder = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
   const staminaFull = useStaminaFull(isArmyHolder ? holder.troops : null);
   const armyUnknown = isArmyHolder && holder.troops === null;
+  // Why the game takes no action yet ("Starts in 2m 33s"): Activate says so before the click, and stays shut.
+  const refusal = useActNowRefusal();
   useEffect(() => {
     if (import.meta.env.DEV && armyUnknown)
       console.warn("Relic activation is waiting for synchronized army facts", { entityId: holder.entityId });
@@ -108,12 +113,13 @@ const RelicActivationHolderCard = ({
           <HudNotice tone="warn" line={STAMINA_FULL.line} why={STAMINA_FULL.why} />
         )}
         {armyUnknown && <HudNotice tone="warn" line="Army data unavailable. Waiting for synchronization." />}
-        {activationError && <HudNotice tone="bad" line={activationError} />}
+        {refusal !== null && <HudNotice line={refusal} />}
+        {failure && <ActionFailureNotice failure={failure} />}
         <span className="flex justify-end">
           <HudButton
             kind="secondary"
             busy={isActivating ? "Activating…" : undefined}
-            disabled={!compatible || !hasEnoughEssence || armyUnknown}
+            disabled={refusal !== null || !compatible || !hasEnoughEssence || armyUnknown}
             onClick={() => onActivate({ holder, hasEnoughEssence, shortfall })}
           >
             Activate
@@ -147,9 +153,10 @@ export const RelicActivationSelector = ({ resourceId, holders, onClose }: RelicA
   ]);
 
   const [activatingHolderId, setActivatingHolderId] = useState<string | null>(null);
-  const [activationError, setActivationError] = useState<{ holderId: string | null; message: string | null }>({
+  // The holder whose last press did not activate, and why: told until the next press.
+  const [activationError, setActivationError] = useState<{ holderId: string | null; failure: ActionFailure | null }>({
     holderId: null,
-    message: null,
+    failure: null,
   });
 
   const { relicInfo, resourceId: relicResourceId, essenceCost } = useRelicMetadata(resourceId);
@@ -186,9 +193,12 @@ export const RelicActivationSelector = ({ resourceId, holders, onClose }: RelicA
 
   const held = holders.reduce((total, holder) => total + holder.held, 0);
 
+  const failed = (holderId: string, reason: string) =>
+    setActivationError({ holderId, failure: { refused: false, reason } });
+
   const handleActivate = async ({ holder, hasEnoughEssence, shortfall }: ActivationRequest) => {
     if (!relicInfo) {
-      setActivationError({ holderId: String(holder.entityId), message: "Relic data unavailable." });
+      failed(String(holder.entityId), "Relic data unavailable.");
       return;
     }
 
@@ -196,26 +206,26 @@ export const RelicActivationSelector = ({ resourceId, holders, onClose }: RelicA
     const compatible = isRelicCompatible(relicInfo, holder.recipientType);
 
     if (!compatible) {
-      setActivationError({ holderId: holderKey, message: "This entity cannot activate this relic." });
+      failed(holderKey, "This entity cannot activate this relic.");
       return;
     }
 
     if (!account || accountAddress() === null) {
-      setActivationError({ holderId: holderKey, message: "Account not connected." });
+      failed(holderKey, "Account not connected.");
       return;
     }
 
     if (!systemCalls.apply_relic) {
-      setActivationError({ holderId: holderKey, message: "Relic activation is not available yet." });
+      failed(holderKey, "Relic activation is not available yet.");
       return;
     }
 
     if (!hasEnoughEssence) {
-      setActivationError({ holderId: holderKey, message: shortfall });
+      failed(holderKey, shortfall);
       return;
     }
 
-    setActivationError({ holderId: null, message: null });
+    setActivationError({ holderId: null, failure: null });
     setActivatingHolderId(holderKey);
 
     try {
@@ -226,11 +236,13 @@ export const RelicActivationSelector = ({ resourceId, holders, onClose }: RelicA
         recipient_type: relicInfo.recipientTypeParam,
       });
 
-      setActivationError({ holderId: null, message: null });
+      setActivationError({ holderId: null, failure: null });
       onClose();
     } catch (error) {
-      console.error("Failed to activate relic:", error);
-      setActivationError({ holderId: holderKey, message: "Failed to activate relic. Please try again." });
+      setActivationError({
+        holderId: holderKey,
+        failure: actionFailure(error, "Failed to activate relic. Please try again."),
+      });
     } finally {
       setActivatingHolderId(null);
     }
@@ -254,7 +266,7 @@ export const RelicActivationSelector = ({ resourceId, holders, onClose }: RelicA
                 essenceCost={essenceCost}
                 onActivate={handleActivate}
                 isActivating={activatingHolderId === holderKey}
-                activationError={activationError.holderId === holderKey ? activationError.message : null}
+                failure={activationError.holderId === holderKey ? activationError.failure : null}
               />
             );
           })

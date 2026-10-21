@@ -5,6 +5,7 @@ import { shortString } from "starknet";
 import { configManager, readResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
+  createSystemCalls,
   EntityType,
   RelicRecipientType,
   RelicRecipientTypeParam,
@@ -16,12 +17,19 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
+import { RelicActivationPopup } from "@/ui/features/economy/resources/relic-activation-popup";
 import { RelicActivationSelector } from "./relic-activation-selector";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { nativePresetForId, nativePresetIdFor } from "../../../../../../../config/source/native";
 import explorerFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 
 vi.mock("@/audio/hooks/useAudio", () => ({ useAudio: () => ({ play: () => {} }) }));
+// The act-now gate on the chain clock: open unless a case shuts it, as before play opens.
+const gate = vi.hoisted(() => ({ refusal: null as string | null }));
+vi.mock("@/utils/can-issue-orders", async (original) => ({
+  ...(await original<typeof import("@/utils/can-issue-orders")>()),
+  useActNowRefusal: () => gate.refusal,
+}));
 
 const ARMY_ID = 4294967297;
 const signer = { address: "0x111" };
@@ -132,6 +140,7 @@ afterEach(async () => {
   usePopoverStore.getState().close();
   useAccountStore.getState().setGameplayAccount(null, null);
   setBlockTimestampSource(null);
+  gate.refusal = null;
   host.remove();
   vi.restoreAllMocks();
 });
@@ -293,4 +302,92 @@ it("heads the window with every holder's whole relics, and gives each target row
   expect(text).toMatch(/^Activate Stamina IStamina I×3(?!\d)/);
   expect(text).toMatch(/Veil Brands×1(?!\d)/);
   expect(text.match(/×(\d+|<1)/g)).toEqual(["×3", "×1", "×2"]);
+});
+
+/**
+ * The game, its relic activations sent through the real system call: refused while the game does not take actions yet
+ * ("Starts in 2m 33s") until `open()`, then sent to a provider that answers with `answer`.
+ */
+const refusingGame = (answer: () => Promise<unknown> = async () => undefined) => {
+  const state = game();
+  const sent = vi.fn(answer);
+  let refusal: string | null = "Starts in 2m 33s";
+  const systemCalls = createSystemCalls({
+    provider: { apply_relic: sent },
+    authHandler: { refuseNow: () => refusal, onError: (error) => console.error(error) },
+  });
+  const open = () => {
+    refusal = null;
+  };
+  return { ...state, setup: { ...state.setup, systemCalls } as GameClientSetup, sent, open };
+};
+
+const renderPopup = (state: ReturnType<typeof refusingGame>) =>
+  act(async () =>
+    root.render(
+      <GameProvider value={state.setup} account={signer as never}>
+        <RelicActivationPopup
+          entityId={ARMY_ID}
+          entityOwnerId={7}
+          recipientType={RelicRecipientType.Explorer}
+          relicId={ResourcesIds.StaminaRelic1}
+          relicBalance={1}
+          onClose={() => {}}
+        />
+      </GameProvider>,
+    ),
+  );
+
+/** Both relic controls, each opened to its Activate button. */
+const CONTROLS = [
+  ["the inventory's selector", (state: ReturnType<typeof refusingGame>) => openInventory(state)],
+  [
+    "the resource controls' popup",
+    async (state: ReturnType<typeof refusingGame>) => {
+      await renderPopup(state);
+      return button("Activate Relic");
+    },
+  ],
+] as const;
+
+/** The lines the window says as news (a status) and as errors (an alert). */
+const said = (role: "status" | "alert") =>
+  [...document.querySelectorAll(`[role="${role}"]`)].map((line) => line.textContent);
+
+it.each(CONTROLS)(
+  "%s: a refused activation is told as news, logs nothing, and goes through once play opens",
+  async (_, openControl) => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const state = refusingGame();
+    const confirm = await openControl(state);
+    await act(async () => confirm.click());
+    expect(state.sent).not.toHaveBeenCalled();
+    expect(said("status")).toContain("Starts in 2m 33s");
+    expect(said("alert")).toEqual([]);
+    expect(document.body.textContent).not.toContain("Failed to activate relic");
+    expect(logged).not.toHaveBeenCalled();
+
+    state.open();
+    expect(confirm.disabled).toBe(false);
+    await act(async () => confirm.click());
+    expect(state.sent).toHaveBeenCalledTimes(1);
+  },
+);
+
+it.each(CONTROLS)("%s: a failed activation is told as an error, with the game's reason", async (_, openControl) => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const state = refusingGame(() => Promise.reject(new Error("Not enough essence")));
+  state.open();
+  const confirm = await openControl(state);
+  await act(async () => confirm.click());
+  expect(state.sent).toHaveBeenCalledTimes(1);
+  expect(said("alert")).toEqual(["Not enough essence"]);
+});
+
+it.each(CONTROLS)("%s: before play opens, Activate is shut and says why before the click", async (_, openControl) => {
+  gate.refusal = "Starts in 2m 33s";
+  const state = refusingGame();
+  const confirm = await openControl(state);
+  expect(confirm.disabled).toBe(true);
+  expect(document.body.textContent).toContain("Starts in 2m 33s");
 });

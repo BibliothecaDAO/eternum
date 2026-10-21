@@ -5,6 +5,17 @@ import { getBlockTimestamp } from "../utils/timestamp";
 import { hyperstructurePointsPerSecond, sharePointCutoff, unclaimedSharePoints } from "../sync/shareholder-points";
 import { configManager } from "./config-manager";
 
+/** A player's standing at one reading of the game clock. */
+export interface PlayerStanding {
+  address: ContractAddress;
+  /** The points registered on chain (PlayerPoints). */
+  registeredPoints: number;
+  /** Hold points earned since each held hyperstructure's last checkpoint, registered at its next one. */
+  accruingHoldPoints: number;
+  /** The standing's total: its registered points plus its accruing hold points. */
+  points: number;
+}
+
 /** Standings are derived from current facts and the game clock at each read. */
 export class LeaderboardManager {
   private static current: LeaderboardManager | undefined;
@@ -15,16 +26,29 @@ export class LeaderboardManager {
     return this.current;
   }
 
-  get pointsPerPlayer(): Map<ContractAddress, number> {
+  /** Every standing from one reading of the clock, so a total and the hold points in it are the same calculation. */
+  private readStandings(): PlayerStanding[] {
     const game = configManager.getActiveGameId();
-    const points = new Map(
+    const registered = new Map(
       [...this.store.inGame("PlayerPoints", game)].map((row) => [row.address, wholePoints(row.points)]),
     );
+    const accruing = new Map<ContractAddress, number>();
     for (const share of this.readAccruedShares()) {
-      const registered = points.get(share.playerAddress) ?? this.getPlayerRegisteredPoints(share.playerAddress);
-      if (registered !== null) points.set(share.playerAddress, registered + share.points);
+      if (!registered.has(share.playerAddress)) {
+        const known = this.getPlayerRegisteredPoints(share.playerAddress);
+        if (known === null) continue;
+        registered.set(share.playerAddress, known);
+      }
+      accruing.set(share.playerAddress, (accruing.get(share.playerAddress) ?? 0) + share.points);
     }
-    return points;
+    return [...registered].map(([address, registeredPoints]) => {
+      const accruingHoldPoints = accruing.get(address) ?? 0;
+      return { address, registeredPoints, accruingHoldPoints, points: registeredPoints + accruingHoldPoints };
+    });
+  }
+
+  get pointsPerPlayer(): Map<ContractAddress, number> {
+    return new Map(this.readStandings().map((standing) => [standing.address, standing.points]));
   }
 
   private get scoresKnown(): boolean {
@@ -33,7 +57,9 @@ export class LeaderboardManager {
       ...[...this.store.inGame("PlayerEntry", game)].map((row) => row.owner),
       ...[...this.store.inGame("GuildMember", game)].map((row) => row.actor),
       ...[...this.store.inGame("Structure", game)].map((row) => row.owner).filter((owner) => owner !== 0n),
-      ...this.readAccruedShares().map((share) => share.playerAddress),
+      ...[...this.store.inGame("HyperstructureShares", game)].flatMap((row) =>
+        row.shareholders.map((share) => share.player),
+      ),
     ]);
     return [...actors].every((actor) => this.getPlayerRegisteredPoints(actor) !== null);
   }
@@ -49,9 +75,10 @@ export class LeaderboardManager {
     return points;
   }
 
-  get playersByRank() {
+  /** The standings, highest total first; none while any player's score is still unknown. */
+  get playersByRank(): PlayerStanding[] {
     if (!this.scoresKnown) return [];
-    return [...this.pointsPerPlayer].toSorted((a, b) => b[1] - a[1]);
+    return this.readStandings().toSorted((a, b) => b.points - a.points);
   }
   get guildsByRank() {
     return [...this.pointsPerGuild].toSorted((a, b) => b[1] - a[1]);
@@ -73,12 +100,6 @@ export class LeaderboardManager {
     );
   }
 
-  getPlayerHyperstructureUnregisteredShareholderPoints(player: ContractAddress): number {
-    return this.readAccruedShares()
-      .filter((row) => row.playerAddress === player)
-      .reduce((sum, row) => sum + row.points, 0);
-  }
-
   getPlayerRegisteredPoints(player: ContractAddress): number | null {
     const result = this.store.requireOrAbsent("PlayerPoints", {
       game_id: configManager.getActiveGameId(),
@@ -89,7 +110,10 @@ export class LeaderboardManager {
 
   getPlayerPoints(player: ContractAddress): number | null {
     const registered = this.getPlayerRegisteredPoints(player);
-    return registered === null ? null : registered + this.getPlayerHyperstructureUnregisteredShareholderPoints(player);
+    if (registered === null) return null;
+    return this.readAccruedShares()
+      .filter((share) => share.playerAddress === player)
+      .reduce((sum, share) => sum + share.points, registered);
   }
 
   getCurrentCoOwners(entityId: ID) {

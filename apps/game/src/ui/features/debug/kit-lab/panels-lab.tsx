@@ -10,6 +10,7 @@ import { HoldingsList, useHoldings } from "@/ui/features/world/hud/holdings";
 import { LeftColumn, OrdersFoot } from "@/ui/features/world/hud/desktop-hud";
 import { HudMinimap } from "@/ui/features/world/hud/minimap";
 import { BuildTag } from "@/ui/layouts/build-tag";
+import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { RealmCard } from "@/ui/features/world/hud/realm-card";
 import { createGameViews, type GameClient } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -244,7 +245,10 @@ const LAB_TILES = {
   empty: { col: 42, row: 14, biome: BiomeType.TemperateDeciduousForest },
 } as const;
 
-/** The picked tile as the right rail draws it, on the sites fixture with its tiles' biomes known. */
+/**
+ * The picked tile as the right rail draws it, on the sites fixture with its tiles' biomes known, with the surface a
+ * control on it opens (a guard slot's deploy picker).
+ */
 const TileLab = ({ tile }: { tile: keyof typeof LAB_TILES }) => {
   useDocumentClass("classic-hud");
   return (
@@ -254,6 +258,7 @@ const TileLab = ({ tile }: { tile: keyof typeof LAB_TILES }) => {
           <SelectedWorldmapEntity />
         </div>
       </div>
+      <SurfaceHost />
     </TileGame>
   );
 };

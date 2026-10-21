@@ -14,7 +14,6 @@ import { TierChip } from "../../utils/tier-chip";
 
 interface DefenseSlotSelectionProps {
   guardSlot: number;
-  maxDefenseSlots: number;
   guardsBySlot: Map<number, GuardSummary>;
   availableSlots: number[];
   selectedTroopCombo: SelectedTroopCombo;
@@ -26,7 +25,6 @@ interface DefenseSlotSelectionProps {
 
 export const DefenseSlotSelection = ({
   guardSlot,
-  maxDefenseSlots,
   guardsBySlot,
   availableSlots,
   selectedTroopCombo,
@@ -54,8 +52,6 @@ export const DefenseSlotSelection = ({
     }).length;
   }, [sortedSlots, guardsBySlot]);
 
-  const unlockedCapacity = Math.min(sortedSlots.length, maxDefenseSlots);
-
   return (
     <div className="p-1.5 rounded-xl border border-hud-line">
       <div className="grid grid-cols-2 gap-1.5">
@@ -74,7 +70,7 @@ export const DefenseSlotSelection = ({
           const hasGuard = (guardCount ?? 0) > 0;
           const cooldownSeconds = guardInfo?.cooldownRemaining ?? 0;
           const isSelected = guardSlot === slot;
-          const canOpenAdditionalSlot = canCreateDefenseArmy && activeSlotCount < unlockedCapacity;
+          const canOpenAdditionalSlot = canCreateDefenseArmy && activeSlotCount < sortedSlots.length;
           const isSlotSelectable = hasGuard || (canOpenAdditionalSlot && cooldownSeconds === 0);
           const isSlotCompatible =
             !guardInfo || (guardCategory === selectedTroopCombo.type && guardTier === selectedTroopCombo.tier);

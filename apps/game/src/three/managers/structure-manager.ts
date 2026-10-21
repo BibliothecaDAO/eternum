@@ -500,12 +500,6 @@ export class StructureManager {
     };
   }
 
-  /** The tile a structure stands on, by its id; undefined for one not in the map's projection. */
-  public getStructureHex(entityId: ID): { col: number; row: number } | undefined {
-    const structure = this.resolveStructureInfoByEntityId(entityId);
-    return structure ? { col: structure.hexCoords.col, row: structure.hexCoords.row } : undefined;
-  }
-
   private resolveStructureInfoByEntityId(entityId: ID): StructureInfo | undefined {
     const renderable = this.worldSpatialProjection.getStructure(entityId);
     return renderable ? this.resolveStructureInfo(renderable) : undefined;

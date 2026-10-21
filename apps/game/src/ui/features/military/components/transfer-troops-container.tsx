@@ -32,7 +32,7 @@ import {
 } from "@bibliothecadao/types";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
+import { structureGuardSlots } from "../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { TransferBalanceCardData, TransferBalanceCards } from "./transfer-troops/transfer-balance-cards";
 import { getActorTypes, TransferDirection } from "./transfer-troops/transfer-direction";
@@ -43,6 +43,7 @@ import {
 } from "./transfer-troops/transfer-eligibility";
 import { TransferSlotSelection } from "./transfer-troops/transfer-slot-selection";
 import { DeploymentStrengthSummary } from "./deployment-strength-summary";
+import { toast } from "@/ui/features/event-feed/notify";
 
 interface TransferTroopsContainerProps {
   selectedEntityId: ID;
@@ -244,45 +245,9 @@ export const TransferTroopsContainer = ({
 
   const isBalanceSelected = guardSlot === BALANCE_SLOT;
 
-  const resolveUnlockedSlotsForStructure = (structure?: typeof selectedStructure) => {
-    if (!structure?.base) {
-      return [];
-    }
+  const selectedStructureGuardSlots = useMemo(() => structureGuardSlots(selectedStructure), [selectedStructure]);
 
-    const { base } = structure;
-    const category = base.category;
-    const limits: number[] = [];
-    const derivedLimit = getStructureDefenseSlotLimit(category as StructureType | undefined, base.level ?? null);
-    if (typeof derivedLimit === "number" && Number.isFinite(derivedLimit)) {
-      limits.push(derivedLimit);
-    }
-
-    const baseLimitRaw = base.troop_max_guard_count;
-    if (baseLimitRaw !== undefined && baseLimitRaw !== null) {
-      const baseLimit = Number(baseLimitRaw);
-      if (Number.isFinite(baseLimit)) {
-        limits.push(baseLimit);
-      }
-    }
-
-    if (limits.length === 0) {
-      return [];
-    }
-
-    const resolvedLimit = Math.max(0, Math.min(Math.min(...limits), MAX_GUARD_SLOT_COUNT));
-    if (resolvedLimit === 0) {
-      return [];
-    }
-
-    return getUnlockedGuardSlots(resolvedLimit);
-  };
-
-  const selectedStructureGuardSlots = useMemo(
-    () => resolveUnlockedSlotsForStructure(selectedStructure),
-    [selectedStructure],
-  );
-
-  const targetStructureGuardSlots = useMemo(() => resolveUnlockedSlotsForStructure(targetStructure), [targetStructure]);
+  const targetStructureGuardSlots = useMemo(() => structureGuardSlots(targetStructure), [targetStructure]);
 
   const availableGuards = useMemo<number[]>(() => {
     if (transferDirection === TransferDirection.ExplorerToStructure) {
@@ -822,7 +787,7 @@ export const TransferTroopsContainer = ({
 
       onTransferComplete();
     } catch (error) {
-      console.error(error);
+      toast.failed(error, "The troops could not be moved.");
     } finally {
       setLoading(false);
     }

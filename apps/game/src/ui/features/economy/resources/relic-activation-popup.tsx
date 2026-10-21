@@ -1,5 +1,8 @@
 import { HudButton, HudChip, HudNotice, HudRow, HudWindow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { useGame } from "@/hooks/context/game-context";
+import { ActionFailureNotice } from "@/ui/features/event-feed/action-failure-notice";
+import { type ActionFailure, actionFailure } from "@/ui/features/event-feed/notify";
+import { useActNowRefusal } from "@/utils/can-issue-orders";
 import { ID, RelicRecipientType } from "@bibliothecadao/types";
 import React, { useState } from "react";
 import { activateRelic, relicShortName } from "@/ui/design-system/kit/words";
@@ -31,7 +34,9 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
   onActivated,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Why the last press did not activate: told until the next press, which tries again.
+  const [failure, setFailure] = useState<ActionFailure | null>(null);
+  const failed = (reason: string) => setFailure({ refused: false, reason });
 
   const {
     setup: { systemCalls },
@@ -41,30 +46,32 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
   const { relicInfo, resourceId: relicResourceId, essenceCost } = useRelicMetadata(relicId);
   const { essenceBalance, hasEnoughEssence, shortfall } = useRelicEssenceStatus(entityOwnerId, essenceCost);
   const compatible = isRelicCompatible(relicInfo, recipientType);
+  // Why the game takes no action yet ("Starts in 2m 33s"): Activate says so before the click, and stays shut.
+  const refusal = useActNowRefusal();
 
   const handleConfirm = async () => {
     if (!relicInfo) {
-      setError("Relic not found");
+      failed("Relic not found");
       return;
     }
 
     if (!account) {
-      setError("Account not connected");
+      failed("Account not connected");
       return;
     }
 
     if (!hasEnoughEssence) {
-      setError(shortfall);
+      failed(shortfall);
       return;
     }
 
     if (!systemCalls.apply_relic) {
-      setError("Relic activation is not available yet");
+      failed("Relic activation is not available yet");
       return;
     }
 
     setIsLoading(true);
-    setError(null);
+    setFailure(null);
 
     try {
       await systemCalls.apply_relic!({
@@ -77,8 +84,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
       onActivated?.();
       onClose();
     } catch (err) {
-      console.error("Failed to activate relic:", err);
-      setError("Failed to activate relic. Please try again.");
+      setFailure(actionFailure(err, "Failed to activate relic. Please try again."));
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +99,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
         <HudButton
           kind="primary"
           busy={isLoading ? "Activating…" : undefined}
-          disabled={!!error || !compatible || !hasEnoughEssence}
+          disabled={refusal !== null || !compatible || !hasEnoughEssence}
           onClick={handleConfirm}
         >
           Activate Relic
@@ -120,7 +126,8 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
           hasEnoughEssence={hasEnoughEssence}
         />
         {!compatible && <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={recipientType} />}
-        {error && <HudNotice tone="bad" line={error} />}
+        {refusal !== null && <HudNotice line={refusal} />}
+        {failure && <ActionFailureNotice failure={failure} />}
       </div>
     </HudWindow>
   );

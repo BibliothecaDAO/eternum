@@ -391,6 +391,20 @@ describe("native presets", () => {
     expect(diceRules("madara.blitz", 4)).toEqual([false, true]);
   });
 
+  // The HS held rule says a realm settled later counts from the next capture: a capture recounts the realms only where
+  // shares follow the owner (transfer_hyperstructure_shares), so every preset that counts them must have that rule.
+  test("every preset that counts the realms around a hyperstructure gives its shares to whoever captures it", () => {
+    const withRules = (rules: number) =>
+      Object.values(nativePresets)
+        .filter((preset) => (preset.modeRules & rules) === rules)
+        .map((preset) => preset.id);
+    const counted = withRules(nativeRuleConstants.HYPERSTRUCTURE_MULTIPLIERS);
+    expect(counted.length).toBeGreaterThan(0);
+    expect(withRules(nativeRuleConstants.HYPERSTRUCTURE_MULTIPLIERS | nativeRuleConstants.OWNER_ONLY_SHARES)).toEqual(
+      counted,
+    );
+  });
+
   test("Frontier combat is biome-neutral while Blitz keeps its terrain bonus", () => {
     const frontier = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),

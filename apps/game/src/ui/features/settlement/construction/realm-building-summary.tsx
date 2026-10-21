@@ -15,7 +15,7 @@ import { resourceMeaning, type IconMeaning } from "@/ui/design-system/icon-meani
 // preference: heavier infantry / cavalry surface first in the military tab.
 export const MILITARY_BUILDING_GROUP_ORDER = ["Stable", "Barracks", "Archery"] as const;
 
-type MilitaryBuildingGroup = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
+export type MilitaryBuildingGroup = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 
 type RealmBuildingSummaryItem = {
   buildingId: BuildingType;

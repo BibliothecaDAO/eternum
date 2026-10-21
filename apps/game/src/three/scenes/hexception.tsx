@@ -923,7 +923,7 @@ export default class HexceptionScene extends HexagonScene {
           useSimpleCost,
         });
       } catch (error) {
-        console.error("[Hexception] building placement failed", error);
+        toast.failed(error, "Building failed. Please try again.");
       }
     } else {
       // if not building mode

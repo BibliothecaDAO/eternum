@@ -42,6 +42,7 @@ import { ActiveRelicEffects } from "../../world/components/entities/active-relic
 import { AttackTarget, TargetType } from "./types";
 import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
+import { toast } from "@/ui/features/event-feed/notify";
 
 enum RaidOutcome {
   Success = "Success",
@@ -258,7 +259,7 @@ export const RaidContainer = ({
       if (!("transaction_hash" in result)) throw new Error("Raid receipt has no transaction hash");
       setRaidTransactionHash(result.transaction_hash);
     } catch (error) {
-      console.error(error);
+      toast.failed(error, "The raid failed.");
       setShowRaidResult(false);
     } finally {
       setLoading(false);

@@ -47,7 +47,7 @@ const player = (address: bigint, name: string, rank: number, points: number, isU
     hyperStructureBanditsDefeat: { count: rank === 1 ? 2 : 0, points: rank === 1 ? 2_000 : 0 },
     hyperstructureShare: { count: 0, points: rank === 1 ? 420 : 0 },
   } as PlayerCustom["activityBreakdown"],
-  includesLiveShareholderPoints: false,
+  accruingHoldPoints: 0,
   mmrDelta: null,
 });
 

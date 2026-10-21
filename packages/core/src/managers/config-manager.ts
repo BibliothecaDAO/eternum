@@ -438,19 +438,6 @@ export class ClientConfigManager {
     const config = this.rules().troop_stamina_config;
     return Math.max(config.stamina_travel_stamina_cost - config.stamina_bonus_value, 10);
   }
-  getWorldStructureDefenseSlotsConfig() {
-    return {
-      [StructureType.Mine]: 1,
-      [StructureType.Hyperstructure]: 4,
-      [StructureType.Bank]: 4,
-      [StructureType.Camp]: 1,
-      [StructureType.BitcoinMine]: 4,
-      // A Frontier site stands behind the one guard it was found with.
-      [StructureType.Rift]: 1,
-      [StructureType.Ruin]: 1,
-      [StructureType.Beasts]: 1,
-    };
-  }
   getResourceBridgeFeeSplitConfig() {
     const deposit = this.facts().require("DepositRules", { game_id: this.gameId });
     const withdrawal = this.facts().require("WithdrawalRules", { game_id: this.gameId });

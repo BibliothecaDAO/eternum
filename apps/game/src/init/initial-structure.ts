@@ -10,6 +10,7 @@ import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { followRealmsPlayer, readRealmsPlayer } from "@/shell/herald";
 
 import { resolveInitialStructureSelection } from "../sync/initial-structure-selection";
+import { playerScopeApplied } from "../sync/fact-views";
 
 interface InitialSelectableStructure {
   entity_id: number;
@@ -101,10 +102,9 @@ const chooseInitialStructure = (setup: SetupResult, state: AppStore, spectatorPi
  * which answers for a season with no leader); elsewhere the snapshot already held every structure.
  */
 const subjectScopeApplied = (setup: SetupResult, viewer: bigint | null): boolean => {
+  if (viewer !== null) return playerScopeApplied(setup.store, viewer);
   const scope = setup.store.subscriptionScope().known;
-  if (!scope) return false;
-  if (viewer !== null) return scope.actor !== undefined && BigInt(scope.actor) === viewer;
-  return scope.visit !== undefined || scope.expedition === undefined;
+  return scope !== undefined && (scope.visit !== undefined || scope.expedition === undefined);
 };
 
 /** Spectating because no account had arrived, not because the player asked to spectate. */

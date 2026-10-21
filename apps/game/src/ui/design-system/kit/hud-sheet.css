@@ -273,8 +273,10 @@ button.ui-panel__name {
 }
 
 /* ── Tabs: a strip of choices; the chosen one in gold over a gold rule. ── */
+/* A strip too wide for its place wraps to a second row: no tab ever leaves the panel it stands in. */
 .ui-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: theme(spacing.1);
   border-bottom: 1px solid var(--hud-divider);
 }
@@ -297,6 +299,20 @@ button.ui-panel__name {
   transition:
     color var(--hud-fast) var(--hud-ease),
     background-color var(--hud-fast) var(--hud-ease);
+}
+/* A tab that is a painting and its count, no word (a kind of holding): compact, the count a badge on the painting. */
+.ui-tab[data-shape="mark"] {
+  padding: 0 theme(spacing[2.5]) 0 theme(spacing[1.5]);
+}
+.ui-tab__mark {
+  position: relative;
+  display: inline-flex;
+}
+.ui-tab__mark > .ui-chip {
+  position: absolute;
+  right: -10px;
+  bottom: -6px;
+  padding: 0 theme(spacing.1);
 }
 .ui-tabs[data-size="sm"] .ui-tab {
   height: calc(var(--hud-control) - 8px);
