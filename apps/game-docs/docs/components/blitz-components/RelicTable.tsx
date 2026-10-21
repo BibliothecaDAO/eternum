@@ -1,11 +1,4 @@
-import {
-  RELIC_PACKS,
-  RELICS,
-  RelicRecipientType,
-  relicName,
-  LUCKY_CHEST_PERCENT,
-  ResourcesIds,
-} from "@bibliothecadao/types";
+import { RELIC_PACKS, RELICS, RelicRecipientType, relicName, ResourcesIds } from "@bibliothecadao/types";
 import { blitzPreset } from "../../../../../config/source/blitz/native";
 import { colors, section, table } from "../styles";
 

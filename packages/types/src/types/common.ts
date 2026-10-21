@@ -21,10 +21,8 @@ export interface SeasonAddresses {
   realms: string;
   /** Address of the LORDS token contract */
   lords: string;
-  /** Map of resource name to [resourceId, contractAddress] */
-  resources: {
-    [key: string]: (string | number)[];
-  };
+  /** Each resource's id and token contract, by the resource's name. */
+  resources: Record<string, [resourceId: number, address: string]>;
 }
 
 export type ResourceArrivalInfo = {

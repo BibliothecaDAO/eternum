@@ -66,18 +66,7 @@ export const ResourceAddresses = () => {
 
   // Transform the address data for display
   const addressesArray = Object.entries(addresses)
-    .map(([resourceName, data]) => {
-      // data is an array where first element is the ID and second is the address
-      const id = data[0];
-      const address = data[1] as string;
-
-      return {
-        resourceName,
-        id,
-        address,
-      };
-    })
-    .filter((item) => item !== null)
+    .map(([resourceName, [id, address]]) => ({ resourceName, id, address }))
     .toSorted((a, b) => {
       // Sort by the order defined in RESOURCE_ORDER
       const indexA = RESOURCE_ORDER.indexOf(a.id);

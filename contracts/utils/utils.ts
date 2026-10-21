@@ -32,10 +32,8 @@ export interface SeasonAddresses {
   strk: string;
   /** Address whose balance funds factory game deployment. */
   factoryDeployer?: string;
-  /** Map of resource name to [resourceId, contractAddress] */
-  resources: {
-    [key: string]: (string | number)[];
-  };
+  /** Each resource's id and token contract, by the resource's name. */
+  resources: Record<string, [resourceId: number, address: string]>;
   /** Address of the marketplace contract */
   marketplace: string;
   /** Address of the cosmetics claim contract */
