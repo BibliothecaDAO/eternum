@@ -1,8 +1,9 @@
-// @vitest-environment node
+// @vitest-environment jsdom
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { ContractAddress, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
+import { setActiveGame } from "@/runtime/world";
 import { setOpenGameSeats } from "@/utils/entity-ownership";
 import { overrideSpectateIntent } from "@/utils/spectator-session";
 import { minimapMarkersView } from "./minimap-markers";
@@ -10,7 +11,8 @@ import { minimapMarkersView } from "./minimap-markers";
 afterEach(() => {
   setBlockTimestampSource(null);
   overrideSpectateIntent(false);
-  setOpenGameSeats(0, []);
+  setOpenGameSeats({ chainId: "", gameId: 0 }, []);
+  localStorage.clear();
 });
 
 describe("minimap icon meanings from game facts", () => {
@@ -58,8 +60,9 @@ describe("minimap icon meanings from game facts", () => {
 describe("the minimap to a watching viewer (side-colours-4)", () => {
   it("marks each player's things in their seat, nobody's neutral, whatever the viewer's account", () => {
     const { store } = campBeside();
-    // The open game's players as Herald lists them: 0x111 holds realm 7 and army 201.
-    setOpenGameSeats(1, [ContractAddress("0x111"), ContractAddress("0x222")]);
+    // The open game's players in the order they joined it: 0x111 holds realm 7 and army 201.
+    setActiveGame({ chainId: "SHARD", gameId: 1 });
+    setOpenGameSeats({ chainId: "SHARD", gameId: 1 }, [ContractAddress("0x111"), ContractAddress("0x222")]);
     overrideSpectateIntent(true);
     for (const viewer of [null, ContractAddress("0x111"), ContractAddress("0x222")]) {
       const markers = minimapMarkersView.read(store, viewer);

@@ -388,8 +388,8 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   Eternum only: `arePlayersAllied`) blue, anyone else's red, nobody's too (owner, 2026-10-21; `HUD_SHEET` own, ally,
   enemy). A watching viewer (`?spectate=true`, or a spectating HUD) has no side: each player's labels take their seat's
   colour, with their initial on the disk, and nobody's are grey (owner, 2026-10-21: "a diff color for every player";
-  `watchedSide`, `src/utils/entity-ownership.ts`: a Blitz roster's order, else the open game's players as its Herald
-  board lists them, a Frontier season's in the order realms were settled, an Eternum game's by address; 24 colours,
+  `watchedSide`, `src/utils/entity-ownership.ts`: a Blitz roster's order, else the open game's players in the order each
+  first had a realm created (its `RealmCreatedStory` history on Herald), for that shard's game alone; 24 colours,
   `SEAT_COLOURS`, again from the first past the 24th); the minimap marks and the standings (Blitz's **Standings**,
   Frontier's **Season**) carry the same colour and initial. An undefended one shows a dashed ring. No label element
   takes the pointer (`map-plates.css`): a hover or a click, on a token or an open plate, lands on the tile under the

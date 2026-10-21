@@ -1,6 +1,6 @@
 import { configManager } from "@bibliothecadao/eternum";
-import { fetchHeraldLeaderboard, requireShard } from "@bibliothecadao/eternum/game-client";
-import type { HeraldFrontierLeaderboardEntry, HeraldLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
+import { fetchHeraldGameHistory, requireShard } from "@bibliothecadao/eternum/game-client";
+import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useSyncExternalStore } from "react";
@@ -33,43 +33,60 @@ export const PlayerSeatMark = ({ account, name }: { account: bigint | string; na
 );
 
 /**
- * An open game's seat order from its Herald board, which lists every player (a watching viewer's own facts hold only
- * those in view): a Frontier season's by each player's realm, in the order realms were settled (a Frontier realm never
- * changes hands, so a newcomer takes the next seat and no seat moves); an Eternum game's by address, as Herald's board
- * gives no other order.
+ * An open game's seat order: its players in the order each first had a realm created in it (its `RealmCreatedStory`
+ * events, by their place on the chain). A newcomer takes the next seat and no seat moves, a later realm or a captured one
+ * changes nothing, and every viewer, whenever they arrive, reads the same order from the same events.
  */
-export const openGameSeatsOf = (
-  board:
-    | { mode: "frontier"; entries: HeraldFrontierLeaderboardEntry[] }
-    | { mode: "points"; entries: HeraldLeaderboardEntry[] },
-): bigint[] => {
-  const byAddress = (a: bigint, b: bigint) => (a < b ? -1 : a > b ? 1 : 0);
-  if (board.mode === "frontier")
-    return board.entries
-      .map((entry) => ({ player: ContractAddress(entry.address), realm: BigInt(entry.structure_id) }))
-      .toSorted((a, b) => (a.realm === b.realm ? byAddress(a.player, b.player) : a.realm < b.realm ? -1 : 1))
-      .map(({ player }) => player);
-  return board.entries.map((entry) => ContractAddress(entry.address)).toSorted(byAddress);
+export const openGameSeatsOf = (stories: readonly HeraldHistoryEvent[]): bigint[] => {
+  const ordered = stories.toSorted(
+    (a, b) =>
+      a.block_number - b.block_number || a.transaction_index - b.transaction_index || a.event_index - b.event_index,
+  );
+  const seats = new Set<bigint>();
+  for (const story of ordered) {
+    const owner = ContractAddress(String(story.value.owner));
+    if (owner !== 0n) seats.add(owner);
+  }
+  return [...seats];
 };
 
+/** Herald's page, at most. */
+const HISTORY_PAGE = 500;
 const OPEN_SEATS_REFRESH_MS = 30_000;
 
+/** Every realm created in a game, page by page from Herald's history: each a `RealmCreatedStory` event. */
+const fetchRealmsCreated = async (chainId: string, game: number): Promise<HeraldHistoryEvent[]> => {
+  const shard = requireShard(chainId);
+  const stories: HeraldHistoryEvent[] = [];
+  for (let offset = 0; ; offset += HISTORY_PAGE) {
+    const page = await fetchHeraldGameHistory(shard, game, {
+      model: "StoryEvent",
+      story: "RealmCreatedStory",
+      limit: HISTORY_PAGE,
+      offset,
+    });
+    stories.push(...page.items);
+    if (page.items.length === 0 || offset + HISTORY_PAGE >= page.total) return stories;
+  }
+};
+
 /**
- * Keeps an open game's seats from Herald while the viewer watches it (`setOpenGameSeats`): a Blitz or Duel game seats
- * by its roster, on the chain. Mounted once, beside whichever HUD draws.
+ * Keeps an open game's seats while the viewer watches it (`setOpenGameSeats`), for that game alone: its shard's chain id
+ * and its id. A Blitz or Duel game seats by its roster, on the chain. Mounted once, beside whichever HUD draws.
  */
 export const useOpenGameSeats = (): void => {
   const watching = useIsWatching();
   const game = configManager.getActiveGameId();
   const roster = useNativeRow("BlitzRoster", { game_id: game });
   const chainId = getActiveGame()?.chainId;
-  const board = useQuery({
+  const stories = useQuery({
     queryKey: ["openGameSeats", chainId, game],
-    queryFn: () => fetchHeraldLeaderboard(requireShard(chainId), game),
+    queryFn: () => fetchRealmsCreated(chainId!, game),
     enabled: watching && !roster && chainId !== undefined,
     refetchInterval: OPEN_SEATS_REFRESH_MS,
   });
   useEffect(() => {
-    if (board.data) setOpenGameSeats(game, openGameSeatsOf(board.data));
-  }, [board.data, game]);
+    if (stories.data && chainId !== undefined)
+      setOpenGameSeats({ chainId, gameId: game }, openGameSeatsOf(stories.data));
+  }, [stories.data, chainId, game]);
 };

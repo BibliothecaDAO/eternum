@@ -1,6 +1,7 @@
 import { ContractAddress } from "@bibliothecadao/types";
 import { configManager, isViewerOwner, nativeGameModeOf } from "@bibliothecadao/eternum";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import type { GameRef, NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { gameKey, getActiveGameKey } from "@/runtime/world/store";
 import { seatSide, type SeatSide } from "@/tokens";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isWatching } from "./can-issue-orders";
@@ -49,8 +50,11 @@ export function arePlayersAllied(
   return store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: owner })?.guild_id === playerGuild;
 }
 
-/** An open game's players in seat order as Herald lists them (`useOpenGameSeats`), for the game it lists. */
-let openGameSeats: { game: number; order: bigint[] } | null = null;
+/**
+ * An open game's players in seat order (`useOpenGameSeats`), for the one game they were read for: its shard's chain id
+ * and its id there (`gameKey`), as two shards number their games alike.
+ */
+let openGameSeats: { game: string; order: bigint[] } | null = null;
 let seatsRevision = 0;
 const seatListeners = new Set<() => void>();
 
@@ -62,16 +66,17 @@ export const subscribeSeats = (listener: () => void): (() => void) => {
 };
 
 /**
- * Sets an open game's seat order (a Frontier or Eternum game has no roster on the chain): its players as Herald lists
- * every one of them, ordered as `useOpenGameSeats` orders them. Labels and marks drawn by seat are told again.
+ * Sets an open game's seat order (a Frontier or Eternum game has no roster on the chain), as `useOpenGameSeats` read it
+ * for that game. Labels and marks drawn by seat are told again.
  */
-export const setOpenGameSeats = (game: number, order: bigint[]): void => {
+export const setOpenGameSeats = (game: GameRef, order: bigint[]): void => {
+  const key = gameKey(game);
   const same =
-    openGameSeats?.game === game &&
+    openGameSeats?.game === key &&
     openGameSeats.order.length === order.length &&
     openGameSeats.order.every((player, index) => player === order[index]);
   if (same) return;
-  openGameSeats = { game, order };
+  openGameSeats = { game: key, order };
   seatsRevision += 1;
   for (const listener of [...seatListeners]) listener();
 };
@@ -90,14 +95,13 @@ export const onSidesChanged = (listener: () => void): (() => void) => {
 
 /**
  * The game's players in seat order, the same on every client and through the game: a Blitz or Duel game's roster, fixed
- * before play; else an open game's players as Herald lists them all (a spectator's own facts hold only the rows in
- * view). Empty until known.
+ * before play; else an open game's players in the order they joined it (`useOpenGameSeats`). Empty until this game's
+ * own order is known: another game's, on this shard or another, never stands in while its read is on its way or failed.
  */
 export const seatOrder = (store: NativeFactStore): bigint[] => {
-  const game = configManager.getActiveGameId();
-  const roster = store.get("BlitzRoster", { game_id: game });
+  const roster = store.get("BlitzRoster", { game_id: configManager.getActiveGameId() });
   if (roster) return roster.players.map((player) => ContractAddress(player.account));
-  return openGameSeats?.game === game ? openGameSeats.order : [];
+  return openGameSeats !== null && openGameSeats.game === getActiveGameKey() ? openGameSeats.order : [];
 };
 
 /**

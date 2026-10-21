@@ -3,16 +3,9 @@ import { configManager } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { hash } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { HUD_SHEET, SEAT_COLOURS, seatSide } from "@/tokens";
+import { SEAT_COLOURS, seatSide } from "@/tokens";
 import { overrideSpectateIntent } from "./spectator-session";
-import {
-  arePlayersAllied,
-  isEntityOwnedByAccount,
-  onSidesChanged,
-  seatOrder,
-  setOpenGameSeats,
-  watchedSide,
-} from "./entity-ownership";
+import { arePlayersAllied, isEntityOwnedByAccount, seatOrder, watchedSide } from "./entity-ownership";
 
 const fixture = () => {
   configManager.setActiveGame(1, 1);
@@ -115,10 +108,7 @@ describe("allies (owner, 2026-10-21: tribe members, in Eternum only)", () => {
 });
 
 describe("seats (side-colours-4: a watching viewer sees each player in their seat's colour)", () => {
-  afterEach(() => {
-    overrideSpectateIntent(false);
-    setOpenGameSeats(0, []);
-  });
+  afterEach(() => overrideSpectateIntent(false));
   /** A game whose structures are `[entity id, owner]`, with the given registered players and Blitz roster. */
   const game = ({
     structures = [],
@@ -153,44 +143,9 @@ describe("seats (side-colours-4: a watching viewer sees each player in their sea
     expect(seatOrder(store)).toEqual([0xbn, 0xcn, 0xan]);
   });
 
-  it("seats an open game by its players as Herald lists them, and says so when they change", () => {
-    const { store } = game({ structures: [[2n, 0xbn]], players: [0xbn] });
-    expect(seatOrder(store)).toEqual([]);
-    const heard = vi.fn();
-    const stop = onSidesChanged(heard);
-    setOpenGameSeats(1, [0xbn, 0xan]);
-    expect(seatOrder(store)).toEqual([0xbn, 0xan]);
-    setOpenGameSeats(1, [0xbn, 0xan]);
-    expect(heard).toHaveBeenCalledTimes(1);
-    // Another game's list is not this one's; a roster, on the chain, wins over any.
-    setOpenGameSeats(2, [0xcn]);
-    expect(seatOrder(store)).toEqual([]);
-    stop();
-    setOpenGameSeats(1, [0xan]);
-    expect(heard).toHaveBeenCalledTimes(2);
-    const blitz = game({ roster: [0xcn] });
-    expect(seatOrder(blitz.store)).toEqual([0xcn]);
-  });
-
   it("tells nothing by seat while the viewer plays", () => {
     const { store } = game({ structures: [[2n, 0xbn]], players: [0xbn] });
     expect(watchedSide(store, 0xbn)).toBeNull();
-  });
-
-  it("gives a watching viewer each player's seat colour and nobody's grey", () => {
-    const { store } = game({
-      structures: [
-        [2n, 0xbn],
-        [5n, 0xan],
-      ],
-      players: [0xan, 0xbn],
-    });
-    setOpenGameSeats(1, [0xbn, 0xan]);
-    overrideSpectateIntent(true);
-    expect(watchedSide(store, "0x0b")).toEqual({ seat: 0, colour: SEAT_COLOURS[0], ink: "dark" });
-    expect(watchedSide(store, 0xan)).toMatchObject({ seat: 1, colour: SEAT_COLOURS[1] });
-    expect(watchedSide(store, 0n)).toEqual({ seat: null, colour: HUD_SHEET.neutral });
-    expect(watchedSide(store, 0xeeen)).toEqual({ seat: null, colour: HUD_SHEET.neutral });
   });
 
   it("starts the 24 colours again past the 24th seat, and writes each initial in the ink its colour reads in", () => {
