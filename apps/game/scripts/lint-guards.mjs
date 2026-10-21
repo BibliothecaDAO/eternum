@@ -42,6 +42,13 @@ const TEXT_VALUES = {
 // for the first one added above the return; the rule catches both.
 const HOOK_ORDER = { "react-hooks/rules-of-hooks": "error" };
 
+// A name nothing reads is code left behind by a change: an import a refactor stopped using, a constant or helper whose
+// caller went, a parameter every caller still fills. Delete it. A parameter that only holds a place (`_event`) follows
+// the repo's `_` convention; a key named to leave it out of a rest object (`{ secret, ...rest }`) is read by that.
+const UNUSED = {
+  "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", ignoreRestSiblings: true }],
+};
+
 const eslint = new ESLint({
   cwd: REPO,
   overrideConfigFile: true,
@@ -50,8 +57,8 @@ const eslint = new ESLint({
       files: SOURCES,
       languageOptions: { parser: tseslint.parser },
       linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
-      plugins: { "react-hooks": reactHooks },
-      rules: { "no-restricted-syntax": ["error", ...NO_BITWISE_ID], ...HOOK_ORDER },
+      plugins: { "react-hooks": reactHooks, "@typescript-eslint": tseslint.plugin },
+      rules: { "no-restricted-syntax": ["error", ...NO_BITWISE_ID], ...HOOK_ORDER, ...UNUSED },
     },
     {
       files: ["apps/game/src/**/*.{ts,tsx}"],
