@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ADMIN_ACCESS } from "./admin-access";
-import { setUpDirectory } from "./cloudflare";
+import { requireCloudflareResources, setUpDirectory } from "./cloudflare";
 import { PublicError } from "./errors";
 import { preparationSteps, type Deployment } from "./main";
 import { Platform, workers } from "./platform";
@@ -366,6 +366,16 @@ test("setup creates each site's project, hostname and a record to the project's 
     ...site("eternum-game", "play.realms.party", "eternum-game.pages.dev"),
     ...site("realms-docs", "docs.realms.party", "realms-docs-7xq.pages.dev"),
   ]);
+});
+
+test("publishing refuses an environment whose docs site setup has not created yet", async () => {
+  const { target } = emptyAccount();
+  const value = new Platform(target, { cloudflareToken: "private-token" } as Inputs, {} as PrivateStore, true);
+  await expect(requireCloudflareResources(value)).rejects.toThrow(
+    "run setup with --apply before publishing Cloudflare",
+  );
+  crowdedAccount();
+  await requireCloudflareResources(platform(true));
 });
 
 test("setup never overwrites a docs hostname the zone already points elsewhere", async () => {
