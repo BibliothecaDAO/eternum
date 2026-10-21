@@ -7,7 +7,7 @@ vi.mock("@/hooks/context/starknet-provider", async () => ({
 }));
 
 import { installWallet } from "@/ui/modules/identity/test-wallet";
-import { WalletSign } from "./wallet-actions";
+import { WalletPicker, WalletSign } from "./wallet-actions";
 import { rememberOpened } from "@/ui/modules/identity/wallet-holder";
 
 const LINKED = "0x04a1000000000000000000000000000000000000000000000000000000003e9f";
@@ -119,5 +119,50 @@ it("leaves one Try again when the wallet declines, which prompts the same wallet
   expect(ready.transactions()).toHaveLength(1);
   await press(container, "Try again");
   await settled(() => expect(ready.transactions()).toHaveLength(2));
+  expect(landed).not.toHaveBeenCalled();
+});
+
+/** The link's picker as the payout wallet panel shows it, with every wallet this browser has. */
+const openPicker = async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const proven = vi.fn();
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  await act(async () => root.render(<WalletPicker onProof={proven} />));
+  unmounts.push(async () => {
+    await act(async () => root.unmount());
+    container.remove();
+  });
+  return { container, proven };
+};
+
+it("keeps every wallet open to try while one never answers, and says what to do", async () => {
+  installWallet("argentX", { account: OTHER, answers: false });
+  installWallet("braavos", { account: LINKED });
+  const { container, proven } = await openPicker();
+  await press(container, "Ready");
+  await settled(() => expect(container.textContent).toContain("Opening…"));
+  const braavos = [...container.querySelectorAll("button")].find((b) => b.textContent?.includes("Braavos"))!;
+  expect(braavos.disabled).toBe(false);
+  expect(container.textContent).toContain("Nothing opened? Choose it again, or another wallet.");
+
+  await press(container, "Braavos");
+  await settled(() => expect(proven).toHaveBeenCalledOnce());
+  expect(proven.mock.calls[0]?.[0]).toMatchObject({ address: LINKED });
+  expect(container.textContent).not.toContain("Opening…");
+});
+
+it("leaves Try again live while the linked wallet never answers, and prompts it once more", async () => {
+  rememberOpened(LINKED, "argentX");
+  const ready = installWallet("argentX", { account: LINKED, answers: false });
+  const { container, landed } = await openSend();
+  await settled(() => expect(ready.connections()).toHaveLength(1));
+  expect(container.textContent).toContain("Confirm in your wallet");
+  const tryAgain = [...container.querySelectorAll("button")].find((b) => b.textContent === "Try again")!;
+  expect(tryAgain.disabled).toBe(false);
+  await press(container, "Try again");
+  await settled(() => expect(ready.connections()).toHaveLength(2));
+  expect(ready.transactions()).toEqual([]);
   expect(landed).not.toHaveBeenCalled();
 });

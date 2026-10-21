@@ -100,12 +100,13 @@ const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; o
       ) : (
         <>
           {wallet.error && <span className="text-app-label text-app-bad">{wallet.error}</span>}
+          {wallet.pending !== null && !wallet.signing && (
+            <span className="text-app-label text-app-muted">{WALLET_WORDS.confirmInWallet}</span>
+          )}
           <AppButton
             kind="secondary"
             icon="refresh"
-            busy={
-              confirming ? VALUE_WORDS.confirming : wallet.pending === null ? undefined : WALLET_WORDS.confirmInWallet
-            }
+            busy={confirming ? VALUE_WORDS.confirming : wallet.signing ? WALLET_WORDS.confirmInWallet : undefined}
             onClick={() => holder && void wallet.open(holder)}
           >
             {WALLET_WORDS.tryAgain}
@@ -123,35 +124,47 @@ type OnAccount = (account: AccountInterface, connectorId: string, provider: Prov
 
 /**
  * One wallet action at a time: `open` connects a connector's wallet and hands its account to `onAccount`, `pending`
- * names the connector under way and `error` is the one line of why it stopped.
+ * names the connector under way, `signing` says its account is in hand and being used, and `error` is the one line of
+ * why it stopped. A wallet may never answer the connection (its window closed, or blocked by the browser), so a new
+ * `open` while connecting starts over and the one it replaces is ignored; once an account is in hand, nothing else
+ * starts until it is done, so nothing is signed or sent twice.
  */
 const useWalletAction = (failure: "link" | "pay", onAccount: OnAccount) => {
   const { provider } = useProvider();
   const connect = useL2Account();
   const [pending, setPending] = useState<string | null>(null);
+  const [signing, setSigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const running = useRef(false);
+  const latest = useRef(0);
+  const inHand = useRef(false);
 
   const open = async (connector: Connector) => {
-    if (running.current) return;
-    running.current = true;
+    if (inHand.current) return;
+    const attempt = ++latest.current;
+    const current = () => attempt === latest.current;
     setPending(connector.id);
     setError(null);
     try {
-      await onAccount(await connect(connector), connector.id, provider);
+      const account = await connect(connector);
+      if (!current()) return;
+      inHand.current = true;
+      setSigning(true);
+      await onAccount(account, connector.id, provider);
     } catch (cause) {
-      setError(
-        cause instanceof WrongWalletError
-          ? WALLET_WORDS.wrongWallet(shortAddress(cause.owner))
-          : failureLine(failure, cause),
-      );
+      if (current()) setError(walletFailureLine(failure, cause));
     } finally {
-      running.current = false;
-      setPending(null);
+      if (current()) {
+        inHand.current = false;
+        setSigning(false);
+        setPending(null);
+      }
     }
   };
-  return { open, pending, error };
+  return { open, pending, signing, error };
 };
+
+const walletFailureLine = (failure: "link" | "pay", cause: unknown) =>
+  cause instanceof WrongWalletError ? WALLET_WORDS.wrongWallet(shortAddress(cause.owner)) : failureLine(failure, cause);
 
 const WalletRows = ({
   only,
@@ -172,7 +185,7 @@ const WalletRows = ({
         <button
           key={choice.id}
           type="button"
-          disabled={wallet.pending !== null}
+          disabled={wallet.signing}
           onClick={() => void wallet.open(connector)}
           className="flex h-[62px] items-center gap-3 rounded-xl border border-app-line-strong bg-app-well px-3.5 text-left transition-colors hover:border-app-gold disabled:opacity-60"
         >
@@ -185,6 +198,9 @@ const WalletRows = ({
         </button>
       ))}
       {rows.length === 0 && <span className="text-app-body text-app-muted">{WALLET_WORDS.noneHere}</span>}
+      {wallet.pending !== null && !wallet.signing && (
+        <span className="text-app-label text-app-muted">{WALLET_WORDS.nothingOpened}</span>
+      )}
       {wallet.error && <span className="text-app-label text-app-bad">{wallet.error}</span>}
     </div>
   );

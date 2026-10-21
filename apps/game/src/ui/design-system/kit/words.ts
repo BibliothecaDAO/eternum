@@ -687,6 +687,7 @@ export const WALLET_WORDS = {
   unlinkTitle: "Unlink wallet",
   nothingPaysOut: "Nothing pays out until a wallet is linked",
   opening: "Opening…",
+  nothingOpened: "Nothing opened? Choose it again, or another wallet.",
   noneHere: "No wallet this browser can open. Ready by email needs none.",
   wrongWallet: (owner: string) => `Open ${owner}: only that wallet can sign this.`,
   paymentFailed: "The wallet did not confirm it. Check it, then try again.",
