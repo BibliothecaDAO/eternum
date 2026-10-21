@@ -93,7 +93,7 @@ for (const file of await readdir('apps/game/dist', {recursive:true}))
   await publishSite(platform, clientSite(platform.target), "apps/game/dist", revision);
   await verifyPublishedClient(platform);
 }
-/** The docs site, built as validation builds it, published from the same commit as the client. */
+/** The docs site, built as validation builds it and published from the same commit as the client. */
 export async function deployDocs(platform: Platform, revision: string) {
   if (!platform.apply) throw new PublicError("Dry run cannot deploy the docs");
   deploymentStage("publish docs");
@@ -110,9 +110,12 @@ export async function deployDocs(platform: Platform, revision: string) {
     ],
   });
 }
-/** Upload a built site to its Pages project, unless its live deployment is already this commit's. */
+/**
+ * Upload a built site to its Pages project as this commit's deployment. Every run uploads the build it then checks, so
+ * the check proves what this run published, a rerun at the same commit included: two builds of one commit in two
+ * directories differ, and Pages stores only the files it lacks.
+ */
 async function publishSite(platform: Platform, site: PagesSite, dist: string, revision: string) {
-  if ((await platform.siteRevision(site)) === revision) return;
   await command({
     argv: [
       "pnpm",

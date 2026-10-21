@@ -46,7 +46,6 @@ test.each(["dev", "production"] as const)(
   async (environment) => {
     const value = platform(environment);
     const calls = commands();
-    value.siteRevision = async () => undefined;
     await deployClient(value, revision);
     const build = calls.find((call) => call.argv.join(" ") === "pnpm --dir apps/game build")!;
     expect(build.env).toEqual(clientEnvironment(value, revision));
@@ -83,14 +82,15 @@ test.each(["dev", "production"] as const)(
     expect(JSON.stringify(calls.map((call) => call.argv))).not.toContain(input.cloudflareToken);
   },
 );
-test("client upload is skipped when the published revision already exists, but its assets are checked", async () => {
+test("a rerun at a commit whose client is live uploads its own build again, then checks that one", async () => {
   const value = platform();
   const calls = commands();
-  value.siteRevision = async () => revision;
   await deployClient(value, revision);
-  expect(calls.some((call) => call.argv.includes("wrangler"))).toBe(false);
-  expect(calls.at(-1)!.argv).toContain("apps/game/scripts/verify-client-deployment.mjs");
-  expect(calls.at(-1)!.argv.at(-1)).toContain("client-deployment-check.json");
+  const upload = calls.findIndex((call) => call.argv.includes("wrangler"));
+  expect(upload).toBeGreaterThan(0);
+  expect(calls.slice(upload + 1).map((call) => call.argv[1])).toEqual([
+    "apps/game/scripts/verify-client-deployment.mjs",
+  ]);
 });
 test("wrong client chain/RPC stops before a build or upload", async () => {
   const value = platform();
@@ -152,10 +152,7 @@ test.each(["dev", "production"] as const)(
   async (environment) => {
     const value = platform(environment);
     const calls = commands();
-    const asked: string[] = [];
-    value.siteRevision = async (site) => (asked.push(site.pages), undefined);
     await deployDocs(value, revision);
-    expect(asked).toEqual([value.target.docs.pages]);
     const check = join(value.store.directory, "docs-deployment-check.json");
     expect(calls.map((call) => call.argv)).toEqual([
       ["pnpm", "run", "build:docs"],
@@ -177,15 +174,16 @@ test.each(["dev", "production"] as const)(
     );
   },
 );
-test("docs already live at this commit are not uploaded again, but their origin is still proved", async () => {
+test("a rerun at a commit whose docs are live uploads its own build again, then proves that one", async () => {
   const value = platform();
   const calls = commands();
-  value.siteRevision = async () => revision;
   await deployDocs(value, revision);
-  expect(calls.map((call) => call.argv[0] + " " + call.argv[1])).toEqual([
+  expect(calls.map((call) => call.argv.slice(0, 2).join(" "))).toEqual([
     "pnpm run",
+    "pnpm --dir",
     "node apps/game-docs/scripts/verify-docs-deployment.mjs",
   ]);
+  expect(calls[1]!.argv).toContain("../game-docs/dist");
 });
 test("dry publish refuses every write before commands or transports", async () => {
   const value = platform("dev", false);

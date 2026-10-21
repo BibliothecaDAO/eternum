@@ -2,18 +2,26 @@ import { defineConfig } from "vocs";
 import { docsAliases, publicDir } from "./docs/utils/paths";
 import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 
+/**
+ * The site's paths on this machine, given to Vite by a plugin hook. Vocs ships its whole config in the site's bundle,
+ * so a value that only means something on the building machine stays out of it: a hook ships as its source text
+ * (scripts/vocs-config-boundary.test.mjs holds the shipped config to this). Only `vocs dev` serves the game's public
+ * folder (the pages' images); a build copies none of it, and scripts/ship-referenced-assets.mjs ships what pages name.
+ */
+const docsPaths = {
+  name: "docs-paths",
+  config: (_config: unknown, { command }: { command: string }) => ({
+    resolve: { alias: docsAliases },
+    ...(command === "serve" ? { publicDir } : {}),
+  }),
+};
+
 export default defineConfig({
   vite: {
-    // `vocs dev` serves the pages' images from here; `vocs build` ignores it, and scripts/ship-referenced-assets.mjs
-    // ships the files the built pages name.
-    publicDir,
     server: {
       allowedHosts: true,
     },
-    resolve: {
-      alias: docsAliases,
-    },
-    plugins: [llmTxtPlugin()],
+    plugins: [docsPaths, llmTxtPlugin()],
     css: {
       devSourcemap: true,
     },

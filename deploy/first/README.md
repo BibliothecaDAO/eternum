@@ -127,10 +127,11 @@ not enrol those devices or transfer their roles. Dev uses `realms-dev` in `/opt/
 The Cloudflare command belongs to the credential holder. It exports HEAD to a temporary directory, installs locked
 dependencies, builds workspace packages, migrates D1 and publishes Workers, then builds and publishes the client, then
 builds the docs (`pnpm run build:docs`, the build validation runs) and publishes them to `docs.realms.party` (dev:
-`docs.dev-realms.party`). Each site is checked at its own address before the command ends. It refuses to start until
-setup has created every resource, so a site new to the deployment reaches an existing environment through
-`setup --apply`. Neither deploy command has a dry run or performs funding or calendar operations. Production, when
-commissioned, builds its images on its own box from the same source commit.
+`docs.dev-realms.party`). Each run uploads both sites' builds and checks each at its own address, byte for byte, before
+the command ends, so a rerun at the same commit proves what it published. It refuses to start until setup has created
+every resource, so a site new to the deployment reaches an existing environment through `setup --apply`. Neither deploy
+command has a dry run or performs funding or calendar operations. Production, when commissioned, builds its images on
+its own box from the same source commit.
 
 ## Season
 

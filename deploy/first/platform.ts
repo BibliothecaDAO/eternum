@@ -223,22 +223,6 @@ export class Platform {
   async deployedRevision(worker: Worker) {
     return (await this.deployedVersion(worker))?.revision;
   }
-  /** The commit a site's live Pages deployment was published from, or undefined before a successful one. */
-  async siteRevision(site: PagesSite) {
-    const project = await this.cf<{
-      canonical_deployment?: {
-        environment: string;
-        latest_stage: { name: string; status: string };
-        deployment_trigger: { metadata: { commit_hash: string } };
-      };
-    }>(`/accounts/${await this.accountId()}/pages/projects/${site.pages}`);
-    const deployment = project.canonical_deployment;
-    return deployment?.environment === "production" &&
-      deployment.latest_stage.name === "deploy" &&
-      deployment.latest_stage.status === "success"
-      ? deployment.deployment_trigger.metadata.commit_hash
-      : undefined;
-  }
   async cloudflareEnvironment() {
     return {
       CLOUDFLARE_API_TOKEN: this.inputs.cloudflareToken,
