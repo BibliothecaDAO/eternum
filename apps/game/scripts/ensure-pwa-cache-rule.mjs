@@ -4,7 +4,8 @@ import { pathToFileURL } from "node:url";
 
 const phase = "http_request_cache_settings";
 // A zone may serve more than one client host, so each host owns its own rule. The first deploys
-// wrote one rule per zone under the bare prefix; a host adopts that rule when it is the one it describes.
+// wrote one rule per zone under the bare prefix. Cloudflare cannot rename a rule's ref, so a host
+// replaces that rule when it is the one it describes.
 const legacyRuleRef = "realms_pwa_revalidation";
 
 /** Owns one rule per host; never replaces a zone's ruleset or changes another host's caching. */
@@ -22,15 +23,21 @@ export async function ensurePwaCacheRule({ origin, zoneName, token, fetch: reque
     });
     return { origin, action: "created-ruleset" };
   }
-  const matches = ruleset.rules.filter((rule) => isHostRule(rule, desired));
-  if (matches.length > 1) throw new Error("Duplicate managed PWA cache rules");
-  const current = matches[0];
+  const own = ruleset.rules.filter((rule) => rule.ref === desired.ref);
+  if (own.length > 1) throw new Error("Duplicate managed PWA cache rules");
+  const legacy = ruleset.rules.filter((rule) => isLegacyHostRule(rule, desired));
+  const current = own[0];
   const last = ruleset.rules.at(-1);
-  if (current && last.id === current.id && matchesDesiredRule(current, desired)) return { origin, action: "unchanged" };
-  const path = `${zone}/rulesets/${ruleset.id}/rules${current ? `/${current.id}` : ""}`;
+  if (current && last.id === current.id && matchesDesiredRule(current, desired) && !legacy.length)
+    return { origin, action: "unchanged" };
+  const rules = `${zone}/rulesets/${ruleset.id}/rules`;
   const position = last && (!current || last.id !== current.id) ? { position: { after: last.id } } : {};
-  await api(path, { method: current ? "PATCH" : "POST", body: { ...desired, ...position } });
-  return { origin, action: current ? "updated-rule" : "created-rule" };
+  await api(current ? `${rules}/${current.id}` : rules, {
+    method: current ? "PATCH" : "POST",
+    body: { ...desired, ...position },
+  });
+  for (const rule of legacy) await api(`${rules}/${rule.id}`, { method: "DELETE" });
+  return { origin, action: legacy.length ? "replaced-legacy-rule" : current ? "updated-rule" : "created-rule" };
 }
 
 function validatePwaOrigin(origin, zoneName) {
@@ -52,8 +59,8 @@ async function resolveZonePath(api, zoneName) {
   return `/zones/${zones[0].id}`;
 }
 
-function isHostRule(rule, desired) {
-  return rule.ref === desired.ref || (rule.ref === legacyRuleRef && rule.expression === desired.expression);
+function isLegacyHostRule(rule, desired) {
+  return rule.ref === legacyRuleRef && rule.expression === desired.expression;
 }
 
 function buildPwaCacheRule(hostname) {

@@ -222,23 +222,21 @@ it("reads a slot's entry and refund with the payout wallet that pays, signed by 
   expect(await promptsOf(former)).toHaveLength(1);
 });
 
-it("mints the test token to the paying wallet in a dev build, and offers no such thing in a production build", async () => {
-  vi.stubEnv("VITE_PUBLIC_ENVIRONMENT", "staging");
-  const short = await mount({ ...TERMS, lords: 320n * WEI });
-  expect(short.textContent).toContain("Need 180 more LORDS");
-  // The button names a test token: it never says LORDS.
-  const mint = [...short.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Mint"))!;
-  expect(mint.textContent).toBe("Mint 1,000 test tokens");
-  const wallet = installWallet("argentX", { account: WALLET });
-  await press(short, "Mint 1,000 test tokens");
-  // The test token's own public mint, on the token the ledger names, to the wallet that pays: 1,000 of it, asked of
-  // that wallet by the one press.
-  expect(await promptsOf(wallet)).toEqual([
-    [{ contract_address: "0x10e5", entry_point: "mint", calldata: ["0x4a1", String(1_000n * WEI), "0"] }],
-  ]);
-
-  // Both environments are on Starknet mainnet: the build's environment, not its chain, decides.
-  vi.stubEnv("VITE_PUBLIC_ENVIRONMENT", "production");
-  expect(wordsOf(await mount({ ...TERMS, lords: 320n * WEI })).join()).not.toContain("Mint");
-  expect(wordsOf(await mount(TERMS)).join()).not.toContain("Mint");
-});
+it.each(["staging", "production"])(
+  "mints the test token to the paying wallet in a %s build, from the token the ledger names",
+  async (environment) => {
+    vi.stubEnv("VITE_PUBLIC_ENVIRONMENT", environment);
+    const short = await mount({ ...TERMS, lords: 320n * WEI });
+    expect(short.textContent).toContain("Need 180 more LORDS");
+    // The button names a test token: it never says LORDS.
+    const mint = [...short.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Mint"))!;
+    expect(mint.textContent).toBe("Mint 1,000 test tokens");
+    const wallet = installWallet("argentX", { account: WALLET });
+    await press(short, "Mint 1,000 test tokens");
+    // The test token's own public mint, on the token the ledger names, to the wallet that pays: 1,000 of it, asked of
+    // that wallet by the one press.
+    expect(await promptsOf(wallet)).toEqual([
+      [{ contract_address: "0x10e5", entry_point: "mint", calldata: ["0x4a1", String(1_000n * WEI), "0"] }],
+    ]);
+  },
+);

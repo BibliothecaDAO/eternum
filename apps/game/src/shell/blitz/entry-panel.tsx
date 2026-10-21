@@ -199,18 +199,15 @@ const EntryPanel = ({
             {ENTRY_WORDS.payAndJoin}
           </AppButton>
         ))}
-      {/* Asked of the build constant here, at this line: a production bundle holds neither the button nor its call. */}
-      {import.meta.env.VITE_PUBLIC_ENVIRONMENT !== "production" && !signing && (
-        <MintTestToken token={terms.lordsToken} owner={owner} onMinted={onSent} />
-      )}
+      {!signing && <MintTestToken token={terms.lordsToken} owner={owner} onMinted={onSent} />}
     </Plate>
   );
 };
 
 /**
- * A dev build only: its ledger is paid in a test token with no value, never LORDS, and the wallet that pays mints some
- * to itself through that token's own public mint, so an entry can be tried. One signature of its own; the wallet's
- * balance is read again once it lands.
+ * Every environment's ledger is paid in a test token with no value: the wallet that pays mints some to itself through
+ * that token's own public mint, so an entry can be paid. One signature of its own; the wallet's balance is read again
+ * once it lands.
  */
 const MintTestToken = ({ token, owner, onMinted }: { token: string; owner: string; onMinted: () => void }) => {
   const [signing, setSigning] = useState(false);

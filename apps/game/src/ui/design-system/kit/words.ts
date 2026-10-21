@@ -742,10 +742,7 @@ export const ENTRY_WORDS = {
   whereItGoes: "Where this entry goes: the season pool, the season's chests, the treasury",
 } as const;
 
-/**
- * A dev build only: the test token its ledger is paid in, minted to the wallet that pays. A word of its own, outside
- * the entry's table, so a production build drops it with the button.
- */
+/** The test token every environment's ledger is paid in, minted to the wallet that pays. */
 export const mintTestTokenWord = (amount: string) => `Mint ${amount} test tokens`;
 
 /** After a paid Blitz: the rating's change and the chest the result minted. */
