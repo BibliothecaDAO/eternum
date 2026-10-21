@@ -24,7 +24,7 @@ import { ShardReader } from "./shard-rpc";
 import { publishFrontierPools } from "./frontier-pools";
 import { frontierReceiptBindings } from "./frontier-binding";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
-import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
+import { chestLedgerReads, finishChestOnLedger, type SubmittedFinishes } from "./chest-ledger";
 import { DurableChestStore, finishChestNow, finishRequestedChests } from "./chests";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
@@ -115,7 +115,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
           const chests = yield* Effect.result(
             relayEffect("ledger chests unavailable", () =>
               finishRequestedChests(
-                chestPortsOf(relay.env, (effect) => relay.ledgerPermit(effect)),
+                chestPortsOf(relay.env, (effect) => relay.ledgerPermit(effect), relay.chests),
                 relay.chests,
               ),
             ),
@@ -136,7 +136,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   finishChest(tokenId: string) {
     return Effect.runPromise(
       finishChestNow(
-        chestPortsOf(this.env, (effect) => this.ledgerPermit(effect)),
+        chestPortsOf(this.env, (effect) => this.ledgerPermit(effect), this.chests),
         tokenId,
       ),
     );
@@ -467,9 +467,9 @@ const ledgerCredentialsOf = (env: RelayEnv) => ({
   privateKey: env.LEDGER_OPERATOR_PRIVATE_KEY,
 });
 
-const chestPortsOf = (env: RelayEnv, permit: LedgerPermit) => ({
+const chestPortsOf = (env: RelayEnv, permit: LedgerPermit, finishes: SubmittedFinishes) => ({
   ...chestLedgerReads({ rpcUrl: env.L2_RPC_URL, ...ledgerContractOf(env.ENVIRONMENT) }),
-  finish: (tokenId: string) => permit(finishChestOnLedger(ledgerCredentialsOf(env), tokenId)),
+  finish: (tokenId: string) => permit(finishChestOnLedger(ledgerCredentialsOf(env), tokenId, finishes)),
 });
 
 const relayOf = (env: RelayEnv, chainId: string) =>

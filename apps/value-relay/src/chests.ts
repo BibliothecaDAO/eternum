@@ -8,6 +8,7 @@ import {
   type ChestRequest,
   type LedgerAnchor,
 } from "./ports";
+import type { SubmittedFinish, SubmittedFinishes } from "./chest-ledger";
 
 interface ChestCursor {
   /** Absent until the first page: the ledger's deployment block, as the reader reports it. */
@@ -21,7 +22,7 @@ interface ChestStore {
   pending(): Promise<readonly ChestRequest[]>;
   complete(tokenId: string): Promise<void>;
 }
-export class DurableChestStore implements ChestStore {
+export class DurableChestStore implements ChestStore, SubmittedFinishes {
   constructor(private readonly storage: DurableObjectStorage) {}
   async cursor(): Promise<ChestCursor> {
     return (await this.storage.get<ChestCursor>("chests:cursor")) ?? {};
@@ -61,6 +62,15 @@ export class DurableChestStore implements ChestStore {
   }
   async complete(tokenId: string) {
     await this.storage.delete(`chests:request:${tokenId}`);
+  }
+  submitted(tokenId: string) {
+    return this.storage.get<SubmittedFinish>(`chests:submitted:${tokenId}`);
+  }
+  async submit(tokenId: string, finish: SubmittedFinish) {
+    await this.storage.put(`chests:submitted:${tokenId}`, finish);
+  }
+  async settle(tokenId: string) {
+    await this.storage.delete(`chests:submitted:${tokenId}`);
   }
 }
 
@@ -118,7 +128,7 @@ const finishReadyChest = (ports: ChestPorts, store: ChestStore, request: ChestRe
     )
       return yield* Effect.fail(new RelayFailure({ operation: "chest_request_differs" }));
     if (!chest.finished && chestDrawBlocksLeft(request.requestBlock, head) > 0) return { finished: 0, pending: 1 };
-    if (!chest.finished) yield* ports.finish(request.tokenId);
+    if (!chest.finished && (yield* ports.finish(request.tokenId)) === "in_flight") return { finished: 0, pending: 1 };
     yield* relayOperation("complete chest request", () => store.complete(request.tokenId));
     return { finished: chest.finished ? 0 : 1, pending: 0 };
   });
@@ -127,12 +137,13 @@ const finishReadyChest = (ports: ChestPorts, store: ChestStore, request: ChestRe
 export type ChestFinish =
   | { status: "not_requested" }
   | { status: "drawing"; blocksLeft: number }
+  | { status: "finishing" }
   | { status: "finished" };
 
 /**
  * The player's page asks the moment its chest's draw is readable, so the reveal never waits for the next tick; the
  * tick still finishes any chest nobody asked for. Finishing is idempotent: `finish` reads the chest again under the
- * ledger's signing permit and sends nothing for a finished one.
+ * ledger's signing permit and sends nothing for a finished one, nor while a finish it sent is still in flight.
  */
 export const finishChestNow = (ports: ChestPorts, tokenId: string) =>
   Effect.gen(function* () {
@@ -141,6 +152,6 @@ export const finishChestNow = (ports: ChestPorts, tokenId: string) =>
     if (chest.finished) return { status: "finished" } satisfies ChestFinish;
     const blocksLeft = chestDrawBlocksLeft(chest.requestBlock, yield* ports.head());
     if (blocksLeft > 0) return { status: "drawing", blocksLeft } satisfies ChestFinish;
-    yield* ports.finish(tokenId);
-    return { status: "finished" } satisfies ChestFinish;
+    const finish = yield* ports.finish(tokenId);
+    return { status: finish === "in_flight" ? "finishing" : "finished" } satisfies ChestFinish;
   });

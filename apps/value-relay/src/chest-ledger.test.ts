@@ -1,8 +1,9 @@
 import { response } from "../../../packages/value-ledger/test-support/abi";
 import { ledgerAbi, ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
-import { Effect } from "effect";
+import { Effect, Semaphore } from "effect";
+import { finishChestNow } from "./chests";
 import { beforeEach, expect, it, vi } from "vitest";
-import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
+import { chestLedgerReads, finishChestOnLedger, type SubmittedFinish } from "./chest-ledger";
 import { ledgerChestChanges } from "./ledger";
 const rpc = vi.hoisted(() => ({
   call: vi.fn(),
@@ -12,6 +13,7 @@ const rpc = vi.hoisted(() => ({
   events: vi.fn(),
   number: vi.fn(),
   classAt: vi.fn(),
+  status: vi.fn(),
 }));
 vi.mock("starknet", async (original) => ({
   ...(await original<typeof import("starknet")>()),
@@ -23,6 +25,7 @@ vi.mock("starknet", async (original) => ({
       getEvents: rpc.events,
       getBlockNumber: rpc.number,
       getClassHashAt: rpc.classAt,
+      getTransactionStatus: rpc.status,
     };
   }),
   Account: vi.fn(function () {
@@ -47,8 +50,28 @@ const chest = (finished = false) =>
     requester: "0x123",
     request_block: 100,
   });
+/** The relay's durable record of sent finishes, in memory. */
+const sentFinishes = () => {
+  const kept = new Map<string, SubmittedFinish>();
+  return {
+    kept,
+    submitted: async (tokenId: string) => kept.get(tokenId),
+    submit: async (tokenId: string, finish: SubmittedFinish) => void kept.set(tokenId, finish),
+    settle: async (tokenId: string) => void kept.delete(tokenId),
+  };
+};
+let finishes = sentFinishes();
+/** The page's and the tick's finish, as the Worker composes it: the relay's record behind the ledger's signing permit. */
+const finishPorts = () => {
+  const permit = Semaphore.makeUnsafe(1);
+  return {
+    ...chestLedgerReads(connection),
+    finish: (id: string) => permit.withPermit(finishChestOnLedger(connection, id, finishes)),
+  };
+};
 beforeEach(() => {
   vi.clearAllMocks();
+  finishes = sentFinishes();
   rpc.call.mockResolvedValue(chest());
   rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
   rpc.wait.mockResolvedValue({ isReverted: () => false });
@@ -56,7 +79,7 @@ beforeEach(() => {
   rpc.block.mockResolvedValue({ block_number: 111, block_hash: "0xa", timestamp: 699, status: "ACCEPTED_ON_L2" });
 });
 it("finishes the original token with no caller-supplied draw or recipient and makes retry harmless", async () => {
-  await Effect.runPromise(finishChestOnLedger(connection, String(2n ** 128n + 7n)));
+  await Effect.runPromise(finishChestOnLedger(connection, String(2n ** 128n + 7n), finishes));
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x10",
     entrypoint: "open_finish",
@@ -72,12 +95,12 @@ it("finishes the original token with no caller-supplied draw or recipient and ma
     "latest",
   );
   rpc.call.mockResolvedValue(chest(true));
-  await Effect.runPromise(finishChestOnLedger(connection, "7"));
+  await Effect.runPromise(finishChestOnLedger(connection, "7", finishes));
   expect(rpc.execute).toHaveBeenCalledOnce();
 });
 it("keeps reverted or malformed chest finishes unsuccessful", async () => {
   rpc.wait.mockResolvedValue({ isReverted: () => true });
-  await expect(Effect.runPromise(finishChestOnLedger(connection, "7"))).rejects.toThrow();
+  await expect(Effect.runPromise(finishChestOnLedger(connection, "7", finishes))).rejects.toThrow();
   rpc.call.mockResolvedValue(["1"]);
   await expect(Effect.runPromise(chestLedgerReads(connection).chest("7"))).rejects.toThrow();
 });
@@ -122,8 +145,51 @@ it("fails a missing chest read and never submits its finish", async () => {
   await expect(Effect.runPromise(chestLedgerReads(connection).chest("999"))).rejects.toMatchObject({
     operation: "read requested chest",
   });
-  await expect(Effect.runPromise(finishChestOnLedger(connection, "999"))).rejects.toMatchObject({
+  await expect(Effect.runPromise(finishChestOnLedger(connection, "999", finishes))).rejects.toMatchObject({
     operation: "finish requested chest",
   });
   expect(rpc.execute).not.toHaveBeenCalled();
+});
+
+it("does not send a finish again while the one sent is in flight, after its receipt wait failed (review P2)", async () => {
+  const ports = finishPorts();
+  rpc.wait.mockRejectedValueOnce(new Error("receipt temporarily unavailable"));
+  await expect(Effect.runPromise(finishChestNow(ports, "7"))).rejects.toThrow();
+  expect(finishes.kept.get("7")?.hash).toBe("0xabc");
+  // The hash was accepted but has not reached the latest accepted block: the page's next ask, and the tick's.
+  rpc.status.mockResolvedValue({ finality_status: "RECEIVED" });
+  expect(await Effect.runPromise(finishChestNow(ports, "7"))).toEqual({ status: "finishing" });
+  expect(await Effect.runPromise(ports.finish("7"))).toBe("in_flight");
+  expect(rpc.execute).toHaveBeenCalledOnce();
+  // It lands: the chest reads finished, and the record is settled with nothing sent.
+  rpc.call.mockResolvedValue(chest(true));
+  expect(await Effect.runPromise(ports.finish("7"))).toBe("finished");
+  expect(finishes.kept.size).toBe(0);
+  expect(rpc.execute).toHaveBeenCalledOnce();
+});
+
+it("sends again only once the kept finish reverted, or the node dropped it more than a minute ago", async () => {
+  const ports = finishPorts();
+  finishes.kept.set("7", { hash: "0xreverted", sentAt: Date.now() });
+  rpc.status.mockResolvedValue({ finality_status: "ACCEPTED_ON_L2", execution_status: "REVERTED" });
+  expect(await Effect.runPromise(ports.finish("7"))).toBe("finished");
+  expect(rpc.execute).toHaveBeenCalledOnce();
+
+  rpc.status.mockRejectedValue(new Error("RPC: starknet_getTransactionStatus: 29: Transaction hash not found"));
+  finishes.kept.set("7", { hash: "0xrecent", sentAt: Date.now() - 5_000 });
+  expect(await Effect.runPromise(ports.finish("7"))).toBe("in_flight");
+  expect(rpc.execute).toHaveBeenCalledOnce();
+  finishes.kept.set("7", { hash: "0xdropped", sentAt: Date.now() - 61_000 });
+  expect(await Effect.runPromise(ports.finish("7"))).toBe("finished");
+  expect(rpc.execute).toHaveBeenCalledTimes(2);
+});
+
+it("sends once for two page asks at the same moment", async () => {
+  const ports = finishPorts();
+  rpc.wait.mockImplementation(async () => {
+    rpc.call.mockResolvedValue(chest(true));
+    return { isReverted: () => false };
+  });
+  await Promise.all([Effect.runPromise(finishChestNow(ports, "7")), Effect.runPromise(finishChestNow(ports, "7"))]);
+  expect(rpc.execute).toHaveBeenCalledOnce();
 });
