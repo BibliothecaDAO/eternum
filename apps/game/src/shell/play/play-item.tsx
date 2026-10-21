@@ -133,9 +133,9 @@ const SeasonDay = ({ game, now, withPlayers }: { game: DirectoryGame; now: numbe
 
 /** The verb, or where a shard could not be read, the failure in its place. */
 const ItemVerbButton = ({ item, signedIn, lead }: { item: PlayItem; signedIn: boolean; lead: boolean }) => {
+  const requestSignIn = useRequestSignIn();
   const game = gameOf(item);
   if (game?.error) return <ServiceFailure service="directory" error={game.error} />;
-  const requestSignIn = useRequestSignIn();
   const verb = verbOf(item, signedIn);
   if (!verb) return null;
   const press = verb.connectFirst ? { onClick: () => requestSignIn(verb.to) } : { to: verb.to };
