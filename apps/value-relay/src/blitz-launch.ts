@@ -4,6 +4,7 @@ import {
   readLedgerSlot,
   ledgerInteger,
   decodeBlitzSeason,
+  blitzSlotFitsSeason,
   readConfirmedLedgerHead,
   type LedgerSlotKey,
 } from "@realms-world/value-ledger";
@@ -95,7 +96,7 @@ const containingSeason = async (provider: RpcProvider, address: string, window: 
         throw new Error("invalid_season_event");
       const id = ledgerInteger(row.keys[1]!);
       const season = await seasonAt(provider, address, id, head);
-      if (window.start >= season.start && window.start < season.end) matches.push({ id, presetId: season.presetId });
+      if (blitzSlotFitsSeason(window.start, window.end, season)) matches.push({ id, presetId: season.presetId });
     }
     token = page.continuation_token;
     if (token && seen.has(token)) throw new Error("season_page_cycle");

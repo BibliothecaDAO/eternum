@@ -34,7 +34,7 @@ describe("ledger economics", () => {
       decay_bps: 9_600,
     });
     expect(preset.mmr).toEqual({ enabled: true, mean: 1_500, spread: 450, max_delta: 45, k: 50, regression_bps: 150 });
-    expect(BigInt(preset.entry_fee.low)).toBe(500_000_000_000_000_000_000n);
+    expect(BigInt(preset.entry_fee.low)).toBe(100_000_000_000_000_000_000n);
     expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(81);
     expect(buildRegisterLedgerPresetCalldata(1, preset)[19]).toBe("5");
   });
@@ -87,11 +87,13 @@ describe("mystery chest economics", () => {
     expect(chest.bands.reduce((sum, band) => sum + band.lords_shares * band.odds.lords, 0) / 5 / 10000).toBe(0.1);
     for (const [environment, entry] of [
       ["dev", 100],
-      ["production", 500],
+      ["production", 100],
     ] as const) {
       const preset = buildLedgerEconomicPreset("blitz", { environment });
-      for (const price of [preset.entry_fee, preset.sword_price, preset.shield_price])
+      for (const price of [preset.entry_fee, preset.sword_price, preset.shield_price]) {
         expect(BigInt(price.low)).toBe(BigInt(entry) * 10n ** 18n);
+        expect(BigInt(price.high)).toBe(0n);
+      }
       expect(preset.protocol_cut_bps).toBe(1000);
       expect(preset.chest_lords_bps).toBe(1000);
       expect(chest.bands.slice(0, 3).map((band) => band.lords_shares * entry)).toEqual([4 * entry, 2 * entry, entry]);

@@ -13,9 +13,13 @@ Blitz). The environment address book supplies the ledger and L2 chain. No direct
 free/paid entry payload.
 
 Blitz registration belongs to an uncapped ledger slot. It closes five minutes before the common game start; official
-games keep their 11:00 and 20:00 UTC starts. At close, the relay reads confirmed registrations in pages of 100. Identity
-history resolves each payer at its registration block time. The earliest registration for each account gets a seat;
-unlinked and duplicate payers become refundable. Balanced groups retain registration order and contain at most 24
+games start every 90 minutes on the UTC grid: 00:00, 01:30, 03:00, through 22:30, every day. The minute cron publishes
+the next slot still open for registration. Preparation, the preset's full game duration and strictly more than ten
+minutes for result settlement must fit inside the calendar window; the relay checks the same bounds against the
+confirmed ledger season before signing. A calendar extension cannot extend that ledger season. Published slots keep
+their original times when the timetable changes. At close, the relay reads confirmed registrations in pages of 100.
+Identity history resolves each payer at its registration block time. The earliest registration for each account gets a
+seat; unlinked and duplicate payers become refundable. Balanced groups retain registration order and contain at most 24
 players. An empty slot creates no game. D1 keeps schedule and job metadata, never a copy of a paid roster: a paid game's
 players are re-read from the ledger. The one roster D1 holds is a test Blitz's, named by the operator in its run
 request, because that request is its only source. Paid operator one-offs use the same `/api/slots` route; the general
