@@ -10,7 +10,7 @@ import { patchNotes } from "../generated/patch-notes";
 import { changedSections, PatchHead, type PatchNote, PatchSection, patchSection, ReleaseRows } from "./patch-notes";
 
 /** The game's full rules, on the docs site: the notes say what changed, the docs say everything. */
-const FULL_RULES = "https://docs.realms.world";
+const FULL_RULES = "https://docs.realms.party";
 
 /**
  * What's new (spec 13), a place of its own in the bar: the game's patch notes, the page's whole width. A release's head

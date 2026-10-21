@@ -5,7 +5,7 @@
 <p align="center">
   Open-source, fully onchain strategy games by BibliothecaDAO.<br />
   <b><a href="https://play.realms.party">Play</a></b> ·
-  <b><a href="https://docs.realms.world">Docs</a></b> ·
+  <b><a href="https://docs.realms.party">Docs</a></b> ·
   <a href="https://discord.gg/realmsworld">Discord</a> ·
   <a href="https://x.com/LootRealms">X</a>
 </p>
@@ -23,7 +23,7 @@ contracts and every service that runs them.
 | **Blitz**    | A 60-minute match of up to 24 players, entered in paid slots. Points come from exploring, opening crates, taking camps, rifts and Hyperstructures, and holding Hyperstructures.     |
 | **Eternum**  | The long format: a world that unfolds over weeks of empire building, trade and war.                                                                                                 |
 
-The rules of each are on [docs.realms.world](https://docs.realms.world).
+The rules of each are on [docs.realms.party](https://docs.realms.party).
 
 ## How it works
 
@@ -53,7 +53,7 @@ Workers.
 | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`apps/game`](./apps/game/README.md)                     | The game client: React, Vite, three.js                                                                                                       |
 | [`apps/herald`](./apps/herald/README.md)                 | Reads the chain for clients: snapshots, ordered diffs, transaction outcomes                                                                  |
-| [`apps/game-docs`](./apps/game-docs/README.md)           | docs.realms.world (Vocs)                                                                                                                     |
+| [`apps/game-docs`](./apps/game-docs/README.md)           | docs.realms.party (Vocs)                                                                                                                     |
 | `apps/realms`                                            | Identity Worker: sign-in, accounts, the shard directory, ratings, chat                                                                       |
 | [`apps/launch-service`](./apps/launch-service/README.md) | Game launches and Blitz slots                                                                                                                |
 | [`apps/value-relay`](./apps/value-relay/README.md)       | Ledger reads and payouts between the shards and Starknet                                                                                     |

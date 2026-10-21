@@ -182,7 +182,6 @@ AREAS = {
     ],
     "docs": [
         ".github/workflows/test-docs.yml",
-        "vercel.json",
         "apps/game-docs/**",
         "packages/**",
         "config/**",

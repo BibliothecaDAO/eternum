@@ -5,7 +5,7 @@ This page maps the documentation inside this repository.
 ## Players and community
 
 Player-facing docs live in [`apps/game-docs`](../apps/game-docs) and are published at
-[docs.realms.world](https://docs.realms.world).
+[docs.realms.party](https://docs.realms.party).
 
 ## Developers
 

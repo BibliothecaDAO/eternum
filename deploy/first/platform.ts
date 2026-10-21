@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { randomBytes, createECDH, createHash } from "node:crypto";
 import { accountIdentity, newKey, type Keys } from "./chain";
-import { root, type Inputs, type Target } from "./settings";
+import { pagesSites, root, type Inputs, type PagesSite, type Target } from "./settings";
 import type { PrivateStore } from "./private-store";
 import { command } from "./process";
 import { PublicError } from "./errors";
@@ -223,14 +223,15 @@ export class Platform {
   async deployedRevision(worker: Worker) {
     return (await this.deployedVersion(worker))?.revision;
   }
-  async clientRevision() {
+  /** The commit a site's live Pages deployment was published from, or undefined before a successful one. */
+  async siteRevision(site: PagesSite) {
     const project = await this.cf<{
       canonical_deployment?: {
         environment: string;
         latest_stage: { name: string; status: string };
         deployment_trigger: { metadata: { commit_hash: string } };
       };
-    }>(`/accounts/${await this.accountId()}/pages/projects/${this.target.pages}`);
+    }>(`/accounts/${await this.accountId()}/pages/projects/${site.pages}`);
     const deployment = project.canonical_deployment;
     return deployment?.environment === "production" &&
       deployment.latest_stage.name === "deploy" &&
@@ -360,19 +361,12 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
     const { id, databases, pages, buckets, zones } = await this.readResources();
     const baseReady =
       databaseWorkers.every((worker) => databases.some((db) => db.name === databaseName(worker, this.target))) &&
-      pages.some((page) => page.name === this.target.pages) &&
+      pagesSites(this.target).every((site) => pages.some((page) => page.name === site.pages)) &&
       buckets.some((bucket) => bucket.name === this.target.statusBucket);
     if (!baseReady) return false;
-    const hostname = new URL(this.target.origin).hostname;
-    const domains = await this.cfList<{ name: string }>(`/accounts/${id}/pages/projects/${this.target.pages}/domains`);
     if (zones.length !== 1) throw new PublicError("Cloudflare zone unavailable");
-    const records = await this.cfList<{ type: string; content: string }>(
-      `/zones/${zones[0]!.id}/dns_records?name=${hostname}`,
-    );
-    return (
-      domains.some((domain) => domain.name === hostname) &&
-      records.some((record) => record.type === "CNAME" && record.content === `${this.target.pages}.pages.dev`)
-    );
+    for (const site of pagesSites(this.target)) if (!(await this.sitePresent(id, zones[0]!.id, site))) return false;
+    return true;
   }
   async prepareResources() {
     if (!this.apply) throw new PublicError("Dry run cannot create deployment resources");
@@ -381,29 +375,45 @@ export class RelayDiagnostics extends WorkerEntrypoint {}`;
     for (const worker of databaseWorkers)
       if (!databases.some((db) => db.name === databaseName(worker, this.target)))
         await this.cf(`/accounts/${id}/d1/database`, "POST", { name: databaseName(worker, this.target) });
-    const pages = await this.cfList<{ name: string }>(`/accounts/${id}/pages/projects`);
-    if (!pages.some((page) => page.name === this.target.pages))
-      await this.cf(`/accounts/${id}/pages/projects`, "POST", { name: this.target.pages, production_branch: "main" });
     const buckets = await this.buckets(id);
     if (!buckets.some((bucket) => bucket.name === this.target.statusBucket))
       await this.cf(`/accounts/${id}/r2/buckets`, "POST", { name: this.target.statusBucket });
-    const domains = await this.cfList<{ name: string }>(`/accounts/${id}/pages/projects/${this.target.pages}/domains`);
-    const hostname = new URL(this.target.origin).hostname;
-    if (!domains.some((domain) => domain.name === hostname))
-      await this.cf(`/accounts/${id}/pages/projects/${this.target.pages}/domains`, "POST", { name: hostname });
     const zones = await this.cfList<{ id: string }>(`/zones?name=${this.target.zone}`);
     if (zones.length !== 1) throw new PublicError("Cloudflare zone is not available to this token");
-    const records = await this.cfList<{ type: string; content: string }>(
-      `/zones/${zones[0]!.id}/dns_records?name=${hostname}`,
-    );
+    for (const site of pagesSites(this.target)) await this.prepareSite(id, zones[0]!.id, site);
+  }
+  /** A site is served once its project carries its hostname and the zone points that hostname at the project. */
+  private async sitePresent(account: string, zone: string, site: PagesSite) {
+    const hostname = new URL(site.origin).hostname;
+    const domains = await this.cfList<{ name: string }>(`/accounts/${account}/pages/projects/${site.pages}/domains`);
+    if (!domains.some((domain) => domain.name === hostname)) return false;
+    const records = await this.cfList<{ type: string; content: string }>(`/zones/${zone}/dns_records?name=${hostname}`);
+    const target = await this.pagesSubdomain(account, site);
+    return records.some((record) => record.type === "CNAME" && record.content === target);
+  }
+  /** Create what a site lacks: its project, its hostname on the project, and the zone's record for that hostname. */
+  private async prepareSite(account: string, zone: string, site: PagesSite) {
+    const projects = await this.cfList<{ name: string }>(`/accounts/${account}/pages/projects`);
+    if (!projects.some((project) => project.name === site.pages))
+      await this.cf(`/accounts/${account}/pages/projects`, "POST", { name: site.pages, production_branch: "main" });
+    const hostname = new URL(site.origin).hostname;
+    const domains = await this.cfList<{ name: string }>(`/accounts/${account}/pages/projects/${site.pages}/domains`);
+    if (!domains.some((domain) => domain.name === hostname))
+      await this.cf(`/accounts/${account}/pages/projects/${site.pages}/domains`, "POST", { name: hostname });
+    const target = await this.pagesSubdomain(account, site);
+    const records = await this.cfList<{ type: string; content: string }>(`/zones/${zone}/dns_records?name=${hostname}`);
     if (!records.length)
-      await this.cf(`/zones/${zones[0]!.id}/dns_records`, "POST", {
+      await this.cf(`/zones/${zone}/dns_records`, "POST", {
         type: "CNAME",
         name: hostname,
-        content: `${this.target.pages}.pages.dev`,
+        content: target,
         proxied: true,
       });
-    else if (!records.some((record) => record.type === "CNAME" && record.content === `${this.target.pages}.pages.dev`))
-      throw new PublicError("Existing client DNS differs; it was not overwritten");
+    else if (!records.some((record) => record.type === "CNAME" && record.content === target))
+      throw new PublicError(`Existing DNS for ${hostname} differs; it was not overwritten`);
+  }
+  /** The project's own pages.dev host: Cloudflare adds a suffix to a name another account already holds. */
+  private async pagesSubdomain(account: string, site: PagesSite) {
+    return (await this.cf<{ subdomain: string }>(`/accounts/${account}/pages/projects/${site.pages}`)).subdomain;
   }
 }
