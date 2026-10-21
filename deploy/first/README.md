@@ -108,11 +108,13 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
 
 ## Deploy
 
-After setup, the box and Cloudflare halves can run independently from the same pushed commit:
+After setup, both halves run from the same pushed commit. On an environment's first deployment the Cloudflare half goes
+first: the box reads the shard directory from the identity Worker before it starts anything, and stops with HTTP 404
+until that Worker exists. Afterwards the halves are independent.
 
 ```sh
-pnpm run deploy dev
 pnpm run deploy:cloudflare dev "$HOME/.realms-dev"
+pnpm run deploy dev
 ```
 
 The box command needs Bun and SSH, with no dependency install or package build. A Git archive carries its source commit
