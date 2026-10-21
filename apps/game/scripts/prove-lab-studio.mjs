@@ -154,6 +154,24 @@ function rollTakes(browser) {
   }
 }
 
+/** The world at a quarter speed: the Exploration take still plays all three moments, as slow motion. */
+function proveSlowMotion(browser) {
+  browser.eval("window.__studio.time({ scale: 0.25 }); window.__studio.take('explore'); true");
+  browser.run(["wait", "6000"]);
+  step(browser, "06-explore-quarter-speed-mid");
+  browser.run([
+    "wait",
+    "--fn",
+    "document.querySelector('[data-studio-lab]')?.dataset.take === 'idle'",
+    "--timeout",
+    "60000",
+  ]);
+  const end = status(browser);
+  step(browser, "06-explore-quarter-speed-end");
+  browser.eval("window.__studio.time({ scale: 1 }); true");
+  check(end.explored === 3 && !end.walking, "at 0.25x the explorer still uncovers three hexes and arrives");
+}
+
 /** What each take leaves in the world once it has played. */
 const TAKE_OUTCOMES = {
   "hyperstructure-rise": [(end) => end.hyperstructureProgress === 100, "the Hyperstructure rose to completion"],
@@ -172,6 +190,7 @@ try {
       proveFreeCamera(browser);
       proveScriptedMove(browser);
       rollTakes(browser);
+      if (takes.includes("explore")) proveSlowMotion(browser);
       browser.run(["record", "stop"]);
       const errors = browser.run(["errors"]);
       transcript.errors = errors;
