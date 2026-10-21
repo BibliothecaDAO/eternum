@@ -249,7 +249,9 @@ const useIdentityAction = (initialError: string | null) => {
   const [running, setRunning] = useState<IdentityAction | null>(null);
   const [error, setError] = useState<string | null>(initialError);
   const busy = useRef(false);
-  useEffect(() => setError(initialError), [initialError]);
+  useEffect(() => {
+    setError(initialError);
+  }, [initialError]);
   const run = useCallback(async (action: IdentityAction, body: () => Promise<void>): Promise<boolean> => {
     if (busy.current) return false;
     busy.current = true;

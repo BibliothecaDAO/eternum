@@ -9,6 +9,7 @@ import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 
 import { PlayPage } from "../play/play-page";
+import { PageAddress } from "../frame/page-address";
 import { ConnectWindow } from "../sign-in/connect-window";
 import { HandoffStep } from "../sign-in/handoff-step";
 import { NotFoundPage } from "../not-found";
@@ -71,13 +72,14 @@ export const LabConnect = () => {
   const { step } = useParams();
   const shown = labConnectStep(step);
   if (!shown) return <NotFoundPage />;
+  // Play is at its own address under the window, so its place is lit as in the app.
   return (
-    <>
+    <PageAddress.Provider value="/">
       <PlayPage />
       <ConnectWindow title={shown.title} onClose={noop}>
         {shown.body}
       </ConnectWindow>
-    </>
+    </PageAddress.Provider>
   );
 };
 

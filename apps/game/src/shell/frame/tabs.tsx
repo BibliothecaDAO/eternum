@@ -48,7 +48,10 @@ const TABS: readonly Place[] = [
 const matchesPath = (pathname: string, match: string) =>
   match === "/" ? pathname === "/" : pathname.startsWith(match);
 
-/** While no one is signed in, You is Connect: pressed, it opens the Connect window over the page. */
+/**
+ * While no one is signed in, You is Connect: pressed, it opens the Connect window over the page. It stands in You's
+ * place, so it is the one lit on You's own pages.
+ */
 const useConnect = (): (() => void) | undefined => {
   const { status, session } = useIdentitySession();
   const requestSignIn = useRequestSignIn();
@@ -110,8 +113,15 @@ export const TabBar = () => {
         const look = cn(PHONE_TAB, current ? "text-kit-peach" : "text-kit-muted");
         if (tab === YOU_TAB && connect)
           return (
-            <button key={tab.to} type="button" data-role="tab" onClick={connect} className={look}>
-              <TabIcon tab={tab} current={false} size={28} />
+            <button
+              key={tab.to}
+              type="button"
+              data-role="tab"
+              aria-current={current ? "page" : undefined}
+              onClick={connect}
+              className={look}
+            >
+              <TabIcon tab={tab} current={current} size={28} />
               {WORDS.connect}
             </button>
           );

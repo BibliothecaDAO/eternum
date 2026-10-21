@@ -110,7 +110,8 @@ const entryChecks = (b) => {
  */
 const ACCOUNT_PAGES = {
   you: { path: "home/profile", place: "You" },
-  "you-signed-out": { path: "first-visit/profile", place: "You" },
+  // Signed out, You's place reads Connect, and it is the one lit on You's page.
+  "you-signed-out": { path: "first-visit/profile", place: "Connect" },
   "you-unnamed": { path: "unnamed/profile", place: "You" },
   settings: { path: "home/profile/settings", place: "You" },
   "settings-name": { path: "home/profile/settings", place: "You", press: "Name" },
@@ -199,12 +200,15 @@ const sheetPageChecks = (page) => (b) => {
       broken: [...document.querySelectorAll("img")]
         .filter((image) => !(image.complete && image.naturalWidth > 0))
         .map((image) => image.currentSrc || image.src),
-      goldVerbs: document.querySelectorAll('.app-button[data-kind="primary"], .frontier-primary').length,
+      // The gold verbs the player can press now: a layer over the page (a dialog, Connect) leaves the page under it inert.
+      goldVerbs: [...document.querySelectorAll('.app-button[data-kind="primary"], .frontier-primary')].filter((verb) => !verb.closest("[inert]")).length,
       // Each age column's band of painting above its games, as computed.
       ageBands: [...document.querySelectorAll(".app-age-column__body")].map((body) => getComputedStyle(body).paddingTop),
-      // A phone's first screen ends where its notice or foot row begins: a control straddling that edge is half hidden.
+      // A phone's first screen loses what its notice or foot row covers: a control straddling the top of either is half
+      // hidden by it. The tab bar ends every phone screen, as a window's edge does, so a list folding there is cut by
+      // neither.
       cutAtEdge: (() => {
-        const bands = ["notice", "foot", "tabs"].map((name) => document.querySelector('[data-band="' + name + '"]')).filter(Boolean);
+        const bands = ["notice", "foot"].map((name) => document.querySelector('[data-band="' + name + '"]')).filter(Boolean);
         if (!body || bands.length === 0) return [];
         const edge = Math.min(...bands.map((band) => band.getBoundingClientRect().top));
         return [...document.querySelectorAll('[data-band="body"] :is(a[href], button), [data-band="footer"] a[href]')]

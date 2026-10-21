@@ -1,8 +1,7 @@
 import "@/ui/design-system/kit/app-sheet.css";
 
 import { Icon } from "@/ui/design-system/icon";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useSheetCloses } from "@/ui/design-system/kit/sheet-closes";
+import { AppModalLayer } from "@/ui/design-system/kit/app-elements";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
 import { CLOSE } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
@@ -11,9 +10,9 @@ import { useLayout } from "../frame/layout";
 
 /**
  * Connect, over the page the player is on: a window in the page's middle on desktop, a sheet from the foot on a phone.
- * Brooding Plains heads it, the step's title at its foot. It closes from its cross, a press beside it,
- * Escape or the system back, and the page under it never moves. It carries the shell's surface, so it draws the same
- * over a game.
+ * Brooding Plains heads it, the step's title at its foot. It is the app's modal layer: the page under it is dimmed and
+ * inert, never moves, and it closes from its cross, a press beside it, Escape or the system back. It carries the
+ * shell's surface, so it draws the same over a game.
  */
 export const ConnectWindow = ({
   title,
@@ -24,14 +23,9 @@ export const ConnectWindow = ({
   onClose: () => void;
   children: ReactNode;
 }) => {
-  useSheetCloses(onClose);
   const phone = useLayout() === "phone";
   return (
-    <div
-      data-surface="shell"
-      className={cn("app-scrim", phone && "app-scrim--sheet")}
-      onClick={(event) => event.target === event.currentTarget && onClose()}
-    >
+    <AppModalLayer onClose={onClose} sheet={phone}>
       <section
         role="dialog"
         aria-modal
@@ -48,6 +42,6 @@ export const ConnectWindow = ({
         </header>
         <div className="app-connect__body">{children}</div>
       </section>
-    </div>
+    </AppModalLayer>
   );
 };

@@ -153,12 +153,16 @@ describe("Connect", () => {
     }
   });
 
-  it("closes from its cross and leaves the page as it was", async () => {
+  it("leaves the page under it inert while open, and closes from its cross to leave the page as it was", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
     const ui = await mount("/results?game=2", NEXT);
+    const inert = () => ui.query('[data-testid="ask"]')!.closest("[inert]") !== null;
     try {
       await ui.ask();
+      expect(inert()).toBe(true);
+      expect(ui.window()!.closest("[inert]")).toBeNull();
       await act(async () => ui.query<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+      expect(inert()).toBe(false);
       expect(ui.window()).toBeNull();
       expect(ui.where()).toBe("/results?game=2");
     } finally {
