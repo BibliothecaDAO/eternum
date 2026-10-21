@@ -33,6 +33,9 @@ class CiFileOwnership(unittest.TestCase):
     def test_a_package_manifest_still_selects_every_area(self):
         self.assertEqual(areas_run_by("pnpm-lock.yaml"), set(selected_areas([], True)))
 
+    def test_the_install_settings_select_every_area(self):
+        self.assertEqual(areas_run_by(".npmrc"), set(selected_areas([], True)))
+
     def test_committed_contract_schemas_select_all_consuming_areas(self):
         for path in (
             "contracts/l2/ledger/schema/abi.json",

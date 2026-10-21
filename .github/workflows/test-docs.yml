@@ -25,7 +25,9 @@ jobs:
         run: |
           test "$(jq -r .installCommand vercel.json)" = "pnpm install --frozen-lockfile"
           test "$(jq -r .buildCommand vercel.json)" = "pnpm run build:docs"
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      # Vercel starts pnpm 9 for this lockfile on eternum-docs, so the install starts there too and must hand over to
+      # the pnpm package.json names.
+      - name: Install dependencies, started with pnpm 9 as on Vercel
+        run: npx --yes pnpm@9 install --frozen-lockfile
       - name: Build the docs
         run: pnpm run build:docs
