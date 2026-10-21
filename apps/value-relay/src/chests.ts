@@ -1,4 +1,5 @@
 import { Effect, Result } from "effect";
+import { chestDrawBlocksLeft } from "@realms-world/value-ledger";
 import {
   RelayFailure,
   relayOperation,
@@ -116,8 +117,30 @@ const finishReadyChest = (ports: ChestPorts, store: ChestStore, request: ChestRe
       BigInt(chest.requester) !== BigInt(request.requester)
     )
       return yield* Effect.fail(new RelayFailure({ operation: "chest_request_differs" }));
-    if (!chest.finished && head < request.requestBlock + 11) return { finished: 0, pending: 1 };
+    if (!chest.finished && chestDrawBlocksLeft(request.requestBlock, head) > 0) return { finished: 0, pending: 1 };
     if (!chest.finished) yield* ports.finish(request.tokenId);
     yield* relayOperation("complete chest request", () => store.complete(request.tokenId));
     return { finished: chest.finished ? 0 : 1, pending: 0 };
+  });
+
+/** What a player's page learns from asking for its chest: still drawing (with the blocks left), or finished. */
+export type ChestFinish =
+  | { status: "not_requested" }
+  | { status: "drawing"; blocksLeft: number }
+  | { status: "finished" };
+
+/**
+ * The player's page asks the moment its chest's draw is readable, so the reveal never waits for the next tick; the
+ * tick still finishes any chest nobody asked for. Finishing is idempotent: `finish` reads the chest again under the
+ * ledger's signing permit and sends nothing for a finished one.
+ */
+export const finishChestNow = (ports: ChestPorts, tokenId: string) =>
+  Effect.gen(function* () {
+    const chest = yield* ports.chest(tokenId);
+    if (!chest.requested) return { status: "not_requested" } satisfies ChestFinish;
+    if (chest.finished) return { status: "finished" } satisfies ChestFinish;
+    const blocksLeft = chestDrawBlocksLeft(chest.requestBlock, yield* ports.head());
+    if (blocksLeft > 0) return { status: "drawing", blocksLeft } satisfies ChestFinish;
+    yield* ports.finish(tokenId);
+    return { status: "finished" } satisfies ChestFinish;
   });

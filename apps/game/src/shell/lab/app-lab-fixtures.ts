@@ -491,6 +491,7 @@ const SEALED: Reward = {
   chest: CHEST,
   held: true,
   content: null,
+  drawBlocksLeft: null,
   seasonEnd: NOW + 52 * DAY,
   token: { shares: TOKEN_SHARES[CHEST.band], entryFee: ENTRY_FEE },
   registration: SWORD,
@@ -508,7 +509,8 @@ export const LAB_REWARDS: Partial<Record<keyof typeof LAB_SCREENS, Reward>> = {
   // The middle band, the chest the owner picked.
   "reward-sealed": sealedOf(2),
   "reward-after-season": { ...sealedOf(1), seasonEnd: NOW - DAY },
-  "reward-opening": { ...SEALED, chest: { ...OPENED, band: 2, finished: false }, held: false },
+  // The draw part-way: 4 of its 11 blocks still to come.
+  "reward-opening": { ...SEALED, chest: { ...OPENED, band: 2, finished: false }, held: false, drawBlocksLeft: 4 },
   "reward-epic": { ...SEALED, chest: OPENED, held: false, content: { kind: "cosmetic", attributes: "0x4040d01" } },
   // The best band's token reward: four entries.
   "reward-lords": { ...SEALED, chest: OPENED, held: false, content: { kind: "lords", amount: 4n * ENTRY_FEE } },

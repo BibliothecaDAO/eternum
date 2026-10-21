@@ -41,6 +41,7 @@ const SEALED: Reward = {
   chest: CHEST,
   held: true,
   content: null,
+  drawBlocksLeft: null,
   seasonEnd: Math.floor(Date.now() / 1000) + 86_400,
   // The best band at an entry of 100: four entries, drawn while the season runs.
   token: { shares: 4, entryFee: 100n * WEI },
@@ -117,9 +118,9 @@ it("offers Open alone on a sealed chest, waits on the draw, and shows what an op
   expect([...sealed.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Open"]);
 
   expect((await mount({ ...SEALED, seasonEnd: 1 })).textContent).toContain("No LORDS now");
-  expect((await mount({ ...SEALED, chest: { ...OPENED, finished: false }, held: false })).textContent).toContain(
-    "Opening",
-  );
+  expect(
+    (await mount({ ...SEALED, chest: { ...OPENED, finished: false }, held: false, drawBlocksLeft: 0 })).textContent,
+  ).toContain("Opening");
   const item = await mount({
     ...SEALED,
     chest: OPENED,
@@ -132,6 +133,30 @@ it("offers Open alone on a sealed chest, waits on the draw, and shows what an op
   expect(lords.textContent).toContain("400 LORDS");
   const pending = await mount({ ...SEALED, result: { ...SEALED.result, rank: 0, chestId: 0n }, chest: null });
   expect(pending.textContent).toContain("Arrives with the results");
+});
+
+it("fills the draw's bar block by block, says why it waits, and asks the relay to finish the moment it can", async () => {
+  const relay = vi.fn(async (_url: string, _init?: RequestInit) => Response.json({ status: "finished" }));
+  vi.stubGlobal("fetch", relay);
+  const drawing = { ...SEALED, chest: { ...OPENED, finished: false }, held: false };
+  try {
+    const waiting = await mount({ ...drawing, drawBlocksLeft: 7 });
+    const bar = waiting.querySelector('[role="progressbar"]')!;
+    expect(waiting.textContent).toContain("7 blocks to go");
+    expect([bar.getAttribute("aria-valuenow"), bar.getAttribute("aria-valuemax")]).toEqual(["4", "11"]);
+    expect(waiting.textContent).toContain(
+      "The draw waits for new blocks, so nobody can know or pick what's inside in advance.",
+    );
+    expect(relay).not.toHaveBeenCalled();
+
+    const drawn = await mount({ ...drawing, drawBlocksLeft: 0 });
+    expect(drawn.querySelector('[role="progressbar"]')!.getAttribute("aria-valuenow")).toBe("11");
+    await vi.waitFor(() => expect(relay).toHaveBeenCalledOnce());
+    expect(relay.mock.calls[0]![0]).toBe("/api/value/chests/finish?tokenId=41");
+    expect(relay.mock.calls[0]![1]).toMatchObject({ method: "POST" });
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 
 it("reads and opens the chest of the seat's roster wallet, whatever the payout wallet is now", async () => {

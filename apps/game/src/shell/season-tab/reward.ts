@@ -1,7 +1,15 @@
 import { skipToken, useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
-import type { ChestContent, PlayerResult, Registration } from "@realms-world/value-ledger/codecs";
+import {
+  chestDrawBlocksLeft,
+  type ChestContent,
+  type PlayerResult,
+  type Registration,
+} from "@realms-world/value-ledger/codecs";
+
+import { fetchApi } from "@/runtime/app-api";
 
 import type { EnvironmentLedger, GameKey, SlotKey } from "../value/ledger";
 
@@ -28,6 +36,8 @@ export interface Reward {
   held: boolean;
   /** What the chest delivered, once its opening is finished. */
   content: ChestContent | null;
+  /** While the chest's draw is under way, the blocks left before it can be finished (0: it can be now); else null. */
+  drawBlocksLeft: number | null;
   /** The chest's season end: after it, the season's chest LORDS are swept into the prize pool. */
   seasonEnd: number;
   /**
@@ -62,14 +72,48 @@ export const rewardState = (reward: Reward, wallet: string): RewardState => {
 export const rewardKey = (keys: PlayedGameKeys, wallet: string) =>
   ["ledger", "reward", keys.game.shard, keys.game.gameId, wallet] as const;
 
-/** Read every 30 s, every 5 s while the chest's draw is under way so the reveal comes as soon as it lands. */
+/**
+ * Read every 30 s, and every 2 s while the chest's draw is under way: about one Starknet block (11 blocks took 19 s on
+ * mainnet, reports/chest-open-1.md), so each new block and then the reveal show as soon as they land.
+ */
 export const useReward = (ledger: EnvironmentLedger, keys: PlayedGameKeys, wallet: string) =>
   useQuery({
     queryKey: rewardKey(keys, wallet),
     queryFn: () => readReward(ledger, keys, wallet),
-    refetchInterval: (query) =>
-      query.state.data?.chest?.requested && !query.state.data.chest.finished ? 5_000 : 30_000,
+    refetchInterval: (query) => (query.state.data?.drawBlocksLeft == null ? 30_000 : 2_000),
   });
+
+/**
+ * Once a chest's draw can be finished, the relay is asked to finish it at once rather than at its next minute's tick,
+ * and asked again 10 s after each answer while the chest stays unfinished. The tick still finishes a chest whose page
+ * was closed.
+ */
+export const useFinishOnceDrawn = (chestId: bigint, drawBlocksLeft: number | null) => {
+  const drawn = drawBlocksLeft === 0;
+  useEffect(() => {
+    if (!drawn) return;
+    let stopped = false;
+    let again: ReturnType<typeof setTimeout> | undefined;
+    const ask = async () => {
+      await askRelayToFinish(chestId);
+      if (!stopped) again = setTimeout(() => void ask(), 10_000);
+    };
+    void ask();
+    return () => {
+      stopped = true;
+      clearTimeout(again);
+    };
+  }, [chestId, drawn]);
+};
+
+const askRelayToFinish = async (chestId: bigint) => {
+  try {
+    const response = await fetchApi(`/api/value/chests/finish?tokenId=${chestId}`, { method: "POST" });
+    if (!response.ok) console.error("chest_finish_refused", { chestId: String(chestId), status: response.status });
+  } catch (error) {
+    console.error("chest_finish_unreachable", { chestId: String(chestId), error });
+  }
+};
 
 /** The seat a finished game rewards: the ledger, the game's keys, and the wallet the roster froze for the player. */
 export interface RewardSeat {
@@ -96,19 +140,30 @@ const readReward = async (read: EnvironmentLedger, keys: PlayedGameKeys, wallet:
     read.registration(keys.slot, wallet),
     read.chestCollection(),
   ]);
-  const none = { collection, chest: null, held: false, content: null, seasonEnd: 0, token: NO_TOKENS, registration };
+  const none = {
+    collection,
+    chest: null,
+    held: false,
+    content: null,
+    drawBlocksLeft: null,
+    seasonEnd: 0,
+    token: NO_TOKENS,
+    registration,
+  };
   if (result.rank === 0 || result.chestId === 0n) return { result, ...none };
   const chest = await read.chest(result.chestId);
-  const [season, held, content] = await Promise.all([
+  const drawing = chest.requested && !chest.finished;
+  const [season, held, content, drawBlocksLeft] = await Promise.all([
     read.season(chest.seasonId),
     // A requested chest is burnt: no owner to ask.
     chest.requested
       ? false
       : read.chestOwner(collection, result.chestId).then((owner) => isSameStarknetAddress(owner, wallet)),
     chest.finished ? read.chestContent(result.chestId, chest.requestBlock) : null,
+    drawing ? read.latestBlock().then((head) => chestDrawBlocksLeft(chest.requestBlock, head)) : null,
   ]);
   const token = await readTokenReward(read, season.presetId, chest.band);
-  return { result, collection, chest, held, content, seasonEnd: season.end, token, registration };
+  return { result, collection, chest, held, content, drawBlocksLeft, seasonEnd: season.end, token, registration };
 };
 
 const NO_TOKENS: TokenReward = { shares: 0, entryFee: 0n };

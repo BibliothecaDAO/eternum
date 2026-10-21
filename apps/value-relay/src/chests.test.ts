@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { expect, it, vi } from "vitest";
-import { DurableChestStore, finishRequestedChests } from "./chests";
+import { DurableChestStore, finishChestNow, finishRequestedChests } from "./chests";
 import { RelayFailure, type ChestPorts, type ChestPage, type ChestRequest } from "./ports";
 
 /** The block the fake ledger reader starts a scan at, as the real one starts at the ledger's deployment block. */
@@ -187,4 +187,20 @@ it("rebuilds the pending queue from canonical events after a rewrite, across a r
   expect(f.ports.finish).toHaveBeenNthCalledWith(2, "8");
   expect(f.ports.finish).toHaveBeenCalledTimes(2);
   expect(data.get("chests:cursor")).toEqual({ fromBlock: 112, page: null, anchor: { number: 111, hash: "0xa" } });
+});
+
+it("finishes a player's chest the moment its draw is readable, and only then", async () => {
+  const f = fixture();
+  f.ports.head = () => Effect.succeed(105);
+  expect(await Effect.runPromise(finishChestNow(f.ports, "7"))).toEqual({ status: "drawing", blocksLeft: 6 });
+  expect(f.ports.finish).not.toHaveBeenCalled();
+  f.ports.head = () => Effect.succeed(111);
+  expect(await Effect.runPromise(finishChestNow(f.ports, "7"))).toEqual({ status: "finished" });
+  expect(f.ports.finish).toHaveBeenCalledExactlyOnceWith("7");
+  f.ports.chest = () => Effect.succeed({ requested: true, finished: true, requester: "0x123", requestBlock: 100 });
+  expect(await Effect.runPromise(finishChestNow(f.ports, "7"))).toEqual({ status: "finished" });
+  expect(f.ports.finish).toHaveBeenCalledOnce();
+  f.ports.chest = () => Effect.succeed({ requested: false, finished: false, requester: "0x0", requestBlock: 0 });
+  expect(await Effect.runPromise(finishChestNow(f.ports, "8"))).toEqual({ status: "not_requested" });
+  expect(f.ports.finish).toHaveBeenCalledOnce();
 });

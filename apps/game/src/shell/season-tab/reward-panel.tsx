@@ -12,9 +12,16 @@ import { getChestAssetFromAttributesRaw } from "@/ui/features/cosmetics/chest-op
 import { Loading } from "../loading";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
-import type { ChestContent } from "@realms-world/value-ledger/codecs";
+import { CHEST_DRAW_BLOCKS, type ChestContent } from "@realms-world/value-ledger/codecs";
 import { type EnvironmentLedger, lordsOf, openChestCalls } from "../value/ledger";
-import { entryMultipleOf, type PlayedGameKeys, type Reward, rewardState, useReward } from "./reward";
+import {
+  entryMultipleOf,
+  type PlayedGameKeys,
+  type Reward,
+  rewardState,
+  useFinishOnceDrawn,
+  useReward,
+} from "./reward";
 
 const WalletSign = lazy(() =>
   import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletSign })),
@@ -25,8 +32,8 @@ const WalletSign = lazy(() =>
  * minted for the player's rank band. Both belong to the seat's wallet, the one the shard's roster froze at slot close,
  * whatever the payout wallet is now.
  * A sealed chest shows its band and, where that band draws tokens, how many times the entry they are. Open is one
- * signature from that wallet; the draw then lands by
- * itself about ten blocks later, and the reveal plays inside this panel. A chest not opened stays in the collection,
+ * signature from that wallet; the draw then waits for Starknet's next blocks, shown filling, is finished by the relay the
+ * moment it can be, and the reveal plays inside this panel. A chest not opened stays in the collection,
  * tradeable.
  * Nothing is drawn for an account that held no seat in the game.
  */
@@ -122,8 +129,7 @@ const ChestPlate = ({
     return (
       <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
         <Stage>
-          <SemanticIcon name={chestIcon} size={192} className="relative animate-pulse" />
-          <span className="relative text-app-heading text-app-gold">{REWARD_WORDS.opening}</span>
+          <DrawingChest icon={chestIcon} chestId={reward.result.chestId} blocksLeft={reward.drawBlocksLeft} />
         </Stage>
       </Plate>
     );
@@ -243,6 +249,46 @@ const ChestArt = ({ band, dim = false, glow = false }: { band?: number; dim?: bo
     </span>
   </div>
 );
+
+/**
+ * A requested chest while its draw waits for new blocks: a bar filling block by block, the blocks left, and why the
+ * wait is there. Once the draw can be finished the relay is asked to finish it, and the chest reads Opening.
+ */
+const DrawingChest = ({
+  icon,
+  chestId,
+  blocksLeft,
+}: {
+  icon: IconMeaning;
+  chestId: bigint;
+  /** Null until the first read of the chain's head. */
+  blocksLeft: number | null;
+}) => {
+  useFinishOnceDrawn(chestId, blocksLeft);
+  const passed = blocksLeft === null ? 0 : CHEST_DRAW_BLOCKS - blocksLeft;
+  return (
+    <>
+      <SemanticIcon name={icon} size={192} className="relative animate-pulse" />
+      <span className="relative text-app-heading text-app-gold">
+        {blocksLeft ? REWARD_WORDS.blocksLeft(blocksLeft) : REWARD_WORDS.opening}
+      </span>
+      <div
+        role="progressbar"
+        aria-label={REWARD_WORDS.draw}
+        aria-valuemin={0}
+        aria-valuemax={CHEST_DRAW_BLOCKS}
+        aria-valuenow={passed}
+        className="relative h-3 w-[70%] overflow-hidden rounded-full border border-app-line-strong bg-app-dark"
+      >
+        <span
+          className="block h-full rounded-full bg-app-gold transition-[width] duration-700 ease-out"
+          style={{ width: `${(passed / CHEST_DRAW_BLOCKS) * 100}%` }}
+        />
+      </div>
+      <p className="relative w-[80%] text-center text-app-body text-app-muted">{REWARD_WORDS.drawFair}</p>
+    </>
+  );
+};
 
 const Stage = ({ children }: { children: ReactNode }) => (
   <div className="relative isolate flex min-h-[22rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-control bg-app-well py-4">
