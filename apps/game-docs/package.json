@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "pnpm test && vocs build -o ../dist && node scripts/ship-referenced-assets.mjs dist && node scripts/check-rendered-balance.mjs dist",
-    "test": "node --test scripts/llm-txt.test.mjs scripts/ship-referenced-assets.test.mjs scripts/verify-docs-deployment.test.mjs",
+    "build": "pnpm test && vocs build -o ../dist && node scripts/ship-referenced-assets.mjs dist && node scripts/check-rendered-balance.mjs dist && node scripts/check-no-build-paths.mjs dist",
+    "test": "node --test scripts/llm-txt.test.mjs scripts/ship-referenced-assets.test.mjs scripts/verify-docs-deployment.test.mjs scripts/check-no-build-paths.test.mjs",
     "format": "npx prettier --write . --root=..",
     "format:check": "npx prettier --check . --root=..",
     "dev": "vocs dev",
