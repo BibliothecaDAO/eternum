@@ -1,7 +1,5 @@
 import { Euler, Group, Matrix4, Vector3, type Camera, type Scene } from "three";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { configManager } from "@bibliothecadao/eternum";
-import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { BiomeTypeToId, TileOccupier, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
@@ -18,6 +16,7 @@ import { gltfLoader } from "@/three/utils/utils";
 import { advanceGameEnd, resetGameEnd, skipGameEnd } from "@/three/effects/endgame/state";
 import { setEndgameView } from "@/three/effects/endgame/field";
 import { endgameFrame } from "@/three/effects/endgame/sequence";
+import { installLabGameRules } from "../lab-game-rules";
 import { createEndgameFixture, type EndgameLabSettings } from "./fixture";
 
 /** Offline native facts and actors; the SpireManager and end sequence are the production implementation. */
@@ -32,9 +31,7 @@ export class EndgameFixtureScene {
   private frame = endgameFrame(null);
   constructor(private readonly settings: EndgameLabSettings) {
     this.fixture = createEndgameFixture(settings);
-    this.store.applyFacts([{ model: "SliceRules", key: "2", value: { ...preset.rules, game_id: 1 } }]);
-    configManager.setActiveGame(1, 3);
-    configManager.setStore(this.store);
+    installLabGameRules(this.store);
     const offset = FELT_CENTER();
     const facts = this.fixture.request.cells.flatMap((cell, i) => {
       const hex = { game_id: 1, alt: false, col: cell.col + offset, row: cell.row + offset };

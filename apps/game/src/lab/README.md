@@ -218,8 +218,12 @@ screenshots and a JSON transcript. It uses the existing isolated browser driver 
 realm, a Hyperstructure foundation, two armies facing each other and an explorer on the edge of the fog. Every moment
 plays through the production code: the tower through `HyperstructureModel.setConstructionAt`, the attack through the
 world map's combat bridge (`WorldmapCombatPresentation.replayIndexed`, as a confirmed battle replays), the fall through
-the character layer's defeat, the explore through the terrain's shroud reveal, the tiers through the realm models, the
-lightning through the weather runtime. The set lives in `src/lab/studio/`; nothing in it ships to players.
+the map's defeat (the knight's ragdoll, else the model removed under the skull), the explore through the terrain's
+shroud reveal and the army model's own march, the tiers through the realm models, the lightning through the weather
+runtime. Every army is drawn as the world map's army manager draws it (`studio/armies.ts`): the shipped `ArmyModel` and
+its troop-and-tier table at the map's scale (`ARMY_MODEL_SCALE`), handed to the articulated figure only where the map
+hands it (`shouldPresentArmyProcedurally`, the T1 knight). A take stands only its own subjects on the set; Reset stands
+them all. The set lives in `src/lab/studio/`; nothing in it ships to players.
 
 - **Takes:** Hyperstructure rising, Battle up close, Exploration, Realm through its tiers, Wide establisher. Each resets
   the set and plays its camera path with its cues on time, so every take replays the same. `?take=<name>` plays one when

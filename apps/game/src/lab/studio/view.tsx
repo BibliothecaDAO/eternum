@@ -168,7 +168,7 @@ export function StudioLabView() {
                 <select
                   aria-label={`${side} troop`}
                   disabled={!bridge}
-                  defaultValue={side === "attacker" ? "knight:2" : "crossbowman:2"}
+                  defaultValue={side === "attacker" ? "knight:1" : "crossbowman:1"}
                   onChange={(event) => {
                     const [type, tier] = event.target.value.split(":");
                     bridge?.troops({ [side]: { type, tier: Number(tier) } } as Parameters<StudioBridge["troops"]>[0]);

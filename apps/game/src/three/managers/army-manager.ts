@@ -36,7 +36,12 @@ import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "@/three/terrain/te
 import type { TerrainMovementInteraction, TerrainMovementMode } from "@/three/terrain/terrain-movement-effects";
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { isAnimationPositionVisible } from "@/three/utils/animation-visibility";
-import { ARMY_PLATE_HEIGHT, isShipModel, TROOP_TO_SHIP_MODEL } from "@/three/constants/army-constants";
+import {
+  ARMY_MODEL_SCALE,
+  ARMY_PLATE_HEIGHT,
+  isShipModel,
+  TROOP_TO_SHIP_MODEL,
+} from "@/three/constants/army-constants";
 import { ModelType } from "@/three/types/army";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
@@ -280,7 +285,7 @@ export class ArmyManager {
     this.proceduralArmyCharacterLayer.setShadowsEnabled(
       this.currentCameraView === CameraView.Close && (hexagonScene?.getShadowsEnabled() ?? true),
     );
-    this.scale = new Vector3(0.3, 0.3, 0.3);
+    this.scale = new Vector3().setScalar(ARMY_MODEL_SCALE);
     this.renderChunkSize = renderChunkSize;
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
     this.chunkStride = Math.max(1, chunkStride ?? Math.floor(this.renderChunkSize.width / 2));

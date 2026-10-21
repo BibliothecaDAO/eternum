@@ -2,6 +2,8 @@ import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { ModelType } from "../types/army";
 
 export const MAX_INSTANCES = 1000;
+/** The scale every army model is drawn at on the world map (and in the lab's studio, which draws them the same way). */
+export const ARMY_MODEL_SCALE = 0.3;
 /**
  * How far above its tile an army's label point sits, where its token's foot stands (the owner, 2026-10-20: "label should
  * be above not on the army"). The tallest army as drawn (grounded, a ship at its waterline) is a T3 ship at 1.28, a

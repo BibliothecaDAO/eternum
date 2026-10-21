@@ -120,3 +120,21 @@ describe("what is rolling", () => {
     expect(view.setTake.mock.calls).toEqual([["battle"]]);
   });
 });
+
+describe("the set", () => {
+  it.each(Object.entries(STUDIO_TAKES))("holds only what the %s take films while it rolls", async (name, take) => {
+    const stage = stageOnBareLand();
+    const { bridge } = bridgeOver(stage);
+    void bridge.take(name);
+    expect(stage.status().cast).toEqual([...take.cast]);
+    stage.dispose();
+  });
+
+  it("stands everything again on a reset", () => {
+    const stage = stageOnBareLand();
+    const { bridge } = bridgeOver(stage);
+    void bridge.take("battle");
+    bridge.reset();
+    expect(stage.status().cast).toEqual(["realm", "hyperstructure", "battle", "explorer"]);
+  });
+});

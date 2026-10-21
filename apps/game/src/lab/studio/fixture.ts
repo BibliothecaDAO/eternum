@@ -36,7 +36,7 @@ export function createStudioTerrainRequest(revealed: number): TerrainPageRequest
   const occupied = new Set([STUDIO_PLACES.realm, STUDIO_PLACES.hyperstructure].map(hexKey));
   const cells: TerrainCellInput[] = Array.from({ length: COLUMNS * ROWS }, (_, index) => {
     const hex = { col: index % COLUMNS, row: Math.floor(index / COLUMNS) };
-    const biome = resolveStudioBiome(hex);
+    const biome = studioBiomeAt(hex);
     const explored = !isUnderFog(hex) || uncovered.has(hexKey(hex));
     return {
       ...hex,
@@ -69,7 +69,7 @@ function isUnderFog({ col, row }: Hex): boolean {
 }
 
 /** Meadow round the realm, forest and shrub between the subjects, taiga to the north-east, a dry rise by the tower. */
-function resolveStudioBiome({ col, row }: Hex): BiomeType {
+export function studioBiomeAt({ col, row }: Hex): BiomeType {
   const x = col + Math.sin(row * 0.61) * 1.1;
   const y = row + Math.sin(col * 0.47) * 0.9;
   if (Math.hypot(x - 7, y - 5) < 3.6) return BiomeType.Grassland;

@@ -5,7 +5,8 @@ import { WeatherType } from "@/three/managers/weather-manager";
 import { DAY_PHASE_PROGRESS } from "@/utils/cycle-progress";
 
 import type { StudioPath, StudioPose } from "./camera-path";
-import { STUDIO_TRIGGERS, type StudioStage, type StudioTrigger, type StudioTroop } from "./stage";
+import type { StudioTroop } from "./armies";
+import { STUDIO_TRIGGERS, type StudioStage, type StudioTrigger } from "./stage";
 import { STUDIO_TAKES, isStudioTake } from "./takes";
 
 /** Times of day by name, as the game's day names them. */
@@ -53,7 +54,7 @@ export function createStudioBridge(
   };
   const playTake = (name: string) => {
     if (!isStudioTake(name)) throw new Error(`Unknown studio take: ${name}`);
-    stage.reset();
+    stage.reset(STUDIO_TAKES[name].cast);
     return roll(name, STUDIO_TAKES[name].path(stage.places()));
   };
   return {

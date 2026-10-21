@@ -1,12 +1,9 @@
 import type { BattleEventSystemUpdate } from "@bibliothecadao/eternum";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { TroopTier, TroopType, type ID } from "@bibliothecadao/types";
-import { Euler, Matrix4, Vector3, type PerspectiveCamera } from "three";
+import { Matrix4, Vector3, type PerspectiveCamera } from "three";
 import type { MapControls } from "three/addons/controls/MapControls.js";
 
-import {
-  ProceduralArmyCharacterLayer,
-  type ProceduralArmyCharacterPresentation,
-} from "@/three/characters/procedural-army-character-layer";
 import { CombatPresentationCoordinator } from "@/three/combat/combat-presentation-coordinator";
 import type { LabStage, LabStageContext } from "@/three/debug/procedural-terrain-debug-renderer";
 import { WorldmapCombatPresentation } from "@/three/scenes/worldmap-combat-presentation";
@@ -17,6 +14,8 @@ import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { PreparedTerrainPage } from "@/three/terrain/terrain-types";
 import { gltfLoader } from "@/three/utils/utils";
 
+import { installLabGameRules } from "../lab-game-rules";
+import { StudioArmies, type StudioTroop } from "./armies";
 import { cameraPosition, pathDuration, poseAt, poseFromCamera, type StudioPath, type StudioPose } from "./camera-path";
 import { STUDIO_EXPLORE_STEPS, STUDIO_PLACES, createStudioTerrainRequest, type StudioPlace } from "./fixture";
 
@@ -24,21 +23,21 @@ import { STUDIO_EXPLORE_STEPS, STUDIO_PLACES, createStudioTerrainRequest, type S
 export const STUDIO_TRIGGERS = ["rise", "attack", "defeat", "explore", "realm", "strike"] as const;
 export type StudioTrigger = (typeof STUDIO_TRIGGERS)[number];
 
-export interface StudioTroop {
-  category: TroopType;
-  tier: TroopTier;
-}
+/** What the set can hold. A take puts on it only the subjects it films; between takes all of them stand. */
+export const STUDIO_SUBJECTS = ["realm", "hyperstructure", "battle", "explorer"] as const;
+export type StudioSubject = (typeof STUDIO_SUBJECTS)[number];
 
 const ATTACKER = 1;
 const DEFENDER = 2;
 const EXPLORER = 3;
-const STEP_SECONDS = 1.6;
 const HYPERSTRUCTURE_DESIGN = 17;
+const EXPLORER_TROOP: StudioTroop = { category: TroopType.Knight, tier: TroopTier.T1 };
 
 /**
  * The studio's world on the lab's land: a realm whose tier is set on a call, a Hyperstructure that rises on one, two
- * armies that fight through the world map's own combat bridge, and an explorer that walks into the fog and uncovers it
- * the way an explore does. It also runs the camera: free under the mouse, or along a path that plays its cues on time.
+ * armies that fight through the world map's own combat bridge, and an explorer that marches into the fog and uncovers
+ * it the way an explore does, every army drawn as the world map draws it (armies.ts). It also runs the camera: free
+ * under the mouse, or along a path that plays its cues on time.
  */
 export class StudioStage implements LabStage {
   readonly request = createStudioTerrainRequest(0);
@@ -46,20 +45,18 @@ export class StudioStage implements LabStage {
   private pages: PreparedTerrainPage[] = [];
   private readonly realms: SettlementModel[] = [];
   private hyperstructure: HyperstructureModel | null = null;
-  private armies: ProceduralArmyCharacterLayer | null = null;
+  private armies: StudioArmies | null = null;
   private combat: CombatPresentationCoordinator | null = null;
   private combatBridge: WorldmapCombatPresentation | null = null;
   private troops: Record<"attacker" | "defender", StudioTroop> = {
-    attacker: { category: TroopType.Knight, tier: TroopTier.T2 },
-    defender: { category: TroopType.Crossbowman, tier: TroopTier.T2 },
+    attacker: { category: TroopType.Knight, tier: TroopTier.T1 },
+    defender: { category: TroopType.Crossbowman, tier: TroopTier.T1 },
   };
+  private cast = new Set<StudioSubject>(STUDIO_SUBJECTS);
   private realmLevel = 0;
   private hyperstructureProgress = 0;
   private explored = 0;
   private defenderDown = false;
-  private walk: { from: Vector3; to: Vector3; elapsed: number } | null = null;
-  private explorerAt = new Vector3();
-  private explorerFacing = new Vector3();
   private take: {
     path: StudioPath;
     start: StudioPose;
@@ -74,6 +71,8 @@ export class StudioStage implements LabStage {
   async prepare(context: LabStageContext): Promise<void> {
     this.context = context;
     const { scene, terrain, compile } = context;
+    // The armies place themselves by the game's map centre, read from its rules.
+    installLabGameRules(new NativeFactStore());
     this.pages = await Promise.all(
       Array.from({ length: STUDIO_EXPLORE_STEPS + 1 }, (_, revealed) =>
         terrain.preparePageAsync(createStudioTerrainRequest(revealed)),
@@ -94,38 +93,34 @@ export class StudioStage implements LabStage {
     this.hyperstructure = new HyperstructureModel(1);
     await compile(this.hyperstructure.group, scene);
     scene.add(this.hyperstructure.group);
-    this.armies = new ProceduralArmyCharacterLayer(scene);
-    this.armies.setShadowsEnabled(true);
-    this.combat = new CombatPresentationCoordinator(scene, {
-      projectileHitQuery: {
-        hasTarget: (entityId) => this.armies!.hasProjectileTarget(entityId),
-        sweepSphere: (request) => this.armies!.sweepProjectile(request),
-      },
-    });
+    this.armies = new StudioArmies(scene, terrain, compile);
+    await this.armies.prepare();
+    this.combat = new CombatPresentationCoordinator(scene, { projectileHitQuery: this.armies.projectileTargets() });
     this.combatBridge = new WorldmapCombatPresentation({
-      armyManager: this.armyRoster(this.armies),
+      armyManager: this.armies.roster(),
       getCombatPresentation: () => this.combat ?? undefined,
       getArmyDisplayPosition: (entityId) => this.armyHex(entityId),
       getStructureHexPosition: () => undefined,
     });
     this.combatBridge.bind();
     this.reset();
-    await this.waitForArmies();
+    await this.armies.whenReady();
   }
 
-  /** The world as it stood before any moment played: a foundation, a settlement, the fog closed, both armies up. */
-  reset(): void {
+  /**
+   * The world as it stood before any moment played (a foundation, a settlement, the fog closed, both armies up), with
+   * only `cast` on the set.
+   */
+  reset(cast: readonly StudioSubject[] = STUDIO_SUBJECTS): void {
     this.stop();
+    this.cast = new Set(cast);
     this.setRealmLevel(0);
     this.resetHyperstructure();
     this.explored = 0;
-    this.walk = null;
-    this.explorerAt.copy(this.placeAt("exploreStart"));
-    this.explorerFacing.copy(this.hexPosition(STUDIO_PLACES.exploreRoute[0]));
     this.context?.terrain.cancelShroudReveals();
     this.context?.terrain.present([this.pages[0]]);
     this.defenderDown = false;
-    this.armies?.reset(ATTACKER);
+    this.placeArmies();
   }
 
   trigger(name: Exclude<StudioTrigger, "strike">, args: Record<string, unknown> = {}): void {
@@ -138,6 +133,7 @@ export class StudioStage implements LabStage {
 
   setTroops(troops: Partial<Record<"attacker" | "defender", StudioTroop>>): void {
     this.troops = { ...this.troops, ...troops };
+    this.placeArmies();
   }
 
   /** Where each subject stands, for paths framed around it. */
@@ -189,9 +185,10 @@ export class StudioStage implements LabStage {
       realmLevel: this.realmLevel,
       hyperstructureProgress: this.hyperstructureProgress,
       explored: this.explored,
-      walking: this.walk !== null,
+      walking: this.armies?.isMarching(EXPLORER) ?? false,
       defenderDown: this.defenderDown,
       troops: this.troops,
+      cast: [...this.cast],
     };
   }
 
@@ -201,8 +198,7 @@ export class StudioStage implements LabStage {
    */
   update(delta: number): void {
     this.advanceTake(delta);
-    this.advanceWalk(delta);
-    this.armies?.sync(this.presentations(), delta);
+    this.armies?.update(delta);
     this.combat?.update(delta);
     this.hyperstructure?.updateAnimations(delta);
     for (const realm of this.realms) if (realm.group.visible) realm.updateAnimations(delta);
@@ -241,6 +237,7 @@ export class StudioStage implements LabStage {
     this.hyperstructureProgress = 0;
     model.setCount(0);
     model.setCount(1);
+    model.group.visible = this.cast.has("hyperstructure");
     model.setMatrixAt(0, this.placementMatrix("hyperstructure", 0.4));
     model.setConstructionAt(0, { entityId: HYPERSTRUCTURE_DESIGN, progress: 0, completed: false });
   }
@@ -265,25 +262,67 @@ export class StudioStage implements LabStage {
 
   private defeat(): void {
     if (this.defenderDown) return;
-    this.defenderDown = this.armies?.playDefeat(DEFENDER) ?? false;
+    this.defenderDown = this.armies?.defeat(DEFENDER) ?? false;
   }
 
-  /** The explorer steps onto the next hidden hex of its route, which is uncovered from the hex it left. */
+  /**
+   * The explorer marches onto the next hidden hex of its route, which is uncovered from the hex it left. One called
+   * while it still walks sends it on from where it is, as the map replaces a walk.
+   */
   private explore(): void {
     const { terrain } = this.requireContext();
-    if (this.walk || this.explored >= STUDIO_EXPLORE_STEPS) return;
-    const from = this.explored === 0 ? STUDIO_PLACES.exploreStart : STUDIO_PLACES.exploreRoute[this.explored - 1];
+    if (this.explored >= STUDIO_EXPLORE_STEPS) return;
+    const from = this.explorerHex();
     const to = STUDIO_PLACES.exploreRoute[this.explored];
     this.explored += 1;
     terrain.queueShroudReveal(to.col, to.row, from);
     terrain.present([this.pages[this.explored]]);
-    this.walk = { from: this.explorerAt.clone(), to: this.hexPosition(to), elapsed: 0 };
-    this.explorerFacing.copy(this.walk.to);
+    this.armies?.march(EXPLORER, to);
   }
 
   private setRealmLevel(level: number): void {
     this.realmLevel = Math.max(0, Math.min(this.realms.length - 1, level));
-    this.realms.forEach((realm, index) => (realm.group.visible = index === this.realmLevel));
+    this.realms.forEach((realm, index) => (realm.group.visible = this.cast.has("realm") && index === this.realmLevel));
+  }
+
+  /** The armies the cast holds, where they stand now: the battle's two facing each other, the explorer on its route. */
+  private placeArmies(): void {
+    const armies = this.armies;
+    if (!armies) return;
+    const { attacker, defender, exploreRoute } = STUDIO_PLACES;
+    const battle = this.cast.has("battle");
+    if (battle)
+      armies.place({
+        entityId: ATTACKER,
+        ...this.troops.attacker,
+        hex: attacker,
+        yaw: facing(attacker, defender),
+        color: "#e1b955",
+      });
+    else armies.withdraw(ATTACKER);
+    if (battle && !this.defenderDown)
+      armies.place({
+        entityId: DEFENDER,
+        ...this.troops.defender,
+        hex: defender,
+        yaw: facing(defender, attacker),
+        color: "#a33b39",
+      });
+    else armies.withdraw(DEFENDER);
+    const at = this.explorerHex();
+    if (this.cast.has("explorer"))
+      armies.place({
+        entityId: EXPLORER,
+        ...EXPLORER_TROOP,
+        hex: at,
+        yaw: facing(at, exploreRoute[Math.min(this.explored, exploreRoute.length - 1)]),
+        color: "#e1b955",
+      });
+    else armies.withdraw(EXPLORER);
+  }
+
+  private explorerHex() {
+    return this.explored === 0 ? STUDIO_PLACES.exploreStart : STUDIO_PLACES.exploreRoute[this.explored - 1];
   }
 
   private advanceTake(delta: number): void {
@@ -300,61 +339,10 @@ export class StudioStage implements LabStage {
     if (take.elapsed >= pathDuration(take.path)) this.stop();
   }
 
-  private advanceWalk(delta: number): void {
-    const walk = this.walk;
-    if (!walk) return;
-    walk.elapsed += delta;
-    const progress = Math.min(1, walk.elapsed / STEP_SECONDS);
-    this.explorerAt.lerpVectors(walk.from, walk.to, progress);
-    this.explorerAt.y = this.groundHeight(this.explorerAt.x, this.explorerAt.z);
-    if (progress === 1) this.walk = null;
-  }
-
-  private presentations(): ProceduralArmyCharacterPresentation[] {
-    const attacker = this.placeAt("attacker");
-    const defender = this.placeAt("defender");
-    return [
-      army(ATTACKER, this.troops.attacker, attacker, defender, "#e1b955", false),
-      ...(this.defenderDown ? [] : [army(DEFENDER, this.troops.defender, defender, attacker, "#a33b39", false)]),
-      army(
-        EXPLORER,
-        { category: TroopType.Knight, tier: TroopTier.T1 },
-        this.explorerAt,
-        this.explorerFacing,
-        "#e1b955",
-        this.walk !== null,
-      ),
-    ];
-  }
-
-  /** The armies as the combat bridge reads the world map's army manager. */
-  private armyRoster(layer: ProceduralArmyCharacterLayer) {
-    return {
-      getArmy: (entityId: ID) =>
-        entityId === ATTACKER ? this.troops.attacker : entityId === DEFENDER ? this.troops.defender : undefined,
-      playProceduralAttack: (entityId: ID, target: Readonly<Vector3>, targetId?: ID) =>
-        layer.playAttack(Number(entityId), target, targetId === undefined ? undefined : Number(targetId)),
-      presentProceduralProjectileImpact: layer.presentProjectileImpact.bind(layer),
-      onProceduralMeleeContact: layer.onMeleeContact.bind(layer),
-      onProceduralRangedRelease: layer.onRangedRelease.bind(layer),
-    };
-  }
-
   private armyHex(entityId: ID) {
     if (entityId === ATTACKER) return STUDIO_PLACES.attacker;
     if (entityId === DEFENDER) return STUDIO_PLACES.defender;
     return undefined;
-  }
-
-  private async waitForArmies(): Promise<void> {
-    const started = performance.now();
-    while (this.armies && this.armies.getStats().actorCount < 3) {
-      if (this.armies.getStats().loadState === "failed" || performance.now() - started > 20_000) {
-        throw new Error("The studio's armies did not load");
-      }
-      this.armies.sync(this.presentations(), 0);
-      await new Promise((resolve) => setTimeout(resolve, 30));
-    }
   }
 
   private placementMatrix(place: StudioPlace, yaw: number): Matrix4 {
@@ -381,24 +369,11 @@ export class StudioStage implements LabStage {
   }
 }
 
-function army(
-  entityId: number,
-  troop: StudioTroop,
-  position: Vector3,
-  facing: Vector3,
-  primaryColor: string,
-  isMoving: boolean,
-): ProceduralArmyCharacterPresentation {
-  return {
-    entityId,
-    category: troop.category,
-    tier: troop.tier,
-    isNaval: false,
-    isMoving,
-    position: position.clone(),
-    rotation: new Euler(0, Math.atan2(facing.x - position.x, facing.z - position.z), 0),
-    primaryColor,
-  };
+/** The yaw that turns a model on hex `from` to face hex `to`. */
+function facing(from: { col: number; row: number }, to: { col: number; row: number }): number {
+  const a = terrainHexToWorld(from.col, from.row);
+  const b = terrainHexToWorld(to.col, to.row);
+  return Math.atan2(b.x - a.x, b.z - a.z);
 }
 
 function applyPose(camera: PerspectiveCamera, controls: MapControls, pose: StudioPose): void {
