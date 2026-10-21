@@ -70,17 +70,19 @@ sheet; `prove:app <base-url> <out-dir> end-map`, on the live stack, opens the ne
 Share on Results, a release picked on What's new, a legal page's places, a Season row's chips, Settings' Name, You with
 no finished game (`/lab/app/no-games`) and a session with no name (`/lab/app/unnamed`), the phone's own card and a
 Results board row on one line. The pages: Play (`/`) the lead widest and each age as a painted column, Blitz's always:
-with no Blitz anywhere it says none is scheduled and that the next shows there when it opens (`/lab/app/no-blitz`); a
-Blitz lobby (`/blitz/:id`) who is in, the entry and the chat side by side; Season (`/season`) the player's figures over
-Frontier's and Blitz's boards; Results (`/results/:id`, with **See the end map**) the player's place and points, the
-game's board, points by kind and the chest at its tier; What's new (`/scroll`) a release's patch notes, a tab per
-section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a
-fixture realm. `/lab/kit/unified/<view>` the in-game desktop HUD every mode shares, as the game mounts it on the lab's
-game: `blitz` (the Build order panel under Next up, read from the lab realm, which has nothing to build now),
-`blitz-attack` (the lab army's attack forecast on an enemy army beside it, opened as the map opens it), `frontier`,
-`frontier-army` (an army out whose XP buys a level; its panel's Level up sends buy_tier, recorded on the page as
-`window.__labTierBought`), `blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab player's
-last realm lost, a Hyperstructure still held, playing then watching);
+with no Blitz open it shows the season calendar's next ranked game, its start and when its entry opens, in the player's
+local time (`nextBlitz` from the launch service's `/api/factory/calendar`, the schedule's own; `/lab/app/blitz-next`),
+and says none is scheduled only when the season has no next game (`/lab/app/no-blitz`); a Blitz lobby (`/blitz/:id`) who
+is in, the entry and the chat side by side; Season (`/season`) the player's figures over Frontier's and Blitz's boards;
+Results (`/results/:id`, with **See the end map**) the player's place and points, the game's board, points by kind and
+the chest at its tier; What's new (`/scroll`) a release's patch notes, a tab per section, and every release.
+`/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture realm.
+`/lab/kit/unified/<view>` the in-game desktop HUD every mode shares, as the game mounts it on the lab's game: `blitz`
+(the Build order panel under Next up, read from the lab realm, which has nothing to build now), `blitz-attack` (the lab
+army's attack forecast on an enemy army beside it, opened as the map opens it), `frontier`, `frontier-army` (an army out
+whose XP buys a level; its panel's Level up sends buy_tier, recorded on the page as `window.__labTierBought`),
+`blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab player's last realm lost, a
+Hyperstructure still held, playing then watching);
 `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
 1280, 1440 and 1920 px (every part whole on the page, none over another, every control reachable, at most seven parts a
 region). `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with

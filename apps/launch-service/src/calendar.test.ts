@@ -3,7 +3,7 @@ import { slotValueFixture, registrationIdentityFixture } from "./test-database";
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { D1CalendarStore } from "./calendar-store";
-import { runLaunchSchedule } from "./schedule";
+import { nextBlitzGame, runLaunchSchedule } from "./schedule";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase, testChain } from "./test-database";
@@ -292,4 +292,18 @@ test("schedule failures log the fixed underlying code, and the tick leaves freez
     expect.objectContaining({ code: "ledger_head_unconfirmed" }),
   );
   expect(JSON.stringify(log.mock.calls)).not.toContain("secret-value");
+});
+
+test("the schedule opens exactly the game the calendar names next, at the moment it says entry opens", async () => {
+  const { slots, calendar, tick } = stores();
+  await calendar.set({ phase: "blitz", startsAt: day(1, 10).toISOString(), endsAt: day(2).toISOString() }, Date.now());
+  const named = nextBlitzGame(await calendar.list(), day(1, 8).getTime());
+  expect(named).toMatchObject({ name: blitzSlotName(day(1, 10, 30)), opensAt: day(1, 8, 55).toISOString() });
+  // Before the moment it names, nothing opens; at it, that game does.
+  await tick(new Date(Date.parse(named!.opensAt) - 1));
+  expect(await slots.list()).toEqual([]);
+  await tick(new Date(named!.opensAt));
+  expect((await slots.list()).map(({ name, closesAt }) => ({ name, closesAt }))).toEqual([
+    { name: named!.name, closesAt: named!.closesAt },
+  ]);
 });

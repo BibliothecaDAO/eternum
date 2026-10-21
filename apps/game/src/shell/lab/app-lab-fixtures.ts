@@ -160,6 +160,9 @@ export const LAB_SCREENS = {
   // No Blitz anywhere, no slot open and no result left to open: Blitz's column says none is scheduled (live-qa-night-1
   // P3-12: it vanished from Play).
   "no-blitz": { signedIn: true, games: [frontier(true), eternum] },
+  // No Blitz open, the calendar's next ranked game due: its column shows the start and when entry opens (the owner's
+  // 10:08, before the 12:00 game's entry opens at 10:25).
+  "blitz-next": { signedIn: true, games: [frontier(true), eternum] },
   unnamed: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "no-realm": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
   "blitz-seat": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
@@ -299,9 +302,19 @@ export const LAB_EMAIL_CODE = "111111";
 
 export type LabScreen = keyof typeof LAB_SCREENS;
 
+/**
+ * The season calendar as the launch service answers it: on `blitz-next`, the next ranked game starting in 1h 52m with
+ * its entry opening in 17m; on `no-blitz`, none left in the season. Elsewhere a game is open, so the column shows it.
+ */
+export const labCalendar = (screen: LabScreen) => {
+  if (screen !== "blitz-next") return { phases: [], nextBlitz: null };
+  const at = (minutes: number) => new Date((NOW + minutes * 60) * 1000).toISOString();
+  return { phases: [], nextBlitz: { name: "blitz-next", startsAt: at(112), closesAt: at(107), opensAt: at(17) } };
+};
+
 /** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */
 export const labSlots = (screen: LabScreen) => {
-  if (screen === "no-blitz") return { slots: [] };
+  if (screen === "no-blitz" || screen === "blitz-next") return { slots: [] };
   const closed = CLOSED_SLOT_SCREENS.includes(screen);
   const closesAt = closed ? CLOSED_ENTRY.close : screen === "blitz-seat-late-slot" ? LATE_SLOT_CLOSE : ENTRY.close;
   return {

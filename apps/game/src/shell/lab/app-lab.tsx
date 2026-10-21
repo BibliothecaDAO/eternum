@@ -41,6 +41,7 @@ import {
   LAB_SLOT_REGISTERED,
   LAB_WALLET,
   labRatings,
+  labCalendar,
   labSlots,
   type LabScreen,
 } from "./app-lab-fixtures";
@@ -186,12 +187,13 @@ const answerAppReads = (screen: LabScreen) => {
       }),
     "/api/directory/history": () =>
       json({
-        games: screen === "no-games" || screen === "no-blitz" ? [] : [LAB_FINISHED_BLITZ],
+        games: screen === "no-games" || screen === "no-blitz" || screen === "blitz-next" ? [] : [LAB_FINISHED_BLITZ],
         next: null,
         failures: [],
       }),
     "/api/guardian": () => json(LAB_GUARDIAN),
     "/api/slots": () => json(labSlots(screen)),
+    "/api/factory/calendar": () => json(labCalendar(screen)),
     "/api/profiles": (url) => json({ profiles: profilesOf(url.searchParams.get("accounts")?.split(",") ?? []) }),
     "/api/ratings/top": () => json(LAB_RATING_TOP),
     "/api/ratings": (url) => json(labRatings(url.searchParams.get("players")?.split(",") ?? [])),

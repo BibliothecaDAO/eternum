@@ -3,7 +3,7 @@ import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 
 import { useRefundSlots } from "../blitz/entry";
 import { blitzRows } from "../blitz-rows";
-import { usePlaytestSlots } from "../blitz-slot";
+import { useNextBlitz, usePlaytestSlots } from "../blitz-slot";
 import { useDirectory, useRealmsPlayer, useRecentResults } from "../herald";
 import { useNowSeconds } from "../use-now";
 import { playBoard } from "./play-board";
@@ -16,7 +16,7 @@ const RECENT_FINISHED = 8;
  * A read the board stands on that has not answered in full: still on its way, or failed with its retry. A source that
  * is missing here answered; one that is listed here is never drawn as "nothing there".
  */
-export type SourceGap = { service: "slots" | "results" } & (
+export type SourceGap = { service: "slots" | "season" | "results" } & (
   | { kind: "pending" }
   | { kind: "failed"; error: unknown; retry: () => void }
 );
@@ -45,8 +45,8 @@ const resultsGap = (player: Read, history: Read & { data?: { failures: readonly 
     : gapOf("results", history, history.data?.failures.length ? history.data.failures : null);
 
 /**
- * Everything the Play tab draws, read once: the directory's games, Blitz's rows, the player's latest finished games, the
- * sign-in status and the clock, and the board that sorts them. The board is unknown until the directory and the session
+ * Everything the Play tab draws, read once: the directory's games, Blitz's rows and its next game, the player's latest
+ * finished games, the sign-in status and the clock, and the board that sorts them. The board is unknown until the directory and the session
  * answer; the slots and the player's history each either answered or stand as a gap, so a slot outage never reads as
  * "nothing scheduled" and a history outage never hides a result without saying so.
  */
@@ -54,6 +54,7 @@ export const usePlayFacts = () => {
   const { status, session } = useIdentitySession();
   const directory = useDirectory();
   const slots = usePlaytestSlots();
+  const calendar = useNextBlitz();
   const now = useNowSeconds();
   const player = useRealmsPlayer();
   const signedIn = status === "signed-in";
@@ -65,10 +66,12 @@ export const usePlayFacts = () => {
   const finished = signedIn ? (history.data?.games ?? []) : [];
   const known = directory.isSuccess && status !== "loading";
   const board = known ? playBoard({ signedIn, games, blitz, finished, seenResults: readSeenResults() }) : undefined;
-  const gaps = [gapOf("slots", slots), signedIn ? resultsGap(player, history) : null].filter(
+  const gaps = [gapOf("slots", slots), gapOf("season", calendar), signedIn ? resultsGap(player, history) : null].filter(
     (gap): gap is SourceGap => gap !== null,
   );
-  return { directory, slots, now, games, blitz, refunds, signedIn, board, gaps };
+  // The next Blitz game while none is open for entry: known once the calendar answered, null when the season has none.
+  const nextBlitz = calendar.data;
+  return { directory, slots, now, games, blitz, refunds, signedIn, board, gaps, nextBlitz };
 };
 
 export type PlayFacts = ReturnType<typeof usePlayFacts>;

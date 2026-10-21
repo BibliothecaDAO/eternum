@@ -65,6 +65,8 @@ export const CLOCK_WORDS = {
   expires: "Expires",
   /** A slot's registration: "Entry closes 16:25 · 1h 59m left". */
   closes: "Entry closes",
+  /** The next game's registration, before the schedule opens it: "Entry opens 10:25 · in 17m". */
+  entryOpens: "Entry opens",
   /** Before the time left to a beginning: "Starts 16:30 · in 2h 4m". */
   in: "in",
 } as const;
@@ -525,10 +527,14 @@ export const SIGN_IN_WORDS = {
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
 export const BLITZ_WORDS = {
   /**
-   * Blitz's column with no Blitz at all (live-qa-night-1 P3-12: it vanished once an ended one's results were seen). An
-   * operator opens each slot; none is set ahead, so the next one shows here when it opens.
+   * Blitz's column with no Blitz at all and none left in the season's Blitz calendar (live-qa-night-1 P3-12: it vanished
+   * once an ended one's results were seen).
    */
-  noneScheduled: "No Blitz scheduled. The next one shows here when it opens.",
+  noneScheduled: "No Blitz scheduled this season.",
+  /** Blitz's column before the calendar's next game opens for entry: "Starts 12:00 · Entry opens 10:25 · in 17m". */
+  nextRanked: "Next ranked Blitz",
+  /** The next game's entry, due to open at the schedule's next tick. */
+  entryOpening: "Entry opens in a moment",
   preparing: "Preparing…",
   /** Shown only to assistive technology; the seats are drawn. */
   seats: "Seats",
