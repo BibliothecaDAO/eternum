@@ -26,6 +26,7 @@ import {
   buildLedgerEconomicPreset,
   buildRegisterLedgerPresetCalldata,
 } from "../../config/deployer/clean/ledger/economics";
+import { decodeLedgerPreset } from "../../packages/value-ledger/src/codecs";
 
 const temporary: string[] = [];
 const fetchBefore = globalThis.fetch;
@@ -352,6 +353,36 @@ test("setup keeps only missing role calls and uses the environment's two preset 
 const setupOf = (target: typeof environments.dev, entrypoint: string) =>
   setupCalls(target, assets, "0x33", 4000, 9000, 1).filter((call) => call.entrypoint === entrypoint);
 const registered = (call: { calldata: unknown }) => call.calldata as string[];
+
+test.each(["dev", "production"] as const)("%s setup registers 100 LORDS for entry, Sword and Shield", (environment) => {
+  const [operation] = setupOf(environments[environment], "register_preset");
+  const fields = registered(operation!);
+  expect(fields[0]).toBe(environment === "production" ? "2" : "1");
+  const preset = decodeLedgerPreset(fields.slice(1, 19));
+  expect(preset).toMatchObject({
+    entryFee: "100000000000000000000",
+    swordPrice: "100000000000000000000",
+    shieldPrice: "100000000000000000000",
+  });
+});
+
+test.each([
+  ["entry", 0],
+  ["Sword", 6],
+  ["Shield", 8],
+] as const)("setup refuses a registered 500-LORDS %s price instead of pretending to update it", async (_, field) => {
+  const [operation] = setupOf(environments.production, "register_preset");
+  const recorded = registered(operation!).slice(1, 19);
+  recorded[field] = "500000000000000000000";
+  const callContract = mock(async () => recorded);
+  const provider = { callContract } as unknown as RpcProvider;
+  await expect(setupPresenceReader(provider)(operation!, 10)).rejects.toThrow("Registered preset differs");
+  expect(callContract).toHaveBeenCalledTimes(1);
+  expect(callContract).toHaveBeenCalledWith(
+    { contractAddress: assets.ledger, entrypoint: "get_preset", calldata: ["2"] },
+    10,
+  );
+});
 
 test("dev registers its mystery chests and their cosmetics metadata exactly as before", () => {
   const mystery = buildMysteryChestPreset();
