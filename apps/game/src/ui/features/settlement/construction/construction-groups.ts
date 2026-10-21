@@ -2,7 +2,7 @@ import { knownAmount } from "@/ui/utils/utils";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { GameModeConfig } from "@/config/game-modes";
 import type { ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
-import { divideByPrecision, getBalance, getBuildingCosts } from "@bibliothecadao/eternum";
+import { getBalance, getBuildingCosts } from "@bibliothecadao/eternum";
 import { BuildingType, getBuildingFromResource, isEconomyBuilding, type ResourcesIds } from "@bibliothecadao/types";
 import {
   getMilitaryBuildingInfo,

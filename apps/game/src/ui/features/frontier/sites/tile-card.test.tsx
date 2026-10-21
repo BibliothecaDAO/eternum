@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useNowSeconds: () => 350,
   useCurrentArmiesTick: () => 3,
-  useCurrentDefaultTick: () => 3,
+  useCurrentDefaultTick: () => 350,
   useBlockTimestamp: () => ({ currentArmiesTick: 3, armiesTickTimeRemaining: 60 }),
 }));
 vi.mock("@/audio/unit-command-audio", () => ({ playUnitCommandSound: () => {} }));

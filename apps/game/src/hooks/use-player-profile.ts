@@ -10,8 +10,7 @@ import {
   readPlayerProfile,
 } from "@/services/identity/player-profiles";
 import { readPlayers } from "@/sync/fact-views";
-import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import type { ContractAddress, Player } from "@bibliothecadao/types";
 import { useMemo, useSyncExternalStore } from "react";
 
@@ -64,34 +63,39 @@ export interface PlayerNames {
   text: (address: string | bigint) => string;
   /** The rule's reading: named, waiting or unavailable. */
   reading: (address: string | bigint) => PlayerNameReading;
+  /** The player's face: their claimed name and portrait, and whether either is known yet. */
+  profile: (address: string | bigint) => PlayerProfile;
 }
 
-export const usePlayerNames = (): PlayerNames => {
-  const [profiles, user, account] = useNamesRevision();
-  return useMemo(
-    // New functions for each revision, so a dependency on either reader alone follows the names too.
-    () => ({ text: (address) => getPlayerDisplayName(address), reading: (address) => readPlayerName(address) }),
-    [profiles, user, account],
-  );
+type NamesRevision = ReturnType<typeof useNamesRevision>;
+
+let lastNames: { revision: NamesRevision; names: PlayerNames } | null = null;
+
+/** One reader per names revision, the same object for every surface until a name may have changed. */
+const namesAt = (revision: NamesRevision): PlayerNames => {
+  if (lastNames && lastNames.revision.every((part, index) => part === revision[index])) return lastNames.names;
+  const names: PlayerNames = {
+    text: (address) => getPlayerDisplayName(address),
+    reading: (address) => readPlayerName(address),
+    profile: (address) => ({ ...readPlayerProfile(address), known: isPlayerProfileKnown(address) }),
+  };
+  lastNames = { revision, names };
+  return names;
 };
+
+export const usePlayerNames = (): PlayerNames => namesAt(useNamesRevision());
 
 /** The game's registered players, each with their name and portrait. */
 export const usePlayers = (): Player[] => {
-  const {
-    setup: { store },
-  } = useGame();
-  const registrations = useNativeRevision(PLAYER_FACTS);
+  const facts = useNativeFacts(PLAYER_FACTS);
   const names = usePlayerNames();
-  return useMemo(() => readPlayers(store), [store, registrations, names]);
+  return useMemo(() => readPlayers(facts.store, names.profile), [facts, names]);
 };
 
 export const usePlayerProfile = (address: string | bigint | null | undefined): PlayerProfile => {
   const names = usePlayerNames();
   const owner = address === null || address === undefined ? null : toAddress(address);
-  return useMemo(
-    () => (owner === null ? NO_PROFILE : { ...readPlayerProfile(owner), known: isPlayerProfileKnown(owner) }),
-    [owner, names],
-  );
+  return useMemo(() => (owner === null ? NO_PROFILE : names.profile(owner)), [owner, names]);
 };
 
 /** A player's name as the one rule reads it (named, waiting or unavailable), read again whenever a name may change. */

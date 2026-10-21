@@ -45,17 +45,12 @@ const resetStore = () => {
 
 describe("isAutomationResourceBlocked", () => {
   it("blocks Wheat and Labor as outputs", () => {
-    expect(isAutomationResourceBlocked(ResourcesIds.Wheat, "realm", "output")).toBe(true);
-    expect(isAutomationResourceBlocked(ResourcesIds.Labor, "realm", "output")).toBe(true);
-  });
-
-  it("never blocks a resource when role is input", () => {
-    expect(isAutomationResourceBlocked(ResourcesIds.Wheat, "realm", "input")).toBe(false);
-    expect(isAutomationResourceBlocked(ResourcesIds.Labor, "realm", "input")).toBe(false);
+    expect(isAutomationResourceBlocked(ResourcesIds.Wheat)).toBe(true);
+    expect(isAutomationResourceBlocked(ResourcesIds.Labor)).toBe(true);
   });
 
   it("does not block non-blocked resources", () => {
-    expect(isAutomationResourceBlocked(ResourcesIds.Knight, "realm", "output")).toBe(false);
+    expect(isAutomationResourceBlocked(ResourcesIds.Knight)).toBe(false);
   });
 });
 

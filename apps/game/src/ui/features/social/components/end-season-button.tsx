@@ -2,7 +2,6 @@ import { completeNativeBatches } from "@bibliothecadao/provider";
 import { useSeasonWinner } from "@/hooks/store/use-story-events-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { seasonClockView } from "@/sync/fact-views";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { HudButton, HudWindow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { hasFiniteSeasonEnd } from "@/ui/features/world/utils/season-timing";
@@ -11,7 +10,7 @@ import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, formatExact } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 
@@ -21,7 +20,7 @@ interface EndSeasonButtonProps {
 
 export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
   const game = useGame();
-  const revision = useNativeRevision(["PlayerPoints"]);
+  const facts = useNativeFacts(["PlayerPoints"]);
   const {
     setup,
     account: { account },
@@ -30,9 +29,7 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showCongratsPopup, setShowCongratsPopup] = useState(false);
   const setTooltip = useTooltipStore((state) => state.setTooltip);
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { gameEndAt } = useFactView(seasonClockView);
-  const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
   const seasonWinner = useSeasonWinner();
   const hasFiniteGameEnd = useMemo(() => hasFiniteSeasonEnd(gameEndAt), [gameEndAt]);
 
@@ -41,14 +38,14 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
   const pointsForWin = configManager.getHyperstructureConfig().pointsForWin;
 
   const { registeredPoints, percentageOfPoints } = useMemo(() => {
-    const leaderboardManager = LeaderboardManager.instance(setup.store);
+    const leaderboardManager = LeaderboardManager.instance(facts.store);
     const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(ContractAddress(account.address));
 
     return {
       registeredPoints,
       percentageOfPoints: registeredPoints === null ? null : Math.min((registeredPoints / pointsForWin) * 100, 100),
     };
-  }, [structureEntityId, currentBlockTimestamp, revision, setup.store, account.address, pointsForWin]);
+  }, [facts, account.address, pointsForWin]);
 
   const hasReachedFinalPoints = useMemo(() => {
     return percentageOfPoints !== null && percentageOfPoints >= 100;

@@ -5,7 +5,6 @@ import {
   getBalance,
   getRealmInfo,
   getBuildingCount,
-  getBlockTimestamp,
   storedBiomeAt,
   type TileManager,
 } from "../index";
@@ -146,8 +145,10 @@ export function readBlitzRealmSuggestions(input: {
   isBlitzActive: boolean;
   tiles: Pick<TileManager, "isHexOccupied">;
   mode?: ConstructionBuildabilityInput["mode"];
+  /** The default tick the upgrade's cost is judged at. */
+  tick: number;
 }): BlitzSuggestionDraft[] {
-  const { store, realmId, realmName, isBlitzActive, tiles, mode } = input;
+  const { store, realmId, realmName, isBlitzActive, tiles, mode, tick } = input;
   const game_id = configManager.getActiveGameId();
   const structure = store.require("Structure", { game_id, entity_id: realmId });
   if (structure.base.category !== StructureType.Realm) return [];
@@ -175,12 +176,7 @@ export function readBlitzRealmSuggestions(input: {
     realmName,
     realmLevel: structure.base.level,
     isBlitzActive,
-    canAffordUpgrade: canAffordRealmUpgrade(
-      realmId,
-      structure.base.level,
-      store,
-      getBlockTimestamp().currentDefaultTick,
-    ),
+    canAffordUpgrade: canAffordRealmUpgrade(realmId, structure.base.level, store, tick),
     hasAvailableBuildingTile,
     buildingCounts,
     population: buildings.population.current,

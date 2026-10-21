@@ -1,8 +1,7 @@
 import { HudButton, HudChip, HudEventRow } from "@/ui/design-system/kit/hud-elements";
 import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
-import { useGame } from "@/hooks/context/game-context";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
@@ -62,14 +61,13 @@ export function useEventsFeed() {
 
 /** The game's Hyperstructures, read from its facts as they change: a capture of one is everyone's news. */
 const useHyperstructureIds = (): number[] => {
-  const { setup } = useGame();
-  const revision = useNativeRevision(["Hyperstructure"]);
+  const facts = useNativeFacts(["Hyperstructure"]);
   return useMemo(
     () =>
-      [...setup.store.inGame("Hyperstructure", configManager.getActiveGameId())].map((row) =>
+      [...facts.store.inGame("Hyperstructure", configManager.getActiveGameId())].map((row) =>
         safeInteger(row.entity_id),
       ),
-    [setup, revision],
+    [facts],
   );
 };
 

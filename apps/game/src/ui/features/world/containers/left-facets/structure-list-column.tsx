@@ -45,7 +45,6 @@ export const StructureListColumn = memo(() => {
 
   const allStructures = useStructuresWithMetadata({
     structures: playerStructures,
-    store,
     nameUpdateVersion: structureNameVersion,
   });
 
@@ -72,7 +71,7 @@ export const StructureListColumn = memo(() => {
         setStructureEntityId(entityId);
       }
     },
-    [goToStructure, isMapView, playerStructures, setStructureEntityId],
+    [goToStructure, isMapView, playerStructures, setStructureEntityId, store],
   );
 
   const handleRequestRename = useCallback(

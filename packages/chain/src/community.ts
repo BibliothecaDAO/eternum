@@ -4,9 +4,6 @@
  */
 const REALMS_X_HANDLE = "LootRealms";
 
-/** Handles Realms posted from before; a surface naming one is out of date. */
-const RETIRED_REALMS_X_HANDLES = ["realmsgg"] as const;
-
 /** The account's profile link. */
 export const REALMS_X_URL = `https://x.com/${REALMS_X_HANDLE}`;
 

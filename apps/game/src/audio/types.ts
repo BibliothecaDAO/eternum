@@ -39,15 +39,6 @@ export interface AudioPlayOptions {
   onError?: (error: Error) => void;
 }
 
-interface SpatialAudioOptions {
-  position: Vector3;
-  maxDistance?: number;
-  rolloffFactor?: number;
-  coneInnerAngle?: number;
-  coneOuterAngle?: number;
-  coneOuterGain?: number;
-}
-
 export interface AudioState {
   masterVolume: number;
   categoryVolumes: Record<AudioCategory, number>;

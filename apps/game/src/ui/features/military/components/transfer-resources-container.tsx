@@ -9,7 +9,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ActorType, ID, RelicRecipientType, RELICS, resources, formatExact, resourceName } from "@bibliothecadao/types";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getActorTypes, TransferDirection } from "./transfer-troops/transfer-direction";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -96,11 +96,13 @@ export const TransferResourcesContainer = ({
       });
   }, [actorTypes.target, currentDefaultTick, selectedResourceState]);
   // A selection no longer available takes no capacity: it is dropped when the transfer is submitted.
-  const weightOf = (resourceId: number) =>
-    availableResources.find((resource) => resource.resourceId === resourceId)?.weightKg ?? 0;
+  const weightOf = useCallback(
+    (resourceId: number) => availableResources.find((resource) => resource.resourceId === resourceId)?.weightKg ?? 0,
+    [availableResources],
+  );
   const selectedResourcesWeightKg = useMemo(
     () => selectedResources.reduce((total, { resourceId, amount }) => total + amount * weightOf(resourceId), 0),
-    [selectedResources, availableResources],
+    [selectedResources, weightOf],
   );
 
   const explorerCapacity = useMemo(() => {

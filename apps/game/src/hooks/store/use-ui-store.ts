@@ -3,7 +3,7 @@ import type { TroopStack } from "@/ui/features/military/components/unified-army-
 import { useTooltipStore } from "./use-tooltip-store";
 import { ContextMenuState } from "@/types/context-menu";
 import { clampCycleProgress, type DebugCycleProgressOverride } from "@/utils/cycle-progress";
-import { BiomeType, ContractAddress, Direction, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, Direction, StructureType } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 

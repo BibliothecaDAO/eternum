@@ -74,7 +74,6 @@ import {
 } from "../utils/spline-path";
 import { installArmyModelDebugHooks } from "./army-model-debug-hooks";
 import { resolveRenderableBaseModel } from "./army-model-render-policy";
-import { findAnimationByName } from "./animation-clip-matcher";
 import type { PipelineCompiler } from "../pipeline-compiler";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
@@ -448,13 +447,6 @@ export class ArmyModel {
     group.visible = this.modelsVisible;
 
     const mixer = new AnimationMixer(gltf.scene);
-
-    // Name-based animation lookup with fallbacks
-    const idleClip = findAnimationByName(gltf.animations, ["idle", "stand", "rest"]) ?? gltf.animations[0];
-    const runClip =
-      findAnimationByName(gltf.animations, ["run", "walk", "moving"]) ?? gltf.animations[1] ?? idleClip?.clone();
-    const attackClip = findAnimationByName(gltf.animations, ["attack", "strike", "combat"]);
-    const deathClip = findAnimationByName(gltf.animations, ["death", "die", "dead", "defeat"]);
 
     return {
       group,

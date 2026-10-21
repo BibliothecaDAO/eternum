@@ -1,9 +1,10 @@
 import { PublicError, deploymentStage } from "./errors";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { l2EnvironmentProblem } from "../../apps/game/src/runtime/l2-environment";
 import { command } from "./process";
 import { Platform, databaseWorkers, workers, type Worker } from "./platform";
+import { clientSite, type PagesSite } from "./settings";
 
 async function workerReady(platform: Platform, worker: Worker, revision: string) {
   const version = await platform.deployedVersion(worker);
@@ -89,25 +90,46 @@ for (const file of await readdir('apps/game/dist', {recursive:true}))
     argv: ["node", "apps/game/scripts/ensure-pwa-cache-rule.mjs", platform.target.origin, platform.target.zone],
     env: cloudflare,
   });
-  if ((await platform.clientRevision()) !== revision)
-    await command({
-      argv: [
-        "pnpm",
-        "--dir",
-        "apps/game",
-        "exec",
-        "wrangler",
-        "pages",
-        "deploy",
-        "dist",
-        "--project-name",
-        platform.target.pages,
-        "--branch",
-        "main",
-        "--commit-hash",
-        revision,
-      ],
-      env: cloudflare,
-    });
+  await publishSite(platform, clientSite(platform.target), "apps/game/dist", revision);
   await verifyPublishedClient(platform);
+}
+/** The docs site, built as validation builds it, published from the same commit as the client. */
+export async function deployDocs(platform: Platform, revision: string) {
+  if (!platform.apply) throw new PublicError("Dry run cannot deploy the docs");
+  deploymentStage("publish docs");
+  await command({ argv: ["pnpm", "run", "build:docs"] });
+  await publishSite(platform, platform.target.docs, "apps/game-docs/dist", revision);
+  deploymentStage("verify docs");
+  await command({
+    argv: [
+      "node",
+      "apps/game-docs/scripts/verify-docs-deployment.mjs",
+      "apps/game-docs/dist",
+      platform.target.docs.origin,
+      join(platform.store.directory, "docs-deployment-check.json"),
+    ],
+  });
+}
+/** Upload a built site to its Pages project, unless its live deployment is already this commit's. */
+async function publishSite(platform: Platform, site: PagesSite, dist: string, revision: string) {
+  if ((await platform.siteRevision(site)) === revision) return;
+  await command({
+    argv: [
+      "pnpm",
+      "--dir",
+      "apps/game",
+      "exec",
+      "wrangler",
+      "pages",
+      "deploy",
+      relative("apps/game", dist),
+      "--project-name",
+      site.pages,
+      "--branch",
+      "main",
+      "--commit-hash",
+      revision,
+    ],
+    env: await platform.cloudflareEnvironment(),
+  });
 }

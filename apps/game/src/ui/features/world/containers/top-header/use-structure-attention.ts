@@ -1,6 +1,5 @@
-import { useGame } from "@/hooks/context/game-context";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
@@ -20,11 +19,10 @@ const COMBAT_HISTORY = 100;
  * structures under attack, by someone else, and those with arrivals waiting.
  */
 export const useStructureAttention = () => {
-  const { setup } = useGame();
   const structures = useFactView(playerStructuresView);
   const arrivedIds = useUIStore((state) => state.arrivedArrivalStructureIds);
   const now = Math.floor(useNowMs() / 1000);
-  const revision = useNativeRevision(["Guard"]);
+  const facts = useNativeFacts(["Guard"]);
   const combat = usePlayerCombatHistory();
   return useMemo(
     () =>
@@ -32,10 +30,10 @@ export const useStructureAttention = () => {
         structures,
         arrivedIds,
         now,
-        [...setup.store.inGame("Guard", configManager.getActiveGameId())],
+        [...facts.store.inGame("Guard", configManager.getActiveGameId())],
         combat,
       ),
-    [structures, arrivedIds, now, setup.store, revision, combat],
+    [structures, arrivedIds, now, facts, combat],
   );
 };
 

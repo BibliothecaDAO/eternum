@@ -6,7 +6,7 @@ export const WORKSHOP_LINEUP = [
   { label: "Farm · shipped", path: "/models/new-buildings-opt/farm.glb", name: "Farm" },
   {
     label: "Workshop · Craft Yard",
-    path: buildingModelPaths(false)[BUILDINGS_GROUPS.BUILDINGS][BuildingType.ResourceLabor],
+    path: buildingModelPaths()[BUILDINGS_GROUPS.BUILDINGS][BuildingType.ResourceLabor],
     name: "Workshop",
   },
   { label: "Workers Hut · shipped", path: "/models/new-buildings-opt/workers_hut.glb", name: "WorkersHut" },

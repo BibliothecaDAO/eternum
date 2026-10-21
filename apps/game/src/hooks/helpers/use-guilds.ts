@@ -2,42 +2,39 @@ import { readGuildMembers, readGuildWhitelist } from "@bibliothecadao/eternum";
 import type { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "./use-native-facts";
+import { useNativeFacts } from "./use-native-facts";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 
 export const useGuildMembers = (guildId: ContractAddress) => {
   const {
-    setup: { store },
     account: { account },
   } = useGame();
-  const revision = useNativeRevision(["GuildMember"]);
+  const facts = useNativeFacts(["GuildMember"]);
   const names = usePlayerNames();
   return useMemo(
-    () => readGuildMembers(store, guildId, BigInt(account.address), names.text),
-    [store, guildId, account.address, revision, names],
+    () => readGuildMembers(facts.store, guildId, BigInt(account.address), names.text),
+    [facts, guildId, account.address, names],
   );
 };
 export const useGuildWhitelist = (guildId: ContractAddress) => {
   const {
-    setup: { store },
     account: { account },
   } = useGame();
-  const revision = useNativeRevision(["GuildWhitelist"]);
+  const facts = useNativeFacts(["GuildWhitelist"]);
   const names = usePlayerNames();
   return useMemo(
-    () => readGuildWhitelist(store, BigInt(account.address), { guildId }, names.text),
-    [store, guildId, account.address, revision, names],
+    () => readGuildWhitelist(facts.store, BigInt(account.address), { guildId }, names.text),
+    [facts, guildId, account.address, names],
   );
 };
 export const usePlayerWhitelist = (player: ContractAddress) => {
   const {
-    setup: { store },
     account: { account },
   } = useGame();
-  const revision = useNativeRevision(["GuildWhitelist"]);
+  const facts = useNativeFacts(["GuildWhitelist"]);
   const names = usePlayerNames();
   return useMemo(
-    () => readGuildWhitelist(store, BigInt(account.address), { player }, names.text),
-    [store, player, account.address, revision, names],
+    () => readGuildWhitelist(facts.store, BigInt(account.address), { player }, names.text),
+    [facts, player, account.address, names],
   );
 };

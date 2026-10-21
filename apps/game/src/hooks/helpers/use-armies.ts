@@ -2,15 +2,14 @@ import { readExplorers } from "@bibliothecadao/eternum";
 import type { ID } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "./use-native-facts";
+import { useNativeFacts } from "./use-native-facts";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 
 export const useExplorersByStructure = ({ structureEntityId }: { structureEntityId: ID }) => {
   const {
-    setup: { store },
     account: { account },
   } = useGame();
-  const revision = useNativeRevision([
+  const facts = useNativeFacts([
     "ArmySlot",
     "ExplorerTroops",
     "Structure",
@@ -20,7 +19,7 @@ export const useExplorersByStructure = ({ structureEntityId }: { structureEntity
   ]);
   const names = usePlayerNames();
   return useMemo(
-    () => readExplorers(store, structureEntityId, BigInt(account.address), names.text),
-    [store, structureEntityId, account.address, revision, names],
+    () => readExplorers(facts.store, structureEntityId, BigInt(account.address), names.text),
+    [facts, structureEntityId, account.address, names],
   );
 };

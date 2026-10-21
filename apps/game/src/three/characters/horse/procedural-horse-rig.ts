@@ -1,7 +1,6 @@
 import { type Group, Vector3 } from "three";
 
 import {
-  HORSE_LEG_SEGMENT_IDS,
   requireHorseBone,
   type HorseLegSegmentId,
   type HorseRigAdapter,

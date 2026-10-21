@@ -61,7 +61,7 @@ interface TransactionStoreState {
 export const selectHasPendingTransactions = (state: Pick<TransactionStoreState, "transactions">): boolean =>
   state.transactions.some(isTransactionInFlight);
 
-export const useTransactionStore = create<TransactionStoreState>((set, get) => ({
+export const useTransactionStore = create<TransactionStoreState>((set) => ({
   transactions: [],
   isMinimized: true,
 

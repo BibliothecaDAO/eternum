@@ -1,7 +1,6 @@
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
-import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
   configManager,
@@ -102,15 +101,14 @@ const NEXT_UP_MODELS = [
 
 /** Next up's facts for the player's realm, recomputed as the store changes and the clock moves. */
 export const useNextUpFacts = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null): NextUpFacts => {
-  const { setup } = useGame();
-  const revision = useNativeRevision(NEXT_UP_MODELS);
+  const facts = useNativeFacts(NEXT_UP_MODELS);
   const now = useNowSeconds();
   const tick = useCurrentDefaultTick();
   const selected = useUIStore((state) => state.entityActions.selectedEntityId);
   return useMemo(
-    () => readNextUpFacts(setup.store, rules, realm, { now, tick, selected }),
-    // The revision is the recompute signal for store writes; the clocks for time passing.
-    [setup.store, rules, realm, now, tick, selected, revision],
+    () => readNextUpFacts(facts.store, rules, realm, { now, tick, selected }),
+    // The revision is the recompute signal for facts.store writes; the clocks for time passing.
+    [rules, realm, now, tick, selected, facts],
   );
 };
 

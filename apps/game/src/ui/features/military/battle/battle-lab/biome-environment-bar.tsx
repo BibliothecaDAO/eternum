@@ -2,11 +2,10 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudPanel, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { biomeDisplayName } from "@/ui/utils/biome-name";
-import { type CombatSimulator, configManager } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, formatPercent, ResourcesIds, TroopType } from "@bibliothecadao/types";
 
 interface BiomeEnvironmentBarProps {
-  combatSimulator: CombatSimulator;
   biome: BiomeType;
   ethereal?: boolean;
   onSelect: (biome: BiomeType) => void;
@@ -19,12 +18,7 @@ const TROOPS: { type: TroopType; resourceId: ResourcesIds }[] = [
 ];
 
 /** Top bar of the Battle Lab: a roomy biome picker with a clear per-troop bonus row. */
-export const BiomeEnvironmentBar = ({
-  combatSimulator,
-  biome,
-  onSelect,
-  ethereal = false,
-}: BiomeEnvironmentBarProps) => {
+export const BiomeEnvironmentBar = ({ biome, onSelect, ethereal = false }: BiomeEnvironmentBarProps) => {
   const neutral = ethereal || !configManager.hasBiomeCombatEffects();
   return (
     <HudPanel title="Battle Environment" icon="map" collapsible={false}>

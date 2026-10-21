@@ -131,7 +131,7 @@ const data = {
         },
         {
           title: "Developer",
-          url: "https://docs.realms.world",
+          url: "https://docs.realms.party",
         },
       ],
     },

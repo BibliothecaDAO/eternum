@@ -4,11 +4,12 @@
   "type": "module",
   "scripts": {
     "build": "pnpm test && vocs build -o ../dist && node scripts/ship-referenced-assets.mjs dist && node scripts/check-rendered-balance.mjs dist",
-    "test": "node --test scripts/llm-txt.test.mjs scripts/ship-referenced-assets.test.mjs",
+    "test": "node --test scripts/llm-txt.test.mjs scripts/ship-referenced-assets.test.mjs scripts/verify-docs-deployment.test.mjs",
     "format": "npx prettier --write . --root=..",
     "format:check": "npx prettier --check . --root=..",
     "dev": "vocs dev",
-    "preview": "vocs preview"
+    "preview": "vocs preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@bibliothecadao/types": "workspace:*",
@@ -26,5 +27,8 @@
     "remark-stringify": "^11.0.0",
     "vite": "catalog:web",
     "vocs": "v1.0.0-alpha.57"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
   }
 }

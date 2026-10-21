@@ -26,7 +26,7 @@ const sha256 = (path: string) =>
 
 describe("construction model thumbnails", () => {
   it("renders every building from its current in-game GLB", () => {
-    const scene = buildingModelPaths(false);
+    const scene = buildingModelPaths();
     const models: Partial<Record<BuildingType | ResourceMiningTypes, string>> = {
       ...scene[BUILDINGS_GROUPS.BUILDINGS],
       ...scene[BUILDINGS_GROUPS.RESOURCES_MINING],

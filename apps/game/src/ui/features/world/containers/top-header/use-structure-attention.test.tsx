@@ -24,7 +24,9 @@ vi.mock("@/hooks/context/game-context", () => ({
   }),
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowMs: () => 100_000 }));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("@/hooks/helpers/use-native-facts", async () =>
+  (await import("@/hooks/helpers/native-facts-mock")).nativeFactsMock(),
+);
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (select: (state: unknown) => unknown) => select({ account: { address: ME } }),
 }));

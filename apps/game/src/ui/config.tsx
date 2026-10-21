@@ -25,21 +25,3 @@ export const IS_FLAT_MODE = getFlatMode();
 export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
   getBrowserNavigator()?.userAgent ?? "",
 );
-
-enum MenuEnum {
-  military = "military",
-  construction = "construction",
-  hyperstructures = "hyperstructures",
-  entityDetails = "entityDetails",
-  resourceArrivals = "resourceArrivals",
-  trade = "trade",
-  resourceTable = "resourceTable",
-  production = "production",
-  bridge = "bridge",
-  automation = "automation",
-  transfer = "transfer",
-  relics = "relics",
-  chat = "chat",
-  storyEvents = "storyEvents",
-  predictionMarket = "predictionMarket",
-}

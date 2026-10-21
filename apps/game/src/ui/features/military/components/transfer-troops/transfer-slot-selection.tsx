@@ -1,6 +1,5 @@
 import {
   DISPLAYED_SLOT_NUMBER_MAP,
-  GUARD_SLOT_NAMES,
   TroopTier,
   TroopType,
   GuardSlot,

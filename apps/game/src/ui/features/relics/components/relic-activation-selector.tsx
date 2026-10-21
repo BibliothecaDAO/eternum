@@ -15,7 +15,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { ActionFailureNotice } from "@/ui/features/event-feed/action-failure-notice";
 import { type ActionFailure, actionFailure } from "@/ui/features/event-feed/notify";
 import { useActNowRefusal } from "@/utils/can-issue-orders";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { EntityType, ID, RelicRecipientType, Troops, formatAmount } from "@bibliothecadao/types";
 
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
@@ -139,18 +139,11 @@ const useStaminaFull = (troops: Troops | null): boolean => {
 
 export const RelicActivationSelector = ({ resourceId, holders, onClose }: RelicActivationSelectorProps) => {
   const {
-    setup: { store, systemCalls },
+    setup: { systemCalls },
     account: { account },
   } = useGame();
   const mode = useGameModeConfig();
-  const revision = useNativeRevision([
-    "Structure",
-    "ExplorerTroops",
-    "EntityName",
-    "ArmySlot",
-    "ArmyProgress",
-    "SliceRules",
-  ]);
+  const facts = useNativeFacts(["Structure", "ExplorerTroops", "EntityName", "ArmySlot", "ArmyProgress", "SliceRules"]);
 
   const [activatingHolderId, setActivatingHolderId] = useState<string | null>(null);
   // The holder whose last press did not activate, and why: told until the next press.
@@ -167,18 +160,20 @@ export const RelicActivationSelector = ({ resourceId, holders, onClose }: RelicA
     return holders.map((holder) => {
       const game_id = configManager.getActiveGameId();
       const isArmy = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
-      const explorer = isArmy ? store.get("ExplorerTroops", { game_id, explorer_id: holder.entityId }) : undefined;
+      const explorer = isArmy
+        ? facts.store.get("ExplorerTroops", { game_id, explorer_id: holder.entityId })
+        : undefined;
       const entityOwnerId = isArmy ? (explorer ? safeInteger(explorer.owner) : undefined) : holder.entityId;
       const structure =
-        entityOwnerId === undefined ? undefined : store.get("Structure", { game_id, entity_id: entityOwnerId });
+        entityOwnerId === undefined ? undefined : facts.store.get("Structure", { game_id, entity_id: entityOwnerId });
       const entityName = isArmy
-        ? getArmyName(holder.entityId, store)
+        ? getArmyName(holder.entityId, facts.store)
         : structure
           ? mode.structure.getName(structure).name
           : "Structure";
       const parentStructureId = isArmy ? (entityOwnerId ?? null) : null;
       const parentStructureName = isArmy && structure ? mode.structure.getName(structure).name : null;
-      const troops = explorer ? (resolveExplorerTroops(store, explorer) ?? null) : null;
+      const troops = explorer ? (resolveExplorerTroops(facts.store, explorer) ?? null) : null;
 
       return {
         ...holder,
@@ -189,7 +184,7 @@ export const RelicActivationSelector = ({ resourceId, holders, onClose }: RelicA
         troops,
       };
     });
-  }, [store, holders, mode, revision]);
+  }, [holders, mode, facts]);
 
   const held = holders.reduce((total, holder) => total + holder.held, 0);
 

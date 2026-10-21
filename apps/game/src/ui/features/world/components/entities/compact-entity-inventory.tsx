@@ -20,7 +20,6 @@ import {
   ID,
   isRelic,
   RelicRecipientType,
-  resources as resourceDefs,
   ResourcesIds,
   formatAmount,
   resourceName,
@@ -203,7 +202,7 @@ export const CompactEntityInventory = memo(
           content: <RelicActivationSelector resourceId={item.resourceId} holders={[holder]} onClose={closeSurface} />,
         });
       },
-      [allowRelicActivation, entityId, entityType, recipientType, openSurface],
+      [allowRelicActivation, entityId, entityType, recipientType, openSurface, closeSurface],
     );
 
     if (displayItems.length === 0) {

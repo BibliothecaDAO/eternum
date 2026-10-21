@@ -1,10 +1,9 @@
+import { useLatest } from "@/hooks/use-latest";
 import { useCallback, useEffect, useMemo } from "react";
 
 import { useRealtimeChatStore } from "../model/store";
 import type {
-  DirectMessage,
   InitializeRealtimeClientParams,
-  PendingMessage,
   PlayerPresence,
   RealtimeChatActions,
   RealtimeChatState,
@@ -12,11 +11,6 @@ import type {
 } from "../model/types";
 
 type StoreSelector<T> = (state: RealtimeChatState & { actions: RealtimeChatActions }) => T;
-
-const toTimestamp = (value: string | Date | undefined): number => {
-  if (!value) return 0;
-  return typeof value === "string" ? Date.parse(value) : value.getTime();
-};
 
 export const useRealtimeChatActions = () => useRealtimeChatStore((state) => state.actions);
 
@@ -58,17 +52,6 @@ export const useRealtimePresence = (): PlayerPresence[] => {
 
 export const useRealtimeTypingIndicators = () => useRealtimeChatStore((state) => state.typingIndicators);
 
-const useRealtimePendingMessages = () => {
-  const worldZones = useRealtimeChatStore((state) => state.worldZones);
-  const dmThreads = useRealtimeChatStore((state) => state.dmThreads);
-
-  return useMemo(() => {
-    const zonePending = Object.values(worldZones).flatMap(({ pendingMessages }) => pendingMessages);
-    const directPending = Object.values(dmThreads).flatMap(({ pendingMessages }) => pendingMessages);
-    return [...zonePending, ...directPending];
-  }, [worldZones, dmThreads]);
-};
-
 export const useRealtimeWorldZone = (zoneId?: string) => {
   const zone = useRealtimeChatStore((state) => (zoneId ? state.worldZones[zoneId] : undefined));
   const isActive = useRealtimeChatStore((state) => state.activeZoneId === zoneId);
@@ -93,12 +76,6 @@ export const useWorldChatControls = (zoneId?: string) => {
     [actions, zoneId],
   );
 
-  const setActive = useCallback(() => {
-    if (zoneId) {
-      actions.setActiveZone(zoneId);
-    }
-  }, [actions, zoneId]);
-
   const loadHistory = useCallback(
     (cursor?: string) => {
       if (!zoneId) return Promise.resolve();
@@ -115,7 +92,6 @@ export const useWorldChatControls = (zoneId?: string) => {
 
   return {
     sendMessage,
-    setActive,
     loadHistory,
     markAsRead,
   };
@@ -168,46 +144,21 @@ export const useDirectMessageControls = (threadId?: string, recipientId?: string
 
 export const useRealtimeChatInitializer = (config?: InitializeRealtimeClientParams | null) => {
   const actions = useRealtimeChatActions();
+  // The client starts again only for another server or other zones, with the config as it stands then.
+  const startedWith = useLatest(config);
+  const clientKey = config ? `${config.baseUrl} ${JSON.stringify(config.joinZones ?? [])}` : null;
 
   useEffect(() => {
-    if (!config) return;
-    actions.initializeClient(config);
+    const current = startedWith.current;
+    if (!clientKey || !current) return;
+    actions.initializeClient(current);
     return () => {
       actions.resetClient();
     };
-  }, [actions, config?.baseUrl, JSON.stringify(config?.joinZones ?? [])]);
+  }, [actions, clientKey, startedWith]);
 };
 
 export const useRealtimeChatSelector = <T>(
   selector: StoreSelector<T>,
   // equalityFn?: (previous: T, next: T) => boolean,
 ): T => useRealtimeChatStore(selector);
-
-const useRealtimePendingMessageById = (messageId: string): PendingMessage | undefined =>
-  useRealtimeChatStore((state) => {
-    for (const zone of Object.values(state.worldZones)) {
-      const match = zone.pendingMessages.find((pending) => pending.id === messageId);
-      if (match) return match;
-    }
-    for (const thread of Object.values(state.dmThreads)) {
-      const match = thread.pendingMessages.find((pending) => pending.id === messageId);
-      if (match) return match;
-    }
-    return undefined;
-  });
-
-const useRealtimeRecentMessages = (limit = 10): DirectMessage[] => {
-  const dmThreads = useRealtimeChatStore((state) => state.dmThreads);
-
-  return useMemo(() => {
-    const messages = Object.values(dmThreads).flatMap(({ messages }) => messages);
-
-    return messages
-      .toSorted((a, b) => {
-        const aTime = toTimestamp(a.createdAt as string | Date | undefined);
-        const bTime = toTimestamp(b.createdAt as string | Date | undefined);
-        return bTime - aTime;
-      })
-      .slice(0, limit);
-  }, [dmThreads, limit]);
-};

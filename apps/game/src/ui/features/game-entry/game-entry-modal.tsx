@@ -114,7 +114,6 @@ export const GameEntryModal = ({
   const markSettling = useAutoSettleStore((state) => state.markSettling);
   const markCompleted = useAutoSettleStore((state) => state.markCompleted);
   const markFailed = useAutoSettleStore((state) => state.markFailed);
-  const setAutoSettleEnabled = useAutoSettleStore((state) => state.setEnabled);
   const autoSettleAttemptedRef = useRef(false);
   const autoSettleEntryKey = useMemo(() => {
     if (!account?.address) return null;
@@ -167,7 +166,6 @@ export const GameEntryModal = ({
 
   // Settlement state
   const [settleStage, setSettleStage] = useState<SettleStage>("idle");
-  const [settleErrorMessage, setSettleErrorMessage] = useState<string | null>(null);
   const [isSettling, setIsSettling] = useState(false);
   const [settledRealmCount, setSettledRealmCount] = useState(0);
   const [needsSettlement, setNeedsSettlement] = useState(false);
@@ -461,7 +459,6 @@ export const GameEntryModal = ({
     (error: Error) => {
       console.error("[GameEntryModal] Settlement failed", { worldName, error });
       setSettleStage("error");
-      setSettleErrorMessage(error.message);
       if (autoSettleEnabled && autoSettleEntryKey) {
         markFailed(autoSettleEntryKey, error.message);
       }
@@ -477,7 +474,6 @@ export const GameEntryModal = ({
     if (!account) return;
 
     setIsSettling(true);
-    setSettleErrorMessage(null);
     if (autoSettleEnabled && autoSettleEntryKey) {
       markSettling(autoSettleEntryKey, Date.now());
     }

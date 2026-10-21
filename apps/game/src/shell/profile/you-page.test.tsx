@@ -50,7 +50,7 @@ it("offers a signed-out reader Sign in and How to play on the Blitz guide in a n
   const controls = [...body(page).querySelectorAll("a, button")].map((control) => control.textContent);
   expect(controls).toEqual(["Sign in", "How to play"]);
   const docs = body(page).querySelector<HTMLAnchorElement>("a")!;
-  expect([docs.href, docs.target]).toEqual(["https://docs.realms.world/blitz/key-concepts", "_blank"]);
+  expect([docs.href, docs.target]).toEqual(["https://docs.realms.party/blitz/key-concepts", "_blank"]);
 });
 
 // The docs site answers every address with its shell, so a page renamed there would open blank: the guide must be a

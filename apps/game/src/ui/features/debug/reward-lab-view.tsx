@@ -11,7 +11,6 @@ import { CHEST_PALETTES, type ChestPalette } from "@/three/debug/reward-lab-pres
 import "./reward-lab.css";
 import { ChestModelPath, RiftModelPath } from "@/three/constants/scene-constants";
 import { MotionLayer } from "@/ui/motion/motion-layer";
-import { INTENSITY_LABEL, type Intensity } from "@/ui/motion/motion-scale";
 
 export function RewardLabView() {
   const container = useRef<HTMLDivElement>(null);

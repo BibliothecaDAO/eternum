@@ -1,6 +1,5 @@
 import { getRealmInfo } from "@bibliothecadao/eternum";
-import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { usePlayerStructures } from "@/hooks/helpers/use-structures";
 import { RealmInfo } from "@bibliothecadao/types";
 import { useMemo } from "react";
@@ -18,16 +17,13 @@ const buildOwnedStructureInfos = (
     .filter((structureInfo): structureInfo is RealmInfo => Boolean(structureInfo));
 
 const useOwnedStructureInfos = () => {
-  const {
-    setup: { store },
-  } = useGame();
   const playerStructures = usePlayerStructures();
-  const revision = useNativeRevision(["StructureBuildings", "ResourceWeight"]);
+  const facts = useNativeFacts(["StructureBuildings", "ResourceWeight"]);
   const names = usePlayerNames();
 
   return useMemo(
-    () => buildOwnedStructureInfos(playerStructures, store, names),
-    [playerStructures, store, revision, names],
+    () => buildOwnedStructureInfos(playerStructures, facts.store, names),
+    [playerStructures, facts, names],
   );
 };
 

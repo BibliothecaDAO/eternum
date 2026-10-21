@@ -238,11 +238,11 @@ const resolveAccountTask = (reconnectStatus: PlayRouteReconnectStatus): Bootstra
 export const usePlayRouteBootSnapshot = () => usePlayRouteBootStore();
 
 export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
-  const location = useLocation();
+  const { pathname, search } = useLocation();
   const gameplayAccount = useAccountStore((state) => state.account);
   const { status: identityStatus } = useIdentitySession();
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const entryContext = useMemo(() => resolveEntryContextFromPlayRoute(location), [location.pathname, location.search]);
+  const entryContext = useMemo(() => resolveEntryContextFromPlayRoute({ pathname, search }), [pathname, search]);
   const canonicalEntry = useMemo(() => resolveCanonicalPlayEntry(entryContext), [entryContext]);
   const hasGameplayAccount = gameplayAccount !== null;
   const bootstrapContext = useMemo(
@@ -253,7 +253,7 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     context: bootstrapContext,
     enabled: bootstrapContext !== null,
   });
-  const resolvedRequest = useMemo(() => resolvePlayBootRequest(location), [location.pathname, location.search]);
+  const resolvedRequest = useMemo(() => resolvePlayBootRequest({ pathname, search }), [pathname, search]);
   const [bootToken, setBootToken] = useState(0);
   const readiness = usePlayRouteReadinessStore();
   const previousEntryRef = useRef<CanonicalPlayEntry | null>(null);

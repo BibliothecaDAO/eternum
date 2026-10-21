@@ -5,7 +5,6 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
-import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
   configManager,
   expeditionSpireTile,

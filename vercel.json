@@ -1,7 +1,1 @@
-{
-  "installCommand": "npx --yes pnpm@10.25.0 install --frozen-lockfile",
-  "buildCommand": "npx --yes pnpm@10.25.0 run build:docs",
-  "outputDirectory": "apps/game-docs/dist",
-  "ignoreCommand": "case \"$VERCEL_URL\" in eternum-docs-*) exit 1 ;; *) exit 0 ;; esac",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
-}
+{ "ignoreCommand": "exit 0" }

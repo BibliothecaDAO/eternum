@@ -70,17 +70,6 @@ export const getAngleBetweenHexPositions = (fromHex: HexPosition, toHex: HexPosi
 };
 
 /**
- * Convert offset coordinates to cube coordinates
- * Using even-r offset coordinate system
- */
-function offsetToCube(col: number, row: number): { q: number; r: number; s: number } {
-  const q = col - Math.floor((row - (row % 2)) / 2);
-  const r = row;
-  const s = -q - r;
-  return { q, r, s };
-}
-
-/**
  * Calculate time left from battle cooldown end timestamp
  * @param battleCooldownEnd - Unix timestamp when battle cooldown ends
  * @param currentTimestamp - Current unix timestamp (optional, defaults to Date.now())

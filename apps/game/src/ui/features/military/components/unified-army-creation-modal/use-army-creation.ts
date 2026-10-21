@@ -16,7 +16,7 @@ import {
 import type { GameModeConfig } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeRow, useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import {
   BuildingType,
   buildingName,
@@ -110,13 +110,7 @@ export const useArmyCreation = ({
       ? undefined
       : { game_id: configManager.getActiveGameId(), entity_id: activeStructureId },
   );
-  const revision = useNativeRevision([
-    "ResourceBalance",
-    "ResourceProduction",
-    "ResourceWeight",
-    "Guard",
-    "ExplorerTroops",
-  ]);
+  const facts = useNativeFacts(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Guard", "ExplorerTroops"]);
   const provision = useBlitzRealmProvision(activeStructureId ?? null);
 
   const troopOptions = useMemo<TroopSelectionOption[]>(() => {
@@ -133,10 +127,14 @@ export const useArmyCreation = ({
       label: formatTroopTypeLabel(type),
       tiers: TROOP_TIERS.map((tier) => {
         const resourceId = getTroopResourceId(type, tier);
-        return { tier, available: heldTroops(store, activeStructureId, resourceId, currentDefaultTick), resourceId };
+        return {
+          tier,
+          available: heldTroops(facts.store, activeStructureId, resourceId, currentDefaultTick),
+          resourceId,
+        };
       }),
     }));
-  }, [activeStructureId, currentDefaultTick, store, revision]);
+  }, [activeStructureId, currentDefaultTick, facts]);
 
   // The form opens on a troop this structure can deploy, and on a new structure's when the structure changes; the
   // game's own cost and capacity reads never see a troop the game does not raise.
@@ -154,8 +152,10 @@ export const useArmyCreation = ({
   // The selected troop's field army room: the same troops, slots and cap the attack forecast's advice reads.
   const fieldRoom = useMemo(
     () =>
-      structureComponent ? readFieldArmyRoom(store, structureComponent, selectedTroopCombo, currentDefaultTick) : null,
-    [store, structureComponent, selectedTroopCombo, revision, currentDefaultTick],
+      structureComponent
+        ? readFieldArmyRoom(facts.store, structureComponent, selectedTroopCombo, currentDefaultTick)
+        : null,
+    [structureComponent, selectedTroopCombo, facts, currentDefaultTick],
   );
   const troopCapacityLimit = fieldRoom?.cap ?? null;
   const availableGuardSlots = useMemo(() => structureGuardSlots(structureComponent), [structureComponent]);
@@ -163,8 +163,8 @@ export const useArmyCreation = ({
   const availableGuardSlotSet = useMemo(() => new Set(availableGuardSlots), [availableGuardSlots]);
 
   const guardsData = useMemo(
-    () => (structureComponent ? getGuardsByStructure(structureComponent, store) : []),
-    [structureComponent, store, revision],
+    () => (structureComponent ? getGuardsByStructure(structureComponent, facts.store) : []),
+    [structureComponent, facts],
   );
 
   const currentExplorersCount = fieldRoom?.armies ?? 0;
@@ -345,28 +345,28 @@ export const useArmyCreation = ({
   const troopSupply = useMemo(
     () =>
       readTroopSupply(
-        store,
+        facts.store,
         activeStructureId,
         selectedTroopCombo,
         selectedAvailable,
         troopCapacityLimit,
         currentDefaultTick,
       ),
-    [store, activeStructureId, selectedTroopCombo, selectedAvailable, troopCapacityLimit, revision, currentDefaultTick],
+    [activeStructureId, selectedTroopCombo, selectedAvailable, troopCapacityLimit, facts, currentDefaultTick],
   );
   const raiseCost = useMemo(
     () =>
       activeStructureId === undefined
         ? undefined
         : readTroopRaiseCost(
-            store,
+            facts.store,
             configManager.getActiveGameId(),
             activeStructureId,
             getTroopResourceId(selectedTroopCombo.type, selectedTroopCombo.tier),
             troopCount,
             currentDefaultTick,
           ),
-    [store, activeStructureId, selectedTroopCombo, troopCount, currentDefaultTick, revision],
+    [activeStructureId, selectedTroopCombo, troopCount, currentDefaultTick, facts],
   );
   const troopAvailabilityReason = resolveTroopAvailabilityReason({
     capacityRemaining: capacityRemainingForSelector,

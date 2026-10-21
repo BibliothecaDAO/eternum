@@ -204,7 +204,7 @@ const loadTabsFromStorage = () => {
 const loadActiveTabIdFromStorage = () => {
   try {
     return localStorage.getItem("realtime-chat-active-tab") || null;
-  } catch (e) {
+  } catch {
     return null;
   }
 };

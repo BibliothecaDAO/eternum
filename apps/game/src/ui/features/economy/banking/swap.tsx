@@ -14,13 +14,13 @@ import {
   divideByPrecision,
   getBalance,
   getClosestBank,
-  getEntityIdFromKeys,
   isMilitaryResource,
   MarketManager,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
+import { useLatest } from "@/hooks/use-latest";
 import {
   ContractAddress,
   ID,
@@ -44,7 +44,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     setup: { store, systemCalls },
   } = useGame();
 
-  const revision = useNativeRevision([
+  const facts = useNativeFacts([
     "ResourceBalance",
     "ResourceProduction",
     "ResourceWeight",
@@ -69,30 +69,21 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
 
   const marketManager = useMemo(
-    () => new MarketManager(store, ContractAddress(account.address), resourceId),
-    [store, resourceId, account.address, revision],
+    () => new MarketManager(facts.store, ContractAddress(account.address), resourceId),
+    [facts, resourceId, account.address],
   );
 
   useEffect(() => {
     setResourceId(listResourceId);
   }, [listResourceId]);
 
-  // recompute resource amount when resource id changes
-  useEffect(() => {
-    if (isBuyResource) {
-      handleResourceAmountChange(resourceAmount);
-    } else {
-      handleLordsAmountChange(lordsAmount);
-    }
-  }, [marketManager.resourceId]);
-
   const lordsBalance = useMemo(
-    () => getBalance(entityId, ResourcesIds.Lords, currentDefaultTick, store).balance,
-    [entityId, currentDefaultTick, store, revision],
+    () => getBalance(entityId, ResourcesIds.Lords, currentDefaultTick, facts.store).balance,
+    [entityId, currentDefaultTick, facts],
   );
   const resourceBalance = useMemo(
-    () => getBalance(entityId, resourceId, currentDefaultTick, store).balance,
-    [entityId, resourceId, currentDefaultTick, store, revision],
+    () => getBalance(entityId, resourceId, currentDefaultTick, facts.store).balance,
+    [entityId, resourceId, currentDefaultTick, facts],
   );
 
   const hasEnough = useMemo(() => {
@@ -103,7 +94,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
 
   const amountsBiggerThanZero = lordsAmount > 0 && resourceAmount > 0;
 
-  const canSwap = useMemo(() => amountsBiggerThanZero && hasEnough, [lordsAmount, resourceAmount, hasEnough]);
+  const canSwap = amountsBiggerThanZero && hasEnough;
 
   const onInvert = useCallback(() => setIsBuyResource((prev) => !prev), []);
 
@@ -134,8 +125,6 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     account,
     store,
     entityId,
-    lordsAmount,
-    ownerFee,
     playTradeExecuteSound,
     resourceAmount,
     resourceId,
@@ -192,47 +181,42 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     }
   };
 
+  // A new resource quotes the side the player typed again, against its own market.
+  const requote = useLatest(() =>
+    isBuyResource ? handleResourceAmountChange(resourceAmount) : handleLordsAmountChange(lordsAmount),
+  );
+  useEffect(() => {
+    requote.current();
+  }, [resourceId, requote]);
+
   const orderedResources = useMemo(() => {
     return Object.values(mode.resources.getTiers())
       .flat()
       .map((id) => resources.find((r) => r.id === id))
       .filter((r): r is Resources => !!r)
       .filter((r) => !Number.isNaN(r.id));
-  }, []);
+  }, [mode.resources]);
 
-  const renderResourceBar = useCallback(
-    (disableInput: boolean, isLords: boolean) => {
-      const amount = isLords ? lordsAmount : resourceAmount;
-      const selectableResources = orderedResources.filter((r) =>
-        isLords ? r.id === ResourcesIds.Lords : r.id !== ResourcesIds.Lords,
-      );
+  const renderResourceBar = (disableInput: boolean, isLords: boolean) => {
+    const amount = isLords ? lordsAmount : resourceAmount;
+    const selectableResources = orderedResources.filter((r) =>
+      isLords ? r.id === ResourcesIds.Lords : r.id !== ResourcesIds.Lords,
+    );
 
-      return (
-        <ResourceBar
-          entityId={entityId}
-          resources={selectableResources}
-          lordsFee={ownerFee}
-          amount={amount}
-          setAmount={isLords ? handleLordsAmountChange : handleResourceAmountChange}
-          resourceId={isLords ? ResourcesIds.Lords : resourceId}
-          setResourceId={setResourceId}
-          disableInput={disableInput}
-          max={isLords ? (knownAmount(lordsBalance) ?? 0) : Infinity}
-        />
-      );
-    },
-    [
-      entityId,
-      isBuyResource,
-      lordsAmount,
-      resourceAmount,
-      resourceId,
-      ownerFee,
-      resources,
-      handleLordsAmountChange,
-      handleResourceAmountChange,
-    ],
-  );
+    return (
+      <ResourceBar
+        entityId={entityId}
+        resources={selectableResources}
+        lordsFee={ownerFee}
+        amount={amount}
+        setAmount={isLords ? handleLordsAmountChange : handleResourceAmountChange}
+        resourceId={isLords ? ResourcesIds.Lords : resourceId}
+        setResourceId={setResourceId}
+        disableInput={disableInput}
+        max={isLords ? (knownAmount(lordsBalance) ?? 0) : Infinity}
+      />
+    );
+  };
 
   const closestBank = getClosestBank(entityId, store);
   const isVillageAndMilitaryResource =

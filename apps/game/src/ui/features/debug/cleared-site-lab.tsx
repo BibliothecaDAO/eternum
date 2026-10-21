@@ -22,7 +22,7 @@ export function ClearedSiteLab() {
   const [error, setError] = useState<string | null>(null);
   const signature = `${kind}:${distance}`;
   const fixture = useMemo(() => campBeside(kind === "camp" ? "Camp" : "Beasts"), [kind]);
-  const reward = siteReward(kind === "camp" ? "Camp" : "Beasts", fixture.site);
+  const reward = useMemo(() => siteReward(kind === "camp" ? "Camp" : "Beasts", fixture.site), [kind, fixture]);
   const cleared = useMemo(() => {
     const source = campBeside(kind === "camp" ? "Camp" : "Beasts");
     source.store.applyFacts([
@@ -42,7 +42,7 @@ export function ClearedSiteLab() {
       { model: "Guard", key: "0x73", value: null },
     ]);
     return { site: source.store.require("ExpeditionSite", source.site) };
-  }, [kind, reward?.amount, reward?.resourceType]);
+  }, [kind, reward]);
   const name = frontierSiteName(fixture.structure.base.category);
 
   useEffect(() => {

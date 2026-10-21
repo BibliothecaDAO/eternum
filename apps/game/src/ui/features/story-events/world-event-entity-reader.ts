@@ -1,7 +1,7 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { configManager, getExplorerOwner, getStructureName } from "@bibliothecadao/eternum";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
-import { ContractAddress, type ID, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface WorldEventStructure {

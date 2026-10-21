@@ -1,9 +1,10 @@
 import ResourceIcon from "@/components/ResourceIcon";
 import { colors, formatAmount } from "@/components/styles";
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { resources } from "@/utils/constants";
+import { findResourceById, type ResourcesIds } from "@bibliothecadao/types";
+import type { CSSProperties } from "react";
 
-type Cost = { resource: number | "essence"; amount: number };
+type Cost = { resource: ResourcesIds; amount: number };
 
 export const BlitzBuildingCard = ({
   title,
@@ -39,7 +40,7 @@ export const BlitzBuildingCard = ({
   };
 
   const resourceId = getResourceId();
-  const resourceName = resourceId ? resources.find((r) => r.id === resourceId)?.trait || "" : "";
+  const resourceName = resourceId ? findResourceById(resourceId)?.trait || "" : "";
 
   const styles = {
     card: {
@@ -131,7 +132,7 @@ export const BlitzBuildingCard = ({
       borderRadius: "0.25rem",
       fontSize: "0.75rem",
     },
-  };
+  } satisfies Record<string, CSSProperties>;
 
   return (
     <div style={styles.card}>
@@ -168,20 +169,7 @@ export const BlitzBuildingCard = ({
             <div style={styles.costsRow}>
               {(resourceCosts.length ? resourceCosts : standardCosts).map((cost, index) => (
                 <div key={index} style={styles.costItem}>
-                  {cost.resource === "essence" ? (
-                    <div
-                      style={{
-                        width: "16px",
-                        height: "16px",
-                        backgroundColor: "#f8bbd9",
-                        borderRadius: "2px",
-                        border: "1px solid #ec4899",
-                        flexShrink: 0,
-                      }}
-                    />
-                  ) : (
-                    <ResourceIcon id={cost.resource} name="" size="md" />
-                  )}
+                  <ResourceIcon id={cost.resource} name="" size="md" />
                   {formatAmount(cost.amount)}
                 </div>
               ))}
@@ -206,20 +194,7 @@ export const BlitzBuildingCard = ({
               <div style={styles.costsRow}>
                 {(resourceCosts.length ? resourceCosts : standardCosts).map((cost, index) => (
                   <div key={index} style={styles.costItem}>
-                    {cost.resource === "essence" ? (
-                      <div
-                        style={{
-                          width: "16px",
-                          height: "16px",
-                          backgroundColor: "#f8bbd9",
-                          borderRadius: "2px",
-                          border: "1px solid #ec4899",
-                          flexShrink: 0,
-                        }}
-                      />
-                    ) : (
-                      <ResourceIcon id={cost.resource} name="" size="md" />
-                    )}
+                    <ResourceIcon id={cost.resource} name="" size="md" />
                     {formatAmount(cost.amount)}
                   </div>
                 ))}

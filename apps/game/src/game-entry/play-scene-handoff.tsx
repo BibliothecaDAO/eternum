@@ -23,12 +23,12 @@ export const PlaySceneHandoff = () => {
   const playerStructures = usePlayerStructures();
   const gameStructures = useFactView(gameStructuresView);
   const navigate = useNavigate();
-  const location = useLocation();
+  const { pathname, search } = useLocation();
   const worldmapReadyMilestoneRef = useRef(false);
   const handoffStartedRef = useRef(false);
   const overlayDismissedRef = useRef(false);
 
-  const playRoute = useMemo(() => parsePlayRoute(location), [location.pathname, location.search]);
+  const playRoute = useMemo(() => parsePlayRoute({ pathname, search }), [pathname, search]);
   // A player's route with no hex opens the map on their first structure's site.
   useEffect(() => {
     if (playRoute == null || snapshot.resolvedRequest == null || snapshot.resolvedRequest.entryMode !== "player") {

@@ -143,7 +143,8 @@ export const PlayerList = ({
   const [selectedPlayerAddress, setSelectedPlayerAddress] = useState<string | null>(null);
   const mode = useGameModeConfig();
   const showTribeDetails = mode.ui.showGuildsTab;
-  const [prevPositions, setPrevPositions] = useState<Map<string, number>>(new Map());
+  // The rows' last order, for the next reorder to animate from; never drawn.
+  const prevPositions = useRef(new Map<string, number>());
   const showMmr = mmr !== "off";
   const leaderboardGridTemplate = GRID_TEMPLATES[`${showTribeDetails ? "tribe" : "plain"}${showMmr ? "Mmr" : ""}`];
 
@@ -190,18 +191,18 @@ export const PlayerList = ({
 
   // FLIP animation for row reordering
   useLayoutEffect(() => {
-    if (prevPositions.size === 0) {
+    if (prevPositions.current.size === 0) {
       // First render - just store positions
       const newPositions = new Map<string, number>();
       sortedPlayers.forEach((p, i) => newPositions.set(String(p.address), i));
-      setPrevPositions(newPositions);
+      prevPositions.current = newPositions;
       return;
     }
 
     // Animate rows from old position to new
     sortedPlayers.forEach((player, index) => {
       const address = String(player.address);
-      const prevIndex = prevPositions.get(address);
+      const prevIndex = prevPositions.current.get(address);
 
       if (prevIndex !== undefined && prevIndex !== index) {
         const rowEl = rowRefs.current.get(address.toLowerCase());
@@ -215,7 +216,7 @@ export const PlayerList = ({
     // Store current positions for next comparison
     const newPositions = new Map<string, number>();
     sortedPlayers.forEach((p, i) => newPositions.set(String(p.address), i));
-    setPrevPositions(newPositions);
+    prevPositions.current = newPositions;
   }, [sortedPlayers, rowRefs]);
 
   const handleSelectPlayer = (address: PlayerCustom["address"]) => {

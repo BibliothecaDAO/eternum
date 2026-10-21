@@ -1,4 +1,4 @@
-import { EntityType, ID, Position, StructureType } from "@bibliothecadao/types";
+import { ID } from "@bibliothecadao/types";
 
 export enum LeftView {
   None,

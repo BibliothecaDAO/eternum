@@ -332,7 +332,7 @@ export default class HexceptionScene extends HexagonScene {
       }),
     );
 
-    this.inputManager.addListener("contextmenu", (raycaster) => {
+    this.inputManager.addListener("contextmenu", () => {
       this.clearBuildingMode();
     });
 
@@ -819,14 +819,14 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     // CRITICAL: Clean up animation mixers to prevent memory leaks
-    this.buildingMixers.forEach((mixer, key) => {
+    this.buildingMixers.forEach((mixer) => {
       mixer.stopAllAction();
       mixer.uncacheRoot(mixer.getRoot());
     });
     this.buildingMixers.clear();
 
     // Clean up mines materials
-    this.minesMaterials.forEach((material, resourceId) => {
+    this.minesMaterials.forEach((material) => {
       material.dispose();
     });
     this.minesMaterials.clear();

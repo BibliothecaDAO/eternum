@@ -17,7 +17,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeRowOrAbsent, useNativeRow, useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ContractAddress, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
@@ -44,13 +44,13 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const structure = useNativeRow("Structure", keys);
   const resources = useResourceManager(structureEntityId);
   const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", structure ? keys : undefined);
-  const shares = useNativeRow("HyperstructureShares", keys);
-  const revision = useNativeRevision([
+  const facts = useNativeFacts([
     "GuildMember",
     "Guild",
     "Guard",
     "Hyperstructure",
     "HyperstructureProgress",
+    "HyperstructureShares",
     "Structure",
   ]);
   const playerGuild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), store) : undefined;
@@ -61,21 +61,21 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const relicEffects: RelicEffect[] = useMemo(() => {
     const effects: RelicEffect[] = [];
     if (structure) {
-      for (const guard of store.inGame("Guard", structure.game_id)) {
+      for (const guard of facts.store.inGame("Guard", structure.game_id)) {
         if (guard.structure_id === structure.entity_id) effects.push(...getStructureArmyRelicEffects(guard, timestamp));
       }
     }
     if (productionBoostBonus) effects.push(...getStructureRelicEffects(productionBoostBonus, timestamp));
     return effects;
-  }, [productionBoostBonus, structure, store, revision, timestamp]);
+  }, [productionBoostBonus, structure, facts, timestamp]);
   const structureDetails = structure ? { structure, resources, playerGuild, guards, isMine, relicEffects } : null;
   // The rate the map's label shows too: what it pays its holder, or what taking it would pay.
   const hyperstructureRate = useMemo(
     () =>
       structure?.base.category === StructureType.Hyperstructure
-        ? getHyperstructureRates(store).get(structureEntityId)
+        ? getHyperstructureRates(facts.store).get(structureEntityId)
         : undefined,
-    [structure, store, structureEntityId, shares, revision],
+    [structure, structureEntityId, facts],
   );
 
   const isHyperstructure = structure?.base.category === StructureType.Hyperstructure;
@@ -83,7 +83,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const typeLabel = useMemo(() => {
     if (!structure?.base?.category) return undefined;
     return mode.structure.getTypeName(structure.base.category as StructureType, presentedMineKind(structure));
-  }, [mode, store, structure]);
+  }, [mode, structure]);
 
   const backgroundImage = useMemo(() => {
     if (!structure?.base?.category) return undefined;
@@ -102,9 +102,9 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
   const progress = useMemo(() => {
     return isHyperstructure && structure
-      ? getHyperstructureProgress(safeInteger(structure.entity_id), store)
+      ? getHyperstructureProgress(safeInteger(structure.entity_id), facts.store)
       : undefined;
-  }, [isHyperstructure, structure?.entity_id, store, revision]);
+  }, [isHyperstructure, structure, facts]);
 
   const structureName = useMemo(() => {
     return structure ? mode.structure.getName(structure).name : undefined;

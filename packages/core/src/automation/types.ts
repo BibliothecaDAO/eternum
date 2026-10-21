@@ -3,16 +3,9 @@ import type { RealmPresetId } from "./presets";
 
 const BLOCKED_OUTPUT_RESOURCE_SET = new Set<ResourcesIds>([ResourcesIds.Wheat, ResourcesIds.Labor]);
 
-export const isAutomationResourceBlocked = (
-  resourceId: ResourcesIds,
-  entityType: RealmEntityType = "realm",
-  role: "output" | "input" = "output",
-): boolean => {
-  if (role === "input") {
-    return false;
-  }
-  return BLOCKED_OUTPUT_RESOURCE_SET.has(resourceId);
-};
+/** Whether automation may never produce this resource. Any resource may be spent as an input. */
+export const isAutomationResourceBlocked = (resourceId: ResourcesIds): boolean =>
+  BLOCKED_OUTPUT_RESOURCE_SET.has(resourceId);
 
 export const MAX_RESOURCE_ALLOCATION_PERCENT = 90;
 // Execution-time safety ceiling on per-input spend. User-facing percentages remain

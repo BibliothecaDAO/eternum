@@ -88,9 +88,10 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
 7. Reuse the saved service credentials, or generate them once for a new environment. An existing box token requires the
    original private directory; comparison runs on the box and returns only a match result. If the guardian Worker
    already holds `GUARDIAN_PRIVATE_KEY`, keep it even if this directory has no copy. Never rotate it.
-8. Create missing D1 databases (identity, launch, admin), the status R2 bucket, Pages project and domain. Refuse
-   conflicting existing DNS. First-install Worker placeholders have no routes and return 503; their named entrypoints
-   break the binding cycle. Existing Workers are preserved until their actual deployment step.
+8. Create missing D1 databases (identity, launch, admin), the status R2 bucket, and two Pages sites, each a project, its
+   hostname and a CNAME to the project's own `pages.dev` host: the client (`play.`) and the docs (`docs.`) in the
+   environment's zone. Refuse conflicting existing DNS. First-install Worker placeholders have no routes and return 503;
+   their named entrypoints break the binding cycle. Existing Workers are preserved until their actual deployment step.
 9. Make Cloudflare Access hold the admin page's operators from the private directory's `admin-access.json`, written by
    the owner (mode 0600): `{"operators": ["you@example.com"]}` on dev; production adds `"writers"` (each also an
    operator), who alone may act there. It ensures the one-time PIN login, one allow policy and one application on the
@@ -124,9 +125,12 @@ launcher and relay accounts at creation; each Worker joins using its own device 
 not enrol those devices or transfer their roles. Dev uses `realms-dev` in `/opt/athanor/runs/dev`.
 
 The Cloudflare command belongs to the credential holder. It exports HEAD to a temporary directory, installs locked
-dependencies, builds workspace packages, migrates D1 and publishes Workers, then builds and publishes the client.
-Neither deploy command has a dry run or performs funding or calendar operations. Production, when commissioned, builds
-its images on its own box from the same source commit.
+dependencies, builds workspace packages, migrates D1 and publishes Workers, then builds and publishes the client, then
+builds the docs (`pnpm run build:docs`, the build validation runs) and publishes them to `docs.realms.party` (dev:
+`docs.dev-realms.party`). Each site is checked at its own address before the command ends. It refuses to start until
+setup has created every resource, so a site new to the deployment reaches an existing environment through
+`setup --apply`. Neither deploy command has a dry run or performs funding or calendar operations. Production, when
+commissioned, builds its images on its own box from the same source commit.
 
 ## Season
 
@@ -234,8 +238,9 @@ python3 -m unittest discover -s deploy/athanor/scripts -p 'test_*.py'
 
 ## Remove unused GitHub secrets
 
-A push to `next` deploys nothing. No workflow publishes images, Workers or the client. The deployment command never
-reads or writes GitHub secrets or environments. GitHub holds source commits and production validation results only.
+A push to `next` deploys nothing. No workflow publishes images, Workers, the client or the docs. The deployment command
+never reads or writes GitHub secrets or environments. GitHub holds source commits and production validation results
+only.
 
 The owner can delete these stored deployment secrets from repository and environment settings; none has a workflow
 reader: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `L2_RPC_URL`, `BETTER_AUTH_SECRET`, `OPERATOR_TOKEN`,

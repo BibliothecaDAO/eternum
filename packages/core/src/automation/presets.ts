@@ -2,7 +2,6 @@ import {
   MAX_RESOURCE_ALLOCATION_PERCENT,
   isAutomationResourceBlocked,
   type RealmAutomationConfig,
-  type RealmEntityType,
   type ResourceAutomationPercentages,
 } from "./types";
 import { configManager } from "../index";
@@ -191,13 +190,10 @@ const buildSmartPresetAllocations = (
 export const calculatePresetAllocations = (
   resourceIds: ResourcesIds[],
   presetId: RealmPresetId,
-  entityType: RealmEntityType = "realm",
 ): Map<number, ResourceAutomationPercentages> => {
   const allocations = new Map<number, ResourceAutomationPercentages>();
 
-  const scopedIds = Array.from(new Set(resourceIds)).filter(
-    (resourceId) => !isAutomationResourceBlocked(resourceId, entityType),
-  );
+  const scopedIds = Array.from(new Set(resourceIds)).filter((resourceId) => !isAutomationResourceBlocked(resourceId));
 
   if (!scopedIds.length) {
     return allocations;
@@ -225,7 +221,6 @@ export const calculatePresetAllocations = (
 
 export const getAutomationOverallocation = (
   percentagesByResource: Record<number, ResourceAutomationPercentages> | undefined,
-  entityType: RealmEntityType = "realm",
 ): { resourceOver: boolean; laborOver: boolean } => {
   if (!percentagesByResource) {
     return { resourceOver: false, laborOver: false };
@@ -237,10 +232,7 @@ export const getAutomationOverallocation = (
   Object.entries(percentagesByResource).forEach(([key, stored]) => {
     const resourceId = Number(key) as ResourcesIds;
     // Stored settings persist across games; a resource this game cannot produce allocates nothing.
-    if (
-      isAutomationResourceBlocked(resourceId, entityType) ||
-      !configManager.producibleResources().includes(resourceId)
-    ) {
+    if (isAutomationResourceBlocked(resourceId) || !configManager.producibleResources().includes(resourceId)) {
       return;
     }
     const percentages = configManager.isCommandEnabled("BurnLaborForResourceProduction")
@@ -248,14 +240,12 @@ export const getAutomationOverallocation = (
       : { ...stored, laborToResource: 0 };
     const rawComplexInputs = configManager.requireRecipeInputs(resourceId, false);
     const complexInputs = rawComplexInputs.filter(
-      (input: { resource: ResourcesIds }) =>
-        !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
+      (input: { resource: ResourcesIds }) => input.resource !== ResourcesIds.Wheat,
     );
 
     const rawSimpleInputs = configManager.requireRecipeInputs(resourceId, true);
     const simpleInputs = rawSimpleInputs.filter(
-      (input: { resource: ResourcesIds }) =>
-        !isAutomationResourceBlocked(input.resource, entityType, "input") && input.resource !== ResourcesIds.Wheat,
+      (input: { resource: ResourcesIds }) => input.resource !== ResourcesIds.Wheat,
     );
 
     if ((percentages?.resourceToResource ?? 0) > 0) {

@@ -15,6 +15,7 @@ import {
 import { useGame } from "@/hooks/context/game-context";
 import { type UseQueryResult, useQueries, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
+import { useLatest } from "@/hooks/use-latest";
 import { create } from "zustand";
 import { useAccountAddress } from "./use-account-store";
 import { useConnectionStore } from "./use-connection-store";
@@ -402,19 +403,25 @@ export const useStoryReads = (reads: StoryRead[]) => {
   const scopeKey = storyEventScopeKey(scope);
   const handshake = useConnectionStore((state) => state.lastGlobalHandshake);
   const queryClient = useQueryClient();
-  const queryKeys = reads.map(({ limit, story, owner, entityId }) => [
-    "heraldStoryEvents",
-    shard.url,
-    scopeKey,
-    limit,
-    story,
-    owner,
-    entityId,
-  ]);
-  const readsKey = JSON.stringify(queryKeys);
+  // The reads by value: a caller writes a new list on every render.
+  const readsByValue = JSON.stringify(reads);
+  const stableReads = useMemo((): StoryRead[] => JSON.parse(readsByValue), [readsByValue]);
+  const queryKeys = useMemo(
+    () =>
+      stableReads.map(({ limit, story, owner, entityId }) => [
+        "heraldStoryEvents",
+        shard.url,
+        scopeKey,
+        limit,
+        story,
+        owner,
+        entityId,
+      ]),
+    [stableReads, shard.url, scopeKey],
+  );
 
   const queries = useQueries({
-    queries: reads.map((read, index) => ({
+    queries: stableReads.map((read, index) => ({
       queryKey: queryKeys[index],
       queryFn: async () =>
         answerOverHeld(
@@ -430,58 +437,63 @@ export const useStoryReads = (reads: StoryRead[]) => {
     combine: sameResults,
   });
 
+  // The effects below run on their own signals and act on the reads as they stand then.
+  const current = useLatest({ queries, handshake });
   // Each handshake asks every read that holds an answer again.
   useEffect(() => {
-    for (const query of queries) if (!query.isError) void query.refetch({ cancelRefetch: false });
-  }, [handshake, readsKey]);
+    for (const query of current.current.queries) if (!query.isError) void query.refetch({ cancelRefetch: false });
+  }, [handshake, queryKeys, current]);
   // A failed read is asked once per handshake, as soon as it owes one: when the handshake comes, or when a request
   // older than it fails after. One asked under this handshake owes nothing, so a remount, a render or a head asks it
   // nothing, and a read that settles never makes its healthy peers ask again.
   const owedKey = queries.map((query) => owesAttempt(query, handshake)).join();
   useEffect(() => {
+    const { queries, handshake } = current.current;
     for (const query of queries) if (owesAttempt(query, handshake)) void query.refetch({ cancelRefetch: false });
-  }, [owedKey, readsKey]);
+  }, [owedKey, queryKeys, current]);
 
   // A handshake that meets an older read in flight shares it, so a covering read's answer can land behind a snapshot
   // that overtook it; it then catches up once per signal it was not asked under, and never on its own answer.
   const snapshotBlock = useConnectionStore((state) => state.snapshotBlock);
   const confirmedHead = useConnectionStore((state) => state.lastConfirmedBlock);
   const catchUp = queries.map(
-    (query, index) => Boolean(reads[index].coverSnapshot) && shouldCatchUp(query, { snapshotBlock, confirmedHead }),
+    (query, index) =>
+      Boolean(stableReads[index].coverSnapshot) && shouldCatchUp(query, { snapshotBlock, confirmedHead }),
   );
   const catchUpKey = queries.map((query, index) => (catchUp[index] ? query.dataUpdatedAt : "-")).join();
+  const caughtUp = useLatest(catchUp);
   useEffect(() => {
-    queries.forEach((query, index) => {
-      if (catchUp[index]) void query.refetch({ cancelRefetch: false });
+    current.current.queries.forEach((query, index) => {
+      if (caughtUp.current[index]) void query.refetch({ cancelRefetch: false });
     });
-  }, [catchUpKey]);
+  }, [catchUpKey, current, caughtUp]);
 
   const delivered = useMemo(
-    () => reads.map((read) => streamed.filter((event) => matchesRead(event, scopeKey, read))),
-    [streamed, scopeKey, readsKey],
+    () => stableReads.map((read) => streamed.filter((event) => matchesRead(event, scopeKey, read))),
+    [streamed, scopeKey, stableReads],
   );
   // Each read's key follows the same filter, so a new delivery is the one thing that changes what it keeps.
   useEffect(() => {
-    reads.forEach((read, index) => {
+    stableReads.forEach((read, index) => {
       if (delivered[index].length === 0) return;
       queryClient.setQueryData<StoryReadPage>(
         queryKeys[index],
         (held) => held && { ...held, stories: latestStories([...delivered[index], ...held.stories], read.limit) },
       );
     });
-  }, [delivered]);
+  }, [delivered, stableReads, queryClient, queryKeys]);
 
   const data = useMemo(
     () =>
       latestStories(
-        reads.flatMap((read, index) =>
+        stableReads.flatMap((read, index) =>
           latestStories([...delivered[index], ...(queries[index].data?.stories ?? [])], read.limit),
         ),
         Number.POSITIVE_INFINITY,
       )
         .filter(isPresentableStory)
         .map((event) => processStoryEvent(event, store, viewerAddress, names.text)),
-    [store, queries, delivered, viewerAddress, names],
+    [store, stableReads, queries, delivered, viewerAddress, names],
   );
 
   return { data, queries };

@@ -20,7 +20,7 @@ import {
   isRelic as isResourceRelic,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import {
   ID,
   RelicEffect,
@@ -39,19 +39,16 @@ export const ResourceChip = ({
   resourceManager,
   hideZeroBalance = false,
   showTransfer = true,
-  storageCapacity = 0,
-  storageCapacityUsed = 0,
   activeRelicEffects,
   canOpenProduction = false,
   disableButtons = false,
   onManageProduction,
 }: {
   resourceId: ID;
+  /** From useResourceManager: a new manager each time its facts change, so the chip's reads follow it. */
   resourceManager: ResourceManager;
   hideZeroBalance?: boolean;
   showTransfer?: boolean;
-  storageCapacity?: number;
-  storageCapacityUsed?: number;
   activeRelicEffects: RelicEffect[];
   canOpenProduction?: boolean;
   disableButtons?: boolean;
@@ -60,7 +57,6 @@ export const ResourceChip = ({
   const setTooltip = useTooltipStore((state) => state.setTooltip);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
-  const revision = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "ProductionBonus"]);
   const structure = useNativeRow("Structure", {
     game_id: configManager.getActiveGameId(),
     entity_id: resourceManager.entityId,
@@ -73,13 +69,10 @@ export const ResourceChip = ({
   // Undefined when this client holds no resource owner for the structure: the chip then shows nothing.
   const production = useMemo(
     () => resourceManager.balanceWithProduction(now, resourceEnumId),
-    [resourceManager, now, resourceEnumId, revision],
+    [resourceManager, now, resourceEnumId],
   );
   const balance = production?.balance;
-  const productionInfo = useMemo(
-    () => resourceManager.current(resourceEnumId),
-    [resourceManager, resourceEnumId, revision],
-  );
+  const productionInfo = useMemo(() => resourceManager.current(resourceEnumId), [resourceManager, resourceEnumId]);
 
   const productionData = useMemo(() => {
     if (!productionInfo) return null;
@@ -92,7 +85,7 @@ export const ResourceChip = ({
 
   const timeUntilValueReached = useMemo(() => {
     return resourceManager.timeUntilValueReached(now, resourceId);
-  }, [resourceManager, now]);
+  }, [resourceManager, now, resourceId]);
 
   const icon = useMemo(() => {
     return <ResourceIcon withTooltip={false} resource={resourceId} size="sm" className="self-center" />;
@@ -136,11 +129,7 @@ export const ResourceChip = ({
     });
   }, [canShowProductionShortcut, onManageProduction, resourceManager, resourceId, openSurface]);
 
-  // Check if this resource is a relic
-  const isRelic = useMemo(() => {
-    // Using type assertion until the build system picks up the new method
-    return isResourceRelic(resourceId);
-  }, [resourceManager, resourceId]);
+  const isRelic = isResourceRelic(resourceId);
 
   // todo: check relic effect active
   const relicEffectActivated = useMemo(() => {

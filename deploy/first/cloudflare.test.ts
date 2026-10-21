@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ADMIN_ACCESS } from "./admin-access";
-import { setUpDirectory } from "./cloudflare";
+import { requireCloudflareResources, setUpDirectory } from "./cloudflare";
 import { PublicError } from "./errors";
 import { preparationSteps, type Deployment } from "./main";
 import { Platform, workers } from "./platform";
@@ -230,14 +230,25 @@ function crowdedAccount() {
       ...others("db"),
       ...["realms-identity", "realms-launch", "realms-admin"].map((name) => ({ name: `${name}-${target.worker}` })),
     ],
-    [`/accounts/${account}/pages/projects`]: [...others("project"), { name: target.pages }],
+    [`/accounts/${account}/pages/projects`]: [
+      ...others("project"),
+      { name: target.pages },
+      { name: target.docs.pages },
+    ],
     [`/accounts/${account}/pages/projects/${target.pages}/domains`]: [
       ...others("domain"),
       { name: new URL(target.origin).hostname },
     ],
+    [`/accounts/${account}/pages/projects/${target.docs.pages}/domains`]: [
+      ...others("domain"),
+      { name: new URL(target.docs.origin).hostname },
+    ],
     [`/zones?name=${target.zone}`]: [{ id: "test-zone" }],
     [`/zones/test-zone/dns_records?name=${new URL(target.origin).hostname}`]: [
       { type: "CNAME", content: `${target.pages}.pages.dev` },
+    ],
+    [`/zones/test-zone/dns_records?name=${new URL(target.docs.origin).hostname}`]: [
+      { type: "CNAME", content: `${target.docs.pages}.pages.dev` },
     ],
     [`/accounts/${account}/workers/scripts`]: [],
   };
@@ -261,6 +272,8 @@ function crowdedAccount() {
         result_info: { per_page: perPage, ...(end < buckets.length ? { cursor: String(end) } : {}) },
       });
     }
+    const project = /\/pages\/projects\/([^/]+)$/.exec(path)?.[1];
+    if (project) return Response.json({ success: true, result: { name: project, subdomain: `${project}.pages.dev` } });
     const items = lists[path];
     if (!items) return refused(404, 7003);
     const page = Number(parsed.searchParams.get("page") ?? 1);
@@ -292,13 +305,83 @@ test("a list Cloudflare answers in part is refused as a single read, and read wh
   ]);
 });
 
-test("setup finds its databases, project, bucket, domain and DNS on later pages, and creates nothing", async () => {
+test("setup finds its databases, both sites' projects, domains and DNS, and its bucket on later pages, and creates nothing", async () => {
   const requests = crowdedAccount();
   const value = platform(true);
   expect(await value.resourcesPresent()).toBe(true);
   await value.prepareResources();
   expect(requests.filter((request) => !request.startsWith("GET"))).toEqual([]);
   expect(requests.filter((request) => request.endsWith("/r2/buckets")).length).toBeGreaterThan(2);
+});
+
+/** An account holding none of an environment's resources; Cloudflare gives the new docs project a suffixed host. */
+function emptyAccount(dns: Record<string, { type: string; content: string }[]> = {}) {
+  const writes: { method: string; path: string; body: unknown }[] = [];
+  const target = environments.production;
+  const created = new Set<string>();
+  globalThis.fetch = (async (url, init) => {
+    const method = init?.method ?? "GET";
+    const path = bare(url).split("/client/v4")[1]!;
+    const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+    if (method !== "GET") {
+      writes.push({ method, path, body });
+      if (path.endsWith("/pages/projects")) created.add(body.name);
+      return Response.json({ success: true, result: {} });
+    }
+    const project = /\/pages\/projects\/([^/]+)$/.exec(path)?.[1];
+    if (project && created.has(project)) {
+      const subdomain = project === target.docs.pages ? `${project}-7xq.pages.dev` : `${project}.pages.dev`;
+      return Response.json({ success: true, result: { name: project, subdomain } });
+    }
+    const dnsName = /dns_records\?name=(.+)$/.exec(path)?.[1];
+    const result = path.endsWith("/accounts")
+      ? [{ id: account }]
+      : path.includes("/zones?")
+        ? [{ id: "test-zone" }]
+        : path.endsWith("/r2/buckets")
+          ? { buckets: [] }
+          : dnsName
+            ? (dns[dnsName] ?? [])
+            : [];
+    return Response.json({ success: true, result, result_info: { page: 1, total_pages: 1 } });
+  }) as typeof fetch;
+  return { writes, target };
+}
+
+test("setup creates each site's project, hostname and a record to the project's own pages.dev host", async () => {
+  const { writes, target } = emptyAccount();
+  const value = new Platform(target, { cloudflareToken: "private-token" } as Inputs, {} as PrivateStore, true);
+  expect(await value.resourcesPresent()).toBe(false);
+  await value.prepareResources();
+  const site = (pages: string, hostname: string, host: string) => [
+    { method: "POST", path: `/accounts/${account}/pages/projects`, body: { name: pages, production_branch: "main" } },
+    { method: "POST", path: `/accounts/${account}/pages/projects/${pages}/domains`, body: { name: hostname } },
+    {
+      method: "POST",
+      path: "/zones/test-zone/dns_records",
+      body: { type: "CNAME", name: hostname, content: host, proxied: true },
+    },
+  ];
+  expect(writes.filter((write) => write.path.includes("/pages/") || write.path.includes("/dns_records"))).toEqual([
+    ...site("eternum-game", "play.realms.party", "eternum-game.pages.dev"),
+    ...site("realms-docs", "docs.realms.party", "realms-docs-7xq.pages.dev"),
+  ]);
+});
+
+test("publishing refuses an environment whose docs site setup has not created yet", async () => {
+  const { target } = emptyAccount();
+  const value = new Platform(target, { cloudflareToken: "private-token" } as Inputs, {} as PrivateStore, true);
+  await expect(requireCloudflareResources(value)).rejects.toThrow(
+    "run setup with --apply before publishing Cloudflare",
+  );
+  crowdedAccount();
+  await requireCloudflareResources(platform(true));
+});
+
+test("setup never overwrites a docs hostname the zone already points elsewhere", async () => {
+  const { target } = emptyAccount({ "docs.realms.party": [{ type: "CNAME", content: "cname.vercel-dns.com" }] });
+  const value = new Platform(target, { cloudflareToken: "private-token" } as Inputs, {} as PrivateStore, true);
+  await expect(value.prepareResources()).rejects.toThrow("Existing DNS for docs.realms.party differs");
 });
 
 const temporary: string[] = [];

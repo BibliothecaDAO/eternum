@@ -1,9 +1,10 @@
-import { entityMapPosition, structureMapPosition } from "@bibliothecadao/eternum";
 import { getActiveGameStore } from "@/sync/active-game-client";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { readSeatsRevision } from "@/utils/entity-ownership";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { readBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
-import { getPlayerDisplayName, readPlayerProfile } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
 import {
   ClientConfigManager,
@@ -12,7 +13,6 @@ import {
   formatArrivals,
   formatGuilds,
   readStructures,
-  ResourceManager,
   summarizeIncomingTroopArrivals,
 } from "@bibliothecadao/eternum";
 import {
@@ -21,7 +21,7 @@ import {
   type NativeModelName,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { ContractAddress, EntityType, type Player, ResourcesIds, type Structure } from "@bibliothecadao/types";
+import { ContractAddress, type Player, type Structure } from "@bibliothecadao/types";
 
 /**
  * What the client shows of the native store, derived on read and never copied into another store. Each view names
@@ -34,9 +34,18 @@ export interface FactView<T> {
   read: (store: NativeFactStore, viewer: ContractAddress | null) => T;
 }
 
+/** Whose a thing is also reads an open game's seats and whether the viewer watches: a reading holds for one of each. */
+interface Sides {
+  seats: number;
+  spectating: boolean;
+}
+
+const currentSides = (): Sides => ({ seats: readSeatsRevision(), spectating: useUIStore.getState().isSpectating });
+
 interface ViewReading {
   store: NativeFactStore;
   viewer: ContractAddress | null;
+  sides: Sides;
   revision: number;
   value: unknown;
 }
@@ -44,15 +53,27 @@ interface ViewReading {
 const lastReadings = new WeakMap<FactView<unknown>, ViewReading>();
 
 /**
- * One derivation per store revision and viewer, shared by every surface reading the view. The reading is keyed by the
- * store's own revision, so it can never disagree with the facts it was derived from.
+ * One derivation per store revision, viewer and sides, shared by every surface reading the view. The reading is keyed by
+ * the store's own revision, so it can never disagree with the facts it was derived from.
  */
-export const readFactView = <T>(store: NativeFactStore, view: FactView<T>, viewer = accountAddress()): T => {
+export const readFactView = <T>(
+  store: NativeFactStore,
+  view: FactView<T>,
+  viewer = accountAddress(),
+  sides = currentSides(),
+): T => {
   const revision = store.getRevision();
   const last = lastReadings.get(view);
-  if (last?.store === store && last.viewer === viewer && last.revision === revision) return last.value as T;
+  if (
+    last?.store === store &&
+    last.viewer === viewer &&
+    last.revision === revision &&
+    last.sides.seats === sides.seats &&
+    last.sides.spectating === sides.spectating
+  )
+    return last.value as T;
   const value = view.read(store, viewer);
-  lastReadings.set(view, { store, viewer, revision, value });
+  lastReadings.set(view, { store, viewer, sides, revision, value });
   return value;
 };
 
@@ -90,8 +111,6 @@ const readSelectableArmies = (store: NativeFactStore, viewer: ContractAddress | 
   formatArmies(store.inGame("ExplorerTroops", activeGameId()), viewer, store, getPlayerDisplayName)
     .filter((army) => army.isMine)
     .map((army) => ({ entityId: army.entityId }));
-
-const RELIC_RESOURCES = { first: ResourcesIds.StaminaRelic1, last: ResourcesIds.TroopProductionRelic2 };
 
 const readSeasonClock = () => {
   const config = ClientConfigManager.instance();
@@ -187,7 +206,13 @@ export const seasonClockView: FactView<ReturnType<typeof readSeasonClock>> = {
 };
 
 /** The game's registered players, one row per registration, each named by the one player resolver. */
-export const readPlayers = (store: NativeFactStore): Player[] =>
+export const readPlayers = (
+  store: NativeFactStore,
+  profileOf: (address: bigint) => Pick<Player, "name" | "portrait">,
+): Player[] =>
   [...store.entries("PlayerEntry")]
     .filter(([, row]) => row.game_id === activeGameId())
-    .map(([entity, { owner }]) => ({ address: owner, entity, ...readPlayerProfile(owner) }));
+    .map(([entity, { owner }]) => {
+      const { name, portrait } = profileOf(owner);
+      return { address: owner, entity, name, portrait };
+    });

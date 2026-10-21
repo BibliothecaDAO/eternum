@@ -10,4 +10,3 @@ export { SecondaryMenuItems } from "./containers/secondary-menu-items";
 export { BiomeInfoPanel } from "./components/biome-info-panel";
 
 // Hyperstructures - Exports used externally
-export * from "./components/hyperstructures/types";

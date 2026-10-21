@@ -1,7 +1,5 @@
 import { Position } from "@bibliothecadao/eternum";
 
-import * as THREE from "three";
-import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { CameraView } from "../../scenes/camera-view";
 
 /**
@@ -58,30 +56,6 @@ export interface LabelStyle {
 }
 
 /**
- * Stored event handlers for cleanup
- */
-interface LabelEventHandlers {
-  mouseenter: (e: Event) => void;
-  mouseleave: (e: Event) => void;
-  click: (e: Event) => void;
-  contextmenu: (e: Event) => void;
-}
-
-/**
- * Label instance with Three.js object and metadata
- */
-interface LabelInstance {
-  css2dObject: CSS2DObject;
-  element: HTMLElement;
-  config: LabelConfig;
-  data: LabelData;
-  isVisible: boolean;
-  transitionTimeoutId?: number;
-  /** Stored event handlers for proper cleanup */
-  _eventHandlers?: LabelEventHandlers;
-}
-
-/**
  * Label type definition for the registry
  */
 export interface LabelTypeDefinition<T extends LabelData = LabelData> {
@@ -95,63 +69,4 @@ export interface LabelTypeDefinition<T extends LabelData = LabelData> {
   updateElement?: (element: HTMLElement, data: T, cameraView: CameraView) => void;
   /** Optional function to determine if a label should be visible */
   shouldDisplay?: (data: T, cameraView: CameraView) => boolean;
-}
-
-/**
- * Event types for label interactions
- */
-type LabelEventType = "mouseenter" | "mouseleave" | "click" | "rightclick" | "update";
-
-/**
- * Label event handler
- */
-interface LabelEventHandler {
-  (event: { type: LabelEventType; labelInstance: LabelInstance; originalEvent?: Event }): void;
-}
-
-/**
- * Options for creating a label
- */
-interface CreateLabelOptions {
-  /** Override the default configuration */
-  config?: Partial<LabelConfig>;
-  /** Initial camera view state */
-  cameraView?: CameraView;
-  /** Custom event handlers */
-  eventHandlers?: Record<LabelEventType, LabelEventHandler>;
-}
-
-/**
- * Options for updating labels
- */
-interface UpdateLabelOptions {
-  /** Whether to animate the update */
-  animate?: boolean;
-  /** Custom transition duration for this update */
-  transitionDuration?: number;
-}
-
-/**
- * Label manager configuration
- */
-interface LabelManagerConfig {
-  /** Three.js group to add labels to */
-  labelsGroup: THREE.Group;
-  /** Initial camera view */
-  initialCameraView?: CameraView;
-  /** Global event handlers that apply to all labels */
-  globalEventHandlers?: Partial<Record<LabelEventType, LabelEventHandler>>;
-  /** Maximum number of labels to display */
-  maxLabels?: number;
-  /** Whether to automatically clean up labels on removal */
-  autoCleanup?: boolean;
-}
-
-/**
- * Camera view transition info
- */
-interface CameraViewTransition {
-  from: CameraView;
-  to: CameraView;
-  timestamp: number;
 }

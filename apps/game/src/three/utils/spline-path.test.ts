@@ -420,9 +420,8 @@ describe("resolveAfterimagePositions", () => {
       trailOffsets: [0.02, 0.04, 0.06],
     });
     const currentPos = resolveSplinePosition(spline, currentProgress, EasingType.Linear);
-    const startPos = spline.getPointAt(0);
 
-    // Each ghost should be farther from current position and closer to start
+    // Each ghost is farther from the current position than the one before it
     for (let i = 0; i < result.length - 1; i++) {
       const distFromCurrentI = result[i].position.distanceTo(currentPos);
       const distFromCurrentNext = result[i + 1].position.distanceTo(currentPos);

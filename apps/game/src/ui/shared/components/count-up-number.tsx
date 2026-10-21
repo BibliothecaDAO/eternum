@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useLatest } from "@/hooks/use-latest";
 
 const ANIMATION_DURATION_MS = 600;
 const LARGE_CHANGE_THRESHOLD = 0.1; // 10% change considered "large"
@@ -28,6 +29,7 @@ export const CountUpNumber = ({
   const startTimeRef = useRef(0);
   const fromRef = useRef(value);
   const toRef = useRef(value);
+  const shown = useLatest(displayValue);
 
   useEffect(() => {
     const prevValue = prevValueRef.current;
@@ -52,7 +54,7 @@ export const CountUpNumber = ({
     }
 
     // Animate from current display to new value
-    fromRef.current = displayValue;
+    fromRef.current = shown.current;
     toRef.current = value;
     startTimeRef.current = performance.now();
     setIsAnimating(true);
@@ -84,7 +86,7 @@ export const CountUpNumber = ({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [value]);
+  }, [value, shown]);
 
   return (
     <span className={`${className} ${isAnimating ? highlightClassName : ""} transition-colors duration-300`}>

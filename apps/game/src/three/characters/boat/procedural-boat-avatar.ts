@@ -1,7 +1,6 @@
 import {
   Box3,
   BufferGeometry,
-  Color,
   DoubleSide,
   Float32BufferAttribute,
   Group,

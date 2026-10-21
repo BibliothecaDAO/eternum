@@ -4,7 +4,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { ActorType, ID } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { TransferResourcesContainer } from "./transfer-resources-container";
-import { TransferDirection, getActorTypes } from "./transfer-troops/transfer-direction";
+import { TransferDirection } from "./transfer-troops/transfer-direction";
 import { TransferTroopsContainer } from "./transfer-troops-container";
 
 enum TransferType {

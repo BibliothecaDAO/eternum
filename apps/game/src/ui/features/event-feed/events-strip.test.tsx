@@ -67,7 +67,9 @@ vi.mock("@/hooks/context/game-context", () => ({
     },
   }),
 }));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("@/hooks/helpers/use-native-facts", async () =>
+  (await import("@/hooks/helpers/native-facts-mock")).nativeFactsMock(),
+);
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getTick: () => 60, getActiveGameId: () => 1 } }));
 vi.mock("@/ui/design-system/molecules/popover", () => ({
   PopoverPanel: ({ children }: { children: ReactNode }) => <>{children}</>,

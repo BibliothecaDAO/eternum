@@ -14,13 +14,12 @@ import {
   divideByPrecision,
   getBalance,
   getClosestBank,
-  getEntityIdFromKeys,
   isMilitaryResource,
   MarketManager,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, ID, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -30,7 +29,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
     account: { account },
     setup: { store, systemCalls },
   } = useGame();
-  const revision = useNativeRevision([
+  const facts = useNativeFacts([
     "ResourceBalance",
     "ResourceProduction",
     "ResourceWeight",
@@ -52,29 +51,23 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
   const confirmsLoss = useConfirmsLoss();
 
   const marketManager = useMemo(
-    () => new MarketManager(store, ContractAddress(account.address), resourceId),
-    [store, resourceId, account.address, revision],
+    () => new MarketManager(facts.store, ContractAddress(account.address), resourceId),
+    [facts, resourceId, account.address],
   );
 
   useEffect(() => {
     setResourceId(listResourceId);
   }, [listResourceId]);
 
-  useEffect(() => {
-    if (!marketManager.hasReserves()) return;
-    const optimalResourceAmout = marketManager.quoteResource(lordsAmount);
-    if (resourceAmount !== optimalResourceAmout) {
-      setResourceAmount(optimalResourceAmout);
-    }
-  }, [lordsAmount]);
-
-  useEffect(() => {
-    if (!marketManager.hasReserves()) return;
-    const optimalLordsAmout = marketManager.quoteLords(resourceAmount);
-    if (lordsAmount !== optimalLordsAmout) {
-      setLordsAmount(optimalLordsAmout);
-    }
-  }, [resourceAmount]);
+  // A pool takes both sides at its own price: an amount typed on one side sets the other.
+  const changeLordsAmount = (amount: number) => {
+    setLordsAmount(amount);
+    if (marketManager.hasReserves()) setResourceAmount(marketManager.quoteResource(amount));
+  };
+  const changeResourceAmount = (amount: number) => {
+    setResourceAmount(amount);
+    if (marketManager.hasReserves()) setLordsAmount(marketManager.quoteLords(amount));
+  };
 
   const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords), currentDefaultTick, store).balance;
   const resourceBalance = getBalance(entityId, Number(resourceId), currentDefaultTick, store).balance;
@@ -128,7 +121,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
           resources={resources.filter((r) => r.id === Number(ResourcesIds.Lords))}
           amount={Math.floor(lordsAmount)}
           lordsFee={0}
-          setAmount={setLordsAmount}
+          setAmount={changeLordsAmount}
           resourceId={ResourcesIds.Lords}
           setResourceId={setResourceId}
           max={lordsBalance === undefined ? 0 : divideByPrecision(lordsBalance)}
@@ -138,7 +131,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
           resources={resources.filter((r) => r.id !== Number(ResourcesIds.Lords))}
           amount={Math.floor(resourceAmount)}
           lordsFee={0}
-          setAmount={setResourceAmount}
+          setAmount={changeResourceAmount}
           resourceId={resourceId}
           setResourceId={setResourceId}
           max={resourceBalance === undefined ? 0 : divideByPrecision(resourceBalance)}

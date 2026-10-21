@@ -16,9 +16,11 @@ describe("buildResourceDependencyOrder", () => {
 
   it("orders inputs before the resources that consume them", () => {
     recipes({ [ResourcesIds.Knight]: [ResourcesIds.Copper], [ResourcesIds.Copper]: [ResourcesIds.Wood] });
-    expect(
-      buildResourceDependencyOrder([ResourcesIds.Knight, ResourcesIds.Copper, ResourcesIds.Wood], "realm"),
-    ).toEqual([ResourcesIds.Wood, ResourcesIds.Copper, ResourcesIds.Knight]);
+    expect(buildResourceDependencyOrder([ResourcesIds.Knight, ResourcesIds.Copper, ResourcesIds.Wood])).toEqual([
+      ResourcesIds.Wood,
+      ResourcesIds.Copper,
+      ResourcesIds.Knight,
+    ]);
   });
 
   it("orders the Blitz recipe cycle deterministically and keeps troops after their inputs", () => {
@@ -31,10 +33,13 @@ describe("buildResourceDependencyOrder", () => {
       [ResourcesIds.Knight]: [ResourcesIds.Copper],
     });
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const order = buildResourceDependencyOrder(
-      [ResourcesIds.Paladin, ResourcesIds.Copper, ResourcesIds.Knight, ResourcesIds.Wood, ResourcesIds.Coal],
-      "realm",
-    );
+    const order = buildResourceDependencyOrder([
+      ResourcesIds.Paladin,
+      ResourcesIds.Copper,
+      ResourcesIds.Knight,
+      ResourcesIds.Wood,
+      ResourcesIds.Coal,
+    ]);
     expect(order).toHaveLength(5);
     expect(order.indexOf(ResourcesIds.Copper)).toBeLessThan(order.indexOf(ResourcesIds.Knight));
     expect(order.indexOf(ResourcesIds.Copper)).toBeLessThan(order.indexOf(ResourcesIds.Paladin));

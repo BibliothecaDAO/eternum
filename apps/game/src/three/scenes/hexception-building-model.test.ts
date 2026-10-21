@@ -14,7 +14,7 @@ const keep = { ...labor, col: BUILDINGS_CENTER[0], structureType: StructureType.
 
 function modelPath(building: typeof labor, stage = RealmLevels.Settlement) {
   const selected = resolveBuildingModelSelection(building, { ...context, stage });
-  const paths = buildingModelPaths(false)[selected.group] as Record<string, string>;
+  const paths = buildingModelPaths()[selected.group] as Record<string, string>;
   return selected.tierPath ?? paths[selected.type];
 }
 
@@ -33,7 +33,7 @@ describe("Workshops and central keeps share Labor but keep their own identity", 
     "keeps the center's actual castle and name at realm level %s",
     (stage) => {
       const name = castleLevelToRealmCastle[stage];
-      expect(modelPath(keep, stage)).toBe(buildingModelPaths(false)[BUILDINGS_GROUPS.REALMS][name]);
+      expect(modelPath(keep, stage)).toBe(buildingModelPaths()[BUILDINGS_GROUPS.REALMS][name]);
       expect(getBuildingDisplayName(keep, stage, "Village", false)).toBe(name);
     },
   );

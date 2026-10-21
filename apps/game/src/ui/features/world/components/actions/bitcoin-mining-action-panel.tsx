@@ -31,7 +31,6 @@ export const BitcoinMiningActionPanel = ({ structureEntityId }: { structureEntit
         }
       : undefined,
   );
-  const claimPhase = useNativeRow("BitcoinPhase", mine ? { game_id, phase: mine.next_phase } : undefined);
   useNativeRevision(["ResourceBalance", "ResourceProduction"]);
   const [amount, setAmount] = useState("");
   const [pending, setPending] = useState(false);

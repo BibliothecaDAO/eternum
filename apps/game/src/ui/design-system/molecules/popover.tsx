@@ -98,6 +98,7 @@ const OpenPanel = ({
   const isInsideAnchorRef = useRef(isInsideAnchor);
   isInsideAnchorRef.current = isInsideAnchor;
 
+  const placed = panelStyle !== null;
   useLayoutEffect(() => {
     const place = () => {
       setHoldsWindow(isHudWindow(panelRef.current));
@@ -117,7 +118,7 @@ const OpenPanel = ({
       window.visualViewport?.removeEventListener("resize", place);
       window.visualViewport?.removeEventListener("scroll", place);
     };
-  }, [align, anchor, placement, lane, Boolean(panelStyle)]);
+  }, [align, anchor, placement, lane, placed]);
 
   useEffect(() => {
     const closeOnOutsidePointer = (event: PointerEvent) => {
@@ -148,19 +149,20 @@ const OpenPanel = ({
   }, [id]);
 
   useEffect(() => {
-    if (!panelStyle) return;
+    if (!placed) return;
     const previousFocus = document.activeElement;
-    panelRef.current?.focus({ preventScroll: true });
+    const panel = panelRef.current;
+    panel?.focus({ preventScroll: true });
     return () => {
       if (
         previousFocus instanceof HTMLElement &&
         previousFocus.isConnected &&
-        (document.activeElement === document.body || panelRef.current?.contains(document.activeElement))
+        (document.activeElement === document.body || panel?.contains(document.activeElement))
       ) {
         previousFocus.focus({ preventScroll: true });
       }
     };
-  }, [id, Boolean(panelStyle)]);
+  }, [id, placed]);
 
   if (!panelStyle) return null;
 
@@ -271,12 +273,6 @@ export const SurfaceHost = () => {
     </PopoverPanel>
   );
 };
-
-interface PopoverHeaderProps {
-  title: ReactNode;
-  icon?: IconMeaning;
-  onClose: () => void;
-}
 
 /**
  * A large surface's frame, in the HUD sheet's window: its bar (title, painting, close; dragging it moves the surface)

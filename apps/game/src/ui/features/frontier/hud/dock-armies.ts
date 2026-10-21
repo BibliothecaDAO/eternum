@@ -2,7 +2,7 @@ import type { IconMeaning } from "@/ui/design-system/icon";
 import { troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { configManager, getArmyName, homecomingReturn, liveHomeArmies } from "@bibliothecadao/eternum";
@@ -42,11 +42,12 @@ export type DockArmy = {
 /** The realm's armies out today, in the order the castle granted their slots; none without a realm. */
 export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[] => {
   const { setup } = useGame();
-  const revision = useNativeRevision(ARMY_MODELS);
+  const facts = useNativeFacts(ARMY_MODELS);
   const timestamp = useCurrentDefaultTick();
+  const realmId = realm ? safeInteger(realm.entity_id) : null;
   const armies = useMemo(
-    () => (realm ? liveHomeArmies(setup.store, safeInteger(realm.entity_id), configManager.getActiveGameId()) : []),
-    [realm?.entity_id, revision, setup.store, timestamp],
+    () => (realmId === null ? [] : liveHomeArmies(facts.store, realmId, configManager.getActiveGameId(), timestamp)),
+    [realmId, facts, timestamp],
   );
   return armies.map((army, index) => {
     const explorerId = safeInteger(army.explorer_id);

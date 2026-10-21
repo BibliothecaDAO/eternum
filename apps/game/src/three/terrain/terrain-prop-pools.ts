@@ -15,7 +15,6 @@ import {
   Quaternion,
   Sphere,
   Vector3,
-  type BufferAttribute,
 } from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import {
@@ -51,7 +50,6 @@ import type { TerrainPropInstance } from "./terrain-types";
 export const TERRAIN_PROP_POOL_PAGE_SLOTS = WORLD_CHUNK_CONFIG.visualPresentation.maxCompositePages;
 
 const TERRAIN_PROP_ECOLOGY_ATTRIBUTE = "terrainPropEcology";
-const MATRIX_FLOATS = 16;
 const VEC3_FLOATS = 3;
 const EMPTY_INSTANCES: readonly TerrainPropInstance[] = Object.freeze([]);
 

@@ -1,28 +1,26 @@
-import { getActiveGameSyncRuntime, type TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { useEffect, useMemo, useState } from "react";
+import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
+import { useEffect, useMemo } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useSpatialProjection } from "@/hooks/use-spatial-projection";
 
 interface WorldSpatialTileHex {
   col: number;
   row: number;
 }
 
+const TILE_LAYER = ["tiles"] as const;
+
 export const useWorldSpatialTiles = (hexes: readonly WorldSpatialTileHex[]): readonly TileSpatialRenderable[] => {
-  const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
+  const spatial = useSpatialProjection(TILE_LAYER);
   const mapLayer = useUIStore((state) => state.mapLayer);
-  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
-    if (!projection) {
+    if (!spatial.projection)
       console.error("[useWorldSpatialTiles] WorldSpatialProjection is unavailable for the active game");
-      return;
-    }
-
-    return projection.subscribeTiles(() => setRevision((current) => current + 1));
-  }, [projection]);
+  }, [spatial.projection]);
 
   return useMemo(
-    () => hexes.flatMap((hex) => projection?.getTileAtHex({ ...hex, alt: mapLayer }) ?? []),
-    [hexes, mapLayer, projection, revision],
+    () => hexes.flatMap((hex) => spatial.projection?.getTileAtHex({ ...hex, alt: mapLayer }) ?? []),
+    [hexes, mapLayer, spatial],
   );
 };

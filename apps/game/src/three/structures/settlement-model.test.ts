@@ -63,7 +63,7 @@ function fixture(kind: "village" | "realm" = "village") {
 }
 
 describe("gameplay villages", () => {
-  it.each([false, true])("selects the approved model in world and local views (blitz=%s)", (blitz) => {
+  it("selects the approved model in world and local views", () => {
     expect(getStructureModelPaths()[StructureType.Village]).toEqual([VILLAGE_MODEL_PATH]);
     expect(getStructureModelPaths()[StructureType.Camp]).toEqual([
       CAMP_MODEL_PATH,
@@ -76,8 +76,8 @@ describe("gameplay villages", () => {
       CLEARED_SITE_MODEL_PATH,
     ]);
     expect(new Set([VILLAGE_MODEL_PATH, CAMP_MODEL_PATH]).size).toBe(2);
-    expect(buildingModelPaths(blitz)[BUILDINGS_GROUPS.VILLAGE][StructureType.Village]).toBe(VILLAGE_MODEL_PATH);
-    expect(buildingModelPaths(blitz)[BUILDINGS_GROUPS.VILLAGE][StructureType.Camp]).toBe(CAMP_MODEL_PATH);
+    expect(buildingModelPaths()[BUILDINGS_GROUPS.VILLAGE][StructureType.Village]).toBe(VILLAGE_MODEL_PATH);
+    expect(buildingModelPaths()[BUILDINGS_GROUPS.VILLAGE][StructureType.Camp]).toBe(CAMP_MODEL_PATH);
   });
 
   it("keeps simultaneous ownership colors independent when instances are removed and reused", () => {
@@ -114,7 +114,7 @@ describe("gameplay villages", () => {
 });
 
 describe("gameplay realms", () => {
-  it.each([false, true])("selects all four approved tiers in both game views (blitz=%s)", (blitz) => {
+  it("selects all four approved tiers in both game views", () => {
     const paths = [
       RealmLevelNames.Settlement,
       RealmLevelNames.City,
@@ -122,7 +122,7 @@ describe("gameplay realms", () => {
       RealmLevelNames.Empire,
     ].map((level) => REALM_MODEL_PATHS[level]);
     expect(getStructureModelPaths()[StructureType.Realm].slice(0, 4)).toEqual(paths);
-    expect(buildingModelPaths(blitz)[BUILDINGS_GROUPS.REALMS]).toEqual(REALM_MODEL_PATHS);
+    expect(buildingModelPaths()[BUILDINGS_GROUPS.REALMS]).toEqual(REALM_MODEL_PATHS);
   });
 
   it("keeps order zero and other orders independent, and clears reused slots with missing metadata", async () => {

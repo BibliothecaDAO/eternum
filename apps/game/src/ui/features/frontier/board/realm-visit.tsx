@@ -8,6 +8,7 @@ import { configManager, Position, structureMapPosition } from "@bibliothecadao/e
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useEffect, useRef } from "react";
+import { useLatest } from "@/hooks/use-latest";
 
 import { VisitFoot } from "./visit-foot";
 
@@ -40,14 +41,15 @@ export const useRealmVisitNavigation = (home: NativeRows["Structure"] | null) =>
     if (site)
       void goToStructure(safeInteger(realm.entity_id), Position.fromContract(site), on === "map", { spectator });
   };
+  const opener = useLatest(openRealm);
 
   useEffect(() => {
     // Once per visit asked for, as soon as its realm is in the store: a Visit of the realm already watched opens it
     // too, and a later fact about the realm opens nothing again.
     if (!visit?.opensOn || !visited || openedVisit.current === visit) return;
     openedVisit.current = visit;
-    openRealm(visited, true, visit.opensOn);
-  }, [visit, visited?.entity_id]);
+    opener.current(visited, true, visit.opensOn);
+  }, [visit, visited, opener]);
 
   useEffect(() => {
     if (visit) {
@@ -61,9 +63,9 @@ export const useRealmVisitNavigation = (home: NativeRows["Structure"] | null) =>
     }
     if (home) {
       previousVisit.current = null;
-      openRealm(home, false);
+      opener.current(home, false);
     }
-  }, [visit, home]);
+  }, [visit, home, opener]);
 };
 
 /** While visiting another realm, the foot that names it, with Leave (home: the player's realm, to return to). */

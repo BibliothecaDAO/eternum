@@ -51,7 +51,6 @@ class CiFileOwnership(unittest.TestCase):
         # The production Blitz price lives here; changing it once broke the docs build unseen.
         self.assertIn("docs", areas_run_by("deploy/first/environments.json"))
         self.assertEqual(areas_run_by("apps/game-docs/docs/pages/blitz/game-entry.mdx"), {"docs"})
-        self.assertEqual(areas_run_by("vercel.json"), {"docs"})
 
     def test_client_publisher_inputs_select_both_deployment_areas(self):
         self.assertEqual(areas_run_by("apps/game/package.json"), {"client", "native", "runtime"})
@@ -117,12 +116,6 @@ class WorkflowCommands(unittest.TestCase):
     def test_a_pnpm_script_runs_the_files_its_package_names(self):
         scripts = {".": {"words:check": "node --test scripts/words/*.test.mjs && node scripts/words/check.mjs --check"}}
         ran = ran_files(".", "pnpm words:check", lambda directory: scripts.get(directory, {}))
-        self.assertIn("scripts/words/check.mjs", ran)
-        self.assertIn("scripts/words/check.test.mjs", ran)
-
-    def test_a_pnpm_fetched_by_npx_runs_the_files_its_package_names(self):
-        scripts = {".": {"words:check": "node --test scripts/words/*.test.mjs && node scripts/words/check.mjs --check"}}
-        ran = ran_files(".", "npx --yes pnpm@10.25.0 run words:check", lambda directory: scripts.get(directory, {}))
         self.assertIn("scripts/words/check.mjs", ran)
         self.assertIn("scripts/words/check.test.mjs", ran)
 

@@ -7,6 +7,15 @@ export type Environment = "dev" | "production";
 export const root = resolve(import.meta.dir, "../..");
 export { environments };
 export type Target = (typeof environments)[Environment];
+/** A static site the Cloudflare half publishes to Pages: its project and the address that serves it. */
+export interface PagesSite {
+  pages: string;
+  origin: string;
+}
+/** The game client's site: the environment's own origin, which its Workers' routes share. */
+export const clientSite = (target: Target): PagesSite => ({ pages: target.pages, origin: target.origin });
+/** Every Pages site of an environment: the game client and the docs, each on its own hostname in the zone. */
+export const pagesSites = (target: Target): PagesSite[] => [clientSite(target), target.docs];
 export const ACCOUNT_CLASS = "0x540d7f5ec7ecf317e68d48564934cb99259781b1ee3cedbbc37ec5337f8e688";
 export const STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
 export const WEI = 10n ** 18n;

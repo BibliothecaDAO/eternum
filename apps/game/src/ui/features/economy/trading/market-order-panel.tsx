@@ -30,6 +30,7 @@ import {
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
+import { useLatest } from "@/hooks/use-latest";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
   ResourcesIds,
@@ -106,19 +107,7 @@ export const MarketOrderPanel = memo(
 );
 
 export const VirtualizedOrderList = memo(
-  ({
-    offers,
-    entityId,
-    isBuy,
-    updateBalance,
-    setUpdateBalance,
-  }: {
-    offers: MarketInterface[];
-    entityId: ID;
-    isBuy: boolean;
-    updateBalance: boolean;
-    setUpdateBalance: (value: boolean) => void;
-  }) => {
+  ({ offers, entityId, isBuy }: { offers: MarketInterface[]; entityId: ID; isBuy: boolean }) => {
     const parentRef = useRef<HTMLDivElement>(null);
     const rowHeightPx = useOrderRowHeightPx();
 
@@ -156,13 +145,7 @@ export const VirtualizedOrderList = memo(
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
               >
-                <OrderRow
-                  offer={offer}
-                  entityId={entityId}
-                  isBuy={isBuy}
-                  updateBalance={updateBalance}
-                  setUpdateBalance={setUpdateBalance}
-                />
+                <OrderRow offer={offer} entityId={entityId} isBuy={isBuy} />
               </div>
             );
           })}
@@ -189,8 +172,6 @@ const MarketOrders = memo(
     isBuy?: boolean;
     offers: MarketInterface[];
   }) => {
-    const [updateBalance, setUpdateBalance] = useState(false);
-
     return (
       <OrderBookSide resourceId={resourceId} isBuy={isBuy} offers={offers}>
         <div className="flex min-h-0 flex-1 flex-col">
@@ -198,13 +179,7 @@ const MarketOrders = memo(
           {offers.length === 0 ? (
             <EmptyBookSide isBuy={isBuy} />
           ) : (
-            <VirtualizedOrderList
-              offers={offers}
-              entityId={entityId}
-              isBuy={isBuy}
-              updateBalance={updateBalance}
-              setUpdateBalance={setUpdateBalance}
-            />
+            <VirtualizedOrderList offers={offers} entityId={entityId} isBuy={isBuy} />
           )}
         </div>
         <OrderCreation resourceId={resourceId} entityId={entityId} isBuy={isBuy} />
@@ -276,220 +251,180 @@ export const OrderRowHeader = memo(({ resourceId, isBuy }: { resourceId?: number
   </HudTableHead>
 ));
 
-export const OrderRow = memo(
-  ({
-    offer,
-    entityId,
-    isBuy,
-    updateBalance,
-    setUpdateBalance,
-  }: {
-    offer: MarketInterface;
-    entityId: ID;
-    isBuy: boolean;
-    updateBalance: boolean;
-    setUpdateBalance: (value: boolean) => void;
-  }) => {
-    const game = useGame();
+export const OrderRow = memo(({ offer, entityId, isBuy }: { offer: MarketInterface; entityId: ID; isBuy: boolean }) => {
+  const game = useGame();
 
-    const playTradeExecuteSound = useUISound("ui.trade_execute");
+  const playTradeExecuteSound = useUISound("ui.trade_execute");
 
-    const currentDefaultTick = useCurrentDefaultTick();
+  const currentDefaultTick = useCurrentDefaultTick();
 
-    const resourceManager = useResourceManager(entityId);
+  const resourceManager = useResourceManager(entityId);
+  const [makerGets] = offer.makerGets;
+  const [takerGets] = offer.takerGets;
 
-    const lordsBalance = useMemo(() => {
-      const balance = resourceManager.balance(ResourcesIds.Lords);
-      return balance === undefined ? undefined : Number(balance);
-    }, [resourceManager, updateBalance]);
+  const lordsBalance = useMemo(() => {
+    const balance = resourceManager.balance(ResourcesIds.Lords);
+    return balance === undefined ? undefined : Number(balance);
+  }, [resourceManager]);
 
-    const resourceBalance = useMemo(
-      () => resourceManager.balanceWithProduction(currentDefaultTick, offer.makerGets[0].resourceId)?.balance,
-      [resourceManager, currentDefaultTick, offer.makerGets[0].resourceId, updateBalance],
-    );
+  const resourceBalance = useMemo(
+    () => resourceManager.balanceWithProduction(currentDefaultTick, makerGets.resourceId)?.balance,
+    [resourceManager, currentDefaultTick, makerGets.resourceId],
+  );
 
-    const [confirmOrderModal, setConfirmOrderModal] = useState(false);
-    const confirmsLoss = useConfirmsLoss();
+  const [confirmOrderModal, setConfirmOrderModal] = useState(false);
+  const confirmsLoss = useConfirmsLoss();
 
-    const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-    const isSelf = useMemo(() => {
-      return entityId === offer.makerId;
-    }, [entityId, offer.makerId]);
+  const isSelf = entityId === offer.makerId;
+  const getsDisplayNumber = isBuy ? makerGets.amount : takerGets.amount;
+  const getsDisplay = formatCharge(knownAmount(getsDisplayNumber));
+  const getDisplayResource = isBuy ? makerGets.resourceId : takerGets.resourceId;
+  const getTotalLords = isBuy ? takerGets.amount : makerGets.amount;
 
-    const getsDisplay = useMemo(() => {
-      return isBuy
-        ? formatCharge(knownAmount(offer.makerGets[0].amount))
-        : formatCharge(knownAmount(offer.takerGets[0].amount));
-    }, [isBuy, offer.makerGets[0].amount, offer.takerGets[0].amount]);
+  const resourceBalanceRatio = useMemo(
+    // A balance this client cannot see fills nothing.
+    () =>
+      resourceBalance === undefined ? 0 : resourceBalance < getsDisplayNumber ? resourceBalance / getsDisplayNumber : 1,
+    [resourceBalance, getsDisplayNumber],
+  );
+  const lordsBalanceRatio = useMemo(
+    () => (lordsBalance === undefined ? 0 : lordsBalance < getTotalLords ? lordsBalance / getTotalLords : 1),
+    [lordsBalance, getTotalLords],
+  );
+  // The fill starts at the most the balance covers, and follows it.
+  const coveredFill = divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio);
+  const [inputValue, setInputValue] = useState(coveredFill);
+  useEffect(() => {
+    setInputValue(coveredFill);
+  }, [coveredFill]);
 
-    const getsDisplayNumber = useMemo(() => {
-      return isBuy ? offer.makerGets[0].amount : offer.takerGets[0].amount;
-    }, [isBuy, offer.makerGets[0].amount, offer.takerGets[0].amount]);
+  const calculatedResourceAmount = useMemo(() => multiplyByPrecision(inputValue), [inputValue]);
 
-    const getDisplayResource = useMemo(() => {
-      return isBuy ? offer.makerGets[0].resourceId : offer.takerGets[0].resourceId;
-    }, [isBuy, offer.makerGets[0].resourceId, offer.takerGets[0].resourceId]);
+  // The Lords this fill takes: its share of the offer's total.
+  const calculatedLords = useMemo(
+    () => Math.ceil((inputValue / divideByPrecision(getsDisplayNumber, false)) * getTotalLords),
+    [inputValue, getsDisplayNumber, getTotalLords],
+  );
 
-    const getTotalLords = useMemo(() => {
-      return isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount;
-    }, [isBuy, offer.takerGets[0].amount, offer.makerGets[0].amount]);
+  const orderWeightKg = useMemo(() => {
+    // divide by precision because getTotalResourceWeightKg is without precision
+    const totalWeightKg = getTotalResourceWeightKg([
+      {
+        resourceId: takerGets.resourceId,
+        amount: isBuy ? divideByPrecision(calculatedLords) : divideByPrecision(calculatedResourceAmount),
+      },
+    ]);
+    return totalWeightKg;
+  }, [takerGets.resourceId, isBuy, calculatedResourceAmount, calculatedLords]);
 
-    const resourceBalanceRatio = useMemo(
-      // A balance this client cannot see fills nothing.
-      () =>
-        resourceBalance === undefined
-          ? 0
-          : resourceBalance < getsDisplayNumber
-            ? resourceBalance / getsDisplayNumber
-            : 1,
-      [resourceBalance, getsDisplayNumber],
-    );
-    const lordsBalanceRatio = useMemo(
-      () => (lordsBalance === undefined ? 0 : lordsBalance < getTotalLords ? lordsBalance / getTotalLords : 1),
-      [lordsBalance, getTotalLords],
-    );
-    const [inputValue, setInputValue] = useState<number>(() => {
-      return isBuy
-        ? divideByPrecision(offer.makerGets[0].amount) * resourceBalanceRatio
-        : divideByPrecision(offer.takerGets[0].amount) * lordsBalanceRatio;
-    });
+  const donkeysNeeded = useMemo(() => {
+    return calculateDonkeysNeeded(orderWeightKg);
+  }, [orderWeightKg]);
 
-    useEffect(() => {
-      setInputValue(
-        isBuy
-          ? divideByPrecision(offer.makerGets[0].amount) * resourceBalanceRatio
-          : divideByPrecision(offer.takerGets[0].amount) * lordsBalanceRatio,
-      );
-    }, [resourceBalanceRatio, lordsBalanceRatio]);
+  const donkeyBalance = useMemo(() => {
+    return knownAmount(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey)?.balance);
+  }, [resourceManager, currentDefaultTick]);
 
-    const calculatedResourceAmount = useMemo(() => multiplyByPrecision(inputValue), [inputValue]);
+  const onAccept = async () => {
+    try {
+      setLoading(true);
+      setConfirmOrderModal(false);
 
-    // The Lords this fill takes: its share of the offer's total.
-    const calculatedLords = useMemo(
-      () => Math.ceil((inputValue / divideByPrecision(getsDisplayNumber, false)) * getTotalLords),
-      [inputValue, getsDisplayNumber, getTotalLords],
-    );
+      const v = !isBuy ? calculatedResourceAmount : calculatedLords;
+      const takerBuysCount = Math.ceil(v / offer.makerGivesMinResourceAmount);
+      await game.setup.systemCalls.accept_order({
+        signer: game.account.account,
+        taker_id: entityId,
+        trade_id: offer.tradeId,
+        taker_buys_count: takerBuysCount,
+      });
+    } catch (error) {
+      toast.failed(error, "The order could not be accepted.");
+    } finally {
+      playTradeExecuteSound();
+      setLoading(false);
+    }
+  };
 
-    const orderWeightKg = useMemo(() => {
-      // divide by precision because getTotalResourceWeightKg is without precision
-      const totalWeightKg = getTotalResourceWeightKg([
-        {
-          resourceId: offer.takerGets[0].resourceId,
-          amount: isBuy ? divideByPrecision(calculatedLords) : divideByPrecision(calculatedResourceAmount),
-        },
-      ]);
-      return totalWeightKg;
-    }, [entityId, calculatedResourceAmount, calculatedLords]);
+  const onCancel = async () => {
+    try {
+      setLoading(true);
+      await game.setup.systemCalls.cancel_order({
+        signer: game.account.account,
+        trade_id: offer.tradeId,
+      });
+    } catch (error) {
+      toast.failed(error, "The order could not be cancelled.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const donkeysNeeded = useMemo(() => {
-      return calculateDonkeysNeeded(orderWeightKg);
-    }, [orderWeightKg]);
+  const actionLabel = isSelf ? "Cancel" : isBuy ? "Sell" : "Buy";
+  // Taking an offer asks how much; cancelling your own acts at once, but in Frontier, where a loss asks first.
+  const pressAction = () => (isSelf && !confirmsLoss ? onCancel() : setConfirmOrderModal(true));
 
-    const donkeyBalance = useMemo(() => {
-      return knownAmount(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey)?.balance);
-    }, [resourceManager, currentDefaultTick]);
-
-    const onAccept = async () => {
-      try {
-        setLoading(true);
-        setConfirmOrderModal(false);
-
-        const v = !isBuy ? calculatedResourceAmount : calculatedLords;
-        const takerBuysCount = Math.ceil(v / offer.makerGivesMinResourceAmount);
-        await game.setup.systemCalls.accept_order({
-          signer: game.account.account,
-          taker_id: entityId,
-          trade_id: offer.tradeId,
-          taker_buys_count: takerBuysCount,
-        });
-      } catch (error) {
-        toast.failed(error, "The order could not be accepted.");
-      } finally {
-        playTradeExecuteSound();
-        setUpdateBalance(!updateBalance);
-        setLoading(false);
-      }
-    };
-
-    const onCancel = async () => {
-      try {
-        setLoading(true);
-        await game.setup.systemCalls.cancel_order({
-          signer: game.account.account,
-          trade_id: offer.tradeId,
-        });
-      } catch (error) {
-        toast.failed(error, "The order could not be cancelled.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const actionLabel = isSelf ? "Cancel" : isBuy ? "Sell" : "Buy";
-    // Taking an offer asks how much; cancelling your own acts at once, but in Frontier, where a loss asks first.
-    const pressAction = () => (isSelf && !confirmsLoss ? onCancel() : setConfirmOrderModal(true));
-
-    return (
-      <HudTableRow
-        cols={ORDER_COLS}
-        label={`${actionLabel} ${getsDisplay} at ${formatFigure(offer.perLords)} ${LORDS} each`}
-        title={`Expires ${formatMoment(offer.expiresAt)}`}
-        selected={isSelf}
+  return (
+    <HudTableRow
+      cols={ORDER_COLS}
+      label={`${actionLabel} ${getsDisplay} at ${formatFigure(offer.perLords)} ${LORDS} each`}
+      title={`Expires ${formatMoment(offer.expiresAt)}`}
+      selected={isSelf}
+    >
+      <span className={`flex items-center gap-1 tabular-nums ${sideTone(!isBuy)}`}>
+        <ResourceIcon withTooltip={false} size="xs" resource={getDisplayResource} />
+        {getsDisplay}
+      </span>
+      <span className="text-center tabular-nums">{formatFigure(offer.perLords)}</span>
+      <span className={`flex items-center justify-center gap-1 tabular-nums ${sideTone(isBuy)}`}>
+        <ResourceIcon withTooltip={false} size="xs" resource={ResourcesIds.Lords} />
+        {formatCharge(knownAmount(getTotalLords))}
+      </span>
+      <HudButton
+        kind={isSelf ? "danger" : "secondary"}
+        size="sm"
+        busy={loading ? "…" : undefined}
+        onClick={pressAction}
       >
-        <span className={`flex items-center gap-1 tabular-nums ${sideTone(!isBuy)}`}>
-          <ResourceIcon withTooltip={false} size="xs" resource={getDisplayResource} />
-          {getsDisplay}
-        </span>
-        <span className="text-center tabular-nums">{formatFigure(offer.perLords)}</span>
-        <span className={`flex items-center justify-center gap-1 tabular-nums ${sideTone(isBuy)}`}>
-          <ResourceIcon withTooltip={false} size="xs" resource={ResourcesIds.Lords} />
-          {formatCharge(knownAmount(getTotalLords))}
-        </span>
-        <HudButton
-          kind={isSelf ? "danger" : "secondary"}
-          size="sm"
-          busy={loading ? "…" : undefined}
-          onClick={pressAction}
-        >
-          {actionLabel}
-        </HudButton>
-        {confirmOrderModal &&
-          (isSelf ? (
-            <OrderDialog title="Cancel this order?" onCancel={() => setConfirmOrderModal(false)}>
-              <HudConfirm
-                question="Cancel this order?"
-                verb="Cancel order"
-                back="Keep it"
-                tone="bad"
-                onConfirm={() => onCancel().finally(() => setConfirmOrderModal(false))}
-                onBack={() => setConfirmOrderModal(false)}
-              />
-            </OrderDialog>
-          ) : (
-            <TakeOfferForm
-              isBuy={isBuy}
-              onConfirm={onAccept}
-              onCancel={() => setConfirmOrderModal(false)}
-              loading={loading}
-              inputValue={inputValue}
-              setInputValue={setInputValue}
-              maxInputValue={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
-              getDisplayResource={getDisplayResource}
-              calculatedLords={calculatedLords}
-              donkeysNeeded={donkeysNeeded}
-              donkeyBalance={donkeyBalance}
-              isVillageAndMilitaryResource={
-                game.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })
-                  ?.base.category === StructureType.Village &&
-                (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId))
-              }
+        {actionLabel}
+      </HudButton>
+      {confirmOrderModal &&
+        (isSelf ? (
+          <OrderDialog title="Cancel this order?" onCancel={() => setConfirmOrderModal(false)}>
+            <HudConfirm
+              question="Cancel this order?"
+              verb="Cancel order"
+              back="Keep it"
+              tone="bad"
+              onConfirm={() => onCancel().finally(() => setConfirmOrderModal(false))}
+              onBack={() => setConfirmOrderModal(false)}
             />
-          ))}
-      </HudTableRow>
-    );
-  },
-);
+          </OrderDialog>
+        ) : (
+          <TakeOfferForm
+            isBuy={isBuy}
+            onConfirm={onAccept}
+            onCancel={() => setConfirmOrderModal(false)}
+            loading={loading}
+            inputValue={inputValue}
+            setInputValue={setInputValue}
+            maxInputValue={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
+            getDisplayResource={getDisplayResource}
+            calculatedLords={calculatedLords}
+            donkeysNeeded={donkeysNeeded}
+            donkeyBalance={donkeyBalance}
+            isVillageAndMilitaryResource={
+              game.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base
+                .category === StructureType.Village &&
+              (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId))
+            }
+          />
+        ))}
+    </HudTableRow>
+  );
+});
 
 /** A market dialog over the window: centred, and gone when dismissed. */
 const OrderDialog = ({ title, onCancel, children }: { title: string; onCancel: () => void; children: ReactNode }) => (
@@ -640,11 +575,13 @@ export const OrderCreation = memo(
     };
 
     // The market's best price stands in until the player types one; a typed price survives side and resource changes.
+    // It prices the amount standing then; a new amount keeps the Lords and moves the price instead.
+    const standingAmount = useLatest(resource);
     useEffect(() => {
       if (priceTouched || suggestedPrice === undefined || suggestedPrice <= 0) return;
       setBid(String(suggestedPrice));
-      updateLords(suggestedPrice, resource);
-    }, [suggestedPrice, priceTouched, updateLords]);
+      updateLords(suggestedPrice, standingAmount.current);
+    }, [suggestedPrice, priceTouched, updateLords, standingAmount]);
 
     const takerGives = useMemo(() => {
       return isBuy ? [resourceId, multiplyByPrecision(resource)] : [ResourcesIds.Lords, multiplyByPrecision(lords)];

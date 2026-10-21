@@ -28,7 +28,7 @@ export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const mode = useGameModeConfig();
 
-  const filteredResources = Object.entries(mode.resources.getTiers()).flatMap(([tier, resourceIds]) => {
+  const filteredResources = Object.values(mode.resources.getTiers()).flatMap((resourceIds) => {
     return resourceIds.filter(
       (resourceId) =>
         resourceId !== ResourcesIds.Lords && resourceName(resourceId).toLowerCase().includes(searchTerm.toLowerCase()),

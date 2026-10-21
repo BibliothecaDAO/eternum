@@ -7,9 +7,3 @@ export const OVERLAY_SURFACE_HOVER =
 
 export const OVERLAY_SURFACE_ACTIVE =
   "border-gold/65 ring-1 ring-gold/30 shadow-[0_0_18px_rgba(223,170,84,0.16),inset_0_1px_0_rgba(255,214,102,0.28)]";
-
-/**
- * Convenience composite for clickable pill surfaces — the most common case
- * across the HUD. Combines base + hover transition.
- */
-const OVERLAY_PILL_CLICKABLE = `${OVERLAY_SURFACE_BASE} ${OVERLAY_SURFACE_HOVER}`;

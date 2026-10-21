@@ -1,5 +1,5 @@
 import { formatAmount, formatOrdinal, formatPoints } from "@bibliothecadao/types";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
 import type { GameRef } from "@bibliothecadao/eternum/shard";
@@ -83,10 +83,10 @@ const useFinishedGame = (ref: GameRef | null) => {
 export const ResultsPage = () => {
   const { id } = useParams();
   const fromList = isOpenedFrom(useLocation());
-  const ref = gameOfResults(id);
+  const ref = useMemo(() => gameOfResults(id), [id]);
   useEffect(() => {
     if (ref) markResultsSeen(gameKey({ chainId: ref.chainId, game_id: ref.gameId }));
-  }, [ref?.chainId, ref?.gameId]);
+  }, [ref]);
   return ref ? (
     <Result gameRef={ref} fromList={fromList} />
   ) : (

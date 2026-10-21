@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { expect, it } from "vitest";
 import { parsePushRegistration, parseWebPushSubscription, parsePushEnvelope } from "./push";
 const subscription = {
   endpoint: "https://fcm.googleapis.com/fcm/send/example",

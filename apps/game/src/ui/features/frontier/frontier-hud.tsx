@@ -12,6 +12,7 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ReactNode, useEffect, useState } from "react";
+import { useLatest } from "@/hooks/use-latest";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
@@ -92,11 +93,12 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // A building tapped on the realm's board opens Research on its own row: one panel, whichever way the player came.
   const tappedRow = useSelectedBuildingRow(realm);
   const [researchPick, setResearchPick] = useState<string | undefined>(undefined);
+  const surfaceOpener = useLatest(setSurface);
   useEffect(() => {
     if (tappedRow === null) return;
     setResearchPick(`row-${tappedRow}`);
-    setSurface("research");
-  }, [tappedRow]);
+    surfaceOpener.current("research");
+  }, [tappedRow, surfaceOpener]);
   useEffect(() => {
     if (surface !== "research") setResearchPick(undefined);
   }, [surface]);

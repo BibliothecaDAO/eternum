@@ -27,13 +27,6 @@ const unregisterShortcut = (shortcutId: string): void => {
 };
 
 /**
- * Unregister all shortcuts with a specific prefix
- */
-const unregisterShortcutsByPrefix = (prefix: string): void => {
-  getShortcutManager().unregisterShortcutsByPrefix(prefix);
-};
-
-/**
  * Helper class for managing shortcuts within a Three.js scene
  * This class handles the Scene Manager dependency and provides convenient methods
  * for registering shortcuts with automatic scene prefixing and scene restrictions
@@ -127,58 +120,5 @@ export class SceneShortcutManager {
 
   public getRegisteredShortcuts(): string[] {
     return Array.from(this.registeredShortcuts);
-  }
-}
-
-// Utility functions for creating shortcuts with the new system
-class ShortcutUtils {
-  static simple(id: string, key: string, description: string, action: () => void) {
-    return {
-      id,
-      key,
-      description,
-      action,
-    };
-  }
-
-  static withModifiers(id: string, key: string, modifiers: KeyModifiers, description: string, action: () => void) {
-    return {
-      id,
-      key,
-      modifiers,
-      description,
-      action,
-    };
-  }
-
-  static conditional(id: string, key: string, description: string, condition: () => boolean, action: () => void) {
-    return {
-      id,
-      key,
-      description,
-      condition,
-      action,
-    };
-  }
-
-  static cycle<T>(
-    id: string,
-    key: string,
-    description: string,
-    items: T[],
-    getCurrentIndex: () => number,
-    onSelect: (item: T, index: number) => void,
-  ) {
-    return {
-      id,
-      key,
-      description,
-      action: () => {
-        if (items.length === 0) return;
-        const currentIndex = getCurrentIndex();
-        const nextIndex = (currentIndex + 1) % items.length;
-        onSelect(items[nextIndex], nextIndex);
-      },
-    };
   }
 }

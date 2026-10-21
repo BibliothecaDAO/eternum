@@ -2,7 +2,6 @@ import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { DayDial } from "@/ui/design-system/kit/day-dial";
-import { Kbd } from "@/ui/design-system/kit/kbd";
 import { ListRow, RowThumb } from "@/ui/design-system/kit/list-row";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { Portrait } from "@/ui/design-system/kit/portrait";

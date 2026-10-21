@@ -147,7 +147,7 @@ describe.each([390, 1440])("What's new at %i px", (width) => {
     const rules = panel(page, "Patch notes").querySelector<HTMLAnchorElement>(".app-panel__cue a")!;
     expect([rules.textContent, rules.href, rules.target]).toEqual([
       "Full rules",
-      "https://docs.realms.world/",
+      "https://docs.realms.party/",
       "_blank",
     ]);
   });

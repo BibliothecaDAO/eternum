@@ -298,8 +298,6 @@ export const TYPE = {
 
 /** Corner radii by what they round; pills and avatars keep Tailwind's `rounded-full`. */
 export const RADII = {
-  /** A keyboard key hint. */
-  key: "5px",
   /** A thumbnail, a small outlined button. */
   thumb: "8px",
   /** Controls: fields, tabs, switches, notices, small cards. */

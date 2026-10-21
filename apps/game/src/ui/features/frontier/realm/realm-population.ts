@@ -1,5 +1,4 @@
-import { useGame } from "@/hooks/context/game-context";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { configManager } from "@bibliothecadao/eternum";
 import { type NativeFactStore, type NativeRows, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { ID } from "@bibliothecadao/types";
@@ -19,10 +18,6 @@ export const readRealmPopulation = (store: NativeFactStore, entityId: ID): Realm
 
 /** The realm's population, read again whenever its buildings change. */
 export const useRealmPopulation = (realm: NativeRows["Structure"]): RealmPopulation | undefined => {
-  const { setup } = useGame();
-  const revision = useNativeRevision(POPULATION_MODELS);
-  return useMemo(
-    () => readRealmPopulation(setup.store, safeInteger(realm.entity_id)),
-    [realm.entity_id, revision, setup.store],
-  );
+  const facts = useNativeFacts(POPULATION_MODELS);
+  return useMemo(() => readRealmPopulation(facts.store, safeInteger(realm.entity_id)), [realm.entity_id, facts]);
 };

@@ -28,11 +28,11 @@ class HexGeometryDebugger {
     }
   }
 
-  public trackMaterialClone(source: string): void {
+  public trackMaterialClone(): void {
     this.materialCloneCount++;
   }
 
-  public trackSharedGeometryUsage(type: string, source: string): void {
+  public trackSharedGeometryUsage(): void {
     this.sharedGeometryUsageCount++;
 
     // Log sharing summary every 10 usages

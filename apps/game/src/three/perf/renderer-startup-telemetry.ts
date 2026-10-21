@@ -1,13 +1,10 @@
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 
-const RENDERER_STARTUP_TIMING_NAMES = [
-  "webgpu-module-import",
-  "webgpu-renderer-create",
-  "webgpu-renderer-init",
-  "webgpu-backend-total",
-] as const;
-
-export type RendererStartupTimingName = (typeof RENDERER_STARTUP_TIMING_NAMES)[number];
+export type RendererStartupTimingName =
+  | "webgpu-module-import"
+  | "webgpu-renderer-create"
+  | "webgpu-renderer-init"
+  | "webgpu-backend-total";
 export type RendererStartupTimingsSnapshot = Record<string, number>;
 
 let rendererStartupTimings: RendererStartupTimingsSnapshot = {};

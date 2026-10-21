@@ -4,9 +4,8 @@ import { knownAmount } from "@/ui/utils/utils";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { configManager, divideByPrecision, getBalance, getRealmInfo, isViewerOwner } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
-import { useGame } from "@/hooks/context/game-context";
 import { useInFlight } from "@/hooks/store/use-actions-in-flight";
-import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { formatWait, rankName } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
@@ -50,11 +49,10 @@ export const formatIncomingEta = (etaSeconds: number): string =>
   etaSeconds <= 0 ? "landing" : inTime(formatWait(etaSeconds));
 
 export const useStructureUpgrade = (structureEntityId: number | null): StructureUpgradeResult | null => {
-  const { setup } = useGame();
   const viewer = useAccountAddress();
   const currentDefaultTick = useCurrentDefaultTick();
   const isUpgradeLocked = useInFlight("castle", structureEntityId) !== undefined;
-  const revision = useNativeRevision([
+  const facts = useNativeFacts([
     "StructureBuildings",
     "ResourceWeight",
     "ResourceBalance",
@@ -73,8 +71,8 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   const names = usePlayerNames();
   const structureInfo = useMemo(
     () =>
-      liveStructure && structureEntityId ? (getRealmInfo(structureEntityId, setup.store, names.text) ?? null) : null,
-    [liveStructure, setup.store, structureEntityId, revision, names],
+      liveStructure && structureEntityId ? (getRealmInfo(structureEntityId, facts.store, names.text) ?? null) : null,
+    [liveStructure, structureEntityId, facts, names],
   );
 
   const nextLevel = useMemo(() => {
@@ -111,7 +109,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     if (!structureInfo || !nextLevel || !structureEntityId || !rawCosts) return [];
     return rawCosts.map((cost) => {
       const current = knownAmount(
-        getBalance(structureEntityId, cost.resource, currentDefaultTick, setup.store).balance,
+        getBalance(structureEntityId, cost.resource, currentDefaultTick, facts.store).balance,
       );
       const incoming = incomingByResource.get(cost.resource) ?? null;
       return {
@@ -122,16 +120,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
         incoming: incoming && incoming.amount > 0 ? incoming : null,
       };
     });
-  }, [
-    revision,
-    currentDefaultTick,
-    incomingByResource,
-    nextLevel,
-    rawCosts,
-    setup.store,
-    structureEntityId,
-    structureInfo,
-  ]);
+  }, [facts, currentDefaultTick, incomingByResource, nextLevel, rawCosts, structureEntityId, structureInfo]);
 
   // A balance this client cannot see never meets a requirement.
   const canUpgrade =

@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, mkdirSync, readFileSync, readdirSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as processTools from "./process";
-import { clientEnvironment, deployClient, deployWorkers } from "./publish";
+import { clientEnvironment, deployClient, deployDocs, deployWorkers } from "./publish";
 import { Platform, workers, workerSecrets, type Secrets } from "./platform";
 import { PrivateStore } from "./private-store";
 import { environments, type Inputs } from "./settings";
@@ -46,7 +46,7 @@ test.each(["dev", "production"] as const)(
   async (environment) => {
     const value = platform(environment);
     const calls = commands();
-    value.clientRevision = async () => undefined;
+    value.siteRevision = async () => undefined;
     await deployClient(value, revision);
     const build = calls.find((call) => call.argv.join(" ") === "pnpm --dir apps/game build")!;
     expect(build.env).toEqual(clientEnvironment(value, revision));
@@ -86,7 +86,7 @@ test.each(["dev", "production"] as const)(
 test("client upload is skipped when the published revision already exists, but its assets are checked", async () => {
   const value = platform();
   const calls = commands();
-  value.clientRevision = async () => revision;
+  value.siteRevision = async () => revision;
   await deployClient(value, revision);
   expect(calls.some((call) => call.argv.includes("wrangler"))).toBe(false);
   expect(calls.at(-1)!.argv).toContain("apps/game/scripts/verify-client-deployment.mjs");
@@ -147,10 +147,51 @@ test("Worker secrets go only to their own Worker through stdin", async () => {
   };
   for (const worker of workers) await value.installSecrets(worker, workerSecrets(worker, input, secrets, keys, access));
 });
+test.each(["dev", "production"] as const)(
+  "%s docs build as validation builds them, publish to their own project, then prove their origin serves them",
+  async (environment) => {
+    const value = platform(environment);
+    const calls = commands();
+    const asked: string[] = [];
+    value.siteRevision = async (site) => (asked.push(site.pages), undefined);
+    await deployDocs(value, revision);
+    expect(asked).toEqual([value.target.docs.pages]);
+    const check = join(value.store.directory, "docs-deployment-check.json");
+    expect(calls.map((call) => call.argv)).toEqual([
+      ["pnpm", "run", "build:docs"],
+      [
+        ...["pnpm", "--dir", "apps/game", "exec", "wrangler", "pages", "deploy", "../game-docs/dist"],
+        ...["--project-name", value.target.docs.pages, "--branch", "main", "--commit-hash", revision],
+      ],
+      [
+        "node",
+        "apps/game-docs/scripts/verify-docs-deployment.mjs",
+        "apps/game-docs/dist",
+        value.target.docs.origin,
+        check,
+      ],
+    ]);
+    expect(calls[1]!.env!.CLOUDFLARE_API_TOKEN).toBe(input.cloudflareToken);
+    expect(value.target.docs.origin).toBe(
+      environment === "dev" ? "https://docs.dev-realms.party" : "https://docs.realms.party",
+    );
+  },
+);
+test("docs already live at this commit are not uploaded again, but their origin is still proved", async () => {
+  const value = platform();
+  const calls = commands();
+  value.siteRevision = async () => revision;
+  await deployDocs(value, revision);
+  expect(calls.map((call) => call.argv[0] + " " + call.argv[1])).toEqual([
+    "pnpm run",
+    "node apps/game-docs/scripts/verify-docs-deployment.mjs",
+  ]);
+});
 test("dry publish refuses every write before commands or transports", async () => {
   const value = platform("dev", false);
   const calls = commands();
   await expect(deployClient(value, revision)).rejects.toThrow("Dry run");
+  await expect(deployDocs(value, revision)).rejects.toThrow("Dry run");
   await expect(deployWorkers(value, revision)).rejects.toThrow("Dry run");
   expect(calls).toEqual([]);
 });

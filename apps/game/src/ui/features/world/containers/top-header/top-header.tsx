@@ -5,10 +5,9 @@ import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { HudHeaderLayout } from "./hud-header-layout";
 import { MapViewControls } from "./map-view-controls";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position, configManager } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { SecondaryMenuItems } from "@/ui/features/world";
@@ -16,7 +15,7 @@ import { GameClock } from "./game-clock";
 import { AttentionPill } from "./attention-pill";
 import { IdentityChip, type SeasonGoal } from "./identity-chip";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { memo, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 
 /**
@@ -35,17 +34,12 @@ export const TopHeader = memo(({ season, clock }: { season?: SeasonGoal; clock?:
 
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
   const followingArmyMessage = useUIStore((state) => state.followingArmyMessage);
-  const currentDefaultTick = useCurrentDefaultTick();
-
-  // force a refresh of getEntityInfo when the structure data arrives
-  const structure = useNativeRow("Structure", {
-    game_id: configManager.getActiveGameId(),
-    entity_id: structureEntityId,
-  });
+  // Read again when the structure's facts arrive.
+  const structures = useNativeFacts(["Structure"]);
   const entityInfo = useMemo(
     // Only the position is read here, so no viewer is needed.
-    () => mode.structure.getEntityInfo(structureEntityId, null, setup.store),
-    [structureEntityId, currentDefaultTick, structure, mode, setup.store],
+    () => mode.structure.getEntityInfo(structureEntityId, null, structures.store),
+    [structureEntityId, structures, mode],
   );
 
   // With nothing selected there is no structure to open: LOCAL is disabled rather than aimed at a default hex.

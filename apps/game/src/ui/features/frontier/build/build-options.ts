@@ -15,7 +15,7 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, getProducedResource, ResourcesIds } from "@bibliothecadao/types";
 
 import { LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 import { buildingOutputPerSecond } from "@/ui/shared/lib/building-output";

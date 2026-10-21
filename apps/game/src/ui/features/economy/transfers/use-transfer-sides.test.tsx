@@ -9,7 +9,9 @@ vi.mock("@/config/game-modes/use-game-mode-config", () => ({
   useGameModeConfig: () => ({ id: "blitz", structure: { getName: () => ({ name: "Home" }) } }),
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 1 }));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("@/hooks/helpers/use-native-facts", async () =>
+  (await import("@/hooks/helpers/native-facts-mock")).nativeFactsMock(),
+);
 vi.mock("@/hooks/use-fact-view", () => ({
   useFactView: () => [{ entityId: 11, category: StructureType.Realm, structure: {} }],
 }));

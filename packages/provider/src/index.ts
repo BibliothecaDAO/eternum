@@ -208,7 +208,6 @@ export class EternumProvider extends EventEmitter {
     signer: AccountInterface,
     command: NativeCommand,
     transactionType: TransactionType,
-    startedAt?: number,
   ): Promise<GetTransactionReceiptResponse> {
     if (!this.commandAbi) throw new Error("Native command ABI is not configured");
     // Signed and sent in the caller's task: a timer here would let a whole render frame run before the send.

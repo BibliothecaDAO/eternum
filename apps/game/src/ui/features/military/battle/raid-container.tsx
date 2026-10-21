@@ -12,13 +12,12 @@ import {
   configManager,
   divideByPrecision,
   getArmy,
-  getEntityIdFromKeys,
   getRemainingCapacityInKg,
   RaidSimulator,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeRow, useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import {
   BiomeType,
   CapacityConfig,
@@ -30,11 +29,9 @@ import {
   ResourcesIds,
   TroopTier,
   TroopType,
-  formatCharge,
   formatCount,
   formatPercent,
   resourceName,
-  resources,
   formatExact,
 } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
@@ -67,10 +64,9 @@ export const RaidContainer = ({
     account: { account },
     setup: {
       systemCalls: { raid_explorer_vs_guard },
-      store,
     },
   } = useGame();
-  const revision = useNativeRevision(["ExplorerTroops", "Structure", "TileOccupancy"]);
+  const facts = useNativeFacts(["ExplorerTroops", "Structure", "TileOccupancy"]);
   const resourceWeight = useNativeRow("ResourceWeight", {
     game_id: configManager.getActiveGameId(),
     entity_id: attackerEntityId,
@@ -100,7 +96,7 @@ export const RaidContainer = ({
   // Get the current army states for display
   const names = usePlayerNames();
   const attackerArmyData = useMemo(() => {
-    const army = getArmy(attackerEntityId, ContractAddress(account.address), store, names.text);
+    const army = getArmy(attackerEntityId, ContractAddress(account.address), facts.store, names.text);
     // An army this client cannot see raids nothing: no simulation runs on a phantom attacker.
     if (!army) return null;
 
@@ -114,7 +110,7 @@ export const RaidContainer = ({
         battle_cooldown_end: army.troops.battle_cooldown_end,
       },
     };
-  }, [account.address, attackerEntityId, store, timestamp, revision, names]);
+  }, [account.address, attackerEntityId, timestamp, facts, names]);
   const attackerRecharging =
     attackerArmyData !== null &&
     isStaminaRecharging(Number(attackerArmyData.troops.stamina.amount), combatConfig.stamina_attack_req);

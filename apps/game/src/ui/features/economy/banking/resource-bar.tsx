@@ -3,15 +3,7 @@ import { knownAmount } from "@/ui/utils/utils";
 import { getBlockTimestamp, getBalance } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import {
-  ID,
-  Resources,
-  ResourcesIds,
-  findResourceById,
-  formatCharge,
-  formatAmount,
-  resourceName,
-} from "@bibliothecadao/types";
+import { ID, Resources, ResourcesIds, formatCharge, formatAmount, resourceName } from "@bibliothecadao/types";
 import { memo } from "react";
 
 /** One side of a bank trade: how much (typed, or all that is held), and of which resource. */

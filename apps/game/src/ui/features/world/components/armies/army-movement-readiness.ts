@@ -2,11 +2,10 @@ import {
   getArmyMovementFoodRequirementWarnings,
   getArmyStaminaRequirementWarnings,
 } from "@/ui/design-system/kit/words";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useMemo } from "react";
 
-import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   computeExploreFoodCosts,
@@ -125,15 +124,13 @@ export const useArmyMovementReadiness = (
   army: ExplorerTroopsValue | null | undefined,
   structureResources: ResourceValue | null | undefined,
 ): ArmyMovementReadiness | null => {
-  const {
-    setup: { store },
-  } = useGame();
-  const slotRevision = useNativeRevision(["ArmySlot"]);
+  const slotFacts = useNativeFacts(["ArmySlot"]);
   const currentDefaultTick = useCurrentDefaultTick();
 
   return useMemo(
-    () => (army ? readArmyMovementReadiness({ army, structureResources, store, currentDefaultTick }) : null),
-    [army, structureResources, currentDefaultTick, store, slotRevision],
+    () =>
+      army ? readArmyMovementReadiness({ army, structureResources, store: slotFacts.store, currentDefaultTick }) : null,
+    [army, structureResources, currentDefaultTick, slotFacts],
   );
 };
 
