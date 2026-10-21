@@ -403,7 +403,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "chest",
           "title": "LORDS in chests",
-          "line": "Every player's chest holds one entry's worth of LORDS while the chest reserve can pay it, and a sword or shield credit otherwise."
+          "line": "Every player's chest can award one entry's worth of LORDS, or a sword or shield credit; LORDS only while the chest reserve can pay them."
         },
         {
           "kind": "new",

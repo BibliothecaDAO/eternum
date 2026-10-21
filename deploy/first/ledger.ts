@@ -1,8 +1,8 @@
 import { readFileSync, writeFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { Account, byteArray, CallData, hash, json, num, type Call, type RpcProvider } from "starknet";
-import { buildLedgerEconomicPreset } from "../../config/deployer/clean/ledger/economics";
-import { awardableCosmetics, chestPresets } from "../../contracts/l2/ledger/scripts/chest-preset.js";
+import { buildLedgerEconomicPreset, chestPresetFor } from "../../config/deployer/clean/ledger/economics";
+import { awardableCosmetics } from "../../contracts/l2/ledger/scripts/chest-preset.js";
 import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
 import { classAt, isMissing, isContractRevert, confirm, send } from "./chain";
 import { seconds } from "./dates";
@@ -158,12 +158,6 @@ const call = (contractAddress: string, entrypoint: string, values: Parameters<ty
   entrypoint,
   calldata: CallData.compile(values),
 });
-/** The chest rewards an environment registers; an unknown name refuses rather than falling back. */
-function chestPresetOf(target: Target) {
-  const build = chestPresets[target.chests as keyof typeof chestPresets];
-  if (!build) throw new PublicError(`Unknown chest preset ${target.chests}`);
-  return build();
-}
 export function setupCalls(
   target: Target,
   assets: Assets,
@@ -172,7 +166,7 @@ export function setupCalls(
   end: number,
   seasonId: number,
 ) {
-  const chests = chestPresetOf(target);
+  const chests = chestPresetFor(target.environment as Environment);
   const metadata = (collection: string, attributes: number) =>
     call(collection, "set_attrs_raw_to_ipfs_cid", [attributes, byteArray.byteArrayFromString(target.picture), false]);
   return [
