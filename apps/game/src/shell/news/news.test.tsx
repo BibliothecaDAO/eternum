@@ -124,7 +124,7 @@ describe.each([390, 1440])("What's new at %i px", (width) => {
     };
     expect(tabs().map((tab) => tab.getAttribute("aria-selected"))[0]).toBe("true");
     expect(await readAll()).toEqual(asRead(patchNotes[0]));
-    const releases = [...panel(page, "Releases").querySelectorAll<HTMLButtonElement>(".app-row button")];
+    const releases = [...panel(page, "Releases").querySelectorAll<HTMLButtonElement>("button.app-row")];
     expect(releases.map((release) => release.querySelector(".app-row__title")?.textContent)).toEqual(
       patchNotes.map((note) => note.title),
     );

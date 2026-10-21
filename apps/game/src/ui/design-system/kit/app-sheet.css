@@ -562,7 +562,12 @@
 .app-row + .app-row {
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--app-line) 70%, transparent);
 }
-.app-row:has(> :is(button, a).app-row__words):is(:hover, [data-state="hover"]) {
+/* A row that opens is one button or link, edge to edge. */
+:is(button, a).app-row {
+  width: 100%;
+  text-align: left;
+}
+:is(button, a).app-row:is(:hover, [data-state="hover"]) {
   background: var(--app-hover);
 }
 .app-row[data-own] {

@@ -393,8 +393,9 @@ export const AppGameCard = ({
 
 /**
  * One thing of a list: what leads it (a rank, a portrait, an icon), what it is and what it says, then what follows
- * (figures, its own button). The player's own row is lit. With `onClick` the row's words are the button that opens it;
- * with `href`, the link to another site, in a new tab.
+ * (figures, its own button). The player's own row is lit. With `onClick` the whole row is the button that opens it;
+ * with `href`, the link to another site, in a new tab. A row that opens is one target, its value and arrow included,
+ * so what follows it holds no button of its own.
  */
 export const AppRow = ({
   lead,
@@ -413,27 +414,32 @@ export const AppRow = ({
   onClick?: () => void;
   href?: string;
 }) => {
-  const words = (
+  const parts = (
     <>
-      <span className="app-row__title">{title}</span>
-      {detail !== undefined && <span className="app-row__detail">{detail}</span>}
+      {lead !== undefined && <span className="app-row__lead">{lead}</span>}
+      <span className="app-row__words">
+        <span className="app-row__title">{title}</span>
+        {detail !== undefined && <span className="app-row__detail">{detail}</span>}
+      </span>
+      {trail !== undefined && <span className="app-row__trail">{trail}</span>}
     </>
   );
+  const lit = own || undefined;
+  if (href)
+    return (
+      <a className="app-row" data-own={lit} href={href} target="_blank" rel="noopener noreferrer">
+        {parts}
+      </a>
+    );
+  if (onClick)
+    return (
+      <button type="button" className="app-row" data-own={lit} onClick={onClick}>
+        {parts}
+      </button>
+    );
   return (
-    <div className="app-row" data-own={own || undefined}>
-      {lead !== undefined && <span className="app-row__lead">{lead}</span>}
-      {href ? (
-        <a className="app-row__words" href={href} target="_blank" rel="noopener noreferrer">
-          {words}
-        </a>
-      ) : onClick ? (
-        <button type="button" className="app-row__words" onClick={onClick}>
-          {words}
-        </button>
-      ) : (
-        <span className="app-row__words">{words}</span>
-      )}
-      {trail !== undefined && <span className="app-row__trail">{trail}</span>}
+    <div className="app-row" data-own={lit}>
+      {parts}
     </div>
   );
 };

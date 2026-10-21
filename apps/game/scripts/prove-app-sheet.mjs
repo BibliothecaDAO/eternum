@@ -522,7 +522,7 @@ const QA1_CASES = [
       );
       record.releases = oldest;
       b.evaluate(`(() => {
-        const rows = [...[...document.querySelectorAll(".app-panel")].find((panel) => panel.querySelector("h2")?.textContent === "Releases").querySelectorAll(".app-row button")];
+        const rows = [...[...document.querySelectorAll(".app-panel")].find((panel) => panel.querySelector("h2")?.textContent === "Releases").querySelectorAll("button.app-row")];
         rows.at(-1).setAttribute("data-proof-press", "oldest-release");
       })()`);
       const refused = clickAsPlayer(b, '[data-proof-press="oldest-release"]');

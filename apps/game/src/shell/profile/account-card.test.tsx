@@ -82,7 +82,7 @@ it("shows the linked payout wallet by its address, changed only with a code, and
   try {
     // The wallet receives at once: its row is its address, never a time to wait for.
     expect(payoutRow(account.container).textContent).toContain("0x04a1…9f3c");
-    await act(async () => payoutRow(account.container).querySelector("button")!.click());
+    await act(async () => payoutRow(account.container).click());
     const words = [...document.querySelectorAll("button")].map((button) => button.textContent);
     expect(words).toContain("Replace");
     expect(words).toContain("Unlink");
@@ -93,6 +93,13 @@ it("shows the linked payout wallet by its address, changed only with a code, and
   const unlinked = await mount(session);
   try {
     expect(payoutRow(unlinked.container).textContent).toContain("Link wallet");
+    // The whole row is the target: "Link wallet" itself opens the wallet's step.
+    const linkWallet = payoutRow(unlinked.container).querySelector<HTMLElement>(".app-setting__value")!;
+    expect(linkWallet.textContent).toBe("Link wallet");
+    await act(async () => linkWallet.click());
+    expect(document.querySelector('[role="region"][aria-label="Payout wallet"]')?.textContent).toContain(
+      "I have a wallet",
+    );
   } finally {
     await unlinked.unmount();
   }
@@ -113,7 +120,7 @@ it("offers Claim name only once the name differs from the one held (qa-app-1 P3-
   );
   try {
     const nameRow = [...container.querySelectorAll(".app-row")].find((row) => row.textContent === "NameMaelis")!;
-    await act(async () => nameRow.querySelector("button")!.click());
+    await act(async () => (nameRow as HTMLElement).click());
     const claim = () =>
       [...document.querySelectorAll<HTMLButtonElement>("button")].find(
         (button) => button.textContent === "Claim name",
