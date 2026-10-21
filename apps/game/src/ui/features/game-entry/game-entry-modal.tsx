@@ -600,7 +600,7 @@ export const GameEntryModal = ({
       }
       onSignIn={() => requestSignIn()}
       onSpectate={handleSpectate}
-      results={resultsHref({ chainId: game.chainId, game_id: game.gameId })}
+      results={resultsHref(game)}
     >
       {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
       {phase === "settlement" && isBlitzMode && worldMeta && (

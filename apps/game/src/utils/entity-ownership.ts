@@ -1,7 +1,7 @@
 import { ContractAddress } from "@bibliothecadao/types";
 import { configManager, isViewerOwner, nativeGameModeOf } from "@bibliothecadao/eternum";
 import type { GameRef, NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { gameKey, getActiveGameKey } from "@/runtime/world/store";
+import { gameKey, getActiveGame } from "@/runtime/world/store";
 import { seatSide, type SeatSide } from "@/tokens";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isWatching } from "./can-issue-orders";
@@ -101,7 +101,8 @@ export const onSidesChanged = (listener: () => void): (() => void) => {
 export const seatOrder = (store: NativeFactStore): bigint[] => {
   const roster = store.get("BlitzRoster", { game_id: configManager.getActiveGameId() });
   if (roster) return roster.players.map((player) => ContractAddress(player.account));
-  return openGameSeats !== null && openGameSeats.game === getActiveGameKey() ? openGameSeats.order : [];
+  const game = getActiveGame();
+  return game && openGameSeats?.game === gameKey(game) ? openGameSeats.order : [];
 };
 
 /**

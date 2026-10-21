@@ -1,13 +1,11 @@
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 
-import type { DirectoryGame } from "../herald";
-
 /**
- * A finished game's Results page: /results/<chain>-<game>. A list opens it with `openedFrom`, and the page then offers
- * Back to the list and no Continue (spec 08).
+ * A finished game's Results page, named by the game's own identity: /results/<chain>-<game>. Every way to a game's
+ * results (the finished pill, its doorway, Play's card, a history row, Share) goes through here. A list opens it with
+ * `openedFrom`, and the page then offers Back to the list and no Continue (spec 08).
  */
-export const resultsHref = (game: Pick<DirectoryGame, "chainId" | "game_id">) =>
-  `/results/${game.chainId}-${game.game_id}`;
+export const resultsHref = (game: GameRef) => `/results/${game.chainId}-${game.gameId}`;
 
 /** The game a Results address names, or null for one that names none. */
 export const gameOfResults = (id: string | undefined): GameRef | null => {

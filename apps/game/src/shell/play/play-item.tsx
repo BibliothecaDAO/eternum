@@ -19,7 +19,7 @@ import {
 import { lobbyId, lobbyTitle } from "../blitz/lobby";
 import { SeatsChip } from "../blitz/seats-chip";
 import { entryHref } from "../game-links";
-import type { DirectoryGame } from "../herald";
+import { type DirectoryGame, gameRefOf } from "../herald";
 import { gameTitle } from "../season-tab/history-row";
 import { resultsHref } from "../season-tab/results-link";
 import { directoryDay } from "../season";
@@ -64,7 +64,7 @@ const verbOf = (item: PlayItem, signedIn: boolean): ItemVerb | null => {
     case "lobby":
       return { word: BLITZ_WORDS.lobby, icon: "people", to: lobbyHref(item) };
     case "results":
-      return game ? { word: WORDS.results, icon: "leaderboard", to: resultsHref(game) } : null;
+      return game ? { word: WORDS.results, icon: "leaderboard", to: resultsHref(gameRefOf(game)) } : null;
     case null:
       return null;
   }

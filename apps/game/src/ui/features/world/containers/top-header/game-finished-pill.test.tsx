@@ -4,10 +4,20 @@ import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useParams } from "react-router-dom";
 import { expect, it, vi } from "vitest";
 
-vi.mock("@/runtime/world/store", () => ({ requireActiveGame: () => ({ chainId: "0xa", gameId: 5 }) }));
 vi.mock("@/audio/hooks/useAudio", () => ({ useAudio: () => ({ play: () => Promise.resolve() }) }));
 
+import { setActiveGame } from "@/runtime/world/store";
 import { GameFinishedPill } from "./game-finished-pill";
+
+const BLITZ = { chainId: "0xa", gameId: 5, presetId: 2, name: "blitz-20261021-1200-1" };
+const FRONTIER = { chainId: "0xa", gameId: 1, presetId: 1, name: "frontier" };
+
+/** Another tab of the app on this device: its own copy of the client's modules, sharing this page's storage. */
+const enterInAnotherTab = async (game: typeof FRONTIER) => {
+  vi.resetModules();
+  const otherTab = await import("@/runtime/world/store");
+  otherTab.setActiveGame(game);
+};
 
 const ResultsProbe = () => <p data-testid="results">{useParams().id}</p>;
 
@@ -17,8 +27,12 @@ const press = async (label: string) => {
   await act(async () => button.click());
 };
 
-it("leads from a finished game to that game's Results page", async () => {
+// Owner, 2026-10-21, after a ranked Blitz with the Frontier season open too: "when the blitz game ends, I wanna click
+// go to the results, it sends me to the results not the blitz game results".
+it("leads from a finished game to that game's Results page, whatever game another tab entered", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  setActiveGame(BLITZ);
+  await enterInAnotherTab(FRONTIER);
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);

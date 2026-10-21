@@ -11,13 +11,14 @@ import type { PlaytestSlot } from "../blitz-slot";
 
 import { type BlitzRow, seatedGameOf, slotKeyOf } from "../blitz-rows";
 import { useLayout } from "../frame/layout";
-import { type DirectoryGame, useRealmsPlayer } from "../herald";
+import { type DirectoryGame, gameRefOf, useRealmsPlayer } from "../herald";
 import { PageFrame } from "../frame/page-frame";
 import { entryHref } from "../game-links";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
 import { ageOf } from "../play/ages";
 import { usePlayFacts } from "../play/play-facts";
+import { resultsHref } from "../season-tab/results-link";
 import { FailureLine } from "../sign-in/failure-line";
 import { type EnvironmentLedger, environmentLedger } from "../value/ledger";
 import { chatMembershipOf, useEntryTerms } from "./entry";
@@ -64,7 +65,7 @@ export const BlitzLobbyPage = () => {
         signedIn={session !== null}
         wallet={wallet}
         owed={facts.refunds.get(row.slot.name)}
-        games={facts.games}
+        games={[...facts.games, ...facts.finished]}
       />
     );
   return (
@@ -126,10 +127,10 @@ const COUNTDOWN_WORDS = { closes: BLITZ_WORDS.closesIn, starts: BLITZ_WORDS.star
 
 /** What stands of the lobby, as its chips: Live, Entry closed, Joined while the game is prepared, a game's seats, and its one clock. */
 const LobbyChips = ({ row, step, now }: { row: BlitzRow; step: LobbyStep; now: number }) => {
-  const moment = nextMoment(row, now);
+  const moment = step.kind === "results" ? null : nextMoment(row, now);
   return (
     <span className="flex flex-wrap items-center gap-2">
-      {row.startsAt === null && (
+      {row.startsAt === null && step.kind !== "results" && (
         <AppChip tone="good" live>
           {WORDS.live}
         </AppChip>
@@ -158,6 +159,18 @@ const GameAction = ({ game, step }: { game: DirectoryGame; step: LobbyStep }) =>
     return (
       <AppButton kind="primary" size="lg" icon="play" step onClick={() => navigate(entryHref(game, "play"))}>
         {WORDS.enter}
+      </AppButton>
+    );
+  if (step.kind === "results")
+    return (
+      <AppButton
+        kind="primary"
+        size="lg"
+        icon="leaderboard"
+        step
+        onClick={() => navigate(resultsHref(gameRefOf(game)))}
+      >
+        {WORDS.results}
       </AppButton>
     );
   return (

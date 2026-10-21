@@ -13,7 +13,7 @@ import { AppPanel, AppPortrait } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 
 import { useLayout } from "../frame/layout";
-import { useDirectory, useLeaderboard, useRecentResults } from "../herald";
+import { gameRefOf, useDirectory, useLeaderboard, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { OwnRatingLine } from "../rating-line";
 import { ageOf } from "../play/ages";
@@ -38,7 +38,7 @@ const HISTORY = 8;
 /** The live Frontier season's board row for a player: their Order and their rank, the page's one figure. */
 const useSeasonStanding = (account: string) => {
   const season = chooseSeason(useDirectory().data?.games ?? [], true);
-  const board = useLeaderboard(season ? { chainId: season.chainId, gameId: season.game_id } : null);
+  const board = useLeaderboard(season ? gameRefOf(season) : null);
   const entries = board.data?.mode === "frontier" ? board.data.entries : undefined;
   return { own: entries && findOwnEntry(entries, account), field: entries?.length };
 };

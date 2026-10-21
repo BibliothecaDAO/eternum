@@ -25,7 +25,7 @@ export const APP_SPEC: readonly SpecPage[] = [
     page: "Blitz lobby",
     route: "/blitz/:id",
     job: "One Blitz before it starts: its clock, who is in, the paid entry, the chat.",
-    primary: "Pay and join; then Enter when the game opens.",
+    primary: "Pay and join; then Enter when the game opens; its Results once it is over.",
     verdict: "keep",
   },
   {
@@ -38,7 +38,7 @@ export const APP_SPEC: readonly SpecPage[] = [
   {
     page: "Results",
     route: "/results/:id",
-    job: "How a finished game ended for the player: the outcome, the board, the rating and the chest.",
+    job: "How a finished game ended for the player: the outcome, the board, the rating and the chest. Reached from the finished game's own pill, its lobby, Play's card and a history row.",
     primary: "Continue; Open while a chest is sealed.",
     verdict: "keep",
   },

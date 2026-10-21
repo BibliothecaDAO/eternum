@@ -1,57 +1,23 @@
 import type { GameRef } from "@bibliothecadao/eternum/game-client";
 import type { GameProfile } from "./types";
 
-const ACTIVE_KEY = "ACTIVE_GAME";
-const PROFILES_KEY = "GAME_PROFILES";
-
-type GameProfiles = Record<string, GameProfile>;
-
 /** One spelling of a game's name for keys and caches: its shard's chain id and its id there. */
 export const gameKey = (game: GameRef): string => `${game.chainId}:${game.gameId}`;
 
-const readStorageValue = (key: string): string | null => {
-  if (typeof window === "undefined") return null;
-  try {
-    return window.localStorage.getItem(key);
-  } catch {
-    return null;
-  }
+/**
+ * The game this page plays, held by the page alone: every tab plays its own game, so a Frontier opened in another tab
+ * never changes which game this one's Results, chat or seats belong to. A reload enters the game again from its address.
+ */
+let activeGame: GameProfile | null = null;
+
+export const setActiveGame = (game: GameProfile) => {
+  activeGame = game;
 };
 
-const writeStorageValue = (key: string, value: string) => {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(key, value);
-  } catch {
-    // A profile that is not persisted is rebuilt from the shard directory on the next entry.
-  }
-};
-
-const readGameProfiles = (): GameProfiles => {
-  try {
-    return JSON.parse(readStorageValue(PROFILES_KEY) ?? "{}") as GameProfiles;
-  } catch {
-    return {};
-  }
-};
-
-export const saveGameProfile = (profile: GameProfile) => {
-  writeStorageValue(PROFILES_KEY, JSON.stringify({ ...readGameProfiles(), [gameKey(profile)]: profile }));
-};
-
-export const setActiveGame = (game: GameRef) => writeStorageValue(ACTIVE_KEY, gameKey(game));
-
-/** The active game's key (`gameKey`), as `setActiveGame` wrote it: its shard's chain id and its id there. */
-export const getActiveGameKey = (): string | null => readStorageValue(ACTIVE_KEY);
-
-export const getActiveGame = (): GameProfile | null => {
-  const key = readStorageValue(ACTIVE_KEY);
-  return key ? (readGameProfiles()[key] ?? null) : null;
-};
+export const getActiveGame = (): GameProfile | null => activeGame;
 
 /** The game this client plays, asked for from inside it: there, none is a fault. */
 export const requireActiveGame = (): GameProfile => {
-  const game = getActiveGame();
-  if (!game) throw new Error("No active game");
-  return game;
+  if (!activeGame) throw new Error("No active game");
+  return activeGame;
 };

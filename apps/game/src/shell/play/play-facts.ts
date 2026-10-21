@@ -71,7 +71,7 @@ export const usePlayFacts = () => {
   );
   // The next Blitz game while none is open for entry: known once the calendar answered, null when the season has none.
   const nextBlitz = calendar.data;
-  return { directory, slots, now, games, blitz, refunds, signedIn, board, gaps, nextBlitz };
+  return { directory, slots, now, games, finished, blitz, refunds, signedIn, board, gaps, nextBlitz };
 };
 
 export type PlayFacts = ReturnType<typeof usePlayFacts>;

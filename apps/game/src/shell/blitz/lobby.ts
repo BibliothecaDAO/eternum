@@ -1,5 +1,7 @@
 import { formatClockTime } from "@bibliothecadao/types";
 
+import { isGameOver } from "@/runtime/world/directory";
+
 import type { PlaytestSlot } from "../blitz-slot";
 
 import { type BlitzRow, slotRow } from "../blitz-rows";
@@ -35,7 +37,12 @@ export type Seat = {
 };
 
 /** What a lobby offers: the one action, or the fact that stands where it would. */
-export type LobbyStep = { kind: "open" } | { kind: "preparing" } | { kind: "enter" } | { kind: "watch" };
+export type LobbyStep =
+  | { kind: "open" }
+  | { kind: "preparing" }
+  | { kind: "enter" }
+  | { kind: "watch" }
+  | { kind: "results" };
 
 /**
  * A launched game's seats: Herald's fixed roster, each ticked once its player's realm is ready. A Herald that does not
@@ -56,10 +63,12 @@ const UNNAMED_SEAT: Seat = { account: null, wallet: null, own: false, prepared: 
 
 /**
  * The lobby's one step (spec 06): Open a slot's lobby, where its entry is paid; Preparing while the roster's realms are
- * set up, Enter once the player's is open; Watch a game they are not on (its roster was fixed when its slot closed).
+ * set up, Enter once the player's is open; Watch a game they are not on (its roster was fixed when its slot closed);
+ * once the game is over, its Results.
  */
 export const lobbyStep = (row: BlitzRow): LobbyStep => {
   if (row.kind === "slot" || row.action === "open") return { kind: "open" };
+  if (isGameOver(row.game)) return { kind: "results" };
   if (row.action === "enter") return { kind: "enter" };
   if (row.action === "registered") return { kind: "preparing" };
   return { kind: "watch" };

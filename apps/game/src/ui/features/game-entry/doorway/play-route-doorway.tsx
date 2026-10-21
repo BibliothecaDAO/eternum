@@ -64,7 +64,7 @@ export const PlayRouteDoorway = ({
       onRetry={phase === "error" ? retry : () => window.location.reload()}
       onOpenRealm={openRealmWithoutMap}
       onSignIn={() => requestSignIn()}
-      results={route ? resultsHref({ chainId: route.chainId, game_id: route.gameId }) : undefined}
+      results={route ? resultsHref(route) : undefined}
     >
       <BootDebugPanel currentTaskLabel={currentTaskLabel} />
     </DoorwayScreen>
