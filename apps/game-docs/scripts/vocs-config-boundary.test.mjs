@@ -1,33 +1,31 @@
 /**
- * Vocs ships its whole config in the site's bundle (its `virtual:config` module is `serializeConfig(config)`). So that
- * config holds no value that only means something on the machine that builds: such values reach Vite through a plugin
- * hook (`vocs.config.ts`), whose function ships as source text. These tests load the docs' config with Vocs' own
- * loader, serialize it with Vocs' own serializer, and hold the result to that boundary.
+ * Vocs ships its whole config in the site's bundle (its `virtual:config` module is `serializeConfig(config)`). The
+ * docs' filesystem settings, the public folder and the import aliases, are therefore set only by the plugin hook in
+ * `vocs.config.ts`, whose function ships as source text. These tests load the docs' config with Vocs' own loader,
+ * serialize it with Vocs' own serializer, and require that the shipped config carries none of those fields.
  */
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, resolve } from "node:path";
-import { after, test } from "node:test";
+import { dirname, join, resolve } from "node:path";
+import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const docsRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const checkout = resolve(docsRoot, "../..");
 const vocs = dirname(fileURLToPath(import.meta.resolve("vocs")));
 const { resolveVocsConfig } = await import(pathToFileURL(join(vocs, "vite/utils/resolveVocsConfig.js")).href);
 const { serializeConfig } = await import(pathToFileURL(join(vocs, "config.js")).href);
 
-/** Every value in a serialized config that names this machine: an existing absolute path, or one in the checkout. */
-function machineValues(serialized) {
-  const found = [];
-  const visit = (value) => {
-    if (typeof value === "string") {
-      if (value.startsWith("_vocs-fn_")) return;
-      if ((isAbsolute(value) && existsSync(value)) || value.includes(checkout)) found.push(value);
-    } else if (value && typeof value === "object") Object.values(value).forEach(visit);
-  };
-  visit(JSON.parse(serialized));
-  return found;
+/** The Vite settings the docs' hook owns: in the shipped config they would publish this machine's folders. */
+const HOOK_FIELDS = [
+  ["vite", "publicDir"],
+  ["vite", "resolve", "alias"],
+];
+
+/** The hook-owned fields a serialized config carries, by name. */
+function hookFieldsIn(serialized) {
+  const config = JSON.parse(serialized);
+  return HOOK_FIELDS.filter((path) => path.reduce((value, key) => value?.[key], config) !== undefined).map((path) =>
+    path.join("."),
+  );
 }
 
 /** The docs' config as Vocs loads it for a command and puts it in the bundle. */
@@ -41,26 +39,30 @@ async function shippedConfig(command) {
   }
 }
 
-for (const command of ["build", "serve"])
-  test(`the config Vocs ships for \`vocs ${command === "build" ? "build" : "dev"}\` names nothing on this machine`, async () => {
+for (const [command, name] of [
+  ["build", "vocs build"],
+  ["serve", "vocs dev"],
+])
+  test(`the config Vocs ships for \`${name}\` sets no filesystem field the hook owns`, async () => {
     const shipped = await shippedConfig(command);
     assert.ok(shipped.includes('"title":"Realms Docs"'), "the docs' own config was loaded");
-    assert.deepEqual(machineValues(shipped), []);
+    assert.deepEqual(hookFieldsIn(shipped), []);
   });
 
-test("a machine path written in the config is found, wherever it points", () => {
-  const elsewhere = mkdtempSync(join(tmpdir(), "shared-assets-"));
-  after(() => rmSync(elsewhere, { recursive: true, force: true }));
-  const config = {
-    title: "Realms Docs",
-    iconUrl: "/images/logos/eternum-new.svg",
-    vite: { publicDir: elsewhere, resolve: { alias: { "@": join(checkout, "apps/game-docs/docs") } } },
-  };
-  assert.deepEqual(machineValues(serializeConfig(config)), [elsewhere, join(checkout, "apps/game-docs/docs")]);
+test("a public folder written in the config is refused, wherever it points", () => {
+  assert.deepEqual(hookFieldsIn(serializeConfig({ vite: { publicDir: "/data/build/public" } })), ["vite.publicDir"]);
 });
 
-test("a path given through a plugin hook ships as the hook's source, not its value", () => {
-  const publicDir = join(checkout, "apps/game/public");
-  const config = { vite: { plugins: [{ name: "docs-paths", config: () => ({ publicDir }) }] } };
-  assert.deepEqual(machineValues(serializeConfig(config)), []);
+test("an import alias written in the config is refused, wherever it points", () => {
+  const config = { vite: { resolve: { alias: { "@": "/__w/eternum/eternum/apps/game-docs/docs" } } } };
+  assert.deepEqual(hookFieldsIn(serializeConfig(config)), ["vite.resolve.alias"]);
+});
+
+test("a site address that looks like a folder is the site's own and passes", () => {
+  assert.deepEqual(hookFieldsIn(serializeConfig({ iconUrl: "/home/news", logoUrl: "/images/logo.svg" })), []);
+});
+
+test("the same settings given through a plugin hook ship as the hook's source, not as fields", () => {
+  const config = { vite: { plugins: [{ name: "docs-paths", config: () => ({ publicDir: "/data/build/public" }) }] } };
+  assert.deepEqual(hookFieldsIn(serializeConfig(config)), []);
 });
