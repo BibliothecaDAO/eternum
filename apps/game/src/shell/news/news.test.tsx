@@ -92,10 +92,10 @@ describe.each([390, 1440])("What's new at %i px", (width) => {
   it("leads to Realms' marketplace in a new tab from the bar, and only from the bar", async () => {
     const page = await open(width);
     const market = [...page.querySelectorAll<HTMLAnchorElement>("a")].filter((link) =>
-      link.href.startsWith("https://market.realms.world"),
+      link.href.startsWith("https://realms.market"),
     );
     expect(market.map((link) => [link.dataset.role, link.textContent, link.href, link.target, link.rel])).toEqual([
-      ["tab", "Market", "https://market.realms.world/", "_blank", "noopener noreferrer"],
+      ["tab", "Market", "https://realms.market/", "_blank", "noopener noreferrer"],
     ]);
   });
 

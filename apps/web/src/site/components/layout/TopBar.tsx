@@ -214,7 +214,7 @@ export function TopBar() {
                   Account
                 </a>
                 <a
-                  href="https://market.realms.world/"
+                  href="https://realms.market/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
@@ -259,7 +259,7 @@ export function TopBar() {
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <a
-                        href="https://market.realms.world/"
+                        href="https://realms.market/"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full"
