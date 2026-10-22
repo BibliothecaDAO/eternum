@@ -37,6 +37,7 @@ import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
+import { ownerDayLog } from "./today-log-fixture";
 import { SeasonList, type SeasonListRow } from "@/ui/features/frontier/board/season-list";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
@@ -323,11 +324,9 @@ const STORE_LINES: StoreLine[] = [
   line({ icon: "troops", spentAt: "deploy", perHour: 600, sides: ["drill"], held: 1_200, fullIn: 28 * HOUR }),
 ];
 
-const TODAY_LOG = [
-  { id: "a", at: NOW - 24 * 60, text: "Army 1 cleared a camp" },
-  { id: "b", at: NOW - 46 * 60, text: "Army 2 cleared beasts" },
-  { id: "c", at: NOW - 55 * 60, text: "Army 1 cleared a rift" },
-];
+/** Today's lines, each written by the day log itself from the owner's 22 October stories (today-log-fixture.ts). */
+let todayLog: ReturnType<typeof ownerDayLog> | undefined;
+const readTodayLog = () => (todayLog ??= ownerDayLog(NOW - 24 * 60));
 
 const SEASON_NAMES = [
   "Ysabeau",
@@ -1352,7 +1351,7 @@ const LabResults = ({
       today={results !== "today-earlier"}
       totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}
       armiesToUpgrade={2}
-      lines={TODAY_LOG}
+      lines={readTodayLog()}
       failed={results === "today-failed"}
       onRetry={noop}
       onEarlier={noop}
