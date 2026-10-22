@@ -46,6 +46,8 @@ vi.mock("./shard-client", () => ({
       mock.shard(target);
     }
     currentRelease = async () => 2;
+    registeredRelease = async () => ({ logic: { season: "0x55e0", troops: "0x77a2" }, migration: "0x0" });
+    gameId = async (name: string) => (name === "frontier-1" ? 1 : 0);
     gameRelease = async (gameId: number) => mock.pins.get(gameId)!;
     isSettled = async () => false;
     applyRelease = async (gameId: number, releaseId: number) => {
@@ -57,7 +59,7 @@ vi.mock("./shard-client", () => ({
 vi.mock("./store", () => ({
   D1LaunchStore: class {
     nextDue = mock.nextDue;
-    launchedGameIds = mock.launched;
+    gameNames = mock.launched;
   },
   databaseLayer: () => Layer.empty,
 }));
@@ -79,7 +81,7 @@ beforeEach(() => {
   mock.nextFreeze.mockResolvedValue(null);
 });
 afterEach(() => vi.restoreAllMocks());
-const setup = () => {
+const setup = (shards = [{ chainId: "0x1", url: "https://shard.test", status: "active" }]) => {
   const setAlarm = vi.fn(async (_at: number) => {});
   const values = new Map<string, unknown>();
   const context = {
@@ -94,7 +96,7 @@ const setup = () => {
   };
   const registrar = new Registrar(context as unknown as DurableObjectState, {
     DB: {},
-    IDENTITY: { shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }] },
+    IDENTITY: { shards: async () => shards },
   });
   return { registrar, setAlarm };
 };
@@ -178,21 +180,26 @@ it("wakes again at once for a slot that closed while the alarm ran", async () =>
   expect(f.setAlarm).toHaveBeenLastCalledWith(1000);
 });
 
+const RELEASE = {
+  releaseId: 2,
+  schema: "0xs",
+  logic: { season: "0x55e0", troops: "0x77a2" },
+  migration: "0x0",
+};
 const RELEASE_MANIFEST = {
   chainId: "0x1",
   rpcUrl: "https://rpc.shard.test",
   contracts: { games: "0x9" },
-  releaseSchemas: { "1": "0xs", "2": "0xs" },
+  releaseSchemas: { "1": RELEASE.schema, "2": RELEASE.schema },
 };
 
 it("advances each running Frontier game as the joined launcher and reports it", async () => {
   const f = setup();
   mock.account.mockResolvedValue("0x2");
   mock.manifest.mockResolvedValue(RELEASE_MANIFEST);
-  mock.launched.mockResolvedValue([1]);
+  mock.launched.mockResolvedValue(["frontier-1"]);
   mock.pins.set(1, 1);
-  expect(await f.registrar.applyRelease(2)).toEqual({
-    releaseId: 2,
+  expect(await f.registrar.applyRelease(RELEASE)).toEqual({
     shards: [{ chainId: "0x1", releaseId: 2, games: [{ gameId: 1, from: 1, to: 2, transactions: ["0x12"] }] }],
   });
   expect(mock.launched).toHaveBeenCalledWith("madara.frontier");
@@ -212,11 +219,11 @@ it("waits for a running launch before the launcher applies a release", async () 
   );
   mock.account.mockResolvedValue("0x2");
   mock.manifest.mockResolvedValue(RELEASE_MANIFEST);
-  mock.launched.mockResolvedValue([1]);
+  mock.launched.mockResolvedValue(["frontier-1"]);
   mock.pins.set(1, 1);
   const launching = f.registrar.alarm();
   await vi.waitFor(() => expect(mock.account).toHaveBeenCalledOnce());
-  const releasing = f.registrar.applyRelease(2);
+  const releasing = f.registrar.applyRelease(RELEASE);
   await new Promise((resolve) => setTimeout(resolve, 10));
   expect(mock.shard).not.toHaveBeenCalled();
   finish("0x2");
@@ -229,8 +236,21 @@ it("refuses by name and sends nothing when the box half has not registered the r
   const f = setup();
   mock.account.mockResolvedValue("0x2");
   mock.manifest.mockResolvedValue(RELEASE_MANIFEST);
-  mock.launched.mockResolvedValue([1]);
+  mock.launched.mockResolvedValue(["frontier-1"]);
   mock.pins.set(1, 1);
-  await expect(f.registrar.applyRelease(3)).rejects.toThrow("release_not_registered");
+  await expect(f.registrar.applyRelease({ ...RELEASE, releaseId: 3 })).rejects.toThrow("release_not_registered");
   expect(mock.pins.get(1)).toBe(1);
+});
+
+it("refuses a release step without the commit's release while a shard is active, before joining the launcher", async () => {
+  const f = setup();
+  await expect(f.registrar.applyRelease(null)).rejects.toThrow("release_unverified");
+  expect(mock.account).not.toHaveBeenCalled();
+  expect(mock.shard).not.toHaveBeenCalled();
+});
+
+it("answers no shard to a first deployment's release step, before any shard is active", async () => {
+  const f = setup([]);
+  expect(await f.registrar.applyRelease(null)).toEqual({ shards: [] });
+  expect(mock.account).not.toHaveBeenCalled();
 });

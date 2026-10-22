@@ -6,6 +6,7 @@ import { command } from "./process";
 import { Platform, databaseWorkers, workers, type Secrets, type Worker } from "./platform";
 import { clientSite, type PagesSite } from "./settings";
 import { NATIVE_RELEASE_ID } from "../release/native-release";
+import { readReleaseIdentity } from "./release-identity";
 import type { ApplyReleaseRequest, ReleaseReport } from "../../apps/launch-service/src/operator-api";
 
 async function workerReady(platform: Platform, worker: Worker, revision: string) {
@@ -48,30 +49,33 @@ export async function deployWorkers(platform: Platform, revision: string) {
  */
 export async function publishCloudflare(platform: Platform, revision: string) {
   await deployWorkers(platform, revision);
-  await advanceFrontierRelease(platform);
+  await advanceFrontierRelease(platform, revision);
   await deployClient(platform, revision);
   await deployDocs(platform, revision);
 }
 
 /** What the release route's refusals mean for the person running the deploy. */
 const RELEASE_REFUSALS: Record<string, string> = {
-  release_not_registered: `the shard has not registered release ${NATIVE_RELEASE_ID} yet; run the box half (pnpm run deploy) first`,
-  release_unpublished: `Herald does not publish release ${NATIVE_RELEASE_ID} yet; rerun the box half`,
-  release_older_than_shard: `the shard runs a release newer than ${NATIVE_RELEASE_ID}; deploy a newer commit`,
-  release_downgrade: `a running game is pinned past release ${NATIVE_RELEASE_ID}; deploy a newer commit`,
+  release_unverified: "the box half has never built this release; run it (pnpm run deploy) first",
+  release_not_registered: "the shard has not registered it yet; run the box half (pnpm run deploy) first",
+  release_contents_differ:
+    "the shard registered other contents under this release number; run the box half at this commit, or bump the release",
+  release_unpublished: "Herald does not publish it with this commit's schema; rerun the box half",
+  release_older_than_shard: "the shard runs a newer release; deploy a newer commit",
+  release_downgrade: "a running game is pinned past it; deploy a newer commit",
 };
 
 /**
- * The running Frontier games take the release this commit ships before its client goes live: the launch Worker applies
- * it as the launcher. It refuses until the box half has registered the release and Herald publishes it; a rerun sends
- * nothing.
+ * The running Frontier games take the release this commit ships, as the box half built it, before its client goes
+ * live: the launch Worker applies it as the launcher. It refuses until the shard has registered exactly that release
+ * and Herald publishes it with the commit's schema; a rerun sends nothing.
  */
-export async function advanceFrontierRelease(platform: Platform) {
+export async function advanceFrontierRelease(platform: Platform, revision: string) {
   if (!platform.apply) throw new PublicError("Dry run cannot advance a release");
   deploymentStage("advance Frontier release");
   const secrets = platform.store.read<Secrets>("secrets.json");
   if (!secrets) throw new PublicError("Service credentials are missing; run setup with --apply before publishing");
-  const request: ApplyReleaseRequest = { releaseId: NATIVE_RELEASE_ID };
+  const request: ApplyReleaseRequest = { release: readReleaseIdentity(platform.store, revision) };
   const response = await fetch(`${platform.target.origin}/api/factory/release`, {
     method: "POST",
     redirect: "error",

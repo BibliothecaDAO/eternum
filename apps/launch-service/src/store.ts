@@ -169,11 +169,12 @@ export class D1LaunchStore implements LaunchServiceStore {
     return (await statement.all<LaunchRunRow>()).results.map(toRun);
   }
 
-  /** The games this service created in one environment on this chain: every complete game run's id. */
-  async launchedGameIds(environment: GameEnvironmentId): Promise<number[]> {
-    return (await this.list(environment, "game")).flatMap(({ status, summary }) =>
-      status === "complete" && summary?.gameId !== undefined ? [summary.gameId] : [],
-    );
+  /**
+   * The name of every game this service launched or is launching in one environment on this chain, whatever its run's
+   * state: a run names its game before creating it, and one interrupted after creating it may not have recorded it.
+   */
+  async gameNames(environment: GameEnvironmentId): Promise<string[]> {
+    return (await this.list(environment, "game")).map(({ name }) => name);
   }
 
   async rosterCohorts(): Promise<import("@realms-world/value-ledger").SlotCohort[]> {

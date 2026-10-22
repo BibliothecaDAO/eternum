@@ -15,7 +15,7 @@ import { joinBotAccount } from "./launcher-account";
 import { slotResolver } from "./paid-blitz";
 import { D1SlotStore, FREEZE_RETRY_MS } from "./slot-store";
 import { launchFailure } from "./errors";
-import { advanceGames, type ReleaseReport, type ShardRelease } from "./release";
+import { advanceGames, type ReleaseIdentity, type ReleaseReport, type ShardRelease } from "./release";
 import { LaunchShard } from "./shard-client";
 import { D1LaunchStore, databaseLayer } from "./store";
 
@@ -78,14 +78,15 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
   }
 
   /**
-   * Advances every active shard's running Frontier games to `releaseId`, as the launcher, between launches: the
-   * deployment's release step, after the box half registered the release and Herald published it.
+   * Advances every active shard's running Frontier games to the deployed commit's release, as the launcher, between
+   * launches: the deployment's release step, after the box half registered the release and Herald published it.
    */
-  applyRelease(releaseId: number): Promise<ReleaseReport> {
+  applyRelease(release: ReleaseIdentity | null): Promise<ReleaseReport> {
     return this.signingAlone(async () => {
       const env = decodeLaunchEnv(this.env);
       const shards: ShardRelease[] = [];
       for (const { chainId } of await activeShards(env.IDENTITY)) {
+        if (!release) throw new Error("release_unverified");
         const store = new D1LaunchStore(
           env.DB,
           async () => chainId,
@@ -99,10 +100,10 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
           accountAddress: await joinBotAccount(env, chainId, LAUNCHER_LABEL),
           privateKey: env.LAUNCH_DEPLOYER_PRIVATE_KEY,
         });
-        const games = await advanceGames(launcher, herald, await store.launchedGameIds("madara.frontier"), releaseId);
-        shards.push({ chainId, releaseId, games });
+        const games = await advanceGames(launcher, herald, release, await store.gameNames("madara.frontier"));
+        shards.push({ chainId, releaseId: release.releaseId, games });
       }
-      return { releaseId, shards };
+      return { shards };
     });
   }
 
