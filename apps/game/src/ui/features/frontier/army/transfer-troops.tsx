@@ -141,7 +141,7 @@ const TransferSplit = ({
   const emptied = pickedAfter === 0 ? picked : pickedAfter === total ? tapped : null;
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+      <div className="ui-transfer__preview">
         <ArmySide army={picked} after={pickedAfter} />
         <span className="flex flex-col items-center gap-1">
           <Icon name="transfer" size={28} className={cn(moved < 0 && "-scale-x-100")} />

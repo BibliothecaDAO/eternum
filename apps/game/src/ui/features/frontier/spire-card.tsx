@@ -22,7 +22,7 @@ import {
   readExpeditionRules,
 } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatCharge } from "@bibliothecadao/types";
+import { formatCharge, formatHeldAgainst } from "@bibliothecadao/types";
 import type { Account } from "starknet";
 
 import { reachMark } from "./depth-art";
@@ -124,6 +124,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
       }),
     ).catch((error: unknown) => toast.failed(error, "The army could not enter the depth."));
 
+  const stamina = actor?.stamina && formatHeldAgainst(actor.stamina.current, actor.stamina.max);
   return (
     <div className="flex flex-col gap-2">
       {actor ? (
@@ -131,9 +132,9 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
           <HudChip icons={[actor.art]} label={ARMY}>
             {actor.label}
           </HudChip>
-          {actor.stamina && (
+          {stamina && (
             <HudChip icons={["stamina"]} label={STAMINA}>
-              {`${formatCharge(actor.stamina.current)} / ${formatCharge(actor.stamina.max)}`}
+              {`${stamina.held} / ${stamina.need}`}
             </HudChip>
           )}
         </div>

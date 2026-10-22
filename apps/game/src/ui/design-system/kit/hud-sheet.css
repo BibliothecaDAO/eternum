@@ -846,7 +846,7 @@ span.ui-row__choose {
   bottom: var(--hud-phone-foot, 0px);
   z-index: theme(zIndex.hud-sheet);
   display: flex;
-  max-height: 50dvh;
+  max-height: theme(spacing.hud-phone-panel);
   flex-direction: column;
   /* Shown even while the panel it opened from steps aside for it. */
   visibility: visible;
@@ -1239,6 +1239,12 @@ button.ui-relic:focus-visible {
   display: flex;
   flex-direction: column;
   gap: theme(spacing.1);
+}
+.ui-transfer__preview {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: theme(spacing.2);
 }
 .ui-transfer__row {
   display: grid;
