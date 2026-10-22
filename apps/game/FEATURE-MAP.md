@@ -26,7 +26,8 @@ Wraith") and a find's kind. A roaming beast's card is titled by its species; the
 portrait after the guard clears. Today writes the XP each line moved: "+79 labor, +2 XP" (a reveal), "Ashford cleared,
 +82 XP" (a clear, from the guard the site started with), "Battle Uncommon, −100 XP" (a level-up's price). A Shrine's use
 and a Well's use record the army, historical tile and actual XP or stamina gained, including a capped well. Today and
-the Log share the same gain line, even after the army is gone; a Log click returns to the recorded tile. Dev:
+the Log share the same gain line, even after the army is gone; a Log click returns to the recorded tile. Site use
+appears under the Log's Mine and All filters, and in World history; it sends no push alert. Dev:
 `/lab/kit/hud/today-sites`. The XP an emptied army takes with it in a merge leaves no story. Dev: `/lab/kit/hud/today`
 (the owner's 22 October day, through the log's own lines). A Frontier founding line names the settler without the
 realm's off-map settlement coordinate.

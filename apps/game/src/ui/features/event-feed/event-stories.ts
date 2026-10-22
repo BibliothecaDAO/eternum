@@ -1,6 +1,6 @@
 import type { ProcessedStoryEvent, StoryRead } from "@/hooks/store/use-story-events-store";
 import { feltEquals } from "@bibliothecadao/eternum/game-client";
-import { logicalStoryIdentity, storyRecipients } from "@bibliothecadao/notifications";
+import { logicalStoryIdentity } from "@bibliothecadao/notifications";
 
 /**
  * What Events and the Log show, the player's one choice for both: the important events (the default), everything about
@@ -12,7 +12,7 @@ export type EventsFilter = "important" | "mine" | "all";
 type IsHyperstructure = (structureId: number) => boolean;
 
 export const involvesPlayer = (event: ProcessedStoryEvent, address: string | null): boolean =>
-  storyRecipients(event.story, event.owner, event.storyPayload).some((owner) => feltEquals(owner, address));
+  event.participants.some((owner) => feltEquals(owner, address));
 
 /** One identity per action, however many stories tell it (a battle's two sides, a building placed and paid for). */
 export const storyActionIdentity = (event: ProcessedStoryEvent): string =>
@@ -48,6 +48,7 @@ const PLAYER_STORIES = [
   "ExplorationReward",
   "ExplorerCreateStory",
   "ResourceTransferStory",
+  "SiteUsed",
 ];
 
 /**

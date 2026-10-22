@@ -271,7 +271,9 @@ describe("an activated relic in Events and the Log", () => {
       expect(eventsReads(filter, PLAYER, [])).toContainEqual({ limit: 100, story: "RelicActivated", owner: PLAYER });
       const [row] = selectEventStories([event], filter, PLAYER, () => false);
       expect(row).toBe(event);
-      expect(selectEventStories([{ ...event, owner: "0x2" }], filter, PLAYER, () => false)).toEqual([]);
+      expect(
+        selectEventStories([{ ...event, owner: "0x2", participants: ["0x2"] }], filter, PLAYER, () => false),
+      ).toEqual([]);
       game.armies = new Set();
       const root = createRoot(host);
       await act(async () =>
@@ -302,9 +304,18 @@ it.each([
     ownerAddress: PLAYER,
     viewerAddress: PLAYER,
   } as never);
+  for (const filter of ["mine", "all"] as const) {
+    expect(eventsReads(filter, PLAYER, [])).toContainEqual({ limit: 100, story: "SiteUsed", owner: PLAYER });
+    expect(selectEventStories([event], filter, PLAYER, () => false)).toEqual([event]);
+    expect(
+      selectEventStories([{ ...event, owner: "0x2", participants: ["0x2"] }], filter, PLAYER, () => false),
+    ).toEqual([]);
+  }
+  expect(selectEventStories([event], "important", PLAYER, () => false)).toEqual([]);
+  const [row] = eventsRows([event]);
   const root = createRoot(host);
   try {
-    act(() => root.render(<StoryFeedRow event={event} />));
+    act(() => root.render(<StoryFeedRow event={row} />));
     expect(host.textContent).toContain(expected);
     expect(host.textContent).toContain("army");
     await act(async () => host.querySelector<HTMLButtonElement>("button")!.click());
