@@ -42,6 +42,8 @@ import {
 } from "./transfer-troops/transfer-eligibility";
 import { TransferSlotSelection } from "./transfer-troops/transfer-slot-selection";
 import { DeploymentStrengthSummary } from "./deployment-strength-summary";
+import { explorerTransferPlan } from "./transfer-troops/army-merge";
+import { ArmyMergePreview } from "./transfer-troops/army-merge-preview";
 import { toast } from "@/ui/features/event-feed/notify";
 
 interface TransferTroopsContainerProps {
@@ -135,6 +137,7 @@ export const TransferTroopsContainer = ({
     entity_id: selectedEntityId,
   });
   const selectedResourceState = useResourceManager(selectedEntityId);
+  const targetResourceState = useResourceManager(targetEntityId);
   const selectedExplorerTroops = useNativeRow("ExplorerTroops", {
     game_id: configManager.getActiveGameId(),
     explorer_id: selectedEntityId,
@@ -200,7 +203,19 @@ export const TransferTroopsContainer = ({
   );
   const isTransferBlocked = transferRestriction !== null;
 
-  const troopCapacityLimit = useMemo(() => {
+  const selectedExplorerCount = useMemo(() => {
+    const count = selectedExplorerTroops?.troops.count;
+    if (count === undefined) return 0;
+    return divideByPrecision(Number(count));
+  }, [selectedExplorerTroops?.troops.count]);
+
+  const targetExplorerCount = useMemo(() => {
+    const count = targetExplorerTroops?.troops.count;
+    if (count === undefined) return 0;
+    return divideByPrecision(Number(count));
+  }, [targetExplorerTroops?.troops.count]);
+
+  const targetTroopCapacityLimit = useMemo(() => {
     // The contract checks the receiving army at the tier it ends up holding; a guard slot holds the arriving troops'.
     const receivingTier =
       transferDirection === TransferDirection.ExplorerToStructure
@@ -218,12 +233,60 @@ export const TransferTroopsContainer = ({
     targetExplorerConnectedStructure?.base?.level,
   ]);
 
+  const sourceProgress = useNativeRow("ArmyProgress", {
+    game_id: configManager.getActiveGameId(),
+    explorer_id: selectedEntityId,
+  });
+  const targetProgress = useNativeRow("ArmyProgress", {
+    game_id: configManager.getActiveGameId(),
+    explorer_id: targetEntityId,
+  });
+  const progressionRules = useNativeRow("ArmyProgressionRules", { game_id: configManager.getActiveGameId() });
+  const sourceLevel = selectedExplorerConnectedStructure?.base.level;
+  const sourceCap =
+    sourceLevel === undefined || !selectedExplorerTroops
+      ? null
+      : configManager.getMaxArmySize(sourceLevel, selectedExplorerTroops.troops.tier as TroopTier);
+  const explorerPlan = explorerTransferPlan({
+    sourceCount: selectedExplorerCount,
+    targetCount: targetExplorerCount,
+    sourceCap,
+    targetCap: targetTroopCapacityLimit,
+    sourceProgress,
+    targetProgress,
+    rules: progressionRules,
+    requiresProgress: !!selectedExplorerTroops && "Slot" in selectedExplorerTroops.troops.stamina,
+  });
+  const fullMerge =
+    transferDirection === TransferDirection.ExplorerToExplorer &&
+    troopAmount > 0 &&
+    troopAmount === selectedExplorerCount &&
+    explorerPlan.fullFits;
+  const sourceSurvives = fullMerge && explorerPlan.sourceWins;
+  const troopCapacityLimit = fullMerge ? explorerPlan.survivorCap : targetTroopCapacityLimit;
+  const mergeRestriction =
+    transferDirection !== TransferDirection.ExplorerToExplorer
+      ? null
+      : !explorerPlan.known
+        ? "Waiting for both armies’ progress."
+        : troopAmount > explorerPlan.partialMax && !fullMerge
+          ? "This amount exceeds the receiving army’s cap. Choose fewer troops or merge all."
+          : null;
+
   const targetStructureLevel = useMemo(() => {
     if (transferDirection === TransferDirection.ExplorerToStructure) {
       return targetStructure?.base?.level ?? null;
     }
-    return targetStructure?.base?.level ?? targetExplorerConnectedStructure?.base?.level ?? null;
-  }, [targetExplorerConnectedStructure?.base?.level, targetStructure?.base?.level, transferDirection]);
+    return sourceSurvives
+      ? (sourceLevel ?? null)
+      : (targetStructure?.base?.level ?? targetExplorerConnectedStructure?.base?.level ?? null);
+  }, [
+    targetExplorerConnectedStructure?.base?.level,
+    targetStructure?.base?.level,
+    transferDirection,
+    sourceSurvives,
+    sourceLevel,
+  ]);
 
   const targetTierForSummary = useMemo(() => {
     if (transferDirection === TransferDirection.ExplorerToStructure) {
@@ -324,18 +387,6 @@ export const TransferTroopsContainer = ({
     return null;
   }, [transferDirection, isBalanceSelected, structureTroopBalance, selectedGuards, guardSlot]);
 
-  const selectedExplorerCount = useMemo(() => {
-    const count = selectedExplorerTroops?.troops.count;
-    if (count === undefined) return 0;
-    return divideByPrecision(Number(count));
-  }, [selectedExplorerTroops?.troops.count]);
-
-  const targetExplorerCount = useMemo(() => {
-    const count = targetExplorerTroops?.troops.count;
-    if (count === undefined) return 0;
-    return divideByPrecision(Number(count));
-  }, [targetExplorerTroops?.troops.count]);
-
   const structureBalanceCount = useMemo(() => {
     if (!structureTroopBalance) return 0;
     return divideByPrecision(Number(structureTroopBalance.balance));
@@ -421,20 +472,18 @@ export const TransferTroopsContainer = ({
     }
 
     if (transferDirection === TransferDirection.ExplorerToExplorer) {
-      const targetCapacity = Math.max(0, capLimit - targetExplorerCount);
-      if (cap !== null && targetCapacity <= 0) {
-        return { maxTroops: 0, held: 0, capacityBlocked: { type: "explorer" as const } };
-      }
       return {
-        maxTroops: Math.min(selectedExplorerCount, targetCapacity),
+        maxTroops: explorerPlan.maxAmount,
         held: selectedExplorerCount,
-        capacityBlocked: null,
+        capacityBlocked: explorerPlan.known && explorerPlan.maxAmount === 0 ? { type: "explorer" as const } : null,
       };
     }
 
     return { maxTroops: 0, held: 0, capacityBlocked: null };
   }, [
     troopCapacityLimit,
+    explorerPlan.maxAmount,
+    explorerPlan.known,
     transferDirection,
     targetExplorerCount,
     isBalanceSelected,
@@ -465,11 +514,19 @@ export const TransferTroopsContainer = ({
     }
 
     if (transferDirection === TransferDirection.ExplorerToExplorer) {
-      return Math.max(0, troopCapacityLimit - targetExplorerCount);
+      return Math.max(0, troopCapacityLimit - (sourceSurvives ? selectedExplorerCount : targetExplorerCount));
     }
 
     return null;
-  }, [troopCapacityLimit, transferDirection, guardSlot, targetExplorerCount, targetGuards]);
+  }, [
+    troopCapacityLimit,
+    transferDirection,
+    guardSlot,
+    targetExplorerCount,
+    targetGuards,
+    sourceSurvives,
+    selectedExplorerCount,
+  ]);
 
   const capacityRemainingDisplay =
     capacityRemainingTarget !== null && Number.isFinite(capacityRemainingTarget)
@@ -483,7 +540,7 @@ export const TransferTroopsContainer = ({
   }, [maxTroops]);
   const capacityRemainingAfterTransfer =
     capacityRemainingTarget !== null && Number.isFinite(capacityRemainingTarget)
-      ? Math.max(0, capacityRemainingTarget - effectiveTroopAmount)
+      ? Math.max(0, capacityRemainingTarget - (sourceSurvives ? targetExplorerCount : effectiveTroopAmount))
       : null;
 
   const selectedTargetGuardCount = useMemo(() => {
@@ -682,7 +739,7 @@ export const TransferTroopsContainer = ({
   // Handle transfer
   const handleTransfer = async () => {
     if (!selectedHex || !targetEntityId) return;
-    if (isTransferBlocked) return;
+    if (isTransferBlocked || mergeRestriction) return;
 
     const direction = getDirectionBetweenAdjacentHexes(
       { col: selectedHex.x, row: selectedHex.y },
@@ -690,8 +747,38 @@ export const TransferTroopsContainer = ({
     );
     if (direction === null) return;
 
+    const assertMergeUnchanged = () => {
+      if (!fullMerge) return;
+      const game_id = configManager.getActiveGameId();
+      const sourceKey = { game_id, explorer_id: selectedEntityId };
+      const targetKey = { game_id, explorer_id: targetEntityId };
+      const source = store.get("ExplorerTroops", sourceKey);
+      const target = store.get("ExplorerTroops", targetKey);
+      const current = explorerTransferPlan({
+        sourceCount: selectedExplorerCount,
+        targetCount: targetExplorerCount,
+        sourceCap,
+        targetCap: targetTroopCapacityLimit,
+        sourceProgress: store.get("ArmyProgress", sourceKey),
+        targetProgress: store.get("ArmyProgress", targetKey),
+        rules: store.get("ArmyProgressionRules", { game_id }),
+        requiresProgress: !!source && "Slot" in source.troops.stamina,
+      });
+      if (
+        !source ||
+        !target ||
+        source.troops.count !== selectedExplorerTroops?.troops.count ||
+        target.troops.count !== targetExplorerTroops?.troops.count ||
+        !current.known ||
+        current.sourceWins !== sourceSurvives
+      ) {
+        throw new Error("The armies changed. Review the merge before confirming again.");
+      }
+    };
+
     try {
       setLoading(true);
+      assertMergeUnchanged();
 
       // maxTroops is derived from live native store rows. Re-apply it at submit time so
       // a concurrent spend cannot leave stale troop calldata in this panel.
@@ -709,15 +796,13 @@ export const TransferTroopsContainer = ({
         BigInt(troopAmountWithPrecision) >= sourceExplorerCount;
 
       if (willEmptySourceExplorer) {
-        if (!selectedResourceState.hasResources()) {
+        const departingResources = sourceSurvives ? targetResourceState : selectedResourceState;
+        if (!departingResources.hasResources()) {
           throw new Error("Unable to load explorer resources for auto relic transfer");
         }
 
         const relicResources: RelicResourceTransfer[] = RELIC_RESOURCE_IDS.map((resourceId) => {
-          const { balance } = selectedResourceState.balanceWithProduction(
-            currentDefaultTick,
-            resourceId as ResourcesIds,
-          )!;
+          const { balance } = departingResources.balanceWithProduction(currentDefaultTick, resourceId as ResourcesIds)!;
           return {
             resourceId,
             amount: balance,
@@ -728,8 +813,8 @@ export const TransferTroopsContainer = ({
           if (transferDirection === TransferDirection.ExplorerToExplorer) {
             await troop_troop_adjacent_transfer({
               signer: account,
-              from_troop_id: selectedEntityId,
-              to_troop_id: targetEntityId,
+              from_troop_id: sourceSurvives ? targetEntityId : selectedEntityId,
+              to_troop_id: sourceSurvives ? selectedEntityId : targetEntityId,
               resources: relicResources,
             });
           }
@@ -774,6 +859,7 @@ export const TransferTroopsContainer = ({
           return;
         }
       } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
+        assertMergeUnchanged();
         await explorer_explorer_swap({
           signer: account,
           from_explorer_id: selectedEntityId,
@@ -824,7 +910,8 @@ export const TransferTroopsContainer = ({
 
   const isTroopsTransferDisabled =
     isTransferBlocked ||
-    troopAmount === 0 ||
+    mergeRestriction !== null ||
+    effectiveTroopAmount === 0 ||
     (guardSelectionRequired && guardSlot === null) ||
     (transferDirection === TransferDirection.ExplorerToStructure &&
       (!receivingGuard || receivingGuard.cooldownRemaining > 0)) ||
@@ -845,6 +932,7 @@ export const TransferTroopsContainer = ({
   // A fact of the game that keeps the transfer closed, said calmly: nothing the player did failed.
   const blockReason =
     transferRestriction ??
+    mergeRestriction ??
     capacityBlockedMessage ??
     troopMismatchMessage ??
     (receivingGuard && receivingGuard.cooldownRemaining > 0
@@ -930,17 +1018,31 @@ export const TransferTroopsContainer = ({
       }
     } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
       if (selectedExplorerTroops) {
-        pushCard("From explorer", selectedExplorerCount, selectedExplorerCount - troopAmount, "remaining", "sent", {
-          tier: selectedExplorerTroops.troops.tier,
-          category: selectedExplorerTroops.troops.category,
-        });
+        pushCard(
+          "From explorer",
+          selectedExplorerCount,
+          sourceSurvives ? selectedExplorerCount + targetExplorerCount : selectedExplorerCount - troopAmount,
+          "remaining",
+          "sent",
+          {
+            tier: selectedExplorerTroops.troops.tier,
+            category: selectedExplorerTroops.troops.category,
+          },
+        );
       }
 
       if (targetExplorerTroops) {
-        pushCard("To explorer", targetExplorerCount, targetExplorerCount + troopAmount, "arriving", "remaining", {
-          tier: targetExplorerTroops.troops.tier,
-          category: targetExplorerTroops.troops.category,
-        });
+        pushCard(
+          "To explorer",
+          targetExplorerCount,
+          sourceSurvives ? 0 : targetExplorerCount + troopAmount,
+          "arriving",
+          "remaining",
+          {
+            tier: targetExplorerTroops.troops.tier,
+            category: targetExplorerTroops.troops.category,
+          },
+        );
       }
     }
 
@@ -957,6 +1059,7 @@ export const TransferTroopsContainer = ({
     selectedExplorerTroops,
     selectedExplorerCount,
     targetExplorerCount,
+    sourceSurvives,
   ]);
 
   const selectedTroopForSlots = useMemo(() => {
@@ -997,6 +1100,14 @@ export const TransferTroopsContainer = ({
 
   return (
     <div className="flex flex-col space-y-4">
+      {fullMerge && (
+        <ArmyMergePreview
+          survivorId={sourceSurvives ? selectedEntityId : targetEntityId}
+          loserId={sourceSurvives ? targetEntityId : selectedEntityId}
+          position={sourceSurvives ? selectedHex : targetHex}
+          value={sourceSurvives ? explorerPlan.sourceValue : explorerPlan.targetValue}
+        />
+      )}
       {isTargetLoading || isSelectedLoading ? (
         <LoadingAnimation />
       ) : (

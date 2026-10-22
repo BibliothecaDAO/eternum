@@ -754,3 +754,8 @@ on native WebGPU. `verify:beasts` checks all eight deliveries, budgets and edita
 checks decoded triangles for zero masonry contacts at each production scale. All authoring sources and paint live in
 `asset-sources/frontier-beasts/refined/`; `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those
 exact eight packed sources. There is one production path per species and no separate study GLB.
+
+Frontier army merges: select an army, then an adjacent owned army, open Transfer and choose **Max**. Before **Transfer
+Troops**, the panel names the army that survives, its position and slot, retained progression and resulting stamina. A
+full merge keeps the higher value of unspent XP plus all four attributes' cumulative tier prices (including training);
+ties keep the target. Partial transfers retain both armies. The survivor remains on its own hex; the loser's XP is lost.

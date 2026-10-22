@@ -23,6 +23,7 @@ use crate::upgrades::{
     IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, IUpgradeRulesSafeDispatcher,
     IUpgradeRulesSafeDispatcherTrait, UpgradeLimits, UpgradeRecipe,
 };
+mod army_merge;
 mod artificer;
 
 mod bitcoin;

@@ -545,7 +545,7 @@ pub mod TroopsLogic {
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
-            command: crate::troop_management::TransferTroops,
+            mut command: crate::troop_management::TransferTroops,
             rules: SliceRules,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
@@ -573,6 +573,15 @@ pub mod TroopsLogic {
             };
             if target.troops.count != 0 {
                 crate::troop_management::assert_matching(source.troops, target.troops);
+            }
+            if command.amount == source.troops.count && self.source_wins_merge(game_id, command) {
+                command =
+                    crate::troop_management::TransferTroops {
+                        source: command.target, target: command.source, amount: target.troops.count,
+                    };
+                let loser = target;
+                target = source;
+                source = loser;
             }
             source.troops.count -= command.amount;
             crate::troop_management::merge_timers(ref source.troops, ref target.troops, rules, timestamp);
@@ -605,6 +614,22 @@ pub mod TroopsLogic {
                 },
             }
         }
+        fn source_wins_merge(
+            self: @ContractState, game_id: u32, command: crate::troop_management::TransferTroops,
+        ) -> bool {
+            let (source, target) = match (command.source, command.target) {
+                (
+                    crate::troop_management::Army::Explorer(source), crate::troop_management::Army::Explorer(target),
+                ) => { (source, target) },
+                _ => { return false; },
+            };
+            let Some(rules) = crate::logic::progression::rules(game_id) else {
+                return false;
+            };
+            let source = crate::logic::progression::require(ExplorerKey { game_id, explorer_id: source });
+            let target = crate::logic::progression::require(ExplorerKey { game_id, explorer_id: target });
+            crate::progression::progression_value(source, rules) > crate::progression::progression_value(target, rules)
+        }
         fn apply_transfer_source(
             ref self: ContractState,
             game_id: u32,
@@ -626,7 +651,11 @@ pub mod TroopsLogic {
                     }
                     let explorer_key = ExplorerKey { game_id, explorer_id: id };
                     if troops.count == 0 {
-                        self.destroy_explorer(explorer_key, crate::logic::troops::explorer(explorer_key).unwrap());
+                        self
+                            .destroy_explorer(
+                                explorer_key,
+                                ExplorerTroops { troops, ..crate::logic::troops::explorer(explorer_key).unwrap() },
+                            );
                     } else {
                         crate::logic::troops::TroopState::update_troops(explorer_key, troops);
                     }
