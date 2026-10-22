@@ -145,16 +145,27 @@ export const SHRINE_TILE = { col: 40, row: 12, alt: false };
 export const WELL_TILE = { col: 42, row: 12, alt: false };
 export const FAR_SHRINE_TILE = { col: 49, row: 12, alt: false };
 
+type SiteTile = typeof SHRINE_TILE;
+/** Where each of the fixture's things stands. */
+export type SitesLayout = { army: SiteTile; shrine: SiteTile; well: SiteTile; far: SiteTile };
+const SITES_LAYOUT: SitesLayout = { army: ARMY_TILE, shrine: SHRINE_TILE, well: WELL_TILE, far: FAR_SHRINE_TILE };
+
 /**
  * The deploy fixture's Frontier day, where the game allows site use as Frontier's preset does, with the realm's
  * 1,498-knight army (explorer 201) on revealed grassland: a Shrine and a Well beside it, a Shrine eight tiles off, and the
- * game's XP rules (200 XP a Shrine). The army's bar holds `stamina` of its 150.
+ * game's XP rules (200 XP a Shrine). The army's bar holds `stamina` of its 150. `layout` places them elsewhere (the lab
+ * puts them on its drawn world); the Shrine and the Well must stand beside the army.
  */
-export const sitesBeside = (stamina: bigint) => {
+export const sitesBeside = (stamina: bigint, layout: SitesLayout = SITES_LAYOUT) => {
   const { store } = frontierDay();
   const grass = String(BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE));
-  const revealed = [ARMY_TILE, ...getNeighborHexes(ARMY_TILE.col, ARMY_TILE.row), FAR_SHRINE_TILE];
-  const site = (key: string, tile: typeof SHRINE_TILE, entity: number, category: TileOccupier) =>
+  const revealed = [layout.army, ...getNeighborHexes(layout.army.col, layout.army.row), layout.far];
+  const sites = [
+    ["0x76", layout.shrine, 901, TileOccupier.Shrine],
+    ["0x77", layout.well, 902, TileOccupier.Well],
+    ["0x78", layout.far, 903, TileOccupier.Shrine],
+  ] as const;
+  const site = (key: string, tile: SiteTile, entity: number, category: TileOccupier) =>
     set(key, "TileOccupancy", { game_id: 1, ...tile, alt: false, entity_id: entity, category, is_structure: false });
   store.applyFacts([
     set("0x100", "SliceRules", {
@@ -184,19 +195,13 @@ export const sitesBeside = (stamina: bigint) => {
       set(`0x20${index}`, "TileOpt", { game_id: 1, alt: false, col: tile.col, row: tile.row, data: grass }),
     ),
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, stamina) }),
-    site("0x75", ARMY_TILE, 201, TileOccupier.ExplorerKnightT1),
-    ...SITES.map(([key, tile, entity, category]) => site(key, tile, entity, category)),
+    site("0x75", layout.army, 201, TileOccupier.ExplorerKnightT1),
+    ...sites.map(([key, tile, entity, category]) => site(key, tile, entity, category)),
   ] as never);
   /** The chain's answer to a use: the site's tile emptied, as the contract vacates it. */
   const vacate = (tile: { col: number; row: number }) => {
-    const [key] = SITES.find(([, at]) => at.col === tile.col && at.row === tile.row)!;
+    const [key] = sites.find(([, at]) => at.col === tile.col && at.row === tile.row)!;
     store.applyFacts([{ model: "TileOccupancy", key, value: null }] as never);
   };
   return { store, vacate };
 };
-
-const SITES = [
-  ["0x76", SHRINE_TILE, 901, TileOccupier.Shrine],
-  ["0x77", WELL_TILE, 902, TileOccupier.Well],
-  ["0x78", FAR_SHRINE_TILE, 903, TileOccupier.Shrine],
-] as const;

@@ -1,6 +1,6 @@
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { StructureType, type ID } from "@bibliothecadao/types";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Vector3 } from "three";
 
@@ -24,6 +24,8 @@ import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terr
 import { seatSide } from "@/tokens";
 import { SeatMark } from "@/ui/design-system/seat-mark";
 
+import { SiteUseLab } from "./site-use-lab";
+
 type MapZoom = "play" | "close" | "far";
 type World = { stage: TerrainBenchmarkStage; entities: MapLabelEntity[] };
 
@@ -37,7 +39,8 @@ type World = { stage: TerrainBenchmarkStage; entities: MapLabelEntity[] };
  * (no guard slots: a realm holds no guard and nothing marches home to it), `panel=0` to hide the lab's panel (for a
  * phone), `spectate=1` for a watching viewer (each player in their seat's colour with their initial, the seats listed
  * in the panel: the game's rule, `seatSide`, over the fixture's 24 seats), and `rendererMode=webgpu-force-webgl` for
- * WebGL. Pointer hover on a tile and click work too; Escape clears the selection.
+ * WebGL. Pointer hover on a tile and click work too; Escape clears the selection. `sites=1` puts an army with a Shrine and
+ * a Well beside it west of the block, under the world map's own input and handlers (site-use-lab).
  * With a thing selected, the hovered tile shows the map's order line ("Attack", or "Transfer troops" on the player's
  * own), said and placed as the world map says and places it.
  */
@@ -55,7 +58,9 @@ export const MapLabelLabView = () => {
   const busy = params.get("busy") === "1";
   const forceWebGL = params.get("rendererMode") === "webgpu-force-webgl";
   const frontier = params.get("game") === "frontier";
-  const panel = params.get("panel") !== "0";
+  const sites = params.get("sites") === "1";
+  // The HUD's sheet stands where the labels' panel does: the sites view leaves it the place.
+  const panel = params.get("panel") !== "0" && !sites;
   const spectate = params.get("spectate") === "1";
   useMapWorld(canvasRef, busy, forceWebGL, setWorld, setError);
   useZoom(world, zoom, params.get("focus") ?? params.get("hover"));
@@ -71,6 +76,8 @@ export const MapLabelLabView = () => {
     setCounts,
   );
   useOrderLine(world, layer, overlayRef, hovered, selected);
+  // The sites open at the map's play distance, once placed; the zoom buttons aim the camera after.
+  const aimAt = useCallback((target: Vector3) => world && aimCamera(world, target, ZOOM_DISTANCE.play), [world]);
   const set = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
     if (value === null) next.delete(key);
@@ -84,19 +91,30 @@ export const MapLabelLabView = () => {
   });
   return (
     <div className="relative h-full min-h-[600px] w-full overflow-hidden bg-[#d8d0ba]">
+      {/* The map's canvas, as the world map names it: its screen projection reads it by this id. With `sites=1` the
+          world map's own input takes it; otherwise a click or a tap selects the tile under it, read from the event
+          itself (a tap brings no pointer move before it); the labels take none (owner, 2026-10-20: "we click the tile"). */}
       <canvas
         ref={canvasRef}
+        id="main-canvas"
         className="absolute inset-0 size-full"
-        onPointerMove={(event) =>
-          setPointerHover(tileUnder(world, canvasRef.current, event.nativeEvent.offsetX, event.nativeEvent.offsetY))
+        onPointerMove={
+          sites
+            ? undefined
+            : (event) =>
+                setPointerHover(
+                  tileUnder(world, canvasRef.current, event.nativeEvent.offsetX, event.nativeEvent.offsetY),
+                )
         }
-        onPointerLeave={() => setPointerHover(null)}
-        // A click or a tap selects the tile under it, read from the event itself (a tap brings no pointer move before
-        // it); the labels take none (owner, 2026-10-20: "we click the tile").
-        onClick={(event) =>
-          set("select", tileUnder(world, canvasRef.current, event.nativeEvent.offsetX, event.nativeEvent.offsetY))
+        onPointerLeave={sites ? undefined : () => setPointerHover(null)}
+        onClick={
+          sites
+            ? undefined
+            : (event) =>
+                set("select", tileUnder(world, canvasRef.current, event.nativeEvent.offsetX, event.nativeEvent.offsetY))
         }
       />
+      {sites && <SiteUseLab world={world} canvasRef={canvasRef} plates={layer} aim={aimAt} />}
       <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-[2] overflow-hidden" />
       <Tooltip />
       <aside

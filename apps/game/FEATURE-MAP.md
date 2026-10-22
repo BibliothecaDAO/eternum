@@ -436,9 +436,11 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 | Well                    | Frontier Map → select an army beside a discovered stone well → right-click it (hold on a phone): Use, +stamina; the hover warns at a full bar. Tap it for its card, army kept.  |
 | Ownership and placement | `/lab` → Building model → choose an outpost → Ownership where available → Place on selected tile → Focus selected tile. Biome and Fog controls exercise terrain and visibility. |
 
-`src/three/scenes/worldmap-site-use.test.tsx` drives both through the world map's own input and handlers (click,
-right-click, a touch held, the order line) and records the InteractSite call the provider builds; no lab mounts the
-world map scene.
+`/lab/map-labels?sites=1` shows both on the lab's drawn world: an army with a Shrine and a Well beside it (and a Shrine
+three tiles off), under the world map's own input and handlers. Hover a site for its order line; right-click it (hold on
+a phone) to use it; click it for its card with the army kept. Each use is the InteractSite call the provider builds,
+recorded where the game would sign it (`window.__siteUseLab`); the site then goes.
+`src/three/scenes/worldmap-site-use.test.tsx` runs the same handlers as the regression test.
 
 With the local client running, open `/lab?evidence=/absolute/capture/directory` and run
 `scripts/outposts/prove-runtime.playwright.js` through the browser connection with the page as its argument (remove the

@@ -38,25 +38,20 @@ vi.mock("@/hooks/use-world-spatial-tiles", () => ({
     hexes.flatMap((hex) => world.projection?.getTileAtHex({ ...hex, alt: false }) ?? []),
 }));
 
-const { buildArmyPathIndexes, findArmyPaths, Position, setBlockTimestampSource } =
-  await import("@bibliothecadao/eternum");
+const { Position, setBlockTimestampSource } = await import("@bibliothecadao/eternum");
 const { WorldSpatialProjection } = await import("@bibliothecadao/eternum/game-sync");
-const { EternumProvider, encodeNativeCommand } = await import("@bibliothecadao/provider");
-const { ContractAddress, createSystemCalls } = await import("@bibliothecadao/types");
+const { encodeNativeCommand } = await import("@bibliothecadao/provider");
 const { GameProvider } = await import("@/hooks/context/game-context");
 const { useAccountStore } = await import("@/hooks/store/use-account-store");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
-const { InputManager } = await import("../managers/input-manager");
 const { MapSiteCard, useSelectedMapSite } = await import("@/ui/features/frontier/sites/map-site-card");
 const { ARMY_TILE, FAR_SHRINE_TILE, SHRINE_TILE, sitesBeside, WELL_TILE } =
   await import("@/ui/features/frontier/sites/site-fixture");
-const { SceneName } = await import("../types");
-const { default: WorldmapScene } = await import("./worldmap");
+const { HARNESS_WORLD, mountWorldmapSiteHarness, recordingSystemCalls } =
+  await import("../debug/worldmap-site-harness");
 const { default: bindings } = await import("../../../../../contracts/l3/world-native/schema/bindings.json");
 
-const WORLD = "0x5e5e";
 const ARMY = 201;
-const NOW = 350;
 type Tile = typeof SHRINE_TILE;
 
 afterEach(() => {
@@ -69,12 +64,11 @@ afterEach(() => {
 });
 
 /**
- * The world map's own handlers on the sites fixture's Frontier day, driven by the player's input as the game takes it:
- * the map's InputManager on its surface, the scene's listeners (setupInputHandlers), and WorldmapScene's click,
- * right-click, tap rule, order dispatch and order line. Its orders come from the real planner over the projected world
- * (armyPaths). A use goes through the real system calls and EternumProvider, which build the InteractSite call from
- * the world's command ABI; the native submission records that call where the game would sign it. Only the tile under
- * the pointer (the canvas raycast) is set by the test, and the chain's answer (the tile vacated) by the outcome wait.
+ * The world map's own handlers on the sites fixture's Frontier day, as the lab mounts them over its drawn world
+ * (worldmap-site-harness: the map's InputManager on a surface, WorldmapScene's click and right-click handlers, tap rule,
+ * order dispatch and order line, over the real planner and projection), driven by the player's input. A use goes
+ * through the real system calls and EternumProvider, recorded where the game would sign it. Only the tile under the
+ * pointer (the canvas raycast) is set by the test, and the chain's answer (the tile vacated) by the outcome wait.
  */
 const theMap = (stamina: bigint) => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -82,83 +76,42 @@ const theMap = (stamina: bigint) => {
   const projection = new WorldSpatialProjection({ store });
   projection.start();
   world.projection = projection;
-
-  const submitted: { contractAddress: string; entrypoint: string; calldata: string[] }[] = [];
   const sentTo = new Map<string, Tile>();
-  const provider = new EternumProvider({ world: WORLD } as never, "http://127.0.0.1:9", { gameId: 1 });
-  provider.setNativeSubmission(
-    async (_signer, calls) => {
-      const call = (Array.isArray(calls) ? calls[0] : calls) as (typeof submitted)[number];
-      submitted.push({ ...call, calldata: call.calldata.map(String) });
-      const hash = `0x${submitted.length}`;
-      // The fixture site this call names, by the world ABI's own encoding of a use there.
-      const tile = [SHRINE_TILE, WELL_TILE, FAR_SHRINE_TILE].find(
-        (site) => JSON.stringify(interactSite(site)) === JSON.stringify(submitted.at(-1)),
-      );
-      if (tile) sentTo.set(hash, tile);
-      return { transaction_hash: hash };
-    },
-    bindings.commandAbi as never,
-    () => 7,
-  );
+  const { systemCalls, recorded: submitted } = recordingSystemCalls((call, hash) => {
+    // The fixture site this call names, by the world ABI's own encoding of a use there.
+    const tile = [SHRINE_TILE, WELL_TILE, FAR_SHRINE_TILE].find(
+      (site) => JSON.stringify(interactSite(site)) === JSON.stringify(call),
+    );
+    if (tile) sentTo.set(hash, tile);
+  });
   world.land = (hash) => {
     const tile = sentTo.get(hash);
     if (tile) vacate(tile);
   };
-  const systemCalls = createSystemCalls({ provider });
-  const signer = { address: "0x111" } as never;
-  useAccountStore.setState({ account: signer });
+  useAccountStore.setState({ account: { address: "0x111" } as never });
   const setup = { store, systemCalls } as never;
 
-  // The map's input: its manager on a surface, the scene's own listeners; the raycast says which tile is pointed at.
   const pointed = { hex: null as null | { col: number; row: number } };
   const surface = document.createElement("div");
   surface.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1440, height: 900 }) as DOMRect;
-  const inputManager = new InputManager(
-    SceneName.WorldMap,
-    { getCurrentScene: () => SceneName.WorldMap } as never,
-    { setFromCamera: () => {} } as never,
-    new THREE.Vector2(),
-    new THREE.PerspectiveCamera(),
-  );
-  inputManager.setSurface(surface);
-  inputManager.activate();
-  const scene = Object.assign(Object.create(WorldmapScene.prototype), {
-    game: setup,
-    state: useUIStore.getState(),
-    inputManager,
-    interactiveHexManager: { onClick: () => (pointed.hex ? { hexCoords: pointed.hex } : null) },
-    worldSpatialProjection: projection,
-    armyManager: { isArmySelectable: () => true },
-    exploredTiles: new Map(),
-    orderRefusals: new Map(),
-    chunkTransitionToken: 1,
-    actionPathsTransitionToken: 1,
-    pointerOrderTip: { take: () => {}, refresh: () => {} },
-    getHexagonEntity: () => ({}),
-    queuesNextOrder: () => false,
-    hudCarriesOrderVerb: () => false,
-    getInteractionDebugSnapshot: () => ({}),
+  const map = mountWorldmapSiteHarness({
+    setup,
+    projection,
+    surface,
+    camera: new THREE.PerspectiveCamera(),
+    mapPlates: { placeOrderLine: () => null },
+    army: ARMY,
+    player: 0x111n,
+    tileUnder: () => pointed.hex,
   });
-  scene.setupInputHandlers();
 
   /** The scene's tile for a contract tile: the hex the raycast returns and the scene's handlers take. */
   const sceneHex = (tile: Tile) => {
     const normalized = Position.fromContract({ x: tile.col, y: tile.row }).getNormalized();
     return { col: normalized.x, row: normalized.y };
   };
-  /** The player selects their army: the map plans its orders from where it stands (offerSelectedArmyOrders). */
-  const plan = () => {
-    const paths = findArmyPaths({ setup } as never, {
-      explorerId: ARMY,
-      ...buildArmyPathIndexes({ setup, projection } as never),
-      currentDefaultTick: NOW,
-      playerAddress: ContractAddress(0x111n),
-    });
-    act(() => scene.updateEntityActionPaths(paths.getPaths(), paths.getRefusals()));
-  };
-  act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
-  plan();
+  const plan = () => act(() => map.plan());
+  act(() => map.selectArmy());
 
   const at = (tile: Tile) => (pointed.hex = sceneHex(tile));
   return {
@@ -167,7 +120,7 @@ const theMap = (stamina: bigint) => {
     submitted,
     plan,
     /** The line under the pointer at the tile, as the scene names it. */
-    hover: (tile: Tile) => scene.nameOrderAt(sceneHex(tile)),
+    hover: (tile: Tile) => map.scene.nameOrderAt(sceneHex(tile)),
     rightClick: async (tile: Tile) => {
       at(tile);
       await act(async () => {
@@ -204,7 +157,7 @@ const theMap = (stamina: bigint) => {
 
 /** The use the provider built, as the world's ABI encodes it for this army at this tile. */
 const interactSite = (tile: Tile) => ({
-  contractAddress: WORLD,
+  contractAddress: HARNESS_WORLD,
   entrypoint: "InteractSite",
   calldata: [
     "1",
