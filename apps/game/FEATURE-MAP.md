@@ -449,6 +449,11 @@ selected, the spire found by its hover (Enter a depth) and tapped, Ethereal II e
 and the army shown in Ethereal II; add `--viewport 390x844` for a phone. No live game, account or transaction is
 involved.
 
+`/lab/game?scenario=realm` is the same game with the realm a full Settlement (six plots built) and the labor for a City:
+**Realm**, tap the castle, **Upgrade**. The LevelUp command is recorded and applied, the second ring's twelve plots
+light, and the realm view stands at City (18 plots), as it does after going to the World and back.
+`src/three/scenes/hexception-castle-level.test.ts` is its regression test.
+
 `/lab/map-labels?sites=1` shows both on the lab's drawn world: an army with a Shrine and a Well beside it (and a Shrine
 three tiles off), under the world map's own input and handlers. Hover a site for its order line; right-click it (hold on
 a phone) to use it; click it for its card with the army kept. Each use is the InteractSite call the provider builds,
