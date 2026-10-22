@@ -20,7 +20,7 @@ fn slot(d: super::Deployment, key: ExplorerKey, index: u8) -> crate::troops::Arm
             .unwrap(),
     )
 }
-fn timers(d: super::Deployment, key: ExplorerKey, amount: u64, cooldown: u64) {
+fn timers(d: super::Deployment, key: ExplorerKey, amount: u64, cooldown: u32) {
     let mut army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     army.troops.stamina = crate::troops::Stamina { amount, settled_at: 360, remainder: 0 }.into();
     army.troops.battle_cooldown_end = cooldown;
@@ -36,8 +36,7 @@ fn progression_value_counts_all_tiers_training_and_unspent_xp_without_u32_overfl
     assert_eq!(crate::progression::progression_value(mixed, rules), 2607);
     let max = ArmyProgress { xp: 0xffffffff, battle: 5, logistics: 5, scouting: 5, homecoming: 5, scouting_kinds: 0 };
     assert_eq!(crate::progression::progression_value(max, rules), 4294973295);
-    let mut learned = 0;
-    crate::research::buy(ref learned, crate::research::ROW_WAR_HALL, 0);
+    let learned = crate::research::learn(0, crate::research::ROW_WAR_HALL, 0);
     let trained = crate::progression::trained(learned);
     assert_eq!(trained.xp, 0);
     assert_eq!(crate::progression::progression_value(trained, rules), 100);
@@ -199,8 +198,8 @@ fn a_loaded_loser_cannot_be_destroyed_in_either_merge_direction() {
         let weight = snforge_std::interact_with_state(d.games, || crate::logic::resources::weight(key));
         super::resource_commands::set_fixture(
             d.games,
-            starknet::selector!("resources"),
-            starknet::selector!("weights"),
+            selector!("resources"),
+            selector!("weights"),
             array![game_id.into(), loser.explorer_id.into()].span(),
             crate::resources::Weight { weight: 1, ..weight },
         );
