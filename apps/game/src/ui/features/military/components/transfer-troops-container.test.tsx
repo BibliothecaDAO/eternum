@@ -17,6 +17,8 @@ import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { RELICS, StructureType } from "@bibliothecadao/types";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { TransferTroopsContainer } from "./transfer-troops-container";
+import { ArmyMergePreview } from "./transfer-troops/army-merge-preview";
+import { toast } from "@/ui/features/event-feed/notify";
 import { TransferDirection } from "./transfer-troops/transfer-direction";
 import { HudWindow } from "@/ui/design-system/kit/hud-elements";
 
@@ -33,7 +35,10 @@ const troops = (count: bigint, category = "Knight", tier = "T1") => ({
   stamina: { Inline: { amount: "100", settled_at: "360", remainder: 0 } },
 });
 
-afterEach(() => setBlockTimestampSource(null));
+afterEach(() => {
+  setBlockTimestampSource(null);
+  vi.restoreAllMocks();
+});
 
 /**
  * The owner's hyperstructure beside his realm's army of 19,145 T1 knights. Each guard slot holds what `guards` gives
@@ -343,3 +348,69 @@ it("updates the survivor when authoritative progression changes before confirmat
   expect(view.systemCalls.explorer_explorer_swap).not.toHaveBeenCalled();
   view.unmount();
 });
+
+it.each(["0x74", "0x75"])("removes the merge preview when army row %s disappears", (key) => {
+  const view = reinforce({}, troops(500n), mergeFacts(500, 0));
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  act(() =>
+    root.render(
+      <GameProvider value={{ store: view.store } as GameClientSetup} account={{ address: "0x111" } as never}>
+        <ArmyMergePreview survivorId={EXPLORER} loserId={ARMY} position={{ x: 41, y: 12 }} value={600} />
+      </GameProvider>,
+    ),
+  );
+  expect(host.textContent).toContain("Army 1 survives");
+  act(() => view.store.applyFacts([{ model: "ExplorerTroops", key, value: null }]));
+  expect(host.textContent).toBe("");
+  act(() => root.unmount());
+  host.remove();
+  view.unmount();
+});
+
+it.each(["before confirmation", "during relic handoff"])(
+  "refuses a changed survivor %s instead of merging with the stale preview",
+  async (when) => {
+    const failed = vi.spyOn(toast, "failed").mockReturnValue("merge-changed");
+    const resourceId = Number(RELICS[0].id);
+    const view = reinforce({}, troops(500n), (store) => {
+      mergeFacts(500, 0)(store);
+      store.applyFacts([
+        set("0xf900", "ResourceBalance", {
+          game_id: 1,
+          entity_id: ARMY,
+          resource_type: resourceId,
+          balance: String(PRECISION),
+        }),
+      ] as never);
+    });
+    const changeWinner = () =>
+      view.store.applyFacts([
+        set("0xf2022", "ArmyProgress", {
+          ...view.store.require("ArmyProgress", { game_id: 1, explorer_id: ARMY }),
+          xp: 1000,
+        }),
+      ] as never);
+    view.sendMax();
+    expect(view.text()).toContain("Army 1 survives");
+    if (when === "during relic handoff") {
+      view.systemCalls.troop_troop_adjacent_transfer.mockImplementation(async () => changeWinner());
+    }
+    await act(async () => {
+      // Deliver facts and click before React has rendered the new preview.
+      if (when === "before confirmation") changeWinner();
+      view.send().click();
+    });
+    expect(view.systemCalls.explorer_explorer_swap).not.toHaveBeenCalled();
+    expect(view.systemCalls.troop_troop_adjacent_transfer).toHaveBeenCalledTimes(
+      when === "before confirmation" ? 0 : 1,
+    );
+    expect(failed).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "The armies changed. Review the merge before confirming again." }),
+      "The troops could not be moved.",
+    );
+    expect(view.text()).toContain("Army 2 survives");
+    view.unmount();
+  },
+);

@@ -25,8 +25,9 @@ export const ArmyMergePreview = ({
   const timestamp = useCurrentBlockTimestamp();
   useNativeRevision(["ExplorerTroops", "ArmyProgress", "ArmySlot", "EntityName"]);
   const gameId = configManager.getActiveGameId();
-  const survivor = store.require("ExplorerTroops", { game_id: gameId, explorer_id: survivorId });
-  const loser = store.require("ExplorerTroops", { game_id: gameId, explorer_id: loserId });
+  const survivor = store.get("ExplorerTroops", { game_id: gameId, explorer_id: survivorId });
+  const loser = store.get("ExplorerTroops", { game_id: gameId, explorer_id: loserId });
+  if (!survivor || !loser) return null;
   const progress = store.get("ArmyProgress", { game_id: gameId, explorer_id: survivorId });
   const bars = [survivor, loser].map((army) =>
     getExplorerStaminaSnapshot({ timestamp, liveTroops: resolveExplorerTroops(store, army) }),

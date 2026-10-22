@@ -12,10 +12,13 @@ fn write_progress(d: super::Deployment, key: ExplorerKey, value: ArmyProgress) {
     snforge_std::interact_with_state(d.games, || crate::logic::progression::write(key, value));
 }
 fn slot(d: super::Deployment, key: ExplorerKey, index: u8) -> crate::troops::ArmySlot {
+    slot_at_home(d, key, 1, index)
+}
+fn slot_at_home(d: super::Deployment, key: ExplorerKey, home: u64, index: u8) -> crate::troops::ArmySlot {
     snforge_std::interact_with_state(
         d.games,
         || crate::logic::army_slot_storage::read(
-            ArmySlotKey { game_id: key.game_id, structure_id: 1, epoch: 0, slot: index },
+            ArmySlotKey { game_id: key.game_id, structure_id: home, epoch: 0, slot: index },
         )
             .unwrap(),
     )
@@ -163,23 +166,68 @@ fn a_full_merge_over_the_survivor_cap_is_atomic_and_expired_armies_cannot_merge(
     let (source, target) = expedition_armies(d, game_id, category);
     write_progress(d, source, ArmyProgress { xp: 500, ..crate::progression::initial() });
     let state = GameState { contract_address: d.games };
+    // The losing target belongs to a higher-level home that could accept the total.
+    // Recreate the fixture's target at that home, with its own daily slot and home index.
+    let other_home = 999;
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let home = crate::logic::structures::record(crate::resources::ResourceKey { game_id, entity_id: 1 });
+            crate::logic::structures::StructureState::create(
+                crate::resources::ResourceKey { game_id, entity_id: other_home },
+                crate::structures::StructureRecord {
+                    base: crate::structures::StructureBase { level: 1, ..home.base }, ..home,
+                },
+            );
+            let mut army = crate::logic::troops::explorer(target).unwrap();
+            let bar = crate::logic::army_slot_storage::resolve(target, army, None).troops.stamina;
+            crate::logic::army_slot_storage::release(target, army);
+            crate::logic::troops::TroopState::destroy(target);
+            army.owner = other_home;
+            let StaminaSource::Inline(stamina) = bar else {
+                panic!("expected resolved bar");
+            };
+            army
+                .troops
+                .stamina = crate::logic::army_slot_storage::allocate(target, other_home, 0, 4, stamina, stamina.amount);
+            crate::logic::troops::TroopState::create(target, crate::troops::ExplorerRecordTrait::into_record(army));
+        },
+    );
     let mut full = state.resolved_explorer(source).unwrap();
     let limit: u128 = crate::troops::max_army_size(preset.rules.troop_limit_config, 0, full.troops.tier).into();
+    let other_limit: u128 = crate::troops::max_army_size(preset.rules.troop_limit_config, 1, full.troops.tier).into();
+    assert!(limit + 3 <= other_limit);
     full.troops.count = limit * RESOURCE_PRECISION;
     super::resource_commands::set_explorer_fixture(d.games, source, full);
+    let resources = crate::resources::ResourceKey { game_id, entity_id: source.explorer_id };
+    let weight = snforge_std::interact_with_state(d.games, || crate::logic::resources::weight(resources));
+    super::resource_commands::set_fixture(
+        d.games,
+        selector!("resources"),
+        selector!("weights"),
+        array![game_id.into(), source.explorer_id.into()].span(),
+        crate::resources::Weight { capacity: weight.capacity / 3 * limit, ..weight },
+    );
     let before_source = state.explorer(source).unwrap();
     let before_target = state.explorer(target).unwrap();
     let source_slot = slot(d, source, 0);
-    let target_slot = slot(d, target, 1);
+    let target_slot = slot_at_home(d, target, other_home, 0);
     assert!(!execute_in_game(d, game_id, transfer(source, target, limit), 360));
     assert_eq!(state.explorer(source).unwrap(), before_source);
     assert_eq!(state.explorer(target).unwrap(), before_target);
     assert_eq!(slot(d, source, 0), source_slot);
-    assert_eq!(slot(d, target, 1), target_slot);
+    assert_eq!(slot_at_home(d, target, other_home, 0), target_slot);
     assert!(!execute_in_game(d, game_id, transfer(source, target, 1), day_start(d, game_id, 1)));
     assert_eq!(state.explorer(source).unwrap(), before_source);
     assert_eq!(state.explorer(target).unwrap(), before_target);
     assert_eq!(progress(d, source).unwrap().xp, 500);
+    // The same troops fit when the higher-cap home's army wins instead.
+    write_progress(d, target, ArmyProgress { xp: 501, ..crate::progression::initial() });
+    assert!(execute_in_game(d, game_id, transfer(source, target, limit), 360));
+    assert!(state.explorer(source).is_none());
+    let survivor = state.explorer(target).unwrap();
+    assert_eq!(survivor.owner, other_home);
+    assert_eq!(survivor.troops.count, (limit + 3) * RESOURCE_PRECISION);
 }
 
 #[test]
@@ -212,4 +260,24 @@ fn a_loaded_loser_cannot_be_destroyed_in_either_merge_direction() {
         assert_eq!(progress(d, winner).unwrap().xp, 500);
         assert!(progress(d, loser).is_some());
     }
+}
+
+#[test]
+fn buying_a_tier_keeps_the_progression_value() {
+    let rules = ArmyProgressionRules {
+        reveal_xp: 2, fixed_xp: 200, uncommon_xp: 100, rare_xp: 200, epic_xp: 400, legendary_xp: 800,
+    };
+    let mut progress = ArmyProgress { xp: 1500, ..crate::progression::initial() };
+    let before = crate::progression::progression_value(progress, rules);
+    for attribute in array![
+        crate::progression::Attribute::Battle, crate::progression::Attribute::Battle,
+        crate::progression::Attribute::Logistics, crate::progression::Attribute::Battle,
+    ] {
+        crate::progression::buy_tier(
+            ref progress, rules, crate::progression::BuyTier { explorer_id: 1, attribute, kind: Option::None },
+        );
+        assert_eq!(crate::progression::progression_value(progress, rules), before);
+    }
+    assert_eq!(progress.battle, 4);
+    assert_eq!(progress.xp, 1500 - 100 - 200 - 100 - 400);
 }

@@ -747,8 +747,38 @@ export const TransferTroopsContainer = ({
     );
     if (direction === null) return;
 
+    const assertMergeUnchanged = () => {
+      if (!fullMerge) return;
+      const game_id = configManager.getActiveGameId();
+      const sourceKey = { game_id, explorer_id: selectedEntityId };
+      const targetKey = { game_id, explorer_id: targetEntityId };
+      const source = store.get("ExplorerTroops", sourceKey);
+      const target = store.get("ExplorerTroops", targetKey);
+      const current = explorerTransferPlan({
+        sourceCount: selectedExplorerCount,
+        targetCount: targetExplorerCount,
+        sourceCap,
+        targetCap: targetTroopCapacityLimit,
+        sourceProgress: store.get("ArmyProgress", sourceKey),
+        targetProgress: store.get("ArmyProgress", targetKey),
+        rules: store.get("ArmyProgressionRules", { game_id }),
+        requiresProgress: !!source && "Slot" in source.troops.stamina,
+      });
+      if (
+        !source ||
+        !target ||
+        source.troops.count !== selectedExplorerTroops?.troops.count ||
+        target.troops.count !== targetExplorerTroops?.troops.count ||
+        !current.known ||
+        current.sourceWins !== sourceSurvives
+      ) {
+        throw new Error("The armies changed. Review the merge before confirming again.");
+      }
+    };
+
     try {
       setLoading(true);
+      assertMergeUnchanged();
 
       // maxTroops is derived from live native store rows. Re-apply it at submit time so
       // a concurrent spend cannot leave stale troop calldata in this panel.
@@ -829,6 +859,7 @@ export const TransferTroopsContainer = ({
           return;
         }
       } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
+        assertMergeUnchanged();
         await explorer_explorer_swap({
           signer: account,
           from_explorer_id: selectedEntityId,
