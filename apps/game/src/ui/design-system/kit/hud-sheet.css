@@ -867,6 +867,17 @@ span.ui-row__choose {
   overflow-y: auto;
   padding: theme(spacing.2) theme(spacing.3) max(theme(spacing.3), env(safe-area-inset-bottom));
 }
+/* A phone held sideways: the sheet stands in the HUD's right column, under its strip (HudBands). */
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 1023px) {
+  .ui-sheet {
+    inset-inline: auto;
+    right: max(env(safe-area-inset-right), theme(spacing.2));
+    top: var(--hud-sheet-top, theme(spacing.2));
+    bottom: max(env(safe-area-inset-bottom), theme(spacing.2));
+    width: theme(spacing.hud-column);
+    max-height: none;
+  }
+}
 @media (min-width: 1024px) {
   .ui-sheet {
     inset-inline: auto;
@@ -1443,6 +1454,42 @@ button.ui-relic:focus-visible {
 .ui-switch[aria-checked="true"]::after {
   background: rgb(var(--hud-dark));
   transform: translateX(18px);
+}
+
+/* ── A finger's targets (owner, 22 October 2026: mobile direction A). On a touch screen every control takes at least the
+   control height (44 px) each way: a small button, a row that opens, and the hit area of a slider's track and a switch,
+   whose paint stays as it is. ── */
+@media (pointer: coarse) {
+  .ui-button[data-size="sm"] {
+    height: var(--hud-control);
+  }
+  .ui-button[data-icon-only] {
+    min-width: var(--hud-control);
+  }
+  .ui-event__open {
+    min-height: var(--hud-control);
+    align-items: center;
+  }
+  .ui-slider input[type="range"] {
+    height: var(--hud-control);
+    background-color: transparent;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 6px;
+  }
+  .ui-slider input[type="range"]::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+  }
+  .ui-slider input[type="range"]::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+  }
+  .ui-switch::before {
+    position: absolute;
+    inset: -11px -2px;
+    content: "";
+  }
 }
 .ui-check {
   display: inline-grid;

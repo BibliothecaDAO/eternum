@@ -1,6 +1,7 @@
-import { type CSSProperties, type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { type CSSProperties, type ReactNode, type RefObject, useLayoutEffect, useRef, useState } from "react";
 
-import { HUD_FOOT_MARK, HUD_TOP_MARK } from "@/three/utils/labels/hud-clearance";
+import { useSideways } from "@/shell/frame/layout";
+import { HUD_COLUMN_MARK, HUD_FOOT_MARK, HUD_TOP_MARK } from "@/three/utils/labels/hud-clearance";
 import { OpenedFromPanel } from "@/ui/design-system/kit/opened-from-panel";
 
 const SAFE_AREA: CSSProperties = {
@@ -10,28 +11,11 @@ const SAFE_AREA: CSSProperties = {
   paddingLeft: "max(env(safe-area-inset-left), 0.5rem)",
 };
 
-/** The bands' gap (gap-1.5), kept between the place bar and a sheet standing on it. */
+/** The bands' gap (gap-1.5), kept between a sheet and what it stands on. */
 const BAND_GAP = 6;
 
-/**
- * Frontier's HUD on a phone, in bands (owner, 22 October 2026: mobile direction A, the map first): the strip and Next up
- * on top, the map in the middle, and the foot read upward from the place bar: the dock, the action row, the notices.
- * A nav page (Research, the Log, Chat, the season) rises from the place bar to at most half the screen and the map
- * stays above it; a sheet stands in the same place (`--hud-phone-foot`, the place bar's top). While either is open, the
- * action row and the dock step aside under it; the notices stay. A desktop has the HUD every mode shares
- * (FrontierDesktop).
- */
-export const HudBands = ({
-  strip,
-  stage,
-  page,
-  nextUp,
-  notices,
-  action,
-  dock,
-  nav,
-  children,
-}: {
+/** Every slot of a phone's HUD, as Frontier fills them. */
+type Bands = {
   strip: ReactNode;
   /** What floats over the map itself (the last hour's bubble). */
   stage?: ReactNode;
@@ -43,8 +27,23 @@ export const HudBands = ({
   dock?: ReactNode;
   nav?: ReactNode;
   children?: ReactNode;
-}) => {
-  const { ref, foot } = usePlaceBarTop();
+};
+
+/**
+ * Frontier's HUD on a phone (owner, 22 October 2026: mobile direction A, the map first). Held upright, in bands: the
+ * strip and Next up on top, the map in the middle, and the foot read upward from the place bar: the dock, the action
+ * row, the notices. Held sideways, the places stand in a rail at the left and the rest in one column at the right, the
+ * map between them. A nav page (Research, the Log, Chat, the season) stands where the action row and the dock stood, and
+ * the map stays clear of it; a sheet stands in the same place (`--hud-phone-foot` upright, `--hud-sheet-top` sideways,
+ * which hud-sheet.css reads). While either is open, the action row and the dock step aside under it; the notices stay.
+ * A desktop has the HUD every mode shares (FrontierDesktop).
+ */
+export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />);
+
+const UprightBands = ({ strip, stage, page, nextUp, notices, action, dock, nav, children }: Bands) => {
+  const bar = useRef<HTMLDivElement>(null);
+  // A sheet stands on the place bar: its top, from the screen's bottom.
+  const foot = useEdge(bar, (rect) => window.innerHeight - rect.top + BAND_GAP);
   return (
     <div
       aria-label="Frontier HUD"
@@ -58,42 +57,76 @@ export const HudBands = ({
       <div className="relative min-h-0 flex-1">{stage}</div>
       <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5">
         <div className="flex flex-col gap-1.5">{notices}</div>
-        {page ? (
-          <div data-page className="flex h-[50dvh] min-h-0 flex-col">
-            <div className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto">
-              <OpenedFromPanel.Provider value>{page}</OpenedFromPanel.Provider>
-            </div>
-          </div>
-        ) : (
-          <div data-under-sheet className="flex flex-col gap-1.5">
-            {action}
-            <div>{dock}</div>
-          </div>
-        )}
-        <div ref={ref}>{nav}</div>
+        {page ? <PageBand className="h-[50dvh]">{page}</PageBand> : <UnderSheet action={action} dock={dock} />}
+        <div ref={bar}>{nav}</div>
       </div>
       {children}
     </div>
   );
 };
 
-/** How far above the screen's bottom a sheet stands: the place bar's top, with the bands' gap. */
-const usePlaceBarTop = () => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [foot, setFoot] = useState(0);
+const SidewaysBands = ({ strip, stage, page, nextUp, notices, action, dock, nav, children }: Bands) => {
+  const top = useRef<HTMLDivElement>(null);
+  // A sheet stands in the column under the strip and Next up.
+  const sheetTop = useEdge(top, (rect) => rect.bottom + BAND_GAP);
+  return (
+    <div
+      aria-label="Frontier HUD"
+      className="pointer-events-none fixed inset-0 z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden"
+      style={{ ...SAFE_AREA, "--hud-sheet-top": `${sheetTop}px` } as CSSProperties}
+    >
+      <div {...HUD_COLUMN_MARK} className="flex">
+        {nav}
+      </div>
+      <div className="relative min-w-0 flex-1">{stage}</div>
+      <div {...HUD_COLUMN_MARK} className="flex min-h-0 w-hud-column flex-col gap-1.5">
+        <div ref={top} className="flex flex-col gap-1.5">
+          <div className="relative">{strip}</div>
+          <div data-next-up>{nextUp}</div>
+        </div>
+        <div className="flex flex-col gap-1.5">{notices}</div>
+        {page ? <PageBand className="flex-1">{page}</PageBand> : <UnderSheet action={action} dock={dock} />}
+      </div>
+      {children}
+    </div>
+  );
+};
+
+/** A nav page's place: as tall as its band gives, scrolling inside. */
+const PageBand = ({ className, children }: { className: string; children: ReactNode }) => (
+  <div data-page className={`flex min-h-0 flex-col ${className}`}>
+    <div className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto">
+      <OpenedFromPanel.Provider value>{children}</OpenedFromPanel.Provider>
+    </div>
+  </div>
+);
+
+/** The action row and the dock, at the band's foot; a sheet stands over them and they step aside. */
+const UnderSheet = ({ action, dock }: { action: ReactNode; dock: ReactNode }) => (
+  <div data-under-sheet className="mt-auto flex flex-col gap-1.5">
+    {action}
+    <div>{dock}</div>
+  </div>
+);
+
+/** An edge of an element on screen, read again whenever the element or the screen changes size. */
+const useEdge = (ref: RefObject<HTMLElement>, edge: (rect: DOMRect) => number) => {
+  const [value, setValue] = useState(0);
+  const read = useRef(edge);
+  read.current = edge;
   useLayoutEffect(() => {
-    const bar = ref.current;
-    if (!bar) return;
-    const measure = () => setFoot(Math.round(window.innerHeight - bar.getBoundingClientRect().top + BAND_GAP));
+    const element = ref.current;
+    if (!element) return;
+    const measure = () => setValue(Math.round(read.current(element.getBoundingClientRect())));
     measure();
-    // The place bar's height changes with its badges and the safe area, the screen's with its turning.
+    // The element's height changes with its badges and the safe area, the screen's with its turning.
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
-    observer?.observe(bar);
+    observer?.observe(element);
     window.addEventListener("resize", measure);
     return () => {
       observer?.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, []);
-  return { ref, foot };
+  }, [ref]);
+  return value;
 };
