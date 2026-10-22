@@ -29,10 +29,8 @@ export const expectedRuns = (blitz, eternum) => {
   if (firstReward.rewardId !== ESSENCE) throw new Error("the first Blitz exploration reward is no longer Essence");
   return [
     {
-      page: "blitz/worldmap-movement/movement",
+      page: "blitz/map",
       runs: [
-        ["Stamina on Deployment", String(blitz.troop.stamina.staminaInitial)],
-        ["Stamina Gain Per Phase", String(blitz.troop.stamina.staminaGainPerTick)],
         [
           "Essence",
           `${firstReward.percent}%`,
@@ -42,10 +40,10 @@ export const expectedRuns = (blitz, eternum) => {
       ],
     },
     {
-      page: "blitz/materials/production",
+      page: "blitz/realms",
       runs: [
         [
-          "Donkey Production",
+          "Donkeys",
           "Resource",
           "Input Materials (units/s)",
           "Output (units/s)",
@@ -68,7 +66,7 @@ export const expectedRuns = (blitz, eternum) => {
  */
 export const relicRuns = (relics, rules, firstRelicId) => [
   {
-    page: "blitz/materials/relics",
+    page: "blitz/map",
     runs: relics.map((relic) => [
       relic.effect,
       relic.recipientType === "Explorer" ? "Army" : "Realm",
@@ -108,6 +106,22 @@ const staminaPhrases = (mode, config) => {
   ];
 };
 
+/** Blitz's stamina as its armies page states it: per army tick, in seconds. */
+const blitzStaminaPhrases = (config) => {
+  const stamina = config.troop.stamina;
+  return [
+    {
+      page: "blitz/armies",
+      phrases: [
+        `recovers ${stamina.staminaGainPerTick} every ${config.tick.armiesTickIntervalInSeconds} seconds`,
+        `Exploring a tile costs ${stamina.staminaExploreStaminaCost}`,
+        `Attacking takes ${stamina.staminaAttackReq} stamina`,
+        `The defender spends ${stamina.staminaDefenseReq} stamina`,
+      ],
+    },
+  ];
+};
+
 /**
  * Frontier's numbers, from its generated config (stamina, tick, start, castle) and its native preset (days' depths,
  * guards, chests), as its four rules pages state them.
@@ -127,7 +141,7 @@ const frontierPhrases = (config, preset) => {
   const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
   return [
     {
-      page: "frontier/introduction",
+      page: "frontier/armies",
       phrases: [
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes, so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
         `Revealing a tile costs ${stamina.staminaExploreStaminaCost}, a step over known ground ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
@@ -206,11 +220,11 @@ const blitzLedgerPhrases = (blitz, ledger, chests) => {
   const reserve = blitz.startingResources.find((stack) => stack.resource === 26).amount;
   return [
     {
-      page: "blitz/game-entry",
+      page: "blitz/entry",
       phrases: [`at the season's entry fee (${lordsOf(ledger.entry_fee)} LORDS this season)`, flagPrices(ledger)],
     },
     {
-      page: "blitz/prize-pool",
+      page: "blitz/scoring",
       phrases: [
         entrySplit(ledger),
         chestDraw(chests),
@@ -221,7 +235,7 @@ const blitzLedgerPhrases = (blitz, ledger, chests) => {
       ],
     },
     {
-      page: "blitz/military/armies",
+      page: "blitz/armies",
       phrases: [
         `Each starts with ${n(blitz.troop.limit.startingGuard)} T1 troops of its type garrisoned and ${n(reserve)} in reserve`,
       ],
@@ -231,11 +245,13 @@ const blitzLedgerPhrases = (blitz, ledger, chests) => {
 
 /** The phrases every rules page that states a stamina, guard, chest or points number must show. */
 export const expectedPhrases = (blitz, eternum, frontier, frontierPreset, ledger, chests) => [
-  ...staminaPhrases("blitz", blitz),
+  ...blitzStaminaPhrases(blitz),
   ...staminaPhrases("eternum", eternum),
   {
-    page: "blitz/worldmap-movement/worldmap",
-    phrases: [`${n(Number(blitz.victoryPoints.pointsForRelicDiscovery) / POINTS_PRECISION)} victory points`],
+    page: "blitz/map",
+    phrases: [
+      `Opening a crate scores ${n(Number(blitz.victoryPoints.pointsForRelicDiscovery) / POINTS_PRECISION)} points`,
+    ],
   },
   ...frontierPhrases(frontier, frontierPreset),
   ...blitzLedgerPhrases(blitz, ledger, chests),

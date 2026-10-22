@@ -3,25 +3,27 @@ layout: landing
 ---
 
 import { HomePage } from "vocs/components";
+import { BLITZ } from "@/utils/blitz";
 
 <HomePage.Root>
   <div className="realms-homepage-background" aria-hidden="true">
     <img src="/images/covers/twilight-tundra.png" alt="" />
   </div>
 
-{" "}
-
-<img src="/images/logos/realms-world-white.svg" alt="Realms Logo" />
+<img src="/images/logos/realms-lockup.svg" alt="Realms" />
 <HomePage.Description>
-  Eternum is an open-source strategy game built with native Cairo contracts on Starknet, with long-format Eternum worlds
-  and timed Blitz matches.
+  Two strategy games, played onchain. Frontier is free: a new map every day, and nobody can attack you. Blitz is a{" "}
+  {BLITZ.game.minutes}-minute game for up to {BLITZ.game.players} players, paid in LORDS.
 </HomePage.Description>
 <HomePage.Buttons>
-  <HomePage.Button href="/overview/introduction" variant="primary">
-    Get Started
+  <HomePage.Button href="/frontier" variant="primary">
+    Frontier
   </HomePage.Button>
-  <HomePage.Button href="https://empire.realms.world" variant="outline">
-    Enter the Realms
+  <HomePage.Button href="/blitz" variant="outline">
+    Blitz
+  </HomePage.Button>
+  <HomePage.Button href="https://play.realms.party" variant="outline">
+    Play
   </HomePage.Button>
 </HomePage.Buttons>
 

@@ -4,7 +4,9 @@ import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { BEAST_NAMES, FALLEN_REALM_DEPTHS, ROAMING_BEASTS, SITE_GUARDS } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
+import { CONTRACT } from "./contract-constants";
 
 /**
  * Frontier's rules as its pages state them, read from the preset the game is launched with (the generated config for
@@ -25,15 +27,13 @@ const DEPTH_NAMES = ["Surface", "Ethereal I", "Ethereal II", "Ethereal III"] as 
 const TIERS = ["common", "uncommon", "rare", "epic", "legendary"] as const;
 const hoursOf = (units: number) => (units * FRONTIER_DAY_UNIT_SECONDS) / 3600;
 
-// A bag of five days holds one day of each length, 2 to 6 units (contracts/l3/world-native/src/days.cairo).
+// A bag of days holds one day of each length, 2 to 6 units (contracts/l3/world-native/src/days.cairo).
 const SHORT_DAY_UNITS = 2;
 const LONG_DAY_UNITS = 6;
-const DAYS_PER_BAG = 5;
-const UNITS_PER_BAG = 20;
+const DAYS_PER_BAG = CONTRACT.daysPerBag;
+const UNITS_PER_BAG = CONTRACT.unitsPerBag;
 
-// The explore chest's find rate: FRONTIER_CHEST_FIND_BPS in contracts/l3/world-native/src/discovery.cairo, which the
-// client schema does not export.
-const EXPLORE_CHEST_ONE_IN = 10_000;
+const EXPLORE_CHEST_ONE_IN = 10_000 / CONTRACT.frontierChestFindBps;
 // Refill's price, from logic/relics.cairo: 1 LORDS per missing point.
 const REFILL_LORDS_PER_POINT = 1;
 
@@ -95,6 +95,7 @@ export const FRONTIER = {
   },
   depths: frontierPreset.depths.map((depth, index) => ({
     name: DEPTH_NAMES[index],
+    ruinGuardName: BEAST_NAMES[FALLEN_REALM_DEPTHS[index]!.beast],
     revealPercent: `${depth.revealPercent}%`,
     entryStamina: n(depth.entryStamina),
     siteGuard: range(depth.siteGuardLower, depth.siteGuardUpper),
@@ -103,6 +104,12 @@ export const FRONTIER = {
     beastStrong: range(depth.beastStrongLower, depth.beastStrongUpper),
     chest: TIERS.map((tier) => pct(depth.chest[tier])),
   })),
+  guards: {
+    camp: BEAST_NAMES[SITE_GUARDS.camp.beast],
+    rift: BEAST_NAMES[SITE_GUARDS.rift.beast],
+    weakBeast: BEAST_NAMES[ROAMING_BEASTS.lowly.beast],
+    strongBeast: BEAST_NAMES[ROAMING_BEASTS.stronger.beast],
+  },
   xp: {
     reveal: n(frontierPreset.progression.revealXp),
     shrine: n(frontierPreset.progression.fixedXp),

@@ -1,6 +1,6 @@
 # Game Documentation
 
-The official documentation site for Eternum, built with Vocs - a React-based documentation framework.
+The documentation site for Realms (Frontier and Blitz), built with Vocs, a React-based documentation framework.
 
 ## Getting Started
 
@@ -25,63 +25,34 @@ pnpm run build
 The site lives at [docs.realms.party](https://docs.realms.party). `deploy/first`'s Cloudflare command builds and
 publishes it with the client from the same commit (dev: docs.dev-realms.party); see `deploy/first/README.md`.
 
-## Architecture
+## How the site is built
 
-The documentation site follows a structured organization to provide clear and accessible game information:
+The pages say what the game does, read from the game's own code: never a number or a rule written by hand when the code
+holds it.
 
-```
-game-docs/
-├── docs/
-│   ├── pages/               # Documentation content
-│   │   ├── development/     # Developer guides
-│   │   │   ├── client.mdx   # Client development guide
-│   │   │   ├── contracts.mdx # Smart contract documentation
-│   │   │   ├── sdk.mdx      # SDK usage guide
-│   │   │   └── llm.mdx      # LLM integration docs
-│   │   ├── mechanics/       # Game mechanics documentation
-│   │   │   ├── achievements.mdx
-│   │   │   ├── agents.mdx
-│   │   │   ├── tribes.mdx
-│   │   │   └── world-structures.mdx
-│   │   └── overview/        # General game information
-│   │       ├── introduction.mdx
-│   │       ├── bridging.mdx
-│   │       └── world-physics.mdx
-│   ├── components/          # React components for documentation
-│   │   ├── BiomeCombat.tsx  # Combat mechanics by biome
-│   │   ├── BuildingCosts.tsx # Building cost tables
-│   │   ├── ResourceTable.tsx # Resource information
-│   │   └── [other game data components]
-│   └── utils/               # Utilities and constants
-│       ├── resources.ts     # Resource definitions
-│       ├── constants.ts     # Game constants
-│       └── formatting.ts    # Display formatting utilities
-├── vocs.config.ts           # Vocs configuration
-└── vite-plugin-llm-txt.mjs  # Plugin for LLM documentation generation
-```
+- **Pages** (`docs/pages`): Start, Your account (sign-in, payout wallet, LORDS), Frontier, Blitz, and More (What's new,
+  the developer pages, and the Eternum Season 1 archive, which no live game backs and which says so on every page).
+- **Numbers** come from the modes' configs and presets: `docs/utils/frontier.ts` and `docs/utils/blitz.ts` read them,
+  `docs/utils/config.ts` fails the build on a key a mode's config lacks, and `docs/utils/contract-constants.json` holds
+  the few rules the contracts keep as literals, each beside the Cairo line it copies
+  (`scripts/contract-constants.test.mjs` fails when that line changes).
+- **Media** (`docs/components/Media.tsx`): every video and screenshot is captured from the game by one command, from the
+  list in `media.json`, into `apps/game/public/docs-media`:
 
-### Key Components
+  ```bash
+  pnpm --dir apps/game dev --host 127.0.0.1 --port <port>
+  node scripts/capture-media.mjs --base https://127.0.0.1:<port> [--session <saved test player>] [--only a,b]
+  ```
 
-- **Documentation Pages (MDX)**: Written in MDX format, allowing for interactive React components within markdown
-- **Interactive Components**: React components that display game data dynamically (building costs, resource tables,
-  etc.)
-- **Vocs Framework**: Provides navigation, search, and theming capabilities
-- **LLM Integration**: Custom Vite plugin that generates documentation for AI/LLM consumption
+  Most items film the lab's fixture pages and studio. Items marked `live` play the dev stack as a saved test player.
 
-### Documentation Structure
+- **Moved pages** keep their old addresses through `_redirects`.
 
-The documentation is organized into three main sections:
+## Checks
 
-1. **Overview**: General game information, getting started guides, and world mechanics
-2. **Mechanics**: Detailed explanations of game systems (combat, achievements, tribes, etc.)
-3. **Development**: Technical documentation for developers building on Eternum
+`pnpm run build` runs the docs' tests, builds every page, then:
 
-### Building and Deployment
-
-The documentation site is built as a static site that can be deployed to any static hosting service. The build process
-includes:
-
-- MDX compilation
-- Component bundling
-- Static site generation
-- Search index creation
+- ships each file a page names from the game's public folder, and fails on a local link, image, video or redirect that
+  resolves to nothing (`scripts/ship-referenced-assets.mjs`);
+- checks each page states its mode's own numbers, and the text export (`llm.txt`) the same
+  (`scripts/check-rendered-balance.mjs`).

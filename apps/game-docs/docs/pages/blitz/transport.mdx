@@ -1,0 +1,36 @@
+---
+title: Transfers and donkeys
+description: Moving goods and troops between your holdings
+---
+
+import { BLITZ } from "@/utils/blitz";
+import { BlitzWeightTable } from "@/components/blitz-components/WeightTable";
+import { Shot } from "@/components/Media";
+
+# Transfers and donkeys
+
+You can send goods and troops between your own holdings: your realms, camps, Essence Rifts and Hyperstructures. You
+cannot send anything to another player.
+
+## Sending
+
+Open **Transfer** (`T`) from the holding you send from, or right-click another of your holdings on the map. Pick where
+it goes. With several destinations, each good's total splits evenly among them; type a destination's share to fix it.
+Each destination and **Send** say when the goods land.
+
+<Shot name="blitz/transfer" caption="Transfer from one realm to two holdings, with when each shipment lands." />
+
+## Donkeys
+
+Every shipment is carried by donkeys. One donkey carries {BLITZ.transport.donkeyKg} kg, and the donkeys a shipment needs
+are used up by it. Donkeys come from a market ([Realms and production](/blitz/realms#production)).
+
+<BlitzWeightTable />
+
+## Arriving
+
+A shipment travels by distance, and troops travel slower than goods. It lands at the end of the
+{BLITZ.transport.deliveryMinutes}-minute delivery tick its trip ends in, in the destination's **Arrivals**, a tab of the
+Transfer window. A shipment cannot be called back once it has left.
+
+**Repeat** on a delivered shipment adds it to the realm's automation.

@@ -4,15 +4,18 @@ description: What a Frontier chest pays, and how its LORDS reach you
 ---
 
 import { FRONTIER } from "@/utils/frontier";
+import { Shot, Video } from "@/components/Media";
 
 # Chests
 
 Every Frontier chest pays LORDS, from the season's pool, into your realm. There are two: the chest a ruin guards, and
-the rare chest a reveal turns up.
+the rare chest a reveal turns up. A chest pays LORDS and nothing else: no item, relic or cosmetic. Until the LORDS
+launch, these are test LORDS ([LORDS](/account/lords)).
 
 ## A ruin's chest
 
-Clearing a ruin pays its chest. Its tier is rolled when the ruin is found, by the ground it stands on:
+Clearing a ruin pays its chest, and gives the army XP by the ruin guard's starting strength. The chest's rarity is
+rolled when the ruin is found, from the odds of the depth it stands on:
 
 | Ground                    | Common                        | Uncommon                      | Rare                          | Epic                          | Legendary                     |
 | ------------------------- | ----------------------------- | ----------------------------- | ----------------------------- | ----------------------------- | ----------------------------- |
@@ -27,15 +30,26 @@ A chest is worth its tier's shares at the day's price:
 | ------ | --------------------------- | --------------------------- | --------------------------- | --------------------------- | --------------------------- |
 | Shares | {FRONTIER.chests.shares[0]} | {FRONTIER.chests.shares[1]} | {FRONTIER.chests.shares[2]} | {FRONTIER.chests.shares[3]} | {FRONTIER.chests.shares[4]} |
 
-The price of a share is set each day from the season's pool, and never exceeds{" "} {FRONTIER.chests.priceCeiling}
-LORDS. The Season page shows the pool, today's price and its ceiling. A chest's LORDS are set aside from the pool as the
-ruin is found, so a ruin found today pays at today's price.
+The price of a share is set each day from the season's pool, and never exceeds {FRONTIER.chests.priceCeiling} LORDS. A
+chest's LORDS are set aside from the day's budget as the ruin is found, so a ruin found today pays at today's price.
+
+- **One ruin a day.** Each realm finds at most one ruin a day, counting the surface and every depth together.
+- **A ruin the budget cannot fund does not appear.** The reveal comes up empty, and it does not use your day's ruin, so
+  a later reveal that day can still find one.
+
+<Shot
+  frame="panel"
+  name="frontier/season-pool"
+  caption="The Season board: the pool, what today releases, a share's price and its ceiling."
+/>
 
 ## A chest in the wild
 
 Each newly revealed surface tile has a 1 in {FRONTIER.discovery.exploreChestOneIn} chance of a chest, found only while
-the season's pool can fund it. It is worth one common share at today's price, set aside as it is found. Open it with one
-of your armies beside it before the day ends; its LORDS go to that army's realm.
+the day's budget can fund it. It is always common: one share at today's price, set aside as it is found. Open it with
+one of your armies beside it before the day ends; its LORDS go to that army's realm.
+
+<Video frame="wide" name="frontier/open-chest" caption="A chest found in the wild, opened by the army beside it." />
 
 ## Your LORDS
 
