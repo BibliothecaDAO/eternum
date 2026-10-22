@@ -228,3 +228,16 @@ it.each([390, 1440])(
     expect(host.querySelector('section[aria-label="Today"]')).toBeNull();
   },
 );
+
+it.each([390, 1440])("opens and closes the Wheat store from its control at %i px", async (width) => {
+  viewport.set(width);
+  await renderHud();
+  const control = host.querySelector('[aria-label^="Wheat "]')?.closest("button");
+  expect(control).toBeTruthy();
+  expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
+  await act(async () => control!.click());
+  expect(host.querySelector('section[aria-label="Wheat"]')).not.toBeNull();
+  expect(host.querySelector('section[aria-label="Production"]')).toBeNull();
+  await act(async () => control!.click());
+  expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
+});

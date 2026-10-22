@@ -122,14 +122,14 @@ const BLITZ_MAP = {
 };
 
 /**
- * What a signed-in player does: realm, map, select the readiest army, read production, then a tile tapped for the army
+ * What a signed-in player does: realm, map, select the readiest army, read its Wheat store, then a tile tapped for the army
  * while its order is in flight (its next order) in each way that order can leave, and two explores.
  */
 const PLAYER_STEPS = [
   { name: "enter-on-map", settleMs: 8_000, verify: inScene("map") },
   { name: "hud-layout", play: readTheHudLayout, settleMs: 0, verify: hudLaidOut(inScene("map")) },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 3_000, verify: armySelected },
-  { name: "production", play: openAndCloseProduction, settleMs: 1_000, verify: sheetOpenedAndClosed("Production") },
+  { name: "wheat-store", play: openAndCloseWheatStore, settleMs: 1_000, verify: storeOpenedAndClosed },
   ...nextOrderSteps(),
   { name: "explore-1", play: exploreBesideArmy, settleMs: 6_000, verify: explored },
   { name: "explore-2", play: exploreBesideArmy, settleMs: 6_000, verify: explored },
@@ -395,14 +395,21 @@ async function readTheSeasonInTheMenu({ browser }) {
   return { opened, read, closed: browser.observe().dialogs };
 }
 
-/** The store bar opens production; its name starts with the first store it shows. */
-async function openAndCloseProduction({ browser }) {
-  browser.run(["find", "role", "button", "click", "--name", "Essence"]);
+/** A Wheat ring or phone plate opens its store card; pressing it again closes the same card. */
+async function openAndCloseWheatStore({ browser }) {
+  const card = () => browser.read(`Boolean(document.querySelector('section[aria-label="Wheat"]'))`);
+  browser.run(["find", "role", "button", "click", "--name", "Wheat"]);
   await sleep(1_500);
-  const opened = browser.observe().dialogs;
-  browser.press("Escape");
+  const opened = card();
+  browser.run(["find", "role", "button", "click", "--name", "Wheat"]);
   await sleep(1_000);
-  return { opened, closed: browser.observe().dialogs };
+  return { opened, closed: card() };
+}
+
+function storeOpenedAndClosed({ played }) {
+  if (!played.opened) return failed("the Wheat store card did not open");
+  if (played.closed) return failed("the Wheat store card did not close");
+  return completed(played);
 }
 
 function sheetOpenedAndClosed(label) {

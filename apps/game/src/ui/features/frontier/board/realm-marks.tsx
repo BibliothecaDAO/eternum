@@ -23,7 +23,7 @@ export const RealmBadge = ({ level, reach }: { level: number; reach: number }) =
       {step > 0 && (
         <span
           aria-hidden
-          className="absolute -bottom-1 -right-2 inline-flex items-center rounded-full border border-hud-line-strong bg-hud-surface pl-0.5 pr-1 text-[11px] font-bold leading-4 text-hud-accent"
+          className="absolute -bottom-1 -right-2 inline-flex items-center rounded-full border border-hud-line-strong bg-hud-surface pl-0.5 pr-1 text-hud-badge leading-4 text-hud-accent"
         >
           <Icon name={REACH_ICONS[step - 1]} size={12} />
           {REACH_NUMERALS[step - 1]}
