@@ -13,6 +13,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "@types/react": "catalog:game",
     "@types/react-dom": "catalog:game",

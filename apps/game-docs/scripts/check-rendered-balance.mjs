@@ -107,8 +107,12 @@ const staminaPhrases = (mode, config) => {
 };
 
 /** Blitz's stamina as its armies page states it: per army tick, in seconds. */
+/** A tier's damage multiplier over T1's, from its 64.64 fixed-point config value. */
+const tierWeight = (multiplier) => n(Number(BigInt(multiplier) / 2n ** 64n));
+
 const blitzStaminaPhrases = (config) => {
   const stamina = config.troop.stamina;
+  const damage = config.troop.damage;
   return [
     {
       page: "blitz/armies",
@@ -117,15 +121,24 @@ const blitzStaminaPhrases = (config) => {
         `Exploring a tile costs ${stamina.staminaExploreStaminaCost}`,
         `Attacking takes ${stamina.staminaAttackReq} stamina`,
         `The defender spends ${stamina.staminaDefenseReq} stamina`,
+        `each side waits up to ${config.battle.cooldownSeconds} seconds`,
+        `After a ranged attack, both sides wait ${Math.floor(config.battle.cooldownSeconds / 2)} seconds.`,
+        `The tier weights are 1 for T1, ${tierWeight(damage.t2DamageMultiplier)} for T2 and ${tierWeight(damage.t3DamageMultiplier)} for T3.`,
       ],
     },
   ];
 };
 
+/** One Knight's wheat, as its recipe takes it per troop made: Frontier deploys Knights only. */
+const wheatPerTroop = (config) =>
+  config.resources.productionBySimpleRecipe[26].find((input) => input.resource === 35).amount /
+  config.resources.productionBySimpleRecipeOutputs[26];
+
 /**
  * Frontier's numbers, from its generated config (stamina, tick, start, castle) and its native preset (days' depths,
  * guards, chests), as its four rules pages state them.
  */
+
 const frontierPhrases = (config, preset) => {
   const stamina = config.troop.stamina;
   const tick = config.tick.armiesTickIntervalInSeconds;
@@ -168,6 +181,7 @@ const frontierPhrases = (config, preset) => {
       page: "frontier/realm",
       phrases: [
         `A new realm starts with ${start(26)} troops, ${start(35)} wheat and ${start(23)} labor.`,
+        `take ${n(preset.board.rationStep)} wheat off the ${n(wheatPerTroop(config))} wheat each troop costs to deploy`,
         ...armies.map((count, index) => `${index + 1} ${n(count)} ${n(caps[index])}`),
       ],
     },

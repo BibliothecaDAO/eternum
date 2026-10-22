@@ -39,6 +39,16 @@ const REFILL_LORDS_PER_POINT = 1;
 
 const tickMinutes = config.tick.armiesTickIntervalInSeconds / 60;
 
+// What one troop costs to deploy, in wheat: the Knight recipe's wheat over its output (Frontier deploys Knights only).
+// Each Rations pick takes the preset's rationStep off it, in whole wheat (resources_domain.cairo `ration_cut`).
+const KNIGHT = 26;
+const WHEAT = 35;
+const knightWheat = config.resources.productionBySimpleRecipe[KNIGHT]?.find(
+  (input: { resource: number }) => input.resource === WHEAT,
+);
+if (!knightWheat) throw new Error("Frontier's Knight recipe takes no wheat");
+const wheatPerTroop = knightWheat.amount / config.resources.productionBySimpleRecipeOutputs[KNIGHT];
+
 /** One research row's tiers, uncommon up, each with its Essence and labor price. */
 const researchRow = (row: number) =>
   frontierPreset.research
@@ -151,7 +161,8 @@ export const FRONTIER = {
     depths: researchRow(research.ROW_DEPTH),
     trainingGate: TIERS[frontierPreset.board.trainingGateTier],
     outputStep: pct(frontierPreset.board.outputStepBps),
-    rationStep: pct(frontierPreset.board.rationStep * 10000),
+    rationWheat: n(frontierPreset.board.rationStep),
+    troopWheat: n(wheatPerTroop),
     populationStep: pct(frontierPreset.board.populationStepBps),
   },
   attributes: {

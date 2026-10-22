@@ -11,13 +11,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
-import {
-  activeCombatRules,
-  configManager,
-  getGuardsByStructure,
-  getTroopResourceId,
-  StaminaManager,
-} from "@bibliothecadao/eternum";
+import { configManager, getGuardsByStructure, getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
@@ -196,7 +190,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         attackerIsStructureGuard: attackerType === AttackerType.Structure,
         defenderIsStructureGuard: isStructureTarget,
       },
-      { rules: activeCombatRules(), rollsDice },
+      { rules: configManager.getCombatRules(), rollsDice },
     );
   }, [
     attackerArmyData,

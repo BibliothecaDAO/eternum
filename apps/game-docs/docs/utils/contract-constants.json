@@ -88,5 +88,25 @@
     "file": "combat.cairo",
     "source": "BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER = FixedTrait::new(7, false) / FixedTrait::new(10, false);",
     "value": 7
+  },
+  {
+    "key": "sizeExponentTenths",
+    "file": "combat.cairo",
+    "source": "return FixedTrait::new_unscaled(2, false) / FixedTrait::new_unscaled(10, false);",
+    "value": 2
+  },
+  {
+    "key": "timerRefundFloorRatio",
+    "file": "combat.cairo",
+    "source": "let _2_POINT_5: Fixed = FixedTrait::new(46116860184273879040, false);",
+    "fixed64": "46116860184273879040",
+    "value": 2.5
+  },
+  {
+    "key": "timerRefundCeilingRatio",
+    "file": "combat.cairo",
+    "source": "let _10_POINT_0: Fixed = FixedTrait::new(184467440737095516160, false);",
+    "fixed64": "184467440737095516160",
+    "value": 10
   }
 ]

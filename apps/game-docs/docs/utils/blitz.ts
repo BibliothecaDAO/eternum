@@ -1,6 +1,10 @@
+import { type CombatRules, type ExchangeTroops, resolveExchange } from "@bibliothecadao/eternum/combat-exchange";
+import { BiomeType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { buildTroopDamageConfig, buildTroopStaminaConfig } from "../../../../config/deployer/clean/registrar/preset";
 import { blitzPreset } from "../../../../config/source/blitz/native";
 import { nativeRuleConstants as rule } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { buildablePlotCount } from "../../../../packages/core/src/utils/castle-reach";
+
 import {
   BLITZ_SLOT_INTERVAL_SECONDS,
   BLITZ_SLOT_PREPARATION_SECONDS,
@@ -55,6 +59,79 @@ if (!timedRelic) throw new Error("Blitz has no timed relic");
 
 // A Blitz map's Hyperstructure rings stand this far apart: settlement_grid.cairo `distances(spacing).step`.
 const ringStep = (blitzPreset.spacing * 3) / 2 + 3;
+
+// The game's combat rules as the contract reads them: the deployer's own mapping of the config, its 64.64 fixed-point
+// values as the bigints the exchange takes.
+const FIXED_ONE = 2n ** 64n;
+const damageRules = buildTroopDamageConfig(config);
+const combatRules: CombatRules = {
+  cooldownSeconds: config.battle.cooldownSeconds,
+  tickSeconds,
+  damage: {
+    ...damageRules,
+    damage_scaling_factor: BigInt(damageRules.damage_scaling_factor),
+    t1_damage_value: BigInt(damageRules.t1_damage_value),
+    t2_damage_multiplier: BigInt(damageRules.t2_damage_multiplier),
+    t3_damage_multiplier: BigInt(damageRules.t3_damage_multiplier),
+  },
+  stamina: buildTroopStaminaConfig(config),
+};
+const wholeOf = (value: bigint) => Number(value / FIXED_ONE);
+// The armies page says a lopsided fight hands its stamina back; it is wrong the day the config stops the refund.
+if (!combatRules.stamina.damage_stamina_refund) throw new Error("Blitz no longer refunds a fight's stamina");
+
+/**
+ * The worked example: 1,000 Knights of each tier attack 1,000 T1 Knights on grassland (no biome edge for Knights), both
+ * rested, no relics, resolved by the client's exchange, which reproduces the contract's recorded exchanges exactly.
+ */
+const EXAMPLE_TROOPS = 1_000;
+// The moment of the example fight; each bar is settled then, at a T1 army's full stamina.
+const FIGHT_AT = 1_000;
+const TROOP_TIERS = ["T1", "T2", "T3"] as const;
+const restedKnights = (tier: (typeof TROOP_TIERS)[number]): ExchangeTroops => ({
+  category: "Knight",
+  tier,
+  count: BigInt(EXAMPLE_TROOPS) * BigInt(RESOURCE_PRECISION),
+  stamina: { amount: BigInt(stamina.staminaKnightMax), settled_at: FIGHT_AT, remainder: 0 },
+  boosts: {
+    incr_damage_dealt_percent_num: 0,
+    incr_damage_dealt_end_at: 0,
+    decr_damage_gotten_percent_num: 0,
+    decr_damage_gotten_end_at: 0,
+    incr_stamina_regen_percent_num: 0,
+    incr_stamina_regen_seconds_left: 0,
+    incr_explore_reward_percent_num: 0,
+    incr_explore_reward_end_at: 0,
+  },
+  battle_cooldown_end: FIGHT_AT,
+});
+const exampleFight = (tier: (typeof TROOP_TIERS)[number]) => {
+  const attacker = restedKnights(tier);
+  const result = resolveExchange(
+    attacker,
+    restedKnights("T1"),
+    {
+      timestamp: FIGHT_AT,
+      attackDistance: 1,
+      attackerBiome: BiomeType.Grassland,
+      defenderBiome: BiomeType.Grassland,
+      attackerIsStructureGuard: false,
+      defenderIsStructureGuard: false,
+      attackerRoll: 0,
+      defenderRoll: 0,
+    },
+    combatRules,
+  );
+  if (result.ok === false) throw new Error(`The example fight is refused: ${result.refusal}`);
+  const troops = (loss: bigint) => n(Number(loss / BigInt(RESOURCE_PRECISION)));
+  return {
+    tier,
+    defendersLost: troops(result.defenderLoss),
+    attackersLost: troops(result.attackerLoss),
+    attackerWait: n(result.attacker.battle_cooldown_end - FIGHT_AT),
+    staminaSpent: n(Number(attacker.stamina.amount - result.attacker.stamina.amount)),
+  };
+};
 
 export const BLITZ = {
   game: {
@@ -116,6 +193,18 @@ export const BLITZ = {
     rangedOnArmies: `${CONTRACT.rangedOnArmiesPercent}%`,
     rangedOnGuards: `${CONTRACT.rangedOnGuardsPercent}%`,
     crossbowRange: n(CONTRACT.crossbowRange),
+  },
+  combat: {
+    scale: n(wholeOf(combatRules.damage.damage_scaling_factor)),
+    sizeExponent: n(CONTRACT.sizeExponentTenths / 10),
+    tierWeights: [FIXED_ONE, combatRules.damage.t2_damage_multiplier, combatRules.damage.t3_damage_multiplier].map(
+      (weight) => n(wholeOf(weight)),
+    ),
+    refundFrom: n(CONTRACT.timerRefundFloorRatio),
+    refundFull: n(CONTRACT.timerRefundCeilingRatio),
+    rangedWaitSeconds: n(Math.floor(config.battle.cooldownSeconds / 2)),
+    exampleTroops: n(EXAMPLE_TROOPS),
+    example: TROOP_TIERS.map(exampleFight),
   },
   map: {
     ringStep: n(ringStep),

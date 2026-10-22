@@ -13,9 +13,12 @@ const constants = JSON.parse(readFileSync(join(app, "docs/utils/contract-constan
 const source = (file) => readFileSync(join(app, "../../contracts/l3/world-native/src", file), "utf8");
 
 test("every copied contract constant still reads as its Cairo line says", () => {
-  for (const { key, file, source: line, value } of constants) {
+  for (const { key, file, source: line, value, fixed64 } of constants) {
     assert.ok(source(file).includes(line), `${key}: ${file} no longer holds "${line}"`);
-    assert.ok(line.includes(String(value)), `${key}: ${value} is not the value "${line}" states`);
+    // A 64.64 fixed-point literal is stored as Cairo writes it, and its value is that literal over 2^64.
+    const literal = fixed64 ?? String(value);
+    assert.ok(line.includes(literal), `${key}: ${literal} is not the value "${line}" states`);
+    if (fixed64) assert.equal(BigInt(fixed64), BigInt(value * 2 ** 64), `${key}: ${fixed64} is not ${value} in 64.64`);
   }
 });
 

@@ -7,7 +7,6 @@ import { BLITZ } from "@/utils/blitz";
 import { startingForcesOf } from "@/utils/config";
 import { BiomeCombat } from "@/components/BiomeCombat";
 import { BiomeStamina } from "@/components/BiomeStamina";
-import { DamageCalculation } from "@/components/DamageCalculation";
 import { Shot, Video } from "@/components/Media";
 
 # Armies and combat
@@ -73,12 +72,29 @@ tile.
 
 <BiomeCombat mode="blitz" />
 
-**Damage.**
+**Damage.** Both sides strike in the same exchange. Each side deals {BLITZ.combat.scale} × its troops × its tier's
+weight ÷ the other side's tier weight ÷ (both sides' troops together)<sup>{BLITZ.combat.sizeExponent}</sup>. The tier
+weights are {BLITZ.combat.tierWeights[0]} for T1, {BLITZ.combat.tierWeights[1]} for T2 and{" "}
+{BLITZ.combat.tierWeights[2]} for T3. On top of that:
 
-<DamageCalculation />
+- the biome adds or takes {BLITZ.troops.biomeBonus}, as the table above shows;
+- a defender without the stamina to defend deals {BLITZ.troops.lowStaminaPenalty} less;
+- a defender still on its battle timer deals {BLITZ.troops.timerPenalty} less;
+- relics and the troop roles below add their own.
 
-**Battle timer.** After a fight, each side waits {BLITZ.troops.cooldownSeconds} seconds before it can attack again. An
-army attacked while it waits deals {BLITZ.troops.timerPenalty} less damage.
+Blitz rolls no dice, so the attack forecast is the result. For example, {BLITZ.combat.exampleTroops} Knights attack{" "}
+{BLITZ.combat.exampleTroops} T1 Knights on grassland, where Knights have no biome edge:
+
+| Attacking tier                 | Defenders lost                          | Attackers lost                          | Attacker's battle timer                        | Attacker's stamina spent               |
+| ------------------------------ | --------------------------------------- | --------------------------------------- | ---------------------------------------------- | -------------------------------------- |
+| {BLITZ.combat.example[0].tier} | {BLITZ.combat.example[0].defendersLost} | {BLITZ.combat.example[0].attackersLost} | {BLITZ.combat.example[0].attackerWait} seconds | {BLITZ.combat.example[0].staminaSpent} |
+| {BLITZ.combat.example[1].tier} | {BLITZ.combat.example[1].defendersLost} | {BLITZ.combat.example[1].attackersLost} | {BLITZ.combat.example[1].attackerWait} seconds | {BLITZ.combat.example[1].staminaSpent} |
+| {BLITZ.combat.example[2].tier} | {BLITZ.combat.example[2].defendersLost} | {BLITZ.combat.example[2].attackersLost} | {BLITZ.combat.example[2].attackerWait} seconds | {BLITZ.combat.example[2].staminaSpent} |
+
+**Battle timer.** After a fight at close range, each side waits up to {BLITZ.troops.cooldownSeconds} seconds before it
+can attack again, and spends the stamina the fight took. A side that dealt more than {BLITZ.combat.refundFrom} times the
+damage it took waits less and gets some of that stamina back. At {BLITZ.combat.refundFull} times or more it waits not at
+all and gets all of it back. After a ranged attack, both sides wait {BLITZ.combat.rangedWaitSeconds} seconds.
 
 <Video name="blitz/battle" caption="A battle: the attacker strikes, the defender falls." />
 
@@ -90,8 +106,7 @@ army attacked while it waits deals {BLITZ.troops.timerPenalty} less damage.
   {BLITZ.stamina.attack} stamina, but the target spends only {BLITZ.stamina.rangedDefense} and strikes no blow back. It
   deals {BLITZ.troops.rangedOnArmies} of its damage to an army and {BLITZ.troops.rangedOnGuards} to a structure's
   guards, ignores biomes, and its battle timer is half as long. A ranged attack never claims a structure.
-- **Paladins** have no combat bonus. Their biome bonuses and maluses are the largest, and open ground costs them the
-  least stamina.
+- **Paladins** have no combat bonus, and open ground costs them the least stamina.
 
 ## Capturing
 
