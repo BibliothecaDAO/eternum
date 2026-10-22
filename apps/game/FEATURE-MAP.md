@@ -686,6 +686,21 @@ releases each WebGL page after capture. The exported `proveWorkshops` also accep
 To regenerate only the Workshop thumbnail with the shared 85% fill normalizer:
 `node apps/game/scripts/render-building-thumbnails.mjs https://127.0.0.1:4218 /absolute/evidence/directory /models/new-buildings-opt/workshop.glb`.
 
+## Frontier day end
+
+In a Frontier game, with a realm, when the day ends on the chain clock: the spires' orb bursts and the mist rolls over
+the map, sparing the realm (the game end's veil), and the map takes no orders. After 3 s the ended day's summary rises
+over it (the day-done card: totals, rank, troops; once per ended day on this device, only for a day played), low in the
+middle on a desktop and as a sheet on a phone. Space, Esc or Skip jumps the mist to the summary. Continue fades the
+screen to black; the realm's new land comes in behind it (the map re-projected once the block clock turns, the camera on
+the realm), and the screen comes back up on the new day. Opening the game after the day ended: the summary waits over
+the new land in the dark; Continue lifts it. A day not played, or a visit to another realm, passes without the summary.
+Code: `hooks/store/use-day-end-store.ts`, `ExpeditionRollover`, `rollover/day-done.tsx` and `day-end-screen.tsx`.
+
+`/lab/day-end` turns the day with the same rollover (`watchDayTurn`) on a lab clock over the game's Frontier day facts,
+and plays the same moment, screen and card on lab land (`case=ordinary|together|late-block|later`; a narrow window plays
+the phone); `pnpm --dir apps/game prove:day-end --port 4199 --out <fresh-dir>` proves every case on the GPU.
+
 ## Cleared Frontier sites
 
 On the world map, win the adjacent fight at a guarded site. Its standard replaces the structure; select that tile to

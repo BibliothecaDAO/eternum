@@ -1,4 +1,4 @@
-import { gameEndIsNear, type endgameFrame } from "../effects/endgame/sequence";
+import { veilIsNear, type endgameFrame } from "../effects/endgame/sequence";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
@@ -75,12 +75,14 @@ import { LeftView } from "@/types";
 import {
   armyRealmSpire,
   configManager,
+  dayOf,
   expeditionSpires,
   NEUTRAL_BIOME_CLIMATE,
   Position,
   isOpenSpawnHex,
   isViewerOwner,
   isExpeditionRealm,
+  readExpeditionRules,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import {
@@ -1041,6 +1043,8 @@ export default class WorldmapScene extends WarpTravel {
   private chestLabelsGroup!: Group;
   private reservedHyperstructureManager!: ReservedHyperstructureManager;
   private spireManager!: SpireManager;
+  /** The block second the veil's nearness was last asked at. */
+  private veilCheckedAt = -1;
   private mapSiteManager!: MapSiteManager;
   private spireLabelsGroup!: Group;
 
@@ -7961,8 +7965,7 @@ export default class WorldmapScene extends WarpTravel {
 
   public advanceGameEnd(frame: ReturnType<typeof endgameFrame>, delta: number): void {
     if (frame.phase === "live") {
-      if (gameEndIsNear(configManager.getSeasonConfig().endAt, getBlockTimestamp().currentBlockTimestamp))
-        this.spireManager.prepareGameEnd();
+      if (this.veilIsNear()) this.spireManager.prepareGameEnd();
       this.spireManager.advanceGameEnd(frame, delta, this.camera, null);
       return;
     }
@@ -7976,6 +7979,21 @@ export default class WorldmapScene extends WarpTravel {
         sparedHex = { col: position.x - FELT_CENTER(), row: position.y - FELT_CENTER() };
     }
     this.spireManager.advanceGameEnd(frame, delta, this.camera, sparedHex);
+  }
+
+  /**
+   * The veil plays at the game's end, and in Frontier at every day's end (use-day-end-store): its model and shaders
+   * load as either nears. Asked once per block second, not every frame.
+   */
+  private veilIsNear(): boolean {
+    const now = getBlockTimestamp().currentBlockTimestamp;
+    if (now === this.veilCheckedAt) return false;
+    this.veilCheckedAt = now;
+    if (veilIsNear(configManager.getSeasonConfig().endAt, now)) return true;
+    if (getGameModeId() !== "frontier") return false;
+    const rules = readExpeditionRules(this.game.store, configManager.getActiveGameId());
+    const today = rules ? dayOf(rules, now) : null;
+    return today !== null && veilIsNear(today.end, now);
   }
 
   update(deltaTime: number) {
