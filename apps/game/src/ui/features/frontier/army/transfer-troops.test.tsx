@@ -186,3 +186,42 @@ it("is no card for an army acting on a tile with none of the realm's armies on i
   );
   expect(host.querySelector("[data-kit-sheet]")).toBeNull();
 });
+
+it("starts the split again from the armies' new troops when they change while it is open, and sends only what one holds", async () => {
+  const store = twoArmies();
+  const { swap } = render(store);
+  const [[picked], [tapped]] = sides() as [string, string][];
+  act(() => button("Even")!.click());
+  expect(button(`Move 599 to ${tapped}`)).toBeDefined();
+
+  // A fight and an order land while the card is open: each army now holds 100.
+  const now = (id: number) => store.require("ExplorerTroops", { game_id: 1, explorer_id: id });
+  const wire = (value: unknown) =>
+    JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
+  act(() =>
+    store.applyFacts([
+      {
+        model: "ExplorerTroops",
+        key: "0x74",
+        value: wire({ ...now(201), troops: { ...now(201).troops, count: 100n * PRECISION } }),
+      },
+      {
+        model: "ExplorerTroops",
+        key: "0x92",
+        value: wire({ ...now(202), troops: { ...now(202).troops, count: 100n * PRECISION } }),
+      },
+    ] as never),
+  );
+
+  expect(host.textContent).toContain("The armies' troops changed: the split starts again from what they hold now.");
+  // Again a merge into the army tapped, over the new counts: never a count below none.
+  expect(sides()).toEqual([
+    [picked, "0"],
+    [tapped, "200"],
+  ]);
+  await act(async () => button(`Move 100 to ${tapped}`)!.click());
+  expect(swap).toHaveBeenCalledOnce();
+  expect(swap).toHaveBeenCalledWith(
+    expect.objectContaining({ from_explorer_id: 201, to_explorer_id: 202, count: Number(100n * PRECISION) }),
+  );
+});

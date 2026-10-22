@@ -8431,9 +8431,11 @@ export default class WorldmapScene extends WarpTravel {
     const account = accountAddress();
     const position = this.getArmyDisplayPosition(entityId);
     if (account === null || !position) return;
-    // An army already in sight keeps the camera where the player put it: the next tap lands where they aim it.
+    // On a Frontier phone an army already in sight keeps the camera where the player put it, so the next tap lands
+    // where they aim it (owner, 22 October 2026: mobile direction A). Elsewhere a pick frames the army, as it did.
     const inSight =
       !forSite &&
+      this.hudCarriesOrderVerb() &&
       inOpenMapArea(projectHexToScreen(position, this.camera), {
         width: window.innerWidth,
         height: window.innerHeight,

@@ -13,6 +13,8 @@ import type { HudSurface } from "./frontier-nav";
  *
  * - a surface lets go of the tapped tile and its card, and closes the deploy order;
  * - a new card (a new tap) closes the surface and the deploy order;
+ * - on a phone, a new pick on the map (an army, or the tile its order or transfer is pinned on) closes the surface, so
+ *   the action row that answers the pick stands where the surface stood;
  * - the deploy order closes the surface and stands over the card.
  *
  * A card a later panel stands over stays hidden until the selection opens another (`card` is the card's key, null while
@@ -20,12 +22,25 @@ import type { HudSurface } from "./frontier-nav";
  * tile or not: a selected army keeps its spire card with no tile selected, and the army's sheet selects the army, whose
  * spire card would otherwise come back over it.
  */
-export const useOnePanel = (card: string | null) => {
+export const useOnePanel = (
+  card: string | null,
+  /**
+   * Whether a pick on the map puts the open surface away: a phone's (owner, 22 October 2026: mobile direction A, the
+   * map first), where a page or a sheet stands where the action row that answers the pick does. A desktop's surface
+   * stands beside the map and stays.
+   */
+  yieldsToMap = false,
+) => {
   const [surface, setSurface] = useState<HudSurface | null>(null);
   const [hidden, setHidden] = useState<string | null>(null);
   const deploying = useUIStore((state) => state.leftNavigationView === LeftView.MilitaryView);
+  const pick = useUIStore((state) => mapPick(state.entityActions));
   // What the last render saw, and whether a surface opened since: what opened is what changed.
-  const [seen, setSeen] = useState<{ card: string | null; deploying: boolean }>({ card: null, deploying: false });
+  const [seen, setSeen] = useState<{ card: string | null; deploying: boolean; pick: string | null }>({
+    card: null,
+    deploying: false,
+    pick: null,
+  });
   const [surfacePressed, setSurfacePressed] = useState(false);
 
   const openSurface = (next: HudSurface | null) => {
@@ -37,14 +52,15 @@ export const useOnePanel = (card: string | null) => {
     setSurface(next);
   };
 
-  if (card !== seen.card || deploying !== seen.deploying || surfacePressed) {
+  if (card !== seen.card || deploying !== seen.deploying || pick !== seen.pick || surfacePressed) {
     const cardOpened = card !== null && card !== seen.card;
     const deployOpened = deploying && !seen.deploying;
-    setSeen({ card, deploying });
+    const picked = yieldsToMap && pick !== null && pick !== seen.pick;
+    setSeen({ card, deploying, pick });
     setSurfacePressed(false);
     if (card === null) setHidden(null);
     if (surfacePressed) setHidden(card);
-    else if (cardOpened) setSurface(null);
+    else if (cardOpened || picked) setSurface(null);
     else if (deployOpened) {
       setSurface(null);
       setHidden(card);
@@ -59,6 +75,21 @@ export const useOnePanel = (card: string | null) => {
 
   return { surface, openSurface, showsCard };
 };
+
+/**
+ * What the map has picked for the action row to answer: the army selected, and the tile its order or transfer is
+ * pinned on. Null while nothing is picked.
+ */
+const mapPick = ({
+  selectedEntityId,
+  hoveredHex,
+}: {
+  selectedEntityId: unknown;
+  hoveredHex: { col: number; row: number } | null;
+}): string | null =>
+  selectedEntityId === null || selectedEntityId === undefined
+    ? null
+    : `${String(selectedEntityId)}@${hoveredHex ? `${hoveredHex.col},${hoveredHex.row}` : ""}`;
 
 /** The tapped tile, plot or building let go, with its card and an attack result standing in it. */
 const letGoOfTheTile = () => {

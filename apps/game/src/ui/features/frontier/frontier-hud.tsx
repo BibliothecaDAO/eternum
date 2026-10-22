@@ -89,7 +89,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // What the map has selected opens its card; the one panel decides which of it, a surface and a deploy order stands.
   const card = useSelectionCard({ realm, onResearch: () => setSurface("research") });
   const desktop = useLayout() === "desktop";
-  const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null);
+  const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
   const realmLabor = useRealmLabor(rules, realm);
   const research = useResearchTree(realm);
   // A building tapped on the realm's board opens Research on its own row: one panel, whichever way the player came.

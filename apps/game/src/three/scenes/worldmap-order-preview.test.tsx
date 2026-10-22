@@ -227,3 +227,13 @@ describe("an open preview whose order changes before its verb is pressed", () =>
     expect(sent).toEqual([BESIDE]);
   });
 });
+
+it("on a Frontier phone, a finger's hold on a tile shows its facts and never sends", () => {
+  screen(false);
+  const { scene, sent, facts } = worldMap(true);
+  const rightClick = scene as unknown as { onHexagonRightClick: (event: MouseEvent, hex: unknown) => void };
+
+  // The touch recognizer gives a hold as a right-click a finger made (input-manager.test.ts: a long press).
+  rightClick.onHexagonRightClick(new PointerEvent("contextmenu", { pointerType: "touch" }), BESIDE);
+  expect([facts, sent]).toEqual([[BESIDE], []]);
+});

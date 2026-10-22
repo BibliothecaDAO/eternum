@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   attackConfirmsOnTileCard,
+  isTouchHold,
   orderOnTap,
   orderVerbOnHud,
   pinsOrder,
@@ -70,6 +71,14 @@ describe("a tap on a phone, where the HUD carries the verb (owner, 22 October 20
   it("still opens the attack's preview on a target, which has its own confirm", () => {
     expect(onPhone([step(ActionType.Move), step(ActionType.Attack)], { pinned: true })).toBe("attack");
   });
+});
+
+it("tells a finger's hold from a mouse's right-click", () => {
+  const rightClick = (event: object) => event as MouseEvent;
+  expect(isTouchHold(rightClick({ type: "contextmenu", pointerType: "touch" }))).toBe(true);
+  expect(isTouchHold(rightClick({ type: "contextmenu", pointerType: "mouse" }))).toBe(false);
+  // A plain mouse event names no pointer type.
+  expect(isTouchHold(rightClick({ type: "contextmenu" }))).toBe(false);
 });
 
 describe("Escape on the world map", () => {

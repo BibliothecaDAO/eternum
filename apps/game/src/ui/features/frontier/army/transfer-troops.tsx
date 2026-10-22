@@ -73,16 +73,18 @@ export const TransferTroopsSheet = ({
   realm: NativeRows["Structure"];
   pair: TransferPair;
   onClose: () => void;
-}) => (
-  <HudSheet label={TRANSFER_TROOPS.title} onClose={onClose}>
-    <TransferSplit
-      key={`${pair.picked.explorerId}:${pair.tapped.explorerId}`}
-      realm={realm}
-      pair={pair}
-      onSent={onClose}
-    />
-  </HudSheet>
-);
+}) => {
+  // The split is a choice over the troops the armies hold when it is made: when either count changes (a fight, an
+  // order landing) it starts again over the new counts, and says so, so no old choice turns into an impossible move.
+  const counts = `${pair.picked.explorerId}:${pair.picked.troops}:${pair.tapped.explorerId}:${pair.tapped.troops}`;
+  const [first] = useState(counts);
+  return (
+    <HudSheet label={TRANSFER_TROOPS.title} onClose={onClose}>
+      {counts !== first && <HudNotice tone="warn" line={TRANSFER_TROOPS.changed} />}
+      <TransferSplit key={counts} realm={realm} pair={pair} onSent={onClose} />
+    </HudSheet>
+  );
+};
 
 const TransferSplit = ({
   realm,
@@ -111,7 +113,9 @@ const TransferSplit = ({
 
   const send = async () => {
     const direction = getDirectionBetweenAdjacentHexes(fromAt, toAt);
-    if (!account || direction === null || moved === 0) return;
+    // What goes leaves an army that holds it, and the split stands within both armies' limits.
+    const holds = Math.abs(moved) <= from.troops && pickedAfter >= lowest && pickedAfter <= highest;
+    if (!account || direction === null || moved === 0 || !holds) return;
     try {
       await sendOnce("army", picked.explorerId, { order: "move" }, () =>
         systemCalls.explorer_explorer_swap({
