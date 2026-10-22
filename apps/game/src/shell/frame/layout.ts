@@ -21,3 +21,23 @@ export const layoutNow = (): Layout => (typeof window === "undefined" ? "phone" 
 
 // A server render has no viewport; it draws the phone, the first layout.
 export const useLayout = (): Layout => useSyncExternalStore(subscribe, currentLayout, () => "phone");
+
+/**
+ * A phone held sideways: too short for bands stacked top to bottom, so the phone's HUD stands in a rail at one side and
+ * a column at the other (owner, 22 October 2026: mobile direction A, sideways as C). Its CSS twin is the same query in
+ * hud-sheet.css.
+ */
+const SIDEWAYS_QUERY = "(orientation: landscape) and (max-height: 520px)";
+
+const subscribeSideways = (onChange: () => void) => {
+  const query = window.matchMedia(SIDEWAYS_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+};
+
+export const useSideways = (): boolean =>
+  useSyncExternalStore(
+    subscribeSideways,
+    () => window.matchMedia(SIDEWAYS_QUERY).matches,
+    () => false,
+  );

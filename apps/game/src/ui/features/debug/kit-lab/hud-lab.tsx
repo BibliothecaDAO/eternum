@@ -895,16 +895,14 @@ export const HudLab = () => {
       <LabBands
         desktop={desktop}
         lab={lab}
-        strip={
-          <>
-            <StatusStrip clock={lab.clock} stores={[...lab.stores]} />
-            {lab.purse && (
-              <PurseRow>
-                {lab.purse.realms !== undefined && <RealmsChip labor={lab.purse.realms} onOpen={noop} />}
-                <LordsPurse lords={lab.purse.lords} gain={lab.purse.gain} onOpen={noop} />
-              </PurseRow>
-            )}
-          </>
+        strip={<StatusStrip clock={lab.clock} stores={[...lab.stores]} />}
+        purse={
+          lab.purse && (
+            <PurseRow>
+              {lab.purse.realms !== undefined && <RealmsChip labor={lab.purse.realms} onOpen={noop} />}
+              <LordsPurse lords={lab.purse.lords} gain={lab.purse.gain} onOpen={noop} />
+            </PurseRow>
+          )
         }
         page={
           chat && !desktop ? (
@@ -946,7 +944,7 @@ export const HudLab = () => {
           ) : undefined
         }
         stage={lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
-        nextUp={!lab.visiting && <NextUpView steps={labNextUpSteps(lab, desktop)} />}
+        nextUp={!lab.visiting && <NextUpView steps={labNextUpSteps(lab, desktop)} compact={!desktop} />}
         notices={lab.offline && <HudNotice tone="bad" line={OFFLINE} retry={noop} />}
         action={
           <>

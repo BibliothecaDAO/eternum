@@ -110,6 +110,7 @@ export const OpenSlot = ({
   filling,
   wide = false,
   start,
+  waits,
   onDeploy,
 }: {
   label: string;
@@ -120,24 +121,34 @@ export const OpenSlot = ({
   wide?: boolean;
   /** The bar the slot starts its army on, and that in words ("Army 2 starts on 7/150 stamina…"); none while unknown. */
   start?: { bar: { current: number; max: number }; words: string };
+  /**
+   * A free slot Deploy does not fill yet (the game fills the lowest free slot first): its number, and why in words. It
+   * shows its bar and cannot be pressed.
+   */
+  waits?: { number: number; words: string };
   onDeploy: () => void;
 }) => (
   <button
     type="button"
-    aria-label={filling ?? label}
+    aria-label={filling ?? waits?.words ?? label}
     aria-busy={filling !== undefined}
-    disabled={filling !== undefined}
-    data-tip={filling === undefined ? start?.words : undefined}
+    disabled={filling !== undefined || waits !== undefined}
+    data-tip={filling === undefined ? [start?.words, waits?.words].filter(Boolean).join(" ") || undefined : undefined}
     onClick={onDeploy}
-    className={cn(wide ? cn(CARD, "!flex-row justify-center") : TOKEN, "border border-hud-line bg-hud-surface")}
+    className={cn(
+      wide ? cn(CARD, "!flex-row justify-center") : TOKEN,
+      "border border-hud-line bg-hud-surface",
+      waits && "border-dashed",
+    )}
   >
     <span
       className={cn(
-        "flex size-10 items-center justify-center rounded-full border-2 border-dashed border-hud-line text-hud-title text-hud-ink",
+        "flex size-10 items-center justify-center rounded-full border-2 border-dashed border-hud-line text-hud-title",
+        waits ? "text-hud-muted" : "text-hud-ink",
         (pulse || filling !== undefined) && "animate-pulse border-hud-line-strong",
       )}
     >
-      {filling === undefined ? "+" : "…"}
+      {filling !== undefined ? "…" : waits ? waits.number : "+"}
     </span>
     {wide && <span className="text-hud-strong text-hud-ink">{filling ?? label}</span>}
     {start &&

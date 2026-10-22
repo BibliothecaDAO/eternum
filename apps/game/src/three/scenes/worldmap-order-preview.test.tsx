@@ -52,6 +52,8 @@ const worldMap = (frontier: boolean) => {
   camera.lookAt(0, 0, 0);
   const sent: unknown[] = [];
   const pinned: unknown[] = [];
+  /** The tiles whose facts (their order's line) a tap or a hold put up. */
+  const facts: unknown[] = [];
   const scene = Object.assign(Object.create(WorldmapScene.prototype), {
     camera,
     orderRefusals: new Map(),
@@ -60,7 +62,10 @@ const worldMap = (frontier: boolean) => {
     worldSpatialProjection: { getArmy: () => ({}), getStructuresAtHex: () => [] },
     pointerOrderTip: { take: () => {}, refresh: () => {} },
     state: {
-      updateEntityActionHoveredHex: (hex: unknown) => pinned.push(hex),
+      updateEntityActionHoveredHex: (hex: { col: number; row: number } | null) => {
+        pinned.push(hex);
+        useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, hoveredHex: hex } }));
+      },
       updateEntityActionActionPaths: (actionPaths: Map<string, ActionPath[]>) =>
         useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, actionPaths } })),
     },
@@ -68,11 +73,12 @@ const worldMap = (frontier: boolean) => {
     queuesNextOrder: () => false,
     getHexagonEntity: () => ({}),
     actAtHex: (hex: unknown) => sent.push(hex),
+    showTileFacts: (hex: unknown) => facts.push(hex),
   }) as {
     answerTapWithSelectedArmyOrder: (hex: { col: number; row: number }) => boolean;
     updateEntityActionPaths: (actionPaths: Map<string, ActionPath[]>) => void;
   };
-  return { scene, sent, pinned };
+  return { scene, sent, pinned, facts };
 };
 
 beforeEach(() => {
@@ -85,7 +91,12 @@ beforeEach(() => {
   vi.spyOn(configManager, "getExploreStaminaCost").mockReturnValue(20);
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(2147483646);
   useUIStore.setState((state) => ({
-    entityActions: { ...state.entityActions, selectedEntityId: ARMY, actionPaths: pathsBeside(ActionType.Explore) },
+    entityActions: {
+      ...state.entityActions,
+      selectedEntityId: ARMY,
+      actionPaths: pathsBeside(ActionType.Explore),
+      hoveredHex: null,
+    },
   }));
   usePopoverStore.setState({ openId: null, surface: null });
 });
@@ -125,15 +136,33 @@ it.each([
   },
 );
 
-it("on a Frontier phone, a tap pins the order for the HUD's own verb, and opens no preview over the map", () => {
+it("on a Frontier phone, a tap pins the order for the HUD's own verb, naming it at its tile, and opens no preview", () => {
   screen(false);
-  const { scene, sent, pinned } = worldMap(true);
+  const { scene, sent, pinned, facts } = worldMap(true);
 
   expect(scene.answerTapWithSelectedArmyOrder(BESIDE)).toBe(true);
 
   expect(pinned).toEqual([BESIDE]);
+  expect(facts).toEqual([BESIDE]);
   expect(usePopoverStore.getState().surface).toBeNull();
   expect(sent).toEqual([]);
+
+  // Owner, 22 October 2026 (mobile direction A): the same tile again sends the pinned order.
+  expect(scene.answerTapWithSelectedArmyOrder(BESIDE)).toBe(true);
+  expect(sent).toEqual([BESIDE]);
+});
+
+it("on a Frontier phone, a tap on a tile the rules refused says why there, and keeps the army", () => {
+  screen(false);
+  const { scene, sent, pinned, facts } = worldMap(true);
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, actionPaths: new Map() } }));
+  (scene as unknown as { orderRefusals: Map<string, unknown> }).orderRefusals.set(ActionPaths.posKey(BESIDE, true), {
+    reason: "stamina",
+    need: 20,
+  });
+
+  expect(scene.answerTapWithSelectedArmyOrder(BESIDE)).toBe(true);
+  expect([facts, pinned, sent]).toEqual([[BESIDE], [], []]);
 });
 
 /** The preview's verb button, by its words. */
@@ -197,4 +226,14 @@ describe("an open preview whose order changes before its verb is pressed", () =>
     act(() => verbOf(drawn.host, "Explore").click());
     expect(sent).toEqual([BESIDE]);
   });
+});
+
+it("on a Frontier phone, a finger's hold on a tile shows its facts and never sends", () => {
+  screen(false);
+  const { scene, sent, facts } = worldMap(true);
+  const rightClick = scene as unknown as { onHexagonRightClick: (event: MouseEvent, hex: unknown) => void };
+
+  // The touch recognizer gives a hold as a right-click a finger made (input-manager.test.ts: a long press).
+  rightClick.onHexagonRightClick(new PointerEvent("contextmenu", { pointerType: "touch" }), BESIDE);
+  expect([facts, sent]).toEqual([[BESIDE], []]);
 });
