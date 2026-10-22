@@ -12,7 +12,7 @@ import {
   HudTableRow,
 } from "@/ui/design-system/kit/hud-elements";
 
-import { OrderMark } from "./realm-marks";
+import { RealmBadge } from "./realm-marks";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
   BACK,
@@ -37,6 +37,8 @@ export type SeasonListRow = {
   key: string;
   rank: number;
   order: number;
+  /** The realm's rank and its deepest reach, as its facts say them; unknown while its row is not in the store. */
+  realm?: { level: number; reach: number };
   name: ReactNode;
   label: string;
   sitesCleared: number;
@@ -158,14 +160,14 @@ const PoolFigure = ({ word, value }: { word: string; value: string }) => (
   </div>
 );
 
-/** Rank, Order, name, sites cleared (what ranks) and LORDS: the list's head and its rows share these columns. */
+/** Rank, the realm's rank and reach, name, sites cleared (what ranks) and LORDS: the head and rows share these columns. */
 const COLS = "2.25rem 1.75rem minmax(0, 1fr) 3rem 3.5rem";
 
 /** One realm on the list, a row of the sheet's table that opens its detail; the player's own carries the chosen bar. */
 const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) => void }) => (
   <HudTableRow cols={COLS} label={`#${row.rank} ${row.label}`} selected={row.own} onClick={() => onOpen(row.key)}>
     <span className="text-center tabular-nums">{formatAmount(row.rank)}</span>
-    <OrderMark order={row.order} />
+    {row.realm ? <RealmBadge level={row.realm.level} reach={row.realm.reach} /> : <span />}
     <span className="min-w-0 truncate">{row.name}</span>
     <span className="text-right tabular-nums">{formatAmount(row.sitesCleared)}</span>
     <span className="text-right tabular-nums">{formatAmount(row.lords)}</span>
@@ -173,7 +175,7 @@ const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) =>
 );
 
 /**
- * Each column's name over it, as Blitz's standings name theirs: Rank, the realm (its Order mark and name), Sites cleared
+ * Each column's name over it, as Blitz's standings name theirs: Rank, the realm (its rank and reach, and name), Sites cleared
  * (what ranks) and LORDS. The number columns' full names are on their heads' tooltip.
  */
 const BoardHead = () => (

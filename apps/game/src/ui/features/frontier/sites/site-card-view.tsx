@@ -38,6 +38,7 @@ import { type ReactNode, useState } from "react";
 
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
+import { FightBar } from "./fight-bar";
 import { shareTaken } from "./fight-record";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
@@ -142,12 +143,14 @@ export const SiteCardView = ({
             before={facing.army.troops}
             change={facing.fight.troopsLost}
             word={FIGHT_WORDS.youLose}
+            side="ours"
           />
           <Side
             art={guardIcon}
             before={facing.guard}
             change={facing.guard - facing.fight.guardLeft}
             word={FIGHT_WORDS.youKill}
+            side="theirs"
             tip={beast?.combatClass}
           />
         </div>
@@ -198,20 +201,22 @@ const Outcome = ({ facing: { army, fight }, line }: { facing: Facing; line: stri
 };
 
 /**
- * One side of this attack: its troops before → after, the after in red when none are left, and what it loses with its
- * share of the side; a beast's combat class on its hover.
+ * One side of this attack: its troops before → after, the after in red when none are left, its bar in its colour with
+ * the part the attack takes in grey, and what it loses with its share of the side; a beast's combat class on its hover.
  */
 const Side = ({
   art,
   before,
   change,
   word,
+  side,
   tip,
 }: {
   art: IconMeaning;
   before: number;
   change: number;
   word: (troops: string, share: string) => string;
+  side: "ours" | "theirs";
   tip?: string;
 }) => {
   const after = Math.max(0, before - change);
@@ -224,6 +229,7 @@ const Side = ({
           {formatExact(after)}
         </span>
       </span>
+      <FightBar before={before} after={after} side={side} />
       <span className="text-hud-label text-hud-muted">{word(formatExact(change), shareTaken(change, before))}</span>
     </HudPanel>
   );

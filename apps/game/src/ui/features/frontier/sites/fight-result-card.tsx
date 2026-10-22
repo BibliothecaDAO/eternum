@@ -7,6 +7,7 @@ import { ARMY, FIGHT_WORDS, FULL, REST_DID_NOT_FIT, STORE, TROOPS, XP } from "@/
 
 import type { ReactNode } from "react";
 
+import { FightBar } from "./fight-bar";
 import { shareTaken, type TroopsChange } from "./fight-record";
 import type { FightResult } from "./fight-result";
 import { SiteMark } from "./site-card-view";
@@ -54,6 +55,7 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
           mark={<SemanticIcon name={result.armyArt} alt="" className="size-7 rounded-full object-cover" />}
           troops={result.army}
           word={FIGHT_WORDS.youLost}
+          side="ours"
         />
         {result.guard && (
           <Side
@@ -61,6 +63,7 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
             mark={<SemanticIcon name={result.guardIdentity?.art ?? "troops"} size={24} />}
             troops={result.guard}
             word={FIGHT_WORDS.youKilled}
+            side="theirs"
           />
         )}
       </span>
@@ -89,19 +92,21 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
 };
 
 /**
- * One side of the fight: its troops before the battle and what is left of them, in red when none are, and what the
- * fight took with its share of the side.
+ * One side of the fight: its troops before the battle and what is left of them, in red when none are, its bar in its
+ * colour with the part the fight took in grey, and what the fight took with its share of the side.
  */
 const Side = ({
   label,
   mark,
   troops,
   word,
+  side,
 }: {
   label: string;
   mark: ReactNode;
   troops: TroopsChange;
   word: (troops: string, share: string) => string;
+  side: "ours" | "theirs";
 }) => {
   const taken = Math.max(0, troops.before - troops.after);
   const line = word(formatExact(taken), shareTaken(taken, troops.before));
@@ -126,6 +131,7 @@ const Side = ({
             </span>
           </span>
         </span>
+        <FightBar before={troops.before} after={troops.after} side={side} />
         <span aria-hidden className="text-hud-label text-hud-muted">
           {line}
         </span>
