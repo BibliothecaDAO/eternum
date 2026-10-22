@@ -26,65 +26,21 @@ import {
   ArmyActionManager,
   configManager,
   expeditionDepth,
-  expeditionSpireTile,
-  readExpeditionRules,
   setBlockTimestampSource,
 } from "@bibliothecadao/eternum";
-import { getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
+import { TileOccupier } from "@bibliothecadao/types";
 import { useSelectionCard } from "./frontier-selection-sheet";
-import { campBeside } from "./sites/site-fixture";
+import { SPIRE_ARMY, SPIRE_DAY_NOW, spireDay as spireFixture } from "./spire-fixture";
 
-const ARMY = 201;
-const NOW = 350;
+const ARMY = SPIRE_ARMY;
+const NOW = SPIRE_DAY_NOW;
 
-/**
- * Realm 7's day 0 (its spire on the home ring around its site), with Ethereal I and II researched and entry costs of
- * 30, 40 and 50 stamina, and its army 201 standing where the case puts it, holding the stamina it gives.
- */
-const spireDay = ({ stamina = 100n, standing = "beside" }: { stamina?: bigint; standing?: "beside" | "away" } = {}) => {
-  const { store } = campBeside("Camp", true, stamina);
-  const rules = readExpeditionRules(store, 1)!;
-  const spire = expeditionSpireTile(rules, store.require("Structure", { game_id: 1, entity_id: 7 }), NOW)!;
-  const [beside] = getNeighborHexes(spire.col, spire.row);
-  const armyTile =
-    standing === "beside" ? { col: beside.col, row: beside.row } : { col: spire.col + 3, row: spire.row };
-  const depthRules = (depth: number, entry: number) => ({
-    model: "DepthRules",
-    key: `0x90${depth}`,
-    value: {
-      game_id: 1,
-      depth,
-      entry_stamina: entry,
-      reveal_percent: 100,
-      site_guard_lower: 1,
-      site_guard_upper: 2,
-      reveal_site_neighbors: false,
-      chest: { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
-      ruin_guard_lower: 1,
-      ruin_guard_upper: 2,
-      guard_step: 1,
-      beast_weak_lower: 300,
-      beast_weak_upper: 350,
-      beast_strong_lower: 450,
-      beast_strong_upper: 550,
-    },
-  });
-  store.applyFacts([
-    // research.cairo: the depth row's tier sits at bit 46; Ethereal I and II are researched.
-    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: String(2n << 46n) } },
-    depthRules(1, 30),
-    depthRules(2, 40),
-    depthRules(3, 50),
-    { model: "TileOccupancy", key: "0x75", value: null },
-    {
-      model: "TileOccupancy",
-      key: "0x904",
-      value: { game_id: 1, alt: false, ...armyTile, entity_id: ARMY, category: 15, is_structure: false },
-    },
-  ] as never);
+/** The fixture's day, read at its second as the HUD reads the clock. */
+const spireDay = (options?: Parameters<typeof spireFixture>[0]) => {
+  const day = spireFixture(options);
   setBlockTimestampSource(() => NOW);
   useBlockTimestampStore.setState({ currentBlockTimestamp: NOW, currentDefaultTick: NOW });
-  return { store, rules, spire, armyTile };
+  return day;
 };
 
 /** The HUD's selection card, as both layouts mount it, with Research's door recorded. */

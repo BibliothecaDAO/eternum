@@ -214,7 +214,7 @@ export const isAtExpeditionSpire = (spire: { col: number; row: number }, coord: 
  * A realm's spire today, once its research lights it: where it stands and the deepest depth it opens. Null outside an
  * expedition game, before the season, or before Ethereal I.
  */
-export const realmSpire = (
+const realmSpire = (
   store: Pick<NativeFactStore, "get" | "require">,
   realm: NativeRows["Structure"],
   nowSeconds: number,

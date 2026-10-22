@@ -110,4 +110,22 @@ describe("the page a run opens", () => {
     );
     expect([url.pathname, url.searchParams.get("spectate")]).toEqual(["/", null]);
   });
+
+  it("opens a lab game's own page, on its scenario, for the steps written for it", () => {
+    const { game: lab } = STEP_SETS["lab-spire"];
+    const url = new URL(
+      buildRunUrl({
+        baseUrl: "https://127.0.0.1:4173",
+        game: lab,
+        player: null,
+        rendererMode: "webgpu-auto",
+        stepSet: "lab-spire",
+      }),
+    );
+    expect([url.pathname, url.searchParams.get("scenario"), url.searchParams.get("rendererMode")]).toEqual([
+      "/lab/game",
+      "spire",
+      "webgpu-auto",
+    ]);
+  });
 });

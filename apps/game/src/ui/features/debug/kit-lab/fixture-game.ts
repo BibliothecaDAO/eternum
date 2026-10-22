@@ -128,10 +128,14 @@ export const eventStories = (store: NativeFactStore): ProcessedStoryEvent[] => {
 /**
  * The fixture game as the mode plays it (its preset), ended a while ago for a finished game, with what the whole HUD
  * reads that the fixture leaves out: the realm's buildings and population, the preset's building rules, and the realm's
- * upgrade recipes (labor and wheat, more each level).
+ * upgrade recipes (labor and wheat, more each level). Its day is the deploy fixture's, or the one given.
  */
-export const installLabGame = (presetId: number, finished: boolean): NativeFactStore => {
-  const store = installFixtureGame();
+export const installLabGame = (
+  presetId: number,
+  finished: boolean,
+  day: () => { store: NativeFactStore } = frontierDay,
+): NativeFactStore => {
+  const store = installFixtureGame(day);
   const registry = store.require("GameRegistry", { game_id: 1 });
   store.applyFacts([
     {
