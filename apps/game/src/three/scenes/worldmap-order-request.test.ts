@@ -10,8 +10,8 @@ import {
 } from "./worldmap-order-request";
 
 const step = (actionType: ActionType) => ({ hex: { col: 0, row: 0 }, actionType });
-const tap = (path: ReturnType<typeof step>[] | undefined, standingSite = false) =>
-  orderOnTap({ path, armySelected: true, standingSite });
+const tap = (path: ReturnType<typeof step>[] | undefined, standingSite = false, ownSpire = false) =>
+  orderOnTap({ path, armySelected: true, standingSite, ownSpire });
 
 describe("a tap on a tile with an army selected", () => {
   it("pins an order on a tile to explore or move to", () => {
@@ -25,8 +25,15 @@ describe("a tap on a tile with an army selected", () => {
   });
 
   it("opens a standing site out of reach for the army, so its card can say what the army lacks", () => {
-    expect(tap(undefined, true)).toBe("site-out-of-reach");
-    expect(orderOnTap({ path: undefined, armySelected: false, standingSite: true })).toBeNull();
+    expect(tap(undefined, true)).toBe("site-card");
+    expect(orderOnTap({ path: undefined, armySelected: false, standingSite: true, ownSpire: false })).toBeNull();
+  });
+
+  it("opens its realm's spire for the army wherever it stands, ahead of a move onto the spire's tile", () => {
+    expect(tap([step(ActionType.Move), step(ActionType.EnterDepth)], false, true)).toBe("site-card");
+    expect(tap([step(ActionType.Move), step(ActionType.Move)], false, true)).toBe("site-card");
+    expect(tap(undefined, false, true)).toBe("site-card");
+    expect(orderOnTap({ path: undefined, armySelected: false, standingSite: false, ownSpire: true })).toBeNull();
   });
 
   it("counts as an order to a tile only a path that explores or moves there", () => {

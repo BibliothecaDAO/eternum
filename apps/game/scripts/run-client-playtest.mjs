@@ -15,6 +15,7 @@ import {
 import { startClient } from "./client-playtest/client-server.mjs";
 import {
   assertInTargetGame,
+  buildLabGameUrl,
   buildPlayerHomeUrl,
   buildPlaytestUrl,
   collectBrowserErrors,
@@ -114,6 +115,7 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
  */
 export function buildRunUrl({ baseUrl, game, player, rendererMode, stepSet }) {
   const { devOverlays = false } = STEP_SETS[stepSet];
+  if (game.lab) return buildLabGameUrl({ baseUrl, scenario: game.lab, rendererMode, devOverlays });
   if (player) return buildPlayerHomeUrl({ baseUrl, rendererMode, devOverlays });
   return buildPlaytestUrl({ baseUrl, chainId: game.chainId, gameId: game.gameId, rendererMode, devOverlays });
 }
@@ -145,11 +147,12 @@ async function main(argv) {
       : await startClient({ owner, port: options.port, runDir });
     output.client = client;
     output.stage = "finding the game";
-    output.game = await resolvePlaytestGame({
-      ...options,
-      baseUrl: client.baseUrl,
-      mode: STEP_SETS[options.stepSet].game.mode,
-    });
+    const stepsGame = STEP_SETS[options.stepSet].game;
+    // A lab game is its own: the fixture the steps were written for, with its own player.
+    if (stepsGame.lab && options.player) throw new Error("A lab game seats its own player: run it without --player.");
+    output.game = stepsGame.lab
+      ? { chainId: stepsGame.chainId, gameId: stepsGame.gameId, mode: stepsGame.mode, lab: stepsGame.lab }
+      : await resolvePlaytestGame({ ...options, baseUrl: client.baseUrl, mode: stepsGame.mode });
     output.stage = "playing";
     for (const rendererMode of options.rendererModes) {
       for (let iteration = 1; iteration <= options.iterations; iteration += 1) {

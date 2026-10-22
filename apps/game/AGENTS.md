@@ -142,9 +142,14 @@ and again at the closest, the camera distance read and required to be the closes
 `<step>-changes.png`, each pixel's share of frame pairs it changed in: what a still view shimmers with, to compare two
 builds on the same view; `--steps blitz-still-map` the same in a Blitz game; `--steps still-map-frozen-sun` and
 `--steps blitz-still-map-frozen-sun` first tick the dev tools' Override Time to hold the sun, and open the page with the
-dev overlays on, as the plate lists do), `--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each
-run's boot, from before the game page opens to the world being interactive), `--compare <summary.json>` (fails when boot
-regresses), `--headed`. Paths are taken from where the command is run.
+dev overlays on, as the plate lists do), `--steps lab-spire` (no live game: the lab's spire game,
+`/lab/game?scenario=spire`, the game's own route, scenes, HUD and client on a fixture held in the tab, whose player's
+signed commands are recorded in `window.__labChain` and answered as the contract applies them; the army selected from
+the dock, the tile beside it whose hover offers "Enter a depth" tapped for the spire's card, its depths, costs and
+commitment read, then Enter on Ethereal II: the EnterDepth command signed for that army, and the army two regions below,
+shown in Ethereal II; play it at `--viewport 390x844` too), `--out <root>` (default `.context/playtest`), `--trace` (a
+Chrome trace of each run's boot, from before the game page opens to the world being interactive),
+`--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are taken from where the command is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 

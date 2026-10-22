@@ -434,7 +434,14 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 | Beasts                  | Frontier Map → select a beast encounter. Weak and stronger bands both scale with depth; both are below the other site guards.                                                   |
 | Shrine                  | Frontier Map → select a discovered sun arch. Its site card offers the attribute reward when eligible; use removes the site.                                                     |
 | Well                    | Frontier Map → select a discovered stone well. Its site card offers stamina when eligible; use removes the site.                                                                |
+| Spire                   | Frontier Map → tap your lit spire (army selected or beside it): each researched depth, its stamina, Enter, and that the army stays there for the day.                           |
 | Ownership and placement | `/lab` → Building model → choose an outpost → Ownership where available → Place on selected tile → Focus selected tile. Biome and Fog controls exercise terrain and visibility. |
+
+`pnpm --dir apps/game playtest --base-url https://127.0.0.1:<port> --steps lab-spire --iterations 1` plays the spire in
+the lab's game on a fixture (`/lab/game?scenario=spire`, `src/lab/game/`): the game's own map and HUD, the army
+selected, the spire found by its hover (Enter a depth) and tapped, Ethereal II entered, the EnterDepth command recorded
+and the army shown in Ethereal II; add `--viewport 390x844` for a phone. No live game, account or transaction is
+involved.
 
 With the local client running, open `/lab?evidence=/absolute/capture/directory` and run
 `scripts/outposts/prove-runtime.playwright.js` through the browser connection with the page as its argument (remove the

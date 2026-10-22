@@ -43,6 +43,19 @@ export function buildPlaytestUrl({ baseUrl, chainId, gameId, rendererMode, devOv
 }
 
 /**
+ * A lab game (`/lab/game?scenario=…`): the game's own route on a fixture held in the tab, which seats its own player,
+ * so the run opens it directly, with the same renderer and dev-overlay options as a live game's link.
+ */
+export function buildLabGameUrl({ baseUrl, scenario, rendererMode, devOverlays = false }) {
+  const url = new URL(baseUrl);
+  url.pathname = "/lab/game";
+  url.searchParams.set("scenario", scenario);
+  url.searchParams.set("rendererMode", rendererMode);
+  url.searchParams.set("dev", devOverlays ? "1" : "0");
+  return url.toString();
+}
+
+/**
  * A player starts on the home page, signed in by the browser profile, and enters with its call to action. The dev
  * overlays are set there, as for a spectator's link: the page keeps the setting into the game.
  */

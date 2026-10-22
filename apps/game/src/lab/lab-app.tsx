@@ -159,6 +159,13 @@ const TOOLS = [
   },
   {
     group: "Interface",
+    label: "Game on a fixture",
+    path: "/lab/game",
+    route: "game",
+    View: lazy(() => import("./game/game-lab-view").then((module) => ({ default: module.GameLabView }))),
+  },
+  {
+    group: "Interface",
     label: "App fixtures",
     path: "/lab/app/home",
     route: "app/:screen/*",

@@ -28,26 +28,31 @@ export const pinsOrder = (path: ActionPath[] | undefined): boolean => {
 };
 
 /**
- * What a tap on a tile means for the selected army, the same tap for every order: a tile it can explore or move to
- * pins that order (where the HUD carries the verb, it shows the costs and the verb; elsewhere the order's preview opens
- * at the tile with them), a target in its reach opens the attack's preview with its
- * confirm, and a standing site out of its reach still opens that site's card for this army, which says what it lacks.
- * Anything else keeps its own tap.
+ * What a tap on a tile means for the selected army, the same tap for every order: its realm's spire opens the spire's
+ * card for this army, wherever the army stands (the card offers the depths, or says how to reach them); a tile it can
+ * explore or move to pins that order (where the HUD carries the verb, it shows the costs and the verb; elsewhere the
+ * order's preview opens at the tile with them), a target in its reach opens the attack's preview with its confirm,
+ * and a standing site out of its reach still opens that site's card for this army, which says what it lacks. Anything
+ * else keeps its own tap.
  */
-type TapOrder = "pin" | "attack" | "site-out-of-reach";
+type TapOrder = "pin" | "attack" | "site-card";
 
 export const orderOnTap = ({
   path,
   armySelected,
   standingSite,
+  ownSpire,
 }: {
   path: ActionPath[] | undefined;
   armySelected: boolean;
   standingSite: boolean;
+  /** The tile is the selected army's realm's spire today. */
+  ownSpire: boolean;
 }): TapOrder | null => {
+  if (armySelected && ownSpire) return "site-card";
   if (pinsOrder(path)) return "pin";
   if (path && ActionPaths.getActionType(path) === ActionType.Attack) return "attack";
-  return armySelected && standingSite ? "site-out-of-reach" : null;
+  return armySelected && standingSite ? "site-card" : null;
 };
 
 /**

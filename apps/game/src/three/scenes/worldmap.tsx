@@ -72,6 +72,7 @@ import { type RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { LeftView } from "@/types";
 import {
+  armyRealmSpire,
   configManager,
   expeditionSpires,
   NEUTRAL_BIOME_CLIMATE,
@@ -2765,6 +2766,7 @@ export default class WorldmapScene extends WarpTravel {
       path,
       armySelected: this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined,
       standingSite: structure !== undefined && this.isStandingExpeditionSite(structure.id),
+      ownSpire: this.isArmysSpire(selectedEntityId, hexCoords),
     });
     if (order === "pin" && !this.hudCarriesOrderVerb()) {
       this.openOrderPreview(hexCoords);
@@ -2777,7 +2779,7 @@ export default class WorldmapScene extends WarpTravel {
       this.state.updateEntityActionHoveredHex(hexCoords);
     } else if (order === "attack" && path) {
       this.onArmyAttack(path, selectedEntityId);
-    } else if (order === "site-out-of-reach") {
+    } else if (order === "site-card") {
       const contractHex = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
       this.openTargetCardForSelectedArmy({ col: contractHex.x, row: contractHex.y });
     }
@@ -2836,7 +2838,7 @@ export default class WorldmapScene extends WarpTravel {
 
   /**
    * Runs the selected army's order at this tile: the HUD's verb for a pinned order, or a right-click (a long-press)
-   * with no preview. An attack, a help, spire travel and deploy open their own surface from either.
+   * with no preview. An attack, a help, spire travel, a depth's entry and deploy open their own surface from either.
    */
   private actAtHex(hexCoords: HexPosition) {
     const account = useAccountStore.getState().account;
@@ -2890,6 +2892,9 @@ export default class WorldmapScene extends WarpTravel {
           this.onChestSelection(actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
+        } else if (actionType === ActionType.EnterDepth) {
+          // The depth is the player's choice: the spire's card, with this army, offers each one.
+          this.openTargetCardForSelectedArmy(actionPath[actionPath.length - 1].hex);
         }
         this.logInteractionDebug("action_executed_from_right_click", {
           ...this.getInteractionDebugSnapshot(),
@@ -3234,6 +3239,18 @@ export default class WorldmapScene extends WarpTravel {
       armyId === null ? { kind: "hex", hex: siteHex } : { kind: "army", entityId: armyId, tile: siteHex },
     );
     this.state.updateEntityActionHoveredHex(null);
+  }
+
+  /** Whether the normalized tile is the army's realm's spire, as the map draws it today. */
+  private isArmysSpire(armyId: ID, hexCoords: HexPosition): boolean {
+    const spire = armyRealmSpire(
+      this.game.store,
+      configManager.getActiveGameId(),
+      safeInteger(armyId),
+      getBlockTimestamp().currentBlockTimestamp,
+    );
+    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    return spire !== null && spire.col === contract.x && spire.row === contract.y;
   }
 
   private isStandingExpeditionSite(entityId: ID): boolean {

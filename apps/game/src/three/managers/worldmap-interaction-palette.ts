@@ -14,6 +14,12 @@ export interface HoverVisualPalette {
   visualMode: WorldmapHoverVisualMode;
 }
 
+/** Through a spire: the Blitz portal's travel, and a Frontier army's way into its realm's depths. */
+const SPIRE: HighlightLayerPalette = {
+  routeColor: 0x2dd4bf,
+  endpointColor: 0x99f6e4,
+};
+
 const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
   move: {
     routeColor: 0x4fcf6b,
@@ -27,10 +33,8 @@ const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
     routeColor: 0xff6b3d,
     endpointColor: 0xffab8a,
   },
-  spire_travel: {
-    routeColor: 0x2dd4bf,
-    endpointColor: 0x99f6e4,
-  },
+  spire_travel: SPIRE,
+  enter_depth: SPIRE,
   help: {
     routeColor: 0xe36cff,
     endpointColor: 0xf7bbff,
