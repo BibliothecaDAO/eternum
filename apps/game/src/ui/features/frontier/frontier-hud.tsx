@@ -8,16 +8,18 @@ import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
 import { useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
+import { configManager } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { StructureType } from "@bibliothecadao/types";
 import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ComponentProps, type ReactNode, useEffect, useState } from "react";
 import { useLatest } from "@/hooks/use-latest";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatch } from "./board/spectator-watch";
-import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
+import { useExpeditionRules, useFrontierRealm, useGoToFrontierPlace } from "./frontier-home";
 import { ArmyRefill } from "./army/army-refill";
 import { useArmyPanelOpens } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
@@ -52,7 +54,7 @@ import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { FrontierToday } from "./log/frontier-today";
-import { FrontierProduction } from "./production/frontier-production";
+import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
 import { ClearedRuinChest } from "./chest/cleared-ruin-chest";
 import { dayClock } from "./hud/day-clock";
@@ -105,15 +107,35 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // Selecting one of the realm's armies opens its panel; a pick in the dock, Today or Next up goes the same way.
   const openArmy = useArmyPanelOpens(visit ? null : realm, () => setSurface("army"));
   const seasonRank = useSeasonRank();
+  // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
+  const [openStore, setOpenStore] = useState<CardStore | null>(null);
+  const goToPlace = useGoToFrontierPlace(realm);
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
+  const own = realm && !visit ? realm : null;
+  const storeCards = own
+    ? {
+        kinds: CARD_STORE_KINDS,
+        open: openStore,
+        onToggle: (kind: string) => {
+          if (isCardStore(kind)) setOpenStore((open) => (open === kind ? null : kind));
+        },
+        card: openStore && (
+          <FrontierStoreCard rules={rules} realm={own} store={openStore} onDone={() => setOpenStore(null)} />
+        ),
+      }
+    : undefined;
 
   const strip = (
-    <FrontierStrip
-      rules={rules}
-      realm={realm ?? visited}
-      onOpenStores={realm && !visit ? () => setSurface("production") : undefined}
-    />
+    <>
+      <FrontierStrip
+        rules={rules}
+        realm={realm ?? visited}
+        onOpenDay={() => setSurface("today")}
+        storeCards={storeCards}
+      />
+      {storeCards?.open && storeCards.card}
+    </>
   );
   const purse = realm && !visit && (
     <RealmPurse
@@ -153,10 +175,16 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       )}
       {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
       {surface === "realms" && realm && !visit && (
-        <FrontierRealms labor={realmLabor} onRealm={() => setSurface("production")} onClose={close} />
+        <FrontierRealms
+          labor={realmLabor}
+          onRealm={() => {
+            close();
+            goToPlace(false);
+          }}
+          onClose={close}
+        />
       )}
       {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
-      {surface === "production" && realm && <FrontierProduction rules={rules} realm={realm} onClose={close} />}
       {surface === "settings" && (
         <HudSheet label={SETTINGS} onClose={close}>
           <SettingsPanel />
@@ -190,14 +218,15 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   return desktop ? (
     <FrontierDesktop
       season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
-      clock={<FrontierDayClock rules={rules} />}
+      clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
       realm={
         (realm ?? visited) && (
           <FrontierRealmPanel
             rules={rules}
             realm={(realm ?? visited)!}
-            own={realm && !visit ? realm : null}
+            own={own}
             labor={realmLabor?.plan.total ?? 0}
+            storeCards={storeCards}
             onSurface={setSurface}
           />
         )
@@ -434,7 +463,6 @@ const HudMenu = ({
     <MenuSheet
       rank={rank}
       onToday={() => onOpen("today")}
-      onProduction={realm ? () => onOpen("production") : null}
       onSeason={() => onOpen("season")}
       realms={realm ? { waiting: laborWaiting, onOpen: () => onOpen("realms") } : undefined}
       onSettings={() => onOpen("settings")}
@@ -445,14 +473,16 @@ const HudMenu = ({
 };
 
 /**
- * The desktop's realm panel over the realm the HUD reads (the player's, or the one watched or visited): its name, rank,
- * population and stores, and for the player's own realm its LORDS (Withdraw), its Realms' labor (Realms) and Production.
+ * The desktop's realm panel over the realm the HUD reads (the player's, or the one watched or visited): its name and
+ * rank's steps in a header that takes the map home to it, its population and stores, and for the player's own realm
+ * its LORDS (Withdraw), its Realms' labor (Realms) and each store's card.
  */
 const FrontierRealmPanel = ({
   rules,
   realm,
   own,
   labor,
+  storeCards,
   onSurface,
 }: {
   rules: ExpeditionRules;
@@ -460,22 +490,26 @@ const FrontierRealmPanel = ({
   /** The player's own realm, the one read; null while watching or visiting. */
   own: NativeRows["Structure"] | null;
   labor: number;
+  storeCards: ComponentProps<typeof RealmPanel>["storeCards"];
   onSurface: (surface: HudSurface) => void;
 }) => {
   const name = useGameModeConfig().structure.getName(realm).name;
   const stores = useStoreReadings(realm, rules);
   const lords = useRealmLords(own ?? realm);
   const population = useRealmPopulation(realm);
+  const goToPlace = useGoToFrontierPlace(realm);
   return (
     <RealmPanel
       name={name}
       level={realm.base.level}
+      highest={configManager.getMaxLevel(StructureType.Realm)}
       population={population}
       stores={stores}
+      onHome={() => goToPlace(true)}
       {...(own && {
         lords,
         labor,
-        onOpenStores: () => onSurface("production"),
+        storeCards,
         onWithdraw: () => onSurface("withdraw"),
         onRealms: () => onSurface("realms"),
       })}

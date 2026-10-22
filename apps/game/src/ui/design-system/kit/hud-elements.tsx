@@ -520,13 +520,15 @@ export const HudCost = ({ line }: { line: string }) => (line ? <span className="
 /**
  * The HUD's one panel: a header band naming it (its icon, its title, a cue at its end) over a divider, then its body.
  * With a `label` it is a named section for assistive technology (a landmark). Its chevron and title fold its body away
- * unless `collapsible` is off; the cue's own controls never fold it. A `section` is a part of a panel: the same header
+ * unless `collapsible` is off; the cue's own controls never fold it. With `onTitle` the whole header band is one press
+ * instead (the realm card's way home), and the panel never folds. A `section` is a part of a panel: the same header
  * and body on the panel's surface, and a `divided` body stacks such sections with a divider between each.
  * `className` and `bodyClassName` place the panel and lay out its body (flex, overflow, a height, no padding), never
  * its look.
  */
 export const HudPanel = ({
   title,
+  onTitle,
   cue,
   icon,
   label,
@@ -539,6 +541,8 @@ export const HudPanel = ({
   children,
 }: {
   title?: ReactNode;
+  /** The header's one press, named for assistive technology and its tooltip; such a panel never folds. */
+  onTitle?: { label: string; run: () => void };
   cue?: ReactNode;
   icon?: IconMeaning;
   label?: string;
@@ -551,7 +555,8 @@ export const HudPanel = ({
   children: ReactNode;
 }) => {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
-  const folded = collapsible && collapsed;
+  const folds = collapsible && onTitle === undefined;
+  const folded = folds && collapsed;
   const Root = label ? "section" : "div";
   return (
     <Root aria-label={label} className={cn(kind === "panel" ? "ui ui-panel" : "ui-section", "shrink-0", className)}>
@@ -560,7 +565,13 @@ export const HudPanel = ({
           title={title}
           icon={icon}
           cue={cue}
-          fold={collapsible ? { folded, toggle: () => setCollapsed((value) => !value) } : null}
+          press={
+            onTitle
+              ? { kind: "action", ...onTitle }
+              : folds
+                ? { kind: "fold", folded, toggle: () => setCollapsed((value) => !value) }
+                : null
+          }
         />
       )}
       {!folded && (
@@ -572,29 +583,45 @@ export const HudPanel = ({
   );
 };
 
-/** A panel's header band: its name (a fold toggle when the panel folds) and its cue. */
+/** What pressing a panel's header does: fold its body, or the panel's one action across the whole band. */
+type HeadPress =
+  | { kind: "fold"; folded: boolean; toggle: () => void }
+  | { kind: "action"; label: string; run: () => void };
+
+/** A panel's header band: its name (a fold toggle when the panel folds, or the panel's one action) and its cue. */
 const PanelHead = ({
   title,
   icon,
   cue,
-  fold,
+  press,
 }: {
   title: ReactNode;
   icon?: IconMeaning;
   cue?: ReactNode;
-  fold: { folded: boolean; toggle: () => void } | null;
+  press: HeadPress | null;
 }) => {
   const name = (
     <>
-      {fold && <Icon name="chevron-down" className="ui-panel__chevron" data-folded={fold.folded} />}
+      {press?.kind === "fold" && <Icon name="chevron-down" className="ui-panel__chevron" data-folded={press.folded} />}
       {icon && <Icon name={icon} className="ui-panel__icon" />}
       <span className="ui-panel__title">{title}</span>
     </>
   );
   return (
     <header className="ui-panel__head">
-      {fold ? (
-        <button type="button" className="ui-panel__name" aria-expanded={!fold.folded} onClick={fold.toggle}>
+      {press?.kind === "fold" ? (
+        <button type="button" className="ui-panel__name" aria-expanded={!press.folded} onClick={press.toggle}>
+          {name}
+        </button>
+      ) : press?.kind === "action" ? (
+        <button
+          type="button"
+          className="ui-panel__name"
+          data-action
+          aria-label={press.label}
+          data-tip={press.label}
+          onClick={press.run}
+        >
           {name}
         </button>
       ) : (
@@ -1276,7 +1303,7 @@ export const HudSheet = ({ label, onClose, children }: { label: string; onClose:
               onClick={onClose}
             />
           }
-          fold={null}
+          press={null}
         />
         <WindowFootContext.Provider value={foot}>
           <div className="ui-sheet__body">{children}</div>

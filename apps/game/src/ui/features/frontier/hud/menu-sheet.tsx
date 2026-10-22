@@ -1,26 +1,24 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { EXIT, MENU, PRODUCTION, REALMS, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
+import { EXIT, MENU, REALMS, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 const MENU_WORDS = {
   clock: TODAY,
   victory: SEASON,
-  production: PRODUCTION,
   realm: REALMS,
   settings: SETTINGS,
 } as const;
 
 /**
- * The Menu: the ways that are not places (Today, Season with the player's rank, Production, Settings), then Exit to the
- * app and Resume, which closes the menu; a player with no realm of their own has no Production. Realms, with a dot
+ * The Menu: the ways that are not places (Today, Season with the player's rank, Settings), then Exit to the app and
+ * Resume, which closes the menu. Realms, with a dot
  * while their labor waits, opens the Realm holder's labor where its facts are served.
  */
 export const MenuSheet = ({
   rank,
   onToday,
   onSeason,
-  onProduction,
   realms,
   onSettings,
   onExit,
@@ -29,7 +27,6 @@ export const MenuSheet = ({
   rank: string;
   onToday: () => void;
   onSeason: () => void;
-  onProduction: (() => void) | null;
   realms?: { waiting: boolean; onOpen: () => void };
   onSettings: () => void;
   onExit: () => void;
@@ -39,7 +36,6 @@ export const MenuSheet = ({
     <nav className="flex flex-col">
       <MenuRow icon="clock" onClick={onToday} />
       <MenuRow icon="victory" badge={<span className="text-hud-body tabular-nums">{rank}</span>} onClick={onSeason} />
-      {onProduction && <MenuRow icon="production" onClick={onProduction} />}
       {realms && (
         <MenuRow
           icon="realm"

@@ -203,7 +203,8 @@ const ChestChip = ({ tier, lords, rank }: { tier: Tier; lords: number; rank: num
   >
     <HudChip>
       <SemanticIcon name="chest" size={16} />
-      <HudRarity tier={tier} />
+      {/* The pips always carry their word here: beside the rank, bare pips read as the realm's own tier. */}
+      <HudRarity tier={tier} word />
       <SemanticIcon name="lords" size={16} />
       <span className="tabular-nums">{formatAmount(lords)}</span>
       {rank !== null && (

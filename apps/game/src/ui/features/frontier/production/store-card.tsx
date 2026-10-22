@@ -1,8 +1,8 @@
 import { formatAmount, formatRate } from "@bibliothecadao/types";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudMeter, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { HUD_TONE, type Tone } from "@/ui/design-system/kit/tone";
-import { BUILD, DEPLOY, FULL, LABOR, PRODUCTION, REALM, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+import { BUILD, DEPLOY, FULL, LABOR, REALM, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 
 import { FullIn } from "../full-in";
 
@@ -14,8 +14,8 @@ const STORE_WORDS = { wheat: WHEAT, labor: LABOR, troops: TROOPS } as const sati
 /** Where a full store is spent: labor on the realm board, wheat and troops by Deploy. */
 export type SpentAt = "realm" | "deploy";
 
-/** One store's row: what it makes an hour (with the side marks that shape it), what it holds against its limit. */
-export type ProductionLine = {
+/** One store's line: what it makes an hour (with the side marks that shape it), what it holds against its limit. */
+export type StoreLine = {
   icon: keyof typeof STORE_WORDS;
   perHour: number | undefined;
   sides?: readonly IconMeaning[];
@@ -30,41 +30,23 @@ export type ProductionLine = {
 };
 
 /**
- * Production (wireframe 03): three rows, wheat, labor and troops, each named in words beside its icon: the rate an
- * hour with its side marks, what each holds against its limit, and when it is full, in hours, never days. A Full row says so and points to where that store is
- * spent; a store no building makes offers Build. No input rows.
+ * One store's card, opened from its ring or its plate (the owner, 22 October: no Production overlay): its word beside
+ * its icon, the rate an hour with its side marks, what it holds against its limit, and when it is full, in hours, never
+ * days. A full store says so and points to where it is spent; a store no building makes offers Build.
  */
-export const ProductionSheet = ({
-  lines,
-  onSpend,
-  onBuild,
-  onClose,
-}: {
-  lines: readonly ProductionLine[];
-  onSpend: (at: SpentAt) => void;
-  onBuild: () => void;
-  onClose: () => void;
-}) => (
-  <HudSheet label={PRODUCTION} onClose={onClose}>
-    {lines.map((line) => (
-      <Row key={line.icon} line={line} onSpend={onSpend} onBuild={onBuild} />
-    ))}
-  </HudSheet>
-);
-
-const Row = ({
+export const StoreCard = ({
   line,
   onSpend,
   onBuild,
 }: {
-  line: ProductionLine;
+  line: StoreLine;
   onSpend: (at: SpentAt) => void;
   onBuild: () => void;
 }) => {
   const full = line.limit !== undefined && line.held !== undefined && line.held >= line.limit;
   const word = STORE_WORDS[line.icon];
   return (
-    <div className="flex items-center gap-2 border-b border-hud-divider py-1.5">
+    <HudPanel label={word} collapsible={false} className="pointer-events-auto" bodyClassName="flex items-center gap-2">
       <Icon name={line.icon} size={28} />
       <span className="flex w-24 shrink-0 flex-col">
         <span className="text-hud-label capitalize text-hud-muted">{word}</span>
@@ -108,6 +90,6 @@ const Row = ({
       ) : (
         line.fullIn !== undefined && <FullIn seconds={line.fullIn} />
       )}
-    </div>
+    </HudPanel>
   );
 };

@@ -30,7 +30,7 @@ import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
 import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
-import { type ProductionLine, ProductionSheet } from "@/ui/features/frontier/production/production-sheet";
+import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
 import { BuildingType, Direction } from "@bibliothecadao/types";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
@@ -305,7 +305,7 @@ const CASTLE_SIDE = (level: number, limit: number) => ({
 type LabArmySheet = { lords?: number; confirm?: boolean; stamina?: number };
 
 /** A city's three stores: 18,000 a store, wheat lifted by Fields, troops by Drill. */
-const line = (overrides: Partial<ProductionLine> & Pick<ProductionLine, "icon" | "spentAt">): ProductionLine => ({
+const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "icon" | "spentAt">): StoreLine => ({
   perHour: undefined,
   held: undefined,
   limit: 18_000,
@@ -314,7 +314,7 @@ const line = (overrides: Partial<ProductionLine> & Pick<ProductionLine, "icon" |
   noBuilding: false,
   ...overrides,
 });
-const PRODUCTION_LINES: ProductionLine[] = [
+const STORE_LINES: StoreLine[] = [
   line({ icon: "wheat", spentAt: "deploy", perHour: 1_500, sides: ["fields"], held: 4_410, fullIn: 9 * HOUR + 4 * 60 }),
   line({ icon: "labor", spentAt: "realm", perHour: 500, held: 9_640, fullIn: 16 * HOUR + 44 * 60 }),
   line({ icon: "troops", spentAt: "deploy", perHour: 600, sides: ["drill"], held: 1_200, fullIn: 28 * HOUR }),
@@ -654,27 +654,20 @@ const STATES = {
     refill: true,
     order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
   },
-  production: { clock: CLOCK, stores: STORES, armies: ARMIES, production: PRODUCTION_LINES },
-  "production-full": {
+  // A store's card, opened from its ring (desktop) or its plate (phone): filling, full, and made by no building.
+  stores: { clock: CLOCK, stores: STORES, armies: ARMIES, storeCard: STORE_LINES[0] },
+  "stores-full": {
     clock: CLOCK,
     stores: FULL_STORES,
     armies: ARMIES,
     realmDot: "ember",
-    production: [
-      { ...PRODUCTION_LINES[0], held: 17_580, tone: "amber", fullIn: 18 * 60 },
-      { ...PRODUCTION_LINES[1], held: 18_000, tone: "ember" },
-      PRODUCTION_LINES[2],
-    ],
+    storeCard: { ...STORE_LINES[1], held: 18_000, tone: "ember" },
   },
-  "production-empty": {
+  "stores-empty": {
     clock: CLOCK,
     stores: STORES,
     armies: [],
-    production: [
-      line({ icon: "wheat", spentAt: "deploy", perHour: 0, held: 4_500, limit: 6_000, noBuilding: true }),
-      line({ icon: "labor", spentAt: "realm", perHour: 100, held: 2_000, limit: 6_000, fullIn: 40 * HOUR }),
-      line({ icon: "troops", spentAt: "deploy", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
-    ],
+    storeCard: line({ icon: "troops", spentAt: "deploy", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
   },
   research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: true },
   today: { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today" },
@@ -843,7 +836,8 @@ type LabState = {
   visiting?: boolean;
   /** Research's page: the tree on the realm some days in. */
   research?: boolean;
-  production?: readonly ProductionLine[];
+  /** The card a store's ring or plate opened. */
+  storeCard?: StoreLine;
   army?: LabArmySheet;
   realmView?: "build" | "build-early" | "castle" | "castle-short" | "full";
   dayDone?: Parameters<typeof DayDoneCard>[0];
@@ -898,6 +892,7 @@ export const HudLab = () => {
         strip={
           <>
             <StatusStrip clock={lab.clock} stores={[...lab.stores]} />
+            {!desktop && lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
             {lab.purse && (
               <PurseRow>
                 {lab.purse.realms !== undefined && <RealmsChip labor={lab.purse.realms} onOpen={noop} />}
@@ -1002,7 +997,6 @@ export const HudLab = () => {
         {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} />}
         {lab.dayDone && <DayDoneCard {...lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
-        {lab.production && <ProductionSheet lines={lab.production} onSpend={noop} onBuild={noop} onClose={noop} />}
         {(lab.realmView === "build" || lab.realmView === "build-early") && (
           <BuildView
             population={lab.realmView === "build" ? LAB_POPULATION : { used: 0, total: 6 }}
@@ -1052,7 +1046,6 @@ export const HudLab = () => {
             rank="#12"
             onToday={noop}
             onSeason={noop}
-            onProduction={noop}
             realms={lab.menuRealms ? { waiting: true, onOpen: noop } : undefined}
             onSettings={noop}
             onExit={noop}
@@ -1172,7 +1165,12 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
               {...(!lab.visiting && {
                 lords: lab.purse?.lords ?? LAB_LORDS,
                 labor: lab.purse?.realms,
-                onOpenStores: noop,
+                storeCards: lab.storeCard && {
+                  kinds: ["wheat", "labor", "troops"],
+                  open: lab.storeCard.icon,
+                  onToggle: noop,
+                  card: <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />,
+                },
                 onWithdraw: noop,
                 onRealms: noop,
               })}
@@ -1215,11 +1213,9 @@ const labSurface = (lab: LabState): HudSurface | null =>
     ? "season"
     : lab.research
       ? "research"
-      : lab.production
-        ? "production"
-        : lab.results === "today" || lab.results === "today-earlier" || lab.results === "today-failed"
-          ? "today"
-          : null;
+      : lab.results === "today" || lab.results === "today-earlier" || lab.results === "today-failed"
+        ? "today"
+        : null;
 
 /**
  * The armies on the lab, as ArmyDock draws them: a phone's row of tokens with an open slot for each army still to

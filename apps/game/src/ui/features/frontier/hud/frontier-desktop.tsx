@@ -1,6 +1,6 @@
 import { HudBubble } from "@/ui/design-system/kit/hud-elements";
 import { OpenedFromPanel } from "@/ui/design-system/kit/opened-from-panel";
-import { PRODUCTION, REALM, RESEARCH, SEASON, TODAY } from "@/ui/design-system/kit/words";
+import { REALM, RESEARCH, SEASON, TODAY } from "@/ui/design-system/kit/words";
 import type { SeasonGoal } from "@/ui/features/world/containers/top-header/identity-chip";
 import { TopHeader } from "@/ui/features/world/containers/top-header/top-header";
 import { HudColumn, HudFoot } from "@/ui/features/world/hud/desktop-hud";
@@ -76,7 +76,7 @@ export const FrontierDesktop = ({
 );
 
 /**
- * Frontier's places as the shared HUD's round bubbles: Research (lit while a node can be bought), Production, Today and
+ * Frontier's places as the shared HUD's round bubbles: Research (lit while a node can be bought), Today and
  * the Season. A desktop has no Menu: Map and Realm are the top bar's Realm / World, chat the rail's strip, the Realms'
  * labor the realm panel's chip, and leaving the game Settings' Leave game.
  */
@@ -105,7 +105,6 @@ export const FrontierPlaces = ({
   return (
     <nav aria-label="Places" className="pointer-events-auto flex items-start gap-3">
       {research !== undefined && bubble("research", "research", RESEARCH, research ? 1 : undefined)}
-      {research !== undefined && bubble("production", "production", PRODUCTION)}
       {bubble("today", "clock", TODAY)}
       {bubble("season", "victory", SEASON)}
     </nav>

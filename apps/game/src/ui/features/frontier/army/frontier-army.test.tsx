@@ -93,8 +93,10 @@ it("shows the army's figures, then its level-ups one step on, and buys the chose
   game.progress.xp = 260;
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
-  expect(host.textContent).toContain("Damage dealt");
-  expect(host.textContent).toContain("Max stamina");
+  // Each row is named by its attribute, with what it gives as its effect (the owner's pick, 22 October).
+  expect(host.textContent).toContain("Battle");
+  expect(host.textContent).toMatch(/\d+ max stamina/);
+  expect(host.textContent).toMatch(/% come home/);
   // Frontier's camp is its Troll, on the panel as everywhere (the shared structure naming rule).
   expect(host.textContent).toContain("Clear a Troll: more for a stronger guard");
   expect(host.textContent).not.toMatch(/Camp/);

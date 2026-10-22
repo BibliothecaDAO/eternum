@@ -38,8 +38,8 @@ export interface AttributeView {
   name: string;
   /** The Aspect's mark the attribute wears. */
   mark: IconMeaning;
-  stat: string;
   level: number;
+  /** What it gives now, as its effect: "+10% damage", "170 max stamina", "3% come home". */
   now: string;
   /** The next level: its word, the change in one line, its XP, whether it is held, and the stamina buying it refills. */
   next?: { word: string; change: string; xp: number; affordable: boolean; refill: number };
@@ -77,12 +77,12 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
     const price = army.levelXp[level - 1];
     const figure = (at: number) =>
       attributeFigure(key, at, army.stamina.max - logisticsStamina(army.progress.logistics));
-    const now = key === "scouting" ? scoutingNow(army.progress.scoutingKinds) : figure(level);
+    const effect = RESEARCH_TREE.effects[key];
+    const now = key === "scouting" ? scoutingNow(army.progress.scoutingKinds) : effect(figure(level));
     return {
       key,
       name: ATTRIBUTES[index],
       mark,
-      stat: ARMY_DETAIL.stats[key],
       level,
       now,
       next:
@@ -97,7 +97,7 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
                       now,
                       formatPercent(scoutingIncrementBps(level + 1) / 10_000, { signed: true }),
                     )
-                  : RESEARCH_TREE.step(now, figure(level + 1)),
+                  : RESEARCH_TREE.step(figure(level), effect(figure(level + 1))),
               xp: price,
               affordable: army.xp >= price,
               refill: levelRefill(
@@ -149,12 +149,17 @@ const attributeFigure = (key: AttributeKey, level: number, baseStamina: number):
   return formatPercent(steps.reduce((sum, step) => sum + step, 0) / 10_000, { signed: true });
 };
 
-/** Where the army's Scouting levels went: "+10% Rifts"; nothing yet reads as no bonus. */
+/** Where the army's Scouting levels went: "+10% discovery on Rifts"; nothing yet reads as no bonus. */
 const scoutingNow = (kinds: readonly ScoutKind[]): string => {
-  if (kinds.length === 0) return formatPercent(0, { signed: true });
+  if (kinds.length === 0) return RESEARCH_TREE.effects.scouting(formatPercent(0, { signed: true }));
   const byKind = new Map<ScoutKind, number>();
   kinds.forEach((kind, index) => byKind.set(kind, (byKind.get(kind) ?? 0) + scoutingIncrementBps(index + 2)));
   return [...byKind]
-    .map(([kind, bps]) => ARMY_DETAIL.onKind(formatPercent(bps / 10_000, { signed: true }), RESEARCH_TREE.kinds[kind]))
+    .map(([kind, bps]) =>
+      ARMY_DETAIL.onKind(
+        RESEARCH_TREE.effects.scouting(formatPercent(bps / 10_000, { signed: true })),
+        RESEARCH_TREE.kinds[kind],
+      ),
+    )
     .join(" · ");
 };

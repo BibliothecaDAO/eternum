@@ -1,11 +1,12 @@
 import { frontierSiteName, StructureType } from "@bibliothecadao/types";
+import { LABOR } from "@/ui/design-system/kit/words";
 import type { NextUpFacts } from "./next-up-facts";
 
 /**
  * Where a Frontier Next up step's button takes the player: the realm (its board), the open army slot's Deploy, the
- * readiest army selected on the map, the sheet of an army whose XP buys a tier, today's camp, Research, or Production.
+ * readiest army selected on the map, the sheet of an army whose XP buys a tier, today's camp, or Research.
  */
-export type FrontierCoachAct = "realm" | "deploy" | "select-army" | "army" | "camp" | "research" | "production";
+export type FrontierCoachAct = "realm" | "deploy" | "select-army" | "army" | "camp" | "research";
 
 /** A step: its line, and its button's verb and where it goes; a step taken on the map itself has neither. */
 export interface FrontierCoachStep {
@@ -55,8 +56,10 @@ const alerts = (facts: NextUpFacts, at: At): FrontierCoachStep[] => [
         step(
           "store-full",
           `Your ${facts.storeFull} store is full: what does not fit is gone. Spend it, or store more.`,
-          "Production",
-          "production",
+          // Labor is spent on the realm board; wheat and troops by Deploy.
+          ...(facts.storeFull === LABOR.toLowerCase()
+            ? (["Open the realm", "realm"] as const)
+            : (["Deploy", "deploy"] as const)),
         ),
       ]
     : []),

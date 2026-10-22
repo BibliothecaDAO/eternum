@@ -99,7 +99,7 @@ export const ArmyDetail = ({
         {army.attributes.map((attribute) => (
           <div key={attribute.key} className="flex items-center gap-2">
             <Icon name={attribute.mark} size={20} />
-            <dt className="flex-1 text-hud-body text-hud-muted">{attribute.stat}</dt>
+            <dt className="flex-1 text-hud-body text-hud-muted">{attribute.name}</dt>
             <dd className="text-hud-strong tabular-nums text-hud-ink">{attribute.now}</dd>
           </div>
         ))}
@@ -198,7 +198,6 @@ const Choice = ({
           ? RESEARCH_TREE.step(attribute.name, attribute.next.word)
           : ARMY_DETAIL.legendary(attribute.name)}
       </span>
-      <span className="text-hud-label text-hud-muted">{attribute.stat}</span>
       <span className="text-hud-label tabular-nums text-hud-good">{attribute.next?.change ?? attribute.now}</span>
     </span>
     {attribute.next && (

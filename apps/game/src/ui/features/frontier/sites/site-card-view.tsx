@@ -38,6 +38,7 @@ import { type ReactNode, useState } from "react";
 
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
+import { shareTaken } from "./fight-record";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
 
@@ -71,8 +72,8 @@ export type SiteChoice = {
 
 /**
  * A guarded site's card (wireframe 06), read as its result will read (the owner's option A): what this attack comes to,
- * each side's troops before and after it ("you lose", "you kill"), and what the clear pays (what fits large, with its
- * XP, or a ruin's chest with its tier and exact LORDS) and in how many attacks. Its foot is the sheet's: Details, which
+ * each side's troops before and after it ("you lose", "you kill", each with its share), and what the clear pays when
+ * cleared (what fits large, with its XP, or a ruin's chest with its tier and exact LORDS). Its foot is the sheet's: Details, which
  * opens the whole fight's figures, and Realm on the left; the one step alone on the right.
  */
 export const SiteCardView = ({
@@ -153,7 +154,7 @@ export const SiteCardView = ({
       ) : (
         <Matchup army={army} beast={beast} guard={guard} />
       )}
-      <Gain dimmed={lost === true} clearedIn={facing?.fight.outcome === "wins" ? facing.fight.exchanges : undefined}>
+      <Gain dimmed={lost === true}>
         {chest ? <ChestPay chest={chest} /> : pay ? <Pay pay={pay} /> : null}
         {xp !== undefined && !(chest && lost) && (
           <HudChip>
@@ -197,8 +198,8 @@ const Outcome = ({ facing: { army, fight }, line }: { facing: Facing; line: stri
 };
 
 /**
- * One side of this attack: its troops before → after, the after in red when none are left, and what it loses; a
- * beast's combat class on its hover.
+ * One side of this attack: its troops before → after, the after in red when none are left, and what it loses with its
+ * share of the side; a beast's combat class on its hover.
  */
 const Side = ({
   art,
@@ -210,7 +211,7 @@ const Side = ({
   art: IconMeaning;
   before: number;
   change: number;
-  word: (troops: string) => string;
+  word: (troops: string, share: string) => string;
   tip?: string;
 }) => {
   const after = Math.max(0, before - change);
@@ -223,29 +224,19 @@ const Side = ({
           {formatExact(after)}
         </span>
       </span>
-      <span className="text-hud-label text-hud-muted">{word(formatExact(change))}</span>
+      <span className="text-hud-label text-hud-muted">{word(formatExact(change), shareTaken(change, before))}</span>
     </HudPanel>
   );
 };
 
-/** What the clear pays, and in how many attacks while the army wins; dimmed when the fight is lost. */
-const Gain = ({
-  dimmed,
-  clearedIn,
-  children,
-}: {
-  dimmed: boolean;
-  clearedIn: number | undefined;
-  children: ReactNode;
-}) => (
+/** What the clear pays, "When cleared" however many attacks it takes (Details counts them); dimmed when the fight is lost. */
+const Gain = ({ dimmed, children }: { dimmed: boolean; children: ReactNode }) => (
   <HudPanel
     collapsible={false}
     className={cn(dimmed && "opacity-50")}
     bodyClassName="flex items-center justify-between gap-3 py-2"
   >
-    <span className="text-hud-label text-hud-muted">
-      {clearedIn === undefined ? "" : FIGHT_WORDS.clearedIn(clearedIn)}
-    </span>
+    <span className="text-hud-label text-hud-muted">{FIGHT_WORDS.whenCleared}</span>
     <span className="flex flex-wrap items-center justify-end gap-3">{children}</span>
   </HudPanel>
 );

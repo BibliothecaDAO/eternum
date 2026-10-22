@@ -59,6 +59,14 @@ button.ui-panel__name {
   cursor: pointer;
   user-select: none;
 }
+/* A header that is one action (the realm card's way home) is pressed anywhere along its band. */
+button.ui-panel__name[data-action] {
+  flex: 1;
+  text-align: left;
+}
+button.ui-panel__name[data-action]:hover {
+  color: rgb(var(--hud-ink));
+}
 .ui-panel__title {
   overflow: hidden;
   text-overflow: ellipsis;

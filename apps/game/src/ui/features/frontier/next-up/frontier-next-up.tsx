@@ -67,7 +67,7 @@ const toNextStep = (step: FrontierCoachStep, take: (act: FrontierCoachAct) => vo
 /**
  * What a step's button does: open the realm's board, Deploy from the realm, select the readiest army on the map (or
  * the one whose XP buys a tier, with its sheet open), centre the map on today's camp with its tile picked, or open
- * Research or Production.
+ * Research.
  */
 const useTakeStep = (
   realm: NativeRows["Structure"],
@@ -100,8 +100,6 @@ const useTakeStep = (
         return selectOnMap({ kind: "hex", hex: { col: facts.camp.x, row: facts.camp.y } });
       case "research":
         return onSurface("research");
-      case "production":
-        return onSurface("production");
     }
   };
 };

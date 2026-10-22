@@ -100,6 +100,10 @@ export const EMPIRE = "Empire";
 /** The places: the nav's words. */
 export const MAP = "Map";
 export const REALM = "Realm";
+/** The realm's way home from its card's header: the map centred on it. */
+export const SHOW_MY_REALM = "Show my realm";
+/** A realm's place on its ranks' ladder, as its steps say it: "City, rank 2 of 4". */
+export const rankStep = (rank: string, step: number, of: number) => `${rank}, rank ${step} of ${of}`;
 export const RESEARCH = "Research";
 /** Every event and battle: the Events' history, a phone's place for Events. */
 export const LOG = "Log";
@@ -245,13 +249,17 @@ export const WOULD_BE_LOST = "Would be lost";
  * attack does to each side, what it comes to, and under Details the whole fight's figures.
  */
 export const FIGHT_WORDS = {
-  youLose: (troops: string) => `you lose ${troops}`,
-  youKill: (troops: string) => `you kill ${troops}`,
+  /** What this attack takes from each side, and its share of that side's troops: "you lose 407 (37%)". */
+  youLose: (troops: string, share: string) => `you lose ${troops} (${share})`,
+  youKill: (troops: string, share: string) => `you kill ${troops} (${share})`,
+  /** The same, on the attack's result. */
+  youLost: (troops: string, share: string) => `you lost ${troops} (${share})`,
+  youKilled: (troops: string, share: string) => `you killed ${troops} (${share})`,
   armyLost: "Your army is lost",
   clears: "This attack clears it",
   holds: "The guard holds",
-  clearedIn: (attacks: number) =>
-    attacks === 1 ? "Cleared in this attack" : `Cleared in ${formatCount(attacks, "attack")}`,
+  /** The reward row's word: what the site pays once it is cleared, however many attacks that takes (Details says). */
+  whenCleared: "When cleared",
   details: "Details",
   wholeFight: "The whole fight",
   attacks: "Attacks",
@@ -1107,11 +1115,15 @@ export const RESEARCH_TREE = {
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
   /** A level and what it gives: "Uncommon · +10% damage". */
   at: (tier: string, effect: string) => `${tier} · ${effect}`,
+  /**
+   * What an attribute gives, said as the figure and what it is a figure of, the one wording Research and an army's
+   * panel share (the owner, 22 October: by attribute, Homecoming compact): "+10% damage", "3% come home".
+   */
   effects: {
     battle: (value: string) => `${value} damage`,
     logistics: (value: string) => `${value} max stamina`,
-    scouting: (value: string) => `${value} sites found`,
-    homecoming: (value: string) => `${value} of troops back home`,
+    scouting: (value: string) => `${value} discovery`,
+    homecoming: (value: string) => `${value} come home`,
   },
   nouns: { essence: ESSENCE, labor: "Labor" },
   armiesFind: (site: string) => `Armies find ${site}s`,
@@ -1136,13 +1148,8 @@ export const RESEARCH_TREE = {
  * then its level-ups, one step on.
  */
 export const ARMY_DETAIL = {
-  stats: {
-    battle: "Damage dealt",
-    logistics: "Max stamina",
-    scouting: "Sites found",
-    homecoming: "Troops back at the day's end",
-  },
-  onKind: (value: string, kind: string) => `${value} ${kind}`,
+  /** A Scouting effect on the kind its levels went to: "+10% discovery on Rifts". */
+  onKind: (effect: string, kind: string) => `${effect} on ${kind}`,
   scoutingNext: (now: string, step: string) => `${now} · ${step} on the kind you pick`,
   earn: {
     explore: "Explore a tile",
