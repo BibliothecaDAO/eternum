@@ -29,7 +29,6 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
-import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { actNowRefusal, canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
@@ -272,7 +271,6 @@ export default class HexceptionScene extends HexagonScene {
   private mode: GameModeConfig;
   private ambienceSystem: HexceptionAmbienceSystem | null = null;
   private readonly proceduralTerrain: ProceduralTerrain;
-  private structureUpdateSubscription: any | null = null;
   private buildingUpdateUnsubscribe: (() => void) | null = null;
   private isInitialized = false;
   private localAssetsStarted = false;
@@ -287,9 +285,10 @@ export default class HexceptionScene extends HexagonScene {
   // True from setup until switch-off. Store subscriptions fire in every scene, so a grid rebuild (and the
   // hex-ready mark it ends with) only counts while this scene is the one being entered or shown.
   private isEntered = false;
-  // The map hexes the local view's ground shows, and whether one of their tiles changed since the ground was drawn.
+  // The map hexes the local view's ground shows, and whether the grid is behind its facts: one of those tiles, or the
+  // castle's level, changed since it was drawn.
   private shownMapHexes = new Set<string>();
-  private groundIsStale = false;
+  private gridIsStale = false;
   private readonly localZoomPersistDebounceMs = 500;
   private localZoomPersistTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly handleLocalZoomControlsChange = () => {
@@ -317,20 +316,7 @@ export default class HexceptionScene extends HexagonScene {
     this.ambienceSystem = new HexceptionAmbienceSystem(this.scene);
     this.applyAmbienceAppearance();
     this.storeUnsubscribes.push(useWorldAppearanceStore.subscribe(() => this.applyAmbienceAppearance()));
-    this.storeUnsubscribes.push(
-      this.game.store.subscribe((changes) => {
-        if (
-          changes.some(
-            (change) =>
-              (change.model === "Hyperstructure" || change.model === "HyperstructureProgress") &&
-              (change.current ?? change.previous)?.entity_id === BigInt(this.state.structureEntityId) &&
-              (change.current ?? change.previous)?.game_id === configManager.getActiveGameId(),
-          )
-        )
-          this.syncHyperstructureConstruction();
-        if (changes.some((change) => this.changesShownGround(change))) this.redrawStaleGround();
-      }),
-    );
+    this.storeUnsubscribes.push(this.game.store.subscribe((changes) => this.answerFactChanges(changes)));
 
     this.inputManager.addListener("contextmenu", () => {
       this.clearBuildingMode();
@@ -428,36 +414,6 @@ export default class HexceptionScene extends HexagonScene {
         (state) => state.useSimpleCost,
         (useSimpleCost) => {
           this.state.useSimpleCost = useSimpleCost;
-        },
-      ),
-    );
-
-    // Subscribe to structureEntityId changes
-    this.storeUnsubscribes.push(
-      useUIStore.subscribe(
-        (state) => state.structureEntityId,
-        (structureEntityId) => {
-          // Clean up previous subscription if it exists
-          if (this.structureUpdateSubscription) {
-            this.structureUpdateSubscription.unsubscribe();
-            this.structureUpdateSubscription = null;
-          }
-
-          // Only create a new subscription if we have a valid entity ID
-          if (structureEntityId && structureEntityId !== 0) {
-            if (VERBOSE_LOGS_ENABLED) console.log(`Setting up Structure listener for entity ID: ${structureEntityId}`);
-
-            this.structureUpdateSubscription = this.worldUpdateListener.StructureEntityListener.onLevelUpdate(
-              structureEntityId,
-              (update) => {
-                // A raised castle opens a ring; its plots light up once the grid has them.
-                if (update.level > this.structureStage) this.newRingRadius = buildableRadius(update.level);
-                this.structureStage = update.level as RealmLevels;
-                this.removeCastleFromScene();
-                this.updateHexceptionGrid(this.hexceptionRadius);
-              },
-            );
-          }
         },
       ),
     );
@@ -746,7 +702,7 @@ export default class HexceptionScene extends HexagonScene {
 
       this.removeCastleFromScene();
       this.updateHexceptionGrid(this.hexceptionRadius);
-    } else if (this.groundIsStale) {
+    } else if (this.gridIsStale) {
       this.updateHexceptionGrid(this.hexceptionRadius);
     }
 
@@ -811,12 +767,6 @@ export default class HexceptionScene extends HexagonScene {
     // CRITICAL: Clean up all Zustand store subscriptions to prevent memory leaks
     this.storeUnsubscribes.forEach((unsubscribe) => unsubscribe());
     this.storeUnsubscribes = [];
-
-    // Clean up structure update subscription
-    if (this.structureUpdateSubscription) {
-      this.structureUpdateSubscription.unsubscribe();
-      this.structureUpdateSubscription = null;
-    }
 
     // CRITICAL: Clean up animation mixers to prevent memory leaks
     this.buildingMixers.forEach((mixer) => {
@@ -1342,7 +1292,7 @@ export default class HexceptionScene extends HexagonScene {
     const regions = getLocalTerrainRegions(this.tileManager.getHexCoords(), radius);
     this.highlights = [];
     this.shownMapHexes.clear();
-    this.groundIsStale = false;
+    this.gridIsStale = false;
     // The buildable set belongs to this realm and its level; a previous realm's must not linger.
     this.interactiveHexManager.clearHexes();
 
@@ -1807,6 +1757,36 @@ export default class HexceptionScene extends HexagonScene {
     return stored(col, row) ?? stored(this.centerColRow[0], this.centerColRow[1]) ?? BiomeType.Grassland;
   }
 
+  /**
+   * The one place the scene follows its structure's facts: a hyperstructure's construction, the castle's level (a raised
+   * castle opens a ring of plots, lit once the grid has them) and the ground the view shows. Whatever the grid draws
+   * redraws now while the view is open, and on the next entry otherwise.
+   */
+  private answerFactChanges(changes: readonly NativeFactChange[]): void {
+    if (changes.some((change) => this.changesShownHyperstructure(change))) this.syncHyperstructureConstruction();
+    const level = changes.map((change) => this.changedCastleLevel(change)).find((value) => value !== undefined);
+    if (level !== undefined) {
+      if (level > this.structureStage) this.newRingRadius = buildableRadius(level);
+      this.removeCastleFromScene();
+    }
+    if (level !== undefined || changes.some((change) => this.changesShownGround(change))) this.redrawStaleGrid();
+  }
+
+  private changesShownHyperstructure(change: NativeFactChange): boolean {
+    if (change.model !== "Hyperstructure" && change.model !== "HyperstructureProgress") return false;
+    const row = change.current ?? change.previous;
+    return row?.entity_id === BigInt(this.state.structureEntityId) && row?.game_id === configManager.getActiveGameId();
+  }
+
+  /** The shown structure's new level, when the change is one to its level. */
+  private changedCastleLevel(change: NativeFactChange): number | undefined {
+    if (change.model !== "Structure" || !change.current) return undefined;
+    const { current, previous } = change;
+    const shown =
+      current.game_id === configManager.getActiveGameId() && current.entity_id === BigInt(this.state.structureEntityId);
+    return shown && previous?.base.level !== current.base.level ? current.base.level : undefined;
+  }
+
   /** A tile under the local view was revealed or rewritten: its neighbour explored, or its row arriving after the view. */
   private changesShownGround(change: NativeFactChange): boolean {
     if (change.model !== "TileOpt") return false;
@@ -1820,9 +1800,9 @@ export default class HexceptionScene extends HexagonScene {
     );
   }
 
-  /** The ground redraws now while the view is open, and on the next entry otherwise. */
-  private redrawStaleGround(): void {
-    this.groundIsStale = true;
+  /** The grid redraws now while the view is open, and on the next entry otherwise. */
+  private redrawStaleGrid(): void {
+    this.gridIsStale = true;
     this.updateHexceptionGrid(this.hexceptionRadius);
   }
 

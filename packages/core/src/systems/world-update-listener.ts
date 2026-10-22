@@ -50,23 +50,6 @@ export class WorldUpdateListener {
     };
   }
 
-  get StructureEntityListener() {
-    return {
-      onLevelUpdate: (entityId: ID, callback: (update: { entityId: ID; level: number }) => void) => ({
-        unsubscribe: this.setup.store.subscribe((changes) => {
-          for (const change of changes) {
-            if (
-              change.model === "Structure" &&
-              change.current?.game_id === configManager.getActiveGameId() &&
-              change.current.entity_id === BigInt(entityId)
-            )
-              callback({ entityId, level: change.current.base.level });
-          }
-        }),
-      }),
-    };
-  }
-
   private onStory(name: string, callback: (payload: Fields, event: Fields) => void): () => void {
     return this.setup.store.subscribeEvents((event) => {
       const story = event.model === "StoryEvent" ? fields(event.value) : undefined;
