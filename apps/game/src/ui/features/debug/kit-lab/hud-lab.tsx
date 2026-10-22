@@ -1066,6 +1066,11 @@ export const HudLab = () => {
 
 /** Deploy on the fiction, live: 2 wheat a troop, 0.02 a troop a tile. */
 const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
+  const [slot, setSlot] = useState<number | null>(null);
+  const open = [
+    { slot: 1, number: 2, inherited: true, start: { current: 40, max: 150 } },
+    { slot: 2, number: 3, inherited: false, start: { current: 150, max: 150 } },
+  ];
   const [count, setCount] = useState(deploy.count);
   const [chosen, setChosen] = useState<Direction | null>(Direction.EAST);
   const most = Math.min(deploy.troopsAtHome, Math.floor(deploy.wheat / 2));
@@ -1077,12 +1082,12 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       count={count}
       amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
       onCount={setCount}
-      // The next army fills a slot whose army was released today with 40 stamina left.
-      start={{ slot: 2, number: 3, inherited: true, start: { current: 40, max: 150 } }}
+      start={open.find((entry) => entry.slot === slot)}
+      slots={{ allowed: 3, open, onPick: setSlot }}
       wheatCost={count * 2}
       march={count > 0 ? Math.floor(wheatLeft / (count * 0.02)) : 0}
       ring={{ center: { col: 10, row: 10 }, tiles: DEPLOY_RING, chosen, onPick: setChosen }}
-      canDeploy={count > 0}
+      canDeploy={count > 0 && slot !== null}
       sending={false}
       onDeploy={noop}
       wheatShort={undefined}
