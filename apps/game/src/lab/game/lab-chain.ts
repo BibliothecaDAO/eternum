@@ -1,4 +1,9 @@
+import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { LAB_GUARDIAN, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
+import { answerLabChat } from "@/shell/lab/lab-chat";
+import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
+import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import type { AccountInterface } from "starknet";
@@ -19,6 +24,9 @@ export const LAB_GAME = {
 } as const;
 /** The lab game's end: a month of chain seconds, so a session never sees it close. */
 export const LAB_GAME_ENDS_AT = 30 * 86_400;
+/** The lab shard's node and its account class, as its manifest names them. */
+const LAB_SHARD_RPC = "https://rpc.lab.invalid";
+const LAB_ACCOUNT_CLASS = "0x2";
 
 /** A fact as Herald carries it: its model, its key, its wire value (null deletes the row). */
 export type LabFact = { model: string; key: string; value: unknown };
@@ -60,8 +68,8 @@ const rowsOf = (store: NativeFactStore): LabFact[] =>
 
 /**
  * Plays the game route on a fixture, in this tab only: the directory lists the lab shard, its Herald's socket is
- * answered here (the snapshot, the player's scope, a head each second), and the player's account is one whose signed
- * commands are recorded and answered by the scenario as the chain would apply them. Everything past the network is the
+ * answered here (the snapshot, the player's scope, a head each second), the player is signed in with an empty chat, and
+ * their account is one whose signed commands are recorded and answered by the scenario as the chain would apply them. Everything past the network is the
  * game's own: its client, scenes, input and HUD. Installed once for the tab's life; a reload starts from the lab again.
  */
 export const installLabChain = async (scenario: LabScenario): Promise<LabChainRecord> => {
@@ -76,14 +84,18 @@ export const installLabChain = async (scenario: LabScenario): Promise<LabChainRe
   const now = () => scenario.startsAt + Math.floor((Date.now() - startedAt) / 1000);
   const herald = new LabHerald(chain, now);
   answerDirectory(now);
+  answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
+  answerLabChat(true, [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)]);
+  signInLabPlayer();
   seatPlayer(labAccount(scenario, chain, nativeBindings, record, herald, now));
   return record;
 };
 
 /**
- * The tab's directory and the lab shard's own reads (its manifest, its games): the lab shard alone, with the one
- * Frontier game on it, ending a month into the season. Any other read the shard is asked fails as an offline shard's.
+ * The tab's directory and guardian, and the lab shard's own reads (its manifest, its games, its empty history): the lab
+ * shard alone, with the one Frontier game on it, ending a month into the season. Any other read the shard is asked
+ * fails as an offline shard's.
  */
 const answerDirectory = (now: () => number) => {
   const network = window.fetch.bind(window);
@@ -91,8 +103,8 @@ const answerDirectory = (now: () => number) => {
     version: 1,
     chainId: LAB_GAME.chainId,
     releaseSchemas: { "1": nativeFactSchemaIdentity },
-    rpcUrl: "https://rpc.lab.invalid",
-    accountClassHash: "0x2",
+    rpcUrl: LAB_SHARD_RPC,
+    accountClassHash: LAB_ACCOUNT_CLASS,
     contracts: { games: "0x1ab" },
     guardianPublicKey: "0x3",
     l2GasBound: "0x47868c00",
@@ -122,6 +134,10 @@ const answerDirectory = (now: () => number) => {
   const shard = new URL(LAB_GAME.url);
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
+    if (url.pathname === "/api/guardian") return json(LAB_GUARDIAN);
+    // The game's chat has no messages yet, and the player blocks nobody.
+    if (url.pathname === "/api/chat/world") return json({ messages: [], nextCursor: null });
+    if (url.pathname === "/api/chat/blocks") return json({ blocked: [] });
     if (url.pathname === "/api/directory")
       return json({
         shards: [{ url: LAB_GAME.url, chainId: LAB_GAME.chainId, status: "active", games: [game], manifest }],
@@ -130,9 +146,32 @@ const answerDirectory = (now: () => number) => {
     if (url.pathname === "/manifest") return json(manifest);
     if (url.pathname === "/games")
       return json({ chain: LAB_GAME.chainId, world_address: "0x1ab", confirmed_block: now(), games: [game] });
+    // A fresh day has no history yet: the feed reads empty, as a new game's does.
+    if (/^\/games\/\d+\/history$/.test(url.pathname))
+      return json({ complete_through_block: now(), items: [], limit: 0, offset: 0, total: 0 });
     return Promise.reject(new TypeError(`The lab shard does not serve ${url.pathname}`));
   };
 };
+
+/**
+ * The lab's player is signed in as the app lab's (its session and guardian), so the game's HUD reads as a signed-in
+ * player's. The identity client holds its own fetch, so its session read is answered on the client itself.
+ */
+const signInLabPlayer = () => {
+  identityClient.getSession = async () => LAB_SESSION;
+  useIdentitySessionStore.getState().applySession(LAB_SESSION);
+};
+
+/**
+ * The lab RPC's answers to the one join a signed-in player's game makes: their account is deployed and this device is
+ * already one of its keys, so the join sends nothing. starknet binds the tab's fetch when it loads, so the answers are
+ * the shard provider's own, as the identity client's are.
+ */
+const answerAccountJoin = (rpcUrl: string, accountClassHash: string) =>
+  Object.assign(getShardRpcProvider(rpcUrl), {
+    getClassHashAt: async () => accountClassHash,
+    callContract: async () => ["0x1"],
+  });
 
 /** The lab shard's Herald socket is the tab's own; every other socket opens as before. */
 const answerHeraldSocket = (herald: LabHerald) => {

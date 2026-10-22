@@ -110,7 +110,7 @@ const blitzStaminaConfig = {
   staminaExploreWheatCost: 0.05,
 };
 
-const blitzVictoryPointConfig = {
+export const blitzVictoryPointConfig = {
   pointsForTileExploration: 5n * BigInt(VICTORY_POINTS_MULTIPLIER),
   pointsForNonHyperstructureClaimAgainstBandits: 250n * BigInt(VICTORY_POINTS_MULTIPLIER),
   pointsForRelicDiscovery: 250n * BigInt(VICTORY_POINTS_MULTIPLIER),
