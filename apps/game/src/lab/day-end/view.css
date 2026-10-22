@@ -1,6 +1,5 @@
 .day-end-lab {
   position: relative;
-  display: flex;
   height: var(--lab-viewport-height);
   overflow: hidden;
   background: #0b0a09;
@@ -10,17 +9,7 @@
 }
 .day-end-screen {
   position: relative;
-  flex: 1;
-  overflow: hidden;
-}
-/* A phone's screen, 390 × 844, inside the lab's window. */
-.day-end-lab[data-phone="true"] .day-end-screen {
-  flex: none;
-  width: 390px;
-  height: min(844px, calc(100% - 32px));
-  margin: auto;
-  border: 1px solid #3a3027;
-  border-radius: 28px;
+  height: 100%;
 }
 .day-end-screen > canvas {
   display: block;
@@ -28,130 +17,9 @@
   height: 100%;
 }
 
-/* The black the day drops into: down with the nightfall, held while the land changes, up with the dawn. */
-.day-end-black {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  background: #000;
-  opacity: 0;
-  pointer-events: none;
-}
-.day-end-black[data-phase="nightfall"] {
-  opacity: 1;
-  transition: opacity 0.6s ease-in;
-}
-.day-end-black[data-phase="black"] {
-  opacity: 1;
-}
-.day-end-black[data-phase="dawn"] {
-  opacity: 0;
-  transition: opacity 1.4s ease-out;
-}
-/* Opened after the day ended: the new land waits in the dark under the night direction's summary. */
-.day-end-dim {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  background: #000;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 1.4s ease-out;
-}
-.day-end-dim[data-on="true"] {
-  opacity: 0.6;
-  transition: none;
-}
-
-/* The dawn direction's one line over the mist. */
-.day-end-line {
-  position: absolute;
-  z-index: 3;
-  top: 16%;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  white-space: nowrap;
-  text-shadow:
-    0 2px 0 rgb(0 0 0 / 0.7),
-    0 0 24px rgb(0 0 0 / 0.8);
-  animation: day-end-rise 0.8s ease-out 0.8s both;
-}
-/* Over the whole map, the line is read from across the room: larger than the card's title. */
-.day-end-line h2 {
-  font-size: clamp(32px, 4.2vw, 56px);
-  line-height: 1.1;
-}
-.day-end-line p {
-  font-size: clamp(15px, 1.4vw, 20px);
-}
-
-/* The summary: in the night direction centred low over the map, in the dawn direction docked in the HUD's column. */
-.day-end-card {
-  position: absolute;
-  z-index: 4;
-  animation: day-end-rise 0.5s ease-out both;
-}
-.day-end-card[data-placement="centre"] {
-  left: 50%;
-  bottom: 5%;
-  width: min(400px, calc(100% - 32px));
-  transform: translateX(-50%);
-}
-.day-end-card[data-placement="docked"] {
-  top: 76px;
-  right: 16px;
-  width: 320px;
-}
-.day-end-card section {
-  filter: drop-shadow(0 12px 32px rgb(0 0 0 / 0.55));
-}
-/* A phone's summary is a sheet over the screen's lower half, its Continue under the thumb. */
-.day-end-lab[data-phone="true"] .day-end-card {
-  top: auto;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
-  width: auto;
-  transform: none;
-}
-.day-end-lab[data-phone="true"] .day-end-line {
-  top: 12%;
-  white-space: normal;
-  width: 90%;
-}
-
-.day-end-skip {
-  position: absolute;
-  z-index: 6;
-  right: 16px;
-  bottom: 16px;
-  padding: 8px 14px;
-  background: rgb(10 8 6 / 0.72);
-  color: #f4ebdc;
-  border: 1px solid rgb(244 235 220 / 0.25);
-  border-radius: 999px;
-  cursor: pointer;
-}
-.day-end-lab[data-phone="true"] .day-end-skip {
-  top: 16px;
-  bottom: auto;
-}
-
-@keyframes day-end-rise {
-  from {
-    opacity: 0;
-    translate: 0 16px;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
-}
-
 .day-end-panel {
   position: absolute;
-  z-index: 10;
+  z-index: 60;
   top: 16px;
   left: 16px;
   width: 260px;
@@ -192,9 +60,6 @@
   flex: 1;
 }
 .day-end-panel button {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   padding: 7px 9px;
   background: #252016;
   color: #f1ddb4;
@@ -203,11 +68,6 @@
   font-size: 13px;
   text-align: left;
   cursor: pointer;
-}
-.day-end-panel button span {
-  color: #c0af90;
-  font-size: 12px;
-  line-height: 1.35;
 }
 .day-end-panel button[aria-pressed="true"] {
   border-color: #f6c297;

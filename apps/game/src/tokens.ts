@@ -430,6 +430,8 @@ export const HUD_SHEET = {
   dark: channels(HUD_COLORS.ink),
   /** An input's or a map's recess. */
   well: "rgb(0 0 0 / 0.4)",
+  /** The black the screen drops into between two Frontier days, and the dark a later arrival's summary waits in. */
+  night: HUD_COLORS.shade,
   /**
    * Whose a thing is, in three sides (owner, 2026-10-21: "red for everything thats not me, blue for allies ... and green
    * for me"): yours green, an ally's (a tribe member's) blue, anyone else's red, nobody's too. A watching viewer has no
@@ -495,6 +497,7 @@ export const HUD_COLOR_CLASSES: Record<string, string> = Object.fromEntries([
   ...["accent", "gold", "ink", "dark"].map((name) => [name, `rgb(var(--hud-${name}))`]),
   ...[
     "well",
+    "night",
     "own",
     "ally",
     "enemy",
@@ -561,6 +564,8 @@ export const HUD_LAYOUT = {
   "ring-rows": "164px",
   /** The top bar's Settings panel, opened under its button. */
   settings: "420px",
+  /** The day's summary over the map at a Frontier day's end, on a desktop (a phone's is a sheet). */
+  summary: "400px",
   /** The phone's minimap tab. */
   "phone-minimap": "clamp(180px, 35dvh, 320px)",
   "chat-width": "800px",

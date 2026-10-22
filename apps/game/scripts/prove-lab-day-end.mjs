@@ -1,10 +1,10 @@
 /**
- * Proves the Frontier day-end lab (`/lab/day-end`) the way the owner will judge it: on the machine's GPU, each
- * direction plays from the day as it was played to the new day, as a player in the game when the day ends and as one
- * who opens it later, on a desktop and on a phone. Each run leaves a still at each beat, and `transcript.json` holds
- * every phase seen, each still and every check. It records no video: a recording opens the page a second time in its
- * own context, and two WebGPU pages at once left the map black in some stills. It starts its own dev client on `--port`, or
- * drives the one `--base-url` names, and closes its browser however the run ends.
+ * Proves the Frontier day end (`/lab/day-end`) the way a player meets it, through the game's own moment, screen and
+ * card: on the machine's GPU, from the day as it was played to the new day, as a player in the game when the day ends
+ * and as one who opens it later, on a desktop and on a phone (390 × 844). Each run leaves a still at each beat, and
+ * `transcript.json` holds every phase seen, each still and every check. It records no video: a recording opens the page
+ * a second time in its own context. It starts its own dev client on `--port`, or drives the one `--base-url` names, and
+ * closes its browser however the run ends.
  *
  *   pnpm --dir apps/game prove:day-end --port 4199 --out <fresh-dir>
  */
@@ -25,14 +25,12 @@ const out = resolve(arg("--out", `.context/day-end-proof-${Date.now()}`));
 const GPU_FLAGS =
   "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu";
 
-/** Each run: the direction, when the player arrives, the screen, and the beats to still, in seconds from the day's end. */
+/** Each run: when the player arrives, the screen, and the beats to still, in seconds from the day's end. */
 const RUNS = [
-  { direction: "night", arrival: "live", screen: "desktop", beats: [1.2, 2.4, 3.6, 8] },
-  { direction: "dawn", arrival: "live", screen: "desktop", beats: [1, 2.5, 4] },
-  { direction: "night", arrival: "later", screen: "desktop", beats: [0.8] },
-  { direction: "dawn", arrival: "later", screen: "desktop", beats: [] },
-  { direction: "night", arrival: "live", screen: "phone", beats: [1.2, 3.6] },
-  { direction: "dawn", arrival: "live", screen: "phone", beats: [1, 3] },
+  { arrival: "live", screen: "desktop", beats: [1.2, 2.4, 3.6, 8] },
+  { arrival: "later", screen: "desktop", beats: [0.8] },
+  { arrival: "live", screen: "phone", beats: [1.2, 3.6] },
+  { arrival: "later", screen: "phone", beats: [0.8] },
 ];
 const SCREENS = { desktop: [1920, 1080], phone: [390, 844] };
 
@@ -44,15 +42,15 @@ const check = (condition, claim) => {
   transcript.checks.push({ claim, passed: Boolean(condition) });
   if (!condition) throw new Error(`Failed: ${claim}`);
 };
-const phase = (browser) => browser.read("JSON.stringify(document.querySelector('[data-day-end-lab]')?.dataset.phase)");
+const read = (browser, expression) => browser.read(`JSON.stringify(${expression})`);
+const phase = (browser) => read(browser, "document.querySelector('[data-day-end-lab]')?.dataset.phase");
 const waitFor = (browser, expression, timeout = 30000) =>
   browser.run(["wait", "--fn", expression, "--timeout", String(timeout)]);
+const summaryOnScreen = "Boolean(document.querySelector('[data-day-end] section[aria-label=\"Day 1 done\"]'))";
 
 function open(browser, urlBase, run) {
   const [width, height] = SCREENS[run.screen];
-  const query = new URLSearchParams({ direction: run.direction, arrival: run.arrival, capture: "1", panel: "0" });
-  if (run.screen === "phone") query.set("phone", "1");
-  const url = `${urlBase}/lab/day-end?${query}`;
+  const url = `${urlBase}/lab/day-end?${new URLSearchParams({ arrival: run.arrival, capture: "1", panel: "0" })}`;
   browser.run(["set", "viewport", String(width), String(height)]);
   browser.run(["open", url, "--ignore-https-errors"]);
   waitFor(browser, "document.querySelector('[data-day-end-lab]')?.dataset.ready === 'true'", 90000);
@@ -63,7 +61,7 @@ function open(browser, urlBase, run) {
 
 /** Plays one run from the day as it was played to the new day; stills land on the beats and after each change. */
 function play(browser, urlBase, run) {
-  const name = `${run.screen}-${run.direction}-${run.arrival}`;
+  const name = `${run.screen}-${run.arrival}`;
   const record = { name, url: open(browser, urlBase, run), stills: [], load: loadavg()[0] };
   const still = (label) => {
     const file = `${name}-${String(record.stills.length).padStart(2, "0")}-${label}.png`;
@@ -72,49 +70,39 @@ function play(browser, urlBase, run) {
   };
   still("day");
   const endedAt = Date.now();
-  browser.eval("window.__dayEnd.endTheDay(); true");
+  browser.eval(`window.__dayEnd.endTheDay(${JSON.stringify(run.arrival)}); true`);
   for (const second of run.beats) {
     browser.run(["wait", String(Math.max(0, Math.round(second * 1000 - (Date.now() - endedAt))))]);
     still(`${second}s`);
   }
-  if (run.direction === "night") {
-    waitFor(browser, "['summary'].includes(document.querySelector('[data-day-end-lab]')?.dataset.phase)");
-    browser.eval("window.__dayEnd.continueDay(); true");
-    browser.run(["wait", "300"]);
-    still("continued");
-  }
+  waitFor(browser, "document.querySelector('[data-day-end-lab]')?.dataset.phase === 'summary'");
+  check(read(browser, summaryOnScreen), `${name}: the day's summary stands over the map`);
+  browser.click("Continue");
+  browser.run(["wait", "300"]);
+  still("continued");
   // A still takes a moment, so the dawn may already have handed over to the new day.
-  waitFor(browser, "['dawn', 'new-day'].includes(document.querySelector('[data-day-end-lab]')?.dataset.phase)");
+  waitFor(browser, "['dawn', 'day'].includes(document.querySelector('[data-day-end-lab]')?.dataset.phase)");
   still("dawn");
-  waitFor(browser, "document.querySelector('[data-day-end-lab]')?.dataset.phase === 'new-day'");
-  browser.run(["wait", "1500"]);
+  waitFor(browser, "document.querySelector('[data-day-end-lab]')?.dataset.phase === 'day'");
+  browser.run(["wait", "800"]);
   still("new-day");
-  const docked = browser.read("Boolean(document.querySelector('.day-end-card[data-placement=docked]'))");
   check(
-    docked === (run.direction === "dawn"),
-    `${name}: the new day ${run.direction === "dawn" ? "keeps the summary docked" : "opens clear"}`,
+    !read(browser, "Boolean(document.querySelector('[data-day-end]'))"),
+    `${name}: the new day opens clear, the map taking orders again`,
   );
   transcript.runs.push(record);
 }
 
-/** Space skips: the night's mist to its summary, the dawn's mist to the nightfall. */
+/** Space skips the rolling mist to the summary, never past it. */
 function proveSkip(browser, urlBase) {
-  for (const [direction, lands] of [
-    ["night", "summary"],
-    ["dawn", "nightfall"],
-  ]) {
-    open(browser, urlBase, { direction, arrival: "live", screen: "desktop" });
-    browser.eval("window.__dayEnd.endTheDay(); true");
-    browser.run(["wait", "500"]);
-    browser.press("Space");
-    browser.run(["wait", "150"]);
-    // The dawn direction's skip runs on through the black on its own, so a slow read may find it past the nightfall.
-    const after = phase(browser);
-    check(
-      direction === "night" ? after === "summary" : ["nightfall", "black", "dawn", "new-day"].includes(after),
-      `${direction}: Space skips the mist to ${lands}`,
-    );
-  }
+  open(browser, urlBase, { arrival: "live", screen: "desktop" });
+  browser.eval("window.__dayEnd.endTheDay('live'); true");
+  browser.run(["wait", "500"]);
+  browser.press("Space");
+  browser.run(["wait", "150"]);
+  check(phase(browser) === "summary", "Space skips the mist to the summary");
+  browser.press("Space");
+  check(phase(browser) === "summary", "a second Space leaves the summary up");
 }
 
 try {

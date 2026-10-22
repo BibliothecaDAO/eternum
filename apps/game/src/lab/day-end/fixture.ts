@@ -1,6 +1,6 @@
 import { BiomeType } from "@bibliothecadao/types";
 
-import type { DayTotals } from "@/ui/features/frontier/log/day-totals";
+import type { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
 
@@ -12,14 +12,15 @@ import { createEndgameFixture, type EndgameLabSettings } from "../endgame-mist/f
  */
 export const DAY_END_VEIL: EndgameLabSettings = { busy: false, spires: "awaken", spared: "realm" };
 
-/** The day that ends, and the figures of the owner's screenshot of today's card. */
-export const DAY_END_FIXTURE = {
+/** The ended day's card, with the figures of the owner's screenshot of today's card: 12 h left, tomorrow 20 h. */
+export const dayEndSummary = (now: number, onContinue: () => void): Parameters<typeof DayDoneCard>[0] => ({
   endedDay: 1,
-  totals: { reveals: 17, cleared: 2, chests: 0, essence: 969, labor: 2_027, lords: 0 } satisfies DayTotals,
-  /** The new day: 12 h left, and tomorrow lasts 20 h. */
-  secondsLeft: 12 * 3_600,
-  tomorrowSeconds: 20 * 3_600,
-};
+  clock: { endsAt: now + 12 * 3_600, secondsLeft: 12 * 3_600, tomorrowSeconds: 20 * 3_600, tone: "calm" },
+  totals: { reveals: 17, cleared: 2, chests: 0, essence: 969, labor: 2_027, lords: 0 },
+  armies: 0,
+  troopsLost: 0,
+  onContinue,
+});
 
 /** The new day's land round the realm before dawn, and the ring the dawn brings out of the shroud. */
 const KNOWN_AT_NIGHT = 1.2;

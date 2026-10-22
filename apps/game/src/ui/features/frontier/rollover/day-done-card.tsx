@@ -1,22 +1,16 @@
 import { formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudMeter } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { CONTINUE, DAY, DAY_DONE, DAY_OPEN, REALM_KEPT, TROOPS, tomorrowLasts } from "@/ui/design-system/kit/words";
 
 import { DayEnds } from "../day-ends";
 import type { DayClock } from "../hud/day-clock";
 import { type DayTotals, DayTotalsGrid } from "../log/day-totals";
 
-/** The full-screen card stays clear of a phone's notch and home bar. */
-const CLEAR_OF_THE_NOTCH = {
-  paddingTop: "max(env(safe-area-inset-top), 1.5rem)",
-  paddingBottom: "max(env(safe-area-inset-bottom), 1rem)",
-};
-
 /**
- * The day-done card (wireframe 11), once, at the first open after the day ends: the day done and the realm kept, when
- * the new day ends and how long tomorrow lasts, the ended day's totals, the rank it moved to, and the troops the ended
- * armies took with them against those that came home. Continue goes on.
+ * The day-done card (wireframe 11), over the map at the day's end (DayEndScreen places it): the day done and the realm
+ * kept, when the new day ends and how long tomorrow lasts, the ended day's totals, the rank it moved to, and the troops
+ * the ended armies took with them against those that came home. Continue goes on into the new day.
  */
 export const DayDoneCard = ({
   endedDay,
@@ -41,10 +35,10 @@ export const DayDoneCard = ({
   returned?: { sent: number; fitted: number };
   onContinue: () => void;
 }) => (
-  <section
-    aria-label={`${DAY} ${endedDay} ${DAY_DONE}`}
-    className="ui pointer-events-auto fixed inset-0 z-50 flex flex-col items-center gap-2 overflow-y-auto bg-hud-surface px-4"
-    style={CLEAR_OF_THE_NOTCH}
+  <HudPanel
+    label={`${DAY} ${endedDay} ${DAY_DONE}`}
+    collapsible={false}
+    bodyClassName="flex flex-col items-center gap-2 overflow-y-auto"
   >
     <h2 className="text-hud-display">
       {DAY} {endedDay} {DAY_DONE}
@@ -58,7 +52,7 @@ export const DayDoneCard = ({
       <span>{tomorrowLasts(clock.tomorrowSeconds).words}</span>
       <b className="tabular-nums">{tomorrowLasts(clock.tomorrowSeconds).reading}</b>
     </p>
-    <div className="w-full max-w-sm">
+    <div className="w-full">
       <DayTotalsGrid totals={totals} />
     </div>
     {rank && (
@@ -67,13 +61,12 @@ export const DayDoneCard = ({
       </p>
     )}
     {armies > 0 && <ArmiesLine armies={armies} troopsLost={troopsLost} returned={returned} />}
-    <div className="min-h-2 flex-1" />
-    <div className="grid w-full max-w-sm">
+    <div className="grid w-full">
       <HudButton kind="primary" onClick={onContinue}>
         {CONTINUE}
       </HudButton>
     </div>
-  </section>
+  </HudPanel>
 );
 
 /** The ended armies, gone, the troops they took, and the troops returned beside it: what fitted, by a full bar. */

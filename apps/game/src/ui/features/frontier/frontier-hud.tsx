@@ -177,7 +177,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           onSeason={() => setSurface("season")}
         />
       )}
-      {realm && !visit && <DayDone rules={rules} realm={realm} />}
+      {realm && <DayDone rules={rules} realm={realm} visiting={Boolean(visit)} />}
       <BuildingsInFlight />
     </>
   );

@@ -5,8 +5,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import { dayOf } from "@bibliothecadao/eternum";
 
+import { RESTING, useDayEndStore, type DayEndPhase } from "@/hooks/store/use-day-end-store";
+
 import { endedDay } from "../hud/day-clock";
 import { DayDoneCard } from "./day-done-card";
+import { DayEndScreen } from "./day-end-screen";
 import { LastHourBubble } from "./last-hour";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
@@ -59,5 +62,36 @@ describe("the day's end", () => {
     expect(text(renderToStaticMarkup(<LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />))).toBe(
       "6,021+4702",
     );
+  });
+
+  it("draws the day's end over the map: nothing on a plain day, Skip in the mist, the summary until Continue, the black", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    const show = (phase: DayEndPhase) =>
+      act(() => {
+        useDayEndStore.setState({ ...RESTING, phase, summaryShown: true });
+        root.render(<DayEndScreen summary={<p>the summary</p>} />);
+      });
+    const black = () => host.querySelector<HTMLElement>("[data-day-end] > div:last-child")!.style.opacity;
+
+    show("day");
+    expect(host.innerHTML).toBe("");
+    show("veil");
+    expect(host.textContent).toBe("Skip");
+    show("summary");
+    expect(host.textContent).toBe("the summary");
+    expect(black()).toBe("0");
+    show("nightfall");
+    expect(host.textContent).toBe("");
+    expect(black()).toBe("1");
+    show("black");
+    expect(black()).toBe("1");
+    show("dawn");
+    expect(black()).toBe("0");
+    act(() => root.unmount());
+    useDayEndStore.setState(RESTING);
+    host.remove();
   });
 });

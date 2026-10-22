@@ -1,5 +1,6 @@
 import { Vector3 } from "three";
 
+import { mistRolls, useDayEndStore, type DayEndArrival, type DayEndPhase } from "@/hooks/store/use-day-end-store";
 import type { LabStage, LabStageContext } from "@/three/debug/procedural-terrain-debug-renderer";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { PreparedTerrainPage } from "@/three/terrain/terrain-types";
@@ -8,24 +9,12 @@ import { EndgameFixtureScene } from "../endgame-mist/fixture-scene";
 import { pathDuration, poseAt, poseFromCamera, type StudioPath, type StudioPose } from "../studio/camera-path";
 import { applyPose } from "../studio/stage";
 import { createDayEndLand, DAY_END_VEIL } from "./fixture";
-import {
-  advance,
-  continueDay,
-  endTheDay,
-  restingDay,
-  skip,
-  VEIL_PACE,
-  type DayEndArrival,
-  type DayEndDirection,
-  type DayEndPhase,
-  type DayEndState,
-} from "./sequence";
 
 /**
- * The Frontier day end on the lab's land, made of the game's own parts: the game end's veil (the spires' orb gathers,
- * bursts and rolls its mist over the map, sparing the player's realm), the land swapped for the new day's behind the
- * black as the map is re-projected at the rollover, and the realm's new surroundings brought out of the shroud as an
- * explore reveals them. Its clock is the world's, so a slowed world plays it in slow motion.
+ * The Frontier day end on the lab's land, played by the game's own moment (use-day-end-store) and parts: the game
+ * end's veil rolls from the spires while the moment's mist rolls, as the renderer rolls it on the world map; behind the
+ * black the land is swapped for the new day's, as ExpeditionRollover re-projects the map; at dawn the realm's new
+ * surroundings come out of the shroud, as an explore reveals them. Its clock is the world's.
  */
 export class DayEndStage implements LabStage {
   private readonly land = createDayEndLand();
@@ -33,11 +22,9 @@ export class DayEndStage implements LabStage {
   private context: LabStageContext | null = null;
   private veil: EndgameFixtureScene | null = null;
   private pages: Record<"today" | "night" | "dawn", PreparedTerrainPage> | null = null;
-  private state: DayEndState = restingDay("night", "live");
   private shot: { path: StudioPath; start: StudioPose; elapsed: number } | null = null;
   private phone = false;
-
-  constructor(private readonly onPhase: (state: DayEndState) => void) {}
+  private unsubscribe: (() => void) | null = null;
 
   async prepare(context: LabStageContext): Promise<void> {
     this.context = context;
@@ -48,72 +35,62 @@ export class DayEndStage implements LabStage {
       [this.land.today, this.land.night, this.land.dawn].map((page) => terrain.preparePageAsync(page)),
     );
     this.pages = { today, night, dawn };
-    this.rest(this.state.direction, this.state.arrival);
+    this.unsubscribe = useDayEndStore.subscribe((moment, before) => {
+      if (mistRolls(moment) && !mistRolls(before)) this.veil?.play();
+      if (moment.phase !== before.phase) this.enter(moment.phase);
+    });
+    this.rest(this.phone);
   }
 
-  /** The map as it was played, before the day ends; a phone frames the realm in the screen's upper half. */
-  rest(direction: DayEndDirection, arrival: DayEndArrival, phone = this.phone): void {
+  /** The map as it was played, before the day ends; a phone frames the realm above its summary sheet. */
+  rest(phone: boolean): void {
     this.phone = phone;
-    const { terrain } = this.requireContext();
+    const { terrain, controls } = this.requireContext();
+    useDayEndStore.getState().rest();
     this.veil?.reset();
     this.veil?.showOnlyOwnRealm(false);
     terrain.cancelShroudReveals();
     terrain.present([this.requirePages().today]);
-    this.setState(restingDay(direction, arrival));
+    controls.enabled = true;
     this.cut(this.pose("play"));
   }
 
-  endTheDay(): void {
-    if (this.state.phase === "day") this.setState(endTheDay(this.state));
-  }
-
-  continueDay(): void {
-    this.setState(continueDay(this.state));
-  }
-
-  skip(): void {
-    this.setState(skip(this.state));
+  /** The day ends: live, over the land that is ending; later, the new land is already there when the game opens. */
+  endTheDay(arrival: DayEndArrival): void {
+    if (useDayEndStore.getState().phase !== "day") return;
+    if (arrival === "later") this.newLand();
+    useDayEndStore.getState().begin(arrival);
   }
 
   update(delta: number): void {
     const { terrain, camera } = this.requireContext();
-    const rolling = this.state.phase === "veil" || this.state.phase === "summary" || this.state.phase === "nightfall";
-    this.veil?.update(rolling ? delta * VEIL_PACE[this.state.direction] : delta, terrain, camera);
-    const next = advance(this.state, delta);
-    if (next.phase !== this.state.phase) this.setState(next);
-    else this.state = next;
+    this.veil?.update(delta, terrain, camera);
     this.advanceShot(delta);
   }
 
   status() {
     const { camera, controls } = this.requireContext();
+    const { phase, arrival, landReady } = useDayEndStore.getState();
     const pose = poseFromCamera(camera.position.toArray(), controls.target.toArray(), camera.fov);
-    return { ...this.state, pose, veil: this.veil?.getSnapshot() ?? null };
+    return { phase, arrival, landReady, pose, veil: this.veil?.getSnapshot() ?? null };
   }
 
   dispose(): void {
+    this.unsubscribe?.();
+    useDayEndStore.getState().rest();
     this.veil?.dispose();
     this.context = null;
   }
 
-  private setState(next: DayEndState): void {
-    const entered = next.phase !== this.state.phase;
-    this.state = next;
-    if (entered) this.enter(next.phase);
-    this.onPhase(next);
-  }
-
-  /** What the world does as each phase begins; the screen's fades and the summary are the view's. */
+  /** What the world does as each phase begins; the screen's summary, black and fades are the game's DayEndScreen. */
   private enter(phase: DayEndPhase): void {
     const { terrain, controls } = this.requireContext();
-    controls.enabled = phase === "day" || phase === "new-day";
-    if (phase === "veil") {
-      this.veil?.play();
-      this.film([{ t: 0 }, { t: 3, ...this.pose("veil") }]);
+    controls.enabled = phase === "day";
+    if (phase === "veil") this.film([{ t: 0 }, { t: 3, ...this.pose("veil") }]);
+    if (phase === "black") {
+      this.newLand();
+      useDayEndStore.getState().markLandReady();
     }
-    // Arriving later, the night direction's summary opens over the new land, still in the dark.
-    if (phase === "summary" && this.state.arrival === "later") this.newLand();
-    if (phase === "black") this.newLand();
     if (phase === "dawn") {
       for (const hex of this.land.revealed) terrain.queueShroudReveal(hex.col, hex.row, this.land.realm);
       terrain.present([this.requirePages().dawn]);
@@ -121,7 +98,7 @@ export class DayEndStage implements LabStage {
     }
   }
 
-  /** Behind the black, the realm's new land: the veil gone, the land swapped, the camera down on the realm. */
+  /** The realm's new land: the veil gone, the land swapped, only the realm on it, the camera down on the realm. */
   private newLand(): void {
     const { terrain } = this.requireContext();
     this.veil?.reset();
@@ -131,14 +108,14 @@ export class DayEndStage implements LabStage {
     this.cut(this.pose("dawn"));
   }
 
-  /** The camera's framings round the realm: in play, pulled out for the veil, down close at dawn, the new day's. */
+  /**
+   * The camera's framings round the realm: in play, pulled out for the veil, down close at dawn, the new day's. The
+   * summary stands low on every screen, so the realm sits in the upper half: the camera looks south of it.
+   */
   private pose(framing: "play" | "veil" | "dawn" | "day"): StudioPose {
-    const lens = { play: [26, 52], veil: [36, 46], dawn: [13, 60], day: [24, 52] }[framing];
-    const [distance, tilt] = lens;
+    const [distance, tilt] = { play: [26, 52], veil: [36, 46], dawn: [13, 60], day: [24, 52] }[framing];
     const realm = this.realmPoint();
-    // Where the summary sits low (the night direction's card, any phone's sheet), the realm sits in the upper half:
-    // the camera looks south of it.
-    const southward = this.phone || this.state.direction === "night" ? distance * 0.18 : 0;
+    const southward = distance * (this.phone ? 0.22 : 0.18);
     return { target: [realm.x, realm.y, realm.z + southward], distance, tilt, turn: 0, fov: 36 };
   }
 

@@ -75,6 +75,8 @@ export const DAY_DONE = "done";
 export const REALM_KEPT = "Realm kept";
 export const DAY_OPEN = "is open";
 export const CONTINUE = "Continue";
+/** Past the day end's rolling mist, to its summary. */
+export const SKIP = "Skip";
 export const FULL_IN = "Full in";
 /** A production that never runs out, where its time left would stand. */
 export const NO_END = "no end";

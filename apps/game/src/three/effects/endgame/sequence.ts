@@ -11,12 +11,14 @@ export const ENDGAME_SEQUENCE = {
   endOpacity: 0.86,
 } as const;
 
-/** How long before a game's end the veil's model and shaders load, so it plays on time without costing every boot. */
-const GAME_END_PRELOAD_SECONDS = 600;
+/** How long before an end the veil's model and shaders load, so it plays on time without costing every boot. */
+const VEIL_PRELOAD_SECONDS = 600;
 
-/** Whether a game ending at `endAt` (chain seconds; 0 when it has no end time) is within its preload window at `now`. */
-export const gameEndIsNear = (endAt: number, now: number): boolean =>
-  endAt > 0 && endAt - now <= GAME_END_PRELOAD_SECONDS;
+/**
+ * Whether an end at `endAt` (chain seconds; 0 when there is none), the game's or a Frontier day's, is within the veil's
+ * preload window at `now`.
+ */
+export const veilIsNear = (endAt: number, now: number): boolean => endAt > 0 && endAt - now <= VEIL_PRELOAD_SECONDS;
 
 export function endgameFrame(elapsed: number | null) {
   const sequence = ENDGAME_SEQUENCE;

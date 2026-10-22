@@ -21,6 +21,8 @@ import { FightResultCard } from "@/ui/features/frontier/sites/fight-result-card"
 import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
 import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
+import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
+import { RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { LastHourBubble } from "@/ui/features/frontier/rollover/last-hour";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
 import { BuildingsRow } from "@/ui/features/frontier/realm/buildings-row";
@@ -46,7 +48,7 @@ import { frontierCoachSteps } from "@/ui/features/frontier/next-up/frontier-coac
 import type { NextUpFacts } from "@/ui/features/frontier/next-up/next-up-facts";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { NextUpView } from "@/ui/features/world/hud/next-up";
-import { type ComponentProps, useRef, useState } from "react";
+import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { RefillButton, RefillConfirm } from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
@@ -1000,7 +1002,7 @@ export const HudLab = () => {
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
         {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} />}
-        {lab.dayDone && <DayDoneCard {...lab.dayDone} />}
+        {lab.dayDone && <LabDaySummary card={lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
         {lab.production && <ProductionSheet lines={lab.production} onSpend={noop} onBuild={noop} onClose={noop} />}
         {(lab.realmView === "build" || lab.realmView === "build-early") && (
@@ -1359,3 +1361,12 @@ const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
     onClose={noop}
   />
 );
+
+/** The day's summary where the game draws it: over the map at the day's end, in its summary phase. */
+function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {
+  useEffect(() => {
+    useDayEndStore.setState({ phase: "summary", arrival: "live", summaryShown: true });
+    return () => useDayEndStore.setState(RESTING);
+  }, []);
+  return <DayEndScreen summary={<DayDoneCard {...card} />} />;
+}
