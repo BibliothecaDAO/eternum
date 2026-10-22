@@ -277,6 +277,7 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
   }
   const store = {
     entries: facts.entries.bind(facts),
+    inGame: facts.inGame.bind(facts),
     entityOccupancy: facts.entityOccupancy.bind(facts),
     structuresOwnedBy: facts.structuresOwnedBy.bind(facts),
     armiesAtHome: facts.armiesAtHome.bind(facts),
@@ -286,7 +287,7 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
       rules.get(model) ?? facts.require(model as "TileOpt", keys as never)) as never,
   } as Pick<
     NativeFactStore,
-    "entries" | "entityOccupancy" | "structuresOwnedBy" | "armiesAtHome" | "subscribe" | "get" | "require"
+    "entries" | "inGame" | "entityOccupancy" | "structuresOwnedBy" | "armiesAtHome" | "subscribe" | "get" | "require"
   >;
   const projection = new WorldSpatialProjection({ store });
   projection.start();
