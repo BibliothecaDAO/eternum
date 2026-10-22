@@ -1,3 +1,8 @@
+import { GameProvider } from "@/hooks/context/game-context";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { transferArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";
+import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier/army/transfer-troops";
+import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { OFFLINE, PAYOUTS_PAUSED, TRAINING_BUILDINGS, WITHDRAWALS_CLOSED, YOU } from "@/ui/design-system/kit/words";
@@ -451,6 +456,7 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
 
 const STATES = {
   ...FIGHT_STATES,
+  merge: { clock: CLOCK, stores: STORES, armies: ARMIES, merge: true },
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   // An army picked opens its panel, as the game opens it on a selection.
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: {} },
@@ -849,6 +855,7 @@ const STATES = {
 } as const;
 
 type LabState = {
+  merge?: boolean;
   /** The order bar offers Refill for its short stamina. */
   refill?: boolean;
   /** What Next up reads beyond the state's armies, selection, hour and stores. */
@@ -906,6 +913,14 @@ export const HudLab = () => {
   useLabNotice(lab.notice);
   const chatPane = useRef<HTMLElement>(null);
   const chat = lab.chat && <ChatPage gameZoneId="lab-game" signedIn onSignIn={noop} pane={chatPane} />;
+  if (lab.merge)
+    return (
+      <div data-lab="frontier-merge" className="ui min-h-screen bg-hud-surface flex items-center justify-center p-3">
+        <div className="w-full max-w-md">
+          <LabMerge />
+        </div>
+      </div>
+    );
   return (
     <>
       <div
@@ -1412,3 +1427,27 @@ function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {
   }, []);
   return <DayEndScreen summary={<DayDoneCard {...card} />} />;
 }
+
+/** The same transfer selection as the map, on two adjacent armies; this lab never sends a transaction. */
+const LabMerge = () => {
+  const [store] = useState(() => transferArmies());
+  useEffect(() => {
+    useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: TRANSFER_TAPPED });
+    return () => useUIStore.getState().selectOnMap(null);
+  }, []);
+  return (
+    <GameProvider value={{ store, systemCalls: {} } as never} account={{ address: "0x111" } as never}>
+      <LabMergeCard />
+    </GameProvider>
+  );
+};
+const LabMergeCard = () => {
+  const {
+    setup: { store },
+  } = useGame();
+  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+  const pair = useSelectedTransfer(realm);
+  return (
+    pair && <TransferTroopsSheet realm={realm} pair={pair} onClose={() => useUIStore.getState().selectOnMap(null)} />
+  );
+};

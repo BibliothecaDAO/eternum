@@ -17,7 +17,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { getDirectionBetweenAdjacentHexes, getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
 
-import { campBeside } from "../sites/site-fixture";
+import { transferArmies } from "./transfer-fixture";
+import { toast } from "@/ui/features/event-feed/notify";
 import { TransferTroopsSheet, useSelectedTransfer } from "./transfer-troops";
 
 const PRECISION = 1_000_000_000n;
@@ -41,19 +42,29 @@ afterEach(() => {
   host.remove();
   useUIStore.getState().selectOnMap(null);
   setBlockTimestampSource(null);
+  vi.restoreAllMocks();
 });
 
 /** The realm's second army, 300 knights of the first's kind (or of another tier), on the tile beside it. */
 const twoArmies = ({ tier = "T1" }: { tier?: string } = {}) => {
-  const { store } = campBeside();
+  const store = transferArmies(0, 100);
   const first = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
   const wire = (value: unknown) =>
     JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
   store.applyFacts([
     {
       model: "ExplorerTroops",
+      key: "0x74",
+      value: wire({ ...first, troops: { ...first.troops, count: 1498n * PRECISION } }),
+    },
+    {
+      model: "ExplorerTroops",
       key: "0x92",
-      value: wire({ ...first, explorer_id: 202, troops: { ...first.troops, tier, count: 300n * PRECISION } }),
+      value: wire({
+        ...first,
+        explorer_id: 202,
+        troops: { ...first.troops, stamina: { Slot: 1 }, tier, count: 300n * PRECISION },
+      }),
     },
     {
       model: "TileOccupancy",
@@ -156,7 +167,7 @@ it("sends the other way when the split gives the picked army more, and empties a
   const [[picked], [tapped]] = sides() as [string, string][];
   act(() => button(`All to ${picked}`)!.click());
   expect(host.textContent).toContain(`${tapped} is left with none and leaves the map.`);
-  await act(async () => button(`Move 300 to ${picked}`)!.click());
+  await act(async () => button(`Merge into ${picked}`)!.click());
   expect(swap).toHaveBeenCalledWith(
     expect.objectContaining({
       from_explorer_id: 202,
@@ -219,9 +230,126 @@ it("starts the split again from the armies' new troops when they change while it
     [picked, "0"],
     [tapped, "200"],
   ]);
-  await act(async () => button(`Move 100 to ${tapped}`)!.click());
+  await act(async () => button(`Merge into ${tapped}`)!.click());
   expect(swap).toHaveBeenCalledOnce();
   expect(swap).toHaveBeenCalledWith(
     expect.objectContaining({ from_explorer_id: 201, to_explorer_id: 202, count: Number(100n * PRECISION) }),
   );
+});
+
+it.each([
+  [0, 99, "Army 1", 100, 201],
+  [0, 101, "Army 2", 101, 202],
+  [0, 100, "Army 2", 100, 202],
+])(
+  "shows the whole survivor on the selected Frontier transfer (%s, %s)",
+  async (xp, otherXp, name, value, survivor) => {
+    const { swap } = render(transferArmies(xp, otherXp));
+    expect(host.textContent).toContain(`${name} survives at`);
+    expect(host.textContent).toContain(`${value} progression value (XP + all upgrades)`);
+    expect(host.textContent).toContain("7 stamina after merging");
+    expect(host.textContent).toContain("XP and upgrades are not carried over");
+    expect(sides()).toEqual([
+      ["Army 1", survivor === 201 ? "1,100" : "0"],
+      ["Army 2", survivor === 202 ? "1,100" : "0"],
+    ]);
+    expect(swap).not.toHaveBeenCalled();
+    await act(async () => button(`Merge into ${name}`)!.click());
+    expect(swap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from_explorer_id: survivor === 201 ? 202 : 201,
+        to_explorer_id: survivor,
+        count: (survivor === 201 ? 500 : 600) * Number(PRECISION),
+      }),
+    );
+  },
+);
+
+it("keeps partial transfers free of a survivor claim", async () => {
+  const { swap } = render(transferArmies());
+  act(() => button("Even")!.click());
+  expect(host.textContent).not.toContain("survives at");
+  expect(host.textContent).not.toContain("not carried over");
+  expect(sides()).toEqual([
+    ["Army 1", "550"],
+    ["Army 2", "550"],
+  ]);
+  await act(async () => button("Move 50 to Army 2")!.click());
+  expect(swap).toHaveBeenCalledWith(expect.objectContaining({ count: 50 * Number(PRECISION) }));
+});
+
+it.each(["progress", "troops", "stamina", "position", "removed", "day"])(
+  "refuses stale %s before signing, even before React renders the new facts",
+  async (change) => {
+    const store = transferArmies();
+    const { swap, close } = render(store);
+    const failed = vi.spyOn(toast, "failed").mockReturnValue("changed");
+    const send = button("Merge into Army 1")!;
+    const wire = (v: unknown) => JSON.parse(JSON.stringify(v, (_, x) => (typeof x === "bigint" ? x.toString() : x)));
+    const changes = {
+      progress: {
+        model: "ArmyProgress",
+        key: "0xf2022",
+        value: wire({ ...store.require("ArmyProgress", { game_id: 1, explorer_id: 202 }), xp: 101 }),
+      },
+      troops: {
+        model: "ExplorerTroops",
+        key: "0x92",
+        value: wire({
+          ...store.require("ExplorerTroops", { game_id: 1, explorer_id: 202 }),
+          troops: {
+            ...store.require("ExplorerTroops", { game_id: 1, explorer_id: 202 }).troops,
+            count: 400n * PRECISION,
+          },
+        }),
+      },
+      stamina: {
+        model: "ArmySlot",
+        key: "0x9",
+        value: wire({
+          ...store.require("ArmySlot", { game_id: 1, structure_id: 7, epoch: 0n, slot: 0 }),
+          stamina: { amount: "3", settled_at: "350", remainder: 0 },
+        }),
+      },
+      position: { model: "TileOccupancy", key: "0x94", value: wire({ ...store.entityOccupancy(1, 202), col: 100 }) },
+      removed: { model: "ExplorerTroops", key: "0x92", value: null },
+    };
+    await act(async () => {
+      if (change === "day") {
+        store.applyFacts([
+          { model: "ExplorerTroops", key: "0x74", value: null },
+          { model: "ExplorerTroops", key: "0x92", value: null },
+        ]);
+        store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 401 });
+      } else if (change === "position")
+        store.applyFacts([{ model: "TileOccupancy", key: "0x93", value: null }, changes.position] as never);
+      else store.applyFacts([changes[change as keyof typeof changes]] as never);
+      send.click();
+    });
+    expect(swap).not.toHaveBeenCalled();
+    expect(close).not.toHaveBeenCalled();
+    expect(failed).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "The armies changed. Review the merge before confirming again." }),
+      "The troops could not be moved.",
+    );
+  },
+);
+
+it.each(["0x74", "0x92"])("removes the selected transfer if either army disappears (%s)", (key) => {
+  const store = transferArmies();
+  const { swap } = render(store);
+  expect(host.textContent).toContain("Army 1 survives");
+  act(() => store.applyFacts([{ model: "ExplorerTroops", key, value: null }]));
+  expect(host.querySelector('[role="dialog"]')).toBeNull();
+  expect(swap).not.toHaveBeenCalled();
+});
+
+it("waits for both armies' progress instead of guessing the survivor", () => {
+  const store = transferArmies();
+  store.applyFacts([{ model: "ArmyProgress", key: "0xf2022", value: null }]);
+  const { swap } = render(store);
+  expect(host.textContent).toContain("Waiting for both armies’ progress.");
+  expect(host.textContent).not.toContain("survives at");
+  expect(button(/^Move /)!.disabled).toBe(true);
+  expect(swap).not.toHaveBeenCalled();
 });
