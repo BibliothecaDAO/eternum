@@ -1,12 +1,14 @@
-import { BiomeType, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, getNeighborHexes, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { SiteKind } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
   nativeFactModels,
   nativeRuleConstants,
+  nativeTilePackingConstants,
   type NativeModelName,
 } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import { nativeCommandBits } from "../../../../../../../contracts/l3/world-native/schema/commands.gen";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { frontierDay } from "../deploy/deploy-fixture";
 import type { SiteAttack } from "./site-card-plan";
@@ -136,3 +138,65 @@ export const otherArmyAt = (store: ReturnType<typeof campBeside>["store"], col: 
   ] as never);
   return store.require("ExplorerTroops", { game_id: 1, explorer_id: 301 });
 };
+
+/** Where the sites fixture's army stands, and the Shrine and Well beside it; a second Shrine stands far off. */
+export const ARMY_TILE = { col: 41, row: 12, alt: false };
+export const SHRINE_TILE = { col: 40, row: 12, alt: false };
+export const WELL_TILE = { col: 42, row: 12, alt: false };
+export const FAR_SHRINE_TILE = { col: 49, row: 12, alt: false };
+
+/**
+ * The deploy fixture's Frontier day, where the game allows site use as Frontier's preset does, with the realm's
+ * 1,498-knight army (explorer 201) on revealed grassland: a Shrine and a Well beside it, a Shrine eight tiles off, and the
+ * game's XP rules (200 XP a Shrine). The army's bar holds `stamina` of its 150.
+ */
+export const sitesBeside = (stamina: bigint) => {
+  const { store } = frontierDay();
+  const grass = String(BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE));
+  const revealed = [ARMY_TILE, ...getNeighborHexes(ARMY_TILE.col, ARMY_TILE.row), FAR_SHRINE_TILE];
+  const site = (key: string, tile: typeof SHRINE_TILE, entity: number, category: TileOccupier) =>
+    set(key, "TileOccupancy", { game_id: 1, ...tile, alt: false, entity_id: entity, category, is_structure: false });
+  store.applyFacts([
+    set("0x100", "SliceRules", {
+      ...preset.rules,
+      game_id: 1,
+      day_unit_seconds: 100,
+      // The deploy fixture's bar: 150 at most for each troop type.
+      troop_stamina_config: {
+        ...preset.rules.troop_stamina_config,
+        stamina_initial: 150,
+        stamina_knight_max: 150,
+        stamina_paladin_max: 150,
+        stamina_crossbowman_max: 150,
+      },
+      command_mask: String(BigInt(preset.rules.command_mask) | BigInt(nativeCommandBits.InteractSite)),
+    }),
+    set("0x101", "ArmyProgressionRules", {
+      game_id: 1,
+      reveal_xp: 2,
+      fixed_xp: 200,
+      uncommon_xp: 100,
+      rare_xp: 200,
+      epic_xp: 400,
+      legendary_xp: 800,
+    }),
+    ...revealed.map((tile, index) =>
+      set(`0x20${index}`, "TileOpt", { game_id: 1, alt: false, col: tile.col, row: tile.row, data: grass }),
+    ),
+    set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, stamina) }),
+    site("0x75", ARMY_TILE, 201, TileOccupier.ExplorerKnightT1),
+    ...SITES.map(([key, tile, entity, category]) => site(key, tile, entity, category)),
+  ] as never);
+  /** The chain's answer to a use: the site's tile emptied, as the contract vacates it. */
+  const vacate = (tile: { col: number; row: number }) => {
+    const [key] = SITES.find(([, at]) => at.col === tile.col && at.row === tile.row)!;
+    store.applyFacts([{ model: "TileOccupancy", key, value: null }] as never);
+  };
+  return { store, vacate };
+};
+
+const SITES = [
+  ["0x76", SHRINE_TILE, 901, TileOccupier.Shrine],
+  ["0x77", WELL_TILE, 902, TileOccupier.Well],
+  ["0x78", FAR_SHRINE_TILE, 903, TileOccupier.Shrine],
+] as const;

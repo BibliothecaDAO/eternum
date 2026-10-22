@@ -14,6 +14,11 @@ export interface HoverVisualPalette {
   visualMode: WorldmapHoverVisualMode;
 }
 
+const TAKE_BESIDE: HighlightLayerPalette = {
+  routeColor: 0xffcb4c,
+  endpointColor: 0xffe49a,
+};
+
 const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
   move: {
     routeColor: 0x4fcf6b,
@@ -39,10 +44,9 @@ const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
     routeColor: 0xd3a746,
     endpointColor: 0xf0d08a,
   },
-  chest: {
-    routeColor: 0xffcb4c,
-    endpointColor: 0xffe49a,
-  },
+  // An order the army takes beside it, staying where it stands: a crate's open, a site's use.
+  chest: TAKE_BESIDE,
+  use_site: TAKE_BESIDE,
   create_army: {
     routeColor: 0x66d6ff,
     endpointColor: 0xb6ecff,

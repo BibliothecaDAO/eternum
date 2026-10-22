@@ -30,24 +30,25 @@ export const pinsOrder = (path: ActionPath[] | undefined): boolean => {
 /**
  * What a tap on a tile means for the selected army, the same tap for every order: a tile it can explore or move to
  * pins that order (where the HUD carries the verb, it shows the costs and the verb; elsewhere the order's preview opens
- * at the tile with them), a target in its reach opens the attack's preview with its
- * confirm, and a standing site out of its reach still opens that site's card for this army, which says what it lacks.
- * Anything else keeps its own tap.
+ * at the tile with them), a target in its reach opens the attack's preview with its confirm, and a site (a standing
+ * one it has not cleared, a Shrine or a Well) opens that site's card for this army, with the army kept: its Use, or
+ * what the army lacks. Anything else keeps its own tap.
  */
-type TapOrder = "pin" | "attack" | "site-out-of-reach";
+type TapOrder = "pin" | "attack" | "site-card";
 
 export const orderOnTap = ({
   path,
   armySelected,
-  standingSite,
+  site,
 }: {
   path: ActionPath[] | undefined;
   armySelected: boolean;
-  standingSite: boolean;
+  /** The tile holds a site the army acts on through its card. */
+  site: boolean;
 }): TapOrder | null => {
   if (pinsOrder(path)) return "pin";
   if (path && ActionPaths.getActionType(path) === ActionType.Attack) return "attack";
-  return armySelected && standingSite ? "site-out-of-reach" : null;
+  return armySelected && site ? "site-card" : null;
 };
 
 /**

@@ -12,6 +12,7 @@ const tip = (
     refusal: OrderRefusal;
     staminaWait: number;
     food: { wheat: number; fish: number };
+    site: Parameters<typeof orderTip>[0]["site"];
   }> = {},
 ) =>
   orderTip({
@@ -21,6 +22,7 @@ const tip = (
     explored: true,
     refusal: undefined,
     staminaWait: undefined,
+    site: undefined,
     ...more,
   });
 const line = (...args: Parameters<typeof tip>) => tip(...args)?.line ?? null;
@@ -34,6 +36,21 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(line([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("Attack");
     expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe("Transfer troops");
     expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe("Travel through the spire");
+    expect(line([step(ActionType.Move), step(ActionType.UseSite, 0)])).toBe("Use");
+  });
+
+  it("says under a site's Use what it gives, which costs nothing: a Shrine's XP, the stamina a Well lands", () => {
+    const use = [step(ActionType.Move), step(ActionType.UseSite, 0)];
+    const at = (site: NonNullable<Parameters<typeof tip>[1]>["site"]) => cost(use, { site });
+    expect(at({ kind: "Shrine", gain: 200, stamina: undefined })).toBe("+200 XP");
+    expect(at({ kind: "Well", gain: 60, stamina: { current: 30, max: 120 } })).toBe("+60 stamina");
+    // A Well never fills past the bar: what lands, and nothing at a full bar, which the line warns of.
+    expect(at({ kind: "Well", gain: 60, stamina: { current: 100, max: 120 } })).toBe("+20 stamina, to full");
+    expect(at({ kind: "Well", gain: 60, stamina: { current: 120, max: 120 } })).toBe(
+      "Stamina full: the well would be wasted",
+    );
+    // A Shrine whose XP rules have not synced names no gain rather than a wrong one.
+    expect(at({ kind: "Shrine", gain: undefined, stamina: undefined })).toBeNull();
   });
 
   it("puts what the order costs on one compact line under it, rounded as every charge reads", () => {

@@ -14,6 +14,7 @@ import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
+import { sendSiteUse, siteUseFacts, usableSiteAt } from "@/ui/features/frontier/sites/use-site";
 import { type ArmyProgressFacts, xpGained } from "@/ui/features/frontier/attributes/attributes";
 import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
@@ -2419,6 +2420,7 @@ export default class WorldmapScene extends WarpTravel {
     const refusal = this.orderRefusals.get(key);
     const path = getLiveWorldmapEntityActions().actionPaths.get(key);
     const armyTroops = this.selectedArmyRow()?.troops;
+    const site = path && ActionPaths.getActionType(path) === ActionType.UseSite ? this.usableSiteAt(hexCoords) : null;
     return orderTip({
       path,
       exploreStamina: configManager.getExploreStaminaCost(),
@@ -2426,6 +2428,9 @@ export default class WorldmapScene extends WarpTravel {
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
       refusal,
       staminaWait: refusal?.reason === "stamina" ? this.secondsUntilSelectedArmyHolds(refusal.need) : undefined,
+      site: site
+        ? siteUseFacts(this.game.store, site, this.selectedArmyRow(), getBlockTimestamp().currentDefaultTick)
+        : undefined,
     });
   }
 
@@ -2764,7 +2769,9 @@ export default class WorldmapScene extends WarpTravel {
     const order = orderOnTap({
       path,
       armySelected: this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined,
-      standingSite: structure !== undefined && this.isStandingExpeditionSite(structure.id),
+      site:
+        (structure !== undefined && this.isStandingExpeditionSite(structure.id)) ||
+        this.usableSiteAt(hexCoords) !== null,
     });
     if (order === "pin" && !this.hudCarriesOrderVerb()) {
       this.openOrderPreview(hexCoords);
@@ -2777,7 +2784,7 @@ export default class WorldmapScene extends WarpTravel {
       this.state.updateEntityActionHoveredHex(hexCoords);
     } else if (order === "attack" && path) {
       this.onArmyAttack(path, selectedEntityId);
-    } else if (order === "site-out-of-reach") {
+    } else if (order === "site-card") {
       const contractHex = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
       this.openTargetCardForSelectedArmy({ col: contractHex.x, row: contractHex.y });
     }
@@ -2868,7 +2875,13 @@ export default class WorldmapScene extends WarpTravel {
         const actionType = ActionPaths.getActionType(actionPath);
 
         // Only validate army availability for army-specific actions
-        const armyActions = [ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.SpireTravel];
+        const armyActions = [
+          ActionType.Explore,
+          ActionType.Move,
+          ActionType.Attack,
+          ActionType.SpireTravel,
+          ActionType.UseSite,
+        ];
         const isArmySelection = this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined;
         if (actionType && armyActions.includes(actionType) && isArmySelection) {
           if (this.armyManager && !this.armyManager.isArmySelectable(selectedEntityId)) {
@@ -2888,6 +2901,8 @@ export default class WorldmapScene extends WarpTravel {
           this.onArmyHelp(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Chest) {
           this.onChestSelection(actionPath, selectedEntityId);
+        } else if (actionType === ActionType.UseSite) {
+          this.onSiteUse(actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
         }
@@ -3884,6 +3899,29 @@ export default class WorldmapScene extends WarpTravel {
         this.armySelectionRecoveryInFlight.delete(selectedEntityId);
       }
     })();
+  }
+
+  /** The army uses the site its order names, where it stands: the card's own sender, with no card in between. */
+  private onSiteUse(actionPath: ActionPath[], selectedEntityId: ID) {
+    const account = useAccountStore.getState().account;
+    const target = actionPath[actionPath.length - 1].hex;
+    const site = this.usableSiteAt(sceneHexOf(target));
+    if (!account || !site) return;
+    void sendSiteUse({
+      systemCalls: this.game.systemCalls,
+      signer: account,
+      explorerId: safeInteger(selectedEntityId),
+      site,
+    });
+  }
+
+  /**
+   * The usable site (a Shrine or a Well) on this normalized tile of the shown layer, in contract coordinates; null where
+   * the tile holds none.
+   */
+  private usableSiteAt(hexCoords: HexPosition) {
+    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    return usableSiteAt(this.game.store, { col: contract.x, row: contract.y, alt: activeMapLayer() });
   }
 
   /** Right-click on a chest with the adjacent army selected opens it. */

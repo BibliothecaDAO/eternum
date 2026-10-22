@@ -432,9 +432,13 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 | Camp                    | Map → select a discovered canvas camp. Its standard and roof edging show ownership.                                                                                             |
 | Village                 | Map → select a discovered Canvas & Thatch village. The yard standard and tent edging show ownership; local views use the same model.                                            |
 | Beasts                  | Frontier Map → select a beast encounter. Weak and stronger bands both scale with depth; both are below the other site guards.                                                   |
-| Shrine                  | Frontier Map → select a discovered sun arch. Its site card offers the attribute reward when eligible; use removes the site.                                                     |
-| Well                    | Frontier Map → select a discovered stone well. Its site card offers stamina when eligible; use removes the site.                                                                |
+| Shrine                  | Frontier Map → select an army beside a discovered sun arch → right-click it (press and hold on a phone): Use, +XP, the army stays. Tap it for its card and Use, army kept.      |
+| Well                    | Frontier Map → select an army beside a discovered stone well → right-click it (hold on a phone): Use, +stamina; the hover warns at a full bar. Tap it for its card, army kept.  |
 | Ownership and placement | `/lab` → Building model → choose an outpost → Ownership where available → Place on selected tile → Focus selected tile. Biome and Fog controls exercise terrain and visibility. |
+
+`pnpm --dir apps/game prove:frontier-sites --base-url https://127.0.0.1:4195 --out <fresh-dir>` drives both on the live
+Frontier route at desktop and phone size: a Shrine and a Well staged beside a live army (one is staged when none is out
+today), the hover, the right-click or hold, the tap's card, and the recorded command; no transaction is signed.
 
 With the local client running, open `/lab?evidence=/absolute/capture/directory` and run
 `scripts/outposts/prove-runtime.playwright.js` through the browser connection with the page as its argument (remove the

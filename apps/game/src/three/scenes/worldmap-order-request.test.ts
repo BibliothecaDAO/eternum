@@ -10,8 +10,8 @@ import {
 } from "./worldmap-order-request";
 
 const step = (actionType: ActionType) => ({ hex: { col: 0, row: 0 }, actionType });
-const tap = (path: ReturnType<typeof step>[] | undefined, standingSite = false) =>
-  orderOnTap({ path, armySelected: true, standingSite });
+const tap = (path: ReturnType<typeof step>[] | undefined, site = false) =>
+  orderOnTap({ path, armySelected: true, site });
 
 describe("a tap on a tile with an army selected", () => {
   it("pins an order on a tile to explore or move to", () => {
@@ -24,9 +24,11 @@ describe("a tap on a tile with an army selected", () => {
     expect(tap([step(ActionType.Move), step(ActionType.Attack)])).toBe("attack");
   });
 
-  it("opens a standing site out of reach for the army, so its card can say what the army lacks", () => {
-    expect(tap(undefined, true)).toBe("site-out-of-reach");
-    expect(orderOnTap({ path: undefined, armySelected: false, standingSite: true })).toBeNull();
+  it("opens a site's card for the army, so the card offers its Use or says what the army lacks", () => {
+    // A standing site out of reach, a Shrine or Well beyond the army's step, and one beside it the army can use.
+    expect(tap(undefined, true)).toBe("site-card");
+    expect(tap([step(ActionType.Move), step(ActionType.UseSite)], true)).toBe("site-card");
+    expect(orderOnTap({ path: undefined, armySelected: false, site: true })).toBeNull();
   });
 
   it("counts as an order to a tile only a path that explores or moves there", () => {

@@ -30,6 +30,7 @@ const pointer = new PointerOrderTip(
       explored: true,
       refusal: tile.refusal,
       staminaWait: undefined,
+      site: undefined,
     });
     return tip && tile.at && { ...tip, at: tile.at };
   },
