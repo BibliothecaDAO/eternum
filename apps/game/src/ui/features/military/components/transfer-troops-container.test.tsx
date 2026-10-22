@@ -14,7 +14,7 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { StructureType } from "@bibliothecadao/types";
+import { RELICS, StructureType } from "@bibliothecadao/types";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { TransferTroopsContainer } from "./transfer-troops-container";
 import { TransferDirection } from "./transfer-troops/transfer-direction";
@@ -40,7 +40,11 @@ afterEach(() => setBlockTimestampSource(null));
  * it: an empty slot is a stored row with no troops (its stale type left as Crossbowman T2), as the chain leaves it.
  * With `armyBeside`, the transfer goes instead into another of his armies holding those troops.
  */
-const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}, armyBeside?: ReturnType<typeof troops>) => {
+const reinforce = (
+  guards: Record<number, ReturnType<typeof troops>> = {},
+  armyBeside?: ReturnType<typeof troops>,
+  prepare?: (store: GameClientSetup["store"]) => void,
+) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store } = frontierDay();
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
@@ -65,13 +69,19 @@ const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}, armyB
       : []),
   ] as never);
 
+  prepare?.(store);
+  const systemCalls = {
+    explorer_guard_swap: vi.fn(),
+    explorer_explorer_swap: vi.fn(),
+    troop_troop_adjacent_transfer: vi.fn(),
+  };
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   act(() =>
     root.render(
       <GameProvider
-        value={{ store, systemCalls: { explorer_guard_swap: vi.fn() } } as unknown as GameClientSetup}
+        value={{ store, systemCalls } as unknown as GameClientSetup}
         account={{ address: "0x111" } as never}
       >
         {/* In its window, as the game opens it: the window's foot holds the verb. */}
@@ -93,6 +103,8 @@ const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}, armyB
   const button = (label: string) =>
     [...host.querySelectorAll("button")].find((element) => element.textContent?.includes(label));
   return {
+    store,
+    systemCalls,
     text: () => host.textContent ?? "",
     /** The form's refusals, said as alerts (a slot's own "Hit first" tag is part of its button, not a message). */
     errors: () =>
@@ -204,4 +216,130 @@ describe("a destination already at its deployment cap", () => {
     expect(view.send().disabled).toBe(false);
     view.unmount();
   });
+});
+
+const mergeFacts = (sourceXp: number, targetXp: number) => (store: GameClientSetup["store"]) => {
+  store.applyFacts([
+    set("0xf1", "ArmyProgressionRules", {
+      game_id: 1,
+      reveal_xp: 2,
+      fixed_xp: 200,
+      uncommon_xp: 100,
+      rare_xp: 200,
+      epic_xp: 400,
+      legendary_xp: 800,
+    }),
+    ...[EXPLORER, ARMY].flatMap((id, slot) => [
+      set(slot === 0 ? "0x74" : "0x75", "ExplorerTroops", {
+        game_id: 1,
+        explorer_id: id,
+        owner: 7,
+        troops: { ...troops(slot === 0 ? 600n : 500n), stamina: { Slot: slot } },
+      }),
+      set(`0xf${id}2`, "ArmyProgress", {
+        game_id: 1,
+        explorer_id: id,
+        xp: slot === 0 ? sourceXp : targetXp,
+        battle: 1,
+        logistics: slot === 0 ? 2 : 1,
+        scouting: 1,
+        homecoming: 1,
+        scouting_kinds: 0,
+      }),
+      set(slot === 0 ? "0x9" : "0xf2023", "ArmySlot", {
+        game_id: 1,
+        structure_id: 7,
+        epoch: "0",
+        slot,
+        explorer_id: id,
+        stamina: { amount: slot === 0 ? "7" : "100", settled_at: "350", remainder: 0 },
+      }),
+      set(`0xf${id}4`, "TileOccupancy", {
+        game_id: 1,
+        entity_id: id,
+        col: 41 + slot,
+        row: 12,
+        alt: false,
+        category: 26,
+        is_structure: false,
+      }),
+      set(`0xf${id}5`, "ResourceWeight", { game_id: 1, entity_id: id, capacity: "100000000000000", weight: "0" }),
+    ]),
+  ] as never);
+};
+
+describe("full merge confirmation", () => {
+  it.each([
+    [0, 99, "Army 1 survives at (41, 12)", 100],
+    [0, 101, "Army 2 survives at (42, 12)", 101],
+    [0, 100, "Army 2 survives at (42, 12)", 100],
+  ])("previews the whole survivor before confirming (%s, %s)", async (sourceXp, targetXp, survivor, value) => {
+    const view = reinforce({}, troops(500n), mergeFacts(Number(sourceXp), Number(targetXp)));
+    expect(view.text()).not.toContain("survives at");
+    view.sendMax();
+    expect(view.text()).toContain(survivor);
+    expect(view.text()).toContain(`${value} progression value`);
+    expect(view.text()).toContain("7 stamina after merging");
+    expect(view.text()).toContain("the other army’s XP is lost");
+    expect(view.systemCalls.explorer_explorer_swap).not.toHaveBeenCalled();
+    await act(async () => view.send().click());
+    expect(view.systemCalls.explorer_explorer_swap).toHaveBeenCalledWith(
+      expect.objectContaining({ from_explorer_id: EXPLORER, to_explorer_id: ARMY, count: 600 * Number(PRECISION) }),
+    );
+    view.unmount();
+  });
+  it("keeps a partial transfer free of a survivor claim", () => {
+    const view = reinforce({}, troops(500n), mergeFacts(500, 0));
+    view.typeCount("100");
+    expect(view.text()).not.toContain("survives at");
+    expect(view.send().disabled).toBe(false);
+    view.unmount();
+  });
+});
+
+it("moves the losing army's relics toward the previewed survivor before the troop command", async () => {
+  const resourceId = Number(RELICS[0].id);
+  const view = reinforce({}, troops(500n), (store) => {
+    mergeFacts(500, 0)(store);
+    store.applyFacts([
+      set("0xf900", "ResourceBalance", {
+        game_id: 1,
+        entity_id: ARMY,
+        resource_type: resourceId,
+        balance: String(PRECISION),
+      }),
+    ] as never);
+  });
+  view.sendMax();
+  expect(view.text()).toContain("Army 1 survives");
+  await act(async () => view.send().click());
+  expect(view.systemCalls.troop_troop_adjacent_transfer).toHaveBeenCalledWith(
+    expect.objectContaining({
+      from_troop_id: ARMY,
+      to_troop_id: EXPLORER,
+      resources: [{ resourceId, amount: Number(PRECISION) }],
+    }),
+  );
+  expect(view.systemCalls.explorer_explorer_swap).toHaveBeenCalledOnce();
+  expect(view.systemCalls.troop_troop_adjacent_transfer.mock.invocationCallOrder[0]).toBeLessThan(
+    view.systemCalls.explorer_explorer_swap.mock.invocationCallOrder[0],
+  );
+  view.unmount();
+});
+
+it("updates the survivor when authoritative progression changes before confirmation", () => {
+  const view = reinforce({}, troops(500n), mergeFacts(0, 99));
+  view.sendMax();
+  expect(view.text()).toContain("Army 1 survives");
+  act(() =>
+    view.store.applyFacts([
+      set("0xf2022", "ArmyProgress", {
+        ...view.store.require("ArmyProgress", { game_id: 1, explorer_id: ARMY }),
+        xp: 101,
+      }),
+    ] as never),
+  );
+  expect(view.text()).toContain("Army 2 survives");
+  expect(view.systemCalls.explorer_explorer_swap).not.toHaveBeenCalled();
+  view.unmount();
 });
