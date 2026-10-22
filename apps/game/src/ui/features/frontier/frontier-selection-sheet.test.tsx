@@ -483,6 +483,7 @@ it.each([
     useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } });
     fightEnded({
       targetId: SITE,
+      tile: { col: 4, row: 5 },
       site,
       guardIdentity: { name, art },
       verdict: "guard-holds",
@@ -514,3 +515,58 @@ it.each([
     useUIStore.getState().selectOnMap(null);
   },
 );
+
+it("opens a new pick's own card at once over a fight's result, which stands only in its own tile's card", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const { store } = campBeside();
+  useAccountStore.setState({ account: { address: "0x111" } as never });
+  useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } });
+  fightEnded({
+    targetId: SITE,
+    tile: { col: 4, row: 5 },
+    site: "Camp",
+    guardIdentity: { name: "Troll", art: "beast-troll" },
+    verdict: "guard-holds",
+    armyArt: "knight-t1",
+    army: { before: 1_000, after: 694 },
+    guard: { before: 1_000, after: 572 },
+    gained: null,
+  });
+  // The HUD's way: the selection's card, through the one panel that decides what stands.
+  const Hud = () => {
+    const card = useSelectionCard({ realm: null, onResearch: () => undefined });
+    const { showsCard } = useOnePanel(card?.key ?? null);
+    return showsCard ? card!.sheet : null;
+  };
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const sheet = () => host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
+  try {
+    await act(async () =>
+      root.render(
+        <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+          <Hud />
+        </GameProvider>,
+      ),
+    );
+    expect(sheet()).toBe(siteName(SITE));
+    // Another target: its own card, with nothing to close first.
+    tiles.current = [{ occupierType: TileOccupier.Spire, occupierId: 0, hexCoords: { col: 8, row: 9, alt: false } }];
+    await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 8, row: 9 } }));
+    expect(sheet()).toBe("Spire");
+    // An ordinary tile: nothing stands, the result does not come back over the map.
+    await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 11, row: 2 } }));
+    expect(sheet()).toBeNull();
+    // Back on the fight's tile, its card shows the result again.
+    await act(async () => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } }));
+    expect(sheet()).toBe(siteName(SITE));
+  } finally {
+    act(() => {
+      fightEnded(null);
+      root.unmount();
+    });
+    useUIStore.getState().selectOnMap(null);
+    useAccountStore.setState({ account: null });
+    tiles.current = [];
+  }
+});

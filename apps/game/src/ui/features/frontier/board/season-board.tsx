@@ -1,6 +1,6 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeFacts, useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type PlayerNames, usePlayerDisplayName, usePlayerNames } from "@/hooks/use-player-profile";
 import { getActiveGame } from "@/runtime/world";
@@ -8,12 +8,7 @@ import { startRealmVisit } from "@/sync/active-game-client";
 import { PlayerSeatMark } from "@/hooks/use-watched-side";
 import { LordName } from "./realm-marks";
 import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
-import {
-  fetchHeraldLeaderboard,
-  type NativeFactStore,
-  requireShard,
-  safeInteger,
-} from "@bibliothecadao/eternum/game-client";
+import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
@@ -132,31 +127,22 @@ const useSeasonListRows = (
   const own = findOwnEntry(entries ?? [], useViewer());
   // Each row's label is the one name rule's, read as the rows are built: built again when a name lands.
   const names = usePlayerNames();
-  // Each realm's rank and reach are its Structure row's, built again as they change.
-  const facts = useNativeFacts(REALM_MODELS);
   const top = (entries ?? []).slice(0, length);
   return {
-    rows: top.map((entry) => listRow(entry, entry === own, names, facts.store)),
-    pinned: own && !top.includes(own) ? listRow(own, true, names, facts.store) : undefined,
+    rows: top.map((entry) => listRow(entry, entry === own, names)),
+    pinned: own && !top.includes(own) ? listRow(own, true, names) : undefined,
   };
 };
 
-const REALM_MODELS = ["Structure"] as const;
-
-/** A realm's rank and the deepest Ethereal reach it has gone to, from its Structure row; unknown without the row. */
-const realmOf = (store: NativeFactStore, entry: Entry): SeasonListRow["realm"] => {
-  const row = store.get("Structure", {
-    game_id: configManager.getActiveGameId(),
-    entity_id: safeInteger(entry.structure_id),
-  });
-  return row && { level: row.base.level, reach: row.metadata.deepest_depth };
-};
-
-const listRow = (entry: Entry, own: boolean, names: PlayerNames, store: NativeFactStore): SeasonListRow => ({
+/**
+ * Each realm's rank and deepest reach as the board's own entry gives them, whether or not the realm is streamed to this
+ * viewer (Herald reads both from the realm's Structure row).
+ */
+const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow => ({
   key: entry.address,
   rank: entry.rank,
   order: entry.order,
-  realm: realmOf(store, entry),
+  realm: { level: entry.level, reach: entry.deepest_depth },
   name: (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
       <PlayerSeatMark account={entry.address} name={names.text(entry.address)} />

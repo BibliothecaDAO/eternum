@@ -150,7 +150,10 @@ export interface HeraldFrontierLeaderboardEntry {
   sites_cleared: { total: number; camps: number; rifts: number; ruins: number; beasts: number };
   chests_earned: number;
   rewards: { lords: string; essence: string; labor: string };
+  /** The deepest Ethereal reach the realm has gone to (0 before the first): its badge on the board. */
   deepest_depth: number;
+  /** The realm's level (0 a Settlement up to its castle's highest): its rank's castle on the board. */
+  level: number;
   /** The realm's Order, 1 to 16: its emblem on the board. */
   order: number;
 }

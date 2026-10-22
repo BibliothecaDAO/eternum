@@ -11,6 +11,8 @@ import { fightVerdict, type FightVerdict } from "@bibliothecadao/types";
 export interface FightSent {
   /** The site attacked, or the other player's army. */
   targetId: number;
+  /** The tile it stood on: its result stands in that tile's card, and only there. */
+  tile: { col: number; row: number };
   site: AttackTargetKind;
   armyId: number;
   armyArt: IconMeaning;
@@ -36,6 +38,8 @@ export interface FightGain {
 export interface FightResult {
   /** The site attacked, or the other player's army: a site's sheet keeps the name its card had. */
   targetId: number;
+  /** The tile the fight was on: the result stands in that tile's card while it is selected. */
+  tile: { col: number; row: number };
   site: AttackTargetKind;
   verdict: FightVerdict;
   armyArt: IconMeaning;
@@ -58,6 +62,7 @@ export const fightResultOf = (
   const verdict = fightVerdict({ army: army.after, guard: guard.after });
   return {
     targetId: sent.targetId,
+    tile: sent.tile,
     site: sent.site,
     verdict,
     armyArt: sent.armyArt,
@@ -71,6 +76,7 @@ export const fightResultOf = (
 /** The one thing known of a fight with no record once the army's own row is gone: the army was lost. */
 export const lostArmyResult = (sent: FightSent): FightResult => ({
   targetId: sent.targetId,
+  tile: sent.tile,
   site: sent.site,
   verdict: "army-lost",
   armyArt: sent.armyArt,

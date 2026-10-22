@@ -3,6 +3,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudBubble, SheetDock } from "@/ui/design-system/kit/hud-elements";
 import { OpenedFromPanel } from "@/ui/design-system/kit/opened-from-panel";
 import { EVENTS_WORDS, REALM, RESEARCH, SEASON } from "@/ui/design-system/kit/words";
+import { FeedToasts } from "@/ui/features/event-feed/quick-feed";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import type { SeasonGoal } from "@/ui/features/world/containers/top-header/identity-chip";
 import { TopHeader } from "@/ui/features/world/containers/top-header/top-header";
@@ -79,7 +80,8 @@ export const FrontierDesktop = ({
  * Frontier's right rail on a desktop, the one home for everything (the owner, 22 October: "The right rail being home
  * for everything is perfect"): Next up on top, then the open panel (a nav page, or any sheet the HUD opens: Build, an
  * army, a site, Today), which stands in the rail at the feed's width; with none open, the feed, Frontier's events and
- * world history in one. Chat stands at its foot.
+ * world history in one. The client's own notices (a refused order, a warning, the game clock's milestones) stand under
+ * Next up whatever is open, as they stood atop Events. Chat stands at its foot.
  */
 const FrontierRail = ({
   nextUp,
@@ -101,6 +103,9 @@ const FrontierRail = ({
       className="pointer-events-none fixed bottom-hud-base right-3 top-hud-header z-hud-rail flex flex-col gap-2"
     >
       {nextUp && <div className="shrink-0">{nextUp}</div>}
+      <div aria-label="Notices" className="ui ui-panel pointer-events-auto shrink-0 px-3 py-2 empty:hidden">
+        <FeedToasts />
+      </div>
       <div ref={onPanel} data-rail-panel className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden">
         {page && <OpenedFromPanel.Provider value>{page}</OpenedFromPanel.Provider>}
       </div>

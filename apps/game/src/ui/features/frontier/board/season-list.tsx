@@ -37,8 +37,8 @@ export type SeasonListRow = {
   key: string;
   rank: number;
   order: number;
-  /** The realm's rank and its deepest reach, as its facts say them; unknown while its row is not in the store. */
-  realm?: { level: number; reach: number };
+  /** The realm's rank and its deepest reach, as the board's entry gives them. */
+  realm: { level: number; reach: number };
   name: ReactNode;
   label: string;
   sitesCleared: number;
@@ -167,7 +167,7 @@ const COLS = "2.25rem 1.75rem minmax(0, 1fr) 3rem 3.5rem";
 const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) => void }) => (
   <HudTableRow cols={COLS} label={`#${row.rank} ${row.label}`} selected={row.own} onClick={() => onOpen(row.key)}>
     <span className="text-center tabular-nums">{formatAmount(row.rank)}</span>
-    {row.realm ? <RealmBadge level={row.realm.level} reach={row.realm.reach} /> : <span />}
+    <RealmBadge level={row.realm.level} reach={row.realm.reach} />
     <span className="min-w-0 truncate">{row.name}</span>
     <span className="text-right tabular-nums">{formatAmount(row.sitesCleared)}</span>
     <span className="text-right tabular-nums">{formatAmount(row.lords)}</span>

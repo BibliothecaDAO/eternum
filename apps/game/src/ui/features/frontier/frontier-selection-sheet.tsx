@@ -25,7 +25,8 @@ import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
  * build sheet, the keep its upgrade sheet (a standing building opens Research on its row instead), a standing site or another
  * player's army the tile card, a Shrine or Well its card, a spire or reward chest its own. Cleared sites and opened chests keep their receipts on the tile.
  * A cleared site shows its receipt even with an army on the tile. Other empty tiles and armies the dock already
- * shows open no card. The player's own attack result stands in the card's place until it is closed, with the card.
+ * shows open no card. The player's own attack result stands in its tile's card while that tile is selected: any other
+ * pick opens its own card at once, and coming back to the tile shows the result again until it is closed.
  */
 export const useSelectionCard = ({
   realm,
@@ -62,7 +63,7 @@ export const useSelectionCard = ({
   };
   const at = `${selectedHex?.col},${selectedHex?.row}:${selectedBuildingHex?.innerCol},${selectedBuildingHex?.innerRow}`;
   const card = (kind: string, sheet: ReactNode) => ({ key: `${kind}@${at}`, sheet });
-  if (fight)
+  if (fight && selectedHex && fight.tile.col === selectedHex.col && fight.tile.row === selectedHex.row)
     return card(
       "fight",
       <HudSheet

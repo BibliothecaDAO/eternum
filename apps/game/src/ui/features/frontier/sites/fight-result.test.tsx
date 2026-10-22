@@ -11,10 +11,11 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
 
 import { closeFightResult, type FightGain, type FightSent, fightResultOf, lostArmyResult } from "./fight-result";
 import { FightResultCard } from "./fight-result-card";
-import { SITE } from "./site-fixture";
+import { SITE, SITE_TILE } from "./site-fixture";
 
 const SENT: FightSent = {
   targetId: SITE,
+  tile: { col: SITE_TILE.col, row: SITE_TILE.row },
   site: "Camp",
   armyId: 201,
   armyArt: "knight-t1",
@@ -69,6 +70,7 @@ describe("an attack's result, from the battle's own record", () => {
   it("says only that the army was lost when no record of the battle is known", () => {
     expect(lostArmyResult(SENT)).toEqual({
       targetId: SITE,
+      tile: SENT.tile,
       site: "Camp",
       verdict: "army-lost",
       armyArt: SENT.armyArt,

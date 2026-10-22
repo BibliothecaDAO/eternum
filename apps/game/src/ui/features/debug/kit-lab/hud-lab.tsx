@@ -45,7 +45,9 @@ import { frontierCoachSteps } from "@/ui/features/frontier/next-up/frontier-coac
 import type { NextUpFacts } from "@/ui/features/frontier/next-up/next-up-facts";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { NextUpView } from "@/ui/features/world/hud/next-up";
-import { type ComponentProps, useRef, useState } from "react";
+import { type ComponentProps, useEffect, useRef, useState } from "react";
+import { toast } from "@/ui/features/event-feed/notify";
+import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
 import { RefillButton, RefillConfirm } from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
@@ -340,10 +342,25 @@ const SEASON_NAMES = [
 ];
 const SEASON_SITES = [148, 132, 127, 121, 116, 110, 104, 99, 95, 92, 90];
 const SEASON_LORDS = [704, 640, 576, 512, 448, 416, 384, 352, 320, 288, 256];
+/** Each realm's rank (Settlement 0 to Empire 3) and deepest reach, the leaders the furthest on. */
+const SEASON_REALMS = [
+  [3, 3],
+  [3, 2],
+  [2, 2],
+  [2, 1],
+  [2, 1],
+  [2, 0],
+  [1, 1],
+  [1, 0],
+  [1, 1],
+  [0, 0],
+  [0, 0],
+] as const;
 const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
   key: name,
   rank: index + 1,
   order: index + 1,
+  realm: { level: SEASON_REALMS[index][0], reach: SEASON_REALMS[index][1] },
   name,
   label: name,
   sitesCleared: SEASON_SITES[index],
@@ -360,6 +377,7 @@ const OWN_ROW: SeasonListRow = {
   key: "you",
   rank: 12,
   order: 12,
+  realm: { level: 1, reach: 1 },
   name: YOU,
   label: YOU,
   sitesCleared: 88,
@@ -560,6 +578,7 @@ const STATES = {
     armies: ARMIES,
     fight: {
       targetId: 29,
+      tile: { col: 0, row: 0 },
       site: "Camp",
       verdict: "victory",
       armyArt: ARMY_CHIP.art,
@@ -574,6 +593,7 @@ const STATES = {
     armies: ARMIES,
     fight: {
       targetId: 29,
+      tile: { col: 0, row: 0 },
       site: "Beasts",
       verdict: "guard-holds",
       armyArt: ARMY_CHIP.art,
@@ -588,6 +608,7 @@ const STATES = {
     armies: ARMIES,
     fight: {
       targetId: 29,
+      tile: { col: 0, row: 0 },
       site: "Rift",
       verdict: "army-lost",
       armyArt: ARMY_CHIP.art,
@@ -669,6 +690,8 @@ const STATES = {
     storeCard: line({ icon: "troops", spentAt: "deploy", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
   },
   research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: true },
+  // A refused order's notice, through the game's own notice store: on a desktop it stands in the rail under Next up.
+  notice: { clock: CLOCK, stores: STORES, armies: ARMIES, notice: "Not enough stamina" },
   today: { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today" },
   "today-earlier": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-earlier" },
   "today-failed": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-failed" },
@@ -833,6 +856,8 @@ type LabState = {
   seasonLords?: "open" | "closed";
   season?: "list" | "detail" | "unpublished" | "loading" | "failed";
   visiting?: boolean;
+  /** A notice the client raises (a refused order), as the game's notice store holds it. */
+  notice?: string;
   /** Research's page: the tree on the realm some days in. */
   research?: boolean;
   /** The card a store's ring or plate opened. */
@@ -876,6 +901,7 @@ export const HudLab = () => {
   const desktop = useLayout() === "desktop";
   // The game wears Frontier's age (world.tsx's useHudMode); the lab draws it the same.
   useHudMode("frontier");
+  useLabNotice(lab.notice);
   const chatPane = useRef<HTMLElement>(null);
   const chat = lab.chat && <ChatPage gameZoneId="lab-game" signedIn onSignIn={noop} pane={chatPane} />;
   return (
@@ -1054,6 +1080,15 @@ export const HudLab = () => {
       </LabBands>
     </>
   );
+};
+
+/** The state's notice raised in the game's notice store while it shows, and put away when it goes. */
+const useLabNotice = (notice: string | undefined) => {
+  useEffect(() => {
+    if (!notice) return;
+    toast.error(notice);
+    return () => useEventFeedStore.getState().dismiss();
+  }, [notice]);
 };
 
 /** Deploy on the fiction, live: 2 wheat a troop, 0.02 a troop a tile. */
