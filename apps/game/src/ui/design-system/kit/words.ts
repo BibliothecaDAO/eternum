@@ -399,6 +399,17 @@ export const PICKED_ARMY = {
 /** Troops between two of the realm's armies side by side (Frontier's Transfer troops, desktop and phone). */
 export const TRANSFER_TROOPS = {
   title: "Transfer troops",
+  waiting: "Waiting for both armies’ progress.",
+  stale: "The armies changed. Review the merge before confirming again.",
+  merge: (army: string) => `Merge into ${army}`,
+  survives: (army: string, col: number, row: number, slot: number) =>
+    `${army} survives at (${col}, ${row}) · slot ${slot}.`,
+  progression: (value: number, xp: number, loser: string) =>
+    `${formatExact(value)} progression value (XP + all upgrades) · ${formatExact(xp)} unspent XP kept. ${loser}’s XP and upgrades are not carried over.`,
+  mergedStamina: (stamina: number | undefined) =>
+    stamina === undefined
+      ? "Stamina —"
+      : `${formatCharge(stamina)} stamina after merging. The other army’s slot is released.`,
   split: (picked: string, tapped: string) => `Troops: ${picked} keeps this many, ${tapped} the rest`,
   allTo: (army: string) => `All to ${army}`,
   even: "Even",

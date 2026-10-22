@@ -487,7 +487,11 @@ an eligible player. The lab proof does not establish those live actions.
   realm Knights, one Crossbowmen, one Paladins, in an order drawn per player. No army stands on the map at the start;
   the player creates one from the reserve.
 - **Merging armies.** Select an army, then an adjacent army or realm of yours: the transfer panel moves troops between
-  them, across realms too. Both sides must hold the same troop type and tier.
+  them, across realms too. Both sides must hold the same troop type and tier. Frontier opens its **Transfer troops**
+  sheet: a full merge shows which army survives (unspent XP plus all purchased or trained tiers; ties keep the target),
+  its position and slot, the resulting stamina and the other army’s XP and upgrades lost. The troop totals and **Merge
+  into …** button name that same survivor. A changed army refuses confirmation until the new result is reviewed. Partial
+  transfers keep both armies. Dev: `/lab/kit/hud/merge`; tests drive the map’s actual selection card.
 
 ## World atmosphere
 
