@@ -21,7 +21,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-it("shows on each open slot of the dock the bar it starts its army on, as the Deploy sheet reads it", () => {
+it("shows every free slot in order with the bar it starts its army on, and Deploy on the lowest, which the game fills", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, row } = frontierDay();
   // Slot 2 is fresh today; slot 3's army was released this second with 7 stamina left.
@@ -50,15 +50,27 @@ it("shows on each open slot of the dock the bar it starts its army on, as the De
     ),
   );
   try {
-    const slots = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
+    const slots = [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Armies"] button')];
     expect(
       slots.map((slot) => {
         const meter = slot.querySelector('[role="meter"]');
-        return [slot.dataset.tip, meter?.getAttribute("aria-valuenow"), meter?.getAttribute("aria-valuemax")];
+        return [
+          slot.getAttribute("aria-label"),
+          slot.disabled,
+          slot.dataset.tip,
+          meter?.getAttribute("aria-valuenow"),
+          meter?.getAttribute("aria-valuemax"),
+        ];
       }),
     ).toEqual([
-      ["Army 2 starts full: 150/150 stamina. Its slot is fresh today.", "150", "150"],
-      ["Army 3 starts on 7/150 stamina. The bar its slot's last army left.", "7", "150"],
+      ["Deploy", false, "Army 2 starts full: 150/150 stamina. Its slot is fresh today.", "150", "150"],
+      [
+        "Deploy fills slot 2 first.",
+        true,
+        "Army 3 starts on 7/150 stamina. The bar its slot's last army left. Deploy fills slot 2 first.",
+        "7",
+        "150",
+      ],
     ]);
   } finally {
     act(() => root.unmount());
