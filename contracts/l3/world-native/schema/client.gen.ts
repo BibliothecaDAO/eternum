@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e";
+export const nativeFactSchemaIdentity = "271ebcb3c699fed707d9e75a02395208e87a19571020ad6b5a6e26901f1ff461";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "BATTLE_UNCOMMON_BPS": 1000,

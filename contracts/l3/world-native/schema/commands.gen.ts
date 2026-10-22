@@ -75,7 +75,7 @@ export const nativeCommandBits = {
   "WithdrawLords": "2361183241434822606848"
 } as const;
 export interface NativeCommandPayloads {
-  CreateExplorer: { readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
+  CreateExplorer: { readonly slot: BigNumberish; readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
   Explore: { readonly explorer_id: BigNumberish; readonly direction: BigNumberish };
   Battle: { readonly attacker_id: BigNumberish; readonly defender_id: BigNumberish; readonly steal_resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };
   Move: { readonly explorer_id: BigNumberish; readonly directions: readonly (BigNumberish)[] };
