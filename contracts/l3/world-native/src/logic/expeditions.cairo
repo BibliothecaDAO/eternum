@@ -1,4 +1,4 @@
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::expeditions::*;
 use crate::troops::Coord;
 
@@ -72,18 +72,19 @@ fn ruin_key(key: ExpeditionDiscoveryKey) -> (u32, u64, u64) {
 }
 
 pub fn ruin_disappeared(key: crate::resources::ResourceKey) -> bool {
-    let Some(site) = expedition_site(key) else {
-        return false;
-    };
-    if site.category != crate::taxonomy::RUIN_CATEGORY || site.clear.is_some() {
+    let state = crate::state::read();
+    let storage_key = (key.game_id, key.entity_id);
+    if state.structures.structures.entry(storage_key).base.read().category != crate::taxonomy::RUIN_CATEGORY {
         return false;
     }
-    let spacing = crate::logic::settlement::rules(key.game_id).spacing;
-    let day = region_day(Coord { alt: site.alt, x: site.col, y: site.row }, spacing);
-    crate::state::read()
+    let Some(coord) = crate::map::position_from_bits(state.map.entity_tiles.read(storage_key)) else {
+        return false;
+    };
+    let spacing = crate::logic::preset_record::for_game(key.game_id).settlement_spacing.read();
+    state
         .map_rules
         .ruin_cleared
-        .read((key.game_id, crate::entity_ids::namespace(key.entity_id).into(), day))
+        .read((key.game_id, crate::entity_ids::namespace(key.entity_id).into(), region_day(coord, spacing)))
 }
 
 pub fn close_ruins(key: ExpeditionDiscoveryKey) {
