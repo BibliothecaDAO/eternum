@@ -805,6 +805,8 @@ class PackageStartTest(unittest.TestCase):
         for volume in self.volumes.values():
             volume.mkdir()
         self.write_initialized_data()
+        self.facts = root / "release-facts.json"
+        self.facts.write_text(json.dumps({"releaseId": 1}))
         self.environ = {
             **operator_fixture(self.data, self),
             "CHAIN_ID": "RESTORED_SHARD", "GUARDIAN_URL": "https://identity.test/api/guardian",
@@ -815,6 +817,7 @@ class PackageStartTest(unittest.TestCase):
         for name, volume in self.volumes.items():
             self.enterContext(patch.object(self.package, name, volume))
         self.enterContext(patch.object(self.package, "DATA", self.data))
+        self.enterContext(patch.object(self.package, "RELEASE_FACTS", self.facts))
         self.enterContext(patch.object(shard, "wait_for_endpoint"))
         self.enterContext(patch.object(shard, "run"))
 
@@ -822,8 +825,9 @@ class PackageStartTest(unittest.TestCase):
         self.data.mkdir(mode=0o700)
         files = {
             "host-keys.json": {"deployerAddress": "0x789", "deployerPrivateKey": "0xabc", "sequencingPrivateKey": "0xdef"},
-            "native-world.json": {"shard": {"chainId": "0x1"}, "world": {"address": "0x4"}},
-            "gameplay-contracts.json": {"operatorAccountAddress": "0x1"},
+            "native-world.json": {"shard": {"chainId": "0x1"}, "world": {"address": "0x4"}, "native": {"releaseId": 1}},
+            "gameplay-contracts.json": {"operatorAccountAddress": "0x1", "launcherAccountAddress": "0x5",
+                                        "ledgerOperatorAccountAddress": "0x6"},
             "authority.json": {"address": "0x3", "signingKey": "0xdef"},
             "initialized.json": {"chainId": "0x1", "world": "0x4"},
             # A record written before init kept only identity: operational settings beside it are ignored.
@@ -900,6 +904,23 @@ class PackageStartTest(unittest.TestCase):
         for settings in ({"CHAIN_ID": "OTHER"}, {"GUARDIAN_URL": "https://other.test/api/guardian"}, {"L2_GAS_BOUND": "0x1"}):
             with self.subTest(settings=settings), self.assertRaisesRegex(ValueError, "never reinitialize"):
                 self.start(**settings)
+
+    def world_commands(self):
+        return [call.args[0] for call in shard.run.call_args_list if "config/deployer/clean/cli/deploy-world.ts" in call.args[0]]
+
+    def test_a_restart_on_the_shard_release_registers_nothing(self):
+        self.start()
+        self.assertEqual(self.world_commands(), [])
+
+    def test_the_next_release_is_registered_on_the_running_shard_then_inspected(self):
+        self.facts.write_text(json.dumps({"releaseId": 2}))
+        self.start()
+        commands = self.world_commands()
+        self.assertEqual(len(commands), 2)
+        self.assertEqual(commands[0][commands[0].index("--launcher") + 1], "0x5")
+        self.assertEqual(commands[1], [*commands[0], "--inspect"])
+        logs = [call.args[2] for call in shard.run.call_args_list if call.args[0] in commands]
+        self.assertEqual(logs, ["release-2-deploy", "release-2-inspect"])
 
     def test_restart_verifies_the_existing_vrf_credential_without_rotation(self):
         self.start()

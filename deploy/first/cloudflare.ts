@@ -45,15 +45,13 @@ async function publish(environment: string | undefined, directory: string | unde
   const { store, inputs } = setUpDirectory(directory);
   requireInstalledDependencies();
   const { Platform } = await import("./platform");
-  const { deployWorkers, deployClient, deployDocs } = await import("./publish");
+  const { publishCloudflare } = await import("./publish");
   const platform = new Platform(environments[target], inputs, store, true);
   const unlock = store.lock();
   try {
     console.log(`Cloudflare deployment commit ${revision}.`);
     await requireCloudflareResources(platform);
-    await deployWorkers(platform, revision);
-    await deployClient(platform, revision);
-    await deployDocs(platform, revision);
+    await publishCloudflare(platform, revision);
   } finally {
     unlock();
   }

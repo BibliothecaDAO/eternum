@@ -110,7 +110,9 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
 
 ## Deploy
 
-After setup, the box and Cloudflare halves can run independently from the same pushed commit:
+After setup, the box and Cloudflare halves run from the same pushed commit, independently except for a new world release
+(`deploy/release/native-release.ts`): then the box half goes first, and the Cloudflare half refuses until the shard has
+the release.
 
 ```sh
 pnpm run deploy dev
@@ -122,16 +124,21 @@ in `deploy/first/commit.txt`. The box command builds images on the target box, i
 Full output, including builds and failures, stays in a mode-0600 `deploy-*.log` in the run directory; the command prints
 its path, failing stage, HTTP status and fixed service error. Deployment holds the box's stack lock. The world names the
 launcher and relay accounts at creation; each Worker joins using its own device from its alarm or cron. Deployment does
-not enrol those devices or transfer their roles. Dev uses `realms-dev` in `/opt/athanor/runs/dev`.
+not enrol those devices or transfer their roles. Dev uses `realms-dev` in `/opt/athanor/runs/dev`. On a running shard, a
+commit whose release follows the shard's, with the same schema and Games class, continues it: init registers the
+release, and Herald restarts from the published manifest until its `/manifest` maps every release. Any other release
+change is refused, and a rerun registers nothing.
 
 The Cloudflare command belongs to the credential holder. It exports HEAD to a temporary directory, installs locked
-dependencies, builds workspace packages, migrates D1 and publishes Workers, then builds and publishes the client, then
-builds the docs (`pnpm run build:docs`, the build validation runs) and publishes them to `docs.realms.party` (dev:
-`docs.dev-realms.party`). Each run uploads both sites' builds and checks each at its own address, byte for byte, before
-the command ends, so a rerun at the same commit proves what it published. It refuses to start until setup has created
-every resource, so a site new to the deployment reaches an existing environment through `setup --apply`. Neither deploy
-command has a dry run or performs funding or calendar operations. Production, when commissioned, builds its images on
-its own box from the same source commit.
+dependencies, builds workspace packages, migrates D1 and publishes Workers. It then asks the launch Worker to advance
+the running Frontier games to the commit's release, signed by the launcher. The Worker refuses, by name, until the box
+half has registered the release and Herald publishes it, and sends nothing for games already there. Only then does it
+build and publish the client, then builds the docs (`pnpm run build:docs`, the build validation runs) and publishes them
+to `docs.realms.party` (dev: `docs.dev-realms.party`). Each run uploads both sites' builds and checks each at its own
+address, byte for byte, before the command ends, so a rerun at the same commit proves what it published. It refuses to
+start until setup has created every resource, so a site new to the deployment reaches an existing environment through
+`setup --apply`. Neither deploy command has a dry run or performs funding or calendar operations. Production, when
+commissioned, builds its images on its own box from the same source commit.
 
 ## Season
 

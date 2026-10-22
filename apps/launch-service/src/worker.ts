@@ -62,6 +62,7 @@ const launchAppOf = (env: LaunchEnv, chainId?: string | null) => {
       armFor: (dueAt) => registrarOf(env).armFor(dueAt),
       joinFailures: () => registrarOf(env).joinFailures(),
       wakeAt: () => registrarOf(env).wakeAt(),
+      applyRelease: (releaseId) => registrarOf(env).applyRelease(releaseId),
     },
   });
 };

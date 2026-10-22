@@ -141,6 +141,30 @@ test("one Frontier season is created once by every tick and continued like any f
   expect((await store.startNext(Date.now()))?.id).toBe(next.id);
 });
 
+test("the release step finds the Frontier games this chain launched, never a queued run, a Blitz game or another chain's", async () => {
+  const seasonStart = "2027-01-01T00:00:00.000Z";
+  const chain = new D1LaunchStore(database.db, testChain("0x1"));
+  const other = new D1LaunchStore(database.db, testChain("0x2"));
+  const season1 = await scheduleFrontierSeason(chain, season(seasonStart));
+  await completeFreeFixture(chain, (await chain.startNext(Date.now()))!.id, frontierSummary(season1.name, seasonStart));
+  const blitz = await chain.enqueue("game", { environment: "madara.blitz", gameName: "bltz-7" });
+  await completeFreeFixture(chain, (await chain.startNext(Date.now()))!.id, {
+    ...frontierSummary(blitz.name, seasonStart),
+    environment: "madara.blitz",
+    gameType: "blitz",
+    gameId: 7,
+    finalizeAt: Math.floor(Date.now() / 1_000) + 3_600,
+  });
+  await scheduleFrontierSeason(chain, season("2027-04-30T00:00:00.000Z"));
+  const elsewhere = await scheduleFrontierSeason(other, season(seasonStart));
+  await completeFreeFixture(other, (await other.startNext(Date.now()))!.id, {
+    ...frontierSummary(elsewhere.name, seasonStart),
+    gameId: 3,
+  });
+  expect(await chain.launchedGameIds("madara.frontier")).toEqual([9]);
+  expect(await other.launchedGameIds("madara.frontier")).toEqual([3]);
+});
+
 test("retirement preserves history while unfinished live work remains observable", async () => {
   const seasonStart = "2027-01-01T00:00:00.000Z";
   const oldChain = new D1LaunchStore(database.db, testChain("0x1"));

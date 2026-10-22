@@ -3,8 +3,10 @@ import { join, relative } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { l2EnvironmentProblem } from "../../apps/game/src/runtime/l2-environment";
 import { command } from "./process";
-import { Platform, databaseWorkers, workers, type Worker } from "./platform";
+import { Platform, databaseWorkers, workers, type Secrets, type Worker } from "./platform";
 import { clientSite, type PagesSite } from "./settings";
+import { NATIVE_RELEASE_ID } from "../release/native-release";
+import type { ApplyReleaseRequest, ReleaseReport } from "../../apps/launch-service/src/operator-api";
 
 async function workerReady(platform: Platform, worker: Worker, revision: string) {
   const version = await platform.deployedVersion(worker);
@@ -40,6 +42,58 @@ export async function deployWorkers(platform: Platform, revision: string) {
     if (!ready) throw new PublicError("Worker version did not reach its public route");
   }
 }
+/**
+ * The Cloudflare half once setup has created every resource: the Workers, then the running Frontier games' release,
+ * then the client and the docs, which go live only once the games run the release they expect.
+ */
+export async function publishCloudflare(platform: Platform, revision: string) {
+  await deployWorkers(platform, revision);
+  await advanceFrontierRelease(platform);
+  await deployClient(platform, revision);
+  await deployDocs(platform, revision);
+}
+
+/** What the release route's refusals mean for the person running the deploy. */
+const RELEASE_REFUSALS: Record<string, string> = {
+  release_not_registered: `the shard has not registered release ${NATIVE_RELEASE_ID} yet; run the box half (pnpm run deploy) first`,
+  release_unpublished: `Herald does not publish release ${NATIVE_RELEASE_ID} yet; rerun the box half`,
+  release_older_than_shard: `the shard runs a release newer than ${NATIVE_RELEASE_ID}; deploy a newer commit`,
+  release_downgrade: `a running game is pinned past release ${NATIVE_RELEASE_ID}; deploy a newer commit`,
+};
+
+/**
+ * The running Frontier games take the release this commit ships before its client goes live: the launch Worker applies
+ * it as the launcher. It refuses until the box half has registered the release and Herald publishes it; a rerun sends
+ * nothing.
+ */
+export async function advanceFrontierRelease(platform: Platform) {
+  if (!platform.apply) throw new PublicError("Dry run cannot advance a release");
+  deploymentStage("advance Frontier release");
+  const secrets = platform.store.read<Secrets>("secrets.json");
+  if (!secrets) throw new PublicError("Service credentials are missing; run setup with --apply before publishing");
+  const request: ApplyReleaseRequest = { releaseId: NATIVE_RELEASE_ID };
+  const response = await fetch(`${platform.target.origin}/api/factory/release`, {
+    method: "POST",
+    redirect: "error",
+    headers: {
+      "User-Agent": "realms-deployment/1",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${secrets.operator}`,
+    },
+    body: JSON.stringify(request),
+    signal: AbortSignal.timeout(300_000),
+  });
+  const body = (await response.json().catch(() => null)) as (ReleaseReport & { error?: string }) | null;
+  if (!response.ok || !body?.shards) {
+    const code = typeof body?.error === "string" ? body.error : "release_apply_failed";
+    throw new PublicError(`Release ${NATIVE_RELEASE_ID}: ${RELEASE_REFUSALS[code] ?? code}.`, response.status, code);
+  }
+  platform.store.write("release-advance.json", body);
+  for (const { chainId, games } of body.shards)
+    for (const { gameId, from, to } of games)
+      console.log(`Frontier game ${gameId} on ${chainId}: release ${from} → ${to}.`);
+}
+
 export function clientEnvironment(platform: Platform, revision: string) {
   const problem = l2EnvironmentProblem(platform.target.worker, platform.inputs.rpc);
   if (problem) throw new PublicError("Client chain and Alchemy RPC environment do not agree");

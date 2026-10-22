@@ -205,18 +205,23 @@ def wait_for_endpoint(url, rpc=False):
 
 
 def deploy_world(config, directory, environment):
-    def bun(script, *args, name):
-        run(["bun", script, *args], directory, name, environment)
-    seed = f"athanor-{config['shard']}"
-    bun("deploy/athanor/scripts/deploy-gameplay-contracts.ts", name="identity-deploy")
+    run(["bun", "deploy/athanor/scripts/deploy-gameplay-contracts.ts"], directory, "identity-deploy", environment)
+    register_world_release(config, directory, environment)
     identity = json.loads((directory / "gameplay-contracts.json").read_text())
-    command = ["--seed", seed, "--manifest", environment["NATIVE_WORLD_MANIFEST"],
-               "--identity", environment["GAMEPLAY_CONTRACTS_PATH"],
-               "--launcher", identity["launcherAccountAddress"], "--ledger-operator", identity["ledgerOperatorAccountAddress"],
-               "--world-address-file", str(directory / "world-address")]
-    bun("config/deployer/clean/cli/deploy-world.ts", *command, name="world-deploy")
-    bun("config/deployer/clean/cli/deploy-world.ts", *command, "--inspect", name="world-inspect")
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
+
+
+def register_world_release(config, directory, environment, logs="world"):
+    """Deploys Games on a new shard, or registers this image's release on a running one, then proves the world matches
+    the release. The deployer refuses anything but the next release with the same schema and Games class."""
+    identity = json.loads((directory / "gameplay-contracts.json").read_text())
+    command = ["bun", "config/deployer/clean/cli/deploy-world.ts", "--seed", f"athanor-{config['shard']}",
+               "--manifest", environment["NATIVE_WORLD_MANIFEST"], "--identity", environment["GAMEPLAY_CONTRACTS_PATH"],
+               "--launcher", identity["launcherAccountAddress"],
+               "--ledger-operator", identity["ledgerOperatorAccountAddress"],
+               "--world-address-file", str(directory / "world-address")]
+    run(command, directory, f"{logs}-deploy", environment)
+    run([*command, "--inspect"], directory, f"{logs}-inspect", environment)
 
 
 def host_credentials(directory):

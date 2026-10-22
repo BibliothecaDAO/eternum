@@ -1,24 +1,13 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { type Account, type RpcProvider } from "starknet";
 import schemaJson from "../../../../../contracts/l3/world-native/schema/schema.json";
 import { canonicalRealmTraits, realmCatalogueDigest } from "./realm-catalogue";
 import { loadNativeWorld } from "./artifacts";
 import { inspectNativeWorld } from "./plan";
 import { deployNativeWorld } from "./deploy";
-import { applyNativeRelease, registerNativeRelease } from "./releases";
+import { registerNativeRelease } from "./releases";
 import { buildNativeManifest } from "./manifest";
 import type { NativeWorld } from "./types";
-
-const originalFetch = globalThis.fetch;
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-});
-function serveHerald(local: NativeWorld, releaseSchemas: Record<string, string>): void {
-  globalThis.fetch = (async (url: string) => {
-    expect(url).toBe("https://herald.test/manifest");
-    return new Response(JSON.stringify({ chainId: "0x1", contracts: { games: local.games.address }, releaseSchemas }));
-  }) as typeof fetch;
-}
 
 const authentication = { account_class: "0x77", guardian_public_key: "0x88" };
 const catalogueDigest = realmCatalogueDigest(canonicalRealmTraits.length);
@@ -69,7 +58,6 @@ function fixture() {
     ]),
     declared: new Set(["0x123"]),
     authentication: { ...authentication },
-    applied: [] as Array<[number, number]>,
     operations: [] as string[],
   };
   const catalogue = {
@@ -90,7 +78,6 @@ function fixture() {
       if (entrypoint === "vrf_public_key") return [state.key.x, state.key.y];
       if (entrypoint === "l2_gas_bound") return [state.bound];
       if (entrypoint === "current_release") return [String(state.releaseId)];
-      if (entrypoint === "game_release") return [String(state.gamePins.get(Number(calldata[0])))];
       if (entrypoint === "release") {
         const release = state.releases.get(Number(calldata[0]));
         if (!release) throw new Error("unknown release");
@@ -121,12 +108,6 @@ function fixture() {
         state.launcher = calldata[0]!;
       } else if (entrypoint === "set_ledger_operator") {
         state.ledger = calldata[0]!;
-      } else if (entrypoint === "apply_release") {
-        const gameId = Number(calldata[0]);
-        const releaseId = Number(calldata[1]);
-        if (releaseId !== state.gamePins.get(gameId)! + 1) throw new Error("release must follow game pin");
-        state.gamePins.set(gameId, releaseId);
-        state.applied.push([gameId, releaseId]);
       } else throw new Error(`Unexpected transaction ${entrypoint}`);
       return { transaction_hash: "0x321" };
     },
@@ -272,7 +253,7 @@ describe("native deployment planning", () => {
     await expect(deployNativeWorld(local, rpc as unknown as Account, () => {})).rejects.toThrow("Games is immutable");
   });
 
-  test("a hotfix registers once, preserves the Games address, and only applies to explicitly chosen games", async () => {
+  test("a hotfix registers once, preserves the Games address, and leaves every game on its pin", async () => {
     const { local, rpc, state } = fixture();
     const shard = {
       chainId: "0x1",
@@ -300,13 +281,10 @@ describe("native deployment planning", () => {
       "1": local.previous.native.activeSchema,
       "2": local.release.schema,
     });
-    serveHerald(local, { "1": local.release.schema, "2": local.release.schema });
-    await applyNativeRelease(local, rpc as unknown as Account, [7], "https://herald.test", submitted);
-    expect(transactions).toEqual(["declare", "register_release", "apply_release"]);
     transactions.length = 0;
     await deployNativeWorld(local, rpc as unknown as Account, submitted);
-    await applyNativeRelease(local, rpc as unknown as Account, [7], "https://herald.test", submitted);
     expect(transactions).toEqual([]);
+    expect(state.gamePins.get(7)).toBe(1);
   });
   test("a schema-changing hotfix is refused before reading artifacts or sending transactions", async () => {
     const { local, rpc } = fixture();
@@ -368,31 +346,5 @@ describe("native deployment planning", () => {
     await deployNativeWorld(local, rpc as unknown as Account, () => {});
     expect(state.operations).toEqual(["declare:0x456", "register_release"]);
     expect(BigInt(state.releases.get(2)!.migration)).toBe(0x456n);
-  });
-
-  test("apply refuses unregistered or unpublished releases and walks every migration in order", async () => {
-    const { local, rpc, state } = fixture();
-    local.release.releaseId = 2;
-    await expect(
-      applyNativeRelease(local, rpc as unknown as Account, [7], "https://herald.test", () => {}),
-    ).rejects.toThrow("NATIVE_RELEASE_NOT_REGISTERED");
-    await deployNativeWorld(local, rpc as unknown as Account, () => {});
-    local.release.releaseId = 3;
-    await deployNativeWorld(local, rpc as unknown as Account, () => {});
-    serveHerald(local, { "1": local.release.schema, "3": local.release.schema });
-    await expect(
-      applyNativeRelease(local, rpc as unknown as Account, [7, 8], "https://herald.test", () => {}),
-    ).rejects.toThrow("publish release 2 to Herald");
-    expect(state.applied).toEqual([]);
-    serveHerald(local, { "1": local.release.schema, "2": local.release.schema, "3": local.release.schema });
-    await applyNativeRelease(local, rpc as unknown as Account, [7, 8], "https://herald.test", () => {});
-    expect(state.applied).toEqual([
-      [7, 2],
-      [7, 3],
-      [8, 2],
-      [8, 3],
-    ]);
-    await applyNativeRelease(local, rpc as unknown as Account, [7, 8], "https://herald.test", () => {});
-    expect(state.applied).toHaveLength(4);
   });
 });

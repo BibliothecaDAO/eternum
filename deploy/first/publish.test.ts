@@ -3,7 +3,15 @@ import { mkdtempSync, rmSync, mkdirSync, readFileSync, readdirSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as processTools from "./process";
-import { clientEnvironment, deployClient, deployDocs, deployWorkers } from "./publish";
+import {
+  advanceFrontierRelease,
+  clientEnvironment,
+  deployClient,
+  deployDocs,
+  deployWorkers,
+  publishCloudflare,
+} from "./publish";
+import { NATIVE_RELEASE_ID } from "../release/native-release";
 import { Platform, workers, workerSecrets, type Secrets } from "./platform";
 import { PrivateStore } from "./private-store";
 import { environments, type Inputs } from "./settings";
@@ -191,7 +199,92 @@ test("dry publish refuses every write before commands or transports", async () =
   await expect(deployClient(value, revision)).rejects.toThrow("Dry run");
   await expect(deployDocs(value, revision)).rejects.toThrow("Dry run");
   await expect(deployWorkers(value, revision)).rejects.toThrow("Dry run");
+  await expect(advanceFrontierRelease(value)).rejects.toThrow("Dry run");
   expect(calls).toEqual([]);
+});
+
+/** The launch Worker's release route as the deploy reaches it: `answer` for the release call, Worker versions else. */
+function releaseRoute(value: Platform, answer: () => Response) {
+  value.store.write("secrets.json", { operator: "operator-test" } as Secrets);
+  const requests: { url: string; init?: RequestInit }[] = [];
+  globalThis.fetch = mock(async (url: string | URL, init?: RequestInit) => {
+    if (String(url).endsWith("/api/factory/release")) {
+      requests.push({ url: String(url), init });
+      return answer();
+    }
+    return Response.json({
+      environment: value.target.worker,
+      version: String(url).endsWith("/api/health") ? "identity" : "launch",
+    });
+  }) as unknown as typeof fetch;
+  return requests;
+}
+const REPORT = {
+  releaseId: NATIVE_RELEASE_ID,
+  shards: [
+    {
+      chainId: "0x1",
+      releaseId: NATIVE_RELEASE_ID,
+      games: [{ gameId: 1, from: 1, to: NATIVE_RELEASE_ID, transactions: ["0xa"] }],
+    },
+  ],
+};
+
+test.each(["dev", "production"] as const)(
+  "%s asks the launch Worker to advance its Frontier games to this commit's release, as the operator",
+  async (environment) => {
+    const value = platform(environment);
+    const requests = releaseRoute(value, () => Response.json(REPORT));
+    spyOn(console, "log").mockImplementation(() => {});
+    await advanceFrontierRelease(value);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.url).toBe(`${value.target.origin}/api/factory/release`);
+    expect(requests[0]!.init!.method).toBe("POST");
+    expect(new Headers(requests[0]!.init!.headers).get("authorization")).toBe("Bearer operator-test");
+    expect(JSON.parse(String(requests[0]!.init!.body))).toEqual({ releaseId: NATIVE_RELEASE_ID });
+    expect(value.store.read<typeof REPORT>("release-advance.json")).toEqual(REPORT);
+  },
+);
+
+test("a release the box half has not registered stops the deploy before the client is built", async () => {
+  const value = platform();
+  const calls = commands();
+  value.deployedVersion = async (worker) => ({ id: worker.id, revision });
+  releaseRoute(value, () => Response.json({ error: "release_not_registered" }, { status: 409 }));
+  await expect(publishCloudflare(value, revision)).rejects.toThrow(
+    `Release ${NATIVE_RELEASE_ID}: the shard has not registered release ${NATIVE_RELEASE_ID} yet; run the box half (pnpm run deploy) first.`,
+  );
+  expect(calls.map((call) => call.argv.join(" "))).toEqual(["pnpm run build:packages"]);
+});
+
+test("the client and the docs go live only after the release step answered", async () => {
+  const value = platform();
+  const calls = commands();
+  value.deployedVersion = async (worker) => ({ id: worker.id, revision });
+  const order: string[] = [];
+  releaseRoute(value, () => {
+    order.push("release");
+    return Response.json(REPORT);
+  });
+  spyOn(console, "log").mockImplementation(() => {});
+  spyOn(processTools, "command").mockImplementation(async (spec) => {
+    calls.push(spec);
+    order.push(spec.argv.join(" "));
+    return "";
+  });
+  await publishCloudflare(value, revision);
+  expect(order.indexOf("release")).toBeLessThan(order.indexOf("pnpm --dir apps/game build"));
+  expect(order.indexOf("release")).toBeGreaterThan(order.indexOf("pnpm run build:packages"));
+});
+
+test("a deploy without setup's service credentials asks nothing of the launch Worker", async () => {
+  const value = platform();
+  const requests: unknown[] = [];
+  globalThis.fetch = mock(
+    async (url: unknown) => (requests.push(url), Response.json(REPORT)),
+  ) as unknown as typeof fetch;
+  await expect(advanceFrontierRelease(value)).rejects.toThrow("Service credentials are missing");
+  expect(requests).toEqual([]);
 });
 
 test("deployment executables come from installed dependencies", () => {

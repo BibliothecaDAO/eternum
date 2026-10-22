@@ -9,6 +9,7 @@ import { loadNativePresetConfiguration } from "../../../config/deployer/clean/re
 import { buildCreateGameParams } from "../../../config/deployer/clean/registrar/preset";
 import { nativePresetForId } from "../../../config/source/native";
 import type { CreateGameRequest } from "./schemas";
+import type { ReleaseChain } from "./release";
 import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
 
 export interface ShardGame {
@@ -57,7 +58,7 @@ const sameRoster = (stored: readonly RosterSeat[], players: readonly RosterSeat[
   );
 
 /** Current public ABI replaces the launcher's bundled stale ABI and deleted admission/ticket protocol. */
-export class LaunchShard extends ShardOperator {
+export class LaunchShard extends ShardOperator implements ReleaseChain {
   constructor(target: ShardTarget) {
     super(target);
   }
@@ -66,6 +67,18 @@ export class LaunchShard extends ShardOperator {
   }
   game(gameId: number) {
     return this.view<ShardGame>("game", [gameId]);
+  }
+  async currentRelease() {
+    return Number(await this.view<bigint>("current_release", []));
+  }
+  async gameRelease(gameId: number) {
+    return Number(await this.view<bigint>("game_release", [gameId]));
+  }
+  async isSettled(gameId: number) {
+    return (await this.game(gameId)).settled;
+  }
+  async applyRelease(gameId: number, releaseId: number) {
+    return (await this.admin("apply_release", { game_id: gameId, release_id: releaseId })).transactionHash;
   }
   /** Creates one open-entry game; a fixed roster launches with its whole slot through `launchBlitz`. */
   async create(request: CreateGameRequest, createdAt: number): Promise<LaunchGameSummary> {
