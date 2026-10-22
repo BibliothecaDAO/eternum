@@ -2580,6 +2580,10 @@ fn setup_frontier_chests_with_preset(
     preset.rules.troop_stamina_config.stamina_knight_max = 150;
     preset.rules.troop_stamina_config.stamina_gain_per_tick = 0;
     preset.rules.troop_stamina_config.stamina_explore_stamina_cost = 1;
+    preset.rules.troop_stamina_config.stamina_explore_wheat_cost = 0;
+    preset.rules.troop_stamina_config.stamina_explore_fish_cost = 0;
+    preset.rules.troop_stamina_config.stamina_travel_wheat_cost = 0;
+    preset.rules.troop_stamina_config.stamina_travel_fish_cost = 0;
     preset.rules.battle_config.cooldown_seconds = 0;
     preset.rules.battle_config.regular_immunity_ticks = 0;
     let mut depths = array![];
@@ -3019,18 +3023,24 @@ fn reveal_ruin(
         if !unseen {
             continue;
         }
-        assert!(
-            super::play_fixture::play(
-                d.games,
-                super::play_fixture::TestAction {
-                    game_id: key.game_id,
-                    actor: d.actor,
-                    command: Command::Explore(Explore { explorer_id: key.explorer_id, direction }),
-                },
-                root,
-                timestamp,
-            ),
+        let mut refused = snforge_std::spy_events();
+        let applied = super::play_fixture::play(
+            d.games,
+            super::play_fixture::TestAction {
+                game_id: key.game_id,
+                actor: d.actor,
+                command: Command::Explore(Explore { explorer_id: key.explorer_id, direction }),
+            },
+            root,
+            timestamp,
         );
+        if !applied {
+            panic!(
+                "ruin Explore at {} refused: {}",
+                timestamp,
+                super::play_fixture::rejection(ref refused, d.games).reason,
+            );
+        }
         let occupied = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
         assert_eq!(occupied.category, crate::taxonomy::RUIN_OCCUPIER);
         return (ResourceKey { game_id: key.game_id, entity_id: occupied.entity_id }, direction);
