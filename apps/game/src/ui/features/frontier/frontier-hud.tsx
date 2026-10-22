@@ -295,12 +295,8 @@ const FrontierPhoneHud = ({
   return (
     <HudBands
       {...bands}
-      strip={
-        <>
-          {strip}
-          {purse}
-        </>
-      }
+      strip={strip}
+      purse={purse}
       page={
         surface === "chat" ? (
           <ChatPage

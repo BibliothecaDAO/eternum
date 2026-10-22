@@ -851,6 +851,10 @@ span.ui-row__choose {
   /* Shown even while the panel it opened from steps aside for it. */
   visibility: visible;
 }
+/* The verb stays in view while the body scrolls: the foot never gives up its height to the body. */
+.ui-sheet > .ui-window__foot {
+  flex-shrink: 0;
+}
 .ui-sheet__grip {
   display: block;
   width: theme(spacing.10);
@@ -1463,10 +1467,11 @@ button.ui-relic:focus-visible {
   .ui-button[data-size="sm"] {
     height: var(--hud-control);
   }
-  .ui-button[data-icon-only] {
+  .ui-button {
     min-width: var(--hud-control);
   }
-  .ui-event__open {
+  .ui-event__open,
+  .ui-row__choose {
     min-height: var(--hud-control);
     align-items: center;
   }

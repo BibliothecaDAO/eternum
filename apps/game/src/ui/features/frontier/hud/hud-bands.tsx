@@ -17,6 +17,8 @@ const BAND_GAP = 6;
 /** Every slot of a phone's HUD, as Frontier fills them. */
 type Bands = {
   strip: ReactNode;
+  /** The realm's LORDS and its Realms' labor, beside Next up under the strip. */
+  purse?: ReactNode;
   /** What floats over the map itself (the last hour's bubble). */
   stage?: ReactNode;
   /** A nav page, standing on the place bar. */
@@ -40,7 +42,7 @@ type Bands = {
  */
 export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />);
 
-const UprightBands = ({ strip, stage, page, nextUp, notices, action, dock, nav, children }: Bands) => {
+const UprightBands = ({ strip, purse, stage, page, nextUp, notices, action, dock, nav, children }: Bands) => {
   const bar = useRef<HTMLDivElement>(null);
   // A sheet stands on the place bar: its top, from the screen's bottom.
   const foot = useEdge(bar, (rect) => window.innerHeight - rect.top + BAND_GAP);
@@ -52,7 +54,7 @@ const UprightBands = ({ strip, stage, page, nextUp, notices, action, dock, nav, 
     >
       <div {...HUD_TOP_MARK} className="flex flex-col gap-1.5">
         <div className="relative">{strip}</div>
-        <div data-next-up>{nextUp}</div>
+        <TopRow nextUp={nextUp} purse={purse} />
       </div>
       <div className="relative min-h-0 flex-1">{stage}</div>
       <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5">
@@ -65,7 +67,7 @@ const UprightBands = ({ strip, stage, page, nextUp, notices, action, dock, nav, 
   );
 };
 
-const SidewaysBands = ({ strip, stage, page, nextUp, notices, action, dock, nav, children }: Bands) => {
+const SidewaysBands = ({ strip, purse, stage, page, nextUp, notices, action, dock, nav, children }: Bands) => {
   const top = useRef<HTMLDivElement>(null);
   // A sheet stands in the column under the strip and Next up.
   const sheetTop = useEdge(top, (rect) => rect.bottom + BAND_GAP);
@@ -82,7 +84,7 @@ const SidewaysBands = ({ strip, stage, page, nextUp, notices, action, dock, nav,
       <div {...HUD_COLUMN_MARK} className="flex min-h-0 w-hud-column flex-col gap-1.5">
         <div ref={top} className="flex flex-col gap-1.5">
           <div className="relative">{strip}</div>
-          <div data-next-up>{nextUp}</div>
+          <TopRow nextUp={nextUp} purse={purse} />
         </div>
         <div className="flex flex-col gap-1.5">{notices}</div>
         {page ? <PageBand className="flex-1">{page}</PageBand> : <UnderSheet action={action} dock={dock} />}
@@ -91,6 +93,16 @@ const SidewaysBands = ({ strip, stage, page, nextUp, notices, action, dock, nav,
     </div>
   );
 };
+
+/** Under the strip: Next up's line, and the purse at its right. */
+const TopRow = ({ nextUp, purse }: { nextUp: ReactNode; purse: ReactNode }) => (
+  <div className="flex items-start gap-1.5">
+    <div data-next-up className="min-w-0 flex-1">
+      {nextUp}
+    </div>
+    {purse}
+  </div>
+);
 
 /** A nav page's place: as tall as its band gives, scrolling inside. */
 const PageBand = ({ className, children }: { className: string; children: ReactNode }) => (

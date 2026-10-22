@@ -2632,6 +2632,7 @@ export default class WorldmapScene extends WarpTravel {
    */
   private showTileFacts(hexCoords: HexPosition): void {
     this.onHexagonMouseMove({ hexCoords, position: getWorldPositionForHex(hexCoords) });
+    this.pointerOrderTip.hold(hexCoords);
     this.factsShown = true;
   }
 
@@ -2812,6 +2813,9 @@ export default class WorldmapScene extends WarpTravel {
       if (this.worldSpatialProjection.getStructuresAtHex(target).some((site) => site.clearedSite))
         this.openTargetCardForSelectedArmy(target);
       this.state.updateEntityActionHoveredHex(hexCoords);
+      // The order's line stands at its tile, marking the tile the bar's verb (or a second tap) sends to.
+      this.showTileFacts(hexCoords);
+      return true;
     } else if (order === "attack" && path) {
       this.onArmyAttack(path, selectedEntityId);
     } else if (order === "site-out-of-reach") {

@@ -81,9 +81,9 @@ export const NextUpView = ({
         type="button"
         aria-label={`Next up: ${stepLine(step)}`}
         onClick={() => setOpen(true)}
-        className="ui ui-panel pointer-events-auto min-h-11 justify-center px-3 text-left"
+        className="ui ui-panel pointer-events-auto min-h-11 w-full justify-center px-3 text-left"
       >
-        <span className="flex items-center gap-2">
+        <span className="flex min-w-0 items-center gap-2">
           <Icon name="target" size={20} />
           <span className="min-w-0 flex-1 truncate text-hud-body text-hud-ink">{stepLine(step)}</span>
           <Icon name="chevron-up" size={16} />

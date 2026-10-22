@@ -70,19 +70,19 @@ export const TransferChoice = ({
   const { tapped } = choice;
   return (
     <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="flex flex-col gap-1.5">
-      {tapped && (
-        <span className="text-hud-label text-hud-muted">{TRANSFER_TROOPS.beside(tapped.label, picked.label)}</span>
-      )}
-      <span className="grid grid-cols-[auto_1fr_1fr] gap-1.5">
-        <HudButton kind="quiet" onClick={() => useUIStore.getState().updateEntityActionHoveredHex(null)}>
+      <span className="flex items-center justify-between gap-2">
+        <span className="text-hud-label text-hud-muted">
+          {tapped ? TRANSFER_TROOPS.beside(tapped.label, picked.label) : TRANSFER_TROOPS.title}
+        </span>
+        <HudButton kind="quiet" size="sm" onClick={() => useUIStore.getState().updateEntityActionHoveredHex(null)}>
           {CANCEL}
         </HudButton>
-        {tapped ? (
+      </span>
+      <span className={tapped ? "grid grid-cols-2 gap-1.5" : "grid"}>
+        {tapped && (
           <HudButton kind="secondary" icon="army" onClick={() => selectArmy(tapped.explorerId)}>
             {TRANSFER_TROOPS.pickArmy(tapped.label)}
           </HudButton>
-        ) : (
-          <span />
         )}
         <HudButton kind="primary" icon="transfer" onClick={() => requestOrderAt(choice.at)}>
           {TRANSFER_TROOPS.title}

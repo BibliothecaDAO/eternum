@@ -54,11 +54,11 @@ export const PlaceNav = ({
       <HudPanel
         collapsible={false}
         className="flex-1"
-        bodyClassName={cn("flex items-stretch justify-between gap-0.5", sideways ? "h-full w-16 flex-col" : "min-h-14")}
+        bodyClassName={cn("flex items-stretch justify-between gap-0.5", sideways ? "h-full flex-col" : "min-h-14")}
       >
         {slot("map", "map", MAP)}
         {slot("realm", "realm", REALM, realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />)}
-        <i aria-hidden className="w-px shrink-0 self-stretch bg-hud-line" />
+        <i aria-hidden className={cn("shrink-0 self-stretch bg-hud-line", sideways ? "h-px" : "w-px")} />
         {researchDot !== undefined &&
           slot("research", "research", RESEARCH, researchDot && <i className={cn("size-2 rounded-full", DOTS.lit)} />)}
         {slot("log", "chronicles", LOG, count(events))}
@@ -87,7 +87,7 @@ const Slot = ({
     aria-current={lit ? "page" : undefined}
     onClick={onClick}
     className={cn(
-      "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-hud-strong",
+      "flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-hud-strong",
       "border-b-2",
       lit ? "border-hud-gold bg-hud-divider text-hud-gold" : "border-transparent text-hud-muted",
     )}
