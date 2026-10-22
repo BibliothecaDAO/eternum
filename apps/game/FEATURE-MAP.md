@@ -678,9 +678,9 @@ the realm), and the screen comes back up on the new day. Opening the game after 
 the new land in the dark; Continue lifts it. A day not played, or a visit to another realm, passes without the summary.
 Code: `hooks/store/use-day-end-store.ts`, `ExpeditionRollover`, `rollover/day-done.tsx` and `day-end-screen.tsx`.
 
-`/lab/day-end` plays it through the same moment, screen and card on lab land (`arrival=later`; a narrow window plays the
-phone); `pnpm --dir apps/game prove:day-end --port 4199 --out <fresh-dir>` proves both arrivals on a desktop and a phone
-on the GPU.
+`/lab/day-end` turns the day with the same rollover (`watchDayTurn`) on a lab clock over the game's Frontier day facts,
+and plays the same moment, screen and card on lab land (`case=ordinary|together|late-block|later`; a narrow window plays
+the phone); `pnpm --dir apps/game prove:day-end --port 4199 --out <fresh-dir>` proves every case on the GPU.
 
 ## Cleared Frontier sites
 

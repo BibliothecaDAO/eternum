@@ -11,101 +11,133 @@ import {
   isExpeditionRealm,
   Position,
   readExpeditionRules,
+  type ExpeditionRules,
 } from "@bibliothecadao/eternum";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { useGame } from "@/hooks/context/game-context";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
+
+/** The game's clocks, facts and map, as the day's turn reads and moves them. */
+export interface DayTurnWorld {
+  store: Pick<NativeFactStore, "get" | "require" | "structuresOwnedBy">;
+  gameId: number;
+  player: string | null;
+  /** Chain time: the day turns on it. */
+  chainNow(): number;
+  /** The last block's time: the map's sites are read on it. */
+  blockNow(): number;
+  /** Re-projects the map on the block clock's day. */
+  reproject(): void;
+  /** Sends the camera to a position on the map. */
+  navigate(position: Position): void;
+}
+
+const POLL_MS = 1_000;
 
 /**
  * The one place a Frontier day turns over: the realm moves to its new region, the map is re-projected, and the camera
  * goes to it. For a player with a realm the turn is a moment (use-day-end-store): the mist rolls over the land that is
- * ending, and the new land comes in behind the black the screen drops into, so the cut never shows. Herald's scope
- * delivers the new day's rows; this only reacts to the clock.
+ * ending, and the new land comes in behind the black the screen drops into. Herald's scope delivers the new day's rows;
+ * this only reacts to the clocks.
  *
  * Two clocks are read on purpose: the turn runs on chain time, which leads the last block, but the map is re-projected
  * when the block clock turns, since a realm's site (structureMapPosition) is read from the block clock. Re-projecting
- * on chain time placed every realm on the day that was ending and left it there all day. So the black holds until the
- * block clock has turned too.
+ * on chain time placed every realm on the day that was ending and left it there all day.
+ *
+ * The land's work and the moment's screen are kept apart. A re-projection or a camera move that is due stays due until
+ * it is done, whatever the moment shows: it waits only while the mist rolls, so the land never changes in view. The
+ * black waits for it, and when the black's longest hold lifts the screen first, the work still lands when the block
+ * clock catches up.
  */
+export function watchDayTurn(world: DayTurnWorld): () => void {
+  let chainDay: number | null | undefined;
+  let blockDay: number | null | undefined;
+  let reprojectDue = false;
+  let siteDue: Position | null = null;
+
+  /** Brings the new land in once nothing would see it change: re-projected, then the camera on the realm's new site. */
+  const bringInTheNewLand = () => {
+    const moment = useDayEndStore.getState();
+    if (mistRolls(moment)) return;
+    if (reprojectDue) {
+      reprojectDue = false;
+      world.reproject();
+    }
+    // The site is on the chain clock's day; the camera goes once the map stands on that day too.
+    if (siteDue && blockDay === chainDay) {
+      world.navigate(siteDue);
+      siteDue = null;
+    }
+    if (moment.phase === "black" && !reprojectDue && !siteDue) moment.markLandReady();
+  };
+
+  const turnTheDay = (rules: ExpeditionRules) => {
+    const realm = world.player
+      ? [...world.store.structuresOwnedBy(world.gameId, BigInt(world.player))].find((structure) =>
+          isExpeditionRealm(world.store, structure),
+        )
+      : undefined;
+    if (!realm) return;
+    // The turn fires on chain time, which runs ahead of the last block's timestamp, so the announced site is computed
+    // for the day that is beginning rather than read through structureMapPosition's block clock.
+    const site = expeditionRealmSite(rules, entityHomeNamespace(realm.entity_id), world.chainNow());
+    if (!site) return;
+    siteDue = Position.fromContract({ x: site.col, y: site.row });
+    useDayEndStore.getState().begin("live");
+  };
+
+  const check = () => {
+    const rules = readExpeditionRules(world.store, world.gameId);
+    if (!rules) return;
+    const chain = seasonDay(rules, world.chainNow());
+    const block = seasonDay(rules, world.blockNow());
+    if (chainDay === undefined) {
+      chainDay = chain;
+      blockDay = block;
+      return;
+    }
+    // The chain clock's turn is met first: both clocks turning between two looks still roll the mist before the
+    // re-projection is let through.
+    if (chain !== chainDay) {
+      chainDay = chain;
+      if (chain !== null) turnTheDay(rules);
+    }
+    if (block !== blockDay) {
+      blockDay = block;
+      reprojectDue = true;
+    }
+    bringInTheNewLand();
+  };
+
+  check();
+  const id = setInterval(check, POLL_MS);
+  const unsubscribe = useDayEndStore.subscribe((moment, before) => {
+    if (moment.phase !== before.phase) bringInTheNewLand();
+  });
+  return () => {
+    clearInterval(id);
+    unsubscribe();
+  };
+}
+
+/** The day's turn on the game's own clocks, facts and map. */
 export const ExpeditionRollover = () => {
   const { setup } = useGame();
-  const address = useAccountStore((state) => state.account?.address ?? null);
+  const player = useAccountStore((state) => state.account?.address ?? null);
   const navigateToMapView = useNavigateToMapView();
-  const seasonDayRef = useRef<number | null | undefined>(undefined);
-  const projectedDayRef = useRef<number | null | undefined>(undefined);
-  /** The new day's site, kept for the black. */
-  const newSite = useRef<Position | null>(null);
-  /** The block clock turned while the mist rolled: the map is re-projected behind the black. */
-  const reprojectBehindTheBlack = useRef(false);
 
   useEffect(() => {
-    const gameId = configManager.getActiveGameId();
-    const reproject = () => getActiveGameSyncRuntime()?.getWorldSpatialProjection()?.rebuild();
-
-    /** Behind the black: the map re-projected once both clocks agree, the camera on the realm, then the black may lift. */
-    const bringInTheNewLand = () => {
-      const moment = useDayEndStore.getState();
-      if (moment.phase !== "black" || moment.landReady) return;
-      if (projectedDayRef.current !== seasonDayRef.current) return;
-      if (reprojectBehindTheBlack.current) {
-        reprojectBehindTheBlack.current = false;
-        reproject();
-      }
-      if (newSite.current) navigateToMapView(newSite.current);
-      newSite.current = null;
-      moment.markLandReady();
-    };
-
-    const check = () => {
-      const rules = readExpeditionRules(setup.store, gameId);
-      if (!rules) return;
-      const now = useChainTimeStore.getState().getNowSeconds();
-      const projectedDay = seasonDay(rules, getBlockTimestamp().currentBlockTimestamp);
-      if (projectedDayRef.current !== undefined && projectedDay !== projectedDayRef.current) {
-        if (mistRolls(useDayEndStore.getState())) reprojectBehindTheBlack.current = true;
-        else reproject();
-      }
-      projectedDayRef.current = projectedDay;
-      const day = seasonDay(rules, now);
-      if (seasonDayRef.current === undefined) {
-        seasonDayRef.current = day;
-        return;
-      }
-      if (day !== seasonDayRef.current) {
-        seasonDayRef.current = day;
-        if (day !== null) turnTheDay(rules, now);
-      }
-      bringInTheNewLand();
-    };
-
-    const turnTheDay = (rules: NonNullable<ReturnType<typeof readExpeditionRules>>, now: number) => {
-      const realm = address
-        ? [...setup.store.structuresOwnedBy(gameId, BigInt(address))].find((structure) =>
-            isExpeditionRealm(setup.store, structure),
-          )
-        : undefined;
-      if (!realm) return;
-      // The turn fires on chain time, which runs ahead of the last block's timestamp, so the announced site is
-      // computed for the day that is beginning rather than read through structureMapPosition's block clock.
-      const site = expeditionRealmSite(rules, entityHomeNamespace(realm.entity_id), now);
-      if (!site) return;
-      const position = Position.fromContract({ x: site.col, y: site.row });
-      useDayEndStore.getState().begin("live");
-      // A moment already showing (a later arrival's summary) has no black to hide the cut behind: the camera goes now.
-      if (useDayEndStore.getState().phase === "veil") newSite.current = position;
-      else navigateToMapView(position);
-    };
-
-    check();
-    const id = window.setInterval(check, 1_000);
-    const unsubscribe = useDayEndStore.subscribe((moment, before) => {
-      if (moment.phase !== before.phase) bringInTheNewLand();
+    return watchDayTurn({
+      store: setup.store,
+      gameId: configManager.getActiveGameId(),
+      player,
+      chainNow: () => useChainTimeStore.getState().getNowSeconds(),
+      blockNow: () => getBlockTimestamp().currentBlockTimestamp,
+      reproject: () => getActiveGameSyncRuntime()?.getWorldSpatialProjection()?.rebuild(),
+      navigate: navigateToMapView,
     });
-    return () => {
-      window.clearInterval(id);
-      unsubscribe();
-    };
-  }, [address, navigateToMapView, setup.store]);
+  }, [player, navigateToMapView, setup.store]);
 
   return null;
 };

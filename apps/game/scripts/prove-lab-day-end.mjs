@@ -1,10 +1,12 @@
 /**
- * Proves the Frontier day end (`/lab/day-end`) the way a player meets it, through the game's own moment, screen and
- * card: on the machine's GPU, from the day as it was played to the new day, as a player in the game when the day ends
- * and as one who opens it later, on a desktop and on a phone (390 × 844). Each run leaves a still at each beat, and
- * `transcript.json` holds every phase seen, each still and every check. It records no video: a recording opens the page
- * a second time in its own context. It starts its own dev client on `--port`, or drives the one `--base-url` names, and
- * closes its browser however the run ends.
+ * Proves the Frontier day end in its lab (`/lab/day-end`) the way a player meets it: the game's rollover turns the day
+ * on a lab clock over the game's Frontier day facts, and its moment, screen and card play over the lab's land, on the
+ * machine's GPU. It plays the ordinary turn, both clocks turning at once, the block clock arriving after the black's
+ * longest hold and a later arrival, on a desktop and on a phone (390 × 844); Space's skip, Continue, and a drag on the
+ * map once the new day is up. It checks what the rollover did to the map and in which phase. Each run leaves a still at
+ * each beat, and `transcript.json` holds every phase, every rollover call and every check. It starts its own dev client
+ * on `--port` (scripts/lib/dev-client.mjs, as the lab's proofs do), or drives the one `--base-url` names, and closes
+ * its browser however the run ends.
  *
  *   pnpm --dir apps/game prove:day-end --port 4199 --out <fresh-dir>
  */
@@ -24,15 +26,9 @@ const port = arg("--port", "4199");
 const out = resolve(arg("--out", `.context/day-end-proof-${Date.now()}`));
 const GPU_FLAGS =
   "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu";
-
-/** Each run: when the player arrives, the screen, and the beats to still, in seconds from the day's end. */
-const RUNS = [
-  { arrival: "live", screen: "desktop", beats: [1.2, 2.4, 3.6, 8] },
-  { arrival: "later", screen: "desktop", beats: [0.8] },
-  { arrival: "live", screen: "phone", beats: [1.2, 3.6] },
-  { arrival: "later", screen: "phone", beats: [0.8] },
-];
 const SCREENS = { desktop: [1920, 1080], phone: [390, 844] };
+/** The black's longest hold and the dawn, in the game's own timing (use-day-end-store DAY_END_TIMING), plus slack. */
+const PAST_THE_HOLD_MS = (10 + 1.4 + 2) * 1000;
 
 mkdirSync(out, { recursive: false });
 const transcript = { runs: [], checks: [], adapter: null };
@@ -42,68 +38,115 @@ const check = (condition, claim) => {
   transcript.checks.push({ claim, passed: Boolean(condition) });
   if (!condition) throw new Error(`Failed: ${claim}`);
 };
-const read = (browser, expression) => browser.read(`JSON.stringify(${expression})`);
-const phase = (browser) => read(browser, "document.querySelector('[data-day-end-lab]')?.dataset.phase");
+const status = (browser) => browser.read("JSON.stringify(window.__dayEnd.status())");
+const phaseIs = (...phases) =>
+  `${JSON.stringify(phases)}.includes(document.querySelector('[data-day-end-lab]')?.dataset.phase)`;
 const waitFor = (browser, expression, timeout = 30000) =>
   browser.run(["wait", "--fn", expression, "--timeout", String(timeout)]);
-const summaryOnScreen = "Boolean(document.querySelector('[data-day-end] section[aria-label=\"Day 1 done\"]'))";
+const SUMMARY_UP = "Boolean(document.querySelector('[data-day-end] section[aria-label=\"Day 1 done\"]'))";
+const MAP_CLEAR =
+  "(() => { const c = document.querySelector('canvas'); const r = c.getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === c; })()";
 
-function open(browser, urlBase, run) {
-  const [width, height] = SCREENS[run.screen];
-  const url = `${urlBase}/lab/day-end?${new URLSearchParams({ arrival: run.arrival, capture: "1", panel: "0" })}`;
+function open(browser, urlBase, how, screen) {
+  const [width, height] = SCREENS[screen];
+  const url = `${urlBase}/lab/day-end?${new URLSearchParams({ case: how, capture: "1", panel: "0" })}`;
   browser.run(["set", "viewport", String(width), String(height)]);
   browser.run(["open", url, "--ignore-https-errors"]);
   waitFor(browser, "document.querySelector('[data-day-end-lab]')?.dataset.ready === 'true'", 90000);
-  // The land, its spires and its realm settle before the day ends.
+  // The land, its spires and its realm settle, and the rollover takes its first look at the clocks.
   browser.run(["wait", "2500"]);
   return url;
 }
 
-/** Plays one run from the day as it was played to the new day; stills land on the beats and after each change. */
-function play(browser, urlBase, run) {
-  const name = `${run.screen}-${run.arrival}`;
-  const record = { name, url: open(browser, urlBase, run), stills: [], load: loadavg()[0] };
+/** One run: the day ends as `how` says, the summary is read and continued, and the new day comes up. */
+function play(browser, urlBase, { how, screen, skip = false }) {
+  const name = `${screen}-${how}`;
+  const record = { name, url: open(browser, urlBase, how, screen), stills: [], load: loadavg()[0] };
   const still = (label) => {
     const file = `${name}-${String(record.stills.length).padStart(2, "0")}-${label}.png`;
     browser.screenshot(join(out, file));
-    record.stills.push({ label, phase: phase(browser), file });
+    record.stills.push({ label, status: status(browser), file });
   };
   still("day");
-  const endedAt = Date.now();
-  browser.eval(`window.__dayEnd.endTheDay(${JSON.stringify(run.arrival)}); true`);
-  for (const second of run.beats) {
-    browser.run(["wait", String(Math.max(0, Math.round(second * 1000 - (Date.now() - endedAt))))]);
-    still(`${second}s`);
+  browser.eval(`window.__dayEnd.endTheDay(${JSON.stringify(how)}); true`);
+  if (how !== "later") {
+    // The rollover looks at the clocks once a second: the turn begins the moment within one look.
+    waitFor(browser, phaseIs("veil"), 5000);
+    browser.run(["wait", "1500"]);
+    still("mist");
+    check(status(browser).events.length === 0, `${name}: the land stays as it was while the mist rolls`);
+    if (skip) {
+      browser.press("Space");
+      browser.run(["wait", "150"]);
+      check(status(browser).phase === "summary", `${name}: Space skips the mist to the summary`);
+      browser.press("Space");
+      check(status(browser).phase === "summary", `${name}: a second Space leaves the summary up`);
+    }
   }
-  waitFor(browser, "document.querySelector('[data-day-end-lab]')?.dataset.phase === 'summary'");
-  check(read(browser, summaryOnScreen), `${name}: the day's summary stands over the map`);
+  waitFor(browser, phaseIs("summary"), 10000);
+  browser.run(["wait", "600"]);
+  still("summary");
+  check(browser.read(SUMMARY_UP), `${name}: the day's summary stands over the map`);
   browser.click("Continue");
   browser.run(["wait", "300"]);
   still("continued");
-  // A still takes a moment, so the dawn may already have handed over to the new day.
-  waitFor(browser, "['dawn', 'day'].includes(document.querySelector('[data-day-end-lab]')?.dataset.phase)");
+  if (how === "late-block") proveLateBlock(browser, name, still);
+  waitFor(browser, phaseIs("dawn", "day"), PAST_THE_HOLD_MS);
   still("dawn");
-  waitFor(browser, "document.querySelector('[data-day-end-lab]')?.dataset.phase === 'day'");
-  browser.run(["wait", "800"]);
+  waitFor(browser, phaseIs("day"));
+  browser.run(["wait", "1500"]);
   still("new-day");
-  check(
-    !read(browser, "Boolean(document.querySelector('[data-day-end]'))"),
-    `${name}: the new day opens clear, the map taking orders again`,
-  );
+  const end = status(browser);
+  if (how !== "later") {
+    const kinds = end.events.map((event) => `${event.kind}@${event.phase}`);
+    const expected = how === "late-block" ? ["reproject@day", "navigate@day"] : ["reproject@black", "navigate@black"];
+    check(
+      JSON.stringify(kinds) === JSON.stringify(expected),
+      `${name}: the rollover re-projected the map and moved the camera ${how === "late-block" ? "when the late block arrived" : "behind the black"} (${kinds.join(", ")})`,
+    );
+  }
+  check(end.onNewLand, `${name}: the new day is up on the realm's new land`);
+  proveMapTakesInput(browser, name);
   transcript.runs.push(record);
 }
 
-/** Space skips the rolling mist to the summary, never past it. */
-function proveSkip(browser, urlBase) {
-  open(browser, urlBase, { arrival: "live", screen: "desktop" });
-  browser.eval("window.__dayEnd.endTheDay('live'); true");
-  browser.run(["wait", "500"]);
-  browser.press("Space");
-  browser.run(["wait", "150"]);
-  check(phase(browser) === "summary", "Space skips the mist to the summary");
-  browser.press("Space");
-  check(phase(browser) === "summary", "a second Space leaves the summary up");
+/** Past the black's longest hold the screen comes up on the old land; the late block still brings the new land in. */
+function proveLateBlock(browser, name, still) {
+  waitFor(browser, phaseIs("day"), PAST_THE_HOLD_MS);
+  const lifted = status(browser);
+  check(lifted.events.length === 0 && !lifted.onNewLand, `${name}: the black lifted at its longest hold, no land yet`);
+  still("held-past");
+  browser.eval("window.__dayEnd.blockArrives(); true");
+  browser.run(["wait", "1800"]);
 }
+
+/** Once the moment is over nothing covers the map, and a drag moves its camera. */
+function proveMapTakesInput(browser, name) {
+  check(!browser.read("Boolean(document.querySelector('[data-day-end]'))"), `${name}: nothing covers the map`);
+  check(browser.read(MAP_CLEAR), `${name}: the map is what a pointer meets`);
+  const before = status(browser).pose.target;
+  const [cx, cy] = browser.read(
+    "JSON.stringify((() => { const r = document.querySelector('canvas').getBoundingClientRect(); return [Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2)]; })())",
+  );
+  browser.run(["batch", `mouse move ${cx} ${cy}`, "mouse down left"]);
+  browser.run(["mouse", "move", String(cx + 120), String(cy + 60), "--steps", "20", "--duration", "500"]);
+  browser.run(["mouse", "up", "left"]);
+  browser.run(["wait", "300"]);
+  const after = status(browser).pose.target;
+  check(
+    Math.hypot(after[0] - before[0], after[2] - before[2]) > 0.5,
+    `${name}: a drag on the map pans its camera on the new day`,
+  );
+}
+
+const RUNS = [
+  { how: "ordinary", screen: "desktop", skip: true },
+  { how: "together", screen: "desktop" },
+  { how: "late-block", screen: "desktop" },
+  { how: "later", screen: "desktop" },
+  { how: "ordinary", screen: "phone" },
+  { how: "later", screen: "phone" },
+];
 
 try {
   await withDevClient({ base, port, out }, async (urlBase) => {
@@ -119,7 +162,6 @@ try {
       );
       check(transcript.adapter && !transcript.adapter.isFallbackAdapter, "the lab renders on a hardware GPU");
       for (const run of RUNS) play(browser, urlBase, run);
-      proveSkip(browser, urlBase);
       const errors = browser.run(["errors"]);
       // A refused GPU frame (a WebGPU validation error) is only a console line, yet it leaves the map black.
       const consoleErrors = browser

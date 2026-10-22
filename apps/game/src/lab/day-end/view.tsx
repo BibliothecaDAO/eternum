@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { useDayEndStore, type DayEndArrival } from "@/hooks/store/use-day-end-store";
+import { useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { SCREENS } from "@/tokens";
 import {
   mountProceduralTerrainDebugRenderer,
@@ -11,20 +11,28 @@ import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
 import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
 
 import { dayEndSummary } from "./fixture";
-import { DayEndStage } from "./stage";
+import { DayEndStage, type DayEndCase } from "./stage";
 import "./view.css";
 
-const ARRIVALS: Record<DayEndArrival, string> = { live: "In the game as the day ends", later: "Opened after it ended" };
+const CASES: Record<DayEndCase, string> = {
+  ordinary: "In the game: the block clock follows",
+  together: "In the game: both clocks at once",
+  "late-block": "In the game: the block clock late",
+  later: "Opened after it ended",
+};
+const isCase = (name: string | null): name is DayEndCase => name !== null && Object.hasOwn(CASES, name);
 
 /**
- * The Frontier day end (`/lab/day-end`), as the game plays it: its moment (use-day-end-store), its screen and card over
- * the lab's land, the spires' veil, the black and the new day's land. `arrival=live|later` sets when the player meets
- * it, and `panel=0` (with `capture=1`) shows nothing but the moment. A window narrower than a desktop plays it as a
- * phone does: the summary a sheet, the realm framed above it.
+ * The Frontier day end (`/lab/day-end`), as the game plays it: the game's rollover turning the day on a lab clock over
+ * the game's Frontier day facts, its moment (use-day-end-store), its screen and card over the lab's land, the spires'
+ * veil, the black and the new day's land. `case=ordinary|together|late-block|later` sets how the day ends, and
+ * `panel=0` (with `capture=1`) shows nothing but the moment. A window narrower than a desktop plays it as a phone
+ * does: the summary a sheet, the realm framed above it.
  */
 export function DayEndLabView() {
   const [params, setParams] = useSearchParams();
-  const arrival: DayEndArrival = params.get("arrival") === "later" ? "later" : "live";
+  const requested = params.get("case");
+  const how: DayEndCase = isCase(requested) ? requested : "ordinary";
   const panel = params.get("panel") !== "0";
   const forceWebGL = params.get("rendererMode") === "webgpu-force-webgl";
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -82,7 +90,7 @@ export function DayEndLabView() {
   // A new choice starts from the day as it was played.
   useEffect(() => {
     if (ready) stage.current?.rest(isPhone());
-  }, [ready, arrival]);
+  }, [ready, how]);
 
   return (
     <main className="day-end-lab" data-day-end-lab data-ready={ready} data-phase={phase}>
@@ -95,10 +103,10 @@ export function DayEndLabView() {
           <h1>Frontier day end</h1>
           <p role="status">{error ?? (!ready ? "Building the land…" : `Phase · ${phase}`)}</p>
           <section>
-            <h2>The player</h2>
-            {(Object.keys(ARRIVALS) as DayEndArrival[]).map((name) => (
-              <button key={name} aria-pressed={arrival === name} onClick={() => setQuery("arrival", name)}>
-                {ARRIVALS[name]}
+            <h2>How the day ends</h2>
+            {(Object.keys(CASES) as DayEndCase[]).map((name) => (
+              <button key={name} aria-pressed={how === name} onClick={() => setQuery("case", name)}>
+                {CASES[name]}
               </button>
             ))}
           </section>
@@ -106,13 +114,29 @@ export function DayEndLabView() {
             <button
               className="primary"
               disabled={!ready || phase !== "day"}
-              onClick={() => stage.current?.endTheDay(arrival)}
+              onClick={() => stage.current?.endTheDay(how)}
             >
               End the day
             </button>
             <button disabled={!ready} onClick={() => stage.current?.rest(isPhone())}>
               Reset
             </button>
+          </section>
+          {how === "late-block" && (
+            <section className="day-end-row">
+              <button disabled={!ready} onClick={() => stage.current?.blockArrives()}>
+                Block arrives
+              </button>
+            </section>
+          )}
+          <section>
+            <h2>What the rollover did</h2>
+            {ready &&
+              (stage.current?.status().events ?? []).map((event, index) => (
+                <p key={index}>
+                  {event.kind} · during {event.phase}
+                </p>
+              ))}
           </section>
           <p className="day-end-help">Space or Esc skips the mist to the summary; Continue goes on into the new day.</p>
         </aside>

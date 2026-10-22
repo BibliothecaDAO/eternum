@@ -10,7 +10,7 @@ import { create } from "zustand";
  * summary, draws it with the black and the way past them, and begins the moment for a player who opens the game after
  * the day ended. The store keeps its own time, so the moment ends even where nothing draws it.
  */
-export type DayEndArrival =
+type DayEndArrival =
   /** In the game as the day ends: the mist rolls over the land that is ending. */
   | "live"
   /** Opened after it ended: the new land is already there, so the summary waits over it in the dark. */

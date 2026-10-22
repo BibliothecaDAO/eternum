@@ -96,7 +96,7 @@ it.each([
   ["/lab/world-fx", "fx"],
   ["/lab/studio?take=battle&gameMode=frontier", "studio"],
   ["/lab/endgame?variation=tide&gameMode=frontier", "endgame"],
-  ["/lab/day-end?arrival=later", "day-end"],
+  ["/lab/day-end?case=late-block", "day-end"],
   ["/lab/characters", "characters"],
   ["/lab/character-benchmark", "benchmark"],
   ["/lab/world", "world"],
