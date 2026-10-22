@@ -1,6 +1,5 @@
 use crate::progression::{ArmyProgress, ArmyProgressionRules};
 use crate::rules::RESOURCE_PRECISION;
-use crate::stamina::StaminaSourceTrait;
 use crate::tests::state::{GameState, TroopObservationTrait};
 use crate::troops::{ArmySlotKey, ExplorerKey, StaminaSource};
 use super::registrar::{day_start, expedition_armies, expedition_home, setup, transfer};
@@ -53,7 +52,7 @@ fn full_merges_keep_the_complete_winner_in_both_directions_and_target_on_ties() 
         let veteran = ArmyProgress { battle: 2, scouting: 2, scouting_kinds: 3, ..crate::progression::initial() };
         write_progress(d, source, ArmyProgress { xp: source_xp, ..veteran });
         write_progress(d, target, ArmyProgress { xp: target_xp, ..veteran });
-        let (winner, loser, winner_slot, loser_slot) = if *source_wins {
+        let (winner, loser, winner_slot, loser_slot) = if source_wins {
             (source, target, 0, 1)
         } else {
             (target, source, 1, 0)
@@ -75,7 +74,7 @@ fn full_merges_keep_the_complete_winner_in_both_directions_and_target_on_ties() 
         assert!(state.explorer(loser).is_none());
         assert_eq!(slot(d, winner, winner_slot).stamina.amount, 7);
         assert_eq!(slot(d, loser, loser_slot).explorer_id, 0);
-        assert_eq!(slot(d, loser, loser_slot).stamina.amount, if *source_wins {
+        assert_eq!(slot(d, loser, loser_slot).stamina.amount, if source_wins {
             80
         } else {
             7
@@ -129,8 +128,8 @@ fn different_logistics_caps_and_exhausted_slots_never_refill_a_merge() {
         let d = setup();
         let (game_id, preset, category) = expedition_home(d);
         let (source, target) = expedition_armies(d, game_id, category);
-        let winning = ArmyProgress { xp: 5000, logistics: *winner_logistics, ..crate::progression::initial() };
-        let losing = ArmyProgress { logistics: *loser_logistics, ..crate::progression::initial() };
+        let winning = ArmyProgress { xp: 5000, logistics: winner_logistics, ..crate::progression::initial() };
+        let losing = ArmyProgress { logistics: loser_logistics, ..crate::progression::initial() };
         write_progress(d, source, winning);
         write_progress(d, target, losing);
         let state = GameState { contract_address: d.games };
@@ -138,18 +137,18 @@ fn different_logistics_caps_and_exhausted_slots_never_refill_a_merge() {
         let maximum = crate::progression::stamina_max(winning, kind, preset.rules.troop_stamina_config);
         let other_max = crate::progression::stamina_max(losing, kind, preset.rules.troop_stamina_config);
         timers(d, source, maximum, 0);
-        timers(d, target, if *tired {
+        timers(d, target, if tired {
             0
         } else {
             other_max
         }, 0);
         assert!(execute_in_game(d, game_id, transfer(source, target, 3), 360));
-        assert_eq!(slot(d, source, 0).stamina.amount, if *tired {
+        assert_eq!(slot(d, source, 0).stamina.amount, if tired {
             0
         } else {
             core::cmp::min(maximum, other_max)
         });
-        assert_eq!(slot(d, target, 1).stamina.amount, if *tired {
+        assert_eq!(slot(d, target, 1).stamina.amount, if tired {
             0
         } else {
             other_max
@@ -190,7 +189,7 @@ fn a_loaded_loser_cannot_be_destroyed_in_either_merge_direction() {
         let d = setup();
         let (game_id, _, category) = expedition_home(d);
         let (source, target) = expedition_armies(d, game_id, category);
-        let (winner, loser) = if *source_wins {
+        let (winner, loser) = if source_wins {
             (source, target)
         } else {
             (target, source)
