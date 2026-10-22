@@ -432,8 +432,8 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 | Camp                    | Map → select a discovered canvas camp. Its standard and roof edging show ownership.                                                                                             |
 | Village                 | Map → select a discovered Canvas & Thatch village. The yard standard and tent edging show ownership; local views use the same model.                                            |
 | Beasts                  | Frontier Map → select a beast encounter. Weak and stronger bands both scale with depth; both are below the other site guards.                                                   |
-| Shrine                  | Frontier Map → select a discovered sun arch. Its site card offers the attribute reward when eligible; use removes the site.                                                     |
-| Well                    | Frontier Map → select a discovered stone well. Its site card offers stamina when eligible; use removes the site.                                                                |
+| Shrine                  | Frontier Map → select an army beside a discovered sun arch → right-click it (press and hold on a phone): Use, +XP, the army stays. Tap it for its card and Use, army kept.      |
+| Well                    | Frontier Map → select an army beside a discovered stone well → right-click it (hold on a phone): Use, +stamina; the hover warns at a full bar. Tap it for its card, army kept.  |
 | Spire                   | Frontier Map → tap your lit spire (army selected or beside it): each researched depth, its stamina, Enter, and that the army stays there for the day.                           |
 | Ownership and placement | `/lab` → Building model → choose an outpost → Ownership where available → Place on selected tile → Focus selected tile. Biome and Fog controls exercise terrain and visibility. |
 
@@ -442,6 +442,12 @@ the lab's game on a fixture (`/lab/game?scenario=spire`, `src/lab/game/`): the g
 selected, the spire found by its hover (Enter a depth) and tapped, Ethereal II entered, the EnterDepth command recorded
 and the army shown in Ethereal II; add `--viewport 390x844` for a phone. No live game, account or transaction is
 involved.
+
+`/lab/map-labels?sites=1` shows both on the lab's drawn world: an army with a Shrine and a Well beside it (and a Shrine
+three tiles off), under the world map's own input and handlers. Hover a site for its order line; right-click it (hold on
+a phone) to use it; click it for its card with the army kept. Each use is the InteractSite call the provider builds,
+recorded where the game would sign it (`window.__siteUseLab`); the site then goes.
+`src/three/scenes/worldmap-site-use.test.tsx` runs the same handlers as the regression test.
 
 With the local client running, open `/lab?evidence=/absolute/capture/directory` and run
 `scripts/outposts/prove-runtime.playwright.js` through the browser connection with the page as its argument (remove the

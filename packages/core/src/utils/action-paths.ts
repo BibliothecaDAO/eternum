@@ -17,6 +17,8 @@ export enum ActionType {
   Help = "help",
   Explore = "explore",
   Chest = "chest",
+  /** A site beside the army that it uses where it stands: a shrine or a well. */
+  UseSite = "use_site",
   CreateArmy = "create_army",
   /** Into one of the realm's depths, from beside its spire; the spire's card picks which. */
   EnterDepth = "enter_depth",

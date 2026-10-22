@@ -29,20 +29,20 @@ export const pinsOrder = (path: ActionPath[] | undefined): boolean => {
 
 /**
  * A tap opens the selected army's spire card or previews its order. On a phone, tapping the pinned tile again sends
- * it, a friendly neighbour offers transfer, and a refused tile explains why. Standing sites keep the army as actor.
+ * it, a friendly neighbour offers transfer, and a refused tile explains why. Sites keep the army as actor.
  */
 type TapOrder = "pin" | "go" | "attack" | "transfer" | "site-card" | "why";
 
 export const orderOnTap = ({
   path,
   armySelected,
-  standingSite,
+  site,
   ownSpire,
   hud,
 }: {
   path: ActionPath[] | undefined;
   armySelected: boolean;
-  standingSite: boolean;
+  site: boolean;
   /** The tile is the selected army's realm's spire today. */
   ownSpire: boolean;
   /** Where the HUD carries the verb: whether this tile is the order already pinned, and whether the rules refused one. */
@@ -53,7 +53,7 @@ export const orderOnTap = ({
   const actionType = path && ActionPaths.getActionType(path);
   if (actionType === ActionType.Attack) return "attack";
   if (hud && actionType === ActionType.Help) return "transfer";
-  if (armySelected && standingSite) return "site-card";
+  if (armySelected && site) return "site-card";
   return hud?.refused ? "why" : null;
 };
 
