@@ -62,6 +62,7 @@ const line = (order: Partial<Parameters<typeof orderTip>[0]>) => {
     explored: true,
     refusal: undefined,
     staminaWait: undefined,
+    site: undefined,
     ...order,
   });
   return tip ? <LabTip line={tip.line} cost={tip.cost ?? undefined} /> : null;

@@ -134,10 +134,15 @@ const useSeasonListRows = (
   };
 };
 
+/**
+ * Each realm's rank and deepest reach as the board's own entry gives them, whether or not the realm is streamed to this
+ * viewer (Herald reads both from the realm's Structure row).
+ */
 const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow => ({
   key: entry.address,
   rank: entry.rank,
   order: entry.order,
+  realm: { level: entry.level, reach: entry.deepest_depth },
   name: (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
       <PlayerSeatMark account={entry.address} name={names.text(entry.address)} />

@@ -2,7 +2,7 @@ import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPill } from "@/ui/design-system/kit/hud-elements";
-import { DAY, dayEnds, dayLeft, phraseText, tomorrowLasts } from "@/ui/design-system/kit/words";
+import { DAY, dayEnds, dayLeft, phraseText, TODAY, tomorrowLasts } from "@/ui/design-system/kit/words";
 import { ClockSpent, useGameFinished } from "@/ui/features/world/containers/top-header/game-clock";
 import { GameFinishedPill } from "@/ui/features/world/containers/top-header/game-finished-pill";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
@@ -10,10 +10,19 @@ import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import { dayClock, type DayClock } from "./day-clock";
 import { STORE_TONES } from "./status-strip";
 
-/** Frontier's clock in the top bar, its one day timer: today on the season's calendar, or the finished game's pill. */
-export const FrontierDayClock = ({ rules }: { rules: ExpeditionRules }) => {
+/**
+ * Frontier's clock in the top bar, its one day timer: today on the season's calendar, which opens Today, the day's
+ * report (the owner, 22 October: "The day opening up the report is great"), or the finished game's pill.
+ */
+export const FrontierDayClock = ({ rules, onOpenToday }: { rules: ExpeditionRules; onOpenToday: () => void }) => {
   const clock = dayClock(rules, useNowSeconds());
-  return useGameFinished() ? <GameFinishedPill /> : <DayPill clock={clock} />;
+  const finished = useGameFinished();
+  if (finished) return <GameFinishedPill />;
+  return (
+    <button type="button" aria-label={TODAY} onClick={onOpenToday} className="pointer-events-auto rounded-full">
+      <DayPill clock={clock} />
+    </button>
+  );
 };
 
 /**

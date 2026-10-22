@@ -20,6 +20,8 @@ export class PointerOrderTip {
   private taken = false;
   /** A refused order's words, said at its tile in place of the tile's line until the pointer moves to another tile. */
   private refusal: string | null = null;
+  /** A finger asked for the line (a hold, a tap that pinned the order): a touch screen draws only such a line. */
+  private held = false;
 
   /**
    * `place` names the tile's order, or why none, and where its line stands now; null where there is no line. `gone` is
@@ -42,6 +44,17 @@ export class PointerOrderTip {
     this.hex = hex;
     this.taken = false;
     this.refusal = null;
+    this.held = false;
+    this.say();
+  }
+
+  /**
+   * A finger asked for the tile's line (owner, 22 October 2026: mobile direction A): a hold, or a tap that pinned the
+   * order there. It stands, held, until the pointer is said to be elsewhere.
+   */
+  hold(hex: HexPosition): void {
+    this.point(hex);
+    this.held = true;
     this.say();
   }
 
@@ -80,7 +93,7 @@ export class PointerOrderTip {
   private say(): void {
     const tip = this.hex && (this.refusal === null ? this.place(this.hex) : this.placeLine(this.hex, this.refusal));
     if (!tip) this.gone();
-    showOrderTip(tip);
+    showOrderTip(tip, this.held);
   }
 }
 
@@ -97,7 +110,7 @@ const showsAnotherTip = (): boolean => {
  * A highlighted tile's name on the app's one tooltip, as a chip's name is: the map has no element under the pointer,
  * so the scene says the line and where it stands. Null takes the line away, and only the line.
  */
-function showOrderTip(tip: PlacedOrderTip | null): void {
+function showOrderTip(tip: PlacedOrderTip | null, held = false): void {
   const store = useTooltipStore.getState();
   if (!tip) {
     if (!showsAnotherTip()) store.setTooltip(null);
@@ -112,6 +125,7 @@ function showOrderTip(tip: PlacedOrderTip | null): void {
       </>
     ),
     fixed: tip.at,
+    held,
   };
   store.setTooltip(shown);
 }

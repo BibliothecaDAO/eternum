@@ -15,6 +15,7 @@ import {
   HudIconButton,
   HudRow,
   HudSelect,
+  HudSheet,
   HudSlider,
   HudTableRow,
   HudTabs,
@@ -496,6 +497,28 @@ describe("an event row", () => {
     expect(host.querySelector("button")).toBeNull();
     expect(host.querySelector(".ui-event__time")).toBeNull();
     expect(host.textContent).toBe("Offline");
+  });
+});
+
+describe("a sheet (owner, 22 October 2026: mobile direction A)", () => {
+  it("draws only its panel, so a tap beside it reaches the stage and leaves it open", () => {
+    const close = vi.fn();
+    const stageTapped = vi.fn();
+    act(() =>
+      root.render(
+        <>
+          <button type="button" aria-label="Map" onClick={stageTapped} />
+          <HudSheet label="Research" onClose={close}>
+            tree
+          </HudSheet>
+        </>,
+      ),
+    );
+    expect([...host.children].map((child) => child.getAttribute("aria-label"))).toEqual(["Map", "Research"]);
+    act(() => host.querySelector<HTMLButtonElement>('[aria-label="Map"]')!.click());
+    expect([stageTapped.mock.calls.length, close.mock.calls.length]).toEqual([1, 0]);
+    act(() => host.querySelector<HTMLButtonElement>('section[aria-label="Research"] [aria-label="Close"]')!.click());
+    expect(close).toHaveBeenCalledTimes(1);
   });
 });
 

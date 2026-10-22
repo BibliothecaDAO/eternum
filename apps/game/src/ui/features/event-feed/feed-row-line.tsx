@@ -23,9 +23,10 @@ export const headlineIcon = (type: HeadlineType): IconMeaning => HEADLINE_ICONS[
 
 /**
  * One story's row, in the strip or the Log: its kind's painting, the Log's own sentence for it (with what came of it),
- * and its time; it opens where the story happened (its army, for an opened crate).
+ * and its time, in gold when it is the player's own among the world's; it opens where the story happened (its army,
+ * for an opened crate).
  */
-export const FeedRowLine = ({ event }: { event: ProcessedStoryEvent }) => {
+export const FeedRowLine = ({ event, own = false }: { event: ProcessedStoryEvent; own?: boolean }) => {
   const open = useStoryOpener(event);
   const text = event.presentation.title;
   return (
@@ -34,7 +35,7 @@ export const FeedRowLine = ({ event }: { event: ProcessedStoryEvent }) => {
       icon={storyIcon(event.story)}
       onOpen={open ?? undefined}
     >
-      {text}
+      {own ? <span className="text-hud-gold">{text}</span> : text}
     </HudEventRow>
   );
 };

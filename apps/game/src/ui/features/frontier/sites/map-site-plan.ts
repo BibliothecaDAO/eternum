@@ -1,5 +1,7 @@
+import { formatAmount, TileOccupier } from "@bibliothecadao/types";
 import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { getLayerNeighborHexes, TileOccupier } from "@bibliothecadao/types";
+
+import { STAMINA, XP } from "@/ui/design-system/kit/words";
 
 /** The single-use sites a tile can hold. */
 export type MapSiteKind = "Shrine" | "Well";
@@ -8,41 +10,24 @@ export type MapSiteKind = "Shrine" | "Well";
 export const mapSiteKind = (occupierType: number | undefined): MapSiteKind | null =>
   occupierType === TileOccupier.Shrine ? "Shrine" : occupierType === TileOccupier.Well ? "Well" : null;
 
-/** The player's selected army, where it stands and its progress, when it could use a site. */
-export interface MapSiteUser {
-  army: NativeRows["ExplorerTroops"];
-  armyTile: { col: number; row: number; alt: boolean };
-  progress: NativeRows["ArmyProgress"] | undefined;
-}
-
-interface MapSitePlan {
-  kind: MapSiteKind;
-  /** What using it gives: a Shrine its fixed XP, a Well stamina; unknown while the game's XP rules are. */
-  gain: number | undefined;
-  usable: boolean;
-}
+/** What one use gives: a Shrine its fixed XP, a Well stamina; unknown while the game's XP rules are. */
+export const siteGain = (
+  kind: MapSiteKind,
+  rules: NativeRows["ArmyProgressionRules"] | undefined,
+): number | undefined => (kind === "Shrine" ? rules?.fixed_xp : nativeRuleConstants.WELL_STAMINA);
 
 /**
- * A Shrine or Well as its tile card shows it: what one use gives, and whether the selected army can use it now. The
- * contract's own refusals disable it first: a living army on an adjacent tile. Unknown progress keeps a Shrine
- * disabled, since its XP lands on the army's progress.
+ * What a use adds to the army, as the hover names it: a Shrine's XP, or the stamina a Well lands, which never rises
+ * past the army's maximum. A full bar gains nothing, and the line says the Well would be spent for nothing.
  */
-export const readMapSite = (
+export const siteGainLine = (
   kind: MapSiteKind,
-  siteTile: { col: number; row: number; alt: boolean },
-  user: MapSiteUser | null,
-  rules: NativeRows["ArmyProgressionRules"] | undefined,
-): MapSitePlan => ({
-  kind,
-  gain: kind === "Shrine" ? rules?.fixed_xp : nativeRuleConstants.WELL_STAMINA,
-  usable: user !== null && canUse(kind, siteTile, user),
-});
-
-const canUse = (kind: MapSiteKind, siteTile: { col: number; row: number; alt: boolean }, user: MapSiteUser): boolean =>
-  user.army.troops.count > 0n &&
-  isAdjacent(user.armyTile, siteTile) &&
-  (kind === "Well" || user.progress !== undefined);
-
-const isAdjacent = (army: MapSiteUser["armyTile"], site: { col: number; row: number; alt: boolean }): boolean =>
-  army.alt === site.alt &&
-  getLayerNeighborHexes(site.col, site.row, site.alt).some((hex) => hex.col === army.col && hex.row === army.row);
+  gain: number | undefined,
+  stamina: { current: number; max: number } | undefined,
+): string | null => {
+  if (gain === undefined) return null;
+  if (kind === "Shrine") return `+${formatAmount(gain)} ${XP}`;
+  const lands = stamina ? Math.max(0, Math.min(gain, stamina.max - stamina.current)) : gain;
+  if (lands === 0) return `Stamina full: the well would be wasted`;
+  return lands < gain ? `+${formatAmount(lands)} ${STAMINA}, to full` : `+${formatAmount(gain)} ${STAMINA}`;
+};

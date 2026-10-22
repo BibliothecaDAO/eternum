@@ -2,8 +2,8 @@ import { type ActionPath, ActionPaths, ActionType } from "@bibliothecadao/eternu
 
 /**
  * The HUD's verb for the order the player has pinned: a tap on a tile the selected army can explore or move to pins
- * it (the path and its costs show), and the verb asks the world map to run that order. A right-click, or a
- * press-and-hold on a touch screen, runs it at once without the preview.
+ * it (the path and its costs show), and the verb asks the world map to run that order. A mouse right-click runs it
+ * directly. On a Frontier phone, holding a tile shows its facts; site holds use a Shrine or Well or open depth choices.
  */
 export const ORDER_REQUEST_EVENT = "orderAtTileRequest";
 
@@ -28,27 +28,37 @@ export const pinsOrder = (path: ActionPath[] | undefined): boolean => {
 };
 
 /**
- * What a tap on a tile means for the selected army, the same tap for every order: a tile it can explore or move to
- * pins that order (where the HUD carries the verb, it shows the costs and the verb; elsewhere the order's preview opens
- * at the tile with them), a target in its reach opens the attack's preview with its
- * confirm, and a standing site out of its reach still opens that site's card for this army, which says what it lacks.
- * Anything else keeps its own tap.
+ * A tap opens the selected army's spire card or previews its order. On a phone, tapping the pinned tile again sends
+ * it, a friendly neighbour offers transfer, and a refused tile explains why. Sites keep the army as actor.
  */
-type TapOrder = "pin" | "attack" | "site-out-of-reach";
+type TapOrder = "pin" | "go" | "attack" | "transfer" | "site-card" | "why";
 
 export const orderOnTap = ({
   path,
   armySelected,
-  standingSite,
+  site,
+  ownSpire,
+  hud,
 }: {
   path: ActionPath[] | undefined;
   armySelected: boolean;
-  standingSite: boolean;
+  site: boolean;
+  /** The tile is the selected army's realm's spire today. */
+  ownSpire: boolean;
+  /** Where the HUD carries the verb: whether this tile is the order already pinned, and whether the rules refused one. */
+  hud?: { pinned: boolean; refused: boolean };
 }): TapOrder | null => {
-  if (pinsOrder(path)) return "pin";
-  if (path && ActionPaths.getActionType(path) === ActionType.Attack) return "attack";
-  return armySelected && standingSite ? "site-out-of-reach" : null;
+  if (armySelected && ownSpire) return "site-card";
+  if (pinsOrder(path)) return hud?.pinned ? "go" : "pin";
+  const actionType = path && ActionPaths.getActionType(path);
+  if (actionType === ActionType.Attack) return "attack";
+  if (hud && actionType === ActionType.Help) return "transfer";
+  if (armySelected && site) return "site-card";
+  return hud?.refused ? "why" : null;
 };
+
+/** A right-click that a finger's hold gave (the touch recognizer sends a hold as one), not a mouse's. */
+export const isTouchHold = (event: MouseEvent): boolean => (event as PointerEvent).pointerType === "touch";
 
 /**
  * Escape backs out one step. Where the HUD carries the order's verb, the pinned order goes first and the selection

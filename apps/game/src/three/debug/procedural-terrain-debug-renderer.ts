@@ -207,6 +207,8 @@ interface TerrainDebugRendererSurface extends RendererSurfaceLike {
   setAnimationLoop(callback: ((time: number) => void) | null): void;
   setClearColor(color: Color, alpha?: number): void;
   setSize(width: number, height: number, updateStyle?: boolean): void;
+  /** three's renderer lets go of its GPU device asynchronously. */
+  dispose(): Promise<void>;
 }
 
 type TerrainDebugRendererConstructor = new (options: {
@@ -255,8 +257,36 @@ type TerrainVerificationWindow = Window & {
 const CAMERA_DIRECTION = new Vector3(0.24, 0.62, 0.75).normalize();
 const CAMERA_FRAME_PADDING = 0.72;
 
+/** Each canvas's turn: settled once the renderer last mounted on it has let go of its GPU device. */
+const canvasTurns = new WeakMap<HTMLCanvasElement, Promise<void>>();
+
+/**
+ * Mounts the lab's renderer on a canvas, one at a time: a mount waits until the one before on the same canvas is
+ * disposed. React's StrictMode mounts a view twice in development; the first renderer, still building when its view
+ * was cancelled, finished and was disposed while the second drew, and a canvas shared by two GPU devices refused every
+ * later frame (a black map).
+ */
 export async function mountProceduralTerrainDebugRenderer(
   input: MountProceduralTerrainDebugRendererInput,
+): Promise<ProceduralTerrainDebugRendererHandle> {
+  const previous = canvasTurns.get(input.canvas) ?? Promise.resolve();
+  let release: () => void = () => {};
+  canvasTurns.set(
+    input.canvas,
+    previous.then(() => new Promise<void>((resolve) => (release = resolve))),
+  );
+  await previous;
+  try {
+    return await mountOnCanvas(input, () => release());
+  } catch (error) {
+    release();
+    throw error;
+  }
+}
+
+async function mountOnCanvas(
+  input: MountProceduralTerrainDebugRendererInput,
+  released: () => void,
 ): Promise<ProceduralTerrainDebugRendererHandle> {
   const debugWindow = window as TerrainVerificationWindow;
   const verification: NonNullable<TerrainVerificationWindow["__terrainVerification"]> = {
@@ -291,7 +321,7 @@ export async function mountProceduralTerrainDebugRenderer(
         runtime.terrain.dispose();
         runtime.weather.dispose();
         runtime.atmosphere.dispose();
-        runtime.renderer.dispose();
+        void runtime.renderer.dispose().finally(released);
         if (debugWindow.__terrainVerification === verification) {
           resetGameEnd();
           delete debugWindow.__terrainVerification;
@@ -355,6 +385,10 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const background = new Color(TERRAIN_DEEP_FOG_COLOR);
   configureRendererColorOutput(renderer);
   renderer.setPixelRatio(1);
+  // Sized to its canvas before any pass is compiled or drawn: a first frame at the canvas's default 300 × 150 left a
+  // depth buffer that never matched the resized frame, and every later frame was refused (a black map).
+  const [width, height] = canvasSize(input.canvas);
+  renderer.setSize(width, height, false);
   renderer.setClearColor(background, 1);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFShadowMap;
@@ -372,7 +406,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
         : input.localRadius === undefined
           ? createTerrainVerificationRequest(input.sceneId)
           : createLocalTerrainLabRequest(input.localRadius);
-  const camera = new PerspectiveCamera(36, 1, 0.1, 300);
+  const camera = new PerspectiveCamera(36, width / height, 0.1, 300);
   const controls = new MapControls(camera, input.canvas);
   controls.enableDamping = false;
   controls.enabled = !input.captureMode;
@@ -485,7 +519,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
       atmosphere.dispose();
       controls.dispose();
       realmModel?.dispose();
-      renderer.dispose();
+      await renderer.dispose();
       throw error;
     }
   }
@@ -733,10 +767,14 @@ function observeCanvas(canvas: HTMLCanvasElement, runtime: TerrainDebugRuntime):
   return observer;
 }
 
-function resizeRenderer(canvas: HTMLCanvasElement, runtime: TerrainDebugRuntime): void {
+/** The canvas's size on its page, in whole pixels. */
+function canvasSize(canvas: HTMLCanvasElement): [width: number, height: number] {
   const bounds = canvas.getBoundingClientRect();
-  const width = Math.max(1, Math.floor(bounds.width));
-  const height = Math.max(1, Math.floor(bounds.height));
+  return [Math.max(1, Math.floor(bounds.width)), Math.max(1, Math.floor(bounds.height))];
+}
+
+function resizeRenderer(canvas: HTMLCanvasElement, runtime: TerrainDebugRuntime): void {
+  const [width, height] = canvasSize(canvas);
   // The canvas takes its size from its page; writing it back inline would pin it and hide every later resize.
   runtime.renderer.setSize(width, height, false);
   runtime.camera.aspect = width / height;

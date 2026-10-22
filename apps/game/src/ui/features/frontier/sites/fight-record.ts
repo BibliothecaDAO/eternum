@@ -1,10 +1,13 @@
 import { streamedStoriesOf } from "@/hooks/store/use-story-events-store";
-import { RESOURCE_PRECISION, type ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
+import { formatPercent, RESOURCE_PRECISION, type ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
 /** One side's whole troops before and after a battle. */
 export type TroopsChange = { before: number; after: number };
+
+/** The share of a side's troops a fight takes, as the fight's cards say it beside the count: "37%". */
+export const shareTaken = (taken: number, before: number): string => formatPercent(before > 0 ? taken / before : 0);
 
 /** What a battle did to both sides, as the battle's own story records it: the attacker's army and whoever it fought. */
 export interface FightRecord {

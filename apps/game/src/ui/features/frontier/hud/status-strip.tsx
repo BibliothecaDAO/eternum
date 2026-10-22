@@ -10,6 +10,7 @@ import {
   FULL_IN,
   LABOR,
   OF,
+  TODAY,
   TROOPS,
   WHEAT,
   dayEnds,
@@ -22,6 +23,7 @@ import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { TickNumber } from "@/ui/motion/tick-number";
 import { AnimatePresence, motion } from "framer-motion";
+import type { ReactNode } from "react";
 
 import type { DayClock } from "./day-clock";
 
@@ -56,33 +58,47 @@ export const STORES: Record<StoreKind, { icon: IconMeaning; word: string }> = {
 };
 
 /**
- * The strip across the top of every Frontier screen: the day's dial, the four stores against their limits, and the
- * clock line under them. A tap on the stores opens Production when the host gives the way there.
+ * The strip across the top of every Frontier screen: the day's dial, which opens Today where the host gives the way, the
+ * four stores against their limits, and the clock line under them. A tap on a store with a card opens it, where the
+ * host gives the way.
  */
 export const StatusStrip = ({
   clock,
   stores,
-  onOpenStores,
+  onOpenDay,
+  storeCards,
 }: {
   clock: DayClock;
   stores: StoreReading[];
-  onOpenStores?: () => void;
+  onOpenDay?: () => void;
+  /** The stores whose plate opens their card, and the way to it. */
+  storeCards?: { kinds: readonly StoreKind[]; onToggle: (kind: StoreKind) => void };
 }) => (
   <HudPanel collapsible={false} bodyClassName="flex flex-col">
     <div className="flex h-12 items-center gap-1.5">
-      <span className="flex w-11 shrink-0 justify-center">
+      <DayDialSlot onOpen={onOpenDay}>
         <HudDial
           value={clock.day ?? "—"}
           share={clock.shareLeft ?? 0}
           tone={STORE_TONES[clock.tone].meter}
           label={clock.day === undefined ? DAY : `${DAY} ${clock.day}`}
         />
-      </span>
-      <Stores stores={stores} onOpen={onOpenStores} />
+      </DayDialSlot>
+      <Stores stores={stores} cards={storeCards} />
     </div>
     <DayClockLine clock={clock} />
   </HudPanel>
 );
+
+/** The day's dial in its place at the strip's start: a press opens Today where the host gives the way. */
+const DayDialSlot = ({ onOpen, children }: { onOpen?: () => void; children: ReactNode }) =>
+  onOpen ? (
+    <button type="button" aria-label={TODAY} onClick={onOpen} className="flex w-11 shrink-0 justify-center">
+      {children}
+    </button>
+  ) : (
+    <span className="flex w-11 shrink-0 justify-center">{children}</span>
+  );
 
 /** The day's clock in words, in the day's tone: "Day ends 21:40 · 7h 14m left · Tomorrow lasts 12h"; unknown a dash. */
 const DayClockLine = ({ clock }: { clock: DayClock }) => (
@@ -101,17 +117,30 @@ const DayClockLine = ({ clock }: { clock: DayClock }) => (
   </p>
 );
 
-const Stores = ({ stores, onOpen }: { stores: StoreReading[]; onOpen?: () => void }) => {
-  const plates = stores.map((store) => <StorePlate key={store.kind} store={store} />);
-  const layout = "flex h-full min-w-0 flex-1 items-stretch gap-1";
-  return onOpen ? (
-    <button type="button" onClick={onOpen} className={layout}>
-      {plates}
-    </button>
-  ) : (
-    <div className={layout}>{plates}</div>
-  );
-};
+const Stores = ({
+  stores,
+  cards,
+}: {
+  stores: StoreReading[];
+  cards?: { kinds: readonly StoreKind[]; onToggle: (kind: StoreKind) => void };
+}) => (
+  <div className="flex h-full min-w-0 flex-1 items-stretch gap-1">
+    {stores.map((store) =>
+      cards?.kinds.includes(store.kind) ? (
+        <button
+          key={store.kind}
+          type="button"
+          onClick={() => cards.onToggle(store.kind)}
+          className="flex min-w-0 flex-1"
+        >
+          <StorePlate store={store} />
+        </button>
+      ) : (
+        <StorePlate key={store.kind} store={store} />
+      ),
+    )}
+  </div>
+);
 
 /**
  * A store in one line, as its plate says it when asked: "Wheat 1,771 of 6,000 · +5/min · Full in 14h". Each part

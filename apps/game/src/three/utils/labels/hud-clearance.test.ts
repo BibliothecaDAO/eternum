@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it } from "vitest";
-import { HUD_COLUMN_MARK, HUD_FOOT_MARK, keepLabelsBesideHudColumns, openMapArea } from "./hud-clearance";
+import {
+  HUD_COLUMN_MARK,
+  HUD_FOOT_MARK,
+  HUD_TOP_MARK,
+  inOpenMapArea,
+  keepLabelsBesideHudColumns,
+  openMapArea,
+} from "./hud-clearance";
 
 /** A HUD column at these screen bounds, as the HUD marks it. */
 const column = (left: number, right: number) => {
@@ -85,4 +92,18 @@ it("finds the map's open area between the columns, below their tops and above th
 
 it("is the whole viewport where the HUD marks nothing", () => {
   expect(openMapArea({ width: 1920, height: 1080 })).toEqual({ left: 0, right: 1920, top: 0, bottom: 1080 });
+});
+
+it("starts a phone's open area under its top band and ends it on its foot, and says what stands in it", () => {
+  const mark = (marks: Record<string, string>, rect: Partial<DOMRect>) => {
+    const element = document.createElement("div");
+    Object.entries(marks).forEach(([name, value]) => element.setAttribute(name, value));
+    element.getBoundingClientRect = () => rect as DOMRect;
+    document.body.append(element);
+  };
+  mark(HUD_TOP_MARK, { left: 8, right: 382, top: 8, bottom: 150 });
+  mark(HUD_FOOT_MARK, { left: 8, right: 382, top: 700, bottom: 836 });
+  const phone = { width: 390, height: 844 };
+  expect(openMapArea(phone)).toEqual({ left: 0, right: 390, top: 150, bottom: 700 });
+  expect([inOpenMapArea({ x: 195, y: 400 }, phone), inOpenMapArea({ x: 195, y: 760 }, phone)]).toEqual([true, false]);
 });

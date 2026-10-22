@@ -11,7 +11,8 @@ vi.mock("@/utils/can-issue-orders", async (original) => ({
   refusedBeforePlay: () => false,
 }));
 
-const { ActionPaths, ActionType, configManager } = await import("@bibliothecadao/eternum");
+const { ActionPaths, ActionType, configManager, setBlockTimestampSource } = await import("@bibliothecadao/eternum");
+const { useAccountStore } = await import("@/hooks/store/use-account-store");
 const { usePopoverStore } = await import("@/hooks/store/use-popover-store");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { default: WorldmapScene } = await import("./worldmap");
@@ -52,6 +53,8 @@ const worldMap = (frontier: boolean) => {
   camera.lookAt(0, 0, 0);
   const sent: unknown[] = [];
   const pinned: unknown[] = [];
+  /** The tiles whose facts (their order's line) a tap or a hold put up. */
+  const facts: unknown[] = [];
   const scene = Object.assign(Object.create(WorldmapScene.prototype), {
     camera,
     orderRefusals: new Map(),
@@ -60,7 +63,10 @@ const worldMap = (frontier: boolean) => {
     worldSpatialProjection: { getArmy: () => ({}), getStructuresAtHex: () => [] },
     pointerOrderTip: { take: () => {}, refresh: () => {} },
     state: {
-      updateEntityActionHoveredHex: (hex: unknown) => pinned.push(hex),
+      updateEntityActionHoveredHex: (hex: { col: number; row: number } | null) => {
+        pinned.push(hex);
+        useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, hoveredHex: hex } }));
+      },
       updateEntityActionActionPaths: (actionPaths: Map<string, ActionPath[]>) =>
         useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, actionPaths } })),
     },
@@ -68,14 +74,16 @@ const worldMap = (frontier: boolean) => {
     queuesNextOrder: () => false,
     getHexagonEntity: () => ({}),
     actAtHex: (hex: unknown) => sent.push(hex),
+    showTileFacts: (hex: unknown) => facts.push(hex),
   }) as {
     answerTapWithSelectedArmyOrder: (hex: { col: number; row: number }) => boolean;
     updateEntityActionPaths: (actionPaths: Map<string, ActionPath[]>) => void;
   };
-  return { scene, sent, pinned };
+  return { scene, sent, pinned, facts };
 };
 
 beforeEach(() => {
+  setBlockTimestampSource(() => 350);
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   // The map's canvas, where a surface over a tile hangs from.
   const canvas = document.createElement("canvas");
@@ -85,11 +93,18 @@ beforeEach(() => {
   vi.spyOn(configManager, "getExploreStaminaCost").mockReturnValue(20);
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(2147483646);
   useUIStore.setState((state) => ({
-    entityActions: { ...state.entityActions, selectedEntityId: ARMY, actionPaths: pathsBeside(ActionType.Explore) },
+    entityActions: {
+      ...state.entityActions,
+      selectedEntityId: ARMY,
+      actionPaths: pathsBeside(ActionType.Explore),
+      hoveredHex: null,
+    },
   }));
   usePopoverStore.setState({ openId: null, surface: null });
 });
 afterEach(() => {
+  setBlockTimestampSource(null);
+  useAccountStore.setState({ account: null });
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -125,15 +140,33 @@ it.each([
   },
 );
 
-it("on a Frontier phone, a tap pins the order for the HUD's own verb, and opens no preview over the map", () => {
+it("on a Frontier phone, a tap pins the order for the HUD's own verb, naming it at its tile, and opens no preview", () => {
   screen(false);
-  const { scene, sent, pinned } = worldMap(true);
+  const { scene, sent, pinned, facts } = worldMap(true);
 
   expect(scene.answerTapWithSelectedArmyOrder(BESIDE)).toBe(true);
 
   expect(pinned).toEqual([BESIDE]);
+  expect(facts).toEqual([BESIDE]);
   expect(usePopoverStore.getState().surface).toBeNull();
   expect(sent).toEqual([]);
+
+  // Owner, 22 October 2026 (mobile direction A): the same tile again sends the pinned order.
+  expect(scene.answerTapWithSelectedArmyOrder(BESIDE)).toBe(true);
+  expect(sent).toEqual([BESIDE]);
+});
+
+it("on a Frontier phone, a tap on a tile the rules refused says why there, and keeps the army", () => {
+  screen(false);
+  const { scene, sent, pinned, facts } = worldMap(true);
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, actionPaths: new Map() } }));
+  (scene as unknown as { orderRefusals: Map<string, unknown> }).orderRefusals.set(ActionPaths.posKey(BESIDE, true), {
+    reason: "stamina",
+    need: 20,
+  });
+
+  expect(scene.answerTapWithSelectedArmyOrder(BESIDE)).toBe(true);
+  expect([facts, pinned, sent]).toEqual([[BESIDE], [], []]);
 });
 
 /** The preview's verb button, by its words. */
@@ -197,4 +230,45 @@ describe("an open preview whose order changes before its verb is pressed", () =>
     act(() => verbOf(drawn.host, "Explore").click());
     expect(sent).toEqual([BESIDE]);
   });
+});
+
+it.each([ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.Help, ActionType.Chest])(
+  "on a Frontier phone, a hold on %s shows facts without sending",
+  (actionType) => {
+    useUIStore.setState((state) => ({
+      entityActions: { ...state.entityActions, actionPaths: pathsBeside(actionType) },
+    }));
+    screen(false);
+    const { scene, sent, facts } = worldMap(true);
+    const rightClick = scene as unknown as { onHexagonRightClick: (event: MouseEvent, hex: unknown) => void };
+
+    // The touch recognizer gives a hold as a right-click a finger made (input-manager.test.ts: a long press).
+    rightClick.onHexagonRightClick(new PointerEvent("contextmenu", { pointerType: "touch" }), BESIDE);
+    expect([facts, sent]).toEqual([[BESIDE], []]);
+  },
+);
+
+it("on a Frontier phone, holding the spire opens its depth choice with the army kept and sends nothing", () => {
+  screen(false);
+  vi.spyOn(configManager, "isCommandEnabled").mockReturnValue(true);
+  useAccountStore.setState({ account: { address: "0x111" } as never });
+  useUIStore.setState((state) => ({
+    entityActions: { ...state.entityActions, actionPaths: pathsBeside(ActionType.EnterDepth) },
+  }));
+  const { scene, sent, facts } = worldMap(true);
+  const prototype = WorldmapScene.prototype as unknown as { actAtHex: (hex: unknown) => void };
+  const actual = Object.assign(scene, {
+    actAtHex: prototype.actAtHex,
+    state: useUIStore.getState(),
+    chunkTransitionToken: 1,
+    actionPathsTransitionToken: 1,
+    getInteractionDebugSnapshot: () => ({}),
+  }) as unknown as { onHexagonRightClick: (event: MouseEvent, hex: unknown) => void };
+
+  actual.onHexagonRightClick(new PointerEvent("contextmenu", { pointerType: "touch" }), BESIDE);
+
+  expect(useUIStore.getState().mapSelection).toEqual({ kind: "army", entityId: ARMY, tile: BESIDE });
+  expect(useUIStore.getState().selectedHex).toEqual(BESIDE);
+  expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
+  expect([facts, sent]).toEqual([[], []]);
 });

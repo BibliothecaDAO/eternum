@@ -54,7 +54,6 @@ export const ResearchPanel = ({
       className="pointer-events-auto flex min-h-0 flex-1 flex-col"
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-y-auto"
     >
-      <StateLegend />
       <div className="grid grid-cols-3 gap-2 px-3">
         {(Object.keys(RESEARCH_TREE.branches) as Branch[]).map((key) => (
           <BranchHead key={key} branch={key} />
@@ -86,24 +85,13 @@ export const ResearchPanel = ({
   );
 };
 
-/** One look per state, the same on a tile, in the legend and in the detail. */
+/** One look per state, the same on a tile and in the detail: each tile's frame and mark say its state. */
 const STATE_LOOK: Record<NodeState, { icon?: IconMeaning; frame: string; text: string }> = {
   done: { icon: "check", frame: "border-hud-line bg-hud-well", text: "text-hud-ink" },
   ready: { icon: "research", frame: "border-hud-good bg-hud-chosen", text: "text-hud-ink" },
   short: { frame: "border-hud-line", text: "text-hud-ink" },
   locked: { icon: "lock", frame: "border-hud-divider opacity-60", text: "text-hud-muted" },
 };
-
-const StateLegend = () => (
-  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 pb-2 text-hud-label text-hud-muted">
-    {(["ready", "short", "done", "locked"] as const).map((state) => (
-      <span key={state} className="flex items-center gap-1">
-        <span className={cn("inline-block size-3 rounded-sm border", STATE_LOOK[state].frame)} />
-        {RESEARCH_TREE.states[state]}
-      </span>
-    ))}
-  </div>
-);
 
 const BRANCH_ICONS: Record<Branch, IconMeaning> = { economy: "farm", army: "barracks", castle: "spire" };
 

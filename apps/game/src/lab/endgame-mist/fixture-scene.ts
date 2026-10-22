@@ -29,6 +29,8 @@ export class EndgameFixtureScene {
   private spires: SpireManager | null = null;
   private actors: ProceduralArmyCharacterPresentation[] = [];
   private frame = endgameFrame(null);
+  private terrain: ProceduralTerrain | null = null;
+  private ownRealmOnly = false;
   constructor(private readonly settings: EndgameLabSettings) {
     this.fixture = createEndgameFixture(settings);
     installLabGameRules(this.store);
@@ -99,16 +101,8 @@ export class EndgameFixtureScene {
     this.realms = new SettlementModel(asset, this.fixture.realms.length, "realm");
     await this.realms.prepare();
     scene.add(this.realms.group);
-    const matrix = new Matrix4();
-    this.fixture.realms.forEach((p, i) => {
-      const w = terrainHexToWorld(p.col, p.row);
-      matrix.makeRotationY(i * 0.6).setPosition(w.x, terrain.sampleSurface(w.x, w.z).height + 0.025, w.z);
-      this.realms!.setMatrixAt(i, matrix);
-      this.realms!.setRelationshipAt(i, p === this.fixture.realm ? "owned" : "enemy");
-      this.realms!.setOrderAt(i, (i % 16) + 1);
-    });
-    this.realms.setCount(this.fixture.realms.length);
-    this.realms.needsUpdate();
+    this.terrain = terrain;
+    this.placeRealms(this.fixture.realms);
     this.armies = new ProceduralArmyCharacterLayer(scene);
     this.actors = this.fixture.realms.flatMap((p, i) =>
       [0, 1].map((j) => {
@@ -138,6 +132,29 @@ export class EndgameFixtureScene {
     await this.spires.prepare();
     this.spires.update(0, camera);
   }
+  /**
+   * Only the player's realm on the map, or every realm and army again. The day-end lab's new land is shrouded round
+   * the realm, and the game draws nothing under the shroud.
+   */
+  showOnlyOwnRealm(only: boolean): void {
+    this.ownRealmOnly = only;
+    this.placeRealms(only ? [this.fixture.realm] : this.fixture.realms);
+  }
+  private placeRealms(sites: readonly { col: number; row: number }[]): void {
+    const realms = this.realms,
+      terrain = this.terrain;
+    if (!realms || !terrain) return;
+    const matrix = new Matrix4();
+    sites.forEach((p, i) => {
+      const w = terrainHexToWorld(p.col, p.row);
+      matrix.makeRotationY(i * 0.6).setPosition(w.x, terrain.sampleSurface(w.x, w.z).height + 0.025, w.z);
+      realms.setMatrixAt(i, matrix);
+      realms.setRelationshipAt(i, p === this.fixture.realm ? "owned" : "enemy");
+      realms.setOrderAt(i, (i % 16) + 1);
+    });
+    realms.setCount(sites.length);
+    realms.needsUpdate();
+  }
   play(): void {
     this.setEnded(true);
   }
@@ -157,7 +174,7 @@ export class EndgameFixtureScene {
     this.spires?.update(this.frame.finished ? 0 : delta, camera);
     setEndgameView(true, this.settings.spared === "realm", this.frame.spread);
     if (!this.frame.finished) {
-      this.armies?.sync(this.actors, delta);
+      this.armies?.sync(this.ownRealmOnly ? [] : this.actors, delta);
       this.realms?.updateAnimations(delta);
     }
   }

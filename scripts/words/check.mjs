@@ -734,7 +734,7 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
       if (target === "Intl.NumberFormat") return "number.intl";
       if (target === "Intl.DateTimeFormat" || target === "Intl.RelativeTimeFormat") return "time.intl";
     }
-    if (ts.isTemplateExpression(node)) {
+    if (ts.isTemplateExpression(node) && !isCodeString(node)) {
       for (const span of node.templateSpans) {
         const expression = span.expression.getText(file);
         if (UNIT.test(span.literal.text) && TIME_HINT.test(expression)) return "time.units";

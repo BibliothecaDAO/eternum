@@ -74,6 +74,7 @@
     "verify:outposts": "node scripts/outposts/verify-outpost.mjs",
     "prove:endgame": "node ./scripts/run-endgame-mist-study.mjs",
     "prove:studio": "node ./scripts/prove-lab-studio.mjs",
+    "prove:day-end": "node ./scripts/prove-lab-day-end.mjs",
     "prove:map-context": "node ./scripts/sheet-map/prove.mjs",
     "prove:app-art": "node ./scripts/prove-app-art.mjs",
     "prove:relic-chest": "node ./scripts/prove-relic-chest.mjs",

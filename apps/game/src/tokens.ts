@@ -430,6 +430,8 @@ export const HUD_SHEET = {
   dark: channels(HUD_COLORS.ink),
   /** An input's or a map's recess. */
   well: "rgb(0 0 0 / 0.4)",
+  /** The black the screen drops into between two Frontier days, and the dark a later arrival's summary waits in. */
+  night: HUD_COLORS.shade,
   /**
    * Whose a thing is, in three sides (owner, 2026-10-21: "red for everything thats not me, blue for allies ... and green
    * for me"): yours green, an ally's (a tribe member's) blue, anyone else's red, nobody's too. A watching viewer has no
@@ -495,6 +497,7 @@ export const HUD_COLOR_CLASSES: Record<string, string> = Object.fromEntries([
   ...["accent", "gold", "ink", "dark"].map((name) => [name, `rgb(var(--hud-${name}))`]),
   ...[
     "well",
+    "night",
     "own",
     "ally",
     "enemy",
@@ -561,8 +564,12 @@ export const HUD_LAYOUT = {
   "ring-rows": "164px",
   /** The top bar's Settings panel, opened under its button. */
   settings: "420px",
+  /** The day's summary over the map at a Frontier day's end, on a desktop (a phone's is a sheet). */
+  summary: "400px",
   /** The phone's minimap tab. */
   "phone-minimap": "clamp(180px, 35dvh, 320px)",
+  /** A phone page or sheet leaves half the map available above it. */
+  "phone-panel": "50dvh",
   "chat-width": "800px",
   "chat-height": "600px",
   "chat-pane": "min(60vh, 520px)",
@@ -572,12 +579,18 @@ export const HUD_LAYOUT = {
   "details-least": "120px",
   "chat-cap": "45vw",
   /**
-   * Frontier's places on the desktop HUD (FrontierDesktop): a nav page in the rail's place, its top and its room (from
-   * that top down to the base band: 76px + 16px), and the stage between the columns.
+   * Frontier's places on the desktop HUD (FrontierDesktop): a sheet floating with no rail to stand in (the labs'), its
+   * width and top, and the stage between the columns.
    */
   "frontier-page": "440px",
+  /**
+   * Frontier's desktop rail, the one home for everything (the owner, 22 October): one width for the feed at home and
+   * for any panel (a page, a sheet) that stands in it ("feed should have the same width as the other panels").
+   */
+  "frontier-rail": "480px",
+  /** Its feed's height before it scrolls inside: a capped list, so Next up and chat always keep their room. */
+  "frontier-feed": "45vh",
   "frontier-page-top": "76px",
-  "frontier-page-room": "calc(100% - 92px)",
   "frontier-stage-top": "150px",
   "frontier-stage-bottom": "140px",
   /** The Frontier HUD's cards: an army token, a site card, and the Build sheet's building card (option B's band). */

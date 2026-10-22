@@ -134,24 +134,110 @@ it("keeps one chat connection and its unread count from desktop to phone and bac
   expect(wire.close).not.toHaveBeenCalled();
 });
 
-it("gives a phone the Events' Log on its place bar, with the filter the desktop's Events have, and closes it", async () => {
+it("gives a phone the Events' Log on its place bar as a page under the map, with the desktop Events' filter", async () => {
   viewport.set(390);
   await renderHud();
   const log = () =>
     [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].find((button) =>
       button.textContent?.endsWith("Log"),
     );
+  const page = () => document.querySelector('[data-page] section[aria-label="Log"]');
   expect(log()).toBeDefined();
-  expect(document.querySelector('[aria-label="Event log"]')).toBeNull();
+  expect(page()).toBeNull();
   await act(async () => log()!.click());
-  const window = document.querySelector('[aria-label="Event log"]');
-  expect(window).not.toBeNull();
-  expect([...window!.querySelectorAll("button")].map((button) => button.textContent)).toEqual(
+  expect(page()).not.toBeNull();
+  expect([...page()!.querySelectorAll("button")].map((button) => button.textContent)).toEqual(
     expect.arrayContaining(["Important", "Mine", "All"]),
   );
   expect(log()!.getAttribute("aria-current")).toBe("page");
-  // The Log is a phone's bottom sheet over the place bar: its own close takes it away.
-  await act(async () => window!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+  // Owner, 22 October 2026 (mobile direction A): the page stands on the place bar and leaves the map above it; the
+  // place bar's Log takes it away again.
   expect(document.querySelector('[aria-label="Event log"]')).toBeNull();
+  await act(async () => log()!.click());
+  expect(page()).toBeNull();
   expect(log()!.getAttribute("aria-current")).toBeNull();
+});
+
+it("keeps a refused order in sight on a desktop, over the feed and over a panel the rail holds", async () => {
+  const { toast } = await import("@/ui/features/event-feed/notify");
+  const { useEventFeedStore } = await import("@/ui/features/event-feed/event-feed-store");
+  viewport.set(1920);
+  await renderHud();
+  const rail = () => host.querySelector("[data-frontier-rail]")!;
+  try {
+    await act(async () => toast.error("Not enough stamina"));
+    expect(rail().querySelector('section[aria-label="Feed"]')).not.toBeNull();
+    expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
+    // The Season stands in the rail's panel, the feed steps aside; the notice stays.
+    const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
+    await act(async () => season.click());
+    expect(rail().querySelector('[data-rail-panel] section[aria-label="Season"]')).not.toBeNull();
+    expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
+  } finally {
+    useEventFeedStore.getState().dismiss();
+  }
+});
+
+it("draws every realm on the Season board with its rank and reach, from Herald's entry, though no realm is streamed", async () => {
+  // Three realms the lab's game streams none of: their Structure rows are absent from the store.
+  const entry = (rank: number, level: number, depth: number) => ({
+    address: `0x${(0xa00 + rank).toString(16)}`,
+    structure_id: String(900 + rank),
+    rank,
+    sites_cleared: { total: 10 - rank, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
+    chests_earned: 0,
+    rewards: { lords: "0", essence: "0", labor: "0" },
+    deepest_depth: depth,
+    level,
+    order: rank,
+  });
+  const board = { game_id: "1", mode: "frontier", entries: [entry(1, 3, 3), entry(2, 1, 2), entry(3, 0, 0)] };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string | URL) =>
+      String(url).includes("/leaderboard")
+        ? new Response(JSON.stringify(board), { status: 200 })
+        : new Response(JSON.stringify({ blocked: [] }), { status: 200 }),
+    ),
+  );
+  viewport.set(1920);
+  await renderHud();
+  const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
+  await act(async () => season.click());
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+  const badges = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
+    .map((badge) => badge.getAttribute("aria-label"))
+    .filter((label) => /Settlement|City|Kingdom|Empire/.test(label ?? ""));
+  expect(badges).toEqual(["Empire · Ethereal III", "City · Ethereal II", "Settlement"]);
+});
+
+it.each([390, 1440])(
+  "opens Today from the day control at %i px, docking only on desktop and leaving the map uncovered",
+  async (width) => {
+    viewport.set(width);
+    await renderHud();
+    const day = host.querySelector<HTMLButtonElement>('button[aria-label="Today"]');
+    expect(day).not.toBeNull();
+    await act(async () => day!.click());
+    const sheet = host.querySelector<HTMLElement>('section[aria-label="Today"]');
+    expect(sheet).not.toBeNull();
+    expect(sheet!.hasAttribute("data-docked")).toBe(width >= 1024);
+    expect(sheet!.closest("[data-rail-panel]") !== null).toBe(width >= 1024);
+    expect(host.querySelector(".ui-sheet__backdrop")).toBeNull();
+    await act(async () => sheet!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    expect(host.querySelector('section[aria-label="Today"]')).toBeNull();
+  },
+);
+
+it.each([390, 1440])("opens and closes the Wheat store from its control at %i px", async (width) => {
+  viewport.set(width);
+  await renderHud();
+  const control = host.querySelector('[aria-label^="Wheat "]')?.closest("button");
+  expect(control).toBeTruthy();
+  expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
+  await act(async () => control!.click());
+  expect(host.querySelector('section[aria-label="Wheat"]')).not.toBeNull();
+  expect(host.querySelector('section[aria-label="Production"]')).toBeNull();
+  await act(async () => control!.click());
+  expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
 });

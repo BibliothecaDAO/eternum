@@ -29,6 +29,7 @@ vi.mock("./research/selected-building", () => ({ useSelectedBuildingRow: () => n
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChestOpeningStore } from "@/hooks/store/use-chest-opening-store";
+import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { onChestOpenRequest } from "@/three/scenes/worldmap-chest-open-request";
 import { ChestOpenings } from "@/ui/features/military/chest/chest-openings";
@@ -205,7 +206,7 @@ describe("Frontier's selection sheet", () => {
   });
 });
 
-/** The realm's army standing beside its spire, Ethereal I researched: the spire's card opens for it. */
+/** The realm's army standing beside its spire, Ethereal I researched: the spire's card acts for it. */
 const armyAtSpire = () => {
   const { store } = campBeside();
   // Realm 7's day-0 site is in its home region, 7; the fixture's clock (t=350) is on day 0.
@@ -260,48 +261,13 @@ const armyAtSpire = () => {
     },
   ] as never);
   useAccountStore.setState({ account: { address: "0x111" } as never });
-  return { store, beside };
+  useBlockTimestampStore.setState({ currentBlockTimestamp: 350, currentDefaultTick: 350 });
+  return { store, spire };
 };
 
-it("offers depth entry from Frontier for an own army at the computed spire", async () => {
+it("stands Research alone over the spire card, and shows the next selection's card", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const { store, beside } = armyAtSpire();
-  // Army 201 selected, acting on the tile beside it.
-  useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: beside.col, row: beside.row } });
-  tiles.current = [];
-  const enter = vi.fn().mockResolvedValue(undefined);
-  const host = document.createElement("div");
-  const root = createRoot(host);
-  act(() =>
-    root.render(
-      <GameProvider
-        value={{ store, systemCalls: { enter_depth: enter } } as never}
-        account={{ address: "0x111" } as never}
-      >
-        <FrontierSelectionSheet
-          realm={store.require("Structure", { game_id: 1, entity_id: 7 })}
-          onResearch={() => undefined}
-        />
-      </GameProvider>,
-    ),
-  );
-  try {
-    const button = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Ethereal I · 20 stamina",
-    );
-    expect(button).toBeDefined();
-    expect(button!.disabled).toBe(false);
-    await act(async () => button!.click());
-    expect(enter).toHaveBeenCalledWith(expect.objectContaining({ explorerId: 201, depth: 1 }));
-  } finally {
-    act(() => root.unmount());
-    useUIStore.getState().selectOnMap(null);
-  }
-});
-
-it("stands Research alone over the spire card of an army selected with no tile, and shows the next selection's card", () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const { store, beside } = armyAtSpire();
+  const { store, spire } = armyAtSpire();
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   /** The HUD's card and surface, both through the one panel; Research and its close as their buttons. */
   const Hud = () => {
@@ -320,8 +286,8 @@ it("stands Research alone over the spire card of an army selected with no tile, 
       </>
     );
   };
-  // The army selected with no tile: its spire's card stands.
-  useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null });
+  // The spire tapped with the army selected: its card stands.
+  useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: spire });
   tiles.current = [];
   const host = document.createElement("div");
   const root = createRoot(host);
@@ -346,10 +312,8 @@ it("stands Research alone over the spire card of an army selected with no tile, 
     press("Research");
     expect(sheets()).toEqual(["research"]);
 
-    // The next selection, the army on its tile beside the spire, opens its card in Research's place.
-    act(() =>
-      useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: beside.col, row: beside.row } }),
-    );
+    // The next selection, the spire tapped alone, opens its card in Research's place.
+    act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: spire }));
     expect(sheets()).toEqual(["Spire"]);
   } finally {
     act(() => root.unmount());
@@ -483,6 +447,7 @@ it.each([
     useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } });
     fightEnded({
       targetId: SITE,
+      tile: { col: 4, row: 5 },
       site,
       guardIdentity: { name, art },
       verdict: "guard-holds",
@@ -514,3 +479,58 @@ it.each([
     useUIStore.getState().selectOnMap(null);
   },
 );
+
+it("opens a new pick's own card at once over a fight's result, which stands only in its own tile's card", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const { store } = campBeside();
+  useAccountStore.setState({ account: { address: "0x111" } as never });
+  useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } });
+  fightEnded({
+    targetId: SITE,
+    tile: { col: 4, row: 5 },
+    site: "Camp",
+    guardIdentity: { name: "Troll", art: "beast-troll" },
+    verdict: "guard-holds",
+    armyArt: "knight-t1",
+    army: { before: 1_000, after: 694 },
+    guard: { before: 1_000, after: 572 },
+    gained: null,
+  });
+  // The HUD's way: the selection's card, through the one panel that decides what stands.
+  const Hud = () => {
+    const card = useSelectionCard({ realm: null, onResearch: () => undefined });
+    const { showsCard } = useOnePanel(card?.key ?? null);
+    return showsCard ? card!.sheet : null;
+  };
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const sheet = () => host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
+  try {
+    await act(async () =>
+      root.render(
+        <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+          <Hud />
+        </GameProvider>,
+      ),
+    );
+    expect(sheet()).toBe(siteName(SITE));
+    // Another target: its own card, with nothing to close first.
+    tiles.current = [{ occupierType: TileOccupier.Spire, occupierId: 0, hexCoords: { col: 8, row: 9, alt: false } }];
+    await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 8, row: 9 } }));
+    expect(sheet()).toBe("Spire");
+    // An ordinary tile: nothing stands, the result does not come back over the map.
+    await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 11, row: 2 } }));
+    expect(sheet()).toBeNull();
+    // Back on the fight's tile, its card shows the result again.
+    await act(async () => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } }));
+    expect(sheet()).toBe(siteName(SITE));
+  } finally {
+    act(() => {
+      fightEnded(null);
+      root.unmount();
+    });
+    useUIStore.getState().selectOnMap(null);
+    useAccountStore.setState({ account: null });
+    tiles.current = [];
+  }
+});

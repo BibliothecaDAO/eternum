@@ -6,7 +6,7 @@ import { useLayout } from "@/shell/frame/layout";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
+import { DEPLOY, DEPLOY_FILLS_FIRST, DEPLOYING } from "@/ui/design-system/kit/words";
 
 import { attributeBadgeTarget } from "../attributes/attributes";
 import type { SlotStart } from "../deploy/deploy-plan";
@@ -18,10 +18,8 @@ import { ArmyToken, OpenSlot } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
 /**
- * The realm's armies today. On a phone, the dock: one row with every slot the castle grants in view, the armies out
- * and then an open slot for each army still to deploy. On a desktop, the list down the left: a row each, then one
- * Deploy while a slot is open, the header counting the slots that stand, and nothing when there is neither (a realm
- * watched with no army out). A visited realm shows its armies read-only and no Deploy.
+ * Every army slot in order: a phone's dock or a desktop's list, each showing its army or starting stamina. Only the
+ * lowest free slot offers Deploy. A visited realm shows its armies read-only, and an empty desktop list stays absent.
  */
 export const ArmyDock = ({
   realm,
@@ -42,30 +40,55 @@ export const ArmyDock = ({
     ? (openSlots?.length ?? Math.max(0, realm.base.troop_max_explorer_count - armies.length))
     : 0;
   const desktop = useLayout() === "desktop";
+  const free = ordersAllowed ? (openSlots ?? []).toSorted((left, right) => left.slot - right.slot) : [];
+  const next = free[0];
+  const slots = [
+    ...armies.map((army) => ({ number: army.number, army })),
+    ...free.map((slot) => ({ number: slot.number, slot })),
+  ].toSorted((left, right) => left.number - right.number);
   if (desktop && armies.length === 0 && openCount === 0) return null;
+  const entries = slots.map((entry) => {
+    if ("army" in entry) {
+      const Army = desktop ? DockArmyRow : DockToken;
+      return (
+        <Army key={entry.army.explorerId} army={entry.army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />
+      );
+    }
+    return (
+      <DeploySlot
+        key={`slot-${entry.slot.slot}`}
+        realm={realm}
+        slot={entry.slot}
+        first={entry.slot === next}
+        waits={entry.slot === next ? undefined : next}
+        pulse={entry.slot === next && armies.length === 0}
+        wide={desktop}
+      />
+    );
+  });
+  const pending =
+    openSlots === undefined &&
+    Array.from({ length: openCount }, (_, index) => (
+      <DeploySlot
+        realm={realm}
+        slot={undefined}
+        key={`open-${index}`}
+        first={index === 0}
+        pulse={false}
+        wide={desktop}
+      />
+    ));
   if (desktop)
     return (
       <ArmyList used={armies.length} allowed={armies.length + openCount}>
-        {armies.map((army) => (
-          <DockArmyRow key={army.explorerId} army={army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />
-        ))}
-        {openCount > 0 && <DeploySlot realm={realm} slot={openSlots?.[0]} pulse={armies.length === 0} wide />}
+        {entries}
+        {pending}
       </ArmyList>
     );
   return (
     <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
-      {armies.map((army) => (
-        <DockToken key={army.explorerId} army={army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />
-      ))}
-      {Array.from({ length: openCount }, (_, index) => (
-        <DeploySlot
-          realm={realm}
-          slot={openSlots?.[index]}
-          key={openSlots?.[index]?.slot ?? `open-${index}`}
-          first={index === 0}
-          pulse={index === 0 && armies.length === 0}
-        />
-      ))}
+      {entries}
+      {pending}
     </nav>
   );
 };
@@ -153,6 +176,7 @@ const DeploySlot = ({
   realm,
   slot,
   first = true,
+  waits,
   pulse,
   wide = false,
 }: {
@@ -160,6 +184,8 @@ const DeploySlot = ({
   /** The slot and its start, as the deploy plan reads it; unknown while the plan is. */
   slot: SlotStart | undefined;
   first?: boolean;
+  /** The lowest free slot, which Deploy fills before this one. */
+  waits?: SlotStart;
   pulse: boolean;
   wide?: boolean;
 }) => {
@@ -171,6 +197,7 @@ const DeploySlot = ({
       filling={first && deploying ? DEPLOYING : undefined}
       pulse={pulse}
       wide={wide}
+      waits={slot && waits ? { number: slot.number, words: DEPLOY_FILLS_FIRST(waits.number) } : undefined}
       start={slot?.start && words ? { bar: slot.start, words: `${words.line}. ${words.why}.` } : undefined}
       onDeploy={() => openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true })}
     />

@@ -1,4 +1,4 @@
-import { gameEndIsNear, type endgameFrame } from "../effects/endgame/sequence";
+import { veilIsNear, type endgameFrame } from "../effects/endgame/sequence";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
@@ -14,6 +14,7 @@ import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
+import { sendSiteUse, siteUseFacts, usableSiteAt } from "@/ui/features/frontier/sites/use-site";
 import { type ArmyProgressFacts, xpGained } from "@/ui/features/frontier/attributes/attributes";
 import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
@@ -72,13 +73,16 @@ import { type RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { LeftView } from "@/types";
 import {
+  armyRealmSpire,
   configManager,
+  dayOf,
   expeditionSpires,
   NEUTRAL_BIOME_CLIMATE,
   Position,
   isOpenSpawnHex,
   isViewerOwner,
   isExpeditionRealm,
+  readExpeditionRules,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import {
@@ -151,7 +155,7 @@ import {
 import throttle from "lodash/throttle";
 import { Box3, Group, Plane, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { zoomTowardCursor } from "./worldmap-zoom/worldmap-zoom-anchor";
-import { openMapArea } from "../utils/labels/hud-clearance";
+import { inOpenMapArea, openMapArea } from "../utils/labels/hud-clearance";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
 import type { TerrainPresentationEvent } from "@/three/terrain/worldmap-procedural-terrain";
@@ -269,6 +273,7 @@ import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
 import {
   attackConfirmsOnTileCard,
   ORDER_REQUEST_EVENT,
+  isTouchHold,
   orderOnTap,
   orderVerbOnHud,
   readOrderRequest,
@@ -977,6 +982,8 @@ export default class WorldmapScene extends WarpTravel {
     this.clearSelection();
   };
   private previouslyHoveredHex: HexPosition | null = null;
+  /** A hold (or a tap on a refused tile) put up a tile's facts, which the next tap takes down. */
+  private factsShown = false;
   private lastHoverReconciliation: WorldmapHoverReconciliationSnapshot | null = null;
 
   // Performance simulation helper
@@ -1036,6 +1043,8 @@ export default class WorldmapScene extends WarpTravel {
   private chestLabelsGroup!: Group;
   private reservedHyperstructureManager!: ReservedHyperstructureManager;
   private spireManager!: SpireManager;
+  /** The block second the veil's nearness was last asked at. */
+  private veilCheckedAt = -1;
   private mapSiteManager!: MapSiteManager;
   private spireLabelsGroup!: Group;
 
@@ -2419,6 +2428,7 @@ export default class WorldmapScene extends WarpTravel {
     const refusal = this.orderRefusals.get(key);
     const path = getLiveWorldmapEntityActions().actionPaths.get(key);
     const armyTroops = this.selectedArmyRow()?.troops;
+    const site = path && ActionPaths.getActionType(path) === ActionType.UseSite ? this.usableSiteAt(hexCoords) : null;
     return orderTip({
       path,
       exploreStamina: configManager.getExploreStaminaCost(),
@@ -2426,6 +2436,9 @@ export default class WorldmapScene extends WarpTravel {
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
       refusal,
       staminaWait: refusal?.reason === "stamina" ? this.secondsUntilSelectedArmyHolds(refusal.need) : undefined,
+      site: site
+        ? siteUseFacts(this.game.store, site, this.selectedArmyRow(), getBlockTimestamp().currentDefaultTick)
+        : undefined,
     });
   }
 
@@ -2623,8 +2636,22 @@ export default class WorldmapScene extends WarpTravel {
     return position;
   }
 
+  /**
+   * A tile's facts, as a desktop's pointer resting on it shows them: its plate, and the selected army's order there
+   * with its cost, or why none. They stand until the next tap.
+   */
+  private showTileFacts(hexCoords: HexPosition): void {
+    this.onHexagonMouseMove({ hexCoords, position: getWorldPositionForHex(hexCoords) });
+    this.pointerOrderTip.hold(hexCoords);
+    this.factsShown = true;
+  }
+
   // hexcoords is normalized
   protected onHexagonClick(hexCoords: HexPosition | null) {
+    if (this.factsShown) {
+      this.factsShown = false;
+      this.onHexagonMouseMove(null);
+    }
     if (
       usePopoverStore.getState().openId === "army-deployment" &&
       resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths)
@@ -2694,7 +2721,20 @@ export default class WorldmapScene extends WarpTravel {
     this.interactionAdapter.selectHex({ contractHexPosition, isMine });
   }
 
+  /** Site holds use an adjacent Shrine or Well, or open a spire's depth choice; other phone holds show facts. */
+  private hasSiteHoldAction(hexCoords: HexPosition): boolean {
+    const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
+    if (selectedEntityId === null || selectedEntityId === undefined) return false;
+    const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
+    const action = path && ActionPaths.getActionType(path);
+    return action === ActionType.UseSite || action === ActionType.EnterDepth;
+  }
+
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
+    if (hexCoords && isTouchHold(event) && this.hudCarriesOrderVerb() && !this.hasSiteHoldAction(hexCoords)) {
+      this.showTileFacts(hexCoords);
+      return;
+    }
     if (!canIssueOrders()) return;
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
@@ -2750,23 +2790,41 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * With an army selected, a tap on a tile answers with that army's order there (orderOnTap), never past a confirm:
-   * the pinned order's verb, the attack preview's, or the site card's own. False leaves the tile its own tap. The
-   * order that skips the confirm is the right-click's (actAtHex).
+   * With an army selected, a tap previews its order or opens its site card. A second tap on a phone's pinned movement
+   * order sends it; attacks and site cards keep their own confirmation. False leaves the tile its own tap.
    */
   private answerTapWithSelectedArmyOrder(hexCoords: HexPosition): boolean {
     if (!canIssueOrders()) return false;
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     if (selectedEntityId === null || selectedEntityId === undefined) return false;
     if (this.queuesNextOrder(selectedEntityId, hexCoords)) return true;
-    const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
+    const key = ActionPaths.posKey(hexCoords, true);
+    const path = actionPaths.get(key);
     const { structure } = this.getHexagonEntity(hexCoords);
+    const pinned = getLiveWorldmapEntityActions().hoveredHex;
     const order = orderOnTap({
       path,
       armySelected: this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined,
-      standingSite: structure !== undefined && this.isStandingExpeditionSite(structure.id),
+      site:
+        (structure !== undefined && this.isStandingExpeditionSite(structure.id)) ||
+        this.usableSiteAt(hexCoords) !== null,
+      ownSpire: this.isArmysSpire(selectedEntityId, hexCoords),
+      hud: this.hudCarriesOrderVerb()
+        ? {
+            pinned: pinned?.col === hexCoords.col && pinned.row === hexCoords.row,
+            refused: this.orderRefusals.has(key),
+          }
+        : undefined,
     });
-    if (order === "pin" && !this.hudCarriesOrderVerb()) {
+    if (order === "go") {
+      this.actAtHex(hexCoords);
+    } else if (order === "transfer") {
+      // The action row offers the transfer, or picking the army there.
+      this.state.updateEntityActionHoveredHex(hexCoords);
+    } else if (order === "why") {
+      this.showTileFacts(hexCoords);
+      return true;
+    } else if (order === "pin" && !this.hudCarriesOrderVerb()) {
       this.openOrderPreview(hexCoords);
     } else if (order === "pin") {
       // The tile becomes the order's target: its path and costs show, and the HUD's verb runs it.
@@ -2775,9 +2833,12 @@ export default class WorldmapScene extends WarpTravel {
       if (this.worldSpatialProjection.getStructuresAtHex(target).some((site) => site.clearedSite))
         this.openTargetCardForSelectedArmy(target);
       this.state.updateEntityActionHoveredHex(hexCoords);
+      // The order's line stands at its tile, marking the tile the bar's verb (or a second tap) sends to.
+      this.showTileFacts(hexCoords);
+      return true;
     } else if (order === "attack" && path) {
       this.onArmyAttack(path, selectedEntityId);
-    } else if (order === "site-out-of-reach") {
+    } else if (order === "site-card") {
       const contractHex = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
       this.openTargetCardForSelectedArmy({ col: contractHex.x, row: contractHex.y });
     }
@@ -2836,7 +2897,7 @@ export default class WorldmapScene extends WarpTravel {
 
   /**
    * Runs the selected army's order at this tile: the HUD's verb for a pinned order, or a right-click (a long-press)
-   * with no preview. An attack, a help, spire travel and deploy open their own surface from either.
+   * with no preview. An attack, a help, spire travel, a depth's entry and deploy open their own surface from either.
    */
   private actAtHex(hexCoords: HexPosition) {
     const account = useAccountStore.getState().account;
@@ -2868,7 +2929,13 @@ export default class WorldmapScene extends WarpTravel {
         const actionType = ActionPaths.getActionType(actionPath);
 
         // Only validate army availability for army-specific actions
-        const armyActions = [ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.SpireTravel];
+        const armyActions = [
+          ActionType.Explore,
+          ActionType.Move,
+          ActionType.Attack,
+          ActionType.SpireTravel,
+          ActionType.UseSite,
+        ];
         const isArmySelection = this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined;
         if (actionType && armyActions.includes(actionType) && isArmySelection) {
           if (this.armyManager && !this.armyManager.isArmySelectable(selectedEntityId)) {
@@ -2888,8 +2955,13 @@ export default class WorldmapScene extends WarpTravel {
           this.onArmyHelp(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Chest) {
           this.onChestSelection(actionPath, selectedEntityId);
+        } else if (actionType === ActionType.UseSite) {
+          this.onSiteUse(actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
+        } else if (actionType === ActionType.EnterDepth) {
+          // The depth is the player's choice: the spire's card, with this army, offers each one.
+          this.openTargetCardForSelectedArmy(actionPath[actionPath.length - 1].hex);
         }
         this.logInteractionDebug("action_executed_from_right_click", {
           ...this.getInteractionDebugSnapshot(),
@@ -3236,6 +3308,18 @@ export default class WorldmapScene extends WarpTravel {
     this.state.updateEntityActionHoveredHex(null);
   }
 
+  /** Whether the normalized tile is the army's realm's spire, as the map draws it today. */
+  private isArmysSpire(armyId: ID, hexCoords: HexPosition): boolean {
+    const spire = armyRealmSpire(
+      this.game.store,
+      configManager.getActiveGameId(),
+      safeInteger(armyId),
+      getBlockTimestamp().currentBlockTimestamp,
+    );
+    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    return spire !== null && spire.col === contract.x && spire.row === contract.y;
+  }
+
   private isStandingExpeditionSite(entityId: ID): boolean {
     const site = this.game.store.get("ExpeditionSite", {
       game_id: configManager.getActiveGameId(),
@@ -3385,6 +3469,11 @@ export default class WorldmapScene extends WarpTravel {
     const target = this.getHexagonEntity(sceneHexOf(targetHex));
     const targetActor = actorOnHex(target);
     if (!targetActor) return;
+    // Frontier's troops between two armies are the HUD's own card (TransferTroopsSheet), where the map's cards stand.
+    if (this.isFrontierHud() && selected.army && target.army) {
+      this.openTargetCardForSelectedArmy(targetHex);
+      return;
+    }
     const viewer = accountAddress();
     const isTargetMine = isViewerOwner(target.army?.owner, viewer) || isViewerOwner(target.structure?.owner, viewer);
     const isSelectedMine =
@@ -3884,6 +3973,29 @@ export default class WorldmapScene extends WarpTravel {
         this.armySelectionRecoveryInFlight.delete(selectedEntityId);
       }
     })();
+  }
+
+  /** The army uses the site its order names, where it stands: the card's own sender, with no card in between. */
+  private onSiteUse(actionPath: ActionPath[], selectedEntityId: ID) {
+    const account = useAccountStore.getState().account;
+    const target = actionPath[actionPath.length - 1].hex;
+    const site = this.usableSiteAt(sceneHexOf(target));
+    if (!account || !site) return;
+    void sendSiteUse({
+      systemCalls: this.game.systemCalls,
+      signer: account,
+      explorerId: safeInteger(selectedEntityId),
+      site,
+    });
+  }
+
+  /**
+   * The usable site (a Shrine or a Well) on this normalized tile of the shown layer, in contract coordinates; null where
+   * the tile holds none.
+   */
+  private usableSiteAt(hexCoords: HexPosition) {
+    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    return usableSiteAt(this.game.store, { col: contract.x, row: contract.y, alt: activeMapLayer() });
   }
 
   /** Right-click on a chest with the adjacent army selected opens it. */
@@ -7853,8 +7965,7 @@ export default class WorldmapScene extends WarpTravel {
 
   public advanceGameEnd(frame: ReturnType<typeof endgameFrame>, delta: number): void {
     if (frame.phase === "live") {
-      if (gameEndIsNear(configManager.getSeasonConfig().endAt, getBlockTimestamp().currentBlockTimestamp))
-        this.spireManager.prepareGameEnd();
+      if (this.veilIsNear()) this.spireManager.prepareGameEnd();
       this.spireManager.advanceGameEnd(frame, delta, this.camera, null);
       return;
     }
@@ -7868,6 +7979,21 @@ export default class WorldmapScene extends WarpTravel {
         sparedHex = { col: position.x - FELT_CENTER(), row: position.y - FELT_CENTER() };
     }
     this.spireManager.advanceGameEnd(frame, delta, this.camera, sparedHex);
+  }
+
+  /**
+   * The veil plays at the game's end, and in Frontier at every day's end (use-day-end-store): its model and shaders
+   * load as either nears. Asked once per block second, not every frame.
+   */
+  private veilIsNear(): boolean {
+    const now = getBlockTimestamp().currentBlockTimestamp;
+    if (now === this.veilCheckedAt) return false;
+    this.veilCheckedAt = now;
+    if (veilIsNear(configManager.getSeasonConfig().endAt, now)) return true;
+    if (getGameModeId() !== "frontier") return false;
+    const rules = readExpeditionRules(this.game.store, configManager.getActiveGameId());
+    const today = rules ? dayOf(rules, now) : null;
+    return today !== null && veilIsNear(today.end, now);
   }
 
   update(deltaTime: number) {
@@ -8385,9 +8511,18 @@ export default class WorldmapScene extends WarpTravel {
     const account = accountAddress();
     const position = this.getArmyDisplayPosition(entityId);
     if (account === null || !position) return;
+    // On a Frontier phone an army already in sight keeps the camera where the player put it, so the next tap lands
+    // where they aim it (owner, 22 October 2026: mobile direction A). Elsewhere a pick frames the army, as it did.
+    const inSight =
+      !forSite &&
+      this.hudCarriesOrderVerb() &&
+      inOpenMapArea(projectHexToScreen(position, this.camera), {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
     await this.runShortcutArmySelection(async () => {
-      await this.focusAndSelectArmy(entityId, position, account);
-      if (getLiveWorldmapEntityActions().selectedEntityId !== entityId) return;
+      await this.focusAndSelectArmy(entityId, position, account, { moveCamera: !inSight });
+      if (getLiveWorldmapEntityActions().selectedEntityId !== entityId || inSight) return;
       const army = Position.fromNormalized({ x: position.col, y: position.row });
       this.frameOnOpenMap(forSite ? [army, forSite] : [army]);
       if (!forSite) return;
@@ -8427,17 +8562,22 @@ export default class WorldmapScene extends WarpTravel {
     entityId: number,
     resolvedPosition: { col: number; row: number },
     account: ContractAddress,
+    { moveCamera = true }: { moveCamera?: boolean } = {},
   ): Promise<void> {
-    this.moveCameraToMapPosition(
-      Position.fromNormalized({ x: resolvedPosition.col, y: resolvedPosition.row }),
-      SHORTCUT_NAVIGATION_DURATION_SECONDS,
-    );
-
-    try {
-      await this.refreshChunksAfterShortcutNavigation(resolvedPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error(`[WorldMap] Failed to update visible chunks while cycling armies (entityId=${entityId}):`, error);
+    if (moveCamera) {
+      this.moveCameraToMapPosition(
+        Position.fromNormalized({ x: resolvedPosition.col, y: resolvedPosition.row }),
+        SHORTCUT_NAVIGATION_DURATION_SECONDS,
+      );
+      try {
+        await this.refreshChunksAfterShortcutNavigation(resolvedPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error(
+            `[WorldMap] Failed to update visible chunks while cycling armies (entityId=${entityId}):`,
+            error,
+          );
+        }
       }
     }
 

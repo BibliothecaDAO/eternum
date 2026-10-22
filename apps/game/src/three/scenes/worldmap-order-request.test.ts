@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   attackConfirmsOnTileCard,
+  isTouchHold,
   orderOnTap,
   orderVerbOnHud,
   pinsOrder,
@@ -10,8 +11,8 @@ import {
 } from "./worldmap-order-request";
 
 const step = (actionType: ActionType) => ({ hex: { col: 0, row: 0 }, actionType });
-const tap = (path: ReturnType<typeof step>[] | undefined, standingSite = false) =>
-  orderOnTap({ path, armySelected: true, standingSite });
+const tap = (path: ReturnType<typeof step>[] | undefined, site = false, ownSpire = false) =>
+  orderOnTap({ path, armySelected: true, site, ownSpire });
 
 describe("a tap on a tile with an army selected", () => {
   it("pins an order on a tile to explore or move to", () => {
@@ -25,8 +26,16 @@ describe("a tap on a tile with an army selected", () => {
   });
 
   it("opens a standing site out of reach for the army, so its card can say what the army lacks", () => {
-    expect(tap(undefined, true)).toBe("site-out-of-reach");
-    expect(orderOnTap({ path: undefined, armySelected: false, standingSite: true })).toBeNull();
+    expect(tap(undefined, true)).toBe("site-card");
+    expect(tap([step(ActionType.Move), step(ActionType.UseSite)], true)).toBe("site-card");
+    expect(orderOnTap({ path: undefined, armySelected: false, site: true, ownSpire: false })).toBeNull();
+  });
+
+  it("opens its realm's spire for the army wherever it stands, ahead of a move onto the spire's tile", () => {
+    expect(tap([step(ActionType.Move), step(ActionType.EnterDepth)], false, true)).toBe("site-card");
+    expect(tap([step(ActionType.Move), step(ActionType.Move)], false, true)).toBe("site-card");
+    expect(tap(undefined, false, true)).toBe("site-card");
+    expect(orderOnTap({ path: undefined, armySelected: false, site: false, ownSpire: true })).toBeNull();
   });
 
   it("counts as an order to a tile only a path that explores or moves there", () => {
@@ -41,6 +50,59 @@ describe("a tap on a tile with an army selected", () => {
     expect(tap([step(ActionType.Move), step(ActionType.SpireTravel)])).toBeNull();
     expect(tap(undefined)).toBeNull();
   });
+});
+
+describe("a tap on a phone, where the HUD carries the verb (owner, 22 October 2026: mobile direction A)", () => {
+  const onPhone = (path: ReturnType<typeof step>[] | undefined, hud: { pinned?: boolean; refused?: boolean } = {}) =>
+    orderOnTap({
+      path,
+      armySelected: true,
+      site: false,
+      ownSpire: false,
+      hud: { pinned: hud.pinned ?? false, refused: hud.refused ?? false },
+    });
+  const explore = [step(ActionType.Move), step(ActionType.Explore)];
+
+  it("pins the order on the first tap and sends it on the same tile's second", () => {
+    expect(onPhone(explore)).toBe("pin");
+    expect(onPhone(explore, { pinned: true })).toBe("go");
+  });
+
+  it("pins the transfer on the player's own army or holding beside the army, which the action row offers", () => {
+    expect(onPhone([step(ActionType.Move), step(ActionType.Help)])).toBe("transfer");
+  });
+
+  it("says why on a tile the rules refused, and leaves any other tile its own tap", () => {
+    expect(onPhone(undefined, { refused: true })).toBe("why");
+    expect(onPhone(undefined)).toBeNull();
+  });
+
+  it.each([ActionType.UseSite, ActionType.EnterDepth])(
+    "keeps %s on its card even when the phone target is pinned",
+    (actionType) => {
+      expect(
+        orderOnTap({
+          path: [step(ActionType.Move), step(actionType)],
+          armySelected: true,
+          site: actionType === ActionType.UseSite,
+          ownSpire: actionType === ActionType.EnterDepth,
+          hud: { pinned: true, refused: false },
+        }),
+      ).toBe("site-card");
+    },
+  );
+
+  it("still opens the attack's preview on a target, which has its own confirm", () => {
+    expect(onPhone([step(ActionType.Move), step(ActionType.Attack)], { pinned: true })).toBe("attack");
+  });
+});
+
+it("tells a finger's hold from a mouse's right-click", () => {
+  const rightClick = (event: object) => event as MouseEvent;
+  expect(isTouchHold(rightClick({ type: "contextmenu", pointerType: "touch" }))).toBe(true);
+  expect(isTouchHold(rightClick({ type: "contextmenu", pointerType: "mouse" }))).toBe(false);
+  // A plain mouse event names no pointer type.
+  expect(isTouchHold(rightClick({ type: "contextmenu" }))).toBe(false);
 });
 
 describe("Escape on the world map", () => {

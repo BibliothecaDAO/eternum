@@ -122,14 +122,14 @@ const BLITZ_MAP = {
 };
 
 /**
- * What a signed-in player does: realm, map, select the readiest army, read production, then a tile tapped for the army
+ * What a signed-in player does: realm, map, select the readiest army, read its Wheat store, then a tile tapped for the army
  * while its order is in flight (its next order) in each way that order can leave, and two explores.
  */
 const PLAYER_STEPS = [
   { name: "enter-on-map", settleMs: 8_000, verify: inScene("map") },
   { name: "hud-layout", play: readTheHudLayout, settleMs: 0, verify: hudLaidOut(inScene("map")) },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 3_000, verify: armySelected },
-  { name: "production", play: openAndCloseProduction, settleMs: 1_000, verify: sheetOpenedAndClosed("Production") },
+  { name: "wheat-store", play: openAndCloseWheatStore, settleMs: 1_000, verify: storeOpenedAndClosed },
   ...nextOrderSteps(),
   { name: "explore-1", play: exploreBesideArmy, settleMs: 6_000, verify: explored },
   { name: "explore-2", play: exploreBesideArmy, settleMs: 6_000, verify: explored },
@@ -395,14 +395,21 @@ async function readTheSeasonInTheMenu({ browser }) {
   return { opened, read, closed: browser.observe().dialogs };
 }
 
-/** The store bar opens production; its name starts with the first store it shows. */
-async function openAndCloseProduction({ browser }) {
-  browser.run(["find", "role", "button", "click", "--name", "Essence"]);
+/** A Wheat ring or phone plate opens its store card; pressing it again closes the same card. */
+async function openAndCloseWheatStore({ browser }) {
+  const card = () => browser.read(`Boolean(document.querySelector('section[aria-label="Wheat"]'))`);
+  browser.run(["find", "role", "button", "click", "--name", "Wheat"]);
   await sleep(1_500);
-  const opened = browser.observe().dialogs;
-  browser.press("Escape");
+  const opened = card();
+  browser.run(["find", "role", "button", "click", "--name", "Wheat"]);
   await sleep(1_000);
-  return { opened, closed: browser.observe().dialogs };
+  return { opened, closed: card() };
+}
+
+function storeOpenedAndClosed({ played }) {
+  if (!played.opened) return failed("the Wheat store card did not open");
+  if (played.closed) return failed("the Wheat store card did not close");
+  return completed(played);
 }
 
 function sheetOpenedAndClosed(label) {
@@ -1025,6 +1032,136 @@ function isProceduralUnitAsset(url) {
   return url.startsWith("/models/characters/") || url.startsWith("/models/boats/");
 }
 
+/**
+ * The lab's spire game (/lab/game?scenario=spire, src/lab/game): the game's own route, scenes, HUD and client on a
+ * fixture chain held in the tab, whose account records each command the game signs and whose Herald answers it as the
+ * contract applies it. Its realm's spire is lit with Ethereal I and II researched, and its army stands beside it.
+ */
+const LAB_SPIRE = { mode: "frontier", lab: "spire", chainId: "0x1ab9", gameId: 1, card: FRONTIER.card };
+
+/**
+ * A realm's spire as a player uses it, at either size: the army selected from the dock, the spire found beside it by
+ * its hover, tapped for its card (the army kept as its actor, each researched depth with its stamina and Enter, the next
+ * one's research, and what entering commits the army to), then Enter on Ethereal II: the command the game signs, and
+ * the army in Ethereal II.
+ */
+const LAB_SPIRE_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+  { name: "find-spire", play: findTheSpire, settleMs: 0, verify: spireFound },
+  { name: "spire-card", play: tapTheSpire, settleMs: 0, verify: spireCardOffersDepths },
+  { name: "enter-depth", play: enterEtherealII, settleMs: 0, verify: armyEnteredEtherealII },
+];
+
+const SPIRE_ORDER = "Enter a depth";
+// The pointer's tooltip, read whole: Frontier's names the order on its first line ("Enter a depth").
+const TILE_TOOLTIP = `JSON.stringify(document.querySelector('[role="tooltip"]')?.innerText.replace(/\\s+/g, " ").trim() ?? null)`;
+const SPIRE_STATE = `JSON.stringify({
+  sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
+  depths: [...document.querySelectorAll("[data-spire-depths] .ui-row")].map((row) => ({
+    depth: row.querySelector(".ui-row__title")?.textContent ?? null,
+    line: row.querySelector(".ui-row__detail")?.textContent ?? null,
+    button: row.querySelector("button")?.textContent ?? null,
+    enabled: row.querySelector("button")?.disabled === false,
+  })),
+  commitment: document.querySelector("[data-spire-commitment]")?.textContent ?? null,
+  text: document.querySelector("[data-kit-sheet]")?.innerText.replace(/\\s+/g, " ").trim() ?? null,
+  army: window.__eternumMapSelection?.army ?? null,
+  sent: (window.__labChain?.sent ?? []).map(({ hash, command }) => ({ hash, ...command })),
+})`;
+
+/** Hovers the selected army's neighbours until one's tooltip offers the spire's order. */
+async function findTheSpire({ browser }) {
+  const scanned = [];
+  for (const offset of NEIGHBOUR_RING) {
+    browser.hover(offset);
+    await sleep(HOVER_SETTLE_MS);
+    const tip = browser.read(TILE_TOOLTIP);
+    scanned.push({ offset, tip });
+    if (tip === SPIRE_ORDER) return { spire: offset, scanned };
+  }
+  return { spire: null, scanned };
+}
+
+function spireFound({ played }) {
+  return played.spire
+    ? completed({ spire: played.spire, scanned: played.scanned })
+    : failed(`no tile beside the army offers "${SPIRE_ORDER}"`, { scanned: played.scanned });
+}
+
+/** Taps the tile whose hover offers the spire's order, as a player taps what they see. */
+async function tapTheSpire({ browser }) {
+  const { spire, scanned } = await findTheSpire({ browser });
+  if (!spire) return { spire, scanned };
+  browser.tap(spire);
+  const state = await readUntil(
+    () => browser.read(SPIRE_STATE),
+    (shown) => shown.sheet !== null,
+    SPIRE_WAIT_MS,
+  );
+  return { spire, scanned, state };
+}
+
+function spireCardOffersDepths({ played, seen }) {
+  if (!played.spire) return failed(`no tile beside the army offers "${SPIRE_ORDER}"`, { scanned: played.scanned });
+  const shown = { ...played.state, pressed: seen.pressed };
+  if (shown.sheet !== "Spire") return failed(`the tap opened ${shown.sheet ?? "no card"}, not the spire's`, shown);
+  if (!shown.army) return failed("the tap on the spire dropped the army", shown);
+  const offered = shown.depths.map(({ depth, line, button, enabled }) => `${depth}|${line}|${button}|${enabled}`);
+  const expected = [
+    "Ethereal I|30 stamina|Enter|true",
+    "Ethereal II|40 stamina|Enter|true",
+    "Ethereal III|Research it to open it|Research|true",
+  ];
+  if (JSON.stringify(offered) !== JSON.stringify(expected))
+    return failed(`the card offers ${offered.join(", ")}`, shown);
+  if (
+    !/^Entering keeps .+ in that depth for the rest of the day \(.+ left\): there is no way back up$/.test(
+      shown.commitment ?? "",
+    )
+  )
+    return failed("the card does not say what entering commits the army to", shown);
+  return completed(shown);
+}
+
+/** Presses Enter on Ethereal II, then reads the card and the army once the command's answer has moved the army. */
+async function enterEtherealII({ browser }) {
+  const before = browser.read(SPIRE_STATE);
+  browser.click("Enter Ethereal II");
+  const moved = (shown) => shown.sent.length > before.sent.length && shown.army?.hex.row !== before.army?.hex.row;
+  const after = await readUntil(() => browser.read(SPIRE_STATE), moved, ORDER_OUTCOME_WAIT_MS);
+  return { before, after };
+}
+
+/** The command the game signed for the press, and the army it moved, shown in Ethereal II. */
+function armyEnteredEtherealII({ played }) {
+  const { before, after } = played;
+  const command = after.sent.at(-1);
+  if (after.sent.length !== before.sent.length + 1 || command?.kind !== "EnterDepth")
+    return failed("Enter sent no EnterDepth command", { before, after });
+  if (Number(command.fields.explorer_id) !== before.army?.id || command.fields.depth !== "2")
+    return failed(`EnterDepth was sent for ${JSON.stringify(command.fields)}`, { before, after });
+  // Two regions of Frontier's hundred rows straight below where it stood.
+  if (after.army?.hex.col !== before.army.hex.col || after.army.hex.row - before.army.hex.row !== 200)
+    return failed("the army did not land in Ethereal II", { before, after });
+  if (!/is in Ethereal II until the day ends/.test(after.text ?? ""))
+    return failed("the card does not show the army in Ethereal II", { before, after });
+  return completed({ command, before: before.army, after: after.army, card: after.text });
+}
+
+const SPIRE_WAIT_MS = 5_000;
+
+/** Reads the page until what it shows is done, or the time is up; the last reading either way. */
+async function readUntil(read, done, timeoutMs) {
+  const startedAt = Date.now();
+  let shown = read();
+  while (!done(shown) && Date.now() - startedAt < timeoutMs) {
+    await sleep(POLL_MS);
+    shown = read();
+  }
+  return shown;
+}
+
 /** The step lists a run can play, by name, each with its game; a run plays its role's list unless it names another. */
 export const STEP_SETS = {
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
@@ -1051,6 +1188,7 @@ export const STEP_SETS = {
     steps: plateSteps(FRONTIER_MAP, { selectArmy: true }),
     devOverlays: true,
   },
+  "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },

@@ -78,6 +78,7 @@ it.each(KINDS)(
     const store = encounter(site);
     const sent = {
       targetId: SITE,
+      tile: { col: 40, row: 12 },
       site,
       armyId: 201,
       armyArt: "knight-t1",

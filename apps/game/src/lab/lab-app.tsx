@@ -61,6 +61,13 @@ const TOOLS = [
   },
   {
     group: "Art",
+    label: "Day end",
+    path: "/lab/day-end",
+    route: "day-end",
+    View: lazy(() => import("./day-end/view").then((module) => ({ default: module.DayEndLabView }))),
+  },
+  {
+    group: "Art",
     label: "World FX",
     path: "/lab/world-fx",
     route: "world-fx",
@@ -156,6 +163,13 @@ const TOOLS = [
     View: lazy(() =>
       import("../ui/features/debug/kit-lab/kit-lab-view").then((module) => ({ default: module.KitLabView })),
     ),
+  },
+  {
+    group: "Interface",
+    label: "Game on a fixture",
+    path: "/lab/game",
+    route: "game",
+    View: lazy(() => import("./game/game-lab-view").then((module) => ({ default: module.GameLabView }))),
   },
   {
     group: "Interface",
