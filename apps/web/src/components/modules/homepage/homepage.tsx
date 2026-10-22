@@ -380,12 +380,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
               <CardContent className="pb-6 text-center">
                 <div className="text-muted-foreground text-lg">No Realms found in your wallet</div>
                 <p className="text-muted-foreground mt-2 text-sm">Visit the marketplace to acquire your first Realm</p>
-                <a
-                  href="https://realms.market"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 inline-block"
-                >
+                <a href="https://realms.market" target="_blank" rel="noopener noreferrer" className="mt-4 inline-block">
                   <Button>
                     <Gavel className="mr-2 h-4 w-4" />
                     Browse Marketplace

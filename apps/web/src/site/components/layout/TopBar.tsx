@@ -258,12 +258,7 @@ export function TopBar() {
                       </a>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <a
-                        href="https://realms.market/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full"
-                      >
+                      <a href="https://realms.market/" target="_blank" rel="noopener noreferrer" className="w-full">
                         Marketplace
                       </a>
                     </DropdownMenuItem>
