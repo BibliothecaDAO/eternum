@@ -102,14 +102,14 @@
     "frame": "game",
     "setup": [
       {
-        "open": "https://play.realms.party/g/0x50524f44554354494f4e5f31386530376435323330633539393933/1/map?spectate=true"
+        "open": "/lab/game?scenario=spire"
       },
       {
-        "until": "document.querySelector('#main-canvas') && document.documentElement.dataset.bootState === 'app-ready'",
+        "until": "document.querySelector('nav[aria-label=\"Armies\"] button[aria-pressed]')",
         "ms": 180000
       },
       {
-        "wait": 15000
+        "wait": 6000
       }
     ]
   },
