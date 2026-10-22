@@ -91,6 +91,53 @@ describe("native presets", () => {
     }
   });
 
+  test("progression presets cannot grant or import relics into an army", () => {
+    const progressionPresets = Object.values(nativePresets).filter(({ progression }) => progression !== null);
+    expect(progressionPresets.length).toBeGreaterThan(0);
+    for (const source of progressionPresets) {
+      expect(source.gameType).toBe("frontier");
+      const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
+      expect(preset.economy.progression.isSome()).toBe(true);
+      expect(preset.economy.chests.isSome()).toBe(true);
+      expect(preset.rules.day_unit_seconds).toBeGreaterThan(0);
+      expect(preset.economy.relics).toEqual([]);
+      expect(preset.exploration).toEqual([]);
+      expect(source.bridgeResources).toEqual([]);
+      expect(preset.economy.withdrawals.isNone()).toBe(true);
+      for (const command of [
+        "CraftRelic",
+        "DepositResource",
+        "OffloadArrival",
+        "SendResources",
+        "TransferExplorerResources",
+        "TransferStructureResourcesToExplorer",
+        "TransferExplorerResourcesToStructure",
+      ] as const) {
+        expect(preset.rules.command_mask & BigInt(nativeCommandBits[command])).toBe(0n);
+      }
+      const grants = [
+        ...preset.settlement.realms.resources,
+        ...preset.settlement.villages.resources,
+        ...preset.settlement.villages.resource_pool,
+        ...preset.structures.camps.resources,
+        ...preset.resources.mine_kinds.map(({ config }) => config),
+      ];
+      expect(grants.some(({ resource_type }) => resource_type >= 39 && resource_type <= 56)).toBe(false);
+      expect(preset.settlement.realms.realm_resources.some((id) => id >= 39 && id <= 56)).toBe(false);
+      const relics = preset.resources.resources.filter(
+        ({ resource_type }) => resource_type >= 39 && resource_type <= 56,
+      );
+      expect(relics).toHaveLength(18);
+      for (const relic of relics) {
+        expect([relic.realm_rate, relic.village_rate]).toEqual([0n, 0n]);
+        const production = preset.resources.production.find(
+          ({ resource_type }) => resource_type === relic.resource_type,
+        )!;
+        expect([production.recipe.simple_output, production.recipe.complex_output]).toEqual([0n, 0n]);
+      }
+    }
+  });
+
   test("held-Realm labor is fixed per shard calendar day and leaves the account ceiling unruled", () => {
     for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
