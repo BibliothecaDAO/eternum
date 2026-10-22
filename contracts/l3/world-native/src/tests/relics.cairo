@@ -101,7 +101,12 @@ fn setup_with_reward(blitz: bool, resource_type: u8, amount: u128) -> (super::De
             deployment,
             Command::CreateExplorer(
                 crate::commands::CreateExplorer {
-                    structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                    slot: 0,
+                    structure_id: home.entity_id,
+                    category: 0,
+                    tier: 0,
+                    amount: RESOURCE_PRECISION,
+                    direction: 0,
                 },
             ),
             30,

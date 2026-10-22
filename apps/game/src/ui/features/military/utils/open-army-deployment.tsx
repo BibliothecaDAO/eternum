@@ -19,6 +19,7 @@ export interface ArmyDeploymentTarget {
   isExplorer: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
+  slot?: number;
   /** The troop stack the order named (Next up's "1,000 troops on hand"): the form opens on that troop at that count. */
   troops?: TroopStack;
 }

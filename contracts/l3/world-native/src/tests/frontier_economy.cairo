@@ -70,7 +70,7 @@ fn demolish(home: ResourceKey, direction: u8) -> Command {
 fn raise(home: ResourceKey, troops: u128, direction: u8) -> Command {
     Command::CreateExplorer(
         CreateExplorer {
-            structure_id: home.entity_id, category: 0, tier: 0, amount: troops * RESOURCE_PRECISION, direction,
+            slot: 0, structure_id: home.entity_id, category: 0, tier: 0, amount: troops * RESOURCE_PRECISION, direction,
         },
     )
 }

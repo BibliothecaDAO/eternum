@@ -67,7 +67,7 @@ describe("an action in flight", () => {
     await expect(sendOnce("army", 8, { order: "explore" }, send())).rejects.toThrow("Tile is occupied");
     // Another kind of subject is not an army's outcome.
     waitForAction.mockResolvedValueOnce(APPLIED);
-    await sendOnce("deploy", 7, true, send());
+    await sendOnce("deploy", 7, 2, send());
     expect(heard).toEqual([
       { key: "7", stillInFlight: false },
       { key: "8", stillInFlight: false },
@@ -86,14 +86,14 @@ describe("an action in flight", () => {
     waitForAction.mockReturnValue(new Promise(() => {}));
     const building = { type: 1, plot: { col: 11, row: 10 } };
     void sendOnce("plot", "7:11,10", building, send());
-    void sendOnce("deploy", 7, true, send());
+    void sendOnce("deploy", 7, 2, send());
     expect(inFlight("plot", "7:11,10")).toBe(building);
     expect(inFlight("plot", "7:12,10")).toBeUndefined();
-    expect(inFlight("deploy", 7)).toBe(true);
+    expect(inFlight("deploy", 7)).toBe(2);
     // A second press of each sends nothing; another plot, and the same realm's castle, are free.
     const again = send();
     expect(await sendOnce("plot", "7:11,10", building, again)).toBeNull();
-    expect(await sendOnce("deploy", 7, true, again)).toBeNull();
+    expect(await sendOnce("deploy", 7, 2, again)).toBeNull();
     expect(again).not.toHaveBeenCalled();
     expect(inFlight("castle", 7)).toBeUndefined();
   });

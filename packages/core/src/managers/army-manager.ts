@@ -47,6 +47,7 @@ export class ArmyManager {
     troopTier: TroopTier,
     troopCount: number,
     spawnDirection: Direction,
+    slot: number,
   ) {
     return this.systemCalls.explorer_create({
       signer,
@@ -55,6 +56,7 @@ export class ArmyManager {
       tier: Object.keys(TroopTier).indexOf(troopTier),
       amount: multiplyByPrecision(troopCount),
       spawn_direction: spawnDirection,
+      slot,
     });
   }
 

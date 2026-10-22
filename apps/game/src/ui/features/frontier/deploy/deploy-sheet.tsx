@@ -36,8 +36,22 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   const { center, ring } = useDeployRing(realm);
   const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);
   const direction = deployDirection(ring, ordered);
+  const pickedSlot = useUIStore((state) => state.pendingMilitaryAction?.slot);
+  const start = plan?.open.find((slot) => slot.slot === pickedSlot);
+  const pickSlot = (slot: number) =>
+    openArmyDeployment({
+      structureId: safeInteger(realm.entity_id),
+      isExplorer: true,
+      slot,
+      direction: direction ?? undefined,
+    });
   const orderToward = (toward: Direction) =>
-    openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true, direction: toward });
+    openArmyDeployment({
+      structureId: safeInteger(realm.entity_id),
+      isExplorer: true,
+      slot: pickedSlot,
+      direction: toward,
+    });
   const realmId = safeInteger(realm.entity_id);
   const deploying = useInFlight("deploy", realmId) !== undefined;
   const goToPlace = useGoToFrontierPlace(realm);
@@ -46,10 +60,17 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   /** The sheet closes as the army leaves; its slot on the dock carries the wait, and a refusal says why there. */
   const deploy = async () => {
     const troops = plan?.troops;
-    if (!troops || direction === null || !preview) return;
+    if (!troops || direction === null || !preview || !start) return;
     try {
-      await sendOnce("deploy", realmId, true, async () => {
-        const sent = await deployArmy(requireActiveGameClient().actions, realm, troops, preview.count, direction);
+      await sendOnce("deploy", realmId, start.slot, async () => {
+        const sent = await deployArmy(
+          requireActiveGameClient().actions,
+          realm,
+          troops,
+          preview.count,
+          direction,
+          start.slot,
+        );
         onClose();
         return sent;
       });
@@ -65,11 +86,12 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       count={preview?.count}
       amount={{ most: range.max, held: range.wheatMax < range.troopsMax ? range.max : (plan?.troops?.atHome ?? 0) }}
       onCount={setCount}
-      start={plan?.next ?? undefined}
+      start={start}
+      slots={{ allowed: realm.base.troop_max_explorer_count, open: plan?.open, onPick: pickSlot }}
       wheatCost={preview?.wheatCost}
       march={preview?.tiles}
-      ring={plan?.next && center ? { center, tiles: ring, chosen: direction, onPick: orderToward } : undefined}
-      canDeploy={Boolean(plan?.troops && preview && preview.count > 0 && direction !== null && plan.next)}
+      ring={plan?.open.length && center ? { center, tiles: ring, chosen: direction, onPick: orderToward } : undefined}
+      canDeploy={Boolean(plan?.troops && preview && preview.count > 0 && direction !== null && start)}
       sending={deploying}
       onDeploy={() => void deploy()}
       wheatShort={

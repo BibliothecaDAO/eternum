@@ -23,7 +23,7 @@ describe("Frontier's deploy", () => {
   it("reads the troops at home as one count, the slot the next army fills, and the wheat each troop costs", () => {
     const { store, row } = frontierDay();
     const plan = planOf(store, row)!;
-    expect(plan.next).toEqual({ slot: 1, number: 2, inherited: false, start: { current: 150, max: 150 } });
+    expect(plan.open[0]).toEqual({ slot: 1, number: 2, inherited: false, start: { current: 150, max: 150 } });
     expect(plan.troops).toMatchObject({ type: TroopType.Knight, tier: TroopTier.T1, atHome: 420 });
     expect(plan.wheatPerTroop).toBe(2);
     expect(plan.wheat).toBe(1_000);
@@ -121,13 +121,14 @@ describe("Frontier's deploy", () => {
     const { store, row } = frontierDay();
     const troops = planOf(store, row)!.troops!;
     const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" } as never));
-    await deployArmy({ createExplorerArmy }, row, troops, 120, 2);
+    await deployArmy({ createExplorerArmy }, row, troops, 120, 2, 2);
     expect(createExplorerArmy).toHaveBeenCalledWith({
       structureId: 7,
       troopType: TroopType.Knight,
       troopTier: TroopTier.T1,
       troopCount: 120,
       spawnDirection: 2,
+      slot: 2,
     });
   });
 });

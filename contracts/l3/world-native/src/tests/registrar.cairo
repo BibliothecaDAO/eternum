@@ -1030,7 +1030,7 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
             game_id,
             Command::CreateExplorer(
                 CreateExplorer {
-                    structure_id: home.entity_id, category, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                    slot: 0, structure_id: home.entity_id, category, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
                 },
             ),
             301,
@@ -1165,8 +1165,12 @@ fn a_day_is_whole_armies_ticks_and_a_season_starts_on_one() {
 }
 
 pub fn muster_command(category: u8, direction: u8) -> Command {
+    muster_slot_command(category, direction, 0)
+}
+
+pub fn muster_slot_command(category: u8, direction: u8, slot: u8) -> Command {
     Command::CreateExplorer(
-        CreateExplorer { structure_id: 1, category, tier: 0, amount: RESOURCE_PRECISION, direction },
+        CreateExplorer { slot, structure_id: 1, category, tier: 0, amount: RESOURCE_PRECISION, direction },
     )
 }
 
@@ -1191,7 +1195,9 @@ pub fn expedition_armies(d: super::Deployment, game_id: u32, category: u8) -> (E
     stop_cheat_caller_address(d.games);
     for direction in array![0_u8, 1] {
         let muster = Command::CreateExplorer(
-            CreateExplorer { structure_id: 1, category, tier: 0, amount: 3 * RESOURCE_PRECISION, direction },
+            CreateExplorer {
+                slot: direction, structure_id: 1, category, tier: 0, amount: 3 * RESOURCE_PRECISION, direction,
+            },
         );
         assert!(execute_in_game(d, game_id, muster, 351));
     }
@@ -1321,13 +1327,13 @@ fn yesterdays_armies_leave_todays_army_cap_free() {
     let troops = GameState { contract_address: d.games };
     let home = ResourceKey { game_id, entity_id: 1 };
     assert!(execute_in_game(d, game_id, muster_command(category, 0), 351));
-    assert!(execute_in_game(d, game_id, muster_command(category, 1), 352));
-    assert!(!execute_in_game(d, game_id, muster_command(category, 2), 353));
+    assert!(execute_in_game(d, game_id, muster_slot_command(category, 1, 1), 352));
+    assert!(!execute_in_game(d, game_id, muster_slot_command(category, 2, 2), 353));
     let yesterday = structures.home_armies(home);
     // The next day both armies are dead by rule; the realm musters its full cap again.
     let tomorrow = day_start(d, game_id, 1);
     assert!(execute_in_game(d, game_id, muster_command(category, 0), tomorrow + 1));
-    assert!(execute_in_game(d, game_id, muster_command(category, 1), tomorrow + 2));
+    assert!(execute_in_game(d, game_id, muster_slot_command(category, 1, 1), tomorrow + 2));
     for id in yesterday {
         assert!(troops.resolved_explorer(ExplorerKey { game_id, explorer_id: *id }).is_none());
     }
@@ -1582,10 +1588,10 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     preset.rules.mode_rules = HOME_REWARDS | crate::rules::UNOWNED_TARGETS | crate::rules::DEPTH_CONTENTS;
     preset.settlement.spacing = 1024;
     let limits = crate::rules::TroopLimitConfig {
-        settlement_armies: 2,
-        city_armies: 3,
-        kingdom_armies: 4,
-        empire_armies: 5,
+        settlement_armies: 3,
+        city_armies: 4,
+        kingdom_armies: 5,
+        empire_armies: 6,
         settlement_guard_slots: 0,
         city_guard_slots: 0,
         kingdom_guard_slots: 0,
@@ -1665,7 +1671,7 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     assert!(troop_resource != 0, "starting garrison missing");
     assert_eq!(crate::troops::max_army_size(limits, 0, crate::troops::TroopTier::T1), 3000);
     let muster = Command::CreateExplorer(
-        CreateExplorer { structure_id: 1, category, tier: 0, amount: RESOURCE_PRECISION, direction: 5 },
+        CreateExplorer { slot: 0, structure_id: 1, category, tier: 0, amount: RESOURCE_PRECISION, direction: 5 },
     );
     for level in 0_u8..4 {
         if level != 0 {
@@ -1673,15 +1679,17 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
         }
         let record = structures.structure(home).unwrap();
         assert_eq!(record.base.troop_max_guard_count, 0);
-        assert_eq!(record.base.troop_max_explorer_count, Into::<u8, u16>::into(level) + 2);
-        while structures.home_armies(home).len() < Into::<u8, u32>::into(level) + 2 {
+        assert_eq!(record.base.troop_max_explorer_count, Into::<u8, u16>::into(level) + 3);
+        while structures.home_armies(home).len() < Into::<u8, u32>::into(level) + 3 {
             let direction: u8 = structures.home_armies(home).len().try_into().unwrap();
             assert!(
                 execute_in_game(
                     d,
                     game_id,
                     Command::CreateExplorer(
-                        CreateExplorer { structure_id: 1, category, tier: 0, amount: RESOURCE_PRECISION, direction },
+                        CreateExplorer {
+                            slot: direction, structure_id: 1, category, tier: 0, amount: RESOURCE_PRECISION, direction,
+                        },
                     ),
                     351,
                 ),
@@ -1963,7 +1971,7 @@ fn assert_capture_at(
             game_id,
             Command::CreateExplorer(
                 CreateExplorer {
-                    structure_id: 1, category: 0, tier: 0, amount: 1000 * RESOURCE_PRECISION, direction: 0,
+                    slot: 0, structure_id: 1, category: 0, tier: 0, amount: 1000 * RESOURCE_PRECISION, direction: 0,
                 },
             ),
             opening + 1,
@@ -2344,6 +2352,7 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
                 game_id,
                 Command::CreateExplorer(
                     CreateExplorer {
+                        slot: depth - 1,
                         structure_id: 1,
                         category: 0,
                         tier: 0,
@@ -2625,7 +2634,7 @@ fn setup_frontier_chests_with_preset(
         );
     stop_cheat_caller_address(d.games);
     let muster = Command::CreateExplorer(
-        CreateExplorer { structure_id: 1, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0 },
+        CreateExplorer { slot: 0, structure_id: 1, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0 },
     );
     assert!(execute_in_game(d, game_id, muster, 351));
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
@@ -3227,6 +3236,53 @@ fn frontier_refuses_off_map_economy_commands_before_reading_positions() {
 }
 
 #[test]
+fn expedition_deploy_chooses_a_free_slot_and_refuses_occupied_or_unallowed_slots() {
+    let d = setup();
+    let (game_id, preset, category) = expedition_home(d);
+    let key = crate::troops::ArmySlotKey { game_id, structure_id: 1, epoch: 0, slot: 1 };
+    let read_slot = |key| snforge_std::interact_with_state(d.games, || crate::logic::army_slot_storage::read(key));
+    let troops = GameState { contract_address: d.games };
+    assert!(execute_in_game(d, game_id, muster_slot_command(category, 0, 1), 351));
+    let fresh = read_slot(key).unwrap();
+    let explorer = ExplorerKey { game_id, explorer_id: fresh.explorer_id };
+    let army = troops.explorer(explorer).unwrap();
+    assert_eq!(army.troops.stamina, crate::troops::StaminaSource::Slot(1));
+    assert_eq!(
+        fresh.stamina.amount,
+        crate::progression::stamina_max(
+            crate::progression::initial(), army.troops.category, preset.rules.troop_stamina_config,
+        ),
+    );
+    assert!(read_slot(crate::troops::ArmySlotKey { slot: 0, ..key }).is_none());
+    let home = ResourceKey { game_id, entity_id: 1 };
+    let before = IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home);
+    // Both commands aim at an empty tile: the slot check is what refuses them.
+    assert!(!execute_in_game(d, game_id, muster_slot_command(category, 1, 1), 351));
+    assert!(!execute_in_game(d, game_id, muster_slot_command(category, 1, 2), 351));
+    assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home), before);
+    assert_eq!(read_slot(key).unwrap(), fresh);
+    assert!(read_slot(crate::troops::ArmySlotKey { slot: 2, ..key }).is_none());
+    let mut tired = troops.resolved_explorer(explorer).unwrap();
+    tired.troops.stamina.set_amount(7);
+    super::resource_commands::set_explorer_fixture(d.games, explorer, tired);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(explorer.explorer_id)),
+            351,
+        ),
+    );
+    // The higher slot keeps its bar even though the lower slot has never been used.
+    assert!(execute_in_game(d, game_id, muster_slot_command(category, 0, 1), 351));
+    let reused = read_slot(key).unwrap();
+    assert!(reused.explorer_id != fresh.explorer_id);
+    assert_eq!(reused.stamina.amount, 7);
+    assert!(execute_in_game(d, game_id, muster_slot_command(category, 1, 0), 351));
+    assert_eq!(read_slot(crate::troops::ArmySlotKey { slot: 0, ..key }).unwrap().stamina.amount, fresh.stamina.amount);
+}
+
+#[test]
 fn expedition_slot_reuse_preserves_its_bar_and_the_next_day_allocates_a_fresh_bar() {
     let d = setup();
     let (game_id, preset, category) = expedition_home(d);
@@ -3317,7 +3373,9 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
             d,
             game_id,
             Command::CreateExplorer(
-                CreateExplorer { structure_id: 1, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 1 },
+                CreateExplorer {
+                    slot: 1, structure_id: 1, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 1,
+                },
             ),
             352,
         ),
@@ -3393,7 +3451,9 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
             d,
             game_id,
             Command::CreateExplorer(
-                CreateExplorer { structure_id: 1, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0 },
+                CreateExplorer {
+                    slot: 0, structure_id: 1, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                },
             ),
             tomorrow,
         ),

@@ -2,6 +2,7 @@ use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct CreateExplorer {
+    pub slot: u8,
     pub structure_id: u64,
     pub category: u8,
     pub tier: u8,

@@ -69,6 +69,7 @@ pub fn setup_with_cooldown(
                 d,
                 Command::CreateExplorer(
                     CreateExplorer {
+                        slot: 0,
                         structure_id: key.entity_id,
                         category: 0,
                         tier: 0,
@@ -844,7 +845,12 @@ fn unowned_target_rule_rejects_owned_sites_and_allows_capture_of_an_unowned_site
             d,
             Command::CreateExplorer(
                 CreateExplorer {
-                    structure_id: home.entity_id, category: 0, tier: 0, amount: 100 * RESOURCE_PRECISION, direction: 0,
+                    slot: 0,
+                    structure_id: home.entity_id,
+                    category: 0,
+                    tier: 0,
+                    amount: 100 * RESOURCE_PRECISION,
+                    direction: 0,
                 },
             ),
             80,

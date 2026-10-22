@@ -311,7 +311,7 @@ pub mod RelicState {
                 let initial = crate::troops::Stamina { amount: maximum, ..value.initial };
                 return ResolvedArmySlot {
                     stamina: army_slot_storage::allocate(
-                        key, value.home, value.epoch, value.allowance, initial, maximum,
+                        key, value.home, value.epoch, value.allowance, value.slot, initial, maximum,
                     ),
                     battle_bonus_percent: 0,
                 };

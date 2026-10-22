@@ -410,6 +410,8 @@ export interface GuardDeleteProps extends SystemSigner {
  * Properties for creating an explorer
  */
 export interface ExplorerCreateProps extends SystemSigner {
+  /** Selected zero-based daily army slot; zero in games without daily slots. */
+  slot: number;
   /** ID of the structure creating the explorer */
   for_structure_id: number;
   /** Type of troops to add */

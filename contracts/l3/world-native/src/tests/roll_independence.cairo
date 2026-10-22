@@ -12,7 +12,9 @@ const ROOTS: u64 = 32;
 fn typed_commands() -> Array<Command> {
     array![
         Command::CreateExplorer(
-            crate::commands::CreateExplorer { structure_id: 999999, category: 0, tier: 0, amount: 1, direction: 0 },
+            crate::commands::CreateExplorer {
+                slot: 0, structure_id: 999999, category: 0, tier: 0, amount: 1, direction: 0,
+            },
         ),
         Command::Explore(crate::commands::Explore { explorer_id: 999999, direction: 0 }),
         Command::Battle(
@@ -963,7 +965,12 @@ fn explorer_case(explore: bool) -> (Deployment, TestAction, u64) {
     }
     let create = Command::CreateExplorer(
         crate::commands::CreateExplorer {
-            structure_id: home.entity_id, category: 0, tier: 0, amount: crate::rules::RESOURCE_PRECISION, direction: 0,
+            slot: 0,
+            structure_id: home.entity_id,
+            category: 0,
+            tier: 0,
+            amount: crate::rules::RESOURCE_PRECISION,
+            direction: 0,
         },
     );
     let command = if explore {

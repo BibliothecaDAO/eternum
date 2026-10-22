@@ -36,6 +36,21 @@ function setup() {
   return { provider, calls: createSystemCalls({ provider }), submit, signer, wait, decoded };
 }
 describe("player command callers", () => {
+  it("carries the chosen army slot through system calls and the provider into CreateExplorer", async () => {
+    const { calls, signer, submit, decoded } = setup();
+    await calls.explorer_create({
+      signer,
+      for_structure_id: 12,
+      category: 0,
+      tier: 0,
+      amount: 100,
+      spawn_direction: 4,
+      slot: 2,
+    });
+    expect(submit.mock.calls.at(-1)![1]).toMatchObject({ entrypoint: "CreateExplorer" });
+    expect(decoded()).toEqual({ structure_id: 12n, category: 0n, tier: 0n, amount: 100n, direction: 4n, slot: 2n });
+  });
+
   it("sends the army sheet's Upgrade as the contract's BuyTier: the army, its attribute, a Scouting tier's kind", async () => {
     const { calls, signer, submit, decoded } = setup();
     await calls.buy_tier({ signer, explorerId: 90, attribute: "Battle" });

@@ -97,7 +97,7 @@ fn blitz_army() -> (super::Deployment, ResourceKey, ExplorerKey) {
         super::resource_commands::grant(d, home, resource, 100 * RESOURCE_PRECISION);
     }
     let raise = CreateExplorer {
-        structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+        slot: 0, structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
     };
     assert!(super::resource_commands::execute(d, Command::CreateExplorer(raise), 80));
     let structures = crate::structures::IStructureOperationsDispatcher { contract_address: d.games };
@@ -267,7 +267,7 @@ fn blitz_army_of(count: u128, tier: u8) -> (super::Deployment, ResourceKey, Expl
         super::resource_commands::grant(d, home, food, 100_000 * RESOURCE_PRECISION);
     }
     let raise = CreateExplorer {
-        structure_id: home.entity_id, category: 0, tier, amount: count * RESOURCE_PRECISION, direction: 0,
+        slot: 0, structure_id: home.entity_id, category: 0, tier, amount: count * RESOURCE_PRECISION, direction: 0,
     };
     assert!(super::resource_commands::execute(d, Command::CreateExplorer(raise), 80));
     let structures = crate::structures::IStructureOperationsDispatcher { contract_address: d.games };

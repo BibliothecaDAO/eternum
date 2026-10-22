@@ -214,7 +214,7 @@ fn action(deployment: Deployment, game_id: u32) -> TestAction {
         game_id,
         actor: deployment.actor,
         command: Command::CreateExplorer(
-            CreateExplorer { structure_id: 7, category: 0, tier: 0, amount: 0, direction: 0 },
+            CreateExplorer { slot: 0, structure_id: 7, category: 0, tier: 0, amount: 0, direction: 0 },
         ),
     }
 }

@@ -707,6 +707,7 @@ export class EternumProvider extends EventEmitter {
         kind: "CreateExplorer",
         value: {
           structure_id: props.for_structure_id,
+          slot: props.slot,
           category: props.category,
           tier: props.tier,
           amount: props.amount,

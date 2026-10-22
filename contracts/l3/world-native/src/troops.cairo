@@ -450,6 +450,7 @@ pub trait IBattleResolution<T> {
 
 #[derive(Copy, Drop, Serde)]
 pub struct ArmySlotAllocation {
+    pub slot: u8,
     pub home: u64,
     pub epoch: u64,
     pub allowance: u8,

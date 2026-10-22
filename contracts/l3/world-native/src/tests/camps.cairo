@@ -223,7 +223,12 @@ fn exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
             d,
             Command::CreateExplorer(
                 CreateExplorer {
-                    structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                    slot: 0,
+                    structure_id: home.entity_id,
+                    category: 0,
+                    tier: 0,
+                    amount: RESOURCE_PRECISION,
+                    direction: 0,
                 },
             ),
             80,
@@ -259,7 +264,12 @@ fn eternum_exploration_does_not_create_a_camp() {
             d,
             Command::CreateExplorer(
                 CreateExplorer {
-                    structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                    slot: 0,
+                    structure_id: home.entity_id,
+                    category: 0,
+                    tier: 0,
+                    amount: RESOURCE_PRECISION,
+                    direction: 0,
                 },
             ),
             80,
@@ -293,7 +303,12 @@ fn blitz_exploration_stores_both_inclusive_camp_guard_endpoints() {
                 d,
                 Command::CreateExplorer(
                     CreateExplorer {
-                        structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                        slot: 0,
+                        structure_id: home.entity_id,
+                        category: 0,
+                        tier: 0,
+                        amount: RESOURCE_PRECISION,
+                        direction: 0,
                     },
                 ),
                 80,

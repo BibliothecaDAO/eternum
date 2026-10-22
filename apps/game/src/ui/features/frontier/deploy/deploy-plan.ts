@@ -40,10 +40,9 @@ export interface SlotStart {
  * resource they are drawn from is the realm's own, never shown.
  */
 interface DeployPlan {
-  /** Today's open slots, lowest first, as the contract fills them. */
+  /** Today's open slots, in slot order, for the player to choose from. */
   open: SlotStart[];
-  /** The slot the next army fills, or null when every slot today holds an army. */
-  next: SlotStart | null;
+
   /** The troops at home the next army draws from; null when the realm holds none. */
   troops: { type: TroopType; tier: TroopTier; atHome: number; cap: number } | null;
   /** Whole wheat a troop costs to deploy (0 where deploying costs nothing). */
@@ -82,7 +81,6 @@ export const readDeployPlan = (
   const starts = open.map((slot) => slotStart(slot, troops, trained, clock.defaultTick));
   return {
     open: starts,
-    next: starts[0] ?? null,
     troops,
     wheatPerTroop: troops ? wheatToDeploy(store, realm, troops, 1, defaultTick) : 0,
     wheatPerTroopTile: troops
@@ -192,6 +190,7 @@ export const deployArmy = (
   troops: NonNullable<DeployPlan["troops"]>,
   count: number,
   direction: Direction,
+  slot: number,
 ) =>
   actions.createExplorerArmy({
     structureId: safeInteger(realm.entity_id),
@@ -199,4 +198,5 @@ export const deployArmy = (
     troopTier: troops.tier,
     troopCount: count,
     spawnDirection: direction,
+    slot,
   });
