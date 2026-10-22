@@ -13,11 +13,11 @@ const world = vi.hoisted(() => ({
   player: "0x1" as string | null,
   navigate: vi.fn(),
   rebuild: vi.fn(),
+  /** The game's store is one object for the game's life, as `setup.store` is. */
+  store: { structuresOwnedBy: () => [{ entity_id: 12 }] },
 }));
 
-vi.mock("@/hooks/context/game-context", () => ({
-  useGame: () => ({ setup: { store: { structuresOwnedBy: () => [{ entity_id: 12 }] } } }),
-}));
+vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: world.store } }) }));
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (select: (state: unknown) => unknown) =>
     select({ account: world.player ? { address: world.player } : null }),
@@ -25,7 +25,10 @@ vi.mock("@/hooks/store/use-account-store", () => ({
 vi.mock("@/hooks/store/use-chain-time-store", () => ({
   useChainTimeStore: { getState: () => ({ getNowSeconds: () => world.chainDay }) },
 }));
-vi.mock("@/hooks/helpers/use-navigate", () => ({ useNavigateToMapView: () => world.navigate }));
+// As the game's hook does, a new navigation function on every render.
+vi.mock("@/hooks/helpers/use-navigate", () => ({
+  useNavigateToMapView: () => (position: unknown) => world.navigate(position),
+}));
 vi.mock("@bibliothecadao/eternum/game-sync", () => ({
   getActiveGameSyncRuntime: () => ({ getWorldSpatialProjection: () => ({ rebuild: world.rebuild }) }),
 }));
@@ -131,6 +134,20 @@ describe("a player's day turning", () => {
     seconds(DAY_END_TIMING.blackHold + DAY_END_TIMING.dawn);
     expect(phase()).toBe("day");
     expect(world.rebuild).not.toHaveBeenCalled();
+    world.blockDay = 2;
+    seconds(1);
+    expect(world.rebuild).toHaveBeenCalledTimes(1);
+    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE);
+  });
+
+  it("keeps the turn's due camera move when a map navigation renders it again before the late block", () => {
+    mount();
+    world.chainDay = 2;
+    seconds(1);
+    continueIntoTheBlack();
+    seconds(DAY_END_TIMING.blackHold + DAY_END_TIMING.dawn);
+    expect(phase()).toBe("day");
+    act(() => root.render(<ExpeditionRollover />));
     world.blockDay = 2;
     seconds(1);
     expect(world.rebuild).toHaveBeenCalledTimes(1);
