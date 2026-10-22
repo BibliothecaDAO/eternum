@@ -26,10 +26,23 @@ use crate::map::{TileKey, TileOpt};
 
 pub fn occupancy(key: TileKey) -> Option<crate::map::TileOccupancy> {
     let state = crate::state::read();
-    crate::map::occupancy_from_bits(state.map.occupancy.read((key.game_id, key.alt, key.col, key.row)))
+    let occupancy = crate::map::occupancy_from_bits(
+        state.map.occupancy.read((key.game_id, key.alt, key.col, key.row)),
+    )?;
+    if occupancy.category == crate::taxonomy::RUIN_OCCUPIER
+        && crate::logic::expeditions::ruin_disappeared(
+            crate::resources::ResourceKey { game_id: key.game_id, entity_id: occupancy.entity_id },
+        ) {
+        None
+    } else {
+        Some(occupancy)
+    }
 }
 
 pub fn entity_coord(key: crate::resources::ResourceKey) -> Option<crate::troops::Coord> {
+    if crate::logic::expeditions::ruin_disappeared(key) {
+        return None;
+    }
     let state = crate::state::read();
     crate::map::position_from_bits(state.map.entity_tiles.read((key.game_id, key.entity_id)))
 }
@@ -162,7 +175,7 @@ pub mod MapState {
     fn write_occupancy(key: TileKey, next: Option<TileOccupancy>) {
         let state = crate::state::write();
         let storage_key = (key.game_id, key.alt, key.col, key.row);
-        let previous = crate::logic::map::occupancy(key);
+        let previous = crate::map::occupancy_from_bits(state.map.occupancy.read(storage_key));
         if let Some(occupier) = previous {
             if has_single_position(occupier) {
                 state.map.entity_tiles.write((key.game_id, occupier.entity_id), 0);
@@ -383,7 +396,7 @@ pub mod MapLogic {
                 ),
             };
             let day = crate::logic::expeditions::discovery(counter)
-                .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_found: false });
+                .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
             if !key.alt
                 && crate::rules::rule_enabled(context.rules.unbox(), crate::rules::DISCOVER_CHESTS)
                 && crate::discovery::frontier_chest(seed) {
@@ -398,8 +411,7 @@ pub mod MapLogic {
                     return crate::discovery::Discovery::Chest;
                 }
             }
-            // A refused ruin still contributes its rolled tier, and leaves this Realm day free.
-            let ruin = if day.ruin_found {
+            let ruin = if day.ruin_cleared {
                 None
             } else {
                 let odds = crate::logic::expeditions::depth_rules_at(
@@ -409,12 +421,7 @@ pub mod MapLogic {
                 Some(crate::logic::lords_budget::candidate(key.game_id, odds, seed, context))
             };
             let (camp, rift, beasts) = crate::progression::scouting_bonus(progress);
-            let mut result = crate::discovery::frontier(rules, camp, rift, beasts, day.empty_reveals, ruin, seed);
-            if let crate::discovery::Discovery::Ruin(chest) = result {
-                if !crate::logic::lords_budget::try_reserve(key.game_id, chest, context) {
-                    result = crate::discovery::Discovery::None;
-                }
-            }
+            let result = crate::discovery::frontier(rules, camp, rift, beasts, day.empty_reveals, ruin, seed);
             crate::logic::expeditions::record_discovery(counter, result);
             if let Some(category) = crate::discovery::tile_occupier(result) {
                 crate::logic::map::MapState::occupy(

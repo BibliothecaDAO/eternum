@@ -10,7 +10,8 @@ pub fn owner(key: ResourceKey) -> ContractAddress {
 
 pub fn exists(key: ResourceKey) -> bool {
     let state = crate::state::read();
-    state.structures.structures.entry((key.game_id, key.entity_id)).base.read().category != 0
+    let category = state.structures.structures.entry((key.game_id, key.entity_id)).base.read().category;
+    category != 0 && (category != crate::taxonomy::RUIN_CATEGORY || !crate::logic::expeditions::ruin_disappeared(key))
 }
 
 pub fn record(key: ResourceKey) -> StructureRecord {

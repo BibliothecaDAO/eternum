@@ -181,8 +181,8 @@ pub struct ExpeditionDiscoveryKey {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExpeditionDiscovery {
     pub empty_reveals: u8,
-    // A player finds at most one ruin a day, counted when it is found.
-    pub ruin_found: bool,
+    // Clearing one ruin closes the home's ruins across all four depths for this day.
+    pub ruin_cleared: bool,
 }
 #[starknet::interface]
 pub trait IFrontierDiscovery<T> {

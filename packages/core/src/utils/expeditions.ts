@@ -1,3 +1,4 @@
+import { entityHomeNamespace } from "./entity-home";
 import { researchedDepth } from "./realm-research";
 import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -119,13 +120,7 @@ export const liveHomeArmies = (
   );
 };
 
-/** Entity IDs carry the home namespace in their upper32bits; old setup homes use their low ID. */
-export function entityHomeNamespace(entityId: number | bigint | string): number {
-  if (typeof entityId === "number" && !Number.isSafeInteger(entityId)) throw new Error("Unsafe home entity id");
-  const value = BigInt(entityId);
-  if (value <= 0n || value > 0xffffffffffffffffn) throw new Error("Invalid home entity id");
-  return Number(value < 0x100000000n ? value : value >> 32n);
-}
+export { entityHomeNamespace } from "./entity-home";
 
 /** A player's expedition home is a realm: its armies muster each day, and other structures are only met on the way. */
 export const isRealmCategory = (category: number): boolean => category === StructureType.Realm;

@@ -5,8 +5,8 @@ import type { SeasonPoolFigures } from "./season-list";
 
 /*
  * A Frontier season's LORDS, as the shard holds them. The pool is the tokens deposited on the ledger for the season,
- * published to the game once (the budget row's `pool`, in whole LORDS); until then it is zero, no ruin holds a chest
- * and nothing can be withdrawn. A chest pays its tier's shares at the day's price, which the budget row freezes when
+ * published to the game once (the budget row's `pool`, in whole LORDS); until then it is zero and no ruin can pay.
+ * Ruins show their chest before funding; only a successful clear spends the pool. A chest pays its tier's shares at the day's price, which the budget row freezes when
  * the day opens and the preset only caps. No preset names a pool, and none names a price a chest is paid at.
  */
 

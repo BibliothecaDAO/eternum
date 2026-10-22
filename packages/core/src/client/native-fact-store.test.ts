@@ -578,7 +578,7 @@ describe("declared fact absence", () => {
         structure_id: 7,
         epoch: "0",
         empty_reveals: 1,
-        ruin_found: true,
+        ruin_cleared: true,
       }),
     ]);
     const counter = { game_id: 1, structure_id: 7, epoch: 0n };
@@ -595,7 +595,7 @@ describe("declared fact absence", () => {
     store.setSnapshot({ gameId: 1, complete: true, timestamp: 350 });
     expect(resolveExplorerTroops(store, army)).toBeUndefined();
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
-    expect(store.requireOrAbsent("ExpeditionDiscovery", counter).known?.ruin_found).toBe(true);
+    expect(store.requireOrAbsent("ExpeditionDiscovery", counter).known?.ruin_cleared).toBe(true);
     for (const epoch of [1n, 2n])
       expect(store.requireOrAbsent("ExpeditionDiscovery", { ...counter, epoch }).unknown).toContain(
         "OUTSIDE_SNAPSHOT_SCOPE",

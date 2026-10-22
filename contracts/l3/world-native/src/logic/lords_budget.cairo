@@ -44,12 +44,27 @@ pub fn candidate(game_id: u32, odds: ChestTiers, seed: u256, context: ExecutionC
     priced_chest(game_id, roll_tier(odds, seed), context)
 }
 
+pub fn pay_ruin(key: ResourceKey, home_id: u64, context: ExecutionContext) -> crate::resources::ResourceAmount {
+    assert!(
+        crate::entity_ids::namespace(key.entity_id) == crate::entity_ids::namespace(home_id),
+        "ruin belongs to another realm",
+    );
+    assert!(!crate::logic::expeditions::ruin_disappeared(key), "realm already cleared a ruin today");
+    let chest = site_chest(key).expect('missing ruin chest');
+    assert!(chest.reservation_day == today(key.game_id, context).day, "ruin belongs to another day");
+    assert!(try_reserve(key.game_id, chest, context), "day's LORDS budget cannot fund this ruin");
+    pay(key, context)
+}
+
 pub fn common_candidate(game_id: u32, context: ExecutionContext) -> SiteChest {
     priced_chest(game_id, 0, context)
 }
 
 fn priced_chest(game_id: u32, tier: u8, context: ExecutionContext) -> SiteChest {
     let today = today(game_id, context);
+    if budget(game_id) != Some(today) {
+        write(game_id, today);
+    }
     SiteChest {
         tier,
         amount: Into::<u16, u128>::into(tier_value(chest_rules(game_id).shares, tier)) * today.price,

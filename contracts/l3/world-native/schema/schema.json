@@ -2863,9 +2863,9 @@
           "feltLength": 1
         },
         {
-          "name": "ruin_found",
+          "name": "ruin_cleared",
           "type": "core::bool",
-          "id": "0x7275696e5f666f756e64",
+          "id": "0x7275696e5f636c6561726564",
           "feltLength": 1
         }
       ],
@@ -8797,7 +8797,7 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "ruin_found",
+          "name": "ruin_cleared",
           "type": "core::bool"
         }
       ]
@@ -13133,5 +13133,5 @@
       ]
     }
   },
-  "identity": "271ebcb3c699fed707d9e75a02395208e87a19571020ad6b5a6e26901f1ff461"
+  "identity": "bdd847a1dfe8f77ec3f7502873522485451d34bd14f2e19dbb78d6f85b8c8a7d"
 }

@@ -218,7 +218,7 @@ fn the_frozen_daily_price_is_shared_and_a_previous_ruin_and_floor_do_not_block_t
                 .rollover_budget
                 .write(game_id, Some(crate::relics::LordsBudget { price: 7, ..budget }));
             let day = crate::expeditions::region_day(coord, 1024);
-            crate::state::write().map_rules.ruin_found.write((game_id, 1, day), true);
+            crate::state::write().map_rules.ruin_cleared.write((game_id, 1, day), true);
             crate::state::write().map_rules.empty_reveals.write((game_id, 1, day), Some(7));
         },
     );

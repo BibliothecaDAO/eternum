@@ -67,12 +67,13 @@ describe("Frontier's tile card", () => {
   });
 
   it("names a ruin by the beast its depth calls for, and pays its chest", () => {
+    setBlockTimestampSource(() => 350);
     const { store, site, structure } = campBeside("Ruin");
     // Row 12 of ten-row bands is the second band: Ethereal I, held by a basilisk.
     const plan = readSiteCard(store, site, structure, SITE_TILE, null);
     expect(plan.name).toBe("Basilisk");
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Lords, amount: 500, fits: 500 });
-    expect(plan.chest).toEqual({ tier: 3, amount: 500 });
+    expect(plan.chest).toMatchObject({ tier: 3, amount: 500, depth: "Ethereal I", funded: true });
     expect(plan.xp).toBe(82);
     const rift = campBeside("Rift");
     expect(readSiteCard(rift.store, rift.site, rift.structure, SITE_TILE, null).payout).toEqual({
@@ -118,4 +119,17 @@ it("reads another player's army as a target: its troops, the same exact fight in
   expect(
     readArmyCard(store, other, { col: 44, row: 12, alt: false }, attack({ col: 41, row: 12, alt: false })).fight,
   ).toBeUndefined();
+});
+
+it("shows a ruin's fixed quote but refuses funding when the shared budget is spent", () => {
+  setBlockTimestampSource(() => 350);
+  const { store, site, structure } = campBeside("Ruin");
+  const budget = store.require("LordsBudget", { game_id: 1 });
+  store.applyFacts([{ model: "LordsBudget", key: "0x101", value: { ...budget, pool_left: 0n } }]);
+  expect(readSiteCard(store, site, structure, SITE_TILE, null).chest).toEqual({
+    tier: 3,
+    amount: 500,
+    depth: "Ethereal I",
+    funded: false,
+  });
 });

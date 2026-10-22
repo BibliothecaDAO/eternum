@@ -49,6 +49,17 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
   const noDice =
     preset.rules.mode_rules & ~(nativeRuleConstants.COMBAT_DICE | nativeRuleConstants.COMBAT_DICE_ETHEREAL);
   store.applyFacts([
+    set("0x101", "LordsBudget", {
+      game_id: 1,
+      pool: "1000000",
+      pool_left: "1000000",
+      open: "0",
+      day: "0",
+      price: "50",
+      rolled_shares: "0",
+      yesterday_shares: "0",
+      yesterday_ticks: "0",
+    }),
     set("0x100", "SliceRules", {
       ...preset.rules,
       game_id: 1,
