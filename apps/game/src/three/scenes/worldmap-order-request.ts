@@ -2,8 +2,8 @@ import { type ActionPath, ActionPaths, ActionType } from "@bibliothecadao/eternu
 
 /**
  * The HUD's verb for the order the player has pinned: a tap on a tile the selected army can explore or move to pins
- * it (the path and its costs show), and the verb asks the world map to run that order. A right-click, or a
- * press-and-hold on a touch screen, runs it at once without the preview.
+ * it (the path and its costs show), and the verb asks the world map to run that order. A mouse right-click runs it
+ * directly. On a Frontier phone, holding a tile shows its facts; site holds use a Shrine or Well or open depth choices.
  */
 export const ORDER_REQUEST_EVENT = "orderAtTileRequest";
 

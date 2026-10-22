@@ -2718,7 +2718,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /** Site holds use an adjacent Shrine or Well, or open a spire's depth choice; other phone holds show facts. */
-  private holdOpensSite(hexCoords: HexPosition): boolean {
+  private hasSiteHoldAction(hexCoords: HexPosition): boolean {
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     if (selectedEntityId === null || selectedEntityId === undefined) return false;
     const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
@@ -2727,7 +2727,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
-    if (hexCoords && isTouchHold(event) && this.hudCarriesOrderVerb() && !this.holdOpensSite(hexCoords)) {
+    if (hexCoords && isTouchHold(event) && this.hudCarriesOrderVerb() && !this.hasSiteHoldAction(hexCoords)) {
       this.showTileFacts(hexCoords);
       return;
     }
@@ -2786,9 +2786,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * With an army selected, a tap on a tile answers with that army's order there (orderOnTap), never past a confirm:
-   * the pinned order's verb, the attack preview's, or the site card's own. False leaves the tile its own tap. The
-   * order that skips the confirm is the right-click's (actAtHex).
+   * With an army selected, a tap previews its order or opens its site card. A second tap on a phone's pinned movement
+   * order sends it; attacks and site cards keep their own confirmation. False leaves the tile its own tap.
    */
   private answerTapWithSelectedArmyOrder(hexCoords: HexPosition): boolean {
     if (!canIssueOrders()) return false;

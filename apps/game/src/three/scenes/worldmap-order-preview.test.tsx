@@ -11,7 +11,8 @@ vi.mock("@/utils/can-issue-orders", async (original) => ({
   refusedBeforePlay: () => false,
 }));
 
-const { ActionPaths, ActionType, configManager } = await import("@bibliothecadao/eternum");
+const { ActionPaths, ActionType, configManager, setBlockTimestampSource } = await import("@bibliothecadao/eternum");
+const { useAccountStore } = await import("@/hooks/store/use-account-store");
 const { usePopoverStore } = await import("@/hooks/store/use-popover-store");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { default: WorldmapScene } = await import("./worldmap");
@@ -82,6 +83,7 @@ const worldMap = (frontier: boolean) => {
 };
 
 beforeEach(() => {
+  setBlockTimestampSource(() => 350);
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   // The map's canvas, where a surface over a tile hangs from.
   const canvas = document.createElement("canvas");
@@ -101,6 +103,8 @@ beforeEach(() => {
   usePopoverStore.setState({ openId: null, surface: null });
 });
 afterEach(() => {
+  setBlockTimestampSource(null);
+  useAccountStore.setState({ account: null });
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -228,12 +232,43 @@ describe("an open preview whose order changes before its verb is pressed", () =>
   });
 });
 
-it("on a Frontier phone, a finger's hold on a tile shows its facts and never sends", () => {
-  screen(false);
-  const { scene, sent, facts } = worldMap(true);
-  const rightClick = scene as unknown as { onHexagonRightClick: (event: MouseEvent, hex: unknown) => void };
+it.each([ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.Help, ActionType.Chest])(
+  "on a Frontier phone, a hold on %s shows facts without sending",
+  (actionType) => {
+    useUIStore.setState((state) => ({
+      entityActions: { ...state.entityActions, actionPaths: pathsBeside(actionType) },
+    }));
+    screen(false);
+    const { scene, sent, facts } = worldMap(true);
+    const rightClick = scene as unknown as { onHexagonRightClick: (event: MouseEvent, hex: unknown) => void };
 
-  // The touch recognizer gives a hold as a right-click a finger made (input-manager.test.ts: a long press).
-  rightClick.onHexagonRightClick(new PointerEvent("contextmenu", { pointerType: "touch" }), BESIDE);
-  expect([facts, sent]).toEqual([[BESIDE], []]);
+    // The touch recognizer gives a hold as a right-click a finger made (input-manager.test.ts: a long press).
+    rightClick.onHexagonRightClick(new PointerEvent("contextmenu", { pointerType: "touch" }), BESIDE);
+    expect([facts, sent]).toEqual([[BESIDE], []]);
+  },
+);
+
+it("on a Frontier phone, holding the spire opens its depth choice with the army kept and sends nothing", () => {
+  screen(false);
+  vi.spyOn(configManager, "isCommandEnabled").mockReturnValue(true);
+  useAccountStore.setState({ account: { address: "0x111" } as never });
+  useUIStore.setState((state) => ({
+    entityActions: { ...state.entityActions, actionPaths: pathsBeside(ActionType.EnterDepth) },
+  }));
+  const { scene, sent, facts } = worldMap(true);
+  const prototype = WorldmapScene.prototype as unknown as { actAtHex: (hex: unknown) => void };
+  const actual = Object.assign(scene, {
+    actAtHex: prototype.actAtHex,
+    state: useUIStore.getState(),
+    chunkTransitionToken: 1,
+    actionPathsTransitionToken: 1,
+    getInteractionDebugSnapshot: () => ({}),
+  }) as unknown as { onHexagonRightClick: (event: MouseEvent, hex: unknown) => void };
+
+  actual.onHexagonRightClick(new PointerEvent("contextmenu", { pointerType: "touch" }), BESIDE);
+
+  expect(useUIStore.getState().mapSelection).toEqual({ kind: "army", entityId: ARMY, tile: BESIDE });
+  expect(useUIStore.getState().selectedHex).toEqual(BESIDE);
+  expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
+  expect([facts, sent]).toEqual([[], []]);
 });
