@@ -20,7 +20,7 @@ each page link to see the painting on its real component with local app fixtures
 `pnpm --dir apps/game prove:app-art --port 4199 --out <fresh-dir>` for comparison and page screenshots, loaded-image
 assertions and browser errors; the command owns and closes its server and browser.
 
-Open `/lab` in the dev environment. The Tool selector groups 17 tools by their users' work. Switching tools unmounts the
+Open `/lab` in the dev environment. The Tool selector groups 18 tools by their users' work. Switching tools unmounts the
 previous view and remembers its full URL for the next visit. The Eternum Lab link exits to the game home page.
 `capture=1` keeps the tool's full viewport and removes the shared header.
 
@@ -40,6 +40,7 @@ former `/debug` tools now live under `/lab`. Their runners and links use the new
 | Rewards             | `/lab/rewards`             | Art: reward and chest review with capture controls                                                                                                                                                                                                                                                                                                                                                                            |
 | Terrain props       | `/lab/terrain-props`       | Art: biome prop and material review                                                                                                                                                                                                                                                                                                                                                                                           |
 | Endgame mist        | `/lab/endgame`             | World: production end trigger, orb event, spared realm and busy-map cost proof                                                                                                                                                                                                                                                                                                                                                |
+| Day end             | `/lab/day-end`             | World: the Frontier day end as a moment: the summary over the live map, the spires' mist, black, the new day's land (`direction` night or dawn, `arrival` live or later, `phone=1`)                                                                                                                                                                                                                                           |
 | World FX            | `/lab/world-fx`            | Art: world effects and capture controls                                                                                                                                                                                                                                                                                                                                                                                       |
 | Studio              | `/lab/studio`              | Film: the reels' shots on the real terrain, models and effects, a free camera, replayable camera paths and takes (see Film studio below)                                                                                                                                                                                                                                                                                      |
 | Character review    | `/lab/characters`          | Character art and animation: frame inspector, smoke checks and animation captures                                                                                                                                                                                                                                                                                                                                             |
@@ -70,6 +71,13 @@ pnpm --dir apps/game smoke:renderer-debug --base-url https://127.0.0.1:4179 --sc
 pnpm --dir apps/game smoke:character-gym --base-url https://127.0.0.1:4179
 pnpm --dir apps/game smoke:character-benchmark --base-url https://127.0.0.1:4179
 pnpm --dir apps/game smoke:procedural-world-gym --base-url https://127.0.0.1:4179
+```
+
+The day end has its proof: both directions, a player in the game and one arriving later, on a desktop and a phone, a
+still at each beat, Space's skip, and no page or console error (a refused GPU frame is only a console line):
+
+```sh
+pnpm --dir apps/game prove:day-end --port 4199 --out <fresh-dir>
 ```
 
 The HUD's style sheet has its own capture: every `/lab/kit` element (or those named, by the name in its header) as its

@@ -61,6 +61,13 @@ const TOOLS = [
   },
   {
     group: "Art",
+    label: "Day end",
+    path: "/lab/day-end",
+    route: "day-end",
+    View: lazy(() => import("./day-end/view").then((module) => ({ default: module.DayEndLabView }))),
+  },
+  {
+    group: "Art",
     label: "World FX",
     path: "/lab/world-fx",
     route: "world-fx",
