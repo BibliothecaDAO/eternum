@@ -57,7 +57,16 @@ export const useOnePanel = (card: string | null) => {
     if (deploying && showsCard) closeDeployOrder();
   }, [deploying, showsCard]);
 
-  return { surface, openSurface, showsCard };
+  /** Back to the rail's home: the surface, the tapped tile with its card, and the deploy order all go. */
+  const goHome = () => {
+    letGoOfTheTile();
+    closeDeployOrder();
+    setSurface(null);
+  };
+  // Nothing stands in the rail's panel: its feed shows.
+  const home = surface === null && !showsCard && !deploying;
+
+  return { surface, openSurface, showsCard, home, goHome };
 };
 
 /** The tapped tile, plot or building let go, with its card and an attack result standing in it. */

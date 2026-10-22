@@ -572,12 +572,19 @@ export const HUD_LAYOUT = {
   "details-least": "120px",
   "chat-cap": "45vw",
   /**
-   * Frontier's places on the desktop HUD (FrontierDesktop): a nav page in the rail's place, its top and its room (from
-   * that top down to the base band: 76px + 16px), and the stage between the columns.
+   * Frontier's places on the desktop HUD (FrontierDesktop): a sheet floating with no rail to stand in (the labs'), its
+   * width and top, and the stage between the columns.
    */
   "frontier-page": "440px",
+  /**
+   * Frontier's desktop rail, the one home for everything (the owner, 22 October): the feed at home, and wider while a
+   * panel (a page, a sheet) stands in it.
+   */
+  "frontier-rail": "360px",
+  "frontier-rail-open": "480px",
+  /** Its feed's height before it scrolls inside: a capped list, so Next up and chat always keep their room. */
+  "frontier-feed": "45vh",
   "frontier-page-top": "76px",
-  "frontier-page-room": "calc(100% - 92px)",
   "frontier-stage-top": "150px",
   "frontier-stage-bottom": "140px",
   /** The Frontier HUD's cards: an army token, a site card, and the Build sheet's building card (option B's band). */

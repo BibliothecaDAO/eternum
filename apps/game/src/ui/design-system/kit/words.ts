@@ -137,6 +137,15 @@ export const BUILD_ORDER_WORDS = {
 export const EVENTS_WORDS = {
   /** What Events and its Log say while the player's filter holds no story. */
   nothingYet: "Nothing here yet.",
+  /** Frontier's one feed in its rail: the world's history, and lenses on it. */
+  feed: "Feed",
+  lenses: { world: "World", mine: "Mine", important: "Important" },
+  lensTips: {
+    world: "Everything players do in the world, yours in gold",
+    mine: "Everything about you: your actions, your realms' news and what happened to them",
+    important: "Your fights and captures, armies lost, crates you opened, refused orders and the game's milestones",
+  },
+  failed: "Event history could not load.",
 } as const;
 export const SETTINGS_WORDS = {
   shortcuts: "Keyboard shortcuts",
@@ -1144,8 +1153,8 @@ export const RESEARCH_TREE = {
 } as const;
 
 /**
- * An army's detail (the owner's pick, 20 October: "For the army C is best"): its figures, its XP and how it is earned,
- * then its level-ups, one step on.
+ * An army's detail (the owner's picks, 20 and 22 October): its status, its four attributes as tiles, its XP with how it
+ * is earned on its hover, then its level-ups, one step on.
  */
 export const ARMY_DETAIL = {
   /** A Scouting effect on the kind its levels went to: "+10% discovery on Rifts". */
@@ -1159,12 +1168,12 @@ export const ARMY_DETAIL = {
   /** What each tile the army explores sends home, on its stamina row. */
   revealPays: (amount: string) => `+${amount} a tile`,
   revealPaysLabel: `${ESSENCE} and ${LABOR} each tile explored sends home`,
-  ready: (count: number) => `${formatCount(count, "level-up")} ready`,
   toNext: (xp: string) => `${xp} ${XP} to the next level-up`,
   allLegendary: "Every attribute is legendary",
   levelUp: "Level up",
   levelUps: "Level-ups",
-  levelUpReady: (count: number) => `Level up · ${count} ready`,
+  /** An attribute tile's hover: what its next tier gives and costs, "Rare: +10% → +20% damage · 200 XP". */
+  nextTier: (tier: string, change: string, xp: string) => `${tier}: ${change} · ${xp} ${XP}`,
   price: (xp: string) => `${xp} ${XP}`,
   short: (xp: string, short: string) => `${xp} ${XP} · ${short} ${XP} short`,
   refills: (xp: string, stamina: string) => `${xp} ${XP} · refills ${stamina} ${STAMINA}`,

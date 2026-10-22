@@ -1275,41 +1275,59 @@ export const HudWindow = ({
 };
 
 /**
+ * Where a sheet stands when its host keeps a place for its sheets (Frontier's desktop rail, the one home for everything):
+ * the sheet stands in that place, in its flow. None elsewhere: a sheet floats over the stage.
+ */
+export const SheetDock = createContext<HTMLElement | null>(null);
+
+/**
  * A sheet over the stage: the panel's look, its name in the header band and its way out as the cue (a cross, or a back
  * arrow when it opened from another panel, whose place it takes). On a phone it is a bottom sheet with a handle (a tap or
  * a drag down closes it) over a backdrop a tap closes; from the desktop width up it docks under the top bar and the
- * stage stays playable beside it. Escape and the system back close it on both. Its foot is a window's (HudWindowFoot),
- * so the verb and its cost stay in view while the body scrolls.
+ * stage stays playable beside it, or stands in the place its host gives (SheetDock) with no backdrop. Escape and the
+ * system back close it on both. Its foot is a window's (HudWindowFoot), so the verb and its cost stay in view while the
+ * body scrolls.
  */
 export const HudSheet = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) => {
   const back = useContext(OpenedFromPanel);
+  const dock = useContext(SheetDock);
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   useSheetCloses(onClose);
+  const sheet = (
+    <section
+      role="dialog"
+      aria-label={label}
+      data-kit-sheet
+      data-docked={dock ? "" : undefined}
+      className="ui ui-panel ui-sheet"
+    >
+      <SheetHandle onClose={onClose}>
+        <i className="ui-sheet__grip" />
+      </SheetHandle>
+      <PanelHead
+        title={label}
+        cue={
+          <HudIconButton
+            icon={back ? "arrow-left" : "close"}
+            label={back ? BACK : CLOSE}
+            kind="quiet"
+            size="sm"
+            onClick={onClose}
+          />
+        }
+        press={null}
+      />
+      <WindowFootContext.Provider value={foot}>
+        <div className="ui-sheet__body">{children}</div>
+      </WindowFootContext.Provider>
+      <footer ref={setFoot} className="ui-window__foot ui-actions" />
+    </section>
+  );
+  if (dock) return createPortal(sheet, dock);
   return (
     <>
       <button type="button" aria-hidden tabIndex={-1} onClick={onClose} className="ui-sheet__backdrop" />
-      <section role="dialog" aria-label={label} data-kit-sheet className="ui ui-panel ui-sheet">
-        <SheetHandle onClose={onClose}>
-          <i className="ui-sheet__grip" />
-        </SheetHandle>
-        <PanelHead
-          title={label}
-          cue={
-            <HudIconButton
-              icon={back ? "arrow-left" : "close"}
-              label={back ? BACK : CLOSE}
-              kind="quiet"
-              size="sm"
-              onClick={onClose}
-            />
-          }
-          press={null}
-        />
-        <WindowFootContext.Provider value={foot}>
-          <div className="ui-sheet__body">{children}</div>
-        </WindowFootContext.Provider>
-        <footer ref={setFoot} className="ui-window__foot ui-actions" />
-      </section>
+      {sheet}
     </>
   );
 };

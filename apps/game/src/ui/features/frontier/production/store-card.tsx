@@ -46,49 +46,53 @@ export const StoreCard = ({
   const full = line.limit !== undefined && line.held !== undefined && line.held >= line.limit;
   const word = STORE_WORDS[line.icon];
   return (
-    <HudPanel label={word} collapsible={false} className="pointer-events-auto" bodyClassName="flex items-center gap-2">
-      <Icon name={line.icon} size={28} />
-      <span className="flex w-24 shrink-0 flex-col">
-        <span className="text-hud-label capitalize text-hud-muted">{word}</span>
-        <span className={`flex items-center gap-1 tabular-nums ${full ? "text-hud-bad" : ""}`}>
-          {full ? formatRate(0) : formatRate(line.perHour === undefined ? undefined : line.perHour / 3600)}
-          {line.sides?.map((side, index) => (
-            <Icon key={index} name={side} size={18} />
-          ))}
+    <HudPanel label={word} collapsible={false} className="pointer-events-auto" bodyClassName="flex flex-col gap-1.5">
+      <span className="flex items-center gap-2">
+        <Icon name={line.icon} size={28} />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-hud-label capitalize text-hud-muted">{word}</span>
+          <span className={`flex items-center gap-1 tabular-nums ${full ? "text-hud-bad" : ""}`}>
+            {full ? formatRate(0) : formatRate(line.perHour === undefined ? undefined : line.perHour / 3600)}
+            {line.sides?.map((side, index) => (
+              <Icon key={index} name={side} size={18} />
+            ))}
+          </span>
         </span>
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
-        {/* The kit's amount rule, as on the strip: a phone's row has no room for two exact five-digit amounts. A full
-            store holds its limit, so its row says the one number beside Full. */}
-        <span className="whitespace-nowrap text-hud-label tabular-nums">
-          {formatAmount(line.held)}
-          {line.limit !== undefined && !full && ` / ${formatAmount(line.limit)}`}
-        </span>
-        {line.limit !== undefined && (
-          <HudMeter
-            share={line.held === undefined || line.limit <= 0 ? 0 : line.held / line.limit}
-            tone={HUD_TONE[line.tone]}
-            label={word}
-          />
+        {full ? (
+          <>
+            <HudChip tone="bad">{FULL}</HudChip>
+            <HudButton
+              kind="secondary"
+              size="sm"
+              icon={line.spentAt === "realm" ? "realm" : undefined}
+              onClick={() => onSpend(line.spentAt)}
+            >
+              {line.spentAt === "realm" ? REALM : DEPLOY}
+            </HudButton>
+          </>
+        ) : line.noBuilding ? (
+          <HudButton kind="secondary" size="sm" onClick={onBuild}>
+            {BUILD}
+          </HudButton>
+        ) : (
+          line.fullIn !== undefined && <FullIn seconds={line.fullIn} />
         )}
       </span>
-      {full ? (
-        <>
-          <HudChip tone="bad">{FULL}</HudChip>
-          <HudButton
-            kind="secondary"
-            icon={line.spentAt === "realm" ? "realm" : undefined}
-            onClick={() => onSpend(line.spentAt)}
-          >
-            {line.spentAt === "realm" ? REALM : DEPLOY}
-          </HudButton>
-        </>
-      ) : line.noBuilding ? (
-        <HudButton kind="secondary" onClick={onBuild}>
-          {BUILD}
-        </HudButton>
-      ) : (
-        line.fullIn !== undefined && <FullIn seconds={line.fullIn} />
+      {line.limit !== undefined && (
+        <span className="flex items-center gap-2">
+          <span className="min-w-0 flex-1">
+            <HudMeter
+              share={line.held === undefined || line.limit <= 0 ? 0 : line.held / line.limit}
+              tone={HUD_TONE[line.tone]}
+              label={word}
+            />
+          </span>
+          {/* A full store holds its limit, so it says the one number beside Full. */}
+          <span className="whitespace-nowrap text-hud-label tabular-nums">
+            {formatAmount(line.held)}
+            {!full && ` / ${formatAmount(line.limit)}`}
+          </span>
+        </span>
       )}
     </HudPanel>
   );

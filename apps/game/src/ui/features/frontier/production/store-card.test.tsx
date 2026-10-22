@@ -34,14 +34,14 @@ const renderCard = (card: StoreLine, onSpend = vi.fn(), onBuild = vi.fn()) => {
 describe("a store's card", () => {
   it("says the store's rate, what it holds against its limit and when it is full", () => {
     const card = renderCard(line({ icon: "wheat", spentAt: "deploy" }));
-    expect(card.text()).toBe("wheat+8.3/min9,640 / 18KFull in 16h 44m");
+    expect(card.text()).toBe("wheat+8.3/minFull in 16h 44m9,640 / 18K");
     card.done();
   });
 
   it("says a full store is full and sends the player where it is spent", () => {
     const onSpend = vi.fn();
     const card = renderCard(line({ icon: "labor", spentAt: "realm", held: 18_000, tone: "ember" }), onSpend);
-    expect(card.text()).toBe("labor0/min18KFullRealm");
+    expect(card.text()).toBe("labor0/minFullRealm18K");
     card.press("Realm");
     expect(onSpend).toHaveBeenCalledWith("realm");
     card.done();

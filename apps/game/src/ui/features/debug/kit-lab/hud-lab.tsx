@@ -15,7 +15,6 @@ import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
 import { DEPLOY_RING } from "./deploy-section";
 import { RuinChestMoment } from "@/ui/features/frontier/chest/ruin-chest-moment";
-import { Sheet } from "@/ui/design-system/kit/sheet";
 import type { FightResult } from "@/ui/features/frontier/sites/fight-result";
 import { FightResultCard } from "@/ui/features/frontier/sites/fight-result-card";
 import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
@@ -1034,9 +1033,9 @@ export const HudLab = () => {
         )}
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
         {lab.fight && (
-          <Sheet label={TARGET_MARKS[lab.fight.site].word} onClose={noop}>
+          <HudSheet label={TARGET_MARKS[lab.fight.site].word} onClose={noop}>
             <FightResultCard result={lab.fight} onClose={noop} />
-          </Sheet>
+          </HudSheet>
         )}
         {lab.chest && <RuinChestMoment {...lab.chest} />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
@@ -1160,8 +1159,10 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
             <RealmPanel
               name={LAB_REALM_NAME}
               level={1}
+              highest={3}
               population={LAB_POPULATION}
               stores={[...lab.stores]}
+              onHome={noop}
               {...(!lab.visiting && {
                 lords: lab.purse?.lords ?? LAB_LORDS,
                 labor: lab.purse?.realms,
@@ -1187,7 +1188,15 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
             </>
           }
           places={
-            !lab.visiting && <FrontierPlaces surface={labSurface(lab)} onSurface={noop} research={!lab.offline} />
+            !lab.visiting && (
+              <FrontierPlaces
+                surface={labSurface(lab)}
+                home={labSurface(lab) === null}
+                onSurface={noop}
+                onHome={noop}
+                research={!lab.offline}
+              />
+            )
           }
         >
           {slots.children}

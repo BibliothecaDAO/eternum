@@ -88,7 +88,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   useSpectatorWatch();
   // What the map has selected opens its card; the one panel decides which of it, a surface and a deploy order stands.
   const card = useSelectionCard({ realm, onResearch: () => setSurface("research") });
-  const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null);
+  const { surface, openSurface: setSurface, showsCard, home, goHome } = useOnePanel(card?.key ?? null);
   const realmLabor = useRealmLabor(rules, realm);
   const desktop = useLayout() === "desktop";
   const research = useResearchTree(realm);
@@ -245,7 +245,9 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         !(visit && realm) && (
           <FrontierPlaces
             surface={surface}
+            home={home}
             onSurface={setSurface}
+            onHome={goHome}
             research={realm ? canResearchNow(research?.nodes) : undefined}
           />
         )

@@ -136,11 +136,12 @@ it("reads a 24-hour day in hours on the top bar and its hover, as Play does (liv
   expect(pill.getAttribute("data-tip")).toMatch(/ · Tomorrow lasts 24h$/);
 });
 
-it("offers a desktop's places, Research, Today and Season, with no Menu and no Production", () => {
-  act(() => root.render(<FrontierPlaces surface={null} onSurface={vi.fn()} research={false} />));
-  expect([...host.querySelectorAll("nav button")].map((button) => button.getAttribute("aria-label"))).toEqual([
-    "Research",
-    "Today",
-    "Season",
-  ]);
+it("offers a desktop's places, Research, the Feed and the Season, the Feed lit at the rail's home", () => {
+  const onHome = vi.fn();
+  act(() => root.render(<FrontierPlaces surface={null} home onSurface={vi.fn()} onHome={onHome} research={false} />));
+  const places = [...host.querySelectorAll("nav button")];
+  expect(places.map((button) => button.getAttribute("aria-label"))).toEqual(["Research", "Feed", "Season"]);
+  expect(places[1].getAttribute("aria-pressed")).toBe("true");
+  act(() => (places[1] as HTMLButtonElement).click());
+  expect(onHome).toHaveBeenCalledTimes(1);
 });

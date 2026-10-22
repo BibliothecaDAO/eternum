@@ -1,22 +1,26 @@
-import { HudBubble } from "@/ui/design-system/kit/hud-elements";
+import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudBubble, SheetDock } from "@/ui/design-system/kit/hud-elements";
 import { OpenedFromPanel } from "@/ui/design-system/kit/opened-from-panel";
-import { REALM, RESEARCH, SEASON, TODAY } from "@/ui/design-system/kit/words";
+import { EVENTS_WORDS, REALM, RESEARCH, SEASON } from "@/ui/design-system/kit/words";
+import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import type { SeasonGoal } from "@/ui/features/world/containers/top-header/identity-chip";
 import { TopHeader } from "@/ui/features/world/containers/top-header/top-header";
 import { HudColumn, HudFoot } from "@/ui/features/world/hud/desktop-hud";
-import { GuidedRail } from "@/ui/features/world/hud/guided-rail";
 import { HudMinimap } from "@/ui/features/world/hud/minimap";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 
+import { FrontierFeed } from "./frontier-feed";
 import type { HudSurface } from "./frontier-nav";
+import { useHudScale } from "./hud-scale";
 
 /**
  * Frontier on the one desktop HUD every mode shares (the owner, 19 October 2026: "A unified hud, with elements that can
  * differ a bit"; issue 5067): the shared top bar, the left column, the rail and the foot, with Frontier's own panels in
  * them. The top bar's clock is the day's, Frontier's one day timer. The left column holds one panel for the realm (its
- * stores and LORDS as rings, as Blitz's realm card reads a holding), one for its armies, and the minimap; the rail Next
- * up, then the shared events and chat; the foot the selected army's state over the round places. An order goes from the
- * map itself, as in Blitz. Sheets and moments render beside the regions.
+ * stores and LORDS as rings, as Blitz's realm card reads a holding), one for its armies, and the minimap; the rail is the
+ * one home for everything (FrontierRail); the foot the selected army's state over the round places. An order goes from
+ * the map itself, as in Blitz. The whole HUD draws bigger on a bigger screen (useHudScale).
  */
 export const FrontierDesktop = ({
   season,
@@ -37,56 +41,98 @@ export const FrontierDesktop = ({
   realm?: ReactNode;
   armies?: ReactNode;
   nextUp?: ReactNode;
-  /** A nav page (Research, the Season's board): the right panel, in the rail's place. */
+  /** A nav page (Research, the Season's board): it stands in the rail's panel. */
   page?: ReactNode;
   /** What floats over the map itself (the last hour's bubble). */
   stage?: ReactNode;
   /** Over the places: notices, the selected army's state, a visit's Leave. */
   foot?: ReactNode;
   places: ReactNode;
+  /** The HUD's sheets: each stands in the rail's panel. */
   children?: ReactNode;
-}) => (
-  <>
-    <TopHeader season={season} clock={clock} />
-    <HudColumn label={REALM}>
-      {realm}
-      <div className="flex shrink-0 flex-col">{armies}</div>
-      <HudMinimap className="mt-auto min-h-hud-minimap w-full shrink" />
-    </HudColumn>
-    <GuidedRail lead={nextUp ?? null} picked={false} />
-    <HudFoot>
-      <div className="pointer-events-none flex flex-col items-center gap-2">
-        {foot}
-        {places}
+}) => {
+  const [panel, setPanel] = useState<HTMLElement | null>(null);
+  return (
+    <div style={{ zoom: useHudScale() }}>
+      <TopHeader season={season} clock={clock} />
+      <HudColumn label={REALM}>
+        {realm}
+        <div className="flex shrink-0 flex-col">{armies}</div>
+        <HudMinimap className="mt-auto min-h-hud-minimap w-full shrink" />
+      </HudColumn>
+      <FrontierRail nextUp={nextUp} page={page} onPanel={setPanel} />
+      <HudFoot>
+        <div className="pointer-events-none flex flex-col items-center gap-2">
+          {foot}
+          {places}
+        </div>
+      </HudFoot>
+      <div className="pointer-events-none fixed inset-x-hud-foot bottom-hud-frontier-stage-bottom top-hud-frontier-stage-top z-hud-foot">
+        {stage}
       </div>
-    </HudFoot>
-    {page && (
-      <div
-        data-page
-        className="pointer-events-none fixed right-3 top-hud-header z-hud-rail flex max-h-hud-frontier-page-room w-hud-frontier-page flex-col"
-      >
-        <OpenedFromPanel.Provider value>{page}</OpenedFromPanel.Provider>
-      </div>
-    )}
-    <div className="pointer-events-none fixed inset-x-hud-foot bottom-hud-frontier-stage-bottom top-hud-frontier-stage-top z-hud-foot">
-      {stage}
+      <SheetDock.Provider value={panel}>{children}</SheetDock.Provider>
     </div>
-    {children}
-  </>
-);
+  );
+};
 
 /**
- * Frontier's places as the shared HUD's round bubbles: Research (lit while a node can be bought), Today and
- * the Season. A desktop has no Menu: Map and Realm are the top bar's Realm / World, chat the rail's strip, the Realms'
- * labor the realm panel's chip, and leaving the game Settings' Leave game.
+ * Frontier's right rail on a desktop, the one home for everything (the owner, 22 October: "The right rail being home
+ * for everything is perfect"): Next up on top, then the open panel (a nav page, or any sheet the HUD opens: Build, an
+ * army, a site, Today), which stands in the rail while it widens; with none open, the feed, Frontier's events and world
+ * history in one. Chat stands at its foot.
+ */
+const FrontierRail = ({
+  nextUp,
+  page,
+  onPanel,
+}: {
+  nextUp?: ReactNode;
+  page?: ReactNode;
+  /** The panel's place, where the HUD's sheets stand. */
+  onPanel: (panel: HTMLElement | null) => void;
+}) => {
+  const [chatOpen, setChatOpen] = useState(false);
+  return (
+    <aside
+      {...HUD_COLUMN_MARK}
+      aria-label="Guided rail"
+      data-hud-rail
+      data-frontier-rail
+      className="pointer-events-none fixed bottom-hud-base right-3 top-hud-header z-hud-rail flex flex-col gap-2 transition-[width] duration-200"
+    >
+      {nextUp && <div className="shrink-0">{nextUp}</div>}
+      <div ref={onPanel} data-rail-panel className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden">
+        {page && <OpenedFromPanel.Provider value>{page}</OpenedFromPanel.Provider>}
+      </div>
+      <div data-rail-home className="flex min-h-0 flex-col">
+        <FrontierFeed />
+      </div>
+      <div className={cn("mt-auto flex shrink-0 flex-col justify-end", chatOpen && "min-h-hud-chat-least")}>
+        <HudChatWindow open={chatOpen} onOpenChange={setChatOpen} />
+      </div>
+    </aside>
+  );
+};
+
+/**
+ * Frontier's places as the shared HUD's round bubbles: Research (lit while a node can be bought), the Feed, the rail's
+ * home, and the Season. Today opens from the top bar's day. A desktop has no Menu: Map and Realm are the top bar's
+ * Realm / World, chat the rail's strip, the Realms' labor the realm panel's chip, and leaving the game Settings' Leave
+ * game.
  */
 export const FrontierPlaces = ({
   surface,
+  home,
   onSurface,
+  onHome,
   research,
 }: {
   surface: HudSurface | null;
+  /** Whether the rail is at home, its feed showing. */
+  home: boolean;
   onSurface: (surface: HudSurface | null) => void;
+  /** Back to the rail's home: whatever stands in its panel goes. */
+  onHome: () => void;
   /** Whether a research node can be bought now; absent for a spectator, who has no Research. */
   research?: boolean;
 }) => {
@@ -105,7 +151,13 @@ export const FrontierPlaces = ({
   return (
     <nav aria-label="Places" className="pointer-events-auto flex items-start gap-3">
       {research !== undefined && bubble("research", "research", RESEARCH, research ? 1 : undefined)}
-      {bubble("today", "clock", TODAY)}
+      <HudBubble
+        icon="chronicles"
+        word={EVENTS_WORDS.feed}
+        pressed={home}
+        aria-label={EVENTS_WORDS.feed}
+        onClick={onHome}
+      />
       {bubble("season", "victory", SEASON)}
     </nav>
   );
