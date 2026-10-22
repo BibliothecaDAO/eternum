@@ -26,6 +26,17 @@ const NO_BITWISE_ID = [
   },
 ];
 
+// A HUD colour is a role (tokens.ts HUD_COLOR_CLASSES): it takes no opacity, so `bg-hud-muted/40` makes no class at all
+// and the part it paints shows the track under it (a fight's lost troops drew black, not grey). The slash is written
+// \x2F so the selector's regex holds no slash of its own.
+const HUD_ROLE_OPACITY = [
+  {
+    selector:
+      ":matches(Literal[value=/-hud-[a-z0-9-]+\\x2F[0-9]/], TemplateElement[value.raw=/-hud-[a-z0-9-]+\\x2F[0-9]/])",
+    message: "A HUD colour role takes no opacity: the class is never made. Use the role whole, or another role.",
+  },
+];
+
 // A function or an object written into text prints its source or "[object Object]": each resource chip's buttons read
 // "Transfer (id) => {…}" where a words function was written in place of the word it returns. Typed, so client only.
 const TEXT_VALUES = {
@@ -67,7 +78,7 @@ const eslint = new ESLint({
     },
     {
       files: ["apps/game/src/**/*.{ts,tsx}"],
-      rules: HOOK_DEPENDENCIES,
+      rules: { ...HOOK_DEPENDENCIES, "no-restricted-syntax": ["error", ...NO_BITWISE_ID, ...HUD_ROLE_OPACITY] },
     },
     {
       files: ["apps/game/src/**/*.{ts,tsx}"],

@@ -5,7 +5,13 @@ import { FightBar } from "./fight-bar";
 
 const parts = (markup: string) =>
   [...new DOMParser().parseFromString(markup, "text/html").querySelectorAll("span > span")].map((part) => ({
-    colour: part.className.includes("bg-hud-good") ? "green" : part.className.includes("bg-hud-bad") ? "red" : "grey",
+    colour: part.className.includes("bg-hud-good")
+      ? "green"
+      : part.className.includes("bg-hud-bad")
+        ? "red"
+        : part.className.includes("bg-hud-neutral")
+          ? "grey"
+          : part.className,
     width: (part as HTMLElement).style.width,
   }));
 

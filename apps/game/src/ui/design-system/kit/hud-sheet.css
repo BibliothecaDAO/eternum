@@ -2070,13 +2070,10 @@ button.ui-card__choose:disabled {
 
 /*
  * Frontier's desktop rail, the one home for everything (the owner, 22 October): a page or a sheet stands in its panel
- * under Next up, the feed steps aside for it, and the rail widens while it stands. Nothing over the rail hides it.
+ * under Next up, at the feed's width, and the feed steps aside for it. Nothing over the rail hides it.
  */
 [data-frontier-rail] {
   width: theme(spacing.hud-frontier-rail);
-}
-[data-frontier-rail]:has([data-rail-panel] > *) {
-  width: theme(spacing.hud-frontier-rail-open);
 }
 [data-frontier-rail]:has([data-rail-panel] > *) [data-rail-home] {
   display: none;

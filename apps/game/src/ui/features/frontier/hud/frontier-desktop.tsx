@@ -78,8 +78,8 @@ export const FrontierDesktop = ({
 /**
  * Frontier's right rail on a desktop, the one home for everything (the owner, 22 October: "The right rail being home
  * for everything is perfect"): Next up on top, then the open panel (a nav page, or any sheet the HUD opens: Build, an
- * army, a site, Today), which stands in the rail while it widens; with none open, the feed, Frontier's events and world
- * history in one. Chat stands at its foot.
+ * army, a site, Today), which stands in the rail at the feed's width; with none open, the feed, Frontier's events and
+ * world history in one. Chat stands at its foot.
  */
 const FrontierRail = ({
   nextUp,
@@ -98,7 +98,7 @@ const FrontierRail = ({
       aria-label="Guided rail"
       data-hud-rail
       data-frontier-rail
-      className="pointer-events-none fixed bottom-hud-base right-3 top-hud-header z-hud-rail flex flex-col gap-2 transition-[width] duration-200"
+      className="pointer-events-none fixed bottom-hud-base right-3 top-hud-header z-hud-rail flex flex-col gap-2"
     >
       {nextUp && <div className="shrink-0">{nextUp}</div>}
       <div ref={onPanel} data-rail-panel className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden">

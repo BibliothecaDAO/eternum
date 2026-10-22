@@ -577,11 +577,10 @@ export const HUD_LAYOUT = {
    */
   "frontier-page": "440px",
   /**
-   * Frontier's desktop rail, the one home for everything (the owner, 22 October): the feed at home, and wider while a
-   * panel (a page, a sheet) stands in it.
+   * Frontier's desktop rail, the one home for everything (the owner, 22 October): one width for the feed at home and
+   * for any panel (a page, a sheet) that stands in it ("feed should have the same width as the other panels").
    */
-  "frontier-rail": "360px",
-  "frontier-rail-open": "480px",
+  "frontier-rail": "480px",
   /** Its feed's height before it scrolls inside: a capped list, so Next up and chat always keep their room. */
   "frontier-feed": "45vh",
   "frontier-page-top": "76px",
