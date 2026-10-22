@@ -3,7 +3,7 @@
  * Captures the docs' videos and screenshots (media.json) from the game itself, into the game's public `docs-media`
  * folder that the pages embed (components/Media.tsx). One command, so a changed screen is one rerun:
  *
- *   node scripts/capture-media.mjs --base https://127.0.0.1:<port> [--session <file>] [--only a,b] [--browser <path>]
+ *   pnpm --dir apps/game-docs capture-media --base https://127.0.0.1:<port> [--session <file>] [--only a,b] [--browser <path>]
  *
  * `--base` is a running dev client (`pnpm --dir apps/game dev`): the lab's fixture pages and studio live only there.
  * Items marked `live` play the real game as a test player and need `--session`, a saved browser state (cookies and the

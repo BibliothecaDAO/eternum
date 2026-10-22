@@ -8,6 +8,7 @@
     "format": "npx prettier --write . --root=..",
     "format:check": "npx prettier --check . --root=..",
     "dev": "vocs dev",
+    "capture-media": "node scripts/capture-media.mjs",
     "preview": "vocs preview",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

@@ -41,7 +41,7 @@ holds it.
 
   ```bash
   pnpm --dir apps/game dev --host 127.0.0.1 --port <port>
-  node scripts/capture-media.mjs --base https://127.0.0.1:<port> [--session <saved test player>] [--only a,b]
+  pnpm --dir apps/game-docs capture-media --base https://127.0.0.1:<port> [--session <saved test player>] [--only a,b]
   ```
 
   Most items film the lab's fixture pages and studio. Items marked `live` play the dev stack as a saved test player.
