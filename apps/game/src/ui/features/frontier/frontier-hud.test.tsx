@@ -210,3 +210,21 @@ it("draws every realm on the Season board with its rank and reach, from Herald's
     .filter((label) => /Settlement|City|Kingdom|Empire/.test(label ?? ""));
   expect(badges).toEqual(["Empire · Ethereal III", "City · Ethereal II", "Settlement"]);
 });
+
+it.each([390, 1440])(
+  "opens Today from the day control at %i px, docking only on desktop and leaving the map uncovered",
+  async (width) => {
+    viewport.set(width);
+    await renderHud();
+    const day = host.querySelector<HTMLButtonElement>('button[aria-label="Today"]');
+    expect(day).not.toBeNull();
+    await act(async () => day!.click());
+    const sheet = host.querySelector<HTMLElement>('section[aria-label="Today"]');
+    expect(sheet).not.toBeNull();
+    expect(sheet!.hasAttribute("data-docked")).toBe(width >= 1024);
+    expect(sheet!.closest("[data-rail-panel]") !== null).toBe(width >= 1024);
+    expect(host.querySelector(".ui-sheet__backdrop")).toBeNull();
+    await act(async () => sheet!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    expect(host.querySelector('section[aria-label="Today"]')).toBeNull();
+  },
+);

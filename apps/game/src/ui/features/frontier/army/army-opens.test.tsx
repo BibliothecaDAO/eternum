@@ -153,7 +153,7 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     await place("Menu");
     await act(async () =>
       [...host.querySelectorAll<HTMLButtonElement>("[data-kit-sheet] button")]
-        .find((button) => button.textContent?.includes("Production"))!
+        .find((button) => button.textContent?.includes("Today"))!
         .click(),
     );
     expect(openSheet()).not.toBeNull();

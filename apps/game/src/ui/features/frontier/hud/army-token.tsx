@@ -139,7 +139,9 @@ export const OpenSlot = ({
         {waiting ? waits.number : filling === undefined ? "+" : "…"}
       </span>
       {wide && (
-        <span className={cn("text-hud-strong", waiting ? "text-hud-muted" : "text-hud-ink")}>{filling ?? (waits ? `${ARMY} ${waits.number}` : label)}</span>
+        <span className={cn("text-hud-strong", waiting ? "text-hud-muted" : "text-hud-ink")}>
+          {filling ?? (waits ? `${ARMY} ${waits.number}` : label)}
+        </span>
       )}
       {start &&
         filling === undefined &&
@@ -148,7 +150,12 @@ export const OpenSlot = ({
   );
   const look = cn(wide ? cn(CARD, "!flex-row justify-center") : TOKEN, "border border-hud-line bg-hud-surface");
   return waiting && wide ? (
-    <div role="group" aria-label={`${ARMY} ${waits.number}`} data-tip={start?.words} className={cn(look, "border-dashed")}>
+    <div
+      role="group"
+      aria-label={`${ARMY} ${waits.number}`}
+      data-tip={start?.words}
+      className={cn(look, "border-dashed")}
+    >
       {body}
     </div>
   ) : (
@@ -159,7 +166,7 @@ export const OpenSlot = ({
       disabled={filling !== undefined || waiting}
       data-tip={filling === undefined ? [start?.words, waits?.words].filter(Boolean).join(" ") || undefined : undefined}
       onClick={onDeploy}
-      className={look}
+      className={cn(look, waiting && "border-dashed")}
     >
       {body}
     </button>

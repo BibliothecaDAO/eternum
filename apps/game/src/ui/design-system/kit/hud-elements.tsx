@@ -1284,8 +1284,8 @@ export const SheetDock = createContext<HTMLElement | null>(null);
  * A sheet over the stage: the panel's look, its name in the header band and its way out as the cue (a cross, or a back
  * arrow when it opened from another panel, whose place it takes). On a phone it rises from the place bar to at most half
  * the screen with a handle (a tap or a drag down closes it), and the map above it stays playable; from the desktop width
- * up it docks under the top bar or in its host's SheetDock, with the stage playable beside it. Escape and the system back close it on both. Its foot is a window's (HudWindowFoot),
- * so the verb and its cost stay in view while the body scrolls.
+ * up it docks under the top bar or in its host's SheetDock, with the stage playable beside it. Escape and system back
+ * close it on both. Its foot is a window's (HudWindowFoot), so the verb and cost stay visible while the body scrolls.
  */
 export const HudSheet = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) => {
   const back = useContext(OpenedFromPanel);

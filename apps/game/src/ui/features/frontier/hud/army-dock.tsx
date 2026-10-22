@@ -18,10 +18,8 @@ import { ArmyToken, OpenSlot } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
 /**
- * The realm's armies today. On a phone, the dock: one row with every slot the castle grants in view, in its order, each
- * an army out or a free slot with the bar it starts on; Deploy fills the lowest free slot, as the game does. On a desktop, the list down the left shows the same ordered slots, with the header counting the slots that stand,
- * and nothing when there is neither (a realm
- * watched with no army out). A visited realm shows its armies read-only and no Deploy.
+ * Every army slot in order: a phone's dock or a desktop's list, each showing its army or starting stamina. Only the
+ * lowest free slot offers Deploy. A visited realm shows its armies read-only, and an empty desktop list stays absent.
  */
 export const ArmyDock = ({
   realm,
@@ -52,22 +50,41 @@ export const ArmyDock = ({
   const entries = slots.map((entry) => {
     if ("army" in entry) {
       const Army = desktop ? DockArmyRow : DockToken;
-      return <Army key={entry.army.explorerId} army={entry.army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />;
+      return (
+        <Army key={entry.army.explorerId} army={entry.army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />
+      );
     }
-    return <DeploySlot
-      key={`slot-${entry.slot.slot}`}
-      realm={realm}
-      slot={entry.slot}
-      first={entry.slot === next}
-      waits={entry.slot === next ? undefined : next}
-      pulse={entry.slot === next && armies.length === 0}
-      wide={desktop}
-    />;
+    return (
+      <DeploySlot
+        key={`slot-${entry.slot.slot}`}
+        realm={realm}
+        slot={entry.slot}
+        first={entry.slot === next}
+        waits={entry.slot === next ? undefined : next}
+        pulse={entry.slot === next && armies.length === 0}
+        wide={desktop}
+      />
+    );
   });
-  const pending = openSlots === undefined && Array.from({ length: openCount }, (_, index) => (
-    <DeploySlot realm={realm} slot={undefined} key={`open-${index}`} first={index === 0} pulse={false} wide={desktop} />
-  ));
-  if (desktop) return <ArmyList used={armies.length} allowed={armies.length + openCount}>{entries}{pending}</ArmyList>;
+  const pending =
+    openSlots === undefined &&
+    Array.from({ length: openCount }, (_, index) => (
+      <DeploySlot
+        realm={realm}
+        slot={undefined}
+        key={`open-${index}`}
+        first={index === 0}
+        pulse={false}
+        wide={desktop}
+      />
+    ));
+  if (desktop)
+    return (
+      <ArmyList used={armies.length} allowed={armies.length + openCount}>
+        {entries}
+        {pending}
+      </ArmyList>
+    );
   return (
     <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
       {entries}
