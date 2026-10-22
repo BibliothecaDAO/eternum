@@ -97,10 +97,42 @@ const pickInDock = () =>
       .click(),
   );
 
-describe.each([
-  ["desktop", true],
-  ["phone", false],
-])("the army's panel on a %s", (_, desktop) => {
+/** A phone's picked army in the action row, and its details button. */
+const details = () => host.querySelector<HTMLButtonElement>('button[aria-label="Army 1: details"]');
+
+describe("the army's panel on a phone (owner, 22 October 2026: mobile direction A, the map first)", () => {
+  beforeEach(() => layout(false));
+
+  it("stays closed when the map selects the army, which the action row shows with its details a tap away", async () => {
+    await renderHud();
+    await select(ARMY);
+    expect(panel()).toBeNull();
+    expect(details()).not.toBeNull();
+    // The picked army takes the dock's place.
+    expect(host.querySelector('nav[aria-label="Armies"]')).toBeNull();
+
+    await act(async () => details()!.click());
+    expect(panel()!.textContent).toContain("Full in");
+    await closePanel();
+    expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
+  });
+
+  it("picks the army from the dock without opening its panel", async () => {
+    await renderHud();
+    await pickInDock();
+    expect(panel()).toBeNull();
+    expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
+  });
+
+  it("offers no details to a signed-in owner who entered the game to spectate it", async () => {
+    await renderHud();
+    await spectate();
+    await select(ARMY);
+    expect([panel(), details()]).toEqual([null, null]);
+  });
+});
+
+describe.each([["desktop", true]])("the army's panel on a %s", (_, desktop) => {
   beforeEach(() => layout(desktop));
 
   it("opens when the map selects the army, with its readings and no army bar under it", async () => {

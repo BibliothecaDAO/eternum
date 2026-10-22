@@ -43,6 +43,35 @@ describe("a tap on a tile with an army selected", () => {
   });
 });
 
+describe("a tap on a phone, where the HUD carries the verb (owner, 22 October 2026: mobile direction A)", () => {
+  const onPhone = (path: ReturnType<typeof step>[] | undefined, hud: { pinned?: boolean; refused?: boolean } = {}) =>
+    orderOnTap({
+      path,
+      armySelected: true,
+      standingSite: false,
+      hud: { pinned: hud.pinned ?? false, refused: hud.refused ?? false },
+    });
+  const explore = [step(ActionType.Move), step(ActionType.Explore)];
+
+  it("pins the order on the first tap and sends it on the same tile's second", () => {
+    expect(onPhone(explore)).toBe("pin");
+    expect(onPhone(explore, { pinned: true })).toBe("go");
+  });
+
+  it("pins the transfer on the player's own army or holding beside the army, which the action row offers", () => {
+    expect(onPhone([step(ActionType.Move), step(ActionType.Help)])).toBe("transfer");
+  });
+
+  it("says why on a tile the rules refused, and leaves any other tile its own tap", () => {
+    expect(onPhone(undefined, { refused: true })).toBe("why");
+    expect(onPhone(undefined)).toBeNull();
+  });
+
+  it("still opens the attack's preview on a target, which has its own confirm", () => {
+    expect(onPhone([step(ActionType.Move), step(ActionType.Attack)], { pinned: true })).toBe("attack");
+  });
+});
+
 describe("Escape on the world map", () => {
   const frontier = { hudCarriesOrderVerb: true, navigationViewOpen: true };
   const shared = { hudCarriesOrderVerb: false, orderPinned: true };

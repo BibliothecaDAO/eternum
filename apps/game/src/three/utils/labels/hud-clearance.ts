@@ -14,6 +14,12 @@ const HUD_FOOT_ATTRIBUTE = "data-hud-foot";
 /** Spread on the HUD's foot element to mark it. */
 export const HUD_FOOT_MARK = { [HUD_FOOT_ATTRIBUTE]: "" };
 
+/** A phone's top band (the strip and Next up) marks itself with this attribute: the open map starts under it. */
+const HUD_TOP_ATTRIBUTE = "data-hud-top";
+
+/** Spread on the HUD's top band to mark it. */
+export const HUD_TOP_MARK = { [HUD_TOP_ATTRIBUTE]: "" };
+
 /** A rectangle on screen, in CSS pixels. */
 interface ScreenArea {
   left: number;
@@ -24,7 +30,8 @@ interface ScreenArea {
 
 /**
  * The map's open area on screen, where what the HUD sends the camera to stays in sight: between the side columns, below
- * their tops and above the foot's order bubbles. The whole viewport where the HUD marks nothing.
+ * their tops and a phone's top band, and above the foot (the order bubbles; a phone's action row, dock and place bar).
+ * The whole viewport where the HUD marks nothing.
  */
 export function openMapArea(viewport: { width: number; height: number }, root: ParentNode = document): ScreenArea {
   const middle = viewport.width / 2;
@@ -32,13 +39,23 @@ export function openMapArea(viewport: { width: number; height: number }, root: P
     column.getBoundingClientRect(),
   );
   const feet = [...root.querySelectorAll(`[${HUD_FOOT_ATTRIBUTE}]`)].map((foot) => foot.getBoundingClientRect());
+  const tops = [...root.querySelectorAll(`[${HUD_TOP_ATTRIBUTE}]`)].map((top) => top.getBoundingClientRect().bottom);
   return {
     left: Math.max(0, ...columns.filter((column) => column.right <= middle).map((column) => column.right)),
     right: Math.min(viewport.width, ...columns.filter((column) => column.left >= middle).map((column) => column.left)),
-    top: columns.length > 0 ? Math.max(0, Math.min(...columns.map((column) => column.top))) : 0,
+    top: Math.max(columns.length > 0 ? Math.max(0, Math.min(...columns.map((column) => column.top))) : 0, ...tops),
     bottom: Math.min(viewport.height, ...feet.map((foot) => foot.top)),
   };
 }
+
+/** Whether a point on screen stands in the map's open area: what the HUD sends the camera to is already in sight there. */
+export const inOpenMapArea = (
+  point: { x: number; y: number },
+  viewport: { width: number; height: number },
+): boolean => {
+  const area = openMapArea(viewport);
+  return point.x >= area.left && point.x <= area.right && point.y >= area.top && point.y <= area.bottom;
+};
 
 /** The HUD's side columns on screen. */
 export const hudColumnRects = (root: ParentNode = document): DOMRect[] =>

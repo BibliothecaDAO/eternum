@@ -837,26 +837,17 @@ span.ui-row__choose {
 }
 
 /* ── Window: a panel the size of a task (Military, Transfer), its title bar and a way out. ── */
-/* ── Sheet: a panel over the stage; a bottom sheet on a phone, docked under the top bar from the desktop width up. ── */
-.ui-sheet__backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: calc(theme(zIndex.hud-sheet) - 1);
-  border: 0;
-  background: transparent;
-  cursor: default;
-  pointer-events: auto;
-}
+/* ── Sheet: a panel over the stage; on a phone it rises from the place bar to at most half the screen, on a desktop it
+   docks under the top bar. It never takes the stage: no backdrop, so the map beside or above it still answers a tap
+   (owner, 22 October 2026: mobile direction A). `--hud-phone-foot` is the height HudBands keeps for its place bar. ── */
 .ui-sheet {
   position: fixed;
-  inset-inline: 0;
-  bottom: 0;
+  inset-inline: theme(spacing.2);
+  bottom: var(--hud-phone-foot, 0px);
   z-index: theme(zIndex.hud-sheet);
   display: flex;
-  max-height: 85dvh;
+  max-height: 50dvh;
   flex-direction: column;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
   /* Shown even while the panel it opened from steps aside for it. */
   visibility: visible;
 }
@@ -877,9 +868,6 @@ span.ui-row__choose {
   padding: theme(spacing.2) theme(spacing.3) max(theme(spacing.3), env(safe-area-inset-bottom));
 }
 @media (min-width: 1024px) {
-  .ui-sheet__backdrop {
-    display: none;
-  }
   .ui-sheet {
     inset-inline: auto;
     right: theme(spacing.2);

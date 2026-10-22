@@ -343,6 +343,35 @@ export const BUILD = "Build";
 
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";
+
+/**
+ * A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): how a tap gives it an order,
+ * and its details' button.
+ */
+export const PICKED_ARMY = {
+  hint: "Tap a lit tile to see its order, then tap it again to go. Hold a tile for its facts.",
+  details: (army: string) => `${army}: details`,
+  letGo: (army: string) => `Let go of ${army}`,
+} as const;
+
+/** Troops between two of the realm's armies side by side (Frontier's Transfer troops, desktop and phone). */
+export const TRANSFER_TROOPS = {
+  title: "Transfer troops",
+  split: (picked: string, tapped: string) => `Troops: ${picked} keeps this many, ${tapped} the rest`,
+  allTo: (army: string) => `All to ${army}`,
+  even: "Even",
+  pick: "Pick a split",
+  move: (count: number, to: string) => `Move ${formatAmount(count)} to ${to}`,
+  sending: "Moving…",
+  leaves: (army: string) => `${army} is left with none and leaves the map.`,
+  cap: (cap: number) => `An army holds at most ${formatAmount(cap)}.`,
+  unalike: (picked: string, tapped: string) =>
+    `${picked} and ${tapped} hold different troops: only armies of the same troops and tier join.`,
+  failed: "The troops could not be moved.",
+  /** A phone's action row, a tap on another of the realm's armies beside the picked one. */
+  beside: (tapped: string, picked: string) => `${tapped} stands beside ${picked}.`,
+  pickArmy: (army: string) => `Pick ${army}`,
+} as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
 /** How many troops an army holds: "1 troop", "5,000 troops". */

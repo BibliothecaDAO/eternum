@@ -1249,9 +1249,9 @@ export const HudWindow = ({
 
 /**
  * A sheet over the stage: the panel's look, its name in the header band and its way out as the cue (a cross, or a back
- * arrow when it opened from another panel, whose place it takes). On a phone it is a bottom sheet with a handle (a tap or
- * a drag down closes it) over a backdrop a tap closes; from the desktop width up it docks under the top bar and the
- * stage stays playable beside it. Escape and the system back close it on both. Its foot is a window's (HudWindowFoot),
+ * arrow when it opened from another panel, whose place it takes). On a phone it rises from the place bar to at most half
+ * the screen with a handle (a tap or a drag down closes it), and the map above it stays playable; from the desktop width
+ * up it docks under the top bar and the stage stays playable beside it. Escape and the system back close it on both. Its foot is a window's (HudWindowFoot),
  * so the verb and its cost stay in view while the body scrolls.
  */
 export const HudSheet = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) => {
@@ -1260,7 +1260,6 @@ export const HudSheet = ({ label, onClose, children }: { label: string; onClose:
   useSheetCloses(onClose);
   return (
     <>
-      <button type="button" aria-hidden tabIndex={-1} onClick={onClose} className="ui-sheet__backdrop" />
       <section role="dialog" aria-label={label} data-kit-sheet className="ui ui-panel ui-sheet">
         <SheetHandle onClose={onClose}>
           <i className="ui-sheet__grip" />

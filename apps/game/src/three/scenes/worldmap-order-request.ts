@@ -32,23 +32,35 @@ export const pinsOrder = (path: ActionPath[] | undefined): boolean => {
  * pins that order (where the HUD carries the verb, it shows the costs and the verb; elsewhere the order's preview opens
  * at the tile with them), a target in its reach opens the attack's preview with its
  * confirm, and a standing site out of its reach still opens that site's card for this army, which says what it lacks.
- * Anything else keeps its own tap.
+ * Where the HUD carries the verb (a phone; owner, 22 October 2026: mobile direction A), a tap on the tile already pinned
+ * sends its order (the same tile again goes), a tap on the player's own army or holding beside it pins the transfer
+ * (the action row offers it, or picking that army), and a tap on a tile the rules refused says why there. Anything else
+ * keeps its own tap.
  */
-type TapOrder = "pin" | "attack" | "site-out-of-reach";
+type TapOrder = "pin" | "go" | "attack" | "transfer" | "site-out-of-reach" | "why";
 
 export const orderOnTap = ({
   path,
   armySelected,
   standingSite,
+  hud,
 }: {
   path: ActionPath[] | undefined;
   armySelected: boolean;
   standingSite: boolean;
+  /** Where the HUD carries the verb: whether this tile is the order already pinned, and whether the rules refused one. */
+  hud?: { pinned: boolean; refused: boolean };
 }): TapOrder | null => {
-  if (pinsOrder(path)) return "pin";
-  if (path && ActionPaths.getActionType(path) === ActionType.Attack) return "attack";
-  return armySelected && standingSite ? "site-out-of-reach" : null;
+  if (pinsOrder(path)) return hud?.pinned ? "go" : "pin";
+  const actionType = path && ActionPaths.getActionType(path);
+  if (actionType === ActionType.Attack) return "attack";
+  if (hud && actionType === ActionType.Help) return "transfer";
+  if (armySelected && standingSite) return "site-out-of-reach";
+  return hud?.refused ? "why" : null;
 };
+
+/** A right-click that a finger's hold gave (the touch recognizer sends a hold as one), not a mouse's. */
+export const isTouchHold = (event: MouseEvent): boolean => (event as PointerEvent).pointerType === "touch";
 
 /**
  * Escape backs out one step. Where the HUD carries the order's verb, the pinned order goes first and the selection

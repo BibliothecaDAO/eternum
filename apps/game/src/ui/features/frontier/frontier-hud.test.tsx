@@ -134,24 +134,26 @@ it("keeps one chat connection and its unread count from desktop to phone and bac
   expect(wire.close).not.toHaveBeenCalled();
 });
 
-it("gives a phone the Events' Log on its place bar, with the filter the desktop's Events have, and closes it", async () => {
+it("gives a phone the Events' Log on its place bar as a page under the map, with the desktop Events' filter", async () => {
   viewport.set(390);
   await renderHud();
   const log = () =>
     [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].find((button) =>
       button.textContent?.endsWith("Log"),
     );
+  const page = () => document.querySelector('[data-page] section[aria-label="Log"]');
   expect(log()).toBeDefined();
-  expect(document.querySelector('[aria-label="Event log"]')).toBeNull();
+  expect(page()).toBeNull();
   await act(async () => log()!.click());
-  const window = document.querySelector('[aria-label="Event log"]');
-  expect(window).not.toBeNull();
-  expect([...window!.querySelectorAll("button")].map((button) => button.textContent)).toEqual(
+  expect(page()).not.toBeNull();
+  expect([...page()!.querySelectorAll("button")].map((button) => button.textContent)).toEqual(
     expect.arrayContaining(["Important", "Mine", "All"]),
   );
   expect(log()!.getAttribute("aria-current")).toBe("page");
-  // The Log is a phone's bottom sheet over the place bar: its own close takes it away.
-  await act(async () => window!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+  // Owner, 22 October 2026 (mobile direction A): the page stands on the place bar and leaves the map above it; the
+  // place bar's Log takes it away again.
   expect(document.querySelector('[aria-label="Event log"]')).toBeNull();
+  await act(async () => log()!.click());
+  expect(page()).toBeNull();
   expect(log()!.getAttribute("aria-current")).toBeNull();
 });

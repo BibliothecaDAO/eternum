@@ -151,7 +151,7 @@ import {
 import throttle from "lodash/throttle";
 import { Box3, Group, Plane, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { zoomTowardCursor } from "./worldmap-zoom/worldmap-zoom-anchor";
-import { openMapArea } from "../utils/labels/hud-clearance";
+import { inOpenMapArea, openMapArea } from "../utils/labels/hud-clearance";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
 import type { TerrainPresentationEvent } from "@/three/terrain/worldmap-procedural-terrain";
@@ -269,6 +269,7 @@ import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
 import {
   attackConfirmsOnTileCard,
   ORDER_REQUEST_EVENT,
+  isTouchHold,
   orderOnTap,
   orderVerbOnHud,
   readOrderRequest,
@@ -977,6 +978,8 @@ export default class WorldmapScene extends WarpTravel {
     this.clearSelection();
   };
   private previouslyHoveredHex: HexPosition | null = null;
+  /** A hold (or a tap on a refused tile) put up a tile's facts, which the next tap takes down. */
+  private factsShown = false;
   private lastHoverReconciliation: WorldmapHoverReconciliationSnapshot | null = null;
 
   // Performance simulation helper
@@ -2623,8 +2626,21 @@ export default class WorldmapScene extends WarpTravel {
     return position;
   }
 
+  /**
+   * A tile's facts, as a desktop's pointer resting on it shows them: its plate, and the selected army's order there
+   * with its cost, or why none. They stand until the next tap.
+   */
+  private showTileFacts(hexCoords: HexPosition): void {
+    this.onHexagonMouseMove({ hexCoords, position: getWorldPositionForHex(hexCoords) });
+    this.factsShown = true;
+  }
+
   // hexcoords is normalized
   protected onHexagonClick(hexCoords: HexPosition | null) {
+    if (this.factsShown) {
+      this.factsShown = false;
+      this.onHexagonMouseMove(null);
+    }
     if (
       usePopoverStore.getState().openId === "army-deployment" &&
       resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths)
@@ -2695,6 +2711,11 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
+    // A hold on a phone shows the tile's facts and never acts (owner, 22 October 2026: mobile direction A).
+    if (hexCoords && isTouchHold(event) && this.hudCarriesOrderVerb()) {
+      this.showTileFacts(hexCoords);
+      return;
+    }
     if (!canIssueOrders()) return;
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
@@ -2759,14 +2780,30 @@ export default class WorldmapScene extends WarpTravel {
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     if (selectedEntityId === null || selectedEntityId === undefined) return false;
     if (this.queuesNextOrder(selectedEntityId, hexCoords)) return true;
-    const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
+    const key = ActionPaths.posKey(hexCoords, true);
+    const path = actionPaths.get(key);
     const { structure } = this.getHexagonEntity(hexCoords);
+    const pinned = getLiveWorldmapEntityActions().hoveredHex;
     const order = orderOnTap({
       path,
       armySelected: this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined,
       standingSite: structure !== undefined && this.isStandingExpeditionSite(structure.id),
+      hud: this.hudCarriesOrderVerb()
+        ? {
+            pinned: pinned?.col === hexCoords.col && pinned.row === hexCoords.row,
+            refused: this.orderRefusals.has(key),
+          }
+        : undefined,
     });
-    if (order === "pin" && !this.hudCarriesOrderVerb()) {
+    if (order === "go") {
+      this.actAtHex(hexCoords);
+    } else if (order === "transfer") {
+      // The action row offers the transfer, or picking the army there.
+      this.state.updateEntityActionHoveredHex(hexCoords);
+    } else if (order === "why") {
+      this.showTileFacts(hexCoords);
+      return true;
+    } else if (order === "pin" && !this.hudCarriesOrderVerb()) {
       this.openOrderPreview(hexCoords);
     } else if (order === "pin") {
       // The tile becomes the order's target: its path and costs show, and the HUD's verb runs it.
@@ -3385,6 +3422,11 @@ export default class WorldmapScene extends WarpTravel {
     const target = this.getHexagonEntity(sceneHexOf(targetHex));
     const targetActor = actorOnHex(target);
     if (!targetActor) return;
+    // Frontier's troops between two armies are the HUD's own card (TransferTroopsSheet), where the map's cards stand.
+    if (this.isFrontierHud() && selected.army && target.army) {
+      this.openTargetCardForSelectedArmy(targetHex);
+      return;
+    }
     const viewer = accountAddress();
     const isTargetMine = isViewerOwner(target.army?.owner, viewer) || isViewerOwner(target.structure?.owner, viewer);
     const isSelectedMine =
@@ -8385,9 +8427,16 @@ export default class WorldmapScene extends WarpTravel {
     const account = accountAddress();
     const position = this.getArmyDisplayPosition(entityId);
     if (account === null || !position) return;
+    // An army already in sight keeps the camera where the player put it: the next tap lands where they aim it.
+    const inSight =
+      !forSite &&
+      inOpenMapArea(projectHexToScreen(position, this.camera), {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
     await this.runShortcutArmySelection(async () => {
-      await this.focusAndSelectArmy(entityId, position, account);
-      if (getLiveWorldmapEntityActions().selectedEntityId !== entityId) return;
+      await this.focusAndSelectArmy(entityId, position, account, { moveCamera: !inSight });
+      if (getLiveWorldmapEntityActions().selectedEntityId !== entityId || inSight) return;
       const army = Position.fromNormalized({ x: position.col, y: position.row });
       this.frameOnOpenMap(forSite ? [army, forSite] : [army]);
       if (!forSite) return;
@@ -8427,17 +8476,22 @@ export default class WorldmapScene extends WarpTravel {
     entityId: number,
     resolvedPosition: { col: number; row: number },
     account: ContractAddress,
+    { moveCamera = true }: { moveCamera?: boolean } = {},
   ): Promise<void> {
-    this.moveCameraToMapPosition(
-      Position.fromNormalized({ x: resolvedPosition.col, y: resolvedPosition.row }),
-      SHORTCUT_NAVIGATION_DURATION_SECONDS,
-    );
-
-    try {
-      await this.refreshChunksAfterShortcutNavigation(resolvedPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error(`[WorldMap] Failed to update visible chunks while cycling armies (entityId=${entityId}):`, error);
+    if (moveCamera) {
+      this.moveCameraToMapPosition(
+        Position.fromNormalized({ x: resolvedPosition.col, y: resolvedPosition.row }),
+        SHORTCUT_NAVIGATION_DURATION_SECONDS,
+      );
+      try {
+        await this.refreshChunksAfterShortcutNavigation(resolvedPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error(
+            `[WorldMap] Failed to update visible chunks while cycling armies (entityId=${entityId}):`,
+            error,
+          );
+        }
       }
     }
 
