@@ -282,6 +282,27 @@ export const BUILDINGS = "Buildings";
 /** The castle rows that unlock the three reaches beyond the spire. */
 export const ETHEREAL = "Ethereal";
 export const REACH_NUMERALS = ["I", "II", "III"] as const;
+/** A depth by its name: "Ethereal II". */
+export const reachName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${REACH_NUMERALS[depth - 1]}`;
+
+/**
+ * A realm's spire, its card's words: whose it is, the army it acts for, each depth's entry or why not, and what entering
+ * commits that army to.
+ */
+export const SPIRE_WORDS = {
+  title: "Spire",
+  enter: "Enter",
+  foreign: "Another realm's spire: only that realm's armies enter it",
+  pickArmy: "Select one of your armies beside the spire to enter a depth",
+  away: (army: string) => `${army} must stand beside the spire to enter`,
+  inDepth: (army: string, depth: string) => `${army} is in ${depth} until the day ends`,
+  cost: (stamina: string) => `${stamina} ${STAMINA}`,
+  needs: (need: string, have: string) => `Needs ${need} ${STAMINA}, has ${have}`,
+  landingTaken: "Its landing is taken",
+  locked: "Research it to open it",
+  commits: (army: string, left: string) =>
+    `Entering keeps ${army} in that depth for the rest of the day (${left} left): there is no way back up`,
+} as const;
 export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
 export const UPGRADING = "Upgrading…";

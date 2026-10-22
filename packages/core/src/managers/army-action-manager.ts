@@ -26,6 +26,7 @@ import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
 import { isViewerOwner } from "../utils/viewer";
 import { isTileOccupierMapSite } from "../utils/map/hex";
+import { armyRealmSpire, isAtExpeditionSpire } from "../utils/expeditions";
 
 /**
  * What bounds an army's orders as chain time passes: its spendable stamina, the steps its stamina and its owner's food
@@ -483,7 +484,29 @@ export class ArmyActionManager {
     );
 
     this.refuseTargetsBeyondStep(actionPaths, startPos, [armyHexes, structureHexes, chestHexes]);
+    this.addDepthEntry(actionPaths, startPos, currentDefaultTick);
     return actionPaths;
+  }
+
+  /**
+   * Beside its realm's lit spire, a living army's order there is to enter a depth, which the spire's card picks: the
+   * spire holds no tile, so the plan would otherwise offer a plain move onto it. Its stamina is the shallowest depth's
+   * entry. An army standing on the spire has no order at its own tile; its card opens as it is selected.
+   */
+  private addDepthEntry(actionPaths: ActionPaths, startPos: HexPosition, nowSeconds: number) {
+    const gameId = configManager.getActiveGameId();
+    const spire = armyRealmSpire(this.store, gameId, this.entityId, nowSeconds);
+    if (!spire || !configManager.isCommandEnabled("EnterDepth")) return;
+    const onSpire = spire.col === startPos.col && spire.row === startPos.row;
+    if (onSpire || !isAtExpeditionSpire(spire, { x: startPos.col, y: startPos.row })) return;
+    actionPaths.set(ActionPaths.posKey(spire), [
+      { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
+      {
+        hex: { col: spire.col, row: spire.row },
+        actionType: ActionType.EnterDepth,
+        staminaCost: this.store.require("DepthRules", { game_id: gameId, depth: 1 }).entry_stamina,
+      },
+    ]);
   }
 
   /**

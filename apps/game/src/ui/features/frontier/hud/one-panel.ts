@@ -17,8 +17,8 @@ import type { HudSurface } from "./frontier-nav";
  *
  * A card a later panel stands over stays hidden until the selection opens another (`card` is the card's key, null while
  * the selection opens none). A surface stands over any card showing when it opens, whether the press let go of its
- * tile or not: a selected army keeps its spire card with no tile selected, and the army's sheet selects the army, whose
- * spire card would otherwise come back over it.
+ * tile or not: an army standing on its realm's spire keeps the spire's card while it is selected, and the army's sheet
+ * selects the army, whose spire card would otherwise come back over it.
  */
 export const useOnePanel = (card: string | null) => {
   const [surface, setSurface] = useState<HudSurface | null>(null);
