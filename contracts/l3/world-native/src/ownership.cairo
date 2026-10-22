@@ -68,6 +68,7 @@ pub enum Story {
     SpireDiscovered: crate::exploration_rewards::ExtractedReward,
     RewardChestOpened: crate::relics::RewardChestOpened,
     RelicActivated: crate::relics::RelicActivated,
+    SiteUsed: crate::relics::SiteUsed,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

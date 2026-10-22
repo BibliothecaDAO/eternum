@@ -36,7 +36,7 @@ import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
-import { ownerDayLog } from "./today-log-fixture";
+import { ownerDayLog, siteUseDayLog } from "./today-log-fixture";
 import { SeasonList, type SeasonListRow } from "@/ui/features/frontier/board/season-list";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
@@ -431,6 +431,7 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
 
 const STATES = {
   ...FIGHT_STATES,
+  "today-sites": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-sites" },
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   // An army picked opens its panel, as the game opens it on a selection.
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: {} },
@@ -835,7 +836,7 @@ type LabState = {
   refill?: boolean;
   /** What Next up reads beyond the state's armies, selection, hour and stores. */
   nextUp?: Partial<NextUpFacts>;
-  results?: "today" | "today-earlier" | "today-failed" | "over" | "over-strong";
+  results?: "today" | "today-sites" | "today-earlier" | "today-failed" | "over" | "over-strong";
   /** The realm's LORDS on the season-over card: still to withdraw, or past the season's close. */
   seasonLords?: "open" | "closed";
   season?: "list" | "detail" | "unpublished" | "loading" | "failed";
@@ -1312,7 +1313,7 @@ const LabResults = ({
       today={results !== "today-earlier"}
       totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}
       armiesToUpgrade={2}
-      lines={readTodayLog()}
+      lines={results === "today-sites" ? siteUseDayLog(NOW) : readTodayLog()}
       failed={results === "today-failed"}
       onRetry={noop}
       onEarlier={noop}

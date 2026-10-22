@@ -82,8 +82,10 @@ pub fn award_xp(key: ExplorerKey, award: XpAward) {
 }
 
 /// A shrine's XP: a fixed amount, whatever its quality.
-pub fn grant_fixed_xp(key: ExplorerKey) {
+pub fn grant_fixed_xp(key: ExplorerKey) -> u32 {
     let mut progress = require(key);
-    progress.xp += rules(key.game_id).expect('missing progression rules').fixed_xp;
+    let amount = rules(key.game_id).expect('missing progression rules').fixed_xp;
+    progress.xp += amount;
     write(key, progress);
+    amount
 }

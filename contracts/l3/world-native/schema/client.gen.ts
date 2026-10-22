@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "bdd847a1dfe8f77ec3f7502873522485451d34bd14f2e19dbb78d6f85b8c8a7d";
+export const nativeFactSchemaIdentity = "2171a8efb603225a9d3c91ee6f471431ae0965444c4eb6c019618169c088d5cb";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "BATTLE_UNCOMMON_BPS": 1000,
@@ -165,7 +165,8 @@ export const nativeStoryVariants = [
   "SitePayout",
   "SpireDiscovered",
   "RewardChestOpened",
-  "RelicActivated"
+  "RelicActivated",
+  "SiteUsed"
 ] as const;
 export type NativeStoryVariant = (typeof nativeStoryVariants)[number];
 export interface NativeRows {

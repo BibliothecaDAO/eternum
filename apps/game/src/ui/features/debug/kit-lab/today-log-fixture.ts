@@ -1,3 +1,4 @@
+import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { dayLogLine } from "@/ui/features/frontier/log/day-line";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -75,5 +76,22 @@ export const ownerDayLog = (now: number) => {
   return day.flatMap(({ story, storyPayload, title }, index) => {
     const text = dayLogLine({ story, storyPayload, presentation: { title } }, store);
     return text === null ? [] : [{ id: `owner-${index}`, at: now - index * 4 * 60, text }];
+  });
+};
+
+/** Next season's recorded site uses, including a well limited by the army's remaining capacity. */
+export const siteUseDayLog = (now: number) => {
+  const { store } = campBeside();
+  return [{ Shrine: 200 }, { Well: 60 }, { Well: 5 }, { Well: 0 }].map((benefit, index) => {
+    const storyPayload = { explorer_id: 201, coord: { x: 41, y: 12 }, benefit };
+    const presentation = buildStoryEventPresentation(
+      { storyType: "SiteUsed", storyPayload, entityId: 201, ownerAddress: "0x111", viewerAddress: "0x111" } as never,
+      store,
+    );
+    return {
+      id: `site-use-${index}`,
+      at: now - index * 60,
+      text: dayLogLine({ story: "SiteUsed", storyPayload, presentation }, store)!,
+    };
   });
 };

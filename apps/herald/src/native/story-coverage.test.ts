@@ -144,6 +144,10 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
       reward: { resource_type: 23n, amount: 500n },
     },
   },
+  SiteUsed: {
+    fields: [7, 1, 12, 34, 0, 200],
+    expected: { explorer_id: 7n, coord, benefit: { Shrine: 200n } },
+  },
   TierBought: {
     fields: [7, 1, 1, 3, 200],
     expected: { explorer_id: 7n, attribute: "Logistics", kind: null, tier: 3n, price: 200n },
@@ -278,4 +282,20 @@ describe("compiled native history coverage", () => {
       },
     );
   });
+});
+
+it.each([60, 5, 0])("decodes the actual capped well gain %s from every story prefix", (gain) => {
+  const variant = storyVariants().findIndex((v) => v.name === "SiteUsed");
+  expect(variant).toBeGreaterThanOrEqual(0);
+  for (const layout of schema.games.events.filter(({ name }) => name === "StoryEvent")) {
+    assertDecoded(
+      raw({
+        from_address: manifest.world.address,
+        keys: [...layout.prefix, "2", "1", "0", "17", "0", "7", "0x55"],
+        data: [String(variant), "7", "1", "12", "34", "1", String(gain), "140"],
+      }),
+      { game_id: 1n, owner: 17n, entity_id: 7n, tx_hash: 85n },
+      { story: { SiteUsed: { explorer_id: 7n, coord, benefit: { Well: BigInt(gain) } } }, timestamp: 140n },
+    );
+  }
 });

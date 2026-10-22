@@ -49,7 +49,7 @@ it("covers every native story and tests every cumulative level", () => {
       "RelicActivated",
       "TroopsTransferred",
     ],
-    excluded: ["FaithPointsClaimedStory", "LordsWithdrawn"],
+    excluded: ["FaithPointsClaimedStory", "LordsWithdrawn", "SiteUsed"],
   };
   expect([...variants, "BattleEvent", "RaidEvent"].sort()).toEqual(Object.values(nativeLevels).flat().sort());
   for (const [minimum, stories] of Object.entries(nativeLevels)) {

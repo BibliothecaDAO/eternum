@@ -414,3 +414,16 @@ pub fn assert_claim_window(game: crate::game::GameRegistry, rules: ChestRules, t
         "LORDS claim window closed",
     );
 }
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum SiteBenefit {
+    Shrine: u32,
+    Well: u64,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct SiteUsed {
+    pub explorer_id: u64,
+    pub coord: Coord,
+    pub benefit: SiteBenefit,
+}

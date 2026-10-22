@@ -54,6 +54,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
 import { FeedRowLine } from "./feed-row-line";
 import { eventsReads, selectEventStories } from "./event-stories";
 import { StoryFeedRow } from "./story-feed-row";
+import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { relicChestRelics } from "@bibliothecadao/types";
 
 const PLAYER = "0x1";
@@ -286,4 +287,30 @@ describe("an activated relic in Events and the Log", () => {
       await act(async () => root.unmount());
     },
   );
+});
+
+it.each([
+  [{ Shrine: 200 }, "Shrine used, +200 XP"],
+  [{ Well: 5 }, "Well used, +5 stamina"],
+])("the Log renders site use and opens its historical tile after the army is gone (%j)", async (benefit, expected) => {
+  game.armies.clear();
+  const event = story("site-use", "SiteUsed", PLAYER, { explorer_id: 9, coord: { x: 3, y: 4 }, benefit }, expected);
+  event.presentation = buildStoryEventPresentation({
+    storyType: event.story,
+    storyPayload: event.storyPayload,
+    entityId: 9,
+    ownerAddress: PLAYER,
+    viewerAddress: PLAYER,
+  } as never);
+  const root = createRoot(host);
+  try {
+    act(() => root.render(<StoryFeedRow event={event} />));
+    expect(host.textContent).toContain(expected);
+    expect(host.textContent).toContain("army");
+    await act(async () => host.querySelector<HTMLButtonElement>("button")!.click());
+    expect(game.navigate).toHaveBeenCalledOnce();
+    expect(game.navigate.mock.calls[0][0].getContract()).toEqual({ x: 3, y: 4 });
+  } finally {
+    act(() => root.unmount());
+  }
 });

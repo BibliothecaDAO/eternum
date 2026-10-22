@@ -6,6 +6,7 @@
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import {
   BuildingType,
+  XP,
   buildingName,
   formatAmount,
   formatCount,
@@ -88,7 +89,7 @@ export const CLOSE = "Close";
 /** The safe choice on a confirm: the primary. */
 export const KEEP = "Keep";
 
-export const XP = "XP";
+export { XP, xpGainedLine, xpSpentLine } from "@bibliothecadao/types";
 export const ESSENCE = "Essence";
 export const LABOR = "labor";
 export const WHEAT = "wheat";
@@ -353,9 +354,6 @@ export const revealLine = (amount: string, resource: string) => `+${amount} ${re
 export const builtLine = (building: string) => `${building} built`;
 export const deployedLine = (army: string) => `${army} deployed`;
 export const disbandedLine = (army: string) => `${army} disbanded`;
-/** A day log line with the XP its story gave or spent: "+98 labor, +2 XP", "Battle Uncommon, −100 XP". */
-export const xpGainedLine = (line: string, amount: string) => `${line}, +${amount} ${XP}`;
-export const xpSpentLine = (line: string, amount: string) => `${line}, −${amount} ${XP}`;
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
 /** How deep a season went, on its total. */

@@ -139,6 +139,7 @@ const STORY_RULES = {
   },
   FaithPointsClaimedStory: { excluded: "Recipient and notification UX deferred" },
   LordsWithdrawn: { excluded: "The player's own withdrawal needs no notification" },
+  SiteUsed: { excluded: "Site use is recorded in Today and the Log" },
 } satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent", StoryRule>;
 
 export function storyNotificationRule(story: string): StoryRule {

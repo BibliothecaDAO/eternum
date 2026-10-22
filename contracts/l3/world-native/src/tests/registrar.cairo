@@ -2955,6 +2955,40 @@ fn frontier_reveals_many_ruins_clears_one_and_starts_fresh_the_next_day() {
             364,
         ),
     );
+    assert!(structures.structure(second).is_none(), "walked-over ruin remains absent");
+    assert!(
+        !execute_in_game(
+            d,
+            game_id,
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: key.explorer_id, defender_id: second.entity_id },
+            ),
+            364,
+        ),
+    );
+    assert_eq!(resources.resource_balance(lords) - before, chest.amount * RESOURCE_PRECISION);
+    let back = (second_direction + 3) % 6;
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::Move(crate::commands::Move { explorer_id: key.explorer_id, directions: array![back].span() }),
+            364,
+        ),
+    );
+    assert!(structures.structure(second).is_none(), "vacated ruin remains absent");
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(other_tile)).is_none());
+    assert!(
+        !execute_in_game(
+            d,
+            game_id,
+            Command::BattleGuard(
+                crate::commands::Battle { attacker_id: key.explorer_id, defender_id: second.entity_id },
+            ),
+            364,
+        ),
+    );
+    assert_eq!(resources.resource_balance(lords) - before, chest.amount * RESOURCE_PRECISION);
     let moved = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let root = discovery_root(game_id, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()));
     let mut explored = false;
@@ -3630,6 +3664,7 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
 #[test]
 fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() {
     let d = setup();
+    let mut stories = snforge_std::spy_events();
     let (game_id, _, category) = expedition_home(d);
     let (key, _) = expedition_armies(d, game_id, category);
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
@@ -3702,6 +3737,43 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
         GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops.stamina.inline().amount,
         before + 5,
     );
+
+    // The story records actual gains: a near-full well gives 5, and a full well gives 0.
+    snforge_std::interact_with_state(
+        d.games, || crate::logic::map::MapState::occupy(tile, 904, crate::taxonomy::WELL_OCCUPIER, false),
+    );
+    assert!(execute_in_game(d, game_id, command, 360));
+    assert!(!execute_in_game(d, game_id, command, 360));
+    let expected = array![
+        crate::relics::SiteBenefit::Shrine(200), crate::relics::SiteBenefit::Shrine(200),
+        crate::relics::SiteBenefit::Well(60), crate::relics::SiteBenefit::Well(5), crate::relics::SiteBenefit::Well(0),
+    ];
+    let mut used = 0;
+    for (_, event) in stories.get_events().emitted_by(d.games).events.span() {
+        // Component stories may have their component selector before StoryEvent.
+        let offset = if *event.keys.at(0) == selector!("StoryEvent") {
+            1
+        } else {
+            if event.keys.len() < 2 || *event.keys.at(1) != selector!("StoryEvent") {
+                continue;
+            }
+            2
+        };
+        let mut keys = event.keys.span().slice(offset, event.keys.len() - offset);
+        let mut data = event.data.span();
+        let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+        if let crate::ownership::Story::SiteUsed(visit) = story.story {
+            assert_eq!(story.game_id, game_id);
+            assert_eq!(story.entity_id, Some(key.explorer_id));
+            assert_eq!(story.owner, Some(d.actor));
+            assert_eq!(story.timestamp, 360);
+            assert_eq!(visit.explorer_id, key.explorer_id);
+            assert_eq!(visit.coord, coord);
+            assert_eq!(visit.benefit, *expected.at(used));
+            used += 1;
+        }
+    }
+    assert_eq!(used, expected.len(), "one story per successful use, none for refusals");
 }
 
 #[test]

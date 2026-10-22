@@ -77,14 +77,13 @@ pub fn ruin_disappeared(key: crate::resources::ResourceKey) -> bool {
     if state.structures.structures.entry(storage_key).base.read().category != crate::taxonomy::RUIN_CATEGORY {
         return false;
     }
-    let Some(coord) = crate::map::position_from_bits(state.map.entity_tiles.read(storage_key)) else {
+    let Some(chest) = state.structures.site_chests.read(storage_key) else {
         return false;
     };
-    let spacing = crate::logic::preset_record::for_game(key.game_id).settlement_spacing.read();
     state
         .map_rules
         .ruin_cleared
-        .read((key.game_id, crate::entity_ids::namespace(key.entity_id).into(), region_day(coord, spacing)))
+        .read((key.game_id, crate::entity_ids::namespace(key.entity_id).into(), chest.reservation_day))
 }
 
 pub fn close_ruins(key: ExpeditionDiscoveryKey) {

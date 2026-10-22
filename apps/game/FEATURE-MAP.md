@@ -24,10 +24,12 @@ site by its one name, the map label's (and a rename): "clientlane2 vs Ashford ·
 guard 154 to 0", "Ashford cleared", "Ashford found"; its guard's species is the fight's forces ("507 T1 Knight vs 154
 Wraith") and a find's kind. A roaming beast's card is titled by its species; the fight result retains that species'
 portrait after the guard clears. Today writes the XP each line moved: "+79 labor, +2 XP" (a reveal), "Ashford cleared,
-+82 XP" (a clear, from the guard the site started with), "Battle Uncommon, −100 XP" (a level-up's price). A Shrine's 200
-XP and the XP an emptied army takes with it in a merge leave no story, so no line. Dev: `/lab/kit/hud/today` (the
-owner's 22 October day, through the log's own lines). A Frontier founding line names the settler without the realm's
-off-map settlement coordinate.
++82 XP" (a clear, from the guard the site started with), "Battle Uncommon, −100 XP" (a level-up's price). A Shrine's use
+and a Well's use record the army, historical tile and actual XP or stamina gained, including a capped well. Today and
+the Log share the same gain line, even after the army is gone; a Log click returns to the recorded tile. Dev:
+`/lab/kit/hud/today-sites`. The XP an emptied army takes with it in a merge leaves no story. Dev: `/lab/kit/hud/today`
+(the owner's 22 October day, through the log's own lines). A Frontier founding line names the settler without the
+realm's off-map settlement coordinate.
 
 ## Cleared-site standard
 

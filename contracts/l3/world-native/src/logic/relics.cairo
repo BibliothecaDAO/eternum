@@ -202,11 +202,25 @@ pub mod RelicState {
                 },
                 crate::geometry::tile_key(game_id, command.coord),
             );
-            if category == crate::taxonomy::SHRINE_OCCUPIER {
-                crate::logic::progression::grant_fixed_xp(key);
+            let benefit = if category == crate::taxonomy::SHRINE_OCCUPIER {
+                crate::relics::SiteBenefit::Shrine(crate::logic::progression::grant_fixed_xp(key))
             } else {
-                self.grant_stamina(key, explorer, crate::rules::WELL_STAMINA, context);
-            }
+                crate::relics::SiteBenefit::Well(self.grant_stamina(key, explorer, crate::rules::WELL_STAMINA, context))
+            };
+            self
+                .emit(
+                    crate::ownership::StoryEvent {
+                        version: 2,
+                        game_id,
+                        entity_id: Some(command.explorer_id),
+                        owner: Some(actor),
+                        timestamp: context.timestamp,
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: crate::ownership::Story::SiteUsed(
+                            crate::relics::SiteUsed { explorer_id: command.explorer_id, coord: command.coord, benefit },
+                        ),
+                    },
+                );
             ()
         }
     }
@@ -443,12 +457,13 @@ pub mod RelicState {
             explorer: crate::troops::ExplorerTroops,
             amount: u8,
             context: ExecutionContext,
-        ) {
+        ) -> u64 {
             let progress = crate::logic::progression::require(key);
             let maximum = crate::progression::stamina_max(
                 progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
             );
             let mut stamina = explorer.troops.stamina.inline();
+            let before = stamina.amount;
             stamina.amount += amount.into();
             stamina.clamp(maximum);
             crate::troops::IArmySlotStaminaDispatcherTrait::army_slot_stamina(
@@ -458,6 +473,7 @@ pub mod RelicState {
                 key,
                 crate::troops::ArmySlotAction::Persist(crate::troops::StaminaSource::Inline(stamina)),
             );
+            stamina.amount - before
         }
 
         fn refund_capture_stamina(
