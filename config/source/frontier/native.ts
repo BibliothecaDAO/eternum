@@ -144,7 +144,7 @@ export const frontierPreset: NativePreset = {
       beastStrongUpper: 1650,
       revealSiteNeighbors: false,
       entryStamina: 30,
-      chest: { common: 4000, uncommon: 3000, rare: 1700, epic: 900, legendary: 400 },
+      chest: { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
     },
     {
       revealPercent: 20,
@@ -159,7 +159,7 @@ export const frontierPreset: NativePreset = {
       beastStrongUpper: 4400,
       revealSiteNeighbors: false,
       entryStamina: 40,
-      chest: { common: 3000, uncommon: 3000, rare: 2200, epic: 1200, legendary: 600 },
+      chest: { common: 0, uncommon: 0, rare: 5500, epic: 3000, legendary: 1500 },
     },
     {
       revealPercent: 25,
@@ -174,7 +174,7 @@ export const frontierPreset: NativePreset = {
       beastStrongUpper: 11000,
       revealSiteNeighbors: false,
       entryStamina: 50,
-      chest: { common: 2000, uncommon: 3000, rare: 2500, epic: 1600, legendary: 900 },
+      chest: { common: 0, uncommon: 0, rare: 0, epic: 6400, legendary: 3600 },
     },
   ],
 };

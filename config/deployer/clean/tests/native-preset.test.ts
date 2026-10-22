@@ -167,14 +167,28 @@ describe("native presets", () => {
       shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
       claim_window_seconds: 604800,
     });
-    expect(preset.settlement.depths.map(({ chest }) => Object.values(chest))).toEqual([
-      [5000, 2700, 1400, 600, 300],
-      [4000, 3000, 1700, 900, 400],
-      [3000, 3000, 2200, 1200, 600],
-      [2000, 3000, 2500, 1600, 900],
-    ]);
     expect(config.season.durationSeconds).toBe(0);
   });
+
+  test.each([FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID])(
+    "Frontier preset %i removes one chest rarity at each depth and preserves the remaining proportions",
+    (id) => {
+      const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
+      const tables = preset.settlement.depths.map(({ chest }) => chest);
+      expect(tables).toEqual([
+        { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
+        { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
+        { common: 0, uncommon: 0, rare: 5500, epic: 3000, legendary: 1500 },
+        { common: 0, uncommon: 0, rare: 0, epic: 6400, legendary: 3600 },
+      ]);
+      for (const [depth, table] of tables.entries()) {
+        const weights = [table.common, table.uncommon, table.rare, table.epic, table.legendary];
+        expect(weights.every(Number.isInteger)).toBe(true);
+        expect(weights.reduce((sum, weight) => sum + weight, 0)).toBe(10000);
+        expect(weights.slice(0, depth)).toEqual(Array(depth).fill(0));
+      }
+    },
+  );
 
   test("every preset supplies its cooldown explicitly, independent of the stamina clock", () => {
     for (const [network, id, expected] of [

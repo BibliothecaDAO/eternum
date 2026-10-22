@@ -159,7 +159,7 @@ fn refused_chests_reserve_nothing_and_clearing_spends_only_the_hold() {
 }
 
 #[test]
-fn chest_tiers_follow_each_depths_odds_over_10k_rolls() {
+fn chest_tiers_follow_each_depths_odds_and_never_roll_removed_tiers_over_10k_rolls() {
     let (_, preset) = super::preset_projection::current_definition("frontier");
     for depth in preset.settlement.depths {
         let odds = *depth.chest;
@@ -171,6 +171,9 @@ fn chest_tiers_follow_each_depths_odds_over_10k_rolls() {
         for tier in 0_u8..5 {
             let expected: u32 = tier_value(odds, tier).into();
             let actual = counts.get(tier.into());
+            if expected == 0 {
+                assert_eq!(actual, 0, "a removed chest tier rolled");
+            }
             let difference = core::cmp::max(actual, expected) - core::cmp::min(actual, expected);
             let variance = expected * (10000 - expected) / 10000;
             assert!(difference * difference <= 16 * variance + 1, "chest tier outside four sigma");
