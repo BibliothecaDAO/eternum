@@ -21,7 +21,7 @@ import { registrarWorldOf } from "../../config/deployer/clean/world/native/manif
 import { schemaIdentity, type NativeSchema } from "../../apps/herald/src/native/schema";
 
 // Bump for every published change to the logic table or migration.
-const NATIVE_RELEASE_ID = 2;
+const NATIVE_RELEASE_ID = 3;
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const WORLD = resolve(ROOT, "contracts/l3/world-native");

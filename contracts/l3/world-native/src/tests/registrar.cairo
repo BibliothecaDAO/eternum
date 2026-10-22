@@ -1025,6 +1025,19 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     let guards = IGuardsDispatcher { contract_address: d.games };
     let category: u8 = guards.guard(GuardKey { game_id, structure_id: home.entity_id, slot: 0 }).troops.category.into();
     assert!(
+        !execute_in_game(
+            d,
+            game_id,
+            Command::CreateExplorer(
+                CreateExplorer {
+                    slot: 1, structure_id: home.entity_id, category, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                },
+            ),
+            301,
+        ),
+    );
+    assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).len(), 0);
+    assert!(
         execute_in_game(
             d,
             game_id,
