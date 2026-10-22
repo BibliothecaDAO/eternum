@@ -76,8 +76,26 @@ it("writes the same 57.6 reveal on Today's line, and keeps its fraction until th
     ownerAddress: "0x1",
     viewerAddress: null,
   } as never);
-  expect(dayLogLine({ story: "ExplorationReward", storyPayload, presentation } as never, {} as never)).toBe(
-    "+58 Essence",
+  // Prod's XP rules: Today writes the reveal's 2 XP beside its pay.
+  const { NativeFactStore } = await import("@bibliothecadao/eternum/game-client");
+  const store = new NativeFactStore();
+  store.applyFacts([
+    {
+      model: "ArmyProgressionRules",
+      key: "0x101",
+      value: {
+        game_id: 1,
+        reveal_xp: 2,
+        fixed_xp: 200,
+        uncommon_xp: 100,
+        rare_xp: 200,
+        epic_xp: 400,
+        legendary_xp: 800,
+      },
+    },
+  ] as never);
+  expect(dayLogLine({ story: "ExplorationReward", storyPayload, presentation } as never, store)).toBe(
+    "+58 Essence, +2 XP",
   );
 
   const fiveReveals = Array.from({ length: 5 }, () => ({
