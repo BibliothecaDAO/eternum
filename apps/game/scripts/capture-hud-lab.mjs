@@ -67,7 +67,7 @@ const HUD_LAYOUT_PAGES = [
   "hud/next-up-deploy",
   "hud/purse-next-up",
   "hud/last-hour",
-  "hud/production",
+  "hud/stores",
 ];
 
 const holdHudLayout = ({ baseUrl, out, run }) => {

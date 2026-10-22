@@ -9,33 +9,41 @@ import {
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPanel, HudRing } from "@/ui/design-system/kit/hud-elements";
-import { REALM } from "@/ui/design-system/kit/words";
+import { REALM, SHOW_MY_REALM } from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
+import type { ReactNode } from "react";
 
+import { RankSteps } from "../realm/rank-steps";
 import type { RealmPopulation } from "../realm/realm-population";
 import { RealmsChip } from "../value/lords-purse";
 import { LandingDelta, STORE_TONES, STORES, type StoreReading, storeLine } from "./status-strip";
 
 /**
- * Frontier's realm on the desktop HUD's left column, read as Blitz's realm card reads a holding: its name, its rank
- * and population (used of all it can hold) with the way to Realms (the labor they hold today on it), then a ring per store (Essence, Labor, Wheat, Troops), each filling toward its
- * limit with the time until full on its rim, and a ring for its LORDS. A tap on a store opens Production, on the LORDS
- * Withdraw; a realm watched or visited shows its stores alone. The day's clock is the top bar's.
+ * Frontier's realm on the desktop HUD's left column, read as Blitz's realm card reads a holding: its name with its
+ * rank's steps in a header that takes the map home to it (it never folds), its rank and population (used of all it can
+ * hold) with the way to Realms (the labor they hold today on it), then a ring per store (Essence, Labor, Wheat, Troops),
+ * each filling toward its limit with the time until full on its rim, and a ring for its LORDS. A tap on a store with a
+ * card opens it under the rings, on the LORDS Withdraw; a realm watched or visited shows its stores alone. The day's
+ * clock is the top bar's.
  */
 export const RealmPanel = ({
   name,
   level,
+  highest,
   population,
   stores,
   lords,
   labor = 0,
-  onOpenStores,
+  onHome,
+  storeCards,
   onWithdraw,
   onRealms,
 }: {
   name: string;
   level: number | undefined;
+  /** The highest level a realm reaches: its rank's steps run up to it; unknown leaves them out. */
+  highest?: number;
   /** What the realm's buildings take of the population its castle and Huts give; unknown is left out. */
   population?: RealmPopulation;
   stores: StoreReading[];
@@ -43,11 +51,32 @@ export const RealmPanel = ({
   lords?: number;
   /** The labor the player's Realms have waiting today, which the Realms chip wears. */
   labor?: number;
-  onOpenStores?: () => void;
+  /** The header's press: the map centred on the realm. */
+  onHome?: () => void;
+  /** The stores whose ring opens their card, the one open, and that card under the rings. */
+  storeCards?: {
+    kinds: readonly StoreReading["kind"][];
+    open: StoreReading["kind"] | null;
+    onToggle: (kind: StoreReading["kind"]) => void;
+    card: ReactNode;
+  };
   onWithdraw?: () => void;
   onRealms?: () => void;
 }) => (
-  <HudPanel label={REALM} title={name} className="pointer-events-auto" bodyClassName="flex flex-col gap-2">
+  <HudPanel
+    label={REALM}
+    title={
+      <span className="inline-flex items-center gap-2">
+        {name}
+        {level !== undefined && highest !== undefined && <RankSteps level={level} highest={highest} />}
+      </span>
+    }
+    icon={onHome ? "location" : undefined}
+    onTitle={onHome && { label: SHOW_MY_REALM, run: onHome }}
+    collapsible={false}
+    className="pointer-events-auto"
+    bodyClassName="flex flex-col gap-2"
+  >
     <div className="flex min-h-9 items-center gap-2 text-hud-strong text-hud-ink">
       {level !== undefined && (
         <>
@@ -62,7 +91,10 @@ export const RealmPanel = ({
     <ul aria-label="Stores" className="grid grid-cols-5 justify-items-center gap-y-5 pb-2 pt-2">
       {stores.map((store) => (
         <li key={store.kind} className="relative">
-          <StoreRing store={store} onOpen={onOpenStores} />
+          <StoreRing
+            store={store}
+            onOpen={storeCards?.kinds.includes(store.kind) ? () => storeCards.onToggle(store.kind) : undefined}
+          />
         </li>
       ))}
       {lords !== undefined && (
@@ -77,6 +109,7 @@ export const RealmPanel = ({
         </li>
       )}
     </ul>
+    {storeCards?.open && storeCards.card}
   </HudPanel>
 );
 

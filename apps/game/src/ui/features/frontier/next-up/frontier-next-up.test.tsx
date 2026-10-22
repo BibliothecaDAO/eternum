@@ -116,7 +116,7 @@ it("selects the army with the most stamina to explore, and opens the panel of th
   expect(onSurface).not.toHaveBeenCalled();
 });
 
-it("opens the realm for barracks, and Research and Production where a step names them", () => {
+it("opens the realm for barracks, Research where a step names it, and a full store where it is spent", () => {
   show({ barracks: false, armies: 1 });
   press("Open the realm");
   expect(moves.goToPlace).toHaveBeenCalledWith(false);
@@ -126,8 +126,13 @@ it("opens the realm for barracks, and Research and Production where a step names
   expect(onSurface).toHaveBeenCalledWith("research");
 
   show({ armies: 1, armiesTired: true, storeFull: "wheat" });
-  press("Production");
-  expect(onSurface).toHaveBeenCalledWith("production");
+  press("Deploy");
+  expect(moves.deploy).toHaveBeenCalledWith({ structureId: 7, isExplorer: true });
+
+  moves.goToPlace.mockClear();
+  show({ armies: 1, armiesTired: true, storeFull: "labor" });
+  press("Open the realm");
+  expect(moves.goToPlace).toHaveBeenCalledWith(false);
 });
 
 it("says in the realm how to build the barracks there, with no button back into the realm", () => {

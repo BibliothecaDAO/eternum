@@ -56,6 +56,7 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
   const result = fightResultOf(
     {
       targetId: SITE,
+      tile: { col: 40, row: 12 },
       site: "Camp",
       armyId: 201,
       armyArt: "knight-t1",

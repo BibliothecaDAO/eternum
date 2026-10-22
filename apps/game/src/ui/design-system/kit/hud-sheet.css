@@ -59,6 +59,14 @@ button.ui-panel__name {
   cursor: pointer;
   user-select: none;
 }
+/* A header that is one action (the realm card's way home) is pressed anywhere along its band. */
+button.ui-panel__name[data-action] {
+  flex: 1;
+  text-align: left;
+}
+button.ui-panel__name[data-action]:hover {
+  color: rgb(var(--hud-ink));
+}
 .ui-panel__title {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2106,10 +2114,21 @@ button.ui-card__choose:disabled {
   opacity: 0.24;
 }
 
-/* A docked sheet or nav page takes the right rail's place on a desktop: the rail steps aside under it. */
-@media (min-width: 1024px) {
-  body:has([data-kit-sheet]) [data-hud-rail],
-  body:has([data-page]) [data-hud-rail] {
-    visibility: hidden;
-  }
+/*
+ * Frontier's desktop rail, the one home for everything (the owner, 22 October): a page or a sheet stands in its panel
+ * under Next up, at the feed's width, and the feed steps aside for it. Nothing over the rail hides it.
+ */
+[data-frontier-rail] {
+  width: theme(spacing.hud-frontier-rail);
+}
+[data-frontier-rail]:has([data-rail-panel] > *) [data-rail-home] {
+  display: none;
+}
+[data-rail-panel] .ui-sheet {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
+  max-height: 100%;
+  border-radius: var(--hud-radius-panel);
 }

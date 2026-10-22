@@ -7,7 +7,7 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { BlockTimestampPoller } from "@/ui/shared/components/block-timestamp-poller";
 import { frontierDay } from "../deploy/deploy-fixture";
-import { FrontierProduction } from "./frontier-production";
+import { FrontierStoreCard } from "./frontier-store-card";
 
 const context = vi.hoisted(() => {
   vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "performance"] });
@@ -56,11 +56,11 @@ it("keeps an open barracks figure fixed until the chain-proven floor advances", 
       root.render(
         <>
           <BlockTimestampPoller />
-          <FrontierProduction realm={row} rules={rules} onClose={() => {}} />
+          <FrontierStoreCard realm={row} rules={rules} store="troops" onDone={() => {}} />
         </>,
       ),
     );
-    const troopRow = () => host.querySelectorAll("section[aria-label='Production'] > div > div")[2].textContent;
+    const troopRow = () => host.querySelector("section[aria-label='troops']")!.textContent;
     expect(troopRow()).toContain("420");
     act(() => vi.advanceTimersByTime(1000));
     expect(troopRow()).toContain("420");

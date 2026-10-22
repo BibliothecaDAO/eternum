@@ -157,3 +157,56 @@ it("gives a phone the Events' Log on its place bar as a page under the map, with
   expect(page()).toBeNull();
   expect(log()!.getAttribute("aria-current")).toBeNull();
 });
+
+it("keeps a refused order in sight on a desktop, over the feed and over a panel the rail holds", async () => {
+  const { toast } = await import("@/ui/features/event-feed/notify");
+  const { useEventFeedStore } = await import("@/ui/features/event-feed/event-feed-store");
+  viewport.set(1920);
+  await renderHud();
+  const rail = () => host.querySelector("[data-frontier-rail]")!;
+  try {
+    await act(async () => toast.error("Not enough stamina"));
+    expect(rail().querySelector('section[aria-label="Feed"]')).not.toBeNull();
+    expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
+    // The Season stands in the rail's panel, the feed steps aside; the notice stays.
+    const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
+    await act(async () => season.click());
+    expect(rail().querySelector('[data-rail-panel] section[aria-label="Season"]')).not.toBeNull();
+    expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
+  } finally {
+    useEventFeedStore.getState().dismiss();
+  }
+});
+
+it("draws every realm on the Season board with its rank and reach, from Herald's entry, though no realm is streamed", async () => {
+  // Three realms the lab's game streams none of: their Structure rows are absent from the store.
+  const entry = (rank: number, level: number, depth: number) => ({
+    address: `0x${(0xa00 + rank).toString(16)}`,
+    structure_id: String(900 + rank),
+    rank,
+    sites_cleared: { total: 10 - rank, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
+    chests_earned: 0,
+    rewards: { lords: "0", essence: "0", labor: "0" },
+    deepest_depth: depth,
+    level,
+    order: rank,
+  });
+  const board = { game_id: "1", mode: "frontier", entries: [entry(1, 3, 3), entry(2, 1, 2), entry(3, 0, 0)] };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string | URL) =>
+      String(url).includes("/leaderboard")
+        ? new Response(JSON.stringify(board), { status: 200 })
+        : new Response(JSON.stringify({ blocked: [] }), { status: 200 }),
+    ),
+  );
+  viewport.set(1920);
+  await renderHud();
+  const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
+  await act(async () => season.click());
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+  const badges = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
+    .map((badge) => badge.getAttribute("aria-label"))
+    .filter((label) => /Settlement|City|Kingdom|Empire/.test(label ?? ""));
+  expect(badges).toEqual(["Empire · Ethereal III", "City · Ethereal II", "Settlement"]);
+});

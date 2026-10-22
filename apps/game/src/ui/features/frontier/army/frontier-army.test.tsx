@@ -93,13 +93,18 @@ it("shows the army's figures, then its level-ups one step on, and buys the chose
   game.progress.xp = 260;
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
-  expect(host.textContent).toContain("Damage dealt");
-  expect(host.textContent).toContain("Max stamina");
-  // Frontier's camp is its Troll, on the panel as everywhere (the shared structure naming rule).
-  expect(host.textContent).toContain("Clear a Troll: more for a stronger guard");
+  // Each attribute is a tile named by its attribute, with what it gives as its effect (the owner's pick, 22 October).
+  expect(host.querySelector('button[aria-label="Battle 0% damage"]')).not.toBeNull();
+  expect(host.textContent).toMatch(/\d+ max stamina/);
+  expect(host.textContent).toMatch(/% come home/);
+  // How XP is earned is on the XP's hover; Frontier's camp is its Troll there as everywhere (the structure naming rule).
+  expect(host.querySelector("[data-tip*='Clear a Troll: more for a stronger guard']")).not.toBeNull();
   expect(host.textContent).not.toMatch(/Camp/);
-  act(() => button(/Level up · 4 ready/)!.click());
-  act(() => [...host.querySelectorAll<HTMLButtonElement>("[data-attribute='scouting']")][0]!.click());
+  // Level up counts nothing: the XP buys one level-up, whichever the choices take.
+  expect(button(/Level up/)!.textContent).toBe("Level up");
+  // A tile opens its own level-up.
+  act(() => host.querySelector<HTMLButtonElement>('button[aria-label^="Scouting"]')!.click());
+  expect(host.querySelector("[data-attribute='scouting']")!.getAttribute("aria-pressed")).toBe("true");
   expect(button(/^Trolls$/)).toBeDefined();
   expect(host.textContent).not.toMatch(/Camp/);
   act(() => button(/^Rifts$/)!.click());

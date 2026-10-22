@@ -3,6 +3,7 @@ import { bankedCounterTarget } from "@/ui/motion/moments/banked-flight";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
+import type { ComponentProps } from "react";
 
 import { useRealmStores } from "../realm-stores";
 import { dayClock } from "./day-clock";
@@ -16,15 +17,20 @@ import { StatusStrip, type StoreReading } from "./status-strip";
 export const FrontierStrip = ({
   rules,
   realm,
-  onOpenStores,
+  onOpenDay,
+  storeCards,
 }: {
   rules: ExpeditionRules;
   realm: NativeRows["Structure"] | null;
-  /** Production, from a tap on the stores; absent while visiting. */
-  onOpenStores?: () => void;
+  /** Today, the day's report, from a tap on the day's dial. */
+  onOpenDay: () => void;
+  /** The stores whose plate opens their card; absent while visiting. */
+  storeCards?: ComponentProps<typeof StatusStrip>["storeCards"];
 }) => {
   const clock = dayClock(rules, useNowSeconds());
-  return <StatusStrip clock={clock} stores={useStoreReadings(realm, rules)} onOpenStores={onOpenStores} />;
+  return (
+    <StatusStrip clock={clock} stores={useStoreReadings(realm, rules)} onOpenDay={onOpenDay} storeCards={storeCards} />
+  );
 };
 
 /** Each store of the realm (the strip's plates, the realm panel's rings): its reading and where a payout of it lands. */

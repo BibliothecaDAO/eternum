@@ -3,21 +3,20 @@ import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { MenuSheet } from "./menu-sheet";
 
-it("opens Production and Settings from their own semantic glyphs, and has no Guide row", async () => {
+it("opens Today and Settings from their own semantic glyphs, and has no Guide or Production row", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
-  const onProduction = vi.fn(),
+  const onToday = vi.fn(),
     onSettings = vi.fn();
   try {
     await act(async () =>
       root.render(
         <MenuSheet
           rank="#12"
-          onToday={() => {}}
+          onToday={onToday}
           onSeason={() => {}}
-          onProduction={onProduction}
           onSettings={onSettings}
           onExit={() => {}}
           onClose={() => {}}
@@ -25,7 +24,7 @@ it("opens Production and Settings from their own semantic glyphs, and has no Gui
       ),
     );
     for (const [label, name, callback] of [
-      ["Production", "production", onProduction],
+      ["Today", "clock", onToday],
       ["Settings", "settings", onSettings],
     ] as const) {
       const button = [...host.querySelectorAll<HTMLButtonElement>("nav button")].find((b) =>
@@ -38,9 +37,8 @@ it("opens Production and Settings from their own semantic glyphs, and has no Gui
       await act(async () => button.click());
       expect(callback).toHaveBeenCalledTimes(1);
     }
-    expect([...host.querySelectorAll("nav button")].some((button) => button.textContent?.includes("Guide"))).toBe(
-      false,
-    );
+    for (const gone of ["Guide", "Production"])
+      expect([...host.querySelectorAll("nav button")].some((button) => button.textContent?.includes(gone))).toBe(false);
   } finally {
     await act(async () => root.unmount());
     host.remove();

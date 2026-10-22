@@ -3,7 +3,7 @@ import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon"
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudMeter } from "@/ui/design-system/kit/hud-elements";
 
-import { STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
+import { ARMY, STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
 import { STAMINA_SEGMENTS, staminaFill } from "@/lib/army-stamina/segments";
 
 const TOKEN = "relative flex h-hud-frontier-token w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-xl";
@@ -103,6 +103,7 @@ export const ArmyToken = ({
 /**
  * An open army slot: a plus in a dashed ring that opens Deploy, and under it the stamina the slot starts its army on,
  * in the same segments an army's token carries, said in words when asked. The first one pulses while no army is out.
+ * A slot Deploy does not fill next shows its army's number in the ring and opens nothing.
  */
 export const OpenSlot = ({
   label,
@@ -121,41 +122,49 @@ export const OpenSlot = ({
   wide?: boolean;
   /** The bar the slot starts its army on, and that in words ("Army 2 starts on 7/150 stamina…"); none while unknown. */
   start?: { bar: { current: number; max: number }; words: string };
-  /**
-   * A free slot Deploy does not fill yet (the game fills the lowest free slot first): its number, and why in words. It
-   * shows its bar and cannot be pressed.
-   */
+  /** A later free slot: its army number and why Deploy cannot fill it yet. */
   waits?: { number: number; words: string };
   onDeploy: () => void;
-}) => (
-  <button
-    type="button"
-    aria-label={filling ?? waits?.words ?? label}
-    aria-busy={filling !== undefined}
-    disabled={filling !== undefined || waits !== undefined}
-    data-tip={filling === undefined ? [start?.words, waits?.words].filter(Boolean).join(" ") || undefined : undefined}
-    onClick={onDeploy}
-    className={cn(
-      wide ? cn(CARD, "!flex-row justify-center") : TOKEN,
-      "border border-hud-line bg-hud-surface",
-      waits && "border-dashed",
-    )}
-  >
-    <span
-      className={cn(
-        "flex size-10 items-center justify-center rounded-full border-2 border-dashed border-hud-line text-hud-title",
-        waits ? "text-hud-muted" : "text-hud-ink",
-        (pulse || filling !== undefined) && "animate-pulse border-hud-line-strong",
+}) => {
+  const waiting = waits !== undefined;
+  const body = (
+    <>
+      <span
+        className={cn(
+          "flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-hud-line text-hud-title",
+          waiting ? "text-hud-muted" : "text-hud-ink",
+          (pulse || filling !== undefined) && "animate-pulse border-hud-line-strong",
+        )}
+      >
+        {waiting ? waits.number : filling === undefined ? "+" : "…"}
+      </span>
+      {wide && (
+        <span className={cn("text-hud-strong", waiting ? "text-hud-muted" : "text-hud-ink")}>{filling ?? (waits ? `${ARMY} ${waits.number}` : label)}</span>
       )}
+      {start &&
+        filling === undefined &&
+        (wide ? <StaminaReading stamina={start.bar} /> : <StaminaSegments stamina={start.bar} />)}
+    </>
+  );
+  const look = cn(wide ? cn(CARD, "!flex-row justify-center") : TOKEN, "border border-hud-line bg-hud-surface");
+  return waiting && wide ? (
+    <div role="group" aria-label={`${ARMY} ${waits.number}`} data-tip={start?.words} className={cn(look, "border-dashed")}>
+      {body}
+    </div>
+  ) : (
+    <button
+      type="button"
+      aria-label={filling ?? waits?.words ?? label}
+      aria-busy={filling !== undefined}
+      disabled={filling !== undefined || waiting}
+      data-tip={filling === undefined ? [start?.words, waits?.words].filter(Boolean).join(" ") || undefined : undefined}
+      onClick={onDeploy}
+      className={look}
     >
-      {filling !== undefined ? "…" : waits ? waits.number : "+"}
-    </span>
-    {wide && <span className="text-hud-strong text-hud-ink">{filling ?? label}</span>}
-    {start &&
-      filling === undefined &&
-      (wide ? <StaminaReading stamina={start.bar} /> : <StaminaSegments stamina={start.bar} />)}
-  </button>
-);
+      {body}
+    </button>
+  );
+};
 
 /** A desktop row's stamina: the bar, and its exact count beside it ("58/120"), as an army's row and an open slot read it. */
 export const StaminaReading = ({ stamina }: { stamina: { current: number; max: number } | undefined }) => (
