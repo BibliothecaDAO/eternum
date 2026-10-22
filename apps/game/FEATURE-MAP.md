@@ -436,9 +436,9 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 | Well                    | Frontier Map → select an army beside a discovered stone well → right-click it (hold on a phone): Use, +stamina; the hover warns at a full bar. Tap it for its card, army kept.  |
 | Ownership and placement | `/lab` → Building model → choose an outpost → Ownership where available → Place on selected tile → Focus selected tile. Biome and Fog controls exercise terrain and visibility. |
 
-`pnpm --dir apps/game prove:frontier-sites --base-url https://127.0.0.1:4195 --out <fresh-dir>` drives both on the live
-Frontier route at desktop and phone size: a Shrine and a Well staged beside a live army (one is staged when none is out
-today), the hover, the right-click or hold, the tap's card, and the recorded command; no transaction is signed.
+`src/three/scenes/worldmap-site-use.test.tsx` drives both through the world map's own input and handlers (click,
+right-click, a touch held, the order line) and records the InteractSite call the provider builds; no lab mounts the
+world map scene.
 
 With the local client running, open `/lab?evidence=/absolute/capture/directory` and run
 `scripts/outposts/prove-runtime.playwright.js` through the browser connection with the page as its argument (remove the

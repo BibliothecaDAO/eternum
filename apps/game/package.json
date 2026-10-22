@@ -77,7 +77,6 @@
     "prove:map-context": "node ./scripts/sheet-map/prove.mjs",
     "prove:app-art": "node ./scripts/prove-app-art.mjs",
     "prove:relic-chest": "node ./scripts/prove-relic-chest.mjs",
-    "prove:frontier-sites": "node ./scripts/prove-frontier-sites.mjs",
     "build:app-backgrounds": "node ./asset-sources/app-backgrounds/build.mjs",
     "check:app-backgrounds": "node ./asset-sources/app-backgrounds/build.mjs --check",
     "inventory:map-context": "node ./scripts/sheet-map/inventory.mjs",
