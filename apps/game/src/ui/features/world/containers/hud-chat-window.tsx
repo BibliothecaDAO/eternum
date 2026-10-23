@@ -19,6 +19,9 @@ import { getActiveGame } from "@/runtime/world";
 import { isKeyForSurface } from "@/utils/shortcuts/typing-target";
 import { CHAT_SHORTCUT } from "./chat-shortcut";
 
+/** A game's chat room: game ids repeat across shards, so a room is named by its shard's chain and the game. */
+export const gameChatZoneId = (chainId: string, gameId: number) => `game:0x${BigInt(chainId).toString(16)}:${gameId}`;
+
 /**
  * The game's chat room as the player stands in it: signed in or not, the room's name (game ids repeat across shards,
  * so a room is named by its shard's chain and the game), the zone shown, and what joining it takes.
@@ -27,7 +30,7 @@ const useGameChatRoom = () => {
   const { status } = useIdentitySession();
   const signedIn = status === "signed-in";
   const game = getActiveGame();
-  const gameZoneId = game ? `game:0x${BigInt(game.chainId).toString(16)}:${configManager.getActiveGameId()}` : "";
+  const gameZoneId = game ? gameChatZoneId(game.chainId, configManager.getActiveGameId()) : "";
   const zoneId = useRealtimeChatSelector((state) =>
     state.activeZoneId === gameZoneId ? gameZoneId : GLOBAL_CHAT_CHANNEL_ID,
   );

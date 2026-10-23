@@ -5,7 +5,8 @@ export default defineConfig({
   // client imports it directly so pulling the key helpers never evaluates the
   // package barrel. esm code-splitting keeps it one shared chunk — a second
   // module instance would split the active-game-id mirror the helpers read.
-  // troop-stamina and expeditions are too: services read a game's own rules without the client's config state.
+  // troop-stamina, expeditions and combat-exchange are too: services and the docs read a game's own rules without the
+  // client's config state.
   entry: [
     "src/index.ts",
     "src/account/device-signer.ts",
@@ -16,6 +17,7 @@ export default defineConfig({
     "src/managers/game-entity-keys.ts",
     "src/managers/troop-stamina.ts",
     "src/utils/expeditions.ts",
+    "src/utils/combat-exchange.ts",
     "src/client/index.ts",
     "src/client/shard-reader.ts",
     "src/sync/index.ts",

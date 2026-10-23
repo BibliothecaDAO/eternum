@@ -25,6 +25,6 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build the docs
         run: pnpm run build:docs
-      # After the build, which builds @bibliothecadao/types: the pages read its built declarations.
+      # After the build, which builds the packages: the pages read their built declarations.
       - name: Typecheck the docs
         run: pnpm --dir apps/game-docs typecheck

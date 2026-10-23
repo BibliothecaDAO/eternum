@@ -24,11 +24,11 @@ identity service and admission endpoint. Ports, volumes and credentials belong t
 development deployment against a live game stack.
 
 Native deployment and launch use the existing CLI under `config/deployer/clean/cli`. Supply a native manifest path and
-required environment credentials. Generate balance configuration through the maintained scripts:
+required environment credentials. Regenerate each mode's balance configuration (`config/generated/`) from its source
+with:
 
 ```sh
-pnpm run config:sync:madara:blitz
-pnpm run config:sync:appchain:eternum
+pnpm run config:generate
 ```
 
 The [client guide](/development/client) explains local startup and the state/command path. Deployment credentials never
@@ -64,4 +64,5 @@ It checks the build, class sizes, ABI, schema and format drift, and the native t
 - `packages/provider`, `packages/types`: command encoding and shared types. React hooks live in `apps/game`.
 - `config`: balance configuration and native deployment tools.
 
-Build documentation locally with `pnpm build:docs` or run `pnpm dev:docs` while editing.
+Build documentation locally with `pnpm build:docs` or run `pnpm dev:docs` while editing. The build also writes the whole
+site as one text file, `llm.txt`, which the game serves at `https://play.realms.party/llm.txt`.

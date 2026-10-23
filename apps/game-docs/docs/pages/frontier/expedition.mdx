@@ -1,16 +1,19 @@
 ---
-title: The Expedition
+title: The expedition
 description: Today's map, what a reveal finds, the sites and their guards, the depths, and the day's end
 ---
 
 import { FRONTIER } from "@/utils/frontier";
+import { Shot, Video } from "@/components/Media";
 
-# The Expedition
+# The expedition
 
 ## Today's map
 
 Every day starts on fresh fog. Your realm is raised in its own stretch of the new map, and its six neighbouring tiles
 start the day explored. Walking over known ground costs {FRONTIER.stamina.step} stamina a step and finds nothing.
+
+<Video name="frontier/explore" caption="An army walks into the fog, and each tile it reveals is drawn as it lands." />
 
 ## What a reveal pays
 
@@ -26,42 +29,63 @@ troops, larger the deeper it is. Each reveal also gives the army {FRONTIER.xp.re
 
 ## What a reveal can find
 
-| Find   | Chance                                      | What it is                                                                                                                                                                                               |
-| ------ | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Beasts | {FRONTIER.discovery.beasts}                 | A roaming band, the weakest guard. Clearing it pays XP only.                                                                                                                                             |
-| Troll  | {FRONTIER.discovery.camp}                   | A guarded outpost. Clearing it pays labor: half its guard's starting troops.                                                                                                                             |
-| Rift   | {FRONTIER.discovery.rift}                   | A guarded fissure. Clearing it pays Essence: three times its guard's starting troops.                                                                                                                    |
-| Ruin   | {FRONTIER.discovery.ruin}                   | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. At most one a day per realm, and only while the season's pool can fund its chest: a ruin it cannot fund leaves the tile empty. |
-| Shrine | {FRONTIER.discovery.shrine}                 | Once researched: grants an army {FRONTIER.xp.shrine} XP, then is gone.                                                                                                                                   |
-| Well   | {FRONTIER.discovery.well}                   | Once researched: gives an army {FRONTIER.stamina.well} stamina, then is gone.                                                                                                                            |
-| Chest  | 1 in {FRONTIER.discovery.exploreChestOneIn} | On the surface only, while the season's pool can fund it ([Chests](/frontier/chests)).                                                                                                                   |
+| Find   | Chance                                      | What it is                                                                                                                                                                                                           |
+| ------ | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Beasts | {FRONTIER.discovery.beasts}                 | A roaming band, the weakest guard. Clearing it pays XP only.                                                                                                                                                         |
+| Camp   | {FRONTIER.discovery.camp}                   | A camp guarded by a {FRONTIER.guards.camp}. Clearing it pays labor: half its guard's starting troops.                                                                                                                |
+| Rift   | {FRONTIER.discovery.rift}                   | A fissure guarded by a {FRONTIER.guards.rift}. Clearing it pays Essence: three times its guard's starting troops.                                                                                                    |
+| Ruin   | {FRONTIER.discovery.ruin}                   | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. At most one a day per realm, surface and depths together, and only while the day's budget can fund its chest ([Chests](/frontier/chests)). |
+| Shrine | {FRONTIER.discovery.shrine}                 | Once researched: an army beside it uses it for {FRONTIER.xp.shrine} XP, then it is gone.                                                                                                                             |
+| Well   | {FRONTIER.discovery.well}                   | Once researched: an army beside it uses it for {FRONTIER.stamina.well} stamina, then it is gone.                                                                                                                     |
+| Chest  | 1 in {FRONTIER.discovery.exploreChestOneIn} | On the surface only, while the day's budget can fund it ([Chests](/frontier/chests)).                                                                                                                                |
 
 After {FRONTIER.discovery.emptyRevealLimit} empty reveals in a row, the next reveal draws only among the sites, shrines
-and wells above, so it finds one unless it draws a ruin the pool cannot fund. Scouting makes the kinds you pick for it
-more likely.
+and wells above, so it finds one unless it draws a ruin the budget cannot fund. Scouting makes the kinds you pick for it
+more likely ([Armies](/frontier/armies#xp-and-attributes)).
+
+To use a shrine or a well, select an army beside it and right-click it (on a phone, press and hold), or tap it and press
+**Use**.
 
 ## Guards
 
 Every guard is shown before you attack. Guards grow with depth, so what counts as a safe fight moves as your realm
 grows.
 
-| Ground                    | Trolls and rifts               | Ruins                          | Minotaur (beasts)              | Cyclops (beasts)                 |
+| Ground                    | Camps and rifts                | Ruins                          | Weaker beasts                  | Stronger beasts                  |
 | ------------------------- | ------------------------------ | ------------------------------ | ------------------------------ | -------------------------------- |
 | {FRONTIER.depths[0].name} | {FRONTIER.depths[0].siteGuard} | {FRONTIER.depths[0].ruinGuard} | {FRONTIER.depths[0].beastWeak} | {FRONTIER.depths[0].beastStrong} |
 | {FRONTIER.depths[1].name} | {FRONTIER.depths[1].siteGuard} | {FRONTIER.depths[1].ruinGuard} | {FRONTIER.depths[1].beastWeak} | {FRONTIER.depths[1].beastStrong} |
 | {FRONTIER.depths[2].name} | {FRONTIER.depths[2].siteGuard} | {FRONTIER.depths[2].ruinGuard} | {FRONTIER.depths[2].beastWeak} | {FRONTIER.depths[2].beastStrong} |
 | {FRONTIER.depths[3].name} | {FRONTIER.depths[3].siteGuard} | {FRONTIER.depths[3].ruinGuard} | {FRONTIER.depths[3].beastWeak} | {FRONTIER.depths[3].beastStrong} |
 
-A band of beasts is a Minotaur's or a stronger Cyclops's, as likely as each other. Trolls, rifts and ruins show their
-depth's beast: a Troll on the surface, then a Wyvern, then a Hydra. A clear gives the army XP by the guard's starting
-strength, beasts included.
+A band of beasts is a {FRONTIER.guards.weakBeast} or a stronger {FRONTIER.guards.strongBeast}, as likely as each other.
+A camp is always guarded by a {FRONTIER.guards.camp} and a rift by a {FRONTIER.guards.rift}. A ruin's guard grows with
+depth: {FRONTIER.depths[0].ruinGuardName} on the surface, then {FRONTIER.depths[1].ruinGuardName},{" "}
+{FRONTIER.depths[2].ruinGuardName} and {FRONTIER.depths[3].ruinGuardName}. A clear gives the army XP by the guard's
+starting strength, beasts included.
+
+<Shot
+  frame="panel"
+  name="frontier/fight-card"
+  caption="A site's card before an attack: both sides before and after, and what clearing it pays."
+/>
 
 A site pays once. A cleared site leaves a standard that shows what the clear paid, and armies can walk onto it.
 
+<Shot
+  frame="panel"
+  name="frontier/site-cleared"
+  caption="A fight's result: the guard falls, and the card shows what the clear paid."
+/>
+
 ## The spire and its depths
 
-Research opens the Ethereal depths, one at a time ([Your Realm](/frontier/realm)). An army enters one from your realm's
-spire, paying the entry stamina above; the trip is one way for the day.
+Research opens the Ethereal depths, one at a time ([Your realm](/frontier/realm#research)). Your spire stands on one of
+the six tiles around your realm, a different one each day. Select an army beside it and tap the spire: it lists each
+depth you have researched with its entry stamina. **Enter** takes the army down, and it stays in that depth for the rest
+of the day.
+
+<Shot name="frontier/spire" caption="The spire's card: each researched depth and the stamina to enter it." />
 
 ## The day's end
 

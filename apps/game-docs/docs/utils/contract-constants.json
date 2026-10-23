@@ -1,0 +1,112 @@
+[
+  {
+    "key": "frontierChestFindBps",
+    "file": "discovery.cairo",
+    "source": "pub const FRONTIER_CHEST_FIND_BPS: u128 = 1;",
+    "value": 1
+  },
+  {
+    "key": "spireFindBps",
+    "file": "discovery.cairo",
+    "source": "pub const SPIRE_FIND_BPS: u128 = 50;",
+    "value": 50
+  },
+  {
+    "key": "spireEssence",
+    "file": "exploration_rewards.cairo",
+    "source": "pub const SPIRE_ESSENCE_AMOUNT: u128 = 1000 * crate::rules::RESOURCE_PRECISION;",
+    "value": 1000
+  },
+  {
+    "key": "daysPerBag",
+    "file": "days.cairo",
+    "source": "pub const DAYS_PER_BAG: u64 = 5;",
+    "value": 5
+  },
+  {
+    "key": "unitsPerBag",
+    "file": "days.cairo",
+    "source": "pub const UNITS_PER_BAG: u64 = 20;",
+    "value": 20
+  },
+  {
+    "key": "knightAssaultPercent",
+    "file": "combat.cairo",
+    "source": "return Self::_combat_percent_multiplier(115);",
+    "value": 115
+  },
+  {
+    "key": "knightGuardPercent",
+    "file": "combat.cairo",
+    "source": "return Self::_combat_percent_multiplier(85);",
+    "value": 85
+  },
+  {
+    "key": "rangedOnGuardsPercent",
+    "file": "combat.cairo",
+    "source": "return Self::_combat_percent_multiplier(30);",
+    "value": 30
+  },
+  {
+    "key": "rangedOnArmiesPercent",
+    "file": "combat.cairo",
+    "source": "Self::_combat_percent_multiplier(70)",
+    "value": 70
+  },
+  {
+    "key": "battleTimerPenaltyPercent",
+    "file": "combat.cairo",
+    "source": "BRAVO_BATTLE_TIMER_DAMAGE_MULTIPLIER = FixedTrait::new(85, false) / FixedTrait::new(100, false);",
+    "value": 85
+  },
+  {
+    "key": "crossbowRange",
+    "file": "combat.cairo",
+    "source": "TroopType::Crossbowman => 2,",
+    "value": 2
+  },
+  {
+    "key": "t2StaminaBonus",
+    "file": "stamina.cairo",
+    "source": "TroopTier::T2 => initial_max + 20,",
+    "value": 20
+  },
+  {
+    "key": "t3StaminaBonus",
+    "file": "stamina.cairo",
+    "source": "TroopTier::T3 => initial_max + 40,",
+    "value": 40
+  },
+  {
+    "key": "luckyChestBps",
+    "file": "relics.cairo",
+    "source": "pub const LUCKY_CHEST_BPS: u128 = 2000;",
+    "value": 2000
+  },
+  {
+    "key": "lowStaminaTenths",
+    "file": "combat.cairo",
+    "source": "BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER = FixedTrait::new(7, false) / FixedTrait::new(10, false);",
+    "value": 7
+  },
+  {
+    "key": "sizeExponentTenths",
+    "file": "combat.cairo",
+    "source": "return FixedTrait::new_unscaled(2, false) / FixedTrait::new_unscaled(10, false);",
+    "value": 2
+  },
+  {
+    "key": "timerRefundFloorRatio",
+    "file": "combat.cairo",
+    "source": "let _2_POINT_5: Fixed = FixedTrait::new(46116860184273879040, false);",
+    "fixed64": "46116860184273879040",
+    "value": 2.5
+  },
+  {
+    "key": "timerRefundCeilingRatio",
+    "file": "combat.cairo",
+    "source": "let _10_POINT_0: Fixed = FixedTrait::new(184467440737095516160, false);",
+    "fixed64": "184467440737095516160",
+    "value": 10
+  }
+]

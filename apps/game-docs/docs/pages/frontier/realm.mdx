@@ -1,19 +1,15 @@
 ---
-title: Your Realm
-description: Founding, the buildings, the castle and research
+title: Your realm
+description: The buildings, the castle, research, and the labor your Realms send
 ---
 
 import { FRONTIER } from "@/utils/frontier";
+import { Shot } from "@/components/Media";
 
-# Your Realm
+# Your realm
 
-## Founding
-
-Your realm is founded the first time you enter the Frontier season, and from then on it is raised again on every new
-map, in its own stretch of wilderness. Entry is free and open for the whole season, so a player who arrives late starts
-the same way as one who arrived on day one.
-
-A new realm starts with {FRONTIER.realm.troops} troops, {FRONTIER.realm.wheat} wheat and {FRONTIER.realm.labor} labor.
+Your realm makes the troops, wheat and labor your armies need, and grows stronger with research. A new realm starts with
+{FRONTIER.realm.troops} troops, {FRONTIER.realm.wheat} wheat and {FRONTIER.realm.labor} labor.
 
 ## Buildings
 
@@ -30,6 +26,12 @@ Tap an open plot to build there. Buildings are paid in labor:
 Each workers' hut houses {FRONTIER.realm.hutHouses}, and every other building takes the population shown. Each further
 copy of a building costs more than the last, and pulling one down returns {FRONTIER.realm.demolitionRefund} of its
 price. Barracks train for free; deploying costs {FRONTIER.realm.deployWheat} wheat a troop.
+
+<Shot
+  frame="panel"
+  name="frontier/build"
+  caption="An open plot's build sheet: each building, what one more gives, and its price."
+/>
 
 ## The castle
 
@@ -48,8 +50,9 @@ troops at once:
 
 At the castle, each building type climbs from common to legendary, paid in Essence and labor. A tier lifts every
 building of its type at once, and the choice a tier asks for is final for the season: farms and workshops make{" "}
-{FRONTIER.research.outputStep} more or store more, barracks train {FRONTIER.research.outputStep} more or deploy for{" "}
-{FRONTIER.research.rationStep} less wheat, and each hut tier houses {FRONTIER.research.populationStep} more.
+{FRONTIER.research.outputStep} more or store more, barracks train {FRONTIER.research.outputStep} more or take
+{FRONTIER.research.rationWheat} wheat off the{" "} {FRONTIER.research.troopWheat} wheat each troop costs to deploy, and
+each hut tier houses{" "} {FRONTIER.research.populationStep} more.
 
 | Type                   | Uncommon                                                                                     | Rare                                                                                         | Epic                                                                                         | Legendary                                                                                    |
 | ---------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
@@ -67,16 +70,13 @@ Homecoming.
 before reveals can find them.
 
 **The Ethereal depths.** Research opens them one at a time, for {FRONTIER.research.depths[0].essence},{" "}
-{FRONTIER.research.depths[1].essence}, then {FRONTIER.research.depths[2].essence} Essence.
+{FRONTIER.research.depths[1].essence}, then {FRONTIER.research.depths[2].essence} Essence
+([The expedition](/frontier/expedition#the-spire-and-its-depths)).
 
-## Armies learn
+<Shot frame="panel" name="frontier/research" caption="The castle's research tree, with one node open." />
 
-An army earns XP from reveals, clears and shrines, and spends it on the attribute tiers you choose, up to legendary:
-{FRONTIER.xp.tierPrices[0]}, {FRONTIER.xp.tierPrices[1]}, {FRONTIER.xp.tierPrices[2]}, then{" "}
-{FRONTIER.xp.tierPrices[3]} XP for each next tier. Battle hits up to {FRONTIER.attributes.battleMax} harder, Logistics
-carries up to{" "} {FRONTIER.stamina.logisticsMax} more stamina, and each Scouting tier adds
-{FRONTIER.attributes.scouting[0]},{" "} {FRONTIER.attributes.scouting[1]}, {FRONTIER.attributes.scouting[2]}, then
-{FRONTIER.attributes.scouting[3]} to the find rate of the camps, rifts or beasts you pick for it, so all four on one
-kind add{" "} {FRONTIER.attributes.scoutingOneKind}. Homecoming sends survivors home when the day ends
-([The Expedition](/frontier/expedition)). An army's XP and tiers end with it; its stamina stays with its army slot for
-the next army ([Stamina stays with the slot](/frontier/introduction#stamina-stays-with-the-slot)).
+## Labor from your Realms
+
+Each Realm in your payout wallet gives your Frontier realm {FRONTIER.labor.perRealm} labor once a day: open Realms from
+your realm's panel, add each by its number, then **Claim all**. Link a payout wallet first
+([Payout wallet](/account/payout-wallet)).

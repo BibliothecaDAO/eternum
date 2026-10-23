@@ -27,6 +27,7 @@ import { hasEnabledProductionPath } from "../utils/production-path";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
 import { getBlockTimestamp } from "../utils/timestamp";
 import type { BiomeClimateConfig } from "../utils/biome";
+import type { CombatRules } from "../utils/combat-exchange";
 
 const MAP_CENTER = 2147483646;
 type ResourceAmount = { readonly resource_type: number; readonly amount: bigint };
@@ -384,6 +385,16 @@ export class ClientConfigManager {
       troop_damage_config: rules.troop_damage_config,
       troop_stamina_config: rules.troop_stamina_config,
       troop_limit_config: { ...rules.troop_limit_config, troops_per_military_building: 1, max_defense_armies: 4 },
+    };
+  }
+  /** The active game's combat rules, as its SliceRules carries them. */
+  getCombatRules(): CombatRules {
+    const rules = this.rules();
+    return {
+      cooldownSeconds: rules.battle_config.cooldown_seconds,
+      tickSeconds: this.getTick(TickIds.Armies),
+      damage: rules.troop_damage_config,
+      stamina: rules.troop_stamina_config,
     };
   }
   /** Army strength a structure of this level may deploy. */

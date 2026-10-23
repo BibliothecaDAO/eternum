@@ -1,6 +1,5 @@
 import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structures/frontier-beast";
 import {
-  activeCombatRules,
   configManager,
   forecastFight,
   getBlockTimestamp,
@@ -101,7 +100,7 @@ export const readSiteCard = (
     xp: siteClearXp(site),
     chest: chest && { tier: chest.tier, amount: Number(chest.amount) },
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
-    attackStamina: activeCombatRules().stamina.stamina_attack_req,
+    attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
     fight: guard && attack ? forecastFightAt(store, guard.troops, siteTile, attack, true) : undefined,
   };
 };
@@ -124,7 +123,7 @@ export const readArmyCard = (
     xp: undefined,
     chest: null,
     payout: null,
-    attackStamina: activeCombatRules().stamina.stamina_attack_req,
+    attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
     fight: troops && troops.count > 0n && attack ? forecastFightAt(store, troops, armyTile, attack, false) : undefined,
   };
 };
@@ -207,7 +206,7 @@ const forecastFightAt = (
       attackerRoll: 0,
       defenderRoll: 0,
     },
-    activeCombatRules(),
+    configManager.getCombatRules(),
   );
   if (forecast.outcome === "refused") return { outcome: "refused" };
   return {
@@ -229,4 +228,4 @@ const forecastFightAt = (
  * that moment does, and is read then.
  */
 const whenItCanAttack = (troops: Troops, now: number): number =>
-  StaminaManager.getAffordableAt(troops, activeCombatRules().stamina.stamina_attack_req, now) ?? now;
+  StaminaManager.getAffordableAt(troops, configManager.getCombatRules().stamina.stamina_attack_req, now) ?? now;

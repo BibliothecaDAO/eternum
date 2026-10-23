@@ -1,0 +1,679 @@
+[
+  {
+    "name": "account/connect",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/app/first-visit/connect/start?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "account/code",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/app/first-visit/connect/code?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "account/name",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/app/first-visit/connect/name?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "account/payout-wallet",
+    "frame": "panel",
+    "setup": [
+      {
+        "open": "/lab/app/wallet-none/profile/settings?next=%2F&capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ],
+    "crop": "[...document.querySelectorAll('section.app-panel')].find((s) => s.querySelector('h2')?.textContent.trim() === 'Payout wallet')"
+  },
+  {
+    "name": "account/mint",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/app/entry-short/blitz/slot-blitz-1630?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "account/withdraw",
+    "frame": "panel",
+    "setup": [
+      {
+        "open": "/lab/kit/hud/withdraw-paid?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ],
+    "crop": "[...document.querySelectorAll('aside[data-hud-rail=\"true\"] section')].filter((s) => s.getBoundingClientRect().height > 40).at(-1)"
+  },
+  {
+    "name": "frontier/hud",
+    "frame": "game",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=spire"
+      },
+      {
+        "until": "document.querySelector('nav[aria-label=\"Armies\"] button[aria-pressed]')",
+        "ms": 180000
+      },
+      {
+        "wait": 6000
+      }
+    ]
+  },
+  {
+    "name": "frontier/research",
+    "frame": "panel",
+    "setup": [
+      {
+        "open": "/lab/kit/hud/research?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ],
+    "crop": "document.querySelector('aside[data-hud-rail=\"true\"]')"
+  },
+  {
+    "name": "frontier/level-up",
+    "frame": "panel",
+    "setup": [
+      {
+        "open": "/lab/kit/hud/selected?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ],
+    "crop": "[...document.querySelectorAll('aside[data-hud-rail=\"true\"] section')].filter((s) => s.getBoundingClientRect().height > 40).at(-1)"
+  },
+  {
+    "name": "frontier/fight-card",
+    "frame": "panel",
+    "setup": [
+      {
+        "open": "/lab/kit/hud/fight-ready?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ],
+    "crop": "[...document.querySelectorAll('aside[data-hud-rail=\"true\"] section')].filter((s) => s.getBoundingClientRect().height > 40).at(-1)"
+  },
+  {
+    "name": "frontier/season-pool",
+    "frame": "panel",
+    "setup": [
+      {
+        "open": "/lab/kit/hud/season?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ],
+    "crop": "[...document.querySelectorAll('aside[data-hud-rail=\"true\"] section')].filter((s) => s.getBoundingClientRect().height > 40).at(-1)"
+  },
+  {
+    "name": "blitz/hud",
+    "frame": "game",
+    "setup": [
+      {
+        "open": "https://play.realms.party/g/0x50524f44554354494f4e5f31386530376435323330633539393933/8/map?spectate=true"
+      },
+      {
+        "until": "document.querySelector('#main-canvas') && document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 180000
+      },
+      {
+        "wait": 15000
+      }
+    ]
+  },
+  {
+    "name": "blitz/next",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/app/blitz-next?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "blitz/entry",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/app/entry-choose/blitz/slot-blitz-1630?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "blitz/lobby",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/app/entry-seated/blitz/slot-blitz-1630?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "blitz/transfer",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/kit/windows/transfer-holdings?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "blitz/deploy",
+    "frame": "panel",
+    "setup": [
+      {
+        "open": "/lab/kit/deploy?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ],
+    "crop": "document.querySelector('[data-deploy-lab-picker]')"
+  },
+  {
+    "name": "blitz/attack-forecast",
+    "frame": "panel",
+    "setup": [
+      {
+        "open": "/lab/kit/unified/blitz-attack?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 9000
+      }
+    ],
+    "crop": "document.querySelector('[role=\"dialog\"]')"
+  },
+  {
+    "name": "blitz/results",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/app/reward-sealed/results/0x5245414c4d53-7?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "blitz/opened-chest",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/app/reward-lords/results/0x5245414c4d53-7?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "blitz/season",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/app/season-running/season?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "frontier/explore",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/studio?gameMode=frontier&clean=1&capture=1"
+      },
+      {
+        "until": "document.querySelector('[data-studio-lab][data-ready=true]')",
+        "ms": 180000
+      },
+      {
+        "wait": 3000
+      }
+    ],
+    "record": [
+      {
+        "eval": "window.__studio.take('explore')"
+      },
+      {
+        "wait": 500
+      }
+    ],
+    "seconds": 8
+  },
+  {
+    "name": "blitz/explore",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/studio?gameMode=blitz&clean=1&capture=1"
+      },
+      {
+        "until": "document.querySelector('[data-studio-lab][data-ready=true]')",
+        "ms": 180000
+      },
+      {
+        "wait": 3000
+      }
+    ],
+    "record": [
+      {
+        "eval": "window.__studio.take('explore')"
+      },
+      {
+        "wait": 500
+      }
+    ],
+    "seconds": 8
+  },
+  {
+    "name": "blitz/battle",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/studio?gameMode=blitz&clean=1&capture=1"
+      },
+      {
+        "until": "document.querySelector('[data-studio-lab][data-ready=true]')",
+        "ms": 180000
+      },
+      {
+        "wait": 3000
+      }
+    ],
+    "record": [
+      {
+        "eval": "window.__studio.take('battle')"
+      },
+      {
+        "wait": 500
+      }
+    ],
+    "seconds": 7
+  },
+  {
+    "name": "blitz/hyperstructure",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/studio?gameMode=blitz&clean=1&capture=1"
+      },
+      {
+        "until": "document.querySelector('[data-studio-lab][data-ready=true]')",
+        "ms": 180000
+      },
+      {
+        "wait": 3000
+      }
+    ],
+    "record": [
+      {
+        "eval": "window.__studio.take('hyperstructure-rise')"
+      },
+      {
+        "wait": 500
+      }
+    ],
+    "seconds": 9
+  },
+  {
+    "name": "blitz/an-hour",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/studio?gameMode=blitz&clean=1&capture=1"
+      },
+      {
+        "until": "document.querySelector('[data-studio-lab][data-ready=true]')",
+        "ms": 180000
+      },
+      {
+        "wait": 3000
+      }
+    ],
+    "record": [
+      {
+        "eval": "window.__studio.take('establisher')"
+      },
+      {
+        "wait": 500
+      }
+    ],
+    "seconds": 9
+  },
+  {
+    "name": "frontier/open-chest",
+    "frame": "game",
+    "setup": [
+      {
+        "open": "/lab/relic-chest?gameMode=frontier&capture=1"
+      },
+      {
+        "until": "document.querySelector('[data-relic-chest-lab]')?.dataset.ready === 'true'",
+        "ms": 180000
+      },
+      {
+        "wait": 2000
+      },
+      {
+        "click": "[aria-label=\"Focus relic chest\"]"
+      },
+      {
+        "wait": 2500
+      }
+    ],
+    "record": [
+      {
+        "wait": 800
+      },
+      {
+        "clickText": "Open"
+      },
+      {
+        "wait": 5500
+      }
+    ],
+    "seconds": 8,
+    "cropRect": [0, 66, 1920, 664]
+  },
+  {
+    "name": "blitz/open-crate",
+    "frame": "game",
+    "setup": [
+      {
+        "open": "/lab/relic-chest?capture=1"
+      },
+      {
+        "until": "document.querySelector('[data-relic-chest-lab]')?.dataset.ready === 'true'",
+        "ms": 180000
+      },
+      {
+        "wait": 2000
+      },
+      {
+        "click": "[aria-label=\"Focus relic chest\"]"
+      },
+      {
+        "wait": 2500
+      }
+    ],
+    "record": [
+      {
+        "wait": 800
+      },
+      {
+        "clickText": "Open"
+      },
+      {
+        "wait": 5500
+      }
+    ],
+    "seconds": 8,
+    "cropRect": [0, 66, 1920, 664]
+  },
+  {
+    "name": "frontier/build",
+    "frame": "panel",
+    "setup": [
+      {
+        "open": "/lab/kit/hud/build?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ],
+    "crop": "[...document.querySelectorAll('aside[data-hud-rail=\"true\"] section')].filter((s) => s.getBoundingClientRect().height > 40).at(-1)"
+  },
+  {
+    "name": "frontier/deploy",
+    "frame": "phone",
+    "setup": [
+      {
+        "open": "/lab/kit/hud/deploy?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "frontier/site-cleared",
+    "frame": "panel",
+    "setup": [
+      {
+        "open": "/lab/kit/hud/fight-won?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ],
+    "crop": "[...document.querySelectorAll('aside[data-hud-rail=\"true\"] section')].filter((s) => s.getBoundingClientRect().height > 40).at(-1)"
+  },
+  {
+    "name": "blitz/build",
+    "frame": "panel",
+    "setup": [
+      {
+        "open": "/lab/kit/blitz-build?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ],
+    "crop": "[...document.querySelectorAll('span')].find((s) => s.textContent.trim() === 'Build on this plot')?.closest('.rounded')"
+  },
+  {
+    "name": "frontier/spire",
+    "frame": "game",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=spire"
+      },
+      {
+        "until": "document.querySelector('nav[aria-label=\"Armies\"] button[aria-pressed]')",
+        "ms": 180000
+      },
+      {
+        "wait": 4000
+      },
+      {
+        "readiestArmy": true
+      },
+      {
+        "findTile": "Enter a depth"
+      },
+      {
+        "until": "document.querySelector('[data-kit-sheet][aria-label=\"Spire\"]')",
+        "ms": 15000
+      },
+      {
+        "wait": 1500
+      }
+    ]
+  },
+  {
+    "name": "account/settings",
+    "frame": "panel",
+    "setup": [
+      {
+        "open": "/lab/app/home/profile/settings?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ],
+    "crop": "[...document.querySelectorAll('section.app-panel')].find((s) => s.querySelector('h2')?.textContent.trim() === 'Account')"
+  },
+  {
+    "name": "frontier/realm-tiers",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/studio?gameMode=frontier&clean=1&capture=1"
+      },
+      {
+        "until": "document.querySelector('[data-studio-lab][data-ready=true]')",
+        "ms": 180000
+      },
+      {
+        "wait": 3000
+      }
+    ],
+    "record": [
+      {
+        "eval": "window.__studio.take('realm-tiers')"
+      },
+      {
+        "wait": 500
+      }
+    ],
+    "seconds": 7
+  }
+]

@@ -20,10 +20,7 @@ export const ConstructionGate = () => (
         <EternumWordsLogo className="mx-auto w-40 fill-current stroke-current" />
         <p className="text-hud-display text-hud-ink">Blitz is being crafted, and will be available soon…</p>
         <div className="flex flex-wrap justify-center gap-3">
-          <HudButton kind="primary" onClick={open("https://empire.realms.world/trade")}>
-            Buy a Season Pass
-          </HudButton>
-          <HudButton kind="secondary" icon="discord" onClick={open(communityPlace("Discord").href)}>
+          <HudButton kind="primary" icon="discord" onClick={open(communityPlace("Discord").href)}>
             Discord
           </HudButton>
           <HudButton kind="secondary" icon="twitter" onClick={open(communityPlace("X").href)}>
