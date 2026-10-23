@@ -5,7 +5,8 @@ import {
   normalizePresentationTroops,
   parsePresentationDescription,
 } from "@/ui/features/story-events/story-event-utils";
-import { useGoToStructure, useNavigateToMapView, useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
+import { useGoToStructure, useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
+import { openOnMap } from "@/play/navigation/open-place";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { relicChestShares } from "@bibliothecadao/types";
@@ -72,7 +73,6 @@ export function useStoryOpener(event: ProcessedStoryEvent): (() => void) | null 
     setup: { store },
   } = useGame();
   useNativeRevision(["Structure", "ExplorerTroops", "TileOccupancy"]);
-  const navigate = useNavigateToMapView();
   const selectArmy = useSelectArmyOnMap();
   const goToStructure = useGoToStructure(setup);
   const { isMapView } = useQuery();
@@ -80,7 +80,7 @@ export function useStoryOpener(event: ProcessedStoryEvent): (() => void) | null 
   const position = resolveStoryEventPosition(event, store);
   if (holder?.kind === "structure") return () => void goToStructure(holder.id, holder.position, isMapView);
   if (holder) return () => selectArmy(holder.id);
-  return position ? () => navigate(position) : null;
+  return position ? () => openOnMap(position, "tile") : null;
 }
 
 /** A world story in the Log: what happened and its line (a fight's sides, forces and rolls), and its time. */

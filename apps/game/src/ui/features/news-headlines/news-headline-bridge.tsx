@@ -16,8 +16,8 @@ import { useGame } from "@/hooks/context/game-context";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { openOnMap } from "@/play/navigation/open-place";
 import { AudioManager } from "@/audio/core/AudioManager";
 
 import { type Headline, HEADLINE_DISPLAY_MS } from "./headline-types";
@@ -30,11 +30,9 @@ import { usePlayerNames } from "@/hooks/use-player-profile";
 export function NewsHeadlineBridge() {
   const { setup } = useGame();
   const { isMapView } = useQuery();
-  const selectOnMap = useUIStore((state) => state.selectOnMap);
   const winner = useSeasonWinner();
   const endRevision = useNativeRevision(["BlitzResult", "BlitzRoster", "PlayerPoints"]);
   const goToStructure = useGoToStructure(setup);
-  const navigateToMapView = useNavigateToMapView();
   const names = usePlayerNames();
   const entityReader = useMemo(() => {
     const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
@@ -55,10 +53,10 @@ export function NewsHeadlineBridge() {
   const shownIdsRef = useRef(new Set<string>());
 
   // Navigation refs
-  const navRef = useRef({ goToStructure, navigateToMapView, selectOnMap, isMapView });
+  const navRef = useRef({ goToStructure, isMapView });
   useEffect(() => {
-    navRef.current = { goToStructure, navigateToMapView, selectOnMap, isMapView };
-  }, [goToStructure, navigateToMapView, selectOnMap, isMapView]);
+    navRef.current = { goToStructure, isMapView };
+  }, [goToStructure, isMapView]);
 
   // --- Banner, then the feed ---
   const announce = useCallback((headline: Headline) => {
@@ -176,21 +174,13 @@ export function NewsHeadlineBridge() {
   // --- Navigation handler ---
   const handleNavigate = useCallback(
     async (location: { x: number; y: number; entityId: number }) => {
-      const { goToStructure, navigateToMapView, selectOnMap, isMapView } = navRef.current;
+      const { goToStructure, isMapView } = navRef.current;
       const position = Position.fromContract({ x: location.x, y: location.y });
-
-      const col = Number(location.x);
-      const row = Number(location.y);
-      if (Number.isFinite(col) && Number.isFinite(row)) {
-        const next = { col, row };
-        selectOnMap({ kind: "hex", hex: next });
-        setTimeout(() => selectOnMap({ kind: "hex", hex: next }), 0);
-      }
 
       try {
         await goToStructure(location.entityId, position, isMapView);
       } catch {
-        navigateToMapView(position);
+        openOnMap(position, "tile");
       }
 
       dismiss();

@@ -175,6 +175,52 @@ describe("reading the season", () => {
   });
 });
 
+describe("a story opened from the Feed", () => {
+  const verify = verifyOf("open-feed-event");
+  const to = { col: -1446133336, row: -1596959636 };
+  // The selected tile is a contract hex: the address's, one map centre (1,596,960,486) out on both axes.
+  const selected = { ...onTheMap, selection: { hex: { col: 150827150, row: 850 } } };
+  const played = { row: "12:31 A fight · Guard holds", to, reloaded: false };
+
+  it("completes on the map at the story's place, selected, in the same page", () => {
+    expect(verify({ seen: selected, played }).status).toBe("completed");
+  });
+
+  it("fails a page that loaded again, a place not selected, or another tile selected", () => {
+    expect(verify({ seen: selected, played: { ...played, reloaded: true } }).reason).toBe(
+      "the page loaded again to open the story",
+    );
+    expect(verify({ seen: onTheMap, played }).reason).toBe("the story's place was not selected");
+    const elsewhere = { ...onTheMap, selection: { hex: { col: 150827151, row: 850 } } };
+    expect(verify({ seen: elsewhere, played }).status).toBe("failed");
+  });
+
+  it("is blocked when the Feed shows no story", () => {
+    expect(verify({ seen: onTheMap, played: { row: null } }).status).toBe("blocked");
+  });
+});
+
+describe("visiting another realm", () => {
+  const verify = verifyOf("visit-realm");
+  const site = { col: -1446133336, row: -1596959636 };
+  const played = { row: "#2 clientlane", realm: true, map: true, realmHex: site, mapHex: site, reloaded: false };
+
+  it("completes when the realm and then the map on it opened in the same page", () => {
+    expect(verify({ seen: onTheMap, played }).status).toBe("completed");
+  });
+
+  it("fails a visit that loaded the page again or opened the map elsewhere", () => {
+    expect(verify({ seen: onTheMap, played: { ...played, reloaded: true } }).reason).toBe(
+      "the page loaded again on the visit",
+    );
+    const elsewhere = { ...played, mapHex: { col: site.col + 1, row: site.row } };
+    expect(verify({ seen: onTheMap, played: elsewhere }).status).toBe("failed");
+    expect(verify({ seen: onTheMap, played: { ...played, map: false } }).reason).toBe(
+      "the map never opened on the visited realm",
+    );
+  });
+});
+
 describe("a scene check", () => {
   const verify = verifyOf("return-to-map");
 

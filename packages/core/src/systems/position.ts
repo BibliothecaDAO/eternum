@@ -28,14 +28,4 @@ export class Position {
     const center = FELT_CENTER();
     return { x: this.x - center, y: this.y - center };
   }
-
-  public toMapLocationUrl() {
-    const normalized = this.getNormalized();
-    return `/map?col=${normalized.x}&row=${normalized.y}`;
-  }
-
-  public toHexLocationUrl() {
-    const normalized = this.getNormalized();
-    return `/hex?col=${normalized.x}&row=${normalized.y}`;
-  }
 }

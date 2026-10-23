@@ -1,5 +1,5 @@
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { openOnMap } from "@/play/navigation/open-place";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { HudEventRow } from "@/ui/design-system/kit/hud-elements";
 import { Position } from "@bibliothecadao/eternum";
@@ -55,9 +55,12 @@ export const ToastRow = ({
   text: ReactNode;
   place: { x: number; y: number } | null;
 }) => {
-  const navigate = useNavigateToMapView();
   return (
-    <HudEventRow icon={icon} tone={tone} onOpen={place ? () => navigate(Position.fromContract(place)) : undefined}>
+    <HudEventRow
+      icon={icon}
+      tone={tone}
+      onOpen={place ? () => openOnMap(Position.fromContract(place), "tile") : undefined}
+    >
       {text}
     </HudEventRow>
   );

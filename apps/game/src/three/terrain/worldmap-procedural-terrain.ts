@@ -9,6 +9,7 @@ import {
   type TerrainPresentationDiagnostics,
   type TerrainUploadMetrics,
 } from "./procedural-terrain";
+import { worldOrigin } from "../world-origin";
 import { hexCellKey } from "./hex-cell-key";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { plainTerrainPageRequest } from "./terrain-page-builder";
@@ -953,11 +954,12 @@ function buildWorldmapTerrainPageRequest(
 }
 
 /**
- * The cache key is the whole request, so a newly landed neighbour legitimately rebuilds the pages whose halo it
- * changed. Serialising one page costs ~0.3 ms inside its own request task; a structural hash measured slower.
+ * The cache key is the whole request and the floating origin the page is drawn around, so a newly landed neighbour
+ * legitimately rebuilds the pages whose halo it changed, and a page built around another origin is never placed again.
+ * Serialising one page costs ~0.3 ms inside its own request task; a structural hash measured slower.
  */
 function signPageRequest(request: TerrainPageRequest): TerrainPagePreparation {
-  return { request, signature: JSON.stringify(request) };
+  return { request, signature: JSON.stringify({ origin: worldOrigin(), request }) };
 }
 
 function summarizePreparedPages(pages: readonly PreparedTerrainPage[]): {

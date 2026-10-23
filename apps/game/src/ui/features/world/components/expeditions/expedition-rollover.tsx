@@ -1,7 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { mistRolls, useDayEndStore } from "@/hooks/store/use-day-end-store";
-import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { openOnMap } from "@/play/navigation/open-place";
 import {
   configManager,
   seasonDay,
@@ -16,7 +16,7 @@ import {
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { useGame } from "@/hooks/context/game-context";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 /** The game's clocks, facts and map, as the day's turn reads and moves them. */
 export interface DayTurnWorld {
@@ -123,18 +123,11 @@ export function watchDayTurn(world: DayTurnWorld): () => void {
 
 /**
  * The day's turn on the game's own clocks, facts and map. One watcher lives as long as its game and player: the turn's
- * due work is the watcher's, so it is only dropped when they are left. The camera's navigation is reached through a
- * ref, as its function is new on every render and a map navigation renders this again.
+ * due work is the watcher's, so it is only dropped when they are left.
  */
 export const ExpeditionRollover = () => {
   const { setup } = useGame();
   const player = useAccountStore((state) => state.account?.address ?? null);
-  const navigateToMapView = useNavigateToMapView();
-  const navigate = useRef(navigateToMapView);
-  useEffect(() => {
-    navigate.current = navigateToMapView;
-  }, [navigateToMapView]);
-
   useEffect(() => {
     return watchDayTurn({
       store: setup.store,
@@ -143,7 +136,7 @@ export const ExpeditionRollover = () => {
       chainNow: () => useChainTimeStore.getState().getNowSeconds(),
       blockNow: () => getBlockTimestamp().currentBlockTimestamp,
       reproject: () => getActiveGameSyncRuntime()?.getWorldSpatialProjection()?.rebuild(),
-      navigate: (position) => navigate.current(position),
+      navigate: (position) => openOnMap(position, null),
     });
   }, [player, setup.store]);
 

@@ -29,6 +29,13 @@ XP and the XP an emptied army takes with it in a merge leave no story, so no lin
 owner's 22 October day, through the log's own lines). A Frontier founding line names the settler without the realm's
 off-map settlement coordinate.
 
+Every link inside a match (a Feed, Log or Today row, a toast, the standings, the Season's Visit, a chat coordinate, Next
+up's camp) opens its place through `play/navigation/open-place.ts`: the address carries the normalized hex
+(`/g/<chain>/<game>/map?col=&row=`, a Frontier realm's about −1.4 billion), the page is never loaded again, and the map
+selects what the link names (the tile, its structure or army). Frontier's realms stand millions of hexes apart, past the
+floating origin's 8,192-hex reach; the map then draws the world again around the new place in the same page. The
+spectator playtest presses a Feed story and visits the board's second realm (`open-feed-event`, `visit-realm`).
+
 ## Cleared-site standard
 
 Open `/lab/models?family=cleared-sites` through **Models & motion → Cleared sites**. **Site** compares the shipped Troll

@@ -43,7 +43,7 @@ import {
   onPlayRouteBootStarted,
   usePlayRouteReadinessStore,
 } from "@/game-entry/play-route-readiness-store";
-import { buildPlayHref, mapRouteHex, parsePlayRoute } from "@/play/navigation/play-route";
+import { parsePlayRoute } from "@/play/navigation/play-route";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
 import {
   clearPendingReservedHyperstructureCreation,
@@ -650,14 +650,6 @@ function resolveExploreClientLatencyPhase(stage: string | undefined): ClientActi
   if (stage === "explore_submit_guard_released") return "submit_guard_released";
   if (stage === "explore_sign_send_started") return "sign_send_started";
   return undefined;
-}
-
-/** Re-opens the world map on a hex, so the page draws around a floating origin there; the URL's hex is origin-free. */
-function reopenWorldMapAt(hex: HexPosition): void {
-  const route = parsePlayRoute(window.location);
-  if (!route) throw new Error(`Cannot re-open the world map outside a game route: ${window.location.pathname}`);
-  const position = Position.fromNormalized({ x: hex.col, y: hex.row });
-  window.location.replace(buildPlayHref({ ...route, scene: "map", ...mapRouteHex(position) }));
 }
 
 /** An action path's contract hex, as the scene hex its helpers work in. */
@@ -2113,22 +2105,23 @@ export default class WorldmapScene extends WarpTravel {
   /** Moves the camera onto a map position, by the one conversion every camera target goes through. */
   public moveCameraToMapPosition(position: Position, duration: number = 2): void {
     const hex = cameraHexOf(position);
-    if (!this.reachWorldOrigin(hex)) return;
+    if (this.reachWorldOrigin(hex)) return;
     super.moveCameraToColRow(hex.col, hex.row, duration);
   }
 
   /**
-   * Keeps a camera target within reach of the floating world origin. Until the first pass is drawn the origin simply
-   * moves to the target; after that everything drawn is placed relative to it, so a far target re-opens the map there.
+   * Keeps a hex the camera goes to within reach of the floating world origin. Until the first pass is drawn the origin
+   * simply moves to it. After that everything drawn stands relative to the old origin, so the camera jumps onto the hex
+   * around the new one and the world is drawn again there, in the page as it is: a Frontier realm's neighbours sit
+   * millions of hexes apart. True when the camera jumped.
    */
   private reachWorldOrigin(target: HexPosition): boolean {
-    if (isWithinWorldOriginReach(target)) return true;
-    if (!this.worldOriginLocked) {
-      setWorldOrigin(target);
-      return true;
-    }
-    reopenWorldMapAt(target);
-    return false;
+    if (isWithinWorldOriginReach(target)) return false;
+    setWorldOrigin(target);
+    if (!this.worldOriginLocked) return false;
+    super.moveCameraToColRow(target.col, target.row, 0);
+    this.redrawWorld("world_origin_moved");
+    return true;
   }
 
   public moveCameraToURLLocation(options: WorldmapUrlLocationMoveOptions = {}): void {
@@ -7238,7 +7231,8 @@ export default class WorldmapScene extends WarpTravel {
     if (this.isSwitchedOff) {
       return false;
     }
-    if (!this.reachWorldOrigin(this.getCameraTargetHex())) {
+    // A camera that panned beyond the origin's reach has the world drawn again around it, which updates the chunks.
+    if (this.reachWorldOrigin(this.getCameraTargetHex())) {
       return false;
     }
     incrementWorldmapRenderCounter("updateVisibleChunksCalls");
@@ -8537,7 +8531,7 @@ export default class WorldmapScene extends WarpTravel {
    */
   private frameOnOpenMap(positions: Position[]): void {
     const hexes = positions.map(cameraHexOf);
-    if (!this.reachWorldOrigin(hexes[0])) return;
+    this.reachWorldOrigin(hexes[0]);
     const points = hexes.map((hex) => this.hexSpace.positionForHex(hex));
     const middle = points
       .reduce((sum, point) => sum.add(new Vector3(point.x, point.y, point.z)), new Vector3())
@@ -8785,8 +8779,17 @@ export default class WorldmapScene extends WarpTravel {
     const alt = activeMapLayer();
     if (this.renderedMapLayer === alt) return;
     this.renderedMapLayer = alt;
-    this.resetLayerStreamingState();
     this.proceduralTerrain.setSurfacePresentation(alt ? "ethereal" : "world");
+    this.redrawWorld("map_layer_changed");
+  }
+
+  /**
+   * Drops everything the map drew and draws the world again from the facts, around the camera: when the layer shown
+   * changes, and when the floating origin moves under what was drawn.
+   */
+  private redrawWorld(triggerReason: "map_layer_changed" | "world_origin_moved"): void {
+    const alt = activeMapLayer();
+    this.resetLayerStreamingState();
     this.resetLayerPresentations();
     this.seedStrategicMarkers();
     this.syncExploredTilesFromProjection(this.worldSpatialProjection.getTiles(alt));
@@ -8799,9 +8802,9 @@ export default class WorldmapScene extends WarpTravel {
     if (!this.isSwitchedOff) {
       void Promise.all([
         this.refreshVisualTerrainWindowFromCamera(),
-        this.updateVisibleChunks(true, { reason: "default", triggerReason: "map_layer_changed" }),
+        this.updateVisibleChunks(true, { reason: "default", triggerReason }),
       ]).catch((error) => {
-        console.error("[WorldmapScene] Failed to refresh map layer", error);
+        console.error("[WorldmapScene] Failed to redraw the world", error);
       });
     }
   }

@@ -84,6 +84,8 @@ export const SPECTATOR_STEPS = [
   { name: "pan", play: panTheMap, settleMs: 17_000, verify: panned(inScene("map")) },
   { name: "zoom", play: zoomOutAndIn, settleMs: 1_000, verify: zoomedOutAndIn(inScene("map")) },
   { name: "season", play: readTheSeason, settleMs: 1_000, verify: seasonReadAndClosed },
+  { name: "open-feed-event", play: openAFeedEvent, settleMs: 3_000, verify: openedInThePage },
+  { name: "visit-realm", play: visitAnotherRealm, settleMs: 0, verify: visitedInThePage },
   { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 8_000, verify: inScene("hex") },
   { name: "return-to-map", play: goTo("Map", "map"), settleMs: 8_000, verify: inScene("map") },
   { name: "steady", settleMs: 60_000, verify: inScene("map") },
@@ -372,6 +374,100 @@ async function readTheSeason(input) {
   browser.click("Season");
   await sleep(1_000);
   return { desktop: true, opened, closed: browser.observe() };
+}
+
+/** The route's hex as the address names it: normalized, the same place on every client. */
+const ROUTE_HEX_EXPRESSION = `JSON.stringify((() => {
+  const query = new URLSearchParams(location.search);
+  return query.has("col") && query.has("row") ? { col: Number(query.get("col")), row: Number(query.get("row")) } : null;
+})())`;
+
+/** How far apart two route hexes are, along the larger axis; the map redraws around a place past 8,192 hexes. */
+const hexesApart = (from, to) =>
+  from && to ? Math.max(Math.abs(from.col - to.col), Math.abs(from.row - to.row)) : null;
+
+/**
+ * The Feed's first story pressed as a player presses it: the map goes where it happened. Frontier's realms stand
+ * millions of hexes apart, so a story of another realm is a far jump.
+ */
+async function openAFeedEvent({ browser }) {
+  const before = browser.observe();
+  const from = browser.read(ROUTE_HEX_EXPRESSION);
+  // A row's button is named by its words, time and line run together; the browser presses the first one where it is.
+  const row = browser.read(`JSON.stringify(document.querySelector(".ui-event__open")?.textContent.trim() ?? null)`);
+  if (!row) return { row: null };
+  browser.run(["click", ".ui-event__open"]);
+  await waitFor(browser, (seen) => seen.playable && seen.scene === "map", SCENE_WAIT_MS);
+  const to = browser.read(ROUTE_HEX_EXPRESSION);
+  return { row, from, to, apart: hexesApart(from, to), reloaded: browser.observe().timeOrigin !== before.timeOrigin };
+}
+
+/**
+ * A story opens in the page, never by loading it again, on the map at the story's place, with what is there selected:
+ * the selected tile (a contract hex) is the route's (a normalized hex), one map centre apart on both axes.
+ */
+function openedInThePage({ seen, played }) {
+  if (!played.row) return blocked("the Feed showed no story to press", played);
+  if (played.reloaded) return failed("the page loaded again to open the story", played);
+  if (!played.to) return failed("the story's address names no hex", played);
+  const scene = inScene("map")({ seen });
+  if (scene.status !== "completed") return scene;
+  const hex = seen.selection?.hex;
+  if (!hex) return failed("the story's place was not selected", played);
+  if (hex.col - played.to.col !== hex.row - played.to.row)
+    return failed(`the selected tile ${JSON.stringify(hex)} is not the address's ${JSON.stringify(played.to)}`, played);
+  return completed(played);
+}
+
+/**
+ * Another realm visited from the Season's board, as a player does: its second row (the board's leader is the realm a
+ * spectator watches first), Visit, the realm it opens, then the world map on it.
+ */
+async function visitAnotherRealm({ browser }) {
+  const before = browser.observe();
+  const from = browser.read(ROUTE_HEX_EXPRESSION);
+  if (onADesktop()) browser.click("Season");
+  else {
+    browser.click("Menu");
+    await sleep(1_500);
+    browser.click("Season");
+  }
+  await sleep(2_000);
+  const rows = `[...document.querySelectorAll('button[aria-label^="#"]')].map((row) => row.getAttribute("aria-label"))`;
+  const row = browser.read(`JSON.stringify(${rows})`)[1] ?? null;
+  if (!row) return { row: null };
+  browser.click(row);
+  await sleep(1_500);
+  browser.click("Visit");
+  const realm = await arrives(browser, "Realm", "hex");
+  const realmHex = browser.read(ROUTE_HEX_EXPRESSION);
+  pressPlace(browser, "Map");
+  const map = await arrives(browser, "Map", "map");
+  const mapHex = browser.read(ROUTE_HEX_EXPRESSION);
+  return {
+    row,
+    realm,
+    map,
+    realmHex,
+    mapHex,
+    apart: hexesApart(from, mapHex),
+    reloaded: browser.observe().timeOrigin !== before.timeOrigin,
+  };
+}
+
+/** The visit opened the realm and then the map on it, in the page: never loaded again, never elsewhere. */
+function visitedInThePage({ seen, played }) {
+  if (!played.row) return blocked("the Season's board listed no other realm to visit", played);
+  if (played.reloaded) return failed("the page loaded again on the visit", played);
+  if (!played.realm) return failed("the visit never opened the realm", played);
+  if (!played.map) return failed("the map never opened on the visited realm", played);
+  if (hexesApart(played.realmHex, played.mapHex) !== 0)
+    return failed(
+      `the map opened at ${JSON.stringify(played.mapHex)}, not the realm's ${JSON.stringify(played.realmHex)}`,
+      played,
+    );
+  const scene = inScene("map")({ seen });
+  return scene.status === "completed" ? completed(played) : scene;
 }
 
 /** A desktop's Season page drew with its place pressed, then closed; a phone's Menu sheet opened, then closed. */
