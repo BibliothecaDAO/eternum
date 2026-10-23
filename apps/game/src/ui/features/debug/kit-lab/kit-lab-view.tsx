@@ -37,6 +37,8 @@ import { WordsLab } from "./words-lab";
 import { AppArtLab } from "./app-art-lab";
 import { AppSheetLab } from "./app-lab/app-sheet-lab";
 
+import { ResearchBalanceLab } from "./research-balance/research-balance-lab";
+
 const HOUR = 3600;
 /** The handoff's one fiction: Day 12, today ends at 21:40 with 7h 14m left, tomorrow lasts 12h. */
 const ENDS_AT = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
@@ -63,6 +65,7 @@ export const KitLabView = () => {
       <Route path="blitz-build" element={<BlitzBuildLab />} />
       <Route path="research-balance/army-levels" element={<ArmyLevelsLab />} />
       <Route path="progression" element={<ProgressionLab />} />
+      <Route path="research-balance" element={<ResearchBalanceLab />} />
       <Route path="tokens" element={<TokensLab />} />
       <Route path="words" element={<WordsLab />} />
       <Route path="hud/:state" element={<HudLab />} />
@@ -80,6 +83,7 @@ const Components = () => {
   return (
     <main data-surface="shell" className="min-h-dvh bg-kit-ground px-4 py-6 font-sans text-kit-cream">
       <div className="mx-auto flex max-w-[390px] flex-col gap-8 lg:max-w-5xl lg:flex-row lg:flex-wrap">
+        <Link to="/lab/kit/research-balance">Research balance proposals</Link>
         <Link to="/lab/kit/icons">Facets icon catalog</Link>
         <Link to="/lab/kit/tokens">Design tokens</Link>
         <Link to="/lab/kit/reward-chests">Reward chest tiers</Link>
