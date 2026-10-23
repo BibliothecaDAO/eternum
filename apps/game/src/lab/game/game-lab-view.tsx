@@ -13,6 +13,8 @@ const SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   realm: realmScenario,
   "day-turn": dayTurnScenario("live"),
   "day-later": dayTurnScenario("later"),
+  "day-turn-slow": dayTurnScenario("live", "late"),
+  "day-later-short": dayTurnScenario("later", "capped"),
 };
 
 /**

@@ -1151,26 +1151,40 @@ function armyEnteredEtherealII({ played }) {
 
 const SPIRE_WAIT_MS = 5_000;
 
-const LAB_DAY_TURN = { mode: "frontier", lab: "day-turn", chainId: "0x1ab9", gameId: 1, card: FRONTIER.card };
-const LAB_DAY_LATER = { ...LAB_DAY_TURN, lab: "day-later" };
+const labDayTurn = (scenario) => ({
+  mode: "frontier",
+  lab: scenario,
+  chainId: "0x1ab9",
+  gameId: 1,
+  card: FRONTIER.card,
+});
 
 /**
- * Realm 7's day 2 ending on prod's recorded history (src/lab/game/day-turn-scenario.ts), in the session (day-turn) or
- * before it opened (day-later), the map opened where the realm stood on day 2: the summary rises with the player's own
- * day 2 as prod's history holds it, and Continue brings the camera onto the realm's day-3 site.
+ * Realm 7's day 2 ending on prod's recorded history (src/lab/game/day-turn-scenario.ts), in the session (day-turn,
+ * day-turn-slow) or before it opened (day-later, day-later-short), the map opened where the realm stood on day 2: the
+ * summary rises with what the player's history gives of day 2, and Continue brings the camera onto the realm's day-3
+ * site.
  */
-const LAB_DAY_TURN_STEPS = [
+const labDayTurnSteps = (expected) => [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  { name: "day-summary", play: readTheDaySummary, settleMs: 0, verify: summaryCountsTheDay },
+  { name: "day-summary", play: readTheDaySummary, settleMs: 0, verify: summaryShows(expected) },
   { name: "continue", play: continueIntoTheNewDay, settleMs: 0, verify: cameraOnTheNewSite },
 ];
 
 /** Prod's leading player's own day 2: 35 reveals and 5 sites cleared, paying 7,246 Essence and 524 Labor. */
-const RECORDED_DAY_TOTALS = ["35Reveals", "5Sites cleared", "0Chests", "+7,246Essence", "+524Labor", "+0LORDS"];
+const RECORDED_DAY_2 = {
+  totals: ["35Reveals", "5Sites cleared", "0Chests", "+7,246Essence", "+524Labor", "+0LORDS"],
+  notice: null,
+};
+/** Day 2 past the history read: each total a dash, and the card says why. */
+const DAY_2_OUT_OF_REACH = {
+  totals: ["—Reveals", "—Sites cleared", "—Chests", "—Essence", "—Labor", "—LORDS"],
+  notice: "Your history no longer reaches back to this day's start, so its totals are unknown.",
+};
 /** Realm 7's site on day 3 of the lab's calendar: its region's column, four regions a day down (contract hexes). */
 const LAB_DAY_3_SITE = { col: 650, row: 850 };
-/** The live turn waits for the day's last seconds, the rollover's look and the mist before the summary rises. */
-const DAY_SUMMARY_WAIT_MS = 60_000;
+/** The live turn waits for the day's last seconds and the mist, and a slow history for its answer after the moment. */
+const DAY_SUMMARY_WAIT_MS = 90_000;
 const NEW_DAY_WAIT_MS = 20_000;
 /** The camera's hex is reported at most every 100 ms. */
 const CAMERA_REPORT_MS = 1_000;
@@ -1178,6 +1192,7 @@ const DAY_END_STATE = `JSON.stringify({
   phase: document.querySelector("[data-day-end]")?.dataset.dayEnd ?? "day",
   card: document.querySelector("section[aria-label$=' done']")?.getAttribute("aria-label") ?? null,
   totals: [...document.querySelectorAll("section[aria-label$=' done'] [data-total]")].map((cell) => cell.textContent),
+  notice: document.querySelector("section[aria-label$=' done'] .ui-notice")?.textContent ?? null,
   camera: window.__eternumMapSelection?.camera ?? null,
 })`;
 
@@ -1190,11 +1205,18 @@ async function readTheDaySummary({ browser }) {
   );
 }
 
-function summaryCountsTheDay({ played }) {
-  if (played.card !== "Day 2 done") return failed(`the summary shown is ${played.card ?? "none"}`, played);
-  if (JSON.stringify(played.totals) !== JSON.stringify(RECORDED_DAY_TOTALS))
-    return failed(`the summary counts ${played.totals.join(", ")}`, played);
-  return completed(played);
+function summaryShows(expected) {
+  return ({ played }) => {
+    if (played.card !== "Day 2 done") return failed(`the summary shown is ${played.card ?? "none"}`, played);
+    if (JSON.stringify(played.totals) !== JSON.stringify(expected.totals))
+      return failed(`the summary counts ${played.totals.join(", ")}`, played);
+    if (played.notice !== expected.notice)
+      return failed(
+        `the summary says ${JSON.stringify(played.notice)}, not ${JSON.stringify(expected.notice)}`,
+        played,
+      );
+    return completed(played);
+  };
 }
 
 /** Presses Continue, waits for the screen to come back up on the new day, and reads where the camera looks. */
@@ -1260,8 +1282,10 @@ export const STEP_SETS = {
     devOverlays: true,
   },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
-  "lab-day-turn": { game: LAB_DAY_TURN, steps: LAB_DAY_TURN_STEPS },
-  "lab-day-later": { game: LAB_DAY_LATER, steps: LAB_DAY_TURN_STEPS },
+  "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },
+  "lab-day-later": { game: labDayTurn("day-later"), steps: labDayTurnSteps(RECORDED_DAY_2) },
+  "lab-day-turn-slow": { game: labDayTurn("day-turn-slow"), steps: labDayTurnSteps(RECORDED_DAY_2) },
+  "lab-day-later-short": { game: labDayTurn("day-later-short"), steps: labDayTurnSteps(DAY_2_OUT_OF_REACH) },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },

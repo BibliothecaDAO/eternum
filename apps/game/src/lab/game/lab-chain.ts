@@ -41,6 +41,8 @@ export interface LabScenario {
   answer: (command: LabCommand, chain: NativeFactStore, now: number) => LabFact[];
   /** The game's history, newest first, on the lab's clock: Herald serves each event once its time has come. */
   history?: HeraldHistoryEvent[];
+  /** The lab second before which Herald's history holds its answers back (a slow Herald); none: it answers at once. */
+  historyAnswersAt?: number;
 }
 
 interface LabChainRecord {
@@ -136,6 +138,7 @@ const answerDirectory = (now: () => number, read: (url: URL) => unknown) => {
       return json({ chain: LAB_GAME.chainId, world_address: "0x1ab", confirmed_block: now(), games: [game] });
     const answer = read(url);
     if (answer === NOT_CLOSED) return Promise.resolve(new Response(null, { status: 404 }));
+    if (answer instanceof Promise) return answer.then(json);
     if (answer !== undefined) return json(answer);
     return Promise.reject(new TypeError(`The lab shard does not serve ${url.pathname}`));
   };
@@ -160,6 +163,11 @@ const answerHeraldRead = (
 ): unknown => {
   const game = `/games/${LAB_GAME.gameId}`;
   if (url.pathname === `${game}/history`) {
+    const heldFor = (scenario.historyAnswersAt ?? 0) - now();
+    if (heldFor > 0)
+      return new Promise((answered) =>
+        setTimeout(() => answered(answerHeraldRead(url, scenario, chain, now, confirmedBlock)), heldFor * 1_000),
+      );
     const query = url.searchParams;
     const owner = query.get("owner");
     const named = owner && `"0x${BigInt(owner).toString(16)}"`;
