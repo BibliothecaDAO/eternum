@@ -583,7 +583,8 @@ export default class InstancedModel {
               textureChanged =
                 writeMorphWeightsIfChanged(
                   textureData,
-                  i * textureWidth,
+                  i,
+                  textureWidth,
                   this.bucketWeightsBuffer,
                   srcOffset,
                   morphCount,
