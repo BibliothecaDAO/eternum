@@ -698,6 +698,20 @@ releases each WebGL page after capture. The exported `proveWorkshops` also accep
 To regenerate only the Workshop thumbnail with the shared 85% fill normalizer:
 `node apps/game/scripts/render-building-thumbnails.mjs https://127.0.0.1:4218 /absolute/evidence/directory /models/new-buildings-opt/workshop.glb`.
 
+## Frontier buildings — painted set
+
+Open `/lab/models?family=frontier-painted` (Models & motion → Frontier buildings · painted set). Set shows one group of
+the set at scale one on game terrain through `InstancedModel`: the realm castles, Farm, Workshop, Barracks or Workers'
+hut at tiers I–V, the four training buildings, or the map sites. Compare puts the models the game draws today in a row
+behind (none yet for the Farm, Barracks and Workers' hut at tiers IV and V). Focus and View (Detail) inspect one
+building closely; Turn steps through the board's six headings while each tier banner holds its heading, broadside to the
+camera. Realm castles do not turn: they face the camera, as realm models do in the game. A Farm's sails turn.
+
+The set is delivered for integration but not yet drawn on the board or the map. The board and the placement preview
+already keep any part with a `poleAxis` at its authored heading (`src/three/structures/held-heading.ts`), as
+`InstancedModel` does. `pnpm --dir apps/game verify:painted-buildings` checks the deliveries
+(`public/models/frontier/painted/SOURCE.md`).
+
 ## Frontier day end
 
 In a Frontier game, with a realm, when the day ends on the chain clock: the spires' orb bursts and the mist rolls over

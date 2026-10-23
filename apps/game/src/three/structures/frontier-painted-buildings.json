@@ -1,0 +1,266 @@
+[
+  {
+    "id": "settlement",
+    "label": "Settlement",
+    "group": "realms",
+    "path": "/models/frontier/painted/settlement.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "city",
+    "label": "City",
+    "group": "realms",
+    "path": "/models/frontier/painted/city.glb",
+    "architectureTriangles": 12000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "kingdom",
+    "label": "Kingdom",
+    "group": "realms",
+    "path": "/models/frontier/painted/kingdom.glb",
+    "architectureTriangles": 16000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "empire",
+    "label": "Empire",
+    "group": "realms",
+    "path": "/models/frontier/painted/empire.glb",
+    "architectureTriangles": 20000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "farm-1",
+    "label": "Farm I",
+    "group": "farm",
+    "path": "/models/frontier/painted/farm-1.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "farm-2",
+    "label": "Farm II",
+    "group": "farm",
+    "path": "/models/frontier/painted/farm-2.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "farm-3",
+    "label": "Farm III",
+    "group": "farm",
+    "path": "/models/frontier/painted/farm-3.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "farm-4",
+    "label": "Farm IV",
+    "group": "farm",
+    "path": "/models/frontier/painted/farm-4.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "farm-5",
+    "label": "Farm V",
+    "group": "farm",
+    "path": "/models/frontier/painted/farm-5.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "workshop-1",
+    "label": "Workshop I",
+    "group": "workshop",
+    "path": "/models/frontier/painted/workshop-1.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "workshop-2",
+    "label": "Workshop II",
+    "group": "workshop",
+    "path": "/models/frontier/painted/workshop-2.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "workshop-3",
+    "label": "Workshop III",
+    "group": "workshop",
+    "path": "/models/frontier/painted/workshop-3.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "workshop-4",
+    "label": "Workshop IV",
+    "group": "workshop",
+    "path": "/models/frontier/painted/workshop-4.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "workshop-5",
+    "label": "Workshop V",
+    "group": "workshop",
+    "path": "/models/frontier/painted/workshop-5.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "barracks-1",
+    "label": "Barracks I",
+    "group": "barracks",
+    "path": "/models/frontier/painted/barracks-1.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "barracks-2",
+    "label": "Barracks II",
+    "group": "barracks",
+    "path": "/models/frontier/painted/barracks-2.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "barracks-3",
+    "label": "Barracks III",
+    "group": "barracks",
+    "path": "/models/frontier/painted/barracks-3.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "barracks-4",
+    "label": "Barracks IV",
+    "group": "barracks",
+    "path": "/models/frontier/painted/barracks-4.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "barracks-5",
+    "label": "Barracks V",
+    "group": "barracks",
+    "path": "/models/frontier/painted/barracks-5.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "workers-hut-1",
+    "label": "Workers' hut I",
+    "group": "workers-hut",
+    "path": "/models/frontier/painted/workers-hut-1.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "workers-hut-2",
+    "label": "Workers' hut II",
+    "group": "workers-hut",
+    "path": "/models/frontier/painted/workers-hut-2.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "workers-hut-3",
+    "label": "Workers' hut III",
+    "group": "workers-hut",
+    "path": "/models/frontier/painted/workers-hut-3.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "workers-hut-4",
+    "label": "Workers' hut IV",
+    "group": "workers-hut",
+    "path": "/models/frontier/painted/workers-hut-4.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "workers-hut-5",
+    "label": "Workers' hut V",
+    "group": "workers-hut",
+    "path": "/models/frontier/painted/workers-hut-5.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "war-hall",
+    "label": "War hall",
+    "group": "training",
+    "path": "/models/frontier/painted/war-hall.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "supply-yard",
+    "label": "Supply yard",
+    "group": "training",
+    "path": "/models/frontier/painted/supply-yard.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "scouts-lodge",
+    "label": "Scouts' lodge",
+    "group": "training",
+    "path": "/models/frontier/painted/scouts-lodge.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "hearth",
+    "label": "Hearth",
+    "group": "training",
+    "path": "/models/frontier/painted/hearth.glb",
+    "architectureTriangles": 8000,
+    "atlasSize": 1024
+  },
+  {
+    "id": "camp",
+    "label": "Camp",
+    "group": "sites",
+    "path": "/models/frontier/painted/camp.glb",
+    "architectureTriangles": 5000,
+    "atlasSize": 512
+  },
+  {
+    "id": "fallen-realm-ruin",
+    "label": "Fallen realm",
+    "group": "sites",
+    "path": "/models/frontier/painted/fallen-realm-ruin.glb",
+    "architectureTriangles": 5000,
+    "atlasSize": 512
+  },
+  {
+    "id": "shrine",
+    "label": "Shrine",
+    "group": "sites",
+    "path": "/models/frontier/painted/shrine.glb",
+    "architectureTriangles": 4000,
+    "atlasSize": 512
+  },
+  {
+    "id": "well",
+    "label": "Well",
+    "group": "sites",
+    "path": "/models/frontier/painted/well.glb",
+    "architectureTriangles": 4000,
+    "atlasSize": 512
+  },
+  {
+    "id": "essence-rift",
+    "label": "Essence rift",
+    "group": "sites",
+    "path": "/models/frontier/painted/essence-rift.glb",
+    "architectureTriangles": 10000,
+    "atlasSize": 512
+  }
+]

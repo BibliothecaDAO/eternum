@@ -1,3 +1,4 @@
+import { FRONTIER_PAINTED_REALMS } from "../structures/frontier-painted-buildings";
 import { REALM_PATHS } from "../structures/realm-design";
 import { StructureProgress } from "@bibliothecadao/eternum";
 import {
@@ -59,7 +60,7 @@ export const REALM_MODEL_PATHS = {
 } as const;
 
 export function isRealmModelPath(path: string): boolean {
-  return REALM_PATHS.includes(path);
+  return REALM_PATHS.includes(path) || FRONTIER_PAINTED_REALMS.includes(path);
 }
 
 export function isSettlementModelPath(path: string): boolean {
