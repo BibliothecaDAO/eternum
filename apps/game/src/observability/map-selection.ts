@@ -14,6 +14,8 @@ interface MapSelectionSnapshot {
    * (the proof's transfer gesture right-clicks another of the viewer's).
    */
   hovered: { id: number; ownedByViewer: boolean; selectedHolding: boolean } | null;
+  /** The hex the camera looks at (a contract hex, as `hex` is): a link's place is under it once the map is there. */
+  camera: { col: number; row: number } | null;
 }
 
 interface MapSelectionWindow {
@@ -21,9 +23,9 @@ interface MapSelectionWindow {
 }
 
 /**
- * Mirrors the map's selection after every change of it, of what it rings or of the selected army's orders, for checks
- * that cannot see the canvas (the playtest's ownership-ring and army steps). Each source publishes its own part. Read
- * it as `window.__eternumMapSelection`.
+ * Mirrors the map's selection after every change of it, of what it rings, of the selected army's orders or of where
+ * the camera looks, for checks that cannot see the canvas (the playtest's ownership-ring, army and link steps). Each
+ * source publishes its own part. Read it as `window.__eternumMapSelection`.
  */
 export const publishMapSelection = (part: Partial<MapSelectionSnapshot>): void => {
   if (typeof window === "undefined") return;

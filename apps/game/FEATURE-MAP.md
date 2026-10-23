@@ -35,8 +35,8 @@ camp) opens its place through `play/navigation/open-place.ts`: the address carri
 selects what the link names (the tile, its structure or army). A Frontier story from a day that has closed is no link
 (`linkFrom`): the map is built again each day, so its place is not on today's map. Frontier's realms stand millions of
 hexes apart, past the floating origin's 8,192-hex reach; the map then draws the world again around the new place in the
-same page. The spectator playtest presses a Feed story and visits the board's second realm (`open-feed-event`,
-`visit-realm`).
+same page. The spectator playtest presses a Feed story and visits the board's second and third realms in turn
+(`open-feed-event`, `visit-realm`).
 
 ## Cleared-site standard
 

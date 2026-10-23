@@ -85,7 +85,7 @@ export const SPECTATOR_STEPS = [
   { name: "zoom", play: zoomOutAndIn, settleMs: 1_000, verify: zoomedOutAndIn(inScene("map")) },
   { name: "season", play: readTheSeason, settleMs: 1_000, verify: seasonReadAndClosed },
   { name: "open-feed-event", play: openAFeedEvent, settleMs: 3_000, verify: openedInThePage },
-  { name: "visit-realm", play: visitAnotherRealm, settleMs: 0, verify: visitedInThePage },
+  { name: "visit-realm", play: visitOtherRealms, settleMs: 0, verify: visitedInThePage },
   { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 8_000, verify: inScene("hex") },
   { name: "return-to-map", play: goTo("Map", "map"), settleMs: 8_000, verify: inScene("map") },
   { name: "steady", settleMs: 60_000, verify: inScene("map") },
@@ -413,18 +413,41 @@ function openedInThePage({ seen, played }) {
   if (!played.to) return failed("the story's address names no hex", played);
   const scene = inScene("map")({ seen });
   if (scene.status !== "completed") return scene;
-  const hex = seen.selection?.hex;
-  if (!hex) return failed("the story's place was not selected", played);
-  if (hex.col - played.to.col !== hex.row - played.to.row)
-    return failed(`the selected tile ${JSON.stringify(hex)} is not the address's ${JSON.stringify(played.to)}`, played);
-  return completed(played);
+  const missed = placeMissed(seen, played.to);
+  return missed ? failed(`the story's place: ${missed}`, played) : completed(played);
 }
 
 /**
- * Another realm visited from the Season's board, as a player does: its second row (the board's leader is the realm a
- * spectator watches first), Visit, the realm it opens, then the world map on it.
+ * Why the map does not stand on a link's place, or null: that tile is selected (a contract hex, one map centre from the
+ * address's normalized hex on both axes) and the camera looks at it.
  */
-async function visitAnotherRealm({ browser }) {
+function placeMissed(seen, address) {
+  const hex = seen.selection?.hex;
+  if (!hex) return "nothing was selected";
+  if (hex.col - address.col !== hex.row - address.row)
+    return `the selected tile ${JSON.stringify(hex)} is not the address's ${JSON.stringify(address)}`;
+  const camera = seen.selection?.camera;
+  if (camera?.col !== hex.col || camera?.row !== hex.row)
+    return `the camera looks at ${JSON.stringify(camera ?? null)}, not the selected tile ${JSON.stringify(hex)}`;
+  return null;
+}
+
+/**
+ * Other realms visited from the Season's board, one after the other, as a player does: its second row, then its third
+ * (the board's leader is the realm a spectator watches first), each by Visit, the realm it opens, then the world map
+ * on it. The second visit is the one that follows another realm.
+ */
+async function visitOtherRealms({ browser }) {
+  const visits = [];
+  for (const index of [1, 2]) {
+    const visit = await visitRow(browser, index);
+    visits.push(visit);
+    if (!visit.row) break;
+  }
+  return { visits };
+}
+
+async function visitRow(browser, index) {
   const before = browser.observe();
   const from = browser.read(ROUTE_HEX_EXPRESSION);
   if (onADesktop()) browser.click("Season");
@@ -435,7 +458,7 @@ async function visitAnotherRealm({ browser }) {
   }
   await sleep(2_000);
   const rows = `[...document.querySelectorAll('button[aria-label^="#"]')].map((row) => row.getAttribute("aria-label"))`;
-  const row = browser.read(`JSON.stringify(${rows})`)[1] ?? null;
+  const row = browser.read(`JSON.stringify(${rows})`)[index] ?? null;
   if (!row) return { row: null };
   browser.click(row);
   await sleep(1_500);
@@ -445,6 +468,7 @@ async function visitAnotherRealm({ browser }) {
   pressPlace(browser, "Map");
   const map = await arrives(browser, "Map", "map");
   const mapHex = browser.read(ROUTE_HEX_EXPRESSION);
+  const seen = browser.observe();
   return {
     row,
     realm,
@@ -452,23 +476,38 @@ async function visitAnotherRealm({ browser }) {
     realmHex,
     mapHex,
     apart: hexesApart(from, mapHex),
-    reloaded: browser.observe().timeOrigin !== before.timeOrigin,
+    reloaded: seen.timeOrigin !== before.timeOrigin,
+    seen,
   };
 }
 
-/** The visit opened the realm and then the map on it, in the page: never loaded again, never elsewhere. */
-function visitedInThePage({ seen, played }) {
-  if (!played.row) return blocked("the Season's board listed no other realm to visit", played);
-  if (played.reloaded) return failed("the page loaded again on the visit", played);
-  if (!played.realm) return failed("the visit never opened the realm", played);
-  if (!played.map) return failed("the map never opened on the visited realm", played);
-  if (hexesApart(played.realmHex, played.mapHex) !== 0)
-    return failed(
-      `the map opened at ${JSON.stringify(played.mapHex)}, not the realm's ${JSON.stringify(played.realmHex)}`,
-      played,
-    );
-  const scene = inScene("map")({ seen });
-  return scene.status === "completed" ? completed(played) : scene;
+/**
+ * Each visit opened the realm and then the map on it, in the page: never loaded again, never elsewhere, the visited
+ * realm selected and the camera on it, whatever realm came before.
+ */
+function visitedInThePage({ played }) {
+  const [first] = played.visits;
+  if (!first?.row) return blocked("the Season's board listed no other realm to visit", played);
+  for (const [index, visit] of played.visits.entries()) {
+    const missed = visitMissed(visit);
+    if (missed) return failed(`visit ${index + 1} (${visit.row ?? "no row"}): ${missed}`, played);
+  }
+  return completed(played);
+}
+
+/** Why a visit did not land on its realm in the page, or null. */
+function visitMissed(visit) {
+  if (!visit.row) return "the Season's board listed no realm to visit";
+  if (visit.reloaded) return "the page loaded again";
+  if (!visit.realm) return "the realm never opened";
+  if (!visit.map) return "the map never opened on it";
+  if (hexesApart(visit.realmHex, visit.mapHex) !== 0)
+    return `the map opened at ${JSON.stringify(visit.mapHex)}, not the realm's ${JSON.stringify(visit.realmHex)}`;
+  const scene = inScene("map")({ seen: visit.seen });
+  if (scene.status !== "completed") return scene.reason;
+  const realm = visit.seen.selection?.structure;
+  if (!realm?.realm || realm.ownedByViewer) return "it is not the realm selected";
+  return placeMissed(visit.seen, visit.mapHex);
 }
 
 /** A desktop's Season page drew with its place pressed, then closed; a phone's Menu sheet opened, then closed. */

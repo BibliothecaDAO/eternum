@@ -179,20 +179,25 @@ describe("a story opened from the Feed", () => {
   const verify = verifyOf("open-feed-event");
   const to = { col: -1446133336, row: -1596959636 };
   // The selected tile is a contract hex: the address's, one map centre (1,596,960,486) out on both axes.
-  const selected = { ...onTheMap, selection: { hex: { col: 150827150, row: 850 } } };
+  const tile = { col: 150827150, row: 850 };
+  const selected = { ...onTheMap, selection: { hex: tile, camera: tile } };
   const played = { row: "12:31 A fight · Guard holds", to, reloaded: false };
 
   it("completes on the map at the story's place, selected, in the same page", () => {
     expect(verify({ seen: selected, played }).status).toBe("completed");
   });
 
-  it("fails a page that loaded again, a place not selected, or another tile selected", () => {
+  it("fails a page that loaded again, a place not selected, another tile selected, or the camera elsewhere", () => {
     expect(verify({ seen: selected, played: { ...played, reloaded: true } }).reason).toBe(
       "the page loaded again to open the story",
     );
-    expect(verify({ seen: onTheMap, played }).reason).toBe("the story's place was not selected");
-    const elsewhere = { ...onTheMap, selection: { hex: { col: 150827151, row: 850 } } };
+    expect(verify({ seen: onTheMap, played }).reason).toBe("the story's place: nothing was selected");
+    const elsewhere = { ...onTheMap, selection: { hex: { col: 150827151, row: 850 }, camera: tile } };
     expect(verify({ seen: elsewhere, played }).status).toBe("failed");
+    const lookingAway = { ...onTheMap, selection: { hex: tile, camera: { col: 150826822, row: 850 } } };
+    expect(verify({ seen: lookingAway, played }).reason).toBe(
+      'the story\'s place: the camera looks at {"col":150826822,"row":850}, not the selected tile {"col":150827150,"row":850}',
+    );
   });
 
   it("is blocked when the Feed shows no story", () => {
@@ -200,24 +205,55 @@ describe("a story opened from the Feed", () => {
   });
 });
 
-describe("visiting another realm", () => {
+describe("visiting other realms", () => {
   const verify = verifyOf("visit-realm");
   const site = { col: -1446133336, row: -1596959636 };
-  const played = { row: "#2 clientlane", realm: true, map: true, realmHex: site, mapHex: site, reloaded: false };
+  const tile = { col: 150827150, row: 850 };
+  const theirs = { id: 1508272, owner: "0x2", realm: true, ownedByViewer: false };
+  const onTheRealm = { ...onTheMap, selection: { hex: tile, camera: tile, structure: theirs } };
+  const visit = {
+    row: "#2 clientlane",
+    realm: true,
+    map: true,
+    realmHex: site,
+    mapHex: site,
+    reloaded: false,
+    seen: onTheRealm,
+  };
+  const twoVisits = (second) => ({ visits: [visit, { ...visit, row: "#4 djizus", ...second }] });
 
-  it("completes when the realm and then the map on it opened in the same page", () => {
-    expect(verify({ seen: onTheMap, played }).status).toBe("completed");
+  it("completes when each realm and then the map on it opened in the same page, it selected and in view", () => {
+    expect(verify({ seen: onTheRealm, played: twoVisits({}) }).status).toBe("completed");
+  });
+
+  it("fails a later visit whose map selected another realm or nothing, or looks elsewhere", () => {
+    const own = {
+      ...onTheRealm,
+      selection: { ...onTheRealm.selection, structure: { ...theirs, ownedByViewer: true } },
+    };
+    expect(verify({ seen: own, played: twoVisits({ seen: own }) }).reason).toBe(
+      "visit 2 (#4 djizus): it is not the realm selected",
+    );
+    expect(verify({ seen: onTheMap, played: twoVisits({ seen: onTheMap }) }).reason).toBe(
+      "visit 2 (#4 djizus): it is not the realm selected",
+    );
+    const away = { ...onTheRealm, selection: { ...onTheRealm.selection, camera: { col: 97316650, row: 850 } } };
+    expect(verify({ seen: away, played: twoVisits({ seen: away }) }).status).toBe("failed");
   });
 
   it("fails a visit that loaded the page again or opened the map elsewhere", () => {
-    expect(verify({ seen: onTheMap, played: { ...played, reloaded: true } }).reason).toBe(
-      "the page loaded again on the visit",
+    expect(verify({ seen: onTheRealm, played: twoVisits({ reloaded: true }) }).reason).toBe(
+      "visit 2 (#4 djizus): the page loaded again",
     );
-    const elsewhere = { ...played, mapHex: { col: site.col + 1, row: site.row } };
-    expect(verify({ seen: onTheMap, played: elsewhere }).status).toBe("failed");
-    expect(verify({ seen: onTheMap, played: { ...played, map: false } }).reason).toBe(
-      "the map never opened on the visited realm",
+    const elsewhere = twoVisits({ mapHex: { col: site.col + 1, row: site.row } });
+    expect(verify({ seen: onTheRealm, played: elsewhere }).status).toBe("failed");
+    expect(verify({ seen: onTheRealm, played: twoVisits({ map: false }) }).reason).toBe(
+      "visit 2 (#4 djizus): the map never opened on it",
     );
+  });
+
+  it("is blocked when the board lists no other realm", () => {
+    expect(verify({ seen: onTheMap, played: { visits: [{ row: null }] } }).status).toBe("blocked");
   });
 });
 
