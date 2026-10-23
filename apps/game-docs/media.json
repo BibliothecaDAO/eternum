@@ -182,22 +182,6 @@
     "crop": "[...document.querySelectorAll('aside[data-hud-rail=\"true\"] section')].filter((s) => s.getBoundingClientRect().height > 40).at(-1)"
   },
   {
-    "name": "blitz/hud",
-    "frame": "game",
-    "setup": [
-      {
-        "open": "https://play.realms.party/g/0x50524f44554354494f4e5f31386530376435323330633539393933/8/map?spectate=true"
-      },
-      {
-        "until": "document.querySelector('#main-canvas') && document.documentElement.dataset.bootState === 'app-ready'",
-        "ms": 180000
-      },
-      {
-        "wait": 15000
-      }
-    ]
-  },
-  {
     "name": "blitz/next",
     "frame": "desktop",
     "setup": [

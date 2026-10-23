@@ -422,8 +422,6 @@ When the 60 minutes end, the game records every player's points and place
 * Shelter behind immunity: no realm has any.
 * Keep playing after you lose your last realm. You can watch until the end.
 
-<Shot name="blitz/hud" caption="A finished Blitz, watched as it ended: the final standings and the minimap on the left, the events on the right." />
-
 ## Next
 
 * [Entry and the lobby](/blitz/entry): get a seat in the next game.
