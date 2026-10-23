@@ -1,0 +1,34 @@
+.frontier-painted-lab {
+  height: var(--lab-viewport-height, 100vh);
+  display: flex;
+  flex-direction: column;
+  background: #172322;
+  color: #eee;
+}
+.frontier-painted-lab > header {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+}
+.frontier-painted-lab h1 {
+  font-size: 18px;
+  margin: 0 auto 0 0;
+}
+.frontier-painted-lab select {
+  background: #263b35;
+  color: #fff;
+  padding: 5px;
+}
+.frontier-painted-lab > p,
+.frontier-painted-lab > footer {
+  margin: 0;
+  padding: 8px 20px;
+  font-size: 14px;
+}
+
+.frontier-painted-lab-canvas {
+  flex: 1;
+  min-height: 0;
+}
