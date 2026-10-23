@@ -3,7 +3,7 @@ import { create } from "zustand";
 /**
  * A Frontier day's end, as one moment (owner, 2026-10-22: "nightfall is perfect for day end"): the spires' mist rolls
  * over the map and the day's summary rises over it; Continue drops the screen to black, the realm's new land comes in
- * behind it, and the screen comes back up on the new day.
+ * behind it with the camera on the realm, and the screen comes back up on the new day.
  *
  * Who plays which part: ExpeditionRollover begins it at the day's turn and brings the new land in behind the black;
  * the renderer rolls the game end's veil while `mistRolls` holds; the Frontier HUD's DayDone says whether there is a
@@ -83,10 +83,14 @@ function nextPhase(moment: DayEndMoment): DayEndMoment {
   }
 }
 
-/** The summary's Continue: live, the screen drops to black; later, the new land is already there, so it dawns. */
+/**
+ * The summary's Continue drops the screen to black, however the day ended: behind it the camera comes onto the realm,
+ * which a later arrival's map may have opened away from (owner, 2026-10-23: "when the day passes it doesnt focus on the
+ * enw realm location").
+ */
 function continueDayEnd(moment: DayEndMoment): DayEndMoment {
   if (moment.phase !== "summary") return moment;
-  return { ...moment, phase: moment.arrival === "live" ? "nightfall" : "dawn" };
+  return { ...moment, phase: "nightfall" };
 }
 
 /** With no summary to read (a day not played, another realm in view), the summary phase passes at once. */

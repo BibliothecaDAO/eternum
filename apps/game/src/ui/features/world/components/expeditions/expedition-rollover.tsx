@@ -11,7 +11,6 @@ import {
   isExpeditionRealm,
   Position,
   readExpeditionRules,
-  type ExpeditionRules,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
@@ -45,6 +44,9 @@ const POLL_MS = 1_000;
  * when the block clock turns, since a realm's site (structureMapPosition) is read from the block clock. Re-projecting
  * on chain time placed every realm on the day that was ending and left it there all day.
  *
+ * The camera comes onto the realm in the black, however the day ended: at the turn in the game, or for a game opened
+ * after it, whose map may stand where the route left it the day before.
+ *
  * The land's work and the moment's screen are kept apart. A re-projection or a camera move that is due stays due until
  * it is done, whatever the moment shows: it waits only while the mist rolls, so the land never changes in view. The
  * black waits for it, and when the black's longest hold lifts the screen first, the work still lands when the block
@@ -72,19 +74,19 @@ export function watchDayTurn(world: DayTurnWorld): () => void {
     if (moment.phase === "black" && !reprojectDue && !siteDue) moment.markLandReady();
   };
 
-  const turnTheDay = (rules: ExpeditionRules) => {
-    const realm = world.player
-      ? [...world.store.structuresOwnedBy(world.gameId, BigInt(world.player))].find((structure) =>
-          isExpeditionRealm(world.store, structure),
-        )
-      : undefined;
-    if (!realm) return;
-    // The turn fires on chain time, which runs ahead of the last block's timestamp, so the announced site is computed
-    // for the day that is beginning rather than read through structureMapPosition's block clock.
-    const site = expeditionRealmSite(rules, entityHomeNamespace(realm.entity_id), world.chainNow());
-    if (!site) return;
-    siteDue = Position.fromContract({ x: site.col, y: site.row });
-    useDayEndStore.getState().begin("live");
+  /** The player's realm's site on the chain clock's day; null for a viewer with no realm. */
+  const realmSite = (): Position | null => {
+    const rules = readExpeditionRules(world.store, world.gameId);
+    const realm =
+      rules && world.player
+        ? [...world.store.structuresOwnedBy(world.gameId, BigInt(world.player))].find((structure) =>
+            isExpeditionRealm(world.store, structure),
+          )
+        : undefined;
+    // Chain time runs ahead of the last block's timestamp, so the site is computed for the day that is beginning
+    // rather than read through structureMapPosition's block clock.
+    const site = rules && realm && expeditionRealmSite(rules, entityHomeNamespace(realm.entity_id), world.chainNow());
+    return site ? Position.fromContract({ x: site.col, y: site.row }) : null;
   };
 
   const check = () => {
@@ -101,7 +103,7 @@ export function watchDayTurn(world: DayTurnWorld): () => void {
     // re-projection is let through.
     if (chain !== chainDay) {
       chainDay = chain;
-      if (chain !== null) turnTheDay(rules);
+      if (chain !== null && realmSite()) useDayEndStore.getState().begin("live");
     }
     if (block !== blockDay) {
       blockDay = block;
@@ -113,7 +115,9 @@ export function watchDayTurn(world: DayTurnWorld): () => void {
   check();
   const id = setInterval(check, POLL_MS);
   const unsubscribe = useDayEndStore.subscribe((moment, before) => {
-    if (moment.phase !== before.phase) bringInTheNewLand();
+    if (moment.phase === before.phase) return;
+    if (moment.phase === "black") siteDue = realmSite();
+    bringInTheNewLand();
   });
   return () => {
     clearInterval(id);

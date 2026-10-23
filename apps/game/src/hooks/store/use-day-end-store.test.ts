@@ -84,12 +84,17 @@ describe("a day ending with the player in the game", () => {
 });
 
 describe("a day that ended before the game opened", () => {
-  it("opens on the summary over the new land, rolls no mist, and dawns at Continue without a black", () => {
+  it("opens on the summary over the new land, rolls no mist, and drops to the black at Continue for the camera", () => {
     moment().showSummary(true);
     moment().begin("later");
     expect(moment().phase).toBe("summary");
     expect(mistRolls(moment())).toBe(false);
     moment().continueDay();
+    expect(moment().phase).toBe("nightfall");
+    seconds(DAY_END_TIMING.nightfall);
+    expect(moment().phase).toBe("black");
+    moment().markLandReady();
+    seconds(DAY_END_TIMING.black);
     expect(moment().phase).toBe("dawn");
     seconds(DAY_END_TIMING.dawn);
     expect(moment().phase).toBe("day");

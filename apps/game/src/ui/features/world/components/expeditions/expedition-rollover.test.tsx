@@ -155,6 +155,22 @@ describe("a player's day turning", () => {
   });
 });
 
+describe("a player who opens the game after the day ended", () => {
+  it("brings the camera onto the realm's site in the black their Continue drops to", () => {
+    world.chainDay = 2;
+    world.blockDay = 2;
+    mount();
+    act(() => useDayEndStore.getState().begin("later"));
+    expect(world.navigate).not.toHaveBeenCalled();
+    act(() => useDayEndStore.getState().continueDay());
+    seconds(DAY_END_TIMING.nightfall);
+    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE);
+    expect(world.rebuild).not.toHaveBeenCalled();
+    seconds(DAY_END_TIMING.black);
+    expect(phase()).toBe("dawn");
+  });
+});
+
 describe("a viewer with no realm", () => {
   it("plays no moment and re-projects as soon as the block clock turns", () => {
     world.player = null;
