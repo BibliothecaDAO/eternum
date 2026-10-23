@@ -37,9 +37,11 @@ try {
     { stdio: "inherit" },
   );
   const textures = resolve(temporary, "textures.glb");
-  execFileSync(tool, ["etc1s", normal, textures, "--slots", "baseColorTexture", "--quality", "180", "--jobs", "2"], {
-    stdio: "inherit",
-  });
+  execFileSync(
+    tool,
+    ["etc1s", normal, textures, "--slots", "{baseColorTexture,emissiveTexture}", "--quality", "180", "--jobs", "2"],
+    { stdio: "inherit" },
+  );
   execFileSync(tool, ["draco", textures, output, "--method", "edgebreaker"], { stdio: "inherit" });
 } finally {
   rmSync(temporary, { recursive: true, force: true });
