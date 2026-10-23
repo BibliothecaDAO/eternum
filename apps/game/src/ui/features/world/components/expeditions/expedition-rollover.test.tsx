@@ -74,7 +74,7 @@ beforeEach(() => {
   Object.assign(world, { chainDay: 1, blockDay: 1, player: "0x1" });
   world.navigate.mockReset();
   world.rebuild.mockReset();
-  useDayEndStore.setState({ ...RESTING, summaryShown: true });
+  useDayEndStore.setState({ ...RESTING, summary: "shown" });
 });
 
 afterEach(() => {

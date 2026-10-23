@@ -27,7 +27,7 @@ const render = (props: Partial<Parameters<typeof TodaySheet>[0]>) => {
           today
           totals={totals}
           lines={[{ id: "a", at: 0, text: "Army 1 cleared a camp" }]}
-          failed={false}
+          history="whole"
           onRetry={vi.fn()}
           onClose={vi.fn()}
           {...props}
@@ -91,11 +91,20 @@ describe("Today", () => {
 
   it("says the log did not answer, with Try again, in the log's place", () => {
     const onRetry = vi.fn();
-    const { host, unmount } = render({ failed: true, onRetry });
+    const { host, unmount } = render({ history: "failed", onRetry });
     expect(host.textContent).toContain("Today did not answer.");
     expect(host.textContent).not.toContain("Army 1 cleared a camp");
     act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Try again")!.click());
     expect(onRetry).toHaveBeenCalled();
+    unmount();
+  });
+
+  it("says when the player's history no longer reaches back to the day's start, and keeps the log it has", () => {
+    const { host, unmount } = render({ history: "short", totals: { ...totals, reveals: undefined } });
+    expect(host.querySelector('[role="status"]')?.textContent).toBe(
+      "Your history no longer reaches back to this day's start, so its totals are unknown.",
+    );
+    expect(host.textContent).toContain("Army 1 cleared a camp");
     unmount();
   });
 });

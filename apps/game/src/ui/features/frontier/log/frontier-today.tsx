@@ -49,7 +49,7 @@ export const FrontierToday = ({
       lines={logLines(played.stories, setup.store)}
       armiesToUpgrade={onOpenArmy && day === today ? buyers.length : undefined}
       onArmies={onOpenArmy && buyers[0] ? () => onOpenArmy(buyers[0]!.explorerId) : undefined}
-      failed={played.failed}
+      history={played.history}
       onRetry={played.retry}
       onEarlier={day !== undefined && day > 1 ? () => step(day - 1) : undefined}
       onLater={day !== undefined && today !== undefined && day < today ? () => step(day + 1) : undefined}
