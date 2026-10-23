@@ -1,9 +1,10 @@
 import { formatAmount, formatClockTime } from "@bibliothecadao/types";
 import { HudEventRow, HudIconButton, HudNotice, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { DAY, TODAY, TODAY_ERROR } from "@/ui/design-system/kit/words";
+import { DAY, DAY_HISTORY_SHORT, TODAY, TODAY_ERROR } from "@/ui/design-system/kit/words";
 import { Icon } from "@/ui/design-system/icon";
 
 import { type DayTotals, DayTotalsGrid } from "./day-totals";
+import type { DayHistory } from "./player-day";
 
 /** One line of the day's log: when (unix seconds) and what happened. */
 export type LogLine = { id: string; at: number; text: string };
@@ -11,7 +12,7 @@ export type LogLine = { id: string; at: number; text: string };
 /**
  * Today (wireframe 12), a sheet from the Menu: the day's totals, the armies with a tier to buy, the day's log newest
  * first, and the stepper to earlier days. The clock is on the strip, not repeated. When the log did not answer, its
- * card says so, with Try again.
+ * card says so, with Try again; when the history no longer reaches back to the day's start, it says so above the log.
  */
 export const TodaySheet = ({
   day,
@@ -19,7 +20,7 @@ export const TodaySheet = ({
   totals,
   armiesToUpgrade,
   lines,
-  failed,
+  history,
   onRetry,
   onEarlier,
   onLater,
@@ -33,7 +34,8 @@ export const TodaySheet = ({
   /** Armies with an attribute tier their XP can buy; absent until the army's XP is read. */
   armiesToUpgrade?: number;
   lines: readonly LogLine[];
-  failed: boolean;
+  /** How much of the day the player's history gives. */
+  history: DayHistory;
   onRetry: () => void;
   /** Absent on the season's first day. */
   onEarlier?: () => void;
@@ -50,7 +52,8 @@ export const TodaySheet = ({
       {armiesToUpgrade !== undefined && armiesToUpgrade > 0 && (
         <HudRow lead={<Icon name="picks" size={22} />} title={formatAmount(armiesToUpgrade)} onClick={onArmies} />
       )}
-      {failed ? (
+      {history === "short" && <HudNotice line={DAY_HISTORY_SHORT} />}
+      {history === "failed" ? (
         <HudNotice tone="bad" line={TODAY_ERROR} retry={onRetry} />
       ) : (
         <ol className="flex max-h-hud-list flex-col overflow-y-auto">

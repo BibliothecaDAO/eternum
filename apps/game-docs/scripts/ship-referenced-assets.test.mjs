@@ -34,15 +34,19 @@ test("every same-site link, image, video, srcset and CSS reference is read, rela
 });
 
 /** Runs the step on a built site holding one page with this body. */
-const run = (body) => {
+const run = (body, redirects = "") => {
   const dist = mkdtempSync(join(tmpdir(), "docs-assets-"));
   try {
     mkdirSync(join(dist, "page"));
     writeFileSync(join(dist, "page", "index.html"), `<html><body>${body}</body></html>`);
-    const result = spawnSync(process.execPath, [script.pathname, dist], { encoding: "utf8" });
+    const redirectsFile = join(dist, "..", `${dist.split("/").pop()}-redirects`);
+    writeFileSync(redirectsFile, redirects);
+    const result = spawnSync(process.execPath, [script.pathname, dist, redirectsFile], { encoding: "utf8" });
+    rmSync(redirectsFile);
     return {
       status: result.status,
       stderr: result.stderr,
+      redirectsShipped: existsSync(join(dist, "_redirects")),
       shipped: existsSync(join(dist, "images/buildings/construction/farm.png")),
     };
   } finally {
@@ -68,4 +72,17 @@ test("a link to a page the site has passes; a link to a page it lacks fails, nam
   assert.equal(status, 1);
   assert.match(stderr, /^\/blitz\/military\/troops: no such page or file, named by page\/index\.html$/m);
   assert.doesNotMatch(stderr, /^\/page\/:/m);
+});
+
+test("a redirect ships with the build when its target is a page and its old address is not", () => {
+  const { status, redirectsShipped } = run("", "# moved\n/old-page /page 301\n/old-page/ /page 301\n");
+  assert.equal(status, 0);
+  assert.equal(redirectsShipped, true);
+});
+
+test("a redirect to a page the site lacks, or from a page it still has, fails", () => {
+  const { status, stderr } = run("", "/old-page /gone 301\n/page /elsewhere 301\n");
+  assert.equal(status, 1);
+  assert.match(stderr, /^\/gone: no such page or file, named by _redirects \(from \/old-page\)$/m);
+  assert.match(stderr, /^\/page: redirected in _redirects, but the site still has this page$/m);
 });

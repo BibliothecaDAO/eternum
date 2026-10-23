@@ -50,7 +50,7 @@ it("offers a signed-out reader Sign in and How to play on the Blitz guide in a n
   const controls = [...body(page).querySelectorAll("a, button")].map((control) => control.textContent);
   expect(controls).toEqual(["Sign in", "How to play"]);
   const docs = body(page).querySelector<HTMLAnchorElement>("a")!;
-  expect([docs.href, docs.target]).toEqual(["https://docs.realms.party/blitz/key-concepts", "_blank"]);
+  expect([docs.href, docs.target]).toEqual(["https://docs.realms.party/blitz", "_blank"]);
 });
 
 // The docs site answers every address with its shell, so a page renamed there would open blank: the guide must be a
@@ -58,6 +58,9 @@ it("offers a signed-out reader Sign in and How to play on the Blitz guide in a n
 it("opens How to play on a page the docs site has", () => {
   const { pathname } = new URL(HOW_TO_PLAY);
   const apps = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
-  const page = join(apps, "game-docs/docs/pages", `${pathname}.mdx`);
-  expect([relative(apps, page), existsSync(page)]).toEqual(["game-docs/docs/pages/blitz/key-concepts.mdx", true]);
+  // A page is its path's own file, or the index of the folder the path names.
+  const page = [`${pathname}.mdx`, `${pathname}/index.mdx`]
+    .map((file) => join(apps, "game-docs/docs/pages", file))
+    .find((file) => existsSync(file));
+  expect(page && relative(apps, page)).toBe("game-docs/docs/pages/blitz/index.mdx");
 });

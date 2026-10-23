@@ -17,6 +17,8 @@ export const dayEndSummary = (now: number, onContinue: () => void): Parameters<t
   endedDay: 1,
   clock: { endsAt: now + 12 * 3_600, secondsLeft: 12 * 3_600, tomorrowSeconds: 20 * 3_600, tone: "calm" },
   totals: { reveals: 17, cleared: 2, chests: 0, essence: 969, labor: 2_027, lords: 0 },
+  history: "whole",
+  onRetry: () => undefined,
   armies: 0,
   troopsLost: 0,
   onContinue,

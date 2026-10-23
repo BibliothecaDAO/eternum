@@ -7,9 +7,6 @@ import {
   readConfirmedLedgerHead,
 } from "./codecs";
 
-/** Registration freezes before the common game clock starts, leaving time to create and seat every group. */
-export const BLITZ_SLOT_PREPARATION_SECONDS = 300;
-
 /** The ledger requires strictly more than ten minutes after a game's end to settle its result. */
 const BLITZ_SETTLEMENT_MARGIN_SECONDS = 600;
 

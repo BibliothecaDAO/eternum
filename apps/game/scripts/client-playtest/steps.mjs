@@ -84,6 +84,8 @@ export const SPECTATOR_STEPS = [
   { name: "pan", play: panTheMap, settleMs: 17_000, verify: panned(inScene("map")) },
   { name: "zoom", play: zoomOutAndIn, settleMs: 1_000, verify: zoomedOutAndIn(inScene("map")) },
   { name: "season", play: readTheSeason, settleMs: 1_000, verify: seasonReadAndClosed },
+  { name: "open-feed-event", play: openAFeedEvent, settleMs: 3_000, verify: openedInThePage },
+  { name: "visit-realm", play: visitOtherRealms, settleMs: 0, verify: visitedInThePage },
   { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 8_000, verify: inScene("hex") },
   { name: "return-to-map", play: goTo("Map", "map"), settleMs: 8_000, verify: inScene("map") },
   { name: "steady", settleMs: 60_000, verify: inScene("map") },
@@ -372,6 +374,140 @@ async function readTheSeason(input) {
   browser.click("Season");
   await sleep(1_000);
   return { desktop: true, opened, closed: browser.observe() };
+}
+
+/** The route's hex as the address names it: normalized, the same place on every client. */
+const ROUTE_HEX_EXPRESSION = `JSON.stringify((() => {
+  const query = new URLSearchParams(location.search);
+  return query.has("col") && query.has("row") ? { col: Number(query.get("col")), row: Number(query.get("row")) } : null;
+})())`;
+
+/** How far apart two route hexes are, along the larger axis; the map redraws around a place past 8,192 hexes. */
+const hexesApart = (from, to) =>
+  from && to ? Math.max(Math.abs(from.col - to.col), Math.abs(from.row - to.row)) : null;
+
+/**
+ * The Feed's first story that still opens a place (one from a closed Frontier day is no link), pressed as a player
+ * presses it: the map goes where it happened. Frontier's realms stand millions of hexes apart, so a story of another
+ * realm is a far jump.
+ */
+async function openAFeedEvent({ browser }) {
+  const before = browser.observe();
+  const from = browser.read(ROUTE_HEX_EXPRESSION);
+  // A row's button is named by its words, time and line run together; the browser presses the first one where it is.
+  const row = browser.read(`JSON.stringify(document.querySelector(".ui-event__open")?.textContent.trim() ?? null)`);
+  if (!row) return { row: null };
+  browser.run(["click", ".ui-event__open"]);
+  await waitFor(browser, (seen) => seen.playable && seen.scene === "map", SCENE_WAIT_MS);
+  const to = browser.read(ROUTE_HEX_EXPRESSION);
+  return { row, from, to, apart: hexesApart(from, to), reloaded: browser.observe().timeOrigin !== before.timeOrigin };
+}
+
+/**
+ * A story opens in the page, never by loading it again, on the map at the story's place, with what is there selected:
+ * the selected tile (a contract hex) is the route's (a normalized hex), one map centre apart on both axes.
+ */
+function openedInThePage({ seen, played }) {
+  if (!played.row) return blocked("the Feed showed no story that opens a place", played);
+  if (played.reloaded) return failed("the page loaded again to open the story", played);
+  if (!played.to) return failed("the story's address names no hex", played);
+  const scene = inScene("map")({ seen });
+  if (scene.status !== "completed") return scene;
+  const missed = placeMissed(seen, played.to);
+  return missed ? failed(`the story's place: ${missed}`, played) : completed(played);
+}
+
+/**
+ * Why the map does not stand on a link's place, or null: that tile is selected (a contract hex, one map centre from the
+ * address's normalized hex on both axes) and the camera looks at it.
+ */
+function placeMissed(seen, address) {
+  const hex = seen.selection?.hex;
+  if (!hex) return "nothing was selected";
+  if (hex.col - address.col !== hex.row - address.row)
+    return `the selected tile ${JSON.stringify(hex)} is not the address's ${JSON.stringify(address)}`;
+  const camera = seen.selection?.camera;
+  if (camera?.col !== hex.col || camera?.row !== hex.row)
+    return `the camera looks at ${JSON.stringify(camera ?? null)}, not the selected tile ${JSON.stringify(hex)}`;
+  return null;
+}
+
+/**
+ * Other realms visited from the Season's board, one after the other, as a player does: its second row, then its third
+ * (the board's leader is the realm a spectator watches first), each by Visit, the realm it opens, then the world map
+ * on it. The second visit is the one that follows another realm.
+ */
+async function visitOtherRealms({ browser }) {
+  const visits = [];
+  for (const index of [1, 2]) {
+    const visit = await visitRow(browser, index);
+    visits.push(visit);
+    if (!visit.row) break;
+  }
+  return { visits };
+}
+
+async function visitRow(browser, index) {
+  const before = browser.observe();
+  const from = browser.read(ROUTE_HEX_EXPRESSION);
+  if (onADesktop()) browser.click("Season");
+  else {
+    browser.click("Menu");
+    await sleep(1_500);
+    browser.click("Season");
+  }
+  await sleep(2_000);
+  const rows = `[...document.querySelectorAll('button[aria-label^="#"]')].map((row) => row.getAttribute("aria-label"))`;
+  const row = browser.read(`JSON.stringify(${rows})`)[index] ?? null;
+  if (!row) return { row: null };
+  browser.click(row);
+  await sleep(1_500);
+  browser.click("Visit");
+  const realm = await arrives(browser, "Realm", "hex");
+  const realmHex = browser.read(ROUTE_HEX_EXPRESSION);
+  pressPlace(browser, "Map");
+  const map = await arrives(browser, "Map", "map");
+  const mapHex = browser.read(ROUTE_HEX_EXPRESSION);
+  const seen = browser.observe();
+  return {
+    row,
+    realm,
+    map,
+    realmHex,
+    mapHex,
+    apart: hexesApart(from, mapHex),
+    reloaded: seen.timeOrigin !== before.timeOrigin,
+    seen,
+  };
+}
+
+/**
+ * Each visit opened the realm and then the map on it, in the page: never loaded again, never elsewhere, the visited
+ * realm selected and the camera on it, whatever realm came before.
+ */
+function visitedInThePage({ played }) {
+  const [first] = played.visits;
+  if (!first?.row) return blocked("the Season's board listed no other realm to visit", played);
+  for (const [index, visit] of played.visits.entries()) {
+    const missed = visitMissed(visit);
+    if (missed) return failed(`visit ${index + 1} (${visit.row ?? "no row"}): ${missed}`, played);
+  }
+  return completed(played);
+}
+
+/** Why a visit did not land on its realm in the page, or null. */
+function visitMissed(visit) {
+  if (!visit.row) return "the Season's board listed no realm to visit";
+  if (visit.reloaded) return "the page loaded again";
+  if (!visit.realm) return "the realm never opened";
+  if (!visit.map) return "the map never opened on it";
+  if (hexesApart(visit.realmHex, visit.mapHex) !== 0)
+    return `the map opened at ${JSON.stringify(visit.mapHex)}, not the realm's ${JSON.stringify(visit.realmHex)}`;
+  const scene = inScene("map")({ seen: visit.seen });
+  if (scene.status !== "completed") return scene.reason;
+  const realm = visit.seen.selection?.structure;
+  if (!realm?.realm || realm.ownedByViewer) return "it is not the realm selected";
+  return placeMissed(visit.seen, visit.mapHex);
 }
 
 /** A desktop's Season page drew with its place pressed, then closed; a phone's Menu sheet opened, then closed. */
@@ -1151,6 +1287,99 @@ function armyEnteredEtherealII({ played }) {
 
 const SPIRE_WAIT_MS = 5_000;
 
+const labDayTurn = (scenario) => ({
+  mode: "frontier",
+  lab: scenario,
+  chainId: "0x1ab9",
+  gameId: 1,
+  card: FRONTIER.card,
+});
+
+/**
+ * Realm 7's day 2 ending on prod's recorded history (src/lab/game/day-turn-scenario.ts), in the session (day-turn,
+ * day-turn-slow) or before it opened (day-later, day-later-short), the map opened where the realm stood on day 2: the
+ * summary rises with what the player's history gives of day 2, and Continue brings the camera onto the realm's day-3
+ * site.
+ */
+const labDayTurnSteps = (expected) => [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "day-summary", play: readTheDaySummary, settleMs: 0, verify: summaryShows(expected) },
+  { name: "continue", play: continueIntoTheNewDay, settleMs: 0, verify: cameraOnTheNewSite },
+];
+
+/** Prod's leading player's own day 2: 35 reveals and 5 sites cleared, paying 7,246 Essence and 524 Labor. */
+const RECORDED_DAY_2 = {
+  totals: ["35Reveals", "5Sites cleared", "0Chests", "+7,246Essence", "+524Labor", "+0LORDS"],
+  notice: null,
+};
+/** Day 2 past the history read: each total a dash, and the card says why. */
+const DAY_2_OUT_OF_REACH = {
+  totals: ["—Reveals", "—Sites cleared", "—Chests", "—Essence", "—Labor", "—LORDS"],
+  notice: "Your history no longer reaches back to this day's start, so its totals are unknown.",
+};
+/** Realm 7's site on day 3 of the lab's calendar: its region's column, four regions a day down (contract hexes). */
+const LAB_DAY_3_SITE = { col: 650, row: 850 };
+/** The live turn waits for the day's last seconds and the mist, and a slow history for its answer after the moment. */
+const DAY_SUMMARY_WAIT_MS = 90_000;
+const NEW_DAY_WAIT_MS = 20_000;
+/** The camera's hex is reported at most every 100 ms. */
+const CAMERA_REPORT_MS = 1_000;
+const DAY_END_STATE = `JSON.stringify({
+  phase: document.querySelector("[data-day-end]")?.dataset.dayEnd ?? "day",
+  card: document.querySelector("section[aria-label$=' done']")?.getAttribute("aria-label") ?? null,
+  totals: [...document.querySelectorAll("section[aria-label$=' done'] [data-total]")].map((cell) => cell.textContent),
+  notice: document.querySelector("section[aria-label$=' done'] .ui-notice")?.textContent ?? null,
+  camera: window.__eternumMapSelection?.camera ?? null,
+})`;
+
+/** Waits for the ended day's summary over the map, and reads it and where the camera looks. */
+async function readTheDaySummary({ browser }) {
+  return readUntil(
+    () => browser.read(DAY_END_STATE),
+    (shown) => shown.card !== null,
+    DAY_SUMMARY_WAIT_MS,
+  );
+}
+
+function summaryShows(expected) {
+  return ({ played }) => {
+    if (played.card !== "Day 2 done") return failed(`the summary shown is ${played.card ?? "none"}`, played);
+    if (JSON.stringify(played.totals) !== JSON.stringify(expected.totals))
+      return failed(`the summary counts ${played.totals.join(", ")}`, played);
+    if (played.notice !== expected.notice)
+      return failed(
+        `the summary says ${JSON.stringify(played.notice)}, not ${JSON.stringify(expected.notice)}`,
+        played,
+      );
+    return completed(played);
+  };
+}
+
+/** Presses Continue, waits for the screen to come back up on the new day, and reads where the camera looks. */
+async function continueIntoTheNewDay({ browser }) {
+  const before = browser.read(DAY_END_STATE);
+  browser.click("Continue");
+  await readUntil(
+    () => browser.read(DAY_END_STATE),
+    (shown) => shown.phase === "day",
+    NEW_DAY_WAIT_MS,
+  );
+  await sleep(CAMERA_REPORT_MS);
+  return { before, after: browser.read(DAY_END_STATE) };
+}
+
+function cameraOnTheNewSite({ played }) {
+  const { before, after } = played;
+  if (after.phase !== "day") return failed(`the screen is still on the day's end (${after.phase})`, played);
+  const on = after.camera;
+  if (!on || Math.abs(on.col - LAB_DAY_3_SITE.col) > 1 || Math.abs(on.row - LAB_DAY_3_SITE.row) > 1)
+    return failed(
+      `the camera looks at ${JSON.stringify(on)}, not the realm's day-3 site ${JSON.stringify(LAB_DAY_3_SITE)}`,
+      played,
+    );
+  return completed({ before: before.camera, after: on, site: LAB_DAY_3_SITE });
+}
+
 /** Reads the page until what it shows is done, or the time is up; the last reading either way. */
 async function readUntil(read, done, timeoutMs) {
   const startedAt = Date.now();
@@ -1189,6 +1418,10 @@ export const STEP_SETS = {
     devOverlays: true,
   },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },
+  "lab-day-later": { game: labDayTurn("day-later"), steps: labDayTurnSteps(RECORDED_DAY_2) },
+  "lab-day-turn-slow": { game: labDayTurn("day-turn-slow"), steps: labDayTurnSteps(RECORDED_DAY_2) },
+  "lab-day-later-short": { game: labDayTurn("day-later-short"), steps: labDayTurnSteps(DAY_2_OUT_OF_REACH) },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },

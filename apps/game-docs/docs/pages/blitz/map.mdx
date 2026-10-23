@@ -1,0 +1,79 @@
+---
+title: The map
+description: The layout, exploring, spires, relic crates and relics, and the structures worth taking
+---
+
+import { BLITZ } from "@/utils/blitz";
+import { ExplorationRewards } from "@/components/blitz-components/ExplorationRewards";
+import { HyperstructureRings } from "@/components/blitz-components/HyperstructureRings";
+import RelicTable, { RelicPackTable } from "@/components/blitz-components/RelicTable";
+import { Shot, Video } from "@/components/Media";
+
+# The map
+
+## The layout
+
+The map starts dark. At the start everyone sees every realm with the tiles around it, and every Hyperstructure site.
+Once a tile is explored, everyone sees it.
+
+Hyperstructure sites stand in rings around the centre of the map, {BLITZ.map.ringStep} hexes apart, and the number of
+rings grows with the number of players in the game:
+
+<HyperstructureRings />
+
+Each player's three realms stand close together, three hexes apart, among the rings.
+
+## Exploring
+
+An army beside an unexplored tile can explore it, for {BLITZ.stamina.explore} stamina. The tile is revealed to everyone,
+scores {BLITZ.points.tile} points, and pays the army's home realm one of the finds below: a share of the army's strength
+(its troop count times its tier's strength), counted up to {BLITZ.map.exploreCap}. An Exploration Reward relic adds its
+bonus on top.
+
+<ExplorationRewards />
+
+<Video name="blitz/explore" caption="An army explores, and each tile it reveals is drawn as it lands." />
+
+A revealed tile can also hold something:
+
+| Find            | Chance per reveal     |
+| --------------- | --------------------- |
+| A dormant spire | {BLITZ.map.spireFind} |
+| An Essence Rift | {BLITZ.map.riftFind}  |
+| A camp          | {BLITZ.map.campFind}  |
+
+**Dormant spires.** The finder's realm receives {BLITZ.map.spireEssence} Essence once, plus any active Exploration
+Reward relic bonus. The spire then stands on its tile for the rest of the game, blocking it.
+
+## Relic crates
+
+When a player explores and no crate has appeared for {BLITZ.map.crateMinutes} minutes, a relic crate appears within{" "}
+{BLITZ.map.crateHexes} hexes of the explored tile, where everyone can see it. An army beside it opens it: its pack of
+three relics is revealed, the army keeps the army relics, and the realm relics go to that army's home realm. Opening a
+crate scores {BLITZ.points.crate} points.
+
+<RelicPackTable />
+
+<Video frame="wide" name="blitz/open-crate" caption="A relic crate opened beside an army, and its three relics." />
+
+## Relics
+
+A relic is activated by the army or the realm that holds it, for Essence. A timed relic works for{" "}
+{BLITZ.map.relicMinutes} minutes.
+
+<RelicTable />
+
+## Camps, Essence Rifts and Hyperstructures
+
+Each is held by bandits until a player clears its guard and claims it ([Armies and combat](/blitz/armies#capturing)).
+
+- **Camps** start with one T1 guard of {BLITZ.map.lightGuard} troops. A claimed camp holds {BLITZ.map.camp.wheat} wheat,
+  {BLITZ.map.camp.labor} labor and {BLITZ.map.camp.donkeys} donkeys, makes {BLITZ.map.campLaborPerSecond} labor a
+  second, runs production, and fields one army.
+- **Essence Rifts** start with one T1 guard of {BLITZ.map.lightGuard} troops. A held rift makes{" "}
+  {BLITZ.map.riftPerSecond} Essence a second, {BLITZ.map.riftTotal} in all.
+- **Hyperstructures** are founded by any player on a site: double-click the site, or press **Create here** on its panel.
+  It rises guarded by three T2 bandit guards of {BLITZ.map.heavyGuard} troops each. Claiming it scores points once, and
+  holding it scores points every second ([Points, results and prizes](/blitz/scoring)).
+
+<Video name="blitz/hyperstructure" caption="A Hyperstructure rising on its site." />

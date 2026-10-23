@@ -1,0 +1,85 @@
+---
+title: Frontier
+description: What Frontier is, and what you can and can't do in it
+---
+
+import { FRONTIER } from "@/utils/frontier";
+import { Shot, Video } from "@/components/Media";
+
+# Frontier
+
+Frontier is free to play. Every day a new map opens around your realm. Your armies explore it, clear what guards it, and
+send home what they find. No other player can attack you.
+
+<Video
+  name="frontier/realm-tiers"
+  caption="Your realm grows as its castle rises, and is raised again on every new map with all it holds."
+/>
+
+## The day
+
+1. **Deploy.** Barracks train troops at your realm. Deploying puts them on a tile beside it as an army.
+2. **Explore.** The map is hidden until you walk it. What sits on a tile is decided the moment an army reveals it, so
+   nobody can scout ahead. Each tile an army reveals sends Essence or labor home.
+3. **Clear.** Trolls, rifts, ruins and beasts guard their sites. Each shows its guard and what it pays before you
+   attack.
+4. **Bring it home.** Everything a reveal or a clear pays goes straight to your realm. An army never carries anything
+   worth losing.
+
+A day lasts {FRONTIER.day.shortestHours} to {FRONTIER.day.longestHours} hours. The lengths are drawn for the whole
+season in bags of {FRONTIER.day.daysPerBag} days, one of each length, {FRONTIER.day.bagHours} hours a bag. No bag opens
+with the shortest day, and two shortest days never follow each other. The top bar shows when today ends and how long
+tomorrow lasts.
+
+When the day ends, the map and every army on it are gone. Your realm is raised again on the next map with everything it
+holds.
+
+| Gone when the day ends            | Kept by your realm                   |
+| --------------------------------- | ------------------------------------ |
+| The map and its fog               | Its buildings, castle and research   |
+| Every Troll, rift, ruin and beast | Its troops, wheat, labor and Essence |
+| Every army you sent out           | Its LORDS                            |
+
+## What you can do
+
+- Found your realm for free the first time you enter, on any day of the season.
+- Build farms, barracks, workshops, workers' huts and four training buildings, and raise your castle.
+- Research each building type up to legendary, then shrines, wells and the three Ethereal depths.
+- Field {FRONTIER.realm.armies[0]} armies of Knights, and up to {FRONTIER.realm.armies[3]} as the castle rises.
+- Explore, move, and fight the guards of Trolls, rifts, ruins and beasts.
+- Spend each army's XP on Battle, Logistics, Scouting and Homecoming.
+- Use a shrine or a well beside one of your armies.
+- Open chests, Refill stamina with LORDS, and withdraw LORDS to your payout wallet.
+- Merge two of your armies standing side by side, or disband one.
+- Claim labor each day for every Realm in your payout wallet.
+- Visit another player's realm from the Season board.
+
+## What you can't do
+
+- Fight another player, or be attacked by one. Your realm has no guard slots because nothing can reach it.
+- Trade, bridge, or send anything to another player.
+- Raise Crossbowmen, Paladins, or troops above T1.
+- Keep the map or your armies after the day ends.
+- Use relics, join a tribe, pledge faith, or build a Hyperstructure.
+- Win or lose a fight by luck: no dice are rolled, so a fight's forecast is its result.
+
+<Shot
+  name="frontier/hud"
+  caption="Frontier on a desktop: your realm and its armies on the left, the feed on the right, the minimap below."
+/>
+
+## Your first day
+
+Your realm is founded the first time you enter the Frontier season, and from then on it is raised again on every new
+map, in its own stretch of wilderness. Entry is free and open for the whole season, so a player who arrives late starts
+the same way as one who arrived on day one.
+
+A new realm starts with {FRONTIER.realm.troops} troops, {FRONTIER.realm.wheat} wheat and {FRONTIER.realm.labor} labor.
+Build barracks, deploy an army, and walk it into the fog.
+
+## Next
+
+- [Your realm](/frontier/realm): build the realm that feeds your armies.
+- [Armies](/frontier/armies): field your armies, keep them going, and level them up.
+- [The expedition](/frontier/expedition): read the day's map and pick the fights you can win.
+- [Chests and LORDS](/frontier/chests): what a ruin's chest and a wild chest pay.

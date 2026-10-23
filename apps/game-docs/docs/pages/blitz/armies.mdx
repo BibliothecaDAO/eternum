@@ -1,0 +1,124 @@
+---
+title: Armies and combat
+description: Starting forces, deployment, stamina, biomes, damage, troop roles and capture
+---
+
+import { BLITZ } from "@/utils/blitz";
+import { startingForcesOf } from "@/utils/config";
+import { BiomeCombat } from "@/components/BiomeCombat";
+import { BiomeStamina } from "@/components/BiomeStamina";
+import { Shot, Video } from "@/components/Media";
+
+# Armies and combat
+
+An army holds one troop type at one tier. Each hex holds one army.
+
+## Starting forces
+
+Each of your three realms is dealt one troop type, one realm Knights, one Crossbowmen and one Paladins, in an order
+drawn for you. Each starts with {startingForcesOf("blitz").garrison} T1 troops of its type garrisoned and{" "}
+{startingForcesOf("blitz").reserve} in reserve. No army stands on the map at the start: create one from the reserve.
+
+Barracks make more: T1 troops from wheat and a resource, T2 from T1 troops, T3 from T2
+([Realms and production](/blitz/realms#production)).
+
+## Tiers and deployment
+
+A troop's strength is its count times its tier's strength: {BLITZ.troops.strength[0]} for T1,{" "}
+{BLITZ.troops.strength[1]} for T2, {BLITZ.troops.strength[2]} for T3. A realm's level caps the strength of one army
+([Realms and production](/blitz/realms#levels)), and the largest army is that cap divided by its tier's strength,
+times{" "} {BLITZ.troops.sizeModifier[0]} for T1, {BLITZ.troops.sizeModifier[1]} for T2 and
+{BLITZ.troops.sizeModifier[2]} for T3.
+
+**Field armies** stand on the map. Select your realm and right-click a free tile beside it to deploy one there, or use
+the Military window (`M`). A new army starts with {BLITZ.stamina.start} stamina.
+
+**Guards** stand in a structure's guard slots and do not appear on the map. An attacker meets them one slot at a time. A
+slot whose guard falls cannot take a new one for {BLITZ.troops.guardRefillMinutes} minutes. A guard can attack an army
+beside its structure.
+
+<Shot
+  frame="panel"
+  name="blitz/deploy"
+  caption="Deploying beside a realm: how many troops, the stamina they start on, and the cost."
+/>
+
+## Merging and moving troops
+
+Select an army, then right-click another of your armies or one of your structures beside it: the transfer panel moves
+troops between them, across your realms too. Both sides must hold the same troop type and tier; an empty guard slot
+takes any type and tier, and only from an army. A guard cannot move straight to another guard slot. The army that
+receives troops keeps the lower of the two staminas and the longer of the two battle timers.
+
+## Stamina
+
+A T1 army holds {BLITZ.stamina.max} stamina, a T2 army {BLITZ.stamina.t2} and a T3 army {BLITZ.stamina.t3}. Each
+recovers {BLITZ.stamina.perTick} every {BLITZ.game.tickSeconds} seconds. Exploring a tile costs {BLITZ.stamina.explore}.
+A step onto a known tile costs {BLITZ.stamina.step}, {BLITZ.stamina.biomeStep} more or less by biome and troop type.
+Moving and exploring also cost {BLITZ.stamina.wheatPerTroop} wheat a troop, from the army's home realm.
+
+<BiomeStamina mode="blitz" />
+
+## Attacking
+
+Select an army and right-click an enemy within reach: the attack forecast opens with each side's losses, and **Attack**
+sends it. Attacking takes {BLITZ.stamina.attack} stamina; without it, the attack is refused. The defender spends{" "}
+{BLITZ.stamina.defense} stamina, and deals {BLITZ.troops.lowStaminaPenalty} less damage without it.
+
+<Shot frame="panel" name="blitz/attack-forecast" caption="The attack forecast: each side's troops before and after." />
+
+**Biomes.** Each troop type fights {BLITZ.troops.biomeBonus} better or worse on some biomes. The biome is the defender's
+tile.
+
+<BiomeCombat mode="blitz" />
+
+**Damage.** Both sides strike in the same exchange. Each side deals {BLITZ.combat.scale} × its troops × its tier's
+weight ÷ the other side's tier weight ÷ (both sides' troops together)<sup>{BLITZ.combat.sizeExponent}</sup>. The tier
+weights are {BLITZ.combat.tierWeights[0]} for T1, {BLITZ.combat.tierWeights[1]} for T2 and{" "}
+{BLITZ.combat.tierWeights[2]} for T3. On top of that:
+
+- the biome adds or takes {BLITZ.troops.biomeBonus}, as the table above shows;
+- a defender without the stamina to defend deals {BLITZ.troops.lowStaminaPenalty} less;
+- a defender still on its battle timer deals {BLITZ.troops.timerPenalty} less;
+- relics and the troop roles below add their own.
+
+Blitz rolls no dice, so the attack forecast is the result. For example, {BLITZ.combat.exampleTroops} Knights attack{" "}
+{BLITZ.combat.exampleTroops} T1 Knights on grassland, where Knights have no biome edge:
+
+| Attacking tier                 | Defenders lost                          | Attackers lost                          | Attacker's battle timer                        | Attacker's stamina spent               |
+| ------------------------------ | --------------------------------------- | --------------------------------------- | ---------------------------------------------- | -------------------------------------- |
+| {BLITZ.combat.example[0].tier} | {BLITZ.combat.example[0].defendersLost} | {BLITZ.combat.example[0].attackersLost} | {BLITZ.combat.example[0].attackerWait} seconds | {BLITZ.combat.example[0].staminaSpent} |
+| {BLITZ.combat.example[1].tier} | {BLITZ.combat.example[1].defendersLost} | {BLITZ.combat.example[1].attackersLost} | {BLITZ.combat.example[1].attackerWait} seconds | {BLITZ.combat.example[1].staminaSpent} |
+| {BLITZ.combat.example[2].tier} | {BLITZ.combat.example[2].defendersLost} | {BLITZ.combat.example[2].attackersLost} | {BLITZ.combat.example[2].attackerWait} seconds | {BLITZ.combat.example[2].staminaSpent} |
+
+**Battle timer.** An army cannot attack while its battle timer runs. A fight at close range adds up to{" "}
+{BLITZ.troops.cooldownSeconds} seconds to each side's timer and spends the stamina the fight took. A side that dealt
+more than {BLITZ.combat.refundFrom} times the damage it took has less time added and gets some of that stamina back. At
+{BLITZ.combat.refundFull} times or more it has none added and gets all of it back. A ranged attack adds{" "}
+{BLITZ.combat.rangedWaitSeconds} seconds to both timers.
+
+The time is added to what is left on a timer, so a defender attacked again before its timer ends waits longer. For
+example, {BLITZ.combat.exampleTroops} T1 Knights attack {BLITZ.combat.exampleTroops} T1 Knights with{" "}
+{BLITZ.combat.waitingDefender.melee.defenderBefore} seconds left on their timer: the defenders then wait{" "}
+{BLITZ.combat.waitingDefender.melee.defenderAfter} seconds and the attackers{" "}
+{BLITZ.combat.waitingDefender.melee.attackerWait}. If {BLITZ.combat.exampleTroops} T1 Crossbowmen attack them from range
+instead, the defenders wait {BLITZ.combat.waitingDefender.ranged.defenderAfter} seconds and the Crossbowmen{" "}
+{BLITZ.combat.waitingDefender.ranged.attackerWait}.
+
+<Video name="blitz/battle" caption="A battle: the attacker strikes, the defender falls." />
+
+## Troop roles
+
+- **Knights** deal {BLITZ.troops.knightAssault} more damage attacking a structure's guards from beside it, and as guards
+  take {BLITZ.troops.knightGuard} less damage.
+- **Crossbowmen** can attack from {BLITZ.troops.crossbowRange} hexes away. A ranged attack still costs the attacker{" "}
+  {BLITZ.stamina.attack} stamina, but the target spends only {BLITZ.stamina.rangedDefense} and strikes no blow back. It
+  deals {BLITZ.troops.rangedOnArmies} of its damage to an army and {BLITZ.troops.rangedOnGuards} to a structure's
+  guards, ignores biomes, and adds half as much to the battle timers. A ranged attack never claims a structure.
+- **Paladins** have no combat bonus, and open ground costs them the least stamina.
+
+## Capturing
+
+When a structure's last guard falls, an army beside it claims it. Realms, camps, Essence Rifts and Hyperstructures can
+all be captured, and a captured realm's armies go with it. A player who loses their last realm watches the rest of the
+game.

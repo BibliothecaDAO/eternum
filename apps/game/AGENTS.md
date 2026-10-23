@@ -68,7 +68,10 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   at most seven parts in each region, and on a desktop the minimap.
 - **As a spectator** (default), from a fresh browser profile (cold cache): enter on the map (a Frontier session opens
   there, the realm one press away), the HUD's layout, map idle, pan (WASD), zoom out and in, the season (a desktop's
-  Season place and its page; a phone's Menu), the realm and back to the map, then a minute of watching.
+  Season place and its page; a phone's Menu), the Feed's first story that is a link (the map on its place, that tile
+  selected, the page never loaded again), visits to the board's second and third realms in turn (each by Visit, its
+  realm, then the map on it, in the same page, that realm selected and the camera on it), the realm and back to the map,
+  then a minute of watching.
 - **As a player** (`--player <email>`), entering through the Frontier card's Resume or Play on the home page with the
   browser's own click, and past a new day's summary (Continue): enter on the map, select the army with the most stamina,
   open and close production, the next order's life (below), explore twice (tap a tile beside the army, Enter; on a
@@ -147,9 +150,15 @@ dev overlays on, as the plate lists do), `--steps lab-spire` (no live game: the 
 signed commands are recorded in `window.__labChain` and answered as the contract applies them; the army selected from
 the dock, the tile beside it whose hover offers "Enter a depth" tapped for the spire's card, its depths, costs and
 commitment read, then Enter on Ethereal II: the EnterDepth command signed for that army, and the army two regions below,
-shown in Ethereal II; play it at `--viewport 390x844` too), `--out <root>` (default `.context/playtest`), `--trace` (a
-Chrome trace of each run's boot, from before the game page opens to the world being interactive),
-`--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are taken from where the command is run.
+shown in Ethereal II; play it at `--viewport 390x844` too), `--steps lab-day-turn`, `--steps lab-day-later`,
+`--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same game on Frontier's day 2 ending,
+`/lab/game?scenario=day-turn` in the session or `scenario=day-later` before it opened, over prod's recorded history of
+that day, the map opened where the realm stood on day 2: the summary's totals must be the recorded player's own day 2
+(slow: history answers only after the moment went on, and the summary opens then; short: a page of newer stories leaves
+day 2 unread, and the card shows dashes and says why), and Continue must bring the camera onto the realm's day-3 site),
+`--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each run's boot, from before the game page
+opens to the world being interactive), `--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are
+taken from where the command is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 

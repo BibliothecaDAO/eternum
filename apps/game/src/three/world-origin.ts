@@ -14,14 +14,27 @@ const ORIGIN_GRID = 64;
 /** How far a world-map hex may sit from the origin: keeps world values well inside float32 and cell keys in range. */
 const WORLD_ORIGIN_REACH = 8192;
 
+const listeners = new Set<() => void>();
+
 export const worldOrigin = (): HexPosition => origin;
 
 export function setWorldOrigin(hex: HexPosition): void {
-  origin = {
+  const next = {
     col: Math.round(hex.col / ORIGIN_GRID) * ORIGIN_GRID,
     row: Math.round(hex.row / ORIGIN_GRID) * ORIGIN_GRID,
   };
+  if (next.col === origin.col && next.row === origin.row) return;
+  origin = next;
+  listeners.forEach((listener) => listener());
 }
+
+/** Calls back each time the origin moves: whatever was placed around the old one is placed again around the new. */
+export const subscribeWorldOrigin = (listener: () => void): (() => void) => {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+};
 
 export const isWithinWorldOriginReach = (hex: HexPosition): boolean =>
   Math.abs(hex.col - origin.col) <= WORLD_ORIGIN_REACH && Math.abs(hex.row - origin.row) <= WORLD_ORIGIN_REACH;

@@ -1,7 +1,7 @@
 import { canEnterGame, isGameOver, isMember, rosterWalletOf } from "@/runtime/world/directory";
 import { feltEquals } from "@bibliothecadao/eternum/game-client";
 import { isSameStarknetAddress } from "@realms-world/identity";
-import { BLITZ_SLOT_PREPARATION_SECONDS } from "@realms-world/value-ledger/blitz-slots";
+import { BLITZ_SLOT_PREPARATION_SECONDS } from "@realms-world/value-ledger/blitz-timetable";
 
 import { BLITZ_SEATS, type PlaytestSlot } from "./blitz-slot";
 import type { DirectoryGame } from "./herald";

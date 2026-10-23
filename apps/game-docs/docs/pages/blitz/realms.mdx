@@ -1,0 +1,93 @@
+---
+title: Realms and production
+description: What your three realms start with, their levels, buildings, production and automation
+---
+
+import { BLITZ } from "@/utils/blitz";
+import { BlitzBuildings } from "@/components/blitz-components/BlitzBuildings";
+import { BlitzRealmLeveling } from "@/components/blitz-components/BlitzRealmLeveling";
+import {
+  BlitzDonkeyProduction,
+  BlitzStandardResourceProduction,
+  BlitzStandardTroopProduction,
+} from "@/components/blitz-components/ResourceProduction";
+import { Shot } from "@/components/Media";
+
+# Realms and production
+
+## What each realm starts with
+
+Each of your three realms starts as a Settlement with {BLITZ.realm.wheat} wheat, {BLITZ.realm.labor} labor,{" "}
+{BLITZ.realm.wood} wood, {BLITZ.realm.coal} coal, {BLITZ.realm.copper} copper and {BLITZ.realm.donkeys} donkeys. It is
+dealt one troop type, and holds {BLITZ.realm.garrison} T1 troops of it in its guard and {BLITZ.realm.reserve} in reserve
+([Armies and combat](/blitz/armies#starting-forces)).
+
+Your realms are as likely to be attacked as anyone's: no realm has immunity, from the first second to the last.
+
+## Levels
+
+A realm levels up from Settlement to City, Kingdom and Empire. Each level opens another ring of plots, more field armies
+and guard slots, and a bigger army:
+
+| Level                        | Plots                         | Field armies                   | Guard slots                    | Deployment cap              |
+| ---------------------------- | ----------------------------- | ------------------------------ | ------------------------------ | --------------------------- |
+| {BLITZ.realm.levels[0].name} | {BLITZ.realm.levels[0].plots} | {BLITZ.realm.levels[0].armies} | {BLITZ.realm.levels[0].guards} | {BLITZ.realm.levels[0].cap} |
+| {BLITZ.realm.levels[1].name} | {BLITZ.realm.levels[1].plots} | {BLITZ.realm.levels[1].armies} | {BLITZ.realm.levels[1].guards} | {BLITZ.realm.levels[1].cap} |
+| {BLITZ.realm.levels[2].name} | {BLITZ.realm.levels[2].plots} | {BLITZ.realm.levels[2].armies} | {BLITZ.realm.levels[2].guards} | {BLITZ.realm.levels[2].cap} |
+| {BLITZ.realm.levels[3].name} | {BLITZ.realm.levels[3].plots} | {BLITZ.realm.levels[3].armies} | {BLITZ.realm.levels[3].guards} | {BLITZ.realm.levels[3].cap} |
+
+Reaching City costs nothing; the next levels cost:
+
+<BlitzRealmLeveling />
+
+Level a realm up with the arrow on its row in your holdings list. Hover its **i** for what it still needs.
+
+## Buildings
+
+Tap an open plot, pick a tab (Resources, Economic or Military) and a building. Most buildings can be paid two ways: in
+labor alone, or in less labor plus resources. The rarest resources and the T2 and T3 troop buildings take resources
+only. Every building except a workers' hut takes population; each workers' hut adds capacity, on top of the realm's
+base. Each further copy of a building costs more than the last.
+
+<Shot
+  frame="panel"
+  name="blitz/build"
+  caption="A Blitz plot's build sheet: Resources, Economic and Military, each building with its price."
+/>
+
+**Economic**
+
+<BlitzBuildings group="economic" />
+
+**Resources**
+
+<BlitzBuildings group="resources" />
+
+**Military**
+
+<BlitzBuildings group="military" />
+
+## Production
+
+Each realm's keep makes {BLITZ.realm.laborPerSecond} labor a second, and each farm {BLITZ.realm.wheatPerFarm} wheat a
+second, with no input. Everything else is made from other materials: a run pays all its inputs when it starts, then
+makes its output over time. Camps run production too. Labor cannot be turned into resources.
+
+<BlitzStandardResourceProduction />
+
+<BlitzStandardTroopProduction />
+
+<BlitzDonkeyProduction />
+
+Start a run from **Production** (`P`): type the output you want, or what to spend of an input.
+
+## Automation
+
+Each realm's card offers automatic production, top right:
+
+- **Smart**, the default: production runs itself, spread across the realm's buildings.
+- **Custom**: production follows the shares you set in Production.
+- **Off**: nothing is produced automatically.
+
+Automation runs in your browser while the game is open. A realm whose only producers are farms and workers' huts has
+nothing to automate: wheat and labor produce on their own.

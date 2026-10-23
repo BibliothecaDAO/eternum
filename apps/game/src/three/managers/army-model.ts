@@ -1336,7 +1336,6 @@ export class ArmyModel {
             const state = this.animationStates[i];
             if (this.shouldSkipAnimation(state)) continue;
 
-            const dstOffset = i * textureWidth;
             let sourceWeights: Float32Array | null = null;
             let sourceOffset = 0;
             if (state === ANIMATION_STATE_MOVING) {
@@ -1350,7 +1349,7 @@ export class ArmyModel {
             }
             if (sourceWeights) {
               textureChanged =
-                writeMorphWeightsIfChanged(textureData, dstOffset, sourceWeights, sourceOffset, morphCount) ||
+                writeMorphWeightsIfChanged(textureData, i, textureWidth, sourceWeights, sourceOffset, morphCount) ||
                 textureChanged;
             }
           }
