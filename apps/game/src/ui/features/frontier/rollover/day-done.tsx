@@ -3,7 +3,6 @@ import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useDayEndStore } from "@/hooks/store/use-day-end-store";
-import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { configManager, type readExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
@@ -11,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { endedHomeArmies, homecomingAtNextDeploy } from "../frontier-home";
 import { dayClock, endedDay } from "../hud/day-clock";
-import { totalToday } from "../log/today-totals";
+import { usePlayerDay } from "../log/player-day";
 import { DayDoneCard } from "./day-done-card";
 import { DayEndScreen } from "./day-end-screen";
 import { useClosingRankChange } from "./day-ranks";
@@ -22,11 +21,12 @@ const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "ArmyProgress", "Resourc
 
 /**
  * A Frontier day's end in the HUD (use-day-end-store): the ended day's summary over the map, the black and the way past
- * them (DayEndScreen). The summary is the day-done card, once per ended day on this device: the ended day's totals, the
- * rank it closed at against the day before, the troops its armies took and what Homecoming returns at the next deploy.
- * A day the player did not play (no army ended with it, nothing revealed or cleared) has none, and a visit to another
- * realm shows none; the moment then passes without it. In the game as the day ends, ExpeditionRollover begins the moment;
- * opening the game after it ended, this does.
+ * them (DayEndScreen). The summary is the day-done card, once per ended day on this device: the ended day's totals (the
+ * player's day as Today reads it, usePlayerDay), the rank it closed at against the day before, the troops its armies
+ * took and what Homecoming returns at the next deploy. It waits for the player's history to answer. A day the player
+ * did not play (no army ended with it, nothing revealed or cleared) has none, and a visit to another realm shows none;
+ * the moment then passes without it. In the game as the day ends, ExpeditionRollover begins the moment; opening the
+ * game after it ended, this does.
  */
 export const DayDone = ({
   rules,
@@ -41,18 +41,18 @@ export const DayDone = ({
   const now = useNowSeconds();
   const tick = useCurrentDefaultTick();
   const player = useAccountStore((state) => state.account?.address ?? null);
-  const { data: stories } = useStoryEvents(350);
   useNativeRevision(ARMY_MODELS);
   const gameId = configManager.getActiveGameId();
   const [seen, markSeen] = useSeenDay(gameId, player);
   const ended = endedDay(rules, now);
+  const played = usePlayerDay(player, ended);
   const rank = useClosingRankChange(ended?.day);
   const openedAt = useOpenedAt(now);
   const { phase, begin, continueDay, showSummary } = useDayEndStore();
 
   const summary = (() => {
-    if (visiting || !ended || !player || (seen !== null && seen >= ended.day)) return null;
-    const totals = totalToday(stories, player, { startMs: ended.start * 1_000, endMs: ended.end * 1_000 });
+    if (visiting || !ended || !player || (seen !== null && seen >= ended.day) || !played.settled) return null;
+    const { totals } = played;
     const gone = endedHomeArmies(setup.store, realm, rules, now);
     if (gone.length === 0 && totals.reveals === 0 && totals.cleared === 0) return null;
     const returned = homecomingAtNextDeploy(setup.store, realm, rules, now, tick);
