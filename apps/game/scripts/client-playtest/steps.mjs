@@ -1151,6 +1151,77 @@ function armyEnteredEtherealII({ played }) {
 
 const SPIRE_WAIT_MS = 5_000;
 
+const LAB_DAY_TURN = { mode: "frontier", lab: "day-turn", chainId: "0x1ab9", gameId: 1, card: FRONTIER.card };
+const LAB_DAY_LATER = { ...LAB_DAY_TURN, lab: "day-later" };
+
+/**
+ * Realm 7's day 2 ending on prod's recorded history (src/lab/game/day-turn-scenario.ts), in the session (day-turn) or
+ * before it opened (day-later), the map opened where the realm stood on day 2: the summary rises with the player's own
+ * day 2 as prod's history holds it, and Continue brings the camera onto the realm's day-3 site.
+ */
+const LAB_DAY_TURN_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "day-summary", play: readTheDaySummary, settleMs: 0, verify: summaryCountsTheDay },
+  { name: "continue", play: continueIntoTheNewDay, settleMs: 0, verify: cameraOnTheNewSite },
+];
+
+/** Prod's leading player's own day 2: 35 reveals and 5 sites cleared, paying 7,246 Essence and 524 Labor. */
+const RECORDED_DAY_TOTALS = ["35Reveals", "5Sites cleared", "0Chests", "+7,246Essence", "+524Labor", "+0LORDS"];
+/** Realm 7's site on day 3 of the lab's calendar: its region's column, four regions a day down (contract hexes). */
+const LAB_DAY_3_SITE = { col: 650, row: 850 };
+/** The live turn waits for the day's last seconds, the rollover's look and the mist before the summary rises. */
+const DAY_SUMMARY_WAIT_MS = 60_000;
+const NEW_DAY_WAIT_MS = 20_000;
+/** The camera's hex is reported at most every 100 ms. */
+const CAMERA_REPORT_MS = 1_000;
+const DAY_END_STATE = `JSON.stringify({
+  phase: document.querySelector("[data-day-end]")?.dataset.dayEnd ?? "day",
+  card: document.querySelector("section[aria-label$=' done']")?.getAttribute("aria-label") ?? null,
+  totals: [...document.querySelectorAll("section[aria-label$=' done'] [data-total]")].map((cell) => cell.textContent),
+  camera: window.__eternumMapSelection?.camera ?? null,
+})`;
+
+/** Waits for the ended day's summary over the map, and reads it and where the camera looks. */
+async function readTheDaySummary({ browser }) {
+  return readUntil(
+    () => browser.read(DAY_END_STATE),
+    (shown) => shown.card !== null,
+    DAY_SUMMARY_WAIT_MS,
+  );
+}
+
+function summaryCountsTheDay({ played }) {
+  if (played.card !== "Day 2 done") return failed(`the summary shown is ${played.card ?? "none"}`, played);
+  if (JSON.stringify(played.totals) !== JSON.stringify(RECORDED_DAY_TOTALS))
+    return failed(`the summary counts ${played.totals.join(", ")}`, played);
+  return completed(played);
+}
+
+/** Presses Continue, waits for the screen to come back up on the new day, and reads where the camera looks. */
+async function continueIntoTheNewDay({ browser }) {
+  const before = browser.read(DAY_END_STATE);
+  browser.click("Continue");
+  await readUntil(
+    () => browser.read(DAY_END_STATE),
+    (shown) => shown.phase === "day",
+    NEW_DAY_WAIT_MS,
+  );
+  await sleep(CAMERA_REPORT_MS);
+  return { before, after: browser.read(DAY_END_STATE) };
+}
+
+function cameraOnTheNewSite({ played }) {
+  const { before, after } = played;
+  if (after.phase !== "day") return failed(`the screen is still on the day's end (${after.phase})`, played);
+  const on = after.camera;
+  if (!on || Math.abs(on.col - LAB_DAY_3_SITE.col) > 1 || Math.abs(on.row - LAB_DAY_3_SITE.row) > 1)
+    return failed(
+      `the camera looks at ${JSON.stringify(on)}, not the realm's day-3 site ${JSON.stringify(LAB_DAY_3_SITE)}`,
+      played,
+    );
+  return completed({ before: before.camera, after: on, site: LAB_DAY_3_SITE });
+}
+
 /** Reads the page until what it shows is done, or the time is up; the last reading either way. */
 async function readUntil(read, done, timeoutMs) {
   const startedAt = Date.now();
@@ -1189,6 +1260,8 @@ export const STEP_SETS = {
     devOverlays: true,
   },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  "lab-day-turn": { game: LAB_DAY_TURN, steps: LAB_DAY_TURN_STEPS },
+  "lab-day-later": { game: LAB_DAY_LATER, steps: LAB_DAY_TURN_STEPS },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },

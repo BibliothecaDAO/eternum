@@ -147,9 +147,13 @@ dev overlays on, as the plate lists do), `--steps lab-spire` (no live game: the 
 signed commands are recorded in `window.__labChain` and answered as the contract applies them; the army selected from
 the dock, the tile beside it whose hover offers "Enter a depth" tapped for the spire's card, its depths, costs and
 commitment read, then Enter on Ethereal II: the EnterDepth command signed for that army, and the army two regions below,
-shown in Ethereal II; play it at `--viewport 390x844` too), `--out <root>` (default `.context/playtest`), `--trace` (a
-Chrome trace of each run's boot, from before the game page opens to the world being interactive),
-`--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are taken from where the command is run.
+shown in Ethereal II; play it at `--viewport 390x844` too), `--steps lab-day-turn` and `--steps lab-day-later` (the same
+game on Frontier's day 2 ending, `/lab/game?scenario=day-turn` in the session or `scenario=day-later` before it opened,
+over prod's recorded history of that day, the map opened where the realm stood on day 2: the summary's totals must be
+the recorded player's own day 2, and Continue must bring the camera onto the realm's day-3 site), `--out <root>`
+(default `.context/playtest`), `--trace` (a Chrome trace of each run's boot, from before the game page opens to the
+world being interactive), `--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are taken from where
+the command is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 

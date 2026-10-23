@@ -1,5 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import type { AccountInterface } from "starknet";
 
@@ -37,6 +39,8 @@ export interface LabScenario {
   opensOn: { col: number; row: number };
   /** The facts the chain writes for a command, as the game's contract would apply it; none for one it ignores. */
   answer: (command: LabCommand, chain: NativeFactStore, now: number) => LabFact[];
+  /** The game's history, newest first, on the lab's clock: Herald serves each event once its time has come. */
+  history?: HeraldHistoryEvent[];
 }
 
 interface LabChainRecord {
@@ -75,7 +79,7 @@ export const installLabChain = async (scenario: LabScenario): Promise<LabChainRe
   const startedAt = Date.now();
   const now = () => scenario.startsAt + Math.floor((Date.now() - startedAt) / 1000);
   const herald = new LabHerald(chain, now);
-  answerDirectory(now);
+  answerDirectory(now, (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()));
   answerHeraldSocket(herald);
   seatPlayer(labAccount(scenario, chain, nativeBindings, record, herald, now));
   return record;
@@ -85,7 +89,7 @@ export const installLabChain = async (scenario: LabScenario): Promise<LabChainRe
  * The tab's directory and the lab shard's own reads (its manifest, its games): the lab shard alone, with the one
  * Frontier game on it, ending a month into the season. Any other read the shard is asked fails as an offline shard's.
  */
-const answerDirectory = (now: () => number) => {
+const answerDirectory = (now: () => number, read: (url: URL) => unknown) => {
   const network = window.fetch.bind(window);
   const manifest = {
     version: 1,
@@ -130,8 +134,66 @@ const answerDirectory = (now: () => number) => {
     if (url.pathname === "/manifest") return json(manifest);
     if (url.pathname === "/games")
       return json({ chain: LAB_GAME.chainId, world_address: "0x1ab", confirmed_block: now(), games: [game] });
+    const answer = read(url);
+    if (answer === NOT_CLOSED) return Promise.resolve(new Response(null, { status: 404 }));
+    if (answer !== undefined) return json(answer);
     return Promise.reject(new TypeError(`The lab shard does not serve ${url.pathname}`));
   };
+};
+
+/** Herald's answer for a day that has not closed (day_ranks_not_closed). */
+const NOT_CLOSED = Symbol("not closed");
+/** Herald's largest history page. */
+const HISTORY_PAGE = 500;
+
+/**
+ * The lab shard's Herald reads: the game's history as Herald's history filters it (a player's events: the ones naming
+ * them; then one story or model, newest first, a page at a time), and each closed day's ranks, the lab's player first.
+ * Undefined for any other read.
+ */
+const answerHeraldRead = (
+  url: URL,
+  scenario: LabScenario,
+  chain: NativeFactStore,
+  now: () => number,
+  confirmedBlock: number,
+): unknown => {
+  const game = `/games/${LAB_GAME.gameId}`;
+  if (url.pathname === `${game}/history`) {
+    const query = url.searchParams;
+    const owner = query.get("owner");
+    const named = owner && `"0x${BigInt(owner).toString(16)}"`;
+    const limit = Math.min(Number(query.get("limit") ?? 100), HISTORY_PAGE);
+    const offset = Number(query.get("offset") ?? 0);
+    const items = (scenario.history ?? []).filter(
+      (event) =>
+        hasHappened(event, now()) &&
+        (!named || JSON.stringify(event.value).includes(named)) &&
+        (!query.get("model") || event.model === query.get("model")) &&
+        (!query.get("story") || storyOf(event) === query.get("story")),
+    );
+    return { complete_through_block: confirmedBlock, items: items.slice(offset, offset + limit), limit, offset };
+  }
+  const ranks = url.pathname.match(new RegExp(`^${game}/days/(\\d+)/ranks$`));
+  if (ranks) {
+    const rules = readExpeditionRules(chain, LAB_GAME.gameId);
+    const today = rules && dayOf(rules, now());
+    if (!today || Number(ranks[1]) >= today.index) return NOT_CLOSED;
+    return {
+      game_id: String(LAB_GAME.gameId),
+      day_index: Number(ranks[1]),
+      entries: [{ rank: 1, address: scenario.player }],
+    };
+  }
+  return undefined;
+};
+
+const hasHappened = (event: HeraldHistoryEvent, now: number): boolean =>
+  typeof event.value.timestamp !== "string" || Number(BigInt(event.value.timestamp)) <= now;
+
+const storyOf = (event: HeraldHistoryEvent): string | undefined => {
+  const story = event.value.story;
+  return story && typeof story === "object" ? Object.keys(story)[0] : undefined;
 };
 
 /** The lab shard's Herald socket is the tab's own; every other socket opens as before. */
@@ -224,6 +286,10 @@ class LabHerald {
     private readonly chain: NativeFactStore,
     private readonly now: () => number,
   ) {}
+
+  confirmedBlock(): number {
+    return this.block;
+  }
 
   open(): LabSocket {
     this.socket?.close();
