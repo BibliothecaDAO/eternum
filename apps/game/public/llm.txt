@@ -378,7 +378,7 @@ meta: {
 }
 
 import { BLITZ } from "@/utils/blitz";
-import { Shot, Video } from "@/components/Media";
+import { Video } from "@/components/Media";
 
 # Blitz
 
