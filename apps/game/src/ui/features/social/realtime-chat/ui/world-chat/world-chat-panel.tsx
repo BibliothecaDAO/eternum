@@ -5,7 +5,7 @@ import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { Position } from "@bibliothecadao/eternum";
-import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { openOnMap } from "@/play/navigation/open-place";
 import { type PlayerNames, resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import {
   useRealtimeChatActions,
@@ -128,15 +128,11 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
   // load loop where the user never sees the latest messages.
   const hasInitialAnchorRef = useRef(false);
 
-  const navigateToMapView = useNavigateToMapView();
   // A sender's name is read as the list draws, and the list draws again when one lands.
   const names = usePlayerNames();
-  const handleNavigateToCoordinates = useCallback(
-    (coordinates: { x: number; y: number }) => {
-      navigateToMapView(Position.fromNormalized({ x: coordinates.x, y: coordinates.y }));
-    },
-    [navigateToMapView],
-  );
+  const handleNavigateToCoordinates = useCallback((coordinates: { x: number; y: number }) => {
+    openOnMap(Position.fromNormalized({ x: coordinates.x, y: coordinates.y }), "tile");
+  }, []);
 
   const handleUserClick = (userId: string) => {
     const threadId = actions.openDirectThread(userId);

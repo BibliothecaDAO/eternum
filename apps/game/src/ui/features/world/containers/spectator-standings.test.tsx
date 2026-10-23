@@ -33,7 +33,7 @@ vi.mock("@/hooks/context/game-context", async () => {
   GAME.store = new NativeFactStore();
   return { useGame: () => ({ setup: { store: GAME.store } }) };
 });
-vi.mock("@/hooks/helpers/use-navigate", () => ({ useNavigateToMapView: () => () => {} }));
+vi.mock("@/play/navigation/open-place", () => ({ openOnMap: () => {} }));
 vi.mock("./top-header/game-clock", () => ({ useGameFinished: () => true }));
 
 import { useUIStore } from "@/hooks/store/use-ui-store";

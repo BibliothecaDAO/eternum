@@ -13,11 +13,6 @@ export const useQuery = () => {
   const route = useSyncExternalStore(subscribeToRoute, readRoute, () => "/");
   const [location, searchString = ""] = route.split("?");
 
-  const handleUrlChange = useCallback((url: string) => {
-    window.history.pushState({}, "", url);
-    window.dispatchEvent(new Event("urlChanged"));
-  }, []);
-
   const isMapView = useMemo(() => location.includes("/map"), [location]);
 
   const hexPosition = useMemo(() => {
@@ -35,7 +30,6 @@ export const useQuery = () => {
 
   return {
     isLocation,
-    handleUrlChange,
     hexPosition,
     isMapView,
   };
