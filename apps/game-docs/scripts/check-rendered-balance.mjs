@@ -106,13 +106,19 @@ const staminaPhrases = (mode, config) => {
   ];
 };
 
-/** Blitz's stamina as its armies page states it: per army tick, in seconds. */
 /** A tier's damage multiplier over T1's, from its 64.64 fixed-point config value. */
 const tierWeight = (multiplier) => n(Number(BigInt(multiplier) / 2n ** 64n));
+
+/**
+ * Blitz's stamina and battle timer as its armies page states them: per army tick, in seconds. A fight adds its time to
+ * what is left on each timer; the page's even T1 fight, against a defender with a full timer to run, refunds none of it.
+ */
 
 const blitzStaminaPhrases = (config) => {
   const stamina = config.troop.stamina;
   const damage = config.troop.damage;
+  const cooldown = config.battle.cooldownSeconds;
+  const rangedCooldown = Math.floor(cooldown / 2);
   return [
     {
       page: "blitz/armies",
@@ -121,8 +127,10 @@ const blitzStaminaPhrases = (config) => {
         `Exploring a tile costs ${stamina.staminaExploreStaminaCost}`,
         `Attacking takes ${stamina.staminaAttackReq} stamina`,
         `The defender spends ${stamina.staminaDefenseReq} stamina`,
-        `each side waits up to ${config.battle.cooldownSeconds} seconds`,
-        `After a ranged attack, both sides wait ${Math.floor(config.battle.cooldownSeconds / 2)} seconds.`,
+        `adds up to ${n(cooldown)} seconds to each side's timer`,
+        `A ranged attack adds ${n(rangedCooldown)} seconds to both timers.`,
+        `with ${n(cooldown)} seconds left on their timer: the defenders then wait ${n(cooldown * 2)} seconds and the attackers ${n(cooldown)}.`,
+        `the defenders wait ${n(cooldown + rangedCooldown)} seconds and the Crossbowmen ${n(rangedCooldown)}.`,
         `The tier weights are 1 for T1, ${tierWeight(damage.t2DamageMultiplier)} for T2 and ${tierWeight(damage.t3DamageMultiplier)} for T3.`,
       ],
     },

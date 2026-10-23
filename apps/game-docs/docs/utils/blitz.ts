@@ -81,18 +81,27 @@ const wholeOf = (value: bigint) => Number(value / FIXED_ONE);
 if (!combatRules.stamina.damage_stamina_refund) throw new Error("Blitz no longer refunds a fight's stamina");
 
 /**
- * The worked example: 1,000 Knights of each tier attack 1,000 T1 Knights on grassland (no biome edge for Knights), both
+ * The worked examples: 1,000 T1 Knights defend on grassland (no biome edge for Knights) against 1,000 attackers, all
  * rested, no relics, resolved by the client's exchange, which reproduces the contract's recorded exchanges exactly.
  */
 const EXAMPLE_TROOPS = 1_000;
-// The moment of the example fight; each bar is settled then, at a T1 army's full stamina.
+// The moment of the example fight; each bar is settled then, at its army's full stamina.
 const FIGHT_AT = 1_000;
 const TROOP_TIERS = ["T1", "T2", "T3"] as const;
-const restedKnights = (tier: (typeof TROOP_TIERS)[number]): ExchangeTroops => ({
-  category: "Knight",
+type ExampleCategory = "Knight" | "Crossbowman";
+const FULL_STAMINA: Record<ExampleCategory, number> = {
+  Knight: stamina.staminaKnightMax,
+  Crossbowman: stamina.staminaCrossbowmanMax,
+};
+const restedArmy = (
+  category: ExampleCategory,
+  tier: (typeof TROOP_TIERS)[number],
+  battleCooldownEnd = FIGHT_AT,
+): ExchangeTroops => ({
+  category,
   tier,
   count: BigInt(EXAMPLE_TROOPS) * BigInt(RESOURCE_PRECISION),
-  stamina: { amount: BigInt(stamina.staminaKnightMax), settled_at: FIGHT_AT, remainder: 0 },
+  stamina: { amount: BigInt(FULL_STAMINA[category]), settled_at: FIGHT_AT, remainder: 0 },
   boosts: {
     incr_damage_dealt_percent_num: 0,
     incr_damage_dealt_end_at: 0,
@@ -103,16 +112,15 @@ const restedKnights = (tier: (typeof TROOP_TIERS)[number]): ExchangeTroops => ({
     incr_explore_reward_percent_num: 0,
     incr_explore_reward_end_at: 0,
   },
-  battle_cooldown_end: FIGHT_AT,
+  battle_cooldown_end: battleCooldownEnd,
 });
-const exampleFight = (tier: (typeof TROOP_TIERS)[number]) => {
-  const attacker = restedKnights(tier);
+const fightOnGrassland = (attacker: ExchangeTroops, defender: ExchangeTroops, attackDistance: number) => {
   const result = resolveExchange(
     attacker,
-    restedKnights("T1"),
+    defender,
     {
       timestamp: FIGHT_AT,
-      attackDistance: 1,
+      attackDistance,
       attackerBiome: BiomeType.Grassland,
       defenderBiome: BiomeType.Grassland,
       attackerIsStructureGuard: false,
@@ -123,13 +131,30 @@ const exampleFight = (tier: (typeof TROOP_TIERS)[number]) => {
     combatRules,
   );
   if (result.ok === false) throw new Error(`The example fight is refused: ${result.refusal}`);
+  return result;
+};
+const secondsLeft = (troops: ExchangeTroops) => n(troops.battle_cooldown_end - FIGHT_AT);
+const exampleFight = (tier: (typeof TROOP_TIERS)[number]) => {
+  const attacker = restedArmy("Knight", tier);
+  const result = fightOnGrassland(attacker, restedArmy("Knight", "T1"), 1);
   const troops = (loss: bigint) => n(Number(loss / BigInt(RESOURCE_PRECISION)));
   return {
     tier,
     defendersLost: troops(result.defenderLoss),
     attackersLost: troops(result.attackerLoss),
-    attackerWait: n(result.attacker.battle_cooldown_end - FIGHT_AT),
+    attackerWait: secondsLeft(result.attacker),
     staminaSpent: n(Number(attacker.stamina.amount - result.attacker.stamina.amount)),
+  };
+};
+// A fight adds to the timer an army already has (combat.cairo `update_timer`, then `+=`): the defender here is attacked
+// again with a full timer still to run.
+const waitingDefenderFight = (category: ExampleCategory, attackDistance: number) => {
+  const defender = restedArmy("Knight", "T1", FIGHT_AT + config.battle.cooldownSeconds);
+  const result = fightOnGrassland(restedArmy(category, "T1"), defender, attackDistance);
+  return {
+    defenderBefore: secondsLeft(defender),
+    defenderAfter: secondsLeft(result.defender),
+    attackerWait: secondsLeft(result.attacker),
   };
 };
 
@@ -205,6 +230,10 @@ export const BLITZ = {
     rangedWaitSeconds: n(Math.floor(config.battle.cooldownSeconds / 2)),
     exampleTroops: n(EXAMPLE_TROOPS),
     example: TROOP_TIERS.map(exampleFight),
+    waitingDefender: {
+      melee: waitingDefenderFight("Knight", 1),
+      ranged: waitingDefenderFight("Crossbowman", CONTRACT.crossbowRange),
+    },
   },
   map: {
     ringStep: n(ringStep),
