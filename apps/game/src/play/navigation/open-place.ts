@@ -1,7 +1,14 @@
 import type { MapSelectionIntent } from "@/hooks/store/map-selection";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { traceFlightMark } from "@/three/flight-trace";
-import type { Position } from "@bibliothecadao/eternum";
+import { getActiveGameStore } from "@/sync/active-game-client";
+import {
+  configManager,
+  getBlockTimestamp,
+  readExpeditionRules,
+  seasonDay,
+  type Position,
+} from "@bibliothecadao/eternum";
 
 import { buildPlayHref, mapRouteHex, parsePlayRoute, type PlayScene } from "./play-route";
 
@@ -32,4 +39,22 @@ export function openOnMap(position: Position, select: "tile" | MapSelectionInten
   openPlace("map", position);
   const { x, y } = position.getContract();
   useUIStore.getState().selectOnMap(select === "tile" ? { kind: "hex", hex: { col: x, row: y } } : select);
+}
+
+/**
+ * A link to where something happened at `seconds` (chain time), opened by `open`, or none: Frontier builds its map
+ * again each day, so a place from a day that has closed names nothing on today's map, and following it sends the
+ * player somewhere wrong. Today is the map's own, read on the block clock its sites are placed by. Another mode keeps
+ * one map all game, and its links stand. Checked again on the press, in case the day closed under an open row.
+ */
+export function linkFrom(seconds: number, open: () => void): (() => void) | null {
+  const onTodaysMap = () => {
+    const store = getActiveGameStore();
+    const rules = store && readExpeditionRules(store, configManager.getActiveGameId());
+    return !rules || seasonDay(rules, seconds) === seasonDay(rules, getBlockTimestamp().currentBlockTimestamp);
+  };
+  if (!onTodaysMap()) return null;
+  return () => {
+    if (onTodaysMap()) open();
+  };
 }

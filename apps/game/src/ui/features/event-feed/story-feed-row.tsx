@@ -6,7 +6,7 @@ import {
   parsePresentationDescription,
 } from "@/ui/features/story-events/story-event-utils";
 import { useGoToStructure, useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
-import { openOnMap } from "@/play/navigation/open-place";
+import { linkFrom, openOnMap } from "@/play/navigation/open-place";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { relicChestShares } from "@bibliothecadao/types";
@@ -65,7 +65,8 @@ function storyChestHolder(event: ProcessedStoryEvent, store: NativeFactStore): C
 /**
  * Opens a story where it happened, for the Events card and the log alike. An opened crate's row selects what holds
  * its reward: a LORDS chest's realm, an army pack's army (from the realm view, on the world map once it is shown), a structure pack's realm.
- * Any other row, or a crate whose army is gone, flies to its tile. Null when the story has no place left to show.
+ * Any other row, or a crate whose army is gone, flies to its tile. Null when the story has no place left to show, or
+ * none on today's map: a Frontier story from a day that has closed (linkFrom).
  */
 export function useStoryOpener(event: ProcessedStoryEvent): (() => void) | null {
   const {
@@ -78,9 +79,13 @@ export function useStoryOpener(event: ProcessedStoryEvent): (() => void) | null 
   const { isMapView } = useQuery();
   const holder = storyChestHolder(event, store);
   const position = resolveStoryEventPosition(event, store);
-  if (holder?.kind === "structure") return () => void goToStructure(holder.id, holder.position, isMapView);
-  if (holder) return () => selectArmy(holder.id);
-  return position ? () => openOnMap(position, "tile") : null;
+  const open =
+    holder?.kind === "structure"
+      ? () => void goToStructure(holder.id, holder.position, isMapView)
+      : holder
+        ? () => selectArmy(holder.id)
+        : position && (() => openOnMap(position, "tile"));
+  return open ? linkFrom(event.timestampMs / 1000, open) : null;
 }
 
 /** A world story in the Log: what happened and its line (a fight's sides, forces and rolls), and its time. */

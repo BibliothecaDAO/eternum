@@ -29,7 +29,10 @@ vi.mock("@/hooks/context/game-context", () => ({
   }),
 }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0, useNativeRow: () => undefined }));
-vi.mock("@/play/navigation/open-place", () => ({ openOnMap: game.navigate }));
+vi.mock("@/play/navigation/open-place", async (original) => ({
+  ...(await original<typeof import("@/play/navigation/open-place")>()),
+  openOnMap: game.navigate,
+}));
 vi.mock("@/hooks/helpers/use-navigate", () => ({
   useGoToStructure: () => game.goToStructure,
   useSelectArmyOnMap: () => game.selectArmy,

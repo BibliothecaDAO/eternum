@@ -387,8 +387,9 @@ const hexesApart = (from, to) =>
   from && to ? Math.max(Math.abs(from.col - to.col), Math.abs(from.row - to.row)) : null;
 
 /**
- * The Feed's first story pressed as a player presses it: the map goes where it happened. Frontier's realms stand
- * millions of hexes apart, so a story of another realm is a far jump.
+ * The Feed's first story that still opens a place (one from a closed Frontier day is no link), pressed as a player
+ * presses it: the map goes where it happened. Frontier's realms stand millions of hexes apart, so a story of another
+ * realm is a far jump.
  */
 async function openAFeedEvent({ browser }) {
   const before = browser.observe();
@@ -407,7 +408,7 @@ async function openAFeedEvent({ browser }) {
  * the selected tile (a contract hex) is the route's (a normalized hex), one map centre apart on both axes.
  */
 function openedInThePage({ seen, played }) {
-  if (!played.row) return blocked("the Feed showed no story to press", played);
+  if (!played.row) return blocked("the Feed showed no story that opens a place", played);
   if (played.reloaded) return failed("the page loaded again to open the story", played);
   if (!played.to) return failed("the story's address names no hex", played);
   const scene = inScene("map")({ seen });
