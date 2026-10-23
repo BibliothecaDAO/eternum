@@ -48,6 +48,7 @@ def main(environment, directory, report_stage=ignore_stage):
         (directory / ".env").write_text(render_environment(inputs, (directory / "images.env").read_text()))
         check_operator_approval()
         status = start(directory, inputs, report_stage)
+        publish_releases(directory, inputs, report_stage)
         report_stage("verify facts")
         differences = release_differences(release, *deployed_facts(directory / "data"), inputs["presets"])
         if not differences and status["status"] == "pending":
@@ -219,8 +220,10 @@ def unfinished_differences(data, inputs, release):
     guardian = shard.read_guardian_identity(inputs["guardian_url"])
     if not same(manifest.get("shard", {}).get("guardianPublicKey"), guardian["guardianPublicKey"]):
         differences.append("guardian identity differs")
-    return differences + release_differences(release, manifest, initialized,
-                                             [preset for preset in inputs["presets"] if str(preset) in initialized.get("presets", {})])
+    presets = [preset for preset in inputs["presets"] if str(preset) in initialized.get("presets", {})]
+    # The next release continues the running shard: init registers it. Any other release difference replaces it.
+    table = [] if is_next_release(release, manifest) else release_table_differences(release, manifest)
+    return differences + table + fixed_differences(release, manifest, initialized, presets)
 
 
 def write_build(directory, release):
@@ -276,6 +279,26 @@ def start(directory, config, report_stage=ignore_stage):
 
 
 
+def publish_releases(directory, config, report_stage=ignore_stage):
+    """Herald reads the shard's manifest once, when it starts, and init may register a release after that: Herald
+    restarts from the published manifest until its /manifest maps every release from 1 to the shard's current one."""
+    report_stage("publish releases")
+    native = json.loads((directory / "data/native-world.json").read_text())["native"]
+    if served_releases(config) != native["releaseSchemas"]:
+        subprocess.run([*compose(directory), "up", "-d", "--no-deps", "--force-recreate", "herald"],
+                       check=True, stdout=sys.stdout, stderr=sys.stderr)
+        wait_for_identity(config)
+    served = served_releases(config)
+    unpublished = [release for release in range(1, native["releaseId"] + 1)
+                   if served.get(str(release)) != native["activeSchema"]]
+    if served != native["releaseSchemas"] or unpublished:
+        raise RuntimeError(f"Herald does not publish releases {unpublished or sorted(native['releaseSchemas'])}")
+
+
+def served_releases(config):
+    return service_json(config["public_herald_url"].rstrip("/") + "/manifest", timeout=10).get("releaseSchemas", {})
+
+
 def activate(config, directory, report_stage=ignore_stage):
     report_stage("activate")
     directory_status(config, "active")
@@ -292,22 +315,40 @@ def same(left, right):
 
 def release_differences(release, manifest, initialized, presets):
     """Every way the deployed shard differs from the release it was deployed from."""
+    return release_table_differences(release, manifest) + fixed_differences(release, manifest, initialized, presets)
+
+
+def is_next_release(release, manifest):
+    """The image ships the release after the shard's: init registers it on the running shard, and the fixed parts
+    (schema, Games, verifier and account classes, presets) must still match."""
+    return release["releaseId"] == manifest["native"]["releaseId"] + 1
+
+
+def release_table_differences(release, manifest):
+    """What a registered release replaces: its id, its logic classes and its migration."""
     native, classes = manifest["native"], release["classes"]
     differences = []
     if native["releaseId"] != release["releaseId"]:
         differences.append(f"release id {native['releaseId']}, release has {release['releaseId']}")
-    if native["activeSchema"] != release["schema"]:
-        differences.append(f"schema {native['activeSchema']}, release has {release['schema']}")
-    if not same(native["gamesClassHash"], classes["games"]):
-        differences.append(f"Games class {native['gamesClassHash']}, release has {classes['games']}")
-    if not same(native.get("verifierClassHash"), classes.get("verifier")):
-        differences.append(f"verifier class {native.get('verifierClassHash')}, release has {classes.get('verifier')}")
     for name in sorted(set(native["logic"]) | set(classes["logic"])):
         if not same(native["logic"].get(name), classes["logic"].get(name)):
             differences.append(f"{name} class {native['logic'].get(name)}, release has {classes['logic'].get(name)}")
     if not same(native.get("migrationClassHash"), release["migrationClassHash"]):
         differences.append(f"migration class {native.get('migrationClassHash')}, release has "
                            f"{release['migrationClassHash']}")
+    return differences
+
+
+def fixed_differences(release, manifest, initialized, presets):
+    """What no release changes on a running shard: its schema, its Games, verifier and account classes, its presets."""
+    native, classes = manifest["native"], release["classes"]
+    differences = []
+    if native["activeSchema"] != release["schema"]:
+        differences.append(f"schema {native['activeSchema']}, release has {release['schema']}")
+    if not same(native["gamesClassHash"], classes["games"]):
+        differences.append(f"Games class {native['gamesClassHash']}, release has {classes['games']}")
+    if not same(native.get("verifierClassHash"), classes.get("verifier")):
+        differences.append(f"verifier class {native.get('verifierClassHash')}, release has {classes.get('verifier')}")
     if not same(manifest["shard"].get("accountClassHash"), classes["account"]):
         differences.append(f"account class {manifest['shard'].get('accountClassHash')}, release has {classes['account']}")
     for preset in presets:
@@ -319,7 +360,7 @@ def release_differences(release, manifest, initialized, presets):
 
 STAGES = (
     "build images", "restart pending shard", "prepare", "start Herald", "wait for Herald identity",
-    "register pending", "start services", "initialise", "verify facts", "activate",
+    "register pending", "start services", "initialise", "publish releases", "verify facts", "activate",
 )
 
 

@@ -45,15 +45,13 @@ async function publish(environment: string | undefined, directory: string | unde
   const { store, inputs } = setUpDirectory(directory);
   requireInstalledDependencies();
   const { Platform } = await import("./platform");
-  const { deployWorkers, deployClient, deployDocs } = await import("./publish");
+  const { publishCloudflare } = await import("./publish");
   const platform = new Platform(environments[target], inputs, store, true);
   const unlock = store.lock();
   try {
     console.log(`Cloudflare deployment commit ${revision}.`);
     await requireCloudflareResources(platform);
-    await deployWorkers(platform, revision);
-    await deployClient(platform, revision);
-    await deployDocs(platform, revision);
+    await publishCloudflare(platform, revision);
   } finally {
     unlock();
   }
@@ -67,9 +65,12 @@ async function main() {
   deploymentStage("publish Cloudflare");
   if (!directory)
     throw new PublicError("Usage: pnpm run deploy:cloudflare <dev|production> /absolute/private-directory");
-  setUpDirectory(directory);
+  const { store } = setUpDirectory(directory);
   const commit = await deploymentRevision(target);
   if (archivedRevision()) return publish(target, directory, commit);
+  deploymentStage("read the box's release");
+  const { recordReleaseIdentity } = await import("./release-identity");
+  await recordReleaseIdentity(store, environments[target], commit);
   mkdirSync(EXPORTS, { recursive: true });
   const exported = mkdtempSync(join(EXPORTS, "realms-deploy-"));
   try {

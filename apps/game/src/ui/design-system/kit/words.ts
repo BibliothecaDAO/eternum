@@ -399,6 +399,17 @@ export const PICKED_ARMY = {
 /** Troops between two of the realm's armies side by side (Frontier's Transfer troops, desktop and phone). */
 export const TRANSFER_TROOPS = {
   title: "Transfer troops",
+  waiting: "Waiting for both armies’ progress.",
+  stale: "The armies changed. Review the merge before confirming again.",
+  merge: (army: string) => `Merge into ${army}`,
+  survives: (army: string, col: number, row: number, slot: number) =>
+    `${army} survives at (${col}, ${row}) · slot ${slot}.`,
+  progression: (value: number, xp: number, loser: string) =>
+    `${formatExact(value)} progression value (XP + all upgrades) · ${formatExact(xp)} unspent XP kept. ${loser}’s XP and upgrades are not carried over.`,
+  mergedStamina: (stamina: number | undefined) =>
+    stamina === undefined
+      ? "Stamina —"
+      : `${formatCharge(stamina)} stamina after merging. The other army’s slot is released.`,
   split: (picked: string, tapped: string) => `Troops: ${picked} keeps this many, ${tapped} the rest`,
   allTo: (army: string) => `All to ${army}`,
   even: "Even",
@@ -425,6 +436,9 @@ export const revealLine = (amount: string, resource: string) => `+${amount} ${re
 export const builtLine = (building: string) => `${building} built`;
 export const deployedLine = (army: string) => `${army} deployed`;
 export const disbandedLine = (army: string) => `${army} disbanded`;
+/** A day log line with the XP its story gave or spent: "+98 labor, +2 XP", "Battle Uncommon, −100 XP". */
+export const xpGainedLine = (line: string, amount: string) => `${line}, +${amount} ${XP}`;
+export const xpSpentLine = (line: string, amount: string) => `${line}, −${amount} ${XP}`;
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
 /** How deep a season went, on its total. */

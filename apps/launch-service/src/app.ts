@@ -12,6 +12,7 @@ import { type LaunchJobRequest, type LaunchKind } from "./schemas";
 import type { LaunchServiceStore } from "./store";
 import { isSameTestBlitz, readTestBlitz, testBlitzRequest, type TestBlitz } from "./test-blitz";
 import { isDevShardChain } from "@realms-world/value-ledger";
+import { isReleaseIdentity, RELEASE_REFUSALS, type ReleaseIdentity, type ReleaseReport } from "./release";
 
 interface LaunchAppDependencies {
   config: { operatorToken: string };
@@ -26,6 +27,7 @@ interface LaunchAppDependencies {
     armFor(dueAt: number): Promise<void>;
     joinFailures(): Promise<JoinFailure[]>;
     wakeAt(): Promise<number | null>;
+    applyRelease(release: ReleaseIdentity | null): Promise<ReleaseReport>;
   };
 }
 
@@ -190,5 +192,22 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.post("/api/factory/results/:environment/:name/actions/continue", (context) =>
     continueRun(context, dependencies, "result", context.req.param("name")),
   );
+
+  // The Cloudflare deploy's release step: the running Frontier games take the release its commit ships, as its box
+  // build baked it, before its client goes live. A refusal names its reason; a rerun on games already there sends
+  // nothing.
+  app.post("/api/factory/release", async (context) => {
+    const body = (await context.req.json().catch(() => null)) as { release?: unknown } | null;
+    const release = body?.release;
+    if (release !== null && !isReleaseIdentity(release)) return context.json({ error: "invalid_release" }, 400);
+    try {
+      return context.json(await dependencies.registrar.applyRelease(release));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if ((RELEASE_REFUSALS as readonly string[]).includes(message)) return context.json({ error: message }, 409);
+      console.error("release_apply_failed", error);
+      return context.json({ error: "release_apply_failed" }, 503);
+    }
+  });
   return app;
 };

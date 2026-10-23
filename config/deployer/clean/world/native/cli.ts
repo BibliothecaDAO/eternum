@@ -10,8 +10,7 @@ import { loadNativeWorld } from "./artifacts";
 import { buildNativeManifest } from "./manifest";
 import { deployNativeWorld } from "./deploy";
 import { inspectNativeWorld } from "./plan";
-import type { NativeTransaction, NativeWorldManifest } from "./types";
-import { applyNativeRelease } from "./releases";
+import type { NativeWorldManifest } from "./types";
 
 export async function runNativeDeployment(args: CliArgs, root: string): Promise<void> {
   const manifestPath = args.manifest ?? requiredEnvironment("NATIVE_WORLD_MANIFEST");
@@ -48,21 +47,6 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     return;
   }
   const account = createOperatorAccount(provider, authority, requiredEnvironment("DEPLOYER_PRIVATE_KEY"));
-  if (args["apply-games"]) {
-    const transactions: NativeTransaction[] = [];
-    await applyNativeRelease(
-      local,
-      account,
-      args["apply-games"].split(",").map(Number),
-      args["herald-url"] ?? requiredEnvironment("HERALD_URL"),
-      (transaction) => {
-        transactions.push(transaction);
-        console.error(JSON.stringify({ event: "native_world_transaction", ...transaction }));
-      },
-    );
-    console.log(JSON.stringify({ event: "native_release_applied", transactions }, null, 2));
-    return;
-  }
   const declarer = createMadaraAccount(
     provider,
     requiredEnvironment("DEPLOYER_ACCOUNT_ADDRESS"),

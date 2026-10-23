@@ -3,8 +3,11 @@ import { join, relative } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { l2EnvironmentProblem } from "../../apps/game/src/runtime/l2-environment";
 import { command } from "./process";
-import { Platform, databaseWorkers, workers, type Worker } from "./platform";
+import { Platform, databaseWorkers, workers, type Secrets, type Worker } from "./platform";
 import { clientSite, type PagesSite } from "./settings";
+import { NATIVE_RELEASE_ID } from "../release/native-release";
+import { readReleaseIdentity } from "./release-identity";
+import type { ApplyReleaseRequest, ReleaseReport } from "../../apps/launch-service/src/operator-api";
 
 async function workerReady(platform: Platform, worker: Worker, revision: string) {
   const version = await platform.deployedVersion(worker);
@@ -40,6 +43,61 @@ export async function deployWorkers(platform: Platform, revision: string) {
     if (!ready) throw new PublicError("Worker version did not reach its public route");
   }
 }
+/**
+ * The Cloudflare half once setup has created every resource: the Workers, then the running Frontier games' release,
+ * then the client and the docs, which go live only once the games run the release they expect.
+ */
+export async function publishCloudflare(platform: Platform, revision: string) {
+  await deployWorkers(platform, revision);
+  await advanceFrontierRelease(platform, revision);
+  await deployClient(platform, revision);
+  await deployDocs(platform, revision);
+}
+
+/** What the release route's refusals mean for the person running the deploy. */
+const RELEASE_REFUSALS: Record<string, string> = {
+  release_unverified: "the box half has never built this release; run it (pnpm run deploy) first",
+  release_not_registered: "the shard has not registered it yet; run the box half (pnpm run deploy) first",
+  release_contents_differ:
+    "the shard registered other contents under this release number; run the box half at this commit, or bump the release",
+  release_unpublished: "Herald does not publish it with this commit's schema; rerun the box half",
+  release_older_than_shard: "the shard runs a newer release; deploy a newer commit",
+  release_downgrade: "a running game is pinned past it; deploy a newer commit",
+};
+
+/**
+ * The running Frontier games take the release this commit ships, as the box half built it, before its client goes
+ * live: the launch Worker applies it as the launcher. It refuses until the shard has registered exactly that release
+ * and Herald publishes it with the commit's schema; a rerun sends nothing.
+ */
+export async function advanceFrontierRelease(platform: Platform, revision: string) {
+  if (!platform.apply) throw new PublicError("Dry run cannot advance a release");
+  deploymentStage("advance Frontier release");
+  const secrets = platform.store.read<Secrets>("secrets.json");
+  if (!secrets) throw new PublicError("Service credentials are missing; run setup with --apply before publishing");
+  const request: ApplyReleaseRequest = { release: readReleaseIdentity(platform.store, revision) };
+  const response = await fetch(`${platform.target.origin}/api/factory/release`, {
+    method: "POST",
+    redirect: "error",
+    headers: {
+      "User-Agent": "realms-deployment/1",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${secrets.operator}`,
+    },
+    body: JSON.stringify(request),
+    signal: AbortSignal.timeout(300_000),
+  });
+  const body = (await response.json().catch(() => null)) as (ReleaseReport & { error?: string }) | null;
+  if (!response.ok || !body?.shards) {
+    const code = typeof body?.error === "string" ? body.error : "release_apply_failed";
+    throw new PublicError(`Release ${NATIVE_RELEASE_ID}: ${RELEASE_REFUSALS[code] ?? code}.`, response.status, code);
+  }
+  platform.store.write("release-advance.json", body);
+  for (const { chainId, games } of body.shards)
+    for (const { gameId, from, to } of games)
+      console.log(`Frontier game ${gameId} on ${chainId}: release ${from} → ${to}.`);
+}
+
 export function clientEnvironment(platform: Platform, revision: string) {
   const problem = l2EnvironmentProblem(platform.target.worker, platform.inputs.rpc);
   if (problem) throw new PublicError("Client chain and Alchemy RPC environment do not agree");

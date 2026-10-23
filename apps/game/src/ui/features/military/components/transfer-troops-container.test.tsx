@@ -33,14 +33,21 @@ const troops = (count: bigint, category = "Knight", tier = "T1") => ({
   stamina: { Inline: { amount: "100", settled_at: "360", remainder: 0 } },
 });
 
-afterEach(() => setBlockTimestampSource(null));
+afterEach(() => {
+  setBlockTimestampSource(null);
+  vi.restoreAllMocks();
+});
 
 /**
  * The owner's hyperstructure beside his realm's army of 19,145 T1 knights. Each guard slot holds what `guards` gives
  * it: an empty slot is a stored row with no troops (its stale type left as Crossbowman T2), as the chain leaves it.
  * With `armyBeside`, the transfer goes instead into another of his armies holding those troops.
  */
-const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}, armyBeside?: ReturnType<typeof troops>) => {
+const reinforce = (
+  guards: Record<number, ReturnType<typeof troops>> = {},
+  armyBeside?: ReturnType<typeof troops>,
+  prepare?: (store: GameClientSetup["store"]) => void,
+) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store } = frontierDay();
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
@@ -65,13 +72,19 @@ const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}, armyB
       : []),
   ] as never);
 
+  prepare?.(store);
+  const systemCalls = {
+    explorer_guard_swap: vi.fn(),
+    explorer_explorer_swap: vi.fn(),
+    troop_troop_adjacent_transfer: vi.fn(),
+  };
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   act(() =>
     root.render(
       <GameProvider
-        value={{ store, systemCalls: { explorer_guard_swap: vi.fn() } } as unknown as GameClientSetup}
+        value={{ store, systemCalls } as unknown as GameClientSetup}
         account={{ address: "0x111" } as never}
       >
         {/* In its window, as the game opens it: the window's foot holds the verb. */}
@@ -93,6 +106,8 @@ const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}, armyB
   const button = (label: string) =>
     [...host.querySelectorAll("button")].find((element) => element.textContent?.includes(label));
   return {
+    store,
+    systemCalls,
     text: () => host.textContent ?? "",
     /** The form's refusals, said as alerts (a slot's own "Hit first" tag is part of its button, not a message). */
     errors: () =>

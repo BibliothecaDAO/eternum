@@ -2,6 +2,14 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@/sync/action-outcome", async (original) => ({
+  ...(await original<typeof import("@/sync/action-outcome")>()),
+  untilApplied: async (sent: Promise<unknown>) => {
+    await sent;
+    return "0x1";
+  },
+}));
+
 const { tiles } = vi.hoisted(() => ({
   tiles: {
     current: [] as {
@@ -42,6 +50,7 @@ import {
   setEntityNameLocalStorage,
 } from "@bibliothecadao/eternum";
 import { getNeighborHexes, siteName, TileOccupier } from "@bibliothecadao/types";
+import { transferArmies, TRANSFER_TAPPED } from "./army/transfer-fixture";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useOnePanel } from "./hud/one-panel";
 import { fightEnded } from "./sites/fight-result";
@@ -532,5 +541,47 @@ it("opens a new pick's own card at once over a fight's result, which stands only
     useUIStore.getState().selectOnMap(null);
     useAccountStore.setState({ account: null });
     tiles.current = [];
+  }
+});
+
+it("the map's actual transfer selection shows the survivor before the player confirms", async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const store = transferArmies();
+  useAccountStore.setState({ account: { address: "0x111" } as never });
+  tiles.current = [];
+  useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: TRANSFER_TAPPED });
+  const swap = vi.fn().mockResolvedValue({ transaction_hash: "0x1" });
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    act(() =>
+      root.render(
+        <GameProvider
+          value={{ store, systemCalls: { explorer_explorer_swap: swap } } as never}
+          account={{ address: "0x111" } as never}
+        >
+          <FrontierSelectionSheet
+            realm={store.require("Structure", { game_id: 1, entity_id: 7 })}
+            onResearch={() => undefined}
+          />
+        </GameProvider>,
+      ),
+    );
+    expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Transfer troops");
+    expect(host.textContent).toContain("Army 1 survives at (41, 12) · slot 1");
+    expect(host.textContent).toContain("7 stamina after merging");
+    expect(host.textContent).toContain("Army 2’s XP and upgrades are not carried over");
+    expect(swap).not.toHaveBeenCalled();
+    const confirm = [...host.querySelectorAll("button")].find((button) => button.textContent === "Merge into Army 1")!;
+    await act(async () => confirm.click());
+    expect(swap).toHaveBeenCalledWith(
+      expect.objectContaining({ from_explorer_id: 202, to_explorer_id: 201, count: 500_000_000_000 }),
+    );
+  } finally {
+    act(() => root.unmount());
+    host.remove();
+    useUIStore.getState().selectOnMap(null);
+    useAccountStore.setState({ account: null });
   }
 });

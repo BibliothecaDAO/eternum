@@ -23,8 +23,11 @@ Frontier fight cards and Events share **Victory**, **Army lost** and **Guard hol
 site by its one name, the map label's (and a rename): "clientlane2 vs Ashford · Victory", "Ashford: Victory, lost 84,
 guard 154 to 0", "Ashford cleared", "Ashford found"; its guard's species is the fight's forces ("507 T1 Knight vs 154
 Wraith") and a find's kind. A roaming beast's card is titled by its species; the fight result retains that species'
-portrait after the guard clears. A Frontier founding line names the settler without the realm's off-map settlement
-coordinate.
+portrait after the guard clears. Today writes the XP each line moved: "+79 labor, +2 XP" (a reveal), "Ashford cleared,
++82 XP" (a clear, from the guard the site started with), "Battle Uncommon, −100 XP" (a level-up's price). A Shrine's 200
+XP and the XP an emptied army takes with it in a merge leave no story, so no line. Dev: `/lab/kit/hud/today` (the
+owner's 22 October day, through the log's own lines). A Frontier founding line names the settler without the realm's
+off-map settlement coordinate.
 
 ## Cleared-site standard
 
@@ -487,7 +490,11 @@ an eligible player. The lab proof does not establish those live actions.
   realm Knights, one Crossbowmen, one Paladins, in an order drawn per player. No army stands on the map at the start;
   the player creates one from the reserve.
 - **Merging armies.** Select an army, then an adjacent army or realm of yours: the transfer panel moves troops between
-  them, across realms too. Both sides must hold the same troop type and tier.
+  them, across realms too. Both sides must hold the same troop type and tier. Frontier opens its **Transfer troops**
+  sheet: a full merge shows which army survives (unspent XP plus all purchased or trained tiers; ties keep the target),
+  its position and slot, the resulting stamina and the other army’s XP and upgrades lost. The troop totals and **Merge
+  into …** button name that same survivor. A changed army refuses confirmation until the new result is reviewed. Partial
+  transfers keep both armies. Dev: `/lab/kit/hud/merge`; tests drive the map’s actual selection card.
 
 ## World atmosphere
 
@@ -759,3 +766,8 @@ on native WebGPU. `verify:beasts` checks all eight deliveries, budgets and edita
 checks decoded triangles for zero masonry contacts at each production scale. All authoring sources and paint live in
 `asset-sources/frontier-beasts/refined/`; `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those
 exact eight packed sources. There is one production path per species and no separate study GLB.
+
+Frontier army merges: select an army, then an adjacent owned army, open Transfer and choose **Max**. Before **Transfer
+Troops**, the panel names the army that survives, its position and slot, retained progression and resulting stamina. A
+full merge keeps the higher value of unspent XP plus all four attributes' cumulative tier prices (including training);
+ties keep the target. Partial transfers retain both armies. The survivor remains on its own hex; the loser's XP is lost.

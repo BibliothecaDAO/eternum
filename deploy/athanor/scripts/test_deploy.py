@@ -140,6 +140,7 @@ class ActivationTest(unittest.TestCase):
                     patch.object(deploy, "render_environment", return_value=""),
                     patch.object(deploy, "check_operator_approval"),
                     patch.object(deploy, "start", return_value={"status": "pending"}),
+                    patch.object(deploy, "publish_releases"),
                     patch.object(deploy, "activate") as activate,
                 ):
                     self.assertEqual(deploy.main("test", root), int(mismatch))
@@ -301,6 +302,80 @@ class RestartUnfinishedTest(unittest.TestCase):
                 self.assertIn('chain identity differs', deploy.unfinished_differences(data, inputs, release()))
                 (data / 'host-keys.json').unlink()
                 self.assertEqual(deploy.unfinished_differences(data, inputs, release()), ['initialization is incomplete'])
+
+    def test_the_next_release_continues_the_shard_and_any_other_change_does_not(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            inputs = {'chain_id': 'TEST', 'guardian_url': 'https://identity.test/api/guardian',
+                      'l2_gas_bound': '0x10', 'presets': [2, 5]}
+            manifest, initialized = deployed()
+            manifest['shard'].update(chainId='0x54455354', guardianPublicKey='0x7')
+            for name in ('host-keys.json', 'host-accounts.json', 'vrf-key.json', 'gameplay-contracts.json', 'chain-config.yaml', 'harness.env'):
+                (data / name).write_text('{}')
+            (data / 'native-world.json').write_text(json.dumps(manifest))
+            (data / 'initialized.json').write_text(json.dumps(initialized))
+            (data / 'init-configuration.json').write_text(json.dumps({
+                'shard': 'test', 'chain_id': 'TEST', 'guardian_url': inputs['guardian_url'], 'l2_gas_bound': '0x10'}))
+
+            def candidate(release_id, **changes):
+                facts = release()
+                facts['releaseId'] = release_id
+                facts['classes']['logic']['Season'] = '0x22'
+                facts['migrationClassHash'] = '0x23'
+                for key, value in changes.items():
+                    if key == 'games':
+                        facts['classes']['games'] = value
+                    else:
+                        facts[key] = value
+                return facts
+
+            with patch.object(deploy.shard, 'read_guardian_identity', return_value={'guardianPublicKey': '0x7'}):
+                differences = lambda facts: deploy.unfinished_differences(data, inputs, facts)
+                self.assertEqual(differences(candidate(2)), [])
+                self.assertEqual(differences(candidate(3)), [
+                    'release id 1, release has 3', 'Season class 0x2, release has 0x22',
+                    'migration class 0x0, release has 0x23'])
+                self.assertEqual(differences(candidate(2, games='0x99')), ['Games class 0x01, release has 0x99'])
+                self.assertEqual(differences(candidate(2, schema='0xother')), ['schema 0xs, release has 0xother'])
+                self.assertEqual(differences(candidate(2, presets={'2': '0x20', '5': '0x51'})),
+                                 ['preset 5 commitment 0x050, release has 0x51'])
+            # After the run the shard must run this release exactly: verification never accepts the previous one.
+            self.assertEqual(deploy.release_differences(candidate(2), manifest, initialized, [2, 5]), [
+                'release id 1, release has 2', 'Season class 0x2, release has 0x22',
+                'migration class 0x0, release has 0x23'])
+
+
+class PublishReleasesTest(unittest.TestCase):
+    """Herald serves the release mapping it read at its start; a release init registered later needs a restart."""
+
+    def publish(self, served):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "data").mkdir()
+            (directory / "data/native-world.json").write_text(json.dumps({"native": {
+                "releaseId": 2, "activeSchema": "0xs", "releaseSchemas": {"1": "0xs", "2": "0xs"}}}))
+            stages = []
+            with (
+                patch.object(deploy, "service_json", side_effect=[{"releaseSchemas": value} for value in served]) as read,
+                patch.object(deploy, "wait_for_identity"),
+                patch.object(deploy.subprocess, "run") as run,
+            ):
+                deploy.publish_releases(directory, {"public_herald_url": "https://herald.test/"}, stages.append)
+            self.assertEqual(stages, ["publish releases"])
+            self.assertEqual(read.call_args.args[0], "https://herald.test/manifest")
+            return [call.args[0][-5:] for call in run.call_args_list]
+
+    def test_a_herald_serving_every_release_is_left_running(self):
+        both = {"1": "0xs", "2": "0xs"}
+        self.assertEqual(self.publish([both, both]), [])
+
+    def test_a_herald_started_before_the_registration_restarts_from_the_published_manifest(self):
+        self.assertEqual(self.publish([{"1": "0xs"}, {"1": "0xs", "2": "0xs"}]),
+                         [["up", "-d", "--no-deps", "--force-recreate", "herald"]])
+
+    def test_a_herald_still_missing_a_release_after_its_restart_stops_the_deployment(self):
+        with self.assertRaisesRegex(RuntimeError, r"Herald does not publish releases \[2\]"):
+            self.publish([{"1": "0xs"}, {"1": "0xs"}])
 
 
 class ChainIdentityTest(unittest.TestCase):

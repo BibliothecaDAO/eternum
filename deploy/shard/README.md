@@ -109,10 +109,13 @@ roles before directory activation. Never initialize fresh host keys over an inco
 
 ## Contract releases
 
-Games and its VRF configuration are immutable for the life of the shard. Releases register new logic classes and
-explicitly apply them to games through the existing owner-only calls. The baked release facts include the verifier class
-hash. A schema-changing release still requires the repository's release/migration procedure; do not edit a published
-release's contents or reuse a chain identity for a fresh world.
+Games and its VRF configuration are immutable for the life of the shard. A deployment whose baked release facts name the
+shard's next release, with the same schema and Games class, registers it: init runs the world deployer, which declares
+the changed logic classes and registers them under the next id. Deploy then restarts Herald from the published manifest,
+so `/manifest` maps every release. A registration moves no game: games created afterwards start on the new release, and
+the launch Worker, which holds the launcher, applies it to the running Frontier games during the Cloudflare deploy. The
+baked release facts include the verifier class hash. A schema-changing release still requires the repository's
+release/migration procedure; do not edit a published release's contents or reuse a chain identity for a fresh world.
 
 ## Shipped node settings
 

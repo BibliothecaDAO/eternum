@@ -36,16 +36,17 @@ been made for these new accounts or the revised reward contracts.
 
 Install Bun 1.4, Node 22, pnpm 10.25, git, GitHub CLI and SSH. Before setup or season, run
 `pnpm install --frozen-lockfile --ignore-scripts`. Deploy and teardown need no local dependencies; Cloudflare deployment
-installs its dependencies in its temporary commit export. Authenticate `gh` with repository and Actions read permissions
-(plus permission to push the public address book). The Cloudflare token must be scoped to exactly one account. Required
-permissions: Account — Workers Scripts edit, D1 edit, Pages edit, Workers R2 Storage edit, Access: Apps and Policies
-edit, Access: Organizations, Identity Providers, and Groups edit; Zone for the environment's zone — Zone read, DNS edit,
-Workers Routes edit, Cache Rules edit (shown as 'Cache Settings' in the token screen). Turn on Cloudflare Zero Trust
-once for the account (its free plan; any team name): the admin page sits behind Access. Enable R2 on the account once.
-Prerequisites read D1, Pages, R2, the zone, Workers scripts and the zone’s rulesets list before any STRK is spent; these
-reads cannot verify write permissions. Refusals name the resource family, HTTP status and numeric Cloudflare codes,
-never the response text. The Resend key needs the environment's verified email sending domain. The one Alchemy URL is
-also used in the browser build and is therefore public to players.
+installs its dependencies in its temporary commit export, and reads the box's build record over the same SSH alias as
+the box command. Authenticate `gh` with repository and Actions read permissions (plus permission to push the public
+address book). The Cloudflare token must be scoped to exactly one account. Required permissions: Account — Workers
+Scripts edit, D1 edit, Pages edit, Workers R2 Storage edit, Access: Apps and Policies edit, Access: Organizations,
+Identity Providers, and Groups edit; Zone for the environment's zone — Zone read, DNS edit, Workers Routes edit, Cache
+Rules edit (shown as 'Cache Settings' in the token screen). Turn on Cloudflare Zero Trust once for the account (its free
+plan; any team name): the admin page sits behind Access. Enable R2 on the account once. Prerequisites read D1, Pages,
+R2, the zone, Workers scripts and the zone’s rulesets list before any STRK is spent; these reads cannot verify write
+permissions. Refusals name the resource family, HTTP status and numeric Cloudflare codes, never the response text. The
+Resend key needs the environment's verified email sending domain. The one Alchemy URL is also used in the browser build
+and is therefore public to players.
 
 `environments.json` is the one dev/production table for this command. Dev uses the reviewed `deploy/release/dev.json`,
 SSH alias `realms-dev`, and the existing dev tunnel. Production's book, `production.json`, starts with dev's test LORDS
@@ -110,7 +111,9 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
 
 ## Deploy
 
-After setup, the box and Cloudflare halves can run independently from the same pushed commit:
+After setup, the box and Cloudflare halves run from the same pushed commit, independently except for a new world release
+(`deploy/release/native-release.ts`): then the box half goes first, and the Cloudflare half refuses until the shard has
+the release.
 
 ```sh
 pnpm run deploy dev
@@ -122,11 +125,23 @@ in `deploy/first/commit.txt`. The box command builds images on the target box, i
 Full output, including builds and failures, stays in a mode-0600 `deploy-*.log` in the run directory; the command prints
 its path, failing stage, HTTP status and fixed service error. Deployment holds the box's stack lock. The world names the
 launcher and relay accounts at creation; each Worker joins using its own device from its alarm or cron. Deployment does
-not enrol those devices or transfer their roles. Dev uses `realms-dev` in `/opt/athanor/runs/dev`.
+not enrol those devices or transfer their roles. Dev uses `realms-dev` in `/opt/athanor/runs/dev`. On a running shard, a
+commit whose release follows the shard's, with the same schema and Games class, continues it: init registers the
+release, and Herald restarts from the published manifest until its `/manifest` maps every release. Any other release
+change is refused, and a rerun registers nothing.
 
-The Cloudflare command belongs to the credential holder. It exports HEAD to a temporary directory, installs locked
-dependencies, builds workspace packages, migrates D1 and publishes Workers, then builds and publishes the client, then
-builds the docs (`pnpm run build:docs`, the build validation runs) and publishes them to `docs.realms.party` (dev:
+The Cloudflare command belongs to the credential holder. It first reads, over the box's SSH alias, the box's record of
+its last build (`release.json` in the run directory): the release facts the init image baked. It takes them as this
+commit's release only when the record is the same release and `git diff` finds no change between the two commits in
+`RELEASE_SOURCES` (`deploy/first/release-identity.ts`: the world's contracts and Scarb path dependencies, the release
+id, and the image that compiles them); otherwise it asks for the box half at this commit first. It then exports HEAD to
+a temporary directory, installs locked dependencies, builds workspace packages, migrates D1 and publishes Workers. It
+hands that release to the launch Worker, which advances the running Frontier games to it, signed by the launcher. The
+Worker resolves each Frontier launch's game by its name on the chain, whatever the launch's state, so a launch
+interrupted after creating its game is included. It refuses, by name and before sending anything, until the shard's
+registered release has those contents and Herald maps every release a game moves through to that schema, and it sends
+nothing for games already there. Only then does it build and publish the client, then builds the docs
+(`pnpm run build:docs`, the build validation runs) and publishes them to `docs.realms.party` (dev:
 `docs.dev-realms.party`). Each run uploads both sites' builds and checks each at its own address, byte for byte, before
 the command ends, so a rerun at the same commit proves what it published. It refuses to start until setup has created
 every resource, so a site new to the deployment reaches an existing environment through `setup --apply`. Neither deploy

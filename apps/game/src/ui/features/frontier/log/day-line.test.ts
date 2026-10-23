@@ -1,7 +1,7 @@
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
-import { campBeside } from "../sites/site-fixture";
+import { campBeside, SITE } from "../sites/site-fixture";
 import { dayLogLine } from "./day-line";
 
 const story = (name: string, storyPayload: Record<string, unknown>, title = "The story's own title") => ({
@@ -48,6 +48,42 @@ describe("the day log's line for a story", () => {
     expect(dayLogLine(story("ExplorerCreateStory", { explorer_id: 201 }), store)).toBe("Army 2 deployed");
     expect(dayLogLine(story("ExplorerDeleteStory", { explorer_id: 201 }), store)).toBe("Army 2 disbanded");
     expect(dayLogLine(story("ExplorerCreateStory", { explorer_id: 999 }), store)).toBe("Army deployed");
+  });
+
+  it("writes the XP each story moved: a reveal's, a clear's by the guard the site started with, a level-up's price", () => {
+    const { store } = campBeside();
+    // Prod's rules: 2 XP a reveal. The fixture's site started with 1,100 guards, so its clear pays 82 XP whatever
+    // the last attack killed (√(25 × 1,100) = 165, halved).
+    store.applyFacts([
+      {
+        model: "ArmyProgressionRules",
+        key: "0x101",
+        value: {
+          game_id: 1,
+          reveal_xp: 2,
+          fixed_xp: 200,
+          uncommon_xp: 100,
+          rare_xp: 200,
+          epic_xp: 400,
+          legendary_xp: 800,
+        },
+      },
+    ] as never);
+    const reveal = { resource_type: ResourcesIds.Labor, amount: "98400000000" };
+    expect(dayLogLine(story("ExplorationReward", reveal), store)).toBe("+98 labor, +2 XP");
+    expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store)).toBe(
+      "Troll cleared, +82 XP",
+    );
+    expect(dayLogLine(story("TierBought", { price: "0x64" }, "Battle Uncommon"), store)).toBe(
+      "Battle Uncommon, −100 XP",
+    );
+    expect(dayLogLine(story("TierBought", { price: "12500" }, "Battle Legendary"), store)).toBe(
+      "Battle Legendary, −12.5K XP",
+    );
+    // A clear of a site this client no longer holds keeps its title: no figure is guessed.
+    expect(dayLogLine(story("SitePayout", { site_id: 999, reward: null }, "Troll cleared"), store)).toBe(
+      "Troll cleared",
+    );
   });
 
   it("keeps the title of any story it has no line of its own for", () => {

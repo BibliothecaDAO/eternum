@@ -19,6 +19,8 @@ export const GAME_ENVIRONMENTS = [
 export type FactoryRunRecord = ReturnType<typeof toFactoryRunRecord>;
 
 export type { GameEnvironmentId, PlaytestSlot, SeasonPhase, SeasonPhaseName, TestBlitz };
+/** `POST /api/factory/release` and its answer. */
+export type { ApplyReleaseRequest, ReleaseIdentity, ReleaseReport } from "./release";
 
 /** `POST /api/slots`. */
 export interface OpenSlotRequest {

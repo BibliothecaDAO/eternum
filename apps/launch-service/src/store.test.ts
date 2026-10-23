@@ -141,6 +141,19 @@ test("one Frontier season is created once by every tick and continued like any f
   expect((await store.startNext(Date.now()))?.id).toBe(next.id);
 });
 
+test("every game run's name is listed per environment and chain, whatever its state", async () => {
+  const seasonStart = "2027-01-01T00:00:00.000Z";
+  const chain = new D1LaunchStore(database.db, testChain("0x1"));
+  const other = new D1LaunchStore(database.db, testChain("0x2"));
+  const done = await scheduleFrontierSeason(chain, season(seasonStart));
+  await completeFreeFixture(chain, (await chain.startNext(Date.now()))!.id, frontierSummary(done.name, seasonStart));
+  const next = await scheduleFrontierSeason(chain, season("2027-04-30T00:00:00.000Z"));
+  await chain.enqueue("game", { environment: "madara.blitz", gameName: "bltz-7" });
+  const elsewhere = await scheduleFrontierSeason(other, season(seasonStart));
+  expect((await chain.gameNames("madara.frontier")).sort()).toEqual([done.name, next.name].sort());
+  expect(await other.gameNames("madara.frontier")).toEqual([elsewhere.name]);
+});
+
 test("retirement preserves history while unfinished live work remains observable", async () => {
   const seasonStart = "2027-01-01T00:00:00.000Z";
   const oldChain = new D1LaunchStore(database.db, testChain("0x1"));
