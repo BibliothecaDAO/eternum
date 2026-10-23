@@ -1,6 +1,6 @@
 /**
  * The world map's selection as the page shows it: the selected hex, the structure on it, the hexes ringed, the army,
- * and the structure under the pointer.
+ * the structure under the pointer, and the hex the camera looks at.
  */
 interface MapSelectionSnapshot {
   hex: { col: number; row: number } | null;
@@ -14,6 +14,8 @@ interface MapSelectionSnapshot {
    * (the proof's transfer gesture right-clicks another of the viewer's).
    */
   hovered: { id: number; ownedByViewer: boolean; selectedHolding: boolean } | null;
+  /** The hex at the camera's target, in contract coordinates (the day turn's proof reads it against the realm's site). */
+  camera: { col: number; row: number } | null;
 }
 
 interface MapSelectionWindow {

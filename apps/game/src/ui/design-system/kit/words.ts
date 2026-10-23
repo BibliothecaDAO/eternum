@@ -477,6 +477,9 @@ export const YOU_PLACED = "You placed";
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
 export const SEASON_ERROR = "Season did not answer.";
 export const TODAY_ERROR = "Today did not answer.";
+/** A day's totals the player's history cannot give: the read keeps only the newest stories, or did not answer. */
+export const DAY_HISTORY_SHORT = "Your history no longer reaches back to this day's start, so its totals are unknown.";
+export const DAY_HISTORY_FAILED = "Your history did not answer, so this day's totals are unknown.";
 export const BACK = "Back";
 
 /** Looking at another realm, and stopping. */

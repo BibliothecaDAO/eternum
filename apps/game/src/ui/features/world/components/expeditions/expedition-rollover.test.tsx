@@ -74,7 +74,7 @@ beforeEach(() => {
   Object.assign(world, { chainDay: 1, blockDay: 1, player: "0x1" });
   world.navigate.mockReset();
   world.rebuild.mockReset();
-  useDayEndStore.setState({ ...RESTING, summaryShown: true });
+  useDayEndStore.setState({ ...RESTING, summary: "shown" });
 });
 
 afterEach(() => {
@@ -152,6 +152,22 @@ describe("a player's day turning", () => {
     seconds(1);
     expect(world.rebuild).toHaveBeenCalledTimes(1);
     expect(world.navigate).toHaveBeenCalledWith(NEW_SITE);
+  });
+});
+
+describe("a player who opens the game after the day ended", () => {
+  it("brings the camera onto the realm's site in the black their Continue drops to", () => {
+    world.chainDay = 2;
+    world.blockDay = 2;
+    mount();
+    act(() => useDayEndStore.getState().begin("later"));
+    expect(world.navigate).not.toHaveBeenCalled();
+    act(() => useDayEndStore.getState().continueDay());
+    seconds(DAY_END_TIMING.nightfall);
+    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE);
+    expect(world.rebuild).not.toHaveBeenCalled();
+    seconds(DAY_END_TIMING.black);
+    expect(phase()).toBe("dawn");
   });
 });
 

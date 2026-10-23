@@ -2,6 +2,7 @@ import { Position } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+import { dayTurnScenario } from "./day-turn-scenario";
 import { installLabChain, LAB_GAME, type LabScenario } from "./lab-chain";
 import { realmScenario } from "./realm-scenario";
 import { spireScenario } from "./spire-scenario";
@@ -12,6 +13,10 @@ const SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   spire: spireScenario,
   realm: realmScenario,
   "painted-buildings": paintedBuildingsScenario,
+  "day-turn": dayTurnScenario("live"),
+  "day-later": dayTurnScenario("later"),
+  "day-turn-slow": dayTurnScenario("live", "late"),
+  "day-later-short": dayTurnScenario("later", "capped"),
 };
 
 /**
