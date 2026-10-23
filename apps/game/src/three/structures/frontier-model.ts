@@ -20,9 +20,10 @@ import { mapAnimationTime as time } from "../effects/endgame/state";
 import { createInstancedMeshWithSharedMatrices } from "../utils/create-instanced-mesh";
 import { MaterialPool } from "../utils/material-pool";
 import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEASTS, type FrontierSpecies } from "./frontier-beast";
+import { frontierPaintedPath } from "./frontier-painted-buildings";
 
 export function frontierModelKind(path: string) {
-  if (path === FALLEN_REALM_RUIN_PATH) return "ruin";
+  if (path === FALLEN_REALM_RUIN_PATH || path === frontierPaintedPath("fallen-realm-ruin")) return "ruin";
   return (Object.keys(FRONTIER_BEASTS) as FrontierSpecies[]).find((species) => FRONTIER_BEASTS[species].path === path);
 }
 

@@ -11,6 +11,9 @@ import { ModelLabEnvironment } from "./model-lab-environment";
 import { readModelLabSettings } from "./model-lab-settings";
 import { FrontierModel, frontierModelKind } from "../../structures/frontier-model";
 import { RewardTileModel } from "../../rewards/reward-tile-model";
+import { SettlementModel } from "../../structures/settlement-model";
+import { isRealmModelPath, isSettlementModelPath } from "../../constants/scene-constants";
+import { bakeLineupTransforms } from "./bake-lineup-transforms";
 import {
   resolveWorldmapCameraFieldOfViewDegrees,
   resolveWorldmapCameraPitchRadians,
@@ -170,16 +173,26 @@ export async function mountStaticLineup(
         if (!batch) {
           const gltf = await gltfLoader.loadAsync(part.path);
           signal.throwIfAborted();
+          bakeLineupTransforms(gltf.scene);
           const capacity = lineup.flatMap((entry) => entry.parts).filter((entry) => entry.path === part.path).length;
           const kind = frontierModelKind(part.path);
           const model = kind
             ? new FrontierModel(gltf, capacity, kind)
             : part.path === "/models/reward-tiles/rift.glb"
               ? new RewardTileModel(gltf, capacity)
-              : new InstancedModel(gltf, capacity, false, asset.label);
+              : isSettlementModelPath(part.path)
+                ? new SettlementModel(gltf, capacity, isRealmModelPath(part.path) ? "realm" : "village")
+                : new InstancedModel(gltf, capacity, false, asset.label);
+          models.push(model);
+          if (model instanceof SettlementModel) {
+            await model.prepare();
+            for (let index = 0; index < capacity; index++) {
+              model.setRelationshipAt(index, "owned");
+              if (model.kind === "realm") model.setOrderAt(index, 1);
+            }
+          }
           batch = { model, count: 0, parts: [] };
           batches.set(part.path, batch);
-          models.push(model);
           scene.add(model.group);
           const active = batch;
           model.instancedMeshes.forEach((mesh) => {
