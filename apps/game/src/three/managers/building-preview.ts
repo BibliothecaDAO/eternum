@@ -3,6 +3,7 @@ import { HoverSound } from "@/three/sound/hover-sound";
 import { ResourceIdToMiningType } from "@bibliothecadao/eternum";
 import { BuildingType, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/types";
 import * as THREE from "three";
+import { holdPartHeadings } from "../structures/held-heading";
 
 interface BuildingPreviewSource {
   cacheKey: string;
@@ -183,6 +184,7 @@ export class BuildingPreview {
 function clonePreviewModel(template: THREE.Group): THREE.Group {
   const model = template.clone(true);
   model.position.set(0, -100, 0);
+  holdPartHeadings(model);
   model.traverse((child) => {
     if (!(child instanceof THREE.Mesh)) {
       return;

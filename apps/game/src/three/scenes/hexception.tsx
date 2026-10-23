@@ -3,6 +3,7 @@ import {
   resolveBuildingModelSelection,
   type BuildingModelSelection,
 } from "./hexception-building-model";
+import { holdPartHeadings } from "../structures/held-heading";
 import { isWonderModelPath } from "../structures/realm-design";
 import { RealmLivingAura } from "../structures/realm-living-aura";
 import { HexceptionTierModels, disposeBuildingModel } from "./hexception-tier-models";
@@ -1466,6 +1467,7 @@ export default class HexceptionScene extends HexagonScene {
       const modelPath = selection.tierPath ?? categoryPaths[selection.type];
       instance.rotation.set(0, resolveStructureRotationY([modelPath], instance.rotation.y), 0);
     }
+    holdPartHeadings(instance);
     if (selection.tierPath && isWonderModelPath(selection.tierPath)) {
       const aura = new RealmLivingAura(buildingData.model);
       aura.setEntityAt(0, this.state.structureEntityId);
