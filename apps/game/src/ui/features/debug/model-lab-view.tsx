@@ -1,5 +1,6 @@
 import { FrontierSiteLab } from "./frontier-site-lab";
 import { FrontierBeastLab } from "./frontier-beast-lab";
+import { FrontierPaintedLab } from "./frontier-painted-lab";
 import { WorkshopModelLab } from "./workshop-model-lab";
 import { RealmSeriesLab } from "./realm-series-lab";
 import { ClearedSiteLab } from "./cleared-site-lab";
@@ -46,6 +47,7 @@ export function ModelLabView() {
   const [params] = useSearchParams();
   if (params.get("family") === "beasts")
     return params.get("group") === "site-map" ? <FrontierSiteLab /> : <FrontierBeastLab />;
+  if (params.get("family") === "frontier-painted") return <FrontierPaintedLab />;
   if (params.get("family") === "workshops") return <WorkshopModelLab />;
   if (params.get("family") === "cleared-sites") return <ClearedSiteLab />;
   return params.get("family") === "realms" ? <RealmSeriesLab /> : <UnitModelLabView />;
@@ -167,6 +169,7 @@ function UnitModelLabView() {
         <Link to="/lab/models?family=beasts">Frontier beasts</Link>
         <Link to="/lab/models?family=realms">Realm ladder</Link>
         <Link to="/lab/models?family=workshops">Workshop · Craft Yard</Link>
+        <Link to="/lab/models?family=frontier-painted">Frontier buildings · painted set</Link>
         <Link to="/lab/models?family=cleared-sites">Cleared sites</Link>
         <div>
           <strong>Models & motion</strong>

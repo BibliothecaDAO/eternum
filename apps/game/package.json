@@ -83,6 +83,7 @@
     "inventory:map-context": "node ./scripts/sheet-map/inventory.mjs",
     "prove:workshops": "node scripts/workshops/prove.mjs",
     "verify:beasts": "vitest run --config vitest.assets.config.ts scripts/frontier-beasts/beast-assets.test.mjs",
+    "verify:painted-buildings": "vitest run --config vitest.assets.config.ts scripts/frontier-painted/painted-building-assets.test.mjs",
     "prove:beasts": "node scripts/frontier-beasts/prove.mjs"
   },
   "dependencies": {
