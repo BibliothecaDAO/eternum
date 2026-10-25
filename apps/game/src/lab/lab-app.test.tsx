@@ -43,6 +43,7 @@ vi.mock("../ui/features/debug/map-label-lab/map-label-lab-view", () => ({
 }));
 vi.mock("../ui/features/debug/motion-lab/motion-lab-view", () => ({ MotionLabView: () => <Tool name="motion" /> }));
 vi.mock("../ui/features/debug/kit-lab/kit-lab-view", () => ({ KitLabView: () => <Tool name="kit" /> }));
+vi.mock("./options/view", () => ({ LabOptionsView: () => <Tool name="options" /> }));
 vi.mock("../shell/lab/app-lab", () => ({ AppLabView: () => <Tool name="app" /> }));
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -106,6 +107,7 @@ it.each([
   ["/lab/motion", "motion"],
   ["/lab/kit/hud/live", "kit"],
   ["/lab/app/home/profile", "app"],
+  ["/lab/options?option=b&room=Data", "options"],
 ])("opens %s through the common bootstrap", async (address, name) => {
   await openLab(address);
   expect((await findTool(name)).getAttribute("data-address")).toBe(address);

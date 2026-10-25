@@ -6,6 +6,13 @@ import "./lab-app.css";
 
 const TOOLS = [
   {
+    group: "Review",
+    label: "Lab redesign · options",
+    path: "/lab/options",
+    route: "options",
+    View: lazy(() => import("./options/view").then((module) => ({ default: module.LabOptionsView }))),
+  },
+  {
     group: "Art",
     label: "Terrain & buildings",
     path: "/lab",
