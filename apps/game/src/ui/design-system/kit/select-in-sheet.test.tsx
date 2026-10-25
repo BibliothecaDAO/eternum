@@ -82,8 +82,9 @@ const SURFACES: {
           )}
         />,
       ),
-    isOpen: () => document.querySelector(".ui-sheet__backdrop") !== null,
-    pressOutside: () => document.querySelector<HTMLButtonElement>(".ui-sheet__backdrop")!.click(),
+    isOpen: () => document.querySelector(".ui-sheet") !== null,
+    // A HUD sheet leaves the stage playable: no press outside closes it, its own cross does.
+    pressOutside: () => document.querySelector<HTMLButtonElement>('.ui-sheet button[aria-label="Close"]')!.click(),
   },
   {
     name: "the kit sheet",
@@ -194,7 +195,7 @@ describe.each(Object.entries(SCREENS))("on a %s", (_, screen) => {
       true,
     ]);
 
-    // A press outside still closes the surface.
+    // Its way out (a press outside, or a HUD sheet's cross) still closes the surface.
     await act(async () => surface.pressOutside());
     expect(surface.isOpen()).toBe(false);
   });

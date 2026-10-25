@@ -79,7 +79,7 @@ const END = {
   signOutAsked: `[...document.querySelectorAll("[data-kit-sheet]")].some((sheet) => sheet.innerText.includes("Sign out?"))`,
   docs: `[...document.querySelectorAll("a[href]")].some((a) => a.href.startsWith("https://docs.realms.party") && a.target === "_blank")`,
   // Realms' marketplace, a place of the bar (a phone's tabs) that opens its own site in a new tab.
-  market: `[...document.querySelectorAll('[data-role="tab"]')].some((a) => a.href === "https://market.realms.world/" && a.target === "_blank")`,
+  market: `[...document.querySelectorAll('[data-role="tab"]')].some((a) => a.href === "https://realms.market/" && a.target === "_blank")`,
   // What's new under its place, a section's tab chosen and that section's changes shown under its name.
   news: `location.pathname === "/scroll" && ${placeLit("What's new")} && [...document.querySelectorAll('[role="tab"][aria-selected="true"]')].some((tab) => tab.innerText.trim() === "Blitz") && [...document.querySelectorAll(".app-panel h2")].some((name) => name.innerText.trim() === "Blitz")`,
   // The terms, read from the footer: a page no place holds, so none is lit (qa-app-1 P3-3).

@@ -12,7 +12,7 @@ function facts(depths = [2]) {
     add("Structure", {
       entity_id: i + 1,
       owner: i + 10,
-      base: { category: 1 },
+      base: { category: 1, level: i % 4 },
       metadata: { deepest_depth: depth, order: i + 3 },
     }),
   );
@@ -112,6 +112,7 @@ describe("Frontier season standings", () => {
     expect(board.entries[0]).toMatchObject({
       structure_id: "1",
       deepest_depth: 2,
+      level: 0,
       order: 3,
       sites_cleared: { total: 6, camps: 3, rifts: 1, ruins: 1, beasts: 1 },
       chests_earned: 1,

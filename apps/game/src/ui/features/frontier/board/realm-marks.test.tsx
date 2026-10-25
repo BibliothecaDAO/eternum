@@ -17,7 +17,7 @@ vi.mock("@/hooks/use-player-profile", async () => {
   };
 });
 
-import { LordName, OrderMark } from "./realm-marks";
+import { LordName, OrderMark, RealmBadge } from "./realm-marks";
 
 const render = (node: ReactNode) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -42,6 +42,15 @@ describe("a lord and a realm's Order on the HUD", () => {
     expect(unclaimed.querySelector(".text-hud-muted")).not.toBeNull();
     expect(unclaimed.querySelector("img")).toBeNull();
     expect(render(<LordName account="0xabc" you />).textContent).toBe("You");
+  });
+
+  it("shows a realm's rank by its castle, with its deepest reach as a badge, and no badge before the first", () => {
+    const deep = render(<RealmBadge level={1} reach={2} />);
+    expect(deep.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe("City · Ethereal II");
+    expect(deep.textContent).toBe("II");
+    const home = render(<RealmBadge level={0} reach={0} />);
+    expect(home.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe("Settlement");
+    expect(home.textContent).toBe("");
   });
 
   it("names the Order its painting shows", () => {

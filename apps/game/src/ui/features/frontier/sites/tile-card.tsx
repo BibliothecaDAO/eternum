@@ -315,6 +315,7 @@ const sitePay = (plan: SiteCardPlan) => {
 /** The attack as it leaves, for its result: who fights whom, for which realm, and the XP a clear of it gives. */
 const fightSentBy = (army: NativeRows["ExplorerTroops"], selected: AttackTarget, plan: SiteCardPlan): FightSent => ({
   targetId: targetId(selected),
+  tile: { col: selected.tile.hexCoords.col, row: selected.tile.hexCoords.row },
   site: plan.kind,
   armyId: safeInteger(army.explorer_id),
   armyArt: armyArt(army.troops),

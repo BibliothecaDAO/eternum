@@ -3,7 +3,15 @@ import { mkdtempSync, rmSync, mkdirSync, readFileSync, readdirSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as processTools from "./process";
-import { clientEnvironment, deployClient, deployDocs, deployWorkers } from "./publish";
+import {
+  advanceFrontierRelease,
+  clientEnvironment,
+  deployClient,
+  deployDocs,
+  deployWorkers,
+  publishCloudflare,
+} from "./publish";
+import { NATIVE_RELEASE_ID } from "../release/native-release";
 import { Platform, workers, workerSecrets, type Secrets } from "./platform";
 import { PrivateStore } from "./private-store";
 import { environments, type Inputs } from "./settings";
@@ -191,7 +199,117 @@ test("dry publish refuses every write before commands or transports", async () =
   await expect(deployClient(value, revision)).rejects.toThrow("Dry run");
   await expect(deployDocs(value, revision)).rejects.toThrow("Dry run");
   await expect(deployWorkers(value, revision)).rejects.toThrow("Dry run");
+  await expect(advanceFrontierRelease(value, revision)).rejects.toThrow("Dry run");
   expect(calls).toEqual([]);
+});
+
+/** The release the checkout's run read from the box's build, recorded for `commit`. */
+const IDENTITY = {
+  releaseId: NATIVE_RELEASE_ID,
+  schema: "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e",
+  logic: { season: "0x55e0", troops: "0x77a2" },
+  migration: "0x0",
+};
+const recordIdentity = (value: Platform, commit = revision) =>
+  value.store.write("release-identity.json", { commit, release: IDENTITY });
+
+/** The launch Worker's release route as the deploy reaches it: `answer` for the release call, Worker versions else. */
+function releaseRoute(value: Platform, answer: () => Response) {
+  value.store.write("secrets.json", { operator: "operator-test" } as Secrets);
+  recordIdentity(value);
+  const requests: { url: string; init?: RequestInit }[] = [];
+  globalThis.fetch = mock(async (url: string | URL, init?: RequestInit) => {
+    if (String(url).endsWith("/api/factory/release")) {
+      requests.push({ url: String(url), init });
+      return answer();
+    }
+    return Response.json({
+      environment: value.target.worker,
+      version: String(url).endsWith("/api/health") ? "identity" : "launch",
+    });
+  }) as unknown as typeof fetch;
+  return requests;
+}
+const REPORT = {
+  shards: [
+    {
+      chainId: "0x1",
+      releaseId: NATIVE_RELEASE_ID,
+      games: [{ gameId: 1, from: 1, to: NATIVE_RELEASE_ID, transactions: ["0xa"] }],
+    },
+  ],
+};
+
+test.each(["dev", "production"] as const)(
+  "%s asks the launch Worker, as the operator, to advance its Frontier games to the box's build of this release",
+  async (environment) => {
+    const value = platform(environment);
+    const requests = releaseRoute(value, () => Response.json(REPORT));
+    spyOn(console, "log").mockImplementation(() => {});
+    await advanceFrontierRelease(value, revision);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.url).toBe(`${value.target.origin}/api/factory/release`);
+    expect(requests[0]!.init!.method).toBe("POST");
+    expect(new Headers(requests[0]!.init!.headers).get("authorization")).toBe("Bearer operator-test");
+    expect(JSON.parse(String(requests[0]!.init!.body))).toEqual({ release: IDENTITY });
+    expect(value.store.read<typeof REPORT>("release-advance.json")).toEqual(REPORT);
+  },
+);
+
+test.each([
+  ["release_not_registered", "the shard has not registered it yet; run the box half (pnpm run deploy) first"],
+  [
+    "release_contents_differ",
+    "the shard registered other contents under this release number; run the box half at this commit, or bump the release",
+  ],
+  ["release_unpublished", "Herald does not publish it with this commit's schema; rerun the box half"],
+  ["release_unverified", "the box half has never built this release; run it (pnpm run deploy) first"],
+])("a release the launch Worker refuses (%s) stops the deploy before the client is built", async (code, reason) => {
+  const value = platform();
+  const calls = commands();
+  value.deployedVersion = async (worker) => ({ id: worker.id, revision });
+  releaseRoute(value, () => Response.json({ error: code }, { status: 409 }));
+  await expect(publishCloudflare(value, revision)).rejects.toThrow(`Release ${NATIVE_RELEASE_ID}: ${reason}.`);
+  expect(calls.map((call) => call.argv.join(" "))).toEqual(["pnpm run build:packages"]);
+});
+
+test("the client and the docs go live only after the release step answered", async () => {
+  const value = platform();
+  const calls = commands();
+  value.deployedVersion = async (worker) => ({ id: worker.id, revision });
+  const order: string[] = [];
+  releaseRoute(value, () => {
+    order.push("release");
+    return Response.json(REPORT);
+  });
+  spyOn(console, "log").mockImplementation(() => {});
+  spyOn(processTools, "command").mockImplementation(async (spec) => {
+    calls.push(spec);
+    order.push(spec.argv.join(" "));
+    return "";
+  });
+  await publishCloudflare(value, revision);
+  expect(order.indexOf("release")).toBeLessThan(order.indexOf("pnpm --dir apps/game build"));
+  expect(order.indexOf("release")).toBeGreaterThan(order.indexOf("pnpm run build:packages"));
+});
+
+test("a release read for another commit, or none, asks nothing of the launch Worker", async () => {
+  const value = platform();
+  const requests = releaseRoute(value, () => Response.json(REPORT));
+  recordIdentity(value, "d".repeat(40));
+  await expect(advanceFrontierRelease(value, revision)).rejects.toThrow("No release identity was read for this commit");
+  expect(requests).toEqual([]);
+});
+
+test("a deploy without setup's service credentials asks nothing of the launch Worker", async () => {
+  const value = platform();
+  recordIdentity(value);
+  const requests: unknown[] = [];
+  globalThis.fetch = mock(
+    async (url: unknown) => (requests.push(url), Response.json(REPORT)),
+  ) as unknown as typeof fetch;
+  await expect(advanceFrontierRelease(value, revision)).rejects.toThrow("Service credentials are missing");
+  expect(requests).toEqual([]);
 });
 
 test("deployment executables come from installed dependencies", () => {

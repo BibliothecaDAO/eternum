@@ -18,6 +18,7 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { ActionPaths, ActionType } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { MapSiteCard } from "./map-site-card";
@@ -26,7 +27,7 @@ import { campBeside, SITE_TILE } from "./site-fixture";
 afterEach(() => useUIStore.getState().selectOnMap(null));
 
 describe("a Well's tile card", () => {
-  it("shows the stamina it gives, offers Use only with an army beside it, and uses it", async () => {
+  it("shows the stamina it gives, offers Use only where the army's orders offer it, and uses it", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store } = campBeside();
     store.applyFacts([
@@ -56,10 +57,26 @@ describe("a Well's tile card", () => {
     expect(use()).toBeUndefined();
 
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+    // Selected but offered no Use (the planner has not offered one): no Use.
+    expect(use()).toBeUndefined();
+    // The planner's Use at the site, as the map offers it for the selected army.
+    act(() =>
+      useUIStore.getState().updateEntityActionActionPaths(
+        new Map([
+          [
+            ActionPaths.posKey(SITE_TILE),
+            [
+              { hex: { col: 41, row: 12 }, actionType: ActionType.Move },
+              { hex: { col: SITE_TILE.col, row: SITE_TILE.row }, actionType: ActionType.UseSite, staminaCost: 0 },
+            ],
+          ],
+        ]),
+      ),
+    );
     expect(use()?.disabled).toBe(false);
     await act(async () => use()!.click());
     expect(interact).toHaveBeenCalledWith(
-      expect.objectContaining({ explorer_id: 201n, coord: { alt: false, x: SITE_TILE.col, y: SITE_TILE.row } }),
+      expect.objectContaining({ explorer_id: 201, coord: { alt: false, x: SITE_TILE.col, y: SITE_TILE.row } }),
     );
     act(() => root.unmount());
   });

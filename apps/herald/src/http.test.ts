@@ -423,7 +423,7 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
             game_id: "7",
             entity_id: "1",
             owner: "10",
-            base: { category: 1 },
+            base: { category: 1, level: 2 },
             metadata: { deepest_depth: depth, order: 5 },
           },
         },
@@ -444,7 +444,7 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
   depth = 2;
   head = 13;
   release([]);
-  expect(await (await pending).json()).toMatchObject({ mode: "frontier", entries: [{ deepest_depth: 1 }] });
+  expect(await (await pending).json()).toMatchObject({ mode: "frontier", entries: [{ deepest_depth: 1, level: 2 }] });
   const next = read(new Request(url));
   await vi.waitFor(() => expect(frontierHistory).toHaveBeenCalledWith("7", 13));
   release([]);

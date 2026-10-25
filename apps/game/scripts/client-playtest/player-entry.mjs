@@ -99,8 +99,8 @@ export async function enterAsPlayer(browser, owner, timeoutMs, { card, game }) {
 }
 
 /**
- * A new day opens on the last one's summary card, over the whole page; a player reads it and continues. Returns whether
- * it was shown.
+ * A new day opens on the last one's summary card, over the map; a player reads it and continues. Returns whether it
+ * was shown.
  */
 export async function continuePastTheDaySummary(browser, owner) {
   const shown = () =>

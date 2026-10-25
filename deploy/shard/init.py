@@ -155,6 +155,7 @@ def deploy(config, presets):
     complete = DATA / "initialized.json"
     if complete.exists():
         shard.run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", str(DATA), env["RPC_URL"]], DATA, "shard-roles", env)
+        register_next_release(config, env)
         record = json.loads(complete.read_text())
     else:
         record = deploy_world_once(config, env)
@@ -178,6 +179,15 @@ def deploy_world_once(config, env):
     shard.save_harness_environment(DATA, env)
     manifest = json.loads((DATA / "native-world.json").read_text())
     return {"chainId": manifest["shard"]["chainId"], "world": manifest["world"]["address"]}
+
+
+# A running shard takes this image's release when it is the next one: the deployer registers it and rewrites the
+# manifest, which deploy publishes and Herald then serves. The shard's games keep their pins until the launch Worker
+# advances them.
+def register_next_release(config, env):
+    shard_release = json.loads((DATA / "native-world.json").read_text())["native"]["releaseId"]
+    if json.loads(RELEASE_FACTS.read_text())["releaseId"] != shard_release:
+        shard.register_world_release(config, DATA, env, logs=f"release-{shard_release + 1}")
 
 
 # Registration is idempotent, so every start registers the listed presets: one added later registers without

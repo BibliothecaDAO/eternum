@@ -618,3 +618,13 @@ describe("the plate steps (a live Blitz's map plates, read as drawn)", () => {
     expect(names("frontier-plates-player").slice(0, 2)).toEqual(["enter-on-map", "select-army"]);
   });
 });
+
+describe("the player's Wheat store card", () => {
+  const verify = STEP_SETS.player.steps.find((step) => step.name === "wheat-store").verify;
+
+  it("requires the card to open and close through its store control", () => {
+    expect(verify({ played: { opened: true, closed: false } }).status).toBe("completed");
+    expect(verify({ played: { opened: false, closed: false } }).status).toBe("failed");
+    expect(verify({ played: { opened: true, closed: true } }).status).toBe("failed");
+  });
+});

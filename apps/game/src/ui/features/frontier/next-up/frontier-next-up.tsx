@@ -21,8 +21,8 @@ import { type NextUpFacts, useNextUpFacts } from "./next-up-facts";
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
 /**
- * Frontier's Next up, in the unified HUD's Next up place (the rail's top on a desktop, the band over the dock on a
- * phone): the step the player's day calls for now, with its one button, and the rest a page away (frontierCoachSteps).
+ * Frontier's Next up, in the unified HUD's Next up place (the rail's top on a desktop; on a phone one line under the
+ * strip, a tap from its full step): the step the player's day calls for now, with its one button, and the rest a page away (frontierCoachSteps).
  * It speaks to a player in their own realm; a visit or a spectator has none. Settings' Tips off leaves the alerts.
  */
 export const FrontierNextUp = ({
@@ -51,7 +51,12 @@ export const FrontierNextUp = ({
   const layout = useLayout();
   const orderPinned = order !== null && layout === "phone";
   return (
-    <NextUpView steps={steps.map((step) => toNextStep(step, take))} refusal={useActNowRefusal()} yields={orderPinned} />
+    <NextUpView
+      steps={steps.map((step) => toNextStep(step, take))}
+      refusal={useActNowRefusal()}
+      yields={orderPinned}
+      compact={layout === "phone"}
+    />
   );
 };
 
@@ -67,7 +72,7 @@ const toNextStep = (step: FrontierCoachStep, take: (act: FrontierCoachAct) => vo
 /**
  * What a step's button does: open the realm's board, Deploy from the realm, select the readiest army on the map (or
  * the one whose XP buys a tier, with its sheet open), centre the map on today's camp with its tile picked, or open
- * Research or Production.
+ * Research.
  */
 const useTakeStep = (
   realm: NativeRows["Structure"],
@@ -100,8 +105,6 @@ const useTakeStep = (
         return selectOnMap({ kind: "hex", hex: { col: facts.camp.x, row: facts.camp.y } });
       case "research":
         return onSurface("research");
-      case "production":
-        return onSurface("production");
     }
   };
 };

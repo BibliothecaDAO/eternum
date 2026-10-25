@@ -19,9 +19,7 @@ import {
 import { readClassArtifact } from "../../config/deployer/clean/shared/declare";
 import { registrarWorldOf } from "../../config/deployer/clean/world/native/manifest";
 import { schemaIdentity, type NativeSchema } from "../../apps/herald/src/native/schema";
-
-// Bump for every published change to the logic table or migration.
-const NATIVE_RELEASE_ID = 3;
+import { NATIVE_RELEASE_ID } from "./native-release";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const WORLD = resolve(ROOT, "contracts/l3/world-native");

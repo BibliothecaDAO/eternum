@@ -18,10 +18,8 @@ import { ArmyToken, OpenSlot } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
 /**
- * The realm's armies today. On a phone, the dock: one row with every slot the castle grants in view, the armies out
- * and then an open slot for each army still to deploy. On a desktop, the list down the left: a row each, then one
- * row per open slot, the header counting the slots that stand, and nothing when there is neither (a realm
- * watched with no army out). A visited realm shows its armies read-only and no Deploy.
+ * Every army slot in order: a phone's dock or a desktop's list, each showing its army or starting stamina. Only the
+ * player can deploy into any free slot. A visited realm shows its armies read-only, and an empty desktop list stays absent.
  */
 export const ArmyDock = ({
   realm,
@@ -42,37 +40,46 @@ export const ArmyDock = ({
     ? (openSlots?.length ?? Math.max(0, realm.base.troop_max_explorer_count - armies.length))
     : 0;
   const desktop = useLayout() === "desktop";
+  const free = ordersAllowed ? (openSlots ?? []).toSorted((left, right) => left.slot - right.slot) : [];
+  const next = free[0];
+  const slots = [
+    ...armies.map((army) => ({ number: army.number, army })),
+    ...free.map((slot) => ({ number: slot.number, slot })),
+  ].toSorted((left, right) => left.number - right.number);
   if (desktop && armies.length === 0 && openCount === 0) return null;
+  const entries = slots.map((entry) => {
+    if ("army" in entry) {
+      const Army = desktop ? DockArmyRow : DockToken;
+      return (
+        <Army key={entry.army.explorerId} army={entry.army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />
+      );
+    }
+    return (
+      <DeploySlot
+        key={`slot-${entry.slot.slot}`}
+        realm={realm}
+        slot={entry.slot}
+        pulse={entry.slot === next && armies.length === 0}
+        wide={desktop}
+      />
+    );
+  });
+  const pending =
+    openSlots === undefined &&
+    Array.from({ length: openCount }, (_, index) => (
+      <DeploySlot realm={realm} slot={undefined} key={`open-${index}`} pulse={false} wide={desktop} />
+    ));
   if (desktop)
     return (
       <ArmyList used={armies.length} allowed={armies.length + openCount}>
-        {armies.map((army) => (
-          <DockArmyRow key={army.explorerId} army={army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />
-        ))}
-        {Array.from({ length: openCount }, (_, index) => (
-          <DeploySlot
-            key={openSlots?.[index]?.slot ?? `open-${index}`}
-            realm={realm}
-            slot={openSlots?.[index]}
-            pulse={index === 0 && armies.length === 0}
-            wide
-          />
-        ))}
+        {entries}
+        {pending}
       </ArmyList>
     );
   return (
     <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
-      {armies.map((army) => (
-        <DockToken key={army.explorerId} army={army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />
-      ))}
-      {Array.from({ length: openCount }, (_, index) => (
-        <DeploySlot
-          realm={realm}
-          slot={openSlots?.[index]}
-          key={openSlots?.[index]?.slot ?? `open-${index}`}
-          pulse={index === 0 && armies.length === 0}
-        />
-      ))}
+      {entries}
+      {pending}
     </nav>
   );
 };
@@ -153,7 +160,8 @@ const useWellRefillShown = (army: DockArmy) => {
 };
 
 /**
- * An open slot, with the bar it starts its army on. The chosen slot carries its deployment's wait after the sheet closes.
+ * An open slot, with the bar it starts its army on; the first one carries the wait of the army being deployed once the
+ * Deploy sheet has closed. A desktop's list shows one, the next to fill, as a row.
  */
 const DeploySlot = ({
   realm,
@@ -167,7 +175,7 @@ const DeploySlot = ({
   pulse: boolean;
   wide?: boolean;
 }) => {
-  const deploying = useInFlight("deploy", safeInteger(realm.entity_id));
+  const deploying = useInFlight("deploy", safeInteger(realm.entity_id)) !== undefined;
   const words = slot && slotStartWords(slot);
   return (
     <OpenSlot

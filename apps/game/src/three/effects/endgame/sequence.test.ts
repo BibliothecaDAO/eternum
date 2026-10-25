@@ -1,6 +1,6 @@
 import { afterEach, expect, it } from "vitest";
 import type NodeFrame from "three/src/nodes/core/NodeFrame.js";
-import { GameEndTimeline, endgameFrame, gameEndIsNear } from "./sequence";
+import { GameEndTimeline, endgameFrame, veilIsNear } from "./sequence";
 import { advanceGameEnd, mapAnimationTime, resetGameEnd, skipGameEnd } from "./state";
 
 afterEach(resetGameEnd);
@@ -48,8 +48,8 @@ it("holds the shader clock only after the veil finishes or is skipped", () => {
   expect(clock(21)).toBe(21);
 });
 it("nears a game's end in its last ten minutes, and never for a game with no end time", () => {
-  expect(gameEndIsNear(10_000, 10_000 - 601)).toBe(false);
-  expect(gameEndIsNear(10_000, 10_000 - 600)).toBe(true);
-  expect(gameEndIsNear(10_000, 10_500)).toBe(true);
-  expect(gameEndIsNear(0, 10_000)).toBe(false);
+  expect(veilIsNear(10_000, 10_000 - 601)).toBe(false);
+  expect(veilIsNear(10_000, 10_000 - 600)).toBe(true);
+  expect(veilIsNear(10_000, 10_500)).toBe(true);
+  expect(veilIsNear(0, 10_000)).toBe(false);
 });

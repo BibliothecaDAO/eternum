@@ -16,7 +16,6 @@ export type HudSurface =
   | "menu"
   | "today"
   | "settings"
-  | "production"
   | "season"
   | "army"
   | "withdraw"

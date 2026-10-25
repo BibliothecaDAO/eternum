@@ -53,7 +53,6 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
         stores={STORES}
         lords={1_240}
         labor={2_000}
-        onOpenStores={vi.fn()}
         onWithdraw={onWithdraw}
         onRealms={onRealms}
       />,
@@ -75,6 +74,42 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
   expect(onWithdraw).toHaveBeenCalledTimes(1);
   act(() => (host.querySelector('[aria-label="Realms +2,000 Labor"]') as HTMLButtonElement).click());
   expect(onRealms).toHaveBeenCalledTimes(1);
+});
+
+it("takes the map home from its whole header, which never folds, with the rank's steps beside the name", () => {
+  const onHome = vi.fn();
+  act(() => root.render(<RealmPanel name="Duskbite" level={1} highest={3} stores={STORES} onHome={onHome} />));
+  const head = host.querySelector<HTMLButtonElement>('button[aria-label="Show my realm"]')!;
+  expect(head.textContent).toContain("Duskbite");
+  expect(host.querySelector('[aria-label="City, rank 2 of 4"]')).not.toBeNull();
+  act(() => head.click());
+  act(() => head.click());
+  expect(onHome).toHaveBeenCalledTimes(2);
+  // Pressing the header never folds the stores away.
+  expect(named()).toContain("Essence 18,250");
+});
+
+it("opens a store's card under the rings from the ring of a store that has one", () => {
+  const onToggle = vi.fn();
+  const render = (open: "wheat" | null) =>
+    act(() =>
+      root.render(
+        <RealmPanel
+          name="Duskbite"
+          level={1}
+          stores={STORES}
+          storeCards={{ kinds: ["wheat", "labor", "troops"], open, onToggle, card: <p>wheat card</p> }}
+        />,
+      ),
+    );
+  render(null);
+  expect(host.textContent).not.toContain("wheat card");
+  // Essence has no card: its ring is not a button.
+  expect(host.querySelector('button[aria-label="Essence 18,250"]')).toBeNull();
+  act(() => host.querySelector<HTMLButtonElement>('button[aria-label^="wheat 4,410"]')!.click());
+  expect(onToggle).toHaveBeenCalledWith("wheat");
+  render("wheat");
+  expect(host.textContent).toContain("wheat card");
 });
 
 it("shows a realm watched or visited by its stores alone: no LORDS and no Realms", () => {
@@ -101,12 +136,12 @@ it("reads a 24-hour day in hours on the top bar and its hover, as Play does (liv
   expect(pill.getAttribute("data-tip")).toMatch(/ · Tomorrow lasts 24h$/);
 });
 
-it("offers a desktop's places, Research, Production, Today and Season, with no Menu", () => {
-  act(() => root.render(<FrontierPlaces surface={null} onSurface={vi.fn()} research={false} />));
-  expect([...host.querySelectorAll("nav button")].map((button) => button.getAttribute("aria-label"))).toEqual([
-    "Research",
-    "Production",
-    "Today",
-    "Season",
-  ]);
+it("offers a desktop's places, Research, the Feed and the Season, the Feed lit at the rail's home", () => {
+  const onHome = vi.fn();
+  act(() => root.render(<FrontierPlaces surface={null} home onSurface={vi.fn()} onHome={onHome} research={false} />));
+  const places = [...host.querySelectorAll("nav button")];
+  expect(places.map((button) => button.getAttribute("aria-label"))).toEqual(["Research", "Feed", "Season"]);
+  expect(places[1].getAttribute("aria-pressed")).toBe("true");
+  act(() => (places[1] as HTMLButtonElement).click());
+  expect(onHome).toHaveBeenCalledTimes(1);
 });

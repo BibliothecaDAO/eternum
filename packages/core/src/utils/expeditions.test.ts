@@ -165,7 +165,9 @@ describe("expedition spire", () => {
           : storeWith(expeditionRules).get(model),
       inGame: (model: string) => (model === "Structure" ? [realm(1), realm(3)] : [])[Symbol.iterator](),
     };
-    expect(expeditionSpires(store as never, 7, dayStart(1) + 10)).toEqual([{ col: 25, row: 46 }]);
+    expect(expeditionSpires(store as never, 7, dayStart(1) + 10)).toEqual([
+      { col: 25, row: 46, deepest: 1, realm: realm(3) },
+    ]);
   });
 });
 

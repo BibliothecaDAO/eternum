@@ -5,12 +5,12 @@ import { LABOR, REALMS } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 /**
- * Under the phone's strip, at its right end, over the map: the realm's LORDS count (it opens Withdraw where one exists)
+ * Under the phone's strip, beside Next up at its right: the realm's LORDS count (it opens Withdraw where one exists)
  * and, while the player's Realms have labor waiting today, the Realms chip beside it (the phone's Menu always has
  * Realms). A desktop's realm panel carries both, its Realms chip always.
  */
 export const PurseRow = ({ children }: { children: ReactNode }) => (
-  <div className="pointer-events-auto absolute right-2 top-full z-10 flex gap-1.5">{children}</div>
+  <div className="pointer-events-auto flex shrink-0 gap-1.5">{children}</div>
 );
 
 /** The realm's LORDS, and what a chest just added to them. */

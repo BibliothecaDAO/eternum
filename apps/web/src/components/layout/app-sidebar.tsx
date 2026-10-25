@@ -29,7 +29,7 @@ const data = {
         {
           title: "Eternum Season Passes",
           target: "_blank",
-          url: "https://market.realms.world",
+          url: "https://realms.market",
         },
       ],
     },

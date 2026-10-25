@@ -282,3 +282,12 @@ test("finds a least amount to type written as a charge, in text a player reads, 
     "5 number.threshold",
   ]);
 });
+
+test("keeps CSS transition durations out of player words while checking visible durations", () => {
+  const source = [
+    "const fade = <div style={{ transitionDuration: `${black.seconds}s` }} />;",
+    "const label = <span>{`${black.seconds}s`}</span>;",
+    "const tip = <span title={`${black.seconds}s`} />;",
+  ].join("\n");
+  assert.deepEqual(scan(source), ["2 time.units", "3 time.units"]);
+});

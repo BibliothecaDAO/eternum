@@ -14,6 +14,7 @@ import {
   DEV_CHAIN,
   PRODUCTION_CHAIN,
 } from "./test-database";
+import type { ReleaseIdentity, ReleaseReport } from "./release";
 
 const token = { authorization: "Bearer operator-test-token", "content-type": "application/json" };
 const session = { cookie: "session=valid", origin: "https://play.realms.party", "content-type": "application/json" };
@@ -33,15 +34,16 @@ const fixture = (chain = TEST_CHAIN) => {
   const armFor = vi.fn();
   const wakeAt = vi.fn(async (): Promise<number | null> => 0);
   const joinFailures = vi.fn(async (): Promise<import("./registrar").JoinFailure[]> => []);
+  const applyRelease = vi.fn(async (_release: ReleaseIdentity | null): Promise<ReleaseReport> => ({ shards: [] }));
   const app = createLaunchApp({
     config: { operatorToken: "operator-test-token" },
     deployment: { environment: "staging", version: "test", revision: "abc1234" },
     store,
     slots,
     calendar,
-    registrar: { armFor, joinFailures, wakeAt },
+    registrar: { armFor, joinFailures, wakeAt, applyRelease },
   });
-  return { app, store, slots, calendar, value, armFor, joinFailures, wakeAt };
+  return { app, store, slots, calendar, value, armFor, joinFailures, wakeAt, applyRelease };
 };
 const close = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString();
 test("the create-run and launcher-discovery routes are gone even for the operator", async () => {
@@ -71,6 +73,7 @@ test.each([
   ["POST", "/api/factory/runs/madara.eternum/old/actions/delete"],
   ["POST", "/api/factory/results/madara.blitz/old/actions/continue"],
   ["POST", "/api/factory/test-blitz"],
+  ["POST", "/api/factory/release"],
 ])("requires an operator token for %s %s", async (method, url) => {
   const { app } = fixture();
   for (const headers of [session, {}, { authorization: "Bearer wrong" }] as Record<string, string>[])
@@ -316,4 +319,72 @@ test.each([
   const { app, store } = fixture(DEV_CHAIN);
   expect((await testBlitz(app, body)).status).toBe(400);
   expect(await store.list("madara.blitz")).toEqual([]);
+});
+
+const applyRelease = (app: ReturnType<typeof fixture>["app"], body: unknown) =>
+  app.request("/api/factory/release", { method: "POST", headers: token, body: JSON.stringify(body) });
+const RELEASE = {
+  releaseId: 2,
+  schema: "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e",
+  logic: { season: "0x55e0", troops: "0x77a2" },
+  migration: "0x0",
+};
+
+test("the release route hands the commit's release to the registrar and answers its report", async () => {
+  const { app, applyRelease: registrar } = fixture();
+  const report = {
+    shards: [{ chainId: DEV_CHAIN, releaseId: 2, games: [{ gameId: 1, from: 1, to: 2, transactions: ["0xa"] }] }],
+  };
+  registrar.mockResolvedValueOnce(report);
+  const response = await applyRelease(app, { release: RELEASE });
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(report);
+  expect(registrar).toHaveBeenCalledWith(RELEASE);
+});
+
+test("a deployment whose box never built sends no release, which only a shardless directory accepts", async () => {
+  const { app, applyRelease: registrar } = fixture();
+  expect((await applyRelease(app, { release: null })).status).toBe(200);
+  expect(registrar).toHaveBeenCalledWith(null);
+});
+
+test.each([
+  [{}],
+  [null],
+  [{ releaseId: 2 }],
+  [{ release: { ...RELEASE, releaseId: 0 } }],
+  [{ release: { ...RELEASE, schema: "0x2fbd" } }],
+  [{ release: { ...RELEASE, logic: {} } }],
+  [{ release: { ...RELEASE, logic: { season: "season" } } }],
+  [{ release: { ...RELEASE, migration: undefined } }],
+])("the release route refuses %j before the registrar signs anything", async (body) => {
+  const { app, applyRelease: registrar } = fixture();
+  const response = await applyRelease(app, body);
+  expect(response.status).toBe(400);
+  expect(await response.json()).toEqual({ error: "invalid_release" });
+  expect(registrar).not.toHaveBeenCalled();
+});
+
+test.each([
+  "release_unverified",
+  "release_not_registered",
+  "release_older_than_shard",
+  "release_contents_differ",
+  "release_unpublished",
+  "release_downgrade",
+])("the release route names the refusal %s", async (code) => {
+  const { app, applyRelease: registrar } = fixture();
+  registrar.mockRejectedValueOnce(new Error(code));
+  const response = await applyRelease(app, { release: RELEASE });
+  expect(response.status).toBe(409);
+  expect(await response.json()).toEqual({ error: code });
+});
+
+test("an unexpected release failure is reported without its detail", async () => {
+  const { app, applyRelease: registrar } = fixture();
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  registrar.mockRejectedValueOnce(new Error("rpc https://secret.test failed"));
+  const response = await applyRelease(app, { release: RELEASE });
+  expect(response.status).toBe(503);
+  expect(await response.json()).toEqual({ error: "release_apply_failed" });
 });

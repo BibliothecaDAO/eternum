@@ -255,11 +255,10 @@ describe("the place bar", () => {
 });
 
 describe("the Menu", () => {
-  it("opens Today, Season with the rank, Production and Settings, and closes on Resume", () => {
+  it("opens Today, Season with the rank and Settings, and closes on Resume", () => {
     const handlers = {
       onToday: vi.fn(),
       onSeason: vi.fn(),
-      onProduction: vi.fn(),
       onSettings: vi.fn(),
       onExit: vi.fn(),
       onClose: vi.fn(),
@@ -274,7 +273,6 @@ describe("the Menu", () => {
     for (const [word, handler] of [
       ["Today", handlers.onToday],
       ["Season", handlers.onSeason],
-      ["Production", handlers.onProduction],
       ["Settings", handlers.onSettings],
       ["Exit", handlers.onExit],
       ["Resume", handlers.onClose],
@@ -284,9 +282,9 @@ describe("the Menu", () => {
     }
   });
 
-  it("offers a spectator no Production", () => {
+  it("has no Production: each store's card opens from its own plate", () => {
     const ways = { onToday: vi.fn(), onSeason: vi.fn(), onSettings: vi.fn(), onExit: vi.fn(), onClose: vi.fn() };
-    act(() => root.render(<MenuSheet rank="—" onProduction={null} {...ways} />));
+    act(() => root.render(<MenuSheet rank="—" {...ways} />));
     const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .ui-row")].map(
       (row) => row.textContent,
     );

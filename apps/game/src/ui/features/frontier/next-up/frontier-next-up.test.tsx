@@ -116,7 +116,7 @@ it("selects the army with the most stamina to explore, and opens the panel of th
   expect(onSurface).not.toHaveBeenCalled();
 });
 
-it("opens the realm for barracks, and Research and Production where a step names them", () => {
+it("opens the realm for barracks, Research where a step names it, and a full store where it is spent", () => {
   show({ barracks: false, armies: 1 });
   press("Open the realm");
   expect(moves.goToPlace).toHaveBeenCalledWith(false);
@@ -126,8 +126,13 @@ it("opens the realm for barracks, and Research and Production where a step names
   expect(onSurface).toHaveBeenCalledWith("research");
 
   show({ armies: 1, armiesTired: true, storeFull: "wheat" });
-  press("Production");
-  expect(onSurface).toHaveBeenCalledWith("production");
+  press("Deploy");
+  expect(moves.deploy).toHaveBeenCalledWith({ structureId: 7, isExplorer: true });
+
+  moves.goToPlace.mockClear();
+  show({ armies: 1, armiesTired: true, storeFull: "labor" });
+  press("Open the realm");
+  expect(moves.goToPlace).toHaveBeenCalledWith(false);
 });
 
 it("says in the realm how to build the barracks there, with no button back into the realm", () => {
@@ -144,8 +149,21 @@ it("steps its button down to secondary while a phone's pinned order holds the ac
   show({});
   expect(kindOf()).toBe("primary");
   show({}, { pinned: true, layout: "phone" });
+  act(() => host.querySelector<HTMLButtonElement>('button[aria-label^="Next up:"]')!.click());
   expect(kindOf()).toBe("secondary");
   // A desktop's hover names a tile's order without pinning a bar: Next up keeps the action.
   show({}, { pinned: true, layout: "desktop" });
   expect(kindOf()).toBe("primary");
+});
+
+it("stands on a phone as its step's one line, a tap from the step and its fold back (mobile direction A)", () => {
+  show({ barracks: false, armies: 1 }, { layout: "phone" });
+  const pill = () => host.querySelector<HTMLButtonElement>('button[aria-label^="Next up:"]');
+  expect(pill()!.textContent).toContain("Build barracks");
+  expect(host.querySelector('section[aria-label="Next up"]')).toBeNull();
+
+  act(() => pill()!.click());
+  expect(host.querySelector('section[aria-label="Next up"]')!.textContent).toContain("Open the realm");
+  act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Fold Next up"]')!.click());
+  expect(pill()).not.toBeNull();
 });

@@ -2,6 +2,7 @@ import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { useSideways } from "@/shell/frame/layout";
 
 import { CHAT, LOG, MAP, MENU, REALM, RESEARCH } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
@@ -20,7 +21,7 @@ const DOTS: Record<Dot, string> = {
 /**
  * The phone's place bar: Map and Realm as one switch (the two places of play), then Research, the Log (the Events'
  * history, with what arrived since it was read), Chat and Menu, an icon and one word each, at the foot of every nav
- * page. The lit slot is where the player is.
+ * page, or down the left edge of a phone held sideways. The lit slot is where the player is.
  */
 export const PlaceNav = ({
   place,
@@ -46,12 +47,18 @@ export const PlaceNav = ({
   const slot = (to: Place, icon: IconMeaning, word: string, badge?: ReactNode) => (
     <Slot key={to} lit={place === to} icon={icon} word={word} badge={badge} onClick={() => onGo(to)} />
   );
+  // Held sideways the places stand in a rail at the left thumb (mobile direction A, sideways as C).
+  const sideways = useSideways();
   return (
-    <nav aria-label="Places" className="flex">
-      <HudPanel collapsible={false} className="flex-1" bodyClassName="flex h-14 items-stretch justify-between gap-0.5">
+    <nav aria-label="Places" className={cn("flex", sideways && "flex-col")}>
+      <HudPanel
+        collapsible={false}
+        className="flex-1"
+        bodyClassName={cn("flex items-stretch justify-between gap-0.5", sideways ? "h-full flex-col" : "min-h-14")}
+      >
         {slot("map", "map", MAP)}
         {slot("realm", "realm", REALM, realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />)}
-        <i aria-hidden className="w-px shrink-0 self-stretch bg-hud-line" />
+        <i aria-hidden className={cn("shrink-0 self-stretch bg-hud-line", sideways ? "h-px" : "w-px")} />
         {researchDot !== undefined &&
           slot("research", "research", RESEARCH, researchDot && <i className={cn("size-2 rounded-full", DOTS.lit)} />)}
         {slot("log", "chronicles", LOG, count(events))}
@@ -80,7 +87,7 @@ const Slot = ({
     aria-current={lit ? "page" : undefined}
     onClick={onClick}
     className={cn(
-      "flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-hud-strong ",
+      "flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-hud-strong",
       "border-b-2",
       lit ? "border-hud-gold bg-hud-divider text-hud-gold" : "border-transparent text-hud-muted",
     )}

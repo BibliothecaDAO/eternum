@@ -5,7 +5,8 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { Icon } from "@/ui/design-system/icon";
+import { HudButton, HudIconButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
 import { Position, structureMapPosition } from "@bibliothecadao/eternum";
@@ -48,11 +49,18 @@ export const NextUpView = ({
   steps,
   refusal = null,
   yields = false,
+  compact = false,
 }: {
   steps: NextStep[];
   refusal?: string | null;
   yields?: boolean;
+  /**
+   * Folded to the current step's line, one tap from its full step (Frontier on a phone; owner, 22 October 2026: mobile
+   * direction A, the map first). Its fold folds it back.
+   */
+  compact?: boolean;
 }) => {
+  const [open, setOpen] = useState(false);
   const surfaceOpen = usePopoverStore((state) => state.surface !== null);
   const kind = yields || surfaceOpen ? "secondary" : "primary";
   const [paged, setPaged] = useState<{ from: string; to: string } | null>(null);
@@ -67,16 +75,43 @@ export const NextUpView = ({
     const next = steps[(index + 1) % steps.length];
     setPaged(next === current ? null : { from: current.key, to: next.key });
   };
+  if (compact && !open)
+    return (
+      <button
+        type="button"
+        aria-label={`Next up: ${stepLine(step)}`}
+        onClick={() => setOpen(true)}
+        className="ui ui-panel pointer-events-auto min-h-11 w-full justify-center px-3 text-left"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <Icon name="target" size={20} />
+          <span className="min-w-0 flex-1 truncate text-hud-body text-hud-ink">{stepLine(step)}</span>
+          <Icon name="chevron-up" size={16} />
+        </span>
+      </button>
+    );
   return (
     <HudPanel
       label="Next up"
       title="Next up"
+      collapsible={!compact}
       cue={
-        steps.length > 1 && (
-          <HudButton kind="quiet" size="sm" onClick={pageOn}>
-            {index + 1} of {steps.length} ›
-          </HudButton>
-        )
+        <>
+          {steps.length > 1 && (
+            <HudButton kind="quiet" size="sm" onClick={pageOn}>
+              {index + 1} of {steps.length} ›
+            </HudButton>
+          )}
+          {compact && (
+            <HudIconButton
+              icon="chevron-down"
+              label="Fold Next up"
+              kind="quiet"
+              size="sm"
+              onClick={() => setOpen(false)}
+            />
+          )}
+        </>
       }
     >
       {step.kind === "level-up" ? (
@@ -87,6 +122,9 @@ export const NextUpView = ({
     </HudPanel>
   );
 };
+
+/** A step's words in one line: its own line, or a level-up's realm. */
+const stepLine = (step: NextStep): string => (step.kind === "level-up" ? `${step.name} can level up.` : step.line);
 
 /** Next up's button: the screen's primary action, or secondary while another surface holds it. */
 type StepKind = "primary" | "secondary";

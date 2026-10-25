@@ -1,5 +1,11 @@
 import { accountJoinErrors } from "@bibliothecadao/eternum/realms-account";
-import { activeShards, LAUNCHER_LABEL, seaterLabels, serviceFailure } from "@realms-world/value-ledger";
+import {
+  activeShards,
+  LAUNCHER_LABEL,
+  readRegisteredShard,
+  seaterLabels,
+  serviceFailure,
+} from "@realms-world/value-ledger";
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Layer, Semaphore } from "effect";
 import { decodeLaunchEnv } from "./env";
@@ -9,6 +15,8 @@ import { joinBotAccount } from "./launcher-account";
 import { slotResolver } from "./paid-blitz";
 import { D1SlotStore, FREEZE_RETRY_MS } from "./slot-store";
 import { launchFailure } from "./errors";
+import { advanceGames, type ReleaseIdentity, type ReleaseReport, type ShardRelease } from "./release";
+import { LaunchShard } from "./shard-client";
 import { D1LaunchStore, databaseLayer } from "./store";
 
 export interface JoinFailure {
@@ -59,18 +67,60 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
   }
 
   override alarm(): Promise<void> {
-    return Effect.runPromise(
+    return this.signingAlone(async () => {
+      this.processing = true;
+      try {
+        await this.processAlarm();
+      } finally {
+        this.processing = false;
+      }
+    });
+  }
+
+  /**
+   * Advances every active shard's running Frontier games to the deployed commit's release, as the launcher, between
+   * launches: the deployment's release step, after the box half registered the release and Herald published it.
+   */
+  applyRelease(release: ReleaseIdentity | null): Promise<ReleaseReport> {
+    return this.signingAlone(async () => {
+      const env = decodeLaunchEnv(this.env);
+      const shards: ShardRelease[] = [];
+      for (const { chainId } of await activeShards(env.IDENTITY)) {
+        if (!release) throw new Error("release_unverified");
+        const store = new D1LaunchStore(
+          env.DB,
+          async () => chainId,
+          () => activeShards(env.IDENTITY).then((rows) => rows.map((row) => row.chainId)),
+        );
+        const herald = await readRegisteredShard(env.IDENTITY, chainId);
+        const launcher = new LaunchShard({
+          rpcUrl: herald.rpcUrl,
+          chainId: herald.chainId,
+          gamesAddress: herald.contracts.games!,
+          accountAddress: await joinBotAccount(env, chainId, LAUNCHER_LABEL),
+          privateKey: env.LAUNCH_DEPLOYER_PRIVATE_KEY,
+        });
+        const games = await advanceGames(launcher, herald, release, await store.gameNames("madara.frontier"));
+        shards.push({ chainId, releaseId: release.releaseId, games });
+      }
+      return { shards };
+    });
+  }
+
+  /** The launcher and the seaters sign one transaction stream at a time: launches and release steps never overlap. */
+  private async signingAlone<T>(work: () => Promise<T>): Promise<T> {
+    const outcome = await Effect.runPromise(
       this.signing.withPermit(
-        Effect.promise(async () => {
-          this.processing = true;
-          try {
-            await this.processAlarm();
-          } finally {
-            this.processing = false;
-          }
-        }),
+        Effect.promise(() =>
+          work().then(
+            (value) => ({ value }),
+            (error: unknown) => ({ error }),
+          ),
+        ),
       ),
     );
+    if ("error" in outcome) throw outcome.error;
+    return outcome.value;
   }
   private async processAlarm(): Promise<void> {
     console.log("registrar_alarm", { at: new Date().toISOString() });

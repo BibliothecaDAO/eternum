@@ -19,6 +19,7 @@ const row = (rank: number, own = false): SeasonListRow => ({
   key: `realm-${rank}`,
   rank,
   order: rank,
+  realm: { level: 1, reach: 0 },
   name: `Realm ${rank}`,
   label: `Realm ${rank}`,
   sitesCleared: 100 - rank,

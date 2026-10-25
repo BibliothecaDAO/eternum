@@ -46,7 +46,7 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore): string |
     case "TierBought":
       return payload.price === undefined
         ? story.presentation.title
-        : xpSpentLine(story.presentation.title, formatExact(BigInt(String(payload.price))));
+        : xpSpentLine(story.presentation.title, formatCharge(Number(payload.price)));
     case "BuildingPaymentStory":
       return builtLineOf(payload) ?? story.presentation.title;
     case "BuildingPlacementStory":

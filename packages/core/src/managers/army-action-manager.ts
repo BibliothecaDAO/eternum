@@ -25,7 +25,8 @@ import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
 import { isViewerOwner } from "../utils/viewer";
-import { isTileOccupierMapSite } from "../utils/map/hex";
+import { armyRealmSpire, isAtExpeditionSpire } from "../utils/expeditions";
+import { isTileOccupierMapSite, isTileOccupierUsableSite } from "../utils/map/hex";
 
 /**
  * What bounds an army's orders as chain time passes: its spendable stamina, the steps its stamina and its owner's food
@@ -160,6 +161,24 @@ export class ArmyActionManager {
   }
 
   /**
+   * A shrine or a well the game lets an army use (InteractSite): the army beside it uses it where it stands, so the
+   * order is offered from the next tile and a site further off is a step away from it.
+   */
+  private isUsableSiteHex(position: HexPosition): boolean {
+    const tile = getTileAt(this.store, this._getCurrentPosition().alt, position.col, position.row);
+    return (
+      tile !== undefined &&
+      isTileOccupierUsableSite(tile.occupier_type) &&
+      configManager.isCommandEnabled("InteractSite")
+    );
+  }
+
+  /** Why a held tile offers no order: a usable site wants the army beside it, anything else holds its tile. */
+  private heldTileRefusal(position: HexPosition): OrderRefusal {
+    return this.isUsableSiteHex(position) ? { reason: "too-far" } : { reason: "occupied" };
+  }
+
+  /**
    * Something holds the tile, by the tile's own occupancy: the contract refuses a move or an explore onto any held
    * tile, so no step enters or crosses it, whatever the indexes this plan was handed saw there (they leave out a
    * reserved Hyperstructure site, for one).
@@ -274,6 +293,9 @@ export class ArmyActionManager {
     const foodBoundsSteps = maxHex < this.staminaSteps(armyStamina);
 
     const troopType = this._getTroopType();
+    const alive =
+      this.store.require("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: this.entityId })
+        .troops.count > 0n;
     // One truth: paths plan from the same ExplorerTroops coord the submit
     // freshness guard checks. Callers must not substitute a visual position.
     const startPos = this._getCurrentPosition();
@@ -311,6 +333,14 @@ export class ArmyActionManager {
       const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
       const key = ActionPaths.posKey({ col, row });
 
+      // A usable site beside a living army is its order there: the army stays where it stands, and the use costs nothing.
+      if (alive && this.isUsableSiteHex({ col, row })) {
+        actionPaths.set(key, [
+          { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
+          { hex: { col, row }, actionType: ActionType.UseSite, staminaCost: 0 },
+        ]);
+        continue;
+      }
       // Each tile skipped here says why (ActionPaths.refuse), so the map can name the reason where no order leads.
       if (!isSpire && !isExplored && !canExplore) {
         actionPaths.refuse(key, this.exploreRefusal(armyStamina));
@@ -430,7 +460,7 @@ export class ArmyActionManager {
           // A target ends a route where it stands: the attack paths or the distance decide it below.
           if (hasSpire || hasArmy || hasStructure || hasChest) continue;
           if (this.isOccupiedHex({ col, row })) {
-            actionPaths.refuse(neighborKey, { reason: "occupied" });
+            actionPaths.refuse(neighborKey, this.heldTileRefusal({ col, row }));
             continue;
           }
           if (!isExplored) continue;
@@ -483,7 +513,30 @@ export class ArmyActionManager {
     );
 
     this.refuseTargetsBeyondStep(actionPaths, startPos, [armyHexes, structureHexes, chestHexes]);
+    this.addDepthEntry(actionPaths, startPos, currentDefaultTick);
+    this.refuseSitesBeyondStep(actionPaths, startPos);
     return actionPaths;
+  }
+
+  /**
+   * Beside its realm's lit spire, a living army's order there is to enter a depth, which the spire's card picks: the
+   * spire holds no tile, so the plan would otherwise offer a plain move onto it. Its stamina is the shallowest depth's
+   * entry. An army standing on the spire has no order at its own tile; its card opens as it is selected.
+   */
+  private addDepthEntry(actionPaths: ActionPaths, startPos: HexPosition, nowSeconds: number) {
+    const gameId = configManager.getActiveGameId();
+    const spire = armyRealmSpire(this.store, gameId, this.entityId, nowSeconds);
+    if (!spire || !configManager.isCommandEnabled("EnterDepth")) return;
+    const onSpire = spire.col === startPos.col && spire.row === startPos.row;
+    if (onSpire || !isAtExpeditionSpire(spire, { x: startPos.col, y: startPos.row })) return;
+    actionPaths.set(ActionPaths.posKey(spire), [
+      { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
+      {
+        hex: { col: spire.col, row: spire.row },
+        actionType: ActionType.EnterDepth,
+        staminaCost: this.store.require("DepthRules", { game_id: gameId, depth: 1 }).entry_stamina,
+      },
+    ]);
   }
 
   /**
@@ -503,8 +556,21 @@ export class ArmyActionManager {
           const hex = { col: col + this.FELT_CENTER, row: row + this.FELT_CENTER };
           const key = ActionPaths.posKey(hex);
           if (key === startKey || actionPaths.decided(key)) continue;
-          actionPaths.refuse(key, this.isMapSiteHex(hex) ? { reason: "occupied" } : { reason: "too-far" });
+          actionPaths.refuse(key, this.isMapSiteHex(hex) ? this.heldTileRefusal(hex) : { reason: "too-far" });
         }
+  }
+
+  /**
+   * Every usable site this client holds on the army's layer that no rule above decided stands beyond its step: the
+   * army uses it from beside it, so the reason is the distance. The indexes leave these sites out, so their tiles say.
+   */
+  private refuseSitesBeyondStep(actionPaths: ActionPaths, startPos: HexPosition & { alt: boolean }) {
+    if (!configManager.isCommandEnabled("InteractSite")) return;
+    for (const occupancy of this.store.inGame("TileOccupancy", configManager.getActiveGameId())) {
+      if (occupancy.alt !== startPos.alt || !isTileOccupierUsableSite(occupancy.category)) continue;
+      const key = ActionPaths.posKey({ col: occupancy.col, row: occupancy.row });
+      if (!actionPaths.decided(key)) actionPaths.refuse(key, { reason: "too-far" });
+    }
   }
 
   private readonly _findDirection = (path: HexPosition[], spire = false) => {

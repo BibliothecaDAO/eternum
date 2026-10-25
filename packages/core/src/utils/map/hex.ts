@@ -5,7 +5,15 @@
 
 import { TileOccupier } from "@bibliothecadao/types";
 
-type TileOccupantKind = "none" | "structure" | "reserved-hyperstructure" | "army" | "chest" | "spire" | "map-site";
+type TileOccupantKind =
+  | "none"
+  | "structure"
+  | "reserved-hyperstructure"
+  | "army"
+  | "chest"
+  | "spire"
+  | "usable-site"
+  | "dormant-spire";
 
 /** What stands on a tile, for every occupier the contract names: a new id does not compile until it is placed here. */
 const TILE_OCCUPANT_KINDS: Record<TileOccupier, TileOccupantKind> = {
@@ -36,12 +44,12 @@ const TILE_OCCUPANT_KINDS: Record<TileOccupier, TileOccupantKind> = {
   [TileOccupier.Camp]: "structure",
   [TileOccupier.BitcoinMine]: "structure",
   [TileOccupier.ReservedHyperstructure]: "reserved-hyperstructure",
-  [TileOccupier.Shrine]: "map-site",
-  [TileOccupier.Well]: "map-site",
+  [TileOccupier.Shrine]: "usable-site",
+  [TileOccupier.Well]: "usable-site",
   [TileOccupier.Rift]: "structure",
   [TileOccupier.Ruin]: "structure",
   [TileOccupier.Beasts]: "structure",
-  [TileOccupier.DormantSpire]: "map-site",
+  [TileOccupier.DormantSpire]: "dormant-spire",
 };
 
 const tileOccupantKind = (tileOccupier: number): TileOccupantKind | undefined =>
@@ -56,7 +64,13 @@ export const isTileOccupierStructure = (tileOccupier: TileOccupier) => {
 export const isTileOccupierArmy = (tileOccupier: number) => tileOccupantKind(tileOccupier) === "army";
 
 /** A shrine, a well or a dormant spire: a tile object with no Structure, which no army may enter. */
-export const isTileOccupierMapSite = (tileOccupier: number) => tileOccupantKind(tileOccupier) === "map-site";
+export const isTileOccupierMapSite = (tileOccupier: number) => {
+  const kind = tileOccupantKind(tileOccupier);
+  return kind === "usable-site" || kind === "dormant-spire";
+};
+
+/** A shrine or a well: a single-use site an army beside it uses where it stands (the contract's InteractSite). */
+export const isTileOccupierUsableSite = (tileOccupier: number) => tileOccupantKind(tileOccupier) === "usable-site";
 
 export const isTileOccupierChest = (tileOccupier: TileOccupier) => {
   return tileOccupantKind(tileOccupier) === "chest";

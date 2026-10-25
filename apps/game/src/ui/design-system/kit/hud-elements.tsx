@@ -520,13 +520,15 @@ export const HudCost = ({ line }: { line: string }) => (line ? <span className="
 /**
  * The HUD's one panel: a header band naming it (its icon, its title, a cue at its end) over a divider, then its body.
  * With a `label` it is a named section for assistive technology (a landmark). Its chevron and title fold its body away
- * unless `collapsible` is off; the cue's own controls never fold it. A `section` is a part of a panel: the same header
+ * unless `collapsible` is off; the cue's own controls never fold it. With `onTitle` the whole header band is one press
+ * instead (the realm card's way home), and the panel never folds. A `section` is a part of a panel: the same header
  * and body on the panel's surface, and a `divided` body stacks such sections with a divider between each.
  * `className` and `bodyClassName` place the panel and lay out its body (flex, overflow, a height, no padding), never
  * its look.
  */
 export const HudPanel = ({
   title,
+  onTitle,
   cue,
   icon,
   label,
@@ -539,6 +541,8 @@ export const HudPanel = ({
   children,
 }: {
   title?: ReactNode;
+  /** The header's one press, named for assistive technology and its tooltip; such a panel never folds. */
+  onTitle?: { label: string; run: () => void };
   cue?: ReactNode;
   icon?: IconMeaning;
   label?: string;
@@ -551,7 +555,8 @@ export const HudPanel = ({
   children: ReactNode;
 }) => {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
-  const folded = collapsible && collapsed;
+  const folds = collapsible && onTitle === undefined;
+  const folded = folds && collapsed;
   const Root = label ? "section" : "div";
   return (
     <Root aria-label={label} className={cn(kind === "panel" ? "ui ui-panel" : "ui-section", "shrink-0", className)}>
@@ -560,7 +565,13 @@ export const HudPanel = ({
           title={title}
           icon={icon}
           cue={cue}
-          fold={collapsible ? { folded, toggle: () => setCollapsed((value) => !value) } : null}
+          press={
+            onTitle
+              ? { kind: "action", ...onTitle }
+              : folds
+                ? { kind: "fold", folded, toggle: () => setCollapsed((value) => !value) }
+                : null
+          }
         />
       )}
       {!folded && (
@@ -572,29 +583,45 @@ export const HudPanel = ({
   );
 };
 
-/** A panel's header band: its name (a fold toggle when the panel folds) and its cue. */
+/** What pressing a panel's header does: fold its body, or the panel's one action across the whole band. */
+type HeadPress =
+  | { kind: "fold"; folded: boolean; toggle: () => void }
+  | { kind: "action"; label: string; run: () => void };
+
+/** A panel's header band: its name (a fold toggle when the panel folds, or the panel's one action) and its cue. */
 const PanelHead = ({
   title,
   icon,
   cue,
-  fold,
+  press,
 }: {
   title: ReactNode;
   icon?: IconMeaning;
   cue?: ReactNode;
-  fold: { folded: boolean; toggle: () => void } | null;
+  press: HeadPress | null;
 }) => {
   const name = (
     <>
-      {fold && <Icon name="chevron-down" className="ui-panel__chevron" data-folded={fold.folded} />}
+      {press?.kind === "fold" && <Icon name="chevron-down" className="ui-panel__chevron" data-folded={press.folded} />}
       {icon && <Icon name={icon} className="ui-panel__icon" />}
       <span className="ui-panel__title">{title}</span>
     </>
   );
   return (
     <header className="ui-panel__head">
-      {fold ? (
-        <button type="button" className="ui-panel__name" aria-expanded={!fold.folded} onClick={fold.toggle}>
+      {press?.kind === "fold" ? (
+        <button type="button" className="ui-panel__name" aria-expanded={!press.folded} onClick={press.toggle}>
+          {name}
+        </button>
+      ) : press?.kind === "action" ? (
+        <button
+          type="button"
+          className="ui-panel__name"
+          data-action
+          aria-label={press.label}
+          data-tip={press.label}
+          onClick={press.run}
+        >
           {name}
         </button>
       ) : (
@@ -1248,43 +1275,54 @@ export const HudWindow = ({
 };
 
 /**
+ * Where a sheet stands when its host keeps a place for its sheets (Frontier's desktop rail, the one home for everything):
+ * the sheet stands in that place, in its flow. None elsewhere: a sheet floats over the stage.
+ */
+export const SheetDock = createContext<HTMLElement | null>(null);
+
+/**
  * A sheet over the stage: the panel's look, its name in the header band and its way out as the cue (a cross, or a back
- * arrow when it opened from another panel, whose place it takes). On a phone it is a bottom sheet with a handle (a tap or
- * a drag down closes it) over a backdrop a tap closes; from the desktop width up it docks under the top bar and the
- * stage stays playable beside it. Escape and the system back close it on both. Its foot is a window's (HudWindowFoot),
- * so the verb and its cost stay in view while the body scrolls.
+ * arrow when it opened from another panel, whose place it takes). On a phone it rises from the place bar to at most half
+ * the screen with a handle (a tap or a drag down closes it), and the map above it stays playable; from the desktop width
+ * up it docks under the top bar or in its host's SheetDock, with the stage playable beside it. Escape and system back
+ * close it on both. Its foot is a window's (HudWindowFoot), so the verb and cost stay visible while the body scrolls.
  */
 export const HudSheet = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) => {
   const back = useContext(OpenedFromPanel);
+  const dock = useContext(SheetDock);
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   useSheetCloses(onClose);
-  return (
-    <>
-      <button type="button" aria-hidden tabIndex={-1} onClick={onClose} className="ui-sheet__backdrop" />
-      <section role="dialog" aria-label={label} data-kit-sheet className="ui ui-panel ui-sheet">
-        <SheetHandle onClose={onClose}>
-          <i className="ui-sheet__grip" />
-        </SheetHandle>
-        <PanelHead
-          title={label}
-          cue={
-            <HudIconButton
-              icon={back ? "arrow-left" : "close"}
-              label={back ? BACK : CLOSE}
-              kind="quiet"
-              size="sm"
-              onClick={onClose}
-            />
-          }
-          fold={null}
-        />
-        <WindowFootContext.Provider value={foot}>
-          <div className="ui-sheet__body">{children}</div>
-        </WindowFootContext.Provider>
-        <footer ref={setFoot} className="ui-window__foot ui-actions" />
-      </section>
-    </>
+  const sheet = (
+    <section
+      role="dialog"
+      aria-label={label}
+      data-kit-sheet
+      data-docked={dock ? "" : undefined}
+      className="ui ui-panel ui-sheet"
+    >
+      <SheetHandle onClose={onClose}>
+        <i className="ui-sheet__grip" />
+      </SheetHandle>
+      <PanelHead
+        title={label}
+        cue={
+          <HudIconButton
+            icon={back ? "arrow-left" : "close"}
+            label={back ? BACK : CLOSE}
+            kind="quiet"
+            size="sm"
+            onClick={onClose}
+          />
+        }
+        press={null}
+      />
+      <WindowFootContext.Provider value={foot}>
+        <div className="ui-sheet__body">{children}</div>
+      </WindowFootContext.Provider>
+      <footer ref={setFoot} className="ui-window__foot ui-actions" />
+    </section>
   );
+  return dock ? createPortal(sheet, dock) : sheet;
 };
 
 /**

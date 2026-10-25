@@ -369,6 +369,7 @@ export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
     chests_earned: chests,
     rewards: { lords: String(lords), essence: "0", labor: "0" },
     deepest_depth: 2,
+    level: Math.min(3, Math.floor((12 - index) / 4)),
     order: (index % 16) + 1,
   })),
 };

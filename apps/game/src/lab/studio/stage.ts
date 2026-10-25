@@ -387,7 +387,8 @@ function facing(from: { col: number; row: number }, to: { col: number; row: numb
   return Math.atan2(b.x - a.x, b.z - a.z);
 }
 
-function applyPose(camera: PerspectiveCamera, controls: MapControls, pose: StudioPose): void {
+/** Puts the camera at a pose and points the controls at its target. */
+export function applyPose(camera: PerspectiveCamera, controls: MapControls, pose: StudioPose): void {
   if (camera.fov !== pose.fov) {
     camera.fov = pose.fov;
     camera.updateProjectionMatrix();

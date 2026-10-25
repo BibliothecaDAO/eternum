@@ -1,6 +1,7 @@
 import { formatCharge, formatWait } from "@bibliothecadao/types";
 import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
-import { ATTACK, EXPLORE, MOVE, STAMINA, TRANSFER, UNEXPLORED } from "@/ui/design-system/kit/words";
+import { ATTACK, EXPLORE, MOVE, STAMINA, TRANSFER, UNEXPLORED, USE } from "@/ui/design-system/kit/words";
+import { type MapSiteKind, siteGainLine } from "../sites/map-site-plan";
 import {
   type ActionPath,
   ActionPaths,
@@ -23,20 +24,27 @@ type TileOrder = {
   refusal: OrderRefusal | undefined;
   /** Seconds until the army holds a refused stamina need; undefined when that is unknown. */
   staminaWait: number | undefined;
+  /** The site a Use order uses: its kind, what one use gives, and the army's bar a Well fills; undefined elsewhere. */
+  site:
+    | { kind: MapSiteKind; gain: number | undefined; stamina: { current: number; max: number } | undefined }
+    | undefined;
 };
 
 export type OrderTip = {
   /** The right-click's order ("Explore"), or why there is none. */
   line: string;
-  /** What the order costs, exactly as it is charged ("30 stamina · 100 wheat"); none for a refusal or a crate. */
+  /**
+   * What the order costs, exactly as it is charged ("30 stamina · 100 wheat"), or for a site's Use, which costs
+   * nothing, what it gives ("+200 XP"); none for a refusal or a crate.
+   */
   cost: string | null;
 };
 
 /**
  * What a right-click on a tile does for the selected army, before any click: the order, and under it one compact line
  * of what it costs from the order's own cost rules (owner, sheet round 5: no gesture, no description, no payoff; a
- * crate is its action alone); or, where the rules give no order, the reason the planner recorded. The map's highlight
- * colours mean the army's orders and nothing else; this line is their legend.
+ * crate is its action alone, as is a spire's entry, priced on its card); or, where the rules give no order, the reason
+ * the planner recorded. The map's highlight colours mean the army's orders and nothing else; this line is their legend.
  */
 export const orderTip = (order: TileOrder): OrderTip | null => {
   const ordered = orderOf(order);
@@ -52,13 +60,18 @@ const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.Chest]: "Open crate",
   [ActionType.Help]: `${TRANSFER} troops`,
   [ActionType.SpireTravel]: "Travel through the spire",
+  [ActionType.EnterDepth]: "Enter a depth",
+  [ActionType.UseSite]: USE,
 };
 
-const orderOf = ({ path, exploreStamina, food }: TileOrder): OrderTip | null => {
+const orderOf = ({ path, exploreStamina, food, site }: TileOrder): OrderTip | null => {
   const actionType = path && path.length >= 2 ? ActionPaths.getActionType(path) : undefined;
   const line = actionType === undefined ? undefined : ORDERS[actionType];
   if (!path || line === undefined) return null;
-  if (actionType === ActionType.Chest) return { line, cost: null };
+  // A crate costs nothing; a depth's entry depends on the depth, which the spire's card picks with its cost.
+  if (actionType === ActionType.Chest || actionType === ActionType.EnterDepth) return { line, cost: null };
+  if (actionType === ActionType.UseSite)
+    return { line, cost: site ? siteGainLine(site.kind, site.gain, site.stamina) : null };
   const stamina = computeEffectiveStaminaCost(path.slice(1), actionType, exploreStamina);
   const pieces = [
     ...(stamina > 0 ? [`${formatCharge(stamina)} ${STAMINA}`] : []),

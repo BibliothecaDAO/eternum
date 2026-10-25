@@ -70,7 +70,7 @@ const AREAS = {
     "ui/features/world/components/actions/unoccupied-tile-quadrants.tsx",
     "ui/features/frontier/frontier-hud.tsx",
     "ui/features/frontier/frontier-selection-sheet.tsx",
-    "ui/features/frontier/frontier-spire-sheet.tsx",
+    "ui/features/frontier/spire-card.tsx",
     "ui/features/frontier/full-in.tsx",
     "ui/features/frontier/hud",
     "ui/features/frontier/army",

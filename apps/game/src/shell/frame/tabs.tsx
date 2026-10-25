@@ -24,7 +24,7 @@ export const WHATS_NEW_PATH = "/scroll";
 const YOU_TAB: Place = { to: "/profile", word: WORDS.you, icon: "person", matches: ["/profile", "/results"] };
 
 /** Realms' marketplace: a site of its own, so it opens in a new tab and is never the current place. */
-const MARKET_TAB: Place = { to: "https://market.realms.world/", word: WORDS.market, icon: "trade", matches: [] };
+const MARKET_TAB: Place = { to: "https://realms.market/", word: WORDS.market, icon: "trade", matches: [] };
 
 /**
  * The app's places, one list for both layouts: the phone's tab bar and the desktop's top bar. Play holds what to do

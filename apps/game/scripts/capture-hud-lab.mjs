@@ -41,6 +41,7 @@ export const SURFACES = [
   { name: "blitz-realm-production", path: "/lab/kit/panels?tile=production", mark: "tile" },
   { name: "blitz-next-up-and-events", path: "/lab/kit/guidance", mark: "next-up" },
   { name: "frontier-hud", path: "/lab/kit/hud/idle", mark: "frontier" },
+  { name: "frontier-merge", path: "/lab/kit/hud/merge", mark: "frontier-merge", sizes: [VIEWPORT, [390, 844]] },
   { name: "frontier-selected", path: "/lab/kit/hud/selected", mark: "frontier" },
   { name: "frontier-menu", path: "/lab/kit/hud/menu", mark: "frontier" },
   { name: "frontier-explore", path: "/lab/kit/hud/explore", mark: "frontier" },
@@ -67,7 +68,7 @@ const HUD_LAYOUT_PAGES = [
   "hud/next-up-deploy",
   "hud/purse-next-up",
   "hud/last-hour",
-  "hud/production",
+  "hud/stores",
 ];
 
 const holdHudLayout = ({ baseUrl, out, run }) => {

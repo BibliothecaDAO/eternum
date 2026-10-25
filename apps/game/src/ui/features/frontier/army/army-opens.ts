@@ -18,6 +18,11 @@ import { useDockArmies } from "../hud/dock-armies";
 export const useArmyPanelOpens = (
   realm: NativeRows["Structure"] | null,
   openPanel: () => void,
+  /**
+   * Whether selecting an army opens its panel: a desktop's. A phone keeps the map first (owner, 22 October 2026: mobile
+   * direction A): a selection shows in the action row, and the panel opens from its details button or a pick here.
+   */
+  opensOnSelect: boolean,
 ): ((explorerId: number) => void) => {
   const armies = useDockArmies(realm);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
@@ -29,13 +34,25 @@ export const useArmyPanelOpens = (
   useEffect(() => {
     if (selectedId === seen.current) return;
     seen.current = selectedId;
-    open(selectedId);
+    if (opensOnSelect) open(selectedId);
   });
   return (explorerId) => {
     const reopen = useUIStore.getState().entityActions.selectedEntityId === explorerId;
-    selectArmy(explorerId);
-    if (reopen) open(explorerId);
-    // The selection now, while the map takes its request; its change opens the panel.
-    else useUIStore.getState().selectOnMap({ kind: "army", entityId: explorerId, tile: null });
+    pickArmy(selectArmy, explorerId);
+    if (reopen || !opensOnSelect) open(explorerId);
   };
+};
+
+/**
+ * Picks one of the realm's armies from the HUD (a dock's token or row): the map frames and selects it, and the selection
+ * holds now, while the map takes the request.
+ */
+export const usePickArmy = (): ((explorerId: number) => void) => {
+  const selectArmy = useSelectArmyOnMap();
+  return (explorerId) => pickArmy(selectArmy, explorerId);
+};
+
+const pickArmy = (selectArmy: (explorerId: number) => void, explorerId: number) => {
+  selectArmy(explorerId);
+  useUIStore.getState().selectOnMap({ kind: "army", entityId: explorerId, tile: null });
 };

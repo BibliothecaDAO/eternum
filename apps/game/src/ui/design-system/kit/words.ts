@@ -76,6 +76,8 @@ export const DAY_DONE = "done";
 export const REALM_KEPT = "Realm kept";
 export const DAY_OPEN = "is open";
 export const CONTINUE = "Continue";
+/** Past the day end's rolling mist, to its summary. */
+export const SKIP = "Skip";
 export const FULL_IN = "Full in";
 /** A production that never runs out, where its time left would stand. */
 export const NO_END = "no end";
@@ -101,6 +103,10 @@ export const EMPIRE = "Empire";
 /** The places: the nav's words. */
 export const MAP = "Map";
 export const REALM = "Realm";
+/** The realm's way home from its card's header: the map centred on it. */
+export const SHOW_MY_REALM = "Show my realm";
+/** A realm's place on its ranks' ladder, as its steps say it: "City, rank 2 of 4". */
+export const rankStep = (rank: string, step: number, of: number) => `${rank}, rank ${step} of ${of}`;
 export const RESEARCH = "Research";
 /** Every event and battle: the Events' history, a phone's place for Events. */
 export const LOG = "Log";
@@ -134,6 +140,15 @@ export const BUILD_ORDER_WORDS = {
 export const EVENTS_WORDS = {
   /** What Events and its Log say while the player's filter holds no story. */
   nothingYet: "Nothing here yet.",
+  /** Frontier's one feed in its rail: the world's history, and lenses on it. */
+  feed: "Feed",
+  lenses: { world: "World", mine: "Mine", important: "Important" },
+  lensTips: {
+    world: "Everything players do in the world, yours in gold",
+    mine: "Everything about you: your actions, your realms' news and what happened to them",
+    important: "Your fights and captures, armies lost, crates you opened, refused orders and the game's milestones",
+  },
+  failed: "Event history could not load.",
 } as const;
 export const SETTINGS_WORDS = {
   shortcuts: "Keyboard shortcuts",
@@ -246,13 +261,17 @@ export const WOULD_BE_LOST = "Would be lost";
  * attack does to each side, what it comes to, and under Details the whole fight's figures.
  */
 export const FIGHT_WORDS = {
-  youLose: (troops: string) => `you lose ${troops}`,
-  youKill: (troops: string) => `you kill ${troops}`,
+  /** What this attack takes from each side, and its share of that side's troops: "you lose 407 (37%)". */
+  youLose: (troops: string, share: string) => `you lose ${troops} (${share})`,
+  youKill: (troops: string, share: string) => `you kill ${troops} (${share})`,
+  /** The same, on the attack's result. */
+  youLost: (troops: string, share: string) => `you lost ${troops} (${share})`,
+  youKilled: (troops: string, share: string) => `you killed ${troops} (${share})`,
   armyLost: "Your army is lost",
   clears: "This attack clears it",
   holds: "The guard holds",
-  clearedIn: (attacks: number) =>
-    attacks === 1 ? "Cleared in this attack" : `Cleared in ${formatCount(attacks, "attack")}`,
+  /** The reward row's word: what the site pays once it is cleared, however many attacks that takes (Details says). */
+  whenCleared: "When cleared",
   details: "Details",
   wholeFight: "The whole fight",
   attacks: "Attacks",
@@ -283,6 +302,27 @@ export const BUILDINGS = "Buildings";
 /** The castle rows that unlock the three reaches beyond the spire. */
 export const ETHEREAL = "Ethereal";
 export const REACH_NUMERALS = ["I", "II", "III"] as const;
+/** A depth by its name: "Ethereal II". */
+export const reachName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${REACH_NUMERALS[depth - 1]}`;
+
+/**
+ * A realm's spire, its card's words: whose it is, the army it acts for, each depth's entry or why not, and what entering
+ * commits that army to.
+ */
+export const SPIRE_WORDS = {
+  title: "Spire",
+  enter: "Enter",
+  foreign: "Another realm's spire: only that realm's armies enter it",
+  pickArmy: "Select one of your armies beside the spire to enter a depth",
+  away: (army: string) => `${army} must stand beside the spire to enter`,
+  inDepth: (army: string, depth: string) => `${army} is in ${depth} until the day ends`,
+  cost: (stamina: string) => `${stamina} ${STAMINA}`,
+  needs: (need: string, have: string) => `Needs ${need} ${STAMINA}, has ${have}`,
+  landingTaken: "Its landing is taken",
+  locked: "Research it to open it",
+  commits: (army: string, left: string) =>
+    `Entering keeps ${army} in that depth for the rest of the day (${left} left): there is no way back up`,
+} as const;
 export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
 export const UPGRADING = "Upgrading…";
@@ -340,10 +380,56 @@ export const slotBarWhy = (fresh: boolean) => (fresh ? "Its slot is fresh today"
 export const DEPLOY = "Deploy";
 export const NO_TROOPS_AT_HOME = "No troops at home";
 export const DEPLOYING = "Deploying…";
+/** A free slot after the lowest: the game fills the lowest free slot first. */
+export const DEPLOY_FILLS_FIRST = (number: number) => `Deploy fills slot ${number} first.`;
 export const BUILD = "Build";
 
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";
+
+/**
+ * A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): how a tap gives it an order,
+ * and its details' button.
+ */
+export const PICKED_ARMY = {
+  hint: "Tap a lit tile to see its order, then tap it again to go. Hold a tile for its facts.",
+  details: (army: string) => `${army}: details`,
+  letGo: (army: string) => `Let go of ${army}`,
+} as const;
+
+/** Troops between two of the realm's armies side by side (Frontier's Transfer troops, desktop and phone). */
+export const TRANSFER_TROOPS = {
+  title: "Transfer troops",
+  waiting: "Waiting for both armies’ progress.",
+  stale: "The armies changed. Review the merge before confirming again.",
+  merge: (army: string) => `Merge into ${army}`,
+  confirmMerge: (army: string) => `Confirm merge into ${army}`,
+  confirmLoss: (army: string, lost: number, kept: number) =>
+    `${army} loses ${formatExact(lost)} progression value (XP + upgrades). The surviving army keeps ${formatExact(kept)}. Confirm to merge.`,
+  survives: (army: string, col: number, row: number, slot: number) =>
+    `${army} survives at (${col}, ${row}) · slot ${slot}.`,
+  progression: (value: number, xp: number, loser: string) =>
+    `${formatExact(value)} progression value (XP + all upgrades) · ${formatExact(xp)} unspent XP kept. ${loser}’s XP and upgrades are not carried over.`,
+  mergedStamina: (stamina: number | undefined) =>
+    stamina === undefined
+      ? "Stamina —"
+      : `${formatCharge(stamina)} stamina after merging. The other army’s slot is released.`,
+  split: (picked: string, tapped: string) => `Troops: ${picked} keeps this many, ${tapped} the rest`,
+  allTo: (army: string) => `All to ${army}`,
+  even: "Even",
+  pick: "Pick a split",
+  move: (count: number, to: string) => `Move ${formatAmount(count)} to ${to}`,
+  sending: "Moving…",
+  leaves: (army: string) => `${army} is left with none and leaves the map.`,
+  cap: (cap: number) => `An army holds at most ${formatAmount(cap)}.`,
+  unalike: (picked: string, tapped: string) =>
+    `${picked} and ${tapped} hold different troops: only armies of the same troops and tier join.`,
+  failed: "The troops could not be moved.",
+  changed: "The armies' troops changed: the split starts again from what they hold now.",
+  /** A phone's action row, a tap on another of the realm's armies beside the picked one. */
+  beside: (tapped: string, picked: string) => `${tapped} stands beside ${picked}.`,
+  pickArmy: (army: string) => `Pick ${army}`,
+} as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
 /** How many troops an army holds: "1 troop", "5,000 troops". */
@@ -354,6 +440,9 @@ export const revealLine = (amount: string, resource: string) => `+${amount} ${re
 export const builtLine = (building: string) => `${building} built`;
 export const deployedLine = (army: string) => `${army} deployed`;
 export const disbandedLine = (army: string) => `${army} disbanded`;
+/** A day log line with the XP its story gave or spent: "+98 labor, +2 XP", "Battle Uncommon, −100 XP". */
+export const xpGainedLine = (line: string, amount: string) => `${line}, +${amount} ${XP}`;
+export const xpSpentLine = (line: string, amount: string) => `${line}, −${amount} ${XP}`;
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
 /** How deep a season went, on its total. */
@@ -1108,11 +1197,15 @@ export const RESEARCH_TREE = {
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
   /** A level and what it gives: "Uncommon · +10% damage". */
   at: (tier: string, effect: string) => `${tier} · ${effect}`,
+  /**
+   * What an attribute gives, said as the figure and what it is a figure of, the one wording Research and an army's
+   * panel share (the owner, 22 October: by attribute, Homecoming compact): "+10% damage", "3% come home".
+   */
   effects: {
     battle: (value: string) => `${value} damage`,
     logistics: (value: string) => `${value} max stamina`,
-    scouting: (value: string) => `${value} sites found`,
-    homecoming: (value: string) => `${value} of troops back home`,
+    scouting: (value: string) => `${value} discovery`,
+    homecoming: (value: string) => `${value} come home`,
   },
   nouns: { essence: ESSENCE, labor: "Labor" },
   armiesFind: (site: string) => `Armies find ${site}s`,
@@ -1133,17 +1226,12 @@ export const RESEARCH_TREE = {
 } as const;
 
 /**
- * An army's detail (the owner's pick, 20 October: "For the army C is best"): its figures, its XP and how it is earned,
- * then its level-ups, one step on.
+ * An army's detail (the owner's picks, 20 and 22 October): its status, its four attributes as tiles, its XP with how it
+ * is earned on its hover, then its level-ups, one step on.
  */
 export const ARMY_DETAIL = {
-  stats: {
-    battle: "Damage dealt",
-    logistics: "Max stamina",
-    scouting: "Sites found",
-    homecoming: "Troops back at the day's end",
-  },
-  onKind: (value: string, kind: string) => `${value} ${kind}`,
+  /** A Scouting effect on the kind its levels went to: "+10% discovery on Rifts". */
+  onKind: (effect: string, kind: string) => `${effect} on ${kind}`,
   scoutingNext: (now: string, step: string) => `${now} · ${step} on the kind you pick`,
   earn: {
     explore: "Explore a tile",
@@ -1153,12 +1241,12 @@ export const ARMY_DETAIL = {
   /** What each tile the army explores sends home, on its stamina row. */
   revealPays: (amount: string) => `+${amount} a tile`,
   revealPaysLabel: `${ESSENCE} and ${LABOR} each tile explored sends home`,
-  ready: (count: number) => `${formatCount(count, "level-up")} ready`,
   toNext: (xp: string) => `${xp} ${XP} to the next level-up`,
   allLegendary: "Every attribute is legendary",
   levelUp: "Level up",
   levelUps: "Level-ups",
-  levelUpReady: (count: number) => `Level up · ${count} ready`,
+  /** An attribute tile's hover: what its next tier gives and costs, "Rare: +10% → +20% damage · 200 XP". */
+  nextTier: (tier: string, change: string, xp: string) => `${tier}: ${change} · ${xp} ${XP}`,
   price: (xp: string) => `${xp} ${XP}`,
   short: (xp: string, short: string) => `${xp} ${XP} · ${short} ${XP} short`,
   refills: (xp: string, stamina: string) => `${xp} ${XP} · refills ${stamina} ${STAMINA}`,
