@@ -364,7 +364,8 @@ it("asks before dissolving an army with a whole upgrade more progression, then s
   expect(close).not.toHaveBeenCalled();
   expect(host.textContent).toContain("Army 1 loses 200 progression value");
   await act(async () => button("Confirm merge into Army 2")!.click());
-  expect(swap).toHaveBeenCalledExactlyOnceWith(
+  expect(swap).toHaveBeenCalledOnce();
+  expect(swap).toHaveBeenCalledWith(
     expect.objectContaining({
       from_explorer_id: 201,
       to_explorer_id: 202,
@@ -383,7 +384,8 @@ it("clears confirmation when the split changes and still lets the stronger targe
   expect(button("Merge into Army 2")).toBeDefined();
   act(() => button("All to Army 1")!.click());
   await act(async () => button("Merge into Army 1")!.click());
-  expect(swap).toHaveBeenCalledExactlyOnceWith(
+  expect(swap).toHaveBeenCalledOnce();
+  expect(swap).toHaveBeenCalledWith(
     expect.objectContaining({
       from_explorer_id: 202,
       to_explorer_id: 201,

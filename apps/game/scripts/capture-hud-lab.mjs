@@ -123,6 +123,7 @@ const main = () => {
   }
   const missing = [];
   const broken = [];
+  const interactions = [];
   try {
     for (const { name, path, mark, sizes = [VIEWPORT], rule } of surfaces) {
       for (const [width, height] of sizes) {
@@ -133,6 +134,41 @@ const main = () => {
         const drawn = JSON.parse(run("eval", `Boolean(document.querySelector('[data-lab="${mark}"]'))`));
         if (!drawn) missing.push(shot);
         run("screenshot", join(values.out, `${shot}.png`));
+        if (name === "frontier-merge") {
+          run("find", "text", "Merge into Army 2", "click");
+          run("wait", 'button:has-text("Confirm merge into Army 2")');
+          const confirmed = JSON.parse(
+            run(
+              "eval",
+              `(() => {
+            const sheet = document.querySelector('[role="dialog"]');
+            const button = [...sheet.querySelectorAll('button')].find(b => b.textContent === 'Confirm merge into Army 2');
+            const box = button?.getBoundingClientRect();
+            return { text: sheet.textContent, reachable: !!box && box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight };
+          })()`,
+            ),
+          );
+          if (
+            !confirmed.reachable ||
+            !confirmed.text.includes("Army 2 survives") ||
+            !confirmed.text.includes("Army 1 loses 200 progression value")
+          ) {
+            throw new Error(`${shot}: the chosen target and exact loss must be visible with a reachable confirmation`);
+          }
+          run("screenshot", join(values.out, `${shot}-confirm.png`));
+          run("find", "text", "Even", "click");
+          const partial = JSON.parse(run("eval", "document.querySelector('[role=dialog]').textContent"));
+          if (partial.includes("Confirm merge") || !partial.includes("Move 50 to Army 2")) {
+            throw new Error(`${shot}: changing the split must clear confirmation`);
+          }
+          run("find", "text", "All to Army 1", "click");
+          const reversed = JSON.parse(run("eval", "document.querySelector('[role=dialog]').textContent"));
+          if (!reversed.includes("Army 1 survives") || !reversed.includes("Merge into Army 1")) {
+            throw new Error(`${shot}: both merge directions must remain available`);
+          }
+          interactions.push({ shot, confirmed, partial, reversed });
+          writeFileSync(join(values.out, "merge-interactions.json"), JSON.stringify(interactions, null, 2));
+        }
         const problems = rule ? rule(JSON.parse(run("eval", READ_HUD_BOXES))) : [];
         problems.forEach((problem) => broken.push(`${shot}: ${problem}`));
         console.log(`${!drawn ? "MISSING" : problems.length > 0 ? "BROKEN" : "shot"} ${shot}`);
