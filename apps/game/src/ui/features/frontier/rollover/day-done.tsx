@@ -53,7 +53,7 @@ export const DayDone = ({
   const played = usePlayerDay(player, ended);
   const rank = useClosingRankChange(ended?.day);
   const openedAt = useOpenedAt(now);
-  const { phase, summaryMissed, begin, continueDay, showSummary } = useDayEndStore();
+  const { phase, summaryMissed, landReady, begin, continueDay, showSummary } = useDayEndStore();
   const unseen = !visiting && player !== null && ended !== null && (seen === null || seen < ended.day);
 
   const summary = (() => {
@@ -91,8 +91,9 @@ export const DayDone = ({
   useEffect(() => {
     if (owed && phase === "day") begin("later");
   }, [owed, phase, begin]);
-  // The day's end is gone through once the screen falls to black with nothing owed: past Continue, or with no summary.
-  const goneThrough = unseen && phase === "nightfall" && !summaryMissed ? ended.day : null;
+  // The day's end is gone through once the camera is on the realm's new site with no summary owed. Marked before, a
+  // page booting again in the black would keep the old site and never move.
+  const goneThrough = unseen && landReady && !summaryMissed ? ended.day : null;
   useEffect(() => {
     if (goneThrough !== null) markSeen(goneThrough);
   }, [goneThrough, markSeen]);

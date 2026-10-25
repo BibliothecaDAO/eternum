@@ -4,6 +4,7 @@ import { notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DAY_END_TIMING, RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
+import { Position } from "@bibliothecadao/eternum";
 
 import { endedDay } from "../hud/day-clock";
 
@@ -34,11 +35,18 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
 // The armies are not what this card is about: none ended with the day.
 vi.mock("../frontier-home", () => ({ endedHomeArmies: () => [], homecomingAtNextDeploy: () => null }));
-vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
-  buildStoryEventPresentation: () => ({}),
-  configManager: { getActiveGameId: () => 1 },
-}));
+vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
+  const { RECORDED_DAY: recorded } = await import("./recorded-day-history");
+  return {
+    ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
+    buildStoryEventPresentation: () => ({}),
+    configManager: { getActiveGameId: () => 1 },
+    // The day's turn reads the game's calendar and the realm's site from the facts: realm 7's day-3 site.
+    readExpeditionRules: () => ({ ...recorded.calendar, spacing: 100 }),
+    isExpeditionRealm: () => true,
+    expeditionRealmSite: () => ({ col: 650, row: 850 }),
+  };
+});
 vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
   requireShard: () => ({ url: "https://herald.realms.party", chainId: "0x1", worldAddress: "0xabc" }),
@@ -53,6 +61,7 @@ vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
 }));
 
 const { DayDone } = await import("./day-done");
+const { watchDayTurn } = await import("@/ui/features/world/components/expeditions/expedition-rollover");
 
 const RULES = { ...RECORDED_DAY.calendar, spacing: 100 };
 const SUMMARY = "section[aria-label='Day 2 done']";
@@ -210,15 +219,32 @@ describe("history answering late as the day ends in the game", () => {
     expect(useDayEndStore.getState()).toMatchObject({ phase: "summary", arrival: "later" });
     expect(totalsShown()).toEqual(PROD_DAY_2);
     act(() => host.querySelector<HTMLButtonElement>(`${SUMMARY} button`)!.click());
-    expect(phase()).toBe("nightfall");
+    await seconds(DAY_END_TIMING.nightfall);
+    expect(phase()).toBe("black");
+    expect(window.localStorage.getItem(`frontier.day-done.1.${RECORDED_DAY.player}`)).toBe("1");
+    act(() => useDayEndStore.getState().markLandReady());
     expect(window.localStorage.getItem(`frontier.day-done.1.${RECORDED_DAY.player}`)).toBe("2");
   });
 });
 
 describe("a device arriving in a new day", () => {
   const MARK = `frontier.day-done.1.${RECORDED_DAY.player}`;
-  const arrive = async ({ visiting = false } = {}) => {
-    vi.useFakeTimers();
+  /** Realm 7's day-3 site, where the camera must end up. */
+  const NEW_SITE = Position.fromContract({ x: 650, y: 850 });
+  const navigate = vi.fn();
+  let stopRollover = () => {};
+
+  /** Opens the game: the HUD's day end and the day's turn, on the game's clocks, with the camera's moves recorded. */
+  const openTheGameHere = async ({ visiting = false } = {}) => {
+    stopRollover = watchDayTurn({
+      store: { structuresOwnedBy: () => [{ entity_id: 7 }] } as never,
+      gameId: 1,
+      player: RECORDED_DAY.player,
+      chainNow: () => herald.now,
+      blockNow: () => herald.now,
+      reproject: () => {},
+      navigate,
+    });
     client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     await act(async () =>
       root.render(
@@ -229,8 +255,29 @@ describe("a device arriving in a new day", () => {
     );
     await act(() => vi.advanceTimersByTimeAsync(100));
   };
+  /** The page boots again (a lost GPU): the route and the browser's storage stay, the HUD and the turn start over. */
+  const bootThePageAgain = async () => {
+    act(() => root.unmount());
+    stopRollover();
+    client.clear();
+    useDayEndStore.setState(RESTING);
+    root = createRoot(host);
+    await openTheGameHere();
+  };
+  /** Through the black and the dawn, onto the new day. */
+  const throughTheBlack = async () => {
+    await seconds(DAY_END_TIMING.nightfall);
+    await seconds(DAY_END_TIMING.black);
+    await seconds(DAY_END_TIMING.dawn);
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    navigate.mockClear();
+  });
 
   afterEach(() => {
+    stopRollover();
     vi.useRealTimers();
     client.clear();
   });
@@ -238,21 +285,29 @@ describe("a device arriving in a new day", () => {
   it("goes through the end of a day it opened after with no summary to read, so the camera comes onto the realm", async () => {
     // Day 2 not played: nothing in the player's history, no army ended with it.
     herald.history = [];
-    await arrive();
+    await openTheGameHere();
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(useDayEndStore.getState()).toMatchObject({ phase: "nightfall", arrival: "later", summary: "none" });
-    expect(window.localStorage.getItem(MARK)).toBe("2");
-    await seconds(DAY_END_TIMING.nightfall);
-    // The black: the rollover brings the camera onto the realm's new site behind it.
-    expect(phase()).toBe("black");
-    act(() => useDayEndStore.getState().markLandReady());
-    await seconds(DAY_END_TIMING.black);
-    await seconds(DAY_END_TIMING.dawn);
+    await throughTheBlack();
     expect(phase()).toBe("day");
+    expect(navigate.mock.calls).toEqual([[NEW_SITE]]);
+    expect(window.localStorage.getItem(MARK)).toBe("2");
+  });
+
+  it("moves the camera onto the realm when the page boots again in the fall to black, before it moved", async () => {
+    herald.history = [];
+    await openTheGameHere();
+    expect(phase()).toBe("nightfall");
+    expect(window.localStorage.getItem(MARK)).toBeNull();
+    await bootThePageAgain();
+    await throughTheBlack();
+    expect(phase()).toBe("day");
+    expect(navigate.mock.calls).toEqual([[NEW_SITE]]);
+    expect(window.localStorage.getItem(MARK)).toBe("2");
   });
 
   it("shows the summary on a device opened before the player played on in the new day", async () => {
-    await arrive();
+    await openTheGameHere();
     expect(useDayEndStore.getState()).toMatchObject({ phase: "summary", arrival: "later", summary: "shown" });
     expect(totalsShown()).toEqual(PROD_DAY_2);
   });
@@ -261,38 +316,38 @@ describe("a device arriving in a new day", () => {
     // Prod: the player placed a building in day 3 at 05:56Z, then opened the game here at 06:26Z.
     herald.history = RECORDED_DAY.history;
     herald.now = RECORDED_DAY.openedAt;
-    await arrive();
+    await openTheGameHere();
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(useDayEndStore.getState()).toMatchObject({ phase: "nightfall", arrival: "later", summary: "none" });
-    expect(window.localStorage.getItem(MARK)).toBe("2");
-    await seconds(DAY_END_TIMING.nightfall);
-    expect(phase()).toBe("black");
-    act(() => useDayEndStore.getState().markLandReady());
-    await seconds(DAY_END_TIMING.black);
-    await seconds(DAY_END_TIMING.dawn);
+    await throughTheBlack();
     expect(phase()).toBe("day");
+    expect(navigate.mock.calls).toEqual([[NEW_SITE]]);
+    expect(window.localStorage.getItem(MARK)).toBe("2");
   });
 
   it("does not play a day's end again on a device that went through it, summary or none", async () => {
     window.localStorage.setItem(MARK, "2");
-    await arrive();
+    await openTheGameHere();
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(phase()).toBe("day");
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it("plays and marks nothing while visiting another realm", async () => {
-    await arrive({ visiting: true });
+    await openTheGameHere({ visiting: true });
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(phase()).toBe("day");
     expect(window.localStorage.getItem(MARK)).toBeNull();
   });
 
-  it("marks the day gone through only once Continue drops the screen to black", async () => {
-    await arrive();
+  it("marks the day gone through only once Continue's black has the camera on the realm's new site", async () => {
+    await openTheGameHere();
     expect(totalsShown()).toEqual(PROD_DAY_2);
-    expect(window.localStorage.getItem(MARK)).toBeNull();
     act(() => host.querySelector<HTMLButtonElement>(`${SUMMARY} button`)!.click());
     expect(phase()).toBe("nightfall");
+    expect(window.localStorage.getItem(MARK)).toBeNull();
+    await throughTheBlack();
+    expect(navigate.mock.calls).toEqual([[NEW_SITE]]);
     expect(window.localStorage.getItem(MARK)).toBe("2");
   });
 });

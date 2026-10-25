@@ -711,11 +711,12 @@ screen to black; the realm's new land comes in behind it (the map re-projected o
 the realm), and the screen comes back up on the new day. Opening the game after the day ended: the summary waits over
 the new land in the dark; Continue fades to black too, the camera comes onto the realm, and the screen comes back up. A
 day not played passes without the summary, but its black still brings the camera onto the realm; a visit to another
-realm passes with neither. Each device goes through each ended day's end once (its mark is in the browser's storage), so
-the camera comes onto the realm on a phone too after a desktop went through it. The summary shows only until the player
-acts in the new day (owner, 2026-10-25): once their history holds a story of theirs after the day's end, from any
-device, a device arriving later goes through the black without it. Code: `hooks/store/use-day-end-store.ts`,
-`ExpeditionRollover`, `rollover/day-done.tsx` and `day-end-screen.tsx`.
+realm passes with neither. Each device goes through each ended day's end once (its mark is in the browser's storage,
+written once the camera is on the realm, so a page booting again before then plays the end again), so the camera comes
+onto the realm on a phone too after a desktop went through it. The summary shows only until the player acts in the new
+day (owner, 2026-10-25): once their history holds a story of theirs after the day's end, from any device, a device
+arriving later goes through the black without it. Code: `hooks/store/use-day-end-store.ts`, `ExpeditionRollover`,
+`rollover/day-done.tsx` and `day-end-screen.tsx`.
 
 Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab
 in the background, or WebGPU's device) boots the page again on its route once it is seen, and a Herald stream silent for
