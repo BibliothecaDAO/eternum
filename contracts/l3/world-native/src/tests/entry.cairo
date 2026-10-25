@@ -208,7 +208,11 @@ fn a_held_settlement_receives_one_thousand_labor_per_day_and_retries_are_exact()
     assert_eq!(operator.labor_grant(home, 0).unwrap(), Some(grant));
     assert!(operator.grant_labor(home, 0, authority()).is_err());
     snforge_std::start_cheat_block_timestamp(d.games, 86400);
-    assert_eq!(operator.grant_labor(home, 1, d.actor).unwrap().amount, 1000 * crate::rules::RESOURCE_PRECISION);
+    let next_day = operator.grant_labor(home, 1, d.actor).unwrap();
+    // Starting 2,000 + the first 1,000 claim + 2,409.12 produced leaves 590.88 in the 6,000 store.
+    assert_eq!(next_day.amount, 59088 * crate::rules::RESOURCE_PRECISION / 100);
+    assert_eq!(operator.labor_grant(home, 1).unwrap(), Some(next_day));
+    assert_eq!(operator.grant_labor(home, 1, d.actor).unwrap(), next_day);
     set_operator(d, 0.try_into().unwrap());
     assert!(operator.grant_labor(home, 1, d.actor).is_err());
 }
