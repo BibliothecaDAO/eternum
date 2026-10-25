@@ -10,6 +10,7 @@ import {
   judgeNextOrder,
   judgePlateStamina,
   refusalErrors,
+  contextLossErrors,
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
@@ -1266,7 +1267,7 @@ function labDayTurnAsleepSteps() {
     },
     {
       name: "tab-wakes",
-      play: wakeTheTab,
+      play: (context) => wakeTheTab(context, night),
       settleMs: 0,
       verify: ({ played }) => wokeIntoTheEndedDay(played, night),
     },
@@ -1355,13 +1356,20 @@ async function setWindowState(devTools, windowState) {
 async function sleepThroughTheDayEnd({ base, browser, devTools }) {
   const awake = { ...browser.read(DAY_END_STATE), tab: await readInPage(devTools, TAB_STATE) };
   const mapAwake = await readTheMapBand(devTools, `${base}-awake.png`);
+  const loggedBefore = consoleLines(browser).length;
   await setWindowState(devTools, "minimized");
   await sleep(500);
   const away = await readInPage(devTools, TAB_GOES_AWAY);
   await devTools.send("Page.setWebLifecycleState", { state: "frozen" });
   await sleep(ASLEEP_MS);
-  return { awake, mapAwake, away };
+  return { awake, mapAwake, away, loggedBefore };
 }
+
+const consoleLines = (browser) =>
+  browser
+    .run(["console"], { allowFailure: true })
+    .split("\n")
+    .map((line) => line.trim());
 
 function sleptBeforeTheEnd({ played }) {
   const { awake, away } = played;
@@ -1377,8 +1385,11 @@ function sleptBeforeTheEnd({ played }) {
   return completed(played);
 }
 
-/** Brings the tab back: the page let run, its window shown again; then waits for the ended day's summary. */
-async function wakeTheTab({ browser, devTools, extraScreenshot }) {
+/**
+ * Brings the tab back: the page let run, its window shown again; then waits for the ended day's summary. The context
+ * loss the sleep provoked is logged by the client as an error, which is this step's outcome.
+ */
+async function wakeTheTab({ browser, devTools, extraScreenshot }, { loggedBefore }) {
   await devTools.send("Page.setWebLifecycleState", { state: "active" });
   await setWindowState(devTools, "normal");
   await sleep(1_000);
@@ -1388,7 +1399,8 @@ async function wakeTheTab({ browser, devTools, extraScreenshot }) {
     (state) => state?.card !== null && state?.card !== undefined,
     WOKEN_WAIT_MS,
   );
-  return { ...shown, tab: await readInPage(devTools, TAB_STATE) };
+  const provokedErrors = contextLossErrors(consoleLines(browser).slice(loggedBefore));
+  return { ...shown, tab: await readInPage(devTools, TAB_STATE), provokedErrors };
 }
 
 /** A read of the day's end that a page booting again may not answer yet. */
