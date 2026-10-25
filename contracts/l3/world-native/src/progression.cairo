@@ -143,17 +143,6 @@ pub fn tier_price(rules: ArmyProgressionRules, tier: u8) -> u32 {
     }
 }
 
-/// Current progression, including tiers granted by realm training. Wider than stored XP so every valid row fits.
-pub fn progression_value(progress: ArmyProgress, rules: ArmyProgressionRules) -> u64 {
-    let mut value: u64 = progress.xp.into();
-    for tier in array![progress.battle, progress.logistics, progress.scouting, progress.homecoming] {
-        for purchased in 1_u8..tier {
-            value += Into::<u32, u64>::into(tier_price(rules, purchased));
-        }
-    }
-    value
-}
-
 /// Spends the next tier's price and raises the attribute by one tier.
 pub fn buy_tier(ref progress: ArmyProgress, rules: ArmyProgressionRules, command: BuyTier) -> TierBought {
     let price = tier_price(rules, attribute_tier(progress, command.attribute));

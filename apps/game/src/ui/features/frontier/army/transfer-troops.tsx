@@ -1,5 +1,5 @@
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { explorerTransferPlan, progressionValue } from "./army-merge";
+import { explorerTransferPlan } from "./army-merge";
 import { useGame } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
@@ -65,7 +65,7 @@ export const useSelectedTransfer = (realm: NativeRows["Structure"] | null): Tran
  * redone for desktop & mobile"; direction A): the slider is where the line between them falls, so one control moves
  * troops either way and nothing needs a Swap. It opens as a merge into the army tapped. Each army shows what it holds
  * now and after; quick splits cover the common asks; the one verb says what will happen. The game moves troops
- * between alike armies only, each within its realm's limit. A full merge keeps the army with more progression value.
+ * between alike armies only, each within its realm's limit. A full merge keeps the chosen target.
  */
 export const TransferTroopsSheet = ({
   realm,
@@ -146,19 +146,13 @@ const TransferSplit = ({
   const lowest = Math.max(0, total - capOf(tapped));
   const highest = Math.min(total, capOf(picked));
   const [split, setSplit] = useState(lowest);
-  const pickedProgress = progress(picked.explorerId);
-  const tappedProgress = progress(tapped.explorerId);
-  const values =
-    rules && pickedProgress && tappedProgress
-      ? [progressionValue(pickedProgress, rules), progressionValue(tappedProgress, rules)]
-      : undefined;
-  // At either end this is a full merge. Point the control at the army that will actually hold the troops.
-  // Equal values leave both ends available: the player chooses the target that survives the tie.
-  const mergeSplit = (value: number) => {
-    if (!values || (value !== 0 && value !== total)) return value;
-    return values[0]! > values[1]! ? total : values[1]! > values[0]! ? 0 : value;
+  const pickedAfter = split;
+  const [confirmation, setConfirmation] = useState<{ split: number; facts: unknown[] } | null>(null);
+  const confirmed = confirmation?.split === split && confirmation.facts.every((fact, index) => fact === choice[index]);
+  const chooseSplit = (value: number) => {
+    setConfirmation(null);
+    setSplit(value);
   };
-  const pickedAfter = mergeSplit(split);
   const alike =
     picked.troopsFact.category === tapped.troopsFact.category && picked.troopsFact.tier === tapped.troopsFact.tier;
   const moved = picked.troops - pickedAfter;
@@ -168,18 +162,16 @@ const TransferSplit = ({
   const plan = explorerTransferPlan({
     sourceCount: from.troops,
     targetCount: to.troops,
-    sourceCap: capOf(from),
     targetCap: capOf(to),
     sourceProgress: progress(from.explorerId),
     targetProgress: progress(to.explorerId),
     rules,
-    requiresProgress: true,
   });
   const fullMerge = moved !== 0 && Math.abs(moved) === from.troops;
-  const survivor = fullMerge ? (plan.sourceWins ? from : to) : null;
-  const loser = survivor ? (survivor === from ? to : from) : null;
-  const survivorAt = survivor === from ? fromAt : toAt;
-  const value = plan.sourceWins ? plan.sourceValue : plan.targetValue;
+  const survivor = fullMerge ? to : null;
+  const loser = fullMerge ? from : null;
+  const survivorAt = toAt;
+  const value = plan.targetValue;
   const mergedStamina =
     survivor?.stamina && loser?.stamina
       ? Math.min(survivor.stamina.current, loser.stamina.current, survivor.stamina.max)
@@ -198,6 +190,10 @@ const TransferSplit = ({
       if (readChoice().some((fact, index) => fact !== choice[index])) {
         throw new Error(TRANSFER_TROOPS.stale);
       }
+      if (fullMerge && plan.confirmLoss && !confirmed) {
+        setConfirmation({ split, facts: choice });
+        return;
+      }
       await sendOnce("army", picked.explorerId, { order: "move" }, () =>
         systemCalls.explorer_explorer_swap({
           signer: account as unknown as Account,
@@ -214,7 +210,7 @@ const TransferSplit = ({
   };
 
   if (!alike) return <HudNotice tone="warn" line={TRANSFER_TROOPS.unalike(picked.label, tapped.label)} />;
-  const splitOptions = [highest, Math.min(highest, Math.max(lowest, Math.round(total / 2))), lowest].map(mergeSplit);
+  const splitOptions = [highest, Math.min(highest, Math.max(lowest, Math.round(total / 2))), lowest];
   const splits: [string, number][] = [...new Set(splitOptions)].map((value) => [
     value === 0 || value === total
       ? TRANSFER_TROOPS.allTo(value === total ? picked.label : tapped.label)
@@ -226,6 +222,9 @@ const TransferSplit = ({
 
   return (
     <div className="flex flex-col gap-3">
+      {confirmed && fullMerge && plan.confirmLoss && (
+        <HudNotice tone="warn" line={TRANSFER_TROOPS.confirmLoss(from.label, plan.sourceValue!, plan.targetValue!)} />
+      )}
       {!plan.known && <HudNotice tone="warn" line={TRANSFER_TROOPS.waiting} />}
       {survivor && loser && plan.known && (
         <div role="status" className="rounded-lg border border-hud-line bg-hud-well p-3 text-hud-body text-hud-ink">
@@ -247,7 +246,7 @@ const TransferSplit = ({
         value={pickedAfter}
         max={total}
         stop={highest}
-        onChange={(value) => setSplit(Math.max(lowest, value))}
+        onChange={(value) => chooseSplit(Math.max(lowest, value))}
       />
       <div className="flex gap-1.5">
         {splits.map(([word, value]) => (
@@ -257,7 +256,7 @@ const TransferSplit = ({
             size="sm"
             className="flex-1"
             aria-pressed={pickedAfter === value}
-            onClick={() => setSplit(value)}
+            onClick={() => chooseSplit(value)}
           >
             {word}
           </HudButton>
@@ -282,7 +281,9 @@ const TransferSplit = ({
           {moved === 0
             ? TRANSFER_TROOPS.pick
             : survivor && plan.known
-              ? TRANSFER_TROOPS.merge(survivor.label)
+              ? confirmed
+                ? TRANSFER_TROOPS.confirmMerge(survivor.label)
+                : TRANSFER_TROOPS.merge(survivor.label)
               : TRANSFER_TROOPS.move(Math.abs(moved), to.label)}
         </HudButton>
       </HudWindowFoot>

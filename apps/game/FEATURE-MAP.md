@@ -500,10 +500,15 @@ an eligible player. The lab proof does not establish those live actions.
   the player creates one from the reserve.
 - **Merging armies.** Select an army, then an adjacent army or realm of yours: the transfer panel moves troops between
   them, across realms too. Both sides must hold the same troop type and tier. Frontier opens its **Transfer troops**
-  sheet: a full merge shows which army survives (unspent XP plus all purchased or trained tiers; ties keep the target),
+  sheet: a full merge keeps the chosen target and shows its progression (unspent XP plus purchased or trained tiers),
   its position and slot, the resulting stamina and the other army’s XP and upgrades lost. The troop totals and **Merge
-  into …** button name that same survivor. A changed army refuses confirmation until the new result is reviewed. Partial
-  transfers keep both armies. Dev: `/lab/kit/hud/merge`; tests drive the map’s actual selection card.
+  into …** button name that same survivor. If the dissolving army has at least one first-tier upgrade more progression
+  (100 XP in the current preset), click **Merge into …**, review the loss, then **Confirm merge into …**. Smaller gaps
+  send on the first click. Changing the split or army facts clears confirmation. Partial transfers keep both armies.
+  Dev: `/lab/kit/hud/merge`; tests drive the map’s actual selection card. Browser proof:
+  `pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <new-directory> --only frontier-merge`.
+  It clicks both directions and the loss step at desktop and phone sizes, preserving screenshots and a transcript
+  without sending.
 
 ## World atmosphere
 
@@ -801,8 +806,3 @@ on native WebGPU. `verify:beasts` checks all eight deliveries, budgets and edita
 checks decoded triangles for zero masonry contacts at each production scale. All authoring sources and paint live in
 `asset-sources/frontier-beasts/refined/`; `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those
 exact eight packed sources. There is one production path per species and no separate study GLB.
-
-Frontier army merges: select an army, then an adjacent owned army, open Transfer and choose **Max**. Before **Transfer
-Troops**, the panel names the army that survives, its position and slot, retained progression and resulting stamina. A
-full merge keeps the higher value of unspent XP plus all four attributes' cumulative tier prices (including training);
-ties keep the target. Partial transfers retain both armies. The survivor remains on its own hex; the loser's XP is lost.

@@ -63,7 +63,7 @@ export const LabGame = ({
  * The fixture's player stays the lab's account while the lab plays: the app's own sign-in runtime clears an account
  * no session holds, which would leave a fresh browser's lab with no player.
  */
-const useLabPlayer = () =>
+export const useLabPlayer = () =>
   useEffect(() => {
     const hold = () => {
       if (useAccountStore.getState().account?.address !== PLAYER)
