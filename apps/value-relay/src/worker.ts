@@ -1,3 +1,4 @@
+import { handleRealmEntryRequest, registerHeldRealm, type RealmEntryClaim } from "./realm-entry";
 import { joinShardOperator } from "./shard-account";
 import { decodeRelaySettings, ledgerAddress, ledgerContractOf, type RelaySettings } from "./environment";
 import { bindLedgerState, ledgerOrNull, ledgerStateName } from "./ledger-state";
@@ -18,7 +19,7 @@ import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
 import { onIdentityChain } from "./ledger-chain";
 import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
-import { currentLaborDay, writeLaborGrants } from "./shard-labor";
+import { currentLaborDay, writeLaborGrant } from "./shard-labor";
 import { handleLaborRequest } from "./labor-route";
 import { ShardReader } from "./shard-rpc";
 import { publishFrontierPools } from "./frontier-pools";
@@ -313,6 +314,35 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       jobs: observation ?? null,
     };
   }
+  async realmEntry(claim: RealmEntryClaim) {
+    const result = await Effect.runPromise(
+      this.shardSigning.withPermit(
+        Effect.result(
+          Effect.tryPromise({
+            try: async () => {
+              await this.portsFor(claim.chainId);
+              const progress = await this.store.progress();
+              if (progress.halted) throw new Error("relay_halted_or_wrong_chain");
+              const shard = await readRegisteredShard(this.env.IDENTITY, claim.chainId);
+              return registerHeldRealm(
+                {
+                  connection: connectionOf(shard),
+                  heraldUrl: shard.url,
+                  operatorAddress: relayAccountAddress(shard),
+                  privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
+                  identity: this.env.IDENTITY,
+                },
+                claim,
+              );
+            },
+            catch: (error) => error,
+          }),
+        ),
+      ),
+    );
+    if (Result.isFailure(result)) throw result.failure;
+    return result.success;
+  }
   async labor(claim: LaborClaim) {
     const relay = this;
     return Effect.runPromise(
@@ -419,7 +449,6 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
   const reader = new ShardReader(connectionOf(shard));
   return {
     identity: identityAdapter(env.IDENTITY),
-    realms: { ownerOf: (realmId) => relayOperation("read Realm owner", () => env.IDENTITY.realmOwnerOf(realmId)) },
     ledger: {
       payment: (row) =>
         relayEffect("read ledger payment", () =>
@@ -447,7 +476,7 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
         relayOperation("grant on official shard", async () => {
           await requireActiveChain(env.IDENTITY, claim.chainId);
           return Effect.runPromise(
-            writeLaborGrants(
+            writeLaborGrant(
               {
                 connection: connectionOf(shard),
                 operatorAddress: relayAccountAddress(shard),
@@ -559,6 +588,18 @@ export default {
     if (new URL(request.url).pathname === "/api/value/chests/finish" && request.method === "POST")
       return finishChestResponse(request, env);
 
+    if (new URL(request.url).pathname === "/api/value/realm-entry" && request.method === "POST") {
+      const chainId = new URL(request.url).searchParams.get("chainId");
+      if (!chainId || !/^0x[0-9a-f]+$/i.test(chainId))
+        return Response.json({ error: "shard_chain_required" }, { status: 400 });
+      return handleRealmEntryRequest(request, {
+        chainId,
+        origin: env.BASE_URL,
+        authenticate: (cookie) => env.IDENTITY.authenticate(cookie),
+        accountForRealmsId: (id) => env.IDENTITY.accountForRealmsId(id),
+        register: (claim) => relayOf(env, claim.chainId).realmEntry(claim),
+      });
+    }
     if (new URL(request.url).pathname === "/api/value/labor" && request.method === "POST") {
       const chainId = new URL(request.url).searchParams.get("chainId");
       if (!chainId || !/^0x[0-9a-f]+$/i.test(chainId))

@@ -58,7 +58,8 @@ it("lets the shard signer grant labor while the ledger signer awaits confirmatio
   await entered;
   const labor = relay.labor({
     chainId: "0x1",
-    realms: [{ gameId: 1, realmId: "1", home: "1" }],
+    gameId: 1,
+    home: "1",
     day: 1,
     realmsId: "0x1",
     account: "0x2",
