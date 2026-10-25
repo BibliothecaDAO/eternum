@@ -15,8 +15,6 @@ export type GameModeId = "frontier" | "blitz" | "eternum" | "duel";
 
 export type VillageIconKey = "castle" | "tent";
 
-type StructureNameInput = Parameters<typeof getStructureName>[0];
-
 export interface GameModeConfig {
   id: GameModeId;
   displayName: string;
@@ -54,7 +52,7 @@ export interface GameModeConfig {
     isBuildingTypeAllowed: (key: string) => boolean;
   };
   structure: {
-    getName: (structure: StructureNameInput) => ReturnType<typeof getStructureName>;
+    getName: typeof getStructureName;
     getTypeName: (structureType: StructureType, mineKind?: number) => string | undefined;
     getEntityInfo: (
       entityId: ID,
@@ -97,7 +95,7 @@ function resolveBuildingModelPaths(isBlitz: boolean) {
 
 const buildStructureHelpers = (mode: GameModeId) => ({
   // A mode names the active game's structures, from the active game's facts.
-  getName: (structure: StructureNameInput) => getStructureName(structure),
+  getName: getStructureName,
   getTypeName: (type: StructureType, mineKind?: number) => structureName(type, mineKind, mode),
   getEntityInfo: (entityId: ID, playerAccount: ContractAddress | null, store: NativeFactStore) =>
     getEntityInfo(entityId, playerAccount, store),

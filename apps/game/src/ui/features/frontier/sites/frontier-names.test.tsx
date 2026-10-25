@@ -125,7 +125,7 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
     expect(text, surface).not.toMatch(/\bcamps?\b/i);
     expect(text, surface).not.toContain("Troll Troll");
   }
-  expect(mode.structure.getName(structure).name).toBe(siteDisplayName(Number(structure.entity_id)));
+  expect(mode.structure.getName(structure, {} as never).name).toBe(siteDisplayName(Number(structure.entity_id)));
   expect(words.kindLine.match(/Troll/g)).toHaveLength(1);
   expect(events[0].title).toBe(`${siteDisplayName(SITE)} cleared`);
   // A discovery names the site as its clear does; what guards it is the kind beside it.
@@ -136,7 +136,7 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
 it("retains site proper names and Camp for Blitz kind lines and lists", () => {
   const { structure } = campBeside();
   const mode = getGameModeConfig(2);
-  expect(mode.structure.getName(structure).name).toBe(siteDisplayName(Number(structure.entity_id)));
+  expect(mode.structure.getName(structure, {} as never).name).toBe(siteDisplayName(Number(structure.entity_id)));
   expect(mode.structure.getTypeName(StructureType.Camp)).toBe("Camp");
   expect(kindsHeld([{ category: StructureType.Camp, structure }], mode.id)[0].plural).toBe("Camps");
 });

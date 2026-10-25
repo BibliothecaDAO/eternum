@@ -177,7 +177,7 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
                   ...(source ? [] : [{ value: "", label: "Select an owned structure", disabled: true }]),
                   ...sources.map((row) => ({
                     value: row.entity_id.toString(),
-                    label: getStructureName(row).name,
+                    label: getStructureName(row, store).name,
                   })),
                 ]}
                 onChange={(id) => {

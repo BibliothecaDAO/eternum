@@ -3,6 +3,7 @@ import { entityMapPosition } from "./tile";
 import { structureMapPosition } from "./expeditions";
 import {
   armyName,
+  realmName,
   CapacityConfig,
   ContractAddress,
   ID,
@@ -36,7 +37,7 @@ export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress | nul
     };
   } else {
     if (structure) {
-      name = getStructureName(structure);
+      name = getStructureName(structure, store);
     }
   }
 
@@ -83,8 +84,14 @@ export const getArmyName = (armyEntityId: ID, store: NativeFactStore) => {
   return named && named.name !== 0n ? shortString.decodeShortString(named.name.toString()) : armyName(armyEntityId);
 };
 
-const getRealmName = (structure: NativeRows["Structure"]) => {
-  const baseName = getRealmNameById(structure.metadata.realm_id);
+const getRealmName = (structure: NativeRows["Structure"], store: NativeFactStore) => {
+  const { game_id } = structure;
+  const release = store.require("GameRelease", { game_id });
+  const held = store.get("SettledRealm", { game_id, realm_id: structure.metadata.realm_id });
+  const baseName =
+    release.release_id < 3 || held?.home === structure.entity_id
+      ? getRealmNameById(structure.metadata.realm_id)
+      : realmName(safeInteger(structure.entity_id));
   return structure.metadata.has_wonder ? `WONDER - ${baseName}` : baseName;
 };
 
@@ -99,13 +106,13 @@ export const siteDisplayName = (entityId: ID): string => getEntityNameFromLocalS
  * A structure's name, and the name it had before its holder renamed it (originalName, which the rename control shows).
  * A site is named by siteDisplayName, the rule every reader of a site shares.
  */
-export const getStructureName = (structure: NativeRows["Structure"]) => {
+export const getStructureName = (structure: NativeRows["Structure"], store: NativeFactStore) => {
   const entityId = safeInteger(structure.entity_id);
   if (structure.base.category !== StructureType.Realm && structure.base.category !== StructureType.Hyperstructure) {
     return { name: siteDisplayName(entityId), originalName: siteName(entityId) };
   }
   const originalName =
-    structure.base.category === StructureType.Realm ? getRealmName(structure) : getHyperstructureName(structure);
+    structure.base.category === StructureType.Realm ? getRealmName(structure, store) : getHyperstructureName(structure);
   return { name: getEntityNameFromLocalStorage(entityId) || originalName, originalName };
 };
 
@@ -118,7 +125,7 @@ export const getEntityName = (entityId: ID, store: NativeFactStore): string | un
   const game_id = configManager.getActiveGameId();
   if (store.get("ExplorerTroops", { game_id, explorer_id: entityId })) return getArmyName(entityId, store);
   const structure = store.get("Structure", { game_id, entity_id: entityId });
-  return structure ? getStructureName(structure).name : undefined;
+  return structure ? getStructureName(structure, store).name : undefined;
 };
 
 export const setEntityNameLocalStorage = (entityId: ID, name: string) => {

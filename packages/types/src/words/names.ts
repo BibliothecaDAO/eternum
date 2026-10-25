@@ -118,3 +118,35 @@ export const armyName = (entityId: number): string => {
   const hash = mix(foldEntityId(entityId, 0x5bd1e995));
   return `${FIRST[hash % FIRST.length]} ${BAND[Math.floor(hash / FIRST.length) % BAND.length]}`;
 };
+
+// Syllables from the canonical Realm names; the full combinations are checked against the catalogue.
+const REALM_FIRST = [
+  "Stol",
+  "Het",
+  "Egon",
+  "Noy",
+  "Nio",
+  "Tul",
+  "Ulo",
+  "Emil",
+  "Lem",
+  "Hem",
+  "Auno",
+  "Kon",
+  "Anong",
+  "Tem",
+  "Wind",
+  "Men",
+];
+const REALM_MIDDLE = ["kam", "le", "nu", "go", "mi", "pou", "sha", "ti"];
+const REALM_LAST = ["rin", "nos", "li", "pen", "dor", "kum", "nel", "mok"];
+
+/** A home founded without a held Realm has its own name, fixed by its whole entity id. */
+export const realmName = (homeId: number): string => {
+  const word = mix(foldEntityId(homeId, 0x27d4eb2d));
+  return (
+    REALM_FIRST[word % REALM_FIRST.length] +
+    REALM_MIDDLE[Math.floor(word / REALM_FIRST.length) % REALM_MIDDLE.length] +
+    REALM_LAST[Math.floor(word / (REALM_FIRST.length * REALM_MIDDLE.length)) % REALM_LAST.length]
+  );
+};

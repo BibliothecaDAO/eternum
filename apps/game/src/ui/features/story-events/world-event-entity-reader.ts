@@ -54,7 +54,7 @@ export const createWorldEventEntityReader = (
       coordY: spatial.hexCoords.row,
       ownerAddress,
       ownerName: getPlayerName(ownerAddress),
-      structureName: getStructureName(structure).name,
+      structureName: getStructureName(structure, store).name,
       structureType: structure.base.category as StructureType,
     };
   };

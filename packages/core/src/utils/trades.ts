@@ -29,7 +29,7 @@ export const computeTrades = (
       const maker = store.require("Structure", { game_id: order.game_id, entity_id: order.maker_id });
       return {
         makerName: maker.owner === 0n ? "" : (playerName(maker.owner) ?? ""),
-        originName: getStructureName(maker).name,
+        originName: getStructureName(maker, store).name,
         tradeId: safeInteger(order.trade_id),
         makerId: safeInteger(order.maker_id),
         takerId: safeInteger(order.taker_id),

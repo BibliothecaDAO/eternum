@@ -14,7 +14,6 @@ import { ProductionModal } from "@/ui/features/settlement/production/production-
 import {
   configManager,
   getBuildingQuantity,
-  getRealmNameById,
   isMilitaryResource,
   Position,
   ResourceManager,
@@ -28,7 +27,6 @@ import {
   ID,
   ResourcesIds,
   StructureType,
-  structureName,
   formatAmount,
   formatRate,
 } from "@bibliothecadao/types";
@@ -37,7 +35,6 @@ import { HudChip, HudIconButton, HudPanel, HudSwitch } from "@/ui/design-system/
 
 import React, { useCallback, useMemo, useState } from "react";
 import { ALWAYS_SHOW_RESOURCES, productionTimeLeft, HIDE_TIME_REMAINING_FOR, TIER_DISPLAY_NAMES } from "./utils";
-import { presentedMineKind } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface StructureColumn {
@@ -118,13 +115,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     const columns = playerStructures
       .filter((structure) => structure.isMine)
       .map((structure) => {
-        const realmId = Number(structure.structure.metadata.realm_id || 0);
-        const label = realmId
-          ? getRealmNameById(realmId) || structureName(StructureType.Realm)
-          : mode.structure.getTypeName(
-              structure.structure.base.category as StructureType,
-              presentedMineKind(structure.structure),
-            ) || "Structure";
+        const label = mode.structure.getName(structure.structure).name;
 
         return {
           entityId: safeInteger(structure.entityId),
