@@ -47,7 +47,7 @@ const realmView = ({ store }: Fixture) => {
     }),
     bootstrapSceneOwnership: () => {},
     moveCameraToURLLocation: () => {},
-    alignLocalCameraToPreferredZoom: () => {},
+    standCameraAtPreferredZoom: () => {},
     getThunderBoltManager: () => ({ setConfig: () => {} }),
     localPresentation: Promise.resolve(),
     reconcileAllBuildingInstances: () => {},
