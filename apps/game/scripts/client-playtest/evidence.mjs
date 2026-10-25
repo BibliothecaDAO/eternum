@@ -171,6 +171,15 @@ export function summarizeStep(probe, { name, startedOn }) {
       peakMb: toMb(Math.max(...probe.heap.filter(([t]) => t >= from && t < to).map(([, bytes]) => bytes))),
     },
     labelNodes: distribution((probe.labelNodes ?? []).filter(([t]) => t >= from && t < to).map(([, count]) => count)),
+    loads: summarizeLoads(
+      (probe.resources ?? []).filter((entry) => entry.start >= from && entry.start < to),
+      from,
+    ),
+    gpu: summarizeGpuWork(frameIndexes.map((index) => probe.gpu?.[index]).filter(Boolean)),
+    scenesDrawn: sceneChanges(probe, frameIndexes, from),
+    marks: (probe.marks ?? [])
+      .filter((mark) => mark.t >= from && mark.t < to)
+      .map((mark) => ({ name: mark.name, atMs: round(mark.t - from) })),
     herald: {
       count: messages.length,
       kb: round(sum(messages.map((message) => message.bytes)) / 1024),
@@ -183,6 +192,75 @@ export function summarizeStep(probe, { name, startedOn }) {
       frameMsAfterMessage: distribution(frameMsAfterMessage),
     },
   };
+}
+
+const RESOURCE_KINDS = [
+  ["script", /\.m?js$/],
+  ["style", /\.css$/],
+  ["wasm", /\.wasm$/],
+  ["model", /\.(glb|gltf|bin)$/],
+  ["texture", /\.(ktx2|basis|png|jpe?g|webp|avif|hdr|exr)$/],
+  ["font", /\.(woff2?|ttf|otf)$/],
+  ["audio", /\.(mp3|ogg|wav|m4a)$/],
+  ["data", /\.json$/],
+];
+const SLOWEST_LOADS = 8;
+
+/** What a download is, by its file's extension; anything else (an API call, a socket) is "other". */
+export const resourceKind = (url) => RESOURCE_KINDS.find(([, pattern]) => pattern.test(url))?.[0] ?? "other";
+
+/**
+ * The downloads a window started: how many, their bytes on the wire and as served (a cache hit costs no wire bytes),
+ * by kind, when the last one finished, and the slowest ones by their own span.
+ */
+export function summarizeLoads(entries, from) {
+  const byKind = {};
+  for (const entry of entries) {
+    const kind = (byKind[resourceKind(entry.url)] ??= { count: 0, kb: 0, wireKb: 0 });
+    kind.count += 1;
+    kind.kb = round(kind.kb + entry.bytes / 1024);
+    kind.wireKb = round(kind.wireKb + entry.transferBytes / 1024);
+  }
+  return {
+    count: entries.length,
+    kb: round(sum(entries.map((entry) => entry.bytes)) / 1024),
+    wireKb: round(sum(entries.map((entry) => entry.transferBytes)) / 1024),
+    fromCache: entries.filter((entry) => entry.transferBytes === 0 && entry.decodedBytes > 0).length,
+    lastEndMs: entries.length ? round(Math.max(...entries.map((entry) => entry.end)) - from) : null,
+    byKind,
+    slowest: [...entries]
+      .sort((left, right) => right.end - right.start - (left.end - left.start))
+      .slice(0, SLOWEST_LOADS)
+      .map((entry) => ({
+        url: entry.url,
+        kb: round(entry.bytes / 1024),
+        startMs: round(entry.start - from),
+        ms: round(entry.end - entry.start),
+      })),
+  };
+}
+
+/** The GPU work a window's frames asked for: pipelines and shaders compiled, the time spent asking, bytes uploaded. */
+export function summarizeGpuWork(frames) {
+  return {
+    pipelines: sum(frames.map((frame) => frame.pipelines)),
+    shaders: sum(frames.map((frame) => frame.shaders)),
+    compileCallMs: round(sum(frames.map((frame) => frame.callMs))),
+    worstFrameCompileCallMs: round(Math.max(0, ...frames.map((frame) => frame.callMs))),
+    uploadMb: round(sum(frames.map((frame) => frame.uploadBytes)) / 1024 / 1024),
+  };
+}
+
+/** Each frame in the window where the drawn scene changed, with its time from the window's start. */
+function sceneChanges(probe, frameIndexes, from) {
+  const changes = [];
+  let previous = probe.scenes?.[frameIndexes[0] - 1] ?? null;
+  for (const index of frameIndexes) {
+    const scene = probe.scenes?.[index] ?? null;
+    if (scene !== previous) changes.push({ scene, atMs: round(probe.frames[index] - from) });
+    previous = scene;
+  }
+  return changes;
 }
 
 /** From the step's start on the old page to the new page's world-interactive, on one wall clock. */

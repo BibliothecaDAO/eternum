@@ -1,6 +1,7 @@
 // Registered by run-client-playtest.mjs as an init script, so it runs before any page code. It only observes: frame
-// times, long animation frames, input-to-paint latency, every input's time, draw calls, heap, the map labels' DOM size,
-// and each Herald socket message's arrival and handler cost. The runner reads it with `window.__playtest.read()` and reduces it per step.
+// times, the scene each frame drew, long animation frames, input-to-paint latency, every input's time, draw calls, the
+// GPU work each frame asked for (pipelines and shaders compiled, bytes uploaded), every download, the scene marks, heap,
+// the map labels' DOM size, and each Herald socket message's arrival and handler cost. The runner reads it with `window.__playtest.read()` and reduces it per step.
 (() => {
   if (window.__playtest) return;
 
@@ -15,11 +16,16 @@
     labelNodes: [],
     loafs: [],
     messages: [],
-    models: [],
+    gpu: [],
+    marks: [],
     plateStamina: [],
+    resources: [],
+    scenes: [],
     steps: [],
   };
   let drawsThisFrame = 0;
+  const NO_GPU_WORK = { pipelines: 0, shaders: 0, uploadBytes: 0, callMs: 0 };
+  let gpuThisFrame = { ...NO_GPU_WORK };
 
   const push = (list, entry) => {
     if (list.length < MAX_ENTRIES) list.push(entry);
@@ -48,10 +54,73 @@
   ]);
   countDraws(window.GPURenderPassEncoder?.prototype, ["draw", "drawIndexed", "drawIndirect", "drawIndexedIndirect"]);
 
+  // What a frame asks the GPU to build or receive: a pipeline or shader compiled (with the time the page spends in those
+  // calls) and bytes uploaded (counted, not timed: uploads run hundreds of times a frame, and a clock read on each would
+  // cost the frame-work numbers). Each upload reads its bytes from the call's arguments.
+  const byteLength = (data) => data?.byteLength ?? 0;
+  const imageBytes = (...args) => {
+    const image = args.find((arg) => arg && typeof arg === "object" && "width" in arg && "height" in arg);
+    return image ? image.width * image.height * 4 : byteLength(args.find((arg) => ArrayBuffer.isView(arg)));
+  };
+  const countGpuWork = (prototype, works) => {
+    if (!prototype) return;
+    for (const [name, kind, bytesOf] of works) {
+      const call = prototype[name];
+      if (typeof call !== "function") continue;
+      prototype[name] =
+        kind === "upload"
+          ? function (...args) {
+              gpuThisFrame.uploadBytes += bytesOf(...args);
+              return call.apply(this, args);
+            }
+          : function (...args) {
+              const start = performance.now();
+              try {
+                return call.apply(this, args);
+              } finally {
+                gpuThisFrame.callMs += performance.now() - start;
+                gpuThisFrame[kind] += 1;
+              }
+            };
+    }
+  };
+  countGpuWork(window.GPUDevice?.prototype, [
+    ["createShaderModule", "shaders"],
+    ["createRenderPipeline", "pipelines"],
+    ["createRenderPipelineAsync", "pipelines"],
+    ["createComputePipeline", "pipelines"],
+    ["createComputePipelineAsync", "pipelines"],
+  ]);
+  countGpuWork(window.GPUQueue?.prototype, [
+    ["writeBuffer", "upload", (_buffer, _offset, data, _dataOffset, size) => size ?? byteLength(data)],
+    ["writeTexture", "upload", (_destination, data) => byteLength(data)],
+    [
+      "copyExternalImageToTexture",
+      "upload",
+      (_source, _destination, size) => (size?.width ?? size?.[0] ?? 0) * (size?.height ?? size?.[1] ?? 1) * 4,
+    ],
+  ]);
+  countGpuWork(window.WebGL2RenderingContext?.prototype, [
+    ["compileShader", "shaders"],
+    ["linkProgram", "pipelines"],
+    ["bufferData", "upload", (_target, data) => (typeof data === "number" ? data : byteLength(data))],
+    ["bufferSubData", "upload", (_target, _offset, data) => byteLength(data)],
+    ["texImage2D", "upload", (...args) => imageBytes(...args.slice(1))],
+    ["texSubImage2D", "upload", (...args) => imageBytes(...args.slice(2))],
+    ["texImage3D", "upload", (...args) => imageBytes(...args.slice(1))],
+    ["texSubImage3D", "upload", (...args) => imageBytes(...args.slice(2))],
+    ["compressedTexImage2D", "upload", (...args) => byteLength(args.find((arg) => ArrayBuffer.isView(arg)))],
+    ["compressedTexSubImage2D", "upload", (...args) => byteLength(args.find((arg) => ArrayBuffer.isView(arg)))],
+  ]);
+
   const onFrame = (timestamp) => {
     push(state.frames, timestamp);
     push(state.draws, drawsThisFrame);
+    push(state.gpu, gpuThisFrame);
+    // The scene the renderer drew last; read here, it is the previous frame's, one frame late at a change.
+    push(state.scenes, window.__rendererDiagnostics?.sceneName ?? null);
     drawsThisFrame = 0;
+    gpuThisFrame = { ...NO_GPU_WORK };
     requestAnimationFrame(onFrame);
   };
   requestAnimationFrame(onFrame);
@@ -82,11 +151,21 @@
       // An entry type this browser does not ship is reported as absent, not as zero.
     }
   };
+  // Every download, with what it cost on the wire (0 when the HTTP cache served it) and once unpacked.
   observe("resource", {}, (entry) => {
-    if (new URL(entry.name).pathname.startsWith("/models/")) {
-      push(state.models, { url: new URL(entry.name).pathname, bytes: entry.encodedBodySize, start: entry.startTime });
-    }
+    const url = new URL(entry.name);
+    push(state.resources, {
+      url: url.origin === location.origin ? url.pathname : `${url.host}${url.pathname}`,
+      bytes: entry.encodedBodySize,
+      decodedBytes: entry.decodedBodySize,
+      transferBytes: entry.transferSize,
+      initiator: entry.initiatorType,
+      start: entry.startTime,
+      end: entry.responseEnd,
+    });
   });
+  // The game's own marks: a scene asked for and a scene presentable (scene-manager.ts).
+  observe("mark", {}, (entry) => push(state.marks, { name: entry.name, t: entry.startTime }));
   observe("long-animation-frame", {}, (entry) =>
     push(state.loafs, {
       blockingMs: entry.blockingDuration,
@@ -203,6 +282,8 @@
       const fromFrame = firstFrame === -1 ? state.frames.length : Math.max(0, firstFrame - 1);
       return JSON.stringify({
         draws: state.draws.slice(fromFrame),
+        gpu: state.gpu.slice(fromFrame),
+        scenes: state.scenes.slice(fromFrame),
         events: after(state.events, (entry) => entry.start),
         frames: state.frames.slice(fromFrame),
         heap: after(state.heap, ([t]) => t),
@@ -210,9 +291,10 @@
         labelNodes: after(state.labelNodes, ([t]) => t),
         loafs: after(state.loafs, (entry) => entry.start),
         messages: after(state.messages, (entry) => entry.arrived),
-        models: state.models,
+        marks: after(state.marks, (entry) => entry.t),
         now: performance.now(),
         plateStamina: after(state.plateStamina, ([t]) => t),
+        resources: state.resources,
         steps: after(state.steps, (entry) => entry.t),
         timeOrigin: performance.timeOrigin,
         timeline: window.__eternumGameEntryTimeline ?? [],

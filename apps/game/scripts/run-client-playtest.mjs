@@ -295,6 +295,11 @@ async function playRun(context) {
     const entered = player ? await enterAsPlayer(browser, owner, timeoutMs, { card: stepsGame.card, game }) : null;
     record.boot = { ...(await waitForEntrySnapshot(browser, owner, timeoutMs)), entered };
     if (context.trace) browser.run(["trace", "stop", join(runDir, `${label}-trace.json`)]);
+    // The boot as a step: from the page's start to now, its downloads, long frames, GPU work and scene marks.
+    record.bootWindow = readSafely(() => {
+      const probe = JSON.parse(browser.eval("window.__playtest.read(0)"));
+      return summarizeStep(probe, { name: "boot", startedOn: { t: 0, timeOrigin: probe.timeOrigin } });
+    });
     browser.screenshot(join(runDir, `${label}-00-boot.png`));
     if (player) record.daySummary = await continuePastTheDaySummary(browser, owner);
     // No order is sent before the run is proven to be in the game it was asked to play.
@@ -401,6 +406,7 @@ function writeRunEvidence({ browser, context, record }) {
       loadSamples: record.loadSamples,
     },
     metrics: deriveBootMetrics(boot),
+    bootWindow: record.bootWindow ?? null,
     ok: !record.error && bootOk,
     reloads: record.steps
       .filter(({ summary }) => summary.reload)
