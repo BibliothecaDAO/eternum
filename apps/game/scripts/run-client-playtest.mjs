@@ -87,6 +87,10 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     throw new Error(`--steps takes ${Object.keys(STEP_SETS).join(", ")}, not "${stepSet}"`);
   }
 
+  const network = option("--network", null);
+  const link = network === null ? null : /^(\d+(?:\.\d+)?),(\d+)$/.exec(network);
+  if (network !== null && !link) throw new Error(`--network takes <down Mbit/s>,<round trip ms>, not "${network}"`);
+
   const viewport = /^(\d+)x(\d+)$/.exec(option("--viewport", "1920x1080"));
   if (!viewport) throw new Error(`--viewport takes <width>x<height>, not "${option("--viewport")}"`);
 
@@ -98,6 +102,7 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     gameId: Number(option("--game-id", "0")),
     headed: argv.includes("--headed"),
     iterations: integer("--iterations", DEFAULTS.iterations, 1),
+    network: link && { downMbps: Number(link[1]), roundTripMs: Number(link[2]) },
     outRoot: resolve(callerDir, option("--out", join(REPO_ROOT, ".context/playtest"))),
     player,
     port: integer("--port", DEFAULTS.port, 1),
@@ -284,6 +289,7 @@ async function playRun(context) {
     const devTools = await openPageDevTools(browser);
     releaseDevTools = owner.adopt(`DevTools ${label}`, () => devTools.close());
     if (cpuThrottle > 1) await devTools.send("Emulation.setCPUThrottlingRate", { rate: cpuThrottle });
+    if (context.network) await emulateNetwork(devTools, context.network);
     record.rpcSends = await recordRpcSends(devTools);
     record.url = buildRunUrl({ baseUrl: context.baseUrl, game, player, rendererMode, stepSet: context.stepSet });
     // The trace is the boot's: from before the game page opens to the world being interactive. A longer one is not
@@ -401,6 +407,7 @@ function writeRunEvidence({ browser, context, record }) {
     machine: {
       cpus: availableParallelism(),
       cpuThrottle: context.cpuThrottle,
+      network: context.network ?? null,
       loadAverageMax: Math.max(...record.loadSamples),
       loadSampleEveryMs: LOAD_SAMPLE_MS,
       loadSamples: record.loadSamples,
@@ -424,6 +431,18 @@ function writeRunEvidence({ browser, context, record }) {
     rpcSends,
   });
   return result;
+}
+
+/** Chrome's own link shaping for the page: every download pays the round trip and shares the bandwidth, both ways. */
+async function emulateNetwork(devTools, { downMbps, roundTripMs }) {
+  const bytesPerSecond = (downMbps * 1_000_000) / 8;
+  await devTools.send("Network.enable", {});
+  await devTools.send("Network.emulateNetworkConditions", {
+    offline: false,
+    latency: roundTripMs,
+    downloadThroughput: bytesPerSecond,
+    uploadThroughput: bytesPerSecond,
+  });
 }
 
 function readSafely(read) {
