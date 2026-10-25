@@ -774,3 +774,9 @@ on native WebGPU. `verify:beasts` checks all eight deliveries, budgets and edita
 checks decoded triangles for zero masonry contacts at each production scale. All authoring sources and paint live in
 `asset-sources/frontier-beasts/refined/`; `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those
 exact eight packed sources. There is one production path per species and no separate study GLB.
+
+Army level proposals (dev only): **Compare army levels** in `/lab/kit/progression` opens
+`/lab/kit/research-balance/army-levels` compares today's tier purchases with two level-and-point options. Change earned
+XP and training, choose an attribute (and a Scouting kind), then press **Upgrade today** or **Spend point**. The
+portrait ring tracks the next level independently of point spending. No game command is sent. Capture and exercise it
+with `pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <fresh-dir> --only army-levels`.

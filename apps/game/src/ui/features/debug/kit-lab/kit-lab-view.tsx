@@ -27,6 +27,7 @@ import { UnifiedHudLab } from "./unified-hud-lab";
 import { PanelsLab } from "./panels-lab";
 import { BuildOrderLab } from "./build-order-lab";
 import { BlitzBuildLab } from "./blitz-build-lab";
+import { ArmyLevelsLab } from "./army-levels/army-levels-lab";
 import { ProgressionLab } from "./progression/progression-lab";
 import { GuidanceLab } from "./guidance-lab";
 import { StyleSheetLab } from "./style-sheet-lab";
@@ -60,6 +61,7 @@ export const KitLabView = () => {
       <Route path="guidance" element={<GuidanceLab />} />
       <Route path="build-order" element={<BuildOrderLab />} />
       <Route path="blitz-build" element={<BlitzBuildLab />} />
+      <Route path="research-balance/army-levels" element={<ArmyLevelsLab />} />
       <Route path="progression" element={<ProgressionLab />} />
       <Route path="tokens" element={<TokensLab />} />
       <Route path="words" element={<WordsLab />} />

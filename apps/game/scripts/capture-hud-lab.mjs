@@ -31,6 +31,12 @@ const SETTLE_MS = "1200";
 
 /** Each surface: the lab page that draws it, the mark the page puts on it, and its sizes when not just 1920×1080. */
 export const SURFACES = [
+  {
+    name: "army-levels",
+    path: "/lab/kit/research-balance/army-levels",
+    mark: "army-levels",
+    sizes: [VIEWPORT, [390, 844]],
+  },
   { name: "blitz-hud", path: "/lab/kit/panels?part=hud", mark: "hud", sizes: DESKTOPS, rule: hudClearanceProblems },
   { name: "blitz-left-column", path: "/lab/kit/panels", mark: "left-column" },
   { name: "blitz-top-header", path: "/lab/kit/panels?part=top-header", mark: "top-header" },
@@ -135,6 +141,57 @@ const main = () => {
         const drawn = JSON.parse(run("eval", `Boolean(document.querySelector('[data-lab="${mark}"]'))`));
         if (!drawn) missing.push(shot);
         run("screenshot", join(values.out, `${shot}.png`));
+        if (name === "army-levels") {
+          run("fill", '[aria-label="XP earned"]', "350");
+          const press = (label) => run("find", "role", "button", "click", "--name", label, "--exact");
+          press("Upgrade today");
+          press("Upgrade today");
+          for (let count = 0; count < 3; count++) press("Spend point");
+          const read = () =>
+            JSON.parse(
+              run(
+                "eval",
+                `(() => {
+            const proposal = document.querySelector('[aria-label="Proposal"]');
+            const today = document.querySelector('[aria-label="Today"]');
+            return {
+              proposal: proposal.innerText,
+              today: today.innerText,
+              ring: proposal.querySelector('[role="img"]').getAttribute('aria-label'),
+              disabled: [...proposal.querySelectorAll('button')].find(b => b.textContent === 'Spend point').disabled,
+              overflow: document.documentElement.scrollWidth > innerWidth
+            };
+          })()`,
+              ),
+            );
+          const flat = read();
+          if (
+            !flat.proposal.includes("+30% damage") ||
+            !flat.proposal.includes("0 points available") ||
+            !flat.today.includes("50 XP unspent") ||
+            flat.ring !== "50 of 200 XP to next level" ||
+            !flat.disabled ||
+            flat.overflow
+          ) {
+            throw new Error(`${shot}: level, spending, ring or width did not match the comparison`);
+          }
+          run("eval", `document.querySelector('[aria-label="Proposal"]').scrollIntoView({block: "start"})`);
+          run("screenshot", join(values.out, `${shot}-flat.png`), "--full");
+          run("find", "role", "tab", "click", "--name", "2 · Growing bonuses", "--exact");
+          press("Spend point");
+          press("Spend point");
+          const growing = read();
+          if (
+            !growing.proposal.includes("+30% damage") ||
+            growing.ring !== "50 of 300 XP to next level" ||
+            !growing.disabled
+          ) {
+            throw new Error(`${shot}: growing bonuses did not reset and spend two points`);
+          }
+          run("eval", `document.querySelector('[aria-label="Proposal"]').scrollIntoView({block: "start"})`);
+          run("screenshot", join(values.out, `${shot}-growing.png`), "--full");
+          writeFileSync(join(values.out, `${shot}-interactions.json`), JSON.stringify({ flat, growing }, null, 2));
+        }
         if (name === "frontier-merge") {
           run("find", "role", "button", "click", "--name", "Merge into Army 2", "--exact");
           run("wait", "--text", "Confirm merge into Army 2");
