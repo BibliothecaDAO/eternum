@@ -402,6 +402,9 @@ export const TRANSFER_TROOPS = {
   waiting: "Waiting for both armies’ progress.",
   stale: "The armies changed. Review the merge before confirming again.",
   merge: (army: string) => `Merge into ${army}`,
+  confirmMerge: (army: string) => `Confirm merge into ${army}`,
+  confirmLoss: (army: string, lost: number, kept: number) =>
+    `${army} loses ${formatExact(lost)} progression value (XP + upgrades). The surviving army keeps ${formatExact(kept)}. Confirm to merge.`,
   survives: (army: string, col: number, row: number, slot: number) =>
     `${army} survives at (${col}, ${row}) · slot ${slot}.`,
   progression: (value: number, xp: number, loser: string) =>

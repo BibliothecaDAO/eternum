@@ -238,7 +238,7 @@ it("starts the split again from the armies' new troops when they change while it
 });
 
 it.each([
-  [0, 99, "Army 1", 100, 201],
+  [0, 99, "Army 2", 99, 202],
   [0, 101, "Army 2", 101, 202],
   [0, 100, "Army 2", 100, 202],
 ])(
@@ -284,7 +284,7 @@ it.each(["progress", "troops", "stamina", "position", "removed", "day"])(
     const store = transferArmies();
     const { swap, close } = render(store);
     const failed = vi.spyOn(toast, "failed").mockReturnValue("changed");
-    const send = button("Merge into Army 1")!;
+    const send = button("Merge into Army 2")!;
     const wire = (v: unknown) => JSON.parse(JSON.stringify(v, (_, x) => (typeof x === "bigint" ? x.toString() : x)));
     const changes = {
       progress: {
@@ -338,7 +338,7 @@ it.each(["progress", "troops", "stamina", "position", "removed", "day"])(
 it.each(["0x74", "0x92"])("removes the selected transfer if either army disappears (%s)", (key) => {
   const store = transferArmies();
   const { swap } = render(store);
-  expect(host.textContent).toContain("Army 1 survives");
+  expect(host.textContent).toContain("Army 2 survives");
   act(() => store.applyFacts([{ model: "ExplorerTroops", key, value: null }]));
   expect(host.querySelector('[role="dialog"]')).toBeNull();
   expect(swap).not.toHaveBeenCalled();
@@ -352,4 +352,97 @@ it("waits for both armies' progress instead of guessing the survivor", () => {
   expect(host.textContent).not.toContain("survives at");
   expect(button(/^Move /)!.disabled).toBe(true);
   expect(swap).not.toHaveBeenCalled();
+});
+
+it("asks before dissolving an army with a whole upgrade more progression, then sends the chosen direction", async () => {
+  const { swap, close } = render(transferArmies(100, 0));
+  expect(button("All to Army 1")).toBeDefined();
+  expect(button("All to Army 2")).toBeDefined();
+  expect(host.textContent).toContain("Army 2 survives at");
+  await act(async () => button("Merge into Army 2")!.click());
+  expect(swap).not.toHaveBeenCalled();
+  expect(close).not.toHaveBeenCalled();
+  expect(host.textContent).toContain("Army 1 loses 200 progression value");
+  await act(async () => button("Confirm merge into Army 2")!.click());
+  expect(swap).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({
+      from_explorer_id: 201,
+      to_explorer_id: 202,
+      count: 600 * Number(PRECISION),
+    }),
+  );
+  expect(close).toHaveBeenCalledOnce();
+});
+
+it("clears confirmation when the split changes and still lets the stronger target survive without it", async () => {
+  const { swap } = render(transferArmies(100, 0));
+  await act(async () => button("Merge into Army 2")!.click());
+  act(() => button("Even")!.click());
+  expect(button(/^Confirm merge/)).toBeUndefined();
+  act(() => button("All to Army 2")!.click());
+  expect(button("Merge into Army 2")).toBeDefined();
+  act(() => button("All to Army 1")!.click());
+  await act(async () => button("Merge into Army 1")!.click());
+  expect(swap).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({
+      from_explorer_id: 202,
+      to_explorer_id: 201,
+      count: 500 * Number(PRECISION),
+    }),
+  );
+});
+
+it("asks again after progress changes while a loss confirmation is open", async () => {
+  const store = transferArmies(100, 0);
+  const { swap } = render(store);
+  await act(async () => button("Merge into Army 2")!.click());
+  const before = store.require("ArmyProgress", { game_id: 1, explorer_id: 201 });
+  act(() =>
+    store.applyFacts([
+      {
+        model: "ArmyProgress",
+        key: "0xf2012",
+        value: {
+          ...before,
+          explorer_id: "201",
+          xp: 101,
+        },
+      },
+    ] as never),
+  );
+  expect(button(/^Confirm merge/)).toBeUndefined();
+  await act(async () => button("Merge into Army 2")!.click());
+  expect(swap).not.toHaveBeenCalled();
+  expect(host.textContent).toContain("Army 1 loses 201 progression value");
+  await act(async () => button("Confirm merge into Army 2")!.click());
+  expect(swap).toHaveBeenCalledOnce();
+});
+
+it("refuses facts arriving just before the final confirmation click", async () => {
+  const store = transferArmies(100, 0);
+  const { swap, close } = render(store);
+  const failed = vi.spyOn(toast, "failed").mockReturnValue("changed");
+  await act(async () => button("Merge into Army 2")!.click());
+  const confirm = button("Confirm merge into Army 2")!;
+  await act(async () => {
+    const progress = store.require("ArmyProgress", { game_id: 1, explorer_id: 202 });
+    store.applyFacts([
+      {
+        model: "ArmyProgress",
+        key: "0xf2022",
+        value: {
+          ...progress,
+          explorer_id: "202",
+          xp: 1,
+        },
+      },
+    ] as never);
+    confirm.click();
+  });
+  expect(swap).not.toHaveBeenCalled();
+  expect(close).not.toHaveBeenCalled();
+  expect(failed).toHaveBeenCalledWith(
+    expect.objectContaining({ message: "The armies changed. Review the merge before confirming again." }),
+    "The troops could not be moved.",
+  );
 });

@@ -1429,7 +1429,7 @@ function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {
 
 /** The same transfer selection as the map, on two adjacent armies; this lab never sends a transaction. */
 const LabMerge = () => {
-  const [store] = useState(() => transferArmies());
+  const [store] = useState(() => transferArmies(100, 0));
   useEffect(() => {
     useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: TRANSFER_TAPPED });
     return () => useUIStore.getState().selectOnMap(null);

@@ -546,7 +546,7 @@ it("opens a new pick's own card at once over a fight's result, which stands only
 
 it("the map's actual transfer selection shows the survivor before the player confirms", async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  const store = transferArmies();
+  const store = transferArmies(100, 0);
   useAccountStore.setState({ account: { address: "0x111" } as never });
   tiles.current = [];
   useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: TRANSFER_TAPPED });
@@ -569,14 +569,20 @@ it("the map's actual transfer selection shows the survivor before the player con
       ),
     );
     expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Transfer troops");
-    expect(host.textContent).toContain("Army 1 survives at (41, 12) · slot 1");
+    expect(host.textContent).toContain(`Army 2 survives at (${TRANSFER_TAPPED.col}, ${TRANSFER_TAPPED.row}) · slot 2`);
     expect(host.textContent).toContain("7 stamina after merging");
-    expect(host.textContent).toContain("Army 2’s XP and upgrades are not carried over");
+    expect(host.textContent).toContain("Army 1’s XP and upgrades are not carried over");
     expect(swap).not.toHaveBeenCalled();
-    const confirm = [...host.querySelectorAll("button")].find((button) => button.textContent === "Merge into Army 1")!;
+    const confirm = [...host.querySelectorAll("button")].find((button) => button.textContent === "Merge into Army 2")!;
     await act(async () => confirm.click());
+    expect(swap).not.toHaveBeenCalled();
+    expect(host.textContent).toContain("Army 1 loses 200 progression value");
+    const final = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Confirm merge into Army 2",
+    )!;
+    await act(async () => final.click());
     expect(swap).toHaveBeenCalledWith(
-      expect.objectContaining({ from_explorer_id: 202, to_explorer_id: 201, count: 500_000_000_000 }),
+      expect.objectContaining({ from_explorer_id: 201, to_explorer_id: 202, count: 600_000_000_000 }),
     );
   } finally {
     act(() => root.unmount());
