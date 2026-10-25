@@ -115,6 +115,24 @@ export const BEAST_NAMES = {
   basilisk: "Basilisk",
   "dark-fey": "Dark fey",
 } as const;
+type FrontierGuard = { beast: keyof typeof BEAST_NAMES; scale: number };
+/** Who guards a ruin, by depth from the surface to Ethereal III, and at what size its model stands. */
+export const FALLEN_REALM_DEPTHS: readonly FrontierGuard[] = [
+  { beast: "ammit", scale: 1.2 },
+  { beast: "basilisk", scale: 1.2 },
+  { beast: "wyvern", scale: 1.35 },
+  { beast: "hydra", scale: 1.7 },
+];
+/** A roaming band of beasts: the weaker band or the stronger, at every depth. */
+export const ROAMING_BEASTS = {
+  lowly: { beast: "cyclops", scale: 1 },
+  stronger: { beast: "wraith", scale: 1 },
+} as const satisfies Record<string, FrontierGuard>;
+/** A camp's and a rift's guard, the same at every depth. */
+export const SITE_GUARDS = {
+  camp: { beast: "troll", scale: 0.85 },
+  rift: { beast: "dark-fey", scale: 0.75 },
+} as const satisfies Record<string, FrontierGuard>;
 /** Frontier creatures are the encounter itself; a rift or ruin retains its landmark name. */
 export const frontierSiteName = (type: StructureType, beast?: { name: string }): string =>
   (type === StructureType.Camp || type === StructureType.Beasts) && beast

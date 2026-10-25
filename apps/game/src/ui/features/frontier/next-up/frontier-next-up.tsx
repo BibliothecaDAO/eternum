@@ -1,8 +1,8 @@
 import { useArmyOrder } from "@/ui/features/frontier/hud/army-order";
 import { useLayout } from "@/shell/frame/layout";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { useNavigateToMapView, useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
+import { openOnMap } from "@/play/navigation/open-place";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
@@ -83,8 +83,6 @@ const useTakeStep = (
   const goToPlace = useGoToFrontierPlace(realm);
   const armies = useDockArmies(realm);
   const selectArmy = useSelectArmyOnMap();
-  const navigateToMapView = useNavigateToMapView();
-  const selectOnMap = useUIStore((state) => state.selectOnMap);
   return (act: FrontierCoachAct) => {
     switch (act) {
       case "realm":
@@ -100,9 +98,7 @@ const useTakeStep = (
         return tiered && onOpenArmy(tiered.explorerId);
       }
       case "camp":
-        if (!facts.camp) return;
-        navigateToMapView(Position.fromContract(facts.camp));
-        return selectOnMap({ kind: "hex", hex: { col: facts.camp.x, row: facts.camp.y } });
+        return facts.camp && openOnMap(Position.fromContract(facts.camp), "tile");
       case "research":
         return onSurface("research");
     }

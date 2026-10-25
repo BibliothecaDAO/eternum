@@ -29,8 +29,11 @@ vi.mock("@/hooks/context/game-context", () => ({
   }),
 }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0, useNativeRow: () => undefined }));
+vi.mock("@/play/navigation/open-place", async (original) => ({
+  ...(await original<typeof import("@/play/navigation/open-place")>()),
+  openOnMap: game.navigate,
+}));
 vi.mock("@/hooks/helpers/use-navigate", () => ({
-  useNavigateToMapView: () => game.navigate,
   useGoToStructure: () => game.goToStructure,
   useSelectArmyOnMap: () => game.selectArmy,
 }));
@@ -131,6 +134,7 @@ describe("An opened crate in Events", () => {
     await clickRow(eventsRows([crate])[0]);
     expect(game.selectArmy).not.toHaveBeenCalled();
     expect(game.navigate.mock.calls[0][0].getContract()).toEqual({ x: 3, y: 4 });
+    expect(game.navigate.mock.calls[0][1]).toBe("tile");
   });
 });
 

@@ -421,7 +421,8 @@ const PRIVACY: LegalSection[] = [
         <p>Our Services integrate with third-party platforms including:</p>
         <ul>
           <li>
-            <strong>Cartridge</strong> — Session key wallet infrastructure for game interactions
+            <strong>Cartridge Controller, Ready and Braavos</strong> — Starknet wallets you may link as your payout
+            wallet. Linking one asks it to sign a single message; it signs none of your game actions
           </li>
           <li>
             <strong>Starknet / Ethereum</strong> — Public blockchain networks for on-chain game execution
@@ -504,6 +505,10 @@ const PRIVACY: LegalSection[] = [
         <p>We use minimal cookies and local storage necessary for the functioning of our Services, including:</p>
         <ul>
           <li>Session and wallet connection state</li>
+          <li>
+            Your device key, made in your browser. It signs your game actions for your Realms account, and only its
+            public half leaves your browser. Realms approves each new device before it can play.
+          </li>
           <li>Theme and display preferences</li>
           <li>Basic analytics to understand site usage</li>
         </ul>

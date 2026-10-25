@@ -1,11 +1,10 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { openOnMap } from "@/play/navigation/open-place";
 import { useFactView } from "@/hooks/use-fact-view";
 import { gameStructuresView } from "@/sync/fact-views";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { playerAvatarUrl, usePlayerDisplayName } from "@/hooks/use-player-profile";
 import {
@@ -166,8 +165,6 @@ interface HyperstructurePaying {
 
 /** One hyperstructure paying the player: its name, their share, what it pays them a second, and where it stands. */
 const HyperstructureRow = ({ holding }: { holding: HyperstructurePaying }) => {
-  const navigateToMapView = useNavigateToMapView();
-  const selectOnMap = useUIStore((state) => state.selectOnMap);
   const at = holding.position?.getNormalized();
   return (
     <li className="flex items-center gap-2">
@@ -181,8 +178,7 @@ const HyperstructureRow = ({ holding }: { holding: HyperstructurePaying }) => {
           onClick={() => {
             // The map, on the hyperstructure, with it selected; the leaderboard closes so it shows.
             usePopoverStore.getState().close("leaderboard");
-            navigateToMapView(holding.position!);
-            selectOnMap({ kind: "structure", entityId: holding.id });
+            openOnMap(holding.position!, { kind: "structure", entityId: holding.id });
           }}
           className="rounded-md border border-hud-line px-1.5 text-hud-body tabular-nums text-hud-accent hover:bg-hud-hover"
         >

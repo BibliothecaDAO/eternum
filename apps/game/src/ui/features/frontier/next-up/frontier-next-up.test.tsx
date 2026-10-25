@@ -22,8 +22,8 @@ vi.mock("../frontier-home", () => ({ useGoToFrontierPlace: () => moves.goToPlace
 vi.mock("@/ui/features/military/utils/open-army-deployment", () => ({ openArmyDeployment: moves.deploy }));
 vi.mock("@/hooks/helpers/use-navigate", () => ({
   useSelectArmyOnMap: () => moves.selectArmy,
-  useNavigateToMapView: () => vi.fn(),
 }));
+vi.mock("@/play/navigation/open-place", () => ({ openOnMap: vi.fn() }));
 vi.mock("../hud/dock-armies", () => ({
   useDockArmies: () => [
     { explorerId: 11, stamina: { current: 20, max: 150 }, canBuyTier: false },

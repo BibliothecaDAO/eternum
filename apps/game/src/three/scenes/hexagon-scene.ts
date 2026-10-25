@@ -940,37 +940,34 @@ export abstract class HexagonScene {
 
     if (duration) {
       this.cameraAnimate(newPosition, newTarget, duration);
-    } else {
-      target.copy(newTarget);
-      pos.copy(newPosition);
-      this.notifyControlsChanged();
+      return;
     }
+    // A move that takes the camera now ends any move under way, which would otherwise go on writing its own target.
+    this.endCameraTransition();
+    target.copy(newTarget);
+    pos.copy(newPosition);
+    this.notifyControlsChanged();
   }
 
-  /** Moves the camera onto one of this scene's own hexes. The world map takes map positions instead (moveCameraToMapPosition). */
+  /** The camera's transition under way, if any, stops where it is and the camera is idle again. */
+  private endCameraTransition(): void {
+    this.cameraTransitionTimeline?.kill();
+    this.cameraTransitionTimeline = null;
+    gsap.killTweensOf(this.controls.object.position);
+    gsap.killTweensOf(this.controls.target);
+    const token = this.cameraTransitionState.activeToken;
+    if (token === null) return;
+    this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, token);
+    this.setCameraTransitionStatus("idle");
+  }
+
+  /**
+   * Moves the camera onto one of this scene's own hexes, keeping its view angle. The world map takes map positions
+   * instead (moveCameraToMapPosition).
+   */
   protected moveCameraToColRow(col: number, row: number, duration: number = 2) {
     const { x, y, z } = this.hexSpace.positionForHex({ col, row });
-
-    const newTarget = new Vector3(x, y, z);
-
-    const target = this.controls.target;
-    const pos = this.controls.object.position;
-
-    // go to new target with but keep same view angle
-    const deltaX = newTarget.x - target.x;
-    const deltaZ = newTarget.z - target.z;
-
-    const newPosition = IS_FLAT_MODE
-      ? new Vector3(newTarget.x, pos.y, newTarget.z)
-      : new Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ);
-
-    if (duration) {
-      this.cameraAnimate(newPosition, newTarget, duration);
-    } else {
-      target.copy(newTarget);
-      pos.copy(newPosition);
-      this.notifyControlsChanged();
-    }
+    this.moveCameraToXYZ(x, y, z, duration);
   }
 
   public getCameraTargetPosition(): Vector3 {

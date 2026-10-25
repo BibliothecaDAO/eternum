@@ -1,21 +1,35 @@
 import { formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { CONTINUE, DAY, DAY_DONE, DAY_OPEN, REALM_KEPT, TROOPS, tomorrowLasts } from "@/ui/design-system/kit/words";
+import { HudButton, HudChip, HudMeter, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import {
+  CONTINUE,
+  DAY,
+  DAY_DONE,
+  DAY_HISTORY_FAILED,
+  DAY_HISTORY_SHORT,
+  DAY_OPEN,
+  REALM_KEPT,
+  TROOPS,
+  tomorrowLasts,
+} from "@/ui/design-system/kit/words";
 
 import { DayEnds } from "../day-ends";
 import type { DayClock } from "../hud/day-clock";
 import { type DayTotals, DayTotalsGrid } from "../log/day-totals";
+import type { DayHistory } from "../log/player-day";
 
 /**
  * The day-done card (wireframe 11), over the map at the day's end (DayEndScreen places it): the day done and the realm
- * kept, when the new day ends and how long tomorrow lasts, the ended day's totals, the rank it moved to, and the troops
- * the ended armies took with them against those that came home. Continue goes on into the new day.
+ * kept, when the new day ends and how long tomorrow lasts, the ended day's totals (and why they are unknown, when the
+ * player's history cannot give them), the rank it moved to, and the troops the ended armies took with them against
+ * those that came home. Continue goes on into the new day.
  */
 export const DayDoneCard = ({
   endedDay,
   clock,
   totals,
+  history,
+  onRetry,
   rank,
   armies,
   troopsLost,
@@ -26,6 +40,9 @@ export const DayDoneCard = ({
   /** The new day: when it ends, the time left, and how long the day after lasts. */
   clock: Pick<DayClock, "endsAt" | "secondsLeft" | "tomorrowSeconds" | "tone">;
   totals: DayTotals;
+  /** How much of the day the player's history gives; the totals are unknown unless it is the whole day. */
+  history: Exclude<DayHistory, "waiting">;
+  onRetry: () => void;
   /** The closing rank change, from Herald's record of the ended day. */
   rank?: { from: number; to: number };
   /** How many armies ended with the day. */
@@ -55,6 +72,8 @@ export const DayDoneCard = ({
     <div className="w-full">
       <DayTotalsGrid totals={totals} />
     </div>
+    {history === "short" && <HudNotice line={DAY_HISTORY_SHORT} />}
+    {history === "failed" && <HudNotice tone="bad" line={DAY_HISTORY_FAILED} retry={onRetry} />}
     {rank && (
       <p className="flex items-center gap-1.5 text-hud-title tabular-nums">
         <SemanticIcon name="victory" size={24} />#{rank.from} → #{rank.to}

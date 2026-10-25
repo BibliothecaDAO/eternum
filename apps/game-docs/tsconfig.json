@@ -14,7 +14,8 @@
       "@config": ["../../config/utils/utils"]
     },
     "baseUrl": ".",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   },
   "include": ["**/*.ts", "**/*.tsx", "**/*.md", "**/*.mdx"],
   "exclude": ["node_modules", "dist", "**/*.mjs"]

@@ -7,7 +7,7 @@ import type { NativeWorldManifest } from "../../../config/deployer/clean/world/n
 import { nativePresetIdFor } from "../../../config/source/native";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { splitPlaytestRoster } from "../../../packages/value-ledger/src/blitz-roster";
-import { BLITZ_SLOT_PREPARATION_SECONDS } from "../../../packages/value-ledger/src/blitz-slots";
+import { BLITZ_SLOT_PREPARATION_SECONDS } from "../../../packages/value-ledger/src/blitz-timetable";
 import { seaterLabels } from "../../../packages/value-ledger/src/shard-accounts";
 import { LaunchShard, type BlitzLaunch } from "../../../apps/launch-service/src/shard-client";
 import { RegistrationOpen } from "../../../apps/launch-service/src/blitz-roster";

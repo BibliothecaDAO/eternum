@@ -1,4 +1,6 @@
 import { activeMapLayer } from "@/three/map-layer";
+import { getGameModeConfig } from "@/config/game-modes";
+import { frontierPaintedPath } from "../structures/frontier-painted-buildings";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
 import { TileOccupier } from "@bibliothecadao/types";
@@ -14,7 +16,7 @@ const MAP_SITES = [
   { occupier: TileOccupier.Well, path: "/models/outposts/well.glb", name: "Well" },
 ] as const;
 
-type MapSite = (typeof MAP_SITES)[number];
+type MapSite = Omit<(typeof MAP_SITES)[number], "path"> & { path: string };
 type SiteHex = { col: number; row: number };
 
 /**
@@ -28,6 +30,10 @@ export class MapSiteManager {
   private readonly unsubscribe: () => void;
   private modelVisible = true;
   private destroyed = false;
+  private readonly sites = MAP_SITES.map((site) => ({
+    ...site,
+    path: getGameModeConfig().id === "frontier" ? frontierPaintedPath(site.name.toLowerCase()) : site.path,
+  }));
 
   constructor(
     private readonly scene: Scene,
@@ -66,7 +72,7 @@ export class MapSiteManager {
 
   private refresh(): void {
     if (this.destroyed) return;
-    for (const site of MAP_SITES) {
+    for (const site of this.sites) {
       const hexes = this.siteHexes(site);
       const model = this.models.get(site.occupier);
       if (!model) {

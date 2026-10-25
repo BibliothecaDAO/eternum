@@ -85,7 +85,7 @@ export function DayEndLabView() {
 
   // The lab's ended day always has a summary to read.
   useEffect(() => {
-    showSummary(true);
+    showSummary("shown");
   }, [showSummary]);
   // A new choice starts from the day as it was played.
   useEffect(() => {

@@ -16,7 +16,6 @@ import { forecastAttack } from "@/ui/features/military/battle/fight-forecast";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { knownAmount } from "@/ui/utils/utils";
 import {
-  activeCombatRules,
   ArmyActionManager,
   biomeTypeOf,
   configManager,
@@ -256,7 +255,7 @@ const useCertainLoss = () => {
         attackerIsStructureGuard: false,
         defenderIsStructureGuard: true,
       };
-      const rules = { rules: activeCombatRules(), rollsDice: configManager.rollsCombatDice(false) };
+      const rules = { rules: configManager.getCombatRules(), rollsDice: configManager.rollsCombatDice(false) };
       return forecastAttack(troops, guard.troops, circumstances, rules).certainLoss;
     };
   }, [timestamp, facts]);

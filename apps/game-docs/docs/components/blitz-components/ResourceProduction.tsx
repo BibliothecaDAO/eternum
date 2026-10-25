@@ -78,7 +78,7 @@ const RecipeTable = ({ title, firstColumn, recipes }: { title: string; firstColu
 /** The materials, rarest last. */
 export const BlitzStandardResourceProduction = () => (
   <RecipeTable
-    title="Standard Mode Production"
+    title="Resources"
     firstColumn="Resource"
     recipes={blitzMaterials().map((id) => blitzRecipes().find((recipe) => recipe.id === id)!)}
   />
@@ -87,7 +87,7 @@ export const BlitzStandardResourceProduction = () => (
 /** The troops, tier by tier: Knight, Crossbowman and Paladin within each. */
 export const BlitzStandardTroopProduction = () => (
   <RecipeTable
-    title="Standard Troop Production"
+    title="Troops"
     firstColumn="Troop Type"
     recipes={blitzRecipes()
       .filter((recipe) => TROOPS.has(recipe.id))
@@ -97,7 +97,7 @@ export const BlitzStandardTroopProduction = () => (
 
 export const BlitzDonkeyProduction = () => (
   <RecipeTable
-    title="Donkey Production"
+    title="Donkeys"
     firstColumn="Resource"
     recipes={blitzRecipes().filter((recipe) => recipe.id === ResourcesIds.Donkey)}
   />

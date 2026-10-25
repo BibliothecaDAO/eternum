@@ -22,6 +22,6 @@ export const X_HANDLE = REALMS_X_TAG;
 
 /**
  * How to play: the Blitz guide's first page on the docs site (apps/game-docs), the rules a new player reads before a
- * game. The site's front page is about the Realms at large and teaches no game.
+ * game. The site's front page only points at each game.
  */
-export const HOW_TO_PLAY = "https://docs.realms.party/blitz/key-concepts";
+export const HOW_TO_PLAY = "https://docs.realms.party/blitz";

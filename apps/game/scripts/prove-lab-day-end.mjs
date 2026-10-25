@@ -58,6 +58,21 @@ function open(browser, urlBase, how, screen) {
   return url;
 }
 
+/** What the rollover does to the map in each case, and in which phase. */
+const ROLLOVER_CALLS = {
+  ordinary: ["reproject@black", "navigate@black"],
+  together: ["reproject@black", "navigate@black"],
+  "late-block": ["reproject@day", "navigate@day"],
+  // Opened after the day ended, the map is already re-projected; only the camera comes onto the realm.
+  later: ["navigate@black"],
+};
+const ROLLOVER_SAYS = {
+  ordinary: "re-projected the map and moved the camera behind the black",
+  together: "re-projected the map and moved the camera behind the black",
+  "late-block": "re-projected the map and moved the camera when the late block arrived",
+  later: "moved the camera onto the realm behind the black",
+};
+
 /** One run: the day ends as `how` says, the summary is read and continued, and the new day comes up. */
 function play(browser, urlBase, { how, screen, skip = false }) {
   const name = `${screen}-${how}`;
@@ -97,14 +112,11 @@ function play(browser, urlBase, { how, screen, skip = false }) {
   browser.run(["wait", "1500"]);
   still("new-day");
   const end = status(browser);
-  if (how !== "later") {
-    const kinds = end.events.map((event) => `${event.kind}@${event.phase}`);
-    const expected = how === "late-block" ? ["reproject@day", "navigate@day"] : ["reproject@black", "navigate@black"];
-    check(
-      JSON.stringify(kinds) === JSON.stringify(expected),
-      `${name}: the rollover re-projected the map and moved the camera ${how === "late-block" ? "when the late block arrived" : "behind the black"} (${kinds.join(", ")})`,
-    );
-  }
+  const kinds = end.events.map((event) => `${event.kind}@${event.phase}`);
+  check(
+    JSON.stringify(kinds) === JSON.stringify(ROLLOVER_CALLS[how]),
+    `${name}: the rollover ${ROLLOVER_SAYS[how]} (${kinds.join(", ")})`,
+  );
   check(end.onNewLand, `${name}: the new day is up on the realm's new land`);
   proveMapTakesInput(browser, name);
   transcript.runs.push(record);

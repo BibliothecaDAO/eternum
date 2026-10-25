@@ -46,6 +46,7 @@ import {
   type LabScreen,
 } from "./app-lab-fixtures";
 import { LabConnect, LabDoorway } from "./app-lab-flows";
+import { answerLabChat } from "./lab-chat";
 
 /**
  * The dev build's app lab: the real pages over one fixture state per screen, for the painted pass's captures of states
@@ -224,47 +225,15 @@ const answerIdentity = () => {
   });
 };
 
-/**
- * The lobby chat's room socket, answered in the tab: it admits the reader and echoes what a seated player sends as the
- * room would broadcast it. Any other socket opens as before.
- */
+/** The lobby chat's room, answered in the tab: a wallet registered in the slot, and not refunded, writes. */
 const answerLobbyChat = (screen: LabScreen) => {
-  const LAB_ROOM = `slot:${LAB_CHAIN}:blitz-1630`;
-  const Network = window.WebSocket;
-  // As the chat Worker decides at the open: a wallet registered in the slot, and not refunded, writes.
   const registration = LAB_ENTRY_TERMS[screen]?.registration;
   const canWrite =
     LAB_ENTRY_TERMS[screen]?.cancelled !== true &&
     registration?.registered === true &&
     registration.paid > 0n &&
     !registration.refundable;
-  class LabRoom extends EventTarget {
-    readyState = 1;
-    constructor() {
-      super();
-      setTimeout(() => this.#emit({ type: "joined:zone", zoneId: LAB_ROOM, canWrite }), 50);
-    }
-    send(data: string) {
-      const sent = JSON.parse(data) as { payload: { content: string }; clientMessageId?: string };
-      const message = {
-        id: sent.clientMessageId ?? String(Date.now()),
-        sender: { playerId: LAB_SESSION.user.realmsId, displayName: LAB_SESSION.user.name },
-        zoneId: LAB_ROOM,
-        content: sent.payload.content,
-        createdAt: new Date().toISOString(),
-      };
-      this.#emit({ type: "world:message", zoneId: LAB_ROOM, message });
-    }
-    close() {
-      this.readyState = 3;
-    }
-    #emit(body: unknown) {
-      this.dispatchEvent(new MessageEvent("message", { data: JSON.stringify(body) }));
-    }
-  }
-  window.WebSocket = function (url: string | URL) {
-    return String(url).includes("/api/chat/rooms/") ? new LabRoom() : new Network(url);
-  } as unknown as typeof WebSocket;
+  answerLabChat(canWrite);
 };
 
 const profilesOf = (accounts: readonly string[]) =>
