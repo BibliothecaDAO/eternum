@@ -18,7 +18,7 @@ import { ArmyToken, OpenSlot } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
 /**
- * Every army slot in order: a phone's dock or a desktop's list, each showing its army or starting stamina. Only the
+ * Every army slot in order: a phone's dock or a desktop's list, each showing its army or starting stamina. The
  * player can deploy into any free slot. A visited realm shows its armies read-only, and an empty desktop list stays absent.
  */
 export const ArmyDock = ({

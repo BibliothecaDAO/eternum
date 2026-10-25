@@ -381,7 +381,6 @@ export const DEPLOY = "Deploy";
 export const NO_TROOPS_AT_HOME = "No troops at home";
 export const DEPLOYING = "Deploying…";
 /** A free slot after the lowest: the game fills the lowest free slot first. */
-export const DEPLOY_FILLS_FIRST = (number: number) => `Deploy fills slot ${number} first.`;
 export const BUILD = "Build";
 
 /** Default army names: "Army" and its place. */
