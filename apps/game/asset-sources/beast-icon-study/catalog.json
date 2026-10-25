@@ -1,0 +1,5 @@
+{
+  "cyclops": { "label": "Smaller beasts", "options": ["cyclops-a", "cyclops-b"] },
+  "wraith": { "label": "Stronger beasts", "options": ["wraith-a", "wraith-b"] },
+  "troll": { "label": "Camps", "options": ["troll-a", "troll-b"] }
+}

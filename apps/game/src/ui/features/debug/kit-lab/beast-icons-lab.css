@@ -1,0 +1,85 @@
+.beast-icons-lab {
+  min-height: 100vh;
+  padding: 24px;
+  background: #171917;
+  color: rgb(var(--hud-ink));
+}
+.beast-icons-lab > header,
+.beast-icons-lab > nav,
+.beast-icons-lab > p,
+.beast-icons-columns {
+  max-width: 1240px;
+  margin: 0 auto 24px;
+}
+.beast-icons-lab h1 {
+  font-size: 28px;
+}
+.beast-icons-lab h2 {
+  font-size: 20px;
+}
+.beast-icons-lab h3,
+.beast-icons-lab p,
+.beast-icons-lab figcaption {
+  color: var(--hud-muted);
+}
+.beast-icons-lab h3 {
+  margin-top: 20px;
+}
+.beast-icons-lab nav {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.beast-icons-lab nav button {
+  padding: 8px 16px;
+  border: 1px solid var(--hud-line);
+  border-radius: 8px;
+}
+.beast-icons-lab nav button[aria-pressed="true"] {
+  background: rgb(var(--hud-gold));
+  color: #201e1b;
+}
+.beast-icons-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.beast-icons-columns > article {
+  min-width: 0;
+}
+.beast-icons-columns .ui-sheet {
+  position: static;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+}
+.beast-icons-portrait,
+.beast-icons-sizes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 16px 0;
+}
+.beast-icons-sizes figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: end;
+  gap: 8px;
+}
+/* Only this review's candidate columns replace the existing semantic images in the real card. */
+.beast-icons-columns [data-candidate] img[data-icon^="beast-"][src*="/64/"] {
+  content: var(--beast-art-64);
+}
+.beast-icons-columns [data-candidate] img[data-icon^="beast-"][src*="/128/"] {
+  content: var(--beast-art-128);
+}
+.beast-icons-columns [data-candidate] img[data-icon^="beast-"][src*="/256/"] {
+  content: var(--beast-art-256);
+}
+@media (max-width: 760px) {
+  .beast-icons-columns {
+    grid-template-columns: 1fr;
+  }
+}

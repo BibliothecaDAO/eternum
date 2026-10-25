@@ -107,7 +107,7 @@
     "season": "bun --no-env-file deploy/first/owner-command.ts season",
     "teardown": "bun --no-env-file deploy/first/teardown.ts",
     "icons:build": "node scripts/icons/build.mjs",
-    "icons:check": "node --test scripts/icons/*.test.mjs && node scripts/icons/build.mjs --check",
+    "icons:check": "node --test scripts/icons/*.test.mjs && node scripts/icons/build.mjs --check && node scripts/icons/build-beast-study.mjs --check",
     "shell:check": "node --test scripts/shell-tokens/*.test.mjs && node scripts/shell-tokens/check.mjs",
     "hud:check": "node --test scripts/hud-sheet/*.test.mjs && node scripts/hud-sheet/check.mjs && node scripts/hud-sheet/reach.mjs",
     "words:check": "node --test scripts/words/*.test.mjs && node scripts/words/check.mjs --check",
