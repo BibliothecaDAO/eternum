@@ -3,11 +3,16 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { installLabChain, LAB_GAME, type LabScenario } from "./lab-chain";
+import { dayEndScenario } from "./day-end-scenario";
 import { realmScenario } from "./realm-scenario";
 import { spireScenario } from "./spire-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
-const SCENARIOS: Partial<Record<string, () => LabScenario>> = { spire: spireScenario, realm: realmScenario };
+const SCENARIOS: Partial<Record<string, () => LabScenario>> = {
+  spire: spireScenario,
+  realm: realmScenario,
+  "day-end": dayEndScenario,
+};
 
 /**
  * Dev only: the game itself on a fixture. /lab/game?scenario=spire installs the tab's chain for that scenario
