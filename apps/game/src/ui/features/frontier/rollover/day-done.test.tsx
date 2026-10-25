@@ -207,3 +207,63 @@ describe("history answering late as the day ends in the game", () => {
     expect(window.localStorage.getItem(`frontier.day-done.1.${RECORDED_DAY.player}`)).toBe("2");
   });
 });
+
+describe("a device arriving in a new day", () => {
+  const MARK = `frontier.day-done.1.${RECORDED_DAY.player}`;
+  const arrive = async ({ visiting = false } = {}) => {
+    vi.useFakeTimers();
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <DayDone rules={RULES} realm={{} as never} visiting={visiting} />
+        </QueryClientProvider>,
+      ),
+    );
+    await act(() => vi.advanceTimersByTimeAsync(100));
+  };
+
+  afterEach(() => {
+    vi.useRealTimers();
+    client.clear();
+  });
+
+  it("goes through the end of a day it opened after with no summary to read, so the camera comes onto the realm", async () => {
+    // Day 2 not played: nothing in the player's history, no army ended with it.
+    herald.history = [];
+    await arrive();
+    expect(host.querySelector(SUMMARY)).toBeNull();
+    expect(useDayEndStore.getState()).toMatchObject({ phase: "nightfall", arrival: "later", summary: "none" });
+    expect(window.localStorage.getItem(MARK)).toBe("2");
+    await seconds(DAY_END_TIMING.nightfall);
+    // The black: the rollover brings the camera onto the realm's new site behind it.
+    expect(phase()).toBe("black");
+    act(() => useDayEndStore.getState().markLandReady());
+    await seconds(DAY_END_TIMING.black);
+    await seconds(DAY_END_TIMING.dawn);
+    expect(phase()).toBe("day");
+  });
+
+  it("does not play a day's end again on a device that went through it, summary or none", async () => {
+    window.localStorage.setItem(MARK, "2");
+    await arrive();
+    expect(host.querySelector(SUMMARY)).toBeNull();
+    expect(phase()).toBe("day");
+  });
+
+  it("plays and marks nothing while visiting another realm", async () => {
+    await arrive({ visiting: true });
+    expect(host.querySelector(SUMMARY)).toBeNull();
+    expect(phase()).toBe("day");
+    expect(window.localStorage.getItem(MARK)).toBeNull();
+  });
+
+  it("marks the day gone through only once Continue drops the screen to black", async () => {
+    await arrive();
+    expect(totalsShown()).toEqual(PROD_DAY_2);
+    expect(window.localStorage.getItem(MARK)).toBeNull();
+    act(() => host.querySelector<HTMLButtonElement>(`${SUMMARY} button`)!.click());
+    expect(phase()).toBe("nightfall");
+    expect(window.localStorage.getItem(MARK)).toBe("2");
+  });
+});
