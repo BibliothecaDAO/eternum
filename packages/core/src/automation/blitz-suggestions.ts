@@ -1,6 +1,6 @@
-import { BuildingType, formatPopulationInWords, ResourcesIds, type ID } from "@bibliothecadao/types";
+import { BuildingType, formatExact, formatPopulationInWords, ResourcesIds, type ID } from "@bibliothecadao/types";
 
-import { type BuildOrder, type BuildOrderBuilding, type BuildOrderStep, DEFAULT_BUILD_ORDER } from "./build-order";
+import { type BuildOrder, type BuildOrderGoal, type BuildOrderStep, DEFAULT_BUILD_ORDER } from "./build-order";
 
 export type EmpireSuggestionAction =
   | "build-copper"
@@ -9,6 +9,8 @@ export type EmpireSuggestionAction =
   | "build-wheat"
   | "build-wood"
   | "build-worker-hut"
+  | "deploy-army"
+  | "train-troops"
   | "upgrade";
 
 export type BlitzBuildKey = "copper" | "coal" | "military" | "wheat" | "wood" | "workerHut";
@@ -16,6 +18,8 @@ export type BlitzBuildKey = "copper" | "coal" | "military" | "wheat" | "wood" | 
 type BlitzBuildability = {
   canBuild: boolean;
   reason?: string;
+  /** The realm's population has no room for it: the construction rule's own verdict. */
+  needsRoom: boolean;
 };
 
 export type BlitzBuildingCounts = {
@@ -37,6 +41,20 @@ export type BlitzMilitaryTarget = {
   bonusPercent?: number;
 };
 
+/** The realm's field armies, as the order's army step reads them: their troop is the military target's. */
+export type BlitzArmyState = {
+  /** Its living field armies. */
+  armies: number;
+  /** Its field army slots. */
+  maxArmies: number;
+  /** Whole troops of that kind on hand. */
+  troops: number;
+  /** The most troops of that kind one army holds at the realm's level: a full army. */
+  fullArmy: number;
+  /** Whether that troop is being trained: its barracks produces it now, or the realm's production automation will. */
+  training: boolean;
+};
+
 export type BlitzRealmSuggestionInput = {
   realmId: ID;
   realmName: string;
@@ -48,6 +66,8 @@ export type BlitzRealmSuggestionInput = {
   population: number;
   populationCapacity: number;
   militaryTarget?: BlitzMilitaryTarget | null;
+  /** Its field armies of the military target's troop; none without a target. */
+  army: BlitzArmyState | null;
   buildability: Record<BlitzBuildKey, BlitzBuildability>;
 };
 
@@ -62,8 +82,6 @@ export type BlitzSuggestionDraft = {
   reason?: string;
   priority: number;
 };
-
-const MIN_AVAILABLE_POPULATION_BEFORE_WORKER_HUT = 3;
 
 const BUILD_TARGETS: Record<
   BlitzBuildKey,
@@ -118,7 +136,8 @@ const BUILD_TARGETS: Record<
 };
 
 /** An order's building, as the realm's own count and build target name it. */
-const ORDER_KEYS: Record<BuildOrderBuilding, BlitzBuildKey> = {
+type OrderBuilding = Exclude<BuildOrderGoal, "army">;
+const ORDER_KEYS: Record<OrderBuilding, BlitzBuildKey> = {
   farm: "wheat",
   wood: "wood",
   coal: "coal",
@@ -179,63 +198,121 @@ const builtOf = (count: number, target: number): string => `${count} of ${target
 const resolveUpgradeSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null =>
   input.canAffordUpgrade ? createBaseSuggestion(input, "upgrade", "Level up realm", 0, "It can level up now.") : null;
 
-const isPopulationPressured = ({ population, populationCapacity }: BlitzRealmSuggestionInput) =>
-  populationCapacity > 0 && populationCapacity - population <= MIN_AVAILABLE_POPULATION_BEFORE_WORKER_HUT;
-
-const resolvePopulationSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null =>
-  isPopulationPressured(input)
-    ? resolveBuildSuggestion(
-        input,
-        "workerHut",
-        `${formatPopulationInWords(input.population, input.populationCapacity)}: a worker hut makes room for more.`,
-      )
-    : null;
-
 /** What a step counts, in words: "Wood camps", "Knight T1 buildings". */
-const STEP_NAMES: Record<Exclude<BuildOrderBuilding, "military">, string> = {
+const STEP_NAMES: Record<Exclude<OrderBuilding, "military">, string> = {
   farm: "Wheat farms",
   wood: "Wood camps",
   coal: "Coal mines",
   copper: "Copper mines",
   hut: "Worker huts",
 };
-const stepName = (input: BlitzRealmSuggestionInput, building: BuildOrderBuilding): string =>
+const stepName = (input: BlitzRealmSuggestionInput, building: OrderBuilding): string =>
   building === "military" ? `${input.militaryTarget?.label ?? "T1 military"} buildings` : STEP_NAMES[building];
 
-/** How many of a step's building the realm has; a realm with no military worth its biome has none to build. */
-const builtFor = (input: BlitzRealmSuggestionInput, step: BuildOrderStep): number | null => {
-  const key = ORDER_KEYS[step.building];
+/** How many of a building the realm has; a realm with no military worth its biome has none to build. */
+const builtFor = (input: BlitzRealmSuggestionInput, building: OrderBuilding): number | null => {
+  const key = ORDER_KEYS[building];
   if (key !== "military") return input.buildingCounts[key];
   return input.militaryTarget ? input.militaryTarget.count : null;
 };
 
 /**
- * The order's next step for the realm: the first step of its rank or lower it has not met, offered only once it can be
- * taken. An order is a sequence: a step waiting on resources holds the ones after it.
+ * A step's verdict for the realm: it passes (met, or under way by itself), it holds the order (it waits on what the
+ * realm must pay), or it is the step to take now.
  */
-const resolveOrderSuggestion = (input: BlitzRealmSuggestionInput, order: BuildOrder): BlitzSuggestionDraft | null => {
-  const next = order.steps.find((step) => {
-    const built = builtFor(input, step);
-    return step.rank <= input.realmLevel && built !== null && built < step.count;
-  });
-  if (!next) return null;
-  return resolveBuildSuggestion(
-    input,
-    ORDER_KEYS[next.building],
-    `${stepName(input, next.building)}: ${builtOf(builtFor(input, next) ?? 0, next.count)}.`,
-  );
+type StepVerdict = "passes" | "holds" | BlitzSuggestionDraft;
+
+/**
+ * A building step: built, or the build itself; a worker hut first when the realm's population has no room for it, and
+ * only then, so housing never comes before a step that does not need it.
+ */
+const resolveBuildingStep = (input: BlitzRealmSuggestionInput, building: OrderBuilding, count: number): StepVerdict => {
+  const built = builtFor(input, building);
+  if (built === null || built >= count) return "passes";
+  const key = ORDER_KEYS[building];
+  const progress = `${stepName(input, building)}: ${builtOf(built, count)}.`;
+  const take = input.buildability[key].needsRoom
+    ? resolveBuildSuggestion(
+        input,
+        "workerHut",
+        `${progress} ${formatPopulationInWords(input.population, input.populationCapacity)}: a worker hut makes room.`,
+      )
+    : resolveBuildSuggestion(input, key, progress);
+  return take ?? "holds";
 };
 
 /**
- * A realm's one next step in a running Blitz: level up whenever it can, a worker hut whenever population is 3 from
- * full, then the order's next step. The default order is the owner's.
+ * An army step: the realm's barracks, then its troops in training, then the army deployed once a full one is on hand.
+ * Troops in training pass, so the order goes on building while they come; a step the realm cannot field (no free
+ * slot) passes too.
+ */
+const resolveArmyStep = (input: BlitzRealmSuggestionInput, count: number): StepVerdict => {
+  const { army, militaryTarget } = input;
+  if (!army || !militaryTarget || army.armies >= count || army.armies >= army.maxArmies) return "passes";
+  if (army.fullArmy > 0 && army.troops >= army.fullArmy) {
+    return createArmySuggestion(input, "deploy-army", militaryTarget, army);
+  }
+  if (army.training) return "passes";
+  if (militaryTarget.count === 0) return resolveBuildingStep(input, "military", 1);
+  return createArmySuggestion(input, "train-troops", militaryTarget, army);
+};
+
+const ARMY_STEPS = {
+  "deploy-army": {
+    label: () => "Deploy an army",
+    reason: (troop: string, army: BlitzArmyState) =>
+      `${troop}: ${formatExact(army.troops)} on hand, a full army of ${formatExact(army.fullArmy)}.`,
+    priority: 50,
+  },
+  "train-troops": {
+    label: (troop: string) => `Train ${troop}`,
+    reason: (troop: string, army: BlitzArmyState) =>
+      `${troop}: ${formatExact(army.troops)} of ${formatExact(army.fullArmy)} for a full army, and none in training.`,
+    priority: 55,
+  },
+} as const;
+
+/** An army step to take: its troop is the military target's, which the realm's barracks trains. */
+const createArmySuggestion = (
+  input: BlitzRealmSuggestionInput,
+  action: keyof typeof ARMY_STEPS,
+  target: BlitzMilitaryTarget,
+  army: BlitzArmyState,
+): BlitzSuggestionDraft => {
+  const step = ARMY_STEPS[action];
+  return {
+    ...createBaseSuggestion(input, action, step.label(target.label), step.priority, step.reason(target.label, army)),
+    buildingTypeHint: target.buildingType,
+    resourceHint: target.resource,
+  };
+};
+
+const resolveStep = (input: BlitzRealmSuggestionInput, step: BuildOrderStep): StepVerdict =>
+  step.goal === "army" ? resolveArmyStep(input, step.count) : resolveBuildingStep(input, step.goal, step.count);
+
+/**
+ * The order's next step for the realm: the first step of its rank or lower that does not pass, offered only once it
+ * can be taken. An order is a sequence: a step waiting on resources holds the ones after it.
+ */
+const resolveOrderSuggestion = (input: BlitzRealmSuggestionInput, order: BuildOrder): BlitzSuggestionDraft | null => {
+  for (const step of order.steps) {
+    if (step.rank > input.realmLevel) continue;
+    const verdict = resolveStep(input, step);
+    if (verdict === "holds") return null;
+    if (verdict !== "passes") return verdict;
+  }
+  return null;
+};
+
+/**
+ * A realm's one next step in a running Blitz: level up whenever it can, then the order's next step. The default order
+ * is the owner's.
  */
 export const buildBlitzRealmSuggestions = (
   input: BlitzRealmSuggestionInput,
   order: BuildOrder = DEFAULT_BUILD_ORDER,
 ): BlitzSuggestionDraft[] => {
   if (!input.isBlitzActive) return [];
-  const suggestion =
-    resolveUpgradeSuggestion(input) ?? resolvePopulationSuggestion(input) ?? resolveOrderSuggestion(input, order);
+  const suggestion = resolveUpgradeSuggestion(input) ?? resolveOrderSuggestion(input, order);
   return suggestion ? [suggestion] : [];
 };

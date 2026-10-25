@@ -8,7 +8,7 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceBurnPopover } from "@/ui/features/economy/resources/resource-burn-popover";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
-import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
+import { openProduction } from "@/ui/features/settlement/production/open-production";
 import { CountUpNumber } from "@/ui/shared";
 import { HudIconButton, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -118,16 +118,8 @@ export const ResourceChip = ({
     }
 
     if (!resourceManager?.entityId) return;
-    openSurface({
-      id: "production",
-      content: (
-        <ProductionModal
-          preSelectedRealmId={resourceManager.entityId}
-          preSelectedResource={resourceId as ResourcesIds}
-        />
-      ),
-    });
-  }, [canShowProductionShortcut, onManageProduction, resourceManager, resourceId, openSurface]);
+    openProduction({ realmId: resourceManager.entityId, resource: resourceId as ResourcesIds });
+  }, [canShowProductionShortcut, onManageProduction, resourceManager, resourceId]);
 
   const isRelic = isResourceRelic(resourceId);
 

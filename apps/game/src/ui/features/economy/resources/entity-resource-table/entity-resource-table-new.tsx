@@ -10,7 +10,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView, RESOURCE_FACTS } from "@/sync/fact-views";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
+import { openProduction } from "@/ui/features/settlement/production/open-production";
 import {
   configManager,
   getBuildingQuantity,
@@ -264,13 +264,8 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   );
 
   const handleManageProduction = useCallback(
-    (structureId: number, resourceId: ResourcesIds) => {
-      openSurface({
-        id: "production",
-        content: <ProductionModal preSelectedRealmId={structureId} preSelectedResource={resourceId} />,
-      });
-    },
-    [openSurface],
+    (structureId: number, resourceId: ResourcesIds) => openProduction({ realmId: structureId, resource: resourceId }),
+    [],
   );
 
   const handleOpenCraftRelic = useCallback(

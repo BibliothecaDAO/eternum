@@ -8,7 +8,7 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { LeftView } from "@/types";
 import { MarketModal } from "@/ui/features/economy/trading";
-import { ProductionModal } from "@/ui/features/settlement";
+import { openProduction, PRODUCTION_SURFACE_ID } from "@/ui/features/settlement/production/open-production";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 export interface StructureActionBadge {
@@ -78,14 +78,10 @@ export function useStructureActions(): StructureAction[] | null {
     if (openId === "transfer") closePopover();
     else openTransfer({ sourceId: safeInteger(structureEntityId), destinationIds: [] });
   };
-  const openProduction = () => {
+  const toggleProduction = () => {
     setView(LeftView.None);
-    if (openId === "production") closePopover();
-    else
-      openSurface({
-        id: "production",
-        content: <ProductionModal preSelectedRealmId={safeInteger(structureEntityId)} />,
-      });
+    if (openId === PRODUCTION_SURFACE_ID) closePopover();
+    else openProduction({ realmId: safeInteger(structureEntityId) });
   };
   const openMarket = () => {
     setView(LeftView.None);
@@ -104,8 +100,8 @@ export function useStructureActions(): StructureAction[] | null {
     {
       id: "production",
       label: PRODUCTION,
-      active: openId === "production",
-      onClick: openProduction,
+      active: openId === PRODUCTION_SURFACE_ID,
+      onClick: toggleProduction,
       refusal,
     },
     {
