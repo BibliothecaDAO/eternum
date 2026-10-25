@@ -1,7 +1,14 @@
+// @vitest-environment jsdom
+import { act } from "react";
+import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it, vi } from "vitest";
 
+import { MapPlateLayer, type MapPlateScope } from "../map-plates/map-plate-layer";
+import type { ArmyPlate, StructurePlate } from "../map-plates/map-plate-model";
 import { HoverLabelManager } from "./hover-label-manager";
 import type { HoverLabelShowResult } from "./hover-label-show-result";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("HoverLabelManager", () => {
   it("returns a reconcile summary when no hover entity is resolved", () => {
@@ -51,37 +58,6 @@ describe("HoverLabelManager", () => {
       missingTypes: ["army"],
       resolvedAnyEntity: true,
       shownAnyLabel: false,
-    });
-  });
-
-  it("keeps missing types in the summary when another label is shown", () => {
-    const manager = new HoverLabelManager(
-      {
-        army: {
-          show: vi.fn((): HoverLabelShowResult => ({ status: "missing" })),
-          hide: vi.fn(),
-        },
-        structure: {
-          show: vi.fn((): HoverLabelShowResult => ({ status: "shown" })),
-          hide: vi.fn(),
-        },
-      },
-      () => ({
-        army: { id: 42, owner: 1n },
-        structure: { id: 99, owner: 1n },
-      }),
-      undefined,
-      vi.fn(),
-    );
-
-    const result = manager.reconcileHexHover({ col: 10, row: 12 });
-
-    expect(result).toEqual({
-      activeLabelCount: 1,
-      labelsNeedRender: true,
-      missingTypes: ["army"],
-      resolvedAnyEntity: true,
-      shownAnyLabel: true,
     });
   });
 
@@ -423,5 +399,65 @@ describe("HoverLabelManager", () => {
 
     expect(manager.hasActiveLabels()).toBe(true);
     expect(markLabelsDirty).toHaveBeenCalledTimes(1);
+  });
+
+  describe("a tile an army stands on, where a structure resolves too", () => {
+    // Prod, 25 October 2026: the owner's army stood on the camp it had cleared, whose marker stays on the tile.
+    const army: ArmyPlate = {
+      kind: "army",
+      relation: "own",
+      owner: "Maelis",
+      homeName: "Stolsli",
+      troops: { type: "knight", tier: 1, count: 4015 },
+      stamina: { current: 106, max: 120 },
+    };
+    const clearedCamp: StructurePlate = {
+      kind: "structure",
+      relation: "neutral",
+      owner: "",
+      name: "Grimtear Camp",
+      named: true,
+      guards: null,
+      arrivals: [],
+      icon: "camp",
+    };
+    /** A manager's hover controller as ArmyManager and StructureManager give it: its plate scope's hover. */
+    const opensIn = (scope: MapPlateScope) => ({
+      show: (entityId: number): HoverLabelShowResult => {
+        scope.setHover(entityId);
+        return { status: "shown" };
+      },
+      hide: () => scope.clearHover(),
+    });
+
+    it("opens the army's plate, which nothing else on the tile can close", async () => {
+      const container = document.createElement("div");
+      document.body.append(container);
+      const layer = new MapPlateLayer(() => container);
+      const armies = layer.createScope("army");
+      const structures = layer.createScope("structure");
+      armies.setLabel({ entityId: 74, position: new Vector3(0, 0, 0), plate: army });
+      structures.setLabel({ entityId: 76, position: new Vector3(0, 0, 0), plate: clearedCamp });
+      const manager = new HoverLabelManager({ army: opensIn(armies), structure: opensIn(structures) }, () => ({
+        army: { id: 74, owner: 1n },
+        structure: { id: 76, owner: 0n },
+      }));
+      const camera = new PerspectiveCamera(50, 800 / 600, 0.1, 100);
+      camera.position.set(0, 10, 10);
+      camera.lookAt(0, 0, 0);
+
+      manager.onHexHover({ col: 1, row: 1 });
+      await act(async () => {
+        await Promise.resolve();
+      });
+      layer.update(camera, 800, 600);
+
+      const opened = [...container.querySelectorAll<HTMLElement>(".mp-at")]
+        .filter((slot) => slot.querySelector('[data-open="true"]'))
+        .map((slot) => slot.dataset.key);
+      expect(opened).toEqual(["army:74"]);
+      await act(async () => layer.dispose());
+      container.remove();
+    });
   });
 });

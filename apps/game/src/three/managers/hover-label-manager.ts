@@ -162,9 +162,11 @@ export class HoverLabelManager {
     options?: ReconcileHoveredHexLabelsOptions,
   ): HoverLabelReconcileResult {
     const { army, structure, chest } = this.getHexagonEntity(hexCoords);
+    // Army and structure plates open in the map's one plate slot: a tile opens one, the army standing on it first, so
+    // nothing else resolved there can close it.
     const results = [
       this.toggleLabel("army", army?.id, options),
-      this.toggleLabel("structure", structure?.id, options),
+      this.toggleLabel("structure", army ? undefined : structure?.id, options),
       this.toggleLabel("chest", chest?.id, options),
     ];
     const labelsNeedRender = results.some((result) => result.labelsNeedRender);

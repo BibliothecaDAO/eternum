@@ -1176,14 +1176,6 @@ export class StructureManager {
     });
   }
 
-  getStructureByHexCoords(hexCoords: { col: number; row: number }) {
-    const center = FELT_CENTER();
-    const renderable = this.worldSpatialProjection
-      .getStructuresAtHex({ alt: activeMapLayer(), col: hexCoords.col + center, row: hexCoords.row + center })
-      .find((structure) => !structure.reserved);
-    return renderable ? this.resolveStructureInfo(renderable) : undefined;
-  }
-
   public getVisibleCount(): number {
     return this.visibleStructureCount;
   }

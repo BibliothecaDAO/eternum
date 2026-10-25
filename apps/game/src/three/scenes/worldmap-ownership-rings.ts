@@ -12,7 +12,7 @@ import type { HexPosition, ID } from "@bibliothecadao/types";
 /** Where ownership and positions are read: the native fact store and the projection the map draws from. */
 interface OwnershipSources {
   store: Pick<NativeFactStore, "get" | "structuresOwnedBy" | "armiesAtHome">;
-  projection: Pick<WorldSpatialProjection, "getStructure" | "getArmy" | "getStructuresAtHex">;
+  projection: Pick<WorldSpatialProjection, "getStructure" | "getArmy" | "getStandingStructureAtHex">;
   gameId: number;
 }
 
@@ -73,10 +73,7 @@ function describeStructure({ store, gameId }: OwnershipSources, structureId: ID 
 
 /** The structure standing on a hex; null on an empty hex or a reserved construction site. */
 function structureAt({ projection }: OwnershipSources, hex: WorldSpatialHex): ID | null {
-  return (
-    projection.getStructuresAtHex(hex).find((candidate) => !candidate.reserved && !candidate.clearedSite)?.entityId ??
-    null
-  );
+  return projection.getStandingStructureAtHex(hex)?.entityId ?? null;
 }
 
 /**
