@@ -1287,6 +1287,190 @@ function armyEnteredEtherealII({ played }) {
 
 const SPIRE_WAIT_MS = 5_000;
 
+/** A lab game built on the spire's (src/lab/game): the merge games and the owner's army after its fight. */
+const labSpireGame = (scenario) => ({ ...LAB_SPIRE, lab: scenario });
+/** The spire's army, the one a player picks first: the fixture's SPIRE_ARMY. */
+const PICKED_ARMY = 201;
+const MERGE_WAIT_MS = 10_000;
+/** Where the pointer rests between hovers: high on the map, on no army's tile. */
+const POINTER_PARKED = [0, -300];
+/** An army's tile below its token at the map's default zoom (a player run never zooms): its label point's height. */
+const TOKEN_ABOVE_TILE_PX = 100;
+
+/**
+ * Two of the realm's armies merged as a player merges them, then hovered (owner, 2026-10-25: "due to an army merge I dont
+ * see the hover label"): the spire's army picked, the other right-clicked for the transfer card, its Merge pressed and
+ * answered by the chain; then the surviving army's tile, hovered, opens its plate, and the emptied tile opens none.
+ * merge-keeps-picked keeps the army picked (today's rule when it has more progression); merge-keeps-tapped keeps the
+ * army tapped (the merged-into army, as from release 3).
+ */
+function labMergeSteps() {
+  const tiles = { byArmy: null };
+  return [
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+    { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+    { name: "open-merge", play: (context) => openTheMerge(context, tiles), settleMs: 0, verify: mergeCardOpen },
+    { name: "merge", play: pressMerge, settleMs: 1_000, verify: oneArmyLeft },
+    {
+      name: "hover-survivor",
+      play: (context) => hoverTheTileOf(context, tiles, "survivor"),
+      settleMs: 0,
+      verify: survivorPlateOpens,
+    },
+    {
+      name: "hover-emptied",
+      play: (context) => hoverTheTileOf(context, tiles, "emptied"),
+      settleMs: 0,
+      verify: noArmyPlateOpens,
+    },
+  ];
+}
+
+/**
+ * The owner's army just after its fight (src/lab/game/after-battle-scenario.ts): 4,015 knights on the camp they had
+ * cleared, beside the ruin they attacked, both on battle cooldown. With nothing selected, hovering the army's tile opens
+ * its plate (owner, 2026-10-25: "I hover the tile but no label ?").
+ */
+const LAB_AFTER_BATTLE_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+  { name: "hover-army", play: hoverTheArmyAtRest, settleMs: 0, verify: survivorPlateOpens },
+];
+
+// The open card and its buttons, the commands the lab's chain has been sent, and the army a merge's answer destroyed.
+const MERGE_STATE = `JSON.stringify({
+  sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
+  buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
+  sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
+  destroyed: (window.__labChain?.sent ?? []).flatMap(({ answered }) =>
+    answered.filter(({ model, value }) => model === "ExplorerTroops" && value === null).map(({ key }) => Number(key.split(":")[1]))),
+})`;
+// Each army's token drawn at rest, and the tile under it, as offsets from the screen's centre.
+const ARMY_TILES = `JSON.stringify(Object.fromEntries([...document.querySelectorAll('.mp-at[data-key^="army:"]')]
+  .filter((slot) => slot.querySelector(".mp-token") && getComputedStyle(slot).display !== "none")
+  .map((slot) => {
+    const token = slot.firstElementChild.getBoundingClientRect();
+    return [slot.dataset.key.split(":")[1], [
+      Math.round(token.left + token.width / 2 - innerWidth / 2),
+      Math.round(token.top + token.height / 2 + ${TOKEN_ABOVE_TILE_PX} - innerHeight / 2),
+    ]];
+  })))`;
+
+/** Picks each army from the HUD until the map has the spire's selected: the camera comes onto it. */
+async function pickTheSpireArmy({ browser }) {
+  const armies = browser.armies();
+  for (const { label } of armies) {
+    await pickArmy(browser, label);
+    if (browser.observe().selection?.army?.id === PICKED_ARMY) return { armies, army: label };
+  }
+  return { armies, army: null };
+}
+
+function spireArmyPicked({ played }) {
+  return played.army ? completed(played) : failed(`no army on the HUD selects army ${PICKED_ARMY}`, played);
+}
+
+/** Notes both armies' tiles from their tokens at rest, then right-clicks the other army's, as a player opens the card. */
+async function openTheMerge({ browser }, tiles) {
+  browser.hover(POINTER_PARKED);
+  await sleep(HOVER_SETTLE_MS);
+  tiles.byArmy = browser.read(ARMY_TILES);
+  const other = Object.keys(tiles.byArmy).find((id) => Number(id) !== PICKED_ARMY);
+  if (!other) return { tiles: tiles.byArmy, state: null };
+  browser.rightClick(tiles.byArmy[other]);
+  const state = await readUntil(
+    () => browser.read(MERGE_STATE),
+    (shown) => shown.sheet !== null,
+    MERGE_WAIT_MS,
+  );
+  return { tiles: tiles.byArmy, state };
+}
+
+function mergeCardOpen({ played }) {
+  if (Object.keys(played.tiles ?? {}).length !== 2)
+    return failed("the map does not draw the realm's two armies", played);
+  if (!played.state?.sheet) return failed("the right-click on the other army opened no card", played);
+  const merge = played.state.buttons.find((text) => text.startsWith("Merge into"));
+  return merge ? completed({ ...played, merge }) : failed("the card offers no Merge", played);
+}
+
+/** Presses the card's Merge, then waits for the chain's answer to leave the realm one army. */
+async function pressMerge({ browser }) {
+  const before = browser.read(MERGE_STATE);
+  const merge = before.buttons.find((text) => text.startsWith("Merge into"));
+  if (merge) browser.click(merge);
+  const after = await readUntil(
+    () => ({ ...browser.read(MERGE_STATE), armies: browser.armies() }),
+    (shown) => shown.destroyed.length === 1 && shown.armies.length === 1,
+    MERGE_WAIT_MS,
+  );
+  return { merge, before, after };
+}
+
+function oneArmyLeft({ played }) {
+  if (!played.merge) return failed("no Merge to press", played);
+  if (!played.after.sent.includes("ManageTroops")) return failed("Merge sent no troop transfer", played);
+  if (played.after.destroyed.length !== 1) return failed("the chain's answer destroyed no army", played);
+  if (played.after.armies.length !== 1)
+    return failed(`the HUD lists ${played.after.armies.length} armies after the merge`, played);
+  return completed({
+    merge: played.merge,
+    sent: played.after.sent,
+    destroyed: played.after.destroyed[0],
+    left: played.after.armies,
+  });
+}
+
+/** Rests the pointer off the armies, then hovers a tile, and reads the labels drawn. */
+async function hoverAndRead(browser, extraScreenshot, offset, name) {
+  browser.hover(POINTER_PARKED);
+  await sleep(HOVER_SETTLE_MS);
+  browser.hover(offset);
+  await sleep(HOVER_SETTLE_MS * 2);
+  return { plates: browser.read(PLATES_EXPRESSION), shot: extraScreenshot(name) };
+}
+
+/** Hovers the survivor's tile or the one the merge emptied, both noted before the merge. */
+async function hoverTheTileOf({ browser, extraScreenshot }, tiles, which) {
+  const [emptied] = browser.read(MERGE_STATE).destroyed;
+  const survivor = Object.keys(tiles.byArmy ?? {})
+    .map(Number)
+    .find((id) => id !== emptied);
+  const offset = tiles.byArmy?.[which === "survivor" ? survivor : emptied];
+  if (!offset) return { which, survivor, emptied, offset: null };
+  return { which, survivor, emptied, offset, ...(await hoverAndRead(browser, extraScreenshot, offset, which)) };
+}
+
+/** Lets the army go (Escape), then hovers its tile, found under its token. */
+async function hoverTheArmyAtRest({ browser, extraScreenshot }) {
+  for (let press = 0; press < ESCAPES_TO_DESELECT; press += 1) browser.press("Escape");
+  browser.hover(POINTER_PARKED);
+  await sleep(HOVER_SETTLE_MS);
+  const offset = browser.read(ARMY_TILES)[PICKED_ARMY] ?? null;
+  const selected = browser.observe().selection?.army ?? null;
+  if (!offset) return { survivor: PICKED_ARMY, offset, selected };
+  return { survivor: PICKED_ARMY, offset, selected, ...(await hoverAndRead(browser, extraScreenshot, offset, "army")) };
+}
+
+const openArmyPlates = (plates) =>
+  (plates?.things ?? []).filter((thing) => thing.kind === "plate" && thing.open && thing.key?.startsWith("army:"));
+
+function survivorPlateOpens({ played }) {
+  const opened = openArmyPlates(played.plates).map(({ key, text }) => ({ key, text }));
+  const shown = { survivor: played.survivor, offset: played.offset, selected: played.selected, opened };
+  if (!played.offset) return failed(`no token drawn for army ${played.survivor}`, shown);
+  return opened.some(({ key }) => key === `army:${played.survivor}`)
+    ? completed(shown)
+    : failed(`hovering army ${played.survivor}'s tile opens no plate for it`, shown);
+}
+
+function noArmyPlateOpens({ played }) {
+  const opened = openArmyPlates(played.plates).map(({ key, text }) => ({ key, text }));
+  const shown = { survivor: played.survivor, emptied: played.emptied, offset: played.offset, opened };
+  if (!played.offset) return failed("no tile noted for the emptied army", shown);
+  return opened.length === 0 ? completed(shown) : failed("the emptied tile opens an army's plate", shown);
+}
+
 const labDayTurn = (scenario) => ({
   mode: "frontier",
   lab: scenario,
@@ -1418,6 +1602,9 @@ export const STEP_SETS = {
     devOverlays: true,
   },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },
+  "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps() },
+  "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-later": { game: labDayTurn("day-later"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-turn-slow": { game: labDayTurn("day-turn-slow"), steps: labDayTurnSteps(RECORDED_DAY_2) },

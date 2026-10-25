@@ -6,6 +6,7 @@ import { dayTurnScenario } from "./day-turn-scenario";
 import { installLabChain, LAB_GAME, type LabScenario } from "./lab-chain";
 import { realmScenario } from "./realm-scenario";
 import { mergeScenario } from "./merge-scenario";
+import { afterBattleScenario } from "./after-battle-scenario";
 import { spireScenario } from "./spire-scenario";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 
@@ -20,6 +21,7 @@ const SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "day-later-short": dayTurnScenario("later", "capped"),
   "merge-keeps-picked": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),
+  "after-battle": afterBattleScenario,
 };
 
 /**

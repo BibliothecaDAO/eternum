@@ -1,14 +1,15 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { getNeighborHexes } from "@bibliothecadao/types";
 
 import type { LabCommand, LabFact, LabScenario } from "./lab-chain";
-import { spireScenario } from "./spire-scenario";
+import { besideOnOpenLand, spireScenario } from "./spire-scenario";
 
 /** The realm's second army, beside its first. */
 export const MERGE_ARMY = 202;
-/** The second army's troops, at the chain's precision: the first holds 1,498. */
+/** The second army's troops, at the chain's precision: with the spire's 1,498 they make the owner's 4,015. */
 const SECOND_ARMY_TROOPS = 2_517_000_000_000n;
+/** The realm's army limit raised from the fixture's 1,500 to 4,500, as a grown realm's is, so the two can merge. */
+const LIMIT_RAISED = 3;
 
 /**
  * Which army a full merge keeps: the army picked (the source, when it has more progression; today's rule, troops.cairo
@@ -22,10 +23,11 @@ const wire = (value: unknown): unknown =>
 
 /**
  * Two of realm 7's armies side by side on the spire's game (/lab/game?scenario=merge-keeps-picked or
- * merge-keeps-tapped): the spire's 1,498 knights and 2,517 more beside them, alike, so they can merge. The chain
- * answers TransferTroops as troops.cairo's transfer_troops applies it between two explorers: a full merge keeps the
- * army with more progression, the other is destroyed (its troops row and its tile's occupancy deleted). The owner's
- * merge on prod (2026-10-25: "due to an army merge I dont see the hover label") ended with one army of 4,015.
+ * merge-keeps-tapped): the spire's 1,498 knights and 2,517 more beside them, alike and within the realm's army limit
+ * together, so they can merge. The chain answers their transfer as troops.cairo's transfer_troops applies it between two
+ * explorers: a full merge keeps the army with more progression, the other is destroyed (its troops row and its tile's
+ * occupancy deleted). The owner's merge on prod (2026-10-25: "due to an army merge I dont see the hover label") ended
+ * with one army of 4,015.
  */
 export const mergeScenario = (survivor: Survivor) => (): LabScenario => {
   const spire = spireScenario();
@@ -34,6 +36,7 @@ export const mergeScenario = (survivor: Survivor) => (): LabScenario => {
   const beside = besideOnOpenLand(store, occupancy);
   const first = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
   store.applyFacts([
+    raisedArmyLimit(store),
     {
       model: "ExplorerTroops",
       key: "0x1ab90",
@@ -55,16 +58,17 @@ export const mergeScenario = (survivor: Survivor) => (): LabScenario => {
   };
 };
 
-/** A tile beside the army, revealed and empty, where its second army stands. */
-const besideOnOpenLand = (store: NativeFactStore, army: { col: number; row: number }) => {
-  const taken = new Set([...store.entries("TileOccupancy")].map(([, row]) => `${row.col},${row.row}`));
-  const open = getNeighborHexes(army.col, army.row).find(
-    (hex) =>
-      !taken.has(`${hex.col},${hex.row}`) &&
-      store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }),
-  );
-  if (!open) throw new Error("The lab finds no open tile beside the spire's army");
-  return { col: open.col, row: open.row };
+/** The spire's rules (written under the key the spire scenario gives them) with T1 armies held to a larger limit. */
+const raisedArmyLimit = (store: NativeFactStore): LabFact => {
+  const rules = wire(store.require("SliceRules", { game_id: 1 })) as {
+    troop_limit_config: { t1_tier_modifier: number };
+  };
+  const limit = rules.troop_limit_config;
+  return {
+    model: "SliceRules",
+    key: "0x100",
+    value: { ...rules, troop_limit_config: { ...limit, t1_tier_modifier: limit.t1_tier_modifier * LIMIT_RAISED } },
+  };
 };
 
 const progressionRules = (): LabFact => ({
@@ -88,10 +92,17 @@ const armyProgress = (key: string, explorerId: number, xp: number): LabFact => (
   },
 });
 
-/** A TransferTroops between two explorers, as its span reads: [command, Explorer, source, Explorer, target, amount]. */
+/** ManageTroops::Transfer (troop_management.cairo's fifth variant). */
+const TRANSFER = 4n;
+
+/**
+ * A ManageTroops Transfer between two explorers, as its span reads: [command, Transfer, Explorer, source, Explorer,
+ * target, amount]; null for any other troop command.
+ */
 const readTransfer = (command: LabCommand) => {
-  const [, sourceVariant, source, targetVariant, target, amount] = command.calldata.slice(4).map(BigInt);
-  if (sourceVariant !== 0n || targetVariant !== 0n) return null;
+  if (command.kind !== "ManageTroops") return null;
+  const [, variant, sourceVariant, source, targetVariant, target, amount] = command.calldata.slice(4).map(BigInt);
+  if (variant !== TRANSFER || sourceVariant !== 0n || targetVariant !== 0n) return null;
   return { source, target, amount };
 };
 
@@ -100,9 +111,8 @@ const readTransfer = (command: LabCommand) => {
  * emptied army is destroyed (destroy_explorer: its row deleted, its tile vacated), and the other holds the troops.
  */
 const answerTransfer = (command: LabCommand, chain: NativeFactStore): LabFact[] | null => {
-  if (command.kind !== "TransferTroops") return null;
   const transfer = readTransfer(command);
-  if (!transfer) return [];
+  if (!transfer) return null;
   const army = (id: bigint) => [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === id)!;
   const value = (id: bigint) => chain.get("ArmyProgress", { game_id: 1, explorer_id: id })?.xp ?? 0;
   let [source, target, amount] = [transfer.source, transfer.target, transfer.amount];
