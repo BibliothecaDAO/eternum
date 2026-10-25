@@ -193,7 +193,8 @@
       "entry": [
         "src/main.tsx",
         "src/ui/features/debug/kit-lab/render-model.ts",
-        "scripts/relic-chest-route-fixture.mjs"
+        "scripts/relic-chest-route-fixture.mjs",
+        "scripts/frontier-painted/stamp-source.mjs"
       ]
     },
     "apps/herald": {

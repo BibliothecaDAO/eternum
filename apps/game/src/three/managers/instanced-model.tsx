@@ -1,3 +1,4 @@
+import { heldHeadingCorrection, poleAxisOf, yawOfPlacement } from "../structures/held-heading";
 import { LOCAL_GLOW_MATERIALS, LocalEmissiveGlow } from "../structures/local-emissive-glow";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
@@ -38,6 +39,8 @@ const ANIMATION_INTERVAL_MULTIPLIER_LARGE = 3;
 
 // Reusable matrices for instance transformations
 const zeroMatrix = new Matrix4().makeScale(0, 0, 0);
+const heldPlacement = new Matrix4();
+const heldCorrection = new Matrix4();
 // Fixed per-instance buffer capacity when the consumer does not size one
 // (single-instance previews and the like). Buffers never grow — see
 // isWithinCapacity — so real fleets (structures, chests) pass their own cap.
@@ -212,6 +215,7 @@ export default class InstancedModel {
         }
 
         tmp.userData.isInstanceModel = true;
+        if (poleAxisOf(child)) tmp.userData.poleAxis = child.userData.poleAxis;
 
         if (!enableRaycast) {
           tmp.raycast = () => {};
@@ -326,7 +330,7 @@ export default class InstancedModel {
       return;
     }
     this.instancedMeshes.forEach((child) => {
-      child.setMatrixAt(index, matrix);
+      child.setMatrixAt(index, this.resolvePartPlacement(child, matrix));
       child.instanceMatrix.needsUpdate = true;
     });
 
@@ -357,6 +361,16 @@ export default class InstancedModel {
         mesh.instanceColor.needsUpdate = true;
       }
     });
+  }
+
+  /** A held part (a banner on its pole) keeps its authored heading whichever way the placement turns the model. */
+  private resolvePartPlacement(part: InstancedMesh, placement: Matrix4): Matrix4 {
+    const axis = poleAxisOf(part);
+    if (!axis || placement === zeroMatrix) return placement;
+    return heldPlacement.multiplyMatrices(
+      placement,
+      heldHeadingCorrection(axis, yawOfPlacement(placement), heldCorrection),
+    );
   }
 
   setCount(count: number) {
@@ -583,7 +597,8 @@ export default class InstancedModel {
               textureChanged =
                 writeMorphWeightsIfChanged(
                   textureData,
-                  i * textureWidth,
+                  i,
+                  textureWidth,
                   this.bucketWeightsBuffer,
                   srcOffset,
                   morphCount,
