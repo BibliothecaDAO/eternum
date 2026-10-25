@@ -1,3 +1,5 @@
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { StructureType } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { ARMY_DETAIL, ATTRIBUTES, RESEARCH_TREE, TIER_WORDS } from "@/ui/design-system/kit/words";
 import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
@@ -123,7 +125,7 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
     earn: [
       { icon: "explore", line: ARMY_DETAIL.earn.explore, xp: army.revealXp },
       { icon: "shrine", line: ARMY_DETAIL.earn.shrine, xp: army.shrineXp },
-      { icon: "camp", line: ARMY_DETAIL.earn.clear },
+      { icon: structureMeaning(StructureType.Camp, "frontier"), line: ARMY_DETAIL.earn.clear },
     ],
     refill: levelRefill(army, 0),
   };

@@ -14,6 +14,18 @@ const verdicts = Object.fromEntries(
   ].map((key) => [key, { verdict: "equal", reason: "Validation fixture" }]),
 );
 const valid = () => structuredClone({ icons, meanings, resources, verdicts });
+test("guard meanings reject the former soldiers and Blitz camp cannot become a Troll", () => {
+  for (const [name, wrongArt] of [
+    ["beast-cyclops", "beasts"],
+    ["beast-wraith", "beasts"],
+    ["beast-troll", "camp"],
+    ["camp", "beast-troll"],
+  ]) {
+    const input = valid();
+    input.meanings[name].art = wrongArt;
+    assert.throws(() => validateIcons(input), new RegExp(`${name} must use its own painting`));
+  }
+});
 test("every semantic meaning and all 58 resources have reviewed artwork", () =>
   assert.doesNotThrow(() => validateIcons(valid())));
 for (const [meaning, wrongArt, expected] of [

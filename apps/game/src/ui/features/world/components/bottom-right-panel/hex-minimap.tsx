@@ -1,3 +1,4 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { HexMarker } from "@/ui/design-system/hex-marker";
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { minimapMarkersView, type MinimapMarker } from "./minimap-markers";
@@ -21,7 +22,7 @@ import {
   isTileOccupierStructure,
   Position,
 } from "@bibliothecadao/eternum";
-import { HexPosition, TileOccupier } from "@bibliothecadao/types";
+import { HexPosition, TileOccupier, type StructureNamingMode } from "@bibliothecadao/types";
 import {
   useCallback,
   useEffect,
@@ -231,7 +232,11 @@ const SITE_MEANINGS: Partial<Record<number, MinimapMarker["name"]>> = {
  * A tile's marker, read from what occupies it first: an empty tile has none, whatever entity id it still carries; a
  * known entity's own marker; else the occupier's meaning. A zero or missing id is no entity, so never looked up.
  */
-const resolveTileMarker = (tile: MinimapTile, markers: ReadonlyMap<string, MinimapMarker>): MinimapMarker | null => {
+const resolveTileMarker = (
+  tile: MinimapTile,
+  markers: ReadonlyMap<string, MinimapMarker>,
+  mode: StructureNamingMode,
+): MinimapMarker | null => {
   const type = tile.occupier_type ?? 0;
   if (!hasTileOccupier(type)) return null;
   const id = tile.occupier_id ?? "";
@@ -240,7 +245,7 @@ const resolveTileMarker = (tile: MinimapTile, markers: ReadonlyMap<string, Minim
   const site = SITE_MEANINGS[type];
   if (site) return { name: site, owner: "neutral" };
   const structure = getStructureInfoFromTileOccupier(type);
-  if (structure) return { name: structureMeaning(structure.type), owner: "neutral" };
+  if (structure) return { name: structureMeaning(structure.type, mode), owner: "neutral" };
   if (getExplorerInfoFromTileOccupier(type)) return { name: "map-army", owner: "neutral" };
   return null;
 };
@@ -459,7 +464,11 @@ export const HexMinimap = ({
     return result;
   }, [tiles.length, centeredIndex.byCol, tileWindow]);
 
-  const getTileMarker = useCallback((tile: MinimapTile) => resolveTileMarker(tile, markers), [markers]);
+  const mode = useGameModeConfig();
+  const getTileMarker = useCallback(
+    (tile: MinimapTile) => resolveTileMarker(tile, markers, mode.id),
+    [markers, mode.id],
+  );
 
   const tileElements = useMemo(
     () =>

@@ -1,3 +1,5 @@
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { StructureType } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { REACH_NUMERALS, RESEARCH_TREE, SHRINE, STAMINA, TIER_WORDS, WELL, XP } from "@/ui/design-system/kit/words";
 import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
@@ -103,9 +105,9 @@ const TRAINING: { row: number; category: BuildingType; attribute: Attribute; wor
   { row: research.ROW_HEARTH, category: BuildingType.Hearth, attribute: "homecoming", word: "Homecoming" },
 ];
 const KINDS: { icon: IconMeaning; name: string }[] = [
-  { icon: "camp", name: RESEARCH_TREE.kinds.camp },
-  { icon: "rift", name: RESEARCH_TREE.kinds.rift },
-  { icon: "beasts", name: RESEARCH_TREE.kinds.beasts },
+  { icon: structureMeaning(StructureType.Camp, "frontier"), name: RESEARCH_TREE.kinds.camp },
+  { icon: structureMeaning(StructureType.Rift, "frontier"), name: RESEARCH_TREE.kinds.rift },
+  { icon: structureMeaning(StructureType.Beasts, "frontier"), name: RESEARCH_TREE.kinds.beasts },
 ];
 const REACH_MARKS: IconMeaning[] = ["depth-1", "depth-2", "depth-3"];
 

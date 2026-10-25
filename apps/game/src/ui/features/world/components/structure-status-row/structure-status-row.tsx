@@ -1,3 +1,4 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { realmLevelNumber } from "@/ui/lib/realm-level";
 
@@ -12,16 +13,18 @@ import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities"
 import { formatPopulation, type ID, StructureType } from "@bibliothecadao/types";
 import { memo, useCallback } from "react";
 
-const getCategoryIcon = (category: StructureType | number | undefined): IconMeaning =>
-  category === undefined ? "realm" : structureMeaning(category);
-
 const CategoryIcon = ({
   category,
   className,
 }: {
   category: StructureType | number | undefined;
   className?: string;
-}) => <SemanticIcon name={getCategoryIcon(category)} className={className} />;
+}) => {
+  const mode = useGameModeConfig();
+  return (
+    <SemanticIcon name={category === undefined ? "realm" : structureMeaning(category, mode.id)} className={className} />
+  );
+};
 
 /**
  * Status tone for the favorite star. Same tri-state we ship today:

@@ -19,6 +19,7 @@ import { DeployLab } from "./deploy-lab";
 import { IconLab } from "./icon-lab";
 import { TokensLab } from "./tokens-lab";
 import { RewardChestsLab } from "./reward-chests-lab";
+import { BeastIconsLab } from "./beast-icons-lab";
 import { ResourceIconsLab } from "./resource-icons-lab";
 import { Link } from "react-router-dom";
 
@@ -52,6 +53,7 @@ export const KitLabView = () => {
       <Route path="construction" element={<ConstructionLab />} />
       <Route path="icons" element={<IconLab />} />
       <Route path="reward-chests" element={<RewardChestsLab />} />
+      <Route path="beast-icons" element={<BeastIconsLab />} />
       <Route path="resource-icons" element={<ResourceIconsLab />} />
       <Route path="deploy" element={<DeployLab />} />
       <Route path="area-d" element={<AreaDLab />} />
@@ -81,6 +83,7 @@ const Components = () => {
         <Link to="/lab/kit/icons">Facets icon catalog</Link>
         <Link to="/lab/kit/tokens">Design tokens</Link>
         <Link to="/lab/kit/reward-chests">Reward chest tiers</Link>
+        <Link to="/lab/kit/beast-icons">Frontier guard icon review</Link>
         <Link to="/lab/kit/resource-icons">Resource icon review</Link>
         <Link to="/lab/kit/app-art">App background paintings</Link>
         <Link to="/lab/kit/construction">Construction models</Link>

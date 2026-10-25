@@ -1,3 +1,5 @@
+const gameMode = vi.hoisted(() => ({ id: "blitz" }));
+vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => gameMode }));
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { TileOccupier } from "@bibliothecadao/types";
@@ -43,4 +45,16 @@ describe("an entity on the tile", () => {
   it("draws nothing on an empty tile that still carries a stale entity id", () => {
     expect(draw(TileOccupier.None, "42")).not.toContain("data-marker=");
   });
+});
+
+it("uses the game's category meaning before an encounter's entity facts arrive", () => {
+  try {
+    gameMode.id = "frontier";
+    expect(draw(TileOccupier.Camp)).toContain('data-marker="beast-troll"');
+    expect(draw(TileOccupier.Beasts)).toContain('data-marker="beast-cyclops"');
+    gameMode.id = "blitz";
+    expect(draw(TileOccupier.Camp)).toContain('data-marker="camp"');
+  } finally {
+    gameMode.id = "blitz";
+  }
 });

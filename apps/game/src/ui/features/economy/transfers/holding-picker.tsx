@@ -91,7 +91,7 @@ export const HoldingPicker = ({
               <HudRow
                 lead={
                   <HudRing
-                    icon={holdingIcon(holding)}
+                    icon={holdingIcon(holding, mode.id)}
                     label={holding.displayName}
                     corner={holding.realmLevelLabel !== null ? realmLevelNumber(holding.realmLevel) : undefined}
                   />
