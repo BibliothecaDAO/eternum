@@ -244,4 +244,3 @@ fn a_loaded_loser_cannot_be_destroyed_in_either_merge_direction() {
         assert!(progress(d, loser).is_some());
     }
 }
-
