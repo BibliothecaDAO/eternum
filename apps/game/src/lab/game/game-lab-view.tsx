@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { dayTurnScenario } from "./day-turn-scenario";
 import { installLabChain, LAB_GAME, type LabScenario } from "./lab-chain";
 import { realmScenario } from "./realm-scenario";
+import { mergeScenario } from "./merge-scenario";
 import { spireScenario } from "./spire-scenario";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 
@@ -17,6 +18,8 @@ const SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "day-later": dayTurnScenario("later"),
   "day-turn-slow": dayTurnScenario("live", "late"),
   "day-later-short": dayTurnScenario("later", "capped"),
+  "merge-keeps-picked": mergeScenario("picked"),
+  "merge-keeps-tapped": mergeScenario("tapped"),
 };
 
 /**
