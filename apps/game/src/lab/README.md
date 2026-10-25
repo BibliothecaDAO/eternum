@@ -15,6 +15,11 @@ browser/server.
 chest panel/model/caller. Advance to day rollover shows the expired zero reward; Open produces the recorded paid amount,
 including zero. This is a local native-fact fixture, not a transaction.
 
+Phone panels: `/lab/kit/mobile-panels` shows Frontier's big panels on a phone today beside three layouts (A fit to
+content, B peek then more, C cards in the bar's place) at six moments, each phone at its own size with the share of its
+screen where a tap reaches the map measured in the frame. Opened on a phone it shows one layout at the phone's own size.
+The audit behind it: `reports/mobile-ux-pass-1.md` in the lanes folder.
+
 App painting comparison: `/lab/kit/app-art` shows Season and Blitz Results beside their existing reference art. Follow
 each page link to see the painting on its real component with local app fixtures. Run
 `pnpm --dir apps/game prove:app-art --port 4199 --out <fresh-dir>` for comparison and page screenshots, loaded-image

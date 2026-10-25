@@ -29,6 +29,7 @@ import { BuildOrderLab } from "./build-order-lab";
 import { BlitzBuildLab } from "./blitz-build-lab";
 import { ProgressionLab } from "./progression/progression-lab";
 import { GuidanceLab } from "./guidance-lab";
+import { MobilePanelsLab } from "./mobile-panels/mobile-panels-lab";
 import { StyleSheetLab } from "./style-sheet-lab";
 import { ChatLab } from "./chat-lab";
 import { WindowsLab } from "./windows-lab";
@@ -58,6 +59,7 @@ export const KitLabView = () => {
       <Route path="panels" element={<PanelsLab />} />
       <Route path="windows/:surface?" element={<WindowsLab />} />
       <Route path="guidance" element={<GuidanceLab />} />
+      <Route path="mobile-panels" element={<MobilePanelsLab />} />
       <Route path="build-order" element={<BuildOrderLab />} />
       <Route path="blitz-build" element={<BlitzBuildLab />} />
       <Route path="progression" element={<ProgressionLab />} />
