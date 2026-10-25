@@ -18,6 +18,7 @@ import {
   hyperstructureStageToModel,
 } from "../constants/scene-constants";
 import { buildingTierModelPath } from "../structures/building-tiers";
+import { frontierPaintedBuildingPath } from "../structures/frontier-painted-buildings";
 import { REALM_PATHS, realmModelIndex } from "../structures/realm-design";
 
 interface BoardBuilding {
@@ -93,6 +94,7 @@ export function resolveBuildingModelSelection(
     structureId: number;
     mainStructureType?: StructureType;
     wonder: boolean;
+    frontier?: boolean;
   },
 ): BuildingModelSelection {
   const { stage, structureId, mainStructureType, wonder } = context;
@@ -127,7 +129,12 @@ export function resolveBuildingModelSelection(
     group === BUILDINGS_GROUPS.REALMS && wonder
       ? REALM_PATHS[realmModelIndex(stage, true, structureId)]
       : group === BUILDINGS_GROUPS.BUILDINGS
-        ? buildingTierModelPath(type as BuildingType, building.tier)
+        ? context.frontier
+          ? (building.tier ?? 1) > 1
+            ? (frontierPaintedBuildingPath(type as BuildingType, building.tier) ??
+              buildingTierModelPath(type as BuildingType, building.tier))
+            : undefined
+          : buildingTierModelPath(type as BuildingType, building.tier)
         : undefined;
   return { group, type, tierPath };
 }

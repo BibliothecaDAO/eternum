@@ -4,6 +4,8 @@ import {
   type BuildingModelSelection,
 } from "./hexception-building-model";
 import { holdPartHeadings } from "../structures/held-heading";
+import { frontierPaintedBuildingPath } from "../structures/frontier-painted-buildings";
+import { buildingTypeTier } from "@bibliothecadao/eternum";
 import { isWonderModelPath } from "../structures/realm-design";
 import { RealmLivingAura } from "../structures/realm-living-aura";
 import { HexceptionTierModels, disposeBuildingModel } from "./hexception-tier-models";
@@ -609,7 +611,17 @@ export default class HexceptionScene extends HexagonScene {
     if (!this.buildingPreview) {
       this.buildingPreview = new BuildingPreview(this.scene, (group, building) => {
         const groupPaths = this.mode.assets.buildingModelPaths[group] as Record<string, string>;
-        const path = groupPaths[building.toString()];
+        const tier =
+          this.mode.id === "frontier" && group === BUILDINGS_GROUPS.BUILDINGS
+            ? buildingTypeTier(
+                this.game.store,
+                configManager.getActiveGameId(),
+                this.state.structureEntityId,
+                building as BuildingType,
+              )
+            : 1;
+        const tierPath = tier > 1 ? frontierPaintedBuildingPath(building as BuildingType, tier) : undefined;
+        const path = tierPath ?? groupPaths[building.toString()];
         if (!path) {
           return null;
         }
@@ -617,6 +629,10 @@ export default class HexceptionScene extends HexagonScene {
         return {
           cacheKey: path,
           load: async () => {
+            if (tierPath) {
+              await this.tierModels.request(tierPath);
+              return this.tierModels.get(tierPath)?.model ?? null;
+            }
             await Promise.allSettled(this.modelLoadPromises);
             return (
               this.buildingModels.get(group)?.get(building.toString() as BUILDINGS_CATEGORIES_TYPES)?.model ?? null
@@ -1389,6 +1405,7 @@ export default class HexceptionScene extends HexagonScene {
           structureId: this.state.structureEntityId,
           mainStructureType,
           wonder: !!this.tileManager.getWonder(this.state.structureEntityId),
+          frontier: this.mode.id === "frontier",
         })
       : undefined;
     // A tier's model loads the first time a building needs it; until then the building keeps what it shows.
