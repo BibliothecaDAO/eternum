@@ -2,40 +2,30 @@ import { Position } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { dayTurnScenario } from "./day-turn-scenario";
-import { installLabChain, LAB_GAME, type LabScenario } from "./lab-chain";
-import { realmScenario } from "./realm-scenario";
-import { spireScenario } from "./spire-scenario";
-
-/** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
-const SCENARIOS: Partial<Record<string, () => LabScenario>> = {
-  spire: spireScenario,
-  realm: realmScenario,
-  "day-turn": dayTurnScenario("live"),
-  "day-later": dayTurnScenario("later"),
-  "day-turn-slow": dayTurnScenario("live", "late"),
-  "day-later-short": dayTurnScenario("later", "capped"),
-};
+import { installLabChain, LAB_GAME } from "./lab-chain";
+import { LAB_SCENARIOS, startLabGame } from "./lab-games";
 
 /**
  * Dev only: the game itself on a fixture. /lab/game?scenario=spire installs the tab's chain for that scenario
  * (lab-chain.ts) and opens the game's own map route on it, so a player's input goes through the game's scenes, HUD and
- * client; each command it signs is recorded in window.__labChain.
+ * client; each command it signs is recorded in window.__labChain. Opening it again starts the scenario over; a reload
+ * of the game's route goes on with it (LabGameRoute).
  */
 export const GameLabView = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const name = params.get("scenario") ?? "spire";
-  const scenario = SCENARIOS[name];
+  const scenario = LAB_SCENARIOS[name];
   const [failed, setFailed] = useState<string | null>(null);
   useEffect(() => {
     if (!scenario) return;
     const game = scenario();
-    installLabChain(game).then(
+    game.startDevice?.();
+    installLabChain(game, startLabGame(name).startedAt).then(
       () => navigate(mapHref(game.opensOn, params), { replace: true }),
       (error: unknown) => setFailed(String(error)),
     );
-  }, [scenario, navigate, params]);
+  }, [scenario, name, navigate, params]);
   return (
     <div className="lab-loading" role="status">
       {scenario ? (failed ?? `Opening the ${name} game…`) : `No lab game named ${name}`}

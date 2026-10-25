@@ -20,8 +20,12 @@ import { ResultsPage } from "./shell/season-tab/results-page";
 import { SeasonPage } from "./shell/season-tab/season-page";
 import { FirstFrame } from "./shell/first-frame";
 import { ConnectFlow } from "./shell/sign-in/connect-flow";
+import { LAB_GAME_ROUTE } from "./lab/game/lab-shard";
 
 const LabApp = lazy(() => import("./lab/lab-app").then((module) => ({ default: module.LabApp })));
+const LabGameRoute = lazy(() =>
+  import("./lab/game/lab-game-route").then((module) => ({ default: module.LabGameRoute })),
+);
 // Reading matter loads on demand, so the cold path carries no post or legal text.
 const TermsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.TermsPage })));
 const PrivacyPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.PrivacyPage })));
@@ -98,6 +102,16 @@ export const appRoutes = (
         element={
           <LazyRoute>
             <LabApp />
+          </LazyRoute>
+        }
+      />
+    )}
+    {IS_DEV_ENVIRONMENT && (
+      <Route
+        path={LAB_GAME_ROUTE}
+        element={
+          <LazyRoute>
+            <LabGameRoute />
           </LazyRoute>
         }
       />
