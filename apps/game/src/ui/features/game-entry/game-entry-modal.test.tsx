@@ -17,6 +17,10 @@ const settlement = vi.hoisted(() => ({
 
 const GAME = { chainId: "0x5245414c4d53", gameId: 8 };
 
+vi.mock("@/hooks/context/identity-session", async (original) => {
+  const identity = await original<typeof import("@/hooks/context/identity-session")>();
+  return { ...identity, useIdentitySession: () => identity.useIdentitySessionStore() };
+});
 vi.mock("@/hooks/use-game-entry", () => ({
   useGameEntry: () => {
     const now = Math.floor(Date.now() / 1000);

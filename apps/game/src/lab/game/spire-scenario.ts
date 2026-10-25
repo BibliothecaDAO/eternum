@@ -60,7 +60,6 @@ export const spireScenario = (): LabScenario => {
     { model: "Structure", key: "0x71", value: null },
     { model: "ExpeditionSite", key: "0x72", value: null },
     { model: "Guard", key: "0x73", value: null },
-    { model: "GameRelease", key: "0x1ab0", value: { game_id: 1, release_id: 1, preset_commitment: "0x1ab" } },
     ...[site, ...getHexesWithinRadius(site.col, site.row, 4)]
       .filter((hex) => !store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }))
       .map((hex, index) => tile(`0x1ab7${index.toString(16)}`, hex.col, hex.row)),

@@ -90,7 +90,7 @@ const answerDirectory = (now: () => number) => {
   const manifest = {
     version: 1,
     chainId: LAB_GAME.chainId,
-    releaseSchemas: { "1": nativeFactSchemaIdentity },
+    releaseSchemas: { "3": nativeFactSchemaIdentity },
     rpcUrl: "https://rpc.lab.invalid",
     accountClassHash: "0x2",
     contracts: { games: "0x1ab" },

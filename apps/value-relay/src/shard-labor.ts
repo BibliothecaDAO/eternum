@@ -26,7 +26,7 @@ export const writeLaborGrant = (target: LaborTarget, claim: LaborClaim) =>
       accountAddress: target.operatorAddress,
       privateKey: target.privateKey,
     } satisfies ShardTarget);
-    if (!sameFelt(String(await operator.view<bigint>("ledger_operator", [])), target.operatorAddress))
+    if ((await operator.view<bigint>("ledger_operator", [])) !== BigInt(felt(target.operatorAddress)))
       throw new Error("only_ledger_operator");
     const read = () => operator.view<CairoOption<RecordedGrant>>("labor_grant", [home.game_id, home.home, claim.day]);
     let grant = (await read()).unwrap();
@@ -37,13 +37,13 @@ export const writeLaborGrant = (target: LaborTarget, claim: LaborClaim) =>
     if (!grant) throw new Error("labor_grant_not_recorded");
     if (
       Number(grant.game_id) !== claim.gameId ||
-      !sameFelt(String(grant.account), claim.account) ||
-      String(grant.home) !== String(home.home)
+      grant.account !== BigInt(felt(claim.account)) ||
+      grant.home !== home.home
     )
       throw new Error("labor_already_claimed");
     return {
       gameId: Number(grant.game_id),
-      account: felt(String(grant.account)),
+      account: felt(claim.account),
       home: String(grant.home),
       amount: String(grant.amount),
     };

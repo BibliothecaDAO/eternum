@@ -21,6 +21,10 @@ vi.mock("react-router-dom", async (original) => ({
   ...(await original<typeof import("react-router-dom")>()),
   useNavigate: () => state.navigate,
 }));
+vi.mock("@/hooks/context/identity-session", async (original) => {
+  const identity = await original<typeof import("@/hooks/context/identity-session")>();
+  return { ...identity, useIdentitySession: () => identity.useIdentitySessionStore() };
+});
 vi.mock("@/hooks/use-game-entry", () => ({ useGameEntry: () => ({ data: state.entry, error: null }) }));
 vi.mock("@/runtime/world/herald-pre-session-reader", () => ({
   fetchSettlementSnapshot: async () => ({
