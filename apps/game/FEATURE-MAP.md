@@ -7,6 +7,16 @@ next to the crate to open it."). `/lab/relic-chest` exercises that single presen
 model, opening pool, panel and native opening story. Run
 `pnpm --dir apps/game prove:relic-chest --port 4199 --out <fresh-dir>` for both renderer captures and behavior proof.
 
+Next-season research proposals: `/lab/kit/research-balance` (UI kit → Research balance proposals). **Storage** compares
+deleting storage research with smaller late-game base stores; pick a realm and plan a Farm or Workshop upgrade.
+**Research paths** compares separate side levels, a shared four-purchase budget and the current rule; start with Drill
+level 2 and try Drill level 3 or Rations level 2. **Beast labor** compares three guard-based clear payouts at every
+depth and replays 28 recorded clears. Plans are local fixtures and send no game commands. Serve the client on an
+assigned port, open the route with `&evidence=/absolute/new/capture/directory` (use `?` without another query), then run
+`scripts/frontier/prove-research-balance.playwright.js` through the Playwright connection with the page as its argument.
+It clicks the proposals, verifies results and captures desktop and phone; keep its returned transcript with the images.
+No gameplay or preset rule changes are part of this study.
+
 Frontier exploration has a 1/10,000 chance per newly revealed surface tile to find a funded reward chest. Select its
 labelled map tile; an adjacent own living army can Open it. The panel shows its reserved common-share LORDS amount and
 day-rollover expiry; opening credits the army’s home realm and leaves a receipt in Frontier’s selection sheet, including
