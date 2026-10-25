@@ -166,21 +166,6 @@ describe("the Realm holder's labor", () => {
     expect(planRealmLabor({ realms, perRealm: 1_000, cap: 0, labor: { held: 0, limit: 18_000 } }).total).toBe(3_000);
   });
 
-  it("offers one held Realm before the account's daily claim and none after it", () => {
-    const plan = (claimed: boolean) =>
-      planRealmLabor({
-        realms: [realm(1, claimed), realm(2), realm(3)],
-        perRealm: 1_000,
-        cap: 1,
-        labor: { held: 0, limit: 18_000 },
-      });
-    expect(plan(false).rows.map((row) => row.state)).toEqual(["ready", "locked", "locked"]);
-    expect(plan(false).total).toBe(1_000);
-    expect(plan(true).rows.map((row) => row.state)).toEqual(["claimed", "locked", "locked"]);
-    expect(plan(true).total).toBe(0);
-    expect(plan(true).canAdd).toBe(false);
-  });
-
   it("leaves room to add a Realm until the day's cap of Realms has given its labor", () => {
     const plan = (claimed: number, cap: number) =>
       planRealmLabor({

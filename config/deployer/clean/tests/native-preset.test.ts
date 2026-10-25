@@ -138,10 +138,10 @@ describe("native presets", () => {
     }
   });
 
-  test("held-Realm labor grants 1,000 once per account per UTC day", () => {
+  test("held-Realm labor is fixed per shard calendar day and leaves the account ceiling unruled", () => {
     for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
-      expect(preset.economy.labor.unwrap()).toEqual({ amount: 1000n, account_daily_limit: 1 });
+      expect(preset.economy.labor.unwrap()).toEqual({ amount: 1000n, account_daily_limit: 0 });
     }
     for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
   });
