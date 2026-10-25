@@ -25,9 +25,8 @@ vi.mock("@/hooks/store/use-account-store", () => ({
 vi.mock("@/hooks/store/use-chain-time-store", () => ({
   useChainTimeStore: { getState: () => ({ getNowSeconds: () => world.chainDay }) },
 }));
-// As the game's hook does, a new navigation function on every render.
-vi.mock("@/hooks/helpers/use-navigate", () => ({
-  useNavigateToMapView: () => (position: unknown) => world.navigate(position),
+vi.mock("@/play/navigation/open-place", () => ({
+  openOnMap: (position: unknown, select: unknown) => world.navigate(position, select),
 }));
 vi.mock("@bibliothecadao/eternum/game-sync", () => ({
   getActiveGameSyncRuntime: () => ({ getWorldSpatialProjection: () => ({ rebuild: world.rebuild }) }),
@@ -96,7 +95,7 @@ describe("a player's day turning", () => {
     expect(world.navigate).not.toHaveBeenCalled();
     continueIntoTheBlack();
     expect(world.rebuild).toHaveBeenCalledTimes(1);
-    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE);
+    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE, null);
     seconds(DAY_END_TIMING.black);
     expect(phase()).toBe("dawn");
   });
@@ -110,7 +109,7 @@ describe("a player's day turning", () => {
     world.blockDay = 2;
     seconds(1);
     expect(world.rebuild).toHaveBeenCalledTimes(1);
-    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE);
+    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE, null);
     expect(phase()).toBe("dawn");
   });
 
@@ -123,7 +122,7 @@ describe("a player's day turning", () => {
     expect(world.rebuild).not.toHaveBeenCalled();
     continueIntoTheBlack();
     expect(world.rebuild).toHaveBeenCalledTimes(1);
-    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE);
+    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE, null);
   });
 
   it("still re-projects and moves the camera when the block arrives after the black's longest hold", () => {
@@ -137,7 +136,7 @@ describe("a player's day turning", () => {
     world.blockDay = 2;
     seconds(1);
     expect(world.rebuild).toHaveBeenCalledTimes(1);
-    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE);
+    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE, null);
   });
 
   it("keeps the turn's due camera move when a map navigation renders it again before the late block", () => {
@@ -151,7 +150,7 @@ describe("a player's day turning", () => {
     world.blockDay = 2;
     seconds(1);
     expect(world.rebuild).toHaveBeenCalledTimes(1);
-    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE);
+    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE, null);
   });
 });
 
@@ -164,7 +163,7 @@ describe("a player who opens the game after the day ended", () => {
     expect(world.navigate).not.toHaveBeenCalled();
     act(() => useDayEndStore.getState().continueDay());
     seconds(DAY_END_TIMING.nightfall);
-    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE);
+    expect(world.navigate).toHaveBeenCalledWith(NEW_SITE, null);
     expect(world.rebuild).not.toHaveBeenCalled();
     seconds(DAY_END_TIMING.black);
     expect(phase()).toBe("dawn");

@@ -1,27 +1,10 @@
-import { traceFlightMark } from "../flight-trace";
 import { Position } from "@bibliothecadao/eternum";
-import { buildPlayHref, mapRouteHex, parsePlayRoute } from "@/play/navigation/play-route";
+import { parsePlayRoute } from "@/play/navigation/play-route";
+import { openPlace } from "@/play/navigation/open-place";
 
 import { Structure } from "@bibliothecadao/types";
 import { resolveNavigationSceneTarget } from "../scene-navigation-boundary";
 import { SceneName } from "../types";
-
-function buildSceneLocationUrl(position: Position, targetScene: SceneName): string {
-  return buildPlayHref({ ...requirePlayRoute(), scene: targetScene, ...mapRouteHex(position) });
-}
-
-function requirePlayRoute() {
-  const playRoute = parsePlayRoute(window.location);
-  if (!playRoute) throw new Error(`Cannot navigate scenes outside a game route: ${window.location.pathname}`);
-  return playRoute;
-}
-
-function dispatchSceneNavigation(navigationUrl: string): void {
-  traceFlightMark(`navigate ${navigationUrl}`);
-  window.history.pushState({}, "", navigationUrl);
-  window.dispatchEvent(new Event("urlChanged"));
-  traceFlightMark("urlChanged listeners done");
-}
 
 /**
  * Navigate to a structure by updating the URL and dispatching a URL change event
@@ -36,7 +19,7 @@ export function navigateToStructure(position: Position, scene?: "hex" | "map") {
     currentPath: window.location.pathname,
   });
 
-  dispatchSceneNavigation(buildSceneLocationUrl(position, targetScene));
+  openPlace(targetScene === SceneName.Hexception ? "hex" : "map", position);
 }
 
 /**
@@ -67,11 +50,13 @@ export function selectNextStructure(
  * Changes /map?col=X&row=Y to /hex?col=X&row=Y and vice versa
  */
 export function toggleMapHexView() {
-  const playRoute = requirePlayRoute();
+  const playRoute = parsePlayRoute(window.location);
+  if (!playRoute) throw new Error(`Cannot toggle scenes outside a game route: ${window.location.pathname}`);
   if (playRoute.col === null || playRoute.row === null) {
     console.warn("No coordinates found in URL, cannot toggle view");
     return;
   }
 
-  dispatchSceneNavigation(buildPlayHref({ ...playRoute, scene: playRoute.scene === "hex" ? "map" : "hex" }));
+  // The URL's hex is normalized (mapRouteHex).
+  openPlace(playRoute.scene === "hex" ? "map" : "hex", Position.fromNormalized({ x: playRoute.col, y: playRoute.row }));
 }

@@ -2,7 +2,7 @@ import { accountAddress } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { publishMapSelection } from "@/observability/map-selection";
 import { activeMapLayer } from "@/three/map-layer";
-import { isWithinWorldOriginReach } from "@/three/world-origin";
+import { isWithinWorldOriginReach, subscribeWorldOrigin } from "@/three/world-origin";
 import { configManager, Position } from "@bibliothecadao/eternum";
 import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -25,8 +25,8 @@ interface OwnershipRingsInput {
 /**
  * Selecting a hex that holds a player's structure rings every hex that player holds, the viewer's own or anyone's.
  * The rings read only the selected hex and the facts: every selection or clear, from any surface, moves them, and they
- * follow the layer shown, ownership (a capture hands them to the new owner) and every structure or army the projection
- * moves, adds or removes, so they always match the facts the map draws. Each redraw publishes the selection and what
+ * follow the layer shown, the floating origin, ownership (a capture hands them to the new owner) and every structure
+ * or army the projection moves, adds or removes, so they always match the facts the map draws. Each redraw publishes the selection and what
  * the layer rings (observability/map-selection).
  */
 export function bindOwnershipRings({ store, projection, rings }: OwnershipRingsInput): () => void {
@@ -45,6 +45,7 @@ export function bindOwnershipRings({ store, projection, rings }: OwnershipRingsI
   const stops = [
     useUIStore.subscribe((state) => state.selectedHex, redraw),
     useUIStore.subscribe((state) => state.mapLayer, redraw),
+    subscribeWorldOrigin(redraw),
     store.subscribe((changes) => {
       if (changes.some((change) => change.model === "Structure")) redraw();
     }),
