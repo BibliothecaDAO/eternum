@@ -108,7 +108,7 @@ export const frontierPreset: NativePreset = {
     emptyRevealLimit: 7,
   },
   progression: { revealXp: 2, fixedXp: 200, uncommonXp: 100, rareXp: 200, epicXp: 400, legendaryXp: 800 },
-  labor: { amount: 1000, accountDailyLimit: 0 },
+  labor: { amount: 1000, accountDailyLimit: 1 },
   // Daily chest prices cannot exceed 50 LORDS per share.
   chests: {
     priceCeiling: 50,
