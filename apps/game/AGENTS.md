@@ -153,9 +153,14 @@ shown in Ethereal II; play it at `--viewport 390x844` too), `--steps lab-day-tur
 that day, the map opened where the realm stood on day 2: the summary's totals must be the recorded player's own day 2
 (slow: history answers only after the moment went on, and the summary opens then; short: a page of newer stories leaves
 day 2 unread, and the card shows dashes and says why), and Continue must bring the camera onto the realm's day-3 site),
-`--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each run's boot, from before the game page
-opens to the world being interactive), `--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are
-taken from where the command is run.
+`--steps lab-day-later-quiet` (day 2 not played: no summary, and the day's end still brings the camera onto the day-3
+site), `--steps lab-day-turn-asleep` (the owner's phone, at `--viewport 390x844`: a minute before day 2 ends the tab's
+window is minimized and the page frozen, its WebGL context lost and Herald's stream silent with its socket open, then
+brought back past the end; on WebGL the page must boot again and the map draw, its middle band no more than half black
+past what it was, the loss's two error lines its outcome; on WebGPU, whose device this machine keeps, the silent stream
+must be dropped and resumed; then the summary and Continue as above), `--out <root>` (default `.context/playtest`),
+`--trace` (a Chrome trace of each run's boot, from before the game page opens to the world being interactive),
+`--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are taken from where the command is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 

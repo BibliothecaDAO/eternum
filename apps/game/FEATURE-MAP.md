@@ -704,22 +704,32 @@ In a Frontier game, with a realm, when the day ends on the chain clock: the spir
 the map, sparing the realm (the game end's veil), and the map takes no orders. After 3 s the ended day's summary rises
 over it (the day-done card: the player's own totals for the day, as Today counts them from their history; where that
 history no longer reaches back to the day's start, or did not answer, a dash for each total and a line saying why, as
-Today says too; rank, troops; once per ended day on this device, only for a day played), low in the middle on a desktop
-and as a sheet on a phone. While the history is still being read the summary waits for it, at most 10 s; past that the
-moment goes on, and the summary opens over the new day once the history answers. Space, Esc or Skip jumps the mist to
-the summary. Continue fades the screen to black; the realm's new land comes in behind it (the map re-projected once the
-block clock turns, the camera on the realm), and the screen comes back up on the new day. Opening the game after the day
-ended: the summary waits over the new land in the dark; Continue fades to black too, the camera comes onto the realm,
-and the screen comes back up. A day not played, or a visit to another realm, passes without the summary. Code:
-`hooks/store/use-day-end-store.ts`, `ExpeditionRollover`, `rollover/day-done.tsx` and `day-end-screen.tsx`.
+Today says too; rank, troops; only for a day played), low in the middle on a desktop and as a sheet on a phone. While
+the history is still being read the summary waits for it, at most 10 s; past that the moment goes on, and the summary
+opens over the new day once the history answers. Space, Esc or Skip jumps the mist to the summary. Continue fades the
+screen to black; the realm's new land comes in behind it (the map re-projected once the block clock turns, the camera on
+the realm), and the screen comes back up on the new day. Opening the game after the day ended: the summary waits over
+the new land in the dark; Continue fades to black too, the camera comes onto the realm, and the screen comes back up. A
+day not played passes without the summary, but its black still brings the camera onto the realm; a visit to another
+realm passes with neither. Each device goes through each ended day's end once (its mark is in the browser's storage), so
+a day read on a desktop shows its summary again on a phone. Code: `hooks/store/use-day-end-store.ts`,
+`ExpeditionRollover`, `rollover/day-done.tsx` and `day-end-screen.tsx`.
+
+Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab
+in the background, or WebGPU's device) boots the page again on its route once it is seen, and a Herald stream silent for
+10 s is dropped and resumed (`three/renderer-device-loss-recovery.ts`, `herald-game-sync-transport.ts`); a day that
+turned meanwhile then plays its end as above.
 
 `/lab/game?scenario=day-turn` plays the game itself (its route, HUD, rollover and map) as day 2 ends 20 s after opening,
 and `scenario=day-later` opens it 8h40m into day 3; both over prod's recorded history of game 1's day 2
 (`rollover/recorded-day-history.ts`), the map opened on the realm's day-2 site. `day-turn-slow` holds history's answers
 until 25 s after the day's end; `day-later-short` gives the player a page of newer stories, so day 2 is out of the
-read's reach. `pnpm --dir apps/game playtest --port <port> --steps lab-day-turn` (or `lab-day-later`,
+read's reach; `day-later-quiet`'s player did not play day 2; `day-turn-asleep` opens a minute before the end for a
+phone's tab to sleep through it. `pnpm --dir apps/game playtest --port <port> --steps lab-day-turn` (or `lab-day-later`,
 `lab-day-turn-slow`, `lab-day-later-short`) checks the summary's totals and its line, and that Continue brings the
-camera onto the realm's day-3 site.
+camera onto the realm's day-3 site; `lab-day-later-quiet` that the camera gets there with no summary;
+`lab-day-turn-asleep` (`--viewport 390x844`, each renderer mode) puts the tab away through the end and brings it back. A
+reload of a lab game's route (`/g/0x1ab9/...`) plays the same lab game again, its clock going on.
 
 `/lab/day-end` turns the day with the same rollover (`watchDayTurn`) on a lab clock over the game's Frontier day facts,
 and plays the same moment, screen and card on lab land (`case=ordinary|together|late-block|later`; a narrow window plays
