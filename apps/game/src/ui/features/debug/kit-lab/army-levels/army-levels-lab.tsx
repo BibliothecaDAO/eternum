@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { Icon } from "@/ui/design-system/icon";
-import { HudButton, HudPanel, HudTabs } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
   ATTRIBUTES,
   effect,
+  gain,
   levelProgress,
   OPTIONS,
   PRICES,
@@ -18,12 +19,11 @@ import observations from "./observations.json";
 /** Compare local plans only; this page never sends a command or changes a game's rules. */
 export function ArmyLevelsLab() {
   useHudMode("frontier");
-  const [option, setOption] = useState<LevelOption>("flat");
   const [xp, setXp] = useState(300);
   const [trained, setTrained] = useState("none");
   return (
     <main data-lab="army-levels" className="min-h-screen bg-kit-ground p-4 text-hud-ink sm:p-8">
-      <div className="mx-auto flex max-w-5xl flex-col gap-5">
+      <div className="mx-auto flex max-w-7xl flex-col gap-5">
         <header className="flex flex-col gap-2">
           <p className="text-hud-label text-hud-muted">Next season · balance proposals</p>
           <h1 className="text-hud-display">One level, one choice</h1>
@@ -31,15 +31,9 @@ export function ArmyLevelsLab() {
             Spend a point on any uncapped attribute. Compare with today's XP prices; this changes no game.
           </p>
         </header>
-        <HudTabs
-          tabs={Object.entries(OPTIONS).map(([key, value]) => ({ key: key as LevelOption, label: value.label }))}
-          value={option}
-          onChange={setOption}
-        />
         <p className="text-hud-body text-hud-muted">
-          {option === "flat"
-            ? "Recommended: 50, 100, 150… XP per level. Each point adds the same bonus; the first choice arrives sooner."
-            : "100, 200, 300… XP per level. Keep today's growing bonuses. Later points are stronger; the first choice still takes 100 XP."}
+          Recommended: one point always buys one rank. Its gain falls with ranks already held, including training: 100%,
+          80%, 60%, then 40% of the first gain. Both proposals need 50, 100, 150… XP per level.
         </p>
         <div className="flex flex-wrap gap-4 text-hud-body">
           <label>
@@ -48,10 +42,10 @@ export function ArmyLevelsLab() {
               aria-label="XP earned"
               type="number"
               min={0}
-              max={13600}
+              max={6800}
               step={1}
               value={xp}
-              onChange={(event) => setXp(Math.max(0, Math.min(13600, Math.floor(Number(event.target.value)))))}
+              onChange={(event) => setXp(Math.max(0, Math.min(6800, Math.floor(Number(event.target.value)))))}
               className="ml-2 w-24 rounded border border-hud-line bg-hud-well p-2"
             />
           </label>
@@ -65,13 +59,15 @@ export function ArmyLevelsLab() {
             >
               <option value="none">None</option>
               <option value="battle-1">Battle +1</option>
+              <option value="battle-2">Battle +2</option>
+              <option value="scouting-2">Scouting +2 on Beasts</option>
               <option value="battle-4">Battle +4 (capped)</option>
               <option value="all">All +4 (capped)</option>
             </select>
           </label>
         </div>
-        <p className="text-hud-label text-hud-muted">Changing XP, training or option starts a fresh comparison.</p>
-        <Comparison key={`${option}-${xp}-${trained}`} xp={xp} trained={training(trained)} option={option} />
+        <p className="text-hud-label text-hud-muted">Changing XP or training starts a fresh comparison.</p>
+        <Comparison key={`${xp}-${trained}`} xp={xp} trained={training(trained)} />
         <section className="flex flex-col gap-3 border-t border-hud-line pt-4">
           <h2 className="text-hud-title">What the observed armies could reach</h2>
           <p className="text-hud-body text-hud-muted">
@@ -84,8 +80,8 @@ export function ArmyLevelsLab() {
                 <tr>
                   <th>Day / armies</th>
                   <th>XP median / p90 / max</th>
-                  <th>Today / option 2</th>
-                  <th>Option 1</th>
+                  <th>Today</th>
+                  <th>Both proposals</th>
                 </tr>
               </thead>
               <tbody>
@@ -124,7 +120,7 @@ export function ArmyLevelsLab() {
   );
 }
 
-function Comparison({ xp, trained, option }: { xp: number; trained: Counts; option: LevelOption }) {
+function Comparison({ xp, trained }: { xp: number; trained: Counts }) {
   const [attribute, setAttribute] = useState(0);
   const [kind, setKind] = useState<ScoutKind>("Beasts");
   return (
@@ -161,9 +157,10 @@ function Comparison({ xp, trained, option }: { xp: number; trained: Counts; opti
           </label>
         )}
       </div>
-      <div className="grid items-start gap-5 md:grid-cols-2">
+      <div className="grid items-start gap-5 lg:grid-cols-3">
         <Plan xp={xp} trained={trained} option="today" attribute={attribute} kind={kind} />
-        <Plan xp={xp} trained={trained} option={option} attribute={attribute} kind={kind} />
+        <Plan xp={xp} trained={trained} option="flat" attribute={attribute} kind={kind} />
+        <Plan xp={xp} trained={trained} option="diminishing" attribute={attribute} kind={kind} />
       </div>
     </>
   );
@@ -186,7 +183,7 @@ function Plan({
   const [spentXp, setSpentXp] = useState(0);
   const [kinds, setKinds] = useState<ScoutKind[]>(Array.from({ length: trained[2] }, () => "Beasts"));
   const today = option === "today";
-  const progress = levelProgress(xp, trained, today ? "flat" : option);
+  const progress = levelProgress(xp, trained);
   const allocated = counts.reduce((sum, count, index) => sum + count - trained[index]!, 0);
   const available = progress.points - allocated;
   const price = PRICES[counts[attribute]!];
@@ -199,7 +196,11 @@ function Plan({
     if (attribute === 2) setKinds([...kinds, kind]);
   };
   return (
-    <section aria-label={today ? "Today" : "Proposal"} data-plan={option} className="scroll-mt-20">
+    <section
+      aria-label={today ? "Today" : option === "flat" ? "Previous proposal" : "Proposal"}
+      data-plan={option}
+      className="scroll-mt-20"
+    >
       <HudPanel
         title={today ? "Today · buy each tier" : `${OPTIONS[option].label} · level ${progress.level}`}
         collapsible={false}
@@ -236,10 +237,10 @@ function Plan({
           <p className="min-h-10 text-hud-body" data-next>
             {capped
               ? `${ATTRIBUTES[attribute]} is capped. Choose another attribute.`
-              : `${effect(attribute, counts[attribute]! + 1, option, attribute === 2 ? [...kinds, kind] : kinds)} · ${today ? `${price} XP` : "1 point"}`}
+              : `Next gain: ${gain(attribute, counts[attribute]!, option)} · ${today ? `${price} XP` : "1 point"}`}
           </p>
-          <HudButton kind={today ? "secondary" : "primary"} disabled={!canBuy} onClick={spend}>
-            {today ? "Upgrade today" : "Spend point"}
+          <HudButton kind={option === "diminishing" ? "primary" : "secondary"} disabled={!canBuy} onClick={spend}>
+            {today ? "Upgrade today" : option === "flat" ? "Spend flat point" : "Spend point"}
           </HudButton>
           <p className="text-hud-label text-hud-muted">
             Each purchase refills up to 30 stamina, after any Logistics increase. Training grants no refill. This

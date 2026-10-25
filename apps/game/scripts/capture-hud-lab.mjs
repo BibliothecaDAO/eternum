@@ -144,19 +144,19 @@ const main = () => {
         if (name === "army-levels") {
           run("fill", '[aria-label="XP earned"]', "350");
           const press = (label) => run("find", "role", "button", "click", "--name", label, "--exact");
-          press("Upgrade today");
-          press("Upgrade today");
-          for (let count = 0; count < 3; count++) press("Spend point");
           const read = () =>
             JSON.parse(
               run(
                 "eval",
                 `(() => {
             const proposal = document.querySelector('[aria-label="Proposal"]');
-            const today = document.querySelector('[aria-label="Today"]');
+            const previous = document.querySelector('[aria-label="Previous proposal"]');
             return {
               proposal: proposal.innerText,
-              today: today.innerText,
+              previous: previous.innerText,
+              today: document.querySelector('[aria-label="Today"]').innerText,
+              next: proposal.querySelector('[data-next]').textContent,
+              previousNext: previous.querySelector('[data-next]').textContent,
               ring: proposal.querySelector('[role="img"]').getAttribute('aria-label'),
               disabled: [...proposal.querySelectorAll('button')].find(b => b.textContent === 'Spend point').disabled,
               overflow: document.documentElement.scrollWidth > innerWidth
@@ -164,33 +164,62 @@ const main = () => {
           })()`,
               ),
             );
-          const flat = read();
+          press("Upgrade today");
+          press("Upgrade today");
+          for (let count = 0; count < 3; count++) {
+            press("Spend flat point");
+            press("Spend point");
+          }
+          const untrained = read();
           if (
-            !flat.proposal.includes("+30% damage") ||
-            !flat.proposal.includes("0 points available") ||
-            !flat.today.includes("50 XP unspent") ||
-            flat.ring !== "50 of 200 XP to next level" ||
-            !flat.disabled ||
-            flat.overflow
+            !untrained.proposal.includes("+24% damage") ||
+            !untrained.previous.includes("+30% damage") ||
+            !untrained.today.includes("50 XP unspent") ||
+            untrained.ring !== "50 of 200 XP to next level" ||
+            !untrained.disabled ||
+            untrained.overflow
+          )
+            throw new Error(`${shot}: three-rank comparison failed`);
+          run("eval", `document.querySelector('[data-lab="army-levels"]').scrollIntoView({block: "start"})`);
+          run("screenshot", join(values.out, `${shot}-comparison.png`), "--full");
+          run("select", '[aria-label="Starts trained"]', "battle-2");
+          const trained = read();
+          if (
+            trained.next !== "Next gain: +6% damage · 1 point" ||
+            trained.previousNext !== "Next gain: +10% damage · 1 point" ||
+            trained.disabled
           ) {
-            throw new Error(`${shot}: level, spending, ring or width did not match the comparison`);
+            throw new Error(`${shot}: trained starting ranks did not lower the next gain`);
           }
           run("eval", `document.querySelector('[aria-label="Proposal"]').scrollIntoView({block: "start"})`);
-          run("screenshot", join(values.out, `${shot}-flat.png`), "--full");
-          run("find", "role", "tab", "click", "--name", "2 · Growing bonuses", "--exact");
+          run("screenshot", join(values.out, `${shot}-trained-before.png`), "--full");
           press("Spend point");
-          press("Spend point");
-          const growing = read();
+          const spent = read();
           if (
-            !growing.proposal.includes("+30% damage") ||
-            growing.ring !== "50 of 300 XP to next level" ||
-            !growing.disabled
+            !spent.proposal.includes("+24% damage") ||
+            !spent.proposal.includes("2 points available") ||
+            spent.ring !== trained.ring
           ) {
-            throw new Error(`${shot}: growing bonuses did not reset and spend two points`);
+            throw new Error(`${shot}: spending the trained third rank changed the wrong state`);
           }
           run("eval", `document.querySelector('[aria-label="Proposal"]').scrollIntoView({block: "start"})`);
-          run("screenshot", join(values.out, `${shot}-growing.png`), "--full");
-          writeFileSync(join(values.out, `${shot}-interactions.json`), JSON.stringify({ flat, growing }, null, 2));
+          run("screenshot", join(values.out, `${shot}-trained.png`), "--full");
+          run("select", '[aria-label="Starts trained"]', "scouting-2");
+          run("select", '[aria-label="Build toward"]', "2");
+          run("select", '[aria-label="Find more"]', "Rifts");
+          press("Spend point");
+          const scout = read();
+          if (!scout.proposal.includes("Beasts +18% · Rifts +6%"))
+            throw new Error(`${shot}: switching kind reset Scouting rank`);
+          run("select", '[aria-label="Starts trained"]', "all");
+          const capped = read();
+          if (!capped.disabled || !capped.proposal.includes("0 points available") || capped.ring !== "XP complete") {
+            throw new Error(`${shot}: fully trained army promised an unusable point`);
+          }
+          writeFileSync(
+            join(values.out, `${shot}-interactions.json`),
+            JSON.stringify({ untrained, trained, spent, scout, capped }, null, 2),
+          );
         }
         if (name === "frontier-merge") {
           run("find", "role", "button", "click", "--name", "Merge into Army 2", "--exact");

@@ -776,7 +776,9 @@ checks decoded triangles for zero masonry contacts at each production scale. All
 exact eight packed sources. There is one production path per species and no separate study GLB.
 
 Army level proposals (dev only): **Compare army levels** in `/lab/kit/progression` opens
-`/lab/kit/research-balance/army-levels` compares today's tier purchases with two level-and-point options. Change earned
-XP and training, choose an attribute (and a Scouting kind), then press **Upgrade today** or **Spend point**. The
-portrait ring tracks the next level independently of point spending. No game command is sent. Capture and exercise it
-with `pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <fresh-dir> --only army-levels`.
+`/lab/kit/research-balance/army-levels`. Today's tier purchases, the previous flat-gain proposal and the revised
+proposal appear together. Set **Starts trained → Battle +2**: the revised next Battle rank gives +6% damage, while
+starting untrained gives +10%. One point buys either. Change XP, training or attribute, then use **Upgrade today**,
+**Spend flat point** or **Spend point**; the XP ring stays independent of spending. Scouting uses its total rank across
+all kinds. No game command is sent. Exercise and capture it with
+`pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <fresh-dir> --only army-levels`.
