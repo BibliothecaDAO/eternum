@@ -1429,7 +1429,6 @@ export const STEP_SETS = {
       { name: "painted-board", play: goTo("Realm", "hex"), settleMs: 10_000, verify: inScene("hex") },
       { name: "return-to-map", play: goTo("Map", "map"), settleMs: 3_000, verify: inScene("map") },
     ],
-    devOverlays: true,
   },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
