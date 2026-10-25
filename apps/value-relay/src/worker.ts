@@ -1,4 +1,5 @@
 import { handleRealmEntryRequest, registerHeldRealm, type RealmEntryClaim } from "./realm-entry";
+import { PlayerRequestError } from "./player-request";
 import { joinShardOperator } from "./shard-account";
 import { decodeRelaySettings, ledgerAddress, ledgerContractOf, type RelaySettings } from "./environment";
 import { bindLedgerState, ledgerOrNull, ledgerStateName } from "./ledger-state";
@@ -340,8 +341,16 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         ),
       ),
     );
-    if (Result.isFailure(result)) throw result.failure;
-    return result.success;
+    if (Result.isFailure(result)) {
+      const error = result.failure;
+      return {
+        error:
+          error instanceof PlayerRequestError
+            ? { status: error.status, code: error.code }
+            : { status: 503, code: "value_service_unavailable" },
+      };
+    }
+    return { entry: result.success };
   }
   async labor(claim: LaborClaim) {
     const relay = this;
@@ -597,7 +606,11 @@ export default {
         origin: env.BASE_URL,
         authenticate: (cookie) => env.IDENTITY.authenticate(cookie),
         accountForRealmsId: (id) => env.IDENTITY.accountForRealmsId(id),
-        register: (claim) => relayOf(env, claim.chainId).realmEntry(claim),
+        register: async (claim) => {
+          const result = await relayOf(env, claim.chainId).realmEntry(claim);
+          if (result.error) throw new PlayerRequestError(result.error.status, result.error.code);
+          return result.entry;
+        },
       });
     }
     if (new URL(request.url).pathname === "/api/value/labor" && request.method === "POST") {
