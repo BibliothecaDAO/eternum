@@ -1,6 +1,6 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ContractAddress;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerWriteAccess};
+use starknet::storage::StorageMapWriteAccess;
 use crate::entry::{
     ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait, ILedgerOperatorSafeDispatcher,
     ILedgerOperatorSafeDispatcherTrait,
@@ -165,6 +165,7 @@ fn a_free_settlement_cannot_become_a_held_realm_after_entry() {
     assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), 0);
 }
 
+#[feature("safe_dispatcher")]
 fn settle_labor_home(held: bool) -> (Deployment, crate::entry::LaborHome) {
     let (d, game_id) = super::registrar::setup_open_frontier();
     set_operator(d, authority());
