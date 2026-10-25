@@ -60,14 +60,20 @@ const SUMMARY = "section[aria-label='Day 2 done']";
 let host: HTMLDivElement;
 let root: Root;
 
+/** Day 2's summary is the player's until they play on in day 3: the game as it stood a minute before they did. */
+const BEFORE_PLAYING_ON = {
+  now: RECORDED_DAY.playedOn.at - 60,
+  history: RECORDED_DAY.history.filter((event) => event.block_number < RECORDED_DAY.playedOn.block),
+};
+
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   notifyManager.setNotifyFunction((notify) => act(notify));
   window.localStorage.clear();
   useDayEndStore.setState(RESTING);
-  herald.history = RECORDED_DAY.history;
+  herald.history = BEFORE_PLAYING_ON.history;
   herald.withheld = null;
-  herald.now = RECORDED_DAY.openedAt;
+  herald.now = BEFORE_PLAYING_ON.now;
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -94,7 +100,7 @@ const totalsShown = () =>
   [...(host.querySelector(SUMMARY)?.querySelectorAll("[data-total]") ?? [])].map((cell) => cell.textContent);
 const phase = () => useDayEndStore.getState().phase;
 
-/** Opens the game as the player did on prod, day 2 ended overnight, and reads the summary's totals. */
+/** Opens the game with day 2 ended overnight, before the player played on, and reads the summary's totals. */
 const openTheGame = async () => {
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   await act(async () => draw());
@@ -113,7 +119,7 @@ const endDay2WithHistoryWithheld = async () => {
   let answer!: () => void;
   herald.withheld = new Promise<void>((resolve) => (answer = resolve));
   window.localStorage.setItem(`frontier.day-done.1.${RECORDED_DAY.player}`, "1");
-  const { end } = endedDay(RULES, RECORDED_DAY.openedAt)!;
+  const { end } = endedDay(RULES, BEFORE_PLAYING_ON.now)!;
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   herald.now = end - 1;
   await act(async () => draw());
@@ -133,14 +139,15 @@ const seconds = (count: number) => act(() => vi.advanceTimersByTimeAsync(count *
 it("sums the player's own day 2 as prod's history holds it, not the tail of the game's newest stories", async () => {
   const cells = await openTheGame();
   expect(host.textContent).toContain("Realm kept · Day 3 is open");
-  expect(host.textContent).toContain("11h 20m");
+  expect(host.textContent).toContain("11h 51m");
   expect(host.textContent).toContain("Tomorrow lasts8h");
   expect(cells).toEqual(PROD_DAY_2);
   expect(host.textContent).toContain("#1 → #1");
 });
 
 it("shows a dash for each total, and says why, when the player's history no longer reaches the day's start", async () => {
-  // Five hundred later stories of the player's own push day 2 out of the one page Herald gives.
+  // Five hundred later stories of the player's own, late in day 2, push its start out of the one page Herald gives.
+  const { end } = endedDay(RULES, BEFORE_PLAYING_ON.now)!;
   const later = Array.from({ length: 500 }, (_, index) => ({
     block_number: 170_000 + index,
     transaction_index: 0,
@@ -152,11 +159,11 @@ it("shows a dash for each total, and says why, when the player's history no long
       owner: RECORDED_DAY.player,
       entity_id: "0x0",
       tx_hash: `0x${(index + 1).toString(16)}`,
-      timestamp: `0x${(RECORDED_DAY.openedAt - 60).toString(16)}`,
+      timestamp: `0x${(end - 60).toString(16)}`,
       story: { TroopsTransferred: { amount: "0x1", source: { Explorer: "0x1" }, target: { Explorer: "0x2" } } },
     },
   }));
-  herald.history = [...later, ...RECORDED_DAY.history];
+  herald.history = [...later, ...BEFORE_PLAYING_ON.history];
   expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Chests", "—Essence", "—Labor", "—LORDS"]);
   expect(host.querySelector(`${SUMMARY} [role="status"]`)?.textContent).toBe(
     "Your history no longer reaches back to this day's start, so its totals are unknown.",
@@ -237,6 +244,28 @@ describe("a device arriving in a new day", () => {
     expect(window.localStorage.getItem(MARK)).toBe("2");
     await seconds(DAY_END_TIMING.nightfall);
     // The black: the rollover brings the camera onto the realm's new site behind it.
+    expect(phase()).toBe("black");
+    act(() => useDayEndStore.getState().markLandReady());
+    await seconds(DAY_END_TIMING.black);
+    await seconds(DAY_END_TIMING.dawn);
+    expect(phase()).toBe("day");
+  });
+
+  it("shows the summary on a device opened before the player played on in the new day", async () => {
+    await arrive();
+    expect(useDayEndStore.getState()).toMatchObject({ phase: "summary", arrival: "later", summary: "shown" });
+    expect(totalsShown()).toEqual(PROD_DAY_2);
+  });
+
+  it("skips the summary once the player played on in the new day on another device, and still brings the camera onto the realm", async () => {
+    // Prod: the player placed a building in day 3 at 05:56Z, then opened the game here at 06:26Z.
+    herald.history = RECORDED_DAY.history;
+    herald.now = RECORDED_DAY.openedAt;
+    await arrive();
+    expect(host.querySelector(SUMMARY)).toBeNull();
+    expect(useDayEndStore.getState()).toMatchObject({ phase: "nightfall", arrival: "later", summary: "none" });
+    expect(window.localStorage.getItem(MARK)).toBe("2");
+    await seconds(DAY_END_TIMING.nightfall);
     expect(phase()).toBe("black");
     act(() => useDayEndStore.getState().markLandReady());
     await seconds(DAY_END_TIMING.black);

@@ -1282,10 +1282,11 @@ function labDayTurnAsleepSteps() {
 }
 
 /**
- * A device arriving in day 3 with no summary to read (day-later-quiet: day 2 not played): the day's end still plays, and
- * behind its black the camera comes onto the realm's day-3 site.
+ * A device arriving in day 3 with no summary to read (day-later-quiet: day 2 not played; day-later-played-on: the player
+ * played on in day 3 on another device): the day's end still plays, and behind its black the camera comes onto the
+ * realm's day-3 site.
  */
-const labDayLaterQuietSteps = [
+const labDayLaterNoSummarySteps = [
   { name: "enter-on-map", settleMs: 0, verify: inScene("map") },
   { name: "into-the-new-day", play: waitForTheNewDay, settleMs: 0, verify: cameraOnTheNewSiteWithNoSummary },
 ];
@@ -1504,7 +1505,8 @@ export const STEP_SETS = {
   "lab-day-turn-slow": { game: labDayTurn("day-turn-slow"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-later-short": { game: labDayTurn("day-later-short"), steps: labDayTurnSteps(DAY_2_OUT_OF_REACH) },
   "lab-day-turn-asleep": { game: labDayTurn("day-turn-asleep"), steps: labDayTurnAsleepSteps() },
-  "lab-day-later-quiet": { game: labDayTurn("day-later-quiet"), steps: labDayLaterQuietSteps },
+  "lab-day-later-quiet": { game: labDayTurn("day-later-quiet"), steps: labDayLaterNoSummarySteps },
+  "lab-day-later-played-on": { game: labDayTurn("day-later-played-on"), steps: labDayLaterNoSummarySteps },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },

@@ -13,6 +13,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "day-later-short": dayTurnScenario("later", "capped"),
   "day-turn-asleep": dayTurnScenario("asleep"),
   "day-later-quiet": dayTurnScenario("later", "unplayed"),
+  "day-later-played-on": dayTurnScenario("later", "played-on"),
 };
 
 /** The lab game this tab plays: its scenario and the wall time its chain's clock started at. */

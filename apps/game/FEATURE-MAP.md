@@ -712,7 +712,9 @@ the realm), and the screen comes back up on the new day. Opening the game after 
 the new land in the dark; Continue fades to black too, the camera comes onto the realm, and the screen comes back up. A
 day not played passes without the summary, but its black still brings the camera onto the realm; a visit to another
 realm passes with neither. Each device goes through each ended day's end once (its mark is in the browser's storage), so
-a day read on a desktop shows its summary again on a phone. Code: `hooks/store/use-day-end-store.ts`,
+the camera comes onto the realm on a phone too after a desktop went through it. The summary shows only until the player
+acts in the new day (owner, 2026-10-25): once their history holds a story of theirs after the day's end, from any
+device, a device arriving later goes through the black without it. Code: `hooks/store/use-day-end-store.ts`,
 `ExpeditionRollover`, `rollover/day-done.tsx` and `day-end-screen.tsx`.
 
 Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab
@@ -723,11 +725,12 @@ turned meanwhile then plays its end as above.
 `/lab/game?scenario=day-turn` plays the game itself (its route, HUD, rollover and map) as day 2 ends 20 s after opening,
 and `scenario=day-later` opens it 8h40m into day 3; both over prod's recorded history of game 1's day 2
 (`rollover/recorded-day-history.ts`), the map opened on the realm's day-2 site. `day-turn-slow` holds history's answers
-until 25 s after the day's end; `day-later-short` gives the player a page of newer stories, so day 2 is out of the
-read's reach; `day-later-quiet`'s player did not play day 2; `day-turn-asleep` opens a minute before the end for a
-phone's tab to sleep through it. `pnpm --dir apps/game playtest --port <port> --steps lab-day-turn` (or `lab-day-later`,
-`lab-day-turn-slow`, `lab-day-later-short`) checks the summary's totals and its line, and that Continue brings the
-camera onto the realm's day-3 site; `lab-day-later-quiet` that the camera gets there with no summary;
+until 25 s after the day's end; `day-later-short` gives the player a page of stories late in day 2, so its start is out
+of the read's reach; `day-later-quiet`'s player did not play day 2; `day-later-played-on`'s player played on in day 3,
+as on prod, before this device opened; `day-turn-asleep` opens a minute before the end for a phone's tab to sleep
+through it. `pnpm --dir apps/game playtest --port <port> --steps lab-day-turn` (or `lab-day-later`, `lab-day-turn-slow`,
+`lab-day-later-short`) checks the summary's totals and its line, and that Continue brings the camera onto the realm's
+day-3 site; `lab-day-later-quiet` and `lab-day-later-played-on` that the camera gets there with no summary;
 `lab-day-turn-asleep` (`--viewport 390x844`, each renderer mode) puts the tab away through the end and brings it back. A
 reload of a lab game's route (`/g/0x1ab9/...`) plays the same lab game again, its clock going on.
 

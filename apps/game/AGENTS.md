@@ -151,9 +151,10 @@ shown in Ethereal II; play it at `--viewport 390x844` too), `--steps lab-day-tur
 `--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same game on Frontier's day 2 ending,
 `/lab/game?scenario=day-turn` in the session or `scenario=day-later` before it opened, over prod's recorded history of
 that day, the map opened where the realm stood on day 2: the summary's totals must be the recorded player's own day 2
-(slow: history answers only after the moment went on, and the summary opens then; short: a page of newer stories leaves
-day 2 unread, and the card shows dashes and says why), and Continue must bring the camera onto the realm's day-3 site),
-`--steps lab-day-later-quiet` (day 2 not played: no summary, and the day's end still brings the camera onto the day-3
+(slow: history answers only after the moment went on, and the summary opens then; short: a page of stories late in day 2
+leaves its start unread, and the card shows dashes and says why), and Continue must bring the camera onto the realm's
+day-3 site), `--steps lab-day-later-quiet` and `--steps lab-day-later-played-on` (day 2 not played, or the player
+already played on in day 3 on another device: no summary, and the day's end still brings the camera onto the day-3
 site), `--steps lab-day-turn-asleep` (the owner's phone, at `--viewport 390x844`: a minute before day 2 ends the tab's
 window is minimized and the page frozen, its WebGL context lost and Herald's stream silent with its socket open, then
 brought back past the end; on WebGL the page must boot again and the map draw, its middle band no more than half black

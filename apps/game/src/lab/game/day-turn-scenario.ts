@@ -21,10 +21,11 @@ const GRASS = BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePack
 /** In the game as the day ends; asleep through it, the tab in the background (the playtest puts it there); or later. */
 type Arrival = "live" | "asleep" | "later";
 /**
- * How the player's history answers: at once; only after the moment went on without it; capped short of day 2; or with
- * nothing, the player having not played day 2.
+ * How the player's history answers: at once; only after the moment went on without it; capped short of day 2; with
+ * nothing, the player having not played day 2; or with the player's day-3 play too, on another device before this one
+ * opened. All but the last hold history as it stood before the player played on in day 3.
  */
-type HistoryAnswer = "at-once" | "late" | "capped" | "unplayed";
+type HistoryAnswer = "at-once" | "late" | "capped" | "unplayed" | "played-on";
 /** A late history answers this long after the day's end: past the mist and the summary's longest wait. */
 const LATE_ANSWER_SECONDS = 25;
 /** Herald's largest page: this many newer stories of the player's own leave day 2 outside the read. */
@@ -35,8 +36,9 @@ const HISTORY_PAGE = 500;
  * spire's game: the player's history is prod's (rollover/recorded-day-history.ts), each event at the same share of the
  * same day on the lab's calendar and the recorded player's events the lab player's. The map opens where the realm stood
  * on day 2, as a route kept from that day does; the land round its day-2 and day-3 sites is revealed. day-turn-slow's
- * Herald answers history only after the moment went on; day-later-short's player has played a page of stories since;
- * day-later-quiet's player did not play day 2. day-turn-asleep opens a minute before the end, for a phone's tab to sleep
+ * Herald answers history only after the moment went on; day-later-short's player played a page of stories late in day
+ * 2; day-later-quiet's player did not play day 2; day-later-played-on's player played on in day 3, as on prod, on
+ * another device before opening this one (owner, 2026-10-25: the recap shows "until you act"). day-turn-asleep opens a minute before the end, for a phone's tab to sleep
  * through it (owner, 2026-10-25: "eventually I go back to mobile and it doesnt reload the map I get a black screen").
  */
 export const dayTurnScenario =
@@ -56,11 +58,13 @@ export const dayTurnScenario =
         ? next.start + Math.round((next.end - next.start) * SHARE_OF_THE_NEXT_DAY)
         : ended.end - (arrival === "asleep" ? SECONDS_BEFORE_THE_END_ASLEEP : SECONDS_BEFORE_THE_END);
     const recorded = recordedHistoryOn(rules, spire.player);
+    const beforePlayingOn = recorded.filter((event) => event.block_number < RECORDED_DAY.playedOn.block);
     const history = {
-      "at-once": recorded,
-      late: recorded,
-      capped: [...pageOfOwnStories(spire.player, startsAt), ...recorded],
+      "at-once": beforePlayingOn,
+      late: beforePlayingOn,
+      capped: [...pageOfOwnStories(spire.player, ended.end), ...beforePlayingOn],
       unplayed: [],
+      "played-on": recorded,
     }[answer];
     return {
       ...spire,
@@ -77,7 +81,7 @@ export const dayTurnScenario =
     };
   };
 
-/** A page of the player's own stories from just before the game opened, newer on the chain than any recorded one. */
+/** A page of the player's own stories from a minute before `before`, newer on the chain than any recorded one. */
 const pageOfOwnStories = (player: string, before: number): HeraldHistoryEvent[] =>
   Array.from({ length: HISTORY_PAGE }, (_, index) => {
     const hash = `0x1ab${(HISTORY_PAGE - index).toString(16)}`;

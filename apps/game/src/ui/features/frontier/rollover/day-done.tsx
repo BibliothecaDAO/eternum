@@ -27,7 +27,9 @@ const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "ArmyProgress", "Resourc
  * its armies took and what Homecoming returns at the next deploy. It waits for the player's history to answer (the
  * moment's summary phase waits with it, for a while), and says when that history cannot give the day. A day the player
  * did not play (no army ended with it, nothing revealed or cleared) has none, and a visit to another realm shows none;
- * the moment then passes without it. In the game as the day ends, ExpeditionRollover begins the moment; opening the
+ * the moment then passes without it. Nor does a device show it once the player has played on in the new day, on this
+ * device or another (owner, 2026-10-25: the recap shows "until you act"): their own history says so on every device, so
+ * no device keeps a "seen" for the account. In the game as the day ends, ExpeditionRollover begins the moment; opening the
  * game after it ended (owner, 2026-10-25: "it doesnt automatically move me to the new day area"), or once history
  * answers after the moment went on without the summary, this does.
  */
@@ -55,7 +57,7 @@ export const DayDone = ({
   const unseen = !visiting && player !== null && ended !== null && (seen === null || seen < ended.day);
 
   const summary = (() => {
-    if (!unseen || !ended || played.history === "waiting") return null;
+    if (!unseen || !ended || played.history === "waiting" || played.playedOn) return null;
     const { totals } = played;
     const gone = endedHomeArmies(setup.store, realm, rules, now);
     if (gone.length === 0 && totals.reveals === 0 && totals.cleared === 0) return null;
