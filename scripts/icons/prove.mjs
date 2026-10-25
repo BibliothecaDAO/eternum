@@ -441,84 +441,92 @@ export async function proveResourceIcons(b, out, records, baseUrl) {
   }
 }
 
-export async function proveBeastIcons(b, out, records, baseUrl) {
+function beastDeliveries() {
+  return Object.fromEntries(
+    ["beast-cyclops", "beast-wraith", "beast-troll", "camp"].flatMap((id) =>
+      [64, 128, 256].map((size) => {
+        const path = `/icons/facets/${size}/${id}.webp`;
+        return [
+          path,
+          createHash("sha256")
+            .update(readFileSync(new URL(`../../apps/game/public${path}`, import.meta.url)))
+            .digest("hex"),
+        ];
+      }),
+    ),
+  );
+}
+
+export async function proveBeastIcons(b, out, records, baseUrl, selected = beastDeliveries()) {
   mkdirSync(out, { recursive: true });
   for (const [layout, width, height] of [
     ["desktop", 1440, 1100],
     ["phone", 390, 844],
   ]) {
-    const record = { name: `${layout}-beast-icons`, ready: false, presses: [], checks: [], states: [] };
+    const record = { name: `${layout}-beast-icons`, ready: false, presses: [], checks: [] };
     records.push(record);
     await b.run("set", "viewport", String(width), String(height));
-    await b.run("open", `${baseUrl}/lab/kit/beast-icons`, "--ignore-https-errors");
-    await b.run("wait", "[data-beast-study]");
+    await b.run("open", `${baseUrl}/lab/kit/shell`, "--ignore-https-errors");
+    await b.run("wait", 'a[href="/lab/kit/beast-icons"]');
+    await b.run("click", 'a[href="/lab/kit/beast-icons"]');
+    await b.run("wait", '[data-beast-study="selected"]');
     record.ready = true;
-    for (const kind of ["cyclops", "wraith", "troll"]) {
-      await b.run("click", `[data-beast-kind="${kind}"]`);
-      await b.run("wait", `[data-beast-study="${kind}"]`);
-      const state = await b.evaluate(`(async () => {
-        const kind = ${JSON.stringify(kind)};
-        const columns = await Promise.all([...document.querySelectorAll('[data-beast-option]')].map(async column => {
-          const id = column.dataset.beastOption;
-          const images = await Promise.all([...column.querySelectorAll('img')].map(async element => {
-            const content = getComputedStyle(element).content;
-            const replacement = content.startsWith('url(') ? content.slice(5, -2) : null;
-            const url = replacement || element.src;
-            const path = new URL(url).pathname;
-            const pixels = Number(element.getAttribute('src').split('/')[3]);
-            const expected = id !== 'current' && element.dataset.icon === 'beast-' + kind
-              ? '/lab/beast-icons/' + pixels + '/' + id + '.webp' : element.getAttribute('src');
-            const image = new Image();
-            image.src = url;
-            let loaded = false;
-            try { await image.decode(); loaded = image.naturalWidth > 0; } catch {}
-            return { meaning: element.dataset.icon, path, expected, loaded, width: element.getBoundingClientRect().width };
-          }));
-          const card = column.querySelector('[data-kit-sheet]');
-          const bounds = column.getBoundingClientRect(), cardBounds = card?.getBoundingClientRect();
-          return { id, text: column.textContent, images, cardName: card?.getAttribute('aria-label'),
-            cardFits: !!cardBounds && cardBounds.left >= bounds.left && cardBounds.right <= bounds.right + 1 &&
-              cardBounds.top > column.querySelector('h3').getBoundingClientRect().bottom && cardBounds.bottom <= bounds.bottom + 1 };
-        }));
-        return { kind: document.querySelector('[data-beast-study]').dataset.beastStudy,
-          selected: document.querySelector('[data-beast-kind][aria-pressed="true"]')?.dataset.beastKind,
-          overflow: document.documentElement.scrollWidth > innerWidth, columns };
-      })()`);
-      record.states.push(state);
-      record.presses.push({ kind, status: state.kind === kind && state.selected === kind ? "led" : "failed" });
-      record.checks.push({
-        check: `${kind}: today's art and two candidates render in both contexts`,
-        ok:
-          state.columns.length === 3 &&
-          ["current", `${kind}-a`, `${kind}-b`].every((id) => {
-            const column = state.columns.find((column) => column.id === id);
-            return (
-              column &&
-              column.text.includes("Clear reward") &&
-              column.text.includes("Map card") &&
-              column.cardName === kind[0].toUpperCase() + kind.slice(1) &&
-              column.cardFits &&
-              column.images.filter((image) => image.meaning === `beast-${kind}`).length >= 7 &&
-              column.images.every((image) => image.loaded && image.path === image.expected)
-            );
-          }),
-      });
-      record.checks.push({
-        check: `${kind}: all four small sizes fit without horizontal overflow`,
-        ok:
-          !state.overflow &&
-          state.columns.every((column) =>
-            [16, 24, 36, 64].every((size) =>
-              column.images.some((image) => image.meaning === `beast-${kind}` && image.width === size),
-            ),
-          ),
-      });
-      const fullHeight = await b.evaluate("Math.ceil(document.querySelector('[data-beast-study]').scrollHeight + 80)");
-      await b.run("set", "viewport", String(width), String(fullHeight));
-      await b.run("scrollintoview", "[data-beast-study] > header");
-      await b.run("screenshot", join(out, `${layout}-${kind}.png`));
-      await b.run("set", "viewport", String(width), String(height));
-    }
+    record.presses.push({ page: "Frontier guard icon review", status: "led" });
+    record.state = await b.evaluate(`(async()=>{
+      const selected=${JSON.stringify(selected)};
+      const images=await Promise.all([...document.querySelectorAll('[data-beast-study] img')].map(async image=>{
+        try {await image.decode();} catch {return {loaded:false};}
+        const url=image.getAttribute('src');
+        const meaning=image.dataset.icon;
+        const pixels=image.width>64?256:image.width>32?128:64;
+        const expected='/icons/facets/'+pixels+'/'+meaning+'.webp';
+        const digest=selected[url] ? [...new Uint8Array(await crypto.subtle.digest('SHA-256', await (await fetch(url)).arrayBuffer()))].map(byte=>byte.toString(16).padStart(2,'0')).join('') : null;
+        return {meaning,url,width:image.getBoundingClientRect().width,loaded:image.naturalWidth>0,selected:!selected[expected]||(url===expected&&selected[url]===digest)};
+      }));
+      return {images, overflow:document.documentElement.scrollWidth>innerWidth,
+        columns:[...document.querySelectorAll('[data-beast-option]')].map(column=>{
+          const kind=column.dataset.beastOption,card=column.querySelector('[data-kit-sheet]');
+          const a=column.getBoundingClientRect(),b=card.getBoundingClientRect();
+          return {kind, cardName:card.getAttribute('aria-label'), fits:b.left>=a.left&&b.right<=a.right+1&&b.bottom<=a.bottom+1,
+            meanings:[...column.querySelectorAll('img[data-icon^="beast-"]')].map(i=>i.dataset.icon)};
+        }), blitz:[...document.querySelectorAll('[data-blitz-camp] img')].map(i=>i.dataset.icon)};
+    })()`);
+    const state = record.state;
+    record.checks.push({
+      check: "All rendered paintings decode and selected production bytes match the checkout",
+      ok: state.images.length > 0 && state.images.every((i) => i.loaded && i.selected),
+    });
+    record.checks.push({
+      check: "All three Frontier cards and balance rows use their guard creature",
+      ok:
+        state.columns.length === 3 &&
+        ["cyclops", "wraith", "troll"].every((kind) => {
+          const col = state.columns.find((c) => c.kind === kind);
+          return (
+            col &&
+            col.cardName === kind[0].toUpperCase() + kind.slice(1) &&
+            col.fits &&
+            col.meanings.length >= 8 &&
+            col.meanings.every((m) => m === "beast-" + kind)
+          );
+        }),
+    });
+    record.checks.push({
+      check: "Blitz retains its camp painting",
+      ok: state.blitz.length === 2 && state.blitz.every((m) => m === "camp"),
+    });
+    record.checks.push({
+      check: "Small sizes fit without horizontal overflow",
+      ok:
+        !state.overflow &&
+        ["cyclops", "wraith", "troll"].every((kind) =>
+          [16, 24, 36, 64].every((size) => state.images.some((i) => i.meaning === "beast-" + kind && i.width === size)),
+        ),
+    });
+    const fullHeight = await b.evaluate("Math.ceil(document.querySelector('[data-beast-study]').scrollHeight+80)");
+    await b.run("set", "viewport", String(width), String(fullHeight));
+    await b.run("scrollintoview", "[data-beast-study] > header");
+    await b.run("screenshot", join(out, `${layout}-selected-beasts.png`));
   }
   await b.run("open", "about:blank");
 }

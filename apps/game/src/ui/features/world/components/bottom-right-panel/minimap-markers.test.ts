@@ -15,6 +15,18 @@ afterEach(() => {
 });
 
 describe("minimap icon meanings from game facts", () => {
+  it("uses the Troll in Frontier and the camp structure in Blitz", () => {
+    const { store } = campBeside();
+    const game = store.require("GameRegistry", { game_id: 1 });
+    for (const [preset, expected] of [
+      [5, "beast-troll"],
+      [2, "camp"],
+    ] as const) {
+      store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: preset } }]);
+      expect(minimapMarkersView.read(store, null).get(String(SITE))?.name).toBe(expected);
+    }
+  });
+
   it("changes the realm emblem with its native level while retaining ownership and the value badge", () => {
     const { store } = campBeside();
     const row = store.require("Structure", { game_id: 1, entity_id: 7 });

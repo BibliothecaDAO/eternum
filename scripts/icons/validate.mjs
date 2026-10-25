@@ -27,6 +27,12 @@ export function validateIcons({ icons, meanings, resources, verdicts }) {
       throw new Error(`${name} must use its approved reward tier, not the in-game crate.`);
   }
   if (meanings.chest?.art !== "chest") throw new Error("The in-game crate must keep its model render.");
+  for (const name of ["camp", ...Object.keys(meanings).filter((name) => name.startsWith("beast-"))]) {
+    if (meanings[name]?.art !== name)
+      throw new Error(
+        `${name} must use its own painting; resolve Frontier guards by creature and Blitz sites by kind.`,
+      );
+  }
   for (let id = 1; id <= 58; id++) {
     if (!meanings[resources[id]?.meaning]) throw new Error(`Missing resource meaning: ${id}`);
   }

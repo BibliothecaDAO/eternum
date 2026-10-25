@@ -1,3 +1,5 @@
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { StructureType } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPortrait, HudRarity } from "@/ui/design-system/kit/hud-elements";
@@ -18,9 +20,9 @@ import { FullIn } from "../full-in";
 import type { ArmyView, AttributeKey, AttributeView, ScoutKind } from "./army-detail";
 
 const KINDS: { key: ScoutKind; icon: IconMeaning }[] = [
-  { key: "camp", icon: "camp" },
-  { key: "rift", icon: "rift" },
-  { key: "beasts", icon: "beasts" },
+  { key: "camp", icon: structureMeaning(StructureType.Camp, "frontier") },
+  { key: "rift", icon: structureMeaning(StructureType.Rift, "frontier") },
+  { key: "beasts", icon: structureMeaning(StructureType.Beasts, "frontier") },
 ];
 
 /**
