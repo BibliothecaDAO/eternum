@@ -131,37 +131,50 @@ const main = () => {
         run("set", "viewport", String(width), String(height));
         run("open", `${values["base-url"]}${path}`, "--ignore-https-errors");
         run("wait", SETTLE_MS);
+        if (name === "frontier-merge") run("wait", '[role="dialog"][aria-label="Transfer troops"]');
         const drawn = JSON.parse(run("eval", `Boolean(document.querySelector('[data-lab="${mark}"]'))`));
         if (!drawn) missing.push(shot);
         run("screenshot", join(values.out, `${shot}.png`));
         if (name === "frontier-merge") {
-          run("find", "text", "Merge into Army 2", "click");
-          run("wait", 'button:has-text("Confirm merge into Army 2")');
+          run("find", "role", "button", "click", "--name", "Merge into Army 2", "--exact");
+          run("wait", "--text", "Confirm merge into Army 2");
+
           const confirmed = JSON.parse(
             run(
               "eval",
               `(() => {
             const sheet = document.querySelector('[role="dialog"]');
             const button = [...sheet.querySelectorAll('button')].find(b => b.textContent === 'Confirm merge into Army 2');
-            const box = button?.getBoundingClientRect();
-            return { text: sheet.textContent, reachable: !!box && box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight };
+            const visible = element => {
+              const box = element?.getBoundingClientRect();
+              return !!box && box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight;
+            };
+            return { text: sheet.textContent, reachable: visible(button), lossVisible: visible(sheet.querySelector('.ui-notice')) };
           })()`,
             ),
           );
+          writeFileSync(join(values.out, `${shot}-confirmation.json`), JSON.stringify(confirmed, null, 2));
           if (
             !confirmed.reachable ||
+            !confirmed.lossVisible ||
             !confirmed.text.includes("Army 2 survives") ||
             !confirmed.text.includes("Army 1 loses 200 progression value")
           ) {
             throw new Error(`${shot}: the chosen target and exact loss must be visible with a reachable confirmation`);
           }
           run("screenshot", join(values.out, `${shot}-confirm.png`));
-          run("find", "text", "Even", "click");
+          run(
+            "eval",
+            "[...document.querySelectorAll('button')].find(b => b.textContent === 'Even').scrollIntoView({block: 'center'})",
+          );
+          run("find", "role", "button", "click", "--name", "Even", "--exact");
+          run("wait", "--text", "Move 50 to Army 2");
           const partial = JSON.parse(run("eval", "document.querySelector('[role=dialog]').textContent"));
           if (partial.includes("Confirm merge") || !partial.includes("Move 50 to Army 2")) {
             throw new Error(`${shot}: changing the split must clear confirmation`);
           }
-          run("find", "text", "All to Army 1", "click");
+          run("find", "role", "button", "click", "--name", "All to Army 1", "--exact");
+          run("wait", "--text", "Army 1 survives");
           const reversed = JSON.parse(run("eval", "document.querySelector('[role=dialog]').textContent"));
           if (!reversed.includes("Army 1 survives") || !reversed.includes("Merge into Army 1")) {
             throw new Error(`${shot}: both merge directions must remain available`);

@@ -12,7 +12,7 @@ import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
 import type { HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
-import { LabGame } from "./lab-game";
+import { LabGame, useLabPlayer } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
 import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
@@ -1435,6 +1435,7 @@ function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {
 
 /** The same transfer selection as the map, on two adjacent armies; this lab never sends a transaction. */
 const LabMerge = () => {
+  useLabPlayer();
   const [store] = useState(() => transferArmies(100, 0));
   useEffect(() => {
     useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: TRANSFER_TAPPED });

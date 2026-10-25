@@ -222,6 +222,9 @@ const TransferSplit = ({
 
   return (
     <div className="flex flex-col gap-3">
+      {confirmed && fullMerge && plan.confirmLoss && (
+        <HudNotice tone="warn" line={TRANSFER_TROOPS.confirmLoss(from.label, plan.sourceValue!, plan.targetValue!)} />
+      )}
       {!plan.known && <HudNotice tone="warn" line={TRANSFER_TROOPS.waiting} />}
       {survivor && loser && plan.known && (
         <div role="status" className="rounded-lg border border-hud-line bg-hud-well p-3 text-hud-body text-hud-ink">
@@ -259,9 +262,6 @@ const TransferSplit = ({
           </HudButton>
         ))}
       </div>
-      {confirmed && fullMerge && plan.confirmLoss && (
-        <HudNotice tone="warn" line={TRANSFER_TROOPS.confirmLoss(from.label, plan.sourceValue!, plan.targetValue!)} />
-      )}
       <HudWindowFoot
         note={
           loser && plan.known
