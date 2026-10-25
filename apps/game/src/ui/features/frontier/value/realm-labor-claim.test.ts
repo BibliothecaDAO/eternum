@@ -8,14 +8,16 @@ it("asks for the settled home's daily labor without an NFT inventory, account or
   const fetch = vi.fn(async () => Response.json({ day: 20000, grant: { amount: "1000" } }));
   vi.stubGlobal("fetch", fetch);
   await claimRealmLabor(HOME);
-  expect(fetch).toHaveBeenCalledExactlyOnceWith(
-    "/api/value/labor?chainId=0x52",
-    expect.objectContaining({
-      method: "POST",
-      credentials: "include",
-      body: JSON.stringify({ gameId: 3, home: "412" }),
-    }),
-  );
+  expect(fetch.mock.calls).toEqual([
+    [
+      "/api/value/labor?chainId=0x52",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({ gameId: 3, home: "412" }),
+      }),
+    ],
+  ]);
 });
 it.each([409, 502])("reports a refused or unavailable claim (%s)", async (status) => {
   vi.stubGlobal("fetch", async () => new Response("refused", { status }));
