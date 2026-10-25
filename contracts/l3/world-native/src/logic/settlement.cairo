@@ -280,9 +280,9 @@ pub mod SettlementState {
                     entitlement.metadata_1 == 0 && entitlement.metadata_2 == 0 && entitlement.metadata_3 == 0,
                     "held Realm uses catalogue",
                 );
-                let rules = crate::logic::preset_record::for_game(key.game_id).rules.read();
+                let rules = crate::logic::preset_record::for_game(key.game_id).rules;
                 assert!(
-                    rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0,
+                    rules.entry_rule.read() == crate::rules::ENTRY_OPEN && rules.day_unit_seconds.read() != 0,
                     "held Realm requires Frontier",
                 );
             }

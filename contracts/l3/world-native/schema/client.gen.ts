@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e";
+export const nativeFactSchemaIdentity = "725bf6ae7cd13331fbf55f825a6985485a9c3235831169a93d1ec17d7ce0d368";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "BATTLE_UNCOMMON_BPS": 1000,
@@ -184,8 +184,8 @@ export interface NativeRows {
   ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly fixed_xp: number; readonly uncommon_xp: number; readonly rare_xp: number; readonly epic_xp: number; readonly legendary_xp: number };
   FrontierDiscoveryRules: { readonly game_id: number; readonly beasts_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_found: boolean };
-  LaborRules: { readonly game_id: number; readonly amount: bigint; readonly account_daily_limit: number };
-  LaborGrant: { readonly realm_id: number; readonly day: bigint; readonly game_id: number; readonly account: bigint; readonly home: bigint; readonly amount: bigint };
+  LaborRules: { readonly game_id: number; readonly amount: bigint };
+  LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly account: bigint; readonly amount: bigint };
   ChestRules: { readonly game_id: number; readonly price_ceiling: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number };
   LordsBudget: { readonly game_id: number; readonly pool: bigint; readonly pool_left: bigint; readonly open: bigint; readonly day: bigint; readonly price: bigint; readonly rolled_shares: bigint; readonly yesterday_shares: bigint; readonly yesterday_ticks: bigint };
   SiteChest: { readonly game_id: number; readonly entity_id: bigint; readonly tier: number; readonly amount: bigint; readonly reservation_day: bigint };
@@ -220,6 +220,7 @@ export interface NativeRows {
   VillageRules: { readonly game_id: number; readonly troop_delay_ticks: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly resource_pool: readonly ({ readonly resource_type: number; readonly weight: bigint })[] };
   VillagePass: { readonly game_id: number; readonly pass_id: number; readonly owner: bigint; readonly village_id: bigint };
   VillagePool: { readonly game_id: number; readonly opened: number; readonly available: readonly ({ readonly coords: readonly ({ readonly alt: boolean; readonly x: number; readonly y: number })[] })[] };
+  SettledRealm: { readonly game_id: number; readonly realm_id: number; readonly home: bigint };
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint; readonly realm_id: bigint; readonly metadata_1: bigint; readonly metadata_2: bigint; readonly metadata_3: bigint; readonly pass_kind: number };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint; readonly player: bigint };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
@@ -277,7 +278,7 @@ export interface NativeKeys {
   FrontierDiscoveryRules: { readonly game_id: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint };
   LaborRules: { readonly game_id: number };
-  LaborGrant: { readonly realm_id: number; readonly day: bigint };
+  LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
   ChestRules: { readonly game_id: number };
   LordsBudget: { readonly game_id: number };
   SiteChest: { readonly game_id: number; readonly entity_id: bigint };
@@ -312,6 +313,7 @@ export interface NativeKeys {
   VillageRules: { readonly game_id: number };
   VillagePass: { readonly game_id: number; readonly pass_id: number };
   VillagePool: { readonly game_id: number };
+  SettledRealm: { readonly game_id: number; readonly realm_id: number };
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
@@ -579,22 +581,21 @@ export const nativeFactModels = {
     "scope": "game",
     "fields": {
       "game_id": "u32",
-      "amount": "u128",
-      "account_daily_limit": "u32"
+      "amount": "u128"
     }
   },
   "LaborGrant": {
     "keys": [
-      "realm_id",
+      "game_id",
+      "home",
       "day"
     ],
-    "scope": "deployment",
+    "scope": "game",
     "fields": {
-      "realm_id": "u32",
-      "day": "u64",
       "game_id": "u32",
-      "account": "felt",
       "home": "u64",
+      "day": "u64",
+      "account": "felt",
       "amount": "u128"
     }
   },
@@ -1189,6 +1190,18 @@ export const nativeFactModels = {
           ]
         }
       ]
+    }
+  },
+  "SettledRealm": {
+    "keys": [
+      "game_id",
+      "realm_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "realm_id": "u32",
+      "home": "u64"
     }
   },
   "EntryEntitlement": {
@@ -2154,6 +2167,11 @@ export const nativeSyncScopes = {
   "RealmTraits": {
     "realmTraits": [
       "realm_id"
+    ]
+  },
+  "SettledRealm": {
+    "entities": [
+      "home"
     ]
   },
   "EntryEntitlement": {

@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e",
+  "schemaIdentity": "725bf6ae7cd13331fbf55f825a6985485a9c3235831169a93d1ec17d7ce0d368",
   "commandAbi": [
     {
       "type": "interface",
@@ -483,10 +483,6 @@
       "type": "struct",
       "name": "world_native::realms::SettleSeason",
       "members": [
-        {
-          "name": "name",
-          "type": "core::felt252"
-        },
         {
           "name": "selected_realm",
           "type": "core::option::Option::<core::integer::u32>"
@@ -1545,7 +1541,7 @@
     },
     {
       "name": "LaborGrant",
-      "scope": "deployment"
+      "scope": "game"
     },
     {
       "name": "ChestRules",
@@ -1681,6 +1677,10 @@
     },
     {
       "name": "VillagePool",
+      "scope": "game"
+    },
+    {
+      "name": "SettledRealm",
       "scope": "game"
     },
     {

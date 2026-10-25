@@ -1894,8 +1894,8 @@
         "name": "grant_labor",
         "inputs": [
           {
-            "name": "realms",
-            "type": "core::array::Array::<world_native::entry::LaborRealm>"
+            "name": "home",
+            "type": "world_native::entry::LaborHome"
           },
           {
             "name": "day",
@@ -1908,7 +1908,7 @@
         ],
         "outputs": [
           {
-            "type": "core::array::Array::<world_native::entry::LaborGrant>"
+            "type": "world_native::entry::LaborGrant"
           }
         ],
         "state_mutability": "external"
@@ -1918,8 +1918,8 @@
         "name": "labor_grant",
         "inputs": [
           {
-            "name": "realm",
-            "type": "world_native::entry::LaborRealm"
+            "name": "home",
+            "type": "world_native::entry::LaborHome"
           },
           {
             "name": "day",
@@ -1961,6 +1961,26 @@
         "outputs": [
           {
             "type": "core::option::Option::<world_native::settlement::EntryEntitlement>"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "settled_realm",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "realm_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u64"
           }
         ],
         "state_mutability": "view"
@@ -2898,26 +2918,25 @@
           "type": "core::integer::u128",
           "id": "0x616d6f756e74",
           "feltLength": 1
-        },
-        {
-          "name": "account_daily_limit",
-          "type": "core::integer::u32",
-          "id": "0x6163636f756e745f6461696c795f6c696d6974",
-          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 2,
+      "valueLength": 1,
       "derivedFrom": "preset"
     },
     {
       "name": "LaborGrant",
       "identity": "0x4c61626f724772616e74",
-      "scope": "deployment",
+      "scope": "game",
       "keys": [
         {
-          "name": "realm_id",
+          "name": "game_id",
           "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "home",
+          "type": "core::integer::u64",
           "feltLength": 1
         },
         {
@@ -2928,21 +2947,9 @@
       ],
       "members": [
         {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "id": "0x67616d655f6964",
-          "feltLength": 1
-        },
-        {
           "name": "account",
           "type": "core::starknet::contract_address::ContractAddress",
           "id": "0x6163636f756e74",
-          "feltLength": 1
-        },
-        {
-          "name": "home",
-          "type": "core::integer::u64",
-          "id": "0x686f6d65",
           "feltLength": 1
         },
         {
@@ -2952,8 +2959,8 @@
           "feltLength": 1
         }
       ],
-      "keyLength": 2,
-      "valueLength": 4
+      "keyLength": 3,
+      "valueLength": 2
     },
     {
       "name": "ChestRules",
@@ -4342,6 +4349,33 @@
           "availableLocations": "available"
         }
       }
+    },
+    {
+      "name": "SettledRealm",
+      "identity": "0x536574746c65645265616c6d",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "realm_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "home",
+          "type": "core::integer::u64",
+          "id": "0x686f6d65",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
     },
     {
       "name": "EntryEntitlement",
@@ -8694,16 +8728,12 @@
         }
       ]
     },
-    "world_native::entry::LaborRealm": {
+    "world_native::entry::LaborHome": {
       "type": "struct",
-      "name": "world_native::entry::LaborRealm",
+      "name": "world_native::entry::LaborHome",
       "members": [
         {
           "name": "game_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "realm_id",
           "type": "core::integer::u32"
         },
         {
@@ -8719,10 +8749,6 @@
         {
           "name": "amount",
           "type": "core::integer::u128"
-        },
-        {
-          "name": "account_daily_limit",
-          "type": "core::integer::u32"
         }
       ]
     },
@@ -10844,10 +10870,6 @@
       "type": "struct",
       "name": "world_native::realms::SettleSeason",
       "members": [
-        {
-          "name": "name",
-          "type": "core::felt252"
-        },
         {
           "name": "selected_realm",
           "type": "core::option::Option::<core::integer::u32>"
@@ -13125,5 +13147,5 @@
       ]
     }
   },
-  "identity": "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e"
+  "identity": "725bf6ae7cd13331fbf55f825a6985485a9c3235831169a93d1ec17d7ce0d368"
 }
