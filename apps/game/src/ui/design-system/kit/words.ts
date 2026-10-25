@@ -380,7 +380,6 @@ export const slotBarWhy = (fresh: boolean) => (fresh ? "Its slot is fresh today"
 export const DEPLOY = "Deploy";
 export const NO_TROOPS_AT_HOME = "No troops at home";
 export const DEPLOYING = "Deploying…";
-/** A free slot after the lowest: the game fills the lowest free slot first. */
 export const BUILD = "Build";
 
 /** Default army names: "Army" and its place. */
@@ -439,9 +438,6 @@ export const revealLine = (amount: string, resource: string) => `+${amount} ${re
 export const builtLine = (building: string) => `${building} built`;
 export const deployedLine = (army: string) => `${army} deployed`;
 export const disbandedLine = (army: string) => `${army} disbanded`;
-/** A day log line with the XP its story gave or spent: "+98 labor, +2 XP", "Battle Uncommon, −100 XP". */
-export const xpGainedLine = (line: string, amount: string) => `${line}, +${amount} ${XP}`;
-export const xpSpentLine = (line: string, amount: string) => `${line}, −${amount} ${XP}`;
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
 /** How deep a season went, on its total. */

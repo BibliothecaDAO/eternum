@@ -161,7 +161,7 @@ const useWellRefillShown = (army: DockArmy) => {
 
 /**
  * An open slot, with the bar it starts its army on; the first one carries the wait of the army being deployed once the
- * Deploy sheet has closed. A desktop's list shows one, the next to fill, as a row.
+ * Deploy sheet has closed. Each free slot remains available on desktop and phone.
  */
 const DeploySlot = ({
   realm,
@@ -175,7 +175,7 @@ const DeploySlot = ({
   pulse: boolean;
   wide?: boolean;
 }) => {
-  const deploying = useInFlight("deploy", safeInteger(realm.entity_id)) !== undefined;
+  const deploying = useInFlight("deploy", safeInteger(realm.entity_id));
   const words = slot && slotStartWords(slot);
   return (
     <OpenSlot
