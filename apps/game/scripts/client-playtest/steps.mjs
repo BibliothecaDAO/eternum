@@ -1151,6 +1151,99 @@ function armyEnteredEtherealII({ played }) {
 
 const SPIRE_WAIT_MS = 5_000;
 
+const labDayTurn = (scenario) => ({
+  mode: "frontier",
+  lab: scenario,
+  chainId: "0x1ab9",
+  gameId: 1,
+  card: FRONTIER.card,
+});
+
+/**
+ * Realm 7's day 2 ending on prod's recorded history (src/lab/game/day-turn-scenario.ts), in the session (day-turn,
+ * day-turn-slow) or before it opened (day-later, day-later-short), the map opened where the realm stood on day 2: the
+ * summary rises with what the player's history gives of day 2, and Continue brings the camera onto the realm's day-3
+ * site.
+ */
+const labDayTurnSteps = (expected) => [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "day-summary", play: readTheDaySummary, settleMs: 0, verify: summaryShows(expected) },
+  { name: "continue", play: continueIntoTheNewDay, settleMs: 0, verify: cameraOnTheNewSite },
+];
+
+/** Prod's leading player's own day 2: 35 reveals and 5 sites cleared, paying 7,246 Essence and 524 Labor. */
+const RECORDED_DAY_2 = {
+  totals: ["35Reveals", "5Sites cleared", "0Chests", "+7,246Essence", "+524Labor", "+0LORDS"],
+  notice: null,
+};
+/** Day 2 past the history read: each total a dash, and the card says why. */
+const DAY_2_OUT_OF_REACH = {
+  totals: ["—Reveals", "—Sites cleared", "—Chests", "—Essence", "—Labor", "—LORDS"],
+  notice: "Your history no longer reaches back to this day's start, so its totals are unknown.",
+};
+/** Realm 7's site on day 3 of the lab's calendar: its region's column, four regions a day down (contract hexes). */
+const LAB_DAY_3_SITE = { col: 650, row: 850 };
+/** The live turn waits for the day's last seconds and the mist, and a slow history for its answer after the moment. */
+const DAY_SUMMARY_WAIT_MS = 90_000;
+const NEW_DAY_WAIT_MS = 20_000;
+/** The camera's hex is reported at most every 100 ms. */
+const CAMERA_REPORT_MS = 1_000;
+const DAY_END_STATE = `JSON.stringify({
+  phase: document.querySelector("[data-day-end]")?.dataset.dayEnd ?? "day",
+  card: document.querySelector("section[aria-label$=' done']")?.getAttribute("aria-label") ?? null,
+  totals: [...document.querySelectorAll("section[aria-label$=' done'] [data-total]")].map((cell) => cell.textContent),
+  notice: document.querySelector("section[aria-label$=' done'] .ui-notice")?.textContent ?? null,
+  camera: window.__eternumMapSelection?.camera ?? null,
+})`;
+
+/** Waits for the ended day's summary over the map, and reads it and where the camera looks. */
+async function readTheDaySummary({ browser }) {
+  return readUntil(
+    () => browser.read(DAY_END_STATE),
+    (shown) => shown.card !== null,
+    DAY_SUMMARY_WAIT_MS,
+  );
+}
+
+function summaryShows(expected) {
+  return ({ played }) => {
+    if (played.card !== "Day 2 done") return failed(`the summary shown is ${played.card ?? "none"}`, played);
+    if (JSON.stringify(played.totals) !== JSON.stringify(expected.totals))
+      return failed(`the summary counts ${played.totals.join(", ")}`, played);
+    if (played.notice !== expected.notice)
+      return failed(
+        `the summary says ${JSON.stringify(played.notice)}, not ${JSON.stringify(expected.notice)}`,
+        played,
+      );
+    return completed(played);
+  };
+}
+
+/** Presses Continue, waits for the screen to come back up on the new day, and reads where the camera looks. */
+async function continueIntoTheNewDay({ browser }) {
+  const before = browser.read(DAY_END_STATE);
+  browser.click("Continue");
+  await readUntil(
+    () => browser.read(DAY_END_STATE),
+    (shown) => shown.phase === "day",
+    NEW_DAY_WAIT_MS,
+  );
+  await sleep(CAMERA_REPORT_MS);
+  return { before, after: browser.read(DAY_END_STATE) };
+}
+
+function cameraOnTheNewSite({ played }) {
+  const { before, after } = played;
+  if (after.phase !== "day") return failed(`the screen is still on the day's end (${after.phase})`, played);
+  const on = after.camera;
+  if (!on || Math.abs(on.col - LAB_DAY_3_SITE.col) > 1 || Math.abs(on.row - LAB_DAY_3_SITE.row) > 1)
+    return failed(
+      `the camera looks at ${JSON.stringify(on)}, not the realm's day-3 site ${JSON.stringify(LAB_DAY_3_SITE)}`,
+      played,
+    );
+  return completed({ before: before.camera, after: on, site: LAB_DAY_3_SITE });
+}
+
 /** Reads the page until what it shows is done, or the time is up; the last reading either way. */
 async function readUntil(read, done, timeoutMs) {
   const startedAt = Date.now();
@@ -1189,6 +1282,10 @@ export const STEP_SETS = {
     devOverlays: true,
   },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },
+  "lab-day-later": { game: labDayTurn("day-later"), steps: labDayTurnSteps(RECORDED_DAY_2) },
+  "lab-day-turn-slow": { game: labDayTurn("day-turn-slow"), steps: labDayTurnSteps(RECORDED_DAY_2) },
+  "lab-day-later-short": { game: labDayTurn("day-later-short"), steps: labDayTurnSteps(DAY_2_OUT_OF_REACH) },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },

@@ -235,10 +235,20 @@ const NIGHT: DayClock = {
   tone: "calm",
 };
 const LAST_HOUR: DayClock = { ...CLOCK, secondsLeft: 42 * 60, shareLeft: 42 / 960, tone: "ember" };
+const UNKNOWN_TOTALS = {
+  reveals: undefined,
+  cleared: undefined,
+  chests: undefined,
+  essence: undefined,
+  labor: undefined,
+  lords: undefined,
+};
 const DAY_DONE = {
   endedDay: 12,
   clock: { ...NIGHT, secondsLeft: 7 * HOUR + 55 * 60 },
   totals: { reveals: 31, cleared: 3, chests: 1, essence: 6_400, labor: 1_150, lords: 128 },
+  history: "whole" as const,
+  onRetry: () => undefined,
   rank: { from: 14, to: 12 },
   armies: 3,
   troopsLost: 6_021,
@@ -643,6 +653,13 @@ const STATES = {
     stores: STORES,
     armies: [],
     dayDone: { ...DAY_DONE, returned: { sent: 470, fitted: 200 } },
+  },
+  // The player's history no longer reaches back to the ended day's start: dashes, and why.
+  "day-done-short": {
+    clock: NIGHT,
+    stores: STORES,
+    armies: [],
+    dayDone: { ...DAY_DONE, totals: UNKNOWN_TOTALS, history: "short" as const },
   },
   night: {
     clock: NIGHT,
@@ -1367,7 +1384,7 @@ const LabResults = ({
       totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}
       armiesToUpgrade={2}
       lines={readTodayLog()}
-      failed={results === "today-failed"}
+      history={results === "today-failed" ? "failed" : "whole"}
       onRetry={noop}
       onEarlier={noop}
       onLater={results === "today-earlier" ? noop : undefined}
@@ -1421,7 +1438,7 @@ const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
 /** The day's summary where the game draws it: over the map at the day's end, in its summary phase. */
 function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {
   useEffect(() => {
-    useDayEndStore.setState({ phase: "summary", arrival: "live", summaryShown: true });
+    useDayEndStore.setState({ phase: "summary", arrival: "live", summary: "shown" });
     return () => useDayEndStore.setState(RESTING);
   }, []);
   return <DayEndScreen summary={<DayDoneCard {...card} />} />;

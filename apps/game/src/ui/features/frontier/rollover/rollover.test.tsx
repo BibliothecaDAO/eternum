@@ -36,6 +36,8 @@ describe("the day's end", () => {
           endedDay={12}
           clock={{ endsAt: undefined, secondsLeft: 7 * 3_600 + 55 * 60, tomorrowSeconds: 20 * 3_600, tone: "calm" }}
           totals={{ reveals: 31, cleared: 3, chests: 1, essence: 6_400, labor: 1_150, lords: undefined }}
+          history="whole"
+          onRetry={vi.fn()}
           armies={3}
           troopsLost={6_021}
           returned={{ sent: 470, fitted: 200 }}
@@ -71,7 +73,7 @@ describe("the day's end", () => {
     const root = createRoot(host);
     const show = (phase: DayEndPhase) =>
       act(() => {
-        useDayEndStore.setState({ ...RESTING, phase, summaryShown: true });
+        useDayEndStore.setState({ ...RESTING, phase, summary: "shown" });
         root.render(<DayEndScreen summary={<p>the summary</p>} />);
       });
     const black = () => host.querySelector<HTMLElement>("[data-day-end] > div:last-child")!.style.opacity;
