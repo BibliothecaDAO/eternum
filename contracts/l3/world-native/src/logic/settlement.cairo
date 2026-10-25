@@ -248,7 +248,7 @@ pub mod SettlementPoolState {
 #[starknet::component]
 pub mod SettlementState {
     use core::num::traits::Zero;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use crate::events::RowSet;
     use crate::settlement::{EntryEntitlement, EntryKey, PlayerEntry, SettlementProgress};
 
@@ -273,6 +273,19 @@ pub mod SettlementState {
                 assert!(previous == entitlement, "conflicting entry entitlement");
                 return;
             }
+            assert!(self.data.settlements.entries.read((key.game_id, key.owner)).is_none(), "owner already settled");
+            if entitlement.pass_kind == 2 {
+                assert!(entitlement.realm_id > 0 && entitlement.realm_id <= 8000, "invalid canonical realm");
+                assert!(
+                    entitlement.metadata_1 == 0 && entitlement.metadata_2 == 0 && entitlement.metadata_3 == 0,
+                    "held Realm uses catalogue",
+                );
+                let rules = crate::logic::preset_record::for_game(key.game_id).rules.read();
+                assert!(
+                    rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0,
+                    "held Realm requires Frontier",
+                );
+            }
             self.data.settlements.entitlements.write((key.game_id, key.owner), Some(entitlement));
             let mut values = array![];
             entitlement.serialize(ref values);
@@ -283,6 +296,19 @@ pub mod SettlementState {
                         model: 'EntryEntitlement',
                         keys: array![key.game_id.into(), key.owner.into()].span(),
                         values: values.span(),
+                    },
+                );
+        }
+        fn claim_held_realm(ref self: ComponentState<TContractState>, game_id: u32, realm_id: u32, home: u64) {
+            assert!(self.data.settlements.held_realm_homes.read((game_id, realm_id)) == 0, "Realm already settled");
+            self.data.settlements.held_realm_homes.write((game_id, realm_id), home);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'SettledRealm',
+                        keys: array![game_id.into(), realm_id.into()].span(),
+                        values: array![home.into()].span(),
                     },
                 );
         }

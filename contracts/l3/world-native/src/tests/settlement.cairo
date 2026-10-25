@@ -340,7 +340,7 @@ fn a_missing_ledger_operator_never_bypasses_eternum_entitlements() {
         crate::realms::ISeasonRealmsDispatcher { contract_address: d.games },
         3,
         d.actor,
-        crate::realms::SettleSeason { name: 'Player', selected_realm: None },
+        crate::realms::SettleSeason { selected_realm: None },
         crate::commands::action_context(context(d.games, 3)),
     );
 }

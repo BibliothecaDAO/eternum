@@ -531,10 +531,7 @@ async function settleFrontierPlayer(
     provider,
     stage: timing.stage,
     scheduledAtMs: timing.scheduledAtMs,
-    send: () =>
-      own.submit(identity.account, () =>
-        own.settle(identity.account, identity.owner, `Frontier${identity.botId}`, "frontier"),
-      ),
+    send: () => own.submit(identity.account, () => own.settle(identity.account)),
   });
   if (transaction.outcome !== "completed") return { transaction };
   const realmId = await own.waitFor(

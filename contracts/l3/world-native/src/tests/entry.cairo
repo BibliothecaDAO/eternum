@@ -1,6 +1,6 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ContractAddress;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerWriteAccess};
 use crate::entry::{
     ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait, ILedgerOperatorSafeDispatcher,
     ILedgerOperatorSafeDispatcherTrait,
@@ -8,7 +8,6 @@ use crate::entry::{
 use crate::settlement::{
     EntryEntitlement, EntryKey, ISettlementEntrySafeDispatcher, ISettlementEntrySafeDispatcherTrait,
 };
-use crate::tests::state::{GameState, TroopObservationTrait};
 use crate::village::{IVillagesSafeDispatcher, IVillagesSafeDispatcherTrait, VillagePassKey};
 use super::{Deployment, authority, setup};
 
@@ -116,158 +115,128 @@ fn village_passes_share_operator_rotation_without_sharing_realm_entitlements() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn labor_uses_the_held_realm_day_key_and_retry_cannot_transfer_the_claim() {
-    let (d, game_id, army) = super::registrar::setup_frontier_chests();
-    let home = GameState { contract_address: d.games }.resolved_explorer(army).unwrap().owner;
-    let realm = crate::entry::LaborRealm { game_id, realm_id: 711, home };
+fn held_realm_settlement_uses_catalogue_traits_and_cannot_be_repeated() {
+    let (d, game_id) = super::registrar::setup_open_frontier();
+    let key = EntryKey { game_id, owner: d.actor };
+    let held = EntryEntitlement { realm_id: 711, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: 2 };
+    set_operator(d, authority());
+    start_cheat_caller_address(d.games, authority());
+    ledger(d).register_entitlement(key, held).unwrap();
+    let mut spy = spy_events();
+    ledger(d).register_entitlement(key, held).unwrap();
+    assert_eq!(spy.get_events().emitted_by(d.games).events.len(), 0);
+    let command = crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None });
+    assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
+    let home = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
+    assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), home);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let record = crate::logic::structures::record(crate::resources::ResourceKey { game_id, entity_id: home });
+            assert_eq!(record.metadata.realm_id, 711);
+            assert_eq!(record.metadata.order, 1);
+            assert_eq!(record.owner, d.actor);
+        },
+    );
+    assert!(!super::resource_commands::execute_in_game(d, game_id, command, 360));
+    let other = super::bind_authority(d);
+    start_cheat_caller_address(d.games, authority());
+    ledger(d).register_entitlement(EntryKey { game_id, owner: other.actor }, held).unwrap();
+    assert!(!super::resource_commands::execute_in_game(other, game_id, command, 360));
+    assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), home);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_free_settlement_cannot_become_a_held_realm_after_entry() {
+    let (d, game_id) = super::registrar::setup_open_frontier();
+    let command = crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None });
+    assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
+    set_operator(d, authority());
+    start_cheat_caller_address(d.games, authority());
+    assert!(
+        ledger(d)
+            .register_entitlement(
+                EntryKey { game_id, owner: d.actor },
+                EntryEntitlement { realm_id: 711, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: 2 },
+            )
+            .is_err(),
+    );
+    assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), 0);
+}
+
+fn settle_labor_home(held: bool) -> (Deployment, crate::entry::LaborHome) {
+    let (d, game_id) = super::registrar::setup_open_frontier();
+    set_operator(d, authority());
+    if held {
+        start_cheat_caller_address(d.games, authority());
+        ledger(d)
+            .register_entitlement(
+                EntryKey { game_id, owner: d.actor },
+                EntryEntitlement { realm_id: 711, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: 2 },
+            )
+            .unwrap();
+    }
+    assert!(
+        super::resource_commands::execute_in_game(
+            d,
+            game_id,
+            crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None }),
+            360,
+        ),
+    );
+    let home = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
+    snforge_std::start_cheat_block_timestamp(d.games, 362);
+    start_cheat_caller_address(d.games, authority());
+    (d, crate::entry::LaborHome { game_id, home })
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_held_settlement_receives_one_thousand_labor_per_day_and_retries_are_exact() {
+    let (d, home) = settle_labor_home(true);
     let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    assert!(operator.grant_labor(home, 1, d.actor).is_err());
+    assert!(operator.grant_labor(home, 0, authority()).is_err());
+    let grant = operator.grant_labor(home, 0, d.actor).unwrap();
+    assert_eq!(grant.amount, 1000 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(grant.home, home.home);
+    let mut spy = spy_events();
+    assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), grant);
+    assert_eq!(spy.get_events().emitted_by(d.games).events.len(), 0);
+    assert_eq!(operator.labor_grant(home, 0).unwrap(), Some(grant));
+    assert!(operator.grant_labor(home, 0, authority()).is_err());
+    snforge_std::start_cheat_block_timestamp(d.games, 86400);
+    assert_eq!(operator.grant_labor(home, 1, d.actor).unwrap().amount, 1000 * crate::rules::RESOURCE_PRECISION);
+    set_operator(d, 0.try_into().unwrap());
+    assert!(operator.grant_labor(home, 1, d.actor).is_err());
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_free_settlement_has_no_daily_labor_claim() {
+    let (d, home) = settle_labor_home(false);
+    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    assert!(operator.grant_labor(home, 0, d.actor).is_err());
+    assert_eq!(operator.labor_grant(home, 0).unwrap(), None);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_full_store_consumes_only_that_homes_daily_claim() {
+    let (d, home) = settle_labor_home(true);
     snforge_std::interact_with_state(
         d.games,
         || {
             crate::state::write()
                 .resources
                 .weights
-                .write(
-                    (game_id, home), crate::resources::Weight { capacity: core::num::traits::Bounded::MAX, weight: 0 },
-                );
+                .write((home.game_id, home.home), crate::resources::Weight { capacity: 0, weight: 0 });
         },
     );
-    snforge_std::start_cheat_block_timestamp(d.games, 362);
-    assert!(operator.grant_labor(array![realm], 0, d.actor).is_err());
-    set_operator(d, authority());
-    start_cheat_caller_address(d.games, authority());
-    assert!(operator.grant_labor(array![realm], 1, d.actor).is_err());
-    assert!(operator.grant_labor(array![crate::entry::LaborRealm { realm_id: 0, ..realm }], 0, d.actor).is_err());
-    let grant = *operator.grant_labor(array![realm], 0, d.actor).unwrap().at(0);
-    assert_eq!(grant.amount, 1000 * crate::rules::RESOURCE_PRECISION);
-    let mut spy = spy_events();
-    assert_eq!(*operator.grant_labor(array![realm], 0, d.actor).unwrap().at(0), grant);
-    assert_eq!(spy.get_events().emitted_by(d.games).events.len(), 0);
-    assert!(operator.grant_labor(array![realm], 0, 444.try_into().unwrap()).is_err());
-    assert_eq!(operator.labor_grant(realm, 0).unwrap(), Some(grant));
-    // Unlimited by default, so the same account may claim another held Realm.
-    assert!(operator.grant_labor(array![crate::entry::LaborRealm { realm_id: 712, ..realm }], 0, d.actor).is_ok());
-    set_operator(d, 0.try_into().unwrap());
-    assert!(operator.grant_labor(array![crate::entry::LaborRealm { realm_id: 713, ..realm }], 0, d.actor).is_err());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn a_full_labor_store_consumes_the_claim_and_the_preset_can_limit_held_realms() {
-    let (d, game_id, army) = super::registrar::setup_frontier_chests();
-    let home = GameState { contract_address: d.games }.resolved_explorer(army).unwrap().owner;
-    let realm = crate::entry::LaborRealm { game_id, realm_id: 711, home };
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            let preset = crate::state::write()
-                .presets
-                .entry(crate::logic::game::preset_commitment(crate::logic::game::game(game_id)));
-            preset.labor_rules.write(Some(crate::entry::LaborRules { amount: 1000, account_daily_limit: 1 }));
-            let state = crate::state::write();
-            state.resources.weights.write((game_id, home), crate::resources::Weight { capacity: 0, weight: 0 });
-        },
-    );
-    snforge_std::start_cheat_block_timestamp(d.games, 362);
-    set_operator(d, authority());
-    start_cheat_caller_address(d.games, authority());
     let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
-    let grant = *operator.grant_labor(array![realm], 0, d.actor).unwrap().at(0);
+    let grant = operator.grant_labor(home, 0, d.actor).unwrap();
     assert_eq!(grant.amount, 0);
-    assert_eq!(*operator.grant_labor(array![realm], 0, d.actor).unwrap().at(0), grant);
-    assert!(operator.grant_labor(array![crate::entry::LaborRealm { realm_id: 712, ..realm }], 0, d.actor).is_err());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn a_realm_cannot_receive_daily_labor_in_two_games_on_one_shard() {
-    let (d, game_id, army) = super::registrar::setup_frontier_chests();
-    let home = GameState { contract_address: d.games }.resolved_explorer(army).unwrap().owner;
-    let realm = crate::entry::LaborRealm { game_id, realm_id: 711, home };
-    set_operator(d, authority());
-    start_cheat_caller_address(d.games, authority());
-    snforge_std::start_cheat_block_timestamp(d.games, 362);
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
-    let first = *operator.grant_labor(array![realm], 0, d.actor).unwrap().at(0);
-    let other = crate::entry::LaborRealm { game_id: game_id + 1, ..realm };
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            let state = crate::state::write();
-            state
-                .games
-                .games
-                .write(other.game_id, crate::game::GameRegistry { name: 'other', ..state.games.games.read(game_id) });
-            state.games.overrides.write(other.game_id, state.games.overrides.read(game_id));
-            state.game_releases.write(other.game_id, state.game_releases.read(game_id));
-            let record = crate::logic::structures::record(crate::resources::ResourceKey { game_id, entity_id: home });
-            crate::logic::structures::StructureState::create(
-                crate::resources::ResourceKey { game_id: other.game_id, entity_id: home }, record,
-            );
-            state.resources.resource_exists.write((other.game_id, home), true);
-            state
-                .resources
-                .weights
-                .write(
-                    (other.game_id, home),
-                    crate::resources::Weight { capacity: core::num::traits::Bounded::MAX, weight: 0 },
-                );
-        },
-    );
-    assert_eq!(operator.labor_grant(other, 0).unwrap(), Some(first));
-    assert!(operator.grant_labor(array![other], 0, d.actor).is_err());
-    assert!(operator.grant_labor(array![other], 0, authority()).is_err());
-    assert_eq!(*operator.grant_labor(array![realm], 0, d.actor).unwrap().at(0), first);
-    assert_eq!(crate::entry::labor_day(86399), 0);
-    assert_eq!(crate::entry::labor_day(86400), 1);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn one_labor_call_grants_five_realms_and_retries_without_spending_the_limit_again() {
-    let (d, game_id, army) = super::registrar::setup_frontier_chests();
-    let home = GameState { contract_address: d.games }.resolved_explorer(army).unwrap().owner;
-    let realm = crate::entry::LaborRealm { game_id, realm_id: 711, home };
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            let state = crate::state::write();
-            state
-                .presets
-                .entry(crate::logic::game::preset_commitment(crate::logic::game::game(game_id)))
-                .labor_rules
-                .write(Some(crate::entry::LaborRules { amount: 1000, account_daily_limit: 5 }));
-            state
-                .resources
-                .weights
-                .write(
-                    (game_id, home), crate::resources::Weight { capacity: core::num::traits::Bounded::MAX, weight: 0 },
-                );
-        },
-    );
-    snforge_std::start_cheat_block_timestamp(d.games, 362);
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
-    assert!(operator.grant_labor(array![], 0, d.actor).is_err());
-    set_operator(d, authority());
-    start_cheat_caller_address(d.games, authority());
-    let realms = array![
-        realm, realm, crate::entry::LaborRealm { realm_id: 712, ..realm },
-        crate::entry::LaborRealm { realm_id: 713, ..realm }, crate::entry::LaborRealm { realm_id: 714, ..realm },
-        crate::entry::LaborRealm { realm_id: 715, ..realm },
-    ];
-    let grants = operator.grant_labor(realms.clone(), 0, d.actor).unwrap();
-    assert_eq!(grants.len(), 6);
-    for grant in grants.span() {
-        assert_eq!(*grant.account, d.actor);
-        assert_eq!(*grant.amount, 1000 * crate::rules::RESOURCE_PRECISION);
-        assert_eq!(*grant.home, home);
-    }
-    for held in realms.span() {
-        assert_eq!(operator.labor_grant(*held, 0).unwrap(), Some(*grants.at(0)));
-    }
-    let mut spy = spy_events();
-    assert_eq!(operator.grant_labor(realms, 0, d.actor).unwrap(), grants);
-    assert_eq!(spy.get_events().emitted_by(d.games).events.len(), 0);
-    assert!(operator.grant_labor(array![crate::entry::LaborRealm { realm_id: 716, ..realm }], 0, d.actor).is_err());
-    assert!(operator.grant_labor(array![], 0, d.actor).unwrap().is_empty());
+    assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), grant);
+    assert_eq!(operator.labor_grant(crate::entry::LaborHome { game_id: home.game_id + 1, ..home }, 0).unwrap(), None);
 }

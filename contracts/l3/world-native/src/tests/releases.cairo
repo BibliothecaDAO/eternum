@@ -146,9 +146,7 @@ fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
         super::resource_commands::execute_in_game(
             other,
             game_id,
-            crate::commands::Command::SettleSeason(
-                crate::realms::SettleSeason { name: 'second', selected_realm: Some(2) },
-            ),
+            crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(2) }),
             351,
         ),
     );

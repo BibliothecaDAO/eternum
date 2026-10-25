@@ -90,21 +90,21 @@ pub mod Games {
             );
         }
         fn grant_labor(
-            ref self: ContractState, realms: Array<crate::entry::LaborRealm>, day: u64, account: ContractAddress,
-        ) -> Array<crate::entry::LaborGrant> {
+            ref self: ContractState, home: crate::entry::LaborHome, day: u64, account: ContractAddress,
+        ) -> crate::entry::LaborGrant {
             crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().placement },
-                realms,
+                home,
                 day,
                 account,
             )
         }
         fn labor_grant(
-            self: @ContractState, realm: crate::entry::LaborRealm, day: u64,
+            self: @ContractState, home: crate::entry::LaborHome, day: u64,
         ) -> Option<crate::entry::LaborGrant> {
             crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().placement },
-                realm,
+                home,
                 day,
             )
         }
@@ -162,6 +162,9 @@ pub mod Games {
                 key,
                 entitlement,
             );
+        }
+        fn settled_realm(self: @ContractState, game_id: u32, realm_id: u32) -> u64 {
+            crate::state::read().settlements.held_realm_homes.read((game_id, realm_id))
         }
         fn entry_entitlement(
             self: @ContractState, key: crate::settlement::EntryKey,

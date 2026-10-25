@@ -11,7 +11,7 @@ pub mod EntryAdministration {
     use starknet::storage::{
         StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use crate::entry::{LaborGrant, LaborRealm};
+    use crate::entry::{LaborGrant, LaborHome};
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternal;
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
@@ -41,9 +41,9 @@ pub mod EntryAdministration {
             get_dep_component!(@self, Life).assert_authority();
             self.data.entry.operator.write(operator);
         }
-        fn labor_grant(self: @ComponentState<TContractState>, realm: LaborRealm, day: u64) -> Option<LaborGrant> {
-            match self.data.entry.labor_grants.read((realm.realm_id, day)) {
-                Some((game_id, account, home, amount)) => Some(LaborGrant { game_id, account, home, amount }),
+        fn labor_grant(self: @ComponentState<TContractState>, home: LaborHome, day: u64) -> Option<LaborGrant> {
+            match self.data.entry.home_labor_grants.read((home.game_id, home.home, day)) {
+                Some((account, amount)) => Some(LaborGrant { game_id: home.game_id, account, home: home.home, amount }),
                 None => None,
             }
         }
@@ -52,14 +52,10 @@ pub mod EntryAdministration {
             crate::logic::lords_budget::publish_pool(game_id, amount);
         }
         fn grant_labor(
-            ref self: ComponentState<TContractState>, realms: Array<LaborRealm>, day: u64, account: ContractAddress,
-        ) -> Array<LaborGrant> {
+            ref self: ComponentState<TContractState>, home: LaborHome, day: u64, account: ContractAddress,
+        ) -> LaborGrant {
             super::assert_ledger_operator();
-            let mut grants = array![];
-            for realm in realms {
-                grants.append(self.grant_realm_labor(realm, day, account));
-            }
-            grants
+            self.grant_home_labor(home, day, account)
         }
     }
     #[generate_trait]
@@ -69,37 +65,41 @@ pub mod EntryAdministration {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        fn grant_realm_labor(
-            ref self: ComponentState<TContractState>, realm: LaborRealm, day: u64, account: ContractAddress,
+        fn grant_home_labor(
+            ref self: ComponentState<TContractState>, target: LaborHome, day: u64, account: ContractAddress,
         ) -> LaborGrant {
-            if let Some(previous) = crate::entry::ILedgerOperator::labor_grant(@self, realm, day) {
+            if let Some(previous) = crate::entry::ILedgerOperator::labor_grant(@self, target, day) {
                 assert!(
-                    previous.game_id == realm.game_id && previous.account == account && previous.home == realm.home,
+                    previous.game_id == target.game_id && previous.account == account && previous.home == target.home,
                     "labor already claimed",
                 );
                 return previous;
             }
-            assert!(
-                realm.realm_id > 0 && realm.realm_id <= crate::realms::CANONICAL_REALM_COUNT, "invalid canonical realm",
-            );
             assert!(account != 0.try_into().unwrap(), "invalid labor account");
             let timestamp = starknet::get_block_timestamp();
-            let context = crate::commands::load_context(realm.game_id, 0, timestamp);
+            let context = crate::commands::load_context(target.game_id, 0, timestamp);
             crate::game::assert_playing(context.game.unbox(), timestamp);
-            let rules = crate::logic::preset_record::for_game(realm.game_id)
+            let rules = crate::logic::preset_record::for_game(target.game_id)
                 .labor_rules
                 .read()
                 .expect('labor is disabled');
             assert!(day == crate::entry::labor_day(timestamp), "incorrect labor day");
-            let home = ResourceKey { game_id: realm.game_id, entity_id: realm.home };
+            let home = ResourceKey { game_id: target.game_id, entity_id: target.home };
             let record = crate::logic::structures::record(home);
             assert!(
                 record.base.category == crate::taxonomy::REALM_CATEGORY && record.owner == account,
                 "labor requires an owned realm",
             );
-            let count = self.data.entry.labor_claim_counts.read((account, day));
-            assert!(rules.account_daily_limit == 0 || count < rules.account_daily_limit, "daily labor realm limit");
-            let classes = get_dep_component!(@self, Life).classes(realm.game_id);
+            assert!(
+                self
+                    .data
+                    .settlements
+                    .held_realm_homes
+                    .read((target.game_id, record.metadata.realm_id.into())) == target
+                    .home,
+                "labor requires a settled held Realm",
+            );
+            let classes = get_dep_component!(@self, Life).classes(target.game_id);
             let amount = IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() }
                 .grant_resource(
                     home,
@@ -108,28 +108,23 @@ pub mod EntryAdministration {
                     timestamp,
                     crate::commands::resource_context(context),
                 );
-            let grant = LaborGrant { game_id: realm.game_id, account, home: realm.home, amount };
-            self.record_labor_grant(realm, day, grant, count + 1);
+            let grant = LaborGrant { game_id: target.game_id, account, home: target.home, amount };
+            self.record_labor_grant(day, grant);
             grant
         }
-        fn record_labor_grant(
-            ref self: ComponentState<TContractState>, realm: LaborRealm, day: u64, grant: LaborGrant, count: u32,
-        ) {
+        fn record_labor_grant(ref self: ComponentState<TContractState>, day: u64, grant: LaborGrant) {
             self
                 .data
                 .entry
-                .labor_grants
-                .write((realm.realm_id, day), Some((grant.game_id, grant.account, grant.home, grant.amount)));
-            self.data.entry.labor_claim_counts.write((grant.account, day), count);
-            let mut values = array![];
-            grant.serialize(ref values);
+                .home_labor_grants
+                .write((grant.game_id, grant.home, day), Some((grant.account, grant.amount)));
             self
                 .emit(
                     crate::events::RowSet {
                         version: 1,
                         model: 'LaborGrant',
-                        keys: array![realm.realm_id.into(), day.into()].span(),
-                        values: values.span(),
+                        keys: array![grant.game_id.into(), grant.home.into(), day.into()].span(),
+                        values: array![grant.account.into(), grant.amount.into()].span(),
                     },
                 );
         }

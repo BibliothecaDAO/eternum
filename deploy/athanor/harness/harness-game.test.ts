@@ -93,9 +93,9 @@ test("a prepared Frontier player reaches confirmed play with no owner credential
   } as unknown as GameClient;
   try {
     const game = createHarnessGame(client);
-    const sent = await game.submit(signer, () => game.settle(signer, signer.address, "Frontier1", "frontier"));
+    const sent = await game.submit(signer, () => game.settle(signer));
     await sent.confirmed;
-    expect(calls).toEqual([{ signer, name: "0x46726f6e7469657231" }]);
+    expect(calls).toEqual([{ signer }]);
     expect(sent.transactionHash).toBe("0x123");
   } finally {
     if (saved.address === undefined) delete process.env.DEPLOYER_ACCOUNT_ADDRESS;

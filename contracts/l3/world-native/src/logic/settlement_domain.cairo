@@ -128,7 +128,6 @@ pub mod SettlementLogic {
             let game = context.game.unbox();
             let rules = context.rules.unbox();
             assert!(rules.entry_rule != crate::rules::ENTRY_ROSTER, "not a season game");
-            assert!(command.name != 0, "name cannot be empty");
             assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
             assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
             if rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0 {
@@ -288,6 +287,9 @@ pub mod SettlementLogic {
             self.settlements.register_entitlement(key, entitlement);
             crate::entity_ids::reserve_homes(key.game_id, key.owner);
         }
+        fn settled_realm(self: @ContractState, game_id: u32, realm_id: u32) -> u64 {
+            self.settlements.data.settlements.held_realm_homes.read((game_id, realm_id))
+        }
         fn entry_entitlement(self: @ContractState, key: EntryKey) -> Option<crate::settlement::EntryEntitlement> {
             self.settlements.data.settlements.entitlements.read((key.game_id, key.owner))
         }
@@ -347,7 +349,14 @@ pub mod SettlementLogic {
             self.settlements.reserve_entry(EntryKey { game_id, owner: actor }, actor, false);
             let home = crate::state::read().games.open_homes.read((game_id, actor));
             assert!(home != 0, "open home must be assigned before the roll");
-            let realm_id = if let Some(selected) = command.selected_realm {
+            let entitlement = self.settlements.data.settlements.entitlements.read((game_id, actor));
+            let realm_id = if let Some(held) = entitlement {
+                assert!(held.pass_kind == 2, "held Realm required");
+                assert!(command.selected_realm.is_none(), "held Realm already selected");
+                let realm_id = held.realm_id.try_into().expect('invalid canonical realm');
+                self.settlements.claim_held_realm(game_id, realm_id, home);
+                realm_id
+            } else if let Some(selected) = command.selected_realm {
                 assert!(context.game.unbox().dev_mode_on, "development mode required");
                 selected
             } else {

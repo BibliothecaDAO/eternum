@@ -42,7 +42,7 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
     { name: "wallet", type: "core::starknet::contract_address::ContractAddress" },
   ]);
   assert.equal(
-    abi.find(({ name }) => name === "world_native::entry::LaborRealm").members.find(({ name }) => name === "home").type,
+    abi.find(({ name }) => name === "world_native::entry::LaborHome").members.find(({ name }) => name === "home").type,
     "core::integer::u64",
   );
   assert.deepEqual(method("publish_frontier_pool").inputs, [
@@ -73,11 +73,11 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
     false,
   );
   assert.deepEqual(method("grant_labor").inputs, [
-    { name: "realms", type: "core::array::Array::<world_native::entry::LaborRealm>" },
+    { name: "home", type: "world_native::entry::LaborHome" },
     { name: "day", type: "core::integer::u64" },
     { name: "account", type: "core::starknet::contract_address::ContractAddress" },
   ]);
-  assert.deepEqual(method("grant_labor").outputs, [{ type: "core::array::Array::<world_native::entry::LaborGrant>" }]);
+  assert.deepEqual(method("grant_labor").outputs, [{ type: "world_native::entry::LaborGrant" }]);
   assert.equal(
     methods.some(({ name }) =>
       /recorded_execution|execution_head|actor_nonce|open_epoch|reveal_epoch/.test(name ?? ""),

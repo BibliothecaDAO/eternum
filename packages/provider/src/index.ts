@@ -602,13 +602,12 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async settle_season(props: SystemProps.SystemSigner & { name: string; selectedRealm?: number }) {
+  public async settle_season(props: SystemProps.SystemSigner & { selectedRealm?: number }) {
     return this.submitCommand(
       props.signer,
       {
         kind: "SettleSeason",
         value: {
-          name: props.name,
           selected_realm:
             props.selectedRealm === undefined
               ? { kind: "None", value: undefined }

@@ -4,6 +4,5 @@ use starknet::storage::Map;
 #[starknet::storage_node]
 pub struct EntryAdministrationStorage {
     pub operator: ContractAddress,
-    pub labor_grants: Map<(u32, u64), Option<(u32, ContractAddress, u64, u128)>>,
-    pub labor_claim_counts: Map<(ContractAddress, u64), u32>,
+    pub home_labor_grants: Map<(u32, u64, u64), Option<(ContractAddress, u128)>>,
 }

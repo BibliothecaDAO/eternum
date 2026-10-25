@@ -809,6 +809,9 @@ pub mod GamesFixture {
                 entitlement,
             )
         }
+        fn settled_realm(self: @TContractState, game_id: u32, realm_id: u32) -> u64 {
+            crate::state::read().settlements.held_realm_homes.read((game_id, realm_id))
+        }
         fn entry_entitlement(
             self: @TContractState, key: crate::settlement::EntryKey,
         ) -> Option<crate::settlement::EntryEntitlement> {
@@ -2163,26 +2166,24 @@ pub mod GamesFixture {
             )
         }
         fn grant_labor(
-            ref self: TContractState,
-            realms: Array<crate::entry::LaborRealm>,
-            day: u64,
-            account: starknet::ContractAddress,
-        ) -> Array<crate::entry::LaborGrant> {
+            ref self: TContractState, home: crate::entry::LaborHome, day: u64, account: starknet::ContractAddress,
+        ) -> crate::entry::LaborGrant {
             let state = crate::state::read();
             let classes = state.releases.entry(state.current_release.read()).classes;
             crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() },
-                realms,
+                home,
                 day,
                 account,
             )
         }
         fn labor_grant(
-            self: @TContractState, realm: crate::entry::LaborRealm, day: u64,
+            self: @TContractState, home: crate::entry::LaborHome, day: u64,
         ) -> Option<crate::entry::LaborGrant> {
-            let classes = fixture_classes(realm.game_id);
+            let state = crate::state::read();
+            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() }, realm, day,
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() }, home, day,
             )
         }
     }

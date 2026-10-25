@@ -284,13 +284,7 @@ fn settle_season_realm(deployment: Deployment) -> u64 {
         deployment.games, selector!("realms"), selector!("traits"), array![3492].span(), 0x9000002_u32,
     );
     let mut spy = spy_events();
-    assert!(
-        run(
-            deployment,
-            Command::SettleSeason(crate::realms::SettleSeason { name: 'Season player', selected_realm: Option::None }),
-            100,
-        ),
-    );
+    assert!(run(deployment, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Option::None }), 100));
     created_realm(ref spy, deployment)
 }
 
@@ -406,11 +400,7 @@ fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitlement
     );
     let mut spy = spy_events();
     assert_eq!(
-        run(
-            d,
-            Command::SettleSeason(crate::realms::SettleSeason { name: 'Season player', selected_realm: Option::None }),
-            100,
-        ),
+        run(d, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Option::None }), 100),
         dev || has_entitlement,
     );
     let mut created = false;
