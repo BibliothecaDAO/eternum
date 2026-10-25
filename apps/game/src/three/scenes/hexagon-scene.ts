@@ -100,7 +100,6 @@ export abstract class HexagonScene {
   protected thunderBoltManager!: ThunderBoltManager;
   protected worldAtmosphereController!: WorldAtmosphereController;
   protected GUIFolder!: any;
-  protected modelLoadPromises: Array<Promise<void>> = [];
   protected state!: AppStore;
   protected fog!: Fog;
 
@@ -1265,9 +1264,6 @@ export abstract class HexagonScene {
     // Clear listeners
     this.cameraViewListeners.clear();
     this.cameraTransitionListeners.clear();
-
-    // Clean up any pending promises or model loading
-    this.modelLoadPromises = [];
 
     // Finally, clear the scene
     this.scene.clear();

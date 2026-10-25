@@ -8,7 +8,7 @@ import { frontierPaintedBuildingPath } from "../structures/frontier-painted-buil
 import { buildingTypeTier } from "@bibliothecadao/eternum";
 import { isWonderModelPath } from "../structures/realm-design";
 import { RealmLivingAura } from "../structures/realm-living-aura";
-import { HexceptionTierModels, disposeBuildingModel } from "./hexception-tier-models";
+import { HexceptionModels, disposeBuildingModel } from "./hexception-models";
 import { SettlementAnimation } from "../structures/settlement-animation";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
@@ -67,7 +67,6 @@ import {
   reconcileBuildingUpdate,
   isTierChange,
   resolveBuildingInstanceAction,
-  runOwnedBuildingWorkAfterModelsLoad,
   type TargetedBuildingReconciliation,
 } from "@/three/scenes/hexception-building-reconciliation";
 import { playBuildingSound } from "@/three/sound/utils";
@@ -226,16 +225,13 @@ export default class HexceptionScene extends HexagonScene {
 
   private hexceptionRadius = 4;
   private destroyed = false;
-  private readonly tierModels = new HexceptionTierModels(
+  /** Each building model the realm draws, loaded the first time a building or the build preview needs it. */
+  private readonly models = new HexceptionModels(
     (path) => this.loadBuildingModel(path),
     () => {
       if (this.isEntered) this.reconcileAllBuildingInstances(this.tileManager.structureType());
     },
   );
-  private buildingModels: Map<
-    BUILDINGS_GROUPS,
-    Map<BUILDINGS_CATEGORIES_TYPES, { model: Group; animations: AnimationClip[] }>
-  > = new Map();
   private readonly settlementPresentations = new Map<
     string,
     {
@@ -556,30 +552,6 @@ export default class HexceptionScene extends HexagonScene {
     this.highlightHexManager.highlightHexes([]);
   }
 
-  private loadBuildingModels() {
-    const modelLoadsByPath = new Map<string, Promise<{ model: Group; animations: AnimationClip[] }>>();
-    for (const category of Object.values(BUILDINGS_GROUPS)) {
-      if (category === BUILDINGS_GROUPS.HYPERSTRUCTURE) continue;
-      const categoryPaths = this.mode.assets.buildingModelPaths[category];
-      if (!this.buildingModels.has(category)) {
-        this.buildingModels.set(category, new Map());
-      }
-      const categoryMap = this.buildingModels.get(category)!;
-
-      for (const [building, path] of Object.entries(categoryPaths)) {
-        let sourceLoad = modelLoadsByPath.get(path);
-        if (!sourceLoad) {
-          sourceLoad = this.loadBuildingModel(path);
-          modelLoadsByPath.set(path, sourceLoad);
-        }
-        const loadPromise = sourceLoad.then((modelData) => {
-          categoryMap.set(building as BUILDINGS_CATEGORIES_TYPES, modelData);
-        });
-        this.modelLoadPromises.push(loadPromise);
-      }
-    }
-  }
-
   private async loadBuildingModel(path: string): Promise<{ model: Group; animations: AnimationClip[] }> {
     const gltf = await loader.loadAsync(path);
     const model = gltf.scene as Group;
@@ -629,14 +601,8 @@ export default class HexceptionScene extends HexagonScene {
         return {
           cacheKey: path,
           load: async () => {
-            if (tierPath) {
-              await this.tierModels.request(tierPath);
-              return this.tierModels.get(tierPath)?.model ?? null;
-            }
-            await Promise.allSettled(this.modelLoadPromises);
-            return (
-              this.buildingModels.get(group)?.get(building.toString() as BUILDINGS_CATEGORIES_TYPES)?.model ?? null
-            );
+            await this.models.request(path);
+            return this.models.get(path)?.model ?? null;
           },
         };
       });
@@ -654,7 +620,6 @@ export default class HexceptionScene extends HexagonScene {
     this.groundTexturesReady = this.proceduralTerrain.loadGroundTextures().catch((error) => {
       console.warn("[Hexception] Procedural ground textures failed; retaining flat terrain", error);
     });
-    this.loadBuildingModels();
   }
 
   async setup() {
@@ -767,7 +732,7 @@ export default class HexceptionScene extends HexagonScene {
   destroy() {
     this.destroyed = true;
     this.isEntered = false;
-    this.tierModels.dispose();
+    this.models.dispose();
     window.clearTimeout(this.newRingTimer);
     usePopoverStore.getState().close("plot-construction");
     this.advanceRealmGeneration();
@@ -814,19 +779,6 @@ export default class HexceptionScene extends HexagonScene {
     }
     this.settlementPresentations.clear();
 
-    // Dispose of loaded building models (geometries and materials)
-    const disposedBuildingModels = new Set<Group>();
-    this.buildingModels.forEach((categoryMap) => {
-      categoryMap.forEach((data) => {
-        if (disposedBuildingModels.has(data.model)) {
-          return;
-        }
-        disposedBuildingModels.add(data.model);
-        disposeBuildingModel(data.model);
-      });
-      categoryMap.clear();
-    });
-    this.buildingModels.clear();
     this.hyperstructureModel?.dispose();
     this.hyperstructureModel = undefined;
 
@@ -1177,21 +1129,16 @@ export default class HexceptionScene extends HexagonScene {
     this.buildings = reconciliation.buildings;
 
     const key = buildingKey(reconciliation.position);
-    void runOwnedBuildingWorkAfterModelsLoad({
-      apply: () =>
-        runWithFrameWorkOwner("scene:hexception:building", () => {
-          const latestBuilding = this.buildings.find((building) => buildingKey(building) === key);
-          this.updateBuildingHighlight(reconciliation.position, Boolean(latestBuilding));
-          const action = this.reconcileBuildingInstance(
-            reconciliation.position,
-            latestBuilding,
-            this.tileManager.structureType(),
-          );
-          // A live update that creates a building is the building completing; the grid build never passes here.
-          if (action === "create") this.playBuildingCompleteBurst(reconciliation.position);
-        }),
-      isOwned: () => this.ownsRealmGeneration(realmGeneration),
-      modelLoadPromises: this.modelLoadPromises,
+    runWithFrameWorkOwner("scene:hexception:building", () => {
+      const latestBuilding = this.buildings.find((building) => buildingKey(building) === key);
+      this.updateBuildingHighlight(reconciliation.position, Boolean(latestBuilding));
+      const action = this.reconcileBuildingInstance(
+        reconciliation.position,
+        latestBuilding,
+        this.tileManager.structureType(),
+      );
+      // A live update that creates a building is the building completing; the grid build never passes here.
+      if (action === "create") this.playBuildingCompleteBurst(reconciliation.position);
     });
   }
 
@@ -1292,8 +1239,8 @@ export default class HexceptionScene extends HexagonScene {
     const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
     this.gridBuilds.start({
-      modelsLoaded: () => Promise.allSettled(this.modelLoadPromises),
       layOut: () => runWithFrameWorkOwner("scene:hexception:grid", () => this.layOutGridCells(radius)),
+      loadModels: () => this.loadLaidOutModels(mainStructureType),
       preparePage: (terrainMatricesByBiome) =>
         this.proceduralTerrain.preparePageAsync(this.terrainPageRequest(terrainMatricesByBiome)),
       present: (page) =>
@@ -1399,18 +1346,11 @@ export default class HexceptionScene extends HexagonScene {
     mainStructureType: StructureType | undefined,
   ): BuildingInstanceAction {
     const key = buildingKey(position);
-    const selection = building
-      ? resolveBuildingModelSelection(building, {
-          stage: this.structureStage,
-          structureId: this.state.structureEntityId,
-          mainStructureType,
-          wonder: !!this.tileManager.getWonder(this.state.structureEntityId),
-          frontier: this.mode.id === "frontier",
-        })
-      : undefined;
-    // A tier's model loads the first time a building needs it; until then the building keeps what it shows.
-    if (selection?.tierPath && !this.tierModels.get(selection.tierPath)) {
-      this.loadTierModel(selection.tierPath);
+    const selection = building ? this.selectBuildingModel(building, mainStructureType) : undefined;
+    // A model loads the first time a building needs it; until then the building keeps what it shows.
+    const path = selection && this.modelPath(selection);
+    if (path && !this.models.get(path)) {
+      this.loadModel(path);
       return "keep";
     }
     const signature = building && selection ? this.resolveBuildingRenderSignature(building, selection) : undefined;
@@ -1471,17 +1411,14 @@ export default class HexceptionScene extends HexagonScene {
       return;
     }
 
-    const buildingData = selection.tierPath
-      ? this.tierModels.get(selection.tierPath)
-      : this.buildingModels.get(selection.group)?.get(selection.type.toString() as BUILDINGS_CATEGORIES_TYPES);
-    if (!buildingData) return;
+    const modelPath = this.modelPath(selection);
+    const buildingData = modelPath ? this.models.get(modelPath) : undefined;
+    if (!modelPath || !buildingData) return;
 
     const instance = buildingData.model.clone();
     instance.applyMatrix4(building.matrix);
     if (selection.group === BUILDINGS_GROUPS.REALMS || selection.group === BUILDINGS_GROUPS.VILLAGE) {
       // Apply after the template and tile transforms so neither can turn the entrance away.
-      const categoryPaths: Readonly<Record<string, string>> = this.mode.assets.buildingModelPaths[selection.group];
-      const modelPath = selection.tierPath ?? categoryPaths[selection.type];
       instance.rotation.set(0, resolveStructureRotationY([modelPath], instance.rotation.y), 0);
     }
     holdPartHeadings(instance);
@@ -1507,9 +1444,39 @@ export default class HexceptionScene extends HexagonScene {
     this.startBuildingAnimations(key, instance, buildingData.animations);
   }
 
-  /** Loads one tier's model once, then lets every building waiting on it draw it. */
-  private loadTierModel(path: string): void {
-    void this.tierModels.request(path).catch((error) => {
+  private selectBuildingModel(
+    building: HexceptionBuilding,
+    mainStructureType: StructureType | undefined,
+  ): BuildingModelSelection {
+    return resolveBuildingModelSelection(building, {
+      stage: this.structureStage,
+      structureId: this.state.structureEntityId,
+      mainStructureType,
+      wonder: !!this.tileManager.getWonder(this.state.structureEntityId),
+      frontier: this.mode.id === "frontier",
+    });
+  }
+
+  /** The model file a selection draws: its tier's own, else its group's; a hyperstructure builds its own. */
+  private modelPath(selection: BuildingModelSelection): string | undefined {
+    if (selection.group === BUILDINGS_GROUPS.HYPERSTRUCTURE) return undefined;
+    const groupPaths: Readonly<Record<string, string>> = this.mode.assets.buildingModelPaths[selection.group];
+    return selection.tierPath ?? groupPaths[selection.type];
+  }
+
+  /** The models of the buildings the latest layout placed, loaded together; a failed one leaves its building unshown. */
+  private loadLaidOutModels(mainStructureType: StructureType | undefined): Promise<unknown> {
+    const paths = new Set<string>();
+    for (const building of this.buildings) {
+      const path = this.modelPath(this.selectBuildingModel(building, mainStructureType));
+      if (path) paths.add(path);
+    }
+    return Promise.allSettled([...paths].map((path) => this.models.request(path)));
+  }
+
+  /** Loads one model once, then lets every building waiting on it draw it. */
+  private loadModel(path: string): void {
+    void this.models.request(path).catch((error) => {
       if (!this.destroyed) console.warn(`[Hexception] Failed to load building model ${path}`, error);
     });
   }
