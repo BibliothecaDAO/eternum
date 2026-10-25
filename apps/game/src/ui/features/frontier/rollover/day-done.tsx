@@ -87,10 +87,16 @@ export const DayDone = ({
   // summary is known, shown or none. One whose moment went on before its history answered opens its summary then.
   const endedBeforeOpening = ended !== null && openedAt !== null && ended.end <= openedAt;
   const arrived = unseen && endedBeforeOpening && state !== "waiting";
-  const owed = arrived || (state === "shown" && summaryMissed);
+  // An arrival begins once a page: past the black's longest hold the player is back on the map, and the camera's move,
+  // still due, lands when the block clock catches up. A page booting again begins it afresh.
+  const [begunFor, setBegunFor] = useState<number | null>(null);
+  const endedDayNumber = ended?.day ?? null;
+  const owed = (arrived && begunFor !== endedDayNumber) || (state === "shown" && summaryMissed);
   useEffect(() => {
-    if (owed && phase === "day") begin("later");
-  }, [owed, phase, begin]);
+    if (!owed || phase !== "day") return;
+    setBegunFor(endedDayNumber);
+    begin("later");
+  }, [owed, phase, begin, endedDayNumber]);
   // The day's end is gone through once the camera is on the realm's new site with no summary owed. Marked before, a
   // page booting again in the black would keep the old site and never move.
   const goneThrough = unseen && landReady && !summaryMissed ? ended.day : null;

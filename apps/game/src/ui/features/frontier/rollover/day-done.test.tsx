@@ -233,6 +233,8 @@ describe("a device arriving in a new day", () => {
   const NEW_SITE = Position.fromContract({ x: 650, y: 850 });
   const navigate = vi.fn();
   let stopRollover = () => {};
+  /** The last block's time while the block clock lags the chain's; null: it keeps up. */
+  let lateBlockAt: number | null = null;
 
   /** Opens the game: the HUD's day end and the day's turn, on the game's clocks, with the camera's moves recorded. */
   const openTheGameHere = async ({ visiting = false } = {}) => {
@@ -241,7 +243,7 @@ describe("a device arriving in a new day", () => {
       gameId: 1,
       player: RECORDED_DAY.player,
       chainNow: () => herald.now,
-      blockNow: () => herald.now,
+      blockNow: () => lateBlockAt ?? herald.now,
       reproject: () => {},
       navigate,
     });
@@ -272,6 +274,7 @@ describe("a device arriving in a new day", () => {
   };
 
   beforeEach(() => {
+    lateBlockAt = null;
     vi.useFakeTimers();
     navigate.mockClear();
   });
@@ -301,6 +304,25 @@ describe("a device arriving in a new day", () => {
     expect(window.localStorage.getItem(MARK)).toBeNull();
     await bootThePageAgain();
     await throughTheBlack();
+    expect(phase()).toBe("day");
+    expect(navigate.mock.calls).toEqual([[NEW_SITE]]);
+    expect(window.localStorage.getItem(MARK)).toBe("2");
+  });
+
+  it("leaves the player on the map past the black's longest hold while the block lags, then moves the camera once", async () => {
+    herald.history = [];
+    // The last block is still day 2's: the realm's day-3 site is not on the map yet.
+    lateBlockAt = endedDay(RULES, BEFORE_PLAYING_ON.now)!.end - 1;
+    await openTheGameHere();
+    expect(phase()).toBe("nightfall");
+    await seconds(DAY_END_TIMING.nightfall + DAY_END_TIMING.blackHold + DAY_END_TIMING.dawn);
+    expect(phase()).toBe("day");
+    await seconds(5);
+    expect(phase()).toBe("day");
+    expect(navigate).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem(MARK)).toBeNull();
+    lateBlockAt = null;
+    await seconds(1);
     expect(phase()).toBe("day");
     expect(navigate.mock.calls).toEqual([[NEW_SITE]]);
     expect(window.localStorage.getItem(MARK)).toBe("2");
