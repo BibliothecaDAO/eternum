@@ -60,7 +60,7 @@ import { RefillButton, RefillConfirm } from "@/ui/features/frontier/army/refill"
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
-import { type HeldRealm, planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
+import { planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
 import { RealmsSheet } from "@/ui/features/frontier/value/realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 
@@ -203,27 +203,10 @@ const RUIN_CARD: LabSite = {
   verb: ATTACK_30,
 };
 
-/**
- * The value screens' fiction: a realm holding 1,240 LORDS, a linked wallet, and three Realms in it. LAB_PRESET is the
- * numbers page's proposal for the presets the Realm holder's labor reads (1,000 labor a Realm a game day, five Realms an
- * account a day); the live screen reads them from the preset when Herald serves it.
- */
-const LAB_PRESET = { realmLabor: 1_000, realmsADay: 5 };
+const LAB_PRESET = { realmLabor: 1_000 };
 const WALLET_ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f99f3c";
-const REALMS_HELD: readonly HeldRealm[] = [
-  { realmId: 1_088, name: "Stolsli", order: 9, claimedToday: true, inWallet: true },
-  { realmId: 4_512, name: "Uw Rohi", order: 3, claimedToday: false, inWallet: true },
-  { realmId: 6_077, name: "Mamaalan", order: 8, claimedToday: false, inWallet: true },
-];
-const SEVEN_REALMS: readonly HeldRealm[] = [
-  ...REALMS_HELD,
-  { realmId: 212, name: "Ilbarn", order: 1, claimedToday: false, inWallet: true },
-  { realmId: 3_301, name: "Kelvos", order: 5, claimedToday: false, inWallet: true },
-  { realmId: 5_990, name: "Orrin", order: 12, claimedToday: false, inWallet: true },
-  { realmId: 7_421, name: "Tamsel", order: 14, claimedToday: false, inWallet: true },
-];
 type LabWithdraw = { held: number; wallet: string | null; refusal?: string; step: WithdrawStep; amount: number };
-type LabRealms = { wallet: string | null; realms: readonly HeldRealm[]; labor: number; limit: number };
+type LabRealms = { eligible: boolean; claimed: boolean; labor: number; limit: number };
 const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: WALLET_ADDRESS, step: { kind: "pick" }, amount: 500 };
 /** Day 13 at 22:30: an 8-hour day from 21:40 that ends in the night, at 05:40; tomorrow lasts 20h. */
 const NIGHT: DayClock = {
@@ -794,62 +777,29 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240, realms: 2_000 },
-    realms: { wallet: WALLET_ADDRESS, realms: REALMS_HELD, labor: 9_640, limit: 18_000 },
+    purse: { lords: 1240 },
+    realms: { eligible: true, claimed: false, labor: 9640, limit: 18000 },
   },
   "realms-claimed": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240 },
-    realms: {
-      wallet: WALLET_ADDRESS,
-      realms: REALMS_HELD.map((realm) => ({ ...realm, claimedToday: true })),
-      labor: 9_640,
-      limit: 18_000,
-    },
+    purse: { lords: 1240 },
+    realms: { eligible: true, claimed: true, labor: 9640, limit: 18000 },
   },
   "realms-full": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240, realms: 2_000 },
-    realms: { wallet: WALLET_ADDRESS, realms: REALMS_HELD, labor: 17_600, limit: 18_000 },
-  },
-  "realms-cap": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1_240, realms: 4_000 },
-    realms: { wallet: WALLET_ADDRESS, realms: SEVEN_REALMS, labor: 9_640, limit: 18_000 },
-  },
-  // The second Realm was refused by a claim: the wallet no longer holds it.
-  "realms-sold": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1_240, realms: 1_000 },
-    realms: {
-      wallet: WALLET_ADDRESS,
-      realms: REALMS_HELD.map((realm) => (realm.realmId === 4_512 ? { ...realm, inWallet: false } : realm)),
-      labor: 9_640,
-      limit: 18_000,
-    },
+    purse: { lords: 1240 },
+    realms: { eligible: true, claimed: false, labor: 17600, limit: 18000 },
   },
   "realms-none": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240 },
-    realms: { wallet: WALLET_ADDRESS, realms: [], labor: 9_640, limit: 18_000 },
-  },
-  /** No wallet linked: the sheet says what Realms are for, then asks for the wallet (live-qa-night-1 P3-3). */
-  "realms-no-wallet": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1_240 },
-    realms: { wallet: null, realms: [], labor: 9_640, limit: 18_000 },
+    purse: { lords: 1240 },
+    realms: { eligible: false, claimed: false, labor: 9640, limit: 18000 },
   },
 } as const;
 
@@ -1397,23 +1347,18 @@ const LabWithdrawSheet = ({ withdraw }: { withdraw: LabWithdraw }) => {
 /** Realms on the fiction, planned with the lab's presets against the labor store. */
 const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
   <RealmsSheet
-    wallet={realms.wallet}
     plan={planRealmLabor({
-      realms: realms.realms,
-      perRealm: LAB_PRESET.realmLabor,
-      cap: LAB_PRESET.realmsADay,
-      labor: { held: realms.labor, limit: realms.limit },
+      eligible: realms.eligible,
+      claimed: realms.claimed,
+      amount: LAB_PRESET.realmLabor,
+      held: realms.labor,
+      limit: realms.limit,
     })}
-    perRealm={LAB_PRESET.realmLabor}
-    cap={LAB_PRESET.realmsADay}
-    labor={realms.labor}
+    dailyAmount={LAB_PRESET.realmLabor}
     secondsLeft={CLOCK.secondsLeft}
     sending={false}
-    adding={false}
     onClaim={noop}
-    onAdd={noop}
     onRealm={noop}
-    onLinkWallet={noop}
     onClose={noop}
   />
 );

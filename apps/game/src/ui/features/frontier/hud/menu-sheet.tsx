@@ -1,19 +1,18 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { EXIT, MENU, REALMS, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
+import { EXIT, MENU, REALM_LABOR, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 const MENU_WORDS = {
   clock: TODAY,
   victory: SEASON,
-  realm: REALMS,
+  realm: REALM_LABOR,
   settings: SETTINGS,
 } as const;
 
 /**
  * The Menu: the ways that are not places (Today, Season with the player's rank, Settings), then Exit to the app and
- * Resume, which closes the menu. Realms, with a dot
- * while their labor waits, opens the Realm holder's labor where its facts are served.
+ * Resume, which closes the menu. Realm Labor shows a dot while the daily claim is available.
  */
 export const MenuSheet = ({
   rank,

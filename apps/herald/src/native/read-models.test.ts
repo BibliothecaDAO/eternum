@@ -104,6 +104,33 @@ it("never lists deployment check games or counts them as Frontier seasons", () =
   expect(directory.games.map(({ game_id }) => game_id)).toEqual([2]);
 });
 
+it("restores a player's held Realm registration before a settlement exists", () => {
+  const { fold, native } = world();
+  const input = { chain: "madara", confirmedBlock: 11, timestamp: 30, fold, playerAddress: "0x111" };
+  const entry = () => buildNativeDirectory(input).games.find((game) => game.game_id === 1)!.player_state!;
+  expect(entry().held_realm_id).toBeNull();
+  native.applyReceipt(
+    fold,
+    receipt([
+      rowEvent("EntryEntitlement", ["1", "0x111"], {
+        realm_id: 711n,
+        pass_kind: 2n,
+        metadata_1: 0n,
+        metadata_2: 0n,
+        metadata_3: 0n,
+      }),
+    ]),
+    11,
+    0,
+  );
+  expect(entry().held_realm_id).toBe(711);
+  expect(entry().settled).toBe(false);
+  expect(
+    buildNativeDirectory({ ...input, playerAddress: "0x222" }).games.find((game) => game.game_id === 1)!.player_state!
+      .held_realm_id,
+  ).toBeNull();
+});
+
 describe("native directory and leaderboard", () => {
   it("keeps each player's frozen payout wallet after the game ends and has none for a nonmember", () => {
     const { fold, native } = world();
@@ -157,6 +184,7 @@ describe("native directory and leaderboard", () => {
         registered: true,
         settled: true,
         roster_wallet: "0x3e8",
+        held_realm_id: null,
         structures: [
           { entity_id: 7, category: 1, level: 0, realm_id: 0, coord_x: 7, coord_y: 0, resources_packed: "0" },
           { entity_id: 8, category: 5, level: 0, realm_id: 0, coord_x: 8, coord_y: 0, resources_packed: "0" },

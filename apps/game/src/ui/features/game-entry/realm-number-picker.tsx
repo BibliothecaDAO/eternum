@@ -1,3 +1,11 @@
+import {
+  REALM_NUMBER,
+  OPTIONAL_REALM_NUMBER,
+  FREE_REALM_ENTRY,
+  HELD_REALM_ENTRY,
+  DEV_REALM_ENTRY,
+} from "@/ui/design-system/kit/words";
+import { orders } from "@bibliothecadao/types";
 import { getCanonicalRealmMetadata } from "@bibliothecadao/eternum";
 import { HudField, HudLoading, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { useQuery } from "@tanstack/react-query";
@@ -6,10 +14,12 @@ export function RealmNumberPicker({
   value,
   onChange,
   disabled,
+  purpose,
 }: {
   value: string;
   onChange: (value: string) => void;
   disabled: boolean;
+  purpose: "held" | "development";
 }) {
   const realmId = Number(value);
   const valid = Number.isInteger(realmId) && realmId >= 1 && realmId <= 8000;
@@ -22,10 +32,10 @@ export function RealmNumberPicker({
 
   return (
     <div className="mb-4 flex flex-col gap-2 rounded-xl border border-hud-line p-3">
-      <span className="text-hud-label text-hud-muted">Realm number</span>
+      <span className="text-hud-label text-hud-muted">{purpose === "held" ? OPTIONAL_REALM_NUMBER : REALM_NUMBER}</span>
       <HudField
-        aria-label="Realm number"
-        id="dev-realm-number"
+        aria-label={REALM_NUMBER}
+        id="realm-number"
         type="number"
         min={1}
         max={8000}
@@ -35,7 +45,9 @@ export function RealmNumberPicker({
         disabled={disabled}
       />
       <div aria-live="polite" className="text-hud-body text-hud-ink">
-        {!valid ? (
+        {purpose === "held" && value === "" ? (
+          <p>{FREE_REALM_ENTRY}</p>
+        ) : !valid ? (
           <p>Choose a realm number from 1 to 8000.</p>
         ) : error ? (
           <HudNotice tone="bad" line={error.message} />
@@ -44,13 +56,13 @@ export function RealmNumberPicker({
         ) : data ? (
           <>
             <p className="text-hud-strong">{data.name}</p>
-            <p className="text-hud-muted">{data.resources.join(", ")}</p>
+            <p className="text-hud-muted">
+              {orders.find((order) => order.orderId === data.order)?.fullOrderName} · {data.resources.join(", ")}
+            </p>
           </>
         ) : null}
       </div>
-      <p className="text-hud-label text-hud-cue">
-        Dev mode: settle additional realms. Each realm number can be used once per game.
-      </p>
+      <p className="text-hud-label text-hud-cue">{purpose === "held" ? HELD_REALM_ENTRY : DEV_REALM_ENTRY}</p>
     </div>
   );
 }

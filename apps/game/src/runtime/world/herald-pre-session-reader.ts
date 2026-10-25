@@ -6,6 +6,7 @@ export interface SettlementSnapshot {
   hasSettlementRecord: boolean;
   hasSettledStructure: boolean;
   settledCount: number;
+  heldRealmId: number | null;
 }
 
 /** Before a player joins a game, the entry screens read only their own row of Herald's directory. */
@@ -16,9 +17,10 @@ const fetchPlayerGameState = async (game: GameRef, player: string): Promise<Hera
 };
 
 export const fetchSettlementSnapshot = async (game: GameRef, player: string): Promise<SettlementSnapshot> => {
-  const { registered, structures } = await fetchPlayerGameState(game, player);
+  const { registered, structures, held_realm_id } = await fetchPlayerGameState(game, player);
   return {
     hasSettlementRecord: registered,
+    heldRealmId: held_realm_id,
     hasSettledStructure: structures.length > 0,
     settledCount: structures.length,
   };

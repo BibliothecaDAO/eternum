@@ -1,7 +1,7 @@
 import { formatAmount, formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPill } from "@/ui/design-system/kit/hud-elements";
-import { LABOR, REALMS } from "@/ui/design-system/kit/words";
+import { LABOR, REALM_LABOR } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 /**
@@ -40,9 +40,9 @@ export const LordsPurse = ({
   </HudPill>
 );
 
-/** The way to Realms, where a Realm is added and its labor claimed, wearing the labor they have waiting today. */
+/** The settled home's daily Labor claim, showing what is available today. */
 export const RealmsChip = ({ labor, onOpen }: { labor: number; onOpen: () => void }) => (
-  <HudPill label={labor > 0 ? `${REALMS} +${formatAmount(labor)} ${LABOR}` : REALMS} onPress={onOpen}>
+  <HudPill label={labor > 0 ? `${REALM_LABOR} +${formatAmount(labor)} ${LABOR}` : REALM_LABOR} onPress={onOpen}>
     {[
       <span key="labor" className="flex items-center gap-1 tabular-nums">
         <SemanticIcon name="realm" size={24} />

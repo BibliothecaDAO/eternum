@@ -107,7 +107,7 @@ const answerDirectory = (now: () => number) => {
     expedition: { day_unit_seconds: 3600, seed: "1" },
     clock: { start_settling_at: 1, start_main_at: 100, end_at: LAB_GAME_ENDS_AT, end_grace_seconds: 0 },
     player_count: 1,
-    player_state: { registered: true, settled: true, roster_wallet: null, structures: [] },
+    player_state: { registered: true, settled: true, roster_wallet: null, held_realm_id: null, structures: [] },
     roster_count: 0,
     preset_id: LAB_GAME.presetId,
     registration: null,

@@ -1,4 +1,5 @@
 import { act } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
@@ -23,6 +24,7 @@ vi.mock("react-router-dom", async (original) => ({
 vi.mock("@/hooks/use-game-entry", () => ({ useGameEntry: () => ({ data: state.entry, error: null }) }));
 vi.mock("@/runtime/world/herald-pre-session-reader", () => ({
   fetchSettlementSnapshot: async () => ({
+    heldRealmId: null,
     hasSettlementRecord: state.settled,
     hasSettledStructure: state.settled,
     settledCount: state.settled ? 1 : 0,
@@ -54,19 +56,27 @@ it.each(["play", "settle"] as const)(
     state.milestone.mockClear();
     useAccountStore.setState({ account: { address: "0x111" } as never });
     useIdentitySessionStore.setState({ status: "signed-in" });
-    const root = createRoot(document.createElement("div"));
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    const query = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     await act(async () =>
       root.render(
-        <MemoryRouter>
-          <GameEntryModal isOpen game={{ chainId: "0xa1", gameId: 8 }} entryIntent={entryIntent} />
-        </MemoryRouter>,
+        <QueryClientProvider client={query}>
+          <MemoryRouter>
+            <GameEntryModal isOpen game={{ chainId: "0xa1", gameId: 8 }} entryIntent={entryIntent} />
+          </MemoryRouter>
+        </QueryClientProvider>,
       ),
     );
     try {
+      expect(state.navigate).not.toHaveBeenCalled();
+      const found = [...host.querySelectorAll("button")].find((button) => button.textContent === "Found your realm")!;
+      await act(async () => found.click());
       expect(state.navigate).toHaveBeenCalledTimes(1);
       expect(state.milestone.mock.calls.filter(([name]) => name === "enter-game-started")).toHaveLength(1);
     } finally {
       await act(async () => root.unmount());
+      query.clear();
     }
     await act(async () => vi.advanceTimersByTimeAsync(1001));
     expect(state.navigate).toHaveBeenCalledTimes(1);
