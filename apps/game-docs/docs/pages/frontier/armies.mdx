@@ -1,0 +1,81 @@
+---
+title: Armies
+description: Deploying, stamina, merging, XP and fights
+---
+
+import { FRONTIER } from "@/utils/frontier";
+import { Shot } from "@/components/Media";
+
+# Armies
+
+## Deploying
+
+Barracks train Knights at your realm. **Deploy** puts them on a tile beside the realm as an army, in one of its army
+slots: {FRONTIER.realm.armies[0]} for a new realm, up to {FRONTIER.realm.armies[3]} as its castle rises. Each troop
+deployed costs {FRONTIER.realm.deployWheat} wheat, and each castle level deploys more troops at once
+([Your realm](/frontier/realm#the-castle)).
+
+<Shot
+  name="frontier/deploy"
+  frame="phone"
+  caption="Deploying on a phone: how many troops, the stamina the slot gives them, and the wheat it costs."
+/>
+
+## Stamina
+
+An army holds {FRONTIER.stamina.max} stamina and recovers {FRONTIER.stamina.perTick} every
+{FRONTIER.stamina.tickMinutes}{" "} minutes, so an empty bar fills in {FRONTIER.stamina.fullHours} hours. Revealing a
+tile costs {FRONTIER.stamina.reveal}, a step over known ground {FRONTIER.stamina.step}, and an attack needs
+{FRONTIER.stamina.attack}. Every step and every reveal also costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a
+big army needs farms behind it.
+
+**Refill** tops an army's stamina up at once for {FRONTIER.stamina.refillLords} LORDS a missing point, paid from your
+realm's LORDS. A well gives {FRONTIER.stamina.well} stamina, buying an attribute tier gives
+{FRONTIER.stamina.tierBought}, and Logistics raises an army's maximum by up to {FRONTIER.stamina.logisticsMax}.
+
+### Stamina stays with the slot
+
+Stamina belongs to the army slot, not to the army in it. A new army takes your realm's lowest free slot.
+
+- A slot's first army of the day starts with a full bar: {FRONTIER.stamina.max} stamina, plus what your Supply yard's
+  Logistics adds.
+- When an army dies, is disbanded or merges into another, its slot keeps the stamina it had left, and that stamina keeps
+  recovering.
+- The next army deployed into that slot starts with that stamina, not a full bar. Replacing a tired army never brings a
+  fresh one.
+- The new army's own maximum still caps it. Its XP and tiers start again from your realm's training; only the stamina
+  carries over.
+- When the day ends, every slot is cleared, so each slot's first army tomorrow starts full again.
+
+## Merging and disbanding
+
+Two of your armies standing side by side can merge, keeping the lower of their two staminas. An army you disband loses
+its troops; Frontier asks first.
+
+## XP and attributes
+
+An army earns {FRONTIER.xp.reveal} XP for each tile it reveals, XP for each guard it clears (more for a stronger guard),
+and {FRONTIER.xp.shrine} XP from a shrine. It spends XP on the attribute tiers you choose, up to legendary:
+{FRONTIER.xp.tierPrices[0]}, {FRONTIER.xp.tierPrices[1]}, {FRONTIER.xp.tierPrices[2]}, then
+{FRONTIER.xp.tierPrices[3]}{" "} XP for each next tier.
+
+- **Battle** hits up to {FRONTIER.attributes.battleMax} harder.
+- **Logistics** carries up to {FRONTIER.stamina.logisticsMax} more stamina.
+- **Scouting** adds {FRONTIER.attributes.scouting[0]}, {FRONTIER.attributes.scouting[1]},
+  {FRONTIER.attributes.scouting[2]}, then {FRONTIER.attributes.scouting[3]} to the find rate of the camps, rifts or
+  beasts you pick for each tier, so all four on one kind add {FRONTIER.attributes.scoutingOneKind}.
+- **Homecoming** sends survivors home when the day ends ([The expedition](/frontier/expedition#the-days-end)).
+
+An army's XP and tiers end with it. Your realm's training buildings start every new army a tier higher
+([Your realm](/frontier/realm#research)).
+
+<Shot
+  frame="panel"
+  name="frontier/level-up"
+  caption="An army's panel: its troops, stamina and XP, then the next tier of each attribute."
+/>
+
+## Fights
+
+No dice are rolled in Frontier, so a fight's forecast is its result. Before you attack, a site's card shows each side's
+troops before and after, and what clearing it pays. The ground does not matter: no biome helps or hurts either side.

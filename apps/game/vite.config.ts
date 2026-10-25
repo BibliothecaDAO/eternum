@@ -11,6 +11,7 @@ import wasm from "vite-plugin-wasm";
 import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
 import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
 import { createPwaReleasePlugin } from "./build/pwa-release";
+import { APP_ADDRESS } from "./src/config/app-address";
 import { labArtwork } from "./build/lab-artwork";
 import { isDevEnvironment } from "./src/shell/frame/environment";
 import { l2EnvironmentProblem } from "./src/runtime/l2-environment";
@@ -42,12 +43,14 @@ const appIdentity = (devEnvironment: boolean) => {
   };
 };
 
+/** The page as the environment serves it: its title and icons, and a share card that sends a reader to the live app. */
 const appIdentityHtml = (identity: ReturnType<typeof appIdentity>): Plugin => ({
   name: "app-identity-html",
   transformIndexHtml: (html) =>
     html
       .replace("<title>Realms</title>", `<title>${identity.name}</title>`)
-      .replaceAll("/images/game-", identity.icon("")),
+      .replaceAll("/images/game-", identity.icon(""))
+      .replaceAll("%APP_ADDRESS%", APP_ADDRESS),
 });
 
 /** The dev environment's app and its identity Worker, which every development build signs in against. */

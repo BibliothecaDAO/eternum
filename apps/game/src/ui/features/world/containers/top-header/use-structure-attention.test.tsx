@@ -39,7 +39,6 @@ vi.mock("@/three/utils/utils", () => ({
   isAddressEqualToAccount: (address: string) => BigInt(address) === BigInt(ME),
 }));
 vi.mock("@bibliothecadao/eternum", () => ({
-  activeCombatRules: () => ({ cooldownSeconds: 60 }),
   configManager: { getActiveGameId: () => 1 },
 }));
 // A story read filters the chain the way Herald's history does: by story, and by every player a story names.

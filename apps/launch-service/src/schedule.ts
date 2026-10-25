@@ -1,5 +1,9 @@
 import { launchFailure } from "./errors";
-import { BLITZ_SLOT_PREPARATION_SECONDS, blitzSlotFitsSeason } from "@realms-world/value-ledger";
+import {
+  BLITZ_SLOT_INTERVAL_SECONDS,
+  BLITZ_SLOT_PREPARATION_SECONDS,
+  blitzSlotFitsSeason,
+} from "@realms-world/value-ledger";
 import { Effect, Result } from "effect";
 import { isRunning, type CalendarStore, type NextBlitzGame, type SeasonPhase } from "./calendar";
 import { frontierSeasonRequest } from "./schemas";
@@ -53,8 +57,7 @@ const fitsInside = (season: SeasonPhase, closesAt: string) => {
 export const scheduleFrontierSeason = (store: LaunchServiceStore, season: SeasonPhase) =>
   store.schedule("game", frontierSeasonRequest(season));
 
-/** Ninety minutes divides the UTC day: 00:00, 01:30, ... 22:30. */
-const BLITZ_SLOT_INTERVAL_MS = 90 * 60 * 1000;
+const BLITZ_SLOT_INTERVAL_MS = BLITZ_SLOT_INTERVAL_SECONDS * 1000;
 const PREPARATION_MS = BLITZ_SLOT_PREPARATION_SECONDS * 1000;
 
 /**

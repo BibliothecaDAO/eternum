@@ -1,7 +1,6 @@
 import { bonusActive } from "./relic";
-import { BiomeType, TickIds, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
+import { BiomeType, RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { configManager } from "../managers/config-manager";
 import { staminaAt } from "../managers/troop-stamina";
 import {
   add,
@@ -36,17 +35,6 @@ export interface CombatRules {
   damage: TroopDamageConfig;
   stamina: TroopStaminaConfig;
 }
-
-/** The active game's combat rules, as its SliceRules carries them. */
-export const activeCombatRules = (): CombatRules => {
-  const { battle_config, troop_damage_config, troop_stamina_config } = configManager.getTroopConfig();
-  return {
-    cooldownSeconds: battle_config.cooldown_seconds,
-    tickSeconds: Number(configManager.getTick(TickIds.Armies)),
-    damage: troop_damage_config,
-    stamina: troop_stamina_config,
-  };
-};
 
 interface ExchangeContext {
   timestamp: number;

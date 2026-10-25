@@ -758,3 +758,56 @@ article.vocs_Content,
   width: auto;
   white-space: normal;
 }
+
+/* The pages' videos and screenshots (components/Media.tsx): full measure on a desktop capture, a phone's narrower. */
+.docs-media {
+  margin: 24px 0;
+}
+.docs-media video,
+.docs-media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--realm-border-etched);
+  border-radius: 8px;
+  background: var(--realm-surface-iron);
+}
+.docs-media-desktop video,
+.docs-media-desktop img {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+.docs-media-phone {
+  max-width: 320px;
+}
+.docs-media-phone video,
+.docs-media-phone img {
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+}
+.docs-media-wide video,
+.docs-media-wide img {
+  aspect-ratio: auto;
+}
+.docs-media-panel {
+  max-width: 440px;
+}
+.docs-media figcaption {
+  margin-top: 8px;
+  color: var(--realm-text-muted);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+/* The Eternum Season 1 archive's notice (components/SeasonOneArchive.tsx). */
+.season-archive {
+  margin: 0 0 24px;
+  padding: 12px 16px;
+  border: 1px solid var(--realm-border-strong);
+  border-left: 4px solid var(--realm-accent-ember);
+  border-radius: 8px;
+  background: var(--realm-surface-iron);
+  color: var(--realm-text);
+  font-size: 16px;
+  line-height: 26px;
+}

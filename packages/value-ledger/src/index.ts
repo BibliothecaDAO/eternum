@@ -13,13 +13,8 @@ export {
   readConfirmedLedgerHead,
 } from "./codecs";
 export { rpcAt, isDeploymentBlock } from "./rpc";
-export {
-  BLITZ_SLOT_PREPARATION_SECONDS,
-  blitzSlotFitsSeason,
-  readLedgerSlot,
-  readLedgerRegistration,
-  readRegistrationPage,
-} from "./blitz-slots";
+export { BLITZ_SLOT_INTERVAL_SECONDS, BLITZ_SLOT_PREPARATION_SECONDS } from "./blitz-timetable";
+export { blitzSlotFitsSeason, readLedgerSlot, readLedgerRegistration, readRegistrationPage } from "./blitz-slots";
 export type { LedgerSlotKey, SlotRegistration, RegistrationPage, RegistrationQuery } from "./blitz-slots";
 export type { LedgerSlot } from "./codecs";
 export { resolveBlitzRoster, splitPlaytestRoster } from "./blitz-roster";
