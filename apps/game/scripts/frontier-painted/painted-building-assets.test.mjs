@@ -96,8 +96,10 @@ function expectRuntimeParts(building, parts, animations) {
   expect(parts.has("order-cloth")).toBe(isRealm);
   if (isRealm) expectOrderCloth(parts.get("order-cloth"));
   const isMill = building.group === "farm";
+  const isRift = building.id === "essence-rift";
   expect(parts.has("rotor")).toBe(isMill);
-  expect(animations.map((animation) => animation.getName())).toEqual(isMill ? ["rotor"] : []);
+  expect(animations.map((animation) => animation.getName())).toEqual(isMill ? ["rotor"] : isRift ? ["rift-surge"] : []);
+  if (isRift) expectRiftSurge(parts.get("architecture"), animations[0]);
   if (isMill) {
     // The world map's instancing animates morph weights only; the rotor turns through its morph targets.
     const rotor = parts.get("rotor");
@@ -106,6 +108,35 @@ function expectRuntimeParts(building, parts, animations) {
     expect(channels.map((channel) => [channel.getTargetNode(), channel.getTargetPath()])).toEqual([[rotor, "weights"]]);
     expectConstantTurn(channels[0].getSampler());
   }
+}
+
+function expectRiftSurge(architecture, animation) {
+  const channels = animation.listChannels();
+  expect(channels.map((channel) => [channel.getTargetNode(), channel.getTargetPath()])).toEqual([
+    [architecture, "weights"],
+  ]);
+  const sampler = channels[0].getSampler();
+  expect(sampler.getInterpolation()).toBe("LINEAR");
+  const primitive = architecture.getMesh().listPrimitives()[0];
+  const positions = primitive.getAttribute("POSITION");
+  const targets = primitive.listTargets();
+  expect(targets.length).toBeGreaterThan(1);
+  const weights = Array.from(sampler.getOutput().getArray());
+  expect(weights.slice(0, targets.length)).toEqual(weights.slice(-targets.length));
+  expect(weights.some((weight) => weight > 0.9)).toBe(true);
+  let maxSurge = 0;
+  let moving = 0;
+  for (let index = 0; index < positions.getCount(); index++) {
+    const [x, y, z] = positions.getElement(index, []);
+    const offsets = targets.map((target) => target.getAttribute("POSITION").getElement(index, []));
+    const travel = Math.max(...offsets.map(([dx, dy, dz]) => Math.hypot(dx, dy, dz)));
+    if (y < 0.034 || Math.hypot(x, z) > 0.751) expect(travel).toBeLessThan(0.001);
+    if (travel > 0.01) moving++;
+    maxSurge = Math.max(maxSurge, travel);
+  }
+  expect(maxSurge).toBeGreaterThan(0.06);
+  expect(moving).toBeGreaterThan(30);
+  expect(moving).toBeLessThan(positions.getCount() / 2);
 }
 
 /** The sails turn at one speed through the loop: their progress through the steps grows in proportion to time. */
@@ -151,6 +182,10 @@ function insideHex(x, z) {
 /** Ownership cloth the realm's appearance paints with the order's banner; every flag samples inside the canvas. */
 function expectOrderCloth(node) {
   expect(node.getExtras().orderCloth).toBe("banner");
+  expectClothUvs(node);
+}
+
+function expectClothUvs(node) {
   for (const primitive of node.getMesh().listPrimitives()) {
     const uvs = primitive.getAttribute("TEXCOORD_0");
     for (let index = 0; index < uvs.getCount(); index++) {

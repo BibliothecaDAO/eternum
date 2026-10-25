@@ -10,6 +10,7 @@ import {
   structurePlural,
 } from "@bibliothecadao/types";
 import { BUILDINGS_GROUPS, buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
+import { frontierPaintedBuildingPath, frontierPaintedPath } from "@/three/structures/frontier-painted-buildings";
 
 export type GameModeId = "frontier" | "blitz" | "eternum" | "duel";
 
@@ -192,6 +193,10 @@ const frontierConfig: GameModeConfig = {
   ...blitzConfig,
   id: "frontier",
   displayName: "Frontier",
+  assets: {
+    buildingModelPaths: frontierBuildingModels(),
+    structureModelPaths: frontierStructureModels(),
+  },
   structure: buildStructureHelpers("frontier"),
   labels: {
     ...blitzConfig.labels,
@@ -225,6 +230,24 @@ const frontierConfig: GameModeConfig = {
       ].includes(key),
   },
 };
+
+function frontierBuildingModels() {
+  const paths = resolveBuildingModelPaths(true);
+  for (const key of Object.keys(paths[BUILDINGS_GROUPS.BUILDINGS])) {
+    const type = Number(key) as BuildingType;
+    const painted = frontierPaintedBuildingPath(type);
+    if (painted) paths[BUILDINGS_GROUPS.BUILDINGS][type] = painted;
+  }
+  paths[BUILDINGS_GROUPS.BUILDINGS][BuildingType.ResourceEssence] = frontierPaintedPath("essence-rift");
+  return paths;
+}
+
+function frontierStructureModels() {
+  const paths = getStructureModelPaths();
+  paths[StructureType.Rift] = [frontierPaintedPath("essence-rift"), ...paths[StructureType.Rift].slice(1)];
+  paths[StructureType.Ruin] = [frontierPaintedPath("fallen-realm-ruin"), ...paths[StructureType.Ruin].slice(1)];
+  return paths;
+}
 const duelConfig: GameModeConfig = {
   ...blitzConfig,
   id: "duel",

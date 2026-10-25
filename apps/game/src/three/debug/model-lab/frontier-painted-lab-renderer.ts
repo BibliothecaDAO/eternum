@@ -17,6 +17,8 @@ import { mountStaticLineup, type LineupAsset, type LineupSettings } from "./stat
 export interface FrontierPaintedLabSettings {
   group: FrontierPaintedGroup;
   compare: boolean;
+  shipped: boolean;
+  camera: "board" | "worldmap";
   /** One building of the set to look at closely, by its place in the set; the whole row otherwise. */
   focus: number | null;
   distance: number;
@@ -52,12 +54,17 @@ export async function mountFrontierPaintedLab(
   signal: AbortSignal,
 ) {
   const set = FRONTIER_PAINTED_BUILDINGS.filter((building) => building.group === settings.group);
-  const lineup = settings.compare ? [...placeRow(set, 0), ...placeShippedRow(set)] : placeRow(set, 0);
+  const lineup = settings.shipped
+    ? placeShippedRow(set, 0)
+    : settings.compare
+      ? [...placeRow(set, 0), ...placeShippedRow(set)]
+      : placeRow(set, 0);
   const toLineup = (value: FrontierPaintedLabSettings): LineupSettings => ({
     distance: value.distance,
     focus: value.focus ?? "lineup",
     yaw: value.yaw,
     lighting: value.lighting,
+    camera: value.camera === "worldmap" ? "worldmap" : undefined,
   });
   const mounted = await mountStaticLineup(container, toLineup(settings), signal, lineup);
   return {
@@ -75,11 +82,14 @@ function placeRow(buildings: readonly FrontierPaintedBuilding[], z: number): Lin
   }));
 }
 
-function placeShippedRow(buildings: readonly FrontierPaintedBuilding[]): LineupAsset[] {
-  return buildings.flatMap((building, slot) => {
+function placeShippedRow(buildings: readonly FrontierPaintedBuilding[], z = SHIPPED_ROW_Z): LineupAsset[] {
+  return buildings.map((building, slot) => {
     const path = resolveShippedPath(building);
-    if (!path) return [];
-    return [{ label: "", position: { x: slotX(slot, buildings.length), z: SHIPPED_ROW_Z }, parts: [{ path }] }];
+    return {
+      label: z === 0 ? `${building.label}${path ? "" : " · no shipped model"}` : "",
+      position: { x: slotX(slot, buildings.length), z },
+      parts: path ? [{ path }] : [],
+    };
   });
 }
 

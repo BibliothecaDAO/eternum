@@ -6,11 +6,13 @@ import { dayTurnScenario } from "./day-turn-scenario";
 import { installLabChain, LAB_GAME, type LabScenario } from "./lab-chain";
 import { realmScenario } from "./realm-scenario";
 import { spireScenario } from "./spire-scenario";
+import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 const SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   spire: spireScenario,
   realm: realmScenario,
+  "painted-buildings": paintedBuildingsScenario,
   "day-turn": dayTurnScenario("live"),
   "day-later": dayTurnScenario("later"),
   "day-turn-slow": dayTurnScenario("live", "late"),

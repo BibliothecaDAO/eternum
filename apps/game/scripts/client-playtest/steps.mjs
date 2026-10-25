@@ -1422,6 +1422,15 @@ export const STEP_SETS = {
   "lab-day-later": { game: labDayTurn("day-later"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-turn-slow": { game: labDayTurn("day-turn-slow"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-later-short": { game: labDayTurn("day-later-short"), steps: labDayTurnSteps(DAY_2_OUT_OF_REACH) },
+  "lab-painted-buildings": {
+    game: { ...LAB_SPIRE, lab: "painted-buildings" },
+    steps: [
+      { name: "painted-map", settleMs: 10_000, verify: inScene("map") },
+      { name: "painted-board", play: goTo("Realm", "hex"), settleMs: 10_000, verify: inScene("hex") },
+      { name: "return-to-map", play: goTo("Map", "map"), settleMs: 3_000, verify: inScene("map") },
+    ],
+    devOverlays: true,
+  },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },
