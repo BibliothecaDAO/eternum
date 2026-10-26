@@ -15,13 +15,16 @@ const proof = {
   release: approved.release,
 };
 test("prepares the atomic admin upgrade and extension, never a funding or Blitz call", () => {
-  expect(extensionCalls(proof, "0x1", "0x2")).toEqual([
+  expect(extensionCalls(proof, approved.previousLedgerClass, "0x2")).toEqual([
     { contractAddress: "0x123", entrypoint: "upgrade", calldata: ["0x2"] },
     { contractAddress: "0x123", entrypoint: "extend_frontier", calldata: [approved.chainId, "1"] },
   ]);
   expect(extensionCalls(proof, "0x2", "0x2")).toHaveLength(1);
+  expect(() => extensionCalls(proof, "0x3", "0x2")).toThrow("unreviewed predecessor");
   expect(extensionCalls({ ...proof, ledgerEnd: approved.end }, "0x2", "0x2")).toEqual([]);
-  expect(() => extensionCalls({ ...proof, worldEnd: approved.oldEnd }, "0x1", "0x2")).toThrow("Apply and confirm");
+  expect(() => extensionCalls({ ...proof, worldEnd: approved.oldEnd }, approved.previousLedgerClass, "0x2")).toThrow(
+    "Apply and confirm",
+  );
 });
 test("reconciliation sends nothing until both clocks agree and safely retries a lost response", async () => {
   const dates = {
@@ -62,8 +65,8 @@ test("refuses an unapproved target or missing operator token before any calendar
     "OPERATOR_TOKEN",
   );
   expect(network).not.toHaveBeenCalled();
-  expect(() => extensionCalls(proof, "0x1", "0x0")).toThrow("Invalid reviewed");
-  expect(() => extensionCalls({ ...proof, ledgerEnd: approved.end + 1 }, "0x1", "0x2")).toThrow(
+  expect(() => extensionCalls(proof, approved.previousLedgerClass, "0x0")).toThrow("Invalid reviewed");
+  expect(() => extensionCalls({ ...proof, ledgerEnd: approved.end + 1 }, approved.previousLedgerClass, "0x2")).toThrow(
     "Unapproved ledger end",
   );
 });

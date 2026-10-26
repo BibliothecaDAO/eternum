@@ -13,6 +13,8 @@ export function extensionCalls(proof: Proof, currentClass: string, reviewedClass
     throw new Error("Apply and confirm the approved world release before preparing the ledger extension");
   if (!/^0x[0-9a-f]+$/i.test(reviewedClass) || BigInt(reviewedClass) === 0n)
     throw new Error("Invalid reviewed ledger class");
+  if (![approved.previousLedgerClass, reviewedClass].some((expected) => BigInt(currentClass) === BigInt(expected)))
+    throw new Error("The ledger runs an unreviewed predecessor class");
   const calls: Call[] = [];
   if (BigInt(currentClass) !== BigInt(reviewedClass))
     calls.push({ contractAddress: proof.ledgerAddress, entrypoint: "upgrade", calldata: [reviewedClass] });

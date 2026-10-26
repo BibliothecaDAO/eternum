@@ -10,5 +10,6 @@
   "dayUnit": 14400,
   "claimWindow": 604800,
   "poolLords": 1000000,
-  "release": 4
+  "release": 4,
+  "previousLedgerClass": "0x1fc1d7a67f775e2dd65be2d64738facd508213afd8628c156cce024ac4efda1"
 }
