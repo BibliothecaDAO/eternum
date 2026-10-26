@@ -83,11 +83,8 @@ await withDevClient({ base: values["base-url"], port: values.port, out: values.o
         record.ready = await waitFor(b, `${FEED} !== undefined`, READY_MS);
         if (!record.ready) continue;
         await sleep(3_000);
-        // The recorded day opens on its "Day 2 done" card over the Feed; a player continues past it first.
-        record.presses.push({
-          press: "the day card's Continue",
-          status: b.evaluate(press("Continue")) ? "led" : "none",
-        });
+        // The recorded day can open on its "Day 2 done" card over the Feed; a player continues past it first.
+        if (b.evaluate(press("Continue"))) record.presses.push({ press: "the day card's Continue", status: "led" });
         await sleep(1_000);
         b.run("screenshot", join(out, `${device.name}-open.png`));
         record.feedBox = b.evaluate(`JSON.stringify(${FEED}.getBoundingClientRect())`);
