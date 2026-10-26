@@ -95,7 +95,7 @@ afterEach(() => {
   notifyManager.setNotifyFunction((notify) => notify());
 });
 
-const PROD_DAY_2 = ["35Reveals", "5Sites cleared", "0Chests", "+7,246Essence", "+524Labor", "+0LORDS"];
+const PROD_DAY_2 = ["35Reveals", "5Sites cleared", "0Chests", "+7.2KEssence", "+524Labor", "+0LORDS"];
 
 let client: QueryClient;
 /** Draws the HUD's day end at the clock as it stands. */

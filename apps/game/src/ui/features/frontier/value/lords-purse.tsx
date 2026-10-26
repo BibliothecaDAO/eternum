@@ -1,4 +1,4 @@
-import { formatExact, formatGain, LORDS } from "@bibliothecadao/types";
+import { formatExact, formatGain, LORDS, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { LABOR, REALMS } from "@/ui/design-system/kit/words";
@@ -27,13 +27,13 @@ export const LordsPurse = ({
     {[
       <span key="lords" className="flex items-center gap-1.5 tabular-nums">
         <SemanticIcon name="lords" size={26} />
-        {formatExact(lords)}
+        {formatShort(lords)}
       </span>,
       ...(gain === undefined
         ? []
         : [
             <span key="gain" className="tabular-nums text-hud-good">
-              +{formatExact(gain)}
+              {formatShort(gain, { signed: true })}
             </span>,
           ]),
     ]}
@@ -49,7 +49,7 @@ export const RealmsChip = ({ labor, onOpen }: { labor: number; onOpen: () => voi
         {labor > 0 && (
           <>
             <SemanticIcon name="labor" size={22} />
-            {formatGain(labor)}
+            {formatShort(labor, { signed: true })}
           </>
         )}
       </span>,

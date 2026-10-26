@@ -1,5 +1,5 @@
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { formatAmount, formatGain, frontierSiteName, LORDS, StructureType } from "@bibliothecadao/types";
+import { frontierSiteName, LORDS, StructureType, formatShort } from "@bibliothecadao/types";
 import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { OrderMark } from "./realm-marks";
 import {
@@ -57,7 +57,7 @@ export const SeasonDetailSheet = ({
       </header>
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         <HudChip icons={["flag"]} label={CLEARED}>
-          {formatAmount(detail.sites.total)}
+          {formatShort(detail.sites.total)}
         </HudChip>
         <span aria-hidden className="text-hud-body text-hud-muted">
           =
@@ -66,24 +66,24 @@ export const SeasonDetailSheet = ({
           icons={[structureMeaning(StructureType.Camp, "frontier")]}
           label={frontierSiteName(StructureType.Camp)}
         >
-          {formatAmount(detail.sites.camps)}
+          {formatShort(detail.sites.camps)}
         </HudChip>
         <HudChip icons={["rift"]} label={RIFT}>
-          {formatAmount(detail.sites.rifts)}
+          {formatShort(detail.sites.rifts)}
         </HudChip>
         <HudChip icons={["ruin"]} label={RUIN}>
-          {formatAmount(detail.sites.ruins)}
+          {formatShort(detail.sites.ruins)}
         </HudChip>
         <HudChip icons={["troops"]} label={BEASTS}>
-          {formatAmount(detail.sites.beasts)}
+          {formatShort(detail.sites.beasts)}
         </HudChip>
       </div>
       <div className="flex items-center justify-center gap-1.5">
         <HudChip icons={["chest"]} label={CHESTS}>
-          {formatAmount(detail.chests)}
+          {formatShort(detail.chests)}
         </HudChip>
         <HudChip icons={["lords"]} label={LORDS}>
-          {formatAmount(detail.lords)}
+          {formatShort(detail.lords)}
         </HudChip>
         {detail.depth > 0 && (
           <HudChip icons={["portal"]} label={DEPTH}>
@@ -93,10 +93,10 @@ export const SeasonDetailSheet = ({
       </div>
       <div className="flex items-center justify-center gap-1.5">
         <HudChip icons={["essence"]} label={ESSENCE}>
-          {formatGain(detail.essence)}
+          {formatShort(detail.essence, { signed: true })}
         </HudChip>
         <HudChip icons={["labor"]} label={LABOR}>
-          {formatGain(detail.labor)}
+          {formatShort(detail.labor, { signed: true })}
         </HudChip>
       </div>
       {onVisit && (

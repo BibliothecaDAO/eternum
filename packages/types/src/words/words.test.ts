@@ -16,6 +16,8 @@ import {
   formatPopulation,
   formatPopulationInWords,
   formatRate,
+  formatShort,
+  formatShortChange,
   formatTypedNumber,
   readTypedNumber,
   typedNumberText,
@@ -40,6 +42,25 @@ describe("numbers", () => {
     expect(formatGain(0.4)).toBe("under 1");
     expect(formatGain(0)).toBe("+0");
     expect(formatGain(undefined)).toBe("—");
+  });
+
+  it("writes a chip's number short from a thousand, signed for a gain", () => {
+    expect(formatShort(1_000, { signed: true })).toBe("+1K");
+    expect(formatShort(1_000)).toBe("1K");
+    expect(formatShort(13_940)).toBe("13.9K");
+    expect(formatShort(999)).toBe("999");
+    expect(formatShort(12, { signed: true })).toBe("+12");
+    expect(formatShort(0.4, { signed: true })).toBe("under 1");
+    expect(formatShort(0.4)).toBe("<1");
+    expect(formatShort(undefined)).toBe("—");
+  });
+
+  it("writes a chip's before and after short, exact where short would read as no change", () => {
+    expect(formatShortChange(1_240, 1_000)).toBe("1.2K → 1K");
+    expect(formatShortChange(1_240, 1_230)).toBe("1,240 → 1,230");
+    expect(formatShortChange(7, 140)).toBe("7 → 140");
+    expect(formatShortChange(2_000, 2_000)).toBe("2K → 2K");
+    expect(formatShortChange(500, undefined)).toBe("500 → —");
   });
 
   it("writes a percent whole from ten up, to one place below, signed only as a bonus", () => {

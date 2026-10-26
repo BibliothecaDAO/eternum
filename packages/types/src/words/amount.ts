@@ -57,6 +57,27 @@ const signedCompact = new Intl.NumberFormat("en-US", {
   signDisplay: "always",
 });
 
+/**
+ * A number in a chip or a pill, where room is short (owner, 26 October 2026, on "+1,000": "just put 1k instead of
+ * 1000"): compact from a thousand ("1K", "13.9K"), whole below it, signed when it is a gain ("+1K"). Under a unit it
+ * reads as an amount and a gain do ("<1", "under 1").
+ */
+export const formatShort = (value: number | undefined, { signed = false } = {}): string => {
+  if (value === undefined) return "—";
+  if (Math.abs(value) >= 1_000) return (signed ? signedCompact : compact).format(value);
+  return signed ? formatGain(value) : formatAmount(value);
+};
+
+/**
+ * A chip's before and after ("1.2K → 1K"), each short, unless the two would read alike while they differ: a 10 LORDS
+ * price from 1,240 is "1,240 → 1,230", never "1.2K → 1.2K", a change that reads as none.
+ */
+export const formatShortChange = (before: number | undefined, after: number | undefined): string => {
+  const short = `${formatShort(before)} → ${formatShort(after)}`;
+  const alike = before !== after && formatShort(before) === formatShort(after);
+  return alike ? `${formatExact(before)} → ${formatExact(after)}` : short;
+};
+
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
 /**

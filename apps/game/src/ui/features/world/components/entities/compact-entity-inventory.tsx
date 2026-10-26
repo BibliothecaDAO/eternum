@@ -23,6 +23,7 @@ import {
   ResourcesIds,
   formatAmount,
   resourceName,
+  formatShort,
 } from "@bibliothecadao/types";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -287,7 +288,7 @@ const InventoryResource = ({ item }: { item: DisplayItem }) => {
     <span data-tip={name}>
       <HudChip>
         <ResourceIcon resource={item.resourceId} size="xs" withTooltip={false} />
-        {formatAmount(Math.floor(item.amount))}
+        {formatShort(Math.floor(item.amount))}
       </HudChip>
     </span>
   );

@@ -12,7 +12,7 @@ import {
   type Tier,
   tierNumeral,
 } from "@/ui/design-system/kit/words";
-import { formatAmount, formatExact } from "@bibliothecadao/types";
+import { formatAmount, formatExact, formatShort } from "@bibliothecadao/types";
 import { useState } from "react";
 
 import { type Branch, firstMissing, type Need, needLine, type NodeState, type TreeNode } from "./research-tree";
@@ -302,10 +302,10 @@ const tierOf = (node: TreeNode) => (node.tier + 1) as Tier;
 const HeldCue = ({ essence, labor }: { essence: number; labor: number }) => (
   <span className="flex gap-1">
     <HudChip icons={["essence"]} label={ESSENCE}>
-      {formatAmount(essence)}
+      {formatShort(essence)}
     </HudChip>
     <HudChip icons={["labor"]} label={LABOR}>
-      {formatAmount(labor)}
+      {formatShort(labor)}
     </HudChip>
   </span>
 );

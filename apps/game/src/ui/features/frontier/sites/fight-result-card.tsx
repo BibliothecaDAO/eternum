@@ -1,4 +1,4 @@
-import { formatCharge, formatExact } from "@bibliothecadao/types";
+import { formatCharge, formatExact, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
@@ -82,7 +82,7 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
             </span>
           )}
           <HudChip>
-            {`+${formatExact(result.gained.xp)}`} {XP}
+            {`${formatShort(result.gained.xp, { signed: true })}`} {XP}
           </HudChip>
         </HudPanel>
       )}

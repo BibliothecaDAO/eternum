@@ -148,8 +148,8 @@ describe("the tile card", () => {
     try {
       const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
       expect(card).not.toBeNull();
-      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1,100");
-      expect(host.querySelector('[aria-label="Beast 1,100"]')).not.toBeNull();
+      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1.1K");
+      expect(host.querySelector('[aria-label="Beast 1.1K"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
@@ -169,7 +169,7 @@ describe("the tile card", () => {
       const card = host.querySelector('section[aria-label="North Watch"]')!;
       expect(card).not.toBeNull();
       expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-      expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1,100");
+      expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1.1K");
       expect(card.textContent?.match(/Troll/g)).toHaveLength(1);
       expect(card.textContent).not.toMatch(/\bcamp\b/i);
     } finally {

@@ -1,4 +1,4 @@
-import { formatAmount, formatExact, LORDS } from "@bibliothecadao/types";
+import { formatAmount, formatExact, LORDS, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import {
   HudButton,
@@ -158,7 +158,7 @@ const SeasonChip = ({
           <>
             <SemanticIcon name="chest" size={16} />
             <SemanticIcon name="lords" size={16} />
-            <span className="tabular-nums">{formatAmount(chest.lords)}</span>
+            <span className="tabular-nums">{formatShort(chest.lords)}</span>
           </>
         )}
         {chest && rank !== null && <span aria-hidden className="mx-0.5 h-4 w-px bg-hud-divider" />}

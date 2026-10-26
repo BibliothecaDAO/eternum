@@ -64,17 +64,17 @@ describe("Today", () => {
     const onEarlier = vi.fn();
     const { host, unmount } = render({ onEarlier });
     expect(host.textContent).toContain("Day 12");
-    expect(host.textContent).toContain("+4,150");
+    expect(host.textContent).toContain("+4.2K");
     // Each of the six figures is one image named with its figure: what a reader hears, and what the tooltip shows.
     expect(
       [...host.querySelectorAll('[role="img"][aria-label]')].map((cell) => cell.getAttribute("aria-label")),
-    ).toEqual(["Reveals 19", "Sites cleared 2", "Chests 0", "Essence +4,150", "Labor +550", "LORDS —"]);
+    ).toEqual(["Reveals 19", "Sites cleared 2", "Chests 0", "Essence +4.2K", "Labor +550", "LORDS —"]);
     // Each tally is named in words under its figure, not by its icon alone.
     expect([...host.querySelectorAll("[data-total]")].map((cell) => cell.textContent)).toEqual([
       "19Reveals",
       "2Sites cleared",
       "0Chests",
-      "+4,150Essence",
+      "+4.2KEssence",
       "+550Labor",
       "—LORDS",
     ]);
