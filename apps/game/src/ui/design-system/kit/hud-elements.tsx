@@ -148,8 +148,7 @@ HudField.displayName = "HudField";
 
 /**
  * Whole units typed into an amount field, read as the game has always read them: a sign, digits and thousands commas,
- * the whole part only ("1.5" is 1), held between `min` and `max` ("-500" is 0). Nothing typed yet is null: the field
- * stays blank until it loses focus, and nothing is reported.
+ * the whole part only ("1.5" is 1), held between `min` and `max` ("-500" is 0). Nothing typed yet is null.
  */
 const parseWholeAmount = (text: string, min: number, max: number): number | null =>
   heldBetween(readTypedNumber(text, { whole: true }), min, max);
@@ -166,8 +165,10 @@ const heldBetween = (typed: number | null, min: number, max: number): number | n
   typed === null ? null : Math.min(Math.max(Number.isNaN(typed) ? min : typed, min), max);
 
 /**
- * The one amount input every amount element types into: whole units, formatted, blank while cleared. A decimal one keeps
- * what is typed on screen while it has focus, so a fraction can be typed one digit at a time ("0." stays "0.").
+ * The one amount input every amount element types into: whole units, formatted. A decimal one keeps what is typed on
+ * screen while it has focus, so a fraction can be typed one digit at a time ("0." stays "0."). A cleared field is its
+ * least, `min`: it says so at once and stays blank while it has focus, so its caller never still holds the amount it
+ * showed before. A `display` one is the amount a sheet is about, typed where it is shown large.
  */
 export const AmountInput = ({
   label,
@@ -175,6 +176,7 @@ export const AmountInput = ({
   min = 0,
   max,
   decimals = false,
+  display = false,
   disabled,
   autoFocus,
   onChange,
@@ -184,13 +186,14 @@ export const AmountInput = ({
   min?: number;
   max: number;
   decimals?: boolean;
+  display?: boolean;
   disabled?: boolean;
   autoFocus?: boolean;
   onChange: (amount: number) => void;
 }) => {
   const [draft, setDraft] = useState<string | null>(null);
   return (
-    <label className="ui-field">
+    <label className="ui-field" data-size={display ? "display" : undefined}>
       <span className="sr-only">{label}</span>
       <input
         aria-label={label}
@@ -203,7 +206,7 @@ export const AmountInput = ({
           const amount = decimals ? parseDecimalAmount(text, min, max) : parseWholeAmount(text, min, max);
           if (amount === null) setDraft("");
           else setDraft(decimals ? (typedNumberText(text) ?? formatTypedNumber(amount)) : null);
-          if (amount !== null) onChange(amount);
+          onChange(amount ?? min);
         }}
         onBlur={() => setDraft(null)}
       />

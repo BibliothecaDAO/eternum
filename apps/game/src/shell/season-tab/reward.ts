@@ -10,6 +10,7 @@ import {
 } from "@realms-world/value-ledger/codecs";
 
 import { fetchApi } from "@/runtime/app-api";
+import { L2_BLOCK_MS } from "@/runtime/l2-rpc";
 
 import type { EnvironmentLedger, GameKey, SlotKey } from "../value/ledger";
 
@@ -73,14 +74,14 @@ export const rewardKey = (keys: PlayedGameKeys, wallet: string) =>
   ["ledger", "reward", keys.game.shard, keys.game.gameId, wallet] as const;
 
 /**
- * Read every 30 s, and every 2 s while the chest's draw is under way: about one Starknet block (11 blocks took 19 s on
- * mainnet, reports/chest-open-1.md), so each new block and then the reveal show as soon as they land.
+ * Read every 30 s, and every block while the chest's draw is under way, so each new block and then the reveal show as
+ * soon as they land.
  */
 export const useReward = (ledger: EnvironmentLedger, keys: PlayedGameKeys, wallet: string) =>
   useQuery({
     queryKey: rewardKey(keys, wallet),
     queryFn: () => readReward(ledger, keys, wallet),
-    refetchInterval: (query) => (query.state.data?.drawBlocksLeft == null ? 30_000 : 2_000),
+    refetchInterval: (query) => (query.state.data?.drawBlocksLeft == null ? 30_000 : L2_BLOCK_MS),
   });
 
 /**

@@ -238,6 +238,17 @@ button.ui-panel__name[data-action]:hover {
 .ui-field:has(input:disabled) {
   opacity: 0.45;
 }
+/* The amount a sheet is about (Withdraw's LORDS), typed where it is shown large: the hero's own size, in its field. */
+.ui-field[data-size="display"] {
+  height: auto;
+  padding: theme(spacing.1) theme(spacing.3);
+}
+.ui-field[data-size="display"] input {
+  width: 7ch;
+  font-size: var(--hud-text-display);
+  line-height: var(--hud-leading-display);
+  font-weight: var(--hud-weight-display);
+}
 /* A field on its own (a name, a search, an amount) is as wide as its container; the amount rows size their own. */
 .ui-field[data-fill] {
   display: flex;

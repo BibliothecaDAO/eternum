@@ -1,7 +1,8 @@
 import { formatExact, LORDS } from "@bibliothecadao/types";
+import type { ReactNode } from "react";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { HudButton, HudChip, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { AmountInput, HudButton, HudChip, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   CONTINUE,
   LINK_WALLET,
@@ -101,8 +102,9 @@ const WithdrawBody = ({
 };
 
 /**
- * Choose the amount (or all of it), see the count after and where the LORDS go, then Withdraw carrying the amount. After
- * a withdrawal the game did not apply, its reason stands over the choice.
+ * Choose the amount: typed where it shows, dragged, or all of it; see the count after and where the LORDS go, then
+ * Withdraw carrying the amount (Enter in the amount withdraws too). After a withdrawal the game did not apply, its
+ * reason stands over the choice.
  */
 const Pick = ({
   held,
@@ -118,21 +120,32 @@ const Pick = ({
   notApplied: string | undefined;
   onAmount: (amount: number) => void;
   onWithdraw: () => void;
-}) => (
-  <>
-    <Hero icon="lords" value={formatExact(amount)} />
-    <AmountRange label={LORDS} icon="lords" value={amount} max={held ?? 0} disabled={!held} onChange={onAmount} />
-    <Flow before={held} after={held === undefined ? undefined : held - amount} address={address} />
-    {notApplied && <HudNotice tone="warn" line={notApplied} />}
-    <HudButton kind="primary" disabled={!held || amount < 1 || amount > held} onClick={onWithdraw}>
-      {WITHDRAW}
-    </HudButton>
-  </>
-);
+}) => {
+  const ready = held !== undefined && amount >= 1 && amount <= held;
+  return (
+    <form
+      className="contents"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (ready) onWithdraw();
+      }}
+    >
+      <Hero icon="lords">
+        <AmountInput display label={LORDS} value={amount} max={held ?? 0} disabled={!held} onChange={onAmount} />
+      </Hero>
+      <AmountRange label={LORDS} icon="lords" value={amount} max={held ?? 0} disabled={!held} onChange={onAmount} />
+      <Flow before={held} after={held === undefined ? undefined : held - amount} address={address} />
+      {notApplied && <HudNotice tone="warn" line={notApplied} />}
+      <HudButton kind="primary" type="submit" disabled={!ready}>
+        {WITHDRAW}
+      </HudButton>
+    </form>
+  );
+};
 
 const NoWallet = ({ held, onLinkWallet }: { held: number | undefined; onLinkWallet: () => void }) => (
   <>
-    <Hero icon="lords" value={formatExact(held)} />
+<Hero icon="lords">{formatExact(held)}</Hero>
     <p className="text-center">{LORDS_GO_TO_WALLET}</p>
     <HudNotice tone="warn" line={NO_WALLET} />
     <HudButton kind="primary" icon="share" onClick={onLinkWallet}>
@@ -143,7 +156,7 @@ const NoWallet = ({ held, onLinkWallet }: { held: number | undefined; onLinkWall
 
 const Refused = ({ held, address, line }: { held: number | undefined; address: string; line: string }) => (
   <>
-    <Hero icon="lords" value={formatExact(held)} />
+    <Hero icon="lords">{formatExact(held)}</Hero>
     <div className="flex justify-center">
       <WalletChip address={address} />
     </div>
@@ -156,7 +169,7 @@ const Refused = ({ held, address, line }: { held: number | undefined; address: s
 
 const Sending = ({ amount, held, wallet }: { amount: number; held: number | undefined; wallet: string | null }) => (
   <>
-    <Hero icon="lords" value={formatExact(amount)} />
+    <Hero icon="lords">{formatExact(amount)}</Hero>
     <Leaving held={held} wallet={wallet} />
     <HudButton kind="primary" busy={SENDING}>
       {WITHDRAW}
@@ -166,7 +179,7 @@ const Sending = ({ amount, held, wallet }: { amount: number; held: number | unde
 
 const Waiting = ({ amount, held, wallet }: { amount: number; held: number | undefined; wallet: string | null }) => (
   <>
-    <Hero icon="hourglass" value={formatExact(amount)} />
+    <Hero icon="hourglass">{formatExact(amount)}</Hero>
     <Leaving held={held} wallet={wallet} />
     <HudNotice tone="warn" line={paidWhenResumed(formatExact(amount))} />
   </>
@@ -185,7 +198,7 @@ const Unknown = ({
   onClose: () => void;
 }) => (
   <>
-    <Hero icon="hourglass" value={formatExact(amount)} />
+    <Hero icon="hourglass">{formatExact(amount)}</Hero>
     <Leaving held={held} wallet={wallet} />
     <HudNotice tone="warn" line={withdrawalUnknown(formatExact(amount))} />
     <HudButton kind="primary" onClick={onClose}>
@@ -204,7 +217,7 @@ const Paid = ({
   onClose: () => void;
 }) => (
   <>
-    <Hero icon="backpack" value={`+${formatExact(step.amount)}`} />
+    <Hero icon="backpack">{`+${formatExact(step.amount)}`}</Hero>
     {wallet !== null && (
       <div className="flex justify-center">
         <WalletChip address={wallet} paid />
@@ -268,11 +281,11 @@ const WalletChip = ({ address, paid = false }: { address: string; paid?: boolean
 );
 
 /** The amount the sheet is about, large, beside what it is. */
-const Hero = ({ icon, value }: { icon: IconMeaning; value: string }) => (
+const Hero = ({ icon, children }: { icon: IconMeaning; children: ReactNode }) => (
   <div className="flex items-center justify-center gap-3.5">
     <span className="flex size-16 items-center justify-center rounded-full border border-hud-line">
       <SemanticIcon name={icon} size={44} />
     </span>
-    <span className="text-hud-display tabular-nums">{value}</span>
+    <span className="text-hud-display tabular-nums">{children}</span>
   </div>
 );
