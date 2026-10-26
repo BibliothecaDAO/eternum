@@ -1,6 +1,6 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { defaultScheduler, notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 
@@ -83,6 +83,7 @@ let root: Root;
 
 beforeEach(async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  notifyManager.setScheduler(queueMicrotask);
   notifyManager.setNotifyFunction((notify) => act(notify));
   history.mockClear();
   resetGameSyncStoryEvents();
@@ -102,6 +103,7 @@ afterEach(() => {
   history.mockResolvedValue({ items: [], complete_through_block: 0, limit: 1, offset: 0, total: 0 });
   act(() => root.unmount());
   notifyManager.setNotifyFunction((notify) => notify());
+  notifyManager.setScheduler(defaultScheduler);
 });
 
 it("recovers the exact relic activation from history on reload without an active effect or a streamed event", async () => {
