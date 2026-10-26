@@ -4,11 +4,13 @@ import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { build } from "vite";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { hashedModels } from "./hashed-models";
 
 const roots: string[] = [];
 afterEach(async () => {
+  vi.unstubAllGlobals();
+  vi.resetModules();
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
@@ -31,7 +33,12 @@ async function builtClient(models: Record<string, string>) {
       .filter((entry) => entry.isFile())
       .map((entry) => join(entry.parentPath, entry.name).slice(dist.length));
   const script = (await files(join(dist, "assets"))).find((file) => file.endsWith(".js"))!;
-  return { models: (await files(join(dist, "models"))).toSorted(), script: await readFile(join(dist, script), "utf8") };
+  return {
+    dist,
+    models: (await files(join(dist, "models"))).toSorted(),
+    script: await readFile(join(dist, script), "utf8"),
+    urls: JSON.parse(await readFile(join(dist, "model-urls.json"), "utf8")) as Record<string, string>,
+  };
 }
 
 it("serves each model at a name carrying its content's hash, and gives the client the map from each URL to it", async () => {
@@ -55,4 +62,59 @@ it("gives a changed model a new URL and an unchanged one the same", async () => 
 
   expect(before.models).not.toContain(after.models.find((file) => file.includes("/city.")));
   expect(after.models).toContain(before.models.find((file) => file.includes("/kingdom.")));
+});
+
+const model = (release: string) =>
+  JSON.stringify({ asset: { version: "2.0" }, scenes: [{}], scene: 0, extras: { release } });
+
+/**
+ * The game's glTF loader in a tab opened on one release while the host serves another's files. A missing file gets
+ * the app's page, as Pages answers a path it does not hold.
+ */
+async function tabOpenedOn(release: { urls: Record<string, string> }, served: { dist: string }) {
+  const asked: string[] = [];
+  vi.stubGlobal("__MODEL_URLS__", release.urls);
+  vi.stubGlobal("ProgressEvent", class extends Event {});
+  vi.stubGlobal(
+    "Request",
+    class {
+      constructor(readonly url: string) {}
+    },
+  );
+  vi.stubGlobal("fetch", async (request: string | { url: string }) => {
+    const path = typeof request === "string" ? request : request.url;
+    asked.push(path);
+    try {
+      return new Response(await readFile(join(served.dist, path)));
+    } catch {
+      return new Response("<!doctype html><title>Realms</title>", { headers: { "content-type": "text/html" } });
+    }
+  });
+  const { gltfLoader } = await import("@/three/utils/gltf-loader");
+  return { asked, gltfLoader };
+}
+
+it("loads a model a deployment changed in a tab opened before it, from the deployment's own map", async () => {
+  const before = await builtClient({ "realms/city.gltf": model("before"), "realms/kingdom.gltf": model("kept") });
+  const after = await builtClient({ "realms/city.gltf": model("after"), "realms/kingdom.gltf": model("kept") });
+  const tab = await tabOpenedOn(before, after);
+
+  const city = await tab.gltfLoader.loadAsync("/models/realms/city.gltf");
+
+  expect(city.userData).toEqual({ release: "after" });
+  expect(tab.asked).toEqual([
+    before.urls["/models/realms/city.gltf"],
+    "/model-urls.json",
+    after.urls["/models/realms/city.gltf"],
+  ]);
+  expect((await tab.gltfLoader.loadAsync("/models/realms/kingdom.gltf")).userData).toEqual({ release: "kept" });
+});
+
+it("fails a model the deployment does not serve after one read of its map", async () => {
+  const before = await builtClient({ "realms/city.gltf": model("before"), "realms/ruin.gltf": model("before") });
+  const after = await builtClient({ "realms/city.gltf": model("before") });
+  const tab = await tabOpenedOn(before, after);
+
+  await expect(tab.gltfLoader.loadAsync("/models/realms/ruin.gltf")).rejects.toThrow();
+  expect(tab.asked.filter((path) => path === "/model-urls.json")).toHaveLength(1);
 });

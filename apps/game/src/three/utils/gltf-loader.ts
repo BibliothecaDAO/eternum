@@ -1,10 +1,9 @@
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
 import type { Texture } from "three";
-// Its loaders fetch models at the URLs a build serves them at (content-hashed names).
-import "./model-url";
+import { currentModelUrls, readDeployedModelUrls } from "./model-url";
 
 type KtxRenderer = Parameters<KTX2Loader["detectSupport"]>[0];
 
@@ -19,7 +18,29 @@ if (!isVitest) {
   dracoLoader.preload();
 }
 
-export const gltfLoader = new GLTFLoader();
+/**
+ * The game's one glTF loader. Models are fetched at the URLs the build serves them at (content-hashed names); a model
+ * that fails to load is asked for once more when the deployment now names it, or its buffers, differently.
+ */
+class DeployedGltfLoader extends GLTFLoader {
+  override load(
+    url: string,
+    onLoad: (gltf: GLTF) => void,
+    onProgress?: (event: ProgressEvent) => void,
+    onError?: (error: unknown) => void,
+  ): void {
+    const asked = currentModelUrls();
+    super.load(url, onLoad, onProgress, (error) => {
+      void readDeployedModelUrls().then(() => {
+        if (currentModelUrls() !== asked) super.load(url, onLoad, onProgress, onError);
+        else if (onError) onError(error);
+        else console.error(error);
+      });
+    });
+  }
+}
+
+export const gltfLoader = new DeployedGltfLoader();
 gltfLoader.setDRACOLoader(dracoLoader);
 gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 

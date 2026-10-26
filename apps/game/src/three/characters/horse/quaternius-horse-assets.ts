@@ -1,11 +1,11 @@
 import { Bone, SkinnedMesh } from "three";
-import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 
 import { disposeSkinnedSceneTemplates } from "../skinned-asset-resources";
 import { resolveHorseRigRequiredBoneNames } from "./horse-rig-adapter";
 import type { LoadedProceduralHorseAssetTemplate, ProceduralHorseAssetDefinition } from "./procedural-horse-assets";
 import { QUATERNIUS_HORSE_RIG_ADAPTER } from "./quaternius-horse-rig-adapter";
-import { modelUrl } from "@/three/utils/model-url";
+import { gltfLoader } from "@/three/utils/gltf-loader";
 
 const QUATERNIUS_HORSE_ASSET = {
   adapterId: QUATERNIUS_HORSE_RIG_ADAPTER.id,
@@ -32,7 +32,7 @@ const QUATERNIUS_HORSE_REFERENCE_CLIPS = [
 ] as const;
 
 export async function loadQuaterniusHorseAssetTemplates(): Promise<LoadedProceduralHorseAssetTemplate[]> {
-  const gltf = await new GLTFLoader().loadAsync(modelUrl(QUATERNIUS_HORSE_ASSET.url));
+  const gltf = await gltfLoader.loadAsync(QUATERNIUS_HORSE_ASSET.url);
   try {
     validateQuaterniusHorse(gltf);
     return [{ ...QUATERNIUS_HORSE_ASSET, gltf }];

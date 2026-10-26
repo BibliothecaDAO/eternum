@@ -39,8 +39,9 @@ function renameHashedModels(outputDirectory: string, urls: Record<string, string
 
 /**
  * The build serves models at content-hashed URLs: the client reads the map as `__MODEL_URLS__` (three/utils/model-url.ts)
- * and the output holds only the hashed files, so `public/_headers` can cache `/models/*` as immutable. In development
- * and tests the map is absent and each model keeps its own URL.
+ * and the output holds only the hashed files, so `public/_headers` can cache `/models/*` as immutable. The map is also
+ * published as `/model-urls.json`, which a tab opened before a later deployment reads when one of its models has gone.
+ * In development and tests the map is absent and each model keeps its own URL.
  */
 export function hashedModels(): Plugin {
   let urls: Record<string, string> = {};
@@ -54,6 +55,9 @@ export function hashedModels(): Plugin {
     },
     configResolved(config) {
       outputDirectory = resolve(config.root, config.build.outDir);
+    },
+    generateBundle() {
+      this.emitFile({ type: "asset", fileName: "model-urls.json", source: JSON.stringify(urls) });
     },
     writeBundle() {
       renameHashedModels(outputDirectory, urls);
