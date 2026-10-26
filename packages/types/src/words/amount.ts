@@ -126,13 +126,15 @@ export const formatPercent = (fraction: number | undefined, { signed = false } =
 };
 
 /**
- * A rate, from its amount a second: a second when it is one or more ("+2.5/s"), a minute below ("+30/min",
- * "+0.6/min"), signed, never an hour. Nothing gained reads "0/min".
+ * A rate, from its amount a second: a second when it is one or more ("+2.5/s"), a minute below, whole from one a minute
+ * ("+30/min", "+8/min": no decimal a player has to read) and two figures under it ("+0.6/min"), signed, never an hour.
+ * Nothing gained reads "0/min".
  */
 export const formatRate = (perSecond: number | undefined): string => {
   if (perSecond === undefined) return "—";
   if (Math.abs(perSecond) >= 1) return `${formatFigure(perSecond, { signed: true })}/s`;
-  return `${formatFigure(perSecond * 60, { signed: true })}/min`;
+  const perMinute = perSecond * 60;
+  return `${Math.abs(perMinute) >= 1 ? SIGN(WHOLE).format(perMinute) : formatFigure(perMinute, { signed: true })}/min`;
 };
 
 const ORDINAL = new Intl.PluralRules("en-US", { type: "ordinal" });

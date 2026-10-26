@@ -46,6 +46,9 @@ describe("numbers", () => {
     expect(formatRate(2.5)).toBe("+2.5/s");
     expect(formatRate(12.4)).toBe("+12/s");
     expect(formatRate(0.5)).toBe("+30/min");
+    // A minute's rate from one up is whole: a game, not a math demo (owner, 26 October).
+    expect(formatRate(6.3 / 60)).toBe("+6/min");
+    expect(formatRate(8.6 / 60)).toBe("+9/min");
     expect(formatRate(0.01)).toBe("+0.6/min");
     expect(formatRate(-0.25)).toBe("-15/min");
     expect(formatRate(0)).toBe("0/min");
