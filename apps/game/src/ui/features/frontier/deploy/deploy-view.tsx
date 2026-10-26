@@ -2,7 +2,6 @@ import type { IconMeaning } from "@/ui/design-system/icon";
 import {
   HudButton,
   HudCost,
-  HudMeter,
   HudNotice,
   HudPortrait,
   HudSheet,
@@ -11,28 +10,17 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
-import {
-  BUILD,
-  DEPLOY,
-  DEPLOY_TILE,
-  DEPLOYING,
-  marchLine,
-  NO_OPEN_TILE,
-  NO_TROOPS_AT_HOME,
-  STAMINA,
-  TROOPS,
-} from "@/ui/design-system/kit/words";
+import { BUILD, DEPLOY, DEPLOYING, NO_OPEN_TILE, NO_TROOPS_AT_HOME, TROOPS } from "@/ui/design-system/kit/words";
 
+import { StaminaReading } from "../hud/army-token";
 import type { SlotStart } from "./deploy-plan";
-import { slotStartWords } from "./slot-start";
 
 /**
- * Deploy, from its props: the two choices a deploy makes and its one verb. How many troops go (the count typed, +500
- * and Max beside it, out of how many can, a slider under them), the stamina the army starts on (its slot's bar), and
- * onto which tile beside the realm: picked on the map itself, where the order's tile is marked among the realm's open
- * ones (owner, 26 October 2026: "we dont need to show another map in the deploy panel"), so the sheet only says so.
- * Deploy stands in the foot with its wheat price and how far the wheat left lets the army march: the trade the count
- * makes. With no troops at home, Build is the step.
+ * Deploy, from its props: the controls, the numbers and the action, with no line explaining them (owner, 26 October
+ * 2026: "good UI/UX doesnt need subtext"). How many troops go (the count, +500, Max, out of how many can, a slider), the
+ * stamina bar the army starts on, and Deploy with its wheat price. The tile is picked on the map itself, where the
+ * order's tile is marked among the realm's open ones. A notice shows only where Deploy cannot: no troops at home (Build
+ * is the step), no open tile, or not one troop's wheat.
  */
 export const DeployView = ({
   art,
@@ -42,7 +30,6 @@ export const DeployView = ({
   onCount,
   start,
   wheatCost,
-  march,
   tile,
   canDeploy,
   sending,
@@ -60,8 +47,6 @@ export const DeployView = ({
   /** The slot the army fills and the bar it starts on there; none while every slot holds an army or it is unknown. */
   start: SlotStart | undefined;
   wheatCost: number | undefined;
-  /** The tiles the wheat left at home lets the army march; unknown is undefined. */
-  march: number | undefined;
   /** Whether the realm has an open tile to step out on; unknown while its plan or ring is. */
   tile: "open" | "none" | undefined;
   canDeploy: boolean;
@@ -84,7 +69,7 @@ export const DeployView = ({
         onChange={onCount}
       />
     </div>
-    {start && troopsAtHome !== 0 && <SlotStartReading start={start} />}
+    {start?.start && troopsAtHome !== 0 && <StaminaReading stamina={start.start} />}
     {troopsAtHome === 0 ? (
       <>
         <HudNotice tone="warn" line={NO_TROOPS_AT_HOME} />
@@ -93,11 +78,11 @@ export const DeployView = ({
         </HudButton>
       </>
     ) : (
-      tile && <TileLine tile={tile} />
+      tile === "none" && <HudNotice tone="warn" line={NO_OPEN_TILE} />
     )}
     {wheatShort && <HudNotice tone="warn" line={shortfallLine({ kind: "short", of: "wheat", ...wheatShort })} />}
     {canDeploy && wheatCost !== undefined && (
-      <HudWindowFoot note={<DeployPrice wheatCost={wheatCost} march={march} />}>
+      <HudWindowFoot note={<HudCost line={costLine([{ of: "wheat", amount: wheatCost }])} />}>
         <HudButton
           kind="primary"
           icon="military"
@@ -111,32 +96,3 @@ export const DeployView = ({
     )}
   </HudSheet>
 );
-
-/** The stamina the new army starts on: its slot's bar, as its card will show it once out, and why it is that bar. */
-const SlotStartReading = ({ start }: { start: SlotStart }) => {
-  const words = slotStartWords(start);
-  if (!words || !start.start) return null;
-  return (
-    <section aria-label={words.line} className="flex flex-col gap-1">
-      <span>{words.line}</span>
-      <HudMeter amount={start.start} tone="good" label={STAMINA} />
-      <span className="text-hud-muted">{words.why}</span>
-    </section>
-  );
-};
-
-/** The wheat Deploy takes, and under it how far the wheat left lets the army march (none reads as a warning). */
-const DeployPrice = ({ wheatCost, march }: { wheatCost: number; march: number | undefined }) => (
-  <span className="flex flex-col items-start">
-    <HudCost line={costLine([{ of: "wheat", amount: wheatCost }])} />
-    {march !== undefined && <span className={march === 0 ? "text-hud-warn" : undefined}>{marchLine(march)}</span>}
-  </span>
-);
-
-/** Where the army steps out: the bright tile on the map, and that another lit one moves it; or that none is open. */
-const TileLine = ({ tile }: { tile: "open" | "none" }) =>
-  tile === "open" ? (
-    <span className="text-hud-muted">{DEPLOY_TILE}</span>
-  ) : (
-    <HudNotice tone="warn" line={NO_OPEN_TILE} />
-  );

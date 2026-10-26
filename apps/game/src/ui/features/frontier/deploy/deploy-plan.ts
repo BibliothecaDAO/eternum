@@ -1,6 +1,5 @@
 import { exploreStaminaOf, type StaminaBar } from "@/lib/army-stamina/segments";
 import {
-  computeTravelFoodCosts,
   configManager,
   type ExpeditionRules,
   type GameActions,
@@ -49,8 +48,6 @@ interface DeployPlan {
   troops: { type: TroopType; tier: TroopTier; atHome: number; cap: number } | null;
   /** Whole wheat a troop costs to deploy (0 where deploying costs nothing). */
   wheatPerTroop: number;
-  /** Whole wheat each troop eats a tile. */
-  wheatPerTroopTile: number;
   /** Whole wheat the realm holds. */
   wheat: number;
 }
@@ -87,9 +84,6 @@ export const readDeployPlan = (
     next: starts[0] ?? null,
     troops,
     wheatPerTroop: troops ? wheatToDeploy(store, realm, troops, 1, defaultTick) : 0,
-    wheatPerTroopTile: troops
-      ? Math.abs(computeTravelFoodCosts({ category: troops.type, count: PRECISION }).wheatPayAmount)
-      : 0,
     wheat: Number(BigInt(wheat) / PRECISION),
   };
 };
@@ -169,16 +163,10 @@ export const deployRange = (plan: DeployPlan): { troopsMax: number; wheatMax: nu
   return { troopsMax, wheatMax, max: Math.min(troopsMax, wheatMax) };
 };
 
-/** The army a count makes: what it costs in wheat, the wheat left, and how many tiles that wheat moves it. */
-export const previewDeploy = (
-  plan: DeployPlan,
-  count: number,
-): { count: number; wheatCost: number; wheatLeft: number; tiles: number } => {
+/** The army a count makes: the whole troops that go and what they cost in wheat. */
+export const previewDeploy = (plan: DeployPlan, count: number): { count: number; wheatCost: number } => {
   const whole = Math.max(0, Math.min(Math.floor(count), deployRange(plan).max));
-  const wheatCost = whole * plan.wheatPerTroop;
-  const wheatLeft = Math.max(0, plan.wheat - wheatCost);
-  const perTile = whole * plan.wheatPerTroopTile;
-  return { count: whole, wheatCost, wheatLeft, tiles: perTile > 0 ? Math.floor(wheatLeft / perTile) : 0 };
+  return { count: whole, wheatCost: whole * plan.wheatPerTroop };
 };
 
 /**

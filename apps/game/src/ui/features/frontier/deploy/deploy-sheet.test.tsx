@@ -72,6 +72,16 @@ const typeCount = (host: HTMLElement, value: number) => {
 const press = (host: HTMLElement, word: string) =>
   act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
 const outOf = (host: HTMLElement) => host.querySelector(".ui-amount__of")?.textContent;
+
+/** The stamina the sheet shows the new army starting on: the number beside its bar, and the bar's reading. */
+const startReading = (host: HTMLElement) => {
+  const meter = host.querySelector<HTMLElement>('[role="meter"][aria-label="stamina"]');
+  return {
+    number: meter?.parentElement?.parentElement?.textContent ?? null,
+    meter: meter && [Number(meter.getAttribute("aria-valuenow")), Number(meter.getAttribute("aria-valuemax"))],
+  };
+};
+
 const foot = (host: HTMLElement) => host.querySelector(".ui-window__foot")?.textContent ?? "";
 
 /** What the sheet asks the map to show, in the order asked: its realm and tile while open, null once closed. */
@@ -110,9 +120,9 @@ describe("the Deploy sheet", () => {
     press(host, "Max");
     expect(countField(host).value).toBe("420");
     typeCount(host, 120);
-    // Deploy in the foot, beside its price and how far the wheat left lets the army march.
+    // Deploy in the foot beside its price, and nothing else.
     expect(deployButton(host)?.textContent).toBe("Deploy");
-    expect(foot(host)).toMatch(/^240 wheatLeaves wheat to march [\d.,]+K? tiles?Deploy$/);
+    expect(foot(host)).toBe("240 wheatDeploy");
     // The window shows the decision only: the count's slider over the same range, no stamina, attribute marks or day
     // clock.
     const slider = host.querySelector<HTMLInputElement>("input[type=range]");
@@ -121,9 +131,11 @@ describe("the Deploy sheet", () => {
       "420",
       "120",
     ]);
-    // The day's clock is the top bar's; the stamina the army starts on is the sheet's (the owner: "Show it").
+    // The day's clock is the top bar's; the stamina the army starts on is the sheet's bar and its number, with no line
+    // explaining either (the owner: "good UI/UX doesnt need subtext").
     expect(host.textContent).not.toMatch(/Day ends/i);
-    expect(host.textContent).toContain("Army 2 starts full: 150/150 stamina");
+    expect(startReading(host)).toEqual({ number: "150/150", meter: [150, 150] });
+    expect(host.textContent).not.toMatch(/starts|its slot|Leaves|Steps out/);
     await act(async () => deployButton(host)!.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -174,7 +186,7 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("caps the count where the wheat runs out, and says the army is left no wheat to march", () => {
+  it("caps the count where the wheat runs out", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts([
@@ -190,25 +202,16 @@ describe("the Deploy sheet", () => {
     expect(outOf(host)).toBe("of 50");
     typeCount(host, 300);
     expect(countField(host).value).toBe("50");
-    expect(foot(host)).toBe("100 wheatLeaves no wheat to marchDeploy");
+    expect(foot(host)).toBe("100 wheatDeploy");
     act(() => root.unmount());
     host.remove();
   });
-
-  /** What the sheet says the new army starts on, in words and on its meter. */
-  const startReading = (host: HTMLElement) => {
-    const meter = host.querySelector<HTMLElement>('section[aria-label$="stamina"] [role="meter"]');
-    return {
-      words: host.querySelector('section[aria-label$="stamina"]')?.textContent ?? null,
-      meter: meter && [Number(meter.getAttribute("aria-valuenow")), Number(meter.getAttribute("aria-valuemax"))],
-    };
-  };
 
   it.each([
     {
       case: "a slot fresh today starts its army full",
       facts: [],
-      words: "Army 2 starts full: 150/150 staminaIts slot is fresh today",
+      number: "150/150",
       meter: [150, 150],
     },
     {
@@ -228,7 +231,7 @@ describe("the Deploy sheet", () => {
           },
         },
       ],
-      words: "Army 2 starts on 7/150 staminaThe bar its slot's last army left",
+      number: "7/150",
       meter: [7, 150],
     },
     {
@@ -240,16 +243,16 @@ describe("the Deploy sheet", () => {
           value: { game_id: 1, structure_id: 7, learned: String(1n << 27n) },
         },
       ],
-      words: "Army 2 starts full: 170/170 staminaIts slot is fresh today",
+      number: "170/170",
       meter: [170, 170],
     },
-  ])("says the stamina the new army starts on, its slot's bar: $case", ({ facts, words, meter }) => {
+  ])("shows the stamina bar the new army starts on, its slot's: $case", ({ facts, number, meter }) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts(facts as never);
     const { host, root } = render(store, row);
     // Slot 1 (Army 1) holds an army: the next army fills slot 2, as the contract fills the lowest free slot.
-    expect(startReading(host)).toEqual({ words, meter });
+    expect(startReading(host)).toEqual({ number, meter });
     act(() => root.unmount());
     host.remove();
   });
@@ -283,7 +286,7 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("draws no map of its own: it shows its order on the map, the first open tile until one is picked there", async () => {
+  it("draws no map or tile line of its own: it shows its order on the map, the first open tile until one is picked there", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     ring.taken = 0;
     const { store, row } = frontierDay();
@@ -297,9 +300,7 @@ describe("the Deploy sheet", () => {
     const map = shownOnMap();
     const { host, root, draw } = render(store, row);
     expect(host.querySelector('[aria-label="Deploy tile"]')).toBeNull();
-    expect(host.textContent).toContain(
-      "Steps out on the bright tile. Tap another lit tile beside the realm to move it there.",
-    );
+    expect(host.textContent).not.toMatch(/tile/i);
     // The taken tile is passed over: the map marks the first open one.
     expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: ringDirection(store, row, 1) });
     // A tap on another lit tile orders again (openArmyDeployment), and the map marks that one.

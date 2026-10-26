@@ -369,15 +369,6 @@ export const MINIMUM = "Minimum";
 export const MAXIMUM = "Maximum";
 
 /**
- * How far the wheat left at home after a deploy lets the new army march (each troop eats wheat a tile), short: a scout
- * eats so little that its reach runs to thousands.
- */
-export const marchLine = (tiles: number) =>
-  tiles === 0
-    ? `Leaves no ${WHEAT} to march`
-    : `Leaves wheat to march ${tiles === 1 ? "1 tile" : `${formatAmount(tiles)} tiles`}`;
-
-/**
  * The stamina a new army starts on, which its army slot holds (the owner, 20 October 2026: "stamina is slot tied"):
  * full when the slot is fresh today, else the bar the slot's last army left. `bar` is "7/150".
  */
@@ -405,8 +396,6 @@ export const slotBarWhy = (fresh: boolean) => (fresh ? "Its slot is fresh today"
 /** Raise an army from troops at home; with none, the realm's Barracks trains them. */
 export const DEPLOY = "Deploy";
 export const NO_TROOPS_AT_HOME = "No troops at home";
-/** Where a Frontier deploy steps out: the tile its order names, marked on the map among the realm's open tiles. */
-export const DEPLOY_TILE = "Steps out on the bright tile. Tap another lit tile beside the realm to move it there.";
 /** Every tile beside the realm holds something: a deploy has nowhere to step out. */
 export const NO_OPEN_TILE = "No open tile beside the realm";
 /** A site's card with no army selected: what an army does there, or, with none out, where one comes from. */

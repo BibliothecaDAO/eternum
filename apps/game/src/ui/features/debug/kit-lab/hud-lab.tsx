@@ -1124,11 +1124,10 @@ const useLabNotice = (notice: string | undefined) => {
   }, [notice]);
 };
 
-/** Deploy on the fiction, live: 2 wheat a troop, 0.02 a troop a tile. */
+/** Deploy on the fiction, live: 2 wheat a troop. */
 const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
   const [count, setCount] = useState(deploy.count);
   const most = Math.min(deploy.troopsAtHome, Math.floor(deploy.wheat / 2));
-  const wheatLeft = deploy.wheat - count * 2;
   return (
     <DeployView
       art={deploy.troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
@@ -1139,7 +1138,6 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       // The next army fills a slot whose army was released today with 40 stamina left.
       start={{ slot: 2, number: 3, inherited: true, start: { current: 40, max: 150, perExplore: LAB_EXPLORE } }}
       wheatCost={count * 2}
-      march={count > 0 ? Math.floor(wheatLeft / (count * 0.02)) : 0}
       tile="open"
       canDeploy={count > 0}
       sending={false}

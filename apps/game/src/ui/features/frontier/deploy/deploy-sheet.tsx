@@ -69,7 +69,6 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       onCount={setCount}
       start={plan?.next ?? undefined}
       wheatCost={preview?.wheatCost}
-      march={preview?.tiles}
       tile={plan?.next && center ? (direction === null ? "none" : "open") : undefined}
       canDeploy={Boolean(plan?.troops && preview && direction !== null && plan.next)}
       sending={deploying}
