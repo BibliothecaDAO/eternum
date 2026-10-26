@@ -18,10 +18,6 @@ path = "../support"
 
 [lib]
 
-[[target.starknet-contract]]
-sierra = true
-build-external-contracts = ["world_native::*", "world_test_support::*", "realms_vrf_verifier::Verifier"]
-
 [tool]
 scarb.workspace = true
 fmt.workspace = true
@@ -30,6 +26,12 @@ fmt.workspace = true
 name = "world_tests_capture_unittest"
 test-type = "unit"
 build-external-contracts = []
+
+[[test]]
+name = "world_tests_capture_contracts"
+test-type = "integration"
+source-path = "../contracts.cairo"
+build-external-contracts = ["world_native::*", "world_test_support::*", "realms_vrf_verifier::Verifier"]
 
 [tool.snforge]
 workspace = true
