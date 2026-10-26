@@ -89,7 +89,7 @@ it("reads each side now against the next tier, picks a side by its row, and rese
   act(() => button(/^Research Granary$/)!.click());
   expect(onResearch).toHaveBeenCalledWith(1);
   // The tier is its gem, never its word: a Rare Farm holds II, its next tier III.
-  expect(gems()).toEqual(["II", "II", "III"]);
+  expect(gems()).toEqual(["III", "III", "IV"]);
   expect(card().textContent).not.toMatch(/Common|Uncommon|Rare|Epic|Legendary/);
 });
 
@@ -108,8 +108,8 @@ it("shows a training building's one figure, what every new army starts with, now
   draw(research.ROW_WAR_HALL, { standing: 1 });
   expect(rows()).toEqual([["Battle", "0% damage", "→", "+10% damage"]]);
   expect(button(/^Research$/)).toBeDefined();
-  // Common has no gem: only the next tier's, I.
-  expect(gems()).toEqual(["I"]);
+  // Common is I on the card and current column; the next tier is II.
+  expect(gems()).toEqual(["I", "I", "II"]);
 });
 
 it("at Legendary shows what research gave, with no next column and no Research", () => {
@@ -123,7 +123,7 @@ it("at Legendary shows what research gave, with no next column and no Research",
     ["Granary", "+50%"],
   ]);
   expect(button(/^Research/)).toBeUndefined();
-  expect(gems()).toEqual(["IV", "IV"]);
+  expect(gems()).toEqual(["V", "V"]);
 });
 
 /** The lab's realm with the Essence and labor for a Scouts' lodge tier. */

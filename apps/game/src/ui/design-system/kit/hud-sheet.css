@@ -525,9 +525,9 @@ button.ui-panel__name[data-action]:hover {
   box-shadow: 0 0 10px var(--hud-rarity-5);
 }
 
-/* ── Tier: a gem in its rarity colour with the tier's numeral, Uncommon I to Legendary IV; Common draws none. ── */
+/* ── Tier: a gem in its rarity colour with the tier's numeral, Common I to Legendary V. ── */
 .ui-tier {
-  --rarity: var(--hud-rarity-2);
+  --rarity: var(--hud-rarity-1);
   display: inline-flex;
   width: 26px;
   height: 22px;
@@ -551,6 +551,9 @@ button.ui-panel__name[data-action]:hover {
   align-items: center;
   gap: theme(spacing.1);
   color: var(--hud-muted);
+}
+.ui-tier[data-tier="2"] {
+  --rarity: var(--hud-rarity-2);
 }
 .ui-tier[data-tier="3"] {
   --rarity: var(--hud-rarity-3);

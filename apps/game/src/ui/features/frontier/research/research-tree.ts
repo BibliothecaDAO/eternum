@@ -102,7 +102,7 @@ export interface TreeNode {
   figures: Figure[];
   /** The nodes this one leads to (the tree's lines). */
   leadsTo: string[];
-  /** The Barracks' gate to the training buildings: the tier that opens them ("Barracks II"), and whether it is reached. */
+  /** The Barracks' gate to the training buildings: the tier that opens them ("Barracks III"), and whether it is reached. */
   gate?: { name: string; met: boolean };
 }
 
@@ -393,18 +393,12 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   }
 };
 
-/**
- * A research tier (0 common to 4 legendary) as text beside the gems: its numeral, Uncommon I to Legendary IV, and a
- * dash for Common, which has none.
- */
-const tierShown = (tier: number): string => (tier === 0 ? "—" : tierNumeral((tier + 1) as Exclude<Tier, 1>));
+/** A research tier (0 common to 4 legendary) as text beside the gems: its numeral, Common I to Legendary V. */
+const tierShown = (tier: number): string => tierNumeral((tier + 1) as Tier);
 
 /** A training row: the level every new army of the realm starts the attribute at, and what that level gives. */
 const trainingGives = (attribute: Attribute, word: string, tier: number): TreeNode["gives"] => {
-  const at = (level: number) =>
-    level === 1
-      ? attributeEffect(attribute, level)
-      : RESEARCH_TREE.at(tierShown(level - 1), attributeEffect(attribute, level));
+  const at = (level: number) => RESEARCH_TREE.at(tierShown(level - 1), attributeEffect(attribute, level));
   return { line: RESEARCH_TREE.newArmiesStart(word), now: at(tier + 1), next: tier < 4 ? at(tier + 2) : undefined };
 };
 

@@ -23,12 +23,12 @@ it("says a chest's rarity by its word, on a plate of its colour, with no pips", 
   }
 });
 
-it("draws a levelled tier as a gem with its numeral, Uncommon I to Legendary IV, and nothing at Common", () => {
-  expect(drawn(<HudTier tier={1} />).innerHTML).toBe("");
+it("draws a tier as a gem with its numeral, Common I to Legendary V", () => {
   for (const [tier, numeral, name] of [
-    [2, "I", "Uncommon"],
-    [3, "II", "Rare"],
-    [5, "IV", "Legendary"],
+    [1, "I", "Common"],
+    [2, "II", "Uncommon"],
+    [3, "III", "Rare"],
+    [5, "V", "Legendary"],
   ] as const) {
     const gem = drawn(<HudTier tier={tier} />).querySelector<HTMLElement>(".ui-tier")!;
     expect(gem.textContent).toBe(numeral);
@@ -37,9 +37,9 @@ it("draws a levelled tier as a gem with its numeral, Uncommon I to Legendary IV,
   }
 });
 
-it("steps from the gem held to the next, with none before the first", () => {
-  expect(drawn(<HudTierStep from={1} to={2} />).textContent).toBe("→I");
+it("steps from the gem held to the next", () => {
+  expect(drawn(<HudTierStep from={1} to={2} />).textContent).toBe("I→II");
   const step = drawn(<HudTierStep from={3} to={4} />);
-  expect(step.textContent).toBe("II→III");
+  expect(step.textContent).toBe("III→IV");
   expect(step.querySelector("[role='img']")?.getAttribute("aria-label")).toBe("Rare → Epic");
 });

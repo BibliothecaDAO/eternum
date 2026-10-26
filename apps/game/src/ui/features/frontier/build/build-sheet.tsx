@@ -311,7 +311,7 @@ const buildingLine = (option: BuildOption): string => {
     effect.kind === "produces"
       ? makes(PRODUCTS[effect.resource].word, formatRate(effect.output.total))
       : effect.kind === "trains"
-        ? startsNewArmies(effect.attribute, option.tier === 1 ? undefined : tierNumeral(option.tier))
+        ? startsNewArmies(effect.attribute, tierNumeral(option.tier))
         : `${formatGain(effect.amount)} ${POPULATION}`;
   const takes = option.populationCost > 0 ? `, ${takesPopulation(formatCharge(option.populationCost))}` : "";
   return `${buildingName(option.category)}: ${does}${takes}`;
@@ -321,7 +321,7 @@ const buildingLine = (option: BuildOption): string => {
 const riseLine = (option: BuildOption): string | undefined =>
   option.rise.times > 1 ? priceRaised(formatAmount(option.rise.standing)) : undefined;
 
-/** What one more gives: what it makes a minute, the population room it adds, or the tier new armies start at (above Common). */
+/** What one more gives: what it makes a minute, the population room it adds, or the tier new armies start at. */
 const givesOf = ({ effect, tier }: BuildOption): BuildTile["gives"] =>
   effect.kind === "produces"
     ? {
@@ -330,9 +330,7 @@ const givesOf = ({ effect, tier }: BuildOption): BuildTile["gives"] =>
         basis: outputWhy(effect.research),
       }
     : effect.kind === "trains"
-      ? tier === 1
-        ? undefined
-        : { icon: ATTRIBUTE_MARKS[effect.attribute], value: <HudTier tier={tier} /> }
+      ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: <HudTier tier={tier} /> }
       : { icon: "person", value: formatGain(effect.amount) };
 
 /** A realm's plot, as the actions in flight name it. */

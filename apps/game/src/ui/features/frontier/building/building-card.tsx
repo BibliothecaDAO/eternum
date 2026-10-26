@@ -182,7 +182,7 @@ export const BuildingCardView = ({
   );
 };
 
-/** A row's tiers learned (0 to 4) as the tier its gem shows (Common, none, to Legendary IV). */
+/** A row's tiers learned (0 to 4) as the tier its gem shows (Common I to Legendary V). */
 const tierOf = (tier: number) => Math.min(5, tier + 1) as Tier;
 
 /** The next tier's Research in the card's foot, with its price; or, while it cannot run, why, with the fix. */

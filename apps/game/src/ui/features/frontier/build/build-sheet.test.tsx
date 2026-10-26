@@ -349,7 +349,7 @@ describe("the build sheet", () => {
     );
     expect(sheet.card("Hut").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
     expect(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
-      /^War hall: new armies start with Battle(, takes \d+ population)?$/,
+      /^War hall: new armies start with Battle I(, takes \d+ population)?$/,
     );
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
     expect(sheet.card("Farm").querySelector('[aria-label="price raised"]')).toBeNull();
@@ -396,10 +396,11 @@ describe("the build sheet", () => {
     expect(band(sheet, "Farm").getAttribute("data-tone")).toBe("bad");
     expect(band(sheet, "Farm").textContent).toMatch(/\d+[mhd]$/);
     // A training building waits behind the Barracks' tier, said in words with its numeral by the lock and whole on the
-    // tip, never as a gem that would read as the card's own tier; no price. At Common it gives new armies nothing more.
-    expect(band(sheet, "War hall").textContent).toBe("Barracks II");
-    expect(band(sheet, "War hall").getAttribute("data-tip")).toBe("Needs Barracks II");
-    expect(sheet.card("War hall").querySelector(".ui-tier")).toBeNull();
+    // tip, never as a gem that would read as the card's own tier; no price. The card's own gem is its tier, Common I.
+    expect(band(sheet, "War hall").textContent).toBe("Barracks III");
+    expect(band(sheet, "War hall").getAttribute("data-tip")).toBe("Needs Barracks III");
+    expect(band(sheet, "War hall").querySelector(".ui-tier")).toBeNull();
+    expect([...sheet.card("War hall").querySelectorAll(".ui-tier")].map((gem) => gem.textContent)).toEqual(["I"]);
     expect(band(sheet, "War hall").textContent).not.toMatch(/\d/);
     sheet.close();
 
@@ -480,8 +481,8 @@ describe("the build sheet", () => {
     const gold = () => [...host.querySelectorAll("button")].at(-1)!;
     render();
     act(() => card("War hall").click());
-    // The fixture's board gates training at the Barracks row's third tier, Rare (II); no Barracks stands yet.
-    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs Barracks II");
+    // The fixture's board gates training at the Barracks row's third tier, Rare (III); no Barracks stands yet.
+    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs Barracks III");
     expect(gold().textContent).toMatch(/^Build Barracks/);
     act(() => gold().click());
     expect(card("Barracks").getAttribute("aria-pressed")).toBe("true");
