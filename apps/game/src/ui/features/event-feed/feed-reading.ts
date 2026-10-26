@@ -39,10 +39,11 @@ export interface ToldReading {
 }
 
 /**
- * A story this reading does not take apart, in its own words alone: they name the player wherever they do not name a
- * place ("Maelis moved troops", "Qeuvaingauv founded"), so a name before them would say it twice.
+ * A story this reading does not take apart, in its own words: who did it is its owner, a player; a story no player owns
+ * (a season's end) has no one to name.
  */
 interface OwnWords {
+  actor?: string;
   act: IconMeaning;
   words: string;
 }
@@ -134,7 +135,7 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
       return { actor, verb, act: "build", object: { name: buildingName(Number(payload.category), true) } };
     }
     default:
-      return { act: "chronicles", words: story.presentation.title };
+      return { actor: playerOwner(story.owner), act: "chronicles", words: story.presentation.title };
   }
 };
 
@@ -143,6 +144,12 @@ const actorOf = (story: ProcessedStoryEvent): string =>
   story.story === "BattleEvent"
     ? String((story.storyPayload.attacker as Record<string, unknown>).player)
     : String(story.owner ?? "0x0");
+
+/** A story's owner when a player owns it: an address other than zero. */
+const playerOwner = (owner: unknown): string | undefined => {
+  const address = String(owner ?? "");
+  return address.startsWith("0x") && BigInt(address) !== 0n ? address : undefined;
+};
 
 /** What a story paid, written by its rule; none when the rule writes nothing. */
 const paid = (

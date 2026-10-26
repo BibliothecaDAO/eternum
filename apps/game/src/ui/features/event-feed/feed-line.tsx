@@ -28,10 +28,10 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
       <Icon name={reading.act} size={16} className="ui-event__icon" />
       <span className="ui-event__text">
         {"words" in reading ? (
-          reading.words
+          <OwnWordsLine words={reading.words} name={reading.actor && names.text(reading.actor)} own={own} />
         ) : (
           <>
-            <strong className={own ? "text-hud-gold" : undefined}>{names.text(reading.actor)}</strong> {reading.verb}
+            <Name text={names.text(reading.actor)} own={own} /> {reading.verb}
             {reading.object && <ObjectWords object={reading.object} names={names.text} />}
             {reading.outcome && <span className={OUTCOME_TONES[reading.outcome.tone]}> · {reading.outcome.word}</span>}
           </>
@@ -72,3 +72,37 @@ const ObjectWords = ({
     {"player" in object ? names(object.player) : object.name}
   </>
 );
+
+/** Who did it, the player's own name in gold. */
+const Name = ({ text, own }: { text: string; own: boolean }) => (
+  <strong className={own ? "text-hud-gold" : undefined}>{text}</strong>
+);
+
+/**
+ * A story in its own words with who did it named once: where the words already say the name, the name there is the
+ * row's; where they do not ("Crate opened: 1 relic to the army"), the name leads them. A story no player owns stands in
+ * its words alone.
+ */
+const OwnWordsLine = ({ words, name, own }: { words: string; name: string | undefined; own: boolean }) => {
+  if (!name) return <>{words}</>;
+  const at = wordAt(words, name);
+  if (at === -1)
+    return (
+      <>
+        <Name text={name} own={own} /> · {words}
+      </>
+    );
+  return (
+    <>
+      {words.slice(0, at)}
+      <Name text={name} own={own} />
+      {words.slice(at + name.length)}
+    </>
+  );
+};
+
+/** Where `name` stands in `words` as a whole word, not inside another ("Al" in "Alba"); -1 where it does not. */
+const wordAt = (words: string, name: string): number => {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return words.search(new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "u"));
+};

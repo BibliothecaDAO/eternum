@@ -152,7 +152,25 @@ it("names who moved troops once, with how many moved (prod's day: 'Maelis Maelis
   expect(await draw(row)).toEqual({ words: "Krump moved 1,095 troops", reward: null, gold: false });
 });
 
-it("writes a story it does not take apart in its own words, which name the player once", async () => {
-  const row = story(KRUMP, "RealmCreatedStory", { coord: { x: 2147483650, y: 2147483652, alt: false } });
-  expect(await draw(row)).toEqual({ words: "Krump founded a realm", reward: null, gold: null });
+/** Who a row names: each bold name in it. */
+const named = () =>
+  [...host.querySelectorAll("[data-feed-line] .ui-event__text strong")].map((name) => name.textContent);
+
+it("leads a story's own words with who did it where they name no one (review: 'Crate opened' named no player)", async () => {
+  const row = story(KRUMP, "RelicChestOpened", { explorer_id: 71, relics: [39], points: 0 });
+  expect(row.presentation.title).toBe("Crate opened: 1 relic to the army");
+  expect(await draw(row)).toEqual({ words: "Krump · Crate opened: 1 relic to the army", reward: null, gold: false });
+  expect(named()).toEqual(["Krump"]);
+});
+
+it("names the player once where a story's own words already name them, in gold when they are the player's", async () => {
+  const row = story(DJIZUS, "RealmCreatedStory", { coord: { x: 2147483650, y: 2147483652, alt: false } });
+  expect(row.presentation.title).toBe("djizus founded a realm");
+  expect(await draw(row, true)).toEqual({ words: "djizus founded a realm", reward: null, gold: true });
+  expect(named()).toEqual(["djizus"]);
+});
+
+it("names no one on a story no player owns", async () => {
+  const row = story("0x0", "BlitzFinalized", {});
+  expect(await draw(row)).toEqual({ words: "Blitz finalized", reward: null, gold: null });
 });
