@@ -4,7 +4,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { useSideways } from "@/shell/frame/layout";
 
-import { CHAT, EVENTS_WORDS, MENU, REALM, RESEARCH } from "@/ui/design-system/kit/words";
+import { CHAT, EVENTS_WORDS, MENU, REALM, RESEARCH, WORLD } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 export type Place = "realm" | "research" | "feed" | "chat" | "menu";
@@ -19,13 +19,15 @@ const DOTS: Record<Dot, string> = {
 };
 
 /**
- * The phone's place bar: Realm, Research, the Feed (the same as the desktop's, with what arrived since it was read), Chat and
- * Menu, an icon and one word each, at the foot of every nav page, or down the left edge of a phone held sideways. The
- * map is where play is, so it has no slot: each slot opens its place over it and a second press closes it, Realm
- * included (owner, 25 October). The lit slot is what is open; none is lit on the map.
+ * The phone's place bar: the Realm / World switch, Research, the Feed (the same as the desktop's, with what arrived since
+ * it was read), Chat and Menu, an icon and one word each, at the foot of every nav page, or down the left edge of a
+ * phone held sideways. The switch shows where it takes the player, World on the realm and Realm on the map (owner, 26
+ * October: "the toggle (button) should switch realms/world icon otherwise its not a toggle"), so it is never lit; each
+ * other slot opens its place over the map and a second press closes it, and the lit slot is what is open.
  */
 export const PlaceNav = ({
   place,
+  onRealm,
   onGo,
   realmDot,
   researchDot,
@@ -33,6 +35,8 @@ export const PlaceNav = ({
   unread,
 }: {
   place: Place | null;
+  /** Whether the realm's board is what the screen shows: the switch then offers the world. */
+  onRealm: boolean;
   onGo: (place: Place) => void;
   realmDot?: Dot;
   /** Whether Research has a node to buy; none leaves the slot out, for a player with no realm to research. */
@@ -57,7 +61,13 @@ export const PlaceNav = ({
         className="flex-1"
         bodyClassName={cn("flex items-stretch justify-between gap-0.5", sideways ? "h-full flex-col" : "min-h-14")}
       >
-        {slot("realm", "realm", REALM, realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />)}
+        <Slot
+          lit={false}
+          icon={onRealm ? "map" : "realm"}
+          word={onRealm ? WORLD : REALM}
+          badge={realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />}
+          onClick={() => onGo("realm")}
+        />
         {researchDot !== undefined &&
           slot("research", "research", RESEARCH, researchDot && <i className={cn("size-2 rounded-full", DOTS.lit)} />)}
         {slot("feed", "chronicles", EVENTS_WORDS.feed, count(events))}

@@ -1040,17 +1040,8 @@ export const HudLab = () => {
         nav={
           !lab.visiting && (
             <PlaceNav
-              place={
-                lab.chat && !desktop
-                  ? "chat"
-                  : lab.menu || lab.season
-                    ? "menu"
-                    : lab.research
-                      ? "research"
-                      : lab.realmView
-                        ? "realm"
-                        : null
-              }
+              place={lab.chat && !desktop ? "chat" : lab.menu || lab.season ? "menu" : lab.research ? "research" : null}
+              onRealm={lab.realmView !== undefined}
               onGo={noop}
               realmDot={lab.realmDot}
               researchDot={!lab.offline}

@@ -278,7 +278,7 @@ describe("an open slot whose army is being deployed", () => {
 describe("the place bar", () => {
   it("lights what is open, none on the map, dots Research when it can be bought, counts news, and goes", () => {
     const onGo = vi.fn();
-    act(() => root.render(<PlaceNav place={null} onGo={onGo} researchDot events={2} unread={3} />));
+    act(() => root.render(<PlaceNav place={null} onRealm={false} onGo={onGo} researchDot events={2} unread={3} />));
     const slots = [...host.querySelectorAll("button")];
     expect(slots.map((slot) => slot.textContent)).toEqual(["Realm", "Research", "2Feed", "3Chat", "Menu"]);
     expect(slots.map((slot) => slot.getAttribute("aria-current"))).toEqual([null, null, null, null, null]);
@@ -287,19 +287,33 @@ describe("the place bar", () => {
     expect(onGo).toHaveBeenCalledWith("feed");
     act(() => slots[4].click());
     expect(onGo).toHaveBeenCalledWith("menu");
-    act(() => root.render(<PlaceNav place="realm" onGo={onGo} researchDot events={2} unread={3} />));
-    expect(host.querySelector("button")!.getAttribute("aria-current")).toBe("page");
+    act(() => root.render(<PlaceNav place="research" onRealm={false} onGo={onGo} researchDot events={2} unread={3} />));
+    expect(host.querySelectorAll("button")[1]!.getAttribute("aria-current")).toBe("page");
+  });
+
+  it("switches Realm and World: it names where it takes the player, is never lit, and goes there", () => {
+    const onGo = vi.fn();
+    act(() => root.render(<PlaceNav place={null} onRealm={false} onGo={onGo} researchDot events={0} unread={0} />));
+    const onMap = host.querySelector("button")!;
+    expect(onMap.textContent).toBe("Realm");
+    expect(onMap.querySelector("img")?.getAttribute("src")).toContain("realm");
+    act(() => root.render(<PlaceNav place={null} onRealm onGo={onGo} researchDot events={0} unread={0} />));
+    const onBoard = host.querySelector("button")!;
+    expect(onBoard.textContent).toBe("World");
+    expect(onBoard.getAttribute("aria-current")).toBeNull();
+    act(() => onBoard.click());
+    expect(onGo).toHaveBeenCalledWith("realm");
   });
 
   it("draws no divider between its slots, each a toggle alike", () => {
-    act(() => root.render(<PlaceNav place={null} onGo={vi.fn()} researchDot events={0} unread={0} />));
+    act(() => root.render(<PlaceNav place={null} onRealm={false} onGo={vi.fn()} researchDot events={0} unread={0} />));
     expect(host.querySelectorAll("nav i[aria-hidden]")).toHaveLength(0);
   });
 
   it("leaves Research out for a spectator, who has no realm to research", () => {
-    act(() => root.render(<PlaceNav place="realm" onGo={vi.fn()} events={0} unread={0} />));
+    act(() => root.render(<PlaceNav place={null} onRealm onGo={vi.fn()} events={0} unread={0} />));
     const slots = [...host.querySelectorAll("button")].map((slot) => slot.textContent);
-    expect(slots).toEqual(["Realm", "Feed", "Chat", "Menu"]);
+    expect(slots).toEqual(["World", "Feed", "Chat", "Menu"]);
   });
 
   it("dots Research only while a node can be researched now", () => {
