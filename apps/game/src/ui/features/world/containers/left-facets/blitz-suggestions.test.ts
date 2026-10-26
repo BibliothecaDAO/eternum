@@ -177,28 +177,16 @@ describe("a realm's first army on the default build order", () => {
     maxArmies: 3,
     troops: 0,
     fullArmy: 3_000,
-    training: false,
     ...state,
   });
   const city = (state: Partial<BlitzArmyState>, overrides: Partial<BlitzRealmSuggestionInput> = {}) =>
     baseInput({ buildingCounts: cityBuilt, militaryTarget: knights, army: army(state), ...overrides });
 
-  it("trains the realm's troop once its barracks stands and nothing trains it", () => {
-    const [step] = buildBlitzRealmSuggestions(city({ troops: 400 }));
-    expect(step).toMatchObject({
-      action: "train-troops",
-      label: "Train Knight T1",
-      reason: "Knight T1: 400 of 3,000 for a full army, and none in training.",
-      resourceHint: ResourcesIds.Knight,
-    });
-  });
-
-  it("goes on with the order while the troops train, and deploys the army once a full one is on hand", () => {
-    // Training: the army step waits by itself, so the Kingdom's next farm comes meanwhile.
-    expect(nextStep(city({ troops: 1_200, training: true }, { realmLevel: 2 }))).toEqual([
-      "build-wheat · Wheat farms: 4 of 8 built.",
-    ]);
-    expect(nextStep(city({ troops: 3_000, training: true }))).toEqual([
+  it("leaves the troops to production automation: short of a full army the order goes on, and deploys a full one", () => {
+    // No Train step: the City's order is done with its barracks standing, and the Kingdom's next farm comes meanwhile.
+    expect(nextStep(city({ troops: 400 }))).toEqual([]);
+    expect(nextStep(city({ troops: 1_200 }, { realmLevel: 2 }))).toEqual(["build-wheat · Wheat farms: 4 of 8 built."]);
+    expect(nextStep(city({ troops: 3_000 }))).toEqual([
       "deploy-army · Knight T1: 3,000 on hand, a full army of 3,000.",
     ]);
     // Deploy names its troops: the realm's own, a full army of them, for the deployment to open on.

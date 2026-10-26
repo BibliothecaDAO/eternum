@@ -288,20 +288,3 @@ export const inferRealmPreset = (automation?: RealmAutomationConfig): RealmPrese
 
   return "smart";
 };
-
-/**
- * Whether a realm's automation produces a resource once its building stands, as the production plan shares it out:
- * Off never; Custom by the share the player set, Smart's where they set none; Smart by its own share.
- */
-export const automationProduces = (
-  automation: RealmAutomationConfig | undefined,
-  resourceId: ResourcesIds,
-): boolean => {
-  const presetId = inferRealmPreset(automation);
-  if (presetId === "idle") return false;
-  const custom = presetId === "custom" ? automation?.customPercentages?.[resourceId] : undefined;
-  const share = custom
-    ? resolveProductionPercentages(custom, resourceId)
-    : calculatePresetAllocations([resourceId], "smart").get(resourceId);
-  return (share?.resourceToResource ?? 0) + (share?.laborToResource ?? 0) > 0;
-};

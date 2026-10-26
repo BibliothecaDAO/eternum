@@ -147,7 +147,7 @@ const KNIGHTS = {
   troopType: TroopType.Knight,
 };
 const CITY_BUILT = { wheat: 4, wood: 2, coal: 2, copper: 2, workerHut: 1, crossbowmanT1: 0, knightT1: 1, paladinT1: 0 };
-const ARMY: BlitzArmyState = { armies: 0, maxArmies: 3, troops: 0, fullArmy: 3_000, training: false };
+const ARMY: BlitzArmyState = { armies: 0, maxArmies: 3, troops: 0, fullArmy: 3_000 };
 
 const realm = (
   realmId: number,
@@ -187,20 +187,12 @@ const SITUATIONS: { situation: string; input: BlitzRealmSuggestionInput }[] = [
     }),
   },
   {
-    situation: "Barracks up, nothing trains its Knights",
-    input: realm(3, "Stolsli", {
-      buildingCounts: CITY_BUILT,
-      militaryTarget: { ...KNIGHTS, count: 1 },
-      army: { ...ARMY, troops: 400 },
-    }),
-  },
-  {
-    situation: "Kingdom, Knights in training: the order goes on",
+    situation: "Kingdom, Knights short of a full army: automation trains them, the order goes on",
     input: realm(4, "Corwin", {
       realmLevel: 2,
       buildingCounts: CITY_BUILT,
       militaryTarget: { ...KNIGHTS, count: 1 },
-      army: { ...ARMY, troops: 1_200, training: true },
+      army: { ...ARMY, troops: 1_200 },
     }),
   },
   {
@@ -208,7 +200,7 @@ const SITUATIONS: { situation: string; input: BlitzRealmSuggestionInput }[] = [
     input: realm(5, "Ysabeau", {
       buildingCounts: CITY_BUILT,
       militaryTarget: { ...KNIGHTS, count: 1 },
-      army: { ...ARMY, troops: 3_000, training: true },
+      army: { ...ARMY, troops: 3_000 },
     }),
   },
 ];

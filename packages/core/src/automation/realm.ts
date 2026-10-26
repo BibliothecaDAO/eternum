@@ -6,7 +6,6 @@ import {
   getRealmInfo,
   getBuildingCount,
   liveHomeArmies,
-  ResourceManager,
   storedBiomeAt,
   type TileManager,
 } from "../index";
@@ -157,25 +156,22 @@ const resolveRecommendedMilitaryTarget = (
 
 /**
  * The realm's field armies of its military target's troop, as Military counts them: living armies against its slots,
- * whole troops on hand at chain time, a full army at its level, and whether that troop is in training.
+ * whole troops on hand at chain time and a full army at its level.
  */
 const readBlitzArmyState = (
   store: NativeFactStore,
   structure: NativeRows["Structure"],
   militaryTarget: BlitzMilitaryTarget | null,
   tick: number,
-  automationTrains: (resource: ResourcesIds) => boolean,
 ): BlitzArmyState | null => {
   if (!militaryTarget) return null;
   const realmId = Number(structure.entity_id);
-  const resources = new ResourceManager(store, realmId);
   const held = getBalance(realmId, militaryTarget.resource, tick, store).balance;
   return {
     armies: liveHomeArmies(store, realmId, structure.game_id).length,
     maxArmies: Number(structure.base.troop_max_explorer_count),
     troops: held === undefined ? 0 : Math.floor(divideByPrecision(Number(held), false)),
     fullArmy: configManager.getMaxArmySize(Number(structure.base.level), TroopTier.T1),
-    training: resources.isProducingAt(militaryTarget.resource, tick) || automationTrains(militaryTarget.resource),
   };
 };
 
@@ -188,10 +184,8 @@ export function readBlitzRealmSuggestions(input: {
   mode?: ConstructionBuildabilityInput["mode"];
   /** The default tick the upgrade's cost and the troops on hand are judged at. */
   tick: number;
-  /** Whether the realm's production automation trains this troop: the client's own setting, not a chain fact. */
-  automationTrains: (resource: ResourcesIds) => boolean;
 }): BlitzSuggestionDraft[] {
-  const { store, realmId, realmName, isBlitzActive, tiles, mode, tick, automationTrains } = input;
+  const { store, realmId, realmName, isBlitzActive, tiles, mode, tick } = input;
   const game_id = configManager.getActiveGameId();
   const structure = store.require("Structure", { game_id, entity_id: realmId });
   if (structure.base.category !== StructureType.Realm) return [];
@@ -225,7 +219,7 @@ export function readBlitzRealmSuggestions(input: {
     population: buildings.population.current,
     populationCapacity: buildings.population.max + configManager.getBasePopulationCapacity(),
     militaryTarget,
-    army: readBlitzArmyState(store, structure, militaryTarget, tick, automationTrains),
+    army: readBlitzArmyState(store, structure, militaryTarget, tick),
     buildability: resolveBlitzBuildability(
       { entityId: realmId, store, realm, mode, useSimpleCost: false, hasAvailableBuildingTile },
       militaryTarget,
