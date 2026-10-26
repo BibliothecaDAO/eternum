@@ -11,96 +11,30 @@ import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { TierChip } from "@/ui/design-system/kit/tier-chip";
 import { YOU } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
-import { Route, Routes } from "react-router-dom";
-
-import { ConstructionLab } from "./construction-lab";
-import { AreaDLab } from "./area-d-lab";
-import { DeployLab } from "./deploy-lab";
-import { IconLab } from "./icon-lab";
-import { TokensLab } from "./tokens-lab";
-import { RewardChestsLab } from "./reward-chests-lab";
-import { ResourceIconsLab } from "./resource-icons-lab";
-import { Link } from "react-router-dom";
-
-import { HudLab } from "./hud-lab";
-import { UnifiedHudLab } from "./unified-hud-lab";
-import { PanelsLab } from "./panels-lab";
-import { BuildOrderLab } from "./build-order-lab";
-import { BlitzBuildLab } from "./blitz-build-lab";
-import { ProgressionLab } from "./progression/progression-lab";
-import { GuidanceLab } from "./guidance-lab";
-import { StyleSheetLab } from "./style-sheet-lab";
-import { ChatLab } from "./chat-lab";
-import { WindowsLab } from "./windows-lab";
-import { WordsLab } from "./words-lab";
-import { AppArtLab } from "./app-art-lab";
-import { AppSheetLab } from "./app-lab/app-sheet-lab";
-
-import { ResearchBalanceLab } from "./research-balance/research-balance-lab";
 
 const HOUR = 3600;
 /** The handoff's one fiction: Day 12, today ends at 21:40 with 7h 14m left, tomorrow lasts 12h. */
 const ENDS_AT = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
 
 /**
- * Dev only: the HUD's style sheet at /lab/kit (style-sheet-lab.tsx); the shell kit's components in their states, on the
- * Frontier ground, at /lab/kit/shell, the Frontier screens built on them at /lab/kit/hud/<state>, and the token file
- * drawn out at /lab/kit/tokens. Nothing here reads a game; every value is a fixture's.
+ * Dev only: the shell kit's components in their states, on the shell's surface (src/tokens.ts SHELL_*), at
+ * /lab/kit/shell (Kit → App sheet). Nothing here reads a game; every value is a fixture's.
  */
-export const KitLabView = () => {
-  return (
-    <Routes>
-      <Route path="app-art" element={<AppArtLab />} />
-      <Route path="construction" element={<ConstructionLab />} />
-      <Route path="icons" element={<IconLab />} />
-      <Route path="reward-chests" element={<RewardChestsLab />} />
-      <Route path="resource-icons" element={<ResourceIconsLab />} />
-      <Route path="deploy" element={<DeployLab />} />
-      <Route path="area-d" element={<AreaDLab />} />
-      <Route path="panels" element={<PanelsLab />} />
-      <Route path="windows/:surface?" element={<WindowsLab />} />
-      <Route path="guidance" element={<GuidanceLab />} />
-      <Route path="build-order" element={<BuildOrderLab />} />
-      <Route path="blitz-build" element={<BlitzBuildLab />} />
-      <Route path="progression" element={<ProgressionLab />} />
-      <Route path="research-balance" element={<ResearchBalanceLab />} />
-      <Route path="tokens" element={<TokensLab />} />
-      <Route path="words" element={<WordsLab />} />
-      <Route path="hud/:state" element={<HudLab />} />
-      <Route path="unified/:view?" element={<UnifiedHudLab />} />
-      <Route path="shell" element={<Components />} />
-      <Route path="chat" element={<ChatLab />} />
-      <Route path="app" element={<AppSheetLab />} />
-      <Route path="*" element={<StyleSheetLab />} />
-    </Routes>
-  );
-};
-
-/** The catalogue draws the kit on the shell's surface (src/tokens.ts SHELL_*); /lab/kit/hud draws it on the HUD's. */
-const Components = () => {
-  return (
-    <main data-surface="shell" className="min-h-dvh bg-kit-ground px-4 py-6 font-sans text-kit-cream">
-      <div className="mx-auto flex max-w-[390px] flex-col gap-8 lg:max-w-5xl lg:flex-row lg:flex-wrap">
-        <Link to="/lab/kit/research-balance">Research balance proposals</Link>
-        <Link to="/lab/kit/icons">Facets icon catalog</Link>
-        <Link to="/lab/kit/tokens">Design tokens</Link>
-        <Link to="/lab/kit/reward-chests">Reward chest tiers</Link>
-        <Link to="/lab/kit/resource-icons">Resource icon review</Link>
-        <Link to="/lab/kit/app-art">App background paintings</Link>
-        <Link to="/lab/kit/construction">Construction models</Link>
-        <ClockSection />
-        <StoresSection />
-        <PillsSection />
-        <TiersSection />
-        <SeasonSection />
-        <SheetSection />
-        <PortraitsSection />
-        <ClockChipsSection />
-        <ListRowsSection />
-      </div>
-    </main>
-  );
-};
+export const ShellKitLab = () => (
+  <main data-surface="shell" className="min-h-dvh bg-kit-ground px-4 py-6 font-sans text-kit-cream">
+    <div className="mx-auto flex max-w-[390px] flex-col gap-8 lg:max-w-5xl lg:flex-row lg:flex-wrap">
+      <ClockSection />
+      <StoresSection />
+      <PillsSection />
+      <TiersSection />
+      <SeasonSection />
+      <SheetSection />
+      <PortraitsSection />
+      <ClockChipsSection />
+      <ListRowsSection />
+    </div>
+  </main>
+);
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
   <section data-kit-section={title} className="flex w-full flex-col gap-3 lg:w-[390px]">

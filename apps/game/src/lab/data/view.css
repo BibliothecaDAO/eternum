@@ -1,0 +1,57 @@
+.data-room {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+  color: #dce3df;
+  font:
+    14px/1.5 system-ui,
+    sans-serif;
+}
+.data-room-note {
+  color: #8e9b97;
+}
+.data-room code {
+  color: #d4b986;
+}
+.data-room-pull h1 {
+  margin: 28px 0 8px;
+  color: #d4b986;
+  font-size: 22px;
+}
+.data-room-pull h2 {
+  margin: 24px 0 6px;
+  font-size: 17px;
+}
+.data-room-pull h3 {
+  margin: 16px 0 4px;
+  font-size: 15px;
+}
+.data-room-pull p,
+.data-room-pull ul {
+  margin: 6px 0;
+}
+.data-room-pull ul {
+  padding-left: 20px;
+  list-style: disc;
+}
+.data-room-pull table {
+  display: block;
+  margin: 8px 0;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.data-room-pull th,
+.data-room-pull td {
+  padding: 3px 10px;
+  border-bottom: 1px solid #a8bbc020;
+  white-space: nowrap;
+}
+.data-room-pull th {
+  color: #8e9b97;
+  font-weight: 600;
+  text-align: left;
+}

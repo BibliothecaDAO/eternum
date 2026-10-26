@@ -1,5 +1,6 @@
 .lab-app {
-  --lab-viewport-height: calc(100dvh - 60px);
+  --lab-header-height: 92px;
+  --lab-viewport-height: calc(100dvh - var(--lab-header-height));
   height: 100dvh;
   background: #10191f;
   color: #dce3df;
@@ -8,33 +9,72 @@
 .lab-app[data-capture="true"] {
   --lab-viewport-height: 100dvh;
 }
+/* Two rows of one line each: the rooms and the switches, then the room's pages and the page's views. A row too long
+   for the window scrolls sideways, so the header keeps its height on a phone. */
 .lab-header {
   display: flex;
-  align-items: center;
-  gap: 24px;
-  height: 60px;
-  padding: 0 20px;
+  flex-direction: column;
+  height: var(--lab-header-height);
   border-bottom: 1px solid #a8bbc020;
   font:
     13px/1.4 system-ui,
     sans-serif;
 }
-.lab-header a {
-  color: #d4b986;
-  white-space: nowrap;
-}
-.lab-header label {
+.lab-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 0;
+  gap: 20px;
+  height: 46px;
+  padding: 0 16px;
+  overflow-x: auto;
+  white-space: nowrap;
 }
-.lab-header select {
-  min-width: 0;
-  max-width: 100%;
-  padding: 8px;
+.lab-row + .lab-row {
+  background: #0c1419;
+}
+.lab-header nav,
+.lab-header [role="group"] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.lab-switches {
+  display: flex;
+  gap: 16px;
+  margin-left: auto;
+  color: #8e9b97;
+}
+.lab-header a {
+  color: #d4b986;
+}
+.lab-header button,
+.lab-header nav a {
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: #a9b6b2;
+  font: inherit;
+  text-decoration: none;
+}
+.lab-header button:hover,
+.lab-header nav a:hover {
   background: #18252e;
-  color: #dce3df;
+}
+.lab-header [aria-current="page"] {
+  background: #18252e;
+  color: #f1ece0;
+}
+.lab-header [aria-label="Rooms"] [aria-current="page"] {
+  color: #d4b986;
+}
+.lab-header [aria-pressed="true"] {
+  border-color: #d4b986;
+  color: #f1ece0;
+}
+.lab-header [aria-label="Views"] {
+  padding-left: 16px;
+  border-left: 1px solid #a8bbc030;
 }
 .lab-tool {
   height: var(--lab-viewport-height);
@@ -46,7 +86,7 @@
   place-content: center;
 }
 .lab-header a:focus-visible,
-.lab-header select:focus-visible {
+.lab-header button:focus-visible {
   outline: 2px solid #d4b986;
-  outline-offset: 3px;
+  outline-offset: 2px;
 }

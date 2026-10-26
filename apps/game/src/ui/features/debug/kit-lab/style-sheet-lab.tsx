@@ -77,7 +77,7 @@ import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/g
 import { ResourcesIds, siteName } from "@bibliothecadao/types";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { lazy, Suspense, type ReactNode, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import { eventStories, installFixtureGame, PLAYER } from "./fixture-game";
 
@@ -109,8 +109,11 @@ type State = (typeof STATES)[number];
 export const StyleSheetLab = () => {
   useDocumentClass("classic-hud");
   const [store] = useState(installFixtureGame);
-  const [mode, setMode] = useState<HudMode>("blitz");
-  const [device, setDevice] = useState<Device>("desktop");
+  // The lab's Game and Device switches (`mode`, `device`).
+  const [params] = useSearchParams();
+  const asked = params.get("mode");
+  const mode: HudMode = asked !== null && asked in HUD_MODES ? (asked as HudMode) : "blitz";
+  const device: Device = params.get("device") === "phone" ? "phone" : "desktop";
   const sheetRef = useRef<HTMLDivElement>(null);
   return (
     <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: PLAYER } as never}>
@@ -123,39 +126,7 @@ export const StyleSheetLab = () => {
         <header data-lab-chrome className="mb-6 flex flex-wrap items-center gap-4 text-sm text-white/80">
           <h1 className="text-xl font-bold text-white">Style sheet</h1>
           <span>The HUD scope of src/tokens.ts on the left; the type scale, then each element in every state.</span>
-          <label className="flex items-center gap-2">
-            Mode
-            <select
-              value={mode}
-              onChange={(event) => setMode(event.target.value as HudMode)}
-              className="rounded bg-black/60 px-2 py-1"
-            >
-              {(Object.keys(HUD_MODES) as HudMode[]).map((key) => (
-                <option key={key} value={key}>
-                  {AGE_NAMES[key]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center gap-2">
-            Device
-            <select
-              value={device}
-              onChange={(event) => setDevice(event.target.value as Device)}
-              className="rounded bg-black/60 px-2 py-1"
-            >
-              <option value="desktop">Desktop</option>
-              <option value="phone">Phone (390 wide, touch)</option>
-            </select>
-          </label>
-          <nav className="ml-auto flex gap-3 underline">
-            <Link to="/lab/kit/shell">Shell kit</Link>
-            <Link to="/lab/kit/tokens">Tokens</Link>
-            <Link to="/lab/kit/panels">HUD panels</Link>
-            <Link to="/lab/kit/guidance">Guidance</Link>
-            <Link to="/lab/kit/icons">Icons</Link>
-            <Link to="/lab/kit/words">Words</Link>
-          </nav>
+          <span>{AGE_NAMES[mode]}</span>
         </header>
         <div className="flex items-start gap-6">
           <TokenEditor key={mode} target={sheetRef} mode={mode} />

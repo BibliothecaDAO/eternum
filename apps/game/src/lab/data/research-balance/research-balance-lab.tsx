@@ -32,7 +32,7 @@ export function ResearchBalanceLab() {
   const [params, setParams] = useSearchParams();
   const part = params.get("part") ?? "storage";
   return (
-    <main className="min-h-screen bg-kit-ground p-4 text-hud-ink sm:p-8" data-lab="research-balance">
+    <main className="bg-kit-ground p-4 text-hud-ink sm:p-8" data-lab="research-balance">
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
         <header className="flex flex-col gap-2">
           <p className="text-hud-label uppercase tracking-wide text-hud-muted">Next season · proposals for review</p>
@@ -48,7 +48,12 @@ export function ResearchBalanceLab() {
             { key: "beasts", label: "Beast labor" },
           ]}
           value={part}
-          onChange={(value) => setParams({ part: value })}
+          onChange={(value) =>
+            setParams((current) => {
+              current.set("part", value);
+              return current;
+            })
+          }
         />
         {part === "storage" ? <StorageStudy /> : part === "tree" ? <TreeStudy /> : <BeastStudy />}
         <footer className="border-t border-hud-line pt-3 text-hud-label text-hud-muted">

@@ -46,8 +46,8 @@ export function buildTerrainGalleryUrl(
   revealProgress = 0,
 ) {
   const url = new URL(baseUrl);
-  const gameMode = url.searchParams.get("gameMode");
-  url.pathname = "/lab";
+  const gameMode = url.searchParams.get("mode");
+  url.pathname = "/lab/terrain";
   url.search = "";
   url.searchParams.set("capture", "1");
   url.searchParams.set("rendererMode", rendererMode);
@@ -55,7 +55,7 @@ export function buildTerrainGalleryUrl(
   url.searchParams.set("scene", sceneId);
   url.searchParams.set("quality", qualityTier);
   if (revealProgress > 0) url.searchParams.set("reveal", String(revealProgress));
-  if (gameMode === "blitz" || gameMode === "frontier") url.searchParams.set("gameMode", gameMode);
+  if (gameMode === "blitz" || gameMode === "frontier") url.searchParams.set("mode", gameMode);
   return url.toString();
 }
 
@@ -534,7 +534,7 @@ async function main(args) {
       }
     }
   }
-  const gameMode = new URL(baseUrl).searchParams.get("gameMode") === "frontier" ? "frontier" : "blitz";
+  const gameMode = new URL(baseUrl).searchParams.get("mode") === "frontier" ? "frontier" : "blitz";
   const evaluation = evaluateTerrainGalleryResults(results, {
     groundModes,
     rendererModes,

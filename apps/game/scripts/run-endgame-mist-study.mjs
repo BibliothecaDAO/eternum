@@ -97,7 +97,7 @@ async function captureTimedStage(devTools, seconds, name) {
   return result.value;
 }
 async function gallery(browser, urlBase, world, spires) {
-  const url = urlBase + "/lab/endgame?gameMode=" + world + "&spires=" + spires;
+  const url = urlBase + "/lab/endgame?mode=" + world + "&spires=" + spires;
   const adapter = openScenario(browser, url);
   const name = "fracture-" + world + "-" + spires;
   const before = capture(browser, name + "-before");
@@ -183,7 +183,7 @@ const sample = (browser, count, includeBurst = false) =>
       ")burstSnapshot=window.__terrainVerification.getSnapshot();}return JSON.stringify({intervals:values,burstSnapshot,snapshot:window.__terrainVerification.getSnapshot()});})()",
   );
 async function cost(browser, urlBase, rendererMode, iteration) {
-  const url = urlBase + "/lab/endgame?capture=1&gameMode=blitz&spires=awaken&busy=1&rendererMode=" + rendererMode;
+  const url = urlBase + "/lab/endgame?capture=1&mode=blitz&spires=awaken&busy=1&rendererMode=" + rendererMode;
   const adapter = openScenario(browser, url);
   const drawingBuffer = browser.read(
     'JSON.stringify((()=>{const c=document.querySelector("canvas");return {width:c.width,height:c.height,viewportWidth:innerWidth,viewportHeight:innerHeight,dpr:devicePixelRatio};})())',

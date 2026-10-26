@@ -100,7 +100,7 @@ export const ProceduralTerrainDebugView = () => {
   const localMode = searchParams.get("layout") === "settlement";
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<ProceduralTerrainDebugRendererHandle | null>(null);
-  const gameMode = searchParams.get("gameMode") === "frontier" ? "frontier" : "blitz";
+  const gameMode = searchParams.get("mode") === "frontier" ? "frontier" : "blitz";
   const capture = searchParams.get("capture") === "1";
   const forceWebGL = searchParams.get("rendererMode") === "webgpu-force-webgl";
   const texturedGround = searchParams.get("groundMode") !== "flat";
@@ -216,18 +216,6 @@ export const ProceduralTerrainDebugView = () => {
             </p>
           </div>
 
-          <label className="flex flex-col gap-1 text-sm">
-            World mode
-            <select
-              aria-label="World mode"
-              className="bg-stone-900 p-2"
-              value={gameMode}
-              onChange={(event) => changeSceneSetting("gameMode", event.target.value)}
-            >
-              <option value="blitz">Blitz — shipped lighting, edge mist</option>
-              <option value="frontier">Frontier — Ember lighting, dark mist</option>
-            </select>
-          </label>
           <label className="flex flex-col gap-1 text-sm">
             Layout
             <select

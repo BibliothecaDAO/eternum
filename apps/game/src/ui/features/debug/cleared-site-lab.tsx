@@ -74,7 +74,7 @@ export function ClearedSiteLab() {
   return (
     <main className="cleared-site-lab" data-ready={loaded === signature && !error}>
       <header>
-        <Link to="/lab">Lab</Link>
+        <Link to="/lab/models">Models</Link>
         <div>
           <h1>After the fight</h1>
           <p>Standing site · cleared standard</p>

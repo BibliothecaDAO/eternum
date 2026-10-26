@@ -17,7 +17,7 @@ async (page) => {
     ]) {
       await page.setViewportSize(viewport);
       for (const part of ["storage", "tree", "beasts"]) {
-        await page.goto(new URL(`/lab/kit/research-balance?part=${part}`, entry).href);
+        await page.goto(new URL(`/lab/data?mode=frontier&view=balance&part=${part}`, entry).href);
         await page.getByRole("heading", { name: "Make each research pick count" }).waitFor();
         if (part === "storage") {
           if (await page.getByRole("button", { name: /^Granary/ }).count())
