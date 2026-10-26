@@ -53,6 +53,7 @@ vi.mock("./hud/view", () => ({
 vi.mock("./data/view", () => ({ DataRoomView: () => <Tool name="data" /> }));
 vi.mock("./footage/view", () => ({ FootageView: () => <Tool name="footage" /> }));
 vi.mock("./feed/view", () => ({ FeedLabView: () => <Tool name="feed" /> }));
+vi.mock("./feed/draw", () => ({ FeedDrawView: () => <Tool name="feed-draw" /> }));
 vi.mock("../ui/features/debug/procedural-character-benchmark-view", () => ({
   ProceduralCharacterBenchmarkView: () => <Tool name="benchmark" />,
   ProceduralWorldGymView: () => <Tool name="world" />,
@@ -158,6 +159,7 @@ it.each([
   ["/lab/kit/windows/settings", "kit-windows", "HUD", "In game"],
   ["/lab/app/home/profile", "app", "HUD", "App pages"],
   ["/lab/feed?option=c&device=phone", "feed", "HUD", "Feed · to pick"],
+  ["/lab/feed/draw?frame=a&device=desktop", "feed-draw", "HUD", "Feed · to pick"],
   ["/lab/day-end?case=late-block", "day-end", "Game", "Day end"],
   ["/lab/endgame?variation=tide&mode=frontier", "endgame", "Game", "Game end"],
   ["/lab/map-labels?zoom=close&hover=28", "map-labels", "Game", "Map labels & sites"],
