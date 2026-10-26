@@ -37,6 +37,18 @@ const HUD_ROLE_OPACITY = [
   },
 ];
 
+// A render subscribed to the confirmed head runs again at every block, about once a second: the Frontier Feed redrew its
+// 350 stories that way on a still map, a long frame each time on a laptop. Follow the head in the store
+// (useConnectionStore.subscribe in an effect), or select only what the render shows from it.
+const NO_HEAD_RENDER = [
+  {
+    selector:
+      "CallExpression[callee.name='useConnectionStore'] > ArrowFunctionExpression > MemberExpression.body[property.name='lastConfirmedBlock']",
+    message:
+      "A render subscribed to the confirmed head runs at every block: follow it with useConnectionStore.subscribe, or select what the render shows.",
+  },
+];
+
 // A function or an object written into text prints its source or "[object Object]": each resource chip's buttons read
 // "Transfer (id) => {…}" where a words function was written in place of the word it returns. Typed, so client only.
 const TEXT_VALUES = {
@@ -78,7 +90,10 @@ const eslint = new ESLint({
     },
     {
       files: ["apps/game/src/**/*.{ts,tsx}"],
-      rules: { ...HOOK_DEPENDENCIES, "no-restricted-syntax": ["error", ...NO_BITWISE_ID, ...HUD_ROLE_OPACITY] },
+      rules: {
+        ...HOOK_DEPENDENCIES,
+        "no-restricted-syntax": ["error", ...NO_BITWISE_ID, ...HUD_ROLE_OPACITY, ...NO_HEAD_RENDER],
+      },
     },
     {
       files: ["apps/game/src/**/*.{ts,tsx}"],
