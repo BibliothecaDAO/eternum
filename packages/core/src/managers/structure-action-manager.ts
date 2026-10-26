@@ -110,6 +110,11 @@ export class StructureActionManager {
 
       const targetArmy = armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
       if (!targetArmy || isViewerOwner(targetArmy.owner, playerAddress)) continue;
+      // A structure's guard attacking an army is its own command, which a game may leave out (Frontier does).
+      if (!configManager.isCommandEnabled("GuardAttack")) {
+        actionPaths.refuse(ActionPaths.posKey({ col, row }), { reason: "no-attack" });
+        continue;
+      }
 
       const biome = exploredRow.get(row - this.FELT_CENTER);
 

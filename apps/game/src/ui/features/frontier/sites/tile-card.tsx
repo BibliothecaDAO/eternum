@@ -84,7 +84,8 @@ type AttackTarget =
 
 /**
  * The map tile the player tapped, when something an army can attack stands on it: a standing expedition site (a
- * camp, rift, ruin or beasts), or an army that is not the player's own.
+ * camp, rift, ruin or beasts), or an army that is not the player's own where the game takes an army's attack on another
+ * (Battle; Frontier's preset leaves it out).
  */
 export const useSelectedTarget = (): AttackTarget | null => {
   const { setup } = useGame();
@@ -95,7 +96,8 @@ export const useSelectedTarget = (): AttackTarget | null => {
   const [tile] = useWorldSpatialTiles(hexes);
   useNativeRevision(SITE_MODELS);
   if (!isMapView || !tile) return null;
-  return tile.occupierIsStructure ? standingSite(setup.store, tile) : otherArmy(setup.store, tile, viewer);
+  if (tile.occupierIsStructure) return standingSite(setup.store, tile);
+  return configManager.isCommandEnabled("Battle") ? otherArmy(setup.store, tile, viewer) : null;
 };
 
 const standingSite = (store: NativeFactStore, tile: TileSpatialRenderable): AttackTarget | null => {

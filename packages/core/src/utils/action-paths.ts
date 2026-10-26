@@ -34,12 +34,14 @@ const sameStep = (left: ActionPath, right: ActionPath): boolean =>
 /**
  * Why the rules gave an actor no order at a tile they looked at, as the planner established it: the stamina the order
  * needs (the smallest any route there needs), the owner's food for it, a structure the game lets no army attack, a
- * holding the game allows no transfer with, a site that holds its tile, or a target beyond the army's step.
+ * target whose attack the game's commands leave out, a holding the game allows no transfer with, a site that holds its
+ * tile, or a target beyond the army's step.
  */
 export type OrderRefusal =
   | { reason: "stamina"; need: number }
   | { reason: "food" }
   | { reason: "off-limits" }
+  | { reason: "no-attack" }
   | { reason: "no-transfer" }
   | { reason: "occupied" }
   | { reason: "too-far" };

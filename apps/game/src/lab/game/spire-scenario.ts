@@ -6,7 +6,7 @@ import { BiomeType, BiomeTypeToId, getHexesWithinRadius } from "@bibliothecadao/
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { nativeTilePackingConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
-import { nativeCommandBits } from "../../../../../contracts/l3/world-native/schema/commands.gen";
+import { frontierPreset } from "../../../../../config/source/frontier/native";
 import { LAB_GAME, LAB_GAME_ENDS_AT, type LabFact, type LabScenario } from "./lab-chain";
 
 const GRASS = BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
@@ -15,8 +15,9 @@ const wire = (value: unknown): unknown =>
   JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
 
 /**
- * The fixture's rules as Frontier plays them where the spire needs it: hour-long day units, so a day outlasts a
- * session; depth entry enabled (config/source/frontier/native.ts); and wheat the only food a step burns
+ * The fixture's rules as Frontier plays them: hour-long day units, so a day outlasts a session; Frontier's own commands
+ * and mode rules (config/source/frontier/native.ts), so the lab offers only what a Frontier game takes (an army fights a
+ * site's guard, never another army or a player's holding); and wheat the only food a step burns
  * (config/source/frontier/base.ts), since the realm holds no fish.
  */
 const frontierRules = (rules: NativeRows["SliceRules"]) => {
@@ -24,7 +25,8 @@ const frontierRules = (rules: NativeRows["SliceRules"]) => {
   return {
     ...wired,
     day_unit_seconds: 3600,
-    command_mask: String(rules.command_mask | BigInt(nativeCommandBits.EnterDepth)),
+    command_mask: String(frontierPreset.commandMask),
+    mode_rules: frontierPreset.modeRules,
     troop_stamina_config: { ...wired.troop_stamina_config, stamina_explore_fish_cost: 0, stamina_travel_fish_cost: 0 },
   };
 };
