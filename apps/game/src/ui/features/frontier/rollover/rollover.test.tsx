@@ -80,7 +80,9 @@ describe("the day's end", () => {
         ),
       );
       const line = host.querySelector("[aria-label='troops']")!;
-      expect(line.querySelector("[role='img']")?.getAttribute("aria-label")).toBe(`Armies ended with the day ×${armies}`);
+      expect(line.querySelector("[role='img']")?.getAttribute("aria-label")).toBe(
+        `Armies ended with the day ×${armies}`,
+      );
       expect(line.textContent).toBe(`×${armies}−6,021`);
       expect(line.querySelectorAll(".rounded-full")).toHaveLength(0);
     }
