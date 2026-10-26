@@ -138,11 +138,14 @@ pub fn independent_sides(row: u8) -> bool {
 }
 
 pub fn tier(learned: u64, row: u8) -> u8 {
-    if independent_sides(row) {
-        return core::cmp::max(picks(learned, row, 0), picks(learned, row, 1));
-    }
     let (scale, size) = tier_slot(row);
-    (learned / scale % size).try_into().unwrap()
+    let first = (learned / scale % size).try_into().unwrap();
+    if independent_sides(row) {
+        let second = (learned / (scale * size) % size).try_into().unwrap();
+        core::cmp::max(first, second)
+    } else {
+        first
+    }
 }
 
 // The choice made at a tier, from 1 (uncommon) up to the row's tier.
