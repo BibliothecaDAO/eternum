@@ -140,8 +140,8 @@ describe("a guarded site's card", () => {
     // The site's painting and the guard's side name the Basilisk.
     expect(card.querySelectorAll('[data-icon="beast-basilisk"]')).toHaveLength(2);
     // The headline says the loss, and the chest this attack does not win stands dimmed beside it.
-    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("Your army is lost+128Rare+145 XP");
-    expect(card.querySelector(".ui-sheet__body header .opacity-50")?.textContent).toBe("+128Rare+145 XP");
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("Your army is lost+128Rare");
+    expect(card.querySelector(".ui-sheet__body header .opacity-50")?.textContent).toBe("+128Rare");
     expect(card.querySelector('[data-icon="troops"]')).toBeNull();
     expect(card.querySelector('[data-tip="Knight"]')).not.toBeNull();
     expect(card.textContent).toContain("2,300");
@@ -235,7 +235,7 @@ describe("a guarded site's card", () => {
     );
     const header = document.querySelector(".ui-sheet__body header")!;
     expect(header.textContent).toBe("This attack earns+120Full+82 XP");
-    expect(header.querySelector('[data-tip="The store is full: the rest did not fit"]')).not.toBeNull();
+    expect(header.querySelector('[data-tip="Storage is full: the rest did not fit"]')).not.toBeNull();
     act(() =>
       buttons()
         .find((button) => button.textContent === "Realm")!
