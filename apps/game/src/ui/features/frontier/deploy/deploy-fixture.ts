@@ -70,7 +70,7 @@ export const frontierDay = () => {
       end_grace_seconds: 0,
       seed: "1",
     }),
-    set("0x1ab0", "GameRelease", { game_id: 1, release_id: 3, preset_commitment: "0x1ab" }),
+    set("0x1ab0", "GameRelease", { game_id: 1, release_id: 3, created_release_id: 3, preset_commitment: "0x1ab" }),
     set("0x7", "Structure", realm),
     ...preset.resources.map((rule) => set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 })),
     set("0x6", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: "100000000000000", weight: "0" }),

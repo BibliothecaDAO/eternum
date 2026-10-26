@@ -3065,7 +3065,9 @@ fn creation_emits_release_and_overrides_without_per_game_configuration_rows() {
     let mut overrides_count = 0;
     for (_, event) in events.events {
         if event.keys.span() == array![selector!("GameEvent"), selector!("RowSet"), 1, 'GameRelease'].span() {
-            assert_eq!(event.data.span(), array![1, game_id.into(), 2, 1, crate::presets::commitment(preset)].span());
+            assert_eq!(
+                event.data.span(), array![1, game_id.into(), 3, 1, crate::presets::commitment(preset), 1].span(),
+            );
             count += 1;
         }
         if event.keys.span() == array![selector!("GameEvent"), selector!("RowSet"), 1, 'GameOverrides'].span() {

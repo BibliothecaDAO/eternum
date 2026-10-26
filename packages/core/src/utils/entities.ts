@@ -89,7 +89,7 @@ const getRealmName = (structure: NativeRows["Structure"], store: NativeFactStore
   const release = store.require("GameRelease", { game_id });
   const held = store.get("SettledRealm", { game_id, realm_id: structure.metadata.realm_id });
   const baseName =
-    release.release_id < 3 || held?.home === structure.entity_id
+    release.created_release_id < 3 || held?.home === structure.entity_id
       ? getRealmNameById(structure.metadata.realm_id)
       : realmName(safeInteger(structure.entity_id));
   return structure.metadata.has_wonder ? `WONDER - ${baseName}` : baseName;

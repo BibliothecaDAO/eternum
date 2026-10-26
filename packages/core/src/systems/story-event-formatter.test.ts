@@ -33,7 +33,7 @@ const buildStore = () => {
     {
       model: "GameRelease",
       key: hash.computePoseidonHashOnElements([1]),
-      value: { game_id: 1, release_id: 3, preset_commitment: 0x1abn },
+      value: { game_id: 1, release_id: 3, created_release_id: 3, preset_commitment: 0x1abn },
     },
   ]);
   const setHeldRealm = (id: number, realmId: number, level: number) => {

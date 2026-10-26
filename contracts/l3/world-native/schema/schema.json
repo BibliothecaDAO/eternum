@@ -6080,10 +6080,16 @@
           "type": "core::felt252",
           "id": "0x7072657365745f636f6d6d69746d656e74",
           "feltLength": 1
+        },
+        {
+          "name": "created_release_id",
+          "type": "core::integer::u32",
+          "id": "0x637265617465645f72656c656173655f6964",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 2
+      "valueLength": 3
     },
     {
       "name": "GameRegistry",
@@ -13147,5 +13153,5 @@
       ]
     }
   },
-  "identity": "725bf6ae7cd13331fbf55f825a6985485a9c3235831169a93d1ec17d7ce0d368"
+  "identity": "5aff876d6f7ae613cae6c7808d2139be283093b8df95c7a351c8563d935baaaa"
 }

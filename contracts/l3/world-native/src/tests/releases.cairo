@@ -1,5 +1,5 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_events, start_cheat_caller_address};
-use starknet::storage::StorageMapReadAccess;
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use crate::logic::release::{
@@ -204,7 +204,7 @@ fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
     assert_eq!(emitted.events.len(), 2);
     let (_, pin) = emitted.events.at(0);
     assert_eq!(pin.keys.span(), array![selector!("GameEvent"), selector!("RowSet"), 1, 'GameRelease'].span());
-    assert_eq!(pin.data.span(), array![1, game_id.into(), 2, 2, crate::presets::commitment(preset)].span());
+    assert_eq!(pin.data.span(), array![1, game_id.into(), 3, 2, crate::presets::commitment(preset), 1].span());
     let mut repeated = spy_events();
     releases.apply_release(game_id, 2);
     assert!(repeated.get_events().emitted_by(d.games).events.is_empty());
@@ -381,4 +381,45 @@ fn migrations_cannot_be_skipped_and_rollback_is_a_new_forward_release() {
     assert_eq!(releases.game_release(1), 4);
     assert_eq!(releases.release(4), original);
     assert_eq!(games.game(1).seed, before.seed + 11);
+}
+
+#[test]
+fn creation_release_survives_hotfixes_and_retried_launches() {
+    let d = super::registrar::setup();
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let registrar = IRegistrarDispatcher { contract_address: d.games };
+    let preset = super::registrar::definition(true);
+    let params = super::registrar::params(true);
+    start_cheat_caller_address(d.games, authority());
+    registrar.register_preset(1, preset);
+    let logic = releases.release(1);
+    releases.register_release(2, logic);
+    let existing = registrar.create_game(params);
+    let legacy = registrar.create_game(CreateGameParams { name: 'before-origin', ..params });
+    // Simulate a game created before this storage field existed.
+    interact_with_state(d.games, || crate::state::write().game_creation_releases.write(legacy, 0));
+    releases.register_release(3, logic);
+    let next = registrar.create_game(CreateGameParams { name: 'next-season', ..params });
+    releases.apply_release(existing, 3);
+    releases.apply_release(legacy, 3);
+    releases.register_release(4, logic);
+    let mut spy = spy_events();
+    for (game_id, created_release) in array![(existing, 2_u32), (legacy, 0), (next, 3)] {
+        releases.apply_release(game_id, 4);
+        assert_eq!(releases.game_release(game_id), 4);
+        assert_eq!(
+            interact_with_state(d.games, || crate::state::read().game_creation_releases.read(game_id)), created_release,
+        );
+    }
+    let events = spy.get_events().emitted_by(d.games);
+    assert_eq!(events.events.len(), 3);
+    for (index, created_release) in array![(0_u32, 2_u32), (1, 0), (2, 3)] {
+        let (_, pin) = events.events.at(index);
+        assert_eq!(pin.keys.span(), array![selector!("GameEvent"), selector!("RowSet"), 1, 'GameRelease'].span());
+        assert_eq!(*pin.data.at(2), 3);
+        assert_eq!(*pin.data.at(3), 4);
+        assert_eq!(*pin.data.at(5), created_release.into());
+    }
+    assert_eq!(registrar.create_game(params), existing);
+    assert_eq!(interact_with_state(d.games, || crate::state::read().game_creation_releases.read(existing)), 2);
 }
