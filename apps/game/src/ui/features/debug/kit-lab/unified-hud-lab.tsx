@@ -4,8 +4,10 @@ import { useHudMode } from "@/hooks/use-hud-mode";
 import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { FrontierHud } from "@/ui/features/frontier/frontier-hud";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
-import { TopHeader } from "@/ui/features/world/containers/top-header/top-header";
-import { DesktopHud } from "@/ui/features/world/hud/desktop-hud";
+import { ArenaHud } from "@/ui/features/world/hud/arena-hud";
+import { usePointsGoal } from "@/ui/features/world/hud/points-goal";
+import { gameStartHeadline } from "@/ui/features/news-headlines/news-headline-bridge";
+import { NewsHeadlineBanner } from "@/ui/features/news-headlines/news-headline-banner";
 import { readExpeditionRules, structureMapPosition } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ActorType, RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
@@ -18,12 +20,22 @@ import { LabGame } from "./lab-game";
 
 /**
  * The views the lab draws: each mode's player (Blitz's, its Build order panel read from the lab realm, and its army's
- * attack forecast on an enemy army beside it, or stocked for its build steps; Frontier's, and with an army out whose XP buys a tier), a spectator
+ * attack forecast on an enemy army beside it, or stocked for its build steps, also as the game begins with its news
+ * over the HUD; Frontier's, and with an army out whose XP buys a tier), a spectator
  * of a game running and of one finished, and a Blitz player whose last realm fell, still holding a Hyperstructure, then watching.
  */
 const VIEWS = {
   blitz: { preset: 2, spectating: false, finished: false, army: false, attack: false },
   "blitz-build": { preset: 2, spectating: false, finished: false, army: false, attack: false, stocked: true },
+  "blitz-start": {
+    preset: 2,
+    spectating: false,
+    finished: false,
+    army: false,
+    attack: false,
+    stocked: true,
+    start: true,
+  },
   "blitz-attack": { preset: 2, spectating: false, finished: false, army: true, attack: true },
   frontier: { preset: 5, spectating: false, finished: false, army: false, attack: false },
   "frontier-army": { preset: 5, spectating: false, finished: false, army: true, attack: false },
@@ -41,10 +53,10 @@ export const UNIFIED_VIEWS = (Object.keys(VIEWS) as View[]).map((name) => ({
 }));
 
 /**
- * Dev only: the in-game HUD on a desktop as the game mounts it, every mode's, on the lab's game, at
- * /lab/kit/unified/<view>: blitz, blitz-attack, blitz-build, frontier, frontier-army, blitz-spectator, blitz-finished,
- * blitz-out, blitz-out-watching. Frontier's states on the same
- * HUD are the Frontier HUD lab's, /lab/kit/hud/<state>.
+ * Dev only: the in-game HUD as the game mounts it (a desktop's columns, a phone's compact HUD), every mode's, on the
+ * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-build, blitz-start, frontier, frontier-army,
+ * blitz-spectator, blitz-finished, blitz-out, blitz-out-watching. Frontier's states on the same HUD are the Frontier HUD
+ * lab's, /lab/kit/hud/<state>.
  */
 export const UnifiedHudLab = () => {
   const { view = "blitz" } = useParams();
@@ -55,6 +67,7 @@ export const UnifiedHudLab = () => {
 const ViewLab = ({ view }: { view: View }) => {
   const { preset, spectating, finished, army, attack } = VIEWS[view];
   const stocked = "stocked" in VIEWS[view];
+  const start = "start" in VIEWS[view];
   const out = "out" in VIEWS[view];
   const frontier = preset === VIEWS.frontier.preset;
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
@@ -86,15 +99,21 @@ const ViewLab = ({ view }: { view: View }) => {
             rules && <FrontierHud rules={rules} />
           ) : (
             <>
-              <TopHeader />
-              <DesktopHud />
+              <ArenaHud />
               {attack && <AttackForecast store={store} />}
+              {start && <GameStartNews />}
             </>
           );
         }}
       </LabGame>
     </>
   );
+};
+
+/** The news that the game has begun, as the game shows it over the HUD. */
+const GameStartNews = () => {
+  const goal = usePointsGoal();
+  return <NewsHeadlineBanner headline={gameStartHeadline(0, goal)} />;
 };
 
 /**

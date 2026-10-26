@@ -566,6 +566,8 @@ export const HUD_LAYOUT = {
   settings: "420px",
   /** The day's summary over the map at a Frontier day's end, on a desktop (a phone's is a sheet). */
   summary: "400px",
+  /** A phone's top bar, both its rows (Blitz's and Frontier's end by 94px): the game's news stands under it. */
+  "phone-header": "100px",
   /** The phone's minimap tab. */
   "phone-minimap": "clamp(180px, 35dvh, 320px)",
   /** The most of a phone's screen a page or a sheet takes, sized to what it holds (owner, 26 October 2026: layout A). */

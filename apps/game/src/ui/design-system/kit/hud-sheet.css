@@ -2072,7 +2072,7 @@ button.ui-card__choose:disabled {
   background: linear-gradient(90deg, transparent, rgb(var(--hud-ink) / 0.35), transparent);
 }
 
-/* ── Banner: news across the top of the map, its side and mark in the news' tone. ── */
+/* ── Banner: news across the top of the map, its side and mark in the news' tone; it takes no click. ── */
 .ui-banner {
   --banner-tone: rgb(var(--hud-accent));
   display: flex;
@@ -2086,7 +2086,7 @@ button.ui-card__choose:disabled {
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
   padding: theme(spacing.3) theme(spacing.4);
-  pointer-events: auto;
+  pointer-events: none;
 }
 .ui-banner[data-tone="good"] {
   --banner-tone: var(--hud-good);
@@ -2128,15 +2128,6 @@ button.ui-card__choose:disabled {
 }
 .ui-banner__line {
   color: var(--hud-muted);
-}
-.ui-banner__actions {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  align-items: center;
-  gap: theme(spacing.1);
-  border-left: 1px solid var(--hud-divider);
-  padding-left: theme(spacing.3);
 }
 
 /* ── Loading backdrop: the contour lines behind the loading panel, in the age's accent on the dark ground. ── */

@@ -1371,14 +1371,6 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
             eyebrow="War Report"
             title="Xeswet has fallen"
             line="Moonhand took it from Kestrel."
-            actions={
-              <>
-                <HudButton kind="secondary" size="sm" icon="navigation">
-                  View
-                </HudButton>
-                <HudIconButton icon="close" label="Dismiss" kind="quiet" size="sm" />
-              </>
-            }
           />
           <HudBanner tone="warn" icon="hourglass" eyebrow="Timer Warning" title="Five minutes left" />
         </div>

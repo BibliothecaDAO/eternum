@@ -13,12 +13,11 @@ import type { FightResult } from "./fight-result";
 import { SiteMark } from "./site-card-view";
 import { TARGET_MARKS, attackTargetName } from "./site-marks";
 
-import { VERDICT_WORDS, type FightVerdict } from "@bibliothecadao/types";
+import { VERDICT_WORDS } from "@bibliothecadao/types";
 
-const VERDICT_TONES: Record<FightVerdict, string> = {
+const VERDICT_TONES: Record<FightResult["verdict"], string> = {
   victory: "text-hud-gold",
   "army-lost": "text-hud-bad",
-  "guard-holds": "text-hud-ink",
 };
 
 /**

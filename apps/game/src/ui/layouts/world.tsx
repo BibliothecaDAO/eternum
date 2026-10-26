@@ -10,13 +10,9 @@ import { Tooltip } from "../design-system/molecules/tooltip";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
 import { ContextMenu } from "../features/world/components/context-menu/context-menu";
-import { CompactHud } from "../features/world/containers/compact-hud";
 import { GameChatConnection } from "../features/world/containers/hud-chat-window";
 import { LeftViewSurfaces } from "../features/world/containers/left-view-surfaces";
-import { TopHeader } from "../features/world/containers/top-header/top-header";
-import { DesktopHud } from "../features/world/hud/desktop-hud";
-import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
-import { useDocumentClass } from "@/hooks/use-document-class";
+import { ArenaHud } from "../features/world/hud/arena-hud";
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
@@ -140,18 +136,6 @@ const HUD = () => {
       {/* Every mode's moments fly their sprites on this one layer. */}
       <MotionLayer />
       <ContextMenu />
-    </>
-  );
-};
-
-const ArenaHud = () => {
-  // The Blitz and Eternum HUD keeps its own type: IM FELL labels and buttons, caps, the teal surfaces (index.css).
-  useDocumentClass("classic-hud");
-  const lane = useCompactLane();
-  return (
-    <>
-      <TopHeader />
-      {lane ? <CompactHud lane={lane} /> : <DesktopHud />}
     </>
   );
 };

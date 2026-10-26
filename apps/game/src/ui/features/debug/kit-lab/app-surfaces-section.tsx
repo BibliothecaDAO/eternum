@@ -38,8 +38,6 @@ export const AppSurfacesSection = () => {
                 location: { x: 0, y: 0, entityId: 1 },
                 timestamp: 0,
               }}
-              onDismiss={() => undefined}
-              onNavigate={() => undefined}
             />
           </figure>
           <figure className="relative h-96 overflow-hidden rounded-lg [transform:translateZ(0)]" data-game-end-banner>
@@ -52,7 +50,6 @@ export const AppSurfacesSection = () => {
                 description: ["Moonhand wins!"],
                 timestamp: 0,
               }}
-              onDismiss={() => undefined}
             />
           </figure>
           <figure className="h-80">

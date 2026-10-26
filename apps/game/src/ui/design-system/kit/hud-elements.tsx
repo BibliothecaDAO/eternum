@@ -1217,8 +1217,9 @@ export const HudNotice = ({
 );
 
 /**
- * News across the top of the map: what kind it is (its painting and a word over the headline), the headline, a line,
- * and what the player can do about it; its side in the news' tone (bad for a war report, warn for a timer).
+ * News across the top of the map: what kind it is (its painting and a word over the headline), the headline and a
+ * line; its side in the news' tone (bad for a war report, warn for a timer). It is read, never pressed: it takes no
+ * click, so the map and HUD under it stay playable while it shows.
  */
 export const HudBanner = ({
   tone,
@@ -1226,14 +1227,12 @@ export const HudBanner = ({
   eyebrow,
   title,
   line,
-  actions,
 }: {
   tone?: Tone;
   icon: IconMeaning;
   eyebrow: string;
   title: string;
   line?: ReactNode;
-  actions?: ReactNode;
 }) => (
   <section className="ui ui-banner" data-tone={tone} role="status" aria-label={title}>
     <span className="ui-banner__mark" aria-hidden="true">
@@ -1244,7 +1243,6 @@ export const HudBanner = ({
       <span className="ui-banner__title">{title}</span>
       {line && <span className="ui-banner__line">{line}</span>}
     </span>
-    {actions !== undefined && <span className="ui-banner__actions">{actions}</span>}
   </section>
 );
 

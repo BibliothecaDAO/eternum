@@ -117,7 +117,7 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
         onClose={() => {}}
       />,
     ),
-    result: publicText(<FightResultCard result={result} onClose={() => {}} />),
+    result: publicText(<FightResultCard result={result!} onClose={() => {}} />),
     receipt: publicText(<SiteReceipt selected={{ site: clear }} />),
   };
   for (const [surface, text] of Object.entries(words)) {

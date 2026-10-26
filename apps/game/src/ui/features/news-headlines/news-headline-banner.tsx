@@ -1,5 +1,5 @@
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { HudBanner, HudButton, HudIconButton } from "@/ui/design-system/kit/hud-elements";
+import { HudBanner } from "@/ui/design-system/kit/hud-elements";
 import { HEADLINE_EYEBROWS } from "@/ui/design-system/kit/words";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -17,17 +17,12 @@ const HEADLINE_THEME_MAP: Record<HeadlineType, { icon: IconMeaning; tone?: "good
   "t3-building": { icon: "defend" },
 };
 
-interface NewsHeadlineBannerProps {
-  headline: Headline | null;
-  onDismiss: () => void;
-  onNavigate?: (location: { x: number; y: number; entityId: number }) => void;
-}
-
-export function NewsHeadlineBanner({ headline, onDismiss, onNavigate }: NewsHeadlineBannerProps) {
+/**
+ * The game's news across the top of the map, one at a time: it reads, then leaves by itself (the bridge's timer). It
+ * takes no click, so whatever it covers stays playable. A headline with a place keeps it in its Feed row, one tap away.
+ */
+export function NewsHeadlineBanner({ headline }: { headline: Headline | null }) {
   const theme = headline ? HEADLINE_THEME_MAP[headline.icon] : null;
-  const navigationLocation = headline?.location ?? null;
-  const canNavigate = Boolean(navigationLocation && onNavigate);
-
   return (
     <AnimatePresence mode="wait">
       {headline && theme && (
@@ -37,7 +32,7 @@ export function NewsHeadlineBanner({ headline, onDismiss, onNavigate }: NewsHead
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: -16, opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-x-0 top-hud-header z-hud-rail flex justify-center px-4"
+          className="pointer-events-none fixed inset-x-0 top-hud-phone-header z-hud-rail flex justify-center px-4 lg:top-hud-header"
         >
           <HudBanner
             tone={theme.tone}
@@ -45,25 +40,6 @@ export function NewsHeadlineBanner({ headline, onDismiss, onNavigate }: NewsHead
             eyebrow={HEADLINE_EYEBROWS[headline.icon]}
             title={headline.title}
             line={<HeadlineLine parts={headline.description} />}
-            actions={
-              <>
-                {canNavigate && (
-                  <HudButton
-                    kind="secondary"
-                    size="sm"
-                    icon="navigation"
-                    onClick={(evt) => {
-                      evt.stopPropagation();
-                      if (!navigationLocation || !onNavigate) return;
-                      onNavigate(navigationLocation);
-                    }}
-                  >
-                    View
-                  </HudButton>
-                )}
-                <HudIconButton icon="close" label="Dismiss" kind="quiet" size="sm" onClick={onDismiss} />
-              </>
-            }
           />
         </motion.div>
       )}
