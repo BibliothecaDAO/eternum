@@ -15,10 +15,16 @@ browser/server.
 panel/model/caller. Advance to day rollover shows the expired zero reward; Open produces the recorded paid amount,
 including zero. This is a local native-fact fixture, not a transaction.
 
-Phone panels (HUD → Phone panels · to pick, `/lab/kit/mobile-panels`) shows Frontier's big panels on a phone today beside three layouts (A fit to
-content, B peek then more, C cards in the bar's place) at six moments, each phone at its own size with the share of its
-screen where a tap reaches the map measured in the frame. Opened on a phone it shows one layout at the phone's own size.
-The audit behind it: `reports/mobile-ux-pass-1.md` in the lanes folder.
+Phone panels (HUD → Phone panels · to pick, `/lab/kit/mobile-panels`) shows Frontier's big panels on a phone today
+beside three layouts (A fit to content, B peek then more, C cards in the bar's place) at six moments, each phone at its
+own size with the share of its screen where a tap reaches the map measured in the frame. Opened on a phone it shows one
+layout at the phone's own size. The audit behind it: `reports/mobile-ux-pass-1.md` in the lanes folder.
+
+Research drafts (HUD → Research · to pick, `/lab/kit/research-ux`) show the research panel today beside three drafts (A
+the choice pinned above the tree, B each building a row with its sides as its buttons, C the choice rising over the
+tree) and the desktop's round buttons today beside three (D one labelled bar, E Research in the realm panel, F nothing),
+each a live HUD frame at desktop and phone size on the game's own tree. The report: `reports/frontier-research-ux-1.md`
+in the lanes folder.
 
 App painting comparison: `/lab/kit/app-art` shows Season and Blitz Results beside their existing reference art. Follow
 each page link to see the painting on its real component with local app fixtures. Run

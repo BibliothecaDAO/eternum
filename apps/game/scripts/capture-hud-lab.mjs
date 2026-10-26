@@ -49,6 +49,19 @@ export const SURFACES = [
   { name: "frontier-site-camp", path: "/lab/kit/hud/site-camp", mark: "frontier" },
   { name: "frontier-fight-won", path: "/lab/kit/hud/fight-won", mark: "frontier" },
   { name: "frontier-army-refill", path: "/lab/kit/hud/army-refill", mark: "frontier" },
+  // The research panel and foot-place drafts for the owner's pick (src/ui/features/debug/kit-lab/research-ux).
+  ...["research", "research-choice-first", "research-cards", "research-overlay"].map((state) => ({
+    name: `frontier-${state}`,
+    path: `/lab/kit/hud/${state}`,
+    mark: "frontier",
+    sizes: [[1600, 900], VIEWPORT, [390, 844]],
+  })),
+  ...["idle", "launch-bar", "launch-realm", "launch-none"].map((state) => ({
+    name: `frontier-launchers-${state}`,
+    path: `/lab/kit/hud/${state}`,
+    mark: "frontier",
+    sizes: [[1600, 900]],
+  })),
 ];
 
 /**
