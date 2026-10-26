@@ -19,10 +19,11 @@ export const GameLabView = () => {
   const [failed, setFailed] = useState<string | null>(null);
   useEffect(() => {
     if (!scenario) return;
-    const game = scenario();
-    game.startDevice?.();
-    installLabChain(game, startLabGame(name).startedAt).then(
-      () => navigate(mapHref(game.opensOn, params), { replace: true }),
+    installLabChain(scenario, startLabGame(name).startedAt).then(
+      (game) => {
+        game.startDevice?.();
+        navigate(mapHref(game.opensOn, params), { replace: true });
+      },
       (error: unknown) => setFailed(String(error)),
     );
   }, [scenario, name, navigate, params]);
