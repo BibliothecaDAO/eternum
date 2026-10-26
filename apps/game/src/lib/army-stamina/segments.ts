@@ -4,7 +4,7 @@ import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 export type StaminaBar = { current: number; max: number; perExplore: number };
 
 /** One segment of a stamina bar: its length (1 is one explore's worth) and how full it is, 0 to 1. */
-export type StaminaSegment = { size: number; fill: number };
+type StaminaSegment = { size: number; fill: number };
 
 /** The stamina one explore costs, as the game's troop stamina rules set it. */
 export const exploreStaminaOf = (store: Pick<NativeFactStore, "require">, gameId: number): number =>

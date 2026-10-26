@@ -100,7 +100,7 @@ export const STAMINA = "stamina";
 /** The HUD's tab for everything the player holds. */
 export const EMPIRE = "Empire";
 /** The places: the nav's words. */
-export const MAP = "Map";
+const MAP = "Map";
 export const REALM = "Realm";
 /** The realm's way home from its card's header: the map centred on it. */
 export const SHOW_MY_REALM = "Show my realm";

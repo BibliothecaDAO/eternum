@@ -38,7 +38,7 @@ const MAKERS = {
     side: RESEARCH_TREE.sides.drill[0],
   },
 } as const;
-export type MadeResource = keyof typeof MAKERS;
+type MadeResource = keyof typeof MAKERS;
 
 /**
  * The buildings of a type standing on a realm, from its facts (the packed counts Blitz's tables read too). The castle's

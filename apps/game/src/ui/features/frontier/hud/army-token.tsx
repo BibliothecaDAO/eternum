@@ -6,7 +6,8 @@ import { ARMY, comesHomeAtDayEnd, STAMINA, TIER_WORDS, TROOPS, XP, xpToward } fr
 import { type StaminaBar, staminaSegments } from "@/lib/army-stamina/segments";
 
 // A token grows past its height only for the last hour's Homecoming line.
-const TOKEN = "relative flex min-h-hud-frontier-token w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-xl py-1";
+const TOKEN =
+  "relative flex min-h-hud-frontier-token w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-xl py-1";
 const CARD = "relative flex w-full shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2";
 
 /** What XP buys next: the attribute tier's XP price and the tier it reaches, 2 (uncommon) to 5 (legendary). */
