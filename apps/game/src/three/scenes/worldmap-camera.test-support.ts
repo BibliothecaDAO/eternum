@@ -5,7 +5,7 @@ import { vi } from "vitest";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { WORLD_HEX_SPACE } from "@/three/utils/utils";
-import { setWorldOrigin } from "@/three/world-origin";
+import { setWorldOrigin, worldOrigin } from "@/three/world-origin";
 
 import { HexagonScene } from "./hexagon-scene";
 import WorldmapScene from "./worldmap";
@@ -17,11 +17,13 @@ export const MAP_CENTER = 2147483646;
  * The world map's camera, read as a player's eye: every hex the scene moves or frames the camera onto, as scene
  * (normalized) hexes. The scene's own methods run; only drawing, chunk loading and the army's own selection are left
  * out. The player's army stands on `army` (a scene hex), as the map draws it. A chunk switch keeps the selection, so a
- * framing into another chunk changes nothing here.
+ * framing into another chunk changes nothing here. Given `drawnAround`, the map has already drawn its first pass around
+ * that hex; each time it draws the world again, the origin it draws around is kept in `redrawnAround`.
  */
-export const worldMapCamera = (army: HexPosition) => {
+export const worldMapCamera = (army: HexPosition, { drawnAround }: { drawnAround?: HexPosition } = {}) => {
   const aimed: HexPosition[] = [];
-  setWorldOrigin({ col: 0, row: 0 });
+  const redrawnAround: HexPosition[] = [];
+  setWorldOrigin(drawnAround ?? { col: 0, row: 0 });
   useAccountStore.setState({ account: { address: "0x7d79" } as never });
   vi.spyOn(
     HexagonScene.prototype as never as { moveCameraToColRow: () => void },
@@ -32,7 +34,9 @@ export const worldMapCamera = (army: HexPosition) => {
   camera.lookAt(0, 0, 0);
   const openedCards: HexPosition[] = [];
   const scene = Object.assign(Object.create(WorldmapScene.prototype), {
-    worldOriginLocked: false,
+    worldOriginLocked: drawnAround !== undefined,
+    hasInitialized: drawnAround !== undefined,
+    redrawWorld: () => redrawnAround.push(worldOrigin()),
     camera,
     moveCameraToXYZ: (x: number, y: number, z: number) => {
       aimed.push(WORLD_HEX_SPACE.hexForPosition({ x, y, z }));
@@ -45,8 +49,9 @@ export const worldMapCamera = (army: HexPosition) => {
   }) as {
     selectRequestedArmy: (entityId: number, forSite: unknown) => Promise<void>;
     openOnEntryDestination: () => Promise<void>;
+    moveCameraToURLLocation: (options: { requestRefresh: boolean }) => void;
   };
-  return { aimed, openedCards, scene };
+  return { aimed, openedCards, redrawnAround, scene };
 };
 
 /** How far apart two scene hexes are, in hexes along the larger axis: enough to tell "here" from 2^30 hexes away. */

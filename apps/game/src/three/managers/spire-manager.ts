@@ -1,4 +1,4 @@
-import { isWithinWorldOriginReach, worldOrigin } from "../world-origin";
+import { isWithinWorldOriginReach, subscribeWorldOrigin, worldOrigin } from "../world-origin";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SPIRE_MODEL_PATH } from "@/three/constants/scene-constants";
 import { activeMapLayer } from "@/three/map-layer";
@@ -74,6 +74,7 @@ export class SpireManager {
         },
       ),
       ...(ruleSpires ? [ruleSpires.subscribe(() => this.refresh())] : []),
+      subscribeWorldOrigin(() => this.refresh()),
     ];
     this.refresh();
   }

@@ -45,6 +45,8 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
       isPending: false,
       isSuccess: true,
       isError: false,
+      // The owner's whole history fits the read.
+      holdsSince: 0,
       refetch: vi.fn(),
     };
   },

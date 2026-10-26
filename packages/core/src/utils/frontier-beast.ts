@@ -1,4 +1,11 @@
-import { StructureType, RESOURCE_PRECISION, BEAST_NAMES } from "@bibliothecadao/types";
+import {
+  StructureType,
+  RESOURCE_PRECISION,
+  BEAST_NAMES,
+  FALLEN_REALM_DEPTHS,
+  ROAMING_BEASTS,
+  SITE_GUARDS,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { expeditionDepth, readExpeditionRules } from "./expeditions";
@@ -9,14 +16,7 @@ export interface FrontierBeast {
   name: string;
   scale: number;
 }
-export const FALLEN_REALM_DEPTHS: readonly { beast: FrontierSpecies; scale: number }[] = [
-  { beast: "ammit", scale: 1.2 },
-  { beast: "basilisk", scale: 1.2 },
-  { beast: "wyvern", scale: 1.35 },
-  { beast: "hydra", scale: 1.7 },
-];
 export type BeastBand = "lowly" | "stronger";
-const ROAMING_BEASTS = { lowly: { beast: "cyclops", scale: 1 }, stronger: { beast: "wraith", scale: 1 } } as const;
 type BeastBounds = Pick<
   NativeRows["DepthRules"],
   "beast_weak_lower" | "beast_weak_upper" | "beast_strong_lower" | "beast_strong_upper"
@@ -45,8 +45,8 @@ export function frontierBeast(depth: number, category = StructureType.Ruin, band
     const roaming = ROAMING_BEASTS[band];
     return { ...roaming, name: BEAST_NAMES[roaming.beast] };
   }
-  if (category === StructureType.Camp) return { beast: "troll", scale: 0.85, name: BEAST_NAMES.troll };
-  if (category === StructureType.Rift) return { beast: "dark-fey", scale: 0.75, name: BEAST_NAMES["dark-fey"] };
+  if (category === StructureType.Camp) return { ...SITE_GUARDS.camp, name: BEAST_NAMES[SITE_GUARDS.camp.beast] };
+  if (category === StructureType.Rift) return { ...SITE_GUARDS.rift, name: BEAST_NAMES[SITE_GUARDS.rift.beast] };
   return { ...entry, name: BEAST_NAMES[entry.beast] };
 }
 

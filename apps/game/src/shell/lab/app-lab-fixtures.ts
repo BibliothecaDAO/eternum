@@ -1,5 +1,9 @@
 import type { HeraldFrontierLeaderboard, HeraldLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { StructureType } from "@bibliothecadao/types";
+import { uint256 } from "starknet";
+import { buildLedgerEconomicPreset, chestPresetFor } from "../../../../../config/deployer/clean/ledger/economics";
+import { blitzVictoryPointConfig } from "../../../../../config/source/blitz/balance";
+import { VICTORY_POINTS_MULTIPLIER } from "../../../../../config/source/common/arena/points";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { Session } from "@realms-world/identity";
 
@@ -234,6 +238,18 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string
 };
 
 const WEI = 10n ** 18n;
+
+/**
+ * Blitz's money as production registers it (its ledger and chest presets), so every entry and reward screen, and every
+ * docs capture of one, states the live entry, split and chest.
+ */
+const PRODUCTION_CHESTS = chestPresetFor("production");
+const PRODUCTION_LEDGER = buildLedgerEconomicPreset("blitz", { environment: "production", chests: PRODUCTION_CHESTS });
+const ENTRY_FEE = uint256.uint256ToBN(PRODUCTION_LEDGER.entry_fee);
+const SWORD_PRICE = uint256.uint256ToBN(PRODUCTION_LEDGER.sword_price);
+const SHIELD_PRICE = uint256.uint256ToBN(PRODUCTION_LEDGER.shield_price);
+/** The payout wallet's LORDS before it joins the slot. */
+const WALLET_LORDS = 2_140n * WEI;
 const NOT_REGISTERED = {
   registered: false,
   sword: false,
@@ -251,20 +267,22 @@ const SEATED = {
   shield: true,
   swordCredit: true,
   shieldCredit: false,
-  paid: 1_000n * WEI,
+  // The seat and the shield in LORDS; the sword from a credit.
+  paid: ENTRY_FEE + SHIELD_PRICE,
   refundable: false,
   gameId: 0,
   registeredAt: 0,
 };
+const SEATED_WALLET_LORDS = WALLET_LORDS - SEATED.paid;
 const ENTRY: EntryTerms = {
-  prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
-  split: { protocolCutBps: 1000, chestLordsBps: 1000 },
+  prices: { seat: ENTRY_FEE, sword: SWORD_PRICE, shield: SHIELD_PRICE },
+  split: { protocolCutBps: PRODUCTION_LEDGER.protocol_cut_bps, chestLordsBps: PRODUCTION_LEDGER.chest_lords_bps },
   cancelled: false,
   close: NOW + 2 * 3600 + 4 * 60,
   credits: { swords: 2, shields: 0 },
   registration: NOT_REGISTERED,
   lordsToken: "0x10e5",
-  lords: 2_140n * WEI,
+  lords: WALLET_LORDS,
 };
 
 /** The same slot past its close, its games drawn. */
@@ -272,7 +290,7 @@ const CLOSED_ENTRY: EntryTerms = {
   ...ENTRY,
   close: NOW - 20 * 60,
   credits: { swords: 1, shields: 0 },
-  lords: 1_140n * WEI,
+  lords: SEATED_WALLET_LORDS,
 };
 
 /** Screens whose slot has closed: its lobby is reached by its address once the list no longer shows it. */
@@ -287,12 +305,18 @@ export const LAB_SLOT_REGISTERED = 31;
 /** A paid Blitz's terms for the payout wallet on each entry screen: what the ledger and the tokens would answer. */
 export const LAB_ENTRY_TERMS: Partial<Record<keyof typeof LAB_SCREENS, EntryTerms>> = {
   "entry-choose": ENTRY,
-  "entry-short": { ...ENTRY, credits: { swords: 0, shields: 0 }, lords: 320n * WEI },
-  "entry-registered": { ...ENTRY, credits: { swords: 1, shields: 0 }, registration: SEATED, lords: 1_140n * WEI },
+  // Short of the seat itself: Mint is the way on.
+  "entry-short": { ...ENTRY, credits: { swords: 0, shields: 0 }, lords: ENTRY_FEE / 2n },
+  "entry-registered": {
+    ...ENTRY,
+    credits: { swords: 1, shields: 0 },
+    registration: SEATED,
+    lords: SEATED_WALLET_LORDS,
+  },
   "entry-drawing": { ...CLOSED_ENTRY, registration: SEATED },
   "entry-seated": { ...CLOSED_ENTRY, registration: SEATED },
   "entry-unseated": { ...CLOSED_ENTRY, registration: { ...SEATED, refundable: true } },
-  "entry-cancelled": { ...ENTRY, cancelled: true, registration: SEATED, lords: 1_140n * WEI },
+  "entry-cancelled": { ...ENTRY, cancelled: true, registration: SEATED, lords: SEATED_WALLET_LORDS },
   "entry-refunded": { ...CLOSED_ENTRY, registration: { ...SEATED, refundable: true, swordCredit: false, paid: 0n } },
   "entry-no-wallet": ENTRY,
 };
@@ -374,6 +398,33 @@ export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
   })),
 };
 
+/** Blitz's points for one of each scoring action, as its balance grants them (stored in millionths). */
+const BLITZ_POINTS = {
+  tile: Number(blitzVictoryPointConfig.pointsForTileExploration / BigInt(VICTORY_POINTS_MULTIPLIER)),
+  crate: Number(blitzVictoryPointConfig.pointsForRelicDiscovery / BigInt(VICTORY_POINTS_MULTIPLIER)),
+  hyperstructure: Number(
+    blitzVictoryPointConfig.pointsForHyperstructureClaimAgainstBandits / BigInt(VICTORY_POINTS_MULTIPLIER),
+  ),
+  claim: Number(
+    blitzVictoryPointConfig.pointsForNonHyperstructureClaimAgainstBandits / BigInt(VICTORY_POINTS_MULTIPLIER),
+  ),
+};
+
+/** One row of a finished Blitz: what each action scored at Blitz's points, and their sum. */
+const blitzBoardRow = (address: string, index: number) => {
+  const tiles = 48 - index * 6;
+  const claims = 4 - Math.floor(index / 2);
+  const activityBreakdown = {
+    exploration: { count: tiles, points: tiles * BLITZ_POINTS.tile },
+    openRelicChest: { count: 3, points: 3 * BLITZ_POINTS.crate },
+    hyperStructureBanditsDefeat: { count: 1, points: BLITZ_POINTS.hyperstructure },
+    otherStructureBanditsDefeat: { count: claims, points: claims * BLITZ_POINTS.claim },
+    hyperstructureShare: { count: 1, points: 1_060 - index * 180 },
+  };
+  const totalPoints = Object.values(activityBreakdown).reduce((sum, { points }) => sum + points, 0);
+  return { address, rank: index + 1, totalPoints, activityBreakdown };
+};
+
 /**
  * A finished Blitz: the player third of five, each row with the activity its points came from, as Herald's points
  * board answers it (the score card draws the player's).
@@ -381,18 +432,7 @@ export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
 export const LAB_BLITZ_BOARD: HeraldLeaderboard = {
   game_id: "7",
   mode: "points",
-  entries: [rival(1), rival(0), LAB_PLAYER, rival(2), rival(3)].map((address, index) => ({
-    address,
-    rank: index + 1,
-    totalPoints: 412 - index * 30,
-    activityBreakdown: {
-      exploration: { count: 48 - index * 6, points: 96 - index * 12 },
-      openRelicChest: { count: 3, points: 30 },
-      hyperStructureBanditsDefeat: { count: 1, points: 100 },
-      otherStructureBanditsDefeat: { count: 4 - (index % 3), points: 80 - (index % 3) * 20 },
-      hyperstructureShare: { count: 1, points: 106 - index * 18 + (index % 3) * 20 },
-    },
-  })),
+  entries: [rival(1), rival(0), LAB_PLAYER, rival(2), rival(3)].map(blitzBoardRow),
 };
 
 /** Names for the rivals the identity Worker would serve; the unnamed one reads "Lord" and its last four. */
@@ -483,9 +523,8 @@ const SWORD = {
 };
 const CHEST = { seasonId: 3, band: 0, requested: false, finished: false, requester: "0x0", requestBlock: 0 };
 const OPENED = { ...CHEST, requested: true, finished: true, requester: LAB_WALLET, requestBlock: 812_300 };
-/** The slot's entry, and each rank band's token reward in shares of it, best band first: the two lowest draw none. */
-const ENTRY_FEE = 500n * WEI;
-const TOKEN_SHARES = [4, 2, 1, 0, 0];
+/** Each rank band's token reward in entries, best band first, as production's chest preset pays it. */
+const TOKEN_SHARES = PRODUCTION_CHESTS.bands.map((band) => band.lords_shares);
 const SEALED: Reward = {
   result: RESULT,
   collection: "0xc4e57",
@@ -513,8 +552,13 @@ export const LAB_REWARDS: Partial<Record<keyof typeof LAB_SCREENS, Reward>> = {
   // The draw part-way: 4 of its 11 blocks still to come.
   "reward-opening": { ...SEALED, chest: { ...OPENED, band: 2, finished: false }, held: false, drawBlocksLeft: 4 },
   "reward-epic": { ...SEALED, chest: OPENED, held: false, content: { kind: "cosmetic", attributes: "0x4040d01" } },
-  // The best band's token reward: four entries.
-  "reward-lords": { ...SEALED, chest: OPENED, held: false, content: { kind: "lords", amount: 4n * ENTRY_FEE } },
+  // The best band's token reward.
+  "reward-lords": {
+    ...SEALED,
+    chest: OPENED,
+    held: false,
+    content: { kind: "lords", amount: BigInt(TOKEN_SHARES[CHEST.band]) * ENTRY_FEE },
+  },
   "reward-credit": {
     ...SEALED,
     result: { ...RESULT, mmrAfter: 1732 },

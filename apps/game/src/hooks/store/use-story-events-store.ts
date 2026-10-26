@@ -499,13 +499,30 @@ export const useStoryReads = (reads: StoryRead[]) => {
   return { data, queries };
 };
 
-/** One story read: its stories, its query's status, and the block its history was complete through. */
+/**
+ * One story read: its stories, its query's status, the block its history was complete through, and the time it holds
+ * every story since (holdsSince).
+ */
 export const useStoryEvents = (limit: number = 100, story?: string, owner?: string, coverSnapshot = false) => {
   const {
     data,
     queries: [query],
   } = useStoryReads([{ limit, story, owner, coverSnapshot }]);
-  return { ...query, data, completeThroughBlock: query.data?.completeThroughBlock ?? null };
+  return {
+    ...query,
+    data,
+    completeThroughBlock: query.data?.completeThroughBlock ?? null,
+    holdsSince: query.data && holdsSince(query.data.stories, limit),
+  };
+};
+
+/**
+ * The unix second from which a read holds every story it asked for: a read keeps only its newest `limit`, so a full one
+ * reaches back no further than just after its oldest story (more may share that second); one with room holds them all.
+ */
+const holdsSince = (stories: readonly StoryEventData[], limit: number): number => {
+  if (stories.length < limit) return 0;
+  return Math.min(...stories.map((story) => Number(BigInt(story.timestamp)))) + 1;
 };
 
 /** The season's winner once its SeasonEnded story is in history; null until then. */

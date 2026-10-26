@@ -272,6 +272,10 @@ def build_ground(parts):
 def write_delivery(runtime, building, master, output):
     runtime[0]["masterSha256"] = hashlib.sha256(master.read_bytes()).hexdigest()
     runtime[0]["frontierBuilding"] = building
+    write_runtime(runtime, building, output)
+
+
+def write_runtime(runtime, building, output):
     for obj in bpy.context.scene.objects:
         obj.select_set(obj in runtime)
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,55 @@
+---
+title: Entry and the lobby
+description: Pay into a Blitz slot, take your seat, and play
+---
+
+import { BLITZ } from "@/utils/blitz";
+import { Shot } from "@/components/Media";
+
+# Entry and the lobby
+
+## When games run
+
+A new Blitz slot starts every {BLITZ.game.slotMinutes} minutes, on a fixed grid of the UTC day, while the season's Blitz
+window is open. Play shows the next ranked Blitz: when it starts and when its entry opens, in your local time.
+
+<Shot name="blitz/next" caption="Play's Blitz column: the next ranked game, its start, and when its entry opens." />
+
+## Joining
+
+Join a slot from Play: entry is paid in LORDS from your linked payout wallet, at the season's entry fee (100 LORDS this
+season), shown on every slot. Link a payout wallet in Settings first; the slot's **Link wallet** takes you there and
+back ([Payout wallet](/account/payout-wallet)). Until the LORDS launch the entry is paid in test LORDS, and **Mint 1,000
+test tokens** under the entry tops your wallet up ([LORDS](/account/lords)).
+
+<Shot name="blitz/entry" caption="A slot's entry: the seat, the sword and the shield, the total, and Pay & join." />
+
+## Sword and shield
+
+At entry you can add a sword, which doubles your rating gain in that game, and a shield, which halves your rating loss.
+Each costs one entry. A sword or shield credit won from a chest is used before LORDS
+([Points, results and prizes](/blitz/scoring#ratings)).
+
+## Your entry
+
+Your entry reads **Registered** once paid, then **Seated** when your seat is drawn. A paid entry is **Not seated** when
+the wallet that paid was not the payout wallet of your Realms account, or when your account already holds a seat in that
+slot: the earlier entry keeps it. A slot that is cancelled leaves every entry unseated.
+
+An unseated entry is refunded in full, with any sword or shield you paid for, to the wallet that paid. Press **Take
+refund** on the slot in Play once it shows.
+
+## The lobby
+
+Registered players write in their slot's lobby chat; any signed-in player can read it. The lobby counts down to entry
+closing, then to the start. On a desktop, the roster shows each seat's Blitz rating.
+
+<Shot name="blitz/lobby" caption="A seated player's lobby: who is in, the countdown, and the chat." />
+
+## When entry closes
+
+Entry closes {BLITZ.game.closeMinutes} minutes before the games start. There is no cap on a slot: at the close, everyone
+seated is split into games of up to {BLITZ.game.players} players, as even as can be and in the order they joined. For
+example, 25 players form games of 13 and 12. The game settles three realms for each player, with their stores and their
+troops. It opens at its start time once its whole roster is seated, and ends at its scheduled end. A player who is not
+on the roster can watch.

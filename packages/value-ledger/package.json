@@ -9,6 +9,7 @@
     "./commitment": "./src/commitment.ts",
     "./codecs": "./src/codecs.ts",
     "./blitz-slots": "./src/blitz-slots.ts",
+    "./blitz-timetable": "./src/blitz-timetable.ts",
     "./dev-shard": "./src/dev-shard.ts"
   },
   "scripts": {

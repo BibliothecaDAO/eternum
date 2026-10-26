@@ -29,7 +29,7 @@ export const TopHeader = memo(({ season, clock }: { season?: SeasonGoal; clock?:
   const playClick = useUISound("ui.click");
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const lastControlledStructureEntityId = useUIStore((state) => state.lastControlledStructureEntityId);
+  const isSpectating = useUIStore((state) => state.isSpectating);
   const mode = useGameModeConfig();
 
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
@@ -86,13 +86,10 @@ export const TopHeader = memo(({ season, clock }: { season?: SeasonGoal; clock?:
     (world: boolean) => {
       if (!selectedStructurePosition) return;
       playClick();
-      goToStructure(
-        world ? lastControlledStructureEntityId || structureEntityId : structureEntityId,
-        selectedStructurePosition,
-        world,
-      );
+      // One realm both ways: the one the view shows, where it stands, watched or played as it is (a visit stays one).
+      goToStructure(structureEntityId, selectedStructurePosition, world, { spectator: isSpectating });
     },
-    [goToStructure, lastControlledStructureEntityId, playClick, selectedStructurePosition, structureEntityId],
+    [goToStructure, isSpectating, playClick, selectedStructurePosition, structureEntityId],
   );
 
   return (

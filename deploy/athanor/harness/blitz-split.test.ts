@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { BLITZ_SLOT_PREPARATION_SECONDS } from "../../../packages/value-ledger/src/blitz-slots";
+import { BLITZ_SLOT_PREPARATION_SECONDS } from "../../../packages/value-ledger/src/blitz-timetable";
 import { slotLaunches } from "./blitz-split";
 
 test("a 2,000-player slot is the production split, dealt to the pool by group index, its settling open now", () => {
