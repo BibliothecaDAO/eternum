@@ -28,7 +28,7 @@ import { createPortal } from "react-dom";
 
 import { OpenedFromPanel } from "./opened-from-panel";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import { BACK, CLOSE, TIER_WORDS, TRY_AGAIN } from "./words";
+import { BACK, CLOSE, type Tier, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -749,17 +749,32 @@ export const HudTierChip = ({ tier }: { tier: 1 | 2 | 3 }) => (
 );
 
 /**
- * A chest's rarity, common to legendary: its pips filled to its tier on a frame that thickens and warms with it, its
- * word beside them where there is room. Not a troop tier: a rarity has five steps and no colours of its own kind.
+ * A chest's rarity, common to legendary: its word on a plate whose frame thickens and warms with it. Not a tier of
+ * something the player levels: a chest is found at its rarity and keeps it.
  */
-export const HudRarity = ({ tier, word = false }: { tier: 1 | 2 | 3 | 4 | 5; word?: boolean }) => (
-  <span className="ui-rarity" data-tier={tier} role="img" aria-label={TIER_WORDS[tier - 1]}>
-    <span aria-hidden className="ui-rarity__pips">
-      {TIER_WORDS.map((name, index) => (
-        <i key={name} data-filled={index < tier || undefined} />
-      ))}
+export const HudRarity = ({ tier }: { tier: Tier }) => (
+  <span className="ui-rarity" data-tier={tier}>
+    {TIER_WORDS[tier - 1]}
+  </span>
+);
+
+/**
+ * The tier a player levels something to (a building type's row, an army's attribute): a gem in the tier's rarity
+ * colour with its numeral, Uncommon I to Legendary IV. Common draws nothing: nothing has been levelled yet.
+ */
+export const HudTier = ({ tier }: { tier: Tier }) =>
+  tier === 1 ? null : (
+    <span className="ui-tier" data-tier={tier} role="img" aria-label={TIER_WORDS[tier - 1]}>
+      {tierNumeral(tier)}
     </span>
-    {word && <span aria-hidden>{TIER_WORDS[tier - 1]}</span>}
+  );
+
+/** A tier's next step, from the gem it holds (none at Common) to the next one's. */
+export const HudTierStep = ({ from, to }: { from: Tier; to: Tier }) => (
+  <span className="ui-tier-step" role="img" aria-label={`${TIER_WORDS[from - 1]} → ${TIER_WORDS[to - 1]}`}>
+    <HudTier tier={from} />
+    <span aria-hidden>→</span>
+    <HudTier tier={to} />
   </span>
 );
 

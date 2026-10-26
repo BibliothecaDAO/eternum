@@ -4,7 +4,7 @@ import { transferArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/tra
 import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier/army/transfer-troops";
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudNotice, HudSheet, HudTier } from "@/ui/design-system/kit/hud-elements";
 import { OFFLINE, PAYOUTS_PAUSED, TRAINING_BUILDINGS, WITHDRAWALS_CLOSED, YOU } from "@/ui/design-system/kit/words";
 import { ArmyList, ArmyRow } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
@@ -272,7 +272,10 @@ const tile = (
 ): LabTile => ({ key, icon, name, tip: "", gives, takes, standing });
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"]) =>
   ({ kind: "price", labor, short }) as const;
-const TRAINS = { icon: "order-rage", value: "Common" } as const;
+/** An open training building at Uncommon: new armies start one tier up in its attribute. */
+const TRAINS = { icon: "order-rage", value: <HudTier tier={2} /> } as const;
+/** A training building waiting for the Barracks at Rare (II). */
+const LOCKED = { kind: "locked", gate: 3 } as const;
 
 /**
  * A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor, the
@@ -301,19 +304,11 @@ const EARLY_TILES: LabTile[] = [
   tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, 1, price(2_000)),
   tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(800)),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(300)),
-  tile("war", "war-hall", TRAINING_BUILDINGS[0], TRAINS, 2, { kind: "locked", gate: 3 }),
-  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, {
-    kind: "locked",
-    gate: 3,
-  }),
-  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, {
-    kind: "locked",
-    gate: 3,
-  }),
-  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...TRAINS, icon: "order-enlightenment" }, 2, {
-    kind: "locked",
-    gate: 3,
-  }),
+  // The training buildings are still at Common, which gives new armies nothing more: no gives, only the Barracks lock.
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], undefined, 2, LOCKED),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], undefined, 2, LOCKED),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], undefined, 2, LOCKED),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], undefined, 2, LOCKED),
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,
@@ -362,7 +357,7 @@ const SEASON_NAMES = [
 ];
 const SEASON_SITES = [148, 132, 127, 121, 116, 110, 104, 99, 95, 92, 90];
 const SEASON_LORDS = [704, 640, 576, 512, 448, 416, 384, 352, 320, 288, 256];
-/** Each realm's rank (Settlement 0 to Empire 3) and deepest reach, the leaders the furthest on. */
+/** Each realm's rank (Settlement 0 to Empire 3) and depth, the leaders the furthest on. */
 const SEASON_REALMS = [
   [3, 3],
   [3, 2],
@@ -380,7 +375,7 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
   key: name,
   rank: index + 1,
   order: index + 1,
-  realm: { level: SEASON_REALMS[index][0], reach: SEASON_REALMS[index][1] },
+  realm: { level: SEASON_REALMS[index][0], depth: SEASON_REALMS[index][1] },
   name,
   label: name,
   sitesCleared: SEASON_SITES[index],
@@ -388,16 +383,16 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
   own: false,
 }));
 /**
- * A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. Yesterday's
- * rolls set today's share at 12 LORDS, under the ceiling of 16; a common chest holds two shares.
+ * A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. Today's
+ * share is 12 LORDS and a common chest holds two shares.
  */
-const SEASON_POOL_FIGURES = { lords: 1_000_000, today: 50_000, price: 12, ceiling: 16 };
-const SEASON_COMMON_CHEST = { tier: 1 as const, lords: 24 };
+const SEASON_POOL_FIGURES = { lords: 1_000_000, today: 50_000 };
+const SEASON_COMMON_CHEST = { lords: 24 };
 const OWN_ROW: SeasonListRow = {
   key: "you",
   rank: 12,
   order: 12,
-  realm: { level: 1, reach: 1 },
+  realm: { level: 1, depth: 1 },
   name: YOU,
   label: YOU,
   sitesCleared: 88,
@@ -1010,7 +1005,7 @@ export const HudLab = () => {
                   sites: { total: 132, camps: 70, rifts: 43, ruins: 9, beasts: 10 },
                   chests: 9,
                   lords: 640,
-                  reach: 0,
+                  depth: 0,
                   essence: 212_000,
                   labor: 96_000,
                 }}
@@ -1027,7 +1022,6 @@ export const HudLab = () => {
                 state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}
                 onRetry={noop}
                 onOpen={noop}
-                onBack={noop}
               />
             )
           ) : undefined
@@ -1437,7 +1431,7 @@ const LabResults = ({
         { key: "2", rank: 2, name: "Aldric", sitesCleared: 412 },
         { key: "3", rank: 3, name: "Corwin", sitesCleared: 397 },
       ]}
-      totals={{ sitesCleared: 288, chests: 61, lords: 2_003, reach: 2, essence: 2_100_000, labor: 1_400_000 }}
+      totals={{ sitesCleared: 288, chests: 61, lords: 2_003, depth: 2, essence: 2_100_000, labor: 1_400_000 }}
       withdraw={
         seasonLords && (
           <SeasonWithdrawRow

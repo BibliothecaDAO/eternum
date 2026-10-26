@@ -8,23 +8,24 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { useAllInFlight, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
+import { HudTier } from "@/ui/design-system/kit/hud-elements";
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
+  type Tier,
   BARRACKS,
   BUILD,
   HUT,
   LABOR,
   makes,
-  needsAt,
+  needsTier,
+  tierNumeral,
   ONE_A_REALM,
   POPULATION,
   priceRaised,
   RESEARCH,
   startsNewArmies,
   takesPopulation,
-  TIER_WORDS,
 } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownAmount } from "@/ui/utils/utils";
@@ -223,7 +224,7 @@ export const BuildSheet = ({
    * once a Barracks stands, and until one does the fix is to build it.
    */
   const gateRefusal = (gate: number): Refusal => {
-    const reason = { kind: "failed", line: needsAt(BARRACKS, TIER_WORDS[gate]) } as const;
+    const reason = { kind: "failed", line: needsTier(BARRACKS, tierNumeral(gateTier(gate))) } as const;
     if (getBuildingQuantity(realmId, BuildingType.ResourceKnightT1, setup.store) === 0)
       return {
         reason,
@@ -282,14 +283,16 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
   standing: standingOf(option, holdings),
 });
 
+/** The Barracks tier a training building waits for: a research tier above common, which the kit counts from common. */
+const gateTier = (gate: number) => (gate + 1) as Exclude<Tier, 1>;
+
 /**
  * Where a building stands for the realm, the first that holds: built (a realm holds one), locked behind the Barracks'
  * tier, or its price, with the labor the realm lacks and the wait until it holds it, or else the population it lacks.
  */
 const standingOf = (option: BuildOption, { labor, laborPerHour, free }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
-  // The gate is a research tier above common; the kit counts tiers from common.
-  if (option.standing !== "open") return { kind: "locked", gate: (option.standing.gate + 1) as Tier };
+  if (option.standing !== "open") return { kind: "locked", gate: gateTier(option.standing.gate) };
   const price = option.cost.find(({ resource }) => resource === ResourcesIds.Labor)?.amount ?? 0;
   const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] =
     labor === undefined || labor < price
@@ -310,7 +313,7 @@ const buildingLine = (option: BuildOption): string => {
     effect.kind === "produces"
       ? makes(PRODUCTS[effect.resource].word, outputLine(effect.output, effect.research))
       : effect.kind === "trains"
-        ? startsNewArmies(effect.attribute, TIER_WORDS[option.tier - 1])
+        ? startsNewArmies(effect.attribute, option.tier === 1 ? undefined : tierNumeral(option.tier))
         : `${formatGain(effect.amount)} ${POPULATION}`;
   const takes = option.populationCost > 0 ? `, ${takesPopulation(formatCharge(option.populationCost))}` : "";
   return `${buildingName(option.category)}: ${does}${takes}`;
@@ -330,7 +333,7 @@ const riseLine = (option: BuildOption, price: number): string | undefined =>
       )
     : undefined;
 
-/** What one more gives: what it makes a minute, the population room it adds, or the tier new armies start at. */
+/** What one more gives: what it makes a minute, the population room it adds, or the tier new armies start at (above Common). */
 const givesOf = ({ effect, tier }: BuildOption): BuildTile["gives"] =>
   effect.kind === "produces"
     ? {
@@ -339,7 +342,9 @@ const givesOf = ({ effect, tier }: BuildOption): BuildTile["gives"] =>
         basis: outputBasis(effect.output, effect.research),
       }
     : effect.kind === "trains"
-      ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: TIER_WORDS[tier - 1] }
+      ? tier === 1
+        ? undefined
+        : { icon: ATTRIBUTE_MARKS[effect.attribute], value: <HudTier tier={tier} /> }
       : { icon: "person", value: formatGain(effect.amount) };
 
 /** A realm's plot, as the actions in flight name it. */

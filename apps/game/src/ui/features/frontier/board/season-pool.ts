@@ -1,4 +1,3 @@
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import type { SeasonPoolFigures } from "./season-list";
@@ -7,11 +6,11 @@ import type { SeasonPoolFigures } from "./season-list";
  * A Frontier season's LORDS, as the shard holds them. The pool is the tokens deposited on the ledger for the season,
  * published to the game once (the budget row's `pool`, in whole LORDS); until then it is zero, no ruin holds a chest
  * and nothing can be withdrawn. A chest pays its tier's shares at the day's price, which the budget row freezes when
- * the day opens and the preset only caps. No preset names a pool, and none names a price a chest is paid at.
+ * the day opens. No preset names a pool, and none names a price a chest is paid at.
  */
 
 type Budget = Pick<NativeRows["LordsBudget"], "pool" | "day" | "price">;
-type ChestRules = Pick<NativeRows["ChestRules"], "price_ceiling" | "shares">;
+type ChestRules = Pick<NativeRows["ChestRules"], "shares">;
 
 interface Span {
   start: number;
@@ -41,13 +40,11 @@ export const sharePriceOn = (budget: Pick<Budget, "day" | "price">, day: number)
   budget.day === BigInt(day) ? budget.price : null;
 
 interface CommonChest {
-  tier: Tier;
   lords: number;
 }
 
 /** What a common chest pays at a share's price: the common tier's shares, as lords_budget.cairo prices a chest. */
 export const commonChestAt = (shares: ChestRules["shares"], price: bigint): CommonChest => ({
-  tier: 1,
   lords: Number(BigInt(shares.common) * price),
 });
 
@@ -59,8 +56,8 @@ export interface SeasonLords {
 
 /**
  * The Season page's LORDS on a day of the season (`today`, with its index; null before the season starts and after it
- * ends): the pool with what today releases of it, a share's price today under its ceiling, and a common chest at that
- * price. The pool is null while none is published. Without today's price there is no chest to quote.
+ * ends): the pool with what today releases of it, and a common chest at today's share price. The pool is null while
+ * none is published. Without today's price there is no chest to quote.
  */
 export const seasonLordsOf = (
   facts: { budget: Budget | undefined; chestRules: ChestRules | undefined },
@@ -74,8 +71,6 @@ export const seasonLordsOf = (
     pool: {
       lords: Number(budget.pool),
       today: today ? Number(releasedInDay(budget.pool, season, today)) : undefined,
-      price: price === null ? undefined : Number(price),
-      ceiling: chestRules && Number(chestRules.price_ceiling),
     },
     chest: chestRules && price !== null ? commonChestAt(chestRules.shares, price) : undefined,
   };

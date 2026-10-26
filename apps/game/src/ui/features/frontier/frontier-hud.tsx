@@ -156,7 +156,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     surface === "research" && realm ? (
       <FrontierResearch key={researchPick} realm={realm} pick={researchPick} />
     ) : surface === "season" ? (
-      <FrontierSeason rules={rules} onBack={close} />
+      <FrontierSeason rules={rules} onVisited={close} />
     ) : surface === "menu" ? (
       <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
     ) : undefined;

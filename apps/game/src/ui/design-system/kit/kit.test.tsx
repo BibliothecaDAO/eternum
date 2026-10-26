@@ -14,7 +14,6 @@ import { SeasonRow } from "./season-row";
 import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
 import { StoreBar } from "./store-bar";
-import { TierChip } from "./tier-chip";
 import { dayEnds, dayLeft, phraseText, tomorrowLasts } from "./words";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
@@ -168,15 +167,6 @@ describe("ListRow", () => {
     expect(link).toContain('target="_blank"');
     expect(link).toContain('rel="noopener noreferrer"');
     expect(link).toContain('aria-current="true"');
-  });
-});
-
-describe("TierChip", () => {
-  it("draws the tier's pips and its word alone, or the pips without the word where there is no room", () => {
-    const rare = renderToStaticMarkup(<TierChip tier={3} showWord />);
-    expect(text(rare)).toBe("Rare");
-    expect(rare).toContain('aria-label="Rare"');
-    expect(text(renderToStaticMarkup(<TierChip tier={5} showWord={false} />))).toBe("");
   });
 });
 

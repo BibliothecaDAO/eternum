@@ -6,15 +6,23 @@ import {
   HudChip,
   HudCost,
   HudNotice,
-  HudRarity,
   HudSheet,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import type { Refusal } from "@/ui/design-system/kit/refusal";
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import { BUILD, BUILDING, POPULATION, PRICE_UP } from "@/ui/design-system/kit/words";
+import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
+import {
+  type Tier,
+  BARRACKS,
+  BUILD,
+  BUILDING,
+  needsTier,
+  POPULATION,
+  PRICE_UP,
+  tierNumeral,
+} from "@/ui/design-system/kit/words";
 
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
+import type { ReactNode } from "react";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import type { RealmPopulation } from "../realm/realm-population";
 
@@ -31,10 +39,11 @@ export type BuildTile = {
   /** What the building does, in one line, on the card's tooltip. */
   tip: string;
   /**
-   * What one more gives, as its painting and figure: "+1.7/min" troops, "+6" population, "Common" Battle; a producer's
-   * figure with research says what it is made of under it ("1.7 + 25% Drill").
+   * What one more gives, as its painting and figure: "+1.7/min" troops, "+6" population, Battle's tier gem; none for a
+   * training building at Common, which starts new armies at nothing more. A producer's figure with research says what
+   * it is made of under it ("1.7 + 25% Drill").
    */
-  gives: { icon: IconMeaning; value: string; basis?: string };
+  gives?: { icon: IconMeaning; value: ReactNode; basis?: string };
   /** The population it takes; 0 takes none. */
   takes: number;
   standing:
@@ -47,7 +56,7 @@ export type BuildTile = {
         short?: { of: "labor"; wait: number | undefined } | { of: "population" };
       }
     | { kind: "built" }
-    | { kind: "locked"; gate: Tier };
+    | { kind: "locked"; gate: Exclude<Tier, 1> };
 };
 
 /**
@@ -143,7 +152,7 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
 const Gives = ({ tile }: { tile: BuildTile }) => (
   <span className="flex flex-col items-center">
     <GivesLine tile={tile} />
-    {tile.gives.basis && (
+    {tile.gives?.basis && (
       <span className="whitespace-nowrap text-hud-label tabular-nums text-hud-muted">{tile.gives.basis}</span>
     )}
   </span>
@@ -151,10 +160,12 @@ const Gives = ({ tile }: { tile: BuildTile }) => (
 
 const GivesLine = ({ tile }: { tile: BuildTile }) => (
   <span className="flex items-center justify-center gap-x-1.5 whitespace-nowrap tabular-nums">
-    <span className="flex items-center gap-1">
-      <SemanticIcon name={tile.gives.icon} size={14} />
-      {tile.gives.value}
-    </span>
+    {tile.gives && (
+      <span className="flex items-center gap-1">
+        <SemanticIcon name={tile.gives.icon} size={14} />
+        {tile.gives.value}
+      </span>
+    )}
     {tile.takes > 0 && (
       <span className="flex items-center gap-0.5" role="img" aria-label={`${POPULATION} ${formatCharge(tile.takes)}`}>
         <SemanticIcon name="person" size={12} />
@@ -175,17 +186,21 @@ const bandTone = (standing: BuildTile["standing"]) =>
       : undefined;
 
 /**
- * Where a building stands, along its card's foot: its price and what it lacks, the Barracks tier it waits for (its
- * refusal names the Barracks), or a tick.
+ * Where a building stands, along its card's foot: its price and what it lacks, the Barracks tier it waits for in words
+ * with its numeral ("Barracks II" by the lock, "Needs Barracks II" on its tip and refusal: never a gem, which would
+ * read as the card's own tier), or a tick.
  */
 const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
-  <HudChip tone={bandTone(standing)}>
+  <HudChip
+    tone={bandTone(standing)}
+    tip={standing.kind === "locked" ? needsTier(BARRACKS, tierNumeral(standing.gate)) : undefined}
+  >
     <span className="flex items-center gap-1 whitespace-nowrap tabular-nums">
       {standing.kind === "built" && <SemanticIcon name="check" size={16} />}
       {standing.kind === "locked" && (
         <>
           <SemanticIcon name="lock" size={14} />
-          <HudRarity tier={standing.gate} />
+          {`${BARRACKS} ${tierNumeral(standing.gate)}`}
         </>
       )}
       {standing.kind === "price" && <Price standing={standing} />}

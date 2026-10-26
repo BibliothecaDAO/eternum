@@ -55,6 +55,36 @@ describe("the day's end", () => {
     host.remove();
   });
 
+  it("counts the armies that ended with the day beside the troops they took, never as a row of empty circles", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    for (const armies of [1, 3, 5]) {
+      act(() =>
+        root.render(
+          <DayDoneCard
+            endedDay={12}
+            clock={{ endsAt: undefined, secondsLeft: 3_600, tomorrowSeconds: 20 * 3_600, tone: "calm" }}
+            totals={{ reveals: 0, cleared: 0, chests: 0, essence: 0, labor: 0, lords: 0 }}
+            history="whole"
+            onRetry={vi.fn()}
+            armies={armies}
+            troopsLost={6_021}
+            returned={undefined}
+            onContinue={vi.fn()}
+          />,
+        ),
+      );
+      const line = host.querySelector("[aria-label='troops']")!;
+      expect(line.querySelector("[role='img']")?.getAttribute("aria-label")).toBe(
+        `Armies ended with the day ×${armies}`,
+      );
+      expect(line.textContent).toBe(`×${armies}−6,021`);
+      expect(line.querySelectorAll(".rounded-full")).toHaveLength(0);
+    }
+    act(() => root.unmount());
+  });
+
   it("draws the day's end over the map: nothing on a plain day, Skip in the mist, the summary until Continue, the black", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const host = document.createElement("div");
