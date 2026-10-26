@@ -1,7 +1,7 @@
 import type { FrontierSpecies } from "@/three/structures/frontier-beast";
 import { StructureType, type StructureNamingMode } from "@bibliothecadao/types";
 import { frontierBeast, nativeGameModeOf, readFrontierBeast } from "@bibliothecadao/eternum";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { iconDefinition, type IconMeaning } from "./icon-meaning";
 const structureMeanings = {
@@ -39,7 +39,9 @@ export function readStructureMeaning(
     return structureMeaning(category);
   const mode = nativeGameModeOf(store.require("GameRegistry", { game_id: structure.game_id }).preset_id);
   const guard =
-    mode === "frontier" ? readFrontierBeast(store, structure.game_id, structure.entity_id)?.beast : undefined;
+    mode === "frontier"
+      ? readFrontierBeast(store, structure.game_id, safeInteger(structure.entity_id))?.beast
+      : undefined;
   return structureMeaning(category, mode, guard);
 }
 

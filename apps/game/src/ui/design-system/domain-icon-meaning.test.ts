@@ -14,6 +14,16 @@ describe("guard and site icon meanings", () => {
       expect(structureMeaning(StructureType.Ruin, "frontier", species)).toBe(beastMeaning(species));
   });
 
+  it("rejects encounter IDs that cannot be represented by the numeric reader", () => {
+    const { store } = campBeside("Beasts");
+    const game = store.require("GameRegistry", { game_id: 1 });
+    store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: 5 } }]);
+    const structure = store.require("Structure", { game_id: 1, entity_id: SITE });
+    expect(() => readStructureMeaning(store, { ...structure, entity_id: 9007199254740993n })).toThrow(
+      "Native integer cannot be represented as a JavaScript number: 9007199254740993",
+    );
+  });
+
   it("reads the actual encounter band from native facts, unaffected by casualties, and ignores it in Blitz", () => {
     const { store } = campBeside("Beasts");
     const game = store.require("GameRegistry", { game_id: 1 });
