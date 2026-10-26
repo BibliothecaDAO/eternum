@@ -53,9 +53,8 @@ vi.mock("./hud/view", () => ({
 vi.mock("./data/view", () => ({ DataRoomView: () => <Tool name="data" /> }));
 vi.mock("./data/ui-usage", () => ({ UiUsageView: () => <Tool name="ui-usage" /> }));
 vi.mock("./data/ships", () => ({ ShipsView: () => <Tool name="ships" /> }));
+vi.mock("./kit-sheet/view", () => ({ FrontierSheetView: () => <Tool name="frontier-sheet" /> }));
 vi.mock("./footage/view", () => ({ FootageView: () => <Tool name="footage" /> }));
-vi.mock("./feed/view", () => ({ FeedLabView: () => <Tool name="feed" /> }));
-vi.mock("./feed/draw", () => ({ FeedDrawView: () => <Tool name="feed-draw" /> }));
 vi.mock("../ui/features/debug/procedural-character-benchmark-view", () => ({
   ProceduralCharacterBenchmarkView: () => <Tool name="benchmark" />,
   ProceduralWorldGymView: () => <Tool name="world" />,
@@ -164,8 +163,6 @@ it.each([
   ["/lab/kit/unified/blitz-attack", "kit-unified-hud", "HUD", "In game"],
   ["/lab/kit/windows/settings", "kit-windows", "HUD", "In game"],
   ["/lab/app/home/profile", "app", "HUD", "App pages"],
-  ["/lab/feed?option=c&device=phone", "feed", "HUD", "Feed · to pick"],
-  ["/lab/feed/draw?frame=a&device=desktop", "feed-draw", "HUD", "Feed · to pick"],
   ["/lab/day-end?case=late-block", "day-end", "Game", "Day end"],
   ["/lab/endgame?variation=tide&mode=frontier", "endgame", "Game", "Game end"],
   ["/lab/map-labels?zoom=close&hover=28", "map-labels", "Game", "Map labels & sites"],
@@ -176,6 +173,7 @@ it.each([
   ["/lab/data?view=balance", "data", "Data", "Balance & data"],
   ["/lab/data/usage?mode=blitz", "ui-usage", "Data", "UI usage"],
   ["/lab/data/ships", "ships", "Data", "Ships"],
+  ["/lab/kit/frontier-sheet", "frontier-sheet", "Kit", "Frontier sheet"],
   ["/lab/studio?take=battle&mode=frontier", "studio", "Studio", "Set"],
   ["/lab/footage", "footage", "Studio", "Footage"],
 ])("opens %s through the common bootstrap, in its room and page", async (at, name, room, page) => {
@@ -191,7 +189,7 @@ it("lists the six rooms, and each room its pages", async () => {
   await openLab("/lab/kit");
   await settle();
   expect(labels("Rooms")).toEqual(["Kit", "HUD", "Game", "Art", "Data", "Studio"]);
-  expect(labels("Pages")).toEqual(["HUD sheet", "App sheet", "Icons", "Words", "Motion"]);
+  expect(labels("Pages")).toEqual(["HUD sheet", "Frontier sheet", "App sheet", "Icons", "Words", "Motion"]);
   expect(labels("Views")).toEqual(["Sheet", "Tokens"]);
   await press("Rooms", "Art");
   expect(labels("Pages")).toEqual(ROOMS.find((room) => room.title === "Art")!.pages.map((page) => page.title));

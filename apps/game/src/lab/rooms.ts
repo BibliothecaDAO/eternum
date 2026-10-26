@@ -146,6 +146,17 @@ export const ROOMS: LabRoom[] = [
         ],
       },
       {
+        title: "Frontier sheet",
+        views: [
+          view(
+            "Frontier sheet",
+            "/lab/kit/frontier-sheet",
+            "kit/frontier-sheet",
+            load(() => import("./kit-sheet/view"), "FrontierSheetView"),
+          ),
+        ],
+      },
+      {
         title: "App sheet",
         views: [
           view(
@@ -237,39 +248,6 @@ export const ROOMS: LabRoom[] = [
           ),
         ],
         inside: Object.values(HUD_INSIDE),
-      },
-      {
-        title: "Phone panels · to pick",
-        modes: ["frontier"],
-        views: [
-          view(
-            "Phone panels",
-            "/lab/kit/mobile-panels",
-            "kit/mobile-panels",
-            load(() => import("../ui/features/debug/kit-lab/mobile-panels/mobile-panels-lab"), "MobilePanelsLab"),
-          ),
-        ],
-      },
-      {
-        title: "Feed · to pick",
-        devices: ["both", "desktop", "phone"],
-        views: [
-          view(
-            "Feed",
-            "/lab/feed",
-            "feed",
-            load(() => import("./feed/view"), "FeedLabView"),
-          ),
-        ],
-        // The frames its stills are screenshots of (pnpm --dir apps/game capture:feed); not a page to read.
-        inside: [
-          view(
-            "Feed still",
-            "/lab/feed/draw",
-            "feed/draw",
-            load(() => import("./feed/draw"), "FeedDrawView"),
-          ),
-        ],
       },
       {
         title: "App pages",
