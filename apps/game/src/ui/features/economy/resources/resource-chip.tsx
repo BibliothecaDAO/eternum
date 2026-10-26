@@ -6,7 +6,6 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ResourceBurnPopover } from "@/ui/features/economy/resources/resource-burn-popover";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
 import { CountUpNumber } from "@/ui/shared";
@@ -251,26 +250,6 @@ export const ResourceChip = ({
                   event.stopPropagation();
                   openTransfer({ sourceId: resourceManager.entityId, destinationIds: [], resource: resourceId });
                 }}
-              />
-            )}
-            {showTransfer && (balance ?? 0) > 0 && (
-              <ResourceBurnPopover
-                structureId={resourceManager.entityId}
-                resourceId={resourceEnumId}
-                trigger={(toggle) => (
-                  <HudIconButton
-                    icon="flame"
-                    label={`Burn ${name}`}
-                    title="Burn"
-                    kind="quiet"
-                    size="sm"
-                    disabled={disableButtons}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      toggle();
-                    }}
-                  />
-                )}
               />
             )}
             {isRelic && balance > 0 && (

@@ -132,7 +132,6 @@ export enum TransactionType {
   // Structures & Ownership
   SET_ENTITY_NAME = "set_entity_name",
   TRANSFER_STRUCTURE_OWNERSHIP = "transfer_structure_ownership",
-  STRUCTURE_BURN = "structure_burn",
 
   // Hyperstructures
   CREATE_HYPERSTRUCTURE = "create_hyperstructure",
