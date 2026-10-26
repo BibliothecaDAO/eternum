@@ -493,6 +493,17 @@ export const ROOMS: LabRoom[] = [
           ),
         ],
       },
+      {
+        title: "Ships",
+        views: [
+          view(
+            "Ships",
+            "/lab/data/ships",
+            "data/ships",
+            load(() => import("./data/ships"), "ShipsView"),
+          ),
+        ],
+      },
     ],
   },
   {
