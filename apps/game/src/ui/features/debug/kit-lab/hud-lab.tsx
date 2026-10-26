@@ -6,6 +6,7 @@ import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { HudIconButton, HudNotice, HudSheet, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { OFFLINE, PAYOUTS_PAUSED, TRAINING_BUILDINGS, WITHDRAWALS_CLOSED, YOU } from "@/ui/design-system/kit/words";
 import { ArmyList, ArmyRow } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
@@ -940,7 +941,8 @@ const noop = () => undefined;
 /**
  * Dev only: the Map HUD's states on the lab fixtures, at /lab/kit/hud/<state> (idle, selected, full, offline, menu,
  * empty, explore, move, wheat-short, stamina-short): the components the live HUD draws, on the handoff's fiction.
- * Next up reads each state (next-up-deploy, next-up-barracks, next-up-rest, next-up-camp say more).
+ * Next up reads each state (next-up-deploy, next-up-barracks, next-up-rest, next-up-camp say more). The app's tooltip
+ * is mounted as world.tsx mounts it, so a named thing shows its line on hover (or a phone's hold) as in the game.
  */
 export const HudLab = () => {
   const { state = "idle" } = useParams();
@@ -957,6 +959,7 @@ export const HudLab = () => {
         <div className="w-full max-w-md">
           <LabMerge />
         </div>
+        <Tooltip />
       </div>
     );
   return (
@@ -1111,6 +1114,7 @@ export const HudLab = () => {
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
         {lab.realms && <LabRealmsSheet realms={lab.realms} />}
       </LabBands>
+      <Tooltip />
     </>
   );
 };
