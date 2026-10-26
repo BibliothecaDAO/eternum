@@ -255,6 +255,15 @@ export const ROOMS: LabRoom[] = [
             load(() => import("./feed/view"), "FeedLabView"),
           ),
         ],
+        // The frames its stills are screenshots of (pnpm --dir apps/game capture:feed); not a page to read.
+        inside: [
+          view(
+            "Feed still",
+            "/lab/feed/draw",
+            "feed/draw",
+            load(() => import("./feed/draw"), "FeedDrawView"),
+          ),
+        ],
       },
       {
         title: "App pages",

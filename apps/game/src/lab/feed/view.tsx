@@ -1,16 +1,9 @@
-import { GameProvider } from "@/hooks/context/game-context";
-import { usePlayerNames } from "@/hooks/use-player-profile";
-import { useHudMode } from "@/hooks/use-hud-mode";
-import { HudBubble, HudPanel, HudTabs } from "@/ui/design-system/kit/hud-elements";
-import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
-import { FeedRowLine } from "@/ui/features/event-feed/feed-row-line";
-import { involvesPlayer } from "@/ui/features/event-feed/event-stories";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { useSearchParams } from "react-router-dom";
 
-import { feedRuns, readFeedStory } from "./feed-reading";
-import { type FeedOption, FeedPanel, FeedRows } from "./options";
-import { answerRecordedNames, installRecordedGame, RECORDED_FEED, recordedStories } from "./recorded-feed";
+import type { FeedOption } from "./options";
+import { RECORDED_FEED } from "./recorded-feed";
+import { type StillDevice, type StillFrame, stillUrl } from "./stills";
 
 /** Each option: its name, and the one sentence that says what it changes. */
 const FEED_OPTIONS: Record<FeedOption, { name: string; line: string }> = {
@@ -28,165 +21,62 @@ const FEED_OPTIONS: Record<FeedOption, { name: string; line: string }> = {
   },
 };
 
-/** A desktop's rail at 1440 × 900: from under the top bar to over the foot's places. */
-const RAIL = { width: 480, height: 720 };
-const PHONE = { width: 390, height: 844 };
+const DEVICE_WORDS: Record<StillDevice, string> = { desktop: "desktop rail", phone: "phone" };
 
 /**
- * Dev only: the Feed's options for the owner to pick (26 Oct 2026, HUD → Feed · to pick), each beside today's Feed, on
- * prod's recorded page (recorded-feed.ts): who did what on every row, a reward under one without its amount, and a Feed
- * that closes and fills the rail. `option` names the option, the lab's `device` the frames.
+ * Dev only: the Feed's options for the owner to pick (26 Oct 2026, HUD → Feed · to pick), each beside today's Feed, as
+ * still screenshots of prod's recorded page (capture:feed takes them from draw.tsx): who did what on every row, a reward
+ * under one without its amount, a Feed that fills the rail and closes, the phone's Log named the Feed. `option` names
+ * the option, the lab's `device` the stills.
  */
 export const FeedLabView = () => {
-  useHudMode("frontier");
   const [params, setParams] = useSearchParams();
   const option = (["a", "b", "c"] as const).find((key) => key === params.get("option")) ?? "a";
-  const device = params.get("device") ?? "both";
-  const [store] = useState(installRecordedGame);
-  const [restore] = useState(answerRecordedNames);
-  useEffect(() => restore, [restore]);
-  const names = usePlayerNames();
-  const stories = useMemo(() => recordedStories(store, names), [store, names]);
-  const readings = useMemo(() => stories.map((story) => readFeedStory(story, store)), [stories, store]);
-  const runs = useMemo(() => feedRuns(readings, stories), [readings, stories]);
+  const device = params.get("device");
+  const devices: StillDevice[] = device === "desktop" || device === "phone" ? [device] : ["desktop", "phone"];
   const choose = (key: string) =>
     setParams((current) => {
       current.set("option", key);
       return current;
     });
-  const rows = <FeedRows option={option} readings={readings} runs={runs} names={names} viewer={RECORDED_FEED.viewer} />;
-  const today = (
-    <div className="flex flex-col">
-      {stories.map((story) => (
-        <FeedRowLine key={story.id} event={story} own={involvesPlayer(story, RECORDED_FEED.viewer)} />
-      ))}
-    </div>
-  );
   return (
-    <GameProvider value={{ store, systemCalls: {} } as never} account={{ address: RECORDED_FEED.viewer } as never}>
-      <main className="min-h-full bg-hud-dark p-4 font-sans text-hud-ink" data-lab="feed">
-        <header className="mb-3 flex flex-col gap-1">
-          <h1 className="text-hud-title">The Feed: who did what, on every row</h1>
-          <p className="max-w-[72rem] text-hud-label text-hud-muted">
-            Prod's Frontier feed as it read on {RECORDED_FEED.pulledAt.slice(0, 16).replace("T", " ")} UTC:{" "}
-            {stories.length} stories of {Object.keys(RECORDED_FEED.names).length} players, seen by djizus (gold).
-            Today's Feed on the left; the option on the right. Every option closes (×, then the Feed bubble opens it
-            again) and fills the rail as Research and the Season do.
-          </p>
-        </header>
-        <HudTabs
-          tabs={(Object.keys(FEED_OPTIONS) as FeedOption[]).map((key) => ({ key, label: FEED_OPTIONS[key].name }))}
-          value={option}
-          onChange={choose}
-        />
-        <p className="my-2 text-hud-body">{FEED_OPTIONS[option].line}</p>
-        <div className="flex flex-wrap items-start gap-6">
-          {device !== "phone" && (
-            <>
-              <Frame caption="Today · desktop rail">
-                <Rail today>{today}</Rail>
-              </Frame>
-              <Frame caption={`${FEED_OPTIONS[option].name} · desktop rail`}>
-                <Rail key={option}>{rows}</Rail>
-              </Frame>
-            </>
-          )}
-          {device !== "desktop" && (
-            <Frame caption={`${FEED_OPTIONS[option].name} · phone`}>
-              <Phone key={option}>{rows}</Phone>
-            </Frame>
-          )}
-        </div>
-      </main>
-    </GameProvider>
-  );
-};
-
-const Frame = ({ caption, children }: { caption: string; children: ReactNode }) => (
-  <figure className="flex flex-col gap-1">
-    {children}
-    <figcaption className="text-hud-label text-hud-muted">{caption}</figcaption>
-  </figure>
-);
-
-/** What stands above the Feed in the rail, as the game draws it there. */
-const NextUp = () => (
-  <HudPanel label="Next up" title="Next up" icon="flag" collapsible={false} className="shrink-0">
-    <p className="text-hud-body">Your army can explore: each new tile sends Essence or labor home and gives 2 XP.</p>
-  </HudPanel>
-);
-
-const ChatStrip = () => (
-  <div className="ui ui-panel mt-auto shrink-0 px-3 py-2 text-hud-label text-hud-muted">Sign in to chat</div>
-);
-
-/**
- * A desktop rail at its size: Next up, the Feed, chat at its foot; under it, the Feed's bubble among the places. Today's
- * Feed keeps its cap (45% of the screen: 405 px of 900) and has no ×; an option's fills the rail and closes.
- */
-const Rail = ({ today = false, children }: { today?: boolean; children: ReactNode }) => {
-  const [open, setOpen] = useState(true);
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <div
-        className="flex flex-col gap-2 rounded-lg border border-dashed border-hud-line p-2"
-        style={{ width: RAIL.width, height: RAIL.height }}
-        data-rail={today ? "today" : "option"}
-        data-feed-open={open}
-      >
-        <NextUp />
-        {open &&
-          (today ? (
-            <HudPanel
-              label={EVENTS_WORDS.feed}
-              title={EVENTS_WORDS.feed}
-              icon="chronicles"
-              collapsible={false}
-              className="flex min-h-0 flex-col"
-              bodyClassName="min-h-0 max-h-[405px] overflow-y-auto overflow-x-hidden scrollbar-thin"
-            >
-              {children}
-            </HudPanel>
-          ) : (
-            <FeedPanel onClose={() => setOpen(false)}>{children}</FeedPanel>
-          ))}
-        <ChatStrip />
-      </div>
-      <HudBubble
-        icon="chronicles"
-        word={EVENTS_WORDS.feed}
-        pressed={open}
-        aria-label={EVENTS_WORDS.feed}
-        disabled={today}
-        onClick={() => setOpen(!open)}
+    <main className="min-h-full bg-hud-dark p-4 font-sans text-hud-ink" data-lab="feed">
+      <header className="mb-3 flex flex-col gap-1">
+        <h1 className="text-hud-title">The Feed: who did what, on every row</h1>
+        <p className="max-w-[72rem] text-hud-label text-hud-muted">
+          Prod's Frontier feed as it read on {RECORDED_FEED.pulledAt.slice(0, 16).replace("T", " ")} UTC, seen by djizus
+          (gold), at the same stories in every still: today's Feed on the left, the option on the right. Every option
+          fills the rail as Research and the Season do, and closes (× in its head; the Feed bubble opens it again).
+        </p>
+      </header>
+      <HudTabs
+        tabs={(Object.keys(FEED_OPTIONS) as FeedOption[]).map((key) => ({ key, label: FEED_OPTIONS[key].name }))}
+        value={option}
+        onChange={choose}
       />
-    </div>
+      <p className="my-2 text-hud-body">{FEED_OPTIONS[option].line}</p>
+      {devices.map((each) => (
+        <div key={each} className="mb-4 flex flex-wrap items-start gap-6">
+          <Still frame="today" device={each} caption={`Today · ${DEVICE_WORDS[each]}`} />
+          <Still frame={option} device={each} caption={`${FEED_OPTIONS[option].name} · ${DEVICE_WORDS[each]}`} />
+        </div>
+      ))}
+      {devices.includes("desktop") && (
+        <Still
+          name="a-desktop-closed"
+          caption="Every option, closed: the rail keeps Next up and chat, the Feed bubble lit off"
+        />
+      )}
+    </main>
   );
 };
 
-/** A phone at its size: the strip, the Feed as a page between it and the place bar, the place bar with the Feed. */
-const Phone = ({ children }: { children: ReactNode }) => {
-  const [open, setOpen] = useState(true);
+const Still = (props: { caption: string } & ({ frame: StillFrame; device: StillDevice } | { name: string })) => {
+  const name = "name" in props ? props.name : `${props.frame}-${props.device}`;
   return (
-    <div
-      className="flex flex-col overflow-hidden rounded-[28px] border border-hud-line-strong bg-hud-night"
-      style={{ width: PHONE.width, height: PHONE.height }}
-      data-phone
-      data-feed-open={open}
-    >
-      <div className="ui ui-panel m-2 shrink-0 px-3 py-2 text-hud-label">Day 7 · 2h 56m left</div>
-      <div className="flex min-h-0 flex-1 flex-col px-2">
-        {open && <FeedPanel onClose={() => setOpen(false)}>{children}</FeedPanel>}
-      </div>
-      <nav aria-label="Phone places" className="flex shrink-0 justify-center gap-4 p-2">
-        <HudBubble
-          icon="chronicles"
-          word={EVENTS_WORDS.feed}
-          pressed={open}
-          aria-label={EVENTS_WORDS.feed}
-          onClick={() => setOpen(!open)}
-        />
-      </nav>
-    </div>
+    <figure className="flex flex-col gap-1">
+      <img src={stillUrl(name)} alt={props.caption} data-still={name} className="rounded border border-hud-line" />
+      <figcaption className="text-hud-label text-hud-muted">{props.caption}</figcaption>
+    </figure>
   );
 };

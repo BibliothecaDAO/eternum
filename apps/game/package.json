@@ -77,6 +77,7 @@
     "prove:day-end": "node ./scripts/prove-lab-day-end.mjs",
     "prove:lab-load": "node ./scripts/prove-lab-load.mjs",
     "record:feed": "node ./scripts/lab/record-feed.mjs",
+    "capture:feed": "node --experimental-strip-types --no-warnings ./scripts/lab/capture-feed.mjs",
     "prove:map-context": "node ./scripts/sheet-map/prove.mjs",
     "prove:app-art": "node ./scripts/prove-app-art.mjs",
     "prove:relic-chest": "node ./scripts/prove-relic-chest.mjs",
