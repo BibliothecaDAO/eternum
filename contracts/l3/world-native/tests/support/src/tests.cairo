@@ -129,13 +129,6 @@ pub fn bind_authority(d: Deployment) -> Deployment {
     deploy_player(2, GUARDIAN);
     Deployment { actor: authority(), ..d }
 }
-pub fn declare_verifier() -> ClassHash {
-    *snforge_std::declare_from_file("../../../vrf-verifier/target/dev/realms_vrf_verifier_Verifier.contract_class.json")
-        .unwrap()
-        .contract_class()
-        .class_hash
-}
-
 pub fn declare_logic(name: ByteArray) -> ClassHash {
     *declare(name).unwrap().contract_class().class_hash
 }
