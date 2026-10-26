@@ -34,9 +34,8 @@ import { CastleView } from "@/ui/features/frontier/upgrade/castle-view";
 import { readArmyDetail } from "@/ui/features/frontier/army/army-detail";
 import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
 import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
+import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
-import { LauncherBar, type LauncherOption, RealmResearchRow } from "./research-ux/launcher-options";
-import { ResearchOptionPanel, type ResearchOption } from "./research-ux/research-options";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
 import { BuildingType, Direction } from "@bibliothecadao/types";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
@@ -715,20 +714,6 @@ const STATES = {
     storeCard: line({ icon: "troops", spentAt: "deploy", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
   },
   research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: true },
-  // Research panel drafts for the owner's pick (research-ux/research-options.tsx), on the same realm and tree.
-  "research-choice-first": { clock: CLOCK, stores: STORES, armies: ARMIES, research: "choice-first" },
-  "research-cards": { clock: CLOCK, stores: STORES, armies: ARMIES, research: "cards" },
-  "research-overlay": { clock: CLOCK, stores: STORES, armies: ARMIES, research: "overlay" },
-  // The desktop's foot places, drafted (research-ux/launcher-options.tsx): the map at rest under each.
-  "launch-bar": { clock: CLOCK, stores: STORES, armies: ARMIES, launchers: "bar" },
-  "launch-realm": { clock: CLOCK, stores: STORES, armies: ARMIES, launchers: "realm" },
-  "launch-none": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    launchers: "none",
-    nextUp: { typeTierAffordable: "Farm" },
-  },
   // A refused order's notice, through the game's own notice store: on a desktop it stands in the rail under Next up.
   notice: { clock: CLOCK, stores: STORES, armies: ARMIES, notice: "Not enough stamina" },
   today: { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today" },
@@ -898,10 +883,8 @@ type LabState = {
   visiting?: boolean;
   /** A notice the client raises (a refused order), as the game's notice store holds it. */
   notice?: string;
-  /** Research's page: the tree on the realm some days in, as shipped or as one of the drafts. */
-  research?: true | ResearchOption;
-  /** The desktop's foot places, as shipped (none given) or as one of the drafts. */
-  launchers?: LauncherOption;
+  /** Research's page: the tree on the realm some days in. */
+  research?: boolean;
   /** The card a store's ring or plate opened. */
   storeCard?: StoreLine;
   army?: LabArmySheet;
@@ -985,7 +968,7 @@ export const HudLab = () => {
           chat && !desktop ? (
             chat
           ) : lab.research ? (
-            <LabResearch option={lab.research === true ? "today" : lab.research} />
+            <LabResearch />
           ) : lab.season ? (
             // A realm's detail stands in the list's place, as FrontierSeason shows it.
             lab.season === "detail" ? (
@@ -1195,15 +1178,23 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
   );
 };
 
-/** Research's page on the realm some days in: the game's tree, as the shipped panel or a draft draws it. */
-const LabResearch = ({ option }: { option: ResearchOption }) => (
-  <ResearchOptionPanel
-    option={option}
-    nodes={readResearchTree(MID_REALM)}
-    essence={MID_REALM.essence}
-    labor={MID_REALM.labor}
-  />
-);
+/** Research's page on the realm some days in: the game's tree, the picked node under it. */
+const LabResearch = () => {
+  const nodes = readResearchTree(MID_REALM);
+  const [picked, setPicked] = useState(nodes[0]!.key);
+  return (
+    <ResearchPanel
+      nodes={nodes}
+      essence={MID_REALM.essence}
+      labor={MID_REALM.labor}
+      picked={picked}
+      onPick={setPicked}
+      sending={new Set()}
+      fixFor={() => undefined}
+      onResearch={noop}
+    />
+  );
+};
 
 /** Next up on the lab's realm at a state: the coach's steps, their buttons doing nothing. */
 const labNextUpSteps = (lab: LabState, desktop: boolean): NextStep[] =>
@@ -1238,29 +1229,26 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
           season={{ rank: "#12", onOpen: noop }}
           clock={<DayPill clock={lab.clock} />}
           realm={
-            <>
-              <RealmPanel
-                name={LAB_REALM_NAME}
-                level={1}
-                highest={3}
-                population={LAB_POPULATION}
-                stores={[...lab.stores]}
-                onHome={noop}
-                {...(!lab.visiting && {
-                  lords: lab.purse?.lords ?? LAB_LORDS,
-                  labor: lab.purse?.realms,
-                  storeCards: lab.storeCard && {
-                    kinds: ["wheat", "labor", "troops"],
-                    open: lab.storeCard.icon,
-                    onToggle: noop,
-                    card: <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />,
-                  },
-                  onWithdraw: noop,
-                  onRealms: noop,
-                })}
-              />
-              {lab.launchers === "realm" && <RealmResearchRow researchReady={!lab.offline} />}
-            </>
+            <RealmPanel
+              name={LAB_REALM_NAME}
+              level={1}
+              highest={3}
+              population={LAB_POPULATION}
+              stores={[...lab.stores]}
+              onHome={noop}
+              {...(!lab.visiting && {
+                lords: lab.purse?.lords ?? LAB_LORDS,
+                labor: lab.purse?.realms,
+                storeCards: lab.storeCard && {
+                  kinds: ["wheat", "labor", "troops"],
+                  open: lab.storeCard.icon,
+                  onToggle: noop,
+                  card: <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />,
+                },
+                onWithdraw: noop,
+                onRealms: noop,
+              })}
+            />
           }
           armies={slots.dock}
           nextUp={slots.nextUp}
@@ -1272,7 +1260,17 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
               {slots.action}
             </>
           }
-          places={!lab.visiting && <LabPlaces lab={lab} />}
+          places={
+            !lab.visiting && (
+              <FrontierPlaces
+                surface={labSurface(lab)}
+                home={labSurface(lab) === null}
+                onSurface={noop}
+                onHome={noop}
+                research={!lab.offline}
+              />
+            )
+          }
         >
           {slots.children}
         </FrontierDesktop>
@@ -1281,21 +1279,6 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
   ) : (
     <HudBands {...slots} />
   );
-
-/** The desktop's foot places: the shipped round bubbles, or the state's draft (none for the drafts that cut them). */
-const LabPlaces = ({ lab }: { lab: LabState }) => {
-  if (lab.launchers === "bar") return <LauncherBar researchReady={!lab.offline} />;
-  if (lab.launchers === "realm" || lab.launchers === "none") return null;
-  return (
-    <FrontierPlaces
-      surface={labSurface(lab)}
-      home={labSurface(lab) === null}
-      onSurface={noop}
-      onHome={noop}
-      research={!lab.offline}
-    />
-  );
-};
 
 /** Frontier's preset, so the lab's game plays as a Frontier game. */
 const FRONTIER_PRESET = 5;
