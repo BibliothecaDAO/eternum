@@ -1,4 +1,5 @@
 import { formatDuration } from "@bibliothecadao/types";
+import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { ARRIVING, UNDEFENDED } from "@/ui/design-system/kit/words";
 
 import { attackOrder, type ArmyPlate, type MapPlate, type PlateTroops, type StructurePlate } from "./map-plate-model";
@@ -15,7 +16,7 @@ export type PlateSegment =
   | { kind: "label"; text: string }
   | { kind: "cue"; text: string }
   | { kind: "troops"; troops: PlateTroops }
-  | { kind: "stamina"; current: number; max: number }
+  | ({ kind: "stamina" } & StaminaBar)
   /** Between the guard slots, in the order an attacker meets them. */
   | { kind: "next" }
   /** Between two readings on one row: a player and their realm ("clientlane | Stolsli"), a guard and what is beside it. */

@@ -2,7 +2,7 @@ import { usePlayerNames } from "@/hooks/use-player-profile";
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HudButton, HudChip, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudMeter, HudPanel, HudStamina } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { isStaminaRecharging, STAMINA_RECHARGING_TEXT_CLASS } from "@/ui/shared/lib/stamina-visuals";
@@ -107,6 +107,11 @@ export const RaidContainer = ({
         category: army.troops.category as TroopType,
         tier: army.troops.tier as TroopTier,
         stamina: StaminaManager.getStamina(army.troops, timestamp),
+        staminaMax: StaminaManager.getMaxStamina(
+          army.troops.category as TroopType,
+          army.troops.tier as TroopTier,
+          army.troops.staminaMax,
+        ),
         battle_cooldown_end: army.troops.battle_cooldown_end,
       },
     };
@@ -362,14 +367,17 @@ export const RaidContainer = ({
                                   Current Stamina:
                                 </span>
                                 <span className="w-28">
-                                  <HudMeter
-                                    share={Math.min(1, Number(attackerArmyData.troops.stamina.amount) / 100)}
+                                  <HudStamina
+                                    stamina={{
+                                      current: Number(attackerArmyData.troops.stamina.amount),
+                                      max: attackerArmyData.troops.staminaMax,
+                                      perExplore: configManager.getExploreStaminaCost(),
+                                    }}
                                     tone={
                                       Number(attackerArmyData.troops.stamina.amount) >= combatConfig.stamina_attack_req
                                         ? "good"
                                         : "bad"
                                     }
-                                    label="Stamina"
                                     filling={attackerRecharging}
                                   />
                                 </span>

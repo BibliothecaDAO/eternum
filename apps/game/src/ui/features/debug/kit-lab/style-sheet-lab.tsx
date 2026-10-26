@@ -28,6 +28,7 @@ import {
   HudLoading,
   HudMenu,
   HudMeter,
+  HudStamina,
   HudNumberField,
   HudMinimapFrame,
   HudNotice,
@@ -638,11 +639,11 @@ const SettingsSection = () => {
 const MeterSection = () => (
   <Element
     name="Meter"
-    rule="How full a thing is: stamina, production, a load; the fill in a tone. A dial is a number in a ring that drains (the day, as today runs out), toned near its end."
+    rule="How full a thing is: production, a load; the fill in a tone. Stamina is the meter cut into a segment per explore (20 stamina), the same bar on every army, slot, guard and map plate. A dial is a number in a ring that drains (the day, as today runs out), toned near its end."
     sheet={
       <div className="flex max-w-xs flex-col gap-3">
-        <HudMeter share={0.62} tone="good" label="Stamina" />
-        <HudMeter share={0.62} tone="good" label="Stamina, refilling" filling />
+        <HudStamina stamina={{ current: 86, max: 140, perExplore: 20 }} />
+        <HudStamina stamina={{ current: 86, max: 140, perExplore: 20 }} filling />
         <HudMeter share={0.35} label="Production" />
         <HudMeter share={0.9} tone="warn" label="Storage" />
         <HudMeter share={0.1} tone="bad" label="Food" />
@@ -824,7 +825,7 @@ const ORDER_LINES = [
   },
   {
     path: [orderStep(ActionType.Move), orderStep(ActionType.UseSite)],
-    site: { kind: "Well", gain: 60, stamina: { current: 120, max: 120 } } as const,
+    site: { kind: "Well", gain: 60, stamina: { current: 120, max: 120, perExplore: 20 } } as const,
   },
   { path: undefined, refusal: { reason: "stamina", need: 30 } as const, staminaWait: 24 },
 ].flatMap((order) => {
@@ -1475,7 +1476,7 @@ const ARMY: ArmyPlate = {
   owner: "Moonhand",
   homeName: "Xeswet",
   troops: { type: "paladin", tier: 3, count: 300 },
-  stamina: { current: 84, max: 150 },
+  stamina: { current: 84, max: 150, perExplore: 20 },
 };
 const REALM: StructurePlate = {
   kind: "structure",

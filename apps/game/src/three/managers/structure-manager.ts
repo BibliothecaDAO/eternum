@@ -700,12 +700,13 @@ export class StructureManager {
     if (!guards) return structure;
     const now = getBlockTimestamp().currentDefaultTick;
     const bySlot = new Map(guards.map(({ slot, troops }) => [slot, getGuardStaminaSnapshot(troops, now)]));
+    const perExplore = configManager.getExploreStaminaCost();
     return {
       ...structure,
       guardArmies: structure.guardArmies.map((guard) => {
         const stamina = bySlot.get(guard.slot);
         return stamina && stamina.max > 0
-          ? { ...guard, stamina: { current: stamina.current, max: stamina.max } }
+          ? { ...guard, stamina: { current: stamina.current, max: stamina.max, perExplore } }
           : guard;
       }),
     };

@@ -34,8 +34,8 @@ const chainAt = (seconds: number) => {
 
 /**
  * The fixture realm with one guard slot, as the chain sends it (its bar still wrapped, `{ Inline }`), in a Blitz game
- * (preset 3: knights capped at 120, a tier adds 20, 20 stamina a 60 s tick) or a Frontier game (`frontierDay`: knights
- * capped at 150, no tier bonus).
+ * (preset 3: knights capped at 120, a tier adds 20, 20 stamina a 60 s tick, 30 an explore: a segment of its bar) or a
+ * Frontier game (`frontierDay`: knights capped at 150, no tier bonus).
  */
 const realmWithGuard = (
   game: "blitz" | "frontier",
@@ -113,21 +113,21 @@ describe("a structure's guard stamina on its map plate, as the chain's time runs
     const store = realmWithGuard("blitz", "T2", { amount: 60, settledAt: 100 });
     const { said } = managerOver(store, 2);
     chainAt(100);
-    expect(said()).toEqual({ current: 60, max: 140 });
+    expect(said()).toEqual({ current: 60, max: 140, perExplore: 30 });
     // A minute later, one tick: 20 more, with no guard row changed and the cached facts untouched.
     chainAt(160);
-    expect(said()).toEqual({ current: 80, max: 140 });
+    expect(said()).toEqual({ current: 80, max: 140, perExplore: 30 });
     chainAt(400);
-    expect(said()).toEqual({ current: 140, max: 140 });
+    expect(said()).toEqual({ current: 140, max: 140, perExplore: 30 });
   });
 
   it("caps a Frontier guard at its game's maximum, with no tier bonus, however high its tier", () => {
     const store = realmWithGuard("frontier", "T3", { amount: 60, settledAt: 290 });
     const { said } = managerOver(store, 3);
     chainAt(350);
-    expect(said()).toEqual({ current: 80, max: 150 });
+    expect(said()).toEqual({ current: 80, max: 150, perExplore: 30 });
     chainAt(1_000);
-    expect(said()).toEqual({ current: 150, max: 150 });
+    expect(said()).toEqual({ current: 150, max: 150, perExplore: 30 });
   });
 });
 

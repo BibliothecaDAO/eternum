@@ -2,8 +2,8 @@ import { formatAmount, formatCharge, formatExact, formatGain } from "@bibliothec
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { ARMY, comesHomeAtDayEnd, STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
-import { type StaminaBar, staminaSegments } from "@/lib/army-stamina/segments";
+import { HudStamina, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
+import { ARMY, comesHomeAtDayEnd, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
 
 // A token grows past its height only for the last hour's Homecoming line.
 const TOKEN =
@@ -83,7 +83,7 @@ export const ArmyToken = ({
           </span>
         )}
       </span>
-      <StaminaSegments stamina={stamina} />
+      <TokenStamina stamina={stamina} />
       <span
         role="img"
         aria-label={`${TROOPS} ${formatAmount(troops)}`}
@@ -151,7 +151,7 @@ export const OpenSlot = ({
       )}
       {start &&
         filling === undefined &&
-        (wide ? <StaminaReading stamina={start.bar} /> : <StaminaSegments stamina={start.bar} />)}
+        (wide ? <StaminaReading stamina={start.bar} /> : <TokenStamina stamina={start.bar} />)}
     </>
   );
   const look = cn(wide ? cn(CARD, "!flex-row justify-center") : TOKEN, "border border-hud-line bg-hud-surface");
@@ -199,33 +199,15 @@ export const HomecomingReturn = ({ troops }: { troops: number }) => (
 export const StaminaReading = ({ stamina }: { stamina: StaminaBar | undefined }) => (
   <span className="flex flex-1 items-center gap-2">
     <span className="min-w-8 flex-1">
-      <StaminaSegments stamina={stamina} />
+      <HudStamina stamina={stamina} />
     </span>
     <span>{`${formatAmount(stamina?.current)}/${formatAmount(stamina?.max)}`}</span>
   </span>
 );
 
-/** The stamina bar: a segment per explore the army's maximum holds (staminaSegments), an empty track while unknown. */
-const StaminaSegments = ({ stamina }: { stamina: StaminaBar | undefined }) => {
-  const segments = staminaSegments(stamina);
-  return (
-    <span
-      role="meter"
-      aria-label={STAMINA}
-      aria-valuenow={stamina?.current}
-      aria-valuemin={0}
-      aria-valuemax={stamina?.max}
-      className="flex w-full gap-0.5 px-1.5"
-    >
-      {(segments.length > 0 ? segments : [{ size: 1, fill: 0 }]).map(({ size, fill }, index) => (
-        <i
-          key={index}
-          className="h-1 overflow-hidden rounded-sm bg-hud-divider"
-          style={{ flexGrow: size, flexBasis: 0 }}
-        >
-          <b className="block h-full bg-hud-good" style={{ width: `${fill * 100}%` }} />
-        </i>
-      ))}
-    </span>
-  );
-};
+/** A token's stamina: the kit's bar, inset from the token's edge. */
+const TokenStamina = ({ stamina }: { stamina: StaminaBar | undefined }) => (
+  <span className="w-full px-1.5">
+    <HudStamina stamina={stamina} />
+  </span>
+);

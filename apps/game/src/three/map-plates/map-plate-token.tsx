@@ -1,6 +1,6 @@
 import { formatExact, formatPercent } from "@bibliothecadao/types";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudTierChip } from "@/ui/design-system/kit/hud-elements";
+import { HudStamina, HudTierChip, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { UNDEFENDED } from "@/ui/design-system/kit/words";
 
 import { chipWidth, labelWidth } from "./map-plate-layout";
@@ -21,8 +21,8 @@ interface TokenReading {
   beast: string | null;
   /** A structure with guard slots and none filled; a Frontier realm, with no guard to tell, is not undefended. */
   undefended: boolean;
-  /** An army's stamina, 0 to 1. */
-  stamina: number | null;
+  /** An army's stamina. */
+  stamina: StaminaBar | null;
   /** To a watching viewer, its player's initial on the disk, in their seat's colour. */
   mark: PlateWatched["mark"];
 }
@@ -34,7 +34,7 @@ export const tokenReading = (plate: MapPlate): TokenReading => {
       strength: { tier: plate.troops.tier, count: plate.troops.count },
       beast: null,
       undefended: false,
-      stamina: plate.stamina ? plate.stamina.current / plate.stamina.max : null,
+      stamina: plate.stamina ?? null,
       mark: plate.watched?.mark ?? null,
     };
   const guards = plate.guards ?? [];
@@ -100,7 +100,7 @@ const TokenView = ({ reading }: { reading: TokenReading }) => (
     )}
     {reading.stamina !== null && (
       <span className="mp-plate__stamina mp-token__stamina">
-        <i style={{ width: `${reading.stamina * 100}%` }} />
+        <HudStamina stamina={reading.stamina} />
       </span>
     )}
   </div>
@@ -113,7 +113,7 @@ const tokenWords = (reading: TokenReading): string =>
       ? UNDEFENDED
       : reading.strength &&
         `${reading.strength.tier === null ? reading.beast : `T${reading.strength.tier}`} ${formatExact(reading.strength.count)}`,
-    reading.stamina !== null && `Stamina ${formatPercent(reading.stamina)}`,
+    reading.stamina !== null && `Stamina ${formatPercent(reading.stamina.current / reading.stamina.max)}`,
   ]
     .filter(Boolean)
     .join(", ");

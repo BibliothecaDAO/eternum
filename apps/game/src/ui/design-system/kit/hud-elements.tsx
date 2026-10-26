@@ -28,7 +28,7 @@ import { createPortal } from "react-dom";
 
 import { OpenedFromPanel } from "./opened-from-panel";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import { BACK, CLOSE, type Tier, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
+import { BACK, CLOSE, STAMINA, type Tier, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -1723,9 +1723,9 @@ export const HudBubble = ({
 );
 
 /**
- * How full a thing is, in a tone; `filling` while it refills (stamina). Given as a `share` from 0 to 1 (production, a
- * load), it reads as a percentage; given as an `amount` (an army's stamina), it reads as that amount of its maximum,
- * so a reader of the meter gets the amount itself, as the phone's stamina segments give it (unknown reads as nothing).
+ * How full a thing is, in a tone; `filling` while it refills. Given as a `share` from 0 to 1 (production, a load), it
+ * reads as a percentage; given as an `amount` (labor held of its storage), it reads as that amount of its maximum, so a
+ * reader of the meter gets the amount itself, as HudStamina gives it (unknown reads as nothing). Stamina is HudStamina.
  */
 export const HudMeter = ({
   share,
@@ -1754,6 +1754,58 @@ export const HudMeter = ({
       <i style={{ width: `${Math.min(1, Math.max(0, fill)) * 100}%` }} />
     </span>
   );
+};
+
+/** An army's or a guard's stamina as its bar draws it: held, its maximum, and what one explore costs. */
+export type StaminaBar = { current: number; max: number; perExplore: number };
+
+/**
+ * Every stamina bar (an army's card, token, row and map plate, a slot's start, a guard): the meter cut into a segment
+ * per explore its maximum holds, so a full bar counts the tiles it can explore and each explore's worth of maximum
+ * Logistics adds is one more segment (the owner, 26 October: "split the bar in 20 stamina ? like on mobile ?"). A
+ * maximum the explore cost does not divide ends in a shorter segment. It reads as the amount itself; an empty track
+ * while unknown.
+ */
+export const HudStamina = ({
+  stamina,
+  tone = "good",
+  filling = false,
+}: {
+  stamina: StaminaBar | undefined;
+  tone?: Tone;
+  filling?: boolean;
+}) => (
+  <span
+    role="meter"
+    aria-label={STAMINA}
+    aria-valuenow={stamina?.current}
+    aria-valuemin={0}
+    aria-valuemax={stamina?.max}
+    className="flex w-full gap-0.5"
+  >
+    {staminaSegments(stamina).map(({ size, fill }, index) => (
+      <span
+        key={index}
+        className="ui-meter"
+        data-tone={tone}
+        data-filling={filling || undefined}
+        style={{ flexGrow: size, flexBasis: 0 }}
+      >
+        <i style={{ width: `${fill * 100}%` }} />
+      </span>
+    ))}
+  </span>
+);
+
+/** A stamina bar's segments: each one's length (1 is one explore) and fill, 0 to 1; one empty while unknown. */
+const staminaSegments = (stamina: StaminaBar | undefined): { size: number; fill: number }[] => {
+  if (!stamina || stamina.max <= 0 || stamina.perExplore <= 0) return [{ size: 1, fill: 0 }];
+  const { current, max, perExplore } = stamina;
+  return Array.from({ length: Math.ceil(max / perExplore) }, (_, index) => {
+    const start = index * perExplore;
+    const length = Math.min(perExplore, max - start);
+    return { size: length / perExplore, fill: Math.min(1, Math.max(0, (current - start) / length)) };
+  });
 };
 
 /** What a relic works on: its chip takes that kind's colour. */
