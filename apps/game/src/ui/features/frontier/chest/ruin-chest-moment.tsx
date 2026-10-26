@@ -1,4 +1,4 @@
-import { formatExact, LORDS } from "@bibliothecadao/types";
+import { formatExact, LORDS, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { HudRarity, HudChip } from "@/ui/design-system/kit/hud-elements";
@@ -54,9 +54,9 @@ export const RuinChestMoment = ({
         </span>
         <HudRarity tier={tier} />
         <span className="flex items-center gap-2">
-          {xp !== undefined && <HudChip>{`+${formatExact(xp)} ${XP}`}</HudChip>}
+          {xp !== undefined && <HudChip>{`${formatShort(xp, { signed: true })} ${XP}`}</HudChip>}
           <HudChip icons={["skull"]} label={TROOPS}>
-            {`−${formatExact(troopsLost)}`}
+            {`−${formatShort(troopsLost)}`}
           </HudChip>
         </span>
       </motion.span>

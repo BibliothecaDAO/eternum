@@ -1,4 +1,4 @@
-import { formatAmount, LORDS, resourceName, ResourcesIds } from "@bibliothecadao/types";
+import { formatAmount, LORDS, resourceName, ResourcesIds, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
@@ -80,11 +80,11 @@ export const SeasonOverCard = ({
       <div className="w-full max-w-sm">
         <TotalsGrid
           cells={[
-            { icon: "flag", name: SITES_CLEARED, value: formatAmount(totals.sitesCleared) },
-            { icon: "chest", name: CHESTS, value: formatAmount(totals.chests) },
-            { icon: "lords", name: LORDS, value: formatAmount(totals.lords) },
-            { icon: "essence", name: ESSENCE, value: formatAmount(totals.essence) },
-            { icon: "labor", name: resourceName(ResourcesIds.Labor), value: formatAmount(totals.labor) },
+            { icon: "flag", name: SITES_CLEARED, value: formatShort(totals.sitesCleared) },
+            { icon: "chest", name: CHESTS, value: formatShort(totals.chests) },
+            { icon: "lords", name: LORDS, value: formatShort(totals.lords) },
+            { icon: "essence", name: ESSENCE, value: formatShort(totals.essence) },
+            { icon: "labor", name: resourceName(ResourcesIds.Labor), value: formatShort(totals.labor) },
             ...depthCell(totals.depth),
           ]}
         />

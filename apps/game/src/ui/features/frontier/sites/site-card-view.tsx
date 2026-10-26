@@ -1,5 +1,5 @@
 import type { FrontierBeast } from "@/three/structures/frontier-beast";
-import { formatDuration, formatExact, formatGain, formatHeldAgainst, LORDS } from "@bibliothecadao/types";
+import { formatDuration, formatExact, formatHeldAgainst, LORDS, formatShort } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -164,7 +164,7 @@ export const SiteCardView = ({
         {chest ? <ChestPay chest={chest} /> : pay ? <Pay pay={pay} /> : null}
         {xp !== undefined && !(chest && lost) && (
           <HudChip>
-            {formatGain(xp)} {XP}
+            {formatShort(xp, { signed: true })} {XP}
           </HudChip>
         )}
       </Gain>
@@ -294,7 +294,7 @@ const Matchup = ({
   <div className="flex items-center justify-center gap-2">
     {army && (
       <HudChip icons={[army.art]} label={TROOPS}>
-        {formatExact(army.troops)}
+        {formatShort(army.troops)}
       </HudChip>
     )}
     <SemanticIcon name="attack" size={22} />
@@ -314,7 +314,7 @@ const BeastGuard = ({
     <span className="flex items-center gap-2" data-tip={beast?.combatClass}>
       {beast && <span className="text-hud-strong text-hud-ink">{beast.name}</span>}
       <HudChip icons={[beast ? beastMeaning(beast.beast) : "troops"]} label={beast ? BEAST : TROOPS}>
-        {formatExact(guard)}
+        {formatShort(guard)}
       </HudChip>
     </span>
   );

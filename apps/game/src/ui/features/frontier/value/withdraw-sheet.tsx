@@ -1,4 +1,4 @@
-import { formatExact, LORDS } from "@bibliothecadao/types";
+import { formatExact, LORDS, formatShort, formatShortChange } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { shortAddress } from "@/ui/design-system/kit/address";
@@ -242,7 +242,7 @@ const Paid = ({
 const Leaving = ({ held, wallet }: { held: number | undefined; wallet: string | null }) => (
   <div className="flex items-center justify-center gap-1.5">
     <HudChip icons={["lords"]} label={LORDS}>
-      {formatExact(held)}
+      {formatShort(held)}
     </HudChip>
     <span aria-hidden className="text-hud-muted">
       →
@@ -262,7 +262,7 @@ const Flow = ({
 }) => (
   <div className="flex flex-col items-center gap-1.5">
     <HudChip icons={["lords"]} label={LORDS}>
-      {`${formatExact(before)} → ${formatExact(after)}`}
+      {formatShortChange(before, after)}
     </HudChip>
     <span className="flex items-center gap-1.5">
       <span aria-hidden className="text-hud-muted">

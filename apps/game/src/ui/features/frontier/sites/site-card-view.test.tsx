@@ -238,7 +238,7 @@ describe("a guarded site's card with no army chosen", () => {
     );
     const card = document.querySelector("section[aria-label='North Watch']")!;
     expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("RuinBasilisk1,100");
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("RuinBasilisk1.1K");
   });
 
   it("gives each army a row with the fight it would have, names the skull, and opens the attack on a tap", () => {

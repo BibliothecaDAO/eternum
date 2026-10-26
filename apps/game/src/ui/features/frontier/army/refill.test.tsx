@@ -56,7 +56,7 @@ describe("the refill", () => {
       />,
     );
     expect(host.querySelector('[aria-label="stamina 20 → 150"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="LORDS 1,240 → 1,110"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="LORDS 1.2K → 1.1K"]')).not.toBeNull();
     const buttons = [...host.querySelectorAll("button")];
     act(() => buttons.find((button) => button.textContent?.startsWith("Refill"))!.click());
     act(() => buttons.find((button) => button.textContent === "Cancel")!.click());

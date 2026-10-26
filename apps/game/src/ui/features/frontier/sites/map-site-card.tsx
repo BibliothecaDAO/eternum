@@ -12,7 +12,7 @@ import { MOVE, SHRINE, STAMINA, TROOPS, USE, USING, WELL, XP } from "@/ui/design
 import { ActionPaths, ActionType, configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { formatAmount, formatExact, formatGain, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, formatShort, formatShortChange } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { useFrontierRealm } from "../frontier-home";
@@ -80,7 +80,7 @@ export const MapSiteCard = ({
       <div className="flex items-center justify-center gap-2.5">
         {user && (
           <HudChip icons={[armyArt(user.army.troops)]} label={TROOPS}>
-            {formatExact(Number(user.army.troops.count / BigInt(RESOURCE_PRECISION)))}
+            {formatShort(Number(user.army.troops.count / BigInt(RESOURCE_PRECISION)))}
           </HudChip>
         )}
         {plan.kind === "Well" ? (
@@ -89,7 +89,7 @@ export const MapSiteCard = ({
           </HudChip>
         ) : (
           <HudChip>
-            {formatGain(plan.gain)} {XP}
+            {formatShort(plan.gain, { signed: true })} {XP}
           </HudChip>
         )}
       </div>
@@ -156,6 +156,6 @@ const useUserStamina = (explorerId: number | undefined) => {
 const wellGain = (gain: number | undefined, stamina: { current: number; max: number } | undefined): string => {
   if (gain === undefined) return "—";
   return stamina
-    ? `${formatAmount(stamina.current)} → ${formatAmount(Math.min(stamina.max, stamina.current + gain))}`
-    : formatGain(gain);
+    ? formatShortChange(stamina.current, Math.min(stamina.max, stamina.current + gain))
+    : formatShort(gain, { signed: true });
 };

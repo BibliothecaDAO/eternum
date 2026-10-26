@@ -1,4 +1,4 @@
-import { formatCharge, formatExact, LORDS } from "@bibliothecadao/types";
+import { formatCharge, formatExact, LORDS, formatShortChange } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { CANCEL, REFILL, REFILLING, STAMINA, heldAgainstNeed, refillShort } from "@/ui/design-system/kit/words";
@@ -59,14 +59,12 @@ export const RefillConfirm = ({
   return (
     <HudSheet label={REFILL} onClose={onCancel}>
       <div className="flex items-center justify-center gap-2">
-        <HudChip
-          icons={["stamina"]}
-          label={STAMINA}
-        >{`${formatExact(stamina.current)} → ${formatExact(stamina.max)}`}</HudChip>
-        <HudChip
-          icons={["lords"]}
-          label={LORDS}
-        >{`${formatExact(held)} → ${held === undefined ? "—" : formatExact(held - price)}`}</HudChip>
+        <HudChip icons={["stamina"]} label={STAMINA}>
+          {formatShortChange(stamina.current, stamina.max)}
+        </HudChip>
+        <HudChip icons={["lords"]} label={LORDS}>
+          {formatShortChange(held, held === undefined ? undefined : held - price)}
+        </HudChip>
       </div>
       <div className="grid grid-cols-3 gap-2">
         <HudButton kind="quiet" onClick={onCancel}>

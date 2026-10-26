@@ -71,6 +71,17 @@ const HAND_WRITTEN_GAIN = [
   },
 ];
 
+// A chip or a pill writes its number short (owner, 26 October: "+1,000" was "horrible on desktop, just put 1k"): an
+// amount, a charge or an exact count written into one runs a thousand out in full and pushes past its card.
+const SHORT_IN_CHIPS = [
+  {
+    selector:
+      "JSXElement[openingElement.name.name=/^Hud(Chip|Pill)$/] JSXExpressionContainer:not(JSXAttribute > JSXExpressionContainer) CallExpression[callee.name=/^format(Amount|Charge|Exact|Gain)$/]",
+    message:
+      "A chip or pill writes its number with formatShort (signed: true for a gain) or formatShortChange for a before → after.",
+  },
+];
+
 // A function or an object written into text prints its source or "[object Object]": each resource chip's buttons read
 // "Transfer (id) => {…}" where a words function was written in place of the word it returns. Typed, so client only.
 const TEXT_VALUES = {
@@ -120,6 +131,7 @@ const eslint = new ESLint({
           ...HUD_ROLE_OPACITY,
           ...NO_HEAD_RENDER,
           ...HAND_WRITTEN_GAIN,
+          ...SHORT_IN_CHIPS,
         ],
       },
     },

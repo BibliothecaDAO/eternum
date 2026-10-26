@@ -1,4 +1,4 @@
-import { formatExact } from "@bibliothecadao/types";
+import { formatExact, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
@@ -103,11 +103,13 @@ const ArmiesLine = ({
   returned: { sent: number; fitted: number } | undefined;
 }) => (
   <div className="flex items-center justify-center gap-1.5" aria-label={TROOPS}>
-    <HudChip icons={["army"]} label={ARMIES_ENDED}>{`×${formatExact(armies)}`}</HudChip>
-    <HudChip icons={["troops"]} label={TROOPS}>{`−${formatExact(troopsLost)}`}</HudChip>
+    <HudChip icons={["army"]} label={ARMIES_ENDED}>{`×${formatShort(armies)}`}</HudChip>
+    <HudChip icons={["troops"]} label={TROOPS}>{`−${formatShort(troopsLost)}`}</HudChip>
     {returned && (
       <span className="flex items-center gap-1.5 pl-2.5">
-        <HudChip icons={["order-enlightenment", "troops"]}>{`+${formatExact(returned.fitted)}`}</HudChip>
+        <HudChip
+          icons={["order-enlightenment", "troops"]}
+        >{`${formatShort(returned.fitted, { signed: true })}`}</HudChip>
         {returned.fitted < returned.sent && (
           <>
             <span className="text-hud-label tabular-nums text-hud-muted">{formatExact(returned.sent)}</span>

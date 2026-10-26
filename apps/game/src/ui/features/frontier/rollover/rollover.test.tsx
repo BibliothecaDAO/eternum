@@ -45,9 +45,9 @@ describe("the day's end", () => {
     expect(card.textContent).toContain("Realm kept · Day 13 is open");
     expect(card.textContent).toContain("7h 55m");
     expect(card.textContent).toContain("Tomorrow lasts20h");
-    expect(card.textContent).toContain("+6,400");
+    expect(card.textContent).toContain("+6.4K");
     expect(card.textContent).toContain("—");
-    expect(card.textContent).toContain("−6,021");
+    expect(card.textContent).toContain("−6K");
     // The troops the armies took stand under the troops' mark, with no empty portrait beside them.
     expect(card.querySelector('[aria-label="troops"] [data-icon="troops"]')).not.toBeNull();
     expect(card.querySelector(".rounded-full.border")).toBeNull();
@@ -82,7 +82,7 @@ describe("the day's end", () => {
       expect(line.querySelector("[role='img']")?.getAttribute("aria-label")).toBe(
         `Armies ended with the day ×${armies}`,
       );
-      expect(line.textContent).toBe(`×${armies}−6,021`);
+      expect(line.textContent).toBe(`×${armies}−6K`);
       expect(line.querySelectorAll(".rounded-full")).toHaveLength(0);
     }
     act(() => root.unmount());

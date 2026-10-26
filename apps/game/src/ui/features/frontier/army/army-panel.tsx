@@ -1,5 +1,5 @@
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { StructureType } from "@bibliothecadao/types";
+import { formatExact, formatFigure, formatShort, StructureType } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPortrait, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
@@ -13,7 +13,6 @@ import {
   UPGRADING,
   XP,
 } from "@/ui/design-system/kit/words";
-import { formatAmount, formatExact, formatFigure } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 import { FullIn } from "../full-in";
@@ -115,12 +114,12 @@ export const ArmyDetail = ({
 const StatusLine = ({ army }: { army: ArmyView }) => (
   <span className="flex flex-wrap items-center gap-1.5">
     <HudChip icons={["troops"]} label={TROOPS}>
-      {formatExact(army.troops)}
+      {formatShort(army.troops)}
     </HudChip>
     {army.secondsToFull !== undefined && army.secondsToFull > 0 && <FullIn seconds={army.secondsToFull} />}
     {army.revealYield !== null && (
       <HudChip icons={["essence", "labor"]} label={ARMY_DETAIL.revealPaysLabel}>
-        {army.revealYield === undefined ? "—" : ARMY_DETAIL.revealPays(formatAmount(army.revealYield))}
+        {army.revealYield === undefined ? "—" : ARMY_DETAIL.revealPays(formatShort(army.revealYield))}
       </HudChip>
     )}
   </span>
