@@ -1,10 +1,20 @@
 import { formatAmount, formatClockTime } from "@bibliothecadao/types";
 import { HudEventRow, HudIconButton, HudNotice, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { DAY, DAY_HISTORY_SHORT, TODAY, TODAY_ERROR } from "@/ui/design-system/kit/words";
+import {
+  DAY,
+  DAY_HISTORY_SHORT,
+  dayEnds,
+  dayLeft,
+  phraseText,
+  TODAY,
+  TODAY_ERROR,
+  tomorrowLasts,
+} from "@/ui/design-system/kit/words";
 import { Icon } from "@/ui/design-system/icon";
-import { ClockLine } from "@/ui/design-system/kit/clock-line";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import type { DayClock } from "../hud/day-clock";
+import { STORE_TONES } from "../hud/status-strip";
 
 import { type DayTotals, DayTotalsGrid } from "./day-totals";
 import type { DayHistory } from "./player-day";
@@ -55,14 +65,7 @@ export const TodaySheet = ({
   return (
     <HudSheet label={TODAY} onClose={onClose}>
       <span className="text-hud-title">{title}</span>
-      {today && (
-        <ClockLine
-          endsAt={clock.endsAt}
-          secondsLeft={clock.secondsLeft}
-          tomorrowSeconds={clock.tomorrowSeconds}
-          tone={clock.tone}
-        />
-      )}
+      {today && <DayClockLine clock={clock} />}
       <DayTotalsGrid totals={totals} />
       {armiesToUpgrade !== undefined && armiesToUpgrade > 0 && (
         <HudRow lead={<Icon name="picks" size={22} />} title={formatAmount(armiesToUpgrade)} onClick={onArmies} />
@@ -99,3 +102,14 @@ export const TodaySheet = ({
     </HudSheet>
   );
 };
+
+/** Today's clock in words, in the day's tone: "Day ends 21:40 · 7h 14m left · Tomorrow lasts 12h"; unknown a dash. */
+const DayClockLine = ({ clock }: { clock: DayClock }) => (
+  <p role="timer" className={cn("flex flex-wrap items-baseline gap-x-1 tabular-nums", STORE_TONES[clock.tone].text)}>
+    <span>{phraseText(dayEnds(clock.endsAt))}</span>
+    <span aria-hidden>·</span>
+    <span>{phraseText(dayLeft(clock.secondsLeft))}</span>
+    <span aria-hidden>·</span>
+    <span>{phraseText(tomorrowLasts(clock.tomorrowSeconds))}</span>
+  </p>
+);
