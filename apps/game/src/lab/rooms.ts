@@ -484,6 +484,18 @@ export const ROOMS: LabRoom[] = [
           ),
         ],
       },
+      {
+        title: "UI usage",
+        modes: ["frontier", "blitz"],
+        views: [
+          view(
+            "UI usage",
+            "/lab/data/usage",
+            "data/usage",
+            load(() => import("./data/ui-usage"), "UiUsageView"),
+          ),
+        ],
+      },
     ],
   },
   {

@@ -51,6 +51,7 @@ vi.mock("./hud/view", () => ({
   ),
 }));
 vi.mock("./data/view", () => ({ DataRoomView: () => <Tool name="data" /> }));
+vi.mock("./data/ui-usage", () => ({ UiUsageView: () => <Tool name="ui-usage" /> }));
 vi.mock("./footage/view", () => ({ FootageView: () => <Tool name="footage" /> }));
 vi.mock("./feed/view", () => ({ FeedLabView: () => <Tool name="feed" /> }));
 vi.mock("../ui/features/debug/procedural-character-benchmark-view", () => ({
@@ -166,6 +167,7 @@ it.each([
   ["/lab/rewards", "rewards", "Art", "Chests"],
   ["/lab/chunks", "chunks", "Art", "Bench"],
   ["/lab/data?view=balance", "data", "Data", "Balance & data"],
+  ["/lab/data/usage?mode=blitz", "ui-usage", "Data", "UI usage"],
   ["/lab/studio?take=battle&mode=frontier", "studio", "Studio", "Set"],
   ["/lab/footage", "footage", "Studio", "Footage"],
 ])("opens %s through the common bootstrap, in its room and page", async (at, name, room, page) => {

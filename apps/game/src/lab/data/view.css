@@ -55,3 +55,77 @@
   font-weight: 600;
   text-align: left;
 }
+.ui-usage-title {
+  margin: 8px 0;
+  color: #d4b986;
+  font-size: 20px;
+}
+.ui-usage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ui-usage-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid #a8bbc020;
+  border-radius: 6px;
+}
+.ui-usage-row h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+.ui-usage-rank {
+  color: #d4b986;
+  font-variant-numeric: tabular-nums;
+}
+.ui-usage-kind {
+  align-self: center;
+  padding: 0 8px;
+  line-height: 20px;
+  border-radius: 999px;
+  color: #0b1012;
+  font-size: 12px;
+  font-weight: 600;
+}
+.ui-usage-kind-command {
+  background: #d4b986;
+}
+.ui-usage-kind-ui-only {
+  background: #8fb7c9;
+}
+.ui-usage-kind-rules {
+  background: #b9a0d4;
+}
+.ui-usage-row dl {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 4px 10px;
+  margin: 0;
+}
+.ui-usage-row dt {
+  color: #8e9b97;
+}
+.ui-usage-row dd {
+  margin: 0;
+}
+.ui-usage-shot {
+  width: 100%;
+  border-radius: 4px;
+  align-self: start;
+}
+.ui-usage-notes {
+  padding-left: 20px;
+  list-style: disc;
+}
+@media (max-width: 760px) {
+  .ui-usage-row {
+    grid-template-columns: 1fr;
+  }
+}
