@@ -90,3 +90,50 @@ it("does not require a season seed for a game without a day schedule", () => {
   delete blitz.value.seed;
   expect(buildNativeDirectory(state).games.find((game) => game.game_id === 2)).toMatchObject({ day_index: null });
 });
+
+it("folds the extension row and preserves the added days through a checkpoint reload", async () => {
+  const { default: approved } = await import("../../../../config/source/frontier/extension.json");
+  const { setup, rowEvent, receipt, seedDerivedRows, rulesEvent } = await import("./fixtures");
+  const { WorldFold } = await import("../world-fold");
+  const { shortString, CairoCustomEnum } = await import("starknet");
+  const { fold, native, decoder } = setup();
+  const game = {
+    game_id: 1,
+    name: shortString.encodeShortString(approved.name),
+    preset_id: approved.presetId,
+    creator: 1,
+    ready: true,
+    settled: false,
+    dev_mode_on: false,
+    start_main_at: approved.start,
+    start_settling_at: approved.start,
+    end_at: approved.oldEnd,
+    end_grace_seconds: 0,
+    seed: BigInt(approved.seed),
+  };
+  native.applyReceipt(fold, receipt([rowEvent("GameRegistry", ["1"], game)]), 10, 0);
+  seedDerivedRows(fold, decoder, [
+    rulesEvent("1", String(approved.dayUnit)),
+    rowEvent("SettlementRules", ["1"], {
+      game_id: 1,
+      registration_limit: 0,
+      registration_start: 0,
+      mode: new CairoCustomEnum({ Single: {} }),
+      spacing: 40,
+    }),
+  ]);
+  const directory = (state: typeof fold, timestamp: number) =>
+    buildNativeDirectory({
+      chain: approved.chainId,
+      confirmedBlock: 11,
+      timestamp,
+      fold: state,
+    }).games[0]!;
+  expect(directory(fold, approved.oldEnd).day_index).toBeNull();
+  native.applyReceipt(fold, receipt([rowEvent("GameRegistry", ["1"], { ...game, end_at: approved.end })]), 11, 0);
+  expect(directory(fold, approved.oldEnd)).toMatchObject({ day_index: 10, clock: { end_at: approved.end } });
+  const cold = WorldFold.restore(decoder.registry, JSON.parse(JSON.stringify(fold.checkpoint())));
+  expect(directory(cold, approved.oldEnd)).toEqual(directory(fold, approved.oldEnd));
+  expect(directory(cold, approved.end - 1)).toMatchObject({ day_index: 14, day_ends_at: approved.end });
+  expect(directory(cold, approved.end).day_index).toBeNull();
+});
