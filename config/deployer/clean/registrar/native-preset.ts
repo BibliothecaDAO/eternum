@@ -2,6 +2,7 @@ import { resolveRegistrarExecutionDetails } from "./transaction-details";
 import { assertNativeOwnerSigner } from "../shared/native-owner";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { resolveDeploymentEnvironment } from "../environment";
+import { mergeConfigPatches } from "../../../source/common/merge-config";
 import { nativePresetForId } from "../../../source/native";
 import { configurationOf, type StoredConfiguration } from "../config/config-loader";
 import blitz from "../../../generated/blitz.madara.json";
@@ -134,7 +135,8 @@ export function loadNativePresetConfiguration(environment: DeploymentEnvironment
   const stored = target.chain === "madara" ? NATIVE_CONFIGURATIONS[preset.gameType] : undefined;
   if (preset.environmentGameType !== target.gameType || !stored)
     throw new Error(`No native preset definition for ${environment} preset ${presetId}`);
-  const config = configurationOf(structuredClone(stored), `config/generated/${preset.gameType}.madara.json`);
+  const loaded = configurationOf(structuredClone(stored), `config/generated/${preset.gameType}.madara.json`);
+  const config = preset.balance ? mergeConfigPatches<Config>(loaded, preset.balance) : loaded;
   // A scaled preset's season lasts as many of its shorter bags as its mode's: the length scales with the day unit.
   if (preset.clockScale)
     config.season.durationSeconds = clockScaled(config.season.durationSeconds, preset.clockScale, "season duration");

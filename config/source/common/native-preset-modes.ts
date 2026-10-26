@@ -6,6 +6,12 @@ export const FRONTIER_ACCELERATED_PRESET_ID = 101;
 export const FRONTIER_PRESET_ID = 5;
 /** Immutable Frontier preset used by the committed contract fixtures. */
 export const FRONTIER_FIXTURE_PRESET_ID = 104;
+/**
+ * Frontier's playground, for dev only: Frontier's rules with a realm that starts rich and upgrades for next to nothing,
+ * so a fully upgraded realm and every depth can be played within minutes. Registered on a dev shard by hand; the
+ * launcher never creates from it.
+ */
+export const FRONTIER_PLAYGROUND_PRESET_ID = 105;
 
 /** Every registered preset id and the mode it plays: the one table Herald, the client and the tooling read. */
 const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
@@ -20,6 +26,7 @@ const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
   102: "frontier",
   103: "eternum",
   [FRONTIER_FIXTURE_PRESET_ID]: "frontier",
+  [FRONTIER_PLAYGROUND_PRESET_ID]: "frontier",
 };
 
 export function nativeGameModeOf(presetId: number): GameType {
