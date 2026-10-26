@@ -15,8 +15,8 @@ import {
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
+  type Tier,
   ARMY_WILL_BE_LOST,
   ATTACK,
   ATTACKING,
@@ -338,8 +338,8 @@ const Choices = ({ choices, guardIcon }: { choices: readonly SiteChoice[]; guard
 );
 
 /**
- * One forecast, drawn the same on the attack's plate and on an army's row. The pips beside the flag count the attacks
- * the whole fight takes to win; the figures are the one attack Attack sends now, as its result will show them: the
+ * One forecast, drawn the same on the attack's plate and on an army's row. The flag's count is the attacks the whole
+ * fight takes to win; the figures are the one attack Attack sends now, as its result will show them: the
  * troops it costs and, while the guard still stands after it, the guard left. A fight the army does not win shows
  * both in amber, under a skull that names itself. Unknown is a dash on the plate and nothing on a row.
  */
@@ -369,18 +369,7 @@ const Forecast = ({
   }
   return (
     <>
-      <span className="flex items-center gap-1.5" aria-label={known ? `${known.exchanges}` : "—"}>
-        <SemanticIcon name="flag" size={22} />
-        {known ? (
-          <span aria-hidden className="flex gap-1">
-            {Array.from({ length: known.exchanges }, (_, index) => (
-              <i key={index} className="size-2 rounded-full border border-hud-line-strong" />
-            ))}
-          </span>
-        ) : (
-          <span className="text-hud-title tabular-nums text-hud-ink">—</span>
-        )}
-      </span>
+      <Line icon="flag" value={known ? `×${known.exchanges}` : "—"} name={FIGHT_WORDS.attacks} />
       <Line icon="skull" value={known ? `−${formatExact(known.troopsLost)}` : "—"} />
       {known && known.guardLeft > 0 && <Line icon={guardIcon} value={formatExact(known.guardLeft)} />}
     </>
@@ -436,7 +425,7 @@ const ChestPay = ({ chest }: { chest: { tier: Tier; lords: number } }) => (
       <SemanticIcon name="lords" size={22} />
       <span className="text-hud-display leading-none tabular-nums text-hud-gold">+{formatExact(chest.lords)}</span>
     </span>
-    <HudRarity tier={chest.tier} word />
+    <HudRarity tier={chest.tier} />
   </>
 );
 

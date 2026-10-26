@@ -1,7 +1,7 @@
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { StructureType } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { REACH_NUMERALS, RESEARCH_TREE, SHRINE, STAMINA, TIER_WORDS, WELL, XP } from "@/ui/design-system/kit/words";
+import { depthName, RESEARCH_TREE, SHRINE, STAMINA, TIER_WORDS, WELL, XP } from "@/ui/design-system/kit/words";
 import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from "@bibliothecadao/types";
@@ -114,7 +114,7 @@ const KINDS: { icon: IconMeaning; name: string }[] = [
   { icon: structureMeaning(StructureType.Rift, "frontier"), name: RESEARCH_TREE.kinds.rift },
   { icon: structureMeaning(StructureType.Beasts, "frontier"), name: RESEARCH_TREE.kinds.beasts },
 ];
-const REACH_MARKS: IconMeaning[] = ["depth-1", "depth-2", "depth-3"];
+const DEPTH_MARKS: IconMeaning[] = ["depth-1", "depth-2", "depth-3"];
 
 const percent = (bps: number) => formatPercent(bps / 10_000, { signed: true });
 /** What one level of Scouting adds to the kind picked with it, in basis points of that kind's base rate. */
@@ -298,8 +298,8 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       now: "—",
       next: RESEARCH_TREE.each(`+${formatExact(realm.wellStamina)} ${STAMINA}`),
     }),
-    ...[1, 2, 3].map((depth) => {
-      const reach = RESEARCH_TREE.reach(REACH_NUMERALS[depth - 1]!);
+    ...([1, 2, 3] as const).map((depth) => {
+      const name = depthName(depth);
       const before: Need[] =
         depth === 1
           ? []
@@ -307,16 +307,16 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
               {
                 kind: "tier",
                 met: learned(ROWS.depth).tier >= depth - 1,
-                node: RESEARCH_TREE.reach(REACH_NUMERALS[depth - 2]!),
-                icon: REACH_MARKS[depth - 2]!,
+                node: depthName((depth - 1) as 1 | 2),
+                icon: DEPTH_MARKS[depth - 2]!,
               },
             ];
       return castleNode(
         `reach-${depth}`,
         ROWS.depth,
-        reach,
-        REACH_MARKS[depth - 1]!,
-        { line: RESEARCH_TREE.enters(reach), now: "—", next: RESEARCH_TREE.opens },
+        name,
+        DEPTH_MARKS[depth - 1]!,
+        { line: RESEARCH_TREE.enters(name), now: "—", next: RESEARCH_TREE.opens },
         depth,
         before,
         depth < 3 ? [`reach-${depth + 1}`] : [],

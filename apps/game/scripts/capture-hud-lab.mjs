@@ -28,6 +28,11 @@ const VIEWPORT = [1920, 1080];
 /** The desktop sizes the HUD's layout is held at: the narrowest desktop, a small laptop, a laptop, a full HD screen. */
 const DESKTOPS = [[1024, 768], [1280, 720], [1440, 900], VIEWPORT];
 const SETTLE_MS = "1200";
+/** A Frontier card or page as a laptop and a phone show it. */
+const CARDS = [
+  [1600, 900],
+  [390, 844],
+];
 
 /** Each surface: the lab page that draws it, the mark the page puts on it, and its sizes when not just 1920×1080. */
 export const SURFACES = [
@@ -58,6 +63,11 @@ export const SURFACES = [
       [390, 844],
     ],
   },
+  { name: "frontier-season", path: "/lab/kit/hud/season", mark: "frontier", sizes: CARDS },
+  { name: "frontier-site-pick", path: "/lab/kit/hud/site-pick", mark: "frontier", sizes: CARDS },
+  { name: "frontier-site-ruin", path: "/lab/kit/hud/site-ruin", mark: "frontier", sizes: CARDS },
+  { name: "frontier-day-done", path: "/lab/kit/hud/day-done-full", mark: "frontier", sizes: CARDS },
+  { name: "frontier-clear-ruin", path: "/lab/kit/hud/clear-ruin", mark: "frontier", sizes: CARDS },
 ];
 
 /**

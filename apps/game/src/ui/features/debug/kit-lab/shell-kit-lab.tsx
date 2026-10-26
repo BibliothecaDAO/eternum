@@ -8,7 +8,6 @@ import { Portrait } from "@/ui/design-system/kit/portrait";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
-import { TierChip } from "@/ui/design-system/kit/tier-chip";
 import { YOU } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
 
@@ -26,7 +25,6 @@ export const ShellKitLab = () => (
       <ClockSection />
       <StoresSection />
       <PillsSection />
-      <TiersSection />
       <SeasonSection />
       <SheetSection />
       <PortraitsSection />
@@ -179,16 +177,6 @@ const PillsSection = () => (
       <Pill size="lg" tone="muted" icon="lords" struck>
         No LORDS
       </Pill>
-    </div>
-  </Section>
-);
-
-const TiersSection = () => (
-  <Section title="TierChip">
-    <div className="flex flex-wrap gap-2">
-      {([1, 2, 3, 4, 5] as const).map((tier) => (
-        <TierChip key={tier} tier={tier} showWord />
-      ))}
     </div>
   </Section>
 );

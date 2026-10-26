@@ -11,8 +11,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
+  type Tier,
   BARRACKS,
   BUILD,
   HUT,

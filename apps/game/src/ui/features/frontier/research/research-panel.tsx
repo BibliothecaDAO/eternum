@@ -1,6 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudPanel, HudRarity } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudPanel, HudTier } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
 import { CLOSE, ESSENCE, LABOR, RESEARCH, RESEARCH_TREE, RESEARCHING, TIER_WORDS } from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact } from "@bibliothecadao/types";
@@ -137,7 +137,7 @@ const NodeTile = ({ node, picked, onPick }: { node: TreeNode; picked: boolean; o
       <Icon name={node.icon} size={36} />
       <span className={cn("text-hud-label leading-tight", look.text)}>{node.name}</span>
       {node.maxTier === 4 ? (
-        <HudRarity tier={(node.tier + 1) as 1 | 2 | 3 | 4 | 5} />
+        <HudTier tier={(node.tier + 1) as 1 | 2 | 3 | 4 | 5} />
       ) : (
         <span className="text-hud-label tabular-nums text-hud-muted">
           {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}

@@ -147,7 +147,9 @@ describe("a guarded site's card", () => {
     expect(card.querySelector('[data-tip="Knight"]')).not.toBeNull();
     expect(card.textContent).toContain("2,300");
     expect(card.querySelector('[aria-label="128 LORDS"]')).not.toBeNull();
-    expect(card.querySelector('[aria-label="Rare"]')).not.toBeNull();
+    // The chest's rarity is its word on its plate, never pips.
+    expect(card.querySelector(".ui-rarity")?.textContent).toBe("Rare");
+    expect(card.querySelectorAll(".ui-rarity i")).toHaveLength(0);
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
     expect(attack.disabled).toBe(false);
     expect(attack.dataset.kind).toBe("danger");
@@ -290,10 +292,11 @@ describe("a guarded site's card with no army chosen", () => {
       [...document.querySelectorAll(".ui-row")].find((candidate) =>
         candidate.querySelector("button")?.textContent?.startsWith(`${label}`),
       )!;
-    // Two attacks win it: the figures are the first one's, the troops it costs and the guard it leaves standing.
+    // Two attacks win it, counted beside the flag: the figures are the first one's, the troops it costs and the guard it
+    // leaves standing.
     expect(row("Army 1").querySelector('[data-icon="beast-dark-fey"]')).not.toBeNull();
-    expect(row("Army 1").textContent).toBe("Army 15,000 troops−456492");
-    expect(row("Army 1").querySelector('[aria-label="2"]')).not.toBeNull();
+    expect(row("Army 1").textContent).toBe("Army 15,000 troops×2−456492");
+    expect(row("Army 1").querySelector('[data-tip="Attacks"]')?.textContent).toBe("×2");
     expect(row("Army 2").textContent).toBe("Army 2154 troops−1541,028");
     expect(row("Army 2").querySelector('[data-tip="Would be lost"]')).not.toBeNull();
     // Out of reach: the army is still a choice, with no forecast to show and no dash in its place.
@@ -399,7 +402,7 @@ describe("a cleared ruin's chest", () => {
     act(() => root.render(<RuinChestMoment tier={5} lords={640} xp={145} troopsLost={1_250} onClose={onClose} />));
     const moment = host.querySelector("button[aria-label='Ruin']")!;
     expect(moment.querySelector('[aria-label="640 LORDS"]')).not.toBeNull();
-    expect(moment.querySelector('[aria-label="Legendary"]')).not.toBeNull();
+    expect(moment.querySelector(".ui-rarity")?.textContent).toBe("Legendary");
     act(() => (moment as HTMLButtonElement).click());
     expect(onClose).toHaveBeenCalled();
   });

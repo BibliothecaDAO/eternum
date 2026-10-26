@@ -2,6 +2,7 @@ import { formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
+  ARMIES_ENDED,
   CONTINUE,
   DAY,
   DAY_DONE,
@@ -88,7 +89,10 @@ export const DayDoneCard = ({
   </HudPanel>
 );
 
-/** The ended armies, gone, the troops they took, and the troops returned beside it: what fitted, by a full bar. */
+/**
+ * How many armies ended with the day, counted ("×3"), the troops they took, and the troops returned beside it: what
+ * fitted, by a full bar.
+ */
 const ArmiesLine = ({
   armies,
   troopsLost,
@@ -99,9 +103,7 @@ const ArmiesLine = ({
   returned: { sent: number; fitted: number } | undefined;
 }) => (
   <div className="flex items-center justify-center gap-1.5" aria-label={TROOPS}>
-    {Array.from({ length: armies }, (_, index) => (
-      <span key={index} className="size-8 rounded-full border border-hud-line" />
-    ))}
+    <HudChip icons={["army"]} label={ARMIES_ENDED}>{`×${formatExact(armies)}`}</HudChip>
     <span className="tabular-nums">−{formatExact(troopsLost)}</span>
     {returned && (
       <span className="flex items-center gap-1.5 pl-2.5">

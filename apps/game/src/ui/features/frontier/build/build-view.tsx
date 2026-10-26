@@ -6,13 +6,12 @@ import {
   HudChip,
   HudCost,
   HudNotice,
-  HudRarity,
+  HudTier,
   HudSheet,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import { BUILD, BUILDING, POPULATION, PRICE_UP } from "@/ui/design-system/kit/words";
+import { type Tier, BUILD, BUILDING, POPULATION, PRICE_UP } from "@/ui/design-system/kit/words";
 
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
@@ -185,7 +184,7 @@ const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
       {standing.kind === "locked" && (
         <>
           <SemanticIcon name="lock" size={14} />
-          <HudRarity tier={standing.gate} />
+          <HudTier tier={standing.gate} />
         </>
       )}
       {standing.kind === "price" && <Price standing={standing} />}
