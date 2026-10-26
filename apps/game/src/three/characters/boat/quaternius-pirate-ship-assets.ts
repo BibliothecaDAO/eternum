@@ -2,6 +2,7 @@ import { Group, Mesh } from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 
 import { disposeSkinnedSceneTemplates } from "../skinned-asset-resources";
+import { modelUrl } from "@/three/utils/model-url";
 
 export interface LoadedQuaterniusPirateShipAsset {
   animations: readonly unknown[];
@@ -45,7 +46,7 @@ export class QuaterniusPirateShipLibrary {
   private constructor(private readonly gltf: GLTF) {}
 
   public static async load(): Promise<QuaterniusPirateShipLibrary> {
-    const gltf = await new GLTFLoader().loadAsync(QUATERNIUS_PIRATE_SHIP_ASSET.url);
+    const gltf = await new GLTFLoader().loadAsync(modelUrl(QUATERNIUS_PIRATE_SHIP_ASSET.url));
     try {
       validateQuaterniusPirateShip(gltf);
       return new QuaterniusPirateShipLibrary(gltf);

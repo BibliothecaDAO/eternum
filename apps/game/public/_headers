@@ -52,3 +52,6 @@
   Cache-Control: no-cache
 /credits
   Cache-Control: no-cache
+# Model files carry their content's hash in their name (build/hashed-models.ts): a changed model is a new URL.
+/models/*
+  Cache-Control: public, max-age=31536000, immutable

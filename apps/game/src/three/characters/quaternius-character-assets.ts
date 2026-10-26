@@ -9,6 +9,7 @@ import type {
   ProceduralCharacterAssetDefinition,
 } from "./procedural-character-assets";
 import { disposeSkinnedSceneTemplates } from "./skinned-asset-resources";
+import { modelUrl } from "@/three/utils/model-url";
 
 type QuaterniusCharacterAssetId = Extract<ProceduralCharacterAssetId, "base" | "peasant" | "ranger">;
 
@@ -43,7 +44,7 @@ export async function loadQuaterniusCharacterAssetTemplate(
   base?: LoadedProceduralCharacterAssetTemplate,
 ): Promise<LoadedProceduralCharacterAssetTemplate> {
   const definition = QUATERNIUS_CHARACTER_ASSETS[id];
-  const gltf = await new GLTFLoader().loadAsync(definition.url);
+  const gltf = await new GLTFLoader().loadAsync(modelUrl(definition.url));
   const asset = { ...definition, gltf };
   try {
     validateQuaterniusCharacterAsset(definition, gltf);

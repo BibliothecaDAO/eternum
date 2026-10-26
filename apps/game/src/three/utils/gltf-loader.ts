@@ -3,6 +3,8 @@ import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
 import type { Texture } from "three";
+// Its loaders fetch models at the URLs a build serves them at (content-hashed names).
+import "./model-url";
 
 type KtxRenderer = Parameters<KTX2Loader["detectSupport"]>[0];
 

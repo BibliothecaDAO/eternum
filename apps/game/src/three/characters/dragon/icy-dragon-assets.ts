@@ -14,6 +14,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 import { disposeSkinnedSceneTemplates, instantiateSkinnedScene } from "../skinned-asset-resources";
 import { resolveIcyDragonRequiredBoneNames } from "./icy-dragon-rig-adapter";
+import { modelUrl } from "@/three/utils/model-url";
 
 const ICY_DRAGON_ASSET_URL = "/models/characters/icy-dragon/scene.gltf";
 const ICY_DRAGON_TARGET_EXTENT = 4.6;
@@ -42,7 +43,7 @@ export class IcyDragonLibrary {
 }
 
 export async function loadIcyDragonLibrary(): Promise<IcyDragonLibrary> {
-  const { animations, scene } = await new GLTFLoader().loadAsync(ICY_DRAGON_ASSET_URL);
+  const { animations, scene } = await new GLTFLoader().loadAsync(modelUrl(ICY_DRAGON_ASSET_URL));
   applyIcyDragonReferencePose(scene, animations[0]);
   validateIcyDragon(scene);
   discardIcyAuthoredAnimations(scene);
