@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
@@ -119,7 +120,6 @@ import {
   MANAGER_UNCOMMITTED_CHUNK,
   shouldAcceptManagerChunkRequest,
   shouldRunManagerChunkUpdate,
-  waitForVisualSettle,
 } from "./manager-update-convergence";
 import { getRendererDiagnosticActiveMode } from "../renderer-diagnostics";
 import { scheduleFrameBudgetWork, type FrameBudgetWorkScheduler } from "../frame-budget-work-queue";
@@ -965,7 +965,7 @@ export class ArmyManager {
       prepareForUpdate: () => this.armyModel.loadPromise,
       shouldAcceptRequest: shouldAcceptManagerChunkRequest,
       state: this.resolveChunkUpdateRuntimeState(),
-      waitForSettle: waitForVisualSettle,
+      waitForSettle: nextFrameOrTimeout,
     });
   }
 

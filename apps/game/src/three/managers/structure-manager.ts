@@ -1,4 +1,5 @@
 import { FrontierModel, frontierModelKind } from "../structures/frontier-model";
+import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds, structureName } from "@bibliothecadao/types";
 import { configManager, siteDisplayName, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
@@ -91,7 +92,6 @@ import {
   MANAGER_UNCOMMITTED_CHUNK,
   shouldAcceptManagerChunkRequest,
   shouldRunManagerChunkUpdate,
-  waitForVisualSettle,
 } from "./manager-update-convergence";
 import type { MapPlateScope } from "../map-plates/map-plate-layer";
 import { buildStructurePlate, guardsToTell } from "../map-plates/map-plate-model";
@@ -1145,7 +1145,7 @@ export class StructureManager {
       options,
       shouldAcceptRequest: shouldAcceptManagerChunkRequest,
       state: this.resolveChunkUpdateRuntimeState(),
-      waitForSettle: waitForVisualSettle,
+      waitForSettle: nextFrameOrTimeout,
     });
   }
 
