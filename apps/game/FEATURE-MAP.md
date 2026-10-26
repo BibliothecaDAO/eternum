@@ -108,13 +108,15 @@ game loads the address's `rendererMode`, else the saved renderer, else the build
 `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and opens its
 keys with Show and leaves with Back; every window it draws must keep each tab strip inside its panel.
 `/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms, villages, a camp, rifts, a
-Hyperstructure). `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window body, Combat and crate
-panel as the game draws them (the crate from afar: a line saying what opening it needs, no button), on the deploy
-fixture's realm; capture them with `pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`.
-`/lab/kit/words` the words sheet: every voice, number, time, noun and name rule of the words module (the rules in
-`packages/types/src/words`, shared with core's story text; the client's phrases in `src/ui/design-system/kit/words.ts`)
-on sample inputs. `pnpm words:check` fails on any number, time or name written outside it where a player reads it, and
-on any string that breaks a voice rule; `node scripts/words/check.mjs` counts them by kind.
+Hyperstructure). `/lab/kit/windows/army-transfer` Blitz's Transfer Troops & Relics between an army out beside the lab
+realm and the realm (**Swap** for realm → army). `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and
+window body, Combat and crate panel as the game draws them (the crate from afar: a line saying what opening it needs, no
+button), on the deploy fixture's realm; capture them with
+`pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words sheet: every voice,
+number, time, noun and name rule of the words module (the rules in `packages/types/src/words`, shared with core's story
+text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs. `pnpm words:check` fails on any
+number, time or name written outside it where a player reads it, and on any string that breaks a voice rule;
+`node scripts/words/check.mjs` counts them by kind.
 
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read
