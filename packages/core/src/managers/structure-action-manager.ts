@@ -31,13 +31,15 @@ export class StructureActionManager {
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
     playerAddress: ContractAddress,
+    /** Whether anything occupies the tile (an army, a site, a chest): the contract raises no army onto it. */
+    isOccupied: (hex: HexPosition) => boolean,
     attackRange = 1,
   ): ActionPaths {
     const actionPaths = new ActionPaths();
 
     const position = { col: contractPosition.col, row: contractPosition.row };
 
-    this.addAdjacentSupportActionPaths(actionPaths, position, armyHexes, exploredHexes, playerAddress);
+    this.addAdjacentSupportActionPaths(actionPaths, position, armyHexes, exploredHexes, playerAddress, isOccupied);
     this.addAttackActionPaths(actionPaths, position, armyHexes, exploredHexes, playerAddress, attackRange);
 
     return actionPaths;
@@ -49,6 +51,7 @@ export class StructureActionManager {
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
     playerAddress: ContractAddress,
+    isOccupied: (hex: HexPosition) => boolean,
   ) {
     const neighbors = getNeighborHexes(position.col, position.row);
 
@@ -80,7 +83,7 @@ export class StructureActionManager {
         ];
 
         actionPaths.set(ActionPaths.posKey({ col, row }), path);
-      } else {
+      } else if (!isOccupied({ col, row })) {
         const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
 
         const path: ActionPath[] = [

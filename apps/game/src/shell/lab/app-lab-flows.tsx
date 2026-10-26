@@ -103,7 +103,7 @@ export const LabDoorway = () => {
     >
       {/* The entry's own chips at the realm step, as game-entry-modal passes them. */}
       {state === "waiting" && <ClockChip prefix="starts" at={now + LAB_SEASON_WAIT} now={now} />}
-      {state === "preparing" && <Pill icon="check">{`${BLITZ_WORDS.preparing} 17/24`}</Pill>}
+      {state === "preparing" && <Pill icon="hourglass">{`${BLITZ_WORDS.preparing} 17/24`}</Pill>}
     </DoorwayScreen>
   );
 };

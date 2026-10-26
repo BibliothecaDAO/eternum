@@ -147,6 +147,7 @@ import {
   ContractAddress,
   Direction,
   getDirectionBetweenAdjacentHexes,
+  getNeighborHexes,
   HexEntityInfo,
   HexPosition,
   ID,
@@ -154,9 +155,9 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
-import { Box3, Group, Plane, Raycaster, Sphere, Vector2, Vector3 } from "three";
+import { Box3, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { zoomTowardCursor } from "./worldmap-zoom/worldmap-zoom-anchor";
-import { inOpenMapArea, openMapArea } from "../utils/labels/hud-clearance";
+import { inOpenMapArea } from "../utils/labels/hud-clearance";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
 import type { TerrainPresentationEvent } from "@/three/terrain/worldmap-procedural-terrain";
@@ -265,6 +266,13 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "./worldmap-army-select-request";
+import {
+  DEPLOY_ON_MAP_EVENT,
+  type DeployOnMap,
+  deployShownOnMap,
+  markDeployTile,
+  readDeployOnMap,
+} from "./worldmap-deploy-request";
 import { cameraHexOf } from "./worldmap-camera-target";
 import { offerSelectedArmyOrdersAtOutcome, sendSelectedArmyTravel } from "./worldmap-army-order-selection";
 import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-order";
@@ -908,10 +916,20 @@ export default class WorldmapScene extends WarpTravel {
     if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) this.selectAwaitedArmy();
   };
 
-  /** Shown, the map takes the army selection asked while another view was showing. */
+  /** Shown, the map takes the army selection asked while another view was showing, and an open deploy order. */
   public override activateInputSurface(): void {
     super.activateInputSurface();
     this.selectAwaitedArmy();
+    if (this.isFrontierHud()) this.showAwaitedDeployOrder();
+  }
+
+  /** The deploy sheet opened before the map was shown: its order, framed once the map's first frames have settled. */
+  private showAwaitedDeployOrder(): void {
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) this.showDeployOrder(deployShownOnMap());
+      }),
+    );
   }
 
   private selectAwaitedArmy(): void {
@@ -923,6 +941,10 @@ export default class WorldmapScene extends WarpTravel {
     if (!canIssueOrders()) return;
     const tile = readOrderRequest(event);
     if (tile) this.actAtHex(tile);
+  };
+  private deployOnMapHandler = (event: Event) => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap || !this.isFrontierHud()) return;
+    this.showDeployOrder(readDeployOnMap(event));
   };
   private minimapZoomHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
@@ -1009,6 +1031,11 @@ export default class WorldmapScene extends WarpTravel {
   private orderRefusals: Map<string, OrderRefusal> = new Map();
   /** The order the open order preview names, while one is open. */
   private previewedOrder: PreviewedOrder | null = null;
+  /**
+   * Frontier's deploy order shown on the map while its sheet is open (showDeployOnMap), and whether the map selected the
+   * realm for it: a selection the sheet made goes with the sheet.
+   */
+  private deployShown: { order: NonNullable<DeployOnMap>; selectedForIt: boolean } | null = null;
   /** The line under the pointer: the order a right-click sends at its tile, or why none. */
   private readonly pointerOrderTip = new PointerOrderTip(
     (hex) => this.placeOrderTip(hex),
@@ -1854,6 +1881,7 @@ export default class WorldmapScene extends WarpTravel {
     window.addEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
     window.addEventListener(ARMY_SELECT_REQUEST_EVENT, this.armySelectRequestHandler);
     window.addEventListener(ORDER_REQUEST_EVENT, this.orderRequestHandler);
+    window.addEventListener(DEPLOY_ON_MAP_EVENT, this.deployOnMapHandler);
     this.stopChestOpenRequests = onChestOpenRequest(({ explorerId, hex }) => {
       if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) void this.openChest(explorerId, hex);
     });
@@ -2597,6 +2625,7 @@ export default class WorldmapScene extends WarpTravel {
       resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths)
     )
       return;
+    if (this.pickDeployTile(hexCoords)) return;
     if (hexCoords && this.answerTapWithSelectedArmyOrder(hexCoords)) return;
     const viewer = accountAddress();
     const {
@@ -2661,17 +2690,21 @@ export default class WorldmapScene extends WarpTravel {
     this.interactionAdapter.selectHex({ contractHexPosition, isMine });
   }
 
-  /** Site holds use an adjacent Shrine or Well, or open a spire's depth choice; other phone holds show facts. */
-  private hasSiteHoldAction(hexCoords: HexPosition): boolean {
+  /**
+   * The holds that act: a site's (an adjacent Shrine or Well used, a spire's depth choice) and, with the realm selected,
+   * a lit tile beside it, which opens Deploy aimed there (owner, 26 October 2026: "When I touch the realm and long press
+   * a tile it should deploy an army on that tile"). Other phone holds show the tile's facts.
+   */
+  private hasHoldAction(hexCoords: HexPosition): boolean {
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     if (selectedEntityId === null || selectedEntityId === undefined) return false;
     const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
     const action = path && ActionPaths.getActionType(path);
-    return action === ActionType.UseSite || action === ActionType.EnterDepth;
+    return action === ActionType.UseSite || action === ActionType.EnterDepth || action === ActionType.CreateArmy;
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
-    if (hexCoords && isTouchHold(event) && this.hudCarriesOrderVerb() && !this.hasSiteHoldAction(hexCoords)) {
+    if (hexCoords && isTouchHold(event) && this.hudCarriesOrderVerb() && !this.hasHoldAction(hexCoords)) {
       this.showTileFacts(hexCoords);
       return;
     }
@@ -3476,9 +3509,57 @@ export default class WorldmapScene extends WarpTravel {
       }
     }
     this.updateEntityActionPaths(actionPaths.getPaths());
-    this.highlightHexManager.highlightHexes(actionPaths.getHighlightDescriptors());
+    this.highlightHexManager.highlightHexes(
+      markDeployTile(actionPaths.getHighlightDescriptors(), this.deployTileOf(selectedEntityId)),
+    );
 
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
+  }
+
+  /**
+   * Frontier's deploy sheet shows its order on the map: the realm selected with its open tiles lit, the order's tile
+   * marked among them, and, as the sheet opens, the realm framed in the map left open above it. Closed, a selection
+   * the map made for the sheet goes with it.
+   */
+  private showDeployOrder(order: DeployOnMap): void {
+    const shown = this.deployShown;
+    if (!order) {
+      this.deployShown = null;
+      if (shown?.selectedForIt && getLiveWorldmapEntityActions().selectedEntityId === shown.order.structureId)
+        this.clearEntitySelection();
+      return;
+    }
+    const realm = this.getStructureHexPosition(order.structureId);
+    if (!realm) return;
+    const opening = shown?.order.structureId !== order.structureId;
+    const selectedForIt = opening
+      ? getLiveWorldmapEntityActions().selectedEntityId !== order.structureId
+      : (shown?.selectedForIt ?? false);
+    this.deployShown = { order, selectedForIt };
+    this.onStructureSelection(order.structureId, realm);
+    if (opening) this.frameOnOpenMap([Position.fromNormalized({ x: realm.col, y: realm.row })]);
+  }
+
+  /** The tile the shown deploy order steps out on, as the lit tiles name it; none for another structure or no order. */
+  private deployTileOf(structureId: ID): HexPosition | null {
+    const order = this.deployShown?.order;
+    if (!order || order.structureId !== Number(structureId) || order.direction === null) return null;
+    const structure = this.worldSpatialProjection.getStructure(structureId);
+    const tile =
+      structure &&
+      getNeighborHexes(structure.hexCoords.col, structure.hexCoords.row).find(
+        (neighbor) => neighbor.direction === order.direction,
+      );
+    return tile ? { col: tile.col - FELT_CENTER(), row: tile.row - FELT_CENTER() } : null;
+  }
+
+  /** While Frontier's deploy is shown, a tap on a lit tile beside the realm aims the deploy there. */
+  private pickDeployTile(hexCoords: HexPosition | null): boolean {
+    if (!this.deployShown || !this.isFrontierHud()) return false;
+    const path = resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths);
+    if (!path) return false;
+    this.onArmyCreate(path, this.deployShown.order.structureId);
+    return true;
   }
 
   private showSelectedStructure(structureId: ID, hex: HexPosition): void {
@@ -3972,6 +4053,27 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
+   * On a phone a tapped tile's card stands over the map's foot (owner, 26 October 2026: layout A, "the camera puts the
+   * tapped tile in the map left open"): once the card stands, a tile it covers is framed in the map left open above it.
+   * A tile still in sight keeps the camera where the player put it.
+   */
+  private keepSelectedTileInSight(selectedHex: HexPosition | null): void {
+    if (!selectedHex || !this.hudCarriesOrderVerb()) return;
+    // The card opens on the render after the tap; the open area is read once it stands.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const now = this.state.selectedHex;
+        if (!now || now.col !== selectedHex.col || now.row !== selectedHex.row) return;
+        const tile = Position.fromContract({ x: selectedHex.col, y: selectedHex.row });
+        const normalized = tile.getNormalized();
+        const viewport = { width: window.innerWidth, height: window.innerHeight };
+        if (inOpenMapArea(projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera), viewport)) return;
+        this.frameOnOpenMap([tile]);
+      }),
+    );
+  }
+
+  /**
    * The selection's orders, and why each tile the rules looked at offers none (ActionPaths.getRefusals): the two always
    * change together, so the map never names a reason from another moment's orders.
    */
@@ -4338,7 +4440,9 @@ export default class WorldmapScene extends WarpTravel {
       count: 6, // Many thunder bolts for dramatic effect
     });
 
-    useUIStore.getState().setLeftNavigationView(LeftView.None);
+    // Frontier's deploy order stays open as the map comes up: its tile is picked here.
+    if (!this.isFrontierHud() || deployShownOnMap() === null)
+      useUIStore.getState().setLeftNavigationView(LeftView.None);
   }
 
   private reportWarpTravelRefreshError(error: unknown, phase: "initial" | "resume"): void {
@@ -8366,6 +8470,7 @@ export default class WorldmapScene extends WarpTravel {
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
     window.removeEventListener(ARMY_SELECT_REQUEST_EVENT, this.armySelectRequestHandler);
     window.removeEventListener(ORDER_REQUEST_EVENT, this.orderRequestHandler);
+    window.removeEventListener(DEPLOY_ON_MAP_EVENT, this.deployOnMapHandler);
     this.stopChestOpenRequests?.();
     this.clearCache();
 
@@ -8483,20 +8588,7 @@ export default class WorldmapScene extends WarpTravel {
     const middle = points
       .reduce((sum, point) => sum.add(new Vector3(point.x, point.y, point.z)), new Vector3())
       .divideScalar(points.length);
-    this.moveCameraToXYZ(middle.x, middle.y, middle.z, 0);
-    const viewport = { width: window.innerWidth, height: window.innerHeight };
-    const area = openMapArea(viewport);
-    const aim = new Vector2(
-      (area.left + area.right) / viewport.width - 1,
-      1 - (area.top + area.bottom) / viewport.height,
-    );
-    this.camera.updateMatrixWorld();
-    const raycaster = new Raycaster();
-    raycaster.setFromCamera(aim, this.camera);
-    const ground = raycaster.ray.intersectPlane(new Plane(new Vector3(0, 1, 0), -middle.y), new Vector3());
-    if (!ground) return;
-    // The ground now under the open area's centre is where the midpoint should be: move by the difference.
-    this.moveCameraToXYZ(2 * middle.x - ground.x, middle.y, 2 * middle.z - ground.z, 0);
+    this.centerOnOpenMap(middle);
   }
 
   private async focusAndSelectArmy(
@@ -8809,6 +8901,7 @@ export default class WorldmapScene extends WarpTravel {
         this.state.selectedHex = selectedHex;
         this.showSelectedHexRing(selectedHex);
         this.refreshSelectedPlate();
+        this.keepSelectedTileInSight(selectedHex);
       },
     });
     this.storeSubscriptions.push(

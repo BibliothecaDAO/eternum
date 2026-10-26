@@ -568,8 +568,8 @@ export const HUD_LAYOUT = {
   summary: "400px",
   /** The phone's minimap tab. */
   "phone-minimap": "clamp(180px, 35dvh, 320px)",
-  /** A phone page or sheet leaves half the map available above it. */
-  "phone-panel": "50dvh",
+  /** The most of a phone's screen a page or a sheet takes, sized to what it holds (owner, 26 October 2026: layout A). */
+  "phone-panel": "45dvh",
   "chat-width": "800px",
   "chat-height": "600px",
   "chat-pane": "min(60vh, 520px)",

@@ -82,6 +82,11 @@ describe("the castle", () => {
     expect(sheet.textContent).toContain("Kingdom");
     expect(sheet.querySelector('[aria-label="plots 36"]')).not.toBeNull();
     expect(host.querySelector(".ui-cost")?.textContent).toBe("15K labor");
+    expect(
+      buttons()
+        .find((button) => button.textContent === "Upgrade")!
+        .closest(".ui-window__foot"),
+    ).not.toBeNull();
     act(() =>
       buttons()
         .find((button) => button.textContent === "Upgrade")!
@@ -113,6 +118,9 @@ describe("the castle", () => {
     expect(host.querySelector(".ui-cost")?.textContent).toBe("4,000 labor");
     const upgrade = buttons().find((button) => button.textContent === "Upgrade")!;
     expect(upgrade.disabled).toBe(true);
+    // The verb, why it cannot run and the fix stand in the sheet's foot, never squeezed or scrolled away on a phone.
+    expect(upgrade.closest(".ui-window__foot")).not.toBeNull();
+    expect(host.querySelector('.ui-window__foot [role="status"]')).not.toBeNull();
     act(() => upgrade.click());
     expect(onUpgrade).not.toHaveBeenCalled();
     expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 4,000 labor, have 2,011 · in 19h 44m");

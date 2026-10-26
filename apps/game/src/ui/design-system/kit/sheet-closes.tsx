@@ -16,30 +16,38 @@ export const useSheetCloses = (onClose: () => void) => {
 };
 
 /**
- * A sheet's handle on a phone: a 48 tall strip across its top, `children` its grip. A tap closes the sheet, and so does a
- * drag down.
+ * A drag down on a sheet's head closes it, on a touch screen: the handlers to spread on the head, and whether the press
+ * that just ended was such a drag (so its click does not act too). A mouse never drags a sheet away.
  */
-export const SheetHandle = ({ onClose, children }: { onClose: () => void; children: ReactNode }) => {
+export const useDragDownCloses = (onClose: () => void) => {
   const from = useRef<number | null>(null);
   const dragged = useRef(false);
-  const start = (event: PointerEvent) => {
-    from.current = event.clientY;
+  const onPointerDown = (event: PointerEvent) => {
+    from.current = event.pointerType === "mouse" ? null : event.clientY;
     dragged.current = false;
   };
-  const end = (event: PointerEvent) => {
+  const onPointerUp = (event: PointerEvent) => {
     if (from.current !== null && event.clientY - from.current >= DRAG_CLOSES_PX) {
       dragged.current = true;
       onClose();
     }
     from.current = null;
   };
+  return { handlers: { onPointerDown, onPointerUp }, dragged };
+};
+
+/**
+ * A sheet's handle on a phone: a 48 tall strip across its top, `children` its grip. A tap closes the sheet, and so does a
+ * drag down.
+ */
+export const SheetHandle = ({ onClose, children }: { onClose: () => void; children: ReactNode }) => {
+  const drag = useDragDownCloses(onClose);
   return (
     <button
       type="button"
       aria-label={CLOSE}
-      onPointerDown={start}
-      onPointerUp={end}
-      onClick={() => !dragged.current && onClose()}
+      {...drag.handlers}
+      onClick={() => !drag.dragged.current && onClose()}
       className="flex h-12 w-full shrink-0 touch-none items-center justify-center lg:hidden"
     >
       {children}
