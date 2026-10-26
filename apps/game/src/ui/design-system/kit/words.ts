@@ -260,17 +260,11 @@ export const WOULD_BE_LOST = "Would be lost";
  * attack does to each side, what it comes to, and under Details the whole fight's figures.
  */
 export const FIGHT_WORDS = {
-  /** What this attack takes from each side, and its share of that side's troops: "you lose 407 (37%)". */
-  youLose: (troops: string, share: string) => `you lose ${troops} (${share})`,
-  youKill: (troops: string, share: string) => `you kill ${troops} (${share})`,
-  /** The same, on the attack's result. */
-  youLost: (troops: string, share: string) => `you lost ${troops} (${share})`,
-  youKilled: (troops: string, share: string) => `you killed ${troops} (${share})`,
   armyLost: "Your army is lost",
+  /** An attack that clears the site, over the reward it earns; a site that pays nothing is only cleared. */
+  earns: "This attack earns",
   clears: "This attack clears it",
   holds: "The guard holds",
-  /** The reward row's word: what the site pays once it is cleared, however many attacks that takes (Details says). */
-  whenCleared: "When cleared",
   details: "Details",
   wholeFight: "The whole fight",
   attacks: "Attacks",

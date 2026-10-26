@@ -90,8 +90,8 @@ describe("the result card", () => {
       ),
     );
     const card = host.querySelector<HTMLButtonElement>('button[aria-label="Troll: Victory"]')!;
-    expect(card.querySelector('[aria-label="Army 1,498 → 1,318, you lost 180 (12%)"]')).not.toBeNull();
-    expect(card.querySelector('[aria-label="troops 1,100 → 0, you killed 1,100 (100%)"]')).not.toBeNull();
+    expect(card.querySelector('[aria-label="Army 1,498 → 1,318"]')).not.toBeNull();
+    expect(card.querySelector('[aria-label="troops 1,100 → 0"]')).not.toBeNull();
     expect(card.textContent).toContain("+550");
     expect(card.textContent).toContain("+82 XP");
     act(() => card.click());
@@ -129,15 +129,15 @@ describe("the result card", () => {
       ),
     );
     const card = host.querySelector('button[aria-label="Troll: Army lost"]')!;
-    expect(card.querySelector('[aria-label="Army 1,498 → 0, you lost 1,498 (100%)"]')).not.toBeNull();
-    expect(card.querySelector('[aria-label="troops 1,100 → 1,028, you killed 72 (6.5%)"]')).not.toBeNull();
+    expect(card.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
+    expect(card.querySelector('[aria-label="troops 1,100 → 1,028"]')).not.toBeNull();
     expect(card.querySelector('[aria-label^="XP"]')).toBeNull();
   });
 
   it("shows the lost army alone when nothing is known of the other side", () => {
     act(() => root.render(<FightResultCard result={lostArmyResult(SENT)} onClose={() => {}} />));
     const card = host.querySelector('button[aria-label="Troll: Army lost"]')!;
-    expect(card.querySelector('[aria-label="Army 1,498 → 0, you lost 1,498 (100%)"]')).not.toBeNull();
+    expect(card.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
     expect(card.querySelector('[aria-label^="troops"]')).toBeNull();
     expect(card.textContent).not.toContain("+");
   });
@@ -151,8 +151,6 @@ it("keeps the Troll portrait and name through its result, including a guard clea
     ),
   );
   expect(host.querySelector('button[aria-label="Troll: Guard holds"]')).not.toBeNull();
-  expect(
-    host.querySelector('[aria-label="Troll 1,000 → 572, you killed 428 (43%)"] img')?.getAttribute("data-icon"),
-  ).toBe("beast-troll");
+  expect(host.querySelector('[aria-label="Troll 1,000 → 572"] img')?.getAttribute("data-icon")).toBe("beast-troll");
   expect(host.querySelectorAll('[data-icon="beast-troll"]')).toHaveLength(2);
 });
