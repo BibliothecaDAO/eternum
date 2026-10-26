@@ -144,7 +144,7 @@ it("says a withdrawal with no answer may still apply, sends it no second time, a
   expect(withdrawButton()).toBeUndefined();
 });
 
-it("sends nothing while the typed amount is cleared, then exactly the amount typed in its place", async () => {
+it("sends nothing once the typed amount is cleared, by Enter or by Withdraw after the field loses focus", async () => {
   game.outcome.mockResolvedValue({ status: "SUCCEEDED" });
   game.paymentTransaction.mockResolvedValue("0xpaid");
   await act(async () =>
@@ -163,13 +163,18 @@ it("sends nothing while the typed amount is cleared, then exactly the amount typ
   type("120");
   type("");
   expect(amount.value).toBe("");
-  // Enter in the field (the browser's own submission) and a submit however it comes: neither sends the 120.
+  // Enter in the field: the browser's own submission.
   await act(async () => amount.form!.requestSubmit());
-  await act(async () => amount.form!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+  // A press on Withdraw, in the browser's order: the field loses focus, then the click.
+  await act(async () => amount.dispatchEvent(new FocusEvent("focusout", { bubbles: true })));
+  expect(amount.value).toBe("0");
+  await act(async () => withdrawButton()!.click());
   expect(game.withdraw).not.toHaveBeenCalled();
+  expect(withdrawButton()!.disabled).toBe(true);
 
   type("80");
-  await act(async () => amount.form!.requestSubmit());
+  await act(async () => amount.dispatchEvent(new FocusEvent("focusout", { bubbles: true })));
+  await act(async () => withdrawButton()!.click());
   await act(async () => await new Promise((settled) => setTimeout(settled, 20)));
   expect(game.withdraw).toHaveBeenCalledOnce();
   expect(game.withdraw).toHaveBeenCalledWith(expect.objectContaining({ amount: 80, structureId: 7 }));

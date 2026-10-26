@@ -133,18 +133,18 @@ describe("a typed amount, as the game has always read it", () => {
   });
 
   it.each(Object.entries(elements))(
-    "stays blank while cleared in the %s, reporting nothing, until it loses focus",
+    "is its least once cleared in the %s: said at once, blank while focused, never the amount it held",
     (_, render) => {
       const field = mountTyped(render);
       field.type("1,200");
-      const reports = field.reported.length;
       field.type("");
       expect(field.input().value).toBe("");
-      expect(field.reported).toHaveLength(reports);
+      expect(field.reported.at(-1)).toBe(0);
       act(() => {
         field.input().dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
       });
-      expect(field.input().value).toBe("1,200");
+      expect(field.input().value).toBe("0");
+      expect(field.reported.at(-1)).toBe(0);
     },
   );
 });

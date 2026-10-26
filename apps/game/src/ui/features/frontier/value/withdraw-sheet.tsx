@@ -126,20 +126,11 @@ const Pick = ({
       className="contents"
       onSubmit={(event) => {
         event.preventDefault();
-        // A blank amount sends nothing, whatever amount was chosen before it was cleared.
-        if (ready && event.currentTarget.checkValidity()) onWithdraw();
+        if (ready) onWithdraw();
       }}
     >
       <Hero icon="lords">
-        <AmountInput
-          display
-          label={LORDS}
-          value={amount}
-          min={held ? 1 : 0}
-          max={held ?? 0}
-          disabled={!held}
-          onChange={onAmount}
-        />
+        <AmountInput display label={LORDS} value={amount} max={held ?? 0} disabled={!held} onChange={onAmount} />
       </Hero>
       <AmountRange label={LORDS} icon="lords" value={amount} max={held ?? 0} disabled={!held} onChange={onAmount} />
       <Flow before={held} after={held === undefined ? undefined : held - amount} address={address} />
