@@ -115,23 +115,54 @@ describe("the status strip", () => {
 });
 
 describe("the army token", () => {
-  it("wears the XP balance as its badge, its stamina in five segments of its own maximum, and its troops", () => {
-    const markup = renderToStaticMarkup(
+  // Frontier's explore costs 20 stamina (config/source/frontier/base.ts).
+  const token = (stamina: { current: number; max: number }) =>
+    renderToStaticMarkup(
       <ArmyToken
         label="Army 1"
         art={undefined}
         xp={260}
-        stamina={{ current: 90, max: 150 }}
+        stamina={{ ...stamina, perExplore: 20 }}
         troops={5_000}
         canBuyTier
         selected={false}
       />,
     );
+  /** The bar's segments as drawn: each one's length (its flex-grow) and fill. */
+  const segments = (markup: string) =>
+    [...markup.matchAll(/flex-grow:([\d.]+);flex-basis:0[^>]*><b[^>]*width:([\d.]+)%/g)].map(([, size, fill]) => [
+      Number(size),
+      Number(fill),
+    ]);
+
+  it("wears the XP balance as its badge, its stamina a segment per explore its maximum holds, and its troops", () => {
+    const markup = token({ current: 60, max: 120 });
     expect(text(markup)).toBe("2605,000");
     expect(markup).toContain('role="group"');
-    // 90 of 150 is three segments full.
-    expect(markup.match(/width:100%/g)).toHaveLength(3);
-    expect(markup).toContain("width:0%");
+    // 120 is six explores: three of them held.
+    expect(segments(markup)).toEqual([
+      [1, 100],
+      [1, 100],
+      [1, 100],
+      [1, 0],
+      [1, 0],
+      [1, 0],
+    ]);
+  });
+
+  it("adds a segment for each explore's worth of maximum its Logistics adds, a short one for a part", () => {
+    expect(segments(token({ current: 140, max: 140 }))).toHaveLength(7);
+    // 90 of 150: four explores held and half the fifth, then seven and a half explores long.
+    expect(segments(token({ current: 90, max: 150 }))).toEqual([
+      [1, 100],
+      [1, 100],
+      [1, 100],
+      [1, 100],
+      [1, 50],
+      [1, 0],
+      [1, 0],
+      [0.5, 0],
+    ]);
   });
 
   it("says what the XP buys next on its badge's tooltip, and the balance alone once nothing is left to buy", () => {
@@ -163,7 +194,7 @@ describe("the army token", () => {
           art={undefined}
           xp={25}
           xpGoal={{ price: 100, tier: 2 }}
-          stamina={{ current: 90, max: 150 }}
+          stamina={{ current: 90, max: 150, perExplore: 20 }}
           troops={1}
           canBuyTier
           selected

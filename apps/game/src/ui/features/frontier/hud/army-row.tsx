@@ -2,6 +2,7 @@ import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudPanel, HudPortrait, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { ARMIES, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
+import type { StaminaBar } from "@/lib/army-stamina/segments";
 import type { ReactNode } from "react";
 
 import { StaminaReading, xpLine, type XpGoal } from "./army-token";
@@ -29,7 +30,7 @@ export const ArmyRow = ({
   number: number | undefined;
   art: IconMeaning | undefined;
   troops: number | undefined;
-  stamina: { current: number; max: number } | undefined;
+  stamina: StaminaBar | undefined;
   xp: number | undefined;
   xpGoal?: XpGoal;
   canBuyTier: boolean;

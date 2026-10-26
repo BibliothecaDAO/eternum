@@ -1,10 +1,9 @@
 import { formatAmount, formatCharge } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudMeter } from "@/ui/design-system/kit/hud-elements";
 
 import { ARMY, STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
-import { STAMINA_SEGMENTS, staminaFill } from "@/lib/army-stamina/segments";
+import { type StaminaBar, staminaSegments } from "@/lib/army-stamina/segments";
 
 const TOKEN = "relative flex h-hud-frontier-token w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-xl";
 const CARD = "relative flex w-full shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2";
@@ -44,7 +43,7 @@ export const ArmyToken = ({
   xp: number | undefined;
   /** The attribute tier the XP buys next; none once every attribute is legendary, or while unknown. */
   xpGoal?: XpGoal;
-  stamina: { current: number; max: number } | undefined;
+  stamina: StaminaBar | undefined;
   troops: number | undefined;
   canBuyTier: boolean;
   selected: boolean;
@@ -121,7 +120,7 @@ export const OpenSlot = ({
   /** Desktop's full card: the plus with Deploy beside it. */
   wide?: boolean;
   /** The bar the slot starts its army on, and that in words ("Army 2 starts on 7/150 stamina…"); none while unknown. */
-  start?: { bar: { current: number; max: number }; words: string };
+  start?: { bar: StaminaBar; words: string };
   /** A later free slot: its army number and why Deploy cannot fill it yet. */
   waits?: { number: number; words: string };
   onDeploy: () => void;
@@ -173,32 +172,35 @@ export const OpenSlot = ({
   );
 };
 
-/** A desktop row's stamina: the bar, and its exact count beside it ("58/120"), as an army's row and an open slot read it. */
-export const StaminaReading = ({ stamina }: { stamina: { current: number; max: number } | undefined }) => (
+/** A desktop row's stamina: the bar in segments, and its exact count beside it ("58/120"), as a row and a slot read it. */
+export const StaminaReading = ({ stamina }: { stamina: StaminaBar | undefined }) => (
   <span className="flex flex-1 items-center gap-2">
     <span className="min-w-8 flex-1">
-      <HudMeter amount={stamina} tone="good" label={STAMINA} />
+      <StaminaSegments stamina={stamina} />
     </span>
     <span>{`${formatAmount(stamina?.current)}/${formatAmount(stamina?.max)}`}</span>
   </span>
 );
 
-const StaminaSegments = ({ stamina }: { stamina: { current: number; max: number } | undefined }) => {
-  const filled = STAMINA_SEGMENTS * (staminaFill(stamina) ?? 0);
+/** The stamina bar: a segment per explore the army's maximum holds (staminaSegments), an empty track while unknown. */
+const StaminaSegments = ({ stamina }: { stamina: StaminaBar | undefined }) => {
+  const segments = staminaSegments(stamina);
   return (
     <span
       role="meter"
       aria-label={STAMINA}
       aria-valuenow={stamina?.current}
+      aria-valuemin={0}
       aria-valuemax={stamina?.max}
       className="flex w-full gap-0.5 px-1.5"
     >
-      {Array.from({ length: STAMINA_SEGMENTS }, (_, index) => (
-        <i key={index} className="h-1 flex-1 overflow-hidden rounded-sm bg-hud-divider">
-          <b
-            className="block h-full bg-hud-good"
-            style={{ width: `${Math.min(1, Math.max(0, filled - index)) * 100}%` }}
-          />
+      {(segments.length > 0 ? segments : [{ size: 1, fill: 0 }]).map(({ size, fill }, index) => (
+        <i
+          key={index}
+          className="h-1 overflow-hidden rounded-sm bg-hud-divider"
+          style={{ flexGrow: size, flexBasis: 0 }}
+        >
+          <b className="block h-full bg-hud-good" style={{ width: `${fill * 100}%` }} />
         </i>
       ))}
     </span>

@@ -126,6 +126,8 @@ const ARMIES: LabArmy[] = [
   { troops: 1_200, xp: 120, stamina: 21, tier: true },
 ];
 const UNKNOWN_ARMIES: LabArmy[] = [{}, {}, {}];
+/** The lab's explore cost, as its rules say it: a 150 bar is five explores. */
+const LAB_EXPLORE = 30;
 
 /** Army 1 (5,000 troops, 90 stamina) explores a new tile, or moves three tiles over known ground. */
 const EXPLORE: LabOrder = {
@@ -1122,7 +1124,7 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
       onCount={setCount}
       // The next army fills a slot whose army was released today with 40 stamina left.
-      start={{ slot: 2, number: 3, inherited: true, start: { current: 40, max: 150 } }}
+      start={{ slot: 2, number: 3, inherited: true, start: { current: 40, max: 150, perExplore: LAB_EXPLORE } }}
       wheatCost={count * 2}
       march={count > 0 ? Math.floor(wheatLeft / (count * 0.02)) : 0}
       ring={{ center: { col: 10, row: 10 }, tiles: DEPLOY_RING, chosen, onPick: setChosen }}
@@ -1285,7 +1287,8 @@ const labSurface = (lab: LabState): HudSurface | null =>
 const LabDock = ({ lab }: { lab: LabState }) => {
   const open = lab.visiting ? 0 : SLOTS - lab.armies.length;
   const armyArt = (army: LabArmy) => (army.troops === undefined ? undefined : ("knight-t1" as const));
-  const stamina = (army: LabArmy) => (army.stamina === undefined ? undefined : { current: army.stamina, max: 150 });
+  const stamina = (army: LabArmy) =>
+    army.stamina === undefined ? undefined : { current: army.stamina, max: 150, perExplore: LAB_EXPLORE };
   if (useLayout() === "desktop")
     return (
       <ArmyList used={lab.armies.length} allowed={lab.armies.length + open}>

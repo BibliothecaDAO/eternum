@@ -165,7 +165,7 @@ const DockArmyRow = ({
 const useWellRefillShown = (army: DockArmy) => {
   const ratio = army.stamina && army.stamina.max > 0 ? army.stamina.current / army.stamina.max : 0;
   const { shown } = useWellRefill(army.explorerId, ratio);
-  return army.stamina && { current: shown * army.stamina.max, max: army.stamina.max };
+  return army.stamina && { ...army.stamina, current: shown * army.stamina.max };
 };
 
 /**
