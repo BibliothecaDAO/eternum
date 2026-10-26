@@ -148,12 +148,13 @@ describe("the tile card", () => {
     try {
       const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
       expect(card).not.toBeNull();
-      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1.1K");
+      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toBe("+550+82 XPTroll1.1K");
       expect(host.querySelector('[aria-label="Beast 1.1K"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
-      expect(card!.textContent?.match(/Troll/g)).toHaveLength(1);
+      // With an army chosen, the headline is the attack's; the Troll is its painting and the guard's side.
+      expect(card!.querySelectorAll('[data-icon="beast-troll"]')).toHaveLength(2);
       expect(button("Attack")?.disabled).toBe(false);
       await act(async () => button("Attack")!.click());
       expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
@@ -169,7 +170,7 @@ describe("the tile card", () => {
       const card = host.querySelector('section[aria-label="North Watch"]')!;
       expect(card).not.toBeNull();
       expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-      expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1.1K");
+      expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("+550+82 XPTroll1.1K");
       expect(card.textContent?.match(/Troll/g)).toHaveLength(1);
       expect(card.textContent).not.toMatch(/\bcamp\b/i);
     } finally {
@@ -360,8 +361,8 @@ describe("the result of the player's attack", () => {
       store.applyFacts(ARMY_GONE as never);
     });
     expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
-    expect(result()!.querySelector('[aria-label^="Army 1,498 → 0, "]')).not.toBeNull();
-    expect(result()!.querySelector('[aria-label^="Troll 1,100 → 1,028, "]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Troll 1,100 → 1,028"]')).not.toBeNull();
     unmount();
   });
 
@@ -371,7 +372,7 @@ describe("the result of the player's attack", () => {
       store.applyFacts([...ARMY_GONE, ...SITE_OUT_OF_SCOPE] as never);
     });
     expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
-    expect(result()!.querySelector('[aria-label^="Troll 1,100 → 1,028, "]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Troll 1,100 → 1,028"]')).not.toBeNull();
     expect(result()!.textContent).not.toContain("+550");
     expect(result()!.querySelector('[aria-label^="XP"]')).toBeNull();
     unmount();
@@ -382,7 +383,7 @@ describe("the result of the player's attack", () => {
       store.applyFacts([...ARMY_GONE, ...SITE_OUT_OF_SCOPE] as never),
     );
     expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
-    expect(result()!.querySelector('[aria-label^="Army 1,498 → 0, "]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
     expect(result()!.querySelector('[aria-label^="troops"]')).toBeNull();
     expect(result()!.textContent).not.toContain("+");
     unmount();
@@ -401,7 +402,7 @@ describe("the result of the player's attack", () => {
       payoutArrives({ resource_type: ResourcesIds.Labor, amount: whole(700) });
     });
     expect(result()?.getAttribute("aria-label")).toBe("Troll: Victory");
-    expect(result()!.querySelector('[aria-label^="Army 1,498 → 1,318, "]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Army 1,498 → 1,318"]')).not.toBeNull();
     expect(result()!.textContent).toContain("+700");
     expect(result()!.textContent).not.toContain("550");
     expect(result()!.textContent).toMatch(/\+[\d,]+ XP/);
@@ -485,7 +486,7 @@ describe("an attack on another player's army", () => {
     await act(async () => apply(APPLIED));
     const result = host.querySelector("button[aria-label^='Army:']")!;
     expect(result.getAttribute("aria-label")).toBe("Army: Army lost");
-    expect(result.querySelector('[aria-label^="troops 300 → 120, "]')).not.toBeNull();
+    expect(result.querySelector('[aria-label="troops 300 → 120"]')).not.toBeNull();
     act(() => root.unmount());
     host.remove();
   });
