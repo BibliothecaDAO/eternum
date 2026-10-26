@@ -122,7 +122,8 @@ const Frames = ({ shown, frames }: { shown: Shown; frames: { width: number; heig
   useLayoutEffect(() => {
     const element = stage.current;
     if (!element) return;
-    const measure = () => setRoom({ width: element.clientWidth, height: element.clientHeight - 40 });
+    // The stage's content box: its padding (16 px a side) and the line and captions above and below the frames.
+    const measure = () => setRoom({ width: element.clientWidth - 32, height: element.clientHeight - 80 });
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
