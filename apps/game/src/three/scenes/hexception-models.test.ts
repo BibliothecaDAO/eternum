@@ -1,6 +1,6 @@
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from "three";
 import { expect, it, vi } from "vitest";
-import { HexceptionTierModels } from "./hexception-tier-models";
+import { HexceptionModels } from "./hexception-models";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -25,7 +25,7 @@ function realmView() {
     const selected = models.get(path);
     if (selected) render(selected.model);
   };
-  const models = new HexceptionTierModels(load, reconcile);
+  const models = new HexceptionModels(load, reconcile);
   return {
     models,
     model,

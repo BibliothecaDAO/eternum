@@ -99,6 +99,20 @@ describe("the still map's frames", () => {
   });
 });
 
+describe("the Blitz realm load", () => {
+  it("plays the realm-load steps on a live Blitz game, its realm found by the top bar's Realm tab", () => {
+    const blitz = STEP_SETS["blitz-realm-load"];
+    const names = (steps) => steps.map((step) => step.name);
+    const firstRealm = blitz.steps.find((step) => step.name === "first-realm").verify;
+    const onTheRealm = { scene: "hex", rendered: "hex", place: "Realm", dialogs: [], pressed: [] };
+
+    expect(blitz.game.mode).toBe("blitz");
+    expect(names(blitz.steps)).toEqual(names(STEP_SETS["realm-load"].steps));
+    expect(firstRealm({ seen: onTheRealm }).status).toBe("completed");
+    expect(firstRealm({ seen: { ...onTheRealm, rendered: "map" } }).status).toBe("failed");
+  });
+});
+
 describe("the Blitz still map", () => {
   const blitzMap = { scene: "map", rendered: "map", place: null, dialogs: [], pressed: [] };
   const stepNames = (set) => STEP_SETS[set].steps.map((step) => step.name);

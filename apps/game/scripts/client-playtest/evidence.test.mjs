@@ -204,7 +204,71 @@ describe("summarizeStep", () => {
         arrivalToFrameMs: { n: 1, p50: 50, p95: 50, p99: 50, max: 50 },
         frameMsAfterMessage: { n: 1, p50: 16, p95: 16, p99: 16, max: 16 },
       },
+      loads: { count: 0, kb: 0, wireKb: 0, fromCache: 0, lastEndMs: null, byKind: {}, slowest: [] },
+      gpu: { pipelines: 0, shaders: 0, compileCallMs: 0, worstFrameCompileCallMs: 0, uploadMb: 0 },
+      scenesDrawn: [],
+      marks: [],
     });
+  });
+
+  it("counts the step's downloads by kind, the GPU work its frames asked for, the scene drawn and its marks", () => {
+    const resource = (url, start, end, bytes, transferBytes = bytes + 300) => ({
+      url,
+      start,
+      end,
+      bytes,
+      decodedBytes: bytes,
+      transferBytes,
+      initiator: "fetch",
+    });
+    const gpu = (pipelines, shaders, callMs, uploadBytes) => ({ pipelines, shaders, callMs, uploadBytes });
+    const summary = summarizeStep(
+      probeOf({
+        frames: [990, 1000, 1016, 1100, 1116],
+        draws: [1, 1, 1, 1, 1],
+        gpu: [gpu(9, 9, 9, 9), gpu(0, 0, 0, 0), gpu(3, 2, 40, MB), gpu(1, 0, 5, 2 * MB), gpu(0, 0, 0, 0)],
+        scenes: ["map", "map", "map", "hex", "hex"],
+        resources: [
+          resource("/assets/app.js", 900, 950, 4096),
+          resource("/models/buildings/farm.glb", 1010, 1090, 2048),
+          resource("/models/buildings/mill.glb", 1012, 1030, 1024, 0),
+          resource("/textures/ground.ktx2", 1020, 1100, 3072),
+        ],
+        marks: [
+          { name: "scene:hex:requested", t: 1005 },
+          { name: "scene:hex:presentable", t: 1101 },
+        ],
+        steps: [startedOn, { name: "pan:end", t: 1120, heapBytes: 104 * MB }],
+        now: 1130,
+      }),
+      { name: "pan", startedOn },
+    );
+
+    expect(summary.loads).toEqual({
+      count: 3,
+      kb: 6,
+      wireKb: 5.6,
+      fromCache: 1,
+      lastEndMs: 100,
+      byKind: { model: { count: 2, kb: 3, wireKb: 2.3 }, texture: { count: 1, kb: 3, wireKb: 3.3 } },
+      slowest: [
+        { url: "/models/buildings/farm.glb", kb: 2, startMs: 10, ms: 80 },
+        { url: "/textures/ground.ktx2", kb: 3, startMs: 20, ms: 80 },
+        { url: "/models/buildings/mill.glb", kb: 1, startMs: 12, ms: 18 },
+      ],
+    });
+    expect(summary.gpu).toEqual({
+      pipelines: 4,
+      shaders: 2,
+      compileCallMs: 45,
+      worstFrameCompileCallMs: 40,
+      uploadMb: 3,
+    });
+    expect(summary.scenesDrawn).toEqual([{ scene: "hex", atMs: 100 }]);
+    expect(summary.marks).toEqual([
+      { name: "scene:hex:requested", atMs: 5 },
+      { name: "scene:hex:presentable", atMs: 101 },
+    ]);
   });
 
   it("measures a step whose page reloaded on the new page, with the time back to playable", () => {

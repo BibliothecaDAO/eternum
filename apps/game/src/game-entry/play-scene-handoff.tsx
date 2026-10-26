@@ -1,3 +1,4 @@
+import { useEntryDestination } from "@/game-entry/entry-destination";
 import { usePlayRouteBootSnapshot } from "@/game-entry/play-route-boot";
 import { usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -6,8 +7,6 @@ import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@/hooks/helpers/use-structures";
-import { useFactView } from "@/hooks/use-fact-view";
-import { gameStructuresView } from "@/sync/fact-views";
 import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -21,7 +20,7 @@ export const PlaySceneHandoff = () => {
   const isSpectating = useUIStore((state) => state.isSpectating);
   const returnPosition = useUIStore((state) => state.worldMapReturnPosition);
   const playerStructures = usePlayerStructures();
-  const gameStructures = useFactView(gameStructuresView);
+  const destination = useEntryDestination();
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
   const worldmapReadyMilestoneRef = useRef(false);
@@ -81,8 +80,7 @@ export const PlaySceneHandoff = () => {
       structureEntityId,
       isSpectating,
       returnPosition,
-      openableStructures:
-        snapshot.resolvedRequest.entryMode === "player" ? playerStructures.length : gameStructures.length,
+      destination,
     });
     if (handoff.kind === "wait") return;
 
@@ -113,8 +111,7 @@ export const PlaySceneHandoff = () => {
     structureEntityId,
     isSpectating,
     returnPosition,
-    playerStructures.length,
-    gameStructures.length,
+    destination,
   ]);
 
   // In a running game a scene that fails to open leaves the player on the scene they had, and the route goes back to

@@ -1132,7 +1132,9 @@ async function readKnightPresentation({ browser }) {
   await sleep(3000);
   return {
     stats: browser.read("window.getProceduralArmyProductionStats?.() ?? null"),
-    assets: browser.read("JSON.parse(window.__playtest.read()).models"),
+    assets: browser.read(
+      'JSON.parse(window.__playtest.read()).resources.filter((entry) => entry.url.startsWith("/models/"))',
+    ),
   };
 }
 
@@ -1817,6 +1819,56 @@ async function readUntil(read, done, timeoutMs) {
 }
 
 /** The step lists a run can play, by name, each with its game; a run plays its role's list unless it names another. */
+const STILL_MS = 6_000;
+
+/**
+ * The realm view as a player first meets it: the game entered on its map (a cold cache, as a first visit), the first
+ * press of Realm (the realm's models, ground and props load now), the realm held still, back to the map, the realm
+ * again, and the realm's address loaded again (a warm HTTP cache; the map boots first and hands off). A lab game is
+ * opened again on its realm, its chain being the tab's. Each step reports its downloads, GPU work, long frames, the
+ * frames where the drawn scene changed and the scene marks (requested, presentable); `--viewport 390x844` plays it at
+ * a phone's size.
+ */
+const realmLoadSteps = (labScenario = null) => [
+  { name: "map-still", play: holdStill, settleMs: 0, verify: inScene("map") },
+  { name: "first-realm", play: goTo("Realm", "hex"), settleMs: 0, verify: inScene("hex") },
+  { name: "realm-still", play: holdStill, settleMs: 0, verify: inScene("hex") },
+  { name: "back-to-map", play: goTo("Map", "map"), settleMs: 0, verify: inScene("map") },
+  { name: "realm-again", play: goTo("Realm", "hex"), settleMs: 0, verify: inScene("hex") },
+  { name: "reload-on-realm", play: reloadOnTheRealm(labScenario), settleMs: 0, verify: inScene("hex") },
+];
+
+async function holdStill() {
+  await sleep(STILL_MS);
+  return {};
+}
+
+/** The realm's address loaded again in the same browser, as a player's refresh: it is playable on the realm again. */
+function reloadOnTheRealm(labScenario) {
+  const reload = labScenario
+    ? `(() => {
+        const lab = new URL("/lab/game", location.origin);
+        lab.searchParams.set("scenario", ${JSON.stringify(labScenario)});
+        lab.searchParams.set("scene", "hex");
+        for (const [key, value] of new URLSearchParams(location.search)) {
+          if (key === "rendererMode" || key === "dev") lab.searchParams.set(key, value);
+        }
+        setTimeout(() => location.assign(lab), 0);
+      })()`
+    : "setTimeout(() => location.reload(), 0)";
+  return async ({ browser }) => {
+    const before = browser.observe();
+    browser.run(["eval", reload]);
+    const back = await waitFor(
+      browser,
+      (seen) => seen.timeOrigin !== before.timeOrigin && seen.playable && isIn(seen, "Realm", "hex"),
+      PLAYABLE_WAIT_MS,
+    );
+    if (back) await sleep(SCENE_HOLD_MS);
+    return { reloaded: browser.observe().timeOrigin !== before.timeOrigin };
+  };
+}
+
 export const STEP_SETS = {
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
   "unit-assets-spectator": {
@@ -1861,6 +1913,9 @@ export const STEP_SETS = {
   "lab-day-turn-asleep": { game: labDayTurn("day-turn-asleep"), steps: labDayTurnAsleepSteps() },
   "lab-day-later-quiet": { game: labDayTurn("day-later-quiet"), steps: labDayLaterNoSummarySteps },
   "lab-day-later-played-on": { game: labDayTurn("day-later-played-on"), steps: labDayLaterNoSummarySteps },
+  "realm-load": { game: FRONTIER, steps: realmLoadSteps() },
+  "lab-realm-load": { game: { ...LAB_SPIRE, lab: "painted-buildings" }, steps: realmLoadSteps("painted-buildings") },
+  "blitz-realm-load": { game: BLITZ, steps: realmLoadSteps() },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },

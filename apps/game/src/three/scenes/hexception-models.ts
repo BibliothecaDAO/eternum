@@ -5,8 +5,11 @@ interface BuildingModel {
   animations: AnimationClip[];
 }
 
-/** Scene-owned sources survive view switches; only pending requests suppress another load. */
-export class HexceptionTierModels {
+/**
+ * The realm view's building models by path, each loaded the first time a building draws it. Scene-owned sources survive
+ * view switches; only pending requests suppress another load.
+ */
+export class HexceptionModels {
   private readonly models = new Map<string, BuildingModel>();
   private readonly pending = new Map<string, Promise<void>>();
   private disposed = false;

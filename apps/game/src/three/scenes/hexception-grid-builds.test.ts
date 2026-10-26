@@ -16,7 +16,7 @@ function realmScene() {
     built += 1;
     const build = built;
     builds.start({
-      modelsLoaded: () => Promise.resolve(),
+      loadModels: () => Promise.resolve(),
       layOut: () => {
         cells = build;
         return build;
@@ -61,20 +61,31 @@ it("presents nothing of a build whose realm was left before its page came back",
   expect(scene.released).toEqual([1]);
 });
 
-it("does not lay out a build whose realm was left while its models loaded", async () => {
+it("presents a build once its buildings' models are in, and nothing of one whose realm was left meanwhile", async () => {
   const builds = new RealmGridBuilds();
-  let laidOut = false;
-  builds.start({
-    modelsLoaded: settle,
-    layOut: () => (laidOut = true),
-    preparePage: () => Promise.resolve(0),
-    present: () => {},
-    release: () => {},
-  });
-  builds.supersede();
-  await builds.whenBuilt();
+  const presented: number[] = [];
+  let modelsIn = () => {};
+  const start = () =>
+    builds.start({
+      layOut: () => presented.length + 1,
+      loadModels: () => new Promise<void>((resolve) => (modelsIn = resolve)),
+      preparePage: (layout) => Promise.resolve(layout),
+      present: (page) => presented.push(page),
+      release: () => {},
+    });
 
-  expect(laidOut).toBe(false);
+  start();
+  await settle();
+  expect(presented).toEqual([]);
+  modelsIn();
+  await builds.whenBuilt();
+  expect(presented).toEqual([1]);
+
+  start();
+  builds.supersede();
+  modelsIn();
+  await builds.whenBuilt();
+  expect(presented).toEqual([1]);
 });
 
 it("is built only once the latest build has presented, not when a superseded one settles", async () => {

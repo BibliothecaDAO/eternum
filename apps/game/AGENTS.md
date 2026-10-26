@@ -119,6 +119,8 @@ pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --iterations 1  
 Options: `--renderer-modes webgpu-auto,webgpu-force-webgl` (default both), `--iterations` (default 3),
 `--cpu-throttle 4` (Chrome's CPU slowdown of this machine; not a measured laptop), `--gpu low-power` (WebGPU on the
 machine's integrated GPU instead of its default one; check the screenshots, as a driver may draw the map wrong),
+`--network 20,40` (Chrome shapes the
+page's link to that many Mbit/s and that round trip in ms, so a load is timed as a player's connection serves it),
 `--chain-id` and `--game-id`, `--steps ownership-rings` (the map unselected, the player's realm selected with its
 owner's holdings ringed, held and panned, then cleared: the rings' frame cost; each phase checks the selection and ring
 count the page reports in `window.__eternumMapSelection`, and fails on a build that does not report them),
@@ -169,7 +171,13 @@ phone, at `--viewport 390x844`: a minute before day 2 ends the tab's window is m
 context lost and Herald's stream silent with its socket open, then brought back past the end; on WebGL the page must
 boot again and the map draw, its middle band no more than half black past what it was, the loss's two error lines its
 outcome; on WebGPU, whose device this machine keeps, the silent stream must be dropped and resumed; then the summary and
-Continue as above), `--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each run's boot, from
+Continue as above), `--steps realm-load` (a spectator's realm view as first met: the map held still, the first press of Realm, the realm
+held still, back to the map, Realm again, and the realm's address loaded again; each step reports its downloads by kind
+with their bytes on the wire, the GPU work its frames asked for (pipelines and shaders compiled, bytes uploaded), long
+frames, the frames where the drawn scene changed and the scene marks `scene:<name>:requested` and
+`scene:<name>:presentable`; the boot reports the same as `bootWindow`), `--steps lab-realm-load` (the same on the lab's
+built Kingdom, `/lab/game?scenario=painted-buildings`, reopened on its realm with `&scene=hex`),
+`--steps blitz-realm-load` (the same on the newest live Blitz game), `--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each run's boot, from
 before the game page opens to the world being interactive), `--compare <summary.json>` (fails when boot regresses),
 `--headed`. Paths are taken from where the command is run.
 
