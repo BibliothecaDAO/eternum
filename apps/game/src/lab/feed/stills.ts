@@ -7,7 +7,7 @@ export const FRAMES = ["today", "a", "b", "c"] as const;
 export type StillFrame = (typeof FRAMES)[number];
 export type StillDevice = "desktop" | "phone";
 
-export interface Still {
+interface Still {
   name: string;
   /** The frame's address under /lab, as the capture opens it. */
   draw: string;
