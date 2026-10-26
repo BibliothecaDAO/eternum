@@ -107,6 +107,8 @@ export const EMPIRE = "Empire";
 /** The places: the nav's words. */
 const MAP = "Map";
 export const REALM = "Realm";
+/** The world map, as the Realm / World switch names it. */
+export const WORLD = "World";
 /** The realm's way home from its card's header: the map centred on it. */
 export const SHOW_MY_REALM = "Show my realm";
 /** A realm's place on its ranks' ladder, as its steps say it: "City, rank 2 of 4". */

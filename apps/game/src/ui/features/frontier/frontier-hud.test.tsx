@@ -270,20 +270,26 @@ it.each([390, 1440])("opens and closes the Wheat store from its control at %i px
   expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
 });
 
-it("gives a phone no Map slot: Realm opens the realm board, and a second press shows the map again", async () => {
+it("gives a phone a Realm / World switch: it names where it goes, the board then the map, and puts a page away", async () => {
   viewport.set(390);
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   await renderHud();
   const slots = () => [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')];
-  const realm = () => slots().find((button) => button.textContent?.startsWith("Realm"))!;
+  const toggle = () => slots()[0]!;
   expect(slots().map((button) => button.textContent)).not.toContain("Map");
-  expect(realm().getAttribute("aria-current")).toBeNull();
-  await act(async () => realm().click());
+  expect(toggle().textContent).toBe("Realm");
+  await act(async () => toggle().click());
   expect(window.location.pathname).toMatch(/\/hex$/);
-  expect(realm().getAttribute("aria-current")).toBe("page");
-  await act(async () => realm().click());
+  expect(toggle().textContent).toBe("World");
+  expect(toggle().getAttribute("aria-current")).toBeNull();
+  // A page open over the board: World still goes to the map, and the page goes with it.
+  const feed = () => slots().find((button) => button.textContent?.endsWith("Feed"))!;
+  await act(async () => feed().click());
+  expect(feed().getAttribute("aria-current")).toBe("page");
+  await act(async () => toggle().click());
   expect(window.location.pathname).toMatch(/\/map$/);
-  expect(realm().getAttribute("aria-current")).toBeNull();
+  expect(toggle().textContent).toBe("Realm");
+  expect(feed().getAttribute("aria-current")).toBeNull();
 });
 
 it("opens a phone's Menu as a page on the place bar, its title with no close of its own, and closes it with Menu", async () => {

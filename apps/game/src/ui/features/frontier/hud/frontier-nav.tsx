@@ -22,8 +22,9 @@ export type HudSurface =
   | "realms";
 
 /**
- * The place bar over the game: each slot opens its place over the map and a second tap closes it. Realm opens the
- * realm board and closes it back to the map; the others open their page or the Menu. The Realm slot carries a dot
+ * The place bar over the game: the Realm / World switch takes the player to the realm's board from the map, and back to
+ * the world from the board, putting any page away; each other slot opens its place over the map and a second tap
+ * closes it. The Realm slot carries a dot
  * while a store the realm spends is full or fills within the hour. A spectator, with no realm of their own, opens the
  * realm they watch, and has no Research.
  */
@@ -53,16 +54,14 @@ export const FrontierNav = ({
       ? surface
       : surface === "season"
         ? "menu"
-        : isMapView
-          ? null
-          : "realm";
+        : null;
   const goToPlace = useGoToFrontierPlace(board);
   const researchDot = canResearchNow(useResearchTree(realm)?.nodes);
   const stores = useRealmStores(realm, rules);
   const go = (to: Place) => {
     if (to === "realm") {
       onSurface(null);
-      goToPlace(place === "realm");
+      goToPlace(!isMapView);
       return;
     }
     onSurface(surface === to ? null : to);
@@ -70,6 +69,7 @@ export const FrontierNav = ({
   return (
     <PlaceNav
       place={place}
+      onRealm={!isMapView}
       onGo={go}
       realmDot={stores ? realmDot([stores.wheat, stores.labor, stores.troops]) : undefined}
       researchDot={realm ? researchDot : undefined}

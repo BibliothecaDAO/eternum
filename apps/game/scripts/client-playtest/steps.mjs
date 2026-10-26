@@ -188,17 +188,21 @@ const isIn = (seen, place, scene) =>
 
 /**
  * A place as the top bar's Realm / World names it: a desktop's HUD, every mode's, moves between the map and the realm
- * there; a phone's Frontier HUD has its own place bar's Map and Realm.
+ * there; a phone's Frontier HUD has its place bar's switch, which names where it goes: Realm on the map, World on the
+ * realm (the page reads where the player is from it).
  */
 const PLACE_TABS = { Map: "World", Realm: "Realm" };
 
-/** Presses the place bar's button where there is one (a phone), else the top bar's tab (a desktop). */
+/** Presses the place bar's switch where there is one (a phone, as it names the place), else the top bar's tab (a desktop). */
 function pressPlace(browser, place) {
-  try {
-    browser.click(place);
-  } catch {
-    browser.clickTab(PLACE_TABS[place]);
+  for (const press of [() => browser.click(place), () => browser.click(PLACE_TABS[place])]) {
+    try {
+      return press();
+    } catch {
+      // Not this button: the next way there.
+    }
   }
+  browser.clickTab(PLACE_TABS[place]);
 }
 
 /** Where the HUD's standing parts sit on the map at rest. */
