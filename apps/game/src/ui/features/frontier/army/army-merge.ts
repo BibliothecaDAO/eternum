@@ -44,7 +44,6 @@ export const explorerTransferPlan = ({
     known,
     confirmLoss,
     sourceValue,
-    targetValue,
     partialMax,
     fullFits,
   };

@@ -160,35 +160,32 @@ const main = () => {
         if (!drawn) missing.push(shot);
         run("screenshot", join(values.out, `${shot}.png`));
         if (name === "frontier-merge") {
+          // Army 1 leaves with its 100 XP and its upgrade's 100: the second press names the 200 lost.
+          const confirmLabel = "Lose 200 XP, merge into Army 2";
           run("find", "role", "button", "click", "--name", "Merge into Army 2", "--exact");
-          run("wait", "--text", "Confirm merge into Army 2");
+          run("wait", "--text", confirmLabel);
 
-          // What the sheet shows: its text, the XP struck out on the card of the army a merge empties, and whether the
-          // confirmation and its loss line stand in view.
+          // What the sheet shows: its text, the XP struck out on the card of the army a merge empties, whether the
+          // confirmation stands in view, and whether any notice stands over the cards (none should).
           const readSheet = () =>
             JSON.parse(
               run(
                 "eval",
                 `(() => {
             const sheet = document.querySelector('[role="dialog"]');
-            const button = [...sheet.querySelectorAll('button')].find(b => b.textContent === 'Confirm merge into Army 2');
+            const button = [...sheet.querySelectorAll('button')].find(b => b.textContent === ${JSON.stringify(confirmLabel)});
             const visible = element => {
               const box = element?.getBoundingClientRect();
               return !!box && box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight;
             };
-            return { text: sheet.textContent, struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), lossVisible: visible(sheet.querySelector('.ui-notice')) };
+            return { text: sheet.textContent, struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), notice: sheet.querySelector('.ui-notice')?.textContent ?? null };
           })()`,
               ),
             );
           const confirmed = readSheet();
           writeFileSync(join(values.out, `${shot}-confirmation.json`), JSON.stringify(confirmed, null, 2));
-          if (
-            !confirmed.reachable ||
-            !confirmed.lossVisible ||
-            confirmed.struck !== "100 XP" ||
-            !confirmed.text.includes("Army 1 loses 200 progression value")
-          ) {
-            throw new Error(`${shot}: the army leaving, its exact loss and a reachable confirmation must be visible`);
+          if (!confirmed.reachable || confirmed.notice !== null || confirmed.struck !== "200 XP") {
+            throw new Error(`${shot}: the XP lost struck on the leaving card, a reachable confirmation and no notice`);
           }
           run("screenshot", join(values.out, `${shot}-confirm.png`));
           // The slider moved one step, by key: Army 1 keeps one troop, so the merge becomes a move.
@@ -196,7 +193,7 @@ const main = () => {
           run("press", "ArrowRight");
           run("wait", "--text", "Move 599 to Army 2");
           const partial = readSheet();
-          if (partial.text.includes("Confirm merge") || partial.struck !== null) {
+          if (partial.text.includes(confirmLabel) || partial.struck !== null) {
             throw new Error(`${shot}: changing the split must clear confirmation and the merge's losses`);
           }
           // The slider's far end: everything goes the other way, into Army 1.

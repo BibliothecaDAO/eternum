@@ -7,11 +7,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Icon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {
+  AmountInput,
   HudButton,
   HudChip,
   HudNotice,
   HudSheet,
-  HudSlider,
   HudTierChip,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
@@ -23,6 +23,7 @@ import { formatAmount, getDirectionBetweenAdjacentHexes, type TroopTier } from "
 import { useState } from "react";
 import type { Account } from "starknet";
 
+import { AmountRange } from "../amount-range";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 
 /** Two of the realm's armies standing side by side: the one picked, the one tapped, and where the tapped one stands. */
@@ -212,20 +213,19 @@ const TransferSplit = ({
   if (!alike) return <HudNotice tone="warn" line={TRANSFER_TROOPS.unalike(picked.label, tapped.label)} />;
   // A full merge whose progress is known: the army that stays and the one that leaves.
   const merge = survivor && loser && plan.known ? { survivor, loser } : null;
+  // The XP a merge loses with the army that leaves: its own and what its upgrades cost, the figure the confirm weighs.
+  const lostXp = plan.sourceValue ?? 0;
   const side = (army: DockArmy) => (
     <ArmySide
       army={army}
       after={after(army)}
-      leaves={army === merge?.loser}
+      lostXp={army === merge?.loser ? lostXp : undefined}
       staminaAfter={army === merge?.survivor ? mergedStamina : undefined}
     />
   );
 
   return (
     <div className="flex flex-col gap-3">
-      {confirmed && fullMerge && plan.confirmLoss && (
-        <HudNotice tone="warn" line={TRANSFER_TROOPS.confirmLoss(from.label, plan.sourceValue!, plan.targetValue!)} />
-      )}
       {!plan.known && <HudNotice tone="warn" line={TRANSFER_TROOPS.waiting} />}
       <div className="ui-transfer__preview">
         {side(picked)}
@@ -235,13 +235,27 @@ const TransferSplit = ({
         </span>
         {side(tapped)}
       </div>
-      <HudSlider
-        label={TRANSFER_TROOPS.split(picked.label, tapped.label)}
-        value={pickedAfter}
-        max={total}
-        stop={highest}
-        onChange={(value) => chooseSplit(Math.max(lowest, value))}
-      />
+      {/* How many the picked army keeps: typed, or dragged between its two ends, each labelled with its amount. */}
+      <div className="flex items-center gap-2">
+        <AmountInput
+          label={TRANSFER_TROOPS.split(picked.label, tapped.label)}
+          value={pickedAfter}
+          min={lowest}
+          max={highest}
+          onChange={chooseSplit}
+        />
+        <span className="flex-1">
+          <AmountRange
+            label={TRANSFER_TROOPS.split(picked.label, tapped.label)}
+            icon={picked.art}
+            value={pickedAfter}
+            min={lowest}
+            max={total}
+            stop={highest}
+            onChange={(value) => chooseSplit(Math.max(lowest, value))}
+          />
+        </span>
+      </div>
       <HudWindowFoot
         note={
           !merge && total > Math.min(capOf(picked), capOf(tapped))
@@ -250,7 +264,7 @@ const TransferSplit = ({
         }
       >
         <HudButton
-          kind="primary"
+          kind={confirmed && merge ? "danger" : "primary"}
           icon="transfer"
           disabled={moved === 0 || !valid}
           busy={sending ? TRANSFER_TROOPS.sending : undefined}
@@ -260,7 +274,7 @@ const TransferSplit = ({
             ? TRANSFER_TROOPS.pick
             : merge
               ? confirmed
-                ? TRANSFER_TROOPS.confirmMerge(merge.survivor.label)
+                ? TRANSFER_TROOPS.confirmMerge(lostXp, merge.survivor.label)
                 : TRANSFER_TROOPS.merge(merge.survivor.label)
               : TRANSFER_TROOPS.move(Math.abs(moved), to.label)}
         </HudButton>
@@ -271,60 +285,65 @@ const TransferSplit = ({
 
 /**
  * One army in the transfer: its portrait and name, its stamina, its XP, what it holds now and after. An army a merge
- * empties leaves the map with its XP: its portrait fades and its XP is struck out. The army that stays shows the
- * stamina the merge leaves it, when that is less than it has.
+ * empties leaves the map and its XP is lost: its portrait fades, and its card strikes out the XP lost, its upgrades'
+ * cost included. The army that stays shows the stamina the merge leaves it, when that is less than it has.
  */
 const ArmySide = ({
   army,
   after,
-  leaves,
+  lostXp,
   staminaAfter,
 }: {
   army: DockArmy;
   after: number;
-  leaves: boolean;
+  /** The XP lost with this army, which a merge empties; undefined for an army that stays. */
+  lostXp: number | undefined;
   staminaAfter: number | undefined;
-}) => (
-  <div className="flex flex-col items-center gap-1 rounded-lg border border-hud-line bg-hud-well p-2">
-    <span
-      className={cn(
-        "flex size-12 items-center justify-center overflow-hidden rounded-full border-2 bg-hud-surface",
-        leaves ? "border-hud-bad opacity-50 grayscale" : "border-hud-good",
-      )}
-    >
-      <Icon name={army.art} size={44} />
-    </span>
-    <span className="text-hud-body text-hud-strong">{army.label}</span>
-    {army.stamina && (
-      <span className="flex items-center gap-1 text-hud-label text-hud-muted tabular-nums">
-        <Icon name="stamina" size={16} />
-        {formatAmount(Math.floor(army.stamina.current))}/{formatAmount(army.stamina.max)}
-        {staminaAfter !== undefined && staminaAfter < Math.floor(army.stamina.current) && (
-          <>
-            <span>→</span>
-            <span className="text-hud-bad">{formatAmount(staminaAfter)}</span>
-          </>
-        )}
-      </span>
-    )}
-    {army.xp !== undefined &&
-      (leaves ? (
-        <s className="text-hud-label tabular-nums text-hud-bad">{`${formatAmount(army.xp)} ${XP}`}</s>
-      ) : (
-        <span className="text-hud-label tabular-nums text-hud-gold">{`${formatAmount(army.xp)} ${XP}`}</span>
-      ))}
-    <span className="flex items-center gap-1 tabular-nums">
-      <HudTierChip tier={army.troopsFact.tier === "T3" ? 3 : army.troopsFact.tier === "T2" ? 2 : 1} />
-      <span className="text-hud-label text-hud-muted">{formatAmount(army.troops)}</span>
-      <span className="text-hud-muted">→</span>
+}) => {
+  const leaves = lostXp !== undefined;
+  return (
+    <div className="flex flex-col items-center gap-1 rounded-lg border border-hud-line bg-hud-well p-2">
       <span
         className={cn(
-          "text-hud-title",
-          after === 0 ? "text-hud-bad" : after === army.troops ? "text-hud-ink" : "text-hud-gold",
+          "flex size-12 items-center justify-center overflow-hidden rounded-full border-2 bg-hud-surface",
+          leaves ? "border-hud-bad opacity-50 grayscale" : "border-hud-good",
         )}
       >
-        {formatAmount(after)}
+        <Icon name={army.art} size={44} />
       </span>
-    </span>
-  </div>
-);
+      <span className="text-hud-body text-hud-strong">{army.label}</span>
+      {army.stamina && (
+        <span className="flex items-center gap-1 text-hud-label text-hud-muted tabular-nums">
+          <Icon name="stamina" size={16} />
+          {formatAmount(Math.floor(army.stamina.current))}/{formatAmount(army.stamina.max)}
+          {staminaAfter !== undefined && staminaAfter < Math.floor(army.stamina.current) && (
+            <>
+              <span>→</span>
+              <span className="text-hud-bad">{formatAmount(staminaAfter)}</span>
+            </>
+          )}
+        </span>
+      )}
+      {leaves ? (
+        <s className="text-hud-label tabular-nums text-hud-bad">{`${formatAmount(lostXp)} ${XP}`}</s>
+      ) : (
+        army.xp !== undefined && (
+          <span className="text-hud-label tabular-nums text-hud-gold">{`${formatAmount(army.xp)} ${XP}`}</span>
+        )
+      )}
+      <span className="flex items-center gap-1 tabular-nums">
+        <HudTierChip tier={army.troopsFact.tier === "T3" ? 3 : army.troopsFact.tier === "T2" ? 2 : 1} />
+        <span className="text-hud-label text-hud-muted">{formatAmount(army.troops)}</span>
+        <span className="text-hud-muted">→</span>
+        <span
+          className={cn(
+            "text-hud-title",
+            after === 0 ? "text-hud-bad" : after === army.troops ? "text-hud-ink" : "text-hud-gold",
+          )}
+        >
+          {formatAmount(after)}
+        </span>
+      </span>
+    </div>
+  );
+};
