@@ -2629,92 +2629,91 @@ fn frontier_extension_refuses_to_lower_unlock_below_paid_custody() {
     assert!(fixture.lords.balance_of(player(0)) == pool);
 }
 
-#[test_case(0)]
-#[test_case(1)]
-#[test_case(2)]
-#[test_case(3)]
+#[test]
 #[feature("safe_dispatcher")]
-fn frontier_extension_refuses_changed_funded_identity(case: u8) {
-    use game_ledger::approved_frontier_extension as approved;
-    let fixture = extension_fixture(
-        approved::START + if case == 0 {
-            120
-        } else {
-            0
-        },
-        approved::OLD_END + if case == 0 {
-            120
-        } else if case == 1 {
-            160 * 3600
-        } else {
-            0
-        },
-        approved::SEED + if case == 2 {
-            1
-        } else {
-            0
-        },
-        1000000 * 1000000000000000000 + if case == 3 {
-            1
-        } else {
-            0
-        },
-    );
-    let before = fixture.ledger.get_frontier(approved::CHAIN_ID, 1);
-    assert!(
-        IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address }
-            .extend_frontier(approved::CHAIN_ID, 1)
-            .is_err(),
-    );
-    assert!(fixture.ledger.get_frontier(approved::CHAIN_ID, 1).end == before.end);
+fn frontier_extension_refuses_changed_funded_identity() {
+    for case in 0_u8..4 {
+        use game_ledger::approved_frontier_extension as approved;
+        let fixture = extension_fixture(
+            approved::START + if case == 0 {
+                120
+            } else {
+                0
+            },
+            approved::OLD_END + if case == 0 {
+                120
+            } else if case == 1 {
+                160 * 3600
+            } else {
+                0
+            },
+            approved::SEED + if case == 2 {
+                1
+            } else {
+                0
+            },
+            1000000 * 1000000000000000000 + if case == 3 {
+                1
+            } else {
+                0
+            },
+        );
+        let before = fixture.ledger.get_frontier(approved::CHAIN_ID, 1);
+        assert!(
+            IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address }
+                .extend_frontier(approved::CHAIN_ID, 1)
+                .is_err(),
+        );
+        assert!(fixture.ledger.get_frontier(approved::CHAIN_ID, 1).end == before.end);
+    }
 }
 
 
-#[test_case(0)]
-#[test_case(1)]
-#[test_case(2)]
-#[test_case(3)]
+#[test]
 #[test_case(4)]
 #[feature("safe_dispatcher")]
-fn frontier_extension_refuses_missing_closed_or_changed_preset(case: u8) {
-    use game_ledger::approved_frontier_extension as approved;
-    let fixture = approved_extension_fixture();
-    let mut season = fixture.ledger.get_frontier(approved::CHAIN_ID, 1);
-    if case == 0 {
-        season.funded = false;
-    }
-    if case == 1 {
-        season.closed = true;
-    }
-    if case == 2 {
-        season.preset_id = 1;
-    }
-    if case < 3 {
-        let mut data = array![];
-        season.serialize(ref data);
-        snforge_std::store(
-            fixture.ledger_address,
-            snforge_std::map_entry_address(selector!("frontier_days"), array![approved::CHAIN_ID, 1].span()),
-            data.span(),
-        );
-    } else {
-        let mut preset = fixture.ledger.get_preset(approved::PRESET_ID);
-        if case == 3 {
-            preset.day_unit_seconds = 3600;
-        } else {
-            preset.claim_window_seconds = 3600;
+fn frontier_extension_refuses_missing_closed_or_changed_preset() {
+    for case in 0_u8..5 {
+        use game_ledger::approved_frontier_extension as approved;
+        let fixture = approved_extension_fixture();
+        let mut season = fixture.ledger.get_frontier(approved::CHAIN_ID, 1);
+        if case == 0 {
+            season.funded = false;
         }
-        let mut data = array![];
-        preset.serialize(ref data);
-        snforge_std::store(
-            fixture.ledger_address,
-            snforge_std::map_entry_address(selector!("presets"), array![approved::PRESET_ID.into()].span()),
-            data.span(),
+        if case == 1 {
+            season.closed = true;
+        }
+        if case == 2 {
+            season.preset_id = 1;
+        }
+        if case < 3 {
+            let mut data = array![];
+            season.serialize(ref data);
+            snforge_std::store(
+                fixture.ledger_address,
+                snforge_std::map_entry_address(selector!("frontier_days"), array![approved::CHAIN_ID, 1].span()),
+                data.span(),
+            );
+        } else {
+            let mut preset = fixture.ledger.get_preset(approved::PRESET_ID);
+            if case == 3 {
+                preset.day_unit_seconds = 3600;
+            } else {
+                preset.claim_window_seconds = 3600;
+            }
+            let mut data = array![];
+            preset.serialize(ref data);
+            snforge_std::store(
+                fixture.ledger_address,
+                snforge_std::map_entry_address(selector!("presets"), array![approved::PRESET_ID.into()].span()),
+                data.span(),
+            );
+        }
+        assert!(
+            IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address }
+                .extend_frontier(approved::CHAIN_ID, 1)
+                .is_err(),
         );
     }
-    assert!(
-        IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address }
-            .extend_frontier(approved::CHAIN_ID, 1)
-            .is_err(),
-    );
 }
+
