@@ -9,7 +9,7 @@ import {
   HudSheet,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
+import type { Refusal } from "@/ui/design-system/kit/refusal";
 import {
   type Tier,
   BARRACKS,
