@@ -1,6 +1,6 @@
 import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { LabApp } from "./lab-app";
 import { ROOMS } from "./rooms";
@@ -41,7 +41,15 @@ vi.mock("../ui/features/debug/map-label-lab/map-label-lab-view", () => ({
 vi.mock("../ui/features/debug/motion-lab/motion-lab-view", () => ({ MotionLabView: () => <Tool name="motion" /> }));
 vi.mock("../shell/lab/app-lab", () => ({ AppLabView: () => <Tool name="app" /> }));
 vi.mock("./game/game-lab-view", () => ({ GameLabView: () => <Tool name="game" /> }));
-vi.mock("./hud/view", () => ({ HudRoomView: () => <Tool name="hud" /> }));
+// The HUD room as the owner uses it here: its comparison, and the link that opens the shown HUD alone.
+vi.mock("./hud/view", () => ({
+  HudRoomView: () => (
+    <>
+      <Tool name="hud" />
+      <Link to="/lab/kit/unified/frontier">open alone</Link>
+    </>
+  ),
+}));
 vi.mock("./data/view", () => ({ DataRoomView: () => <Tool name="data" /> }));
 vi.mock("./footage/view", () => ({ FootageView: () => <Tool name="footage" /> }));
 vi.mock("../ui/features/debug/procedural-character-benchmark-view", () => ({
@@ -208,6 +216,37 @@ it("offers the Device switch only on a page drawn for several devices", async ()
   expect(labels("Device")).toEqual(["Both", "Desktop", "Phone"]);
   await press("Device", "Phone");
   expect(address()).toBe("/lab/hud?mode=frontier&device=phone");
+});
+
+it("returns from a HUD opened alone to the comparison, its header offering only the way back", async () => {
+  await openLab("/lab/kit");
+  await press("Rooms", "HUD");
+  expect(address()).toBe("/lab/hud?mode=frontier");
+  await act(async () =>
+    [...container.querySelectorAll("a")].find((link) => link.textContent === "open alone")!.click(),
+  );
+  await settle();
+  expect(address()).toBe("/lab/kit/unified/frontier");
+  expect(container.querySelector('[aria-label="Game"]')).toBeNull();
+  expect(container.querySelector('[aria-label="Device"]')).toBeNull();
+  await press("Views", "← Back to In game");
+  expect(address()).toBe("/lab/hud?mode=frontier");
+  await press("Rooms", "Kit");
+  await press("Rooms", "HUD");
+  expect(address()).toBe("/lab/hud?mode=frontier");
+  await press("Game", "Blitz");
+  expect(address()).toBe("/lab/hud?mode=blitz");
+  expect(container.querySelector('[aria-label="Game"] [aria-pressed="true"]')?.textContent).toBe("Blitz");
+});
+
+it("keeps the game and the Phone choice across the sheet's views", async () => {
+  await openLab("/lab/kit?mode=frontier&device=phone");
+  await findTool("kit-style-sheet");
+  await press("Views", "Tokens");
+  expect(address()).toBe("/lab/kit/tokens?mode=frontier&device=phone");
+  await press("Views", "Sheet");
+  expect(address()).toBe("/lab/kit?mode=frontier&device=phone");
+  expect(container.querySelector('[aria-label="Device"] [aria-pressed="true"]')?.textContent).toBe("Phone");
 });
 
 it("disposes the old page, restores where it was left on return, and releases the viewport on exit", async () => {
