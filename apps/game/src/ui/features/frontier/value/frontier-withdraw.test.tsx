@@ -143,3 +143,34 @@ it("says a withdrawal with no answer may still apply, sends it no second time, a
   expect(picker()).toBeNull();
   expect(withdrawButton()).toBeUndefined();
 });
+
+it("sends nothing while the typed amount is cleared, then exactly the amount typed in its place", async () => {
+  game.outcome.mockResolvedValue({ status: "SUCCEEDED" });
+  game.paymentTransaction.mockResolvedValue("0xpaid");
+  await act(async () =>
+    root.render(
+      <QueryClientProvider client={client}>
+        <FrontierWithdraw realm={{ entity_id: 7n } as never} onClose={() => {}} />
+      </QueryClientProvider>,
+    ),
+  );
+  const amount = host.querySelector<HTMLInputElement>('input[aria-label="LORDS"]')!;
+  const type = (text: string) =>
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(amount, text);
+      amount.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  type("120");
+  type("");
+  expect(amount.value).toBe("");
+  // Enter in the field (the browser's own submission) and a submit however it comes: neither sends the 120.
+  await act(async () => amount.form!.requestSubmit());
+  await act(async () => amount.form!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+  expect(game.withdraw).not.toHaveBeenCalled();
+
+  type("80");
+  await act(async () => amount.form!.requestSubmit());
+  await act(async () => await new Promise((settled) => setTimeout(settled, 20)));
+  expect(game.withdraw).toHaveBeenCalledOnce();
+  expect(game.withdraw).toHaveBeenCalledWith(expect.objectContaining({ amount: 80, structureId: 7 }));
+});

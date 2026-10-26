@@ -126,7 +126,8 @@ const Pick = ({
       className="contents"
       onSubmit={(event) => {
         event.preventDefault();
-        if (ready) onWithdraw();
+        // A blank amount sends nothing, whatever amount was chosen before it was cleared.
+        if (ready && event.currentTarget.checkValidity()) onWithdraw();
       }}
     >
       <Hero icon="lords">

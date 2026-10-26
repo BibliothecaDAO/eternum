@@ -168,7 +168,8 @@ const heldBetween = (typed: number | null, min: number, max: number): number | n
 /**
  * The one amount input every amount element types into: whole units, formatted, blank while cleared. A decimal one keeps
  * what is typed on screen while it has focus, so a fraction can be typed one digit at a time ("0." stays "0."). A
- * `display` one is the amount a sheet is about, typed where it is shown large.
+ * cleared field reports nothing, so its caller still holds the last amount: the field is required, and a form it is in
+ * submits nothing while it is blank. A `display` one is the amount a sheet is about, typed where it is shown large.
  */
 export const AmountInput = ({
   label,
@@ -198,6 +199,7 @@ export const AmountInput = ({
       <input
         aria-label={label}
         inputMode={decimals ? "decimal" : "numeric"}
+        required
         value={draft ?? formatTypedNumber(value)}
         disabled={disabled}
         autoFocus={autoFocus}
