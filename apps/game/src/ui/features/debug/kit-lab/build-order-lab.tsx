@@ -9,10 +9,17 @@ import {
   HudWindow,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import { BuildOrderRow, BuildOrderView } from "@/ui/features/world/hud/build-order-panel";
+import { decorateSuggestion } from "@/ui/features/world/containers/left-facets/use-empire-suggestions";
+import { BuildOrderRow, BuildOrderView, STEP_VERBS } from "@/ui/features/world/hud/build-order-panel";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { NextUpView } from "@/ui/features/world/hud/next-up";
-import { DEFAULT_BUILD_ORDER_TEXT } from "@bibliothecadao/eternum/automation";
+import {
+  type BlitzArmyState,
+  type BlitzRealmSuggestionInput,
+  buildBlitzRealmSuggestions,
+  DEFAULT_BUILD_ORDER_TEXT,
+} from "@bibliothecadao/eternum/automation";
+import { BuildingType, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 /**
@@ -48,7 +55,7 @@ const HUT: RealmStep = {
   icon: "workers-hut",
   step: "Worker hut",
   verb: "Build",
-  why: "Population 5 of 6",
+  why: "No room for the next farm",
 };
 
 const ORDERS = {
@@ -124,36 +131,105 @@ const ImportedOrdersPanel = () => {
   );
 };
 
-/** Phase 1 as built: the game's own panel and rows, on three realms' steps worded as the default order words them. */
-const PHASE_ONE_STEPS = [
-  {
-    realmName: "Egonal",
-    label: "Build wood camp",
-    reason: "Wood camps: 1 of 2 built.",
-    icon: "wood",
-    verb: "Build",
-  },
-  {
-    realmName: "Stolsli",
-    label: "Level up realm",
-    reason: "It can level up to Kingdom now.",
-    icon: "upgrade",
-    verb: "Level up",
-  },
-  {
-    realmName: "Grimwatch",
-    label: "Build worker hut",
-    reason: "Population 5 of 6: a worker hut makes room for more.",
-    icon: "workers-hut",
-    verb: "Build",
-  },
-] satisfies ({ verb: string; icon: IconMeaning } & Parameters<typeof BuildOrderRow>[0]["step"])[];
+/** A realm whose every build can be paid and has room, as the construction rule would judge it. */
+const BUILDABLE: BlitzRealmSuggestionInput["buildability"] = {
+  copper: { canBuild: true, needsRoom: false },
+  coal: { canBuild: true, needsRoom: false },
+  military: { canBuild: true, needsRoom: false },
+  wheat: { canBuild: true, needsRoom: false },
+  wood: { canBuild: true, needsRoom: false },
+  workerHut: { canBuild: true, needsRoom: false },
+};
+const KNIGHTS = {
+  buildingType: BuildingType.ResourceKnightT1,
+  label: "Knight T1",
+  resource: ResourcesIds.Knight,
+  troopType: TroopType.Knight,
+};
+const CITY_BUILT = { wheat: 4, wood: 2, coal: 2, copper: 2, workerHut: 1, crossbowmanT1: 0, knightT1: 1, paladinT1: 0 };
+const ARMY: BlitzArmyState = { armies: 0, maxArmies: 3, troops: 0, fullArmy: 3_000, training: false };
 
+const realm = (
+  realmId: number,
+  realmName: string,
+  input: Partial<BlitzRealmSuggestionInput>,
+): BlitzRealmSuggestionInput => ({
+  realmId,
+  realmName,
+  realmLevel: 1,
+  isBlitzActive: true,
+  canAffordUpgrade: false,
+  hasAvailableBuildingTile: true,
+  buildingCounts: { ...CITY_BUILT, wheat: 0, wood: 0, coal: 0, copper: 0, knightT1: 0 },
+  population: 4,
+  populationCapacity: 12,
+  militaryTarget: { ...KNIGHTS, count: 0 },
+  army: ARMY,
+  buildability: BUILDABLE,
+  ...input,
+});
+
+/** Realms where the player's reports came from, each with the step the game's own rule gives it. */
+const SITUATIONS: { situation: string; input: BlitzRealmSuggestionInput }[] = [
+  {
+    situation: "Population 9 of 12, a farm next: a farm needs 1",
+    input: realm(1, "Egonal", {
+      population: 9,
+      buildingCounts: { ...CITY_BUILT, wheat: 2, wood: 0, coal: 0, copper: 0 },
+    }),
+  },
+  {
+    situation: "Population 11 of 12, a wood camp next: it needs 2",
+    input: realm(2, "Grimwatch", {
+      population: 11,
+      buildingCounts: { ...CITY_BUILT, wood: 0, coal: 0, copper: 0, knightT1: 0 },
+      buildability: { ...BUILDABLE, wood: { canBuild: false, reason: "Need more population.", needsRoom: true } },
+    }),
+  },
+  {
+    situation: "Barracks up, nothing trains its Knights",
+    input: realm(3, "Stolsli", {
+      buildingCounts: CITY_BUILT,
+      militaryTarget: { ...KNIGHTS, count: 1 },
+      army: { ...ARMY, troops: 400 },
+    }),
+  },
+  {
+    situation: "Kingdom, Knights in training: the order goes on",
+    input: realm(4, "Corwin", {
+      realmLevel: 2,
+      buildingCounts: CITY_BUILT,
+      militaryTarget: { ...KNIGHTS, count: 1 },
+      army: { ...ARMY, troops: 1_200, training: true },
+    }),
+  },
+  {
+    situation: "A full army of Knights on hand",
+    input: realm(5, "Ysabeau", {
+      buildingCounts: CITY_BUILT,
+      militaryTarget: { ...KNIGHTS, count: 1 },
+      army: { ...ARMY, troops: 3_000, training: true },
+    }),
+  },
+];
+
+/** The panel as built, on the default order: each situation's row as the game's own rule writes it, under its case. */
 const PhaseOnePanel = () => (
   <BuildOrderView orderName="Default">
-    {PHASE_ONE_STEPS.map(({ verb, ...step }) => (
-      <BuildOrderRow key={step.realmName} step={step} verb={verb} busy={false} refusal={null} onPress={run} />
-    ))}
+    {SITUATIONS.map(({ situation, input }) => {
+      const [draft] = buildBlitzRealmSuggestions(input);
+      const step = draft && decorateSuggestion(draft);
+      return (
+        <div key={input.realmName} data-situation={input.realmName}>
+          <p className="text-hud-label text-hud-muted">{situation}</p>
+          {step && step.action !== "upgrade" ? (
+            <BuildOrderRow step={step} verb={STEP_VERBS[step.action]} busy={false} refusal={null} onPress={run} />
+          ) : (
+            <p className="text-hud-label text-hud-ink">{input.realmName}: nothing to take now.</p>
+          )}
+        </div>
+      );
+    })}
   </BuildOrderView>
 );
 
@@ -172,8 +248,8 @@ const ImportWindow = () => (
       </pre>
       <HudNotice
         tone="bad"
-        line="Line 3: “mill” is not a building of an order"
-        why="Farm, wood, coal, copper, hut or military."
+        line="Line 3: “mill” is not a goal of an order"
+        why="Farm, wood, coal, copper, hut, military or army."
       />
     </div>
   </HudWindow>
@@ -204,7 +280,7 @@ export const BuildOrderLab = () => {
       </Shown>
       <Shown
         name="Phase 1 · the panel"
-        line="Built (build-order-3): the game's own panel, under Next up in a Blitz's rail, on the default order. For every realm only a step it can take now, never one done; Stolsli's level-up and Grimwatch's hut are the two rules that always come first."
+        line="Built: the game's own panel, under Next up in a Blitz's rail, on the default order, each row from the game's own rule. A worker hut only when the next step needs the room; after the barracks, its troops trained, then the first army deployed."
       >
         <PhaseOnePanel />
       </Shown>
@@ -222,7 +298,7 @@ export const BuildOrderLab = () => {
       </Shown>
       <Shown
         name="The order, as written"
-        line="The default order (left) in the same text a player writes and shares, and a player's own (right). Two rules need no line: level up when the realm can, and a worker hut when population is 3 from full."
+        line="The default order (left) in the same text a player writes and shares, and a player's own (right). Two rules need no line: level up when the realm can, and a worker hut when the next step needs the room."
       >
         <div className="flex items-start gap-3">
           <pre className="rounded border border-white/10 p-3 font-mono text-xs text-white/80">

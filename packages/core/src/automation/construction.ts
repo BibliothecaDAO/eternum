@@ -275,10 +275,10 @@ const resolveBuildingPopulationImpact = (buildingType: BuildingType): BuildingPo
   };
 };
 
-const resolvePopulationState = (
-  input: ConstructionBuildabilityInput,
-  basePopulationCapacity: number,
-): PopulationState => {
+/** What the population rule reads: the realm and the building. */
+type PopulationInput = Pick<ConstructionBuildabilityInput, "entityId" | "buildingType" | "store">;
+
+const resolvePopulationState = (input: PopulationInput, basePopulationCapacity: number): PopulationState => {
   const buildings = input.store.require("StructureBuildings", {
     game_id: configManager.getActiveGameId(),
     entity_id: input.entityId,
@@ -296,7 +296,7 @@ const exceedsProjectedPopulationCapacity = (
   basePopulationCapacity: number,
 ): boolean => population.current + impact.cost > population.max + impact.capacityGrant + basePopulationCapacity;
 
-const validatePopulation = (input: ConstructionBuildabilityInput): ConstructionBuildabilityResult => {
+const validatePopulation = (input: PopulationInput): ConstructionBuildabilityResult => {
   if (input.buildingType === BuildingType.WorkersHut) return pass();
 
   const basePopulationCapacity = toNumber(configManager.getBasePopulationCapacity());
@@ -313,6 +313,9 @@ const validatePopulation = (input: ConstructionBuildabilityInput): ConstructionB
 
   return pass();
 };
+
+/** Whether the realm's population has room for the building now, whatever else it lacks: the rule a build is held to. */
+export const hasPopulationRoomFor = (input: PopulationInput): boolean => validatePopulation(input).canSubmit;
 
 /** A game played on realm boards (Frontier): its board rules are among the game's facts. */
 const hasRealmBoard = (store: NativeFactStore) =>

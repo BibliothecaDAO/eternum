@@ -140,8 +140,16 @@ export class ResourceManager {
     return resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
   }
 
-  public isActive(resourceId: ResourcesIds): boolean {
-    return ResourceManager.hasActiveProduction(this.current(resourceId)?.production, resourceId);
+  /**
+   * Whether the resource is being produced at `timestamp`: a building at a rate, with output left once what it made
+   * since its last settlement is counted. A finished batch is no longer production, whether or not a later transaction
+   * has settled its row.
+   */
+  public isProducingAt(resourceId: ResourcesIds, timestamp: number): boolean {
+    const state = this.current(resourceId);
+    return (
+      state !== undefined && ResourceManager.calculateResourceProductionData(resourceId, state, timestamp).isProducing
+    );
   }
 
   /** Production that never runs out: continuous food, or a producer written with the unlimited output sentinel. */

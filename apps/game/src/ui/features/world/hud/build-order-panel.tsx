@@ -18,9 +18,10 @@ import type { ReactNode } from "react";
 
 /**
  * The Build order panel (the owner's pick, build-order-2): the order at its head, then each realm's next step under it,
- * only once the step can be taken; a step done never shows. Level-ups and a worker hut when population runs short come
- * first, as they always do. Self-contained: it reads the game it is drawn in, and draws nothing where there is no build
- * order to follow (outside a Blitz, or for a viewer who gives no orders). The rail places it under Next up.
+ * only once the step can be taken; a step done never shows. A level-up comes first, as it always does; a worker hut
+ * comes when the next step needs the room. Self-contained: it reads the game it is drawn in, and draws nothing where
+ * there is no build order to follow (outside a Blitz, or for a viewer who gives no orders). The rail places it under
+ * Next up.
  */
 export const BuildOrderPanel = () => {
   const blitz = useResolvedWorldGameMode() === "blitz";
@@ -40,7 +41,7 @@ const PlayersBuildOrder = () => {
           <BuildOrderRow
             key={step.id}
             step={step}
-            verb={BUILD_ORDER_WORDS.build}
+            verb={STEP_VERBS[step.action]}
             busy={pendingSuggestionIds.includes(step.id)}
             refusal={refusal}
             onPress={() => void handleSuggestionClick(step).catch(() => undefined)}
@@ -51,6 +52,18 @@ const PlayersBuildOrder = () => {
       )}
     </BuildOrderView>
   );
+};
+
+/** Each order step's verb: a build builds, training opens Production, an army its deployment. */
+export const STEP_VERBS: Record<Exclude<EmpireSuggestion["action"], "upgrade">, string> = {
+  "build-copper": BUILD_ORDER_WORDS.build,
+  "build-coal": BUILD_ORDER_WORDS.build,
+  "build-military": BUILD_ORDER_WORDS.build,
+  "build-wheat": BUILD_ORDER_WORDS.build,
+  "build-wood": BUILD_ORDER_WORDS.build,
+  "build-worker-hut": BUILD_ORDER_WORDS.build,
+  "train-troops": BUILD_ORDER_WORDS.train,
+  "deploy-army": BUILD_ORDER_WORDS.deploy,
 };
 
 /**

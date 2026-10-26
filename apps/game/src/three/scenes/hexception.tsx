@@ -97,7 +97,7 @@ import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-sy
 import { pickLocalRealm } from "./local-realm";
 import { IS_FLAT_MODE } from "@/ui/config";
 
-import { ProductionModal } from "@/ui/features/settlement";
+import { openProduction } from "@/ui/features/settlement/production/open-production";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { sendBuilding } from "@/ui/features/settlement/construction/send-building";
@@ -1090,12 +1090,7 @@ export default class HexceptionScene extends HexagonScene {
     });
 
     const producedResource = getProducedResource(building.category as BuildingType);
-    usePopoverStore.getState().openSurface({
-      id: "production",
-      content: (
-        <ProductionModal preSelectedResource={producedResource === ResourcesIds.Labor ? undefined : producedResource} />
-      ),
-    });
+    openProduction({ resource: producedResource === ResourcesIds.Labor ? undefined : producedResource });
   }
 
   /** The projection knows what stands on a hex, including a Frontier realm raised on a site with no tile of its own. */

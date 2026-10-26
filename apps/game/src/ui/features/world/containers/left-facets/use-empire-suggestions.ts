@@ -5,6 +5,7 @@ import { playerStructuresView, seasonClockView } from "@/sync/fact-views";
 
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
 import { configManager, TileManager } from "@bibliothecadao/eternum";
@@ -13,6 +14,7 @@ import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import {
+  automationProduces,
   readBlitzRealmSuggestions,
   type BlitzSuggestionDraft,
   type EmpireSuggestionAction,
@@ -30,10 +32,12 @@ const ACTION_ICONS: Record<EmpireSuggestionAction, IconMeaning> = {
   "build-wheat": "farm",
   "build-wood": "wood",
   "build-worker-hut": "workers-hut",
+  "deploy-army": "deploy",
+  "train-troops": "troops",
   upgrade: "upgrade",
 };
 
-/** The realms' next steps in the order their kind comes first: a level-up, a hut, then the order's buildings. */
+/** The realms' next steps in the order their kind comes first: a level-up, a hut, the order's buildings, its army. */
 const compareSuggestionDrafts = (left: BlitzSuggestionDraft, right: BlitzSuggestionDraft) =>
   left.priority - right.priority;
 
@@ -55,7 +59,8 @@ const resolveBlitzActivity = ({
   return isBlitzWorld && isMainPhase && !gameOver;
 };
 
-const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestion => {
+/** A step as the HUD draws it: its painting in place of its rank among the realms' steps. */
+export const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestion => {
   const { priority, ...suggestion } = draft;
   void priority;
 
@@ -67,7 +72,7 @@ const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestion => {
 
 /**
  * Every realm's next step in a running Blitz (core's buildBlitzRealmSuggestions on the default build order): only a
- * step that can be submitted now, by the same build path the construction window uses.
+ * step that can be taken now, a build by the same path the construction window uses.
  */
 export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const {
@@ -80,6 +85,7 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const tick = useCurrentDefaultTick();
   const playerStructures = useFactView(playerStructuresView);
   const structureNameVersion = useUIStore((state) => state.structureNameVersion);
+  const automation = useAutomationStore((state) => state.realms);
   const { gameStartMainAt, devModeOn } = useFactView(seasonClockView);
   const metadata = useStructuresWithMetadata({
     structures: playerStructures,
@@ -107,9 +113,10 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
           tiles: TileManager.forStructure(facts.store, systemCalls, structure.entityId),
           mode,
           tick,
+          automationTrains: (resource) => automationProduces(automation[String(structure.entityId)], resource),
         });
       })
       .toSorted(compareSuggestionDrafts)
       .map(decorateSuggestion);
-  }, [metadata, systemCalls, mode, isBlitzActive, facts, tick]);
+  }, [metadata, systemCalls, mode, isBlitzActive, facts, tick, automation]);
 };

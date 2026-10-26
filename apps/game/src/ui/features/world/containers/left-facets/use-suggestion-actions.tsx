@@ -3,7 +3,9 @@ import { actNowRefusal, canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
+import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { buildRealmBuilding } from "@/ui/features/settlement/construction/realm-build-actions";
+import { openProduction } from "@/ui/features/settlement/production/open-production";
 import { getRealmInfo, configManager, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { type BuildingType, type ResourcesIds } from "@bibliothecadao/types";
@@ -34,7 +36,11 @@ const beginPendingSuggestion = (suggestionId: string): boolean => {
 const completePendingSuggestion = (suggestionId: string): void =>
   usePendingSuggestions.setState(({ ids }) => ({ ids: ids.filter((id) => id !== suggestionId) }));
 
-/** A step's build submits against its realm without changing the current selection. */
+/**
+ * A step's verb: a build submits against its realm without changing the current selection; training opens the realm's
+ * Production on the troop, and an army opens its deployment on the troops the step names, where the player chooses
+ * where it goes and confirms.
+ */
 export const useSuggestionActions = () => {
   const { setup } = useGame();
   const mode = useGameModeConfig();
@@ -71,7 +77,11 @@ export const useSuggestionActions = () => {
   const runSuggestionClick = useCallback(
     async (suggestion: OrderSuggestion) => {
       if (!canIssueOrders() || actNowRefusal()) return;
-      await runAutoBuildSuggestion(suggestion);
+      const realmId = safeInteger(suggestion.realmId);
+      if (suggestion.action === "deploy-army")
+        openArmyDeployment({ structureId: realmId, isExplorer: true, troops: suggestion.troops });
+      else if (suggestion.action === "train-troops") openProduction({ realmId, resource: suggestion.resourceHint });
+      else await runAutoBuildSuggestion(suggestion);
     },
     [runAutoBuildSuggestion],
   );

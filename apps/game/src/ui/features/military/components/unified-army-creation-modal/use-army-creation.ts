@@ -554,7 +554,7 @@ function readTroopSupply(
   const name = buildingName(getBuildingFromResource(resourceId), getGameModeId() === "frontier");
   if (structureId === undefined) return { name, perHour: 0, secondsToFullArmy: null };
   const manager = new ResourceManager(store, structureId);
-  const production = manager.isActive(resourceId) ? manager.current(resourceId) : undefined;
+  const production = manager.isProducingAt(resourceId, timestamp) ? manager.current(resourceId) : undefined;
   const perSecond = production
     ? ResourceManager.calculateResourceProductionData(resourceId, production, timestamp).productionPerSecond
     : 0;
