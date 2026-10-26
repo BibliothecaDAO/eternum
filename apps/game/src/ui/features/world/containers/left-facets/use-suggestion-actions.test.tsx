@@ -27,7 +27,6 @@ vi.mock("@bibliothecadao/eternum", async (original) => ({
 }));
 
 const { useSuggestionActions } = await import("./use-suggestion-actions");
-const { usePopoverStore } = await import("@/hooks/store/use-popover-store");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { LeftView } = await import("@/types");
 
@@ -94,7 +93,7 @@ it("sends a step once while it is in flight, whichever surface presses it, and s
 });
 
 /** A realm's army step, as the order offers it once its barracks stands. */
-const armyStep = (action: "train-troops" | "deploy-army") =>
+const armyStep = (action: "deploy-army") =>
   ({
     id: `1-${action}`,
     realmId: 1,
@@ -115,13 +114,7 @@ const pressStep = async (step: never) => {
   await act(async () => host.querySelector("button")!.click());
 };
 
-it("opens the realm's Production on its troop for Train, and its army deployment for Deploy", async () => {
-  await pressStep(armyStep("train-troops"));
-  const production = usePopoverStore.getState().surface;
-  expect([production?.id, (production?.content as { props: unknown }).props]).toEqual([
-    "production",
-    { preSelectedRealmId: 1, preSelectedResource: 7 },
-  ]);
+it("opens the realm's army deployment for Deploy, building nothing", async () => {
   await pressStep(armyStep("deploy-army"));
   expect(useUIStore.getState().leftNavigationView).toBe(LeftView.MilitaryView);
   expect(useUIStore.getState().pendingMilitaryAction).toEqual({ structureId: 1, isExplorer: true });

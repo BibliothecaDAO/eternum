@@ -54,21 +54,19 @@ const blitzRealm = () => {
   return store;
 };
 
-/** The realm's steps, by the game's own reader over the facts it holds, at `tick`, its automation set as `trains`. */
-const readSteps = (store: NativeFactStore, trains = false, tick = 1) =>
+/** The realm's steps, by the game's own reader over the facts it holds. */
+const readSteps = (store: NativeFactStore) =>
   readBlitzRealmSuggestions({
     store,
     realmId: BLITZ_REALM_ID,
     realmName: "Egonal",
     isBlitzActive: true,
     tiles: { isHexOccupied: () => false },
-    tick,
-    automationTrains: () => trains,
+    tick: 1,
   });
 
 /** The realm's next step in words: its action and its reason. */
-const nextStep = (store: NativeFactStore, trains = false, tick = 1) =>
-  readSteps(store, trains, tick).map(({ action, reason }) => `${action} · ${reason}`);
+const nextStep = (store: NativeFactStore) => readSteps(store).map(({ action, reason }) => `${action} · ${reason}`);
 
 /** One troop's balance at the realm, in whole troops. */
 const holdTroops = (store: NativeFactStore, resource: ResourcesIds, count: number) =>
@@ -82,29 +80,6 @@ const holdTroops = (store: NativeFactStore, resource: ResourcesIds, count: numbe
         resource_type: resource,
         balance: String(BigInt(count) * BigInt(RESOURCE_PRECISION)),
       },
-    },
-  ] as never);
-
-/** A paid batch of `count` Paladins from the realm's barracks, one a second from `from`, with room to store them. */
-const trainPaladins = (store: NativeFactStore, count: number, from: number) =>
-  store.applyFacts([
-    {
-      model: "ResourceProduction",
-      key: `0xc5${ResourcesIds.Paladin}`,
-      value: {
-        game_id: 1,
-        entity_id: BLITZ_REALM_ID,
-        resource_type: ResourcesIds.Paladin,
-        building_count: 1,
-        production_rate: String(RESOURCE_PRECISION),
-        output_amount_left: String(BigInt(count) * BigInt(RESOURCE_PRECISION)),
-        last_settled_at: from,
-      },
-    },
-    {
-      model: "ResourceWeight",
-      key: "0x6",
-      value: { game_id: 1, entity_id: BLITZ_REALM_ID, capacity: String((1n << 128n) - 1n), weight: "0" },
     },
   ] as never);
 
@@ -164,29 +139,14 @@ describe("a Blitz realm's next step, read from the game's facts", () => {
     ]);
   });
 
-  it("trains the realm's own troop after its barracks, waits while it trains, and deploys a full army", () => {
+  it("leaves the realm's troop to production automation after its barracks, and deploys a full army", () => {
     const store = blitzRealm();
     cityWithBarracks(store, 400);
-    expect(nextStep(store)).toEqual(["train-troops · Paladin T1: 400 of 7,500 for a full army, and none in training."]);
-    // Its automation trains them: nothing to take while they come.
-    expect(nextStep(store, true)).toEqual([]);
+    // Short of a full army: no step to take, the barracks' troops are automation's to train.
+    expect(nextStep(store)).toEqual([]);
     // A full army at a City of this game is 7,500 Paladins.
     cityWithBarracks(store, 7_500);
-    expect(nextStep(store, true)).toEqual(["deploy-army · Paladin T1: 7,500 on hand, a full army of 7,500."]);
-  });
-
-  it("trains again once a paid batch has run out short of a full army, with no later write of its row", () => {
-    const store = blitzRealm();
-    cityWithBarracks(store, 400);
-    trainPaladins(store, 100, 400);
-    // The batch runs from 400 to 500: in training until then, nothing to take.
-    expect(nextStep(store, false, 450)).toEqual([]);
-    // Run out at 500 with 500 on hand, short of 7,500: nothing trains them now.
-    for (const at of [1_000, 10_000]) {
-      expect(nextStep(store, false, at)).toEqual([
-        "train-troops · Paladin T1: 500 of 7,500 for a full army, and none in training.",
-      ]);
-    }
+    expect(nextStep(store)).toEqual(["deploy-army · Paladin T1: 7,500 on hand, a full army of 7,500."]);
   });
 
   it("opens the deployment on the troop it names, a full army of it, though the realm holds another troop too", async () => {

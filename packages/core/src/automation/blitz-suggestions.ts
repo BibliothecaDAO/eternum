@@ -18,7 +18,6 @@ export type EmpireSuggestionAction =
   | "build-wood"
   | "build-worker-hut"
   | "deploy-army"
-  | "train-troops"
   | "upgrade";
 
 export type BlitzBuildKey = "copper" | "coal" | "military" | "wheat" | "wood" | "workerHut";
@@ -61,8 +60,6 @@ export type BlitzArmyState = {
   troops: number;
   /** The most troops of that kind one army holds at the realm's level: a full army. */
   fullArmy: number;
-  /** Whether that troop is being trained: its barracks produces it now, or the realm's production automation will. */
-  training: boolean;
 };
 
 export type BlitzRealmSuggestionInput = {
@@ -254,53 +251,34 @@ const resolveBuildingStep = (input: BlitzRealmSuggestionInput, building: OrderBu
 };
 
 /**
- * An army step: the realm's barracks, then its troops in training, then the army deployed once a full one is on hand.
- * Troops in training pass, so the order goes on building while they come; a step the realm cannot field (no free
- * slot) passes too.
+ * An army step: the realm's barracks, then the army deployed once a full one is on hand. The barracks' troops are the
+ * production automation's to train, so until a full army stands the step passes and the order goes on building; a step
+ * the realm cannot field (no free slot) passes too.
  */
 const resolveArmyStep = (input: BlitzRealmSuggestionInput, count: number): StepVerdict => {
   const { army, militaryTarget } = input;
   if (!army || !militaryTarget || army.armies >= count || army.armies >= army.maxArmies) return "passes";
-  if (army.fullArmy > 0 && army.troops >= army.fullArmy) {
-    return {
-      ...createArmySuggestion(input, "deploy-army", militaryTarget, army),
-      troops: { type: militaryTarget.troopType, tier: TroopTier.T1, count: army.fullArmy },
-    };
-  }
-  if (army.training) return "passes";
-  if (militaryTarget.count === 0) return resolveBuildingStep(input, "military", 1);
-  return createArmySuggestion(input, "train-troops", militaryTarget, army);
+  if (army.fullArmy > 0 && army.troops >= army.fullArmy) return createDeploySuggestion(input, militaryTarget, army);
+  return militaryTarget.count === 0 ? resolveBuildingStep(input, "military", 1) : "passes";
 };
 
-const ARMY_STEPS = {
-  "deploy-army": {
-    label: () => "Deploy an army",
-    reason: (troop: string, army: BlitzArmyState) =>
-      `${troop}: ${formatExact(army.troops)} on hand, a full army of ${formatExact(army.fullArmy)}.`,
-    priority: 50,
-  },
-  "train-troops": {
-    label: (troop: string) => `Train ${troop}`,
-    reason: (troop: string, army: BlitzArmyState) =>
-      `${troop}: ${formatExact(army.troops)} of ${formatExact(army.fullArmy)} for a full army, and none in training.`,
-    priority: 55,
-  },
-} as const;
-
-/** An army step to take: its troop is the military target's, which the realm's barracks trains. */
-const createArmySuggestion = (
+/** The army deployed: a full army of the realm's own troop, which its barracks trains, for the deployment to open on. */
+const createDeploySuggestion = (
   input: BlitzRealmSuggestionInput,
-  action: keyof typeof ARMY_STEPS,
   target: BlitzMilitaryTarget,
   army: BlitzArmyState,
-): BlitzSuggestionDraft => {
-  const step = ARMY_STEPS[action];
-  return {
-    ...createBaseSuggestion(input, action, step.label(target.label), step.priority, step.reason(target.label, army)),
-    buildingTypeHint: target.buildingType,
-    resourceHint: target.resource,
-  };
-};
+): BlitzSuggestionDraft => ({
+  ...createBaseSuggestion(
+    input,
+    "deploy-army",
+    "Deploy an army",
+    50,
+    `${target.label}: ${formatExact(army.troops)} on hand, a full army of ${formatExact(army.fullArmy)}.`,
+  ),
+  buildingTypeHint: target.buildingType,
+  resourceHint: target.resource,
+  troops: { type: target.troopType, tier: TroopTier.T1, count: army.fullArmy },
+});
 
 const resolveStep = (input: BlitzRealmSuggestionInput, step: BuildOrderStep): StepVerdict =>
   step.goal === "army" ? resolveArmyStep(input, step.count) : resolveBuildingStep(input, step.goal, step.count);
