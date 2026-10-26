@@ -388,19 +388,46 @@ const hexesApart = (from, to) =>
 
 /**
  * The Feed's first story that still opens a place (one from a closed Frontier day is no link), pressed as a player
- * presses it: the map goes where it happened. Frontier's realms stand millions of hexes apart, so a story of another
- * realm is a far jump.
+ * presses it: the map goes where it happened. A desktop's Feed stands in the rail. A phone's stories are in the Log: the
+ * player taps Log in the place bar, then the story. A story whose army can be selected puts the Log away for its card;
+ * one that only goes to a place leaves the Log open over the map, and the player taps Log again to look at the place
+ * (the place bar's Map would take the camera home). Frontier's realms stand millions of hexes apart, so a story of
+ * another realm is a far jump.
  */
 async function openAFeedEvent({ browser }) {
   const before = browser.observe();
   const from = browser.read(ROUTE_HEX_EXPRESSION);
+  const log = onADesktop() ? undefined : await tapTheLog(browser);
+  if (log === false) return { log, row: null };
   // A row's button is named by its words, time and line run together; the browser presses the first one where it is.
   const row = browser.read(`JSON.stringify(document.querySelector(".ui-event__open")?.textContent.trim() ?? null)`);
-  if (!row) return { row: null };
+  if (!row) return { log, row: null };
   browser.run(["click", ".ui-event__open"]);
   await waitFor(browser, (seen) => seen.playable && seen.scene === "map", SCENE_WAIT_MS);
   const to = browser.read(ROUTE_HEX_EXPRESSION);
-  return { row, from, to, apart: hexesApart(from, to), reloaded: browser.observe().timeOrigin !== before.timeOrigin };
+  const logLeftOpen = log
+    ? !(await waitFor(browser, (seen) => !seen.panels.includes("Log"), LOG_CLOSES_MS))
+    : undefined;
+  if (logLeftOpen) await tapTheLog(browser);
+  return {
+    log,
+    row,
+    from,
+    to,
+    apart: hexesApart(from, to),
+    logLeftOpen,
+    reloaded: browser.observe().timeOrigin !== before.timeOrigin,
+  };
+}
+
+/** How long an army's card takes to stand in the Log's place once its story is tapped. */
+const LOG_CLOSES_MS = 3_000;
+
+/** A phone's Log slot tapped, as a player taps it; whether the Log's panel is drawn after. */
+async function tapTheLog(browser) {
+  browser.tapPlace("Log");
+  await sleep(1_500);
+  return browser.observe().panels.includes("Log");
 }
 
 /**
@@ -408,6 +435,7 @@ async function openAFeedEvent({ browser }) {
  * the selected tile (a contract hex) is the route's (a normalized hex), one map centre apart on both axes.
  */
 function openedInThePage({ seen, played }) {
+  if (played.log === false) return failed("the Log did not open", played);
   if (!played.row) return blocked("the Feed showed no story that opens a place", played);
   if (played.reloaded) return failed("the page loaded again to open the story", played);
   if (!played.to) return failed("the story's address names no hex", played);

@@ -196,6 +196,12 @@ describe("a story opened from the Feed", () => {
     expect(verify({ seen: selected, played }).status).toBe("completed");
   });
 
+  it("fails a phone whose Log never opened, and is blocked only when an opened Feed holds no story", () => {
+    expect(verify({ seen: selected, played: { log: false, row: null } }).reason).toBe("the Log did not open");
+    expect(verify({ seen: selected, played: { log: true, row: null } }).status).toBe("blocked");
+    expect(verify({ seen: selected, played: { ...played, log: true } }).status).toBe("completed");
+  });
+
   it("fails a page that loaded again, a place not selected, another tile selected, or the camera elsewhere", () => {
     expect(verify({ seen: selected, played: { ...played, reloaded: true } }).reason).toBe(
       "the page loaded again to open the story",

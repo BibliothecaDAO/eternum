@@ -60,6 +60,11 @@ export function createBrowserSession(session, { headed, profile }) {
     clickTab: (name) => run(["find", "role", "tab", "click", "--name", name, "--exact"]),
     press: (key) => run(["press", key]),
     tap: (offset) => run(["batch", ...tapCommands(offset)]),
+    tapPlace: (word) => {
+      const at = read(placeSlotExpression(word));
+      if (!at) throw new Error(`The place bar shows no ${word}`);
+      run(["batch", `mouse move ${at.x} ${at.y}`, "mouse down", "mouse up"]);
+    },
     hover: (offset) => run(["mouse", "move", ...screenPoint(offset).map(String)]),
     rightClick: (offset) => run(["batch", ...rightClickCommands(offset)]),
     screenshot: (path) => run(["screenshot", path]),
@@ -81,6 +86,19 @@ const withoutNpmNoise = (output) =>
 
 /** A point at an offset from the screen's centre, where selecting an army puts it. */
 const screenPoint = ([dx, dy]) => [VIEWPORT.width / 2 + dx, VIEWPORT.height / 2 + dy];
+
+/**
+ * The centre of a phone's place-bar slot, found by its word: a count of what is unread stands beside the word in the
+ * button's name, so the name alone does not find it.
+ */
+const placeSlotExpression = (word) => `JSON.stringify((() => {
+  const slot = [...document.querySelectorAll('nav[aria-label="Places"] button')].find(
+    (button) => button.lastElementChild?.textContent.trim() === ${JSON.stringify(word)},
+  );
+  const rect = slot?.getBoundingClientRect();
+  // agent-browser's mouse takes whole pixels.
+  return rect ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) } : null;
+})())`;
 
 function tapCommands(offset) {
   const [x, y] = screenPoint(offset);
