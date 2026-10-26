@@ -15,6 +15,8 @@ set -euo pipefail
 HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 BUN_VERSION=1.4.0
 NODE_MAJOR=22
+# Cloudflare, October 2026: older cloudflared trusts eight compromised emSign intermediate certificates.
+CLOUDFLARED_MIN=2026.10.2
 
 install_packages() {
   apt-get update -q
@@ -72,7 +74,16 @@ create_workspace() {
   install -d -m 0755 -o "$OPERATOR" -g "$OPERATOR" /opt/athanor
 }
 
+# A stale mirror or a held package must stop the bootstrap, not start a tunnel on an unsafe version.
+require_safe_cloudflared() {
+  local installed
+  installed=$(dpkg-query -W -f='${Version}' cloudflared)
+  dpkg --compare-versions "$installed" ge "$CLOUDFLARED_MIN" ||
+    { echo "cloudflared $installed is older than $CLOUDFLARED_MIN; run apt-get update and install it again" >&2; return 1; }
+}
+
 install_tunnel() {
+  require_safe_cloudflared
   [ -f /etc/cloudflared/tunnel-token ] || { echo "Write /etc/cloudflared/tunnel-token first" >&2; exit 1; }
   chmod 0600 /etc/cloudflared/tunnel-token
   install -m 0644 "$HERE/cloudflared.service" /etc/systemd/system/cloudflared.service
