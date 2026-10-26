@@ -801,14 +801,14 @@ pub fn setup_frontier_chests_with_rules(
     discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
 ) -> (super::Deployment, u32, ExplorerKey) {
     let (_, frontier) = super::preset_projection::current_definition("frontier");
-    let result = setup_frontier_chests_with_preset(discovery, frontier);
+    let result = setup_frontier_chests_with_preset(discovery, frontier, None);
     let (d, game_id, _) = result;
     publish_test_pool(d, game_id, 1000000, 350);
     result
 }
 pub fn setup_unfunded_frontier_chests() -> (super::Deployment, u32, ExplorerKey) {
     let (_, frontier) = super::preset_projection::current_definition("frontier");
-    setup_frontier_chests_with_preset(None, frontier)
+    setup_frontier_chests_with_preset(None, frontier, None)
 }
 pub fn publish_test_pool(d: super::Deployment, game_id: u32, amount: u128, timestamp: u64) {
     super::entry::set_operator(d, super::authority());
@@ -821,12 +821,18 @@ pub fn publish_test_pool(d: super::Deployment, game_id: u32, amount: u128, times
     stop_cheat_caller_address(d.games);
 }
 pub fn setup_frontier_chests_with_preset(
-    discovery: Option<crate::expeditions::FrontierDiscoveryRules>, frontier: PresetDefinition,
+    discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
+    frontier: PresetDefinition,
+    board: Option<crate::buildings::BoardRules>,
 ) -> (super::Deployment, u32, ExplorerKey) {
     let chests = frontier.economy.chests.unwrap();
     let ground = *frontier.settlement.depths.at(0).chest;
     let d = setup();
     let mut preset = definition(true);
+    preset.structures.board = board;
+    if board.is_some() {
+        preset.structures.research = frontier.structures.research;
+    }
     open_entry(ref preset);
     preset.rules.day_unit_seconds = DAY_UNIT;
     preset.rules.tick_config.armies_tick_in_seconds = 60;
@@ -949,7 +955,7 @@ pub fn setup_frontier_chests_with_preset(
 pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     let rules = ruin_discovery_rules();
-    let (d, game_id, key) = setup_frontier_chests_with_preset(Some(rules), frontier);
+    let (d, game_id, key) = setup_frontier_chests_with_preset(Some(rules), frontier, None);
     let army = strong_frontier_army(d, game_id, key);
     let (ruin, _) = reveal_ruin(d, key, rules, 360);
     let budget = IRelicsDispatcher { contract_address: d.games }.lords_budget(game_id).unwrap();

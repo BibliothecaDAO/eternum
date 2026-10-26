@@ -647,7 +647,8 @@ fn a_beast_clear_clips_labor_at_storage_but_keeps_all_xp() {
 }
 
 fn beast_clear_payout(full: bool) {
-    let (d, game_id, key) = setup_frontier_chests();
+    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let (d, game_id, key) = setup_frontier_chests_with_preset(None, frontier, frontier.structures.board);
     let army = strong_frontier_army(d, game_id, key);
     let coord = crate::geometry::neighbor(army.coord, 0);
     let context = crate::commands::ExecutionContext { timestamp: 360, ..crate::tests::context(d.games, game_id) };
@@ -677,6 +678,18 @@ fn beast_clear_payout(full: bool) {
     );
     stop_cheat_caller_address(d.games);
     let before = resources.resource_balance(labor);
+    let cap = 6000 * RESOURCE_PRECISION;
+    assert_eq!(
+        snforge_std::interact_with_state(
+            d.games, || crate::logic::resources::store_limit(home, crate::resources::LABOR),
+        ),
+        Some(cap),
+    );
+    if full {
+        assert_eq!(before, cap);
+    } else {
+        assert!(before + 250 * RESOURCE_PRECISION <= cap);
+    }
     let xp = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp);
     let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: id });
     assert!(execute_in_game(d, game_id, attack, 361));
