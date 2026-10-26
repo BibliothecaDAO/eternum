@@ -100,7 +100,7 @@ export const STAMINA = "stamina";
 /** The HUD's tab for everything the player holds. */
 export const EMPIRE = "Empire";
 /** The places: the nav's words. */
-export const MAP = "Map";
+const MAP = "Map";
 export const REALM = "Realm";
 /** The realm's way home from its card's header: the map centred on it. */
 export const SHOW_MY_REALM = "Show my realm";
@@ -165,6 +165,8 @@ export const RIGHT_CLICK_SENDS = "A right-click sends it at once.";
 export const CANCEL = "Cancel";
 /** A highlighted tile on its tooltip: ground not yet seen, and troops passed to another of the player's armies. */
 export const UNEXPLORED = "Unexplored";
+/** A reveal that paid under a unit, in the day log: what was done, with no amount (findGain). */
+export const EXPLORED = "Explored";
 export const TRANSFER = "Transfer";
 /** A good held whose weight the game has not given: its donkeys cannot be counted, so it cannot be sent. */
 export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
@@ -430,9 +432,22 @@ export const TRANSFER_TROOPS = {
 export const ARMIES = "Armies";
 /** How many troops an army holds: "1 troop", "5,000 troops". */
 export const troopCount = (count: number) => formatCount(count, "troop", TROOPS);
+/** What a building's output is made of with research: its base and the share its side adds, "5 + 25% Fields". */
+export const researchBasis = (base: string, share: string, side: string) => `${base} + ${share} ${side}`;
+/** One building's output with that basis: "+6.3/min (5 + 25% Fields)". */
+export const withResearch = (rate: string, basis: string) => `${rate} (${basis})`;
+/** What makes a store's rate, line by line on its card: "3 Workshops · +5/min each (3.4 + 50% Tools)", "Castle · +1.7/min". */
+export const MADE_BY = "Made by";
+export const STORE_MAKERS = {
+  buildings: (count: string, each: string, basis?: string) =>
+    basis ? `${count} · ${each} each (${basis})` : `${count} · ${each} each`,
+  castle: (rate: string) => `${CASTLE} · ${rate}`,
+};
+/** What an army's Homecoming sends home when the day ends, on its row or token in the day's last hour. */
+export const comesHomeAtDayEnd = (troops: string) => `${troops} come home when the day ends`;
 
 /** The day log's lines for what the player did, in the names the build cards and the dock use. */
-export const revealLine = (amount: string, resource: string) => `+${amount} ${resource}`;
+export const revealLine = (gain: string, resource: string) => `${gain} ${resource}`;
 export const builtLine = (building: string) => `${building} built`;
 export const deployedLine = (army: string) => `${army} deployed`;
 export const disbandedLine = (army: string) => `${army} disbanded`;
@@ -1189,6 +1204,8 @@ export const RESEARCH_TREE = {
   foundByNewArmies: (kind: string) => `${kind} found by new armies`,
   sidesLine: (made: string) => `Each tier picks a side for the season: more ${made}, or store more`,
   sideKept: "The side is kept for the season.",
+  /** What one building of a row's type makes now, under its make side: "Each Farm: +6.3/min (5 + 25% Fields)". */
+  eachMakes: (building: string, output: string) => `Each ${building}: ${output}`,
   hutLine: "Population from every Hut",
   gateLine: (tier: string) => `${tier} opens the four training buildings`,
   gateOpen: "The four training buildings are open",

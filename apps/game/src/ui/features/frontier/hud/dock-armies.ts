@@ -4,6 +4,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
+import { exploreStaminaOf, type StaminaBar } from "@/lib/army-stamina/segments";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { configManager, getArmyName, homecomingReturn, liveHomeArmies } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -30,7 +31,7 @@ export type DockArmy = {
   xpGoal: { price: number; tier: number } | undefined;
   /** Its four attribute tiers (Battle, Logistics, Scouting, Homecoming), 1 to 5; unknown while its progress is. */
   tiers: readonly [number, number, number, number] | undefined;
-  stamina: { current: number; max: number } | undefined;
+  stamina: StaminaBar | undefined;
   secondsToFull: number | undefined;
   troops: number;
   /** Its XP buys a tier of an attribute now: the card fan on its token. */
@@ -75,7 +76,13 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       xp: progress?.xp,
       xpGoal: progress && xpRules && nextTierGoal(progress, xpRules),
       tiers: progress && attributeTiers(progress),
-      stamina: stamina ? { current: stamina.committedCurrent, max: stamina.committedMax } : undefined,
+      stamina: stamina
+        ? {
+            current: stamina.committedCurrent,
+            max: stamina.committedMax,
+            perExplore: exploreStaminaOf(setup.store, army.game_id),
+          }
+        : undefined,
       secondsToFull: stamina?.secondsUntilFull,
       troops: Number(army.troops.count / BigInt(RESOURCE_PRECISION)),
       canBuyTier: progress !== undefined && xpRules !== undefined && affordableUpgrades(progress, xpRules).length > 0,

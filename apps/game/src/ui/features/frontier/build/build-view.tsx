@@ -29,8 +29,11 @@ export type BuildTile = {
   name: string;
   /** What the building does, in one line, on the card's tooltip. */
   tip: string;
-  /** What one more gives, as its painting and figure: "+1.7/min" troops, "+6" population, "Common" Battle. */
-  gives: { icon: IconMeaning; value: string };
+  /**
+   * What one more gives, as its painting and figure: "+1.7/min" troops, "+6" population, "Common" Battle; a producer's
+   * figure with research says what it is made of under it ("1.7 + 25% Drill").
+   */
+  gives: { icon: IconMeaning; value: string; basis?: string };
   /** The population it takes; 0 takes none. */
   takes: number;
   standing:
@@ -131,8 +134,17 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
   </span>
 );
 
-/** What one more gives, and the population it takes when it takes any. */
+/** What one more gives (with what research adds, under it), and the population it takes when it takes any. */
 const Gives = ({ tile }: { tile: BuildTile }) => (
+  <span className="flex flex-col items-center">
+    <GivesLine tile={tile} />
+    {tile.gives.basis && (
+      <span className="whitespace-nowrap text-hud-label tabular-nums text-hud-muted">{tile.gives.basis}</span>
+    )}
+  </span>
+);
+
+const GivesLine = ({ tile }: { tile: BuildTile }) => (
   <span className="flex items-center justify-center gap-x-1.5 whitespace-nowrap tabular-nums">
     <span className="flex items-center gap-1">
       <SemanticIcon name={tile.gives.icon} size={14} />

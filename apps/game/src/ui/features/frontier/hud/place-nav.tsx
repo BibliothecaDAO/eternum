@@ -4,10 +4,10 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { useSideways } from "@/shell/frame/layout";
 
-import { CHAT, LOG, MAP, MENU, REALM, RESEARCH } from "@/ui/design-system/kit/words";
+import { CHAT, LOG, MENU, REALM, RESEARCH } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-export type Place = "map" | "realm" | "research" | "log" | "chat" | "menu";
+export type Place = "realm" | "research" | "log" | "chat" | "menu";
 
 /** A dot on a slot: lit is news (research to buy), amber and ember a store nearing or at its limit. */
 type Dot = "lit" | "amber" | "ember";
@@ -19,9 +19,10 @@ const DOTS: Record<Dot, string> = {
 };
 
 /**
- * The phone's place bar: Map and Realm as one switch (the two places of play), then Research, the Log (the Events'
- * history, with what arrived since it was read), Chat and Menu, an icon and one word each, at the foot of every nav
- * page, or down the left edge of a phone held sideways. The lit slot is where the player is.
+ * The phone's place bar: Realm, Research, the Log (the Events' history, with what arrived since it was read), Chat and
+ * Menu, an icon and one word each, at the foot of every nav page, or down the left edge of a phone held sideways. The
+ * map is where play is, so it has no slot: each slot opens its place over it and a second press closes it, Realm
+ * included (owner, 25 October). The lit slot is what is open; none is lit on the map.
  */
 export const PlaceNav = ({
   place,
@@ -31,7 +32,7 @@ export const PlaceNav = ({
   events,
   unread,
 }: {
-  place: Place;
+  place: Place | null;
   onGo: (place: Place) => void;
   realmDot?: Dot;
   /** Whether Research has a node to buy; none leaves the slot out, for a player with no realm to research. */
@@ -56,9 +57,7 @@ export const PlaceNav = ({
         className="flex-1"
         bodyClassName={cn("flex items-stretch justify-between gap-0.5", sideways ? "h-full flex-col" : "min-h-14")}
       >
-        {slot("map", "map", MAP)}
         {slot("realm", "realm", REALM, realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />)}
-        <i aria-hidden className={cn("shrink-0 self-stretch bg-hud-line", sideways ? "h-px" : "w-px")} />
         {researchDot !== undefined &&
           slot("research", "research", RESEARCH, researchDot && <i className={cn("size-2 rounded-full", DOTS.lit)} />)}
         {slot("log", "chronicles", LOG, count(events))}

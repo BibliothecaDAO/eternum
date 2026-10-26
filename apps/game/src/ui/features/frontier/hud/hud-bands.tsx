@@ -19,8 +19,6 @@ type Bands = {
   strip: ReactNode;
   /** The realm's LORDS and its Realms' labor, beside Next up under the strip. */
   purse?: ReactNode;
-  /** What floats over the map itself (the last hour's bubble). */
-  stage?: ReactNode;
   /** A nav page, standing on the place bar. */
   page?: ReactNode;
   nextUp?: ReactNode;
@@ -42,7 +40,7 @@ type Bands = {
  */
 export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />);
 
-const UprightBands = ({ strip, purse, stage, page, nextUp, notices, action, dock, nav, children }: Bands) => {
+const UprightBands = ({ strip, purse, page, nextUp, notices, action, dock, nav, children }: Bands) => {
   const bar = useRef<HTMLDivElement>(null);
   // A sheet stands on the place bar: its top, from the screen's bottom.
   const foot = useEdge(bar, (rect) => window.innerHeight - rect.top + BAND_GAP);
@@ -56,7 +54,7 @@ const UprightBands = ({ strip, purse, stage, page, nextUp, notices, action, dock
         <div className="relative">{strip}</div>
         <TopRow nextUp={nextUp} purse={purse} />
       </div>
-      <div className="relative min-h-0 flex-1">{stage}</div>
+      <div className="relative min-h-0 flex-1" />
       <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5">
         <div className="flex flex-col gap-1.5">{notices}</div>
         {page ? <PageBand className="h-hud-phone-panel">{page}</PageBand> : <UnderSheet action={action} dock={dock} />}
@@ -67,7 +65,7 @@ const UprightBands = ({ strip, purse, stage, page, nextUp, notices, action, dock
   );
 };
 
-const SidewaysBands = ({ strip, purse, stage, page, nextUp, notices, action, dock, nav, children }: Bands) => {
+const SidewaysBands = ({ strip, purse, page, nextUp, notices, action, dock, nav, children }: Bands) => {
   const top = useRef<HTMLDivElement>(null);
   // A sheet stands in the column under the strip and Next up.
   const sheetTop = useEdge(top, (rect) => rect.bottom + BAND_GAP);
@@ -80,7 +78,7 @@ const SidewaysBands = ({ strip, purse, stage, page, nextUp, notices, action, doc
       <div {...HUD_COLUMN_MARK} className="flex">
         {nav}
       </div>
-      <div className="relative min-w-0 flex-1">{stage}</div>
+      <div className="relative min-w-0 flex-1" />
       <div {...HUD_COLUMN_MARK} className="flex min-h-0 w-hud-column flex-col gap-1.5">
         <div ref={top} className="flex flex-col gap-1.5">
           <div className="relative">{strip}</div>

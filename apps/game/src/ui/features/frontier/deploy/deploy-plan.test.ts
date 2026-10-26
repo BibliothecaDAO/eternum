@@ -23,7 +23,13 @@ describe("Frontier's deploy", () => {
   it("reads the troops at home as one count, the slot the next army fills, and the wheat each troop costs", () => {
     const { store, row } = frontierDay();
     const plan = planOf(store, row)!;
-    expect(plan.next).toEqual({ slot: 1, number: 2, inherited: false, start: { current: 150, max: 150 } });
+    // The fixture's preset explores for 30 stamina: a 150 bar is five explores.
+    expect(plan.next).toEqual({
+      slot: 1,
+      number: 2,
+      inherited: false,
+      start: { current: 150, max: 150, perExplore: 30 },
+    });
     expect(plan.troops).toMatchObject({ type: TroopType.Knight, tier: TroopTier.T1, atHome: 420 });
     expect(plan.wheatPerTroop).toBe(2);
     expect(plan.wheat).toBe(1_000);

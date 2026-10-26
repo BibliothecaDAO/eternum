@@ -2,21 +2,23 @@ import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudPanel, HudPortrait, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { ARMIES, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
+import type { StaminaBar } from "@/lib/army-stamina/segments";
 import type { ReactNode } from "react";
 
-import { StaminaReading, xpLine, type XpGoal } from "./army-token";
+import { HomecomingReturn, StaminaReading, xpLine, type XpGoal } from "./army-token";
 
 /**
  * One army on a desktop's list: its painting with its number; its name with its XP beside it (what it buys next on
- * hover); under them its troops and its stamina as a bar with the exact count; at its end, while its XP buys a level
- * now, the card fan. A press picks the army and opens its panel, where its levels are bought. The desktop's form of the
- * dock's token; a phone keeps the token. Read-only on a visit.
+ * hover) and, in the day's last hour, what its Homecoming sends home; under them its troops and its stamina as a bar with
+ * the exact count; at its end, while its XP buys a level now, the card fan. A press picks the army and opens its panel,
+ * where its levels are bought. The desktop's form of the dock's token; a phone keeps the token. Read-only on a visit.
  */
 export const ArmyRow = ({
   label,
   number,
   art,
   troops,
+  returnsHome,
   stamina,
   xp,
   xpGoal,
@@ -29,7 +31,9 @@ export const ArmyRow = ({
   number: number | undefined;
   art: IconMeaning | undefined;
   troops: number | undefined;
-  stamina: { current: number; max: number } | undefined;
+  /** In the day's last hour, the troops its Homecoming sends home when the day ends; none otherwise. */
+  returnsHome?: number;
+  stamina: StaminaBar | undefined;
   xp: number | undefined;
   xpGoal?: XpGoal;
   canBuyTier: boolean;
@@ -54,8 +58,11 @@ export const ArmyRow = ({
     title={
       <span className="flex items-center justify-between gap-2">
         <span className="truncate">{label}</span>
-        <span data-tip={xpLine(xp, xpGoal)} className="flex shrink-0 items-center gap-1 tabular-nums text-hud-gold">
-          {`${formatAmount(xp)} ${XP}`}
+        <span className="flex shrink-0 items-center gap-2">
+          {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
+          <span data-tip={xpLine(xp, xpGoal)} className="flex items-center gap-1 tabular-nums text-hud-gold">
+            {`${formatAmount(xp)} ${XP}`}
+          </span>
         </span>
       </span>
     }

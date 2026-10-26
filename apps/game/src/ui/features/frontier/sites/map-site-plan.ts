@@ -1,4 +1,4 @@
-import { formatAmount, TileOccupier } from "@bibliothecadao/types";
+import { formatGain, TileOccupier } from "@bibliothecadao/types";
 import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { STAMINA, XP } from "@/ui/design-system/kit/words";
@@ -26,8 +26,8 @@ export const siteGainLine = (
   stamina: { current: number; max: number } | undefined,
 ): string | null => {
   if (gain === undefined) return null;
-  if (kind === "Shrine") return `+${formatAmount(gain)} ${XP}`;
+  if (kind === "Shrine") return `${formatGain(gain)} ${XP}`;
   const lands = stamina ? Math.max(0, Math.min(gain, stamina.max - stamina.current)) : gain;
   if (lands === 0) return `Stamina full: the well would be wasted`;
-  return lands < gain ? `+${formatAmount(lands)} ${STAMINA}, to full` : `+${formatAmount(gain)} ${STAMINA}`;
+  return lands < gain ? `${formatGain(lands)} ${STAMINA}, to full` : `${formatGain(gain)} ${STAMINA}`;
 };

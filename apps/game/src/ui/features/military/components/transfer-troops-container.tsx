@@ -17,17 +17,18 @@ import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
   ActorType,
   DISPLAYED_SLOT_NUMBER_MAP,
+  formatCharge,
+  formatExact,
+  formatGain,
+  formatWait,
   getDirectionBetweenAdjacentHexes,
+  GuardSlot,
+  guardSlotName,
   ID,
   RELICS,
   ResourcesIds,
   TroopTier,
   TroopType,
-  formatWait,
-  formatCharge,
-  formatExact,
-  guardSlotName,
-  GuardSlot,
 } from "@bibliothecadao/types";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -871,7 +872,7 @@ export const TransferTroopsContainer = ({
 
       if (delta > 0) {
         tone = "positive";
-        changeLabel = `+${formatCharge(delta)} ${gainText}`;
+        changeLabel = `${formatGain(delta)} ${gainText}`;
       } else if (delta < 0) {
         tone = "negative";
         changeLabel = `-${formatCharge(Math.abs(delta))} ${lossText}`;

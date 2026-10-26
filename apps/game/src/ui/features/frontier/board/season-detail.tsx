@@ -1,4 +1,4 @@
-import { formatAmount, LORDS, frontierSiteName, StructureType } from "@bibliothecadao/types";
+import { formatAmount, formatGain, frontierSiteName, LORDS, StructureType } from "@bibliothecadao/types";
 import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { OrderMark } from "./realm-marks";
 import {
@@ -87,10 +87,10 @@ export const SeasonDetailSheet = ({
       </div>
       <div className="flex items-center justify-center gap-1.5">
         <HudChip icons={["essence"]} label={ESSENCE}>
-          {`+${formatAmount(detail.essence)}`}
+          {formatGain(detail.essence)}
         </HudChip>
         <HudChip icons={["labor"]} label={LABOR}>
-          {`+${formatAmount(detail.labor)}`}
+          {formatGain(detail.labor)}
         </HudChip>
       </div>
       {onVisit && (

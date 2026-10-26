@@ -1,4 +1,4 @@
-import { formatAmount, formatCharge, formatDuration } from "@bibliothecadao/types";
+import { formatAmount, formatCharge, formatDuration, formatGain } from "@bibliothecadao/types";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
@@ -69,7 +69,7 @@ export const OrderBar = ({
         )}
         {covered && kind === "explore" && (
           <HudChip>
-            {`+${formatAmount(xp)}`} {XP}
+            {formatGain(xp)} {XP}
           </HudChip>
         )}
         {covered && kind === "move" && (
@@ -152,11 +152,15 @@ const CostChip = ({
 const RevealYield = ({ revealYield, laborFits }: { revealYield: number | undefined; laborFits: number | undefined }) =>
   revealYield !== undefined && laborFits !== undefined && laborFits < revealYield ? (
     <>
-      <HudChip icons={["essence"]} label={ESSENCE}>{`+${formatAmount(revealYield)}`}</HudChip>
-      <HudChip icons={["labor"]} label={LABOR} tone="bad">{`+${formatAmount(laborFits)}`}</HudChip>
+      <HudChip icons={["essence"]} label={ESSENCE}>
+        {formatGain(revealYield)}
+      </HudChip>
+      <HudChip icons={["labor"]} label={LABOR} tone="bad">
+        {formatGain(laborFits)}
+      </HudChip>
     </>
   ) : (
     <HudChip icons={["essence", "labor"]} label={`${ESSENCE}, ${LABOR}`}>
-      {revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
+      {formatGain(revealYield)}
     </HudChip>
   );

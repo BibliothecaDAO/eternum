@@ -35,7 +35,6 @@ const draw = (page?: boolean) =>
       <HudBands
         strip={<i data-part="strip" />}
         nextUp={<i data-part="next-up" />}
-        stage={<i data-part="stage" />}
         page={page ? <i data-part="page" /> : undefined}
         action={<i data-part="action" />}
         dock={<i data-part="dock" />}
@@ -61,27 +60,20 @@ const parts = () =>
 it("stands upright as bands: the strip and Next up over the map, the action row, the dock and the places under it", () => {
   holdPhone(false);
   draw();
-  expect(parts()).toEqual(["strip:top", "next-up:top", "stage:map", "action:foot", "dock:foot", "nav:foot"]);
+  expect(parts()).toEqual(["strip:top", "next-up:top", "action:foot", "dock:foot", "nav:foot"]);
 });
 
 it("stands sideways as a rail of places at the left and one column at the right, the map between them", () => {
   holdPhone(true);
   draw();
-  expect(parts()).toEqual([
-    "nav:column",
-    "stage:map",
-    "strip:column",
-    "next-up:column",
-    "action:column",
-    "dock:column",
-  ]);
+  expect(parts()).toEqual(["nav:column", "strip:column", "next-up:column", "action:column", "dock:column"]);
 });
 
 it("puts a nav page where the action row and the dock stood, held either way, and keeps the map", () => {
   holdPhone(false);
   draw(true);
-  expect(parts()).toEqual(["strip:top", "next-up:top", "stage:map", "page:foot", "nav:foot"]);
+  expect(parts()).toEqual(["strip:top", "next-up:top", "page:foot", "nav:foot"]);
   holdPhone(true);
   draw(true);
-  expect(parts()).toEqual(["nav:column", "stage:map", "strip:column", "next-up:column", "page:column"]);
+  expect(parts()).toEqual(["nav:column", "strip:column", "next-up:column", "page:column"]);
 });

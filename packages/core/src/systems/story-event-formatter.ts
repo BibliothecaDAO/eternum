@@ -1,26 +1,27 @@
 import {
-  CHEST_EARNED,
-  frontierSiteName,
-  StructureType,
-  fightVerdict,
-  VERDICT_WORDS,
   buildingName,
+  CHEST_EARNED,
+  fightVerdict,
   formatCharge,
-  scaledToUnits,
   formatClockTime,
   formatDuration,
   formatExact,
+  formatGain,
   formatPoints,
+  frontierSiteName,
   GuardSlot,
   guardSlotName,
   LORDS,
-  RealmLevels,
   rankName,
+  RealmLevels,
   relicChestDelivery,
   relicEffect,
   relicName,
   resourceName,
+  scaledToUnits,
+  StructureType,
   type ResourcesIds,
+  VERDICT_WORDS,
   wholePoints,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -76,7 +77,13 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   ExplorationReward: (event, payload, components, resolvePlayerName) => {
     const site = discoveredSite(payload, components);
     return {
-      title: findLine(site ? `${siteDisplayName(site.id)} found` : "Explored", payload),
+      title: site
+        ? findLine(
+            `${siteDisplayName(site.id)} found`,
+            `${playerOf(event, components, resolvePlayerName)} found ${siteDisplayName(site.id)}`,
+            payload,
+          )
+        : findLine("Explored", `${playerOf(event, components, resolvePlayerName)} explored`, payload),
       description: joinPieces([
         site?.kind,
         describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
@@ -86,7 +93,11 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     };
   },
   SpireDiscovered: (event, payload, components, resolvePlayerName) => ({
-    title: findLine("Dormant spire found", payload),
+    title: findLine(
+      "Dormant spire found",
+      `${playerOf(event, components, resolvePlayerName)} found a dormant spire`,
+      payload,
+    ),
     description: joinPieces([
       describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
       "Reveal",
@@ -887,11 +898,25 @@ const withPoints = (line: string, points: unknown): string => {
 };
 
 /**
- * A find as the feed tells it: what was done and what it gave, "Explored: +100 Labor". Not where (the map shows it), nor
- * an explore's points, a grant that never changes (the voice rule "A find says what it gave").
+ * What a find gave, as every reader writes it (the feed's story, the day log, the reveal's rise): its gain from one
+ * unit up ("+12"), and nothing below one, so a find under a unit says no amount at all (owner, 26 October: "djizus
+ * explored", not "under 1 Labor"). Unknown is "—". The one rule for a find's amount; every reader asks it.
  */
-const findLine = (found: string, payload: Record<string, unknown>): string =>
-  `${found}: +${formatResourceAmount(payload.amount) ?? "—"} ${resourceName(Number(payload.resource_type))}`;
+export const findGain = (units: number | undefined): string | null =>
+  units !== undefined && units < 1 ? null : formatGain(units);
+
+/**
+ * A find as the feed tells it: what was done and what it gave, "Explored: +100 Labor"; under a unit, who did it and
+ * nothing more, "djizus explored" (findGain). Not where (the map shows it), nor an explore's points, a grant that never
+ * changes (the voice rule "A find says what it gave").
+ */
+const findLine = (found: string, foundBy: string, payload: Record<string, unknown>): string => {
+  const scaled = amountToBigInt(payload.amount);
+  const units = scaled === null ? undefined : scaledToUnits(scaled);
+  return findGain(units) === null
+    ? foundBy
+    : `${found}: ${findGain(units)} ${resourceName(Number(payload.resource_type))}`;
+};
 
 const TROOP_PLURALS: Record<string, string> = { Knight: "Knights", Paladin: "Paladins", Crossbowman: "Crossbowmen" };
 
