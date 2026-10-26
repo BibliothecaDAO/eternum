@@ -5,6 +5,10 @@ const { TileManager } = await import("@bibliothecadao/eternum");
 const { frontierDay } = await import("@/ui/features/frontier/deploy/deploy-fixture");
 const { default: HexceptionScene } = await import("./hexception");
 const { localCameraMaxDistance } = await import("./local-camera-reach");
+const { SceneName } = await import("../types");
+
+/** The scene the game shows now: the realm view unless a test has gone to the map. */
+const shown = { scene: SceneName.Hexception as string };
 
 const REALM = 7;
 const REALM_TILE = { col: 5, row: 5 };
@@ -38,6 +42,7 @@ const realmView = ({ store }: Fixture) => {
     controls: {} as { maxDistance?: number },
     // A phone held upright: the castle's reach decides how far the camera may pull back.
     camera: { aspect: 390 / 844, fov: 45 },
+    sceneManager: { getCurrentScene: () => shown.scene },
     tileManager: TileManager.forStructure(store, {} as never, REALM),
     gridBuilds: {
       start: () => builds.push({ level: scene.structureStage, ringToLight: scene.newRingRadius }),
@@ -69,7 +74,10 @@ const raiseCastle = ({ store }: Fixture) => {
 
 let view: ReturnType<typeof realmView> | undefined;
 beforeEach(() => window.history.replaceState(null, "", "/g/0x1/1/hex?col=5&row=5"));
-afterEach(() => view?.stop());
+afterEach(() => {
+  view?.stop();
+  shown.scene = SceneName.Hexception;
+});
 
 it("redraws an open realm view for a castle raised to City: its grid laid out at City, the new second ring lit", () => {
   const fixture = frontierDay();
@@ -98,4 +106,38 @@ it("leaves the grid alone when the realm's row changes but its level does not", 
   const realm = fixture.store.require("Structure", { game_id: 1, entity_id: REALM });
   fixture.store.applyFacts([{ model: "Structure", key: "0x7", value: { ...realm, resources_packed: "0x1" } }] as never);
   expect(view.builds).toEqual([]);
+});
+
+it("fits the farthest zoom again when the phone turns in the realm view, at Kingdom and at Empire", () => {
+  for (const [level, plotRadius] of [
+    [2, 3],
+    [3, 4],
+  ] as const) {
+    const fixture = frontierDay();
+    const realm = fixture.store.require("Structure", { game_id: 1, entity_id: REALM });
+    fixture.store.applyFacts([
+      { model: "Structure", key: "0x7", value: { ...realm, base: { ...realm.base, level } } },
+    ] as never);
+    view = realmView(fixture);
+    // Entered with the phone on its side: the board already fits at the view's own limit.
+    view.scene.camera.aspect = 844 / 390;
+    view.scene.updateCastleLevel();
+    expect(view.scene.controls.maxDistance).toBe(20);
+    // Turned upright, as the renderer's resize reports it: the whole board fits again, with no leaving and no level up.
+    view.scene.camera.aspect = 390 / 844;
+    view.scene.followScreenShape();
+    expect(view.scene.controls.maxDistance).toBe(
+      localCameraMaxDistance({ plotRadius, aspect: 390 / 844, fovDegrees: 45 }),
+    );
+    view.stop();
+  }
+});
+
+it("leaves the zoom limit alone when the screen turns while the map is shown, whose controls these are then", () => {
+  view = realmView(frontierDay());
+  view.scene.controls.maxDistance = 65;
+  shown.scene = SceneName.WorldMap;
+  view.scene.camera.aspect = 844 / 390;
+  view.scene.followScreenShape();
+  expect(view.scene.controls.maxDistance).toBe(65);
 });

@@ -1166,6 +1166,22 @@ export default class HexceptionScene extends HexagonScene {
       structureType === StructureType.Hyperstructure
         ? getStructureStage(structureType, useUIStore.getState().structureEntityId, this.game.store)
         : this.tileManager.getRealmLevel(this.state.structureEntityId);
+    this.fitCameraReach();
+  }
+
+  /**
+   * The screen changed shape (a phone turned, a window resized; the renderer has set the camera's aspect): while the
+   * realm is shown, its farthest zoom is fitted again, so the whole board still fits without leaving the realm.
+   */
+  public followScreenShape(): void {
+    if (this.sceneManager.getCurrentScene() === SceneName.Hexception) this.fitCameraReach();
+  }
+
+  /**
+   * The camera's farthest zoom for the castle's reach on the screen as it is now (localCameraMaxDistance): on entry, when
+   * the castle rises, and when the screen turns. A zoom still inside the new reach stays where the player left it.
+   */
+  private fitCameraReach(): void {
     this.controls.maxDistance = localCameraMaxDistance({
       plotRadius: buildableRadius(this.structureStage),
       aspect: this.camera.aspect,
