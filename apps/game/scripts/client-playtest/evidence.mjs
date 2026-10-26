@@ -557,6 +557,20 @@ export function refusalErrors(lines) {
 
 const REFUSED_TRANSACTION = /Transaction (0x[0-9a-fA-F]+) not sent \(refused\)/;
 
+/**
+ * The client's log of a WebGL context a step lost on purpose (a phone's tab put away): three's own report and the game's
+ * among `lines`, once each. Any other error stays a browser error.
+ */
+export function contextLossErrors(lines) {
+  const ofTheLoss = lines.filter((line) => WEBGL_CONTEXT_LOSS.some((pattern) => pattern.test(line)));
+  return ofTheLoss.length === WEBGL_CONTEXT_LOSS.length ? ofTheLoss : [];
+}
+
+const WEBGL_CONTEXT_LOSS = [
+  /^\[error\] THREE\.THREE\.WebGPURenderer: WebGL Device Lost:$/,
+  /^\[error\] \[RendererFailure\] kind="device_lost" renderer_mode="webgl2-fallback" /,
+];
+
 /** The client's own frame-spike reports (`[FramePerf]`): spike frames counted and the work that owned each. */
 export function collectFrameSpikes(consoleOutput) {
   const owners = {};

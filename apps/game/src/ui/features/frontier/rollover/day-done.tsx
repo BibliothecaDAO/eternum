@@ -6,7 +6,7 @@ import { type DaySummary, useDayEndStore } from "@/hooks/store/use-day-end-store
 import { configManager, type readExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { endedHomeArmies, homecomingAtNextDeploy } from "../frontier-home";
 import { dayClock, endedDay } from "../hud/day-clock";
@@ -21,13 +21,17 @@ const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "ArmyProgress", "Resourc
 
 /**
  * A Frontier day's end in the HUD (use-day-end-store): the ended day's summary over the map, the black and the way past
- * them (DayEndScreen). The summary is the day-done card, once per ended day on this device: the ended day's totals (the
- * player's day as Today reads it, usePlayerDay), the rank it closed at against the day before, the troops its armies
- * took and what Homecoming returns at the next deploy. It waits for the player's history to answer (the moment's
- * summary phase waits with it, for a while), and says when that history cannot give the day. A day the player did not
- * play (no army ended with it, nothing revealed or cleared) has none, and a visit to another realm shows none; the
- * moment then passes without it. In the game as the day ends, ExpeditionRollover begins the moment; opening the game
- * after it ended, or once history answers after the moment went on without the summary, this does.
+ * them (DayEndScreen). Each device goes through each ended day's end once: the black, behind which the camera comes onto
+ * the realm's new site, and the summary before it when there is one. The summary is the day-done card: the ended day's
+ * totals (the player's day as Today reads it, usePlayerDay), the rank it closed at against the day before, the troops
+ * its armies took and what Homecoming returns at the next deploy. It waits for the player's history to answer (the
+ * moment's summary phase waits with it, for a while), and says when that history cannot give the day. A day the player
+ * did not play (no army ended with it, nothing revealed or cleared) has none, and a visit to another realm shows none;
+ * the moment then passes without it. Nor does a device show it once the player has played on in the new day, on this
+ * device or another (owner, 2026-10-25: the recap shows "until you act"): their own history says so on every device, so
+ * no device keeps a "seen" for the account. In the game as the day ends, ExpeditionRollover begins the moment; opening the
+ * game after it ended (owner, 2026-10-25: "it doesnt automatically move me to the new day area"), or once history
+ * answers after the moment went on without the summary, this does.
  */
 export const DayDone = ({
   rules,
@@ -49,11 +53,11 @@ export const DayDone = ({
   const played = usePlayerDay(player, ended);
   const rank = useClosingRankChange(ended?.day);
   const openedAt = useOpenedAt(now);
-  const { phase, summaryMissed, begin, continueDay, showSummary } = useDayEndStore();
+  const { phase, summaryMissed, landReady, begin, continueDay, showSummary } = useDayEndStore();
   const unseen = !visiting && player !== null && ended !== null && (seen === null || seen < ended.day);
 
   const summary = (() => {
-    if (!unseen || !ended || played.history === "waiting") return null;
+    if (!unseen || !ended || played.history === "waiting" || played.playedOn) return null;
     const { totals } = played;
     const gone = endedHomeArmies(setup.store, realm, rules, now);
     if (gone.length === 0 && totals.reveals === 0 && totals.cleared === 0) return null;
@@ -70,10 +74,7 @@ export const DayDone = ({
         armies={gone.length}
         troopsLost={taken - (returned?.sent ?? 0)}
         returned={returned && returned.sent > 0 ? returned : undefined}
-        onContinue={() => {
-          markSeen(ended.day);
-          continueDay();
-        }}
+        onContinue={continueDay}
       />
     );
   })();
@@ -82,13 +83,26 @@ export const DayDone = ({
   useEffect(() => {
     showSummary(state);
   }, [state, showSummary]);
-  // A day that ended before this session opened was never seen ending, nor one whose moment went on before its
-  // history answered: its summary opens over the new land.
+  // A day that ended before this session opened was never seen ending: its end plays over the new land once its
+  // summary is known, shown or none. One whose moment went on before its history answered opens its summary then.
   const endedBeforeOpening = ended !== null && openedAt !== null && ended.end <= openedAt;
-  const owed = state === "shown" && (endedBeforeOpening || summaryMissed);
+  const arrived = unseen && endedBeforeOpening && state !== "waiting";
+  // An arrival begins once a page: past the black's longest hold the player is back on the map, and the camera's move,
+  // still due, lands when the block clock catches up. A page booting again begins it afresh.
+  const [begunFor, setBegunFor] = useState<number | null>(null);
+  const endedDayNumber = ended?.day ?? null;
+  const owed = (arrived && begunFor !== endedDayNumber) || (state === "shown" && summaryMissed);
   useEffect(() => {
-    if (owed && phase === "day") begin("later");
-  }, [owed, phase, begin]);
+    if (!owed || phase !== "day") return;
+    setBegunFor(endedDayNumber);
+    begin("later");
+  }, [owed, phase, begin, endedDayNumber]);
+  // The day's end is gone through once the camera is on the realm's new site with no summary owed. Marked before, a
+  // page booting again in the black would keep the old site and never move.
+  const goneThrough = unseen && landReady && !summaryMissed ? ended.day : null;
+  useEffect(() => {
+    if (goneThrough !== null) markSeen(goneThrough);
+  }, [goneThrough, markSeen]);
 
   return <DayEndScreen summary={summary} />;
 };
@@ -101,22 +115,25 @@ const useOpenedAt = (now: number): number | null => {
 };
 
 /**
- * The last ended day this device has shown its card for. A convenience in the browser's storage: losing it only shows
- * the card again.
+ * The last ended day this device has gone through the end of. A convenience in the browser's storage: losing it only
+ * plays that day's end again.
  */
 const useSeenDay = (gameId: number, player: string | null): [number | null, (day: number) => void] => {
   const key = player ? `frontier.day-done.${gameId}.${player}` : null;
   const [marked, setMarked] = useState<number | null>(null);
   const stored = readSeen(key);
   const seen = marked === null ? stored : Math.max(marked, stored ?? marked);
-  const mark = (day: number) => {
-    setMarked(day);
-    try {
-      if (key) window.localStorage.setItem(key, String(day));
-    } catch {
-      // Storage refused: the card shows again next time, which is harmless.
-    }
-  };
+  const mark = useCallback(
+    (day: number) => {
+      setMarked(day);
+      try {
+        if (key) window.localStorage.setItem(key, String(day));
+      } catch {
+        // Storage refused: the day's end plays again next time, which is harmless.
+      }
+    },
+    [key],
+  );
   return [seen, mark];
 };
 

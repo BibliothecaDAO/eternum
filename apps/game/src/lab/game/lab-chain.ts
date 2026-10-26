@@ -10,6 +10,8 @@ import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import type { AccountInterface } from "starknet";
 
+import { LAB_CHAIN_ID } from "./lab-shard";
+
 import { FRONTIER_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
 import {
   nativeFactModels,
@@ -19,7 +21,7 @@ import {
 
 /** The lab game's shard: listed in the tab's directory, served by the tab's Herald, never reached on the network. */
 export const LAB_GAME = {
-  chainId: "0x1ab9",
+  chainId: LAB_CHAIN_ID,
   gameId: 1,
   presetId: FRONTIER_PRESET_ID,
   url: "https://herald.lab.invalid",
@@ -51,11 +53,17 @@ export interface LabScenario {
   history?: HeraldHistoryEvent[];
   /** The lab second before which Herald's history holds its answers back (a slow Herald); none: it answers at once. */
   historyAnswersAt?: number;
+  /** What the player's device holds as the game starts (its storage); set once at the start, never on a reload. */
+  startDevice?: () => void;
 }
 
 interface LabChainRecord {
   /** Every command the game signed, in order, with the facts the lab answered it with. */
   sent: { hash: string; command: LabCommand; answered: LabFact[] }[];
+  /** How many stream sockets the game opened to the lab's Herald since this page loaded. */
+  streams: number;
+  /** The stream goes silent, as a slept phone's does: its socket stays open and nothing more comes on it. */
+  silence: () => void;
 }
 
 declare global {
@@ -67,29 +75,29 @@ declare global {
 const wire = (value: unknown): unknown =>
   JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
 
-const rowsOf = (store: NativeFactStore): LabFact[] =>
+/** Every row of a store as Herald carries it. */
+export const rowsOf = (store: NativeFactStore): LabFact[] =>
   (Object.keys(nativeFactModels) as NativeModelName[]).flatMap((model) =>
     [...store.entries(model)].map(([key, value]) => ({ model, key, value: wire(value) })),
   );
 
 /**
  * Plays the game route on a fixture, in this tab only: the directory lists the lab shard, its Herald's socket is
- * answered here (the snapshot, the player's scope, a head each second), the player is signed in with an empty chat, and
- * their account is one whose signed commands are recorded and answered by the scenario as the chain would apply them.
- * Everything past the network is the game's own: its client, scenes, input and HUD. Installed once for the tab's life;
- * a reload starts from the lab again.
+ * answered here (the snapshot, the player's scope, a head each second), the player is signed in with an empty chat, and their account's signed
+ * commands are recorded and answered by the scenario as the chain would apply them. Everything past the network is the
+ * game's own: its client, scenes, input and HUD. Installed once per page load; the chain's clock started at `startedAt`
+ * (wall time), so a reload of the game goes on where the chain stood, its commands' answers gone with the page.
  */
-export const installLabChain = async (scenario: LabScenario): Promise<LabChainRecord> => {
+export const installLabChain = async (scenario: LabScenario, startedAt: number): Promise<LabChainRecord> => {
   if (window.__labChain) return window.__labChain;
-  const record: LabChainRecord = { sent: [] };
+  const record: LabChainRecord = { sent: [], streams: 0, silence: () => herald.silence() };
   window.__labChain = record;
   const { nativeBindings } = await import("@/runtime/world/native-bindings");
   // The chain's own state, keyed as its Herald serves each row: the snapshot, the scope and every answer agree.
   const chain = new NativeFactStore();
   chain.applyFacts(rowsOf(scenario.store) as never);
-  const startedAt = Date.now();
   const now = () => scenario.startsAt + Math.floor((Date.now() - startedAt) / 1000);
-  const herald = new LabHerald(chain, now);
+  const herald = new LabHerald(chain, now, () => (record.streams += 1));
   answerDirectory(now, (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()));
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
@@ -330,6 +338,7 @@ class LabHerald {
   constructor(
     private readonly chain: NativeFactStore,
     private readonly now: () => number,
+    private readonly opened: () => void,
   ) {}
 
   confirmedBlock(): number {
@@ -338,6 +347,7 @@ class LabHerald {
 
   open(): LabSocket {
     this.socket?.close();
+    this.opened();
     const socket = new LabSocket(this);
     this.socket = socket;
     setTimeout(() => {
@@ -352,6 +362,12 @@ class LabHerald {
       });
     }, 0);
     return socket;
+  }
+
+  /** The open socket is let go without a close: it stays open on the game's side and nothing more is sent on it. */
+  silence() {
+    this.socket = null;
+    window.clearInterval(this.heads);
   }
 
   closed(socket: LabSocket) {

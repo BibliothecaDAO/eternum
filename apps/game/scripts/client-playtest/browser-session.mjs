@@ -168,6 +168,10 @@ export async function openPageDevTools(browser) {
   const { sessionId } = await send("Target.attachToTarget", { targetId: page.targetId, flatten: true });
   return {
     send: (method, params) => send(method, params, sessionId),
+    /** A command to the browser itself (its tabs), not the driven page. */
+    sendToBrowser: (method, params) => send(method, params),
+    /** The driven page's tab. */
+    targetId: page.targetId,
     /** Calls `listener` with every event the browser sends; the returned function stops it. */
     onEvent: (listener) => {
       listeners.push(listener);

@@ -43,7 +43,10 @@ interface DayEndMoment {
   summary: DaySummary;
   /** The summary phase passed while the summary was still being read: once read, it opens as a later arrival's. */
   summaryMissed: boolean;
-  /** The new day's land is in (re-projected, the camera on the realm). */
+  /**
+   * The new day's land is in (re-projected, the camera on the realm): the rollover says so once it has moved it, also
+   * after the black lifted without it. A day's end is gone through only then.
+   */
   landReady: boolean;
   /** The black has shown for its least time. It lifts once this and `landReady` both hold. */
   blackHeld: boolean;
@@ -58,7 +61,10 @@ export const DAY_END_TIMING = {
   nightfall: 0.6,
   /** The black's least time, so the land's swap never shows. */
   black: 0.4,
-  /** The longest the black waits for the land; past it the screen comes up anyway, never trapping the player. */
+  /**
+   * The longest the black waits for the land; past it the screen comes up anyway, never trapping the player, and the
+   * land still comes in when it can.
+   */
   blackHold: 10,
   dawn: 1.4,
 } as const;
@@ -85,7 +91,7 @@ function beginDayEnd(moment: DayEndMoment, arrival: DayEndArrival): DayEndMoment
   };
 }
 
-/** A timed phase has run: the next one begins. The black lifts only once it has held and the new land is in. */
+/** A timed phase has run: the next one begins. The black lifts once it has held and the new land is in. */
 function nextPhase(moment: DayEndMoment): DayEndMoment {
   switch (moment.phase) {
     case "veil":
@@ -121,6 +127,16 @@ const passUnansweredSummary = (moment: DayEndMoment): DayEndMoment =>
     ? { ...continueDayEnd(moment), summaryMissed: true }
     : moment;
 
+/** The new land is in: a black that has held lifts on it; after the black, the moment only learns it. */
+const landIn = (moment: DayEndMoment): DayEndMoment => {
+  const ready = { ...moment, landReady: true };
+  return ready.phase === "black" ? nextPhase(ready) : ready;
+};
+
+/** The black has waited its longest for the land: the screen comes up on the new day without it. */
+const liftTheBlack = (moment: DayEndMoment): DayEndMoment =>
+  moment.phase === "black" ? { ...moment, phase: "dawn", blackHeld: true } : moment;
+
 /** Skip: the rolling mist jumps to the summary, never past it. */
 function skipDayEnd(moment: DayEndMoment): DayEndMoment {
   return moment.phase === "veil" ? passUnreadSummary({ ...moment, phase: "summary" }) : moment;
@@ -149,7 +165,7 @@ export const useDayEndStore = create<DayEndStore>((set) => ({
   rest: () => set((moment) => ({ ...RESTING, summary: moment.summary })),
   continueDay: () => set((moment) => continueDayEnd(moment)),
   skip: () => set((moment) => skipDayEnd(moment)),
-  markLandReady: () => set((moment) => nextPhase({ ...moment, landReady: true })),
+  markLandReady: () => set((moment) => landIn(moment)),
   showSummary: (summary) =>
     set((moment) =>
       passUnreadSummary({ ...moment, summary, summaryMissed: summary !== "none" && moment.summaryMissed }),
@@ -173,7 +189,7 @@ useDayEndStore.subscribe((moment, before) => {
   if (moment.phase === "nightfall") after(DAY_END_TIMING.nightfall, nextPhase);
   if (moment.phase === "black") {
     after(DAY_END_TIMING.black, (held) => nextPhase({ ...held, blackHeld: true }));
-    after(DAY_END_TIMING.blackHold, (waited) => nextPhase({ ...waited, blackHeld: true, landReady: true }));
+    after(DAY_END_TIMING.blackHold, liftTheBlack);
   }
   if (moment.phase === "dawn") after(DAY_END_TIMING.dawn, nextPhase);
 });

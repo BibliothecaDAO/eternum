@@ -26,9 +26,11 @@ export type DayHistory = "waiting" | "failed" | "short" | "whole";
 
 /**
  * One player's day, from the one read of their own stories in Herald's history: the day's stories in order, how much
- * of the day the read gives, and the day's totals when it gives the whole day; otherwise each total is unknown rather
- * than a part of it. Today and the day-done card both read it, so they agree. (The card once counted the game's newest
- * stories instead, which an hour of everyone's play fills: on prod it showed the leading player 1 reveal for 35.)
+ * of the day the read gives, the day's totals when it gives the whole day (otherwise each total is unknown rather than
+ * a part of it), and whether the player has played on since the day ended. Today and the day-done card both read it,
+ * so they agree. (The card once counted the game's newest stories instead, which an hour of everyone's play fills: on
+ * prod it showed the leading player 1 reveal for 35.) The read keeps the newest stories, so it always holds the ones
+ * after the day; a story is its sender's, so one of the player's own there is an act of theirs, from any device.
  */
 export const usePlayerDay = (player: string | null, day: DayBounds | null) => {
   const owner = player === null ? undefined : `0x${BigInt(player).toString(16)}`;
@@ -39,6 +41,10 @@ export const usePlayerDay = (player: string | null, day: DayBounds | null) => {
     stories: player && span ? ownStoriesOfDay(stories.data, player, span) : [],
     history,
     totals: player && span && history === "whole" ? totalToday(stories.data, player, span) : UNKNOWN,
+    playedOn:
+      player && span
+        ? ownStoriesOfDay(stories.data, player, { startMs: span.endMs, endMs: Infinity }).length > 0
+        : false,
     retry: () => void stories.refetch(),
   };
 };

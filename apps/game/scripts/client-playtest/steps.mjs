@@ -10,6 +10,7 @@ import {
   judgeNextOrder,
   judgePlateStamina,
   refusalErrors,
+  contextLossErrors,
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
@@ -1380,6 +1381,223 @@ function cameraOnTheNewSite({ played }) {
   return completed({ before: before.camera, after: on, site: LAB_DAY_3_SITE });
 }
 
+/**
+ * The owner's phone (owner, 2026-10-25: "eventually I go back to mobile and it doesnt reload the map I get a black
+ * screen"): in the game a minute before day 2 ends, the tab goes to the background (its window minimized, the page then
+ * frozen as a phone freezes it), losing its WebGL context as a phone takes it, and Herald's stream goes silent with its
+ * socket still open; past the day's end the tab comes back. On WebGL the lost context must boot the page again and the
+ * map draw; on WebGPU, whose device this machine keeps, the silent stream must be dropped and resumed. Either way the
+ * day's summary shows and Continue brings the camera onto the realm's day-3 site.
+ */
+function labDayTurnAsleepSteps() {
+  /** The night, from the tab going away to the map drawn again: the later steps read what the sleep left. */
+  const night = {};
+  return [
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+    {
+      name: "tab-sleeps",
+      // Each run's night replaces the one before.
+      play: async (context) => Object.assign(night, await sleepThroughTheDayEnd(context)),
+      settleMs: 0,
+      verify: sleptBeforeTheEnd,
+    },
+    {
+      name: "tab-wakes",
+      play: (context) => wakeTheTab(context, night),
+      settleMs: 0,
+      verify: ({ played }) => wokeIntoTheEndedDay(played, night),
+    },
+    { name: "continue", play: continueIntoTheNewDay, settleMs: 0, verify: cameraOnTheNewSite },
+    {
+      name: "map-draws",
+      play: readTheMapDrawn,
+      settleMs: 0,
+      verify: ({ played }) => mapDrawsAsBeforeSleep(played, night),
+    },
+  ];
+}
+
+/**
+ * A device arriving in day 3 with no summary to read (day-later-quiet: day 2 not played; day-later-played-on: the player
+ * played on in day 3 on another device): the day's end still plays, and behind its black the camera comes onto the
+ * realm's day-3 site.
+ */
+const labDayLaterNoSummarySteps = [
+  { name: "enter-on-map", settleMs: 0, verify: inScene("map") },
+  { name: "into-the-new-day", play: waitForTheNewDay, settleMs: 0, verify: cameraOnTheNewSiteWithNoSummary },
+];
+
+/** Long enough past day 2's end, the tab put away up to a minute before it, for the end to pass while it sleeps. */
+const ASLEEP_MS = 80_000;
+/** The page boots again and its history answers after the tab is back. */
+const WOKEN_WAIT_MS = 90_000;
+const DAY_END_PASS_MS = 20_000;
+/** A pixel this dark (0–255 grey) is the black of an undrawn canvas, below the map's darkest drawn ground. */
+const DARK_LEVEL = 12;
+/** The share of the band an undrawn map leaves black past what the map before the night did. */
+const BLACK_MAP_SHARE = 0.5;
+/** The map's middle band on a phone, clear of the HUD's top strip and its foot. */
+const MAP_BAND = { left: 0.1, top: 0.3, width: 0.8, height: 0.3 };
+
+/** What the tab is as it goes away: the game's GPU, Herald's streams and the page's load. */
+const TAB_STATE = `JSON.stringify({
+  visibility: document.visibilityState,
+  gpu: document.getElementById("main-canvas")?.getContext("webgl2") ? "webgl2" : "webgpu",
+  streams: window.__labChain?.streams ?? null,
+  loadedAt: performance.timeOrigin,
+})`;
+/** The phone puts the tab away: its WebGL context is lost, if it has one, and Herald's stream goes silent. */
+const TAB_GOES_AWAY = `(() => {
+  const lost = document.getElementById("main-canvas")?.getContext("webgl2")?.getExtension("WEBGL_lose_context");
+  lost?.loseContext();
+  window.__labChain?.silence();
+  return JSON.stringify({ visibility: document.visibilityState, contextLost: Boolean(lost) });
+})()`;
+
+/** The driven page's value for an expression, read through DevTools: it reaches a page that is not the front tab. */
+async function readInPage(devTools, expression) {
+  const { result } = await devTools.send("Runtime.evaluate", { expression, returnByValue: true });
+  return JSON.parse(result.value ?? "null");
+}
+
+/**
+ * The map's middle band in a screenshot of the page: its share of near-black pixels. A lost canvas draws nothing, so the
+ * band is black but for the labels and HUD over it.
+ */
+async function readTheMapBand(devTools, path) {
+  const { data } = await devTools.send("Page.captureScreenshot", { format: "png" });
+  const image = Buffer.from(data, "base64");
+  const { width, height } = await sharp(image).metadata();
+  const band = {
+    left: Math.round(width * MAP_BAND.left),
+    top: Math.round(height * MAP_BAND.top),
+    width: Math.round(width * MAP_BAND.width),
+    height: Math.round(height * MAP_BAND.height),
+  };
+  await sharp(image).toFile(path);
+  const grey = await sharp(image).extract(band).greyscale().raw().toBuffer();
+  const dark = grey.filter((level) => level < DARK_LEVEL).length / grey.length;
+  return { path, band, dark: Math.round(dark * 1000) / 1000 };
+}
+
+/** The window the page is drawn in, minimized (the page hidden) or brought back (shown). */
+async function setWindowState(devTools, windowState) {
+  const { windowId } = await devTools.sendToBrowser("Browser.getWindowForTarget", { targetId: devTools.targetId });
+  await devTools.sendToBrowser("Browser.setWindowBounds", { windowId, bounds: { windowState } });
+}
+
+/**
+ * Puts the tab away a while: its window minimized, the game's GPU and Herald's stream gone as a phone loses them, the
+ * page frozen; then the tab is left asleep past the day's end.
+ */
+async function sleepThroughTheDayEnd({ base, browser, devTools }) {
+  const awake = { ...browser.read(DAY_END_STATE), tab: await readInPage(devTools, TAB_STATE) };
+  const mapAwake = await readTheMapBand(devTools, `${base}-awake.png`);
+  const loggedBefore = consoleLines(browser).length;
+  await setWindowState(devTools, "minimized");
+  await sleep(500);
+  const away = await readInPage(devTools, TAB_GOES_AWAY);
+  await devTools.send("Page.setWebLifecycleState", { state: "frozen" });
+  await sleep(ASLEEP_MS);
+  return { awake, mapAwake, away, loggedBefore };
+}
+
+const consoleLines = (browser) =>
+  browser
+    .run(["console"], { allowFailure: true })
+    .split("\n")
+    .map((line) => line.trim());
+
+function sleptBeforeTheEnd({ played }) {
+  const { awake, away } = played;
+  if (awake.phase !== "day" || awake.card !== null)
+    return failed(
+      `day 2 had already ended (${awake.phase}, ${awake.card ?? "no card"}) before the tab went away`,
+      played,
+    );
+  if (away.visibility !== "hidden")
+    return failed(`the tab stayed ${away.visibility} with its window minimized`, played);
+  if (awake.tab.gpu === "webgl2" && !away.contextLost)
+    return failed("the tab's WebGL context could not be lost", played);
+  return completed(played);
+}
+
+/**
+ * Brings the tab back: the page let run, its window shown again; then waits for the ended day's summary. The context
+ * loss the sleep provoked is logged by the client as an error, which is this step's outcome.
+ */
+async function wakeTheTab({ browser, devTools, extraScreenshot }, { loggedBefore }) {
+  await devTools.send("Page.setWebLifecycleState", { state: "active" });
+  await setWindowState(devTools, "normal");
+  await sleep(1_000);
+  extraScreenshot("woken");
+  const shown = await readUntil(
+    () => readWhileLoading(browser),
+    (state) => state?.card !== null && state?.card !== undefined,
+    WOKEN_WAIT_MS,
+  );
+  const provokedErrors = contextLossErrors(consoleLines(browser).slice(loggedBefore));
+  return { ...shown, tab: await readInPage(devTools, TAB_STATE), provokedErrors };
+}
+
+/** A read of the day's end that a page booting again may not answer yet. */
+function readWhileLoading(browser) {
+  try {
+    return browser.read(DAY_END_STATE);
+  } catch {
+    return null;
+  }
+}
+
+function wokeIntoTheEndedDay(played, night) {
+  const shown = summaryShows(RECORDED_DAY_2)({ played });
+  if (shown.status !== "completed") return shown;
+  const before = night.awake.tab;
+  const rebooted = played.tab.loadedAt !== before.loadedAt;
+  if (before.gpu === "webgl2" && !rebooted)
+    return failed("the tab lost its WebGL context and did not boot again: its map stays black", played);
+  if (before.gpu === "webgpu" && played.tab.streams < 2)
+    return failed("Herald's silent stream was never dropped: the tab still waits on the slept socket", played);
+  return completed({ ...played, rebooted });
+}
+
+async function readTheMapDrawn({ base, devTools }) {
+  return readTheMapBand(devTools, `${base}-map.png`);
+}
+
+/** The map drawn after the night as before the tab went away: its middle band no more black than it was, near enough. */
+function mapDrawsAsBeforeSleep(played, night) {
+  const awake = night.mapAwake;
+  if (played.dark > awake.dark + BLACK_MAP_SHARE)
+    return failed(`the map is black (${played.dark} of its middle band, ${awake.dark} before the tab slept)`, {
+      awake,
+      drawn: played,
+    });
+  return completed({ awake, drawn: played });
+}
+
+/** Waits for the day's end a device arriving in a new day goes through, and reads where the camera then looks. */
+async function waitForTheNewDay({ browser }) {
+  const before = browser.read(DAY_END_STATE);
+  const phases = [before.phase];
+  let shown = before;
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < DAY_END_PASS_MS) {
+    await sleep(POLL_MS);
+    shown = browser.read(DAY_END_STATE);
+    if (phases.at(-1) !== shown.phase) phases.push(shown.phase);
+    if (shown.card !== null || (phases.length > 1 && shown.phase === "day")) break;
+  }
+  await sleep(CAMERA_REPORT_MS);
+  return { before, after: browser.read(DAY_END_STATE), phases };
+}
+
+function cameraOnTheNewSiteWithNoSummary({ played }) {
+  if (played.after.card !== null) return failed(`a summary shows (${played.after.card}) for a day not played`, played);
+  const camera = cameraOnTheNewSite({ played });
+  return camera.status === "completed" ? completed({ ...camera, phases: played.phases }) : camera;
+}
+
 /** Reads the page until what it shows is done, or the time is up; the last reading either way. */
 async function readUntil(read, done, timeoutMs) {
   const startedAt = Date.now();
@@ -1430,6 +1648,9 @@ export const STEP_SETS = {
       { name: "return-to-map", play: goTo("Map", "map"), settleMs: 3_000, verify: inScene("map") },
     ],
   },
+  "lab-day-turn-asleep": { game: labDayTurn("day-turn-asleep"), steps: labDayTurnAsleepSteps() },
+  "lab-day-later-quiet": { game: labDayTurn("day-later-quiet"), steps: labDayLaterNoSummarySteps },
+  "lab-day-later-played-on": { game: labDayTurn("day-later-played-on"), steps: labDayLaterNoSummarySteps },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },

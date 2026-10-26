@@ -5,6 +5,7 @@ import {
   collectBrowserErrors,
   collectFrameSpikes,
   refusalErrors,
+  contextLossErrors,
   comparePlaytestSummary,
   deriveBootMetrics,
   evaluatePlaytestSummary,
@@ -408,6 +409,24 @@ describe("collectBrowserErrors", () => {
   it("leaves out what the client logged for a failure a step provoked, and only that", () => {
     const refused = "[error] Transaction 0x79 not sent (refused)";
     expect(collectBrowserErrors("", `${refused}\n[error] shader failed`, [refused])).toEqual(["[error] shader failed"]);
+  });
+});
+
+describe("contextLossErrors", () => {
+  const loss = [
+    "[error] THREE.THREE.WebGPURenderer: WebGL Device Lost:",
+    '[error] [RendererFailure] kind="device_lost" renderer_mode="webgl2-fallback" recovery_attempted="yes" error="Unknown reason"',
+  ];
+
+  it("exempts the loss's two reports only; any other error after it still fails", () => {
+    const window = ["[info] ready", loss[0], "Message: Unknown reason", loss[1], "[error] Unrelated failure"];
+    const provoked = contextLossErrors(window);
+    expect(provoked).toEqual(loss);
+    expect(collectBrowserErrors("", window.join("\n"), provoked)).toEqual(["[error] Unrelated failure"]);
+  });
+
+  it("exempts nothing when the game did not report the loss three saw", () => {
+    expect(contextLossErrors([loss[0]])).toEqual([]);
   });
 });
 

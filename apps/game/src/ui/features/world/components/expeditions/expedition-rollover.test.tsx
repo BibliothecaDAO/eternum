@@ -125,18 +125,19 @@ describe("a player's day turning", () => {
     expect(world.navigate).toHaveBeenCalledWith(NEW_SITE, null);
   });
 
-  it("still re-projects and moves the camera when the block arrives after the black's longest hold", () => {
+  it("still re-projects and moves the camera when the block arrives after the black's longest hold, and says the land is in then", () => {
     mount();
     world.chainDay = 2;
     seconds(1);
     continueIntoTheBlack();
     seconds(DAY_END_TIMING.blackHold + DAY_END_TIMING.dawn);
-    expect(phase()).toBe("day");
+    expect(useDayEndStore.getState()).toMatchObject({ phase: "day", landReady: false });
     expect(world.rebuild).not.toHaveBeenCalled();
     world.blockDay = 2;
     seconds(1);
     expect(world.rebuild).toHaveBeenCalledTimes(1);
     expect(world.navigate).toHaveBeenCalledWith(NEW_SITE, null);
+    expect(useDayEndStore.getState()).toMatchObject({ phase: "day", landReady: true });
   });
 
   it("keeps the turn's due camera move when a map navigation renders it again before the late block", () => {
