@@ -333,7 +333,11 @@ describe("the build sheet", () => {
     const cost = configManager.getBuildingCategoryConfig(BuildingType.ResourceKnightT1).population_cost;
     expect(sheet.host.querySelector('[role="status"]')!.textContent).toBe(`Needs ${cost} population, 1 free`);
     expect(sheet.button("Build")!.textContent).toContain("Build Hut");
+    // Why, and the way past it, stand together in the foot, in view however many cards the body holds.
     expect(sheet.button("Build Hut")!.closest(".ui-window__foot")).not.toBeNull();
+    expect(sheet.host.querySelector('.ui-window__foot [role="status"]')!.textContent).toBe(
+      `Needs ${cost} population, 1 free`,
+    );
     act(() => sheet.button("Build Hut")!.click());
     expect(sheet.card("Hut").getAttribute("aria-pressed")).toBe("true");
     // A Hut takes no population: it is the fix, and Build stands under it.

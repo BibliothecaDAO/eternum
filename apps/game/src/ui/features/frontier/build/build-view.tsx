@@ -10,7 +10,7 @@ import {
   HudSheet,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
+import type { Refusal } from "@/ui/design-system/kit/refusal";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { BUILD, BUILDING, POPULATION, PRICE_UP } from "@/ui/design-system/kit/words";
 
@@ -51,8 +51,8 @@ export type BuildTile = {
  * The build sheet (wireframe 02): the realm's population in its head, the grid of building cards, each saying what it
  * gives and where it stands, and Build in the sheet's foot with the chosen one's price (the copy surcharge included; an
  * arrow marks a price that has risen), so the verb never scrolls out of view however many cards there are. When the
- * building cannot rise, one line says what it needs against what there is, and the gold button in the foot carries the
- * fix: the Hut that houses it, the map that pays it, the Research that opens it.
+ * building cannot rise, the foot says what it needs against what there is, and its gold button carries the fix: the Hut
+ * that houses it, the map that pays it, the Research that opens it.
  */
 export const BuildView = ({
   population,
@@ -90,10 +90,13 @@ export const BuildView = ({
       ))}
     </div>
     {refusal ? (
-      <>
-        <HudNotice line={refusal.reason.kind === "short" ? shortfallLine(refusal.reason) : refusal.reason.line} />
-        {refusal.fix && <FixVerb fix={refusal.fix} />}
-      </>
+      <HudWindowFoot note={<RefusalNote refusal={refusal} />}>
+        {refusal.fix && (
+          <HudButton kind="primary" icon={refusal.fix.icon} onClick={refusal.fix.onFix}>
+            {refusal.fix.word}
+          </HudButton>
+        )}
+      </HudWindowFoot>
     ) : (
       <HudWindowFoot note={<HudCost line={costLine(prices)} />}>
         <HudButton kind="primary" busy={sending ? BUILDING : undefined} onClick={onBuild}>
@@ -104,13 +107,15 @@ export const BuildView = ({
   </HudSheet>
 );
 
-/** The way past a refusal (the Hut that houses it, the map that pays it), as the sheet's one verb, in its foot. */
-const FixVerb = ({ fix }: { fix: Fix }) => (
-  <HudWindowFoot note={<HudCost line={costLine(fix.prices ?? [])} />}>
-    <HudButton kind="primary" icon={fix.icon} onClick={fix.onFix}>
-      {fix.word}
-    </HudButton>
-  </HudWindowFoot>
+/**
+ * Why the building cannot rise, in the foot where Build would stand, over the price of the way past it (the Hut that
+ * houses it, the map that pays it), whose verb stands beside it.
+ */
+const RefusalNote = ({ refusal }: { refusal: Refusal }) => (
+  <span className="flex flex-col items-start gap-1">
+    <HudNotice line={refusal.reason.kind === "short" ? shortfallLine(refusal.reason) : refusal.reason.line} />
+    {refusal.fix?.prices && <HudCost line={costLine(refusal.fix.prices)} />}
+  </span>
 );
 
 const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boolean; onChoose: () => void }) => (
