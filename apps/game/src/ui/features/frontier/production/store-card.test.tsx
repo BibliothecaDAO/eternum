@@ -34,7 +34,7 @@ const renderCard = (card: StoreLine, onSpend = vi.fn(), onBuild = vi.fn()) => {
 describe("a store's card", () => {
   it("says the store's rate, what it holds against its limit and when it is full", () => {
     const card = renderCard(line({ icon: "wheat", spentAt: "deploy" }));
-    expect(card.text()).toBe("wheat+8.3/minFull in 16h 44m9,640 / 18K");
+    expect(card.text()).toBe("wheat+8/minFull in 16h 44m9,640 / 18K");
     card.done();
   });
 

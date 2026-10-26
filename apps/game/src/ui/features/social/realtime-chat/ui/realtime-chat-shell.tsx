@@ -137,6 +137,7 @@ export function RealtimeChatShell({
   };
 
   const activeTab = openTabs.find((t) => t.id === activeTabId);
+  const onWorld = activeTab?.type === "world";
 
   return (
     <div className={cn("relative w-full", className)}>
@@ -176,45 +177,36 @@ export function RealtimeChatShell({
 
         {isExpanded && (
           <>
-            {gameZoneId && (
-              <div className="flex gap-1 border-b border-hud-divider px-3 py-2" role="group" aria-label="Chat channel">
-                <button
-                  type="button"
-                  aria-pressed={activeZoneId === GLOBAL_CHAT_CHANNEL_ID}
-                  className={cn(
-                    "rounded px-3 py-1 text-hud-body max-lg:min-h-11",
-                    activeZoneId === GLOBAL_CHAT_CHANNEL_ID
-                      ? "bg-hud-chosen text-hud-accent"
-                      : "text-hud-muted hover:text-hud-accent",
-                  )}
-                  onClick={() => selectWorldChannel(GLOBAL_CHAT_CHANNEL_ID)}
-                >
-                  Global
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={activeZoneId === gameZoneId}
-                  disabled={!hasGameChat}
-                  title={
-                    hasGameChat ? "Chat with players in this game" : "Game chat requires registration in this game"
-                  }
-                  className={cn(
-                    "rounded px-3 py-1 text-hud-body disabled:cursor-not-allowed disabled:opacity-40 max-lg:min-h-11",
-                    activeZoneId === gameZoneId
-                      ? "bg-hud-chosen text-hud-accent"
-                      : "text-hud-muted hover:text-hud-accent",
-                  )}
-                  onClick={() => selectWorldChannel(gameZoneId)}
-                >
-                  Game
-                </button>
-              </div>
-            )}
             {/* Tab Bar */}
             <div className="relative">
               <TabBar
                 showWindowControls={!isEmbedded}
-                tabs={openTabs}
+                lead={
+                  gameZoneId && (
+                    <>
+                      <ZoneButton
+                        pressed={onWorld && activeZoneId === GLOBAL_CHAT_CHANNEL_ID}
+                        onClick={() => selectWorldChannel(GLOBAL_CHAT_CHANNEL_ID)}
+                      >
+                        Global
+                      </ZoneButton>
+                      <ZoneButton
+                        pressed={onWorld && activeZoneId === gameZoneId}
+                        disabled={!hasGameChat}
+                        title={
+                          hasGameChat
+                            ? "Chat with players in this game"
+                            : "Game chat requires registration in this game"
+                        }
+                        onClick={() => selectWorldChannel(gameZoneId)}
+                      >
+                        Game
+                      </ZoneButton>
+                    </>
+                  )
+                }
+                // With a game's zones, Global and Game are the world tab: it is not drawn twice.
+                tabs={gameZoneId ? openTabs.filter((tab) => tab.type !== "world") : openTabs}
                 activeTabId={activeTabId}
                 onTabClick={(tabId) => actions.setActiveTab(tabId)}
                 onTabClose={(tabId) => actions.removeTab(tabId)}
@@ -255,3 +247,32 @@ export function RealtimeChatShell({
     </div>
   );
 }
+
+/** A world zone in the chat's one row of tabs: Global, or this game's own. */
+const ZoneButton = ({
+  pressed,
+  disabled,
+  title,
+  onClick,
+  children,
+}: {
+  pressed: boolean;
+  disabled?: boolean;
+  title?: string;
+  onClick: () => void;
+  children: ReactNode;
+}) => (
+  <button
+    type="button"
+    aria-pressed={pressed}
+    disabled={disabled}
+    title={title}
+    className={cn(
+      "flex h-7 flex-shrink-0 items-center rounded px-2 py-1 text-hud-label disabled:cursor-not-allowed disabled:opacity-40 max-lg:h-11",
+      pressed ? "bg-hud-chosen text-hud-accent" : "text-hud-muted hover:text-hud-accent",
+    )}
+    onClick={onClick}
+  >
+    {children}
+  </button>
+);

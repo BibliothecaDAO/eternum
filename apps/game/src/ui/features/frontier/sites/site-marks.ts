@@ -1,3 +1,4 @@
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { type IconMeaning } from "@/ui/design-system/icon";
 
 import { ARMY } from "@/ui/design-system/kit/words";
@@ -9,10 +10,10 @@ export type AttackTargetKind = SiteKind | "Army";
 
 /** Each target as every card draws and titles it. */
 export const TARGET_MARKS: Record<AttackTargetKind, { word: string; icon: IconMeaning }> = {
-  Camp: { word: frontierSiteName(StructureType.Camp), icon: "beast-troll" },
-  Rift: { word: frontierSiteName(StructureType.Rift), icon: "rift" },
-  Ruin: { word: frontierSiteName(StructureType.Ruin), icon: "ruin" },
-  Beasts: { word: frontierSiteName(StructureType.Beasts), icon: "beast-cyclops" },
+  Camp: { word: frontierSiteName(StructureType.Camp), icon: structureMeaning(StructureType.Camp, "frontier") },
+  Rift: { word: frontierSiteName(StructureType.Rift), icon: structureMeaning(StructureType.Rift, "frontier") },
+  Ruin: { word: frontierSiteName(StructureType.Ruin), icon: structureMeaning(StructureType.Ruin, "frontier") },
+  Beasts: { word: frontierSiteName(StructureType.Beasts), icon: structureMeaning(StructureType.Beasts, "frontier") },
   Army: { word: ARMY, icon: "attack" },
 };
 

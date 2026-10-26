@@ -57,7 +57,7 @@ pub struct ExecutionContext {
     pub rules: Box<crate::rules::SliceRules>,
 }
 
-#[cfg(test)]
+#[cfg(feature: "test_support")]
 impl ExecutionContextSerde of Serde<ExecutionContext> {
     fn serialize(self: @ExecutionContext, ref output: Array<felt252>) {
         action_context(*self).serialize(ref output);

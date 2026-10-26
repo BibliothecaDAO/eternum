@@ -1,3 +1,4 @@
+import type { ConfigPatch } from "./merge-config";
 import type { GameType } from "./types";
 
 /** Five chest tiers, common to legendary: a depth's odds in basis points, or the shares each tier pays. */
@@ -16,6 +17,11 @@ export interface NativePreset {
    * The harness registers a fixture preset on first use; the launcher never offers one.
    */
   clockScale?: number;
+  /**
+   * What a fixture preset changes in its mode's balance (starting stock, prices); the rest of the balance is the mode's.
+   * Applied wherever a preset's configuration is loaded.
+   */
+  balance?: ConfigPatch;
   gameType: GameType;
   environmentGameType: GameType;
   bitcoinEnabled: boolean;

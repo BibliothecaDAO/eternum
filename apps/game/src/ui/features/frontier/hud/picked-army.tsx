@@ -57,7 +57,7 @@ export const usePinnedTransfer = (
 
 /**
  * A phone's tap on another of the realm's armies beside the picked one asks which: pick that army, or move troops
- * between them (the transfer's card). Beside a holding only the transfer is offered.
+ * between them (the transfer's card). Beside a holding only the transfer is offered, its button naming it once.
  */
 export const TransferChoice = ({
   picked,
@@ -72,7 +72,7 @@ export const TransferChoice = ({
     <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="flex flex-col gap-1.5">
       <span className="flex items-center justify-between gap-2">
         <span className="text-hud-label text-hud-muted">
-          {tapped ? TRANSFER_TROOPS.beside(tapped.label, picked.label) : TRANSFER_TROOPS.title}
+          {tapped && TRANSFER_TROOPS.beside(tapped.label, picked.label)}
         </span>
         <HudButton kind="quiet" size="sm" onClick={() => useUIStore.getState().updateEntityActionHoveredHex(null)}>
           {CANCEL}

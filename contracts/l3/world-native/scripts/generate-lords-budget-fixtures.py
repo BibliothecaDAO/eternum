@@ -1,31 +1,42 @@
 #!/usr/bin/env python3
 """Record bounded season checkpoints with the compiled conservation test; never reimplement its rules."""
 
+from functools import cache
+import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 WORLD = Path(__file__).resolve().parent.parent
-SOURCE = WORLD / "src/tests/lords_budget.cairo"
+SOURCE = WORLD / "tests/support/src/tests/lords_budget.cairo"
 DIRECTORY = WORLD / "src/tests/fixtures/lords-budget"
 INPUT = WORLD / "target/budget-checkpoint-input.txt"
-PRODUCER = "world_native::tests::lords_budget::record_budget_checkpoint"
+PRODUCER = "world_tests_economy::tests::lords_budget::record_budget_checkpoint"
+
+
+@cache
+def native_runner():
+    return subprocess.check_output(
+        [sys.executable, str(WORLD / "toolchain/snforge.py"), "resolve"], text=True,
+    ).strip()
 
 
 def constant(name):
-    match = re.search(rf"^const {name}: u(?:32|64) = ([0-9]+);$", SOURCE.read_text(), re.M)
+    match = re.search(rf"^pub const {name}: u(?:32|64) = ([0-9]+);$", SOURCE.read_text(), re.M)
     if not match:
         raise ValueError(f"Missing simulation constant {name}")
     return int(match[1])
 
 
-def record_chunk(quiet, clear, first, past, previous):
-    fields = [2000, quiet, int(clear), first, past]
+def record_chunk(density, quiet, clear, first, past, previous):
+    runner = native_runner()
+    fields = [density, quiet, int(clear), first, past]
     fields += [1] if previous is None else [0, *previous]
     INPUT.write_text("".join(f"{value}\n" for value in fields))
     result = subprocess.run(
-        ["snforge", "test", PRODUCER, "--exact", "--ignored", "--max-threads", "1"],
-        cwd=WORLD, text=True, capture_output=True, check=False,
+        [runner, "test", PRODUCER, "--exact", "--ignored", "--max-threads", "1", "--package", "world_tests_economy"],
+        cwd=WORLD / "tests", env={**os.environ, "RAYON_NUM_THREADS": "1"}, text=True, capture_output=True, check=False,
     )
     if result.returncode:
         raise RuntimeError(result.stdout + result.stderr)
@@ -37,24 +48,26 @@ def record_chunk(quiet, clear, first, past, previous):
         raise ValueError("Checkpoint shape or scenario does not match its input")
     if previous is not None and values[5:15] != previous:
         raise ValueError("Checkpoint lost the preceding budget or running totals")
-    print(f"Recorded density=2000 quiet={quiet} clear={clear} days={first}..{past - 1}", flush=True)
+    print(f"Recorded density={density} quiet={quiet} clear={clear} days={first}..{past - 1}", flush=True)
     return values
 
 
 def main():
+    native_runner()
     days, chunk_days, chunks = (constant(name) for name in ("SEASON_DAYS", "CHUNK_DAYS", "CHUNKS"))
     if days != chunk_days * chunks:
         raise ValueError("Chunks must cover the whole season exactly")
     INPUT.parent.mkdir(parents=True, exist_ok=True)
     records = []
     try:
-        for quiet, clear in [(0, True), (30, True), (0, False)]:
-            previous = None
-            for chunk in range(chunks):
-                first = chunk * chunk_days
-                record = record_chunk(quiet, clear, first, first + chunk_days, previous)
-                records.append(record)
-                previous = record[15:25]
+        for density in (2000, 300):
+            for quiet, clear in [(0, True), (30, True), (0, False)]:
+                previous = None
+                for chunk in range(chunks):
+                    first = chunk * chunk_days
+                    record = record_chunk(density, quiet, clear, first, first + chunk_days, previous)
+                    records.append(record)
+                    previous = record[15:25]
     finally:
         INPUT.unlink(missing_ok=True)
     DIRECTORY.mkdir(parents=True, exist_ok=True)
@@ -63,7 +76,7 @@ def main():
     temporary = output.with_suffix(".tmp")
     temporary.write_text("".join(f"{value}\n" for value in values))
     temporary.replace(output)
-    print(f"Recorded {len(records)} chained checkpoints; all 315 days and 570000 dense attempts retained")
+    print(f"Recorded {len(records)} chained checkpoints; all 630 days and 655500 dense attempts retained")
 
 
 if __name__ == "__main__":

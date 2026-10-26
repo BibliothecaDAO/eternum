@@ -54,6 +54,8 @@ const CATEGORIES = {
   retired: "a retired words file back, or an import of one: its words live in the words module now",
   "number.parse":
     'a written figure read back as a number (Number(formatAmount(x)), parseFloat(text.replace(/,/g, "")))',
+  "number.formula":
+    "two figures joined by an operator in JSX ({count} × {rate}, {base} + {share}): a player reads the one result, never the sum",
   "number.population":
     'a population written by hand ("1 / 6", "2 free of 6"): formatPopulation writes it one way, used of all it can hold',
 };
@@ -708,6 +710,16 @@ const handPopulation = (node) => {
   return before !== undefined && ts.isJsxExpression(before) && POPULATION_NAME.test(before.getText());
 };
 
+// A formula drawn in JSX: an operator alone between two written figures, "{count} × {rate}", "{base} + {share}". The
+// voice rule "A number, never a formula" finds one inside a string; this finds the one split across JSX children.
+const JSX_OPERATOR = /^\s*[×✕+=]\s*$/;
+const jsxFormula = (node) => {
+  if (!ts.isJsxText(node) || !JSX_OPERATOR.test(node.text)) return false;
+  const siblings = node.parent.children;
+  const index = siblings.indexOf(node);
+  return ts.isJsxExpression(siblings[index - 1] ?? node) && ts.isJsxExpression(siblings[index + 1] ?? node);
+};
+
 /** Every hit in one file's source: { category, line, text }. */
 export function scanSource(source, fileName, { nouns, voiceRules }) {
   const file = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, fileName.endsWith("x") ? 4 : 3);
@@ -816,6 +828,7 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
       if (index > 0 && ts.isJsxExpression(before))
         hit(/^\s*%/.test(node.text) ? "number.percent" : "number.rate", before);
     }
+    if (jsxFormula(node)) hit("number.formula", node.parent.children[node.parent.children.indexOf(node) - 1]);
     if (ts.isJsxText(node) && node.text.trim()) {
       const text = node.text.trim();
       if (nouns.has(text)) hit("name.literal", node, text);

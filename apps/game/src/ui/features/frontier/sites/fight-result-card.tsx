@@ -1,9 +1,9 @@
-import { formatCharge, formatExact } from "@bibliothecadao/types";
+import { formatCharge, formatExact, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
-import { ARMY, FIGHT_WORDS, FULL, REST_DID_NOT_FIT, STORE, TROOPS, XP } from "@/ui/design-system/kit/words";
+import { ARMY, FIGHT_WORDS, FULL, REST_DID_NOT_FIT, STORAGE, TROOPS, XP } from "@/ui/design-system/kit/words";
 
 import type { ReactNode } from "react";
 
@@ -13,12 +13,11 @@ import type { FightResult } from "./fight-result";
 import { SiteMark } from "./site-card-view";
 import { TARGET_MARKS, attackTargetName } from "./site-marks";
 
-import { VERDICT_WORDS, type FightVerdict } from "@bibliothecadao/types";
+import { VERDICT_WORDS } from "@bibliothecadao/types";
 
-const VERDICT_TONES: Record<FightVerdict, string> = {
+const VERDICT_TONES: Record<FightResult["verdict"], string> = {
   victory: "text-hud-gold",
   "army-lost": "text-hud-bad",
-  "guard-holds": "text-hud-ink",
 };
 
 /**
@@ -76,14 +75,14 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
                 +{formatCharge(result.gained.pay.amount)}
               </span>
               {result.gained.pay.storeFull && (
-                <HudChip label={STORE} tone="bad" tip={REST_DID_NOT_FIT}>
+                <HudChip label={STORAGE} tone="bad" tip={REST_DID_NOT_FIT}>
                   {FULL}
                 </HudChip>
               )}
             </span>
           )}
           <HudChip>
-            {`+${formatExact(result.gained.xp)}`} {XP}
+            {`${formatShort(result.gained.xp, { signed: true })}`} {XP}
           </HudChip>
         </HudPanel>
       )}

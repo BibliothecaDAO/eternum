@@ -157,6 +157,7 @@ const HoldingRow = memo(
     onSelect: (entityId: ID) => void;
     onStar: (entityId: number) => void;
   }) => {
+    const mode = useGameModeConfig();
     const row = useRef<HTMLDivElement>(null);
     useEffect(() => {
       if (selected) row.current?.scrollIntoView({ block: "nearest" });
@@ -179,7 +180,7 @@ const HoldingRow = memo(
           title={
             <span className="flex min-w-0 items-center gap-2.5">
               <HudRing
-                icon={holdingIcon(structure)}
+                icon={holdingIcon(structure, mode.id)}
                 label={structure.displayName}
                 corner={hasLevels(structure) ? realmLevelNumber(structure.realmLevel) : undefined}
               />

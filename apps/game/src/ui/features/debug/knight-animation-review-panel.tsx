@@ -1,6 +1,7 @@
 import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ProceduralUnitConfig } from "@/three/characters/procedural-unit-config";
+import { modelUrl } from "@/three/utils/model-url";
 import type {
   ProceduralAnimationCaptureResult,
   ProceduralAnimationCaptureSampling,
@@ -427,7 +428,7 @@ function Comparison({
 }
 
 async function captureEnvironment(renderer: string): Promise<KnightAnimationReviewRun["environment"]> {
-  const response = await fetch("/models/characters/quaternius/base-male.glb");
+  const response = await fetch(modelUrl("/models/characters/quaternius/base-male.glb"));
   if (!response.ok) throw new Error("Cannot fingerprint the character asset");
   const hash = await crypto.subtle.digest("SHA-256", await response.arrayBuffer());
   const canvas = document.querySelector('[data-debug-route="procedural-characters"] canvas');

@@ -60,12 +60,7 @@ export const kindsHeld = (
     return {
       kind,
       plural: structurePlural(kind, presentsOneMineKind ? onlyMineKind : undefined, mode),
-      icon:
-        mode === "frontier" && kind === StructureType.Camp
-          ? ("beast-troll" as const)
-          : presentsOneMineKind
-            ? mineMeaning(onlyMineKind)
-            : structureMeaning(kind),
+      icon: presentsOneMineKind ? mineMeaning(onlyMineKind) : structureMeaning(kind, mode),
       count: counts.get(kind)!,
     };
   });
@@ -98,8 +93,11 @@ export const listHoldings = <T extends ListedHolding>(holdings: T[], kind: LeftL
 };
 
 /** A realm shows its age's painting, a mine its kind's (a rift's rift), every other holding its category's. */
-export const holdingIcon = (holding: Pick<ListedHolding, "category" | "realmLevel" | "structure">): IconMeaning => {
+export const holdingIcon = (
+  holding: Pick<ListedHolding, "category" | "realmLevel" | "structure">,
+  mode?: StructureNamingMode,
+): IconMeaning => {
   if (holding.category === StructureType.Realm) return realmMeaning(holding.realmLevel);
   const mineKind = mineKindOf(holding);
-  return mineKind !== undefined ? mineMeaning(mineKind) : structureMeaning(holding.category as StructureType);
+  return mineKind !== undefined ? mineMeaning(mineKind) : structureMeaning(holding.category as StructureType, mode);
 };

@@ -1,17 +1,17 @@
 import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { EventsFilterSwitch } from "@/ui/features/event-feed/events-filter-switch";
-import { QuickFeedRows, UnreadFeedBadge, useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
+import { QuickFeedRows, UnreadFeedBadge, useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { forwardRef, type ReactNode, useRef } from "react";
 
 /**
  * The rail's events: the client's toasts (offline, notices, the clock's milestones), then the game's three newest
- * stories through the player's filter (Important by default, Mine or All, the Log's own filter too). With nothing to
- * show it says so in one line. "Log" opens the full history, with what arrived since it was read.
+ * stories through the player's lens (Important by default, or All, the world's history; the Log's own lens too). With
+ * nothing to show it says so in one line. "Log" opens the full history, with the important stories arrived since it was
+ * read.
  */
 export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogToggle: () => void }) => {
-  const { stories } = useEventsFeed();
-  const unread = useUnreadFeedCount(stories, logOpen);
+  const unread = useUnreadImportantCount(logOpen);
   const button = useRef<HTMLButtonElement>(null);
   return (
     <>
@@ -28,7 +28,7 @@ export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTo
   );
 };
 
-/** The events' panel: its name, the filter and Log with its unread count, over the rows it is given. */
+/** The events' panel: its name, the lens and Log with its unread count, over the rows it is given. */
 export const EventsPanel = forwardRef<
   HTMLButtonElement,
   { logOpen: boolean; onLogToggle: () => void; unread: number; children: ReactNode }

@@ -1,6 +1,6 @@
 #[starknet::contract]
 pub mod BridgeLogic {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     use starknet::ContractAddress;
     use crate::logic::bridge::BridgeState;
     use crate::logic::release::ReleaseState;
@@ -41,11 +41,11 @@ pub mod BridgeLogic {
     }
     #[abi(embed_v0)]
     impl Withdrawals of crate::withdrawals::IWithdrawals<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn withdrawal_rules(self: @ContractState, game_id: u32) -> crate::withdrawals::WithdrawalRules {
             self.withdrawals.rules(game_id)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn resource_token(self: @ContractState, key: crate::market::MarketKey) -> ContractAddress {
             self.withdrawals.token(key)
         }

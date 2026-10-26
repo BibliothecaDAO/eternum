@@ -5,9 +5,8 @@ import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { SETTINGS } from "@/ui/design-system/kit/words";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
-import { EventLog } from "@/ui/features/event-feed/event-log-panel";
-import { HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
+import { HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { configManager } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -15,7 +14,6 @@ import { StructureType } from "@bibliothecadao/types";
 import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ComponentProps, type ReactNode, useEffect, useState } from "react";
-import { useLatest } from "@/hooks/use-latest";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
@@ -32,8 +30,8 @@ import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
 import { useChatKey } from "./hud/chat-key";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
+import { FrontierFeed } from "./hud/frontier-feed";
 import { useResearchTree } from "./research/research-facts";
-import { useSelectedBuildingRow } from "./research/selected-building";
 import { canResearchNow } from "./research/research-tree";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
@@ -44,7 +42,7 @@ import { FrontierNextUp } from "./next-up/frontier-next-up";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
 import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
-import { MenuSheet } from "./hud/menu-sheet";
+import { MenuPage } from "./hud/menu-page";
 import { FrontierRealms } from "./value/frontier-realms";
 import { FrontierWithdraw } from "./value/frontier-withdraw";
 import { SeasonWithdraw } from "./value/season-withdraw";
@@ -62,9 +60,7 @@ import { ClearedRuinChest } from "./chest/cleared-ruin-chest";
 import { dayClock } from "./hud/day-clock";
 import { BuildingsInFlight } from "./build/build-sheet";
 import { DayDone } from "./rollover/day-done";
-import { RealmBuildingsRow } from "./realm/buildings-row";
 import { useRealmPopulation } from "./realm/realm-population";
-import { LastHourBubble } from "./rollover/last-hour";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useDocumentClass } from "@/hooks/use-document-class";
 
@@ -89,20 +85,27 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // A spectator watches their own realm when they have one this season, else the leader; the strip reads it.
   useSpectatorWatch();
   // What the map has selected opens its card; the one panel decides which of it, a surface and a deploy order stands.
-  const card = useSelectionCard({ realm, onResearch: () => setSurface("research") });
+  // A card's way to Research may name the node it opens on (the castle's own research, a building's gate).
+  const [researchPick, setResearchPick] = useState<string | undefined>();
+  const card = useSelectionCard({
+    realm,
+    onResearch: (node) => {
+      setResearchPick(node);
+      setSurface("research");
+    },
+  });
   const desktop = useLayout() === "desktop";
-  const { surface, openSurface: setSurface, showsCard, home, goHome } = useOnePanel(card?.key ?? null, !desktop);
+  const {
+    surface,
+    openSurface: setSurface,
+    showsCard,
+    home,
+    goHome,
+    feedOpen,
+    closeFeed,
+  } = useOnePanel(card?.key ?? null, !desktop);
   const realmLabor = useRealmLabor(rules, realm);
   const research = useResearchTree(realm);
-  // A building tapped on the realm's board opens Research on its own row: one panel, whichever way the player came.
-  const tappedRow = useSelectedBuildingRow(realm);
-  const [researchPick, setResearchPick] = useState<string | undefined>(undefined);
-  const surfaceOpener = useLatest(setSurface);
-  useEffect(() => {
-    if (tappedRow === null) return;
-    setResearchPick(`row-${tappedRow}`);
-    surfaceOpener.current("research");
-  }, [tappedRow, surfaceOpener]);
   useEffect(() => {
     if (surface !== "research") setResearchPick(undefined);
   }, [surface]);
@@ -152,9 +155,10 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     surface === "research" && realm ? (
       <FrontierResearch key={researchPick} realm={realm} pick={researchPick} />
     ) : surface === "season" ? (
-      <FrontierSeason rules={rules} onBack={close} />
+      <FrontierSeason rules={rules} onVisited={close} />
+    ) : surface === "menu" ? (
+      <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
     ) : undefined;
-  const stage = dockRealm && !visit && <LastHour rules={rules} realm={dockRealm} />;
   const notices = (
     <>
       <ClearedRuinChest />
@@ -171,14 +175,11 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     </>
   );
   // A phone's dock picks an army, the map first; a desktop's opens its panel too.
-  const dock = dockRealm && <DockFor realm={dockRealm} onOpenArmy={desktop ? openArmy : pickArmy} />;
+  const dock = dockRealm && <DockFor rules={rules} realm={dockRealm} onOpenArmy={desktop ? openArmy : pickArmy} />;
   const sheets = (
     <>
       <FrontierSurfaces realm={realm} />
       {showsCard && card?.sheet}
-      {surface === "menu" && (
-        <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
-      )}
       {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
       {surface === "realms" && realm && !visit && (
         <FrontierRealms
@@ -240,7 +241,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       armies={dock}
       nextUp={nextUp}
       page={page}
-      stage={stage}
+      feed={feedOpen && <FrontierFeed onClose={closeFeed} />}
       foot={
         <>
           {notices}
@@ -252,6 +253,8 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           <FrontierPlaces
             surface={surface}
             home={home}
+            feedOpen={feedOpen}
+            onCloseFeed={closeFeed}
             onSurface={setSurface}
             onHome={goHome}
             research={realm ? canResearchNow(research?.nodes) : undefined}
@@ -272,7 +275,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       strip={strip}
       purse={purse}
       page={page}
-      stage={stage}
       nextUp={nextUp}
       notices={notices}
       action={action}
@@ -312,7 +314,6 @@ const FrontierPhoneHud = ({
   strip: ReactNode;
   purse: ReactNode;
   page: ReactNode;
-  stage: ReactNode;
   nextUp: ReactNode;
   notices: ReactNode;
   action: ReactNode;
@@ -321,8 +322,7 @@ const FrontierPhoneHud = ({
 }) => {
   const chat = useGameChat(surface === "chat");
   const chatPane = useChatKey(() => onSurface("chat"));
-  const { stories } = useEventsFeed();
-  const events = useUnreadFeedCount(stories, surface === "log");
+  const events = useUnreadImportantCount(surface === "feed");
   return (
     <HudBands
       {...bands}
@@ -336,8 +336,8 @@ const FrontierPhoneHud = ({
             onSignIn={chat.requestSignIn}
             pane={chatPane}
           />
-        ) : surface === "log" ? (
-          <LogPage />
+        ) : surface === "feed" ? (
+          <FrontierFeed onClose={() => onSurface(null)} />
         ) : (
           page
         )
@@ -362,18 +362,11 @@ const FrontierPhoneHud = ({
   );
 };
 
-/** The Log as a phone's page: the Events' history, standing on the place bar under the map. */
-const LogPage = () => (
-  <HudPanel label="Log" title="Log" icon="chronicles" collapsible={false} bodyClassName="flex flex-col gap-2">
-    <EventLog />
-  </HudPanel>
-);
-
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
  * 2026: mobile direction A): with an order pending, its costs and verb; with the next order queued, its bar; with an
- * army picked, the army, how to give it an order and its details; otherwise a full realm's Buildings row. A desktop has
- * none: its orders go from the map, and the army's state is its panel's.
+ * army picked, the army, how to give it an order and its details; otherwise nothing. A desktop has none: its orders go
+ * from the map, and the army's state is its panel's.
  */
 const ArmyAction = ({
   rules,
@@ -398,22 +391,25 @@ const ArmyAction = ({
   if (selected && nextOrder?.entityId === selected.explorerId)
     return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
   if (acting && onOpenArmy) return <PickedArmy army={acting} onDetails={() => onOpenArmy(acting.explorerId)} />;
-  return <RealmBuildingsRow realm={realm} />;
+  return null;
 };
 
 /** The dock over the realm's armies today; on a phone the action row takes its place while an army is picked. */
 const DockFor = ({
+  rules,
   realm,
   onOpenArmy,
 }: {
+  rules: ExpeditionRules;
   realm: NativeRows["Structure"];
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const armies = useDockArmies(realm);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
   const phone = useLayout() === "phone";
+  const lastHour = dayClock(rules, useNowSeconds()).tone === "ember";
   if (phone && armies.some((army) => army.explorerId === selectedId)) return null;
-  return <ArmyDock realm={realm} armies={armies} onOpenArmy={onOpenArmy} />;
+  return <ArmyDock realm={realm} armies={armies} lastHour={lastHour} onOpenArmy={onOpenArmy} />;
 };
 
 const PendingOrder = ({
@@ -446,25 +442,7 @@ const PendingOrder = ({
   );
 };
 
-/**
- * In the day's last hour, the bubble of what the day's end takes and returns: the troops still out, what their
- * Homecoming returns, and the armies that can still buy a tier.
- */
-const LastHour = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Structure"] }) => {
-  const armies = useDockArmies(realm);
-  const clock = dayClock(rules, useNowSeconds());
-  if (clock.tone !== "ember" || armies.length === 0) return null;
-  const returns = armies.map(({ returnsHome }) => returnsHome);
-  return (
-    <LastHourBubble
-      troopsOut={armies.reduce((sum, army) => sum + army.troops, 0)}
-      returned={returns.every((back) => back !== undefined) ? returns.reduce((sum, back) => sum + back!, 0) : undefined}
-      tiersToBuy={armies.filter(({ canBuyTier }) => canBuyTier).length}
-    />
-  );
-};
-
-/** The Menu over the game: each row opens its way and closes the menu; Exit leaves for the app. */
+/** The Menu page over the game: each row opens its way and closes the menu; Exit leaves for the app. */
 const HudMenu = ({
   realm,
   laborWaiting,
@@ -480,7 +458,7 @@ const HudMenu = ({
   const navigate = useNavigate();
   const rank = useSeasonRank();
   return (
-    <MenuSheet
+    <MenuPage
       rank={rank}
       onToday={() => onOpen("today")}
       onSeason={() => onOpen("season")}

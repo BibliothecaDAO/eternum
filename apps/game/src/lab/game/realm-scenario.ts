@@ -21,10 +21,11 @@ const FIRST_RING = [
 
 /** Each castle level's price in labor, which the castle card reads (the HUD fixture's wheat price is none it takes). */
 const levelPrice = (level: number) => BigInt(level * 3_000) * BigInt(RESOURCE_PRECISION);
-const LABOR_HELD = 5_000n * BigInt(RESOURCE_PRECISION);
+/** Labor for every level up to an Empire (3,000 + 6,000 + 9,000), so each board size can be walked in the realm view. */
+const LABOR_HELD = 18_000n * BigInt(RESOURCE_PRECISION);
 
 /**
- * The spire's game with realm 7 a full Settlement: its six first-ring plots built and the labor for a City. The chain
+ * The spire's game with realm 7 a full Settlement: its six first-ring plots built and the labor to raise it to an Empire. The chain
  * answers LevelUp as construction.cairo's level_up applies it, the price paid and the realm one level up, so a raised
  * realm's new ring can be seen in the realm view (/lab/game?scenario=realm, the Realm place, then the castle).
  */

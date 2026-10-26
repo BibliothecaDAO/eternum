@@ -115,9 +115,9 @@ export const TopHeader = memo(({ season, clock }: { season?: SeasonGoal; clock?:
         }
       />
 
-      {/* Camera-following status toast — extracted from the old wrapper so it floats independently. */}
+      {/* What the camera follows: read, never pressed, so the map under it stays playable. */}
       {isFollowingArmy && (
-        <div className="pointer-events-auto fixed left-1/2 top-16 z-50 -translate-x-1/2">
+        <div className="pointer-events-none fixed left-1/2 top-16 z-50 -translate-x-1/2">
           <HudPill>
             {[
               <span key="following" className="flex items-center gap-2">

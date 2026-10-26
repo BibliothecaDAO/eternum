@@ -76,6 +76,9 @@ vi.mock("../ui/features/debug/kit-lab/resource-icons-lab", () => ({
 vi.mock("../ui/features/debug/kit-lab/reward-chests-lab", () => ({
   RewardChestsLab: () => <Tool name="kit-reward-chests" />,
 }));
+vi.mock("../ui/features/debug/kit-lab/beast-icons-lab", () => ({
+  BeastIconsLab: () => <Tool name="kit-beast-icons" />,
+}));
 vi.mock("../ui/features/debug/kit-lab/words-lab", () => ({ WordsLab: () => <Tool name="kit-words" /> }));
 vi.mock("../ui/features/debug/kit-lab/hud-lab", () => ({ HudLab: () => <Tool name="kit-hud" /> }));
 vi.mock("../ui/features/debug/kit-lab/unified-hud-lab", () => ({
@@ -154,6 +157,7 @@ it.each([
   ["/lab/kit/tokens", "kit-tokens", "Kit", "HUD sheet"],
   ["/lab/kit/shell", "kit-shell-kit", "Kit", "App sheet"],
   ["/lab/kit/reward-chests", "kit-reward-chests", "Kit", "Icons"],
+  ["/lab/kit/beast-icons", "kit-beast-icons", "Kit", "Icons"],
   ["/lab/motion", "motion", "Kit", "Motion"],
   ["/lab/hud?mode=blitz&show=view:blitz", "hud", "HUD", "In game"],
   ["/lab/kit/hud/live", "kit-hud", "HUD", "In game"],

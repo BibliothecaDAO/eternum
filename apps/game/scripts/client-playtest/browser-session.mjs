@@ -60,6 +60,11 @@ export function createBrowserSession(session, { headed, profile }) {
     clickTab: (name) => run(["find", "role", "tab", "click", "--name", name, "--exact"]),
     press: (key) => run(["press", key]),
     tap: (offset) => run(["batch", ...tapCommands(offset)]),
+    tapPlace: (word) => {
+      const at = read(placeSlotExpression(word));
+      if (!at) throw new Error(`The place bar shows no ${word}`);
+      run(["batch", `mouse move ${at.x} ${at.y}`, "mouse down", "mouse up"]);
+    },
     hover: (offset) => run(["mouse", "move", ...screenPoint(offset).map(String)]),
     rightClick: (offset) => run(["batch", ...rightClickCommands(offset)]),
     screenshot: (path) => run(["screenshot", path]),
@@ -82,6 +87,19 @@ const withoutNpmNoise = (output) =>
 /** A point at an offset from the screen's centre, where selecting an army puts it. */
 const screenPoint = ([dx, dy]) => [VIEWPORT.width / 2 + dx, VIEWPORT.height / 2 + dy];
 
+/**
+ * The centre of a phone's place-bar slot, found by its word: a count of what is unread stands beside the word in the
+ * button's name, so the name alone does not find it.
+ */
+const placeSlotExpression = (word) => `JSON.stringify((() => {
+  const slot = [...document.querySelectorAll('nav[aria-label="Places"] button')].find(
+    (button) => button.lastElementChild?.textContent.trim() === ${JSON.stringify(word)},
+  );
+  const rect = slot?.getBoundingClientRect();
+  // agent-browser's mouse takes whole pixels.
+  return rect ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) } : null;
+})())`;
+
 function tapCommands(offset) {
   const [x, y] = screenPoint(offset);
   return [`mouse move ${x} ${y}`, "mouse down", "mouse up"];
@@ -94,7 +112,7 @@ function rightClickCommands(offset) {
 
 /**
  * What a player can see that says where they are: the route's scene, the scene the renderer last drew, the lit place,
- * open sheets, selection, zoom.
+ * open sheets, the HUD's panels drawn (each by its name), selection, zoom.
  */
 const OBSERVE_EXPRESSION = `JSON.stringify({
   path: location.pathname,
@@ -104,9 +122,12 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
   place:
     document.querySelector('nav[aria-label="Places"] [aria-current="page"]')?.textContent.trim() ??
     document.querySelector('[aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ??
+    ({ world: "Realm", realm: "Map" })[document.querySelector('nav[aria-label="Places"] [data-switch]')?.dataset.switch] ??
     null,
   dialogs: [...document.querySelectorAll('[role="dialog"]')].map((dialog) => dialog.getAttribute("aria-label")),
-  page: Boolean(document.querySelector("[data-page]")),
+  panels: [...document.querySelectorAll("section.ui-panel[aria-label]")]
+    .filter((panel) => panel.checkVisibility({ visibilityProperty: true }))
+    .map((panel) => panel.getAttribute("aria-label")),
   pressed: [...document.querySelectorAll('button[aria-pressed="true"]')].map((button) => button.getAttribute("aria-label")),
   worldmapDistance: JSON.parse(localStorage.getItem("eternum-camera-zoom") ?? "null")?.state?.worldmapDistance ?? null,
   playable: (window.__eternumGameEntryTimeline ?? []).some((milestone) => milestone.name === "world-interactive"),
@@ -168,6 +189,10 @@ export async function openPageDevTools(browser) {
   const { sessionId } = await send("Target.attachToTarget", { targetId: page.targetId, flatten: true });
   return {
     send: (method, params) => send(method, params, sessionId),
+    /** A command to the browser itself (its tabs), not the driven page. */
+    sendToBrowser: (method, params) => send(method, params),
+    /** The driven page's tab. */
+    targetId: page.targetId,
     /** Calls `listener` with every event the browser sends; the returned function stops it. */
     onEvent: (listener) => {
       listeners.push(listener);

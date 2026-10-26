@@ -91,6 +91,10 @@ export interface HeraldGameSyncTransportOptions {
 const DEFAULT_RECONNECT_MS = 200;
 // A stalled browser WebSocket handshake took 31 seconds before retrying during entry profiling.
 const HELLO_TIMEOUT_MS = 10_000;
+// Herald heads a live stream at least twice a second (prod, 2026-10-25: 90 heads in 60 s, none over 0.6 s apart). A live
+// stream silent this long is gone though its socket never closed, as a phone's is once its tab has slept.
+const SILENT_STREAM_MS = 10_000;
+const SILENCE_CHECK_MS = 1_000;
 // Every client of a game reads its final state in the same second: retries back off and spread out.
 const FINAL_STATE_RETRY_FIRST_MS = 1_000;
 const FINAL_STATE_RETRY_MAX_MS = 30_000;
@@ -175,6 +179,9 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private socket?: HeraldSocket;
   private reconnectTimer?: ReturnType<typeof setTimeout>;
   private helloTimer?: ReturnType<typeof setTimeout>;
+  private silenceTimer?: ReturnType<typeof setInterval>;
+  /** Wall time of the socket's last message: it runs on while a phone sleeps, where the page's own clock may not. */
+  private lastHeardAt = 0;
   private pendingSelection?: ScopeSelection;
   private resumed = false;
   private epoch = "";
@@ -324,8 +331,12 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       console.warn(`[Herald] No hello within ${HELLO_TIMEOUT_MS}ms; reconnecting`);
       this.reconnectSocket(socket);
     }, HELLO_TIMEOUT_MS);
+    this.lastHeardAt = Date.now();
+    this.silenceTimer = setInterval(() => this.reconnectIfSilent(socket), SILENCE_CHECK_MS);
     socket.onmessage = ({ data }) => {
-      if (this.socket === socket) this.acceptMessage(data);
+      if (this.socket !== socket) return;
+      this.lastHeardAt = Date.now();
+      this.acceptMessage(data);
     };
     socket.onerror = () => this.reconnectSocket(socket);
     socket.onclose = (event) =>
@@ -445,6 +456,18 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.scheduleReconnect();
   }
 
+  /** A live stream that has gone silent is dropped and resumed, as a closed one is. */
+  private reconnectIfSilent(socket: HeraldSocket): void {
+    if (this.socket !== socket || !this.isLive() || Date.now() - this.lastHeardAt < SILENT_STREAM_MS) return;
+    console.warn(`[Herald] Nothing heard for ${SILENT_STREAM_MS}ms; reconnecting`);
+    this.reconnectSocket(socket);
+  }
+
+  /** Past the handshake and the snapshot: from here Herald heads the stream twice a second. */
+  private isLive(): boolean {
+    return this.resumed && this.firstSnapshotEnded && !this.snapshotStreaming && !this.forceFreshSnapshot;
+  }
+
   private clearHelloTimer(): void {
     if (this.helloTimer !== undefined) clearTimeout(this.helloTimer);
     this.helloTimer = undefined;
@@ -452,6 +475,8 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private closeSocket(): void {
     this.clearHelloTimer();
+    clearInterval(this.silenceTimer);
+    this.silenceTimer = undefined;
     const socket = this.socket;
     this.socket = undefined;
     if (!socket) return;

@@ -3165,7 +3165,7 @@
       "prompt": "prompts/beast-troll.txt",
       "source": {
         "kind": "painted",
-        "sha256": "24ac2ec5727873fc451e11eb90d9b45916440b6fcc63ff0b7bb5905dd8e47451"
+        "sha256": "95069e8523d11a70b703788b176197efb6dde166eabcd4a41b7bd66e670c3b83"
       }
     },
     {
@@ -3195,7 +3195,7 @@
       "prompt": "prompts/beast-wraith.txt",
       "source": {
         "kind": "painted",
-        "sha256": "2a6a3a0cf4cfd1f345e3e29e56ab0544e2193d26181c34947f342b2fd6278d95"
+        "sha256": "a72531babf571eea4d4512ea89a479ef68ab9b6d8185b7604a2a6587dbdee78c"
       }
     },
     {
@@ -3205,7 +3205,7 @@
       "prompt": "prompts/beast-cyclops.txt",
       "source": {
         "kind": "painted",
-        "sha256": "f5b1cc00c9a6c055b8a47bac1a2e28da61f18533cc9352005feb84dd140562de"
+        "sha256": "c709a8f63a1709b972d91805c079c7e7fdd0f44742f771f8b545b2de76705b33"
       }
     },
     {

@@ -1,0 +1,61 @@
+.beast-icons-lab {
+  min-height: 100vh;
+  padding: 24px;
+  background: #171917;
+  color: rgb(var(--hud-ink));
+}
+.beast-icons-lab > header,
+.beast-icons-lab > section,
+.beast-icons-lab > p,
+.beast-icons-columns {
+  max-width: 1240px;
+  margin: 0 auto 24px;
+}
+.beast-icons-lab h1 {
+  font-size: 28px;
+}
+.beast-icons-lab h2 {
+  font-size: 20px;
+}
+.beast-icons-lab h3,
+.beast-icons-lab p,
+.beast-icons-lab figcaption {
+  color: var(--hud-muted);
+}
+.beast-icons-lab h3 {
+  margin-top: 20px;
+}
+.beast-icons-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.beast-icons-columns > article {
+  min-width: 0;
+}
+.beast-icons-columns .ui-sheet {
+  position: static;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+}
+.beast-icons-portrait,
+.beast-icons-sizes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 16px 0;
+}
+.beast-icons-sizes figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: end;
+  gap: 8px;
+}
+@media (max-width: 760px) {
+  .beast-icons-columns {
+    grid-template-columns: 1fr;
+  }
+}

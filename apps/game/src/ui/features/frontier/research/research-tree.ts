@@ -1,5 +1,16 @@
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { StructureType } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { REACH_NUMERALS, RESEARCH_TREE, SHRINE, STAMINA, TIER_WORDS, WELL, XP } from "@/ui/design-system/kit/words";
+import {
+  depthName,
+  RESEARCH_TREE,
+  SHRINE,
+  STAMINA,
+  type Tier,
+  tierNumeral,
+  WELL,
+  XP,
+} from "@/ui/design-system/kit/words";
 import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from "@bibliothecadao/types";
@@ -56,8 +67,13 @@ export type Need =
   | { kind: "store"; met: boolean; limit: number; need: number; level: string }
   | { kind: "essence" | "labor"; met: boolean; have: number; need: number };
 
-/** A side a tier can take: its mark, its word, what it does, and its figure now and with one more pick. */
+/**
+ * A side a tier can take: its mark, its word, what it does, and its figure now and with one more pick.
+ */
 export type Side = { icon: IconMeaning; name: string; line: string; now: string; next: string };
+
+/** One thing a building row's research gives: its mark and word, its figure now, and with the next tier (none at the top). */
+export type Figure = { icon: IconMeaning; name: string; now: string; next?: string };
 
 export interface TreeNode {
   key: string;
@@ -69,20 +85,25 @@ export interface TreeNode {
   tier: number;
   maxTier: number;
   state: NodeState;
-  /** The next tier's word ("Uncommon") and price; none once done. */
-  nextWord?: string;
+  /** The next tier and its price; none once done. */
+  nextTier?: Exclude<Tier, 1>;
   price?: { essence: number; labor: number };
   needs: Need[];
   /** What the node does, one line, and its figure now and after the next tier. */
   gives: { line: string; now: string; next?: string };
-  /** The sides its next tier chooses between, final for the season; the choice sent is the side's index. */
+  /** The sides its next tier chooses between; the choice sent is the side's index. */
   sides?: Side[];
   /** The marks of the sides taken, one per learned tier. */
   taken: IconMeaning[];
+  /**
+   * What a building row's research gives, without its tier's word: each side, or its one figure (a Hut's population, a
+   * training building's attribute), now and with the next tier; a building's own card reads it. None for a castle node.
+   */
+  figures: Figure[];
   /** The nodes this one leads to (the tree's lines). */
   leadsTo: string[];
-  /** The Barracks' gate to the training buildings: the tier that opens them, and whether the realm reached it. */
-  gate?: { tier: string; met: boolean };
+  /** The Barracks' gate to the training buildings: the tier that opens them ("Barracks III"), and whether it is reached. */
+  gate?: { name: string; met: boolean };
 }
 
 const ROWS = {
@@ -96,18 +117,25 @@ const ROWS = {
 } as const;
 
 type Attribute = "battle" | "logistics" | "scouting" | "homecoming";
-const TRAINING: { row: number; category: BuildingType; attribute: Attribute; word: string }[] = [
+/** Each attribute's mark, as a training building's gain shows it. */
+export const ATTRIBUTE_MARKS: Record<"Battle" | "Logistics" | "Scouting" | "Homecoming", IconMeaning> = {
+  Battle: "order-rage",
+  Logistics: "order-skill",
+  Scouting: "order-detection",
+  Homecoming: "order-enlightenment",
+};
+const TRAINING: { row: number; category: BuildingType; attribute: Attribute; word: keyof typeof ATTRIBUTE_MARKS }[] = [
   { row: research.ROW_WAR_HALL, category: BuildingType.WarHall, attribute: "battle", word: "Battle" },
   { row: research.ROW_SUPPLY_YARD, category: BuildingType.SupplyYard, attribute: "logistics", word: "Logistics" },
   { row: research.ROW_SCOUTS_LODGE, category: BuildingType.ScoutsLodge, attribute: "scouting", word: "Scouting" },
   { row: research.ROW_HEARTH, category: BuildingType.Hearth, attribute: "homecoming", word: "Homecoming" },
 ];
 const KINDS: { icon: IconMeaning; name: string }[] = [
-  { icon: "camp", name: RESEARCH_TREE.kinds.camp },
-  { icon: "rift", name: RESEARCH_TREE.kinds.rift },
-  { icon: "beasts", name: RESEARCH_TREE.kinds.beasts },
+  { icon: structureMeaning(StructureType.Camp, "frontier"), name: RESEARCH_TREE.kinds.camp },
+  { icon: structureMeaning(StructureType.Rift, "frontier"), name: RESEARCH_TREE.kinds.rift },
+  { icon: structureMeaning(StructureType.Beasts, "frontier"), name: RESEARCH_TREE.kinds.beasts },
 ];
-const REACH_MARKS: IconMeaning[] = ["depth-1", "depth-2", "depth-3"];
+const DEPTH_MARKS: IconMeaning[] = ["depth-1", "depth-2", "depth-3"];
 
 const percent = (bps: number) => formatPercent(bps / 10_000, { signed: true });
 /** What one level of Scouting adds to the kind picked with it, in basis points of that kind's base rate. */
@@ -144,8 +172,10 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     gives: (tier: number) => TreeNode["gives"],
     options: {
       extra?: Need[];
-      sides?: (tier: number) => Side[];
+      sides?: (tier: number, done: boolean) => Side[];
       taken?: () => IconMeaning[];
+      /** The row's figures where it has no sides; a row with sides shows its sides. */
+      figures?: (tier: number) => Figure[];
       leadsTo?: string[];
       gate?: TreeNode["gate"];
     } = {},
@@ -154,7 +184,9 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     const name = buildingName(category);
     const icon = buildingIcon(category);
     const next = tier < 4 ? tier + 1 : undefined;
-    const needs = next === undefined ? [] : buildingNeeds(row, name, icon, next, options.extra ?? []);
+    const done = next === undefined;
+    const needs = done ? [] : buildingNeeds(row, name, icon, next, options.extra ?? []);
+    const sides = options.sides?.(tier, done);
     return {
       key: `row-${row}`,
       row,
@@ -164,23 +196,25 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       tier,
       maxTier: 4,
       state: stateOf(next === undefined, needs),
-      nextWord: next === undefined ? undefined : TIER_WORDS[next],
+      nextTier: next === undefined ? undefined : ((next + 1) as Exclude<Tier, 1>),
       price: next === undefined ? undefined : realm.price(row, next),
       needs,
       gives: gives(tier),
-      sides: next === undefined ? undefined : options.sides?.(tier),
+      sides: done ? undefined : sides,
       taken: options.taken?.() ?? [],
+      // A row with sides shows each side, with what its picks hold: one figure for the row would hide which side
+      // holds what, and leave the others no way to be picked (the Scouts' lodge's three kinds).
+      figures: sides
+        ? sides.map((side) => ({ icon: side.icon, name: side.name, now: side.now, next: done ? undefined : side.next }))
+        : (options.figures?.(tier) ?? []),
       leadsTo: options.leadsTo ?? [],
       gate: options.gate,
     };
   };
 
+  type SideRule = { icon: IconMeaning; words: readonly [string, string]; at: (picks: number) => string };
   /** Fields, Tools or Drill against Granary, Storeroom or Rations: what one more pick of each adds. */
-  const twoSides = (
-    row: number,
-    make: { icon: IconMeaning; words: readonly [string, string]; at: (picks: number) => string },
-    other: { icon: IconMeaning; words: readonly [string, string]; at: (picks: number) => string },
-  ) => ({
+  const twoSides = (row: number, make: SideRule, other: SideRule) => ({
     sides: (): Side[] =>
       [make, other].map((side, index) => ({
         icon: side.icon,
@@ -196,16 +230,30 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   const rations = (count: number) => formatFigure(realm.wheatPerTroop(count));
   const { sides } = RESEARCH_TREE;
 
-  const tierLine = (row: number, made: string) => (tier: number) => ({
-    line: RESEARCH_TREE.sidesLine(made),
-    now: TIER_WORDS[tier]!,
-    next: tier < 4 ? TIER_WORDS[tier + 1] : undefined,
+  /** A Hut row's population share now and with its next tier. */
+  const hutPopulation = (tier: number) => ({
+    now: percent(tier * realm.board.populationStepBps),
+    next: tier < 4 ? percent((tier + 1) * realm.board.populationStepBps) : undefined,
   });
-  const gateTier = TIER_WORDS[realm.board.trainingGateTier]!;
+
+  /** What a row's picks give so far, read from its two sides: "Fields +50% · Granary +25%". */
+  const picksGive = (row: number, make: SideRule, other: SideRule) => () => ({
+    line: `${make.words[0]} ${make.at(picks(row, 0))}`,
+    now: `${other.words[0]} ${other.at(picks(row, 1))}`,
+  });
+  const farmSides: [SideRule, SideRule] = [
+    { icon: "fields", words: sides.fields, at: output },
+    { icon: "granary", words: sides.granary, at: storage },
+  ];
+  const workshopSides: [SideRule, SideRule] = [
+    { icon: "tools", words: sides.tools, at: output },
+    { icon: "storehouse", words: sides.storeroom, at: storage },
+  ];
+  const gateBarracks = `${buildingName(BuildingType.ResourceKnightT1)} ${tierShown(realm.board.trainingGateTier)}`;
   const gateNeed: Need = {
     kind: "tier",
     met: learned(ROWS.barracks).tier >= realm.board.trainingGateTier,
-    node: `${buildingName(BuildingType.ResourceKnightT1)} ${gateTier}`,
+    node: gateBarracks,
     icon: buildingIcon(BuildingType.ResourceKnightT1),
   };
 
@@ -214,37 +262,31 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       ROWS.farm,
       BuildingType.ResourceWheat,
       "economy",
-      tierLine(ROWS.farm, "wheat"),
-      twoSides(
-        ROWS.farm,
-        { icon: "fields", words: sides.fields, at: output },
-        { icon: "granary", words: sides.granary, at: storage },
-      ),
+      picksGive(ROWS.farm, ...farmSides),
+      twoSides(ROWS.farm, ...farmSides),
     ),
     buildingNode(
       ROWS.workshop,
       BuildingType.ResourceLabor,
       "economy",
-      tierLine(ROWS.workshop, "labor"),
-      twoSides(
-        ROWS.workshop,
-        { icon: "tools", words: sides.tools, at: output },
-        { icon: "storehouse", words: sides.storeroom, at: storage },
-      ),
+      picksGive(ROWS.workshop, ...workshopSides),
+      twoSides(ROWS.workshop, ...workshopSides),
     ),
-    buildingNode(ROWS.hut, BuildingType.WorkersHut, "economy", (tier) => ({
-      line: RESEARCH_TREE.hutLine,
-      now: percent(tier * realm.board.populationStepBps),
-      next: tier < 4 ? percent((tier + 1) * realm.board.populationStepBps) : undefined,
-    })),
+    buildingNode(
+      ROWS.hut,
+      BuildingType.WorkersHut,
+      "economy",
+      (tier) => ({ line: RESEARCH_TREE.hutLine, ...hutPopulation(tier) }),
+      { figures: (tier) => [{ icon: "person", name: RESEARCH_TREE.population, ...hutPopulation(tier) }] },
+    ),
     buildingNode(
       ROWS.barracks,
       BuildingType.ResourceKnightT1,
       "army",
       (tier) => ({
-        line: tier < realm.board.trainingGateTier ? RESEARCH_TREE.gateLine(gateTier) : RESEARCH_TREE.gateOpen,
-        now: TIER_WORDS[tier]!,
-        next: tier < 4 ? TIER_WORDS[tier + 1] : undefined,
+        line: tier < realm.board.trainingGateTier ? RESEARCH_TREE.gateLine(gateBarracks) : RESEARCH_TREE.gateOpen,
+        now: tierShown(tier),
+        next: tier < 4 ? tierShown(tier + 1) : undefined,
       }),
       {
         ...twoSides(
@@ -253,15 +295,16 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
           { icon: "rations", words: sides.rations, at: rations },
         ),
         leadsTo: TRAINING.map(({ row }) => `row-${row}`),
-        gate: { tier: gateTier, met: gateNeed.met },
+        gate: { name: gateBarracks, met: gateNeed.met },
       },
     ),
     ...TRAINING.map(({ row, category, attribute, word }) =>
       buildingNode(row, category, "army", (tier) => trainingGives(attribute, word, tier), {
         extra: [gateNeed],
+        figures: (tier) => [{ icon: ATTRIBUTE_MARKS[word], name: word, ...attributeStep(attribute, tier) }],
         ...(row === research.ROW_SCOUTS_LODGE
           ? {
-              sides: (tier: number) =>
+              sides: (tier: number, done: boolean) =>
                 KINDS.map((kind, index) => {
                   // A lodge tier starts new armies' Scouting one level higher, on the kind it picked.
                   const now = learned(row)
@@ -272,7 +315,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
                     name: kind.name,
                     line: RESEARCH_TREE.foundByNewArmies(kind.name),
                     now: percent(now),
-                    next: percent(now + scoutingStep(tier + 2)),
+                    next: done ? percent(now) : percent(now + scoutingStep(tier + 2)),
                   };
                 }),
               taken: () => learned(row).sides.map((side) => KINDS[side]!.icon),
@@ -290,8 +333,8 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       now: "—",
       next: RESEARCH_TREE.each(`+${formatExact(realm.wellStamina)} ${STAMINA}`),
     }),
-    ...[1, 2, 3].map((depth) => {
-      const reach = RESEARCH_TREE.reach(REACH_NUMERALS[depth - 1]!);
+    ...([1, 2, 3] as const).map((depth) => {
+      const name = depthName(depth);
       const before: Need[] =
         depth === 1
           ? []
@@ -299,16 +342,16 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
               {
                 kind: "tier",
                 met: learned(ROWS.depth).tier >= depth - 1,
-                node: RESEARCH_TREE.reach(REACH_NUMERALS[depth - 2]!),
-                icon: REACH_MARKS[depth - 2]!,
+                node: depthName((depth - 1) as 1 | 2),
+                icon: DEPTH_MARKS[depth - 2]!,
               },
             ];
       return castleNode(
         `reach-${depth}`,
         ROWS.depth,
-        reach,
-        REACH_MARKS[depth - 1]!,
-        { line: RESEARCH_TREE.enters(reach), now: "—", next: RESEARCH_TREE.opens },
+        name,
+        DEPTH_MARKS[depth - 1]!,
+        { line: RESEARCH_TREE.enters(name), now: "—", next: RESEARCH_TREE.opens },
         depth,
         before,
         depth < 3 ? [`reach-${depth + 1}`] : [],
@@ -344,16 +387,26 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       needs,
       gives: done ? { line: gives.line, now: gives.next ?? gives.now } : gives,
       taken: [],
+      figures: [],
       leadsTo,
     };
   }
 };
 
+/** A research tier (0 common to 4 legendary) as text beside the gems: its numeral, Common I to Legendary V. */
+const tierShown = (tier: number): string => tierNumeral((tier + 1) as Tier);
+
 /** A training row: the level every new army of the realm starts the attribute at, and what that level gives. */
 const trainingGives = (attribute: Attribute, word: string, tier: number): TreeNode["gives"] => {
-  const at = (level: number) => RESEARCH_TREE.at(TIER_WORDS[level - 1]!, attributeEffect(attribute, level));
+  const at = (level: number) => RESEARCH_TREE.at(tierShown(level - 1), attributeEffect(attribute, level));
   return { line: RESEARCH_TREE.newArmiesStart(word), now: at(tier + 1), next: tier < 4 ? at(tier + 2) : undefined };
 };
+
+/** What a training row's attribute gives every new army now, and with the next tier: "+10% damage". */
+const attributeStep = (attribute: Attribute, tier: number): Pick<Figure, "now" | "next"> => ({
+  now: attributeEffect(attribute, tier + 1),
+  next: tier < 4 ? attributeEffect(attribute, tier + 2) : undefined,
+});
 
 /** What an attribute gives at a level (1 common to 5 legendary), as the contract's tables apply it. */
 const attributeEffect = (attribute: Attribute, level: number): string => {

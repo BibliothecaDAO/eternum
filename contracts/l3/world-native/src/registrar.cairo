@@ -74,7 +74,7 @@ pub fn validate_params(params: CreateGameParams, rules: LaunchRules) {
         assert!(params.seater.is_zero(), "an open game has no seater");
     }
 }
-pub(crate) fn validate_roster_size(count: u32, mode: crate::settlement::SettlementMode) {
+pub fn validate_roster_size(count: u32, mode: crate::settlement::SettlementMode) {
     assert!(count > 0 && count <= crate::rules::MAX_BLITZ_ROSTER_PLAYERS, "invalid Blitz roster size");
     if mode == crate::settlement::SettlementMode::Duel {
         assert!(count == crate::rules::DUEL_ROSTER_PLAYERS, "Duel requires two players");
@@ -88,7 +88,7 @@ pub fn map_center_offset(game_id: u32, seed: felt252) -> u32 {
     ((seed_step + game_id % STEPS) % STEPS) * 10
 }
 
-pub(crate) fn build_game(params: CreateGameParams, entry_rule: u8) -> crate::game::GameRegistry {
+pub fn build_game(params: CreateGameParams, entry_rule: u8) -> crate::game::GameRegistry {
     crate::game::GameRegistry {
         name: params.name,
         preset_id: params.preset_id,
@@ -102,7 +102,7 @@ pub(crate) fn build_game(params: CreateGameParams, entry_rule: u8) -> crate::gam
         seed: params.seed,
     }
 }
-pub(crate) fn game_overrides(game_id: u32, params: CreateGameParams) -> crate::game::GameOverrides {
+pub fn game_overrides(game_id: u32, params: CreateGameParams) -> crate::game::GameOverrides {
     crate::game::GameOverrides {
         registration_start: params.registration_start,
         biome_climate: params.biome_climate,

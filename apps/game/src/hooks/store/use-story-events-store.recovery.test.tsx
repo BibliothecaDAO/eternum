@@ -1,6 +1,6 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { defaultScheduler, notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 
@@ -83,6 +83,7 @@ let root: Root;
 
 beforeEach(async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  notifyManager.setScheduler(queueMicrotask);
   notifyManager.setNotifyFunction((notify) => act(notify));
   history.mockClear();
   resetGameSyncStoryEvents();
@@ -102,6 +103,7 @@ afterEach(() => {
   history.mockResolvedValue({ items: [], complete_through_block: 0, limit: 1, offset: 0, total: 0 });
   act(() => root.unmount());
   notifyManager.setNotifyFunction((notify) => notify());
+  notifyManager.setScheduler(defaultScheduler);
 });
 
 it("recovers the exact relic activation from history on reload without an active effect or a streamed event", async () => {
@@ -289,6 +291,33 @@ describe("a story read", () => {
     expect(history).toHaveBeenCalledTimes(2);
   });
 
+  it("draws its stories again on a new story, never on a confirmed block that brings none", async () => {
+    const drawn = vi.fn();
+    const Feed = () => {
+      const stories = useStoryEvents(350).data;
+      drawn(stories.length);
+      return <p>{stories.length}</p>;
+    };
+    const feed = createRoot(document.createElement("div"));
+    await act(async () =>
+      feed.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <Feed />
+        </QueryClientProvider>,
+      ),
+    );
+    await act(async () => story(1, { ExplorerMove: {} }));
+    const draws = drawn.mock.calls.length;
+    for (let block = 2; block <= 30; block++) {
+      await act(async () => useConnectionStore.getState().recordConfirmedHead(block));
+    }
+    expect(drawn.mock.calls.length).toBe(draws);
+    await act(async () => story(31, { ExplorerMove: {} }));
+    expect(drawn.mock.calls.length).toBeGreaterThan(draws);
+    expect(drawn).toHaveBeenLastCalledWith(2);
+    await act(async () => feed.unmount());
+  });
+
   it("keeps the season's ending the stream delivered after the stream's ring has moved past it", async () => {
     await act(async () => story(1, { SeasonEnded: {} }, "0x7"));
     expect(host.textContent).toBe("7");
@@ -455,7 +484,7 @@ it("reads the world's stories again each time a reader opens, so another player'
   });
   history.mockResolvedValue(answer([chestOpened(10, "0xd1")], 10));
   const client = new QueryClient();
-  // The Log's World history: every player's stories, which a Frontier client's stream never carries.
+  // All's world history: every player's stories, which a Frontier client's stream never carries.
   const World = () => (
     <ol>
       {useStoryEvents(350).data.map((event) => (

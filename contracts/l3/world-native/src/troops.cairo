@@ -266,11 +266,11 @@ pub fn stock_resource(category: TroopType, tier: TroopTier) -> u8 {
         TroopTier::T3 => 2,
     })
 }
-pub(crate) fn explorer_occupier(explorer: ExplorerTroops) -> u8 {
+pub fn explorer_occupier(explorer: ExplorerTroops) -> u8 {
     troop_occupier(explorer.troops)
 }
 
-pub(crate) fn troop_occupier(troops: Troops) -> u8 {
+pub fn troop_occupier(troops: Troops) -> u8 {
     let category = match troops.category {
         TroopType::Knight => crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER,
         TroopType::Paladin => crate::taxonomy::EXPLORER_PALADIN_T1_OCCUPIER,
@@ -303,7 +303,7 @@ pub fn max_army_size(config: crate::rules::TroopLimitConfig, level: u8, tier: Tr
     cap * modifier.into() / (strength.into() * 100)
 }
 
-pub(crate) fn spend_stamina(
+pub fn spend_stamina(
     ref explorer: ExplorerTroops,
     rules: crate::rules::SliceRules,
     biome: crate::biome::Biome,
@@ -337,9 +337,7 @@ pub(crate) fn spend_stamina(
         );
 }
 
-pub(crate) fn discovery_guards(
-    category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
-) -> Span<Troops> {
+pub fn discovery_guards(category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64) -> Span<Troops> {
     use crate::troops::{TroopTier, TroopType};
     let light_guard = category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY;
     let limits = rules.troop_limit_config;
@@ -392,7 +390,7 @@ pub(crate) fn discovery_guards(
 }
 
 // Every Frontier guard is Knight T1, so counts order encounters without changing combat matchups.
-pub(crate) fn frontier_guard(
+pub fn frontier_guard(
     category: u8, depth: crate::expeditions::DepthRules, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Troops {
     let (lower, upper) = if category == crate::taxonomy::RUIN_CATEGORY {

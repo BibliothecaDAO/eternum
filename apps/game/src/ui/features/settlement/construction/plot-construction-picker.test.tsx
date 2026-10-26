@@ -8,7 +8,10 @@ vi.mock("@/audio/core/AudioManager", () => ({
 }));
 
 import { GameProvider } from "@/hooks/context/game-context";
+import { type SurfaceAnchor, usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { SurfaceHost } from "@/ui/design-system/molecules/popover";
+import { panelOf } from "@/ui/design-system/molecules/surface-panel-testing";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { type GameClient, readBuildingTiles } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
@@ -21,8 +24,8 @@ import { PlotConstructionPicker } from "./plot-construction-picker";
 
 afterEach(() => disposeGameSyncSession());
 
-/** The real picker on the lab's Blitz realm (preset 2, the owner's nine resources), as the realm view opens it. */
-const openPicker = (stocked: boolean) => {
+/** The lab's Blitz realm (preset 2, the owner's nine resources) as the game holds it, and its build call. */
+const installPickerGame = (stocked: boolean) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const store = installLabGame(2, false);
   installBlitzBuildRealm(store, stocked);
@@ -35,18 +38,29 @@ const openPicker = (stocked: boolean) => {
     actions: { placeBuilding },
     waitForAction: () => Promise.resolve({ hash: "0x1", block: 9, status: "SUCCEEDED" }),
   } as unknown as GameClient);
+  return { store, placeBuilding };
+};
+
+/** The picker on the realm's plot, as its tiles read it. */
+const picker = (store: ReturnType<typeof installLabGame>) => (
+  <PlotConstructionPicker
+    entityId={BLITZ_REALM_ID}
+    spot={BLITZ_PLOT}
+    tileManager={readBuildingTiles(store, {} as Parameters<typeof readBuildingTiles>[1], BLITZ_REALM_ID)}
+    isCurrentTarget={() => true}
+  />
+);
+
+/** The real picker on the lab's Blitz realm, drawn alone. */
+const openPicker = (stocked: boolean) => {
+  const { store, placeBuilding } = installPickerGame(stocked);
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   act(() =>
     root.render(
       <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: PLAYER } as never}>
-        <PlotConstructionPicker
-          entityId={BLITZ_REALM_ID}
-          spot={BLITZ_PLOT}
-          tileManager={readBuildingTiles(store, {} as Parameters<typeof readBuildingTiles>[1], BLITZ_REALM_ID)}
-          isCurrentTarget={() => true}
-        />
+        {picker(store)}
       </GameProvider>,
     ),
   );
@@ -151,5 +165,82 @@ describe("Blitz's Build on this plot panel", () => {
     );
     expect(rows[0].querySelector("[data-icon]")?.getAttribute("src")).toContain("/icons/facets/");
     panel.close();
+  });
+});
+
+describe("the panel hanging from a plot", () => {
+  /** A plot low in the middle of a 1267×1014 screen, as the player's report shows it. */
+  const PLOT: SurfaceAnchor = { left: 640, right: 640, top: 600, bottom: 600 };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  /** The picker as the realm view opens it from a plot, in the game's one surface host. */
+  const openOnPlot = () => {
+    const { store } = installPickerGame(true);
+    vi.stubGlobal("innerWidth", 1267);
+    vi.stubGlobal("innerHeight", 1014);
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    // The panel's height is its open tab's: the resources' grid stands taller than the economy's rows.
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.textContent?.includes("Ironwood") ? 490 : 380;
+    });
+    let contentResized = () => {};
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: () => void) {
+          contentResized = callback;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: PLAYER } as never}>
+          <SurfaceHost />
+        </GameProvider>,
+      ),
+    );
+    act(() =>
+      usePopoverStore.getState().openSurface({ id: "plot-construction", anchor: PLOT, content: picker(store) }),
+    );
+    const panel = () => panelOf("plot-construction")!;
+    const tab = (name: string) => {
+      act(() =>
+        [...panel().querySelectorAll<HTMLButtonElement>('[role="tab"]')]
+          .find((each) => each.textContent === name)!
+          .click(),
+      );
+      act(() => contentResized());
+    };
+    const close = () => {
+      act(() => usePopoverStore.getState().close("plot-construction"));
+      act(() => root.unmount());
+      host.remove();
+    };
+    return { panel, tab, close };
+  };
+
+  it("stays where it opened when another tab is shorter or taller, so the tabs stay under the pointer", () => {
+    const opened = openOnPlot();
+    // No room below the plot for the resources' 490 px, so it hangs above it: 600 - 8 - 490.
+    expect(opened.panel().style.top).toBe("102px");
+    opened.tab("Economic");
+    expect(opened.panel().style.top).toBe("102px");
+    opened.tab("Resources");
+    expect(opened.panel().style.top).toBe("102px");
+    opened.close();
   });
 });

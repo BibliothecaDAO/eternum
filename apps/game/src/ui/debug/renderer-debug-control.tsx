@@ -1,7 +1,6 @@
 import { snapshotRendererDiagnostics } from "@/three/renderer-diagnostics";
 import {
   buildRendererDebugUrl,
-  readRendererPreference,
   resolveRendererBuildModeFromSearch,
   type RendererBuildMode,
 } from "@/three/renderer-build-mode";
@@ -12,7 +11,7 @@ interface RendererDebugControlProps {
 }
 
 /** The two backends a player can ask for; asking reloads the game with the choice in its address. */
-export const RENDERER_MODES: ReadonlyArray<{ label: string; mode: RendererBuildMode }> = [
+const RENDERER_MODES: ReadonlyArray<{ label: string; mode: RendererBuildMode }> = [
   { label: "WebGPU", mode: "webgpu-auto" },
   { label: "WebGL2", mode: "webgpu-force-webgl" },
 ];
@@ -27,14 +26,13 @@ const formatActiveMode = (activeMode: ReturnType<typeof snapshotRendererDiagnost
  * The backend this page load asked for: the renderer's own record once it booted, else what the boot would ask for,
  * read once, so a choice saved since does not pass for the one loaded.
  */
-export const requestedRendererMode = (): RendererBuildMode =>
+const requestedRendererMode = (): RendererBuildMode =>
   snapshotRendererDiagnostics().requestedMode ?? pageRendererMode();
 
 let pageMode: RendererBuildMode | null = null;
 const pageRendererMode = (): RendererBuildMode =>
   (pageMode ??= resolveRendererBuildModeFromSearch({
     envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
-    saved: readRendererPreference(localStorage),
     search: window.location.search,
   }));
 

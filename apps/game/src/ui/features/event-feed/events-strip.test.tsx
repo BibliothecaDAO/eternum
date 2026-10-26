@@ -22,8 +22,8 @@ const history = vi.hoisted(
       payload?: Record<string, unknown>;
     }[],
 );
-/** The player's filter for Events, and the game's Hyperstructures. */
-const world = vi.hoisted(() => ({ filter: "all" as "important" | "mine" | "all", hyperstructures: [] as number[] }));
+/** The player's lens for Events, and the game's Hyperstructures. */
+const world = vi.hoisted(() => ({ filter: "all" as "important" | "all", hyperstructures: [] as number[] }));
 
 vi.mock("@/hooks/helpers/use-block-timestamp", async () => {
   const { useChainTimeStore } = await import("@/hooks/store/use-chain-time-store");
@@ -75,7 +75,7 @@ vi.mock("@/ui/design-system/molecules/popover", () => ({
   PopoverPanel: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 vi.mock("./events-filter-switch", () => ({ EventsFilterSwitch: () => null }));
-vi.mock("./story-feed-row", () => ({ StoryFeedRow: () => null }));
+vi.mock("./story-feed-row", () => ({ StoryFeedRow: ({ event }: { event: { id: string } }) => <i>{event.id}</i> }));
 vi.mock("./feed-row-line", () => ({
   FeedRowLine: ({ event }: { event: { id: string } }) => <i>{event.id}</i>,
   ToastRow: ({ text }: { text: string }) => <b>{text}</b>,
@@ -136,7 +136,7 @@ beforeEach(() => {
 });
 afterEach(() => act(() => root.unmount()));
 
-it("brings the player's opened crate into Events among every battle, without their routine stories", () => {
+it("shows under All the world's history, newest first: every player's stories, routine ones too", () => {
   history.push(
     fight("battle", 90_000),
     { id: "crate", story: "RelicChestOpened", owner: PLAYER, participants: [PLAYER], at: 80_000 },
@@ -150,7 +150,7 @@ it("brings the player's opened crate into Events among every battle, without the
         .join(",")}
     </>
   );
-  expect(renderToStaticMarkup(<Ids />)).toBe("battle,crate");
+  expect(renderToStaticMarkup(<Ids />)).toBe("made,battle,theirs,crate");
 });
 
 it("says so under Important before anything important has happened, and stops once something has", () => {
@@ -230,13 +230,6 @@ it("keeps the player's three fights under Important through other players' fight
   expect(rows()).toEqual(["newer", "mine3", "mine2"]);
 });
 
-it("keeps the player's fight under Mine through their own routine stories", () => {
-  world.filter = "mine";
-  history.push(fight("mine", 99_000, PLAYER), ...routineStories(150, 200_000));
-  draw();
-  expect(rows()).toEqual(["mine"]);
-});
-
 it("keeps a Hyperstructure's capture under Important through other structures' captures", () => {
   world.filter = "important";
   world.hyperstructures = [900];
@@ -259,7 +252,15 @@ it("opens the Log on the same Important stories the strip keeps", () => {
   expect(rows()).toEqual(["mine3", "mine2", "mine1", "mine0"]);
 });
 
-it("tells a capture and the fight that won it as one row, by its capture", () => {
+it("opens the Log under All on the world's history as one list, with no second list under it", () => {
+  history.push(fight("theirs", 99_000), { ...routineStories(1, 98_000)[0], id: "made" }, fight("mine", 97_000, PLAYER));
+  act(() => root.render(<EventLogPanel onDismiss={() => undefined} isInsideAnchor={() => false} />));
+  expect(rows()).toEqual(["theirs", "made", "mine"]);
+  expect(host.textContent).not.toContain("World history");
+});
+
+it("tells under Important a capture and the fight that won it as one row, by its capture", () => {
+  world.filter = "important";
   history.push(
     { ...fight("fight", 99_001, PLAYER, "0xa1"), tx: "0xc1a" },
     {

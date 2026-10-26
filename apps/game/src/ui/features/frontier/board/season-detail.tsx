@@ -1,13 +1,14 @@
-import { formatAmount, LORDS, frontierSiteName, StructureType } from "@bibliothecadao/types";
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { frontierSiteName, LORDS, StructureType, formatShort } from "@bibliothecadao/types";
 import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { OrderMark } from "./realm-marks";
 import {
   CHESTS,
   CLEARED,
   ESSENCE,
-  ETHEREAL,
+  DEPTH,
+  DEPTH_NUMERALS,
   LABOR,
-  REACH_NUMERALS,
   RIFT,
   RUIN,
   SEASON,
@@ -22,15 +23,15 @@ export type SeasonDetail = {
   sites: { total: number; camps: number; rifts: number; ruins: number; beasts: number };
   chests: number;
   lords: number;
-  /** The deepest reach beyond the spire, 1 to 3; 0 for a realm that never went through. */
-  reach: number;
+  /** The deepest depth beyond the spire, 1 to 3; 0 for a realm that never went through. */
+  depth: number;
   essence: number;
   labor: number;
 };
 
 /**
  * A row tapped (wireframe 13): the realm's Order, name and rank, its sites cleared by kind (camp, rift, ruin,
- * beasts), chests, LORDS and the deepest reach, what it earned, and one verb: Visit. The player's own row has
+ * beasts), chests, LORDS and its depth once it has gone through, what it earned, and one verb: Visit. The player's own row has
  * nothing to visit.
  */
 export const SeasonDetailSheet = ({
@@ -56,41 +57,46 @@ export const SeasonDetailSheet = ({
       </header>
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         <HudChip icons={["flag"]} label={CLEARED}>
-          {formatAmount(detail.sites.total)}
+          {formatShort(detail.sites.total)}
         </HudChip>
         <span aria-hidden className="text-hud-body text-hud-muted">
           =
         </span>
-        <HudChip icons={["beast-troll"]} label={frontierSiteName(StructureType.Camp)}>
-          {formatAmount(detail.sites.camps)}
+        <HudChip
+          icons={[structureMeaning(StructureType.Camp, "frontier")]}
+          label={frontierSiteName(StructureType.Camp)}
+        >
+          {formatShort(detail.sites.camps)}
         </HudChip>
         <HudChip icons={["rift"]} label={RIFT}>
-          {formatAmount(detail.sites.rifts)}
+          {formatShort(detail.sites.rifts)}
         </HudChip>
         <HudChip icons={["ruin"]} label={RUIN}>
-          {formatAmount(detail.sites.ruins)}
+          {formatShort(detail.sites.ruins)}
         </HudChip>
         <HudChip icons={["troops"]} label={BEASTS}>
-          {formatAmount(detail.sites.beasts)}
+          {formatShort(detail.sites.beasts)}
         </HudChip>
       </div>
       <div className="flex items-center justify-center gap-1.5">
         <HudChip icons={["chest"]} label={CHESTS}>
-          {formatAmount(detail.chests)}
+          {formatShort(detail.chests)}
         </HudChip>
         <HudChip icons={["lords"]} label={LORDS}>
-          {formatAmount(detail.lords)}
+          {formatShort(detail.lords)}
         </HudChip>
-        <HudChip icons={["portal"]} label={ETHEREAL}>
-          {reachShown(detail.reach)}
-        </HudChip>
+        {detail.depth > 0 && (
+          <HudChip icons={["portal"]} label={DEPTH}>
+            {DEPTH_NUMERALS[detail.depth - 1]}
+          </HudChip>
+        )}
       </div>
       <div className="flex items-center justify-center gap-1.5">
         <HudChip icons={["essence"]} label={ESSENCE}>
-          {`+${formatAmount(detail.essence)}`}
+          {formatShort(detail.essence, { signed: true })}
         </HudChip>
         <HudChip icons={["labor"]} label={LABOR}>
-          {`+${formatAmount(detail.labor)}`}
+          {formatShort(detail.labor, { signed: true })}
         </HudChip>
       </div>
       {onVisit && (
@@ -101,6 +107,3 @@ export const SeasonDetailSheet = ({
     </div>
   </HudSheet>
 );
-
-/** The deepest reach as its numeral; a realm that never went through reads 0, since a dash is kept for unknown. */
-const reachShown = (reach: number): string => (reach === 0 ? formatAmount(0) : REACH_NUMERALS[reach - 1]);

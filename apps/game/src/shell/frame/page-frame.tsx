@@ -33,10 +33,13 @@ type PageFrameProps = {
   offersInstall?: boolean;
   /**
    * The painting behind the desktop page: the age or mode the page is about; a page about the app stands on its
-   * landscape.
+   * landscape. A stage stands on it on a phone too.
    */
   painting?: Painting;
-  /** The painting lit brighter: a stage, as the first visit is drawn. */
+  /**
+   * The painting lit brighter: a stage, as the first visit, the doorway and Not found are drawn. A phone draws a stage's
+   * painting behind it as a desktop does, so a screen that holds little (the doorway's steps) is never a black page.
+   */
   stage?: boolean;
   children: ReactNode;
 };
@@ -64,8 +67,11 @@ export const PageFrame = (props: PageFrameProps) => {
   );
 };
 
-const PhoneFrame = ({ back, title, notice, foot, tabs = true, children }: PageFrameProps) => (
-  <div className="flex h-dvh flex-col">
+const PhoneFrame = ({ back, title, notice, foot, tabs = true, painting, stage = false, children }: PageFrameProps) => (
+  <div className={stage ? "app-frame h-dvh" : "flex h-dvh flex-col"} data-stage={stage || undefined}>
+    {stage && painting && (
+      <img aria-hidden {...paintingSources(painting)} sizes="100vw" alt="" className="app-frame__painting" />
+    )}
     <header
       data-band="top"
       className="flex min-h-12 shrink-0 items-center gap-1 px-gutter pt-[env(safe-area-inset-top)]"

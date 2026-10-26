@@ -25,11 +25,11 @@ pub struct SettleSeason {
 #[starknet::interface]
 pub trait ISeasonRealms<T> {
     fn initialize_realm_traits(ref self: T, first_realm: u32, packed_traits: Span<u32>);
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn realm_catalogue(self: @T) -> RealmCatalogue;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn realm_traits(self: @T, realm_id: u32) -> RealmTraits;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn available_realm(self: @T, game_id: u32, index: u32) -> u32;
     fn settle_season(
         ref self: T,

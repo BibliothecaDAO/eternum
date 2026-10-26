@@ -7,6 +7,9 @@ import {
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 import { FRONTIER_PRESET_ID } from "../common/native-preset-modes";
 
+/** Every building a Frontier board can raise, by its category id. */
+export const buildingIds = Array.from({ length: research.HEARTH }, (_, index) => index + 1);
+
 // A building row's tier, uncommon to legendary, costs its base times this ladder, in Essence and in labor.
 const essenceLadder = [1, 4, 12, 30];
 const laborLadder = [1, 3, 8, 20];

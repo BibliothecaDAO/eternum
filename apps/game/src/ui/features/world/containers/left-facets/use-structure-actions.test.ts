@@ -3,7 +3,7 @@ import { nativeCommandBits } from "../../../../../../../../contracts/l3/world-na
 import { nativePresetIdFor, nativePresetForId } from "../../../../../../../../config/source/native";
 
 vi.mock("@/ui/features/economy/trading", () => ({ MarketModal: () => null }));
-vi.mock("@/ui/features/settlement", () => ({ ProductionModal: () => null }));
+vi.mock("@/ui/features/settlement/production/production-modal", () => ({ ProductionModal: () => null }));
 
 const { isStructureActionEnabled } = await import("./use-structure-actions");
 

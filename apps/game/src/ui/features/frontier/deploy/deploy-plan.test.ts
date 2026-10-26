@@ -1,10 +1,5 @@
-import {
-  computeTravelFoodCosts,
-  readExpeditionRules,
-  setBlockTimestampSource,
-  spawnRing,
-} from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
+import { readExpeditionRules, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
+import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { frontierDay } from "./deploy-fixture";
@@ -23,7 +18,13 @@ describe("Frontier's deploy", () => {
   it("reads the troops at home as one count, the slot the next army fills, and the wheat each troop costs", () => {
     const { store, row } = frontierDay();
     const plan = planOf(store, row)!;
-    expect(plan.next).toEqual({ slot: 1, number: 2, inherited: false, start: { current: 150, max: 150 } });
+    // The fixture's preset explores for 30 stamina: a 150 bar is five explores.
+    expect(plan.next).toEqual({
+      slot: 1,
+      number: 2,
+      inherited: false,
+      start: { current: 150, max: 150, perExplore: 30 },
+    });
     expect(plan.troops).toMatchObject({ type: TroopType.Knight, tier: TroopTier.T1, atHome: 420 });
     expect(plan.wheatPerTroop).toBe(2);
     expect(plan.wheat).toBe(1_000);
@@ -42,17 +43,13 @@ describe("Frontier's deploy", () => {
     expect(deployRange({ ...plan, troops: null }).max).toBe(0);
   });
 
-  it("previews the wheat a count costs, the wheat left and the tiles it moves the army", () => {
+  it("previews the whole troops a count sends and the wheat they cost", () => {
     const { store, row } = frontierDay();
     const plan = { ...planOf(store, row)!, wheat: 1_000 };
-    const preview = previewDeploy({ ...plan, troops: { ...plan.troops!, cap: 10_000 } }, 120);
-    const perTile = Math.abs(
-      computeTravelFoodCosts({ category: TroopType.Knight, count: BigInt(RESOURCE_PRECISION) }).wheatPayAmount,
-    );
-    expect(preview.count).toBe(120);
-    expect(preview.wheatCost).toBe(240);
-    expect(preview.wheatLeft).toBe(760);
-    expect(preview.tiles).toBe(Math.floor(760 / (120 * perTile)));
+    expect(previewDeploy({ ...plan, troops: { ...plan.troops!, cap: 10_000 } }, 120.7)).toEqual({
+      count: 120,
+      wheatCost: 240,
+    });
   });
 
   it("counts Homecoming's return from an army whose day has ended among the troops this deploy finds", () => {

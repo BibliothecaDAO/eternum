@@ -1,0 +1,298 @@
+pub use world_test_support::tests::resources::*;
+
+
+#[test]
+fn sparse_resources_emit_typed_rows_and_skip_unchanged_values() {
+    let resources = fixture();
+    let key = ResourceKey { game_id: 1, entity_id: 7 };
+    let mut spy = spy_events();
+    resources.initialize(key, 100);
+    let events = spy.get_events().emitted_by(resources.contract_address);
+    assert_eq!(events.events.len(), 1);
+    let (_, weight) = events.events.at(0);
+    assert_eq!(weight.keys.span(), array![selector!("RowSet"), 1, 'ResourceWeight'].span());
+    assert_eq!(weight.data.span(), array![2, 1, 7, 2, 100, 0].span());
+    resources.start(key);
+    let mut spy = spy_events();
+    resources.settle(key);
+    assert_eq!(spy.get_events().emitted_by(resources.contract_address).events.len(), 0);
+    resources.grant(key, 10);
+    let events = spy.get_events().emitted_by(resources.contract_address);
+    assert_eq!(events.events.len(), 2);
+    let (_, balance) = events.events.at(0);
+    assert_eq!(balance.keys.span(), array![selector!("RowSet"), 1, 'ResourceBalance'].span());
+    assert_eq!(balance.data.span(), array![3, 1, 7, 23, 1, 10].span());
+    let mut spy = spy_events();
+    resources.spend(key, 10);
+    let events = spy.get_events().emitted_by(resources.contract_address);
+    assert_eq!(events.events.len(), 2);
+    let (_, balance) = events.events.at(0);
+    assert_eq!(balance.keys.span(), array![selector!("RowDeleted"), 1, 'ResourceBalance'].span());
+    assert_eq!(balance.data.span(), array![3, 1, 7, 23].span());
+    assert_eq!(resources.balance(key), 0);
+    assert_eq!(resources.weight(key).weight, 0);
+}
+
+#[test]
+fn resource_deletion_clears_production_without_affecting_another_game() {
+    let resources = fixture();
+    let key = ResourceKey { game_id: 1, entity_id: 7 };
+    let other = ResourceKey { game_id: 2, ..key };
+    resources.initialize(key, 100);
+    resources.initialize(other, 200);
+    resources.start(key);
+    resources.grant(key, 10);
+    resources.grant(other, 20);
+    let mut spy = spy_events();
+    resources.destroy(key);
+    let events = spy.get_events().emitted_by(resources.contract_address);
+    assert_eq!(events.events.len(), 3);
+    for index in 0_u32..3 {
+        let (_, event) = events.events.at(index);
+        assert_eq!(*event.keys.at(0), selector!("RowDeleted"));
+    }
+    resources.initialize(key, 50);
+    assert_eq!(resources.balance(key), 0);
+    assert_eq!(resources.production(key), Default::default());
+    assert_eq!(resources.weight(key), Weight { capacity: 50, weight: 0 });
+    assert_eq!(resources.balance(other), 20);
+    assert_eq!(resources.weight(other), Weight { capacity: 200, weight: 20 });
+}
+
+#[test]
+fn production_storage_round_trips_empty_and_maximum_values() {
+    assert_eq!(ProductionPacking::unpack(ProductionPacking::pack(Default::default())), Default::default());
+    let maximum = Production {
+        building_count: 0xff,
+        production_rate: 0xffffffffffffffff,
+        output_amount_left: 0xffffffffffffffffffffffffffffffff,
+        last_settled_at: 0xffffffff,
+    };
+    assert_eq!(ProductionPacking::unpack(ProductionPacking::pack(maximum)), maximum);
+}
+
+#[test]
+#[fuzzer(runs: 256)]
+fn packed_production_fields_do_not_overlap(buildings: u8, rate: u64, cap: u128, time: u32) {
+    let production = Production {
+        building_count: buildings, production_rate: rate, output_amount_left: cap, last_settled_at: time,
+    };
+    assert_eq!(ProductionPacking::unpack(ProductionPacking::pack(production)), production);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn spending_settles_once_and_emits_only_the_final_resource_facts() {
+    let resources = fixture();
+    let key = ResourceKey { game_id: 1, entity_id: 7 };
+    resources.initialize(key, 100);
+    resources.start(key);
+    let mut spy = spy_events();
+    resources.spend_at(key, 23, 5, 1, 20);
+    let events = spy.get_events().emitted_by(resources.contract_address);
+    assert_eq!(events.events.len(), 3);
+    let (_, balance) = events.events.at(0);
+    assert_eq!(balance.keys.span(), array![selector!("RowSet"), 1, 'ResourceBalance'].span());
+    assert_eq!(balance.data.span(), array![3, 1, 7, 23, 1, 15].span());
+    assert_eq!(resources.balance(key), 15);
+    assert_eq!(resources.weight(key), Weight { capacity: 100, weight: 15 });
+    assert_eq!(
+        resources.production(key),
+        Production { building_count: 1, production_rate: 2, output_amount_left: 80, last_settled_at: 20 },
+    );
+    let mut spy = spy_events();
+    resources.grant_at(key, 23, 10, 1, 25);
+    assert_eq!(spy.get_events().emitted_by(resources.contract_address).events.len(), 3);
+    let expected = resources.read_slot(key, 23);
+    let (balance, production, _) = expected;
+    assert_eq!(balance, 35);
+    assert_eq!(production.output_amount_left, 70);
+    let mut spy = spy_events();
+    let rejected = IResourceFixtureSafeDispatcher { contract_address: resources.contract_address };
+    assert!(rejected.spend_at(key, 23, 100, 1, 30).is_err());
+    assert_eq!(resources.read_slot(key, 23), expected);
+    assert_eq!(spy.get_events().emitted_by(resources.contract_address).events.len(), 0);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn relic_balances_keep_precision_without_production_rows() {
+    let resources = fixture();
+    let key = ResourceKey { game_id: 1, entity_id: 7 };
+    resources.initialize(key, 10 * RESOURCE_PRECISION);
+    for resource_type in 39_u8..57 {
+        let mut spy = spy_events();
+        assert_eq!(resources.grant_at(key, resource_type, 2 * RESOURCE_PRECISION, 1, 100), 2 * RESOURCE_PRECISION);
+        assert_eq!(spy.get_events().emitted_by(resources.contract_address).events.len(), 2);
+        let before = resources.read_slot(key, resource_type);
+        let (_, production, _) = before;
+        assert_eq!(production, Default::default());
+        let rejected = IResourceFixtureSafeDispatcher { contract_address: resources.contract_address };
+        let mut spy = spy_events();
+        assert!(rejected.spend_at(key, resource_type, 1, 1, 101).is_err());
+        assert_eq!(resources.read_slot(key, resource_type), before);
+        assert_eq!(spy.get_events().emitted_by(resources.contract_address).events.len(), 0);
+        resources.spend_at(key, resource_type, 2 * RESOURCE_PRECISION, 1, 102);
+        assert_eq!(
+            resources.read_slot(key, resource_type),
+            (0, Default::default(), Weight { capacity: 10 * RESOURCE_PRECISION, weight: 0 }),
+        );
+    }
+}
+
+#[test]
+fn production_spends_its_cap_before_capacity_truncation_and_food_is_uncapped() {
+    let resources = fixture();
+    let key = ResourceKey { game_id: 1, entity_id: 7 };
+    resources.initialize(key, 10);
+    resources.start_at(key, 23, 2, 50, 10);
+    assert_eq!(resources.grant_at(key, 23, 4, 1, 20), 0);
+    let (balance, production, weight) = resources.read_slot(key, 23);
+    assert_eq!(balance, 10);
+    assert_eq!(production.output_amount_left, 30);
+    assert_eq!(weight.weight, 10);
+    resources.spend_at(key, 23, 10, 1, 20);
+    resources.start_at(key, 35, 2, 0, 20);
+    resources.spend_at(key, 35, 3, 1, 25);
+    let (balance, production, weight) = resources.read_slot(key, 35);
+    assert_eq!(balance, 7);
+    assert_eq!(production.output_amount_left, 0);
+    assert_eq!(weight.weight, 7);
+    let mut spy = spy_events();
+    let _ = resources.read_slot(key, 35);
+    assert_eq!(spy.get_events().emitted_by(resources.contract_address).events.len(), 0);
+}
+
+#[test]
+fn inactive_resources_have_no_clock_and_activation_starts_at_block_time() {
+    let resources = fixture();
+    let key = ResourceKey { game_id: 1, entity_id: 7 };
+    resources.initialize(key, 100);
+    let mut spy = spy_events();
+    resources.grant_at(key, 1, 10, 1, 50);
+    assert_eq!(spy.get_events().emitted_by(resources.contract_address).events.len(), 2);
+    let (_, production, _) = resources.read_slot(key, 1);
+    assert_eq!(production, Default::default());
+    let mut spy = spy_events();
+    resources.spend_at(key, 1, 2, 1, 100);
+    assert_eq!(spy.get_events().emitted_by(resources.contract_address).events.len(), 2);
+    resources.start_at(key, 1, 2, 100, 200);
+    let (balance, production, _) = resources.read_slot(key, 1);
+    assert_eq!(balance, 8);
+    assert_eq!(
+        production, Production { building_count: 1, production_rate: 2, output_amount_left: 100, last_settled_at: 200 },
+    );
+    resources.spend_at(key, 1, 0, 1, 205);
+    let (balance, production, weight) = resources.read_slot(key, 1);
+    assert_eq!(balance, 18);
+    assert_eq!(weight.weight, 18);
+    assert_eq!(production.output_amount_left, 90);
+    assert_eq!(production.last_settled_at, 205);
+}
+
+#[test]
+fn consecutive_seconds_pay_one_second_and_match_a_single_settlement() {
+    let resources = fixture();
+    let repeated = ResourceKey { game_id: 1, entity_id: 7 };
+    let once = ResourceKey { game_id: 1, entity_id: 8 };
+    for key in array![repeated, once] {
+        resources.initialize(key, 1000);
+        resources.start_at(key, 1, 7, 1000, 40);
+    }
+    for now in 41_u32..101 {
+        let (before, _, _) = resources.read_slot(repeated, 1);
+        resources.spend_at(repeated, 1, 0, 1, now);
+        let (after, _, _) = resources.read_slot(repeated, 1);
+        assert_eq!(after - before, 7);
+    }
+    resources.spend_at(once, 1, 0, 1, 100);
+    let (once_balance, _, _) = resources.read_slot(once, 1);
+    assert_eq!(once_balance, 420);
+    resources.spend_at(repeated, 1, 0, 1, 100);
+    let (repeated_balance, _, _) = resources.read_slot(repeated, 1);
+    assert_eq!(repeated_balance, once_balance);
+}
+
+#[test]
+fn elapsed_seconds_pay_exactly_however_often_production_settles() {
+    // The exact Frontier farm rate pays for every second, including between armies ticks.
+    let rate = 84000000_u64;
+    let mut production = Production {
+        building_count: 1, production_rate: rate, output_amount_left: 0, last_settled_at: 0,
+    };
+    let mut balance = 0_u128;
+    let mut weight = Weight { capacity: core::num::traits::Bounded::MAX, weight: 0 };
+    let mut now = 0_u32;
+    let mut seed = 7_u128;
+    for _ in 0..10000_u32 {
+        seed = (seed * 6364136223846793005 + 1442695040888963407) % 0x10000000000000000;
+        now += (seed % 300).try_into().unwrap();
+        crate::resources::settle(crate::resources::WHEAT, ref balance, ref production, ref weight, 1, None, now);
+        assert_eq!(balance, Into::<u32, u128>::into(now) * Into::<u64, u128>::into(rate));
+    }
+}
+
+#[test]
+fn frontier_rates_keep_the_same_total_at_every_output_tier() {
+    for (resource, rate, base_cents) in array![
+        (crate::resources::WHEAT, 84_000_000_u64, 1008_u128), (crate::resources::LABOR, 56_000_000, 672),
+        (26, 28_000_000, 336), (crate::resources::LABOR, 28_000_000, 336),
+    ] {
+        for picks in 0_u128..5 {
+            let tier_rate = Into::<u64, u128>::into(rate) * (10000 + picks * 2500) / 10000;
+            let mut production = Production {
+                building_count: 1,
+                production_rate: tier_rate.try_into().unwrap(),
+                output_amount_left: crate::resources::UNLIMITED_OUTPUT,
+                last_settled_at: 0,
+            };
+            let mut balance = 0;
+            let mut weight = Weight { capacity: core::num::traits::Bounded::MAX, weight: 0 };
+            crate::resources::settle(resource, ref balance, ref production, ref weight, 0, None, 10000 * 120);
+            let cents = base_cents * (4 + picks) / 4;
+            assert_eq!(balance, cents * crate::rules::RESOURCE_PRECISION / 100 * 10000);
+        }
+    }
+}
+
+#[test]
+fn resource_commits_preserve_capacity_events_and_clear_the_last_producer_timestamp() {
+    let resources = fixture();
+    let key = ResourceKey { game_id: 1, entity_id: 7 };
+    resources.initialize(key, 100);
+    resources.grant_at(key, 2, 10, 1, 10);
+    let mut spy = spy_events();
+    resources.change_capacity(key, 50, true);
+    let events = spy.get_events().emitted_by(resources.contract_address);
+    assert_eq!(events.events.len(), 1);
+    let (_, event) = events.events.at(0);
+    assert_eq!(event.keys.span(), array![selector!("RowSet"), 1, 'ResourceWeight'].span());
+    assert_eq!(event.data.span(), array![2, 1, 7, 2, 150, 10].span());
+    resources.start_at(key, 2, 2, 20, 10);
+    let mut spy = spy_events();
+    resources.stop_at(key, 2, 2, 20);
+    assert_eq!(resources.read_slot(key, 2), (30, Default::default(), Weight { capacity: 150, weight: 30 }));
+    let events = spy.get_events().emitted_by(resources.contract_address);
+    assert_eq!(events.events.len(), 3);
+    let (_, balance) = events.events.at(0);
+    assert_eq!(balance.keys.span(), array![selector!("RowSet"), 1, 'ResourceBalance'].span());
+    assert_eq!(balance.data.span(), array![3, 1, 7, 2, 1, 30].span());
+    let (_, production) = events.events.at(1);
+    assert_eq!(production.keys.span(), array![selector!("RowDeleted"), 1, 'ResourceProduction'].span());
+    assert_eq!(production.data.span(), array![3, 1, 7, 2].span());
+    let (_, weight) = events.events.at(2);
+    assert_eq!(weight.keys.span(), array![selector!("RowSet"), 1, 'ResourceWeight'].span());
+    assert_eq!(weight.data.span(), array![2, 1, 7, 2, 150, 30].span());
+    let mut spy = spy_events();
+    resources.spend_at(key, 2, 0, 1, 30);
+    assert_eq!(spy.get_events().emitted_by(resources.contract_address).events.len(), 0);
+    assert_eq!(resources.read_slot(key, 2), (30, Default::default(), Weight { capacity: 150, weight: 30 }));
+    let mut spy = spy_events();
+    resources.grant_at(key, 37, 7, 0, 31);
+    let events = spy.get_events().emitted_by(resources.contract_address);
+    assert_eq!(events.events.len(), 1);
+    let (_, balance) = events.events.at(0);
+    assert_eq!(balance.keys.span(), array![selector!("RowSet"), 1, 'ResourceBalance'].span());
+    assert_eq!(balance.data.span(), array![3, 1, 7, 37, 1, 7].span());
+    assert_eq!(resources.read_slot(key, 37), (7, Default::default(), Weight { capacity: 150, weight: 30 }));
+}

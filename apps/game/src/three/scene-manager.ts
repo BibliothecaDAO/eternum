@@ -26,6 +26,11 @@ const SCENE_FAILURES: Record<SceneName, { scene: PlayScene; sentence: string }> 
   [SceneName.Hexception]: { scene: "hex", sentence: "The realm view did not open." },
 };
 
+/** User Timing marks a profiler or the playtest runner reads: a scene asked for, and the moment it can be shown. */
+const markScene = (sceneName: SceneName, stage: "requested" | "presentable"): void => {
+  performance.mark(`scene:${sceneName}:${stage}`);
+};
+
 type SceneSetupResult = { succeeded: true } | { error: unknown; succeeded: false };
 
 interface SceneSetupOwnership {
@@ -65,6 +70,7 @@ export class SceneManager {
 
   switchScene(sceneName: SceneName) {
     traceFlightMark(`switchScene ${sceneName} requested`);
+    markScene(sceneName, "requested");
     const scene = this.scenes.get(sceneName);
     const decision = resolveSceneSwitchRequest({
       requestedSceneName: sceneName,
@@ -227,7 +233,15 @@ export class SceneManager {
     if (finalizePlan.shouldRunPostSetupEffects && (setupSucceeded || previousSceneName !== undefined)) {
       if (!setupSucceeded) this.transitionManager.abandonFlight();
       this.moveCameraForScene();
-      this.transitionManager.fadeIn(this.scenes.get(this.currentScene!));
+      const shown = this.currentScene!;
+      const scene = this.scenes.get(shown);
+      this.transitionManager.fadeIn(scene);
+      if (setupSucceeded && scene) {
+        void scene.whenPresentable().then(
+          () => markScene(shown, "presentable"),
+          () => undefined,
+        );
+      }
     }
 
     this.transitionInProgress = false;

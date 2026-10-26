@@ -6,6 +6,7 @@ import { configManager } from "../../managers/config-manager";
 import { FELT_CENTER } from "../../utils/utils";
 import type { GameClient } from "../game-client";
 import type { HexIndex } from "./armies";
+import { isStandingStructure } from "../../sync/world-spatial-projection";
 
 /** The occupancy armyPaths and structurePaths plan around, keyed the way the scenes key it: normalized col, then row. */
 export interface ArmyPathIndexes {
@@ -38,7 +39,7 @@ export const buildArmyPathIndexes = (client: PathIndexSource, alt = false): Army
 
   const structureHexes: HexIndex<HexEntityInfo> = new Map();
   for (const structure of projection.getStructures(alt)) {
-    if (structure.reserved || structure.clearedSite) continue;
+    if (!isStandingStructure(structure)) continue;
     indexHex(structureHexes, structure.hexCoords, {
       id: structure.entityId,
       owner: structureOwner(structure.entityId),

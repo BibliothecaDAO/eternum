@@ -19,8 +19,11 @@ import {
   FRONTIER_ACCELERATED_PRESET_ID,
   FRONTIER_PRESET_ID,
   FRONTIER_FIXTURE_PRESET_ID,
+  FRONTIER_PLAYGROUND_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
+import { nativePresetIdFor } from "../../../source/native";
+import { RESOURCE_PRECISION, ResourcesIds } from "../../../../packages/types/src/constants";
 import {
   buildNativePresetRegistration,
   registerNativePreset,
@@ -550,7 +553,8 @@ describe("native presets", () => {
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
     expect(nativeGameModeOf(103)).toBe("eternum");
     expect(nativeGameModeOf(104)).toBe("frontier");
-    expect(() => nativeGameModeOf(105)).toThrow("Unknown native preset 105");
+    expect(nativeGameModeOf(105)).toBe("frontier");
+    expect(() => nativeGameModeOf(106)).toThrow("Unknown native preset 106");
   });
 
   test("native balances and mine ladders come only from the selected sheet", () => {
@@ -730,5 +734,64 @@ describe("scaled Frontier presets", () => {
           .durationSeconds,
       ).toBe(durationSeconds);
     }
+  });
+});
+
+describe("the Frontier playground preset", () => {
+  const load = (id: number) => loadNativePresetConfiguration("madara.frontier", id);
+  const definition = (id: number) => buildNativePreset(load(id), id);
+  const whole = (amount: bigint) => Number(amount / BigInt(RESOURCE_PRECISION));
+
+  test("plays Frontier under its own id, which the launcher never creates from", () => {
+    expect(nativeGameModeOf(FRONTIER_PLAYGROUND_PRESET_ID)).toBe("frontier");
+    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_PRESET_ID);
+    expect(
+      buildNativePresetRegistration(
+        definition(FRONTIER_PLAYGROUND_PRESET_ID),
+        FRONTIER_PLAYGROUND_PRESET_ID,
+        manifestPath,
+      ).commitment,
+    ).not.toBe(
+      buildNativePresetRegistration(definition(FRONTIER_PRESET_ID), FRONTIER_PRESET_ID, manifestPath).commitment,
+    );
+  });
+
+  test("keeps Frontier's rules, clocks, depths and research prices in Essence; only its stock and labor prices differ", () => {
+    const playground = definition(FRONTIER_PLAYGROUND_PRESET_ID);
+    const frontier = definition(FRONTIER_PRESET_ID);
+    expect(playground.rules).toEqual(frontier.rules);
+    expect(playground.settlement.depths).toEqual(frontier.settlement.depths);
+    expect(playground.structures.research.map(({ price }) => price.essence)).toEqual(
+      frontier.structures.research.map(({ price }) => price.essence),
+    );
+    expect(playground.structures.research.every(({ price }) => price.labor === 0n)).toBe(true);
+    expect(playground.structures.upgrades.map(({ costs }) => costs.map(({ amount }) => whole(amount)))).toEqual([
+      [100],
+      [100],
+      [100],
+    ]);
+    expect(playground.structures.buildings.every(({ rule }) => rule.simple_cost.length === 0)).toBe(true);
+    // Loading the playground leaves Frontier's own balance as it was.
+    expect(frontier.settlement.realms.resources.map(({ amount }) => whole(amount))).toEqual([1_500, 4_500, 2_000]);
+  });
+
+  test("starts a realm with Essence for every research tier, Ethereal III included, and its castle's stores full", () => {
+    const playground = definition(FRONTIER_PLAYGROUND_PRESET_ID);
+    const start = new Map(
+      playground.settlement.realms.resources.map(({ resource_type, amount }) => [resource_type, whole(amount)]),
+    );
+    const essenceForEveryTier = playground.structures.research.reduce(
+      (sum, { price }) => sum + whole(price.essence),
+      0,
+    );
+    expect(essenceForEveryTier).toBe(4_076_500);
+    expect(start.get(ResourcesIds.Essence)).toBeGreaterThan(essenceForEveryTier);
+    // A castle stores two full deploys of its level; a Settlement's stores hold what the realm starts with, no more.
+    const config = load(FRONTIER_PLAYGROUND_PRESET_ID);
+    const settlementStore =
+      config.troop.limit.settlementDeploymentCap *
+      nativePresets[FRONTIER_PLAYGROUND_PRESET_ID]!.board!.castleStoreDeploys;
+    for (const resource of [ResourcesIds.Labor, ResourcesIds.Wheat, ResourcesIds.Knight])
+      expect(start.get(resource)).toBe(settlementStore);
   });
 });

@@ -7,7 +7,8 @@ import "./view.css";
 
 /** Where the showcase links perf's newest analysis (showcase.sh); a server without one has no pull to show. */
 export const PULL_ADDRESS = "/live-data/analysis.md";
-const RERUN = "cd evidence/perf/frontier-live-data-1 && python3 -I live-data.py all > <new-dir>/analysis.md";
+const RERUN =
+  "cd evidence/perf/frontier-live-data-1 && python3 -I <repo>/apps/game/scripts/live-data/live-data.py all > <new-dir>/analysis.md";
 
 /** The pull's sections for a game: Blitz's under "# Blitz", Frontier's the rest; the value ledger, both games' money, in each. */
 export function sectionsFor(markdown: string, game: "blitz" | "frontier") {

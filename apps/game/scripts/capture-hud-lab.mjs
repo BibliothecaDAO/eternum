@@ -28,6 +28,11 @@ const VIEWPORT = [1920, 1080];
 /** The desktop sizes the HUD's layout is held at: the narrowest desktop, a small laptop, a laptop, a full HD screen. */
 const DESKTOPS = [[1024, 768], [1280, 720], [1440, 900], VIEWPORT];
 const SETTLE_MS = "1200";
+/** A Frontier card or page as a laptop and a phone show it. */
+const CARDS = [
+  [1600, 900],
+  [390, 844],
+];
 
 /** Each surface: the lab page that draws it, the mark the page puts on it, and its sizes when not just 1920×1080. */
 export const SURFACES = [
@@ -49,15 +54,33 @@ export const SURFACES = [
   { name: "frontier-site-camp", path: "/lab/kit/hud/site-camp", mark: "frontier" },
   { name: "frontier-fight-won", path: "/lab/kit/hud/fight-won", mark: "frontier" },
   { name: "frontier-army-refill", path: "/lab/kit/hud/army-refill", mark: "frontier" },
+  ...["castle", "castle-short", "building-farm", "building-barracks", "building-war-hall", "building-scouts-lodge"].map(
+    (state) => ({
+      name: `frontier-${state}`,
+      path: `/lab/kit/hud/${state}`,
+      mark: "frontier",
+      sizes: CARDS,
+    }),
+  ),
+  { name: "frontier-research", path: "/lab/kit/hud/research", mark: "frontier", sizes: CARDS },
+  { name: "frontier-build-locked", path: "/lab/kit/hud/build-early", mark: "frontier", sizes: CARDS },
+  { name: "frontier-army", path: "/lab/kit/hud/selected", mark: "frontier", sizes: CARDS },
+  { name: "frontier-season", path: "/lab/kit/hud/season", mark: "frontier", sizes: CARDS },
+  { name: "frontier-site-pick", path: "/lab/kit/hud/site-pick", mark: "frontier", sizes: CARDS },
+  { name: "frontier-site-ruin", path: "/lab/kit/hud/site-ruin", mark: "frontier", sizes: CARDS },
+  { name: "frontier-day-done", path: "/lab/kit/hud/day-done-full", mark: "frontier", sizes: CARDS },
+  { name: "frontier-clear-ruin", path: "/lab/kit/hud/clear-ruin", mark: "frontier", sizes: CARDS },
 ];
 
 /**
  * The lab pages the layout is held on: the one desktop HUD as each mode and viewer meets it (a Blitz player with the
- * Build order panel in the rail, a Blitz spectator while the game runs and once it has finished, a Frontier player), then Frontier's own moments on it (an
- * army picked, a camp's card, Deploy, Research, Next up on the deploy, the purse with Next up, the last hour, a sheet).
+ * Build order panel in the rail, the same as the game begins with news over it, a Blitz spectator while the game runs and once it has finished, a Frontier player), then Frontier's own moments on it (an
+ * army picked, a camp's card, Deploy, Research, Next up on the deploy, the purse with Next up, the owner's
+ * Kingdom with labor to claim, the last hour, a sheet).
  */
 const HUD_LAYOUT_PAGES = [
   "unified/blitz",
+  "unified/blitz-start",
   "unified/blitz-spectator",
   "unified/blitz-finished",
   "unified/frontier",
@@ -67,6 +90,7 @@ const HUD_LAYOUT_PAGES = [
   "hud/research",
   "hud/next-up-deploy",
   "hud/purse-next-up",
+  "hud/realm-claim",
   "hud/last-hour",
   "hud/stores",
 ];
@@ -123,6 +147,7 @@ const main = () => {
   }
   const missing = [];
   const broken = [];
+  const interactions = [];
   try {
     for (const { name, path, mark, sizes = [VIEWPORT], rule } of surfaces) {
       for (const [width, height] of sizes) {
@@ -130,9 +155,59 @@ const main = () => {
         run("set", "viewport", String(width), String(height));
         run("open", `${values["base-url"]}${path}`, "--ignore-https-errors");
         run("wait", SETTLE_MS);
+        if (name === "frontier-merge") run("wait", '[role="dialog"][aria-label="Transfer troops"]');
         const drawn = JSON.parse(run("eval", `Boolean(document.querySelector('[data-lab="${mark}"]'))`));
         if (!drawn) missing.push(shot);
         run("screenshot", join(values.out, `${shot}.png`));
+        if (name === "frontier-merge") {
+          // Army 1 leaves with its 100 XP and its upgrade's 100: the second press names the 200 lost.
+          const confirmLabel = "Lose 200 XP, merge into Army 2";
+          run("find", "role", "button", "click", "--name", "Merge into Army 2", "--exact");
+          run("wait", "--text", confirmLabel);
+
+          // What the sheet shows: its text, the XP struck out on the card of the army a merge empties, whether the
+          // confirmation stands in view, whether any notice stands over the cards (none should), and the amount sent as
+          // its box and its slider hold it.
+          const readSheet = () =>
+            JSON.parse(
+              run(
+                "eval",
+                `(() => {
+            const sheet = document.querySelector('[role="dialog"]');
+            const button = [...sheet.querySelectorAll('button')].find(b => b.textContent === ${JSON.stringify(confirmLabel)});
+            const visible = element => {
+              const box = element?.getBoundingClientRect();
+              return !!box && box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight;
+            };
+            return { text: sheet.textContent, struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), notice: sheet.querySelector('.ui-notice')?.textContent ?? null, typed: sheet.querySelector('input[aria-label^="Troops "]').value, slid: sheet.querySelector('input[type="range"]').value };
+          })()`,
+              ),
+            );
+          const confirmed = readSheet();
+          writeFileSync(join(values.out, `${shot}-confirmation.json`), JSON.stringify(confirmed, null, 2));
+          if (!confirmed.reachable || confirmed.notice !== null || confirmed.struck !== "200 XP") {
+            throw new Error(`${shot}: the XP lost struck on the leaving card, a reachable confirmation and no notice`);
+          }
+          // It opens at all Army 1 holds: the box and the slider both say 600, what the merge sends.
+          if (confirmed.typed !== "600" || confirmed.slid !== "600") {
+            throw new Error(`${shot}: the amount opens at the 600 Army 1 sends, in the box and on the slider`);
+          }
+          run("screenshot", join(values.out, `${shot}-confirm.png`));
+          // The slider moved one step, by key: Army 1 sends one fewer and keeps one troop, so the merge becomes a move.
+          run("focus", 'input[type="range"]');
+          run("press", "ArrowLeft");
+          run("wait", "--text", "Move 599 to Army 2");
+          const partial = readSheet();
+          if (partial.text.includes(confirmLabel) || partial.struck !== null) {
+            throw new Error(`${shot}: changing the amount must clear confirmation and the merge's losses`);
+          }
+          if (partial.typed !== "599" || partial.slid !== "599") {
+            throw new Error(`${shot}: the box and the slider hold the 599 the button sends`);
+          }
+          run("screenshot", join(values.out, `${shot}-partial.png`));
+          interactions.push({ shot, confirmed, partial });
+          writeFileSync(join(values.out, "merge-interactions.json"), JSON.stringify(interactions, null, 2));
+        }
         const problems = rule ? rule(JSON.parse(run("eval", READ_HUD_BOXES))) : [];
         problems.forEach((problem) => broken.push(`${shot}: ${problem}`));
         console.log(`${!drawn ? "MISSING" : problems.length > 0 ? "BROKEN" : "shot"} ${shot}`);

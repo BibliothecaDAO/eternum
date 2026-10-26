@@ -24,10 +24,13 @@ import type { DockArmy } from "./dock-armies";
 export const ArmyDock = ({
   realm,
   armies,
+  lastHour = false,
   onOpenArmy,
 }: {
   realm: NativeRows["Structure"];
   armies: DockArmy[];
+  /** The day's last hour: each army shows what its Homecoming sends home when the day ends. */
+  lastHour?: boolean;
   /** An army's panel: its figures, its XP and its level-ups. */
   onOpenArmy?: (explorerId: number) => void;
 }) => {
@@ -51,7 +54,13 @@ export const ArmyDock = ({
     if ("army" in entry) {
       const Army = desktop ? DockArmyRow : DockToken;
       return (
-        <Army key={entry.army.explorerId} army={entry.army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />
+        <Army
+          key={entry.army.explorerId}
+          army={entry.army}
+          returnsHome={lastHour ? entry.army.returnsHome : undefined}
+          pickable={own}
+          onOpenArmy={own ? onOpenArmy : undefined}
+        />
       );
     }
     return (
@@ -109,10 +118,12 @@ const useDockArmy = (army: DockArmy, pickable: boolean, onOpenArmy: ((explorerId
 
 const DockToken = ({
   army,
+  returnsHome,
   pickable,
   onOpenArmy,
 }: {
   army: DockArmy;
+  returnsHome: number | undefined;
   pickable: boolean;
   onOpenArmy?: (explorerId: number) => void;
 }) => {
@@ -120,6 +131,7 @@ const DockToken = ({
   return (
     <ArmyToken
       label={army.label}
+      returnsHome={returnsHome}
       number={army.number}
       art={army.art}
       xp={army.xp}
@@ -136,10 +148,12 @@ const DockToken = ({
 
 const DockArmyRow = ({
   army,
+  returnsHome,
   pickable,
   onOpenArmy,
 }: {
   army: DockArmy;
+  returnsHome: number | undefined;
   pickable: boolean;
   onOpenArmy?: (explorerId: number) => void;
 }) => {
@@ -147,6 +161,7 @@ const DockArmyRow = ({
   return (
     <ArmyRow
       label={army.label}
+      returnsHome={returnsHome}
       number={army.number}
       art={army.art}
       troops={army.troops}
@@ -165,7 +180,7 @@ const DockArmyRow = ({
 const useWellRefillShown = (army: DockArmy) => {
   const ratio = army.stamina && army.stamina.max > 0 ? army.stamina.current / army.stamina.max : 0;
   const { shown } = useWellRefill(army.explorerId, ratio);
-  return army.stamina && { current: shown * army.stamina.max, max: army.stamina.max };
+  return army.stamina && { ...army.stamina, current: shown * army.stamina.max };
 };
 
 /**

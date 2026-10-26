@@ -19,6 +19,13 @@ export const settleEntryDestination = (destination: EntryDestination): void => {
   useEntryDestinationStore.setState({ destination });
 };
 
+/** The entry has answered: its realm, or none. */
+export const isEntryDestinationSettled = (): boolean => useEntryDestinationStore.getState().destination !== undefined;
+
+/** The entry's answer as a component reads it: undefined until it has answered. */
+export const useEntryDestination = (): EntryDestination | undefined =>
+  useEntryDestinationStore((state) => state.destination);
+
 /** A new game's entry has not answered yet. */
 export const resetEntryDestination = (): void => useEntryDestinationStore.setState({ destination: undefined });
 

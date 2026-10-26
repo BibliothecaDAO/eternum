@@ -34,6 +34,12 @@ export interface FightGain {
   xp: number;
 }
 
+/**
+ * How an attack with a result ended: the target fell, or the army did. A fight both sides survive has no result: it
+ * goes on in the target's own card, the one the player attacks again from.
+ */
+type FightEnd = Exclude<FightVerdict, "guard-holds">;
+
 /** What one attack did, for its result: each side before and after, and what a clear paid. */
 export interface FightResult {
   /** The site attacked, or the other player's army: a site's sheet keeps the name its card had. */
@@ -41,7 +47,7 @@ export interface FightResult {
   /** The tile the fight was on: the result stands in that tile's card while it is selected. */
   tile: { col: number; row: number };
   site: AttackTargetKind;
-  verdict: FightVerdict;
+  verdict: FightEnd;
   armyArt: IconMeaning;
   guardIdentity?: { name: string; art: IconMeaning };
   army: TroopsChange;
@@ -52,14 +58,16 @@ export interface FightResult {
 
 /**
  * The attack's result from the battle's own record: nothing here is read from what a row no longer says. Only a
- * victory gains, and what it gained is the caller's to read from the clear's own record.
+ * victory gains, and what it gained is the caller's to read from the clear's own record. None when the guard holds:
+ * the target's card stays, with both sides as the battle left them, and the Feed tells the exchange.
  */
 export const fightResultOf = (
   sent: FightSent,
   { army, guard }: FightRecord,
   gained: (sent: FightSent) => FightGain | null,
-): FightResult => {
+): FightResult | null => {
   const verdict = fightVerdict({ army: army.after, guard: guard.after });
+  if (verdict === "guard-holds") return null;
   return {
     targetId: sent.targetId,
     tile: sent.tile,

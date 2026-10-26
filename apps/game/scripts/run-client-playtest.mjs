@@ -59,6 +59,11 @@ const BROWSER_ARGS = [
   "--js-flags=--expose-gc",
   "--enable-precise-memory-info",
 ];
+/** The GPU WebGPU draws on: the machine's default, or its integrated one (`--gpu low-power`), a laptop's class of GPU. */
+const GPUS = { default: [], "low-power": ["--use-webgpu-power-preference=force-low-power"] };
+
+/** The browser's launch flags for a run on `gpu`. */
+export const browserArgsFor = (gpu) => [...BROWSER_ARGS, ...GPUS[gpu]];
 
 /** The command's options, refused when they cannot describe a run. Paths are taken from where the command was run. */
 export function readPlaytestOptions(argv, callerDir = process.cwd()) {
@@ -87,6 +92,12 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     throw new Error(`--steps takes ${Object.keys(STEP_SETS).join(", ")}, not "${stepSet}"`);
   }
 
+  const gpu = option("--gpu", "default");
+  if (!GPUS[gpu]) throw new Error(`--gpu takes ${Object.keys(GPUS).join(" or ")}, not "${gpu}"`);
+  const network = option("--network", null);
+  const link = network === null ? null : /^(\d+(?:\.\d+)?),(\d+)$/.exec(network);
+  if (network !== null && !link) throw new Error(`--network takes <down Mbit/s>,<round trip ms>, not "${network}"`);
+
   const viewport = /^(\d+)x(\d+)$/.exec(option("--viewport", "1920x1080"));
   if (!viewport) throw new Error(`--viewport takes <width>x<height>, not "${option("--viewport")}"`);
 
@@ -96,8 +107,10 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     comparePath: option("--compare", null) && resolve(callerDir, option("--compare")),
     cpuThrottle: integer("--cpu-throttle", DEFAULTS.cpuThrottle, 1),
     gameId: Number(option("--game-id", "0")),
+    gpu,
     headed: argv.includes("--headed"),
     iterations: integer("--iterations", DEFAULTS.iterations, 1),
+    network: link && { downMbps: Number(link[1]), roundTripMs: Number(link[2]) },
     outRoot: resolve(callerDir, option("--out", join(REPO_ROOT, ".context/playtest"))),
     player,
     port: integer("--port", DEFAULTS.port, 1),
@@ -278,12 +291,13 @@ async function playRun(context) {
       "--init-script",
       PROBE_PATH,
       "--args",
-      BROWSER_ARGS.join(","),
+      browserArgsFor(context.gpu).join(","),
     ]);
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
     releaseDevTools = owner.adopt(`DevTools ${label}`, () => devTools.close());
     if (cpuThrottle > 1) await devTools.send("Emulation.setCPUThrottlingRate", { rate: cpuThrottle });
+    if (context.network) await emulateNetwork(devTools, context.network);
     record.rpcSends = await recordRpcSends(devTools);
     record.url = buildRunUrl({ baseUrl: context.baseUrl, game, player, rendererMode, stepSet: context.stepSet });
     // The trace is the boot's: from before the game page opens to the world being interactive. A longer one is not
@@ -295,6 +309,11 @@ async function playRun(context) {
     const entered = player ? await enterAsPlayer(browser, owner, timeoutMs, { card: stepsGame.card, game }) : null;
     record.boot = { ...(await waitForEntrySnapshot(browser, owner, timeoutMs)), entered };
     if (context.trace) browser.run(["trace", "stop", join(runDir, `${label}-trace.json`)]);
+    // The boot as a step: from the page's start to now, its downloads, long frames, GPU work and scene marks.
+    record.bootWindow = readSafely(() => {
+      const probe = JSON.parse(browser.eval("window.__playtest.read(0)"));
+      return summarizeStep(probe, { name: "boot", startedOn: { t: 0, timeOrigin: probe.timeOrigin } });
+    });
     browser.screenshot(join(runDir, `${label}-00-boot.png`));
     if (player) record.daySummary = await continuePastTheDaySummary(browser, owner);
     // No order is sent before the run is proven to be in the game it was asked to play.
@@ -396,11 +415,14 @@ function writeRunEvidence({ browser, context, record }) {
     machine: {
       cpus: availableParallelism(),
       cpuThrottle: context.cpuThrottle,
+      gpu: context.gpu,
+      network: context.network ?? null,
       loadAverageMax: Math.max(...record.loadSamples),
       loadSampleEveryMs: LOAD_SAMPLE_MS,
       loadSamples: record.loadSamples,
     },
     metrics: deriveBootMetrics(boot),
+    bootWindow: record.bootWindow ?? null,
     ok: !record.error && bootOk,
     reloads: record.steps
       .filter(({ summary }) => summary.reload)
@@ -418,6 +440,18 @@ function writeRunEvidence({ browser, context, record }) {
     rpcSends,
   });
   return result;
+}
+
+/** Chrome's own link shaping for the page: every download pays the round trip and shares the bandwidth, both ways. */
+async function emulateNetwork(devTools, { downMbps, roundTripMs }) {
+  const bytesPerSecond = (downMbps * 1_000_000) / 8;
+  await devTools.send("Network.enable", {});
+  await devTools.send("Network.emulateNetworkConditions", {
+    offline: false,
+    latency: roundTripMs,
+    downloadThroughput: bytesPerSecond,
+    uploadThroughput: bytesPerSecond,
+  });
 }
 
 function readSafely(read) {

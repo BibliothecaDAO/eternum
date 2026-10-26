@@ -303,10 +303,15 @@ interface RecoverySignals {
   confirmedHead: number | null;
 }
 
-const currentRecoverySignals = (): RecoverySignals => {
-  const { snapshotBlock, lastConfirmedBlock } = useConnectionStore.getState();
-  return { snapshotBlock, confirmedHead: lastConfirmedBlock };
-};
+const recoverySignalsOf = ({
+  snapshotBlock,
+  lastConfirmedBlock,
+}: Pick<ReturnType<typeof useConnectionStore.getState>, "snapshotBlock" | "lastConfirmedBlock">): RecoverySignals => ({
+  snapshotBlock,
+  confirmedHead: lastConfirmedBlock,
+});
+
+const currentRecoverySignals = (): RecoverySignals => recoverySignalsOf(useConnectionStore.getState());
 
 /** A read that failed, and the handshake it was asked under: the next handshake asks it again, once. */
 class StoryReadFailed extends Error {
@@ -381,6 +386,13 @@ const shouldCatchUp = (query: UseQueryResult<StoryReadPage>, now: RecoverySignal
   isBehindSnapshot(query.data, now.snapshotBlock) &&
   signalsMovedSince(query.data, now);
 
+const owesCatchUp = (read: StoryRead, query: UseQueryResult<StoryReadPage>, now: RecoverySignals): boolean =>
+  Boolean(read.coverSnapshot) && shouldCatchUp(query, now);
+
+/** Which reads owe a catch-up now, each by the answer it would replace: the same key renders nothing. */
+const catchUpKeyOf = (reads: StoryRead[], queries: UseQueryResult<StoryReadPage>[], now: RecoverySignals): string =>
+  queries.map((query, index) => (owesCatchUp(reads[index], query, now) ? query.dataUpdatedAt : "-")).join();
+
 /** Each read's query as it stands: React Query keeps the list the same object until one of them changes. */
 const sameResults = (results: UseQueryResult<StoryReadPage>[]) => results;
 
@@ -454,20 +466,16 @@ export const useStoryReads = (reads: StoryRead[]) => {
   }, [owedKey, queryKeys, current]);
 
   // A handshake that meets an older read in flight shares it, so a covering read's answer can land behind a snapshot
-  // that overtook it; it then catches up once per signal it was not asked under, and never on its own answer.
-  const snapshotBlock = useConnectionStore((state) => state.snapshotBlock);
-  const confirmedHead = useConnectionStore((state) => state.lastConfirmedBlock);
-  const catchUp = queries.map(
-    (query, index) =>
-      Boolean(stableReads[index].coverSnapshot) && shouldCatchUp(query, { snapshotBlock, confirmedHead }),
-  );
-  const catchUpKey = queries.map((query, index) => (catchUp[index] ? query.dataUpdatedAt : "-")).join();
-  const caughtUp = useLatest(catchUp);
+  // that overtook it; it then catches up once per signal it was not asked under, and never on its own answer. The store
+  // is read through the catch-up it decides, not its blocks: a confirmed head comes about once a second, and one that
+  // lets no read catch up renders nothing (a re-render here redraws every story the caller shows).
+  const catchUpKey = useConnectionStore((state) => catchUpKeyOf(stableReads, queries, recoverySignalsOf(state)));
   useEffect(() => {
+    const now = currentRecoverySignals();
     current.current.queries.forEach((query, index) => {
-      if (caughtUp.current[index]) void query.refetch({ cancelRefetch: false });
+      if (owesCatchUp(stableReads[index], query, now)) void query.refetch({ cancelRefetch: false });
     });
-  }, [catchUpKey, current, caughtUp]);
+  }, [catchUpKey, current, stableReads]);
 
   const delivered = useMemo(
     () => stableReads.map((read) => streamed.filter((event) => matchesRead(event, scopeKey, read))),

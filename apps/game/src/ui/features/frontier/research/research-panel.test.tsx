@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MID_REALM } from "./progression-fixture";
 import { ResearchPanel } from "./research-panel";
-import { readResearchTree, type TreeNode } from "./research-tree";
+import { needLine, readResearchTree, type TreeNode } from "./research-tree";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -23,7 +23,7 @@ afterEach(() => {
 });
 
 const nodes = readResearchTree(MID_REALM);
-const draw = (picked: string, onResearch = vi.fn(), onPick = vi.fn(), onFix = vi.fn()) =>
+const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onFix = vi.fn()) =>
   act(() =>
     root.render(
       <ResearchPanel
@@ -62,14 +62,125 @@ it("researches the Farm's next tier with the side picked", () => {
 it("holds a locked node's verb, says why, and offers the step that opens it", () => {
   const onFix = vi.fn();
   draw("row-2", vi.fn(), vi.fn(), onFix);
-  expect(host.textContent).toContain("Labor store 18,000 / 24,000 · a Kingdom holds it");
+  expect(host.textContent).toContain("Labor storage 18,000 / 24,000 · a Kingdom holds it");
   expect(button(/^Research /)!.disabled).toBe(true);
   act(() => button(/Level up the castle/)!.click());
   expect(onFix).toHaveBeenCalledOnce();
 });
 
-it("shows the Scouts' lodge's camp kind as Trolls, never Camp", () => {
+it("names the Scouts' lodge's camp kind Trolls, never Camp", () => {
   draw("row-6");
-  expect(host.textContent).toContain("Trolls found by new armies");
+  const choice = host.querySelector("[data-lab='node-choice']")!;
+  expect([...choice.querySelectorAll("button[aria-pressed]")].map((side) => side.getAttribute("title"))).toEqual([
+    "Trolls found by new armies",
+    "Rifts found by new armies",
+    "Beasts found by new armies",
+  ]);
   expect(host.textContent).not.toMatch(/Camp/);
+});
+
+describe("the picked building's choice, at the panel's foot (the owner's pick C)", () => {
+  const choice = () => host.querySelector("[data-lab='node-choice']");
+
+  it("keeps what a finished node gives: the Shrine researched, a Hut at Legendary", () => {
+    draw("shrine");
+    expect(choice()!.textContent).toContain("Armies find Shrines · +200 XP each");
+    const legendaryHut = readResearchTree({
+      ...MID_REALM,
+      learned: { ...MID_REALM.learned, 3: { tier: 4, sides: [] } },
+    });
+    act(() =>
+      root.render(
+        <ResearchPanel
+          nodes={legendaryHut}
+          essence={MID_REALM.essence}
+          labor={MID_REALM.labor}
+          picked="row-3"
+          onPick={vi.fn()}
+          sending={new Set()}
+          fixFor={() => undefined}
+          onResearch={vi.fn()}
+        />,
+      ),
+    );
+    expect(choice()!.textContent).toContain("Population from every Hut · +100%");
+  });
+
+  it("stands after the whole tree, outside its scroll, with the price held against and Research", () => {
+    draw("row-0");
+    const tree = host.querySelector("[data-node]")!.closest(".overflow-y-auto")!;
+    // Not inside the tree's scroll: no tile the tree scrolls to can push it out of view.
+    expect(tree.contains(choice())).toBe(false);
+    expect(tree.compareDocumentPosition(choice()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(choice()!.textContent).toContain("Farm");
+    expect(choice()!.querySelector(".ui-tier-step")?.getAttribute("aria-label")).toBe("Rare → Epic");
+    expect([...choice()!.querySelectorAll(".ui-tier")].map((gem) => gem.textContent)).toEqual(["III", "IV"]);
+    expect(button(/^Research Fields$/)).toBeDefined();
+    const price = nodes
+      .find(({ key }) => key === "row-0")!
+      .needs.filter(({ kind }) => kind === "essence" || kind === "labor");
+    expect([...choice()!.querySelectorAll("[aria-label*='/']")].map((chip) => chip.getAttribute("aria-label"))).toEqual(
+      price.map((need) => needLine(need)),
+    );
+  });
+
+  it("is put away with its X, leaving the tree, and opens again on the tile tapped", () => {
+    const onPick = vi.fn();
+    draw("row-0", vi.fn(), onPick);
+    act(() => host.querySelector<HTMLButtonElement>("[aria-label='Close']")!.click());
+    expect(onPick).toHaveBeenCalledWith(null);
+    draw(null, vi.fn(), onPick);
+    expect(choice()).toBeNull();
+    expect(host.querySelectorAll("[data-node]")).toHaveLength(nodes.length);
+    act(() => host.querySelector<HTMLButtonElement>("[data-node='row-3']")!.click());
+    expect(onPick).toHaveBeenLastCalledWith("row-3");
+  });
+});
+
+it("shows the chosen research shares without a production formula", () => {
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={nodes}
+        essence={MID_REALM.essence}
+        labor={MID_REALM.labor}
+        picked="row-0"
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={vi.fn()}
+      />,
+    ),
+  );
+  expect(button(/^Fields/)!.textContent).toBe("Fields+25% → +50%");
+  expect(button(/^Granary/)!.textContent).not.toContain("Each Farm");
+  // The choice reads from its cards: no line explaining the sides or that they are kept.
+  const lines = [...host.querySelectorAll("[data-lab='node-choice'] > span")].map((line) => line.textContent);
+  expect(lines).toEqual([]);
+});
+
+it("keeps the chosen Research action outside the tree scroll on every pick, including the initial Farm", () => {
+  const Picking = () => {
+    const [picked, setPicked] = useState<string | null>("row-0");
+    return (
+      <ResearchPanel
+        nodes={nodes}
+        essence={MID_REALM.essence}
+        labor={MID_REALM.labor}
+        picked={picked}
+        onPick={setPicked}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={vi.fn()}
+      />
+    );
+  };
+  act(() => root.render(<Picking />));
+  for (const row of ["row-1", "row-2", "row-0"]) {
+    act(() => host.querySelector<HTMLButtonElement>(`[data-node='${row}']`)!.click());
+    const choice = host.querySelector("[data-lab='node-choice']")!;
+    expect(choice.textContent).toContain(nodes.find(({ key }) => key === row)!.name);
+    expect(host.querySelector(".overflow-y-auto")!.contains(choice)).toBe(false);
+    expect([...choice.querySelectorAll("button")].at(-1)?.textContent).toMatch(/^Research/);
+  }
 });

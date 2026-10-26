@@ -353,10 +353,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.transfer_structure_ownership(props);
   };
 
-  const structure_burn = async (props: SystemProps.StructureBurnProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.structure_burn(props);
-  };
-
   const interact_site = (props: SystemProps.InteractSiteProps) => provider.interact_site(props);
 
   const open_chest = async (props: SystemProps.OpenChestProps): Promise<GetTransactionReceiptResponse> => {
@@ -456,7 +452,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     leave_guild: withAuth(leave_guild),
 
     transfer_structure_ownership: withAuth(transfer_structure_ownership),
-    structure_burn: withAuth(structure_burn),
     open_chest: withAuth(open_chest),
     interact_site: withAuth(interact_site),
     burn_research_for_relic: withAuth(burn_research_for_relic),

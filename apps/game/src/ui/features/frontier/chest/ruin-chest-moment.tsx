@@ -1,9 +1,8 @@
-import { formatExact, LORDS } from "@bibliothecadao/types";
+import { formatExact, LORDS, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { HudRarity, HudChip } from "@/ui/design-system/kit/hud-elements";
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import { RUIN, TROOPS, XP } from "@/ui/design-system/kit/words";
+import { type Tier, RUIN, TROOPS, XP } from "@/ui/design-system/kit/words";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { motion } from "framer-motion";
@@ -53,11 +52,11 @@ export const RuinChestMoment = ({
           <SemanticIcon name="lords" size={34} />
           <span className="text-hud-display tabular-nums text-hud-gold">+{formatExact(lords)}</span>
         </span>
-        <HudRarity tier={tier} word />
+        <HudRarity tier={tier} />
         <span className="flex items-center gap-2">
-          {xp !== undefined && <HudChip>{`+${formatExact(xp)} ${XP}`}</HudChip>}
+          {xp !== undefined && <HudChip>{`${formatShort(xp, { signed: true })} ${XP}`}</HudChip>}
           <HudChip icons={["skull"]} label={TROOPS}>
-            {`−${formatExact(troopsLost)}`}
+            {`−${formatShort(troopsLost)}`}
           </HudChip>
         </span>
       </motion.span>

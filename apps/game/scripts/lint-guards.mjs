@@ -37,6 +37,51 @@ const HUD_ROLE_OPACITY = [
   },
 ];
 
+// A render subscribed to the confirmed head runs again at every block, about once a second: the Frontier Feed redrew its
+// 350 stories that way on a still map, a long frame each time on a laptop. Follow the head in the store
+// (useConnectionStore.subscribe in an effect), or select only what the render shows from it.
+const NO_HEAD_RENDER = [
+  {
+    selector:
+      "CallExpression[callee.name='useConnectionStore'] > ArrowFunctionExpression > MemberExpression.body[property.name='lastConfirmedBlock']",
+    message:
+      "A render subscribed to the confirmed head runs at every block: follow it with useConnectionStore.subscribe, or select what the render shows.",
+  },
+];
+
+// A gain is written by formatGain: one written by hand as "+" before an amount read "+<1 Labor" for a find under a unit,
+// which players took for nothing found (feedback, 25 October). Flags a template, a sum or JSX text joining "+" to an
+// amount writer.
+const AMOUNT_WRITER = "/^format(Amount|Charge)$/";
+const HAND_WRITTEN_GAIN = [
+  {
+    selector: `TemplateLiteral:has(> TemplateElement[value.raw=/\\+$/]):has(> CallExpression[callee.name=${AMOUNT_WRITER}])`,
+    message:
+      'A gain is formatGain(amount) (a find: findGain), never "+" before an amount, which reads "+<1" under a unit.',
+  },
+  {
+    selector: `BinaryExpression[operator='+'][left.value='+'] > CallExpression.right[callee.name=${AMOUNT_WRITER}]`,
+    message:
+      'A gain is formatGain(amount) (a find: findGain), never "+" before an amount, which reads "+<1" under a unit.',
+  },
+  {
+    selector: `JSXElement:has(> JSXText[value=/\\+$/]):has(> JSXExpressionContainer > CallExpression[callee.name=${AMOUNT_WRITER}])`,
+    message:
+      'A gain is formatGain(amount) (a find: findGain), never "+" before an amount, which reads "+<1" under a unit.',
+  },
+];
+
+// A chip or a pill writes its number short (owner, 26 October: "+1,000" was "horrible on desktop, just put 1k"): an
+// amount, a charge or an exact count written into one runs a thousand out in full and pushes past its card.
+const SHORT_IN_CHIPS = [
+  {
+    selector:
+      "JSXElement[openingElement.name.name=/^Hud(Chip|Pill)$/] JSXExpressionContainer:not(JSXAttribute > JSXExpressionContainer) CallExpression[callee.name=/^format(Amount|Charge|Exact|Gain)$/]",
+    message:
+      "A chip or pill writes its number with formatShort (signed: true for a gain) or formatShortChange for a before → after.",
+  },
+];
+
 // A function or an object written into text prints its source or "[object Object]": each resource chip's buttons read
 // "Transfer (id) => {…}" where a words function was written in place of the word it returns. Typed, so client only.
 const TEXT_VALUES = {
@@ -74,11 +119,21 @@ const eslint = new ESLint({
       languageOptions: { parser: tseslint.parser },
       linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
       plugins: { "react-hooks": reactHooks, "@typescript-eslint": tseslint.plugin },
-      rules: { "no-restricted-syntax": ["error", ...NO_BITWISE_ID], ...HOOK_ORDER, ...UNUSED },
+      rules: { "no-restricted-syntax": ["error", ...NO_BITWISE_ID, ...HAND_WRITTEN_GAIN], ...HOOK_ORDER, ...UNUSED },
     },
     {
       files: ["apps/game/src/**/*.{ts,tsx}"],
-      rules: { ...HOOK_DEPENDENCIES, "no-restricted-syntax": ["error", ...NO_BITWISE_ID, ...HUD_ROLE_OPACITY] },
+      rules: {
+        ...HOOK_DEPENDENCIES,
+        "no-restricted-syntax": [
+          "error",
+          ...NO_BITWISE_ID,
+          ...HUD_ROLE_OPACITY,
+          ...NO_HEAD_RENDER,
+          ...HAND_WRITTEN_GAIN,
+          ...SHORT_IN_CHIPS,
+        ],
+      },
     },
     {
       files: ["apps/game/src/**/*.{ts,tsx}"],

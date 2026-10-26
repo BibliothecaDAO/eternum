@@ -1,4 +1,4 @@
-import { formatAmount, LORDS, resourceName, ResourcesIds } from "@bibliothecadao/types";
+import { LORDS, resourceName, ResourcesIds, formatShort } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
@@ -18,9 +18,9 @@ export type DayTotals = {
 export const DayTotalsGrid = ({ totals }: { totals: DayTotals }) => (
   <TotalsGrid
     cells={[
-      { icon: "explore", name: REVEALS, value: formatAmount(totals.reveals) },
-      { icon: "flag", name: SITES_CLEARED, value: formatAmount(totals.cleared) },
-      { icon: "chest", name: CHESTS, value: formatAmount(totals.chests) },
+      { icon: "explore", name: REVEALS, value: formatShort(totals.reveals) },
+      { icon: "flag", name: SITES_CLEARED, value: formatShort(totals.cleared) },
+      { icon: "chest", name: CHESTS, value: formatShort(totals.chests) },
       { icon: "essence", name: ESSENCE, value: gained(totals.essence) },
       { icon: "labor", name: resourceName(ResourcesIds.Labor), value: gained(totals.labor) },
       { icon: "lords", name: LORDS, value: gained(totals.lords) },
@@ -29,7 +29,7 @@ export const DayTotalsGrid = ({ totals }: { totals: DayTotals }) => (
 );
 
 /** One total: its icon, the name the icon stands for, and its figure. */
-type TotalCell = { icon: IconMeaning; name: string; value: string };
+export type TotalCell = { icon: IconMeaning; name: string; value: string };
 
 /**
  * Totals, three to a row: a day's, or a season's. Each cell is its icon beside its figure, named in words under it
@@ -48,4 +48,5 @@ export const TotalsGrid = ({ cells }: { cells: readonly TotalCell[] }) => (
   </HudPanel>
 );
 
-const gained = (amount: number | undefined) => (amount === undefined ? "—" : `+${formatAmount(amount)}`);
+/** A gain in a totals chip, short and signed. */
+const gained = (value: number | undefined) => formatShort(value, { signed: true });

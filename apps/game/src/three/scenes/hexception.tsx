@@ -8,7 +8,7 @@ import { frontierPaintedBuildingPath } from "../structures/frontier-painted-buil
 import { buildingTypeTier } from "@bibliothecadao/eternum";
 import { isWonderModelPath } from "../structures/realm-design";
 import { RealmLivingAura } from "../structures/realm-living-aura";
-import { HexceptionTierModels, disposeBuildingModel } from "./hexception-tier-models";
+import { HexceptionModels, disposeBuildingModel } from "./hexception-models";
 import { SettlementAnimation } from "../structures/settlement-animation";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
@@ -39,6 +39,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveStructureRotationY } from "@/three/structures/structure-orientation";
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
 import { RealmGridBuilds } from "./hexception-grid-builds";
+import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { awaitLocalScenePresentable } from "./local-scene-presentation";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
@@ -67,7 +68,6 @@ import {
   reconcileBuildingUpdate,
   isTierChange,
   resolveBuildingInstanceAction,
-  runOwnedBuildingWorkAfterModelsLoad,
   type TargetedBuildingReconciliation,
 } from "@/three/scenes/hexception-building-reconciliation";
 import { playBuildingSound } from "@/three/sound/utils";
@@ -97,7 +97,7 @@ import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-sy
 import { pickLocalRealm } from "./local-realm";
 import { IS_FLAT_MODE } from "@/ui/config";
 
-import { ProductionModal } from "@/ui/features/settlement";
+import { openProduction } from "@/ui/features/settlement/production/open-production";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { sendBuilding } from "@/ui/features/settlement/construction/send-building";
@@ -151,6 +151,7 @@ import {
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { SceneName } from "../types";
+import { localCameraMaxDistance } from "./local-camera-reach";
 import { LOCAL_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { localHexPosition } from "./hexception-layout";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
@@ -226,16 +227,13 @@ export default class HexceptionScene extends HexagonScene {
 
   private hexceptionRadius = 4;
   private destroyed = false;
-  private readonly tierModels = new HexceptionTierModels(
+  /** Each building model the realm draws, loaded the first time a building or the build preview needs it. */
+  private readonly models = new HexceptionModels(
     (path) => this.loadBuildingModel(path),
     () => {
       if (this.isEntered) this.reconcileAllBuildingInstances(this.tileManager.structureType());
     },
   );
-  private buildingModels: Map<
-    BUILDINGS_GROUPS,
-    Map<BUILDINGS_CATEGORIES_TYPES, { model: Group; animations: AnimationClip[] }>
-  > = new Map();
   private readonly settlementPresentations = new Map<
     string,
     {
@@ -296,6 +294,8 @@ export default class HexceptionScene extends HexagonScene {
   private localZoomPersistTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly handleLocalZoomControlsChange = () => {
     if (this.sceneManager.getCurrentScene() !== SceneName.Hexception) return;
+    // A wheel zooms through the controls alone: the fog and far plane follow it here, as a pinch's do.
+    this.syncDistanceVisuals();
     // Programmatic camera transitions (scene entry, camera-view resets) must
     // not overwrite the player's chosen zoom; only interactive zooms persist.
     if (this.isCameraTransitionInProgress()) return;
@@ -308,6 +308,7 @@ export default class HexceptionScene extends HexagonScene {
     mouse: Vector2,
     raycaster: Raycaster,
     sceneManager: SceneManager,
+    private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
     super(SceneName.Hexception, controls, game, mouse, raycaster, sceneManager);
 
@@ -327,56 +328,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.state = useUIStore.getState();
 
-    this.shortcutManager = new SceneShortcutManager("hexception", this.sceneManager);
-
-    // Only register shortcuts if they haven't been registered already
-    if (!this.shortcutManager.hasShortcuts()) {
-      const shouldCycleRealmsForTab = () => useUIStore.getState().leftNavigationView === LeftView.MilitaryView;
-      const getRealmStructuresForTab = () =>
-        this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
-
-      this.shortcutManager.registerShortcut({
-        id: "cycle-structures",
-        key: "Tab",
-        description: "Cycle through structures",
-        sceneRestriction: SceneName.Hexception,
-        condition: () => {
-          if (shouldCycleRealmsForTab()) {
-            return getRealmStructuresForTab().length > 0;
-          }
-          return this.playerStructures.length > 0;
-        },
-        action: () => {
-          if (shouldCycleRealmsForTab()) {
-            this.selectNextRealmStructure();
-            return;
-          }
-          this.selectNextStructure();
-        },
-      });
-
-      this.shortcutManager.registerShortcut({
-        id: "toggle-view",
-        key: "v",
-        description: "Toggle between world and local view",
-        sceneRestriction: SceneName.Hexception,
-        action: () => toggleMapHexView(),
-      });
-
-      this.shortcutManager.registerShortcut({
-        id: "escape-handler",
-        key: "Escape",
-        description: "Return to world view from local view",
-        sceneRestriction: SceneName.Hexception,
-        action: () => {
-          if (this.isNavigationViewOpen()) {
-            this.closeNavigationViews();
-          } else {
-            this.clearBuildingMode();
-          }
-        },
-      });
-    }
+    this.registerRealmShortcuts();
 
     if (this.GUIFolder) {
       this.GUIFolder.add(this, "structureStage", 0, 3).onFinishChange((value: RealmLevels) => {
@@ -448,13 +400,71 @@ export default class HexceptionScene extends HexagonScene {
     );
   }
 
+  /** The realm view's keys: Tab cycles the player's structures (their realms from the military view), V the view, Escape backs out. */
+  private registerRealmShortcuts(): void {
+    this.shortcutManager = new SceneShortcutManager("hexception", this.sceneManager);
+
+    if (this.shortcutManager.hasShortcuts()) return;
+
+    const shouldCycleRealmsForTab = () => useUIStore.getState().leftNavigationView === LeftView.MilitaryView;
+    const getRealmStructuresForTab = () =>
+      this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
+
+    this.shortcutManager.registerShortcut({
+      id: "cycle-structures",
+      key: "Tab",
+      description: "Cycle through structures",
+      sceneRestriction: SceneName.Hexception,
+      condition: () => {
+        if (shouldCycleRealmsForTab()) {
+          return getRealmStructuresForTab().length > 0;
+        }
+        return this.playerStructures.length > 0;
+      },
+      action: () => {
+        if (shouldCycleRealmsForTab()) {
+          this.selectNextRealmStructure();
+          return;
+        }
+        this.selectNextStructure();
+      },
+    });
+
+    this.shortcutManager.registerShortcut({
+      id: "toggle-view",
+      key: "v",
+      description: "Toggle between world and local view",
+      sceneRestriction: SceneName.Hexception,
+      action: () => toggleMapHexView(),
+    });
+
+    this.shortcutManager.registerShortcut({
+      id: "escape-handler",
+      key: "Escape",
+      description: "Return to world view from local view",
+      sceneRestriction: SceneName.Hexception,
+      action: () => {
+        if (this.isNavigationViewOpen()) {
+          this.closeNavigationViews();
+        } else {
+          this.clearBuildingMode();
+        }
+      },
+    });
+  }
+
   public override getTerrainSurface(): TerrainSurface {
     return this.proceduralTerrain;
   }
 
-  private alignLocalCameraToPreferredZoom(): void {
+  /**
+   * Stands the camera at the realm view's own pose, its pitch at the player's zoom, at once. Setup runs out of sight
+   * (behind the flight's held frame, or the fade) and the flight reveals the camera where setup left it, so the pose
+   * is the same however the view is entered: from the map, or again from itself (Tab cycling to the realm shown).
+   */
+  private standCameraAtPreferredZoom(): void {
     this.cameraAngle = LOCAL_CAMERA_ZOOM.pitchRadians;
-    this.animateCameraToLocalZoomDistance(this.resolvePreferredLocalZoomDistance());
+    this.placeCamera(this.localZoomPosition(this.resolvePreferredLocalZoomDistance()), this.controls.target.clone());
   }
 
   private applyLocalZoomPreferenceLive(): void {
@@ -477,11 +487,17 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private animateCameraToLocalZoomDistance(distance: number): void {
+    this.cameraAnimate(this.localZoomPosition(distance), this.controls.target.clone(), 0.6);
+  }
+
+  /** Where the camera stands to look at its target from the realm view's pitch, at this distance. */
+  private localZoomPosition(distance: number): Vector3 {
     const target = this.controls.target;
-    const cameraHeight = Math.sin(this.cameraAngle) * distance;
-    const cameraDepth = Math.cos(this.cameraAngle) * distance;
-    const newPosition = new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
-    this.cameraAnimate(newPosition, target.clone(), 0.6);
+    return new Vector3(
+      target.x,
+      target.y + Math.sin(this.cameraAngle) * distance,
+      target.z + Math.cos(this.cameraAngle) * distance,
+    );
   }
 
   private scheduleLocalZoomPersist(): void {
@@ -556,30 +572,6 @@ export default class HexceptionScene extends HexagonScene {
     this.highlightHexManager.highlightHexes([]);
   }
 
-  private loadBuildingModels() {
-    const modelLoadsByPath = new Map<string, Promise<{ model: Group; animations: AnimationClip[] }>>();
-    for (const category of Object.values(BUILDINGS_GROUPS)) {
-      if (category === BUILDINGS_GROUPS.HYPERSTRUCTURE) continue;
-      const categoryPaths = this.mode.assets.buildingModelPaths[category];
-      if (!this.buildingModels.has(category)) {
-        this.buildingModels.set(category, new Map());
-      }
-      const categoryMap = this.buildingModels.get(category)!;
-
-      for (const [building, path] of Object.entries(categoryPaths)) {
-        let sourceLoad = modelLoadsByPath.get(path);
-        if (!sourceLoad) {
-          sourceLoad = this.loadBuildingModel(path);
-          modelLoadsByPath.set(path, sourceLoad);
-        }
-        const loadPromise = sourceLoad.then((modelData) => {
-          categoryMap.set(building as BUILDINGS_CATEGORIES_TYPES, modelData);
-        });
-        this.modelLoadPromises.push(loadPromise);
-      }
-    }
-  }
-
   private async loadBuildingModel(path: string): Promise<{ model: Group; animations: AnimationClip[] }> {
     const gltf = await loader.loadAsync(path);
     const model = gltf.scene as Group;
@@ -604,6 +596,9 @@ export default class HexceptionScene extends HexagonScene {
       this.settlementPresentations.set(path, { appearance, animation: new SettlementAnimation(model, meshes) });
       model.userData.settlementModelPath = path;
     }
+    // Its pipelines compile now, behind the held map frame, rather than on the realm's first frame. Only the loaded
+    // model is compiled, never the placed buildings: their render objects are made on their own first draw.
+    await this.compilePipelines(model, this.scene);
     return { model, animations: gltf.animations };
   }
 
@@ -629,14 +624,8 @@ export default class HexceptionScene extends HexagonScene {
         return {
           cacheKey: path,
           load: async () => {
-            if (tierPath) {
-              await this.tierModels.request(tierPath);
-              return this.tierModels.get(tierPath)?.model ?? null;
-            }
-            await Promise.allSettled(this.modelLoadPromises);
-            return (
-              this.buildingModels.get(group)?.get(building.toString() as BUILDINGS_CATEGORIES_TYPES)?.model ?? null
-            );
+            await this.models.request(path);
+            return this.models.get(path)?.model ?? null;
           },
         };
       });
@@ -654,7 +643,6 @@ export default class HexceptionScene extends HexagonScene {
     this.groundTexturesReady = this.proceduralTerrain.loadGroundTextures().catch((error) => {
       console.warn("[Hexception] Procedural ground textures failed; retaining flat terrain", error);
     });
-    this.loadBuildingModels();
   }
 
   async setup() {
@@ -726,13 +714,14 @@ export default class HexceptionScene extends HexagonScene {
     const settlementCenter = LOCAL_HEX_SPACE.positionForHex({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] });
     this.ambienceSystem?.setup(settlementCenter, this.hexceptionRadius);
 
-    this.controls.maxDistance = LOCAL_CAMERA_ZOOM.maxDistance;
+    // The castle's level sets how far the camera may pull back: every plot it reaches fits on the screen.
+    this.updateCastleLevel();
     this.controls.enablePan = false;
     this.controls.enableZoom = true;
     this.controls.zoomToCursor = false;
 
     this.moveCameraToURLLocation();
-    this.alignLocalCameraToPreferredZoom();
+    this.standCameraAtPreferredZoom();
 
     // Configure thunder bolts for hexception - focused storm effect
     this.getThunderBoltManager().setConfig({
@@ -767,7 +756,7 @@ export default class HexceptionScene extends HexagonScene {
   destroy() {
     this.destroyed = true;
     this.isEntered = false;
-    this.tierModels.dispose();
+    this.models.dispose();
     window.clearTimeout(this.newRingTimer);
     usePopoverStore.getState().close("plot-construction");
     this.advanceRealmGeneration();
@@ -814,19 +803,6 @@ export default class HexceptionScene extends HexagonScene {
     }
     this.settlementPresentations.clear();
 
-    // Dispose of loaded building models (geometries and materials)
-    const disposedBuildingModels = new Set<Group>();
-    this.buildingModels.forEach((categoryMap) => {
-      categoryMap.forEach((data) => {
-        if (disposedBuildingModels.has(data.model)) {
-          return;
-        }
-        disposedBuildingModels.add(data.model);
-        disposeBuildingModel(data.model);
-      });
-      categoryMap.clear();
-    });
-    this.buildingModels.clear();
     this.hyperstructureModel?.dispose();
     this.hyperstructureModel = undefined;
 
@@ -928,7 +904,22 @@ export default class HexceptionScene extends HexagonScene {
         this.state.setLeftNavigationView(LeftView.EntityView);
         if (canConstruct) this.openPlotConstruction(normalizedCoords);
       }
+      this.keepPlotInSight(normalizedCoords);
     }
+  }
+
+  /**
+   * The card a tapped plot opens (the build sheet, a building's, the castle's) stands over a phone's foot (owner, 26
+   * October 2026: layout A): once it stands, a plot it covers comes up into the board left open above it.
+   */
+  private keepPlotInSight(plot: HexPosition): void {
+    // The card opens on the render after the tap; the open area is read once it stands.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const { x, y, z } = this.hexSpace.positionForHex(plot);
+        this.keepInOpenMap(new Vector3(x, y, z));
+      }),
+    );
   }
 
   /** The unpinned ghost follows the pointer, red over a plot it cannot stand on. */
@@ -1090,12 +1081,7 @@ export default class HexceptionScene extends HexagonScene {
     });
 
     const producedResource = getProducedResource(building.category as BuildingType);
-    usePopoverStore.getState().openSurface({
-      id: "production",
-      content: (
-        <ProductionModal preSelectedResource={producedResource === ResourcesIds.Labor ? undefined : producedResource} />
-      ),
-    });
+    openProduction({ resource: producedResource === ResourcesIds.Labor ? undefined : producedResource });
   }
 
   /** The projection knows what stands on a hex, including a Frontier realm raised on a site with no tile of its own. */
@@ -1147,6 +1133,34 @@ export default class HexceptionScene extends HexagonScene {
       structureType === StructureType.Hyperstructure
         ? getStructureStage(structureType, useUIStore.getState().structureEntityId, this.game.store)
         : this.tileManager.getRealmLevel(this.state.structureEntityId);
+    this.fitCameraReach();
+  }
+
+  /**
+   * The screen changed shape (a phone turned, a window resized; the renderer has set the camera's aspect): while the
+   * realm is shown, its farthest zoom is fitted again, so the whole board still fits without leaving the realm. A turn
+   * while the realm is still being entered is the map's to ignore; the realm fits again as it becomes the shown scene.
+   */
+  public followScreenShape(): void {
+    if (this.sceneManager.getCurrentScene() === SceneName.Hexception) this.fitCameraReach();
+  }
+
+  /** Shown, the realm fits its farthest zoom to the screen as it is now, whatever turned while it was being entered. */
+  public override activateInputSurface(): void {
+    super.activateInputSurface();
+    this.fitCameraReach();
+  }
+
+  /**
+   * The camera's farthest zoom for the castle's reach on the screen as it is now (localCameraMaxDistance): on entry, when
+   * the castle rises, and when the screen turns. A zoom still inside the new reach stays where the player left it.
+   */
+  private fitCameraReach(): void {
+    this.controls.maxDistance = localCameraMaxDistance({
+      plotRadius: buildableRadius(this.structureStage),
+      aspect: this.camera.aspect,
+      fovDegrees: this.camera.fov,
+    });
   }
 
   private handleBuildingUpdate(update: BuildingSystemUpdate, realmGeneration: number): void {
@@ -1177,28 +1191,23 @@ export default class HexceptionScene extends HexagonScene {
     this.buildings = reconciliation.buildings;
 
     const key = buildingKey(reconciliation.position);
-    void runOwnedBuildingWorkAfterModelsLoad({
-      apply: () =>
-        runWithFrameWorkOwner("scene:hexception:building", () => {
-          const latestBuilding = this.buildings.find((building) => buildingKey(building) === key);
-          this.updateBuildingHighlight(reconciliation.position, Boolean(latestBuilding));
-          const action = this.reconcileBuildingInstance(
-            reconciliation.position,
-            latestBuilding,
-            this.tileManager.structureType(),
-          );
-          // A live update that creates a building is the building completing; the grid build never passes here.
-          if (action === "create") this.playBuildingCompleteBurst(reconciliation.position);
-        }),
-      isOwned: () => this.ownsRealmGeneration(realmGeneration),
-      modelLoadPromises: this.modelLoadPromises,
+    runWithFrameWorkOwner("scene:hexception:building", () => {
+      const latestBuilding = this.buildings.find((building) => buildingKey(building) === key);
+      this.updateBuildingHighlight(reconciliation.position, Boolean(latestBuilding));
+      const action = this.reconcileBuildingInstance(
+        reconciliation.position,
+        latestBuilding,
+        this.tileManager.structureType(),
+      );
+      // A live update that creates a building is the building completing; the grid build never passes here.
+      if (action === "create") this.playBuildingCompleteBurst(reconciliation.position);
     });
   }
 
   /**
    * The first local frame is empty until the grid build presents terrain and buildings, so the world frame is held
-   * until then. Its pipelines compile on that first frame: a scene-wide warm-up compile ahead of it left some
-   * buildings' render objects broken on WebGPU (they drew solid black until rebuilt).
+   * until then. Each building model's pipelines compile as it loads (loadBuildingModel); a scene-wide warm-up compile
+   * of the placed buildings left some of their render objects broken on WebGPU (they drew solid black until rebuilt).
    */
   public override whenPresentable(): Promise<void> {
     return this.localPresentation;
@@ -1292,8 +1301,8 @@ export default class HexceptionScene extends HexagonScene {
     const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
     this.gridBuilds.start({
-      modelsLoaded: () => Promise.allSettled(this.modelLoadPromises),
       layOut: () => runWithFrameWorkOwner("scene:hexception:grid", () => this.layOutGridCells(radius)),
+      loadModels: () => this.loadLaidOutModels(mainStructureType),
       preparePage: (terrainMatricesByBiome) =>
         this.proceduralTerrain.preparePageAsync(this.terrainPageRequest(terrainMatricesByBiome)),
       present: (page) =>
@@ -1399,18 +1408,11 @@ export default class HexceptionScene extends HexagonScene {
     mainStructureType: StructureType | undefined,
   ): BuildingInstanceAction {
     const key = buildingKey(position);
-    const selection = building
-      ? resolveBuildingModelSelection(building, {
-          stage: this.structureStage,
-          structureId: this.state.structureEntityId,
-          mainStructureType,
-          wonder: !!this.tileManager.getWonder(this.state.structureEntityId),
-          frontier: this.mode.id === "frontier",
-        })
-      : undefined;
-    // A tier's model loads the first time a building needs it; until then the building keeps what it shows.
-    if (selection?.tierPath && !this.tierModels.get(selection.tierPath)) {
-      this.loadTierModel(selection.tierPath);
+    const selection = building ? this.selectBuildingModel(building, mainStructureType) : undefined;
+    // A model loads the first time a building needs it; until then the building keeps what it shows.
+    const path = selection && this.modelPath(selection);
+    if (path && !this.models.get(path)) {
+      this.loadModel(path);
       return "keep";
     }
     const signature = building && selection ? this.resolveBuildingRenderSignature(building, selection) : undefined;
@@ -1471,17 +1473,14 @@ export default class HexceptionScene extends HexagonScene {
       return;
     }
 
-    const buildingData = selection.tierPath
-      ? this.tierModels.get(selection.tierPath)
-      : this.buildingModels.get(selection.group)?.get(selection.type.toString() as BUILDINGS_CATEGORIES_TYPES);
-    if (!buildingData) return;
+    const modelPath = this.modelPath(selection);
+    const buildingData = modelPath ? this.models.get(modelPath) : undefined;
+    if (!modelPath || !buildingData) return;
 
     const instance = buildingData.model.clone();
     instance.applyMatrix4(building.matrix);
     if (selection.group === BUILDINGS_GROUPS.REALMS || selection.group === BUILDINGS_GROUPS.VILLAGE) {
       // Apply after the template and tile transforms so neither can turn the entrance away.
-      const categoryPaths: Readonly<Record<string, string>> = this.mode.assets.buildingModelPaths[selection.group];
-      const modelPath = selection.tierPath ?? categoryPaths[selection.type];
       instance.rotation.set(0, resolveStructureRotationY([modelPath], instance.rotation.y), 0);
     }
     holdPartHeadings(instance);
@@ -1507,9 +1506,39 @@ export default class HexceptionScene extends HexagonScene {
     this.startBuildingAnimations(key, instance, buildingData.animations);
   }
 
-  /** Loads one tier's model once, then lets every building waiting on it draw it. */
-  private loadTierModel(path: string): void {
-    void this.tierModels.request(path).catch((error) => {
+  private selectBuildingModel(
+    building: HexceptionBuilding,
+    mainStructureType: StructureType | undefined,
+  ): BuildingModelSelection {
+    return resolveBuildingModelSelection(building, {
+      stage: this.structureStage,
+      structureId: this.state.structureEntityId,
+      mainStructureType,
+      wonder: !!this.tileManager.getWonder(this.state.structureEntityId),
+      frontier: this.mode.id === "frontier",
+    });
+  }
+
+  /** The model file a selection draws: its tier's own, else its group's; a hyperstructure builds its own. */
+  private modelPath(selection: BuildingModelSelection): string | undefined {
+    if (selection.group === BUILDINGS_GROUPS.HYPERSTRUCTURE) return undefined;
+    const groupPaths: Readonly<Record<string, string>> = this.mode.assets.buildingModelPaths[selection.group];
+    return selection.tierPath ?? groupPaths[selection.type];
+  }
+
+  /** The models of the buildings the latest layout placed, loaded together; a failed one leaves its building unshown. */
+  private loadLaidOutModels(mainStructureType: StructureType | undefined): Promise<unknown> {
+    const paths = new Set<string>();
+    for (const building of this.buildings) {
+      const path = this.modelPath(this.selectBuildingModel(building, mainStructureType));
+      if (path) paths.add(path);
+    }
+    return Promise.allSettled([...paths].map((path) => this.models.request(path)));
+  }
+
+  /** Loads one model once, then lets every building waiting on it draw it. */
+  private loadModel(path: string): void {
+    void this.models.request(path).catch((error) => {
       if (!this.destroyed) console.warn(`[Hexception] Failed to load building model ${path}`, error);
     });
   }

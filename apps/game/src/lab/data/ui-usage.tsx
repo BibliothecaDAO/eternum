@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import "./view.css";
 
-/** Where the showcase links the usage audit's findings and its HUD screenshots; a server without them has none to show. */
-export const AUDIT_ADDRESS = "/usage-audit";
+/** Where the showcase links the newest pull's usage counts (live-data.py's usage.json); a server without one has none. */
+export const USAGE_ADDRESS = "/live-data/usage.json";
+/** Where it links the audit's HUD stills: still images only, never a live game frame. */
+export const STILLS_ADDRESS = "/live-data/usage-shots";
 
 type Kind = "command" | "ui-only" | "rules";
 interface Finding {
@@ -35,19 +37,20 @@ const KIND_LABEL: Record<Kind, string> = {
 };
 
 /**
- * Dev only: UI usage (Data room). The usage audit's ranked list of what players never or almost never use, strongest cut
- * first, each beside its HUD screenshot, for the game switched to (`mode`). The rank is the audit's, kept across games.
+ * Dev only: UI usage (Data room). The ranked list of what players never or almost never use, strongest cut first, each
+ * beside a still of it in the HUD, for the game switched to (`mode`); every number is the newest pull's. The rank is
+ * the audit's, kept across games.
  */
 export const UiUsageView = () => {
   const [params] = useSearchParams();
   const game = params.get("mode") === "blitz" ? "blitz" : "frontier";
   const read = useAudit();
-  if (read.state === "loading") return <p className="data-room data-room-note">Reading the usage audit…</p>;
+  if (read.state === "loading") return <p className="data-room data-room-note">Reading the newest pull's usage…</p>;
   if (read.state === "missing")
     return (
       <p className="data-room data-room-note">
-        No usage audit on this server. Link its folder (findings.json and the screenshots) at{" "}
-        <code>{AUDIT_ADDRESS}</code>.
+        No usage counts on this server. Pull with <code>live-data.py all</code> and link the pull's usage.json at{" "}
+        <code>{USAGE_ADDRESS}</code> and the stills at <code>{STILLS_ADDRESS}</code> (the showcase links both).
       </p>
     );
   const { audit } = read;
@@ -96,7 +99,7 @@ const FindingRow = ({ finding, rank }: { finding: Finding; rank: number }) => (
       </dl>
     </div>
     {finding.shot ? (
-      <img className="ui-usage-shot" src={`${AUDIT_ADDRESS}/${finding.shot}`} alt={`${finding.title} in the HUD`} />
+      <img className="ui-usage-shot" src={`${STILLS_ADDRESS}/${finding.shot}`} alt={`${finding.title} in the HUD`} />
     ) : (
       <p className="ui-usage-shot data-room-note">No lab fixture draws it.</p>
     )}
@@ -118,7 +121,7 @@ function useAudit(): Read {
   const [read, setRead] = useState<Read>({ state: "loading" });
   useEffect(() => {
     let current = true;
-    fetch(`${AUDIT_ADDRESS}/findings.json`)
+    fetch(USAGE_ADDRESS)
       .then(async (response) => {
         // The dev server answers an unknown address with the app's page, not a 404.
         const audit = response.ok ? await response.json().catch(() => null) : null;

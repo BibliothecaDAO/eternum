@@ -6,7 +6,6 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
 import { HudButton, HudChip } from "./hud-elements";
-import { TierChip } from "./tier-chip";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -45,7 +44,9 @@ const mount = (onClick = () => undefined) =>
             150
           </HudChip>
         </button>
-        <TierChip tier={1} showWord />
+        <span role="img" aria-label="Common">
+          Common
+        </span>
         <HudButton kind="primary">Deploy</HudButton>
         <span data-testid="store" data-tip="Wheat 1,771 of 6,000 · +302 an hour · Full in 14h">
           1,771

@@ -485,11 +485,6 @@ export interface TransferStructureOwnershipProps extends SystemSigner {
   new_owner: BigNumberish;
 }
 
-export interface StructureBurnProps extends SystemSigner {
-  structure_id: BigNumberish;
-  resources: Resource[];
-}
-
 export interface InteractSiteProps extends SystemSigner {
   explorer_id: BigNumberish;
   coord: { alt: boolean; x: BigNumberish; y: BigNumberish };

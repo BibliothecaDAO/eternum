@@ -291,3 +291,41 @@ test("keeps CSS transition durations out of player words while checking visible 
   ].join("\n");
   assert.deepEqual(scan(source), ["2 time.units", "3 time.units"]);
 });
+
+test("finds a formula a player would read, in a string or across JSX, and leaves counts and gains alone", async () => {
+  const { VOICE_RULES } = await import("@bibliothecadao/types");
+  const formula = VOICE_RULES.find(({ rule }) => rule === "A number, never a formula");
+  const rules = { ...context, voiceRules: [formula] };
+  const source = [
+    // 1-4: what the owner read on the building card and the research tree (10-26), and the price arrow on next
+    "export const researchBasis = (base: string, share: string, side: string) => `${base} + ${share} ${side}`;",
+    "const line = <p>{standing} × {each}</p>;",
+    "export const priceRaised = (base: string, noun: string, times: string, standing: string) =>",
+    "  `Base ${base} ${noun}, ×${times} with ${standing} standing`;",
+    "const price = `1 ${name} = ${formatFigure(price)} ${LORDS}`;", // 5: a price as an equation
+    "const total = <p>{a} + {b}</p>;", // 6
+    // 7-13: what stays: counts, multiples, gains, a figure against its most, a key chord, a price each
+    "const held = `Credit ×${count}`;",
+    'const sword = "Win ×2";',
+    "const entry = `${shares}× entry until ${date}`;",
+    "const gain = `+25/min · +25% from Fields`;",
+    "const store = `${held} / ${most}`;",
+    "const keys = `${modifiers}+${key}`;",
+    "const each = `${price} ${LORDS} each`;",
+    "const sent = `${resourceName(id)} ×${amount}`;", // 14: a count of a good
+    "const top = `calc(${y} + ${gap} + 2px)`;", // 15: CSS
+    "const log = `${name}=${value}`;", // 16: a log's field
+  ].join("\n");
+  assert.deepEqual(
+    scanSource(source, "/repo/apps/game/src/ui/features/probe/probe.tsx", rules).map(
+      ({ category, line }) => `${line} ${category}`,
+    ),
+    [
+      "1 voice: A number, never a formula",
+      "2 number.formula",
+      "4 voice: A number, never a formula",
+      "5 voice: A number, never a formula",
+      "6 number.formula",
+    ],
+  );
+});

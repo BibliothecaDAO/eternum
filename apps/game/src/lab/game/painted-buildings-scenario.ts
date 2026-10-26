@@ -9,6 +9,8 @@ import {
 import type { LabFact, LabScenario } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
 
+const GUARD_PRECISION = 1_000_000_000n;
+
 /** A built Kingdom and its nearby sites, using the game's own board, map and placement controls. */
 export const paintedBuildingsScenario = (): LabScenario => {
   const game = spireScenario();
@@ -122,9 +124,17 @@ export const paintedBuildingsScenario = (): LabScenario => {
     ({ col, row }) =>
       !occupied.has(`${col},${row}`) && !neighbors.some((neighbor) => neighbor.col === col && neighbor.row === row),
   );
-  for (const [index, category] of [StructureType.Camp, StructureType.Camp, StructureType.Rift].entries()) {
+  // Frontier's sites as its contracts make them: nobody's, guarded, each with its expedition site. A weak camp the army
+  // beats, a strong one it does not, and a rift.
+  const army = [...game.store.rows("ExplorerTroops")][0];
+  for (const [index, { category, guard }] of [
+    { category: StructureType.Camp, guard: 300n },
+    { category: StructureType.Camp, guard: 4_000n },
+    { category: StructureType.Rift, guard: 1_600n },
+  ].entries()) {
     const position = sitePlots[index];
     const entityId = 711 + index;
+    const count = String(guard * GUARD_PRECISION);
     facts.push(
       {
         model: "Structure",
@@ -132,8 +142,8 @@ export const paintedBuildingsScenario = (): LabScenario => {
         value: wire({
           ...realm,
           entity_id: entityId,
-          owner: index === 0 ? game.player : "0x222",
-          base: { ...realm.base, category, level: 0 },
+          owner: "0x0",
+          base: { ...realm.base, category, level: 0, troop_max_guard_count: 1 },
         }),
       },
       {
@@ -149,23 +159,32 @@ export const paintedBuildingsScenario = (): LabScenario => {
           is_structure: true,
         },
       },
-    );
-    if (category === StructureType.Rift) {
-      facts.push({
+      {
         model: "ExpeditionSite",
         key: `0x1ac${index}2`,
         value: {
           game_id: 1,
           entity_id: entityId,
           category,
-          initial_guard_count: "0",
+          initial_guard_count: count,
           alt: false,
           col: position.col,
           row: position.row,
           clear: null,
         },
-      });
-    }
+      },
+      {
+        model: "Guard",
+        key: `0x1ac${index}3`,
+        value: wire({
+          game_id: 1,
+          structure_id: entityId,
+          slot: 0,
+          troops: { ...army.troops, count },
+          destroyed_tick: 0,
+        }),
+      },
+    );
   }
   game.store.applyFacts(facts as never);
   return game;

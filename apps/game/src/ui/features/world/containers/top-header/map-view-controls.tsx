@@ -1,6 +1,7 @@
 import { StructureType, structureName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudPill, HudTabs } from "@/ui/design-system/kit/hud-elements";
+import { WORLD } from "@/ui/design-system/kit/words";
 
 interface MapViewControlsProps {
   compact: boolean;
@@ -57,7 +58,7 @@ const MapViewSwitch = ({
             disabled: !canOpenLocal,
             title: canOpenLocal ? undefined : "Select a structure to open its realm view",
           },
-          { key: "world", label: "World" },
+          { key: "world", label: WORLD },
         ]}
         size="sm"
         value={isLocalView ? "realm" : "world"}

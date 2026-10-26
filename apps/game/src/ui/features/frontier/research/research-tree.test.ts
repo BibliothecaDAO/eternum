@@ -30,7 +30,7 @@ describe("the castle's tree as the contract rules it", () => {
     expect(why(EARLY_REALM, "row-0")).toBe("Essence 300 / 1,000");
     expect(why(EARLY_REALM, "row-1")).toBe("Build a Workshop");
     // A training building can only stand once the Barracks row is rare.
-    expect(why(EARLY_REALM, "row-4")).toBe("Barracks Rare first");
+    expect(why(EARLY_REALM, "row-4")).toBe("Barracks III first");
     expect(why(EARLY_REALM, "reach-2")).toBe("Ethereal I first");
     expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(false);
   });
@@ -38,7 +38,7 @@ describe("the castle's tree as the contract rules it", () => {
   it("locks a tier whose labor the castle's store cannot hold, naming the level that holds it", () => {
     // Barracks epic costs 24,000 labor; a City's labor store holds 18,000, a Kingdom's 50,000.
     expect(node(MID_REALM, "row-2").state).toBe("locked");
-    expect(why(MID_REALM, "row-2")).toBe("Labor store 18,000 / 24,000 · a Kingdom holds it");
+    expect(why(MID_REALM, "row-2")).toBe("Labor storage 18,000 / 24,000 · a Kingdom holds it");
   });
 
   it("opens the training rows once the Barracks is rare, and prices each next tier from the game's prices", () => {
@@ -50,7 +50,7 @@ describe("the castle's tree as the contract rules it", () => {
       { essence: 12_000, labor: 8_000 },
     ]);
     expect(node(MID_REALM, "shrine").state).toBe("done");
-    expect(node(MID_REALM, "row-2").gate).toEqual({ tier: "Rare", met: true });
+    expect(node(MID_REALM, "row-2").gate).toEqual({ name: "Barracks III", met: true });
     expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
   });
 
@@ -65,6 +65,17 @@ describe("the castle's tree as the contract rules it", () => {
       ["Trolls", "0%", "+20%"],
       ["Rifts", "+10%", "+30%"],
       ["Beasts", "0%", "+20%"],
+    ]);
+  });
+
+  it("says what a finished Farm's picks give, read from its two sides", () => {
+    // Legendary Farm: three Fields picks (+75% wheat) and one Granary pick (+50% store).
+    const legendary = { ...MID_REALM, learned: { ...MID_REALM.learned, 0: { tier: 4, sides: [0, 1, 0, 0] } } };
+    const farm = node(legendary, "row-0");
+    expect([farm.state, farm.sides, farm.gives]).toEqual([
+      "done",
+      undefined,
+      { line: "Fields +75%", now: "Granary +50%" },
     ]);
   });
 });

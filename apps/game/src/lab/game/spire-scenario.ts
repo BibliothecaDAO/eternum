@@ -1,12 +1,12 @@
 import { installLabGame } from "@/ui/features/debug/kit-lab/fixture-game";
 import { SPIRE_DAY_NOW, spireDay } from "@/ui/features/frontier/spire-fixture";
 import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum";
-import { BiomeType, BiomeTypeToId, getHexesWithinRadius } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, getHexesWithinRadius, getNeighborHexes } from "@bibliothecadao/types";
 
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { nativeTilePackingConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
-import { nativeCommandBits } from "../../../../../contracts/l3/world-native/schema/commands.gen";
+import { frontierPreset } from "../../../../../config/source/frontier/native";
 import { LAB_GAME, LAB_GAME_ENDS_AT, type LabFact, type LabScenario } from "./lab-chain";
 
 const GRASS = BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
@@ -15,8 +15,9 @@ const wire = (value: unknown): unknown =>
   JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
 
 /**
- * The fixture's rules as Frontier plays them where the spire needs it: hour-long day units, so a day outlasts a
- * session; depth entry enabled (config/source/frontier/native.ts); and wheat the only food a step burns
+ * The fixture's rules as Frontier plays them: hour-long day units, so a day outlasts a session; Frontier's own commands
+ * and mode rules (config/source/frontier/native.ts), so the lab offers only what a Frontier game takes (an army fights a
+ * site's guard, never another army or a player's holding); and wheat the only food a step burns
  * (config/source/frontier/base.ts), since the realm holds no fish.
  */
 const frontierRules = (rules: NativeRows["SliceRules"]) => {
@@ -24,7 +25,8 @@ const frontierRules = (rules: NativeRows["SliceRules"]) => {
   return {
     ...wired,
     day_unit_seconds: 3600,
-    command_mask: String(rules.command_mask | BigInt(nativeCommandBits.EnterDepth)),
+    command_mask: String(frontierPreset.commandMask),
+    mode_rules: frontierPreset.modeRules,
     troop_stamina_config: { ...wired.troop_stamina_config, stamina_explore_fish_cost: 0, stamina_travel_fish_cost: 0 },
   };
 };
@@ -103,4 +105,16 @@ export const spireScenario = (): LabScenario => {
       ];
     },
   };
+};
+
+/** A tile beside the one given, revealed and empty: where a lab game stands a second thing by the spire's army. */
+export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; row: number }) => {
+  const taken = new Set([...store.entries("TileOccupancy")].map(([, row]) => `${row.col},${row.row}`));
+  const open = getNeighborHexes(beside.col, beside.row).find(
+    (hex) =>
+      !taken.has(`${hex.col},${hex.row}`) &&
+      store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }),
+  );
+  if (!open) throw new Error("The lab finds no open tile beside the spire's army");
+  return { col: open.col, row: open.row };
 };

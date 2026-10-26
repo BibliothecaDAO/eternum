@@ -1,4 +1,4 @@
-import { formatAmount, formatCharge, formatDuration } from "@bibliothecadao/types";
+import { formatDuration, formatShort } from "@bibliothecadao/types";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
@@ -63,18 +63,18 @@ export const OrderBar = ({
     <>
       <HudPanel collapsible={false} bodyClassName="flex min-h-11 flex-wrap items-center justify-center gap-1.5">
         <CostChip icon="stamina" label={STAMINA} cost={stamina} after={(held) => `${held} → ${held - stamina.cost}`} />
-        <CostChip icon="wheat" label={WHEAT} cost={wheat} after={() => `−${formatCharge(wheat.cost)}`} />
+        <CostChip icon="wheat" label={WHEAT} cost={wheat} after={() => `−${formatShort(wheat.cost)}`} />
         {covered && kind === "explore" && revealYield !== null && (
           <RevealYield revealYield={revealYield} laborFits={laborFits} />
         )}
         {covered && kind === "explore" && (
           <HudChip>
-            {`+${formatAmount(xp)}`} {XP}
+            {formatShort(xp, { signed: true })} {XP}
           </HudChip>
         )}
         {covered && kind === "move" && (
           <HudChip icons={["move"]} label={MOVE}>
-            {formatAmount(tiles)}
+            {formatShort(tiles)}
           </HudChip>
         )}
       </HudPanel>
@@ -152,11 +152,15 @@ const CostChip = ({
 const RevealYield = ({ revealYield, laborFits }: { revealYield: number | undefined; laborFits: number | undefined }) =>
   revealYield !== undefined && laborFits !== undefined && laborFits < revealYield ? (
     <>
-      <HudChip icons={["essence"]} label={ESSENCE}>{`+${formatAmount(revealYield)}`}</HudChip>
-      <HudChip icons={["labor"]} label={LABOR} tone="bad">{`+${formatAmount(laborFits)}`}</HudChip>
+      <HudChip icons={["essence"]} label={ESSENCE}>
+        {formatShort(revealYield, { signed: true })}
+      </HudChip>
+      <HudChip icons={["labor"]} label={LABOR} tone="bad">
+        {formatShort(laborFits, { signed: true })}
+      </HudChip>
     </>
   ) : (
     <HudChip icons={["essence", "labor"]} label={`${ESSENCE}, ${LABOR}`}>
-      {revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
+      {formatShort(revealYield, { signed: true })}
     </HudChip>
   );

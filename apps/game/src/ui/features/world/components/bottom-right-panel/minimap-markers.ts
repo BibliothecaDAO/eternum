@@ -2,7 +2,7 @@ import { configManager, getExplorerOwner } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import type { FactView } from "@/sync/fact-views";
 import { arePlayersAllied, watchedSide } from "@/utils/entity-ownership";
-import { mineMeaning, structureMeaning, realmMarkerMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { mineMeaning, readStructureMeaning, realmMarkerMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import type { MarkerOwner } from "@/ui/design-system/hex-marker";
 export interface MinimapMarker {
@@ -11,7 +11,18 @@ export interface MinimapMarker {
   value?: string;
 }
 export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
-  models: ["Structure", "ExplorerTroops", "GuildMember", "PlayerEntry", "BlitzRoster"],
+  models: [
+    "Structure",
+    "ExplorerTroops",
+    "GuildMember",
+    "PlayerEntry",
+    "BlitzRoster",
+    "GameRegistry",
+    "ExpeditionSite",
+    "SliceRules",
+    "SettlementRules",
+    "DepthRules",
+  ],
   read: (store, viewer) => {
     const game = configManager.getActiveGameId();
     const ownership = (owner: bigint): MarkerOwner => {
@@ -36,7 +47,7 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
             ? "map-village"
             : category === StructureType.Mine
               ? mineMeaning(row.metadata.mine_kind)
-              : structureMeaning(category);
+              : readStructureMeaning(store, row);
       markers.set(String(row.entity_id), {
         name,
         owner: ownership(row.owner),

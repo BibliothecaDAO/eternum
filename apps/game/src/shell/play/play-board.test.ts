@@ -78,15 +78,19 @@ describe("the lead: the one gold verb, first match wins", () => {
       facts({ games: [withRealm(frontier)], blitz: [gameRow(7, "spectate")] }),
       "frontier resume",
     ],
-    ["a season over and unseen: Results", facts({ games: [frontier, endedSeason] }), "frontier results"],
     [
-      "a Blitz of theirs finished and unseen: Results, as for a season",
-      facts({ games: [frontier], finished: [finishedBlitz] }),
+      "a season over and unseen, with no season live: Results",
+      facts({ games: [endedSeason], blitz: [gameRow(7, "spectate")] }),
+      "frontier results",
+    ],
+    [
+      "a Blitz of theirs finished and unseen, with no season to play: Results",
+      facts({ finished: [finishedBlitz], blitz: [gameRow(7, "spectate")] }),
       "blitz results",
     ],
     [
-      "results already opened on this device: Play the live season",
-      facts({ games: [frontier, endedSeason], seenResults: new Set([gameKey(endedSeason)]) }),
+      "no realm in the live season, with a result unseen: Play the season first, as with no result",
+      facts({ games: [frontier, endedSeason], finished: [finishedBlitz] }),
       "frontier play",
     ],
     ["signed in with no realm: Play", facts({ games: [frontier] }), "frontier play"],
@@ -105,6 +109,12 @@ describe("the lead: the one gold verb, first match wins", () => {
     ["nothing live or scheduled: no lead", facts({}), "none"],
   ])("%s", (_case, input, lead) => {
     expect(leadOf(input)).toBe(lead);
+  });
+
+  it("keeps an unseen result under the season to play in its age's column, never off the board", () => {
+    const board = playBoard(facts({ games: [frontier], finished: [finishedBlitz], blitz: [gameRow(7, "spectate")] }));
+    expect(board.lead?.mode).toBe("frontier");
+    expect(board.ages.blitz.map((item) => `${item.when} ${item.verb}`)).toEqual(["now watch", "done results"]);
   });
 
   it("opens a seated game still being prepared on its lobby, and offers Enter once it is ready", () => {

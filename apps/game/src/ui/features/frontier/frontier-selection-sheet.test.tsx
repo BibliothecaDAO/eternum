@@ -32,7 +32,13 @@ vi.mock("./build/build-sheet", () => ({ BuildSheet: () => null, useOpenPlot: () 
 vi.mock("./sites/map-site-card", () => ({ MapSiteCard: () => null, useSelectedMapSite: () => null }));
 vi.mock("./upgrade/castle-upgrade", () => ({ CastleUpgrade: () => null, useKeepSelected: () => null }));
 vi.mock("@/ui/features/military/chest/use-adjacent-own-explorer", () => ({ useAdjacentOwnExplorer: () => 201 }));
-vi.mock("./research/selected-building", () => ({ useSelectedBuildingRow: () => null }));
+const { tapped } = vi.hoisted(() => ({
+  tapped: { current: null as { category: number; innerCol: number; innerRow: number } | null },
+}));
+vi.mock("./research/selected-building", () => ({ useTappedBuilding: () => tapped.current }));
+vi.mock("./building/building-card", () => ({
+  BuildingCard: ({ building }: { building: { category: number } }) => <div data-building-card={building.category} />,
+}));
 
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -41,15 +47,16 @@ import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store"
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { onChestOpenRequest } from "@/three/scenes/worldmap-chest-open-request";
 import { ChestOpenings } from "@/ui/features/military/chest/chest-openings";
-import { campBeside, reloadSiteFacts, SITE, SITE_TILE } from "./sites/site-fixture";
+import { campBeside, otherArmyAt, reloadSiteFacts, SITE, SITE_TILE } from "./sites/site-fixture";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
+  configManager,
   expeditionSpireTile,
   readExpeditionRules,
   setBlockTimestampSource,
   setEntityNameLocalStorage,
 } from "@bibliothecadao/eternum";
-import { getNeighborHexes, siteName, TileOccupier } from "@bibliothecadao/types";
+import { BuildingType, getNeighborHexes, siteName, TileOccupier } from "@bibliothecadao/types";
 import { transferArmies, TRANSFER_TAPPED } from "./army/transfer-fixture";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useOnePanel } from "./hud/one-panel";
@@ -212,6 +219,39 @@ describe("Frontier's selection sheet", () => {
     expect(sheetFor(null)).toBeNull();
     expect(sheetFor(TileOccupier.ExplorerKnightT1)).toBeNull();
     useUIStore.getState().selectOnMap(null);
+  });
+
+  it("opens an attack card on another player's army only where the game takes an army's attack on another", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const enemySheet = (battle: boolean) => {
+      const { store } = campBeside();
+      otherArmyAt(store, 4, 5);
+      const enabled = configManager.isCommandEnabled.bind(configManager);
+      const spy = vi
+        .spyOn(configManager, "isCommandEnabled")
+        .mockImplementation((command) => (command === "Battle" ? battle : enabled(command)));
+      tiles.current = [{ occupierType: TileOccupier.ExplorerKnightT1, occupierId: 301, hexCoords: { col: 4, row: 5 } }];
+      useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 4, row: 5 } });
+      const host = document.createElement("div");
+      const root = createRoot(host);
+      act(() =>
+        root.render(
+          <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+            <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
+          </GameProvider>,
+        ),
+      );
+      const sheet = host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
+      act(() => root.unmount());
+      spy.mockRestore();
+      useUIStore.getState().selectOnMap(null);
+      tiles.current = [];
+      return sheet;
+    };
+
+    // Where the game leaves Battle out, as Frontier's preset does, the contract would refuse the attack: no card offers it.
+    expect(enemySheet(false)).toBeNull();
+    expect(enemySheet(true)).toBe("Army");
   });
 });
 
@@ -459,9 +499,9 @@ it.each([
       tile: { col: 4, row: 5 },
       site,
       guardIdentity: { name, art },
-      verdict: "guard-holds",
+      verdict: "army-lost",
       armyArt: "knight-t1",
-      army: { before: 1_000, after: 694 },
+      army: { before: 1_000, after: 0 },
       guard: { before: 1_000, after: 572 },
       gained: null,
     });
@@ -499,9 +539,9 @@ it("opens a new pick's own card at once over a fight's result, which stands only
     tile: { col: 4, row: 5 },
     site: "Camp",
     guardIdentity: { name: "Troll", art: "beast-troll" },
-    verdict: "guard-holds",
+    verdict: "army-lost",
     armyArt: "knight-t1",
-    army: { before: 1_000, after: 694 },
+    army: { before: 1_000, after: 0 },
     guard: { before: 1_000, after: 572 },
     gained: null,
   });
@@ -546,7 +586,7 @@ it("opens a new pick's own card at once over a fight's result, which stands only
 
 it("the map's actual transfer selection shows the survivor before the player confirms", async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  const store = transferArmies();
+  const store = transferArmies(100, 0);
   useAccountStore.setState({ account: { address: "0x111" } as never });
   tiles.current = [];
   useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: TRANSFER_TAPPED });
@@ -569,14 +609,23 @@ it("the map's actual transfer selection shows the survivor before the player con
       ),
     );
     expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Transfer troops");
-    expect(host.textContent).toContain("Army 1 survives at (41, 12) · slot 1");
-    expect(host.textContent).toContain("7 stamina after merging");
-    expect(host.textContent).toContain("Army 2’s XP and upgrades are not carried over");
+    // The cards say it: Army 1 leaves, its 200 XP lost (100 unspent, 100 in an upgrade) struck out; Army 2 stays with
+    // the stamina the merge leaves it.
+    expect(host.querySelector("s")?.textContent).toBe("200 XP");
+    expect(host.textContent).toContain("100/120→7");
     expect(swap).not.toHaveBeenCalled();
-    const confirm = [...host.querySelectorAll("button")].find((button) => button.textContent === "Merge into Army 1")!;
+    const confirm = [...host.querySelectorAll("button")].find((button) => button.textContent === "Merge into Army 2")!;
     await act(async () => confirm.click());
+    expect(swap).not.toHaveBeenCalled();
+    // The second press says what happens, and no sentence stands over the cards.
+    expect(host.querySelector(".ui-notice")).toBeNull();
+    expect(host.querySelector("s")?.textContent).toBe("200 XP");
+    const final = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Lose 200 XP, merge into Army 2",
+    )!;
+    await act(async () => final.click());
     expect(swap).toHaveBeenCalledWith(
-      expect.objectContaining({ from_explorer_id: 202, to_explorer_id: 201, count: 500_000_000_000 }),
+      expect.objectContaining({ from_explorer_id: 201, to_explorer_id: 202, count: 600_000_000_000 }),
     );
   } finally {
     act(() => root.unmount());
@@ -584,4 +633,27 @@ it("the map's actual transfer selection shows the survivor before the player con
     useUIStore.getState().selectOnMap(null);
     useAccountStore.setState({ account: null });
   }
+});
+
+it("opens a building tapped on the realm's board as its own card, never the Research page", () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const { store } = campBeside();
+  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+  tapped.current = { category: BuildingType.ResourceWheat, innerCol: 11, innerRow: 10 };
+  const onResearch = vi.fn();
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  act(() =>
+    root.render(
+      <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+        <FrontierSelectionSheet realm={realm} onResearch={onResearch} />
+      </GameProvider>,
+    ),
+  );
+  expect(host.querySelector("[data-building-card]")?.getAttribute("data-building-card")).toBe(
+    String(BuildingType.ResourceWheat),
+  );
+  expect(onResearch).not.toHaveBeenCalled();
+  act(() => root.unmount());
+  tapped.current = null;
 });

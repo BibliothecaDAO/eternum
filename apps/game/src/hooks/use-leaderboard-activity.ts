@@ -4,6 +4,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { requireShard } from "@bibliothecadao/eternum/game-client";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
+import { useLatest } from "@/hooks/use-latest";
 import { getActiveGame } from "@/runtime/world";
 import { fetchLeaderboardActivityBreakdowns } from "@/services/leaderboard/player-activity-breakdown-service";
 
@@ -29,16 +30,19 @@ export function useLeaderboardActivity() {
 }
 
 // Herald commits a head's history before it publishes the head, so a points change is read at the next confirmed one.
+// The head is followed in the store, not rendered: it comes about once a second, and the panel shows nothing of it.
 function useRefetchAfterPointsChange(refetch: () => Promise<unknown>) {
   const pointsRevision = useNativeRevision(["PlayerPoints"]);
-  const confirmedBlock = useConnectionStore((state) => state.lastConfirmedBlock);
+  const latest = useLatest({ pointsRevision, refetch });
   const fetchedAtRevision = useRef(pointsRevision);
-  const lastConfirmedBlock = useRef(confirmedBlock);
   useEffect(() => {
-    if (confirmedBlock === lastConfirmedBlock.current) return;
-    lastConfirmedBlock.current = confirmedBlock;
-    if (pointsRevision === fetchedAtRevision.current) return;
-    fetchedAtRevision.current = pointsRevision;
-    void refetch();
-  }, [confirmedBlock, pointsRevision, refetch]);
+    const unsubscribe = useConnectionStore.subscribe((state, previous) => {
+      if (state.lastConfirmedBlock === previous.lastConfirmedBlock) return;
+      const { pointsRevision, refetch } = latest.current;
+      if (pointsRevision === fetchedAtRevision.current) return;
+      fetchedAtRevision.current = pointsRevision;
+      void refetch();
+    });
+    return unsubscribe;
+  }, [latest]);
 }

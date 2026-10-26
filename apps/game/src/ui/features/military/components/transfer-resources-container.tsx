@@ -394,14 +394,9 @@ export const TransferResourcesContainer = ({
       // Selected part is capped by the remaining space in the bar after current load
       selectedPercentageForBar = Math.max(0, Math.min(rawSelectedRatio, 100 - capacityPercentageForBar));
     }
-    // If maxCapacityKg is 0, selectedPercentageForBar remains 0.
-    // This is intentional: selected items cannot visually fill a zero-capacity container's bar.
-    // The text fields (Selected, Remaining) will convey the amounts and zero capacity state.
+    // If maxCapacityKg is 0, selectedPercentageForBar remains 0: selected items cannot fill a zero-capacity bar.
 
     const totalAfterSelectionPercentage = capacityPercentageForBar + selectedPercentageForBar;
-
-    // Prevent available capacity from being negative in display
-    const displayAvailableCapacityKg = Math.max(0, availableCapacityKg);
 
     return (
       <div className="p-3 border border-hud-line rounded-md bg-hud-well">
@@ -448,30 +443,6 @@ export const TransferResourcesContainer = ({
               </div>
             )}
           </div>
-
-          {/* Detailed Breakdown */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-hud-body">
-            <div>
-              <span className="text-hud-accent">Current Load:</span>
-              <span className="float-right text-hud-ink">{formatExact(currentLoadKg)} kg</span>
-            </div>
-            <div>
-              <span className="text-hud-warn">Selected:</span>
-              <span className="float-right text-hud-ink">{formatExact(selectedResourcesWeightKg)} kg</span>
-            </div>
-            <div>
-              <span className="text-hud-accent">After Transfer:</span>
-              <span
-                className={`float-right ${currentLoadKg + selectedResourcesWeightKg > maxCapacityKg ? "text-hud-bad" : "text-hud-ink"}`}
-              >
-                {formatExact(currentLoadKg + selectedResourcesWeightKg)} kg
-              </span>
-            </div>
-            <div>
-              <span className="text-hud-good">Remaining:</span>
-              <span className="float-right text-hud-ink">{formatExact(displayAvailableCapacityKg)} kg</span>
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -479,7 +450,6 @@ export const TransferResourcesContainer = ({
 
   const renderResourceCard = (resource: (typeof availableResources)[number]) => {
     const isSelected = selectedResources.some((r) => r.resourceId === resource.resourceId);
-    const resourceWeight = resource.weightKg;
     const displayAmount = divideByPrecision(resource.amount);
 
     return (
@@ -498,8 +468,6 @@ export const TransferResourcesContainer = ({
         </div>
 
         <div className="flex items-center text-hud-body text-hud-accent mb-2 gap-2">
-          <span>{resourceWeight} kg per unit</span>
-          <span className="text-hud-cue">•</span>
           <span>{formatExact(displayAmount)} available</span>
         </div>
 

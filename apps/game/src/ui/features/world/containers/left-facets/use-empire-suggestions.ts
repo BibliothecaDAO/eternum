@@ -30,10 +30,11 @@ const ACTION_ICONS: Record<EmpireSuggestionAction, IconMeaning> = {
   "build-wheat": "farm",
   "build-wood": "wood",
   "build-worker-hut": "workers-hut",
+  "deploy-army": "deploy",
   upgrade: "upgrade",
 };
 
-/** The realms' next steps in the order their kind comes first: a level-up, a hut, then the order's buildings. */
+/** The realms' next steps in the order their kind comes first: a level-up, a hut, the order's buildings, its army. */
 const compareSuggestionDrafts = (left: BlitzSuggestionDraft, right: BlitzSuggestionDraft) =>
   left.priority - right.priority;
 
@@ -55,7 +56,8 @@ const resolveBlitzActivity = ({
   return isBlitzWorld && isMainPhase && !gameOver;
 };
 
-const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestion => {
+/** A step as the HUD draws it: its painting in place of its rank among the realms' steps. */
+export const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestion => {
   const { priority, ...suggestion } = draft;
   void priority;
 
@@ -67,7 +69,7 @@ const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestion => {
 
 /**
  * Every realm's next step in a running Blitz (core's buildBlitzRealmSuggestions on the default build order): only a
- * step that can be submitted now, by the same build path the construction window uses.
+ * step that can be taken now, a build by the same path the construction window uses.
  */
 export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const {

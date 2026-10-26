@@ -3,7 +3,7 @@ import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { formatCharge, formatExact, formatFigure, resourceName, structureName } from "@bibliothecadao/types";
+import { formatExact, formatFigure, formatGain, resourceName, structureName } from "@bibliothecadao/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -314,7 +314,7 @@ const LocalTilePanel = () => {
   }
 
   const populationChips: Array<{ key: string; label: string }> = [];
-  if (populationCost !== 0) populationChips.push({ key: "cost", label: `Cost +${formatCharge(populationCost)}` });
+  if (populationCost !== 0) populationChips.push({ key: "cost", label: `Cost ${formatGain(populationCost)}` });
   if (populationCapacity !== 0)
     populationChips.push({ key: "cap", label: `Capacity +${formatExact(populationCapacity)}` });
 

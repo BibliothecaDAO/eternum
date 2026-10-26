@@ -1,26 +1,27 @@
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { formatExact, formatFigure, formatShort, StructureType } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudMeter, HudPortrait, HudRarity } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudMeter, HudPortrait, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY_DETAIL,
   BACK,
   RESEARCH_TREE,
   STAMINA,
-  TIER_WORDS,
+  tierNumeral,
   TROOPS,
   UPGRADING,
   XP,
 } from "@/ui/design-system/kit/words";
-import { formatAmount, formatExact, formatFigure } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 import { FullIn } from "../full-in";
 import type { ArmyView, AttributeKey, AttributeView, ScoutKind } from "./army-detail";
 
 const KINDS: { key: ScoutKind; icon: IconMeaning }[] = [
-  { key: "camp", icon: "camp" },
-  { key: "rift", icon: "rift" },
-  { key: "beasts", icon: "beasts" },
+  { key: "camp", icon: structureMeaning(StructureType.Camp, "frontier") },
+  { key: "rift", icon: structureMeaning(StructureType.Rift, "frontier") },
+  { key: "beasts", icon: structureMeaning(StructureType.Beasts, "frontier") },
 ];
 
 /**
@@ -113,19 +114,19 @@ export const ArmyDetail = ({
 const StatusLine = ({ army }: { army: ArmyView }) => (
   <span className="flex flex-wrap items-center gap-1.5">
     <HudChip icons={["troops"]} label={TROOPS}>
-      {formatExact(army.troops)}
+      {formatShort(army.troops)}
     </HudChip>
     {army.secondsToFull !== undefined && army.secondsToFull > 0 && <FullIn seconds={army.secondsToFull} />}
     {army.revealYield !== null && (
       <HudChip icons={["essence", "labor"]} label={ARMY_DETAIL.revealPaysLabel}>
-        {army.revealYield === undefined ? "—" : ARMY_DETAIL.revealPays(formatAmount(army.revealYield))}
+        {army.revealYield === undefined ? "—" : ARMY_DETAIL.revealPays(formatShort(army.revealYield))}
       </HudChip>
     )}
   </span>
 );
 
 /**
- * An attribute as a tile: its mark filling the frame, its name, its tier's pips and what it gives; its hover says what
+ * An attribute as a tile: its mark filling the frame, its name, its tier and what it gives; its hover says what
  * its next tier gives and costs, and a press opens its level-up.
  */
 const AttributeTile = ({ attribute, onOpen }: { attribute: AttributeView; onOpen: () => void }) => (
@@ -134,7 +135,7 @@ const AttributeTile = ({ attribute, onOpen }: { attribute: AttributeView; onOpen
     aria-label={`${attribute.name} ${attribute.now}`}
     data-tip={
       attribute.next
-        ? ARMY_DETAIL.nextTier(attribute.next.word, attribute.next.change, formatExact(attribute.next.xp))
+        ? ARMY_DETAIL.nextTier(tierNumeral(attribute.next.tier), attribute.next.change, formatExact(attribute.next.xp))
         : ARMY_DETAIL.legendary(attribute.name)
     }
     onClick={onOpen}
@@ -142,7 +143,7 @@ const AttributeTile = ({ attribute, onOpen }: { attribute: AttributeView; onOpen
   >
     <Icon name={attribute.mark} size={40} />
     <span className="text-hud-label text-hud-ink">{attribute.name}</span>
-    <HudRarity tier={attribute.level as 1 | 2 | 3 | 4 | 5} />
+    <HudTier tier={attribute.level} />
     <span className="text-center text-hud-label tabular-nums text-hud-good">{attribute.now}</span>
   </button>
 );
@@ -215,10 +216,15 @@ const Choice = ({
   >
     <Icon name={attribute.mark} size={32} />
     <span className="flex min-w-0 flex-1 flex-col">
-      <span className="text-hud-strong text-hud-ink">
-        {attribute.next
-          ? RESEARCH_TREE.step(attribute.name, attribute.next.word)
-          : ARMY_DETAIL.legendary(attribute.name)}
+      <span className="flex items-center gap-1.5 text-hud-strong text-hud-ink">
+        {attribute.next ? (
+          <>
+            {attribute.name}
+            <HudTierStep from={attribute.level} to={attribute.next.tier} />
+          </>
+        ) : (
+          ARMY_DETAIL.legendary(attribute.name)
+        )}
       </span>
       <span className="text-hud-label tabular-nums text-hud-good">{attribute.next?.change ?? attribute.now}</span>
     </span>
@@ -271,8 +277,9 @@ const LevelUpFoot = ({
   chosen.next ? (
     <div className="flex items-center gap-2 border-t border-hud-divider pt-3">
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-hud-body text-hud-ink">
-          {ARMY_DETAIL.from(chosen.name, TIER_WORDS[chosen.level - 1]!, chosen.next.word)}
+        <span className="flex items-center gap-1.5 text-hud-body text-hud-ink">
+          {chosen.name}
+          <HudTierStep from={chosen.level} to={chosen.next.tier} />
         </span>
         <span className={cn("text-hud-label tabular-nums", chosen.next.affordable ? "text-hud-muted" : "text-hud-bad")}>
           {chosen.next.affordable

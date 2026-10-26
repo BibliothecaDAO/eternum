@@ -1,0 +1,331 @@
+diff --git a/crates/forge-runner/src/lib.rs b/crates/forge-runner/src/lib.rs
+index 03b39e5..8b7b434 100644
+--- a/crates/forge-runner/src/lib.rs
++++ b/crates/forge-runner/src/lib.rs
+@@ -3,7 +3,7 @@ use crate::coverage_api::run_coverage;
+ use crate::forge_config::{ExecutionDataToSave, ForgeConfig};
+ use crate::running::{run_fuzz_test, run_test};
+ use crate::test_case_summary::TestCaseSummary;
+-use anyhow::{Result, bail};
++use anyhow::{Context, Result, bail};
+ use build_trace_data::save_trace_data;
+ use cairo_lang_sierra::program::{ConcreteTypeLongId, Function, TypeDeclaration};
+ use camino::Utf8PathBuf;
+@@ -69,6 +69,9 @@ pub fn maybe_save_trace_and_profile(
+         && execution_data_to_save.is_vm_trace_needed()
+     {
+         let name = sanitize_filename::sanitize(name.replace("::", "_"));
++        let trace_data = trace_data
++            .as_ref()
++            .context("Requested test trace was not collected")?;
+         let trace_path = save_trace_data(&name, trace_data)?;
+         if execution_data_to_save.profile {
+             // TODO(#3395): Use Ui spinner
+diff --git a/crates/forge-runner/src/running.rs b/crates/forge-runner/src/running.rs
+index a56a0ef..9b61d87 100644
+--- a/crates/forge-runner/src/running.rs
++++ b/crates/forge-runner/src/running.rs
+@@ -501,8 +501,7 @@ fn extract_test_case_summary(
+                 contracts_data,
+                 versioned_program_path,
+                 &backtrace_sources,
+-                trace_args,
+-                forge_config.output_config.gas_report,
++                &forge_config.output_config,
+             ),
+             RunResult::Error(run_error) => {
+                 let mut message = format!(
+diff --git a/crates/forge-runner/src/running/target.rs b/crates/forge-runner/src/running/target.rs
+index 32020b3..db8afc0 100644
+--- a/crates/forge-runner/src/running/target.rs
++++ b/crates/forge-runner/src/running/target.rs
+@@ -52,8 +52,10 @@ pub fn prepare_test_target(
+         .and_then(|info| info.executables.get("snforge_internal_test_executable"))
+         .unwrap_or(&default_executables);
+
+-    let (matched_cases, prefiltered_out_count) =
++    let (mut matched_cases, prefiltered_out_count) =
+         collect_matched_cases(executables, name_filter, partition_config);
++    matched_cases
++        .retain(|case| partition_config.is_in_partition(&sanitize_test_case_name(&case.name)));
+
+     if matched_cases.is_empty() {
+         return Ok(PrepareTestTargetResult {
+diff --git a/crates/forge-runner/src/scarb.rs b/crates/forge-runner/src/scarb.rs
+index 6d68f26..fba9a6f 100644
+--- a/crates/forge-runner/src/scarb.rs
++++ b/crates/forge-runner/src/scarb.rs
+@@ -1,8 +1,15 @@
+ use anyhow::Result;
+-use cairo_lang_sierra::program::VersionedProgram;
++use cairo_lang_sierra::debug_info::DebugInfo;
++use cairo_lang_sierra::program::{
++    Function, LibfuncDeclaration, Program, ProgramArtifact, Statement, TypeDeclaration, Version,
++};
+ use camino::Utf8Path;
+ use scarb_api::{metadata::PackageMetadata, test_targets_by_name};
+-use std::{fs, io::ErrorKind};
++use serde::Deserialize;
++use std::{
++    fs,
++    io::{BufReader, ErrorKind},
++};
+
+ use crate::package_tests::{TestTargetLocation, raw::TestTargetRaw};
+
+@@ -26,13 +33,10 @@ pub fn load_test_artifacts(
+         let target_file = format!("{target_name}.test.sierra.json");
+         let sierra_program_path = target_dir.join(target_file);
+
+-        match fs::read_to_string(&sierra_program_path) {
+-            Ok(value) => {
+-                let versioned_program = serde_json::from_str::<VersionedProgram>(&value)?;
+-
+-                let sierra_program = match versioned_program {
+-                    VersionedProgram::V1 { program, .. } => program,
+-                };
++        match fs::File::open(&sierra_program_path) {
++            Ok(file) => {
++                let sierra_program =
++                    serde_json::from_reader::<_, TestProgram>(BufReader::new(file))?.into_program();
+
+                 let test_target = TestTargetRaw {
+                     sierra_program,
+@@ -49,3 +53,65 @@ pub fn load_test_artifacts(
+
+     Ok(targets)
+ }
++
++#[derive(Deserialize)]
++struct TestProgram {
++    #[serde(rename = "version")]
++    _version: Version<1>,
++    type_declarations: Vec<TypeDeclaration>,
++    libfunc_declarations: Vec<LibfuncDeclaration>,
++    statements: Vec<Statement>,
++    funcs: Vec<Function>,
++    debug_info: Option<DebugInfo>,
++}
++
++impl TestProgram {
++    fn into_program(self) -> ProgramArtifact {
++        ProgramArtifact {
++            program: Program {
++                type_declarations: self.type_declarations,
++                libfunc_declarations: self.libfunc_declarations,
++                statements: self.statements,
++                funcs: self.funcs,
++            },
++            debug_info: self.debug_info,
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use cairo_lang_sierra::program::VersionedProgram;
++
++    #[test]
++    fn test_artifact_reader_preserves_program_and_debug_information() {
++        let value = serde_json::json!({
++            "version": 1,
++            "type_declarations": [{"id": {"id": 0, "debug_name": "felt252"}, "long_id": {"generic_id": "felt252", "generic_args": []}, "declared_type_info": null}],
++            "libfunc_declarations": [{"id": {"id": 0, "debug_name": "felt252_const<1>"}, "long_id": {"generic_id": "felt252_const", "generic_args": [{"Value": [1, [1]]}]}}],
++            "statements": [{"Return": [{"id": 0}]}],
++            "funcs": [{"id": {"id": 0, "debug_name": "test::one"}, "signature": {"param_types": [], "ret_types": [{"id": 0, "debug_name": "felt252"}]}, "params": [], "entry_point": 0}],
++            "debug_info": {"type_names": [], "libfunc_names": [], "user_func_names": [], "executables": {"snforge_internal_test_executable": [{"id": 0, "debug_name": "test::one"}]}, "annotations": {"test.example/v1": {"nested": [1, "value", null]}}}
++        });
++        let bytes = serde_json::to_vec(&value).unwrap();
++        let expected = serde_json::from_slice::<VersionedProgram>(&bytes)
++            .unwrap()
++            .into_v1()
++            .unwrap();
++        let actual = serde_json::from_reader::<_, TestProgram>(bytes.as_slice())
++            .unwrap()
++            .into_program();
++        assert_eq!(actual, expected);
++    }
++
++    #[test]
++    fn test_artifact_reader_rejects_unsupported_versions_and_incomplete_programs() {
++        for value in [
++            serde_json::json!({"version": 2, "type_declarations": [], "libfunc_declarations": [], "statements": [], "funcs": []}),
++            serde_json::json!({"version": 1, "type_declarations": []}),
++        ] {
++            assert!(serde_json::from_value::<TestProgram>(value).is_err());
++        }
++    }
++}
+diff --git a/crates/forge-runner/src/test_case_summary.rs b/crates/forge-runner/src/test_case_summary.rs
+index 95c2830..b644b30 100644
+--- a/crates/forge-runner/src/test_case_summary.rs
++++ b/crates/forge-runner/src/test_case_summary.rs
+@@ -2,8 +2,9 @@ use crate::backtrace::{
+     BacktraceSources, add_test_backtrace_footer, get_backtrace, is_backtrace_enabled,
+ };
+ use crate::build_trace_data::build_profiler_call_trace;
+-use crate::debugging::{TraceArgs, build_contracts_data_store, build_debugging_trace};
++use crate::debugging::{build_contracts_data_store, build_debugging_trace};
+ use crate::expected_result::{ExpectedPanicValue, ExpectedTestResult};
++use crate::forge_config::OutputConfig;
+ use crate::gas::check_available_gas;
+ use crate::gas::report::SingleTestGasInfo;
+ use crate::gas::stats::GasStats;
+@@ -101,7 +102,7 @@ pub struct Single;
+ impl TestType for Single {
+     type GasInfo = SingleTestGasInfo;
+     type TestStatistics = ();
+-    type TraceData = VersionedProfilerCallTrace;
++    type TraceData = Option<VersionedProfilerCallTrace>;
+ }
+
+ /// Summary of running a single test case
+@@ -381,11 +382,11 @@ impl TestCaseSummary<Single> {
+         contracts_data: &ContractsData,
+         versioned_program_path: &Utf8Path,
+         backtrace_sources: &BacktraceSources,
+-        trace_args: &TraceArgs,
+-        gas_report_enabled: bool,
++        output_config: &OutputConfig,
+     ) -> Self {
+         let name = test_case.name.clone();
+-        let trace_components = trace_args.to_components();
++        let trace_components = output_config.trace_args.to_components();
++        let gas_report_enabled = output_config.gas_report;
+         // `ContractsDataStore` is expensive to build and is needed only by gas report and debugging trace.
+         // Keep this lazy so normal test runs do not parse and extract contract artifacts for every test case.
+         let contracts_data_store = (gas_report_enabled || trace_components.is_some()).then(|| {
+@@ -398,6 +399,19 @@ impl TestCaseSummary<Single> {
+
+         let empty = ForkData::default();
+         let fork_data_ref = fork_data.as_ref().unwrap_or(&empty);
++        let profiler_trace = || {
++            output_config
++                .execution_data_to_save
++                .is_vm_trace_needed()
++                .then(|| {
++                    VersionedProfilerCallTrace::V1(build_profiler_call_trace(
++                        &call_trace,
++                        contracts_data,
++                        fork_data_ref,
++                        versioned_program_path,
++                    ))
++                })
++        };
+         let gas_info = SingleTestGasInfo::new(gas_used);
+         let gas_info = if gas_report_enabled {
+             gas_info.get_with_report_data(
+@@ -428,12 +442,7 @@ impl TestCaseSummary<Single> {
+                         test_statistics: (),
+                         gas_info,
+                         used_resources,
+-                        trace_data: VersionedProfilerCallTrace::V1(build_profiler_call_trace(
+-                            &call_trace,
+-                            contracts_data,
+-                            fork_data_ref,
+-                            versioned_program_path,
+-                        )),
++                        trace_data: profiler_trace(),
+                         debugging_trace,
+                     };
+                     check_available_gas(test_case.config.available_gas, summary)
+@@ -485,12 +494,7 @@ impl TestCaseSummary<Single> {
+                             test_statistics: (),
+                             gas_info,
+                             used_resources,
+-                            trace_data: VersionedProfilerCallTrace::V1(build_profiler_call_trace(
+-                                &call_trace,
+-                                contracts_data,
+-                                fork_data_ref,
+-                                versioned_program_path,
+-                            )),
++                            trace_data: profiler_trace(),
+                             debugging_trace,
+                         }
+                     } else {
+diff --git a/crates/forge/src/lib.rs b/crates/forge/src/lib.rs
+index 4be2424..4611d88 100644
+--- a/crates/forge/src/lib.rs
++++ b/crates/forge/src/lib.rs
+@@ -330,7 +330,7 @@ pub fn main_execution(ui: Arc<UI>) -> Result<ExitStatus> {
+             args.normalize();
+             check_requirements(false, &ui)?;
+
+-            let cores = resolve_thread_count(args.max_threads, &ui);
++            let cores = configure_test_threads(args.max_threads, &ui)?;
+             let rt = Builder::new_multi_thread()
+                 .max_blocking_threads(cores)
+                 .enable_all()
+@@ -347,7 +347,7 @@ pub fn main_execution(ui: Arc<UI>) -> Result<ExitStatus> {
+             Ok(ExitStatus::Success)
+         }
+         ForgeSubcommand::OptimizeInlining { args } => {
+-            let cores = resolve_thread_count(args.test_args.max_threads, &ui);
++            let cores = configure_test_threads(args.test_args.max_threads, &ui)?;
+             check_requirements(false, &ui)?;
+             optimize_inlining::optimize_inlining(&args, cores, &ui)
+         }
+@@ -385,8 +385,8 @@ fn check_requirements(output_on_success: bool, ui: &UI) -> Result<()> {
+     Ok(())
+ }
+
+-fn resolve_thread_count(max_threads: Option<NonZeroUsize>, ui: &UI) -> usize {
+-    match (available_parallelism(), max_threads) {
++fn configure_test_threads(max_threads: Option<NonZeroUsize>, ui: &UI) -> Result<usize> {
++    let cores = match (available_parallelism(), max_threads) {
+         (Ok(available_cores), Some(max_threads)) => {
+             let available = available_cores.get();
+             let max = max_threads.get();
+@@ -410,5 +410,11 @@ fn resolve_thread_count(max_threads: Option<NonZeroUsize>, ui: &UI) -> usize {
+             ));
+             1
+         }
++    };
++    if max_threads.is_some() {
++        rayon::ThreadPoolBuilder::new()
++            .num_threads(cores)
++            .build_global()?;
+     }
++    Ok(cores)
+ }
+diff --git a/crates/forge/src/run_tests/test_target.rs b/crates/forge/src/run_tests/test_target.rs
+index 6e58393..9ca27da 100644
+--- a/crates/forge/src/run_tests/test_target.rs
++++ b/crates/forge/src/run_tests/test_target.rs
+@@ -71,6 +71,7 @@ pub async fn run_for_test_target(
+             .then_some(tests.sierra_program.debug_info.as_ref())
+             .flatten(),
+     );
++    drop(tests.sierra_program);
+
+     // Shared across all test case tasks, so each contract's backtrace data is built once and reused.
+     let contract_backtrace_mapping = Arc::new(LazyContractBacktraceDataMapping::new());
+diff --git a/crates/forge/src/run_tests/workspace.rs b/crates/forge/src/run_tests/workspace.rs
+index efd1ffa..102b3d4 100644
+--- a/crates/forge/src/run_tests/workspace.rs
++++ b/crates/forge/src/run_tests/workspace.rs
+@@ -112,9 +112,6 @@ pub async fn execute_workspace(
+
+     let partitioning_config = get_partitioning_config(args, &ui, &packages, &artifacts_dir_path)?;
+
+-    // Spawn config passes for all packages before running any tests so that
+-    // compilation overlaps with test execution across packages.
+-    let mut all_package_args = Vec::with_capacity(packages.len());
+     for pkg in packages {
+         let cwd = env::current_dir()?;
+         env::set_current_dir(&pkg.root)?;
+@@ -127,13 +124,6 @@ pub async fn execute_workspace(
+             partitioning_config.clone(),
+             &ui,
+         )?;
+-        env::set_current_dir(&cwd)?;
+-        all_package_args.push(pkg_args);
+-    }
+-
+-    for pkg_args in all_package_args {
+-        let cwd = env::current_dir()?;
+-        env::set_current_dir(&pkg_args.package_root)?;
+
+         let result = run_for_package(
+             pkg_args,

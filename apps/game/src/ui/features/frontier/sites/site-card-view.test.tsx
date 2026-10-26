@@ -147,7 +147,9 @@ describe("a guarded site's card", () => {
     expect(card.querySelector('[data-tip="Knight"]')).not.toBeNull();
     expect(card.textContent).toContain("2,300");
     expect(card.querySelector('[aria-label="128 LORDS"]')).not.toBeNull();
-    expect(card.querySelector('[aria-label="Rare"]')).not.toBeNull();
+    // The chest's rarity is its word on its plate, never pips.
+    expect(card.querySelector(".ui-rarity")?.textContent).toBe("Rare");
+    expect(card.querySelectorAll(".ui-rarity i")).toHaveLength(0);
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
     expect(attack.disabled).toBe(false);
     expect(attack.dataset.kind).toBe("danger");
@@ -236,7 +238,7 @@ describe("a guarded site's card with no army chosen", () => {
     );
     const card = document.querySelector("section[aria-label='North Watch']")!;
     expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("RuinBasilisk1,100");
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("RuinBasilisk1.1K");
   });
 
   it("gives each army a row with the fight it would have, names the skull, and opens the attack on a tap", () => {
@@ -290,14 +292,16 @@ describe("a guarded site's card with no army chosen", () => {
       [...document.querySelectorAll(".ui-row")].find((candidate) =>
         candidate.querySelector("button")?.textContent?.startsWith(`${label}`),
       )!;
-    // Two attacks win it: the figures are the first one's, the troops it costs and the guard it leaves standing.
+    // Two attacks win it, counted beside the flag: the figures are the first one's, the troops it costs and the guard it
+    // leaves standing.
     expect(row("Army 1").querySelector('[data-icon="beast-dark-fey"]')).not.toBeNull();
-    expect(row("Army 1").textContent).toBe("Army 15,000 troops−456492");
-    expect(row("Army 1").querySelector('[aria-label="2"]')).not.toBeNull();
+    expect(row("Army 1").textContent).toBe("Army 15,000 troops×2−456492");
+    expect(row("Army 1").querySelector('[data-tip="Attacks"]')?.textContent).toBe("×2");
     expect(row("Army 2").textContent).toBe("Army 2154 troops−1541,028");
     expect(row("Army 2").querySelector('[data-tip="Would be lost"]')).not.toBeNull();
     // Out of reach: the army is still a choice, with no forecast to show and no dash in its place.
     expect(row("Army 3").textContent).toBe("Army 3600 troops");
+    expect(document.body.textContent).toContain("Pick an army to attack it");
     expect(document.querySelector("section[aria-label='Rift']")!.textContent).not.toContain("—");
     act(() => row("Army 1").querySelector("button")!.click());
     expect(onPick).toHaveBeenCalled();
@@ -399,10 +403,32 @@ describe("a cleared ruin's chest", () => {
     act(() => root.render(<RuinChestMoment tier={5} lords={640} xp={145} troopsLost={1_250} onClose={onClose} />));
     const moment = host.querySelector("button[aria-label='Ruin']")!;
     expect(moment.querySelector('[aria-label="640 LORDS"]')).not.toBeNull();
-    expect(moment.querySelector('[aria-label="Legendary"]')).not.toBeNull();
+    expect(moment.querySelector(".ui-rarity")?.textContent).toBe("Legendary");
     act(() => (moment as HTMLButtonElement).click());
     expect(onClose).toHaveBeenCalled();
   });
+});
+
+it("says where an army comes from when the realm has none out, in the place of the rows", () => {
+  act(() =>
+    root.render(
+      <SiteCardView
+        site="Camp"
+        army={null}
+        beast={undefined}
+        guard={1_100}
+        fight={undefined}
+        pay={null}
+        xp={undefined}
+        verb={null}
+        choices={[]}
+        onClose={() => {}}
+      />,
+    ),
+  );
+  expect(document.querySelectorAll(".ui-row")).toHaveLength(0);
+  expect(document.body.textContent).toContain("No army out: deploy one from the realm");
+  expect(document.body.textContent).not.toContain("Pick an army");
 });
 
 it("titles a single roaming Wraith by its species", () => {

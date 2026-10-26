@@ -24,12 +24,10 @@ const common: NativeRows["ArmyProgress"] = {
 const base = {
   sourceCount: 3,
   targetCount: 3,
-  sourceCap: 10,
   targetCap: 10,
   sourceProgress: common,
   targetProgress: common,
   rules,
-  requiresProgress: true,
 };
 
 describe("army merge choice", () => {
@@ -41,42 +39,43 @@ describe("army merge choice", () => {
       progressionValue({ ...common, xp: 0xffffffff, battle: 5, logistics: 5, scouting: 5, homecoming: 5 }, rules),
     ).toBe(4294973295);
   });
-  it("keeps the target on ties and the source when its spent or trained tiers outweigh the target", () => {
-    expect(explorerTransferPlan(base).sourceWins).toBe(false);
+  it.each([
+    [0, 0, false],
+    [0, 99, false],
+    [0, 100, false],
+    [99, 0, false],
+    [100, 0, true],
+    [199, 100, false],
+    [200, 100, true],
+  ])("confirms a first-tier gap: %s versus %s", (sourceXp, targetXp, confirmLoss) => {
     expect(
       explorerTransferPlan({
         ...base,
-        sourceProgress: { ...common, homecoming: 2 },
-        targetProgress: { ...common, xp: 99 },
-      }).sourceWins,
-    ).toBe(true);
-  });
-  it("allows a full merge under the winner's cap even when partial transfers would overflow the target", () => {
-    expect(explorerTransferPlan({ ...base, targetCap: 3, sourceProgress: { ...common, xp: 1 } })).toMatchObject({
-      maxAmount: 3,
-      partialMax: 0,
-      fullFits: true,
-      survivorCap: 10,
-    });
-  });
-  it("refuses an over-cap full merge while still allowing partial transfers into the target", () => {
-    expect(explorerTransferPlan({ ...base, sourceCap: 5, sourceProgress: { ...common, xp: 1 } })).toMatchObject({
-      maxAmount: 2,
-      partialMax: 2,
-      fullFits: false,
-      survivorCap: 5,
-    });
-  });
-  it("waits for Frontier progress and keeps target semantics in games without progress", () => {
-    expect(explorerTransferPlan({ ...base, targetProgress: undefined })).toMatchObject({ known: false, maxAmount: 0 });
-    expect(
-      explorerTransferPlan({
-        ...base,
-        targetProgress: undefined,
-        sourceProgress: undefined,
-        rules: undefined,
-        requiresProgress: false,
+        sourceProgress: { ...common, xp: sourceXp },
+        targetProgress: { ...common, xp: targetXp },
       }),
-    ).toMatchObject({ known: true, sourceWins: false, maxAmount: 3 });
+    ).toMatchObject({ known: true, confirmLoss, sourceValue: sourceXp });
+  });
+  it("counts spent tiers in the confirmation gap and follows the game's first-tier price", () => {
+    expect(explorerTransferPlan({ ...base, sourceProgress: { ...common, homecoming: 2 } }).confirmLoss).toBe(true);
+    expect(
+      explorerTransferPlan({ ...base, sourceProgress: { ...common, xp: 100 }, rules: { ...rules, uncommon_xp: 200 } })
+        .confirmLoss,
+    ).toBe(false);
+  });
+  it("refuses a full merge that exceeds the target cap even when the source has more progression", () => {
+    expect(explorerTransferPlan({ ...base, targetCap: 3, sourceProgress: { ...common, xp: 500 } })).toMatchObject({
+      partialMax: 0,
+      fullFits: false,
+    });
+    expect(explorerTransferPlan({ ...base, targetCap: 5 })).toMatchObject({ partialMax: 2, fullFits: false });
+    expect(explorerTransferPlan(base)).toMatchObject({ partialMax: 2, fullFits: true });
+  });
+  it("waits for both armies' progress", () => {
+    expect(explorerTransferPlan({ ...base, targetProgress: undefined })).toMatchObject({
+      known: false,
+      fullFits: false,
+      confirmLoss: false,
+    });
   });
 });

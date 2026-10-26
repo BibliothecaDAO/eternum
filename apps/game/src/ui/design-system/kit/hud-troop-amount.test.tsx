@@ -67,13 +67,21 @@ describe("the troop amount", () => {
     expect(amount.count()).toBe("1,200");
   });
 
-  it("says the count is out of what fits when fewer fit than are held, so Max and +500 read against that", () => {
-    // A guard of 1,000 into an army with room for 500: half the guard is not what Max or +500 measure.
+  it("says the count is out of what fits when fewer fit than are held, so Max reads against that", () => {
+    // A guard of 1,000 into an army with room for 500: half the guard is not what Max measures.
     const amount = mount(500, 1_000);
     expect(amount.text()).toContain("of 500 that fit");
-    amount.press("+500");
+    amount.press("Max");
     expect(amount.count()).toBe("500");
     expect(mount(1_000, 1_000).text()).not.toContain("that fit");
+  });
+
+  it("offers no +500 where 500 or fewer can go, since it would only be Max", () => {
+    const amount = mount(10);
+    expect(amount.button("+500")).toBeUndefined();
+    amount.press("Max");
+    expect(amount.count()).toBe("10");
+    expect(mount(501).button("+500")).toBeDefined();
   });
 });
 
@@ -133,18 +141,18 @@ describe("a typed amount, as the game has always read it", () => {
   });
 
   it.each(Object.entries(elements))(
-    "stays blank while cleared in the %s, reporting nothing, until it loses focus",
+    "is its least once cleared in the %s: said at once, blank while focused, never the amount it held",
     (_, render) => {
       const field = mountTyped(render);
       field.type("1,200");
-      const reports = field.reported.length;
       field.type("");
       expect(field.input().value).toBe("");
-      expect(field.reported).toHaveLength(reports);
+      expect(field.reported.at(-1)).toBe(0);
       act(() => {
         field.input().dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
       });
-      expect(field.input().value).toBe("1,200");
+      expect(field.input().value).toBe("0");
+      expect(field.reported.at(-1)).toBe(0);
     },
   );
 });

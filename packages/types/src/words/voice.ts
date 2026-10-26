@@ -72,6 +72,17 @@ export const VOICE_RULES: readonly VoiceRule[] = [
     forbidden: /\b[A-Z][a-z]+ #\d+/,
   },
   {
+    rule: "A number, never a formula",
+    instead:
+      'the one number a player gets; a hover may say why in a short line ("+25% from Fields"), never the sum behind it',
+    bad: "+25/min · 4 × +6.3/min (5 + 25% Fields)",
+    good: "+25/min",
+    // Two figures joined by ×, + or = between spaces (a template's ${…} reads as a figure), or a price's base: "4 × 6.3",
+    // "5 + 25%", "1 Wheat = 0.03 LORDS", "Base 400". A count ("Wheat ×900", "Win ×2", "4× entry"), a signed gain ("+25%"),
+    // a log's field (key=value) and CSS's calc() stay.
+    forbidden: /\d ?[×✕] [+−-]?\d|(?<!calc\([^)]*)\d \+ [+−]?\d|\d = [+−]?\d|\bBase \d/,
+  },
+  {
     rule: "Unknown is a dash",
     instead: "—, never 0 or blank, when a figure cannot be read",
     bad: "0 wheat (still loading)",

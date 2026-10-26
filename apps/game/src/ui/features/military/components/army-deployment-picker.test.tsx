@@ -99,13 +99,13 @@ describe("the shared deployment picker", () => {
     const button = (text: RegExp) => [...host.querySelectorAll("button")].find((each) => text.test(each.textContent!))!;
     const field = () => host.querySelector<HTMLInputElement>('input[inputmode="numeric"]')!;
 
-    // The amount: one field, out of the 420 knights on hand, +500 and Max; no line repeating it.
+    // The amount: one field, out of the 420 knights on hand, and Max; no line repeating it, and no +500, which would
+    // only be Max.
     expect(host.textContent).toContain("of 420");
     expect(host.textContent).not.toMatch(/Uses \d/);
-    // +500 adds 500, but never past the 420 on hand.
-    act(() => button(/^\+500$/).click());
+    expect(button(/^\+500$/)).toBeUndefined();
+    act(() => button(/^Max$/).click());
     expect(field().value).toBe("420");
-    expect(button(/^\+500$/).disabled).toBe(true);
     expect(button(/^Max$/).disabled).toBe(true);
     // Each knight takes two wheat: the cost is the line beside the one primary button in the window's foot, never on it.
     expect(button(/^Deploy/).closest(".ui-window__foot")).not.toBeNull();

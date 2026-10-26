@@ -3,7 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
-import { AUDIT_ADDRESS, UiUsageView } from "./ui-usage";
+import { STILLS_ADDRESS, UiUsageView, USAGE_ADDRESS } from "./ui-usage";
 
 const finding = (title: string, modes: string[], shot: string | null) => ({
   title,
@@ -58,11 +58,11 @@ const rows = () => [...host.querySelectorAll(".ui-usage-row h2")].map((row) => r
 
 it("lists the game's findings in the audit's rank, each beside its screenshot", async () => {
   const fetched = await open("/lab/data/usage?mode=blitz", JSON.stringify(AUDIT));
-  expect(fetched).toHaveBeenCalledWith(`${AUDIT_ADDRESS}/findings.json`);
+  expect(fetched).toHaveBeenCalledWith(USAGE_ADDRESS);
   expect(rows()).toEqual(["1 BurnCounted on chain", "3 RenameCounted on chain"]);
   expect([...host.querySelectorAll("img")].map((img) => img.getAttribute("src"))).toEqual([
-    `${AUDIT_ADDRESS}/burn.png`,
-    `${AUDIT_ADDRESS}/rename.png`,
+    `${STILLS_ADDRESS}/burn.png`,
+    `${STILLS_ADDRESS}/rename.png`,
   ]);
   expect(host.textContent).toContain("Burn evidence");
   expect(host.textContent).toContain("Explore 3,283");
@@ -76,5 +76,5 @@ it("shows Frontier's findings by default, saying when a finding has no screensho
 
 it("says where to link the audit when the server has none", async () => {
   await open("/lab/data/usage", "<!doctype html>");
-  expect(host.textContent).toContain("No usage audit on this server");
+  expect(host.textContent).toContain("No usage counts on this server");
 });

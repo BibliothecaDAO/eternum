@@ -1,4 +1,4 @@
-import { formatAmount, formatExact, LORDS } from "@bibliothecadao/types";
+import { formatExact, formatGain, LORDS, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { LABOR, REALMS } from "@/ui/design-system/kit/words";
@@ -27,13 +27,13 @@ export const LordsPurse = ({
     {[
       <span key="lords" className="flex items-center gap-1.5 tabular-nums">
         <SemanticIcon name="lords" size={26} />
-        {formatExact(lords)}
+        {formatShort(lords)}
       </span>,
       ...(gain === undefined
         ? []
         : [
             <span key="gain" className="tabular-nums text-hud-good">
-              +{formatExact(gain)}
+              {formatShort(gain, { signed: true })}
             </span>,
           ]),
     ]}
@@ -42,13 +42,14 @@ export const LordsPurse = ({
 
 /** The way to Realms, where a Realm is added and its labor claimed, wearing the labor they have waiting today. */
 export const RealmsChip = ({ labor, onOpen }: { labor: number; onOpen: () => void }) => (
-  <HudPill label={labor > 0 ? `${REALMS} +${formatAmount(labor)} ${LABOR}` : REALMS} onPress={onOpen}>
+  <HudPill label={labor > 0 ? `${REALMS} ${formatGain(labor)} ${LABOR}` : REALMS} onPress={onOpen}>
     {[
       <span key="labor" className="flex items-center gap-1 tabular-nums">
         <SemanticIcon name="realm" size={24} />
         {labor > 0 && (
           <>
-            <SemanticIcon name="labor" size={22} />+{formatAmount(labor)}
+            <SemanticIcon name="labor" size={22} />
+            {formatShort(labor, { signed: true })}
           </>
         )}
       </span>,

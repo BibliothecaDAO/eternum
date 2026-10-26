@@ -189,6 +189,12 @@ export const ROOMS: LabRoom[] = [
             "kit/reward-chests",
             load(() => import("../ui/features/debug/kit-lab/reward-chests-lab"), "RewardChestsLab"),
           ),
+          view(
+            "Frontier guards",
+            "/lab/kit/beast-icons",
+            "kit/beast-icons",
+            load(() => import("../ui/features/debug/kit-lab/beast-icons-lab"), "BeastIconsLab"),
+          ),
         ],
       },
       {
