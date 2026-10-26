@@ -1,4 +1,4 @@
-export const SCENES = ["Research", "Army", "Level up"] as const;
+export const SCENES = ["Research", "Army", "Level up", "Troops"] as const;
 export const OPTIONS = [
   {
     id: "a",
@@ -8,6 +8,7 @@ export const OPTIONS = [
     removes: "War hall, Supply yard, Scouts’ lodge and Hearth; their plots, population costs and separate build step.",
     tradeoff:
       "First rank costs 3,000 labor with no refund. Today a 3,000-labor building can be demolished for 1,500 back while keeping its training.",
+    troops: "Keep T1 / T2 / T3 as neutral troop-class chips. Gems measure upgrades; XP never changes a troop class.",
   },
   {
     id: "b",
@@ -17,6 +18,7 @@ export const OPTIONS = [
     removes: "The four training buildings, their four research rows, trained starts and the training unlock gate.",
     tradeoff:
       "The biggest cut, but no permanent investment in future armies. The observed median army still earns less than 50 XP.",
+    troops: "Keep T1 / T2 / T3 as neutral troop-class chips. Removing training does not remove troop classes.",
   },
   {
     id: "c",
@@ -26,6 +28,8 @@ export const OPTIONS = [
     removes: "Per-attribute XP prices and pip rows. Keeps all four buildings, their space and population costs.",
     tradeoff:
       "Keeps the longest path: a building is needed to improve its row, but demolition keeps training and refunds half its build labor.",
+    troops:
+      "Fold troop names into rarity: T1 → Common, T2 → Uncommon I, T3 → Rare II. Same rules, new names and colors.",
   },
 ] as const;
 export type OptionId = "today" | (typeof OPTIONS)[number]["id"];

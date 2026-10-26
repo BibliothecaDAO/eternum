@@ -279,6 +279,56 @@
   color: #efce8c;
   margin: 0;
 }
+.tree-troop-chip {
+  display: inline-flex;
+  padding: 2px 5px;
+  border: 1px solid #9a9d91;
+  border-radius: 4px;
+  color: #e0e1d9;
+  background: #313732;
+  font-size: 12px;
+}
+.tree-troop-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.tree-troop-surface {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid #565345;
+}
+.tree-tokens {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.tree-tokens > div {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid #555b4c;
+  border-radius: 8px;
+  padding: 10px 6px;
+  font-size: 11px;
+}
+.tree-tokens .tree-troop-name {
+  flex-wrap: wrap;
+}
+.tree-plate,
+.tree-transfer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.tree-transfer-row > span:last-child {
+  color: #c3baa9;
+  font-size: 10px;
+}
 @media (max-width: 650px) {
   .army-tree {
     padding: 20px 14px;

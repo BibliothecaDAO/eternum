@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useHudMode } from "@/hooks/use-hud-mode";
+import { HudTierChip } from "@/ui/design-system/kit/hud-elements";
 import {
   ATTRIBUTES,
   bonus,
@@ -47,6 +48,7 @@ export function ArmyTreeLab() {
       <section className="tree-intent" aria-label="Selected proposal">
         <h2>{option.summary}</h2>
         <p>{option.path}</p>
+        <p>{option.troops}</p>
       </section>
       <nav aria-label="Moment">
         {SCENES.map((item) => (
@@ -57,7 +59,9 @@ export function ArmyTreeLab() {
       </nav>
       <div className="tree-comparison">
         <figure>
-          <figcaption>T1/B1 rules · original gem draft I–V</figcaption>
+          <figcaption>
+            {scene === "Troops" ? "Current troop chips · Blitz examples" : "T1/B1 rules · original gem draft I–V"}
+          </figcaption>
           <img src={stillPath("today", scene)} alt={`Current rules: ${scene}`} />
         </figure>
         <figure>
@@ -90,6 +94,10 @@ export function ArmyTreeLab() {
           Proposed gains count trained ranks: Battle I adds 10%, II adds 8%, III adds 6%, IV adds 4%. Every point still
           buys one uncapped rank. All three proposals use the same 50 / 100 / 150… XP curve.
         </p>
+        <p className="tree-note">
+          Blitz deployments: T1 185 · T2 5 · T3 81. This sample does not establish why T2 was rare or justify removing
+          it. The troop naming choice can accompany any tree; C demonstrates the folded alternative.
+        </p>
       </section>
     </main>
   );
@@ -104,7 +112,83 @@ function Gem({ rank, today = false }: { rank: number; today?: boolean }) {
   );
 }
 
+function TroopMark({ option, tier }: { option: OptionId; tier: 1 | 2 | 3 }) {
+  if (option === "today") return <HudTierChip tier={tier} />;
+  if (option === "c") return <Gem rank={tier - 1} />;
+  return <span className="tree-troop-chip">T{tier}</span>;
+}
+
+function TroopName({ option, tier }: { option: OptionId; tier: 1 | 2 | 3 }) {
+  return (
+    <span className="tree-troop-name">
+      {option === "c" ? `${RANKS[tier - 1]} Knights` : "Knights"} <TroopMark option={option} tier={tier} />
+    </span>
+  );
+}
+
+function Troops({ option }: { option: OptionId }) {
+  return (
+    <>
+      <p className="tree-explain">Blitz examples · troop class is separate from an army’s Battle rank.</p>
+      <section className="tree-troop-surface">
+        <h2>Map tokens</h2>
+        <div className="tree-tokens">
+          {([1, 2, 3] as const).map((tier) => (
+            <div key={tier}>
+              <span>Army {tier}</span>
+              <TroopName option={option} tier={tier} />
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="tree-troop-surface">
+        <h2>Army plate</h2>
+        <div className="tree-plate">
+          <strong>Army 2 · 1,000</strong>
+          <TroopName option={option} tier={2} />
+        </div>
+        <div className="tree-plate">
+          <span>Battle</span>
+          <Gem rank={2} today={option === "today"} />
+        </div>
+        <p className="tree-explain">Battle upgrades change damage, never the troop class.</p>
+      </section>
+      <section className="tree-troop-surface">
+        <h2>Transfer troops</h2>
+        <p className="tree-explain">
+          Source: <TroopName option={option} tier={2} />
+        </p>
+        {([1, 2, 3] as const).map((tier) => (
+          <div className="tree-transfer-row" key={tier}>
+            <TroopName option={option} tier={tier} />
+            <span>{tier === 2 ? "Can reinforce" : "Different troop class"}</span>
+          </div>
+        ))}
+        <p className="tree-explain">Occupied targets need the same troop type and class. Empty targets accept any.</p>
+      </section>
+      <p className="tree-explain">
+        {option === "c"
+          ? "Common: no gem. Uncommon I is green; Rare II is blue. Troop classes stop at Rare; attribute ranks continue to Legendary."
+          : option === "today"
+            ? "Troop colors today: T1 blue · T2 green · T3 purple. These colors do not follow the rarity order."
+            : "A rectangular T chip identifies troop class. Colored numeral gems identify attribute, research and rarity upgrades."}
+      </p>
+    </>
+  );
+}
+
 function Capture({ option, scene }: { option: OptionId; scene: Scene }) {
+  if (scene === "Troops")
+    return (
+      <article data-tree-capture className="tree-capture">
+        <header>
+          <p className="eyebrow">One troop identity · three surfaces</p>
+          <h1>Troops and upgrades</h1>
+        </header>
+        <Troops option={option} />
+        <footer>Names change here; production, strength and transfer rules stay the same.</footer>
+      </article>
+    );
   const today = option === "today";
   const noTraining = option === "b";
   const ranks = today ? [2, 1, 0, 0] : noTraining ? [1, 1, 0, 0] : [2, 1, 1, 0];
@@ -128,7 +212,9 @@ function Capture({ option, scene }: { option: OptionId; scene: Scene }) {
       ) : (
         <>
           <div className="tree-strip">
-            <span>1,000 troops</span>
+            <span>
+              1,000 <TroopName option={option} tier={1} />
+            </span>
             <span>80 / 120 stamina</span>
           </div>
           <div className="tree-xp">

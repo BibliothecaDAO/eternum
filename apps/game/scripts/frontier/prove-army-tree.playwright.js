@@ -11,7 +11,7 @@ async (page) => {
   await fs.mkdir(artwork, { recursive: true });
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  const scenes = ["Research", "Army", "Level up"];
+  const scenes = ["Research", "Army", "Level up", "Troops"];
   const captures = [];
   await page.setViewportSize({ width: 440, height: 900 });
   for (const option of ["today", "a", "b", "c"]) {

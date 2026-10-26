@@ -50,6 +50,35 @@ it("preserves the exact point curve, trained cap and diminishing third-rank gain
   expect([gain(1, 0), gain(1, 2), bonus(1, 4)]).toEqual([20, 12, 56]);
   expect(bonus(0, 4, true)).toBe(100);
 });
+it("shows distinct and folded troop identities across tokens, plates and transfer targets", () => {
+  for (const option of ["today", "a", "b", "c"] as const) {
+    window.history.replaceState({}, "", `/lab/kit/army-tree?capture=Troops&option=${option}`);
+    act(() => root.render(<ArmyTreeLab />));
+    expect([...host.querySelectorAll("h2")].map((node) => node.textContent)).toEqual([
+      "Map tokens",
+      "Army plate",
+      "Transfer troops",
+    ]);
+    const rows = [...host.querySelectorAll(".tree-transfer-row")];
+    expect(rows.map((node) => node.lastElementChild?.textContent)).toEqual([
+      "Different troop class",
+      "Can reinforce",
+      "Different troop class",
+    ]);
+    if (option === "c") {
+      expect(rows.map((node) => node.querySelector(".tree-troop-name")?.textContent?.trim())).toEqual([
+        "Common Knights",
+        "Uncommon Knights I",
+        "Rare Knights II",
+      ]);
+      expect(rows[0]!.querySelector(".tree-gem")).toBeNull();
+    } else {
+      expect(
+        rows.map((node) => node.querySelector(option === "today" ? ".ui-chip" : ".tree-troop-chip")?.textContent),
+      ).toEqual(["T1", "T2", "T3"]);
+    }
+  }
+});
 it("has every still on disk in the dev-only artwork directory", () => {
   for (const option of ["today", "a", "b", "c"] as const)
     for (const scene of SCENES)
