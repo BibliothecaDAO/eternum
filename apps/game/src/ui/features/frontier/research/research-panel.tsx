@@ -216,11 +216,6 @@ const NodeChoice = ({
                   <span className="truncate text-hud-label tabular-nums text-hud-good">
                     {RESEARCH_TREE.step(option.now, option.next)}
                   </span>
-                  {option.output && (
-                    <span className="text-hud-label tabular-nums text-hud-muted">
-                      {RESEARCH_TREE.eachMakes(node.name, option.output)}
-                    </span>
-                  )}
                 </span>
               </button>
             ))}

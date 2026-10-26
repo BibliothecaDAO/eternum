@@ -1,5 +1,5 @@
-import { RESEARCH_TREE, researchBasis, STORE_MAKERS, withResearch } from "@/ui/design-system/kit/words";
-import { type BuildingOutput, buildingOutput } from "@/ui/shared/lib/building-output";
+import { RESEARCH_TREE, fromResearch, STORE_MAKERS } from "@/ui/design-system/kit/words";
+import { buildingOutput } from "@/ui/shared/lib/building-output";
 import { getBuildingQuantity, realmLearned } from "@bibliothecadao/eternum";
 import {
   nativeResearchConstants as research,
@@ -10,7 +10,6 @@ import {
 import {
   BuildingType,
   formatCount,
-  formatFigure,
   formatPercent,
   formatRate,
   RESOURCE_PRECISION,
@@ -66,40 +65,13 @@ export const researchShare = (
   return { side, picks, share: (picks * step) / 10_000 };
 };
 
-/**
- * What one building's output is made of with research, in its rate's own unit (a second from one a second up, else a
- * minute, as formatRate writes it): "5 + 25% Fields". None before a pick, where the rate is its base.
- */
-export const outputBasis = ({ base, total }: BuildingOutput, research: ResearchShare | undefined): string | undefined =>
-  research &&
-  researchBasis(formatFigure(Math.abs(total) >= 1 ? base : base * 60), formatPercent(research.share), research.side);
-
-/**
- * One building's output as a player reads it: its rate, and with research its basis ("+6.3/min (5 + 25% Fields)"), so
- * the boosted figure is never taken for the base and boosted again (player, 25 October).
- */
-export const outputLine = (output: BuildingOutput, research: ResearchShare | undefined): string => {
-  const basis = outputBasis(output, research);
-  return basis ? withResearch(formatRate(output.total), basis) : formatRate(output.total);
-};
-
-/** What one building of each make row's type makes now, by research row: "+6.3/min (5 + 25% Fields)". */
-export const eachBuildingMakes = (
-  store: NativeFactStore,
-  realm: NativeRows["Structure"],
-  learned: bigint,
-): Partial<Record<number, string>> =>
-  Object.fromEntries(
-    (Object.keys(MAKERS) as unknown as MadeResource[]).map((resource) => {
-      const { category, row } = MAKERS[Number(resource) as MadeResource];
-      const research = researchShare(store, realm, Number(resource) as MadeResource, learned);
-      return [row, outputLine(buildingOutput(store, realm, category, research?.picks ?? 0), research)];
-    }),
-  );
+/** The research reason for a building's rate, without repeating the calculation. */
+export const outputWhy = (research: ResearchShare | undefined): string | undefined =>
+  research && fromResearch(formatPercent(research.share, { signed: true }), research.side);
 
 /**
  * What makes a store's rate, line by line, so its parts add up to the rate the card shows: the buildings standing with
- * what each makes, and for labor the castle's own producer (player, 25 October: "+17" counted a castle no screen
+ * their combined production, and for labor the castle's own producer (player, 25 October: "+17" counted a castle no screen
  * showed). None where no building stands and no castle makes it. While the realm's research is unknown, what each
  * building makes is too: its line says how many stand and nothing more, never the unresearched rate.
  */
@@ -114,22 +86,23 @@ export const storeMakerLines = (
   const name = buildingName(category);
   const standing = formatCount(count, name, name.endsWith("s") ? name : `${name}s`);
   const lines =
-    count > 0 ? [learned === undefined ? standing : eachMakesLine(store, realm, resource, learned, standing)] : [];
+    count > 0 ? [learned === undefined ? standing : makersLine(store, realm, resource, learned, standing, count)] : [];
   if (resource === ResourcesIds.Labor) lines.push(STORE_MAKERS.castle(formatRate(castleLabor(store, realm))));
   return lines;
 };
 
-/** The buildings standing with what each makes under the realm's research: "3 Workshops · +5/min each (3.4 + …)". */
-const eachMakesLine = (
+/** The buildings standing with their combined production under the realm's research. */
+const makersLine = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   resource: MadeResource,
   learned: bigint,
   standing: string,
+  count: number,
 ): string => {
   const research = researchShare(store, realm, resource, learned);
   const each = buildingOutput(store, realm, MAKERS[resource].category, research?.picks ?? 0);
-  return STORE_MAKERS.buildings(standing, formatRate(each.total), outputBasis(each, research));
+  return STORE_MAKERS.buildings(standing, formatRate(each.total * count));
 };
 
 /** The castle's own labor a second: Labor's realm rate, which research never raises. */

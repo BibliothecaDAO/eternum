@@ -137,12 +137,11 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
   });
 });
 
-it("says on the Farm's make side what each Farm makes now, its base and its research share, and nothing on Granary", () => {
-  const withOutput = readResearchTree({ ...MID_REALM, eachMakes: { 0: "+6.3/min (5 + 25% Fields)" } });
+it("shows the chosen research shares without a production formula", () => {
   act(() =>
     root.render(
       <ResearchPanel
-        nodes={withOutput}
+        nodes={nodes}
         essence={MID_REALM.essence}
         labor={MID_REALM.labor}
         picked="row-0"
@@ -153,7 +152,7 @@ it("says on the Farm's make side what each Farm makes now, its base and its rese
       />,
     ),
   );
-  expect(button(/^Fields/)!.textContent).toContain("Each Farm: +6.3/min (5 + 25% Fields)");
+  expect(button(/^Fields/)!.textContent).toBe("Fields+25% → +50%");
   expect(button(/^Granary/)!.textContent).not.toContain("Each Farm");
 });
 

@@ -57,7 +57,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useGoToFrontierPlace } from "../frontier-home";
 import { readRealmPopulation } from "../realm/realm-population";
 import { exploreFix } from "../frontier-reveal-yield";
-import { outputBasis, outputLine } from "../production/store-makers";
+import { outputWhy } from "../production/store-makers";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { type BuildOption, PRODUCTS, readBuildOptions } from "./build-options";
 import { type BuildTile, BuildView } from "./build-view";
@@ -317,7 +317,7 @@ const buildingLine = (option: BuildOption): string => {
   const { effect } = option;
   const does =
     effect.kind === "produces"
-      ? makes(PRODUCTS[effect.resource].word, outputLine(effect.output, effect.research))
+      ? makes(PRODUCTS[effect.resource].word, formatRate(effect.output.total))
       : effect.kind === "trains"
         ? startsNewArmies(effect.attribute, option.tier === 1 ? undefined : tierNumeral(option.tier))
         : `${formatGain(effect.amount)} ${POPULATION}`;
@@ -335,7 +335,7 @@ const givesOf = ({ effect, tier }: BuildOption): BuildTile["gives"] =>
     ? {
         icon: PRODUCTS[effect.resource].icon,
         value: formatRate(effect.output.total),
-        basis: outputBasis(effect.output, effect.research),
+        basis: outputWhy(effect.research),
       }
     : effect.kind === "trains"
       ? tier === 1

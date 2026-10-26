@@ -39,7 +39,7 @@ export type BuildTile = {
   /** What the building does, in one line, on the card's tooltip. */
   tip: string;
   /**
-   * What one more gives: a production rate with its research basis, population, or a training tier gem.
+   * What one more gives: a production rate with its research reason, population, or a training tier gem.
    * Common training adds no tier, so it has no output marker.
    */
   gives?: { icon: IconMeaning; value: ReactNode; basis?: string };

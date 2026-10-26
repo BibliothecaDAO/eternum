@@ -444,15 +444,12 @@ export const ARMIES = "Armies";
 export const ARMIES_ENDED = "Armies ended with the day";
 /** How many troops an army holds: "1 troop", "5,000 troops". */
 export const troopCount = (count: number) => formatCount(count, "troop", TROOPS);
-/** What a building's output is made of with research: its base and the share its side adds, "5 + 25% Fields". */
-export const researchBasis = (base: string, share: string, side: string) => `${base} + ${share} ${side}`;
-/** One building's output with that basis: "+6.3/min (5 + 25% Fields)". */
-export const withResearch = (rate: string, basis: string) => `${rate} (${basis})`;
-/** What makes a store's rate, line by line on its card: "3 Workshops · +5/min each (3.4 + 50% Tools)", "Castle · +1.7/min". */
+/** Why research raises a building's output, without the calculation behind it. */
+export const fromResearch = (share: string, side: string) => `${share} from ${side}`;
+/** The sources of a store's production, each with its combined rate. */
 export const MADE_BY = "Made by";
 export const STORE_MAKERS = {
-  buildings: (count: string, each: string, basis?: string) =>
-    basis ? `${count} · ${each} each (${basis})` : `${count} · ${each} each`,
+  buildings: (count: string, total: string) => `${count} · ${total}`,
   castle: (rate: string) => `${CASTLE} · ${rate}`,
 };
 /** What an army's Homecoming sends home when the day ends, on its row or token in the day's last hour. */
@@ -1219,8 +1216,6 @@ export const RESEARCH_TREE = {
   foundByNewArmies: (kind: string) => `${kind} found by new armies`,
   sidesLine: (made: string) => `Each tier picks a side for the season: more ${made}, or store more`,
   sideKept: "The side is kept for the season.",
-  /** What one building of a row's type makes now, under its make side: "Each Farm: +6.3/min (5 + 25% Fields)". */
-  eachMakes: (building: string, output: string) => `Each ${building}: ${output}`,
   hutLine: "Population from every Hut",
   gateLine: (barracks: string) => `${barracks} opens the four training buildings`,
   gateOpen: "The four training buildings are open",
