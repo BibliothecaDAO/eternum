@@ -57,6 +57,7 @@
     "prove:shell": "node ./scripts/prove-shell.mjs",
     "capture:hud-lab": "node ./scripts/capture-hud-lab.mjs",
     "prove:construction": "node ./scripts/prove-building-thumbnails.mjs",
+    "prove:rift-ground": "node ./scripts/prove-rift-ground.mjs",
     "prove:windows": "node ./scripts/prove-lab-windows.mjs",
     "prove:chat": "node ./scripts/prove-hud-chat.mjs",
     "prove:app": "node ./scripts/prove-app-sheet.mjs",

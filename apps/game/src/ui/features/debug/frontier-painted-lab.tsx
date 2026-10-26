@@ -70,6 +70,7 @@ export function FrontierPaintedLab() {
       <header>
         <Link to="/lab/models">Models</Link>
         <h1>Frontier buildings · painted set</h1>
+        <Link to="/lab/models?family=rift-ground">Essence rift · ground study</Link>
         <button type="button" onClick={() => change("scene", inGame ? "models" : "game")}>
           {inGame ? "Compare models" : "Try the board and map"}
         </button>

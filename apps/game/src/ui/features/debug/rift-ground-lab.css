@@ -1,0 +1,74 @@
+.rift-ground-lab {
+  height: var(--lab-viewport-height, 100dvh);
+  display: flex;
+  flex-direction: column;
+  background: #172322;
+  color: #eee;
+}
+.rift-ground-lab > header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  padding: 14px 20px 8px;
+}
+.rift-ground-lab h1 {
+  font-size: 18px;
+  margin-right: auto;
+}
+.rift-ground-lab select {
+  background: #263b35;
+  color: white;
+  padding: 5px;
+}
+.rift-ground-lab > p {
+  padding: 0 20px 10px;
+  font-size: 13px;
+}
+.rift-ground-comparison {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.rift-ground-comparison > canvas {
+  position: absolute;
+  inset: 0;
+}
+.rift-ground-panel {
+  z-index: 1;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  pointer-events: none;
+  border: 1px solid #172322;
+}
+.rift-ground-panel h2 {
+  font-size: 16px;
+  font-weight: 500;
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #172322dd;
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .rift-ground-lab > header {
+    padding: 10px 12px;
+    gap: 8px 16px;
+  }
+  .rift-ground-lab h1 {
+    width: 100%;
+  }
+  .rift-ground-lab > p {
+    padding: 0 12px 8px;
+  }
+  .rift-ground-comparison {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+}
