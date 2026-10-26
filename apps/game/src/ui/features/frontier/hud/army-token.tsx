@@ -5,7 +5,8 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ARMY, comesHomeAtDayEnd, STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
 import { type StaminaBar, staminaSegments } from "@/lib/army-stamina/segments";
 
-const TOKEN = "relative flex h-hud-frontier-token w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-xl";
+// A token grows past its height only for the last hour's Homecoming line.
+const TOKEN = "relative flex min-h-hud-frontier-token w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-xl py-1";
 const CARD = "relative flex w-full shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2";
 
 /** What XP buys next: the attribute tier's XP price and the tier it reaches, 2 (uncommon) to 5 (legendary). */
@@ -20,8 +21,8 @@ export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): string
 
 /**
  * One army on a phone's dock: its number, the one its map plate carries; its portrait with its XP balance as the badge,
- * a card fan when a tier is affordable now, its stamina in segments, and its troops, with what its Homecoming sends home
- * in the day's last hour; the badge says what the XP buys next when asked. A desktop lists the armies as rows
+ * a card fan when a tier is affordable now, what its Homecoming sends home in the day's last hour, its stamina in
+ * segments, and its troops; the badge says what the XP buys next when asked. A desktop lists the armies as rows
  * (ArmyRow). Read-only on a visit.
  */
 export const ArmyToken = ({
@@ -82,16 +83,14 @@ export const ArmyToken = ({
         )}
       </span>
       <StaminaSegments stamina={stamina} />
-      <span className="flex items-center gap-1">
-        <span
-          role="img"
-          aria-label={`${TROOPS} ${formatAmount(troops)}`}
-          className="text-hud-body leading-none text-hud-ink tabular-nums"
-        >
-          {formatAmount(troops)}
-        </span>
-        {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
+      <span
+        role="img"
+        aria-label={`${TROOPS} ${formatAmount(troops)}`}
+        className="text-hud-body leading-none text-hud-ink tabular-nums"
+      >
+        {formatAmount(troops)}
       </span>
+      {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
     </>
   );
   const look = cn(TOKEN, "border bg-hud-surface", selected ? "border-2 border-hud-line-strong" : "border-hud-line");
@@ -180,17 +179,17 @@ export const OpenSlot = ({
 };
 
 /**
- * In the day's last hour, what an army's Homecoming sends home when the day ends, beside its own troops on its token or
- * row (player, 25 October: by the army it is about, not a bubble repeating the troops).
+ * In the day's last hour, what an army's Homecoming sends home when the day ends, on its own token (under its troops)
+ * or row (beside its XP): by the army it is about, not a bubble repeating the troops (player, 25 October).
  */
 export const HomecomingReturn = ({ troops }: { troops: number }) => (
   <span
     role="img"
     aria-label={comesHomeAtDayEnd(formatExact(troops))}
     data-tip={comesHomeAtDayEnd(formatExact(troops))}
-    className="flex shrink-0 items-center text-hud-label leading-none text-hud-good tabular-nums"
+    className="flex h-5 shrink-0 items-center rounded-full border border-hud-line bg-hud-dark pr-1 text-hud-label leading-none text-hud-good tabular-nums"
   >
-    <SemanticIcon name="order-enlightenment" size={14} />
+    <SemanticIcon name="order-enlightenment" size={16} />
     {formatGain(troops)}
   </span>
 );

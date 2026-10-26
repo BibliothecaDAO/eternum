@@ -9,7 +9,7 @@ import { HomecomingReturn, StaminaReading, xpLine, type XpGoal } from "./army-to
 
 /**
  * One army on a desktop's list: its painting with its number; its name with its XP beside it (what it buys next on
- * hover); under them its troops (with what Homecoming sends home in the day's last hour) and its stamina as a bar with
+ * hover) and, in the day's last hour, what its Homecoming sends home; under them its troops and its stamina as a bar with
  * the exact count; at its end, while its XP buys a level now, the card fan. A press picks the army and opens its panel,
  * where its levels are bought. The desktop's form of the dock's token; a phone keeps the token. Read-only on a visit.
  */
@@ -58,15 +58,17 @@ export const ArmyRow = ({
     title={
       <span className="flex items-center justify-between gap-2">
         <span className="truncate">{label}</span>
-        <span data-tip={xpLine(xp, xpGoal)} className="flex shrink-0 items-center gap-1 tabular-nums text-hud-gold">
-          {`${formatAmount(xp)} ${XP}`}
+        <span className="flex shrink-0 items-center gap-2">
+          {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
+          <span data-tip={xpLine(xp, xpGoal)} className="flex items-center gap-1 tabular-nums text-hud-gold">
+            {`${formatAmount(xp)} ${XP}`}
+          </span>
         </span>
       </span>
     }
     detail={
       <span className="flex items-center gap-2 whitespace-nowrap tabular-nums">
         <span>{troops === undefined ? "—" : troopCount(troops)}</span>
-        {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
         <StaminaReading stamina={stamina} />
       </span>
     }
