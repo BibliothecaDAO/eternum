@@ -242,7 +242,13 @@ function Research({ option }: { option: OptionId }) {
               <h2>{attribute}</h2>
               <Gem rank={index === 0 ? 2 : 0} today={today} />
             </div>
-            <small>{index === 0 ? "New armies start here" : "No starting rank"}</small>
+            <small>
+              {index === 0
+                ? "New armies start here"
+                : option === "a"
+                  ? "3,000 labor → first rank"
+                  : `Build ${["War hall", "Supply yard", "Scouts’ lodge", "Hearth"][index]}`}
+            </small>
           </section>
         ))}
       </div>
