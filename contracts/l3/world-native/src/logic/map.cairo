@@ -216,7 +216,7 @@ pub mod MapState {
         };
     }
 
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     pub fn relocate_fixture(
         key: crate::resources::ResourceKey, coord: crate::troops::Coord, category: u8, is_structure: bool,
     ) {
@@ -531,7 +531,7 @@ pub mod MapLogic {
     }
     #[abi(embed_v0)]
     impl RelicMap of crate::relics::IRelicMap<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn relic_discovery_time(self: @ContractState, game_id: u32) -> u64 {
             self.data.map_rules.last_relic_discovery.read(game_id)
         }

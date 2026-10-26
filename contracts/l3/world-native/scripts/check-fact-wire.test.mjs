@@ -40,3 +40,16 @@ test("an unindexed old class cannot supply missing coverage or hide wire drift",
     /Fact wire drift/,
   );
 });
+
+test("checks every test package and rejects conflicts between packages", async (t) => {
+  const directory = await fixture(t, { "first.json": current, "second.json": current }, ["first.json"]);
+  await writeFile(
+    new URL("second.test.starknet_artifacts.json", directory),
+    JSON.stringify({
+      contracts: [{ artifacts: { sierra: "second.json" } }],
+    }),
+  );
+  assert.equal(await checkFactWire(directory, [current]), 1);
+  await writeFile(new URL("second.json", directory), JSON.stringify({ abi: [stale] }));
+  await assert.rejects(checkFactWire(directory, [current]), /Conflicting test ABI/);
+});

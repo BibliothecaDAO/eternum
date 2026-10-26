@@ -239,7 +239,7 @@ pub trait IRelics<T> {
 }
 #[starknet::interface]
 pub trait IRelicMap<T> {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn relic_discovery_time(self: @T, game_id: u32) -> u64;
     fn discover_relic_chest(
         ref self: T,

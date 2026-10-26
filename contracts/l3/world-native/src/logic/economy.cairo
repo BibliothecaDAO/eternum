@@ -9,7 +9,7 @@ pub mod EconomyLogic {
     use crate::logic::market::MarketState;
     use crate::logic::release::ReleaseState;
     use crate::logic::trade::TradeState;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     use crate::market::BankRules;
     use crate::market::{
         AddLiquidity, BankPlacement, IBankCreationDispatcherTrait, IBankCreationLibraryDispatcher, LiquidityKey, Market,
@@ -20,7 +20,7 @@ pub mod EconomyLogic {
         IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceAmount, ResourceKey,
     };
     use crate::structures::{Structure, structure_coord};
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     use crate::trade::TradeRules;
     use crate::trade::{
         AcceptOrder, CreateOrder, IEconomyDeliveryDispatcherTrait, IEconomyDeliveryLibraryDispatcher, TradeFill,
@@ -58,11 +58,11 @@ pub mod EconomyLogic {
     }
     #[abi(embed_v0)]
     impl Trade of crate::trade::ITrade<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn trade_rules(self: @ContractState, game_id: u32) -> TradeRules {
             self.trades.rules(game_id)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn trade_order(self: @ContractState, key: TradeKey) -> Option<TradeOrder> {
             self.trades.order(key)
         }
@@ -142,18 +142,18 @@ pub mod EconomyLogic {
     }
     #[abi(embed_v0)]
     impl Bank of crate::market::IBank<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn bank_rules(self: @ContractState, game_id: u32) -> BankRules {
             self.markets.rules(game_id)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn bank_name(self: @ContractState, key: ResourceKey) -> felt252 {
             self.markets.data.market.bank_names.read((key.game_id, key.entity_id))
         }
         fn market(self: @ContractState, key: MarketKey) -> Market {
             self.markets.market(key)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn liquidity(self: @ContractState, key: LiquidityKey) -> u128 {
             self.markets.shares(key)
         }

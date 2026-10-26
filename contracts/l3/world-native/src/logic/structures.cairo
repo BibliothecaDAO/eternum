@@ -180,7 +180,7 @@ pub mod StructureState {
 
 #[starknet::contract]
 pub mod StructuresLogic {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     use starknet::get_block_timestamp;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_caller_address};
@@ -316,7 +316,7 @@ pub mod StructuresLogic {
             self.place_discovery(game_id, home_id, coord, discovery, seed, timestamp, false, game_context)
         }
 
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn provision_realm(
             ref self: ContractState, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
         ) -> u64 {
@@ -531,7 +531,7 @@ pub mod StructuresLogic {
 
     #[abi(embed_v0)]
     impl Names of crate::names::INames<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn entity_name(self: @ContractState, key: ResourceKey) -> crate::names::EntityName {
             crate::names::EntityName { name: self.data.structure_rules.entity_names.read((key.game_id, key.entity_id)) }
         }

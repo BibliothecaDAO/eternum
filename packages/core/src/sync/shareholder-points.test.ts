@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 
 import { sharePointCutoff, unclaimedSharePoints } from "./shareholder-points";
 
-// Vectors from contracts/l3/world-native/src/tests/hyperstructures.cairo: 1,000 points per second, a hyperstructure
+// Vectors from contracts/l3/world-native/tests/lifecycle/src/tests/hyperstructures.cairo: 1,000 points per second, a hyperstructure
 // completed at t=50, a game ending at t=200.
 const game = { dev_mode_on: false, end_at: 200n };
 const actor = 0x123n;

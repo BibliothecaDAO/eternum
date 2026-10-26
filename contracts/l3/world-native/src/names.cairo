@@ -13,7 +13,7 @@ pub struct SetEntityName {
 
 #[starknet::interface]
 pub trait INames<T> {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn entity_name(self: @T, key: crate::resources::ResourceKey) -> EntityName;
     fn set_entity_name(
         ref self: T,

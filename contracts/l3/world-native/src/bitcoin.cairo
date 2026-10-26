@@ -78,15 +78,15 @@ pub trait IBitcoinFunding<T> {
 
 #[starknet::interface]
 pub trait IBitcoinViews<T> {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn bitcoin_mine(self: @T, key: crate::resources::ResourceKey) -> MineFunding;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn bitcoin_claimed(self: @T, key: ClaimKey) -> bool;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn bitcoin_phase(self: @T, key: PhaseKey) -> Phase;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn bitcoin_contribution(self: @T, key: ContributionKey) -> Contribution;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn bitcoin_contributor(self: @T, key: PhaseKey, index: u32) -> ContractAddress;
 }
 

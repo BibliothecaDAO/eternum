@@ -1,0 +1,252 @@
+pub use world_test_support::tests::camps::*;
+
+#[test]
+fn camp_lottery_obeys_discoverable_rules_after_mines() {
+    let mut config = rules(true).map_config;
+    for seed in 0_u64..32 {
+        assert_eq!(surface(config, seed.into(), 1, 0, crate::rules::DISCOVER_CAMPS), Discovery::Camp);
+        assert_eq!(surface(config, seed.into(), 1, 0, crate::rules::DISCOVER_HYPERSTRUCTURES), Discovery::None);
+    }
+    config.camp_win_probability = 3;
+    config.camp_fail_probability = 7;
+    for seed in 0_u64..32 {
+        let won = crate::random::lottery(seed.into(), 7, 3, 7);
+        assert_eq!(
+            surface(config, seed.into(), 1, 0, crate::rules::DISCOVER_CAMPS),
+            if won {
+                Discovery::Camp
+            } else {
+                Discovery::None
+            },
+        );
+    }
+    config.hyps_win_prob = 1;
+    config.hyps_fail_prob = 0;
+    config.hyps_fail_prob_increase_p_hex = 10000;
+    config.shards_mines_win_probability = 1;
+    config.shards_mines_fail_probability = 0;
+    assert_eq!(surface(config, 101, 0, 0, crate::rules::DISCOVER_CAMPS), Discovery::Mine);
+    assert_eq!(surface(config, 101, 0, 0, crate::rules::DISCOVER_HYPERSTRUCTURES), Discovery::Hyperstructure);
+}
+#[test]
+fn camps_grant_configured_resources_labor_and_one_seeded_t1_guard() {
+    let (d, _) = setup(true);
+    let key = create(d, coord());
+    let structure = IStructureOperationsDispatcher { contract_address: d.games }.structure(key).unwrap();
+    assert_eq!(structure.owner, 0.try_into().unwrap());
+    assert_eq!(structure.base.category, crate::taxonomy::CAMP_CATEGORY);
+    assert_eq!(structure.base.level, 0);
+    assert_eq!(structure.base.troop_max_guard_count, 1);
+    assert_eq!(structure.base.troop_max_explorer_count, 1);
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let slot = ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: 1 };
+    assert_eq!(resources.resource_balance(slot), 100);
+    assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 2, ..slot }), 20);
+    assert_eq!(resources.resource_weight(key).weight, 120);
+    assert_eq!(
+        resources.resource_weight(key).capacity,
+        Into::<u64, u128>::into(rules(true).structure_capacity_config.camp_capacity) * RESOURCE_PRECISION,
+    );
+    let production = resources.resource_production(ResourceSlot { resource_type: 23, ..slot });
+    assert_eq!(production.production_rate, 5);
+    assert_eq!(production.output_amount_left, 0xffffffffffffffffffffffffffffffff);
+    assert_eq!(production.building_count, 1);
+    // Created at time 30, with no production before that second.
+    assert_eq!(production.last_settled_at, 30);
+    let guards = IGuardsDispatcher { contract_address: d.games };
+    let guard = guards.guard(GuardKey { game_id: 3, structure_id: key.entity_id, slot: 0 });
+    assert_eq!(guard.troops.category, TroopType::Knight);
+    assert_eq!(guard.troops.tier, TroopTier::T1);
+    let bounds = rules(true).troop_limit_config;
+    let expected = crate::random::range(
+        101, 1, Into::<u16, u128>::into(bounds.light_guard_upper_bound - bounds.light_guard_lower_bound) + 1,
+    )
+        + bounds.light_guard_lower_bound.into();
+    assert_eq!(guard.troops.count, expected * RESOURCE_PRECISION);
+    for slot in 1_u8..4 {
+        assert_eq!(guards.guard(GuardKey { game_id: 3, structure_id: key.entity_id, slot }), Default::default());
+    }
+}
+#[test]
+fn tuning_the_village_rate_leaves_camps_unchanged() {
+    let mut preset = camp_preset(true);
+    let mut resources = array![];
+    for rule in preset.resources.resources {
+        let mut rule = *rule;
+        if rule.resource_type == crate::resources::LABOR {
+            rule.village_rate = 999;
+        }
+        resources.append(rule);
+    }
+    preset.resources.resources = resources.span();
+    let (d, _, _) = super::resource_commands::setup_with_preset(preset);
+    let key = create(d, coord());
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    assert_eq!(resources.resource_rule(3, crate::resources::LABOR).village_rate, 999);
+    let slot = ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: crate::resources::LABOR };
+    assert_eq!(resources.resource_production(slot).production_rate, 5);
+}
+#[test]
+fn camp_reveals_six_biomes_without_neighbor_lotteries_or_points() {
+    let (d, _) = setup(true);
+    let key = create(d, coord());
+    let map = IMapLogicDispatcher { contract_address: d.games };
+    assert_eq!(map.occupancy(tile_key(3, coord())).unwrap().category, crate::taxonomy::CAMP_OCCUPIER);
+    for direction in 0_u8..6 {
+        let tile = map.tile(tile_key(3, neighbor(coord(), direction))).unwrap();
+        assert!(map.occupancy(tile_key(3, neighbor(coord(), direction))).is_none());
+        assert!((tile.data / 0x20000000000) % 256 != 0);
+    }
+    assert_eq!(crate::game::IPointsDispatcher { contract_address: d.games }.season_points(3), 0);
+    assert_eq!(key.game_id, 3);
+}
+#[test]
+#[feature("safe_dispatcher")]
+fn camp_configuration_is_immutable_scoped_and_requires_authority() {
+    let (d, _, _) = setup_with_rules(rules(true));
+    let safe = ICampRulesSafeDispatcher { contract_address: d.games };
+    let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: d.games };
+    let mut preset = super::resource_commands::fixture_preset(rules(true));
+    preset.structures.camps.resources = array![].span();
+    start_cheat_caller_address(d.games, d.actor);
+    assert!(registrar.register_preset(20000, preset).is_err());
+    start_cheat_caller_address(d.games, super::authority());
+    let mut invalid = preset;
+    invalid.structures.camps.resources = array![ResourceAmount { resource_type: 99, amount: 1 }].span();
+    assert!(registrar.register_preset(20000, invalid).is_err());
+    assert!(registrar.register_preset(20000, preset).is_ok());
+    assert!(registrar.register_preset(20000, preset).is_err());
+    stop_cheat_caller_address(d.games);
+    let games = crate::game::IGameDispatcher { contract_address: d.games };
+    super::play_fixture::seed_game_with_preset(d.games, 4, games.game(3), preset);
+    assert!(safe.camp_rules(4).unwrap().resources.is_empty());
+    assert!(safe.camp_rules(999).is_err());
+}
+
+#[test]
+fn exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
+    let (d, home) = setup(true);
+    for resource in array![26_u8, 35, 36] {
+        grant(d, home, resource, 100 * RESOURCE_PRECISION);
+    }
+    assert!(
+        execute(
+            d,
+            Command::CreateExplorer(
+                CreateExplorer {
+                    slot: 0,
+                    structure_id: home.entity_id,
+                    category: 0,
+                    tier: 0,
+                    amount: RESOURCE_PRECISION,
+                    direction: 0,
+                },
+            ),
+            80,
+        ),
+    );
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
+    let explorer_id = *structures.home_armies(home).at(0);
+    let key = ExplorerKey { game_id: 3, explorer_id };
+    let troops = GameState { contract_address: d.games };
+    let origin = troops.explorer(key).unwrap().coord;
+    assert!(execute(d, Command::Explore(Explore { explorer_id, direction: 0 }), 140));
+    assert_eq!(troops.explorer(key).unwrap().coord, origin);
+    let destination = neighbor(origin, 0);
+    let _tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
+    let occupancy = IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).unwrap();
+    assert_eq!(occupancy.category, crate::taxonomy::CAMP_OCCUPIER);
+    let camp_id = occupancy.entity_id;
+    assert_eq!(structures.structure(ResourceKey { game_id: 3, entity_id: camp_id }).unwrap().base.created_at, 140);
+    assert_eq!(
+        crate::game::IPointsDispatcher { contract_address: d.games }.player_points(3, d.actor),
+        rules(true).victory_points_grant_config.explore_tiles_points.into(),
+    );
+}
+
+#[test]
+fn eternum_exploration_does_not_create_a_camp() {
+    let (d, home) = setup(false);
+    for resource in array![26_u8, 35, 36] {
+        grant(d, home, resource, 100 * RESOURCE_PRECISION);
+    }
+    assert!(
+        execute(
+            d,
+            Command::CreateExplorer(
+                CreateExplorer {
+                    slot: 0,
+                    structure_id: home.entity_id,
+                    category: 0,
+                    tier: 0,
+                    amount: RESOURCE_PRECISION,
+                    direction: 0,
+                },
+            ),
+            80,
+        ),
+    );
+    let structures = IStructureOperationsDispatcher { contract_address: d.games };
+    let explorer_id = *structures.home_armies(home).at(0);
+    let key = ExplorerKey { game_id: 3, explorer_id };
+    let troops = GameState { contract_address: d.games };
+    let destination = neighbor(troops.explorer(key).unwrap().coord, 0);
+    assert!(execute(d, Command::Explore(Explore { explorer_id, direction: 0 }), 140));
+    let _tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
+    let occupant = IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).unwrap();
+    assert!(!occupant.is_structure);
+    assert_eq!(occupant.entity_id, explorer_id);
+    assert_eq!(troops.explorer(key).unwrap().coord, destination);
+}
+
+#[test]
+fn blitz_exploration_stores_both_inclusive_camp_guard_endpoints() {
+    let (_, current) = super::preset_projection::current_definition("blitz");
+    for (root, expected, troop) in array![(615_u256, 999_u128, TroopType::Paladin), (629, 1499, TroopType::Knight)] {
+        let mut preset = camp_preset(true);
+        preset.rules.troop_limit_config = current.rules.troop_limit_config;
+        let (d, home, _) = super::resource_commands::setup_with_preset(preset);
+        for resource in array![26_u8, 35, 36] {
+            grant(d, home, resource, 100 * RESOURCE_PRECISION);
+        }
+        assert!(
+            execute(
+                d,
+                Command::CreateExplorer(
+                    CreateExplorer {
+                        slot: 0,
+                        structure_id: home.entity_id,
+                        category: 0,
+                        tier: 0,
+                        amount: RESOURCE_PRECISION,
+                        direction: 0,
+                    },
+                ),
+                80,
+            ),
+        );
+        let structures = IStructureOperationsDispatcher { contract_address: d.games };
+        let explorer_id = *structures.home_armies(home).at(0);
+        let explorer = GameState { contract_address: d.games }
+            .explorer(ExplorerKey { game_id: 3, explorer_id })
+            .unwrap();
+        let destination = neighbor(explorer.coord, 0);
+        assert!(
+            super::play_fixture::play(
+                d.games,
+                super::play_fixture::TestAction {
+                    game_id: 3, actor: d.actor, command: Command::Explore(Explore { explorer_id, direction: 0 }),
+                },
+                root,
+                140,
+            ),
+        );
+        let occupancy = IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).unwrap();
+        assert_eq!(occupancy.category, crate::taxonomy::CAMP_OCCUPIER);
+        let guard = IGuardsDispatcher { contract_address: d.games }
+            .guard(GuardKey { game_id: 3, structure_id: occupancy.entity_id, slot: 0 });
+        assert_eq!(guard.troops.category, troop);
+        assert_eq!(guard.troops.tier, TroopTier::T1);
+        assert_eq!(guard.troops.count, expected * RESOURCE_PRECISION);
+    }
+}
