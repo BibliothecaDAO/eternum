@@ -6,9 +6,7 @@ import { isDeepStrictEqual } from "node:util";
 
 // This check replaces unverified fact-only declarations. Generation never reads test artifacts.
 async function currentTestTypes(directory) {
-  const indexes = (await readdir(directory))
-    .filter((name) => name.endsWith(".starknet_artifacts.json") && !name.endsWith(".test.starknet_artifacts.json"))
-    .sort();
+  const indexes = (await readdir(directory)).filter((name) => name.endsWith(".test.starknet_artifacts.json")).sort();
   const types = new Map();
   for (const name of indexes) {
     const index = JSON.parse(await readFile(new URL(name, directory), "utf8"));
