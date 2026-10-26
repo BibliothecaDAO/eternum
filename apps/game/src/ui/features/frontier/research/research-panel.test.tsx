@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MID_REALM } from "./progression-fixture";
 import { ResearchPanel } from "./research-panel";
-import { readResearchTree, type TreeNode } from "./research-tree";
+import { needLine, readResearchTree, type TreeNode } from "./research-tree";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -23,7 +23,7 @@ afterEach(() => {
 });
 
 const nodes = readResearchTree(MID_REALM);
-const draw = (picked: string, onResearch = vi.fn(), onPick = vi.fn(), onFix = vi.fn()) =>
+const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onFix = vi.fn()) =>
   act(() =>
     root.render(
       <ResearchPanel
@@ -68,8 +68,45 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
   expect(onFix).toHaveBeenCalledOnce();
 });
 
-it("shows the Scouts' lodge's camp kind as Trolls, never Camp", () => {
+it("names the Scouts' lodge's camp kind Trolls, never Camp", () => {
   draw("row-6");
-  expect(host.textContent).toContain("Trolls found by new armies");
+  const choice = host.querySelector("[data-lab='node-choice']")!;
+  expect([...choice.querySelectorAll("button[aria-pressed]")].map((side) => side.getAttribute("title"))).toEqual([
+    "Trolls found by new armies",
+    "Rifts found by new armies",
+    "Beasts found by new armies",
+  ]);
   expect(host.textContent).not.toMatch(/Camp/);
+});
+
+describe("the picked building's choice, at the panel's foot (the owner's pick C)", () => {
+  const choice = () => host.querySelector("[data-lab='node-choice']");
+
+  it("stands after the whole tree, outside its scroll, with the price held against and Research", () => {
+    draw("row-0");
+    const tree = host.querySelector("[data-node]")!.closest(".overflow-y-auto")!;
+    // Not inside the tree's scroll: no tile the tree scrolls to can push it out of view.
+    expect(tree.contains(choice())).toBe(false);
+    expect(tree.compareDocumentPosition(choice()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(choice()!.textContent).toContain("Farm");
+    expect(button(/^Research Fields$/)).toBeDefined();
+    const price = nodes
+      .find(({ key }) => key === "row-0")!
+      .needs.filter(({ kind }) => kind === "essence" || kind === "labor");
+    expect([...choice()!.querySelectorAll("[aria-label*='/']")].map((chip) => chip.getAttribute("aria-label"))).toEqual(
+      price.map((need) => needLine(need)),
+    );
+  });
+
+  it("is put away with its X, leaving the tree, and opens again on the tile tapped", () => {
+    const onPick = vi.fn();
+    draw("row-0", vi.fn(), onPick);
+    act(() => host.querySelector<HTMLButtonElement>("[aria-label='Close']")!.click());
+    expect(onPick).toHaveBeenCalledWith(null);
+    draw(null, vi.fn(), onPick);
+    expect(choice()).toBeNull();
+    expect(host.querySelectorAll("[data-node]")).toHaveLength(nodes.length);
+    act(() => host.querySelector<HTMLButtonElement>("[data-node='row-3']")!.click());
+    expect(onPick).toHaveBeenLastCalledWith("row-3");
+  });
 });

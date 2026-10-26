@@ -1178,7 +1178,7 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
 /** Research's page on the realm some days in: the game's tree, the picked node under it. */
 const LabResearch = () => {
   const nodes = readResearchTree(MID_REALM);
-  const [picked, setPicked] = useState(nodes[0]!.key);
+  const [picked, setPicked] = useState<string | null>(nodes[0]!.key);
   return (
     <ResearchPanel
       nodes={nodes}
