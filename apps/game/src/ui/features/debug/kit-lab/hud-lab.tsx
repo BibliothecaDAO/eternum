@@ -1025,7 +1025,7 @@ export const HudLab = () => {
                       ? "research"
                       : lab.realmView
                         ? "realm"
-                        : "map"
+                        : null
               }
               onGo={noop}
               realmDot={lab.realmDot}

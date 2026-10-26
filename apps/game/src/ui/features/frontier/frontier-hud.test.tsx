@@ -241,3 +241,19 @@ it.each([390, 1440])("opens and closes the Wheat store from its control at %i px
   await act(async () => control!.click());
   expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
 });
+
+it("gives a phone no Map slot: Realm opens the realm board, and a second press shows the map again", async () => {
+  viewport.set(390);
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  await renderHud();
+  const slots = () => [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')];
+  const realm = () => slots().find((button) => button.textContent?.startsWith("Realm"))!;
+  expect(slots().map((button) => button.textContent)).not.toContain("Map");
+  expect(realm().getAttribute("aria-current")).toBeNull();
+  await act(async () => realm().click());
+  expect(window.location.pathname).toMatch(/\/hex$/);
+  expect(realm().getAttribute("aria-current")).toBe("page");
+  await act(async () => realm().click());
+  expect(window.location.pathname).toMatch(/\/map$/);
+  expect(realm().getAttribute("aria-current")).toBeNull();
+});

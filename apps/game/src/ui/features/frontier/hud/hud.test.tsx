@@ -227,23 +227,30 @@ describe("an open slot whose army is being deployed", () => {
 });
 
 describe("the place bar", () => {
-  it("lights where the player is, dots Research when it can be bought, counts new events and unread chat, and goes", () => {
+  it("lights what is open, none on the map, dots Research when it can be bought, counts news, and goes", () => {
     const onGo = vi.fn();
-    act(() => root.render(<PlaceNav place="map" onGo={onGo} researchDot events={2} unread={3} />));
+    act(() => root.render(<PlaceNav place={null} onGo={onGo} researchDot events={2} unread={3} />));
     const slots = [...host.querySelectorAll("button")];
-    expect(slots.map((slot) => slot.textContent)).toEqual(["Map", "Realm", "Research", "2Log", "3Chat", "Menu"]);
-    expect(slots[0].getAttribute("aria-current")).toBe("page");
-    expect(slots[2].querySelector("i")).not.toBeNull();
-    act(() => slots[3].click());
+    expect(slots.map((slot) => slot.textContent)).toEqual(["Realm", "Research", "2Log", "3Chat", "Menu"]);
+    expect(slots.map((slot) => slot.getAttribute("aria-current"))).toEqual([null, null, null, null, null]);
+    expect(slots[1].querySelector("i")).not.toBeNull();
+    act(() => slots[2].click());
     expect(onGo).toHaveBeenCalledWith("log");
-    act(() => slots[5].click());
+    act(() => slots[4].click());
     expect(onGo).toHaveBeenCalledWith("menu");
+    act(() => root.render(<PlaceNav place="realm" onGo={onGo} researchDot events={2} unread={3} />));
+    expect(host.querySelector("button")!.getAttribute("aria-current")).toBe("page");
+  });
+
+  it("draws no divider between its slots, each a toggle alike", () => {
+    act(() => root.render(<PlaceNav place={null} onGo={vi.fn()} researchDot events={0} unread={0} />));
+    expect(host.querySelectorAll("nav i[aria-hidden]")).toHaveLength(0);
   });
 
   it("leaves Research out for a spectator, who has no realm to research", () => {
     act(() => root.render(<PlaceNav place="realm" onGo={vi.fn()} events={0} unread={0} />));
     const slots = [...host.querySelectorAll("button")].map((slot) => slot.textContent);
-    expect(slots).toEqual(["Map", "Realm", "Log", "Chat", "Menu"]);
+    expect(slots).toEqual(["Realm", "Log", "Chat", "Menu"]);
   });
 
   it("dots Research only while a node can be researched now", () => {
