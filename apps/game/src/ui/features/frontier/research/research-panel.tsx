@@ -4,7 +4,7 @@ import { HudButton, HudChip, HudPanel, HudRarity } from "@/ui/design-system/kit/
 import type { Fix } from "@/ui/design-system/kit/refusal";
 import { ESSENCE, LABOR, RESEARCH, RESEARCH_TREE, RESEARCHING, TIER_WORDS } from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact } from "@bibliothecadao/types";
-import { useEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 
 import { type Branch, firstMissing, type Need, needLine, type NodeState, type TreeNode } from "./research-tree";
 
@@ -38,8 +38,7 @@ export const ResearchPanel = ({
   onResearch: (node: TreeNode, side: number) => unknown;
 }) => {
   const node = nodes.find(({ key }) => key === picked) ?? nodes[0]!;
-  // A node picked after the panel opened shows its detail: the tree may have scrolled it out of view.
-  const opened = useRef(node.key);
+  const detail = useScrollToEachPick(node.key);
   const tile = (item: TreeNode) => (
     <NodeTile key={item.key} node={item} picked={item.key === node.key} onPick={() => onPick(item.key)} />
   );
@@ -76,13 +75,29 @@ export const ResearchPanel = ({
       <NodeDetail
         key={node.key}
         node={node}
-        reveal={node.key !== opened.current}
+        place={detail}
         sending={sending.has(node.row)}
         fix={(need) => fixFor(need, node)}
         onResearch={(side) => onResearch(node, side)}
       />
     </HudPanel>
   );
+};
+
+/**
+ * Each node picked after the panel opened brings the foot of its detail into view, its needs and Research button with
+ * it, whichever node the panel opened on: the tree above may have scrolled it out of sight, and a phone's page shows
+ * little of both (player, 25 October: Farm did not scroll, Barracks and Workshop stopped short of the button).
+ */
+const useScrollToEachPick = (picked: string): RefObject<HTMLDivElement> => {
+  const detail = useRef<HTMLDivElement>(null);
+  const shown = useRef(picked);
+  useEffect(() => {
+    if (shown.current === picked) return;
+    shown.current = picked;
+    detail.current?.scrollIntoView?.({ block: "end" });
+  }, [picked]);
+  return detail;
 };
 
 /** One look per state, the same on a tile and in the detail: each tile's frame and mark say its state. */
@@ -153,22 +168,18 @@ const NodeTile = ({ node, picked, onPick }: { node: TreeNode; picked: boolean; o
 /** The picked node, in the panel under the tree. */
 const NodeDetail = ({
   node,
-  reveal,
+  place,
   sending,
   fix,
   onResearch,
 }: {
   node: TreeNode;
-  reveal: boolean;
+  place: RefObject<HTMLDivElement>;
   sending: boolean;
   fix: (need: Need) => Fix | undefined;
   onResearch: (side: number) => unknown;
 }) => {
   const [side, setSide] = useState(0);
-  const place = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (reveal) place.current?.scrollIntoView?.({ block: "nearest" });
-  }, [reveal]);
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
   const verb = node.sides?.[side]?.name ?? node.nextWord ?? node.name;

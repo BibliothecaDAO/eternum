@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -72,4 +72,38 @@ it("shows the Scouts' lodge's camp kind as Trolls, never Camp", () => {
   draw("row-6");
   expect(host.textContent).toContain("Trolls found by new armies");
   expect(host.textContent).not.toMatch(/Camp/);
+});
+
+/** The panel as the page holds it: opened on the Farm (row 0), each tile's press picking its node. */
+const PickedPanel = () => {
+  const [picked, setPicked] = useState("row-0");
+  return (
+    <ResearchPanel
+      nodes={nodes}
+      essence={MID_REALM.essence}
+      labor={MID_REALM.labor}
+      picked={picked}
+      onPick={setPicked}
+      sending={new Set()}
+      fixFor={() => undefined}
+      onResearch={vi.fn()}
+    />
+  );
+};
+
+it("brings the picked node's Research button into view on each pick, back to the node it opened on included", () => {
+  const scrolled: { on: string | null; options: unknown }[] = [];
+  vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(function (this: Element, options) {
+    scrolled.push({ on: this.getAttribute("data-lab"), options });
+  });
+  act(() => root.render(<PickedPanel />));
+  expect(scrolled).toEqual([]);
+  // Workshop, then Barracks, then the Farm the panel opened on: each scrolls the detail to its foot.
+  for (const row of ["row-1", "row-2", "row-0"])
+    act(() => host.querySelector<HTMLButtonElement>(`[data-node='${row}']`)!.click());
+  expect(scrolled).toEqual(Array.from({ length: 3 }, () => ({ on: "node-detail", options: { block: "end" } })));
+  // The detail's foot is its Research button.
+  const detailButtons = [...host.querySelectorAll("[data-lab='node-detail'] button")];
+  expect(detailButtons.at(-1)?.textContent).toMatch(/^Research/);
+  vi.restoreAllMocks();
 });
