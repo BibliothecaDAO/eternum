@@ -569,9 +569,9 @@ it("the map's actual transfer selection shows the survivor before the player con
       ),
     );
     expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Transfer troops");
-    expect(host.textContent).toContain(`Army 2 survives at (${TRANSFER_TAPPED.col}, ${TRANSFER_TAPPED.row}) · slot 2`);
-    expect(host.textContent).toContain("7 stamina after merging");
-    expect(host.textContent).toContain("Army 1’s XP and upgrades are not carried over");
+    // The cards say it: Army 1 leaves with its XP struck out, Army 2 stays with the stamina the merge leaves it.
+    expect(host.querySelector("s")?.textContent).toBe("100 XP");
+    expect(host.textContent).toContain("100/120→7");
     expect(swap).not.toHaveBeenCalled();
     const confirm = [...host.querySelectorAll("button")].find((button) => button.textContent === "Merge into Army 2")!;
     await act(async () => confirm.click());

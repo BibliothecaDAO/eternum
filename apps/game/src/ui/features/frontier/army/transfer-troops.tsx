@@ -15,7 +15,7 @@ import {
   HudTierChip,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import { TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
+import { TRANSFER_TROOPS, XP } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { configManager, multiplyByPrecision } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -63,9 +63,11 @@ export const useSelectedTransfer = (realm: NativeRows["Structure"] | null): Tran
 /**
  * Troops between two of the realm's armies side by side, as one split (owner, 22 October 2026: "the merge panel can be
  * redone for desktop & mobile"; direction A): the slider is where the line between them falls, so one control moves
- * troops either way and nothing needs a Swap. It opens as a merge into the army tapped. Each army shows what it holds
- * now and after; quick splits cover the common asks; the one verb says what will happen. The game moves troops
- * between alike armies only, each within its realm's limit. A full merge keeps the chosen target.
+ * troops either way and nothing needs a Swap. It opens as a merge into the army tapped: the map has chosen which army
+ * goes into which (owner, 26 October 2026: the quick splits are "not needed since the player do it from the map").
+ * The cards say what happens, not a paragraph: each army's troops, stamina and XP now and after, and an army a merge
+ * empties faded with its XP struck out. The one verb names the army that stays. The game moves troops between alike
+ * armies only, each within its realm's limit. A full merge keeps the chosen target.
  */
 export const TransferTroopsSheet = ({
   realm,
@@ -170,8 +172,6 @@ const TransferSplit = ({
   const fullMerge = moved !== 0 && Math.abs(moved) === from.troops;
   const survivor = fullMerge ? to : null;
   const loser = fullMerge ? from : null;
-  const survivorAt = toAt;
-  const value = plan.targetValue;
   const mergedStamina =
     survivor?.stamina && loser?.stamina
       ? Math.min(survivor.stamina.current, loser.stamina.current, survivor.stamina.max)
@@ -210,15 +210,16 @@ const TransferSplit = ({
   };
 
   if (!alike) return <HudNotice tone="warn" line={TRANSFER_TROOPS.unalike(picked.label, tapped.label)} />;
-  const splitOptions = [highest, Math.min(highest, Math.max(lowest, Math.round(total / 2))), lowest];
-  const splits: [string, number][] = [...new Set(splitOptions)].map((value) => [
-    value === 0 || value === total
-      ? TRANSFER_TROOPS.allTo(value === total ? picked.label : tapped.label)
-      : value === splitOptions[1]
-        ? TRANSFER_TROOPS.even
-        : TRANSFER_TROOPS.allTo(value === highest ? picked.label : tapped.label),
-    value,
-  ]);
+  // A full merge whose progress is known: the army that stays and the one that leaves.
+  const merge = survivor && loser && plan.known ? { survivor, loser } : null;
+  const side = (army: DockArmy) => (
+    <ArmySide
+      army={army}
+      after={after(army)}
+      leaves={army === merge?.loser}
+      staminaAfter={army === merge?.survivor ? mergedStamina : undefined}
+    />
+  );
 
   return (
     <div className="flex flex-col gap-3">
@@ -226,20 +227,13 @@ const TransferSplit = ({
         <HudNotice tone="warn" line={TRANSFER_TROOPS.confirmLoss(from.label, plan.sourceValue!, plan.targetValue!)} />
       )}
       {!plan.known && <HudNotice tone="warn" line={TRANSFER_TROOPS.waiting} />}
-      {survivor && loser && plan.known && (
-        <div role="status" className="rounded-lg border border-hud-line bg-hud-well p-3 text-hud-body text-hud-ink">
-          <p>{TRANSFER_TROOPS.survives(survivor.label, survivorAt.col, survivorAt.row, survivor.number)}</p>
-          <p>{TRANSFER_TROOPS.progression(value!, survivor.xp!, loser.label)}</p>
-          <p>{TRANSFER_TROOPS.mergedStamina(mergedStamina)}</p>
-        </div>
-      )}
       <div className="ui-transfer__preview">
-        <ArmySide army={picked} after={after(picked)} />
+        {side(picked)}
         <span className="flex flex-col items-center gap-1">
           <Icon name="transfer" size={28} className={cn(moved < 0 && "-scale-x-100")} />
           <HudChip tone={moved === 0 ? undefined : "good"}>{formatAmount(Math.abs(moved))}</HudChip>
         </span>
-        <ArmySide army={tapped} after={after(tapped)} />
+        {side(tapped)}
       </div>
       <HudSlider
         label={TRANSFER_TROOPS.split(picked.label, tapped.label)}
@@ -248,27 +242,11 @@ const TransferSplit = ({
         stop={highest}
         onChange={(value) => chooseSplit(Math.max(lowest, value))}
       />
-      <div className="flex gap-1.5">
-        {splits.map(([word, value]) => (
-          <HudButton
-            key={word}
-            kind="secondary"
-            size="sm"
-            className="flex-1"
-            aria-pressed={pickedAfter === value}
-            onClick={() => chooseSplit(value)}
-          >
-            {word}
-          </HudButton>
-        ))}
-      </div>
       <HudWindowFoot
         note={
-          loser && plan.known
-            ? TRANSFER_TROOPS.leaves(loser.label)
-            : total > Math.min(capOf(picked), capOf(tapped))
-              ? TRANSFER_TROOPS.cap(Math.min(capOf(picked), capOf(tapped)))
-              : undefined
+          !merge && total > Math.min(capOf(picked), capOf(tapped))
+            ? TRANSFER_TROOPS.cap(Math.min(capOf(picked), capOf(tapped)))
+            : undefined
         }
       >
         <HudButton
@@ -280,10 +258,10 @@ const TransferSplit = ({
         >
           {moved === 0
             ? TRANSFER_TROOPS.pick
-            : survivor && plan.known
+            : merge
               ? confirmed
-                ? TRANSFER_TROOPS.confirmMerge(survivor.label)
-                : TRANSFER_TROOPS.merge(survivor.label)
+                ? TRANSFER_TROOPS.confirmMerge(merge.survivor.label)
+                : TRANSFER_TROOPS.merge(merge.survivor.label)
               : TRANSFER_TROOPS.move(Math.abs(moved), to.label)}
         </HudButton>
       </HudWindowFoot>
@@ -291,19 +269,50 @@ const TransferSplit = ({
   );
 };
 
-/** One army in the transfer: its portrait and name, its stamina, what it holds now and after. */
-const ArmySide = ({ army, after }: { army: DockArmy; after: number }) => (
+/**
+ * One army in the transfer: its portrait and name, its stamina, its XP, what it holds now and after. An army a merge
+ * empties leaves the map with its XP: its portrait fades and its XP is struck out. The army that stays shows the
+ * stamina the merge leaves it, when that is less than it has.
+ */
+const ArmySide = ({
+  army,
+  after,
+  leaves,
+  staminaAfter,
+}: {
+  army: DockArmy;
+  after: number;
+  leaves: boolean;
+  staminaAfter: number | undefined;
+}) => (
   <div className="flex flex-col items-center gap-1 rounded-lg border border-hud-line bg-hud-well p-2">
-    <span className="flex size-12 items-center justify-center overflow-hidden rounded-full border-2 border-hud-good bg-hud-surface">
+    <span
+      className={cn(
+        "flex size-12 items-center justify-center overflow-hidden rounded-full border-2 bg-hud-surface",
+        leaves ? "border-hud-bad opacity-50 grayscale" : "border-hud-good",
+      )}
+    >
       <Icon name={army.art} size={44} />
     </span>
     <span className="text-hud-body text-hud-strong">{army.label}</span>
     {army.stamina && (
-      <span className="flex items-center gap-1 text-hud-label text-hud-muted">
+      <span className="flex items-center gap-1 text-hud-label text-hud-muted tabular-nums">
         <Icon name="stamina" size={16} />
         {formatAmount(Math.floor(army.stamina.current))}/{formatAmount(army.stamina.max)}
+        {staminaAfter !== undefined && staminaAfter < Math.floor(army.stamina.current) && (
+          <>
+            <span>→</span>
+            <span className="text-hud-bad">{formatAmount(staminaAfter)}</span>
+          </>
+        )}
       </span>
     )}
+    {army.xp !== undefined &&
+      (leaves ? (
+        <s className="text-hud-label tabular-nums text-hud-bad">{`${formatAmount(army.xp)} ${XP}`}</s>
+      ) : (
+        <span className="text-hud-label tabular-nums text-hud-gold">{`${formatAmount(army.xp)} ${XP}`}</span>
+      ))}
     <span className="flex items-center gap-1 tabular-nums">
       <HudTierChip tier={army.troopsFact.tier === "T3" ? 3 : army.troopsFact.tier === "T2" ? 2 : 1} />
       <span className="text-hud-label text-hud-muted">{formatAmount(army.troops)}</span>

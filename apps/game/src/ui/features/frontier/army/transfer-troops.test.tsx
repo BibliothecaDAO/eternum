@@ -111,6 +111,14 @@ const button = (text: string | RegExp) =>
   [...host.querySelectorAll<HTMLButtonElement>("button")].find((each) =>
     typeof text === "string" ? each.textContent === text : text.test(each.textContent ?? ""),
   );
+/** The split slider dragged to where the picked army keeps `keeps`, as a player drags it. */
+const slide = (keeps: number) => {
+  const slider = host.querySelector<HTMLInputElement>('input[type="range"]')!;
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, String(keeps));
+  act(() => slider.dispatchEvent(new Event("input", { bubbles: true })));
+};
+/** The XP a merge takes off the map with the army it empties, struck out on that army's card; null when none. */
+const struckXp = () => host.querySelector("s")?.textContent ?? null;
 /** The two armies as the card shows them: name, then what each holds after. */
 const sides = () =>
   [...host.querySelectorAll(".text-hud-strong")].map((name) => [
@@ -118,7 +126,7 @@ const sides = () =>
     name.parentElement!.querySelector(".text-hud-title")!.textContent,
   ]);
 
-it("opens as a merge into the army tapped, and moves the split the player picks, either way", async () => {
+it("opens as a merge into the army tapped, and moves the split the player slides, either way", async () => {
   const store = twoArmies();
   const { swap, close } = render(store);
   const [[picked], [tapped]] = sides() as [string, string][];
@@ -130,8 +138,8 @@ it("opens as a merge into the army tapped, and moves the split the player picks,
   expect(button(`Move 1,200 to ${tapped}`)).toBeDefined();
   expect(host.textContent).toContain("An army holds at most 1,500.");
 
-  // Even: 899 each, so 599 leave the picked army.
-  act(() => button("Even")!.click());
+  // 899 each, so 599 leave the picked army.
+  slide(899);
   expect(sides()).toEqual([
     [picked, "899"],
     [tapped, "899"],
@@ -165,8 +173,12 @@ it("sends the other way when the split gives the picked army more, and empties a
   ] as never);
   const { swap } = render(store);
   const [[picked], [tapped]] = sides() as [string, string][];
-  act(() => button(`All to ${picked}`)!.click());
-  expect(host.textContent).toContain(`${tapped} is left with none and leaves the map.`);
+  slide(500);
+  expect(sides()).toEqual([
+    [picked, "500"],
+    [tapped, "0"],
+  ]);
+  expect(struckXp()).toBe("100 XP");
   await act(async () => button(`Merge into ${picked}`)!.click());
   expect(swap).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -202,7 +214,7 @@ it("starts the split again from the armies' new troops when they change while it
   const store = twoArmies();
   const { swap } = render(store);
   const [[picked], [tapped]] = sides() as [string, string][];
-  act(() => button("Even")!.click());
+  slide(899);
   expect(button(`Move 599 to ${tapped}`)).toBeDefined();
 
   // A fight and an order land while the card is open: each army now holds 100.
@@ -237,39 +249,31 @@ it("starts the split again from the armies' new troops when they change while it
   );
 });
 
-it.each([
-  [0, 99, "Army 2", 99, 202],
-  [0, 101, "Army 2", 101, 202],
-  [0, 100, "Army 2", 100, 202],
-])(
-  "shows the whole survivor on the selected Frontier transfer (%s, %s)",
-  async (xp, otherXp, name, value, survivor) => {
-    const { swap } = render(transferArmies(xp, otherXp));
-    expect(host.textContent).toContain(`${name} survives at`);
-    expect(host.textContent).toContain(`${value} progression value (XP + all upgrades)`);
-    expect(host.textContent).toContain("7 stamina after merging");
-    expect(host.textContent).toContain("XP and upgrades are not carried over");
+it.each([99, 101, 100])(
+  "shows the merge on the cards: the army tapped stays, the picked one leaves with its XP (the tapped has %s XP)",
+  async (tappedXp) => {
+    const { swap } = render(transferArmies(0, tappedXp));
     expect(sides()).toEqual([
-      ["Army 1", survivor === 201 ? "1,100" : "0"],
-      ["Army 2", survivor === 202 ? "1,100" : "0"],
+      ["Army 1", "0"],
+      ["Army 2", "1,100"],
     ]);
+    expect(struckXp()).toBe("0 XP");
+    expect(host.textContent).toContain(`${tappedXp} XP`);
+    // Army 2 holds 100 stamina; the merge leaves it Army 1's 7.
+    expect(host.textContent).toContain("100/120→7");
     expect(swap).not.toHaveBeenCalled();
-    await act(async () => button(`Merge into ${name}`)!.click());
+    await act(async () => button("Merge into Army 2")!.click());
     expect(swap).toHaveBeenCalledWith(
-      expect.objectContaining({
-        from_explorer_id: survivor === 201 ? 202 : 201,
-        to_explorer_id: survivor,
-        count: (survivor === 201 ? 500 : 600) * Number(PRECISION),
-      }),
+      expect.objectContaining({ from_explorer_id: 201, to_explorer_id: 202, count: 600 * Number(PRECISION) }),
     );
   },
 );
 
-it("keeps partial transfers free of a survivor claim", async () => {
+it("keeps partial transfers free of a merge's losses", async () => {
   const { swap } = render(transferArmies());
-  act(() => button("Even")!.click());
-  expect(host.textContent).not.toContain("survives at");
-  expect(host.textContent).not.toContain("not carried over");
+  slide(550);
+  expect(struckXp()).toBeNull();
+  expect(host.textContent).not.toContain("→7");
   expect(sides()).toEqual([
     ["Army 1", "550"],
     ["Army 2", "550"],
@@ -338,7 +342,7 @@ it.each(["progress", "troops", "stamina", "position", "removed", "day"])(
 it.each(["0x74", "0x92"])("removes the selected transfer if either army disappears (%s)", (key) => {
   const store = transferArmies();
   const { swap } = render(store);
-  expect(host.textContent).toContain("Army 2 survives");
+  expect(button("Merge into Army 2")).toBeDefined();
   act(() => store.applyFacts([{ model: "ExplorerTroops", key, value: null }]));
   expect(host.querySelector('[role="dialog"]')).toBeNull();
   expect(swap).not.toHaveBeenCalled();
@@ -349,16 +353,14 @@ it("waits for both armies' progress instead of guessing the survivor", () => {
   store.applyFacts([{ model: "ArmyProgress", key: "0xf2022", value: null }]);
   const { swap } = render(store);
   expect(host.textContent).toContain("Waiting for both armies’ progress.");
-  expect(host.textContent).not.toContain("survives at");
+  expect(struckXp()).toBeNull();
   expect(button(/^Move /)!.disabled).toBe(true);
   expect(swap).not.toHaveBeenCalled();
 });
 
 it("asks before dissolving an army with a whole upgrade more progression, then sends the chosen direction", async () => {
   const { swap, close } = render(transferArmies(100, 0));
-  expect(button("All to Army 1")).toBeDefined();
-  expect(button("All to Army 2")).toBeDefined();
-  expect(host.textContent).toContain("Army 2 survives at");
+  expect(struckXp()).toBe("100 XP");
   await act(async () => button("Merge into Army 2")!.click());
   expect(swap).not.toHaveBeenCalled();
   expect(close).not.toHaveBeenCalled();
@@ -378,11 +380,11 @@ it("asks before dissolving an army with a whole upgrade more progression, then s
 it("clears confirmation when the split changes and still lets the stronger target survive without it", async () => {
   const { swap } = render(transferArmies(100, 0));
   await act(async () => button("Merge into Army 2")!.click());
-  act(() => button("Even")!.click());
+  slide(550);
   expect(button(/^Confirm merge/)).toBeUndefined();
-  act(() => button("All to Army 2")!.click());
+  slide(0);
   expect(button("Merge into Army 2")).toBeDefined();
-  act(() => button("All to Army 1")!.click());
+  slide(1_100);
   await act(async () => button("Merge into Army 1")!.click());
   expect(swap).toHaveBeenCalledOnce();
   expect(swap).toHaveBeenCalledWith(

@@ -139,46 +139,50 @@ const main = () => {
           run("find", "role", "button", "click", "--name", "Merge into Army 2", "--exact");
           run("wait", "--text", "Confirm merge into Army 2");
 
-          const confirmed = JSON.parse(
-            run(
-              "eval",
-              `(() => {
+          // What the sheet shows: its text, the XP struck out on the card of the army a merge empties, and whether the
+          // confirmation and its loss line stand in view.
+          const readSheet = () =>
+            JSON.parse(
+              run(
+                "eval",
+                `(() => {
             const sheet = document.querySelector('[role="dialog"]');
             const button = [...sheet.querySelectorAll('button')].find(b => b.textContent === 'Confirm merge into Army 2');
             const visible = element => {
               const box = element?.getBoundingClientRect();
               return !!box && box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight;
             };
-            return { text: sheet.textContent, reachable: visible(button), lossVisible: visible(sheet.querySelector('.ui-notice')) };
+            return { text: sheet.textContent, struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), lossVisible: visible(sheet.querySelector('.ui-notice')) };
           })()`,
-            ),
-          );
+              ),
+            );
+          const confirmed = readSheet();
           writeFileSync(join(values.out, `${shot}-confirmation.json`), JSON.stringify(confirmed, null, 2));
           if (
             !confirmed.reachable ||
             !confirmed.lossVisible ||
-            !confirmed.text.includes("Army 2 survives") ||
+            confirmed.struck !== "100 XP" ||
             !confirmed.text.includes("Army 1 loses 200 progression value")
           ) {
-            throw new Error(`${shot}: the chosen target and exact loss must be visible with a reachable confirmation`);
+            throw new Error(`${shot}: the army leaving, its exact loss and a reachable confirmation must be visible`);
           }
           run("screenshot", join(values.out, `${shot}-confirm.png`));
-          run(
-            "eval",
-            "[...document.querySelectorAll('button')].find(b => b.textContent === 'Even').scrollIntoView({block: 'center'})",
-          );
-          run("find", "role", "button", "click", "--name", "Even", "--exact");
-          run("wait", "--text", "Move 50 to Army 2");
-          const partial = JSON.parse(run("eval", "document.querySelector('[role=dialog]').textContent"));
-          if (partial.includes("Confirm merge") || !partial.includes("Move 50 to Army 2")) {
-            throw new Error(`${shot}: changing the split must clear confirmation`);
+          // The slider moved one step, by key: Army 1 keeps one troop, so the merge becomes a move.
+          run("focus", 'input[type="range"]');
+          run("press", "ArrowRight");
+          run("wait", "--text", "Move 599 to Army 2");
+          const partial = readSheet();
+          if (partial.text.includes("Confirm merge") || partial.struck !== null) {
+            throw new Error(`${shot}: changing the split must clear confirmation and the merge's losses`);
           }
-          run("find", "role", "button", "click", "--name", "All to Army 1", "--exact");
-          run("wait", "--text", "Army 1 survives");
-          const reversed = JSON.parse(run("eval", "document.querySelector('[role=dialog]').textContent"));
-          if (!reversed.includes("Army 1 survives") || !reversed.includes("Merge into Army 1")) {
+          // The slider's far end: everything goes the other way, into Army 1.
+          run("press", "End");
+          run("wait", "--text", "Merge into Army 1");
+          const reversed = readSheet();
+          if (reversed.struck !== "0 XP") {
             throw new Error(`${shot}: both merge directions must remain available`);
           }
+          run("screenshot", join(values.out, `${shot}-reversed.png`));
           interactions.push({ shot, confirmed, partial, reversed });
           writeFileSync(join(values.out, "merge-interactions.json"), JSON.stringify(interactions, null, 2));
         }
