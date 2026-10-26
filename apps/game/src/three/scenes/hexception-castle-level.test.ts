@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, it } from "vitest";
 const { TileManager } = await import("@bibliothecadao/eternum");
 const { frontierDay } = await import("@/ui/features/frontier/deploy/deploy-fixture");
 const { default: HexceptionScene } = await import("./hexception");
+const { localCameraMaxDistance } = await import("./local-camera-reach");
 
 const REALM = 7;
 const REALM_TILE = { col: 5, row: 5 };
@@ -34,7 +35,9 @@ const realmView = ({ store }: Fixture) => {
     buildingMixers: new Map(),
     scene: { add: () => {}, remove: () => {} },
     hoverLabelManager: { clear: () => {} },
-    controls: {},
+    controls: {} as { maxDistance?: number },
+    // A phone held upright: the castle's reach decides how far the camera may pull back.
+    camera: { aspect: 390 / 844, fov: 45 },
     tileManager: TileManager.forStructure(store, {} as never, REALM),
     gridBuilds: {
       start: () => builds.push({ level: scene.structureStage, ringToLight: scene.newRingRadius }),
@@ -73,6 +76,10 @@ it("redraws an open realm view for a castle raised to City: its grid laid out at
   view = realmView(fixture);
   raiseCastle(fixture);
   expect(view.builds).toEqual([{ level: 1, ringToLight: 2 }]);
+  // City's second ring fits on the phone: the camera may now pull back that far.
+  expect(view.scene.controls.maxDistance).toBe(
+    localCameraMaxDistance({ plotRadius: 2, aspect: 390 / 844, fovDegrees: 45 }),
+  );
 });
 
 it("shows a castle raised while the player was on the map once they come back to the realm view", async () => {

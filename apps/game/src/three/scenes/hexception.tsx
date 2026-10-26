@@ -151,6 +151,7 @@ import {
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { SceneName } from "../types";
+import { localCameraMaxDistance } from "./local-camera-reach";
 import { LOCAL_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { localHexPosition } from "./hexception-layout";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
@@ -296,6 +297,8 @@ export default class HexceptionScene extends HexagonScene {
   private localZoomPersistTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly handleLocalZoomControlsChange = () => {
     if (this.sceneManager.getCurrentScene() !== SceneName.Hexception) return;
+    // A wheel zooms through the controls alone: the fog and far plane follow it here, as a pinch's do.
+    this.syncDistanceVisuals();
     // Programmatic camera transitions (scene entry, camera-view resets) must
     // not overwrite the player's chosen zoom; only interactive zooms persist.
     if (this.isCameraTransitionInProgress()) return;
@@ -726,7 +729,8 @@ export default class HexceptionScene extends HexagonScene {
     const settlementCenter = LOCAL_HEX_SPACE.positionForHex({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] });
     this.ambienceSystem?.setup(settlementCenter, this.hexceptionRadius);
 
-    this.controls.maxDistance = LOCAL_CAMERA_ZOOM.maxDistance;
+    // The castle's level sets how far the camera may pull back: every plot it reaches fits on the screen.
+    this.updateCastleLevel();
     this.controls.enablePan = false;
     this.controls.enableZoom = true;
     this.controls.zoomToCursor = false;
@@ -1162,6 +1166,11 @@ export default class HexceptionScene extends HexagonScene {
       structureType === StructureType.Hyperstructure
         ? getStructureStage(structureType, useUIStore.getState().structureEntityId, this.game.store)
         : this.tileManager.getRealmLevel(this.state.structureEntityId);
+    this.controls.maxDistance = localCameraMaxDistance({
+      plotRadius: buildableRadius(this.structureStage),
+      aspect: this.camera.aspect,
+      fovDegrees: this.camera.fov,
+    });
   }
 
   private handleBuildingUpdate(update: BuildingSystemUpdate, realmGeneration: number): void {
