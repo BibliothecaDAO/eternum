@@ -1,6 +1,7 @@
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { StructureType } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
+import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { ARMY_DETAIL, ATTRIBUTES, RESEARCH_TREE, type Tier } from "@/ui/design-system/kit/words";
 import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
 import { formatExact, formatPercent } from "@bibliothecadao/types";
@@ -21,7 +22,7 @@ export interface ArmyDetailFacts {
   art: IconMeaning;
   troops: number;
   xp: number;
-  stamina: { current: number; max: number };
+  stamina: StaminaBar;
   /** Seconds until the stamina is full; 0 or undefined once it is. */
   secondsToFull: number | undefined;
   /** What each tile explored sends home, in whole Essence and labor: unknown at a depth with no rule, null in a game whose reveals pay none. */
@@ -52,7 +53,7 @@ export interface ArmyView {
   art: IconMeaning;
   troops: number;
   xp: number;
-  stamina: { current: number; max: number };
+  stamina: StaminaBar;
   secondsToFull: number | undefined;
   revealYield: number | undefined | null;
   attributes: AttributeView[];

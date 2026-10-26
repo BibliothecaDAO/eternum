@@ -2,6 +2,7 @@ import { Position } from "@bibliothecadao/eternum";
 import type { IncomingTroopArrival, SiteKind } from "@bibliothecadao/eternum";
 
 import { BuildingType, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { CosmeticAttachmentTemplate } from "../cosmetics/types";
 import type { FrontierBeast } from "../structures/frontier-beast";
 
@@ -45,8 +46,8 @@ export interface StructureInfo {
     category: string | null;
     tier: number;
     count: number;
-    /** The slot's stamina, now and at most, where it is read (the battle preview's guard stamina, at the chain's tick). */
-    stamina?: { current: number; max: number };
+    /** The slot's stamina, where it is read (the battle preview's guard stamina, at the chain's tick). */
+    stamina?: StaminaBar;
   }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   incomingTroopArrivals?: IncomingTroopArrival[];

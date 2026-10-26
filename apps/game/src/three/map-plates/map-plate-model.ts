@@ -1,6 +1,7 @@
 import type { FrontierSpecies } from "../structures/frontier-beast";
 import { beastMeaning, mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
+import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { NEUTRAL_OWNER_NAME, StructureType, structureName, frontierSiteName, formatExact } from "@bibliothecadao/types";
 
 import type { SeatSide } from "@/tokens";
@@ -30,8 +31,8 @@ export interface PlateTroops {
   tier: 1 | 2 | 3;
   count: number;
   beast?: FrontierSpecies;
-  /** A guard slot's stamina, now and at most, when it is known: a structure's plate, opened, draws it. */
-  stamina?: { current: number; max: number };
+  /** A guard slot's stamina, when it is known: a structure's plate, opened, draws it. */
+  stamina?: StaminaBar;
 }
 
 /** An army's plate: its owner over its troops and stamina; opened, the realm it comes from. */
@@ -41,8 +42,8 @@ export interface ArmyPlate {
   owner: string;
   homeName: string;
   troops: PlateTroops;
-  /** Its stamina now and at most; absent when it is not known. */
-  stamina?: { current: number; max: number };
+  /** Its stamina; absent when it is not known. */
+  stamina?: StaminaBar;
   /** It fought and is on its battle cooldown: the map keeps its label in view (`keep`, map-plate-layout). */
   inBattle?: boolean;
   /** Whose it is to a watching viewer; absent while the viewer plays. */
@@ -224,6 +225,8 @@ export const buildArmyPlate = (
     | "battleTimerLeft"
   > & { isAlly?: boolean; watched?: SeatSide | null },
   homeName: string,
+  /** The stamina one explore costs: a segment of its bar. */
+  perExplore: number,
 ): ArmyPlate => ({
   kind: "army",
   relation: relationOf(army),
@@ -233,7 +236,11 @@ export const buildArmyPlate = (
   stamina:
     army.currentStamina === undefined || army.maxStamina <= 0
       ? undefined
-      : { current: Math.max(0, Math.min(army.maxStamina, army.currentStamina)), max: army.maxStamina },
+      : {
+          current: Math.max(0, Math.min(army.maxStamina, army.currentStamina)),
+          max: army.maxStamina,
+          perExplore,
+        },
   ...(inBattle(army.battleTimerLeft) ? { inBattle: true } : {}),
   ...watchedOf(army.watched, ownerOf(army.owner)),
 });

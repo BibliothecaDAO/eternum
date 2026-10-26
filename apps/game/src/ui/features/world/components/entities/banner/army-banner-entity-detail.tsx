@@ -8,7 +8,7 @@ import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-conf
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudChip, HudIconButton, HudMeter, HudPanel, HudPortrait } from "@/ui/design-system/kit/hud-elements";
+import { HudChip, HudIconButton, HudPanel, HudPortrait, HudStamina } from "@/ui/design-system/kit/hud-elements";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { isStaminaRecharging } from "@/ui/shared/lib/stamina-visuals";
 import { resolveStaminaDisplay } from "@/ui/shared/lib/stamina-display";
@@ -262,7 +262,11 @@ const InlineStaminaBar = ({
     >
       <SemanticIcon name="stamina" className="h-3 w-3" />
       <span className="min-w-0 flex-1">
-        <HudMeter share={committedPercentage / 100} tone={tone} label="Stamina" filling={recharging} />
+        <HudStamina
+          stamina={{ current: displayedCurrent, max: maxStamina, perExplore: configManager.getExploreStaminaCost() }}
+          tone={tone}
+          filling={recharging}
+        />
       </span>
       <span className="whitespace-nowrap tabular-nums">{`${displayedCurrent}/${maxStamina}`}</span>
       {rightAccessory ? <div className="flex shrink-0 items-center">{rightAccessory}</div> : null}

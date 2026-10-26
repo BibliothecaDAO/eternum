@@ -110,6 +110,7 @@ describe("a map plate's facts", () => {
         maxStamina: 120,
       },
       "Ununtutu",
+      20,
     );
     expect(plate).toEqual({
       kind: "army",
@@ -117,7 +118,7 @@ describe("a map plate's facts", () => {
       owner: "djizus",
       homeName: "Ununtutu",
       troops: { type: "knight", tier: 1, count: 1400 },
-      stamina: { current: 60, max: 120 },
+      stamina: { current: 60, max: 120, perExplore: 20 },
     });
   });
 
@@ -132,8 +133,8 @@ describe("a map plate's facts", () => {
       currentStamina: 60,
       maxStamina: 120,
     } as const;
-    expect(buildArmyPlate({ ...army, battleTimerLeft: 42 }, "Niziz").inBattle).toBe(true);
-    expect(buildArmyPlate({ ...army, battleTimerLeft: undefined }, "Niziz").inBattle).toBeUndefined();
+    expect(buildArmyPlate({ ...army, battleTimerLeft: 42 }, "Niziz", 20).inBattle).toBe(true);
+    expect(buildArmyPlate({ ...army, battleTimerLeft: undefined }, "Niziz", 20).inBattle).toBeUndefined();
     expect(buildStructurePlate(structure({ battleTimerLeft: 42 })).inBattle).toBe(true);
     expect(buildStructurePlate(structure({ battleTimerLeft: 0 })).inBattle).toBeUndefined();
   });

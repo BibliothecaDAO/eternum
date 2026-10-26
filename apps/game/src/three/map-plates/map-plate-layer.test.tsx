@@ -40,7 +40,7 @@ const army: ArmyPlate = {
   owner: "Tamsin",
   homeName: "Niziz",
   troops: { type: "knight", tier: 1, count: 1321 },
-  stamina: { current: 60, max: 120 },
+  stamina: { current: 60, max: 120, perExplore: 20 },
 };
 
 const realm: StructurePlate = {

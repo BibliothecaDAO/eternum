@@ -1,6 +1,6 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { configManager, setBlockTimestampSource, setChainProvenTimestampSource } from "@bibliothecadao/eternum";
 import { TickIds, type Troops } from "@bibliothecadao/types";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -29,6 +29,11 @@ vi.mock("@/sync/active-game-client", () => ({
 }));
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => ({ id: fixture.mode }) }));
 vi.mock("@/ui/design-system/molecules/resource-icon", () => ({ ResourceIcon: () => null }));
+
+// An explore costs 20 stamina: a segment of the army's bar.
+beforeEach(() => {
+  vi.spyOn(configManager, "getExploreStaminaCost").mockReturnValue(20);
+});
 
 afterEach(() => {
   setBlockTimestampSource(null);
