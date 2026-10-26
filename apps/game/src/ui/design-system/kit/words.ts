@@ -301,7 +301,7 @@ export const TRAINING_BUILDINGS = [
 ] as const;
 export const BUILDINGS = "Buildings";
 /** The castle rows that unlock the three depths beyond the spire. */
-export const ETHEREAL = "Ethereal";
+const ETHEREAL = "Ethereal";
 export const DEPTH_NUMERALS = ["I", "II", "III"] as const;
 /** A depth by its name: "Ethereal II". */
 export const depthName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${DEPTH_NUMERALS[depth - 1]}`;
