@@ -86,13 +86,29 @@ describe("the status strip", () => {
     flyTarget: `test-${kind}`,
   });
 
-  it("reads a 24-hour day in hours, as Play does: never '1d' (live-qa-night-1 P3-8)", () => {
+  it("reads a 24-hour day in hours on the dial, as Play does: never '1d' (live-qa-night-1 P3-8)", () => {
     const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
     const clock = { ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 };
-    const line = text(renderToStaticMarkup(<StatusStrip clock={clock} stores={[store("essence", 1)]} />));
-    expect(line).toContain("24h left");
-    expect(line).toContain("Tomorrow lasts 24h");
-    expect(line).not.toMatch(/\b1d\b/);
+    const markup = renderToStaticMarkup(<StatusStrip clock={clock} stores={[store("essence", 1)]} />);
+    expect(markup).toContain(`aria-label="Day ${day.day} · 24h left"`);
+    expect(markup).not.toMatch(/\b1d\b/);
+  });
+
+  it("keeps the strip to one row: the day's ring runs down through the day and turns red in its last hour", () => {
+    const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
+    const morning = renderToStaticMarkup(
+      <StatusStrip clock={{ ...day, shareLeft: 0.75, tone: "calm" }} stores={[store("essence", 1)]} />,
+    );
+    // The clock line lives in Today now; the strip says no "Day ends" and no "Tomorrow lasts".
+    expect(text(morning)).not.toContain("Day ends");
+    expect(text(morning)).not.toContain("Tomorrow lasts");
+    expect(morning).toContain('stroke-dashoffset="0.25"');
+    expect(morning).not.toContain('data-tone="bad"');
+    const lastHour = renderToStaticMarkup(
+      <StatusStrip clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} stores={[store("essence", 1)]} />,
+    );
+    expect(lastHour).toContain('stroke-dashoffset="0.95"');
+    expect(lastHour).toContain('class="ui-dial" data-tone="bad"');
   });
 
   it("shows each store with a limit bar where it has a limit, and dashes the unknown", () => {
@@ -110,7 +126,6 @@ describe("the status strip", () => {
     expect(markup).toContain('role="img" aria-label="labor 9,000 of 18,000"');
     expect(markup).toContain('role="img" aria-label="wheat — of 18,000"');
     expect(text(markup)).toContain("—");
-    expect(text(markup)).toContain("Tomorrow lasts 16h");
   });
 });
 

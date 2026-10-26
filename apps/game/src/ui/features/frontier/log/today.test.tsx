@@ -11,6 +11,15 @@ import { dayBounds } from "../hud/day-clock";
 import { TodaySheet } from "./today-sheet";
 
 const DAY = 16 * 3_600;
+const HOUR = 3_600;
+const CLOCK = {
+  day: 12,
+  endsAt: 1_800_000_000,
+  secondsLeft: 7 * HOUR + 14 * 60,
+  tomorrowSeconds: 12 * HOUR,
+  shareLeft: 0.45,
+  tone: "calm" as const,
+};
 const totals = { reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: undefined };
 
 const render = (props: Partial<Parameters<typeof TodaySheet>[0]>) => {
@@ -25,6 +34,7 @@ const render = (props: Partial<Parameters<typeof TodaySheet>[0]>) => {
         <TodaySheet
           day={12}
           today
+          clock={CLOCK}
           totals={totals}
           lines={[{ id: "a", at: 0, text: "Army 1 cleared a camp" }]}
           history="whole"
@@ -75,6 +85,19 @@ describe("Today", () => {
     act(() => host.querySelector<HTMLButtonElement>("button[aria-label='Day 11']")!.click());
     expect(onEarlier).toHaveBeenCalled();
     unmount();
+  });
+
+  it("says today's clock, the strip keeping only its dial, and no clock on an earlier day", () => {
+    const shown = render({});
+    const timer = shown.host.querySelector('[role="timer"]')!;
+    expect(timer.textContent).toContain("Day ends");
+    expect(timer.textContent).toContain("7h 14m");
+    expect(timer.textContent).toContain("Tomorrow lasts");
+    expect(timer.textContent).toContain("12h");
+    shown.unmount();
+    const earlier = render({ day: 11, today: false });
+    expect(earlier.host.querySelector('[role="timer"]')).toBeNull();
+    earlier.unmount();
   });
 
   it("puts no tooltip over a line that already reads whole", () => {

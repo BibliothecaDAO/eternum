@@ -34,7 +34,8 @@ export const FrontierToday = ({
   const { setup } = useGame();
   const now = useNowSeconds();
   const player = realm ? `0x${BigInt(realm.owner).toString(16)}` : null;
-  const today = dayClock(rules, now).day;
+  const clock = dayClock(rules, now);
+  const today = clock.day;
   const [chosen, setChosen] = useState<number | null>(null);
   const day = chosen ?? today;
   // Only a read that answered and reaches the day counts, an empty day as zero; otherwise every total is a dash.
@@ -45,6 +46,7 @@ export const FrontierToday = ({
     <TodaySheet
       day={day}
       today={day === today}
+      clock={clock}
       totals={played.totals}
       lines={logLines(played.stories, setup.store)}
       armiesToUpgrade={onOpenArmy && day === today ? buyers.length : undefined}

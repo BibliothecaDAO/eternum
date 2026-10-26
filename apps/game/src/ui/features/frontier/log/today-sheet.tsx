@@ -2,6 +2,9 @@ import { formatAmount, formatClockTime } from "@bibliothecadao/types";
 import { HudEventRow, HudIconButton, HudNotice, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { DAY, DAY_HISTORY_SHORT, TODAY, TODAY_ERROR } from "@/ui/design-system/kit/words";
 import { Icon } from "@/ui/design-system/icon";
+import { ClockLine } from "@/ui/design-system/kit/clock-line";
+
+import type { DayClock } from "../hud/day-clock";
 
 import { type DayTotals, DayTotalsGrid } from "./day-totals";
 import type { DayHistory } from "./player-day";
@@ -10,13 +13,15 @@ import type { DayHistory } from "./player-day";
 export type LogLine = { id: string; at: number; text: string };
 
 /**
- * Today (wireframe 12), a sheet from the Menu: the day's totals, the armies with a tier to buy, the day's log newest
- * first, and the stepper to earlier days. The clock is on the strip, not repeated. When the log did not answer, its
+ * Today (wireframe 12), a sheet from the day's dial: today's clock line (when it ends, the time left, how long tomorrow
+ * lasts; the strip keeps only the dial), the day's totals, the armies with a tier to buy, the day's log newest first,
+ * and the stepper to earlier days. When the log did not answer, its
  * card says so, with Try again; when the history no longer reaches back to the day's start, it says so above the log.
  */
 export const TodaySheet = ({
   day,
   today,
+  clock,
   totals,
   armiesToUpgrade,
   lines,
@@ -30,6 +35,8 @@ export const TodaySheet = ({
   day: number | undefined;
   /** The day shown is today. */
   today: boolean;
+  /** Today's clock, shown under the title while the day shown is today. */
+  clock: DayClock;
   totals: DayTotals;
   /** Armies with an attribute tier their XP can buy; absent until the army's XP is read. */
   armiesToUpgrade?: number;
@@ -48,6 +55,14 @@ export const TodaySheet = ({
   return (
     <HudSheet label={TODAY} onClose={onClose}>
       <span className="text-hud-title">{title}</span>
+      {today && (
+        <ClockLine
+          endsAt={clock.endsAt}
+          secondsLeft={clock.secondsLeft}
+          tomorrowSeconds={clock.tomorrowSeconds}
+          tone={clock.tone}
+        />
+      )}
       <DayTotalsGrid totals={totals} />
       {armiesToUpgrade !== undefined && armiesToUpgrade > 0 && (
         <HudRow lead={<Icon name="picks" size={22} />} title={formatAmount(armiesToUpgrade)} onClick={onArmies} />

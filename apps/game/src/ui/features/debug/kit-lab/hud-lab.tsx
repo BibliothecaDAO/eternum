@@ -1381,6 +1381,7 @@ const LabResults = ({
     <TodaySheet
       day={results === "today-earlier" ? 11 : 12}
       today={results !== "today-earlier"}
+      clock={CLOCK}
       totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}
       armiesToUpgrade={2}
       lines={readTodayLog()}
