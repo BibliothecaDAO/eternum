@@ -405,21 +405,10 @@ export const TRANSFER_TROOPS = {
   confirmMerge: (army: string) => `Confirm merge into ${army}`,
   confirmLoss: (army: string, lost: number, kept: number) =>
     `${army} loses ${formatExact(lost)} progression value (XP + upgrades). The surviving army keeps ${formatExact(kept)}. Confirm to merge.`,
-  survives: (army: string, col: number, row: number, slot: number) =>
-    `${army} survives at (${col}, ${row}) · slot ${slot}.`,
-  progression: (value: number, xp: number, loser: string) =>
-    `${formatExact(value)} progression value (XP + all upgrades) · ${formatExact(xp)} unspent XP kept. ${loser}’s XP and upgrades are not carried over.`,
-  mergedStamina: (stamina: number | undefined) =>
-    stamina === undefined
-      ? "Stamina —"
-      : `${formatCharge(stamina)} stamina after merging. The other army’s slot is released.`,
   split: (picked: string, tapped: string) => `Troops: ${picked} keeps this many, ${tapped} the rest`,
-  allTo: (army: string) => `All to ${army}`,
-  even: "Even",
   pick: "Pick a split",
   move: (count: number, to: string) => `Move ${formatAmount(count)} to ${to}`,
   sending: "Moving…",
-  leaves: (army: string) => `${army} is left with none and leaves the map.`,
   cap: (cap: number) => `An army holds at most ${formatAmount(cap)}.`,
   unalike: (picked: string, tapped: string) =>
     `${picked} and ${tapped} hold different troops: only armies of the same troops and tier join.`,

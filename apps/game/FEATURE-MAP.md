@@ -491,15 +491,16 @@ an eligible player. The lab proof does not establish those live actions.
   the player creates one from the reserve.
 - **Merging armies.** Select an army, then an adjacent army or realm of yours: the transfer panel moves troops between
   them, across realms too. Both sides must hold the same troop type and tier. Frontier opens its **Transfer troops**
-  sheet: a full merge keeps the chosen target and shows its progression (unspent XP plus purchased or trained tiers),
-  its position and slot, the resulting stamina and the other army’s XP and upgrades lost. The troop totals and **Merge
-  into …** button name that same survivor. If the dissolving army has at least one first-tier upgrade more progression
-  (100 XP in the current preset), click **Merge into …**, review the loss, then **Confirm merge into …**. Smaller gaps
-  send on the first click. Changing the split or army facts clears confirmation. Partial transfers keep both armies.
-  Dev: `/lab/kit/hud/merge`; tests drive the map’s actual selection card. Browser proof:
+  sheet as a merge into the army tapped: the map chose which army goes into which. Its two cards show each army's
+  troops, stamina and XP now and after; the army a merge empties is faded with its XP struck out, and the one that stays
+  shows the stamina the merge leaves it. **Merge into …** names the army that stays. The slider moves the split either
+  way, down to a partial move that keeps both armies. If the dissolving army has at least one first-tier upgrade more
+  progression (unspent XP plus purchased or trained tiers; 100 XP in the current preset), click **Merge into …**, review
+  the loss, then **Confirm merge into …**. Smaller gaps send on the first click. Changing the split or army facts clears
+  confirmation. Dev: `/lab/kit/hud/merge`; tests drive the map’s actual selection card. Browser proof:
   `pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <new-directory> --only frontier-merge`.
-  It clicks both directions and the loss step at desktop and phone sizes, preserving screenshots and a transcript
-  without sending.
+  It takes the loss step, a partial move and the merge the other way by the slider, at desktop and phone sizes,
+  preserving screenshots and a transcript without sending.
 
 ## World atmosphere
 
