@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-const facts = vi.hoisted(() => ({ held: true, claimed: false }));
+const facts = vi.hoisted(() => ({ held: true, claimed: false, balance: 0 as number | undefined }));
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
     setup: {
@@ -26,7 +26,7 @@ vi.mock("@/hooks/context/game-context", () => ({
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => 20_000 * 86400 + 3600 }));
 vi.mock("@/runtime/world/store", () => ({ requireActiveGame: () => ({ chainId: "0x52", gameId: 3 }) }));
-vi.mock("../realm-stores", () => ({ useRealmStores: () => ({ labor: { amount: 0, limit: 18000 } }) }));
+vi.mock("../realm-stores", () => ({ useRealmStores: () => ({ labor: { amount: facts.balance, limit: 18000 } }) }));
 import { FrontierRealms } from "./frontier-realms";
 import { useRealmLabor } from "./use-realm-labor";
 const home = { game_id: 3, entity_id: 412n, owner: 0xaccn, metadata: { realm_id: 711 } } as NativeRows["Structure"];
@@ -36,6 +36,7 @@ const Sheet = () => (
 afterEach(() => {
   facts.held = true;
   facts.claimed = false;
+  facts.balance = 0;
   vi.unstubAllGlobals();
 });
 it("claims its settled home once and takes the result from the next native facts", async () => {
@@ -49,6 +50,10 @@ it("claims its settled home once and takes the result from the next native facts
   const root = createRoot(host);
   const show = () => act(async () => root.render(<Sheet />));
   try {
+    facts.balance = undefined;
+    await show();
+    expect(host.textContent).toBe("");
+    facts.balance = 0;
     await show();
     const claim = [...host.querySelectorAll("button")].find((button) => button.textContent === "Claim 1,000 Labor")!;
     await act(async () => claim.click());

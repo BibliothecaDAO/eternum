@@ -20,7 +20,7 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
   if (!realm) return undefined;
   const { game_id, entity_id } = realm;
   const laborRules = setup.store.get("LaborRules", { game_id });
-  if (!laborRules || !labor) return undefined;
+  if (!laborRules || labor?.amount === undefined) return undefined;
   const settled = setup.store.get("SettledRealm", { game_id, realm_id: realm.metadata.realm_id });
   const claimed = setup.store.get("LaborGrant", {
     game_id,
