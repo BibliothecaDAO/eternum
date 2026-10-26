@@ -154,9 +154,9 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
-import { Box3, Group, Plane, Raycaster, Sphere, Vector2, Vector3 } from "three";
+import { Box3, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { zoomTowardCursor } from "./worldmap-zoom/worldmap-zoom-anchor";
-import { inOpenMapArea, openMapArea } from "../utils/labels/hud-clearance";
+import { inOpenMapArea } from "../utils/labels/hud-clearance";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
 import type { TerrainPresentationEvent } from "@/three/terrain/worldmap-procedural-terrain";
@@ -4089,6 +4089,27 @@ export default class WorldmapScene extends WarpTravel {
   private clearSelection() {
     this.clearEntitySelection();
     this.state.selectOnMap(null);
+  }
+
+  /**
+   * On a phone a tapped tile's card stands over the map's foot (owner, 26 October 2026: layout A, "the camera puts the
+   * tapped tile in the map left open"): once the card stands, a tile it covers is framed in the map left open above it.
+   * A tile still in sight keeps the camera where the player put it.
+   */
+  private keepSelectedTileInSight(selectedHex: HexPosition | null): void {
+    if (!selectedHex || !this.hudCarriesOrderVerb()) return;
+    // The card opens on the render after the tap; the open area is read once it stands.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const now = this.state.selectedHex;
+        if (!now || now.col !== selectedHex.col || now.row !== selectedHex.row) return;
+        const tile = Position.fromContract({ x: selectedHex.col, y: selectedHex.row });
+        const normalized = tile.getNormalized();
+        const viewport = { width: window.innerWidth, height: window.innerHeight };
+        if (inOpenMapArea(projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera), viewport)) return;
+        this.frameOnOpenMap([tile]);
+      }),
+    );
   }
 
   /**
@@ -8604,20 +8625,7 @@ export default class WorldmapScene extends WarpTravel {
     const middle = points
       .reduce((sum, point) => sum.add(new Vector3(point.x, point.y, point.z)), new Vector3())
       .divideScalar(points.length);
-    this.moveCameraToXYZ(middle.x, middle.y, middle.z, 0);
-    const viewport = { width: window.innerWidth, height: window.innerHeight };
-    const area = openMapArea(viewport);
-    const aim = new Vector2(
-      (area.left + area.right) / viewport.width - 1,
-      1 - (area.top + area.bottom) / viewport.height,
-    );
-    this.camera.updateMatrixWorld();
-    const raycaster = new Raycaster();
-    raycaster.setFromCamera(aim, this.camera);
-    const ground = raycaster.ray.intersectPlane(new Plane(new Vector3(0, 1, 0), -middle.y), new Vector3());
-    if (!ground) return;
-    // The ground now under the open area's centre is where the midpoint should be: move by the difference.
-    this.moveCameraToXYZ(2 * middle.x - ground.x, middle.y, 2 * middle.z - ground.z, 0);
+    this.centerOnOpenMap(middle);
   }
 
   private async focusAndSelectArmy(
@@ -8930,6 +8938,7 @@ export default class WorldmapScene extends WarpTravel {
         this.state.selectedHex = selectedHex;
         this.showSelectedHexRing(selectedHex);
         this.refreshSelectedPlate();
+        this.keepSelectedTileInSight(selectedHex);
       },
     });
     this.storeSubscriptions.push(

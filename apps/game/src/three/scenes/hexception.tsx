@@ -928,7 +928,22 @@ export default class HexceptionScene extends HexagonScene {
         this.state.setLeftNavigationView(LeftView.EntityView);
         if (canConstruct) this.openPlotConstruction(normalizedCoords);
       }
+      this.keepPlotInSight(normalizedCoords);
     }
+  }
+
+  /**
+   * The card a tapped plot opens (the build sheet, a building's, the castle's) stands over a phone's foot (owner, 26
+   * October 2026: layout A): once it stands, a plot it covers comes up into the board left open above it.
+   */
+  private keepPlotInSight(plot: HexPosition): void {
+    // The card opens on the render after the tap; the open area is read once it stands.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const { x, y, z } = this.hexSpace.positionForHex(plot);
+        this.keepInOpenMap(new Vector3(x, y, z));
+      }),
+    );
   }
 
   /** The unpinned ghost follows the pointer, red over a plot it cannot stand on. */
