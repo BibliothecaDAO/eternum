@@ -207,9 +207,10 @@ export const needsAt = (building: string, tier: string) => `Needs ${building} at
 export const ONE_A_REALM = "Built. A realm holds one.";
 /** The arrow beside a price that has risen (a screen reader's words). */
 export const PRICE_UP = "price raised";
-/** Why a price is above its base, on the arrow beside it: "Base 400 labor, ×5 with 2 standing". */
-export const priceRaised = (base: string, noun: string, times: string, standing: string) =>
-  `Base ${base} ${noun}, ×${times} with ${standing} standing`;
+/** Why a price is above its first, on the arrow beside it, in one line and no sum: "Costs more with each one standing: 2". */
+export const priceRaised = (standing: string) => `Costs more with each one standing: ${standing}`;
+/** A market's price for one unit, as a shop says it, never as an equation: "0.03 LORDS each". */
+export const priceEach = (price: string, currency: string) => `${price} ${currency} each`;
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
 export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;

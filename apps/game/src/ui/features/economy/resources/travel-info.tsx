@@ -1,6 +1,4 @@
-import { HudRow } from "@/ui/design-system/kit/hud-elements";
 import { heldAgainstNeed } from "@/ui/design-system/kit/words";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useGame } from "@/hooks/context/game-context";
 
@@ -17,7 +15,8 @@ import { ResourcesIds, type ID, type Resource, formatClockTime } from "@biblioth
 import { useEffect } from "react";
 
 /**
- * A bank pickup's carriage: when the goods land at the structure, their weight, and the donkeys it burns. The landing
+ * A bank pickup's carriage: when the goods land at the structure, and the donkeys it takes (their weight is how the
+ * chain counts them, never shown: the donkeys are what a player has or lacks). The landing
  * is the chain's: the donkeys' round trip from the bank, at the troops' pace when troops are among the goods, landing
  * at the end of the delivery tick it ends in.
  */
@@ -73,49 +72,11 @@ export const TravelInfo = ({
             <dd className="text-hud-strong">{formattedArrivalTime}</dd>
           </>
         )}
-        <dt className="text-right text-hud-label text-hud-muted">Total Transfer Weight</dt>
-        <dd className="text-hud-strong">{`${resourceWeightKg} kg`}</dd>
         <dt className="text-right text-hud-label text-hud-muted">Donkeys Burnt for Transfer</dt>
         <dd className={canCarry ? "text-hud-strong text-hud-good" : "text-hud-strong text-hud-bad"}>
           🔥🫏 {heldAgainstNeed(donkeyBalance, neededDonkeys)}
         </dd>
       </dl>
-      <ResourceWeight />
     </div>
   );
 };
-
-/** What one unit of each kind of good weighs, the goods of each kind painted beside it. */
-const WEIGHTS: { weight: string; kind?: string; resources: ResourcesIds[] }[] = [
-  { weight: "0 kg/unit", resources: [ResourcesIds.Lords, ResourcesIds.Donkey] },
-  { weight: "0.1 kg/unit", kind: "Fragment", resources: [ResourcesIds.AncientFragment] },
-  { weight: "0.1 kg/unit", kind: "Food", resources: [ResourcesIds.Wheat, ResourcesIds.Fish] },
-  { weight: "1 kg/unit", kind: "Resources", resources: [ResourcesIds.Wood, ResourcesIds.Stone, ResourcesIds.Gold] },
-  {
-    weight: "5 kg/unit",
-    kind: "All Troops",
-    resources: [ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin],
-  },
-];
-
-const ResourceWeight = () => (
-  <div className="flex flex-col gap-1">
-    <p className="text-hud-label italic text-hud-muted">Resource weights per unit:</p>
-    <div className="grid grid-cols-2 gap-1">
-      {WEIGHTS.map(({ weight, kind, resources }) => (
-        <HudRow
-          key={`${weight}-${kind ?? "none"}`}
-          lead={
-            <span className="flex items-center gap-1">
-              {resources.map((resource) => (
-                <ResourceIcon key={resource} resource={resource} size="sm" />
-              ))}
-            </span>
-          }
-          title={weight}
-          detail={kind}
-        />
-      ))}
-    </div>
-  </div>
-);

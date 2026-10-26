@@ -2,6 +2,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUISound } from "@/audio";
 import { useConfirmsLoss } from "@/hooks/helpers/use-confirm-for";
 import { HudButton, HudConfirm, HudIconButton, HudNotice, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { priceEach } from "@/ui/design-system/kit/words";
 import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
@@ -236,10 +237,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
         {isBuyResource ? renderResourceBar(true, false) : renderResourceBar(true, true)}
       </div>
       <div className="flex flex-col gap-1">
-        <HudRow
-          title="Price"
-          trail={`1 ${chosenResourceName} = ${formatFigure(marketManager.getMarketPrice())} ${LORDS}`}
-        />
+        <HudRow title="Price" trail={priceEach(formatFigure(marketManager.getMarketPrice()), LORDS)} />
         <HudRow
           title="Slippage"
           trail={
