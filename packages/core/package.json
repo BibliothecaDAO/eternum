@@ -46,6 +46,10 @@
       "types": "./dist/automation/index.d.ts",
       "import": "./dist/automation/index.js"
     },
+    "./build-order": {
+      "types": "./dist/automation/build-order.d.ts",
+      "import": "./dist/automation/build-order.js"
+    },
     "./device-signer": {
       "types": "./dist/account/device-signer.d.ts",
       "import": "./dist/account/device-signer.js"

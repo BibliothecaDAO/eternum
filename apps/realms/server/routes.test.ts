@@ -69,6 +69,7 @@ it.each([
   ["/api/chat/blocks", "POST"],
   ["/api/chat/blocks/0x2", "DELETE"],
   ["/api/notifications/preferences", "POST"],
+  ["/api/build-orders", "POST"],
   ["/api/notifications/push/subscribe", "POST"],
 ])("rejects sibling-origin and originless cookie mutations at %s", async (path, method) => {
   for (const originHeader of [null, "https://herald.realms.party", "null"]) {

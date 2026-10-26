@@ -34,6 +34,7 @@ import {
   type ConstructionBuildabilityInput,
 } from "./construction";
 import { generateBuildablePositions } from "./building-spots";
+import type { BuildOrder } from "./build-order";
 type StaticBlitzBuildKey = Exclude<BlitzBuildKey, "military">;
 type BuildabilityContext = {
   entityId: number;
@@ -184,8 +185,10 @@ export function readBlitzRealmSuggestions(input: {
   mode?: ConstructionBuildabilityInput["mode"];
   /** The default tick the upgrade's cost and the troops on hand are judged at. */
   tick: number;
+  /** The order the player follows: their active one, or the default. */
+  order: BuildOrder;
 }): BlitzSuggestionDraft[] {
-  const { store, realmId, realmName, isBlitzActive, tiles, mode, tick } = input;
+  const { store, realmId, realmName, isBlitzActive, tiles, mode, tick, order } = input;
   const game_id = configManager.getActiveGameId();
   const structure = store.require("Structure", { game_id, entity_id: realmId });
   if (structure.base.category !== StructureType.Realm) return [];
@@ -208,21 +211,24 @@ export function readBlitzRealmSuggestions(input: {
   const hasAvailableBuildingTile = generateBuildablePositions(buildableRadius(structure.base.level)).some(
     (spot) => (spot.col !== BUILDINGS_CENTER[0] || spot.row !== BUILDINGS_CENTER[1]) && !tiles.isHexOccupied(spot),
   );
-  return buildBlitzRealmSuggestions({
-    realmId,
-    realmName,
-    realmLevel: structure.base.level,
-    isBlitzActive,
-    canAffordUpgrade: canAffordRealmUpgrade(realmId, structure.base.level, store, tick),
-    hasAvailableBuildingTile,
-    buildingCounts,
-    population: buildings.population.current,
-    populationCapacity: buildings.population.max + configManager.getBasePopulationCapacity(),
-    militaryTarget,
-    army: readBlitzArmyState(store, structure, militaryTarget, tick),
-    buildability: resolveBlitzBuildability(
-      { entityId: realmId, store, realm, mode, useSimpleCost: false, hasAvailableBuildingTile },
+  return buildBlitzRealmSuggestions(
+    {
+      realmId,
+      realmName,
+      realmLevel: structure.base.level,
+      isBlitzActive,
+      canAffordUpgrade: canAffordRealmUpgrade(realmId, structure.base.level, store, tick),
+      hasAvailableBuildingTile,
+      buildingCounts,
+      population: buildings.population.current,
+      populationCapacity: buildings.population.max + configManager.getBasePopulationCapacity(),
       militaryTarget,
-    ),
-  });
+      army: readBlitzArmyState(store, structure, militaryTarget, tick),
+      buildability: resolveBlitzBuildability(
+        { entityId: realmId, store, realm, mode, useSimpleCost: false, hasAvailableBuildingTile },
+        militaryTarget,
+      ),
+    },
+    order,
+  );
 }
