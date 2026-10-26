@@ -533,9 +533,8 @@ pub mod GameLedger {
                 "Ledger: claim deadline exceeds u64",
             );
             season.end = approved::END;
-            // This write and its reduced-unlock check revert together if existing paid custody would be stranded.
+            assert!(season.paid <= super::frontier_unlock(season, preset, now), "Ledger: extension exceeds unlock");
             self.frontier_days.entry((shard, season_id)).write(season);
-            assert!(season.paid <= self.frontier_unlocked(shard, season_id), "Ledger: extension exceeds unlock");
         }
 
         fn close_frontier(ref self: ContractState, shard: felt252, season_id: u32) {
@@ -562,17 +561,7 @@ pub mod GameLedger {
         fn frontier_unlocked(self: @ContractState, shard: felt252, season_id: u32) -> u256 {
             let season = self.get_frontier(shard, season_id);
             let now = starknet::get_block_timestamp();
-            if now < season.start {
-                0
-            } else if now >= season.end {
-                season.pool
-            } else {
-                let preset = self.get_preset(season.preset_id);
-                let clock = crate::types::FrontierClock { start_main_at: season.start, seed: season.seed };
-                let day = crate::days::day_of(clock, preset.day_unit_seconds, now);
-                let end = core::cmp::min(day.end, season.end);
-                season.pool * (end - season.start).into() / (season.end - season.start).into()
-            }
+            super::frontier_unlock(season, self.get_preset(season.preset_id), now)
         }
 
         fn get_payment(self: @ContractState, shard: felt252, claim_id: felt252) -> WithdrawalPayment {
@@ -1507,5 +1496,18 @@ pub mod GameLedger {
                 );
             }
         }
+    }
+}
+
+fn frontier_unlock(season: FrontierSeason, preset: Preset, now: u64) -> u256 {
+    if now < season.start {
+        0
+    } else if now >= season.end {
+        season.pool
+    } else {
+        let clock = crate::types::FrontierClock { start_main_at: season.start, seed: season.seed };
+        let day = crate::days::day_of(clock, preset.day_unit_seconds, now);
+        let end = core::cmp::min(day.end, season.end);
+        season.pool * (end - season.start).into() / (season.end - season.start).into()
     }
 }
