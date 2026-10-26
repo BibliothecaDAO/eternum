@@ -233,6 +233,18 @@ export const ROOMS: LabRoom[] = [
         inside: Object.values(HUD_INSIDE),
       },
       {
+        title: "Build panel · to pick",
+        devices: ["both", "desktop", "phone"],
+        views: [
+          view(
+            "Build panel",
+            "/lab/build-panel",
+            "build-panel",
+            load(() => import("./build-panel/view"), "BuildPanelLabView"),
+          ),
+        ],
+      },
+      {
         title: "App pages",
         views: [
           view(
