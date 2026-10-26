@@ -6,7 +6,7 @@
  * (where it stands, its first guard, its kind). A site the pull never fought or cleared has no row, so its find reads
  * "Explored" here.
  *
- *   node apps/game/scripts/lab/record-feed.mjs <pull-dir> <viewer-address> <out.json>
+ *   pnpm --dir apps/game record:feed <pull-dir> <viewer-address> <out.json>
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

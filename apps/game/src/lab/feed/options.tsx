@@ -96,7 +96,7 @@ const NamedLine = ({ reading, names, own }: RowProps) => (
 /** B: who (their face and name), the act as a painting, what it was done to as a painting, then what came of it. */
 const StripLine = ({ reading, names, own }: RowProps) => (
   <div
-    className="grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-2 border-b border-hud-line/40 py-1.5 last:border-0"
+    className="grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-2 border-b border-hud-line py-1.5 last:border-0"
     data-feed-row
   >
     <span className="text-hud-label tabular-nums text-hud-muted">{formatClockTime(reading.at)}</span>
@@ -120,7 +120,7 @@ const RunCard = ({ run, names, own }: { run: FeedRun; names: PlayerNames; own: b
   const newest = run.readings[0]!.at;
   const oldest = run.readings.at(-1)!.at;
   return (
-    <article className="rounded-md border border-hud-line bg-hud-well/60 px-2.5 py-2" data-feed-run>
+    <article className="rounded-md border border-hud-line bg-hud-well px-2.5 py-2" data-feed-run>
       <header className="flex items-center gap-2">
         <Face address={run.actor} names={names} own={own} size={28} />
         <span className="ml-auto text-hud-label tabular-nums text-hud-muted">
