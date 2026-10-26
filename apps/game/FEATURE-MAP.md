@@ -459,7 +459,9 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 the lab's game on a fixture (`/lab/game?scenario=spire`, `src/lab/game/`): the game's own map and HUD, the army
 selected, the spire found by its hover (Enter a depth) and tapped, Ethereal II entered, the EnterDepth command recorded
 and the army shown in Ethereal II; add `--viewport 390x844` for a phone. No live game, account or transaction is
-involved.
+involved. `--steps lab-realm-load` times the same game's realm view as a player first opens it (Realm pressed from the
+map, then again, then the realm's address loaded again), with what each step downloads; add `--network 20,40` for a
+player's connection.
 
 `/lab/game?scenario=realm` is the same game with the realm a full Settlement (six plots built) and the labor for a City:
 **Realm**, tap the castle, **Upgrade**. The LevelUp command is recorded and applied, the second ring's twelve plots
