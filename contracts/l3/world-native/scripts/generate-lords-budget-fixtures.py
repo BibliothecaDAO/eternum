@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Record bounded season checkpoints with the compiled conservation test; never reimplement its rules."""
 
+from functools import cache
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 WORLD = Path(__file__).resolve().parent.parent
@@ -11,6 +13,13 @@ SOURCE = WORLD / "tests/support/src/tests/lords_budget.cairo"
 DIRECTORY = WORLD / "src/tests/fixtures/lords-budget"
 INPUT = WORLD / "target/budget-checkpoint-input.txt"
 PRODUCER = "world_tests_economy::tests::lords_budget::record_budget_checkpoint"
+
+
+@cache
+def native_runner():
+    return subprocess.check_output(
+        [sys.executable, str(WORLD / "toolchain/snforge.py"), "resolve"], text=True,
+    ).strip()
 
 
 def constant(name):
@@ -21,11 +30,12 @@ def constant(name):
 
 
 def record_chunk(density, quiet, clear, first, past, previous):
+    runner = native_runner()
     fields = [density, quiet, int(clear), first, past]
     fields += [1] if previous is None else [0, *previous]
     INPUT.write_text("".join(f"{value}\n" for value in fields))
     result = subprocess.run(
-        ["snforge", "test", PRODUCER, "--exact", "--ignored", "--max-threads", "1", "--package", "world_tests_economy"],
+        [runner, "test", PRODUCER, "--exact", "--ignored", "--max-threads", "1", "--package", "world_tests_economy"],
         cwd=WORLD / "tests", env={**os.environ, "RAYON_NUM_THREADS": "1"}, text=True, capture_output=True, check=False,
     )
     if result.returncode:
@@ -43,6 +53,7 @@ def record_chunk(density, quiet, clear, first, past, previous):
 
 
 def main():
+    native_runner()
     days, chunk_days, chunks = (constant(name) for name in ("SEASON_DAYS", "CHUNK_DAYS", "CHUNKS"))
     if days != chunk_days * chunks:
         raise ValueError("Chunks must cover the whole season exactly")
