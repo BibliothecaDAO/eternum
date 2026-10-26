@@ -912,8 +912,10 @@ export const findGain = (units: number | undefined): string | null =>
  */
 const findLine = (found: string, foundBy: string, payload: Record<string, unknown>): string => {
   const scaled = amountToBigInt(payload.amount);
-  const gain = findGain(scaled === null ? undefined : scaledToUnits(scaled));
-  return gain === null ? foundBy : `${found}: ${gain} ${resourceName(Number(payload.resource_type))}`;
+  const units = scaled === null ? undefined : scaledToUnits(scaled);
+  return findGain(units) === null
+    ? foundBy
+    : `${found}: ${findGain(units)} ${resourceName(Number(payload.resource_type))}`;
 };
 
 const TROOP_PLURALS: Record<string, string> = { Knight: "Knights", Paladin: "Paladins", Crossbowman: "Crossbowmen" };
