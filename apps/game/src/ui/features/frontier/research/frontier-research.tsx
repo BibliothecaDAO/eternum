@@ -15,16 +15,17 @@ import type { Need, TreeNode } from "./research-tree";
 import { researchKey, sendResearch } from "./send-research";
 
 /**
- * The castle's tree over the game's facts, Frontier's Research page: the tree, the picked node under it, and Research
- * with the side picked. `pick` opens on a node (a building tapped on the board opens its own row); otherwise the page
- * opens on the first node the realm can research, else the first it is saving for.
+ * The castle's tree over the game's facts, Frontier's Research page: the tree, the picked node's choice at its foot, and
+ * Research with the side picked. `pick` opens on a node (a building tapped on the board opens its own row); otherwise
+ * the page opens on the first node the realm can research, else the first it is saving for.
  */
 export const FrontierResearch = ({ realm, pick }: { realm: NativeRows["Structure"]; pick?: string }) => {
   const { setup, account } = useGame();
   const tree = useResearchTree(realm);
   const goToPlace = useGoToFrontierPlace(realm);
   const researching = useAllInFlight("research");
-  const [picked, setPicked] = useState<string | undefined>(pick);
+  // Undefined until the player picks: the page opens on its first node; null once its choice is put away.
+  const [picked, setPicked] = useState<string | null | undefined>(pick);
   if (!tree) return null;
   const { nodes } = tree;
   const sending = new Set(nodes.flatMap(({ row }) => (researching.has(researchKey(realm, row)) ? [row] : [])));
@@ -60,7 +61,7 @@ export const FrontierResearch = ({ realm, pick }: { realm: NativeRows["Structure
       nodes={nodes}
       essence={tree.essence}
       labor={tree.labor}
-      picked={picked ?? firstToResearch(nodes)}
+      picked={picked === undefined ? firstToResearch(nodes) : picked}
       onPick={setPicked}
       sending={sending}
       fixFor={fixFor}
