@@ -206,8 +206,8 @@ struct ChunkInput {
     before: Option<SeasonState>,
 }
 
-const CHUNK_DAYS: u64 = 7;
-const CHUNKS: u32 = 15;
+const CHUNK_DAYS: u64 = 5;
+const CHUNKS: u32 = 21;
 
 fn initial_season() -> SeasonState {
     SeasonState { budget: empty_day(TEST_POOL, 0), paid: 0, refused: 0 }
@@ -220,7 +220,7 @@ fn assert_conservation(state: SeasonState, clock: SeasonClock, day: u64) {
     );
 }
 
-// Seven-day test VMs replace one season's retained traces; state and running totals cross every boundary.
+// Five-day test VMs replace one season's retained traces; state and running totals cross every boundary.
 fn simulate_range(input: ChunkInput, mut state: SeasonState) -> SeasonState {
     assert!(input.first_day < input.past_day && input.past_day <= SEASON_DAYS);
     let rules = rules();
@@ -265,21 +265,26 @@ fn simulate(ruins_per_day: u32, quiet_days: u64, clear: bool) -> (u128, u128) {
 }
 
 fn assert_dense_chunk(scenario: u32, chunk: u32) {
-    assert!(scenario < 3 && chunk < CHUNKS);
+    assert!(scenario < 6 && chunk < CHUNKS);
     assert_eq!(Into::<u32, u64>::into(CHUNKS) * CHUNK_DAYS, SEASON_DAYS);
     let data = read_txt(@FileTrait::new("src/tests/fixtures/lords-budget/seasons.txt"));
     let mut data = data.span();
     let records: Array<SeasonChunk> = Serde::deserialize(ref data).unwrap();
     assert!(data.is_empty());
-    assert_eq!(records.len(), 3 * CHUNKS);
+    assert_eq!(records.len(), 6 * CHUNKS);
     let index = scenario * CHUNKS + chunk;
     let record = *records.at(index);
-    let (quiet_days, clear) = match scenario {
+    let ruins_per_day = if scenario < 3 {
+        2000
+    } else {
+        300
+    };
+    let (quiet_days, clear) = match scenario % 3 {
         0 => (0, true),
         1 => (30, true),
         _ => (0, false),
     };
-    assert_eq!((record.ruins_per_day, record.quiet_days, record.clear), (2000, quiet_days, clear));
+    assert_eq!((record.ruins_per_day, record.quiet_days, record.clear), (ruins_per_day, quiet_days, clear));
     assert_eq!(record.first_day, Into::<u32, u64>::into(chunk) * CHUNK_DAYS);
     assert_eq!(record.past_day, record.first_day + CHUNK_DAYS);
     if chunk == 0 {
@@ -333,7 +338,7 @@ fn record_budget_checkpoint() {
     println!("BUDGET_CHECKPOINT {:?}", values.span());
 }
 
-// All rates, days, roots and production gates stay; dense scenarios use chained seven-day VMs.
+// All rates, days, roots and production gates stay; dense scenarios use chained five-day VMs.
 #[test]
 fn busy_2_ruins_per_day_never_borrow_future_unlocks() {
     simulate(2, 0, true);
@@ -364,74 +369,152 @@ fn unopened_20_ruins_per_day_never_borrow_future_unlocks() {
     simulate(20, 0, false);
 }
 
-#[test]
-fn busy_300_ruins_per_day_never_borrow_future_unlocks() {
-    simulate(300, 0, true);
+#[test_case(name: "days_000_004", 0)]
+#[test_case(name: "days_005_009", 1)]
+#[test_case(name: "days_010_014", 2)]
+#[test_case(name: "days_015_019", 3)]
+#[test_case(name: "days_020_024", 4)]
+#[test_case(name: "days_025_029", 5)]
+#[test_case(name: "days_030_034", 6)]
+#[test_case(name: "days_035_039", 7)]
+#[test_case(name: "days_040_044", 8)]
+#[test_case(name: "days_045_049", 9)]
+#[test_case(name: "days_050_054", 10)]
+#[test_case(name: "days_055_059", 11)]
+#[test_case(name: "days_060_064", 12)]
+#[test_case(name: "days_065_069", 13)]
+#[test_case(name: "days_070_074", 14)]
+#[test_case(name: "days_075_079", 15)]
+#[test_case(name: "days_080_084", 16)]
+#[test_case(name: "days_085_089", 17)]
+#[test_case(name: "days_090_094", 18)]
+#[test_case(name: "days_095_099", 19)]
+#[test_case(name: "days_100_104", 20)]
+fn busy_300_ruins_per_day_never_borrow_future_unlocks(chunk: u32) {
+    assert_dense_chunk(3, chunk);
 }
 
-#[test]
-fn quiet_then_busy_300_ruins_per_day_never_borrow_future_unlocks() {
-    simulate(300, 30, true);
+#[test_case(name: "days_000_004", 0)]
+#[test_case(name: "days_005_009", 1)]
+#[test_case(name: "days_010_014", 2)]
+#[test_case(name: "days_015_019", 3)]
+#[test_case(name: "days_020_024", 4)]
+#[test_case(name: "days_025_029", 5)]
+#[test_case(name: "days_030_034", 6)]
+#[test_case(name: "days_035_039", 7)]
+#[test_case(name: "days_040_044", 8)]
+#[test_case(name: "days_045_049", 9)]
+#[test_case(name: "days_050_054", 10)]
+#[test_case(name: "days_055_059", 11)]
+#[test_case(name: "days_060_064", 12)]
+#[test_case(name: "days_065_069", 13)]
+#[test_case(name: "days_070_074", 14)]
+#[test_case(name: "days_075_079", 15)]
+#[test_case(name: "days_080_084", 16)]
+#[test_case(name: "days_085_089", 17)]
+#[test_case(name: "days_090_094", 18)]
+#[test_case(name: "days_095_099", 19)]
+#[test_case(name: "days_100_104", 20)]
+fn quiet_then_busy_300_ruins_per_day_never_borrow_future_unlocks(chunk: u32) {
+    assert_dense_chunk(4, chunk);
 }
 
-#[test]
-fn unopened_300_ruins_per_day_never_borrow_future_unlocks() {
-    simulate(300, 0, false);
+#[test_case(name: "days_000_004", 0)]
+#[test_case(name: "days_005_009", 1)]
+#[test_case(name: "days_010_014", 2)]
+#[test_case(name: "days_015_019", 3)]
+#[test_case(name: "days_020_024", 4)]
+#[test_case(name: "days_025_029", 5)]
+#[test_case(name: "days_030_034", 6)]
+#[test_case(name: "days_035_039", 7)]
+#[test_case(name: "days_040_044", 8)]
+#[test_case(name: "days_045_049", 9)]
+#[test_case(name: "days_050_054", 10)]
+#[test_case(name: "days_055_059", 11)]
+#[test_case(name: "days_060_064", 12)]
+#[test_case(name: "days_065_069", 13)]
+#[test_case(name: "days_070_074", 14)]
+#[test_case(name: "days_075_079", 15)]
+#[test_case(name: "days_080_084", 16)]
+#[test_case(name: "days_085_089", 17)]
+#[test_case(name: "days_090_094", 18)]
+#[test_case(name: "days_095_099", 19)]
+#[test_case(name: "days_100_104", 20)]
+fn unopened_300_ruins_per_day_never_borrow_future_unlocks(chunk: u32) {
+    assert_dense_chunk(5, chunk);
 }
 
-#[test_case(name: "days_000_006", 0)]
-#[test_case(name: "days_007_013", 1)]
-#[test_case(name: "days_014_020", 2)]
-#[test_case(name: "days_021_027", 3)]
-#[test_case(name: "days_028_034", 4)]
-#[test_case(name: "days_035_041", 5)]
-#[test_case(name: "days_042_048", 6)]
-#[test_case(name: "days_049_055", 7)]
-#[test_case(name: "days_056_062", 8)]
-#[test_case(name: "days_063_069", 9)]
-#[test_case(name: "days_070_076", 10)]
-#[test_case(name: "days_077_083", 11)]
-#[test_case(name: "days_084_090", 12)]
-#[test_case(name: "days_091_097", 13)]
-#[test_case(name: "days_098_104", 14)]
+#[test_case(name: "days_000_004", 0)]
+#[test_case(name: "days_005_009", 1)]
+#[test_case(name: "days_010_014", 2)]
+#[test_case(name: "days_015_019", 3)]
+#[test_case(name: "days_020_024", 4)]
+#[test_case(name: "days_025_029", 5)]
+#[test_case(name: "days_030_034", 6)]
+#[test_case(name: "days_035_039", 7)]
+#[test_case(name: "days_040_044", 8)]
+#[test_case(name: "days_045_049", 9)]
+#[test_case(name: "days_050_054", 10)]
+#[test_case(name: "days_055_059", 11)]
+#[test_case(name: "days_060_064", 12)]
+#[test_case(name: "days_065_069", 13)]
+#[test_case(name: "days_070_074", 14)]
+#[test_case(name: "days_075_079", 15)]
+#[test_case(name: "days_080_084", 16)]
+#[test_case(name: "days_085_089", 17)]
+#[test_case(name: "days_090_094", 18)]
+#[test_case(name: "days_095_099", 19)]
+#[test_case(name: "days_100_104", 20)]
 fn busy_2000_ruins_per_day_never_borrow_future_unlocks(chunk: u32) {
     assert_dense_chunk(0, chunk);
 }
 
-#[test_case(name: "days_000_006", 0)]
-#[test_case(name: "days_007_013", 1)]
-#[test_case(name: "days_014_020", 2)]
-#[test_case(name: "days_021_027", 3)]
-#[test_case(name: "days_028_034", 4)]
-#[test_case(name: "days_035_041", 5)]
-#[test_case(name: "days_042_048", 6)]
-#[test_case(name: "days_049_055", 7)]
-#[test_case(name: "days_056_062", 8)]
-#[test_case(name: "days_063_069", 9)]
-#[test_case(name: "days_070_076", 10)]
-#[test_case(name: "days_077_083", 11)]
-#[test_case(name: "days_084_090", 12)]
-#[test_case(name: "days_091_097", 13)]
-#[test_case(name: "days_098_104", 14)]
+#[test_case(name: "days_000_004", 0)]
+#[test_case(name: "days_005_009", 1)]
+#[test_case(name: "days_010_014", 2)]
+#[test_case(name: "days_015_019", 3)]
+#[test_case(name: "days_020_024", 4)]
+#[test_case(name: "days_025_029", 5)]
+#[test_case(name: "days_030_034", 6)]
+#[test_case(name: "days_035_039", 7)]
+#[test_case(name: "days_040_044", 8)]
+#[test_case(name: "days_045_049", 9)]
+#[test_case(name: "days_050_054", 10)]
+#[test_case(name: "days_055_059", 11)]
+#[test_case(name: "days_060_064", 12)]
+#[test_case(name: "days_065_069", 13)]
+#[test_case(name: "days_070_074", 14)]
+#[test_case(name: "days_075_079", 15)]
+#[test_case(name: "days_080_084", 16)]
+#[test_case(name: "days_085_089", 17)]
+#[test_case(name: "days_090_094", 18)]
+#[test_case(name: "days_095_099", 19)]
+#[test_case(name: "days_100_104", 20)]
 fn quiet_then_busy_2000_ruins_per_day_never_borrow_future_unlocks(chunk: u32) {
     assert_dense_chunk(1, chunk);
 }
 
-#[test_case(name: "days_000_006", 0)]
-#[test_case(name: "days_007_013", 1)]
-#[test_case(name: "days_014_020", 2)]
-#[test_case(name: "days_021_027", 3)]
-#[test_case(name: "days_028_034", 4)]
-#[test_case(name: "days_035_041", 5)]
-#[test_case(name: "days_042_048", 6)]
-#[test_case(name: "days_049_055", 7)]
-#[test_case(name: "days_056_062", 8)]
-#[test_case(name: "days_063_069", 9)]
-#[test_case(name: "days_070_076", 10)]
-#[test_case(name: "days_077_083", 11)]
-#[test_case(name: "days_084_090", 12)]
-#[test_case(name: "days_091_097", 13)]
-#[test_case(name: "days_098_104", 14)]
+#[test_case(name: "days_000_004", 0)]
+#[test_case(name: "days_005_009", 1)]
+#[test_case(name: "days_010_014", 2)]
+#[test_case(name: "days_015_019", 3)]
+#[test_case(name: "days_020_024", 4)]
+#[test_case(name: "days_025_029", 5)]
+#[test_case(name: "days_030_034", 6)]
+#[test_case(name: "days_035_039", 7)]
+#[test_case(name: "days_040_044", 8)]
+#[test_case(name: "days_045_049", 9)]
+#[test_case(name: "days_050_054", 10)]
+#[test_case(name: "days_055_059", 11)]
+#[test_case(name: "days_060_064", 12)]
+#[test_case(name: "days_065_069", 13)]
+#[test_case(name: "days_070_074", 14)]
+#[test_case(name: "days_075_079", 15)]
+#[test_case(name: "days_080_084", 16)]
+#[test_case(name: "days_085_089", 17)]
+#[test_case(name: "days_090_094", 18)]
+#[test_case(name: "days_095_099", 19)]
+#[test_case(name: "days_100_104", 20)]
 fn unopened_2000_ruins_per_day_never_borrow_future_unlocks(chunk: u32) {
     assert_dense_chunk(2, chunk);
 }
