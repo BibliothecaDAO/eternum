@@ -4,7 +4,7 @@ import gsap from "gsap";
 import { PerspectiveCamera, Vector3 } from "three";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-const { configManager } = await import("@bibliothecadao/eternum");
+const { configManager, TileManager } = await import("@bibliothecadao/eternum");
 
 const { createCameraTransitionState } = await import("./hexagon-scene-camera-transition");
 const { createRendererRouteRuntime } = await import("../renderer-route-runtime");
@@ -15,6 +15,8 @@ const { useWorldAppearanceStore } = await import("@/hooks/store/use-world-appear
 const { HexagonScene } = await import("./hexagon-scene");
 const { SceneName } = await import("../types");
 const { default: HexceptionScene } = await import("./hexception");
+
+const { frontierDay } = await import("@/ui/features/frontier/deploy/deploy-fixture");
 
 const REALM = { entityId: 7, category: StructureType.Realm, position: { x: 5, y: 5 } };
 const MAP_PITCH = (42 * Math.PI) / 180;
@@ -32,7 +34,7 @@ const realmView = () => {
     camera,
     controls: { object: camera, target, minDistance: 2, maxDistance: 40 },
     sceneManager: { getCurrentScene: () => SceneName.Hexception },
-    state: { setStructureEntityId: () => {} },
+    state: { structureEntityId: REALM.entityId, setStructureEntityId: () => {} },
     playerStructures: [REALM],
     structureIndex: 0,
     labels: [],
@@ -50,7 +52,7 @@ const realmView = () => {
     selectRouteStructure: () => ({ structure: { entity_id: REALM.entityId }, position: { col: 5, row: 5 } }),
     bootstrapSceneOwnership: () => {},
     getThunderBoltManager: () => ({ setConfig: () => {} }),
-    tileManager: { structureType: () => StructureType.Realm },
+    tileManager: TileManager.forStructure(frontierDay().store, {} as never, REALM.entityId),
     reconcileAllBuildingInstances: () => {},
     notifyControlsChanged: () => {},
   });
