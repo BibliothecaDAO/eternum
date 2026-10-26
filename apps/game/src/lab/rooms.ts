@@ -257,6 +257,18 @@ export const ROOMS: LabRoom[] = [
         ],
       },
       {
+        title: "Research · to pick",
+        modes: ["frontier"],
+        views: [
+          view(
+            "Research and round buttons",
+            "/lab/kit/research-ux",
+            "kit/research-ux",
+            load(() => import("../ui/features/debug/kit-lab/research-ux/research-ux-lab"), "ResearchUxLab"),
+          ),
+        ],
+      },
+      {
         title: "App pages",
         views: [
           view(
