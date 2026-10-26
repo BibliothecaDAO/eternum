@@ -62,6 +62,7 @@ export const PlaceNav = ({
         bodyClassName={cn("flex items-stretch justify-between gap-0.5", sideways ? "h-full flex-col" : "min-h-14")}
       >
         <Slot
+          switchTo={onRealm ? "world" : "realm"}
           lit={false}
           icon={onRealm ? "map" : "realm"}
           word={onRealm ? WORLD : REALM}
@@ -79,12 +80,15 @@ export const PlaceNav = ({
 };
 
 const Slot = ({
+  switchTo,
   lit,
   icon,
   word,
   badge,
   onClick,
 }: {
+  /** The Realm / World switch's destination, for what reads where the player is (the playtest); none for a place. */
+  switchTo?: "realm" | "world";
   lit: boolean;
   icon: IconMeaning;
   word: string;
@@ -94,6 +98,7 @@ const Slot = ({
   <button
     type="button"
     aria-current={lit ? "page" : undefined}
+    data-switch={switchTo}
     onClick={onClick}
     className={cn(
       "flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-hud-strong",

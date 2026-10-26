@@ -122,6 +122,7 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
   place:
     document.querySelector('nav[aria-label="Places"] [aria-current="page"]')?.textContent.trim() ??
     document.querySelector('[aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ??
+    ({ world: "Realm", realm: "Map" })[document.querySelector('nav[aria-label="Places"] [data-switch]')?.dataset.switch] ??
     null,
   dialogs: [...document.querySelectorAll('[role="dialog"]')].map((dialog) => dialog.getAttribute("aria-label")),
   panels: [...document.querySelectorAll("section.ui-panel[aria-label]")]
