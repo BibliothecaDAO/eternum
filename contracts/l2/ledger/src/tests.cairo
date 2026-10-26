@@ -2670,7 +2670,6 @@ fn frontier_extension_refuses_changed_funded_identity() {
 
 
 #[test]
-#[test_case(4)]
 #[feature("safe_dispatcher")]
 fn frontier_extension_refuses_missing_closed_or_changed_preset() {
     for case in 0_u8..5 {
