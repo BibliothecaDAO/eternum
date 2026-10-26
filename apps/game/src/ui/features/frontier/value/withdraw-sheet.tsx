@@ -145,7 +145,7 @@ const Pick = ({
 
 const NoWallet = ({ held, onLinkWallet }: { held: number | undefined; onLinkWallet: () => void }) => (
   <>
-<Hero icon="lords">{formatExact(held)}</Hero>
+    <Hero icon="lords">{formatExact(held)}</Hero>
     <p className="text-center">{LORDS_GO_TO_WALLET}</p>
     <HudNotice tone="warn" line={NO_WALLET} />
     <HudButton kind="primary" icon="share" onClick={onLinkWallet}>
