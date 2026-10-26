@@ -1,5 +1,14 @@
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { depthName, RESEARCH_TREE, SHRINE, STAMINA, TIER_WORDS, WELL, XP } from "@/ui/design-system/kit/words";
+import {
+  depthName,
+  RESEARCH_TREE,
+  SHRINE,
+  STAMINA,
+  type Tier,
+  tierNumeral,
+  WELL,
+  XP,
+} from "@/ui/design-system/kit/words";
 import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from "@bibliothecadao/types";
@@ -70,7 +79,7 @@ export interface TreeNode {
   maxTier: number;
   state: NodeState;
   /** The next tier's word ("Uncommon") and price; none once done. */
-  nextWord?: string;
+  nextTier?: Exclude<Tier, 1>;
   price?: { essence: number; labor: number };
   needs: Need[];
   /** What the node does, one line, and its figure now and after the next tier. */
@@ -81,8 +90,8 @@ export interface TreeNode {
   taken: IconMeaning[];
   /** The nodes this one leads to (the tree's lines). */
   leadsTo: string[];
-  /** The Barracks' gate to the training buildings: the tier that opens them, and whether the realm reached it. */
-  gate?: { tier: string; met: boolean };
+  /** The Barracks' gate to the training buildings: the tier that opens them ("Barracks II"), and whether it is reached. */
+  gate?: { name: string; met: boolean };
 }
 
 const ROWS = {
@@ -164,7 +173,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       tier,
       maxTier: 4,
       state: stateOf(next === undefined, needs),
-      nextWord: next === undefined ? undefined : TIER_WORDS[next],
+      nextTier: next === undefined ? undefined : ((next + 1) as Exclude<Tier, 1>),
       price: next === undefined ? undefined : realm.price(row, next),
       needs,
       gives: gives(tier),
@@ -198,14 +207,14 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
 
   const tierLine = (row: number, made: string) => (tier: number) => ({
     line: RESEARCH_TREE.sidesLine(made),
-    now: TIER_WORDS[tier]!,
-    next: tier < 4 ? TIER_WORDS[tier + 1] : undefined,
+    now: tierShown(tier),
+    next: tier < 4 ? tierShown(tier + 1) : undefined,
   });
-  const gateTier = TIER_WORDS[realm.board.trainingGateTier]!;
+  const gateBarracks = `${buildingName(BuildingType.ResourceKnightT1)} ${tierShown(realm.board.trainingGateTier)}`;
   const gateNeed: Need = {
     kind: "tier",
     met: learned(ROWS.barracks).tier >= realm.board.trainingGateTier,
-    node: `${buildingName(BuildingType.ResourceKnightT1)} ${gateTier}`,
+    node: gateBarracks,
     icon: buildingIcon(BuildingType.ResourceKnightT1),
   };
 
@@ -242,9 +251,9 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       BuildingType.ResourceKnightT1,
       "army",
       (tier) => ({
-        line: tier < realm.board.trainingGateTier ? RESEARCH_TREE.gateLine(gateTier) : RESEARCH_TREE.gateOpen,
-        now: TIER_WORDS[tier]!,
-        next: tier < 4 ? TIER_WORDS[tier + 1] : undefined,
+        line: tier < realm.board.trainingGateTier ? RESEARCH_TREE.gateLine(gateBarracks) : RESEARCH_TREE.gateOpen,
+        now: tierShown(tier),
+        next: tier < 4 ? tierShown(tier + 1) : undefined,
       }),
       {
         ...twoSides(
@@ -253,7 +262,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
           { icon: "rations", words: sides.rations, at: rations },
         ),
         leadsTo: TRAINING.map(({ row }) => `row-${row}`),
-        gate: { tier: gateTier, met: gateNeed.met },
+        gate: { name: gateBarracks, met: gateNeed.met },
       },
     ),
     ...TRAINING.map(({ row, category, attribute, word }) =>
@@ -349,9 +358,18 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   }
 };
 
+/**
+ * A research tier (0 common to 4 legendary) as text beside the gems: its numeral, Uncommon I to Legendary IV, and a
+ * dash for Common, which has none.
+ */
+const tierShown = (tier: number): string => (tier === 0 ? "—" : tierNumeral((tier + 1) as Exclude<Tier, 1>));
+
 /** A training row: the level every new army of the realm starts the attribute at, and what that level gives. */
 const trainingGives = (attribute: Attribute, word: string, tier: number): TreeNode["gives"] => {
-  const at = (level: number) => RESEARCH_TREE.at(TIER_WORDS[level - 1]!, attributeEffect(attribute, level));
+  const at = (level: number) =>
+    level === 1
+      ? attributeEffect(attribute, level)
+      : RESEARCH_TREE.at(tierShown(level - 1), attributeEffect(attribute, level));
   return { line: RESEARCH_TREE.newArmiesStart(word), now: at(tier + 1), next: tier < 4 ? at(tier + 2) : undefined };
 };
 

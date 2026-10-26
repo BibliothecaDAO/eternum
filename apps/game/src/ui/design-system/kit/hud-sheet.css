@@ -475,7 +475,7 @@ button.ui-panel__name[data-action]:hover {
   color: white;
 }
 
-/* ── Rarity: a chest's tier, common to legendary; its frame thickens and warms with the tier, its pips fill. ── */
+/* ── Rarity: a chest's rarity, common to legendary; its frame thickens and warms with it. ── */
 .ui-rarity {
   --rarity: var(--hud-rarity-1);
   display: inline-flex;
@@ -513,18 +513,37 @@ button.ui-panel__name[data-action]:hover {
   border-style: double;
   box-shadow: 0 0 10px var(--hud-rarity-5);
 }
-.ui-rarity__pips {
+
+/* ── Tier: a gem in its rarity colour with the tier's numeral, Uncommon I to Legendary IV; Common draws none. ── */
+.ui-tier {
+  --rarity: var(--hud-rarity-2);
   display: inline-flex;
-  gap: 3px;
+  width: 26px;
+  height: 22px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--rarity) 65%, white),
+    var(--rarity) 55%,
+    color-mix(in srgb, var(--rarity) 70%, black)
+  );
+  color: rgb(var(--hud-dark));
+  font-size: var(--hud-text-label);
+  font-weight: 800;
+  line-height: 1;
 }
-.ui-rarity__pips > i {
-  width: 7px;
-  height: 7px;
-  border: 1px solid rgb(var(--hud-gold));
-  border-radius: var(--hud-radius-round);
+.ui-tier[data-tier="3"] {
+  --rarity: var(--hud-rarity-3);
 }
-.ui-rarity__pips > i[data-filled] {
-  background: rgb(var(--hud-gold));
+.ui-tier[data-tier="4"] {
+  --rarity: var(--hud-rarity-4);
+}
+.ui-tier[data-tier="5"] {
+  --rarity: var(--hud-rarity-5);
+  filter: drop-shadow(0 0 5px var(--hud-rarity-5));
 }
 
 /* ── Ring: a painting in a round well, its numbers on badges pinned to the rim, all in one badge: buildings top left,

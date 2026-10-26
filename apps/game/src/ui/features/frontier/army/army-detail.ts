@@ -1,5 +1,5 @@
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { ARMY_DETAIL, ATTRIBUTES, RESEARCH_TREE, TIER_WORDS } from "@/ui/design-system/kit/words";
+import { ARMY_DETAIL, ATTRIBUTES, RESEARCH_TREE, type Tier } from "@/ui/design-system/kit/words";
 import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
 import { formatExact, formatPercent } from "@bibliothecadao/types";
 
@@ -38,11 +38,11 @@ export interface AttributeView {
   name: string;
   /** The Aspect's mark the attribute wears. */
   mark: IconMeaning;
-  level: number;
+  level: Tier;
   /** What it gives now, as its effect: "+10% damage", "170 max stamina", "3% come home". */
   now: string;
-  /** The next level: its word, the change in one line, its XP, whether it is held, and the stamina buying it refills. */
-  next?: { word: string; change: string; xp: number; affordable: boolean; refill: number };
+  /** The next level: its tier, the change in one line, its XP, whether it is held, and the stamina buying it refills. */
+  next?: { tier: Exclude<Tier, 1>; change: string; xp: number; affordable: boolean; refill: number };
 }
 
 export interface ArmyView {
@@ -83,13 +83,13 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
       key,
       name: ATTRIBUTES[index],
       mark,
-      level,
+      level: level as Tier,
       now,
       next:
         price === undefined
           ? undefined
           : {
-              word: TIER_WORDS[level]!,
+              tier: (level + 1) as Exclude<Tier, 1>,
               // A Scouting level adds its step to the kind picked with it; every other attribute moves to its next figure.
               change:
                 key === "scouting"

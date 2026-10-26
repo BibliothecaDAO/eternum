@@ -28,7 +28,7 @@ import { createPortal } from "react-dom";
 
 import { OpenedFromPanel } from "./opened-from-panel";
 import { SheetHandle, useSheetCloses } from "./sheet-closes";
-import { BACK, CLOSE, type Tier, TIER_WORDS, TRY_AGAIN } from "./words";
+import { BACK, CLOSE, type Tier, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -759,16 +759,28 @@ export const HudRarity = ({ tier }: { tier: Tier }) => (
 );
 
 /**
- * The tier a player levels something to, common to legendary (a building type's row, a Barracks gate, an army's
- * attribute): its pips filled to the tier on the rarity's plate.
+ * The tier a player levels something to (a building type's row, an army's attribute): a gem in the tier's rarity
+ * colour with its numeral, Uncommon I to Legendary IV. Common draws nothing: nothing has been levelled yet.
  */
-export const HudTier = ({ tier }: { tier: Tier }) => (
-  <span className="ui-rarity" data-tier={tier} role="img" aria-label={TIER_WORDS[tier - 1]}>
-    <span aria-hidden className="ui-rarity__pips">
-      {TIER_WORDS.map((name, index) => (
-        <i key={name} data-filled={index < tier || undefined} />
-      ))}
+export const HudTier = ({ tier }: { tier: Tier }) =>
+  tier === 1 ? null : (
+    <span className="ui-tier" data-tier={tier} role="img" aria-label={TIER_WORDS[tier - 1]}>
+      {tierNumeral(tier)}
     </span>
+  );
+
+/** A tier's next step, from the gem it holds (none at Common) to the next one's. */
+export const HudTierStep = ({ from, to }: { from: Tier; to: Tier }) => (
+  <span
+    className="inline-flex items-center gap-1"
+    role="img"
+    aria-label={`${TIER_WORDS[from - 1]} → ${TIER_WORDS[to - 1]}`}
+  >
+    <HudTier tier={from} />
+    <span aria-hidden className="text-hud-muted">
+      →
+    </span>
+    <HudTier tier={to} />
   </span>
 );
 

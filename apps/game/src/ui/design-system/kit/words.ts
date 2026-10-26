@@ -27,6 +27,9 @@ import {
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
 /** A step on that scale, common (1) to legendary (5). */
 export type Tier = 1 | 2 | 3 | 4 | 5;
+/** A tier a player levels, by its numeral: Common has none (nothing levelled yet), Uncommon I to Legendary IV. */
+const TIER_NUMERALS = ["I", "II", "III", "IV"] as const;
+export const tierNumeral = (tier: Exclude<Tier, 1>): string => TIER_NUMERALS[tier - 2]!;
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
 export { BEAST_NAMES } from "@bibliothecadao/types";
@@ -204,7 +207,8 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
   return `${pair.held} / ${pair.need}`;
 };
 /** A training building waits for the Barracks' tier: "Needs Barracks at Rare". */
-export const needsAt = (building: string, tier: string) => `Needs ${building} at ${tier}`;
+/** A building that waits on another's tier, by its numeral: "Needs Barracks II". */
+export const needsTier = (building: string, numeral: string) => `Needs ${building} ${numeral}`;
 /** A training building already standing: a realm holds one of each. */
 export const ONE_A_REALM = "Built. A realm holds one.";
 /** The arrow beside a price that has risen (a screen reader's words). */
@@ -215,7 +219,9 @@ export const priceRaised = (base: string, noun: string, times: string, standing:
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
 export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
-export const startsNewArmies = (attribute: string, tier: string) => `new armies start with ${attribute} at ${tier}`;
+/** What a training building gives, by its tier's numeral: "new armies start with Battle II" (none at Common). */
+export const startsNewArmies = (attribute: string, numeral: string | undefined) =>
+  `new armies start with ${attribute}${numeral === undefined ? "" : ` ${numeral}`}`;
 /** The fix for a short store that the map can fill: "Explore for labor". */
 export const exploreFor = (noun: string) => `${EXPLORE} for ${noun}`;
 
@@ -1193,9 +1199,9 @@ export const RESEARCH_TREE = {
   sidesLine: (made: string) => `Each tier picks a side for the season: more ${made}, or store more`,
   sideKept: "The side is kept for the season.",
   hutLine: "Population from every Hut",
-  gateLine: (tier: string) => `${tier} opens the four training buildings`,
+  gateLine: (barracks: string) => `${barracks} opens the four training buildings`,
   gateOpen: "The four training buildings are open",
-  gate: (tier: string) => `${tier} opens`,
+  gate: (barracks: string) => `${barracks} opens`,
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
   /** A level and what it gives: "Uncommon · +10% damage". */
   at: (tier: string, effect: string) => `${tier} · ${effect}`,
@@ -1221,7 +1227,7 @@ export const RESEARCH_TREE = {
   held: (noun: string, have: string, need: string) => `${noun} ${have} / ${need}`,
   research: (what: string) => `Research ${what}`,
   levelUpCastle: "Level up the castle",
-  complete: "Legendary · complete",
+  complete: "Complete",
   step: (from: string, to: string) => `${from} → ${to}`,
   price: (essence: string) => `${essence} ${ESSENCE}`,
 } as const;
@@ -1252,5 +1258,4 @@ export const ARMY_DETAIL = {
   short: (xp: string, short: string) => `${xp} ${XP} · ${short} ${XP} short`,
   refills: (xp: string, stamina: string) => `${xp} ${XP} · refills ${stamina} ${STAMINA}`,
   legendary: (attribute: string) => `${attribute} is legendary`,
-  from: (attribute: string, from: string, to: string) => `${attribute} ${from} → ${to}`,
 } as const;

@@ -7,7 +7,7 @@ import { rankName } from "@bibliothecadao/types";
 /**
  * A realm's place on its ranks' ladder (the owner, 22 October: "the ranks own steps"): each rank's castle from the
  * first to the highest, the ones reached lit and the ones to come dimmed. It is the realm's rank, never a tier: the
- * rarity pips mean tiers.
+ * tier gems mean tiers.
  */
 export const RankSteps = ({ level, highest }: { level: number; highest: number }) => {
   const ranks = Array.from({ length: highest + 1 }, (_, rank) => rank);

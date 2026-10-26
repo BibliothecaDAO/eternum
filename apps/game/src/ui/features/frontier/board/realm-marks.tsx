@@ -12,7 +12,8 @@ const DEPTH_ICONS = ["depth-1", "depth-2", "depth-3"] as const;
 
 /**
  * A realm on the season's board as the owner asked (22 October): its rank's painting, and the deepest depth it has
- * gone to as a badge on its corner (none before the first).
+ * gone to as that depth's painting on its corner (none before the first), named on its tip ("City · Ethereal II"). No
+ * numeral: on the board a numeral would read as a tier.
  */
 export const RealmBadge = ({ level, depth }: { level: number; depth: number }) => {
   const step = Math.min(depth, DEPTH_NUMERALS.length) as 0 | 1 | 2 | 3;
@@ -23,10 +24,9 @@ export const RealmBadge = ({ level, depth }: { level: number; depth: number }) =
       {step > 0 && (
         <span
           aria-hidden
-          className="absolute -bottom-1 -right-2 inline-flex items-center rounded-full border border-hud-line-strong bg-hud-surface pl-0.5 pr-1 text-hud-badge leading-4 text-hud-accent"
+          className="absolute -bottom-1 -right-1.5 inline-flex rounded-full border border-hud-line-strong bg-hud-surface p-px"
         >
-          <Icon name={DEPTH_ICONS[step - 1]} size={12} />
-          {DEPTH_NUMERALS[step - 1]}
+          <Icon name={DEPTH_ICONS[step - 1]} size={14} />
         </span>
       )}
     </span>

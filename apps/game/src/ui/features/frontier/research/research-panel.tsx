@@ -1,8 +1,16 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudPanel, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudPanel, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
-import { ESSENCE, LABOR, RESEARCH, RESEARCH_TREE, RESEARCHING, TIER_WORDS } from "@/ui/design-system/kit/words";
+import {
+  ESSENCE,
+  LABOR,
+  RESEARCH,
+  RESEARCH_TREE,
+  RESEARCHING,
+  type Tier,
+  tierNumeral,
+} from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 
@@ -10,7 +18,7 @@ import { type Branch, firstMissing, type Need, needLine, type NodeState, type Tr
 
 /**
  * Research as a tree (the owner's pick, 20 October: "Branches"): three branches side by side, Economy, Army and Castle;
- * each node a tile with its painting, its level pips or price, and its state; a line where one node opens another
+ * each node a tile with its painting, its tier's gem or price, and its state; a line where one node opens another
  * (Barracks at its gate tier to the four training buildings, Reach I to II to III). The picked node opens under the tree,
  * in the same panel, never over it: what it gives now and next, the sides to pick from, each thing its next tier needs
  * ticked or not, the fix for the first one missing, and Research.
@@ -61,7 +69,7 @@ export const ResearchPanel = ({
         <div className="flex flex-col gap-2">{branch("economy").map(tile)}</div>
         <div className="flex flex-col gap-2">
           {barracks && tile(barracks)}
-          {barracks?.gate && <Gate met={barracks.gate.met} word={RESEARCH_TREE.gate(barracks.gate.tier)} />}
+          {barracks?.gate && <Gate met={barracks.gate.met} word={RESEARCH_TREE.gate(barracks.gate.name)} />}
           {training.map(tile)}
         </div>
         <div className="flex flex-col">
@@ -115,7 +123,7 @@ const Gate = ({ met, word }: { met: boolean; word: string }) => (
   </span>
 );
 
-/** A node as a tile: its painting with its state's mark, its name under it, then its level pips or its price. */
+/** A node as a tile: its painting with its state's mark, its name under it, then its tier's gem or its price. */
 const NodeTile = ({ node, picked, onPick }: { node: TreeNode; picked: boolean; onPick: () => void }) => {
   const look = STATE_LOOK[node.state];
   return (
@@ -135,7 +143,7 @@ const NodeTile = ({ node, picked, onPick }: { node: TreeNode; picked: boolean; o
       <Icon name={node.icon} size={36} />
       <span className={cn("text-hud-label leading-tight", look.text)}>{node.name}</span>
       {node.maxTier === 4 ? (
-        <HudTier tier={(node.tier + 1) as 1 | 2 | 3 | 4 | 5} />
+        <HudTier tier={tierOf(node)} />
       ) : (
         <span className="text-hud-label tabular-nums text-hud-muted">
           {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}
@@ -171,16 +179,15 @@ const NodeDetail = ({
   }, [reveal]);
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
-  const verb = node.sides?.[side]?.name ?? node.nextWord ?? node.name;
+  const verb = node.sides?.[side]?.name ?? (node.nextTier ? `${node.name} ${tierNumeral(node.nextTier)}` : node.name);
   return (
     <div ref={place} data-lab="node-detail" className="flex flex-col gap-3 border-t border-hud-divider px-3 pb-3 pt-3">
       <div className="flex items-center gap-3">
         <Icon name={node.icon} size={44} />
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="text-hud-title text-hud-ink">{node.name}</span>
-          <span className="text-hud-label text-hud-muted">{levelLine(node)}</span>
+          <LevelLine node={node} />
         </div>
-        {node.maxTier === 4 && <HudTier tier={(node.tier + 1) as 1 | 2 | 3 | 4 | 5} />}
       </div>
       <div className="flex flex-col gap-1 rounded-md bg-hud-well px-3 py-2">
         <span className="text-hud-body text-hud-ink">{node.gives.line}</span>
@@ -251,15 +258,25 @@ const NodeDetail = ({
 const needIcon = (need: Need): IconMeaning =>
   need.kind === "essence" ? "essence" : need.kind === "labor" ? "labor" : "lock";
 
-/** The node's level, or what researching it costs: "Rare → Epic", "2,000 Essence", "Legendary · complete". */
-const levelLine = (node: TreeNode): string => {
-  if (node.maxTier === 1)
-    return node.state === "done"
-      ? RESEARCH_TREE.states.done
-      : RESEARCH_TREE.price(formatExact(node.price?.essence ?? 0));
-  if (node.state === "done") return RESEARCH_TREE.complete;
-  return RESEARCH_TREE.step(TIER_WORDS[node.tier]!, node.nextWord ?? "");
+/** The node's tier and its next as gems (none at Common), complete at Legendary, or a one-off node's price. */
+const LevelLine = ({ node }: { node: TreeNode }) => {
+  if (node.maxTier === 4 && node.nextTier) return <HudTierStep from={tierOf(node)} to={node.nextTier} />;
+  if (node.maxTier === 4)
+    return (
+      <span className="flex items-center gap-1.5 text-hud-label text-hud-muted">
+        <HudTier tier={tierOf(node)} />
+        {RESEARCH_TREE.complete}
+      </span>
+    );
+  return (
+    <span className="text-hud-label text-hud-muted">
+      {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatExact(node.price?.essence ?? 0))}
+    </span>
+  );
 };
+
+/** A tiered row's tier as the kit counts it, common (1) to legendary (5). */
+const tierOf = (node: TreeNode) => (node.tier + 1) as Tier;
 
 /** The realm's Essence and labor, the panel's cue. */
 const HeldCue = ({ essence, labor }: { essence: number; labor: number }) => (
