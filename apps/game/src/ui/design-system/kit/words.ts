@@ -508,6 +508,8 @@ export const WITHDRAW = "Withdraw";
 export const SENDING = "Sending…";
 export const LINK_WALLET = "Link wallet";
 export const NO_WALLET = "No wallet linked";
+/** What a linked wallet is for on the LORDS purse, as the Realms sheet says what it is for there. */
+export const LORDS_GO_TO_WALLET = "The LORDS you withdraw go to your linked Starknet wallet.";
 export const TRANSACTION = "Transaction";
 export const PAYOUTS_PAUSED = "Payouts paused. Your LORDS stay here.";
 export const paidWhenResumed = (amount: string) => `Payouts paused. These ${amount} pay when they resume.`;

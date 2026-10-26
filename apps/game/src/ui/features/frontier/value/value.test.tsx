@@ -63,6 +63,8 @@ describe("Withdraw", () => {
   it("sends a player with no wallet to link one", () => {
     const ways = render({ wallet: null });
     expect(button("Withdraw")).toBeUndefined();
+    // What linking is for, as the Realms sheet says it for its own.
+    expect(host.textContent).toContain("The LORDS you withdraw go to your linked Starknet wallet.");
     act(() => button("Link wallet")!.click());
     expect(ways.onLinkWallet).toHaveBeenCalledTimes(1);
   });
