@@ -1,4 +1,4 @@
-import { formatGain } from "@bibliothecadao/types";
+import { findGain } from "@bibliothecadao/eternum";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { getResourceSoundId } from "@/three/sound/utils";
 import type { ResourcesIds } from "@bibliothecadao/types";
@@ -41,7 +41,8 @@ export const playRevealYield = ({
   if (own) playChainedCollect(resourceId, now);
   const counter = own ? findBankedCounter(resourceId) : null;
   if (counter) flyHome(resourceId, counter, from, now);
-  else riseSprite({ at: from, icon: resourceIcon(resourceId), label: formatGain(amount) });
+  // Under a unit a find says no amount (findGain): the resource's icon rises alone.
+  else riseSprite({ at: from, icon: resourceIcon(resourceId), label: findGain(amount) ?? "" });
 };
 
 const playChainedCollect = (resourceId: ResourcesIds, now: number) => {

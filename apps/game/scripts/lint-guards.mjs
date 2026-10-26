@@ -44,15 +44,18 @@ const AMOUNT_WRITER = "/^format(Amount|Charge)$/";
 const HAND_WRITTEN_GAIN = [
   {
     selector: `TemplateLiteral:has(> TemplateElement[value.raw=/\\+$/]):has(> CallExpression[callee.name=${AMOUNT_WRITER}])`,
-    message: 'A gain is formatGain(amount), never "+" before an amount: under a unit it says "under 1".',
+    message:
+      'A gain is formatGain(amount) (a find: findGain), never "+" before an amount, which reads "+<1" under a unit.',
   },
   {
     selector: `BinaryExpression[operator='+'][left.value='+'] > CallExpression.right[callee.name=${AMOUNT_WRITER}]`,
-    message: 'A gain is formatGain(amount), never "+" before an amount: under a unit it says "under 1".',
+    message:
+      'A gain is formatGain(amount) (a find: findGain), never "+" before an amount, which reads "+<1" under a unit.',
   },
   {
     selector: `JSXElement:has(> JSXText[value=/\\+$/]):has(> JSXExpressionContainer > CallExpression[callee.name=${AMOUNT_WRITER}])`,
-    message: 'A gain is formatGain(amount), never "+" before an amount: under a unit it says "under 1".',
+    message:
+      'A gain is formatGain(amount) (a find: findGain), never "+" before an amount, which reads "+<1" under a unit.',
   },
 ];
 

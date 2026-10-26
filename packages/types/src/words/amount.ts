@@ -39,9 +39,10 @@ export const formatExact = (value: number | bigint | undefined): string =>
 export const formatCharge = (value: number | undefined): string => formatAmount(value);
 
 /**
- * A gain: what a find, a reward or a return adds, signed ("+12", "+12.4K"), rounded as an amount is. One under a unit
- * says so in words ("under 1"): "+<1 Labor" read as nothing found (player, 25 October), and the chain did pay. Every
- * gain is written here, never as "+" before an amount (lint-guards.mjs).
+ * A gain: what a reward, a return or a preview adds, signed ("+12", "+12.4K"), rounded as an amount is. One under a
+ * unit says so in words ("under 1"), never "+<1", which players read as nothing (25 October). A find is the exception:
+ * under a unit it says no amount at all, by the story formatter's findGain (owner, 26 October). Every gain is written
+ * here, never as "+" before an amount (lint-guards.mjs).
  */
 export const formatGain = (value: number | undefined): string => {
   if (value === undefined) return "—";

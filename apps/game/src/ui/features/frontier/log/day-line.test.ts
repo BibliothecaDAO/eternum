@@ -27,8 +27,8 @@ describe("the day log's line for a story", () => {
     const reveal = (resource: ResourcesIds, amount: string) =>
       dayLogLine(story("ExplorationReward", { resource_type: resource, amount }, "+98.4 Labor"), store);
     expect(reveal(ResourcesIds.Labor, "98400000000")).toBe("+98 labor");
-    // A one-troop army's find, 0.4 labor: under 1, never "+<1" read as nothing found.
-    expect(reveal(ResourcesIds.Labor, "400000000")).toBe("under 1 labor");
+    // A one-troop army's find, 0.4 labor, says no amount (owner, 26 October): what was done, by the feed's rule.
+    expect(reveal(ResourcesIds.Labor, "400000000")).toBe("Explored");
     expect(reveal(ResourcesIds.Essence, "1250000000000")).toBe("+1,250 Essence");
   });
 

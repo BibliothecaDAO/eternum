@@ -118,11 +118,11 @@ describe("the reveal yield", () => {
     expect(plays).toHaveLength(0);
   });
 
-  it("raises the player's own reveal on its tile with its amount when no counter is on screen, as in Blitz", async () => {
+  it("raises the player's own reveal on its tile when no counter is on screen, as in Blitz: under a unit, no amount", async () => {
     const { playRevealYield } = await load();
     playRevealYield({ own: true, amount: 0.1, resourceId: LABOR, from: TILE, now: 0 });
     expect(flights).toHaveLength(0);
-    expect(rises).toEqual([expect.objectContaining({ at: TILE, label: "under 1" })]);
+    expect(rises).toEqual([expect.objectContaining({ at: TILE, label: "" })]);
     expect(plays).toHaveLength(1);
   });
 });

@@ -2,15 +2,16 @@ import {
   builtLine,
   deployedLine,
   disbandedLine,
+  EXPLORED,
   ESSENCE,
   LABOR,
   revealLine,
   xpGainedLine,
   xpSpentLine,
 } from "@/ui/design-system/kit/words";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, findGain } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { formatCharge, formatExact, formatGain, LORDS, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
+import { formatCharge, formatExact, LORDS, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
 
 import { frontierBuildingName } from "../build/building-names";
 import { armyLabel } from "../hud/dock-armies";
@@ -79,9 +80,13 @@ const builtLineOf = (payload: Record<string, unknown>): string | null => {
   return name ? builtLine(name) : null;
 };
 
-/** "+98 labor": what the reveal paid, written as the panel and the Log write it (scaledToUnits, one rounding). */
+/**
+ * "+98 labor": what the reveal paid, written as the panel and the Log write it (scaledToUnits, one rounding); under a
+ * unit, "Explored" with no amount, by the feed's own rule for a find (findGain).
+ */
 const revealPayLine = (payload: Record<string, unknown>): string | null => {
   const word = REVEAL_WORDS[Number(payload.resource_type)];
   if (!word) return null;
-  return revealLine(formatGain(scaledToUnits(BigInt(String(payload.amount)))), word);
+  const gain = findGain(scaledToUnits(BigInt(String(payload.amount))));
+  return gain === null ? EXPLORED : revealLine(gain, word);
 };

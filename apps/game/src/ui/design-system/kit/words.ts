@@ -165,6 +165,8 @@ export const RIGHT_CLICK_SENDS = "A right-click sends it at once.";
 export const CANCEL = "Cancel";
 /** A highlighted tile on its tooltip: ground not yet seen, and troops passed to another of the player's armies. */
 export const UNEXPLORED = "Unexplored";
+/** A reveal that paid under a unit, in the day log: what was done, with no amount (findGain). */
+export const EXPLORED = "Explored";
 export const TRANSFER = "Transfer";
 /** A good held whose weight the game has not given: its donkeys cannot be counted, so it cannot be sent. */
 export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
