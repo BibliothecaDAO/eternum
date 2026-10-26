@@ -25,7 +25,7 @@ fmt.workspace = true
 [[test]]
 name = "world_tests_resources_unittest"
 test-type = "unit"
-build-external-contracts = ["world_native::*", "world_test_support::*", "realms_vrf_verifier::Verifier"]
+build-external-contracts = ["world_native::*", "world_test_support::*"]
 
 [tool.snforge]
 workspace = true

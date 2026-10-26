@@ -20,6 +20,3 @@ sort-module-level-items = true
 [workspace.tool.snforge]
 # The categorical discovery checks evaluate 100,000 draws inside the VM.
 max_n_steps = 500000000
-
-[cairo]
-inlining-strategy = "avoid"
