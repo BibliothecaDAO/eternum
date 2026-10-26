@@ -162,7 +162,7 @@ function TreeStudy() {
               ? "Both sides can reach level 5. Two Barracks purchases in any combination still open training buildings. Scouts’ lodge keeps four shared training tiers, because armies still have only four Scouting upgrades."
               : rule === "budget"
                 ? "Cheaper to open the other side, but four purchases still end this row. This preserves today’s power budget and does not fully satisfy “never locked out”."
-                : "The production panel below still says “The side is kept for the season.” The proposed wording is: “Choose either side at the next tier. Past picks stay.” Prices and the four-pick limit stay as they are."}
+                : "The production panel below shows each side’s figure on its card and no rule text. Prices and the four-pick limit stay as they are."}
           </p>
           <p className="text-hud-label text-hud-muted">
             The plan isolates the rule. It records costs, not a funded realm’s affordability; the live panel also checks

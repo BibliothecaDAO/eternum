@@ -67,6 +67,17 @@ describe("the castle's tree as the contract rules it", () => {
       ["Beasts", "0%", "+20%"],
     ]);
   });
+
+  it("says what a finished Farm's picks give, read from its two sides", () => {
+    // Legendary Farm: three Fields picks (+75% wheat) and one Granary pick (+50% store).
+    const legendary = { ...MID_REALM, learned: { ...MID_REALM.learned, 0: { tier: 4, sides: [0, 1, 0, 0] } } };
+    const farm = node(legendary, "row-0");
+    expect([farm.state, farm.sides, farm.gives]).toEqual([
+      "done",
+      undefined,
+      { line: "Fields +75%", now: "Granary +50%" },
+    ]);
+  });
 });
 
 describe("Frontier's camp is its Troll on the progression views (the shared structure naming rule)", () => {
