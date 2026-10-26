@@ -46,6 +46,8 @@ interface OwnWords {
   actor?: string;
   act: IconMeaning;
   words: string;
+  /** Where the words name the actor, as the story formatter wrote them (`ownerAt`); none where they do not. */
+  named?: { at: number; length: number };
 }
 
 const BUILDING_CHANGES: Record<string, string> = {
@@ -135,7 +137,12 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
       return { actor, verb, act: "build", object: { name: buildingName(Number(payload.category), true) } };
     }
     default:
-      return { actor: playerOwner(story.owner), act: "chronicles", words: story.presentation.title };
+      return {
+        actor: playerOwner(story.owner),
+        act: "chronicles",
+        words: story.presentation.title,
+        named: ownerNamed(story.presentation),
+      };
   }
 };
 
@@ -150,6 +157,10 @@ const playerOwner = (owner: unknown): string | undefined => {
   const address = String(owner ?? "");
   return address.startsWith("0x") && BigInt(address) !== 0n ? address : undefined;
 };
+
+/** Where a story's words name its owner, as its formatter marked it. */
+const ownerNamed = ({ ownerAt, owner }: ProcessedStoryEvent["presentation"]): OwnWords["named"] =>
+  ownerAt === null || ownerAt === undefined || !owner ? undefined : { at: ownerAt, length: owner.length };
 
 /** What a story paid, written by its rule; none when the rule writes nothing. */
 const paid = (

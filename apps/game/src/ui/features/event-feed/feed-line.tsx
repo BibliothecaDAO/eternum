@@ -28,7 +28,12 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
       <Icon name={reading.act} size={16} className="ui-event__icon" />
       <span className="ui-event__text">
         {"words" in reading ? (
-          <OwnWordsLine words={reading.words} name={reading.actor && names.text(reading.actor)} own={own} />
+          <OwnWordsLine
+            words={reading.words}
+            named={reading.named}
+            name={reading.actor && names.text(reading.actor)}
+            own={own}
+          />
         ) : (
           <>
             <Name text={names.text(reading.actor)} own={own} /> {reading.verb}
@@ -79,14 +84,23 @@ const Name = ({ text, own }: { text: string; own: boolean }) => (
 );
 
 /**
- * A story in its own words with who did it named once: where the words already say the name, the name there is the
- * row's; where they do not ("Crate opened: 1 relic to the army"), the name leads them. A story no player owns stands in
- * its words alone.
+ * A story in its own words with who did it named once: where its formatter wrote the actor's name (`named`), the name
+ * there is the row's; where it did not ("Crate opened: 1 relic to the army"), the name leads the words, even when a
+ * word in them reads like it. A story no player owns stands in its words alone.
  */
-const OwnWordsLine = ({ words, name, own }: { words: string; name: string | undefined; own: boolean }) => {
+const OwnWordsLine = ({
+  words,
+  named,
+  name,
+  own,
+}: {
+  words: string;
+  named: { at: number; length: number } | undefined;
+  name: string | undefined;
+  own: boolean;
+}) => {
   if (!name) return <>{words}</>;
-  const at = wordAt(words, name);
-  if (at === -1)
+  if (!named)
     return (
       <>
         <Name text={name} own={own} /> · {words}
@@ -94,15 +108,9 @@ const OwnWordsLine = ({ words, name, own }: { words: string; name: string | unde
     );
   return (
     <>
-      {words.slice(0, at)}
-      <Name text={name} own={own} />
-      {words.slice(at + name.length)}
+      {words.slice(0, named.at)}
+      <Name text={words.slice(named.at, named.at + named.length)} own={own} />
+      {words.slice(named.at + named.length)}
     </>
   );
-};
-
-/** Where `name` stands in `words` as a whole word, not inside another ("Al" in "Alba"); -1 where it does not. */
-const wordAt = (words: string, name: string): number => {
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return words.search(new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "u"));
 };

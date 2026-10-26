@@ -53,6 +53,11 @@ export interface StoryEventPresentation {
   description?: string;
   icon: StoryEventIcon;
   owner?: string | null;
+  /**
+   * Where the title names the story's owner (the index of `owner` in it), as the formatter wrote it; null where it names
+   * them nowhere, though a word in it may read like their name (a player named "army" in "… to the army").
+   */
+  ownerAt?: number | null;
 }
 
 /** What a capture takes with the structure: what the structure owns (its armies, the deliveries bound for it) is the captor's. */
@@ -488,12 +493,29 @@ export function buildStoryEventPresentation(
 ): StoryEventPresentation {
   if (!hasStoryPresentation(event.storyType)) throw new Error(`No presentation for story ${event.storyType}`);
   const formatter = formatters[event.storyType as keyof typeof formatters];
-  const base = formatter(event, event.storyPayload ?? {}, components, resolvePlayerName);
-
+  // The owner's name is written as a mark first, so where the title names them is the formatter's word, not a guess.
+  const marked: PlayerNameResolver = (address) =>
+    isOwner(address, event.ownerAddress) ? OWNER_MARK : (resolvePlayerName?.(address) ?? null);
+  const base = formatter(event, event.storyPayload ?? {}, components, marked);
+  const owner = nameOwner(event.ownerAddress, components, resolvePlayerName) ?? null;
+  const ownerAt = base.title.indexOf(OWNER_MARK);
+  const unmark = (text: string) => text.replaceAll(OWNER_MARK, owner ?? "");
   return {
     ...base,
-    owner: nameOwner(event.ownerAddress, components, resolvePlayerName) ?? null,
+    title: unmark(base.title),
+    description: base.description === undefined ? undefined : unmark(base.description),
+    owner,
+    ownerAt: ownerAt === -1 ? null : ownerAt,
   };
+}
+
+/** A private-use character, which no name or word holds, standing for the owner's name while a story is worded. */
+const OWNER_MARK = "\u{F0000}";
+
+/** Whether an address is the story's owner: a player, never the zero address. */
+function isOwner(address: unknown, owner: unknown): boolean {
+  const player = toBigIntSafe(address);
+  return player !== null && player !== 0n && player === toBigIntSafe(owner);
 }
 
 /** A building's name as its game names it (buildingName): a Frontier story says "Barracks" where Blitz says "Knight T1". */

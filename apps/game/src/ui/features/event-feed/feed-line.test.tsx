@@ -11,7 +11,9 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 /** The players the rows name, as the one name reader gives them. */
 const DJIZUS = "0x510";
 const KRUMP = "0x344";
-const NAMES: Record<string, string> = { [DJIZUS]: "djizus", [KRUMP]: "Krump" };
+/** A player whose name is also a word the Feed's sentences use. */
+const ARMY = "0x777";
+const NAMES: Record<string, string> = { [DJIZUS]: "djizus", [KRUMP]: "Krump", [ARMY]: "army" };
 const nameOf = (address: string | bigint) => NAMES[`0x${BigInt(address).toString(16)}`];
 const CAMP = 9001;
 
@@ -161,6 +163,12 @@ it("leads a story's own words with who did it where they name no one (review: 'C
   expect(row.presentation.title).toBe("Crate opened: 1 relic to the army");
   expect(await draw(row)).toEqual({ words: "Krump · Crate opened: 1 relic to the army", reward: null, gold: false });
   expect(named()).toEqual(["Krump"]);
+});
+
+it("leads with who did it where a word in the story's own words only reads like their name (review: a player named 'army')", async () => {
+  const row = story(ARMY, "RelicChestOpened", { explorer_id: 71, relics: [39], points: 0 });
+  expect(await draw(row)).toEqual({ words: "army · Crate opened: 1 relic to the army", reward: null, gold: false });
+  expect(named()).toEqual(["army"]);
 });
 
 it("names the player once where a story's own words already name them, in gold when they are the player's", async () => {
