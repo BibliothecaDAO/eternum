@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -133,4 +133,39 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     act(() => host.querySelector<HTMLButtonElement>("[data-node='row-3']")!.click());
     expect(onPick).toHaveBeenLastCalledWith("row-3");
   });
+});
+
+it("says on the Farm's make side what each Farm makes now, its base and its research share, and nothing on Granary", () => {
+  const withOutput = readResearchTree({ ...MID_REALM, eachMakes: { 0: "+6.3/min (5 + 25% Fields)" } });
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={withOutput}
+        essence={MID_REALM.essence}
+        labor={MID_REALM.labor}
+        picked="row-0"
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={vi.fn()}
+      />,
+    ),
+  );
+  expect(button(/^Fields/)!.textContent).toContain("Each Farm: +6.3/min (5 + 25% Fields)");
+  expect(button(/^Granary/)!.textContent).not.toContain("Each Farm");
+});
+
+it("keeps the chosen Research action outside the tree scroll on every pick, including the initial Farm", () => {
+  const Picking = () => {
+    const [picked, setPicked] = useState<string | null>("row-0");
+    return <ResearchPanel nodes={nodes} essence={MID_REALM.essence} labor={MID_REALM.labor} picked={picked} onPick={setPicked} sending={new Set()} fixFor={() => undefined} onResearch={vi.fn()} />;
+  };
+  act(() => root.render(<Picking />));
+  for (const row of ["row-1", "row-2", "row-0"]) {
+    act(() => host.querySelector<HTMLButtonElement>(`[data-node='${row}']`)!.click());
+    const choice = host.querySelector("[data-lab='node-choice']")!;
+    expect(choice.textContent).toContain(nodes.find(({key}) => key === row)!.name);
+    expect(host.querySelector(".overflow-y-auto")!.contains(choice)).toBe(false);
+    expect([...choice.querySelectorAll("button")].at(-1)?.textContent).toMatch(/^Research/);
+  }
 });

@@ -1,3 +1,4 @@
+import { exploreStaminaOf, type StaminaBar } from "@/lib/army-stamina/segments";
 import {
   computeTravelFoodCosts,
   configManager,
@@ -31,7 +32,7 @@ export interface SlotStart {
   /** Whether the slot's bar was left by an army today; a fresh slot starts full. */
   inherited: boolean;
   /** The bar the army starts on, under the game's rules; unknown while the troops it would take are. */
-  start: { current: number; max: number } | undefined;
+  start: StaminaBar | undefined;
 }
 
 /**
@@ -79,7 +80,8 @@ export const readDeployPlan = (
   if (troops === undefined) return undefined;
   // A new army's Logistics starts at its realm's Supply yard tier, which raises the bar a fresh slot starts full at.
   const trained = researchTier(learned, research.ROW_SUPPLY_YARD);
-  const starts = open.map((slot) => slotStart(slot, troops, trained, clock.defaultTick));
+  const perExplore = exploreStaminaOf(store, realm.game_id);
+  const starts = open.map((slot) => slotStart(slot, troops, trained, clock.defaultTick, perExplore));
   return {
     open: starts,
     next: starts[0] ?? null,
@@ -93,7 +95,13 @@ export const readDeployPlan = (
 };
 
 /** One open slot's start, through the core's one rule for it (musterStamina), on the dock's clock. */
-const slotStart = (slot: OpenArmySlot, troops: DeployPlan["troops"], trained: number, timestamp: number): SlotStart => {
+const slotStart = (
+  slot: OpenArmySlot,
+  troops: DeployPlan["troops"],
+  trained: number,
+  timestamp: number,
+  perExplore: number,
+): SlotStart => {
   const bar =
     troops &&
     musterStamina(
@@ -108,7 +116,7 @@ const slotStart = (slot: OpenArmySlot, troops: DeployPlan["troops"], trained: nu
     slot: slot.slot,
     number: slot.slot + 1,
     inherited: slot.inherited !== null,
-    start: bar ? { current: bar.amount, max: bar.max } : undefined,
+    start: bar ? { current: bar.amount, max: bar.max, perExplore } : undefined,
   };
 };
 

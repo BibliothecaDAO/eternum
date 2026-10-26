@@ -1,4 +1,4 @@
-import { buildingOutputPerSecond } from "@/ui/shared/lib/building-output";
+import { buildingOutput } from "@/ui/shared/lib/building-output";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getProducedResource, formatExact, formatRate, resourceName } from "@bibliothecadao/types";
 
@@ -14,7 +14,7 @@ export const describeBuildingGives = (
 ): string | null => {
   const resource = getProducedResource(building);
   if (resource !== undefined) {
-    return `${resourceName(resource)} ${formatRate(buildingOutputPerSecond(store, structure, building, null))}`;
+    return `${resourceName(resource)} ${formatRate(buildingOutput(store, structure, building, null).total)}`;
   }
   return capacityGrant > 0 ? `+${formatExact(capacityGrant)} population cap` : null;
 };

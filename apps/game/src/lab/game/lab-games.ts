@@ -1,3 +1,4 @@
+import { dayEndScenario } from "./day-end-scenario";
 import { afterBattleScenario } from "./after-battle-scenario";
 import { mergeScenario } from "./merge-scenario";
 import { dayTurnScenario } from "./day-turn-scenario";
@@ -9,6 +10,7 @@ import { spireScenario } from "./spire-scenario";
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   spire: spireScenario,
+  "day-end": dayEndScenario,
   realm: realmScenario,
   "merge-keeps-picked": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),

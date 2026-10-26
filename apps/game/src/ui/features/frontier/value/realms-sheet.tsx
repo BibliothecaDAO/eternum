@@ -1,4 +1,4 @@
-import { formatAmount, formatExact } from "@bibliothecadao/types";
+import { formatExact, formatGain } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { iconDefinition, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { type FormEvent, type ReactNode, useState } from "react";
@@ -205,7 +205,9 @@ const RealmRow = ({
 );
 
 const LaborChip = ({ amount }: { amount: number }) => (
-  <HudChip icons={["labor"]} tone="good">{`+${formatAmount(amount)}`}</HudChip>
+  <HudChip icons={["labor"]} tone="good">
+    {formatGain(amount)}
+  </HudChip>
 );
 
 /**

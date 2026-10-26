@@ -3,7 +3,6 @@ import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { knownAmount } from "@/ui/utils/utils";
 import {
   getBalance,
-  getBuildingQuantity,
   rationedWheatPerTroop,
   realmLearned,
   researchChoice,
@@ -18,9 +17,10 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
+import { eachBuildingMakes, standingBuildings } from "../production/store-makers";
 import { type LearnedRow, readResearchTree, type RealmResearchFacts, type TreeNode } from "./research-tree";
 
 const RESEARCH_MODELS = [
@@ -90,6 +90,7 @@ const readResearchFacts = (
     labor,
     standing: standingByRow(store, entity),
     learned: rows,
+    eachMakes: eachBuildingMakes(store, realm, learned),
     price: (row, tier) => {
       const price = store.get("ResearchPrice", { game_id: realm.game_id, row, tier });
       if (!price) throw new PricePending(`ResearchPrice row ${row} tier ${tier}`);
@@ -124,11 +125,11 @@ const decodeLearned = (learned: bigint): Partial<Record<number, LearnedRow>> =>
     }),
   );
 
-/** The buildings standing of each building row's type; the castle's own labor producer is not a Workshop. */
+/** The buildings standing of each building row's type (standingBuildings: the castle's labor is no Workshop). */
 const standingByRow = (store: NativeFactStore, entity: number): Partial<Record<number, number>> =>
   Object.fromEntries(
-    Object.entries(researchRowCategory).map(([row, category]) => {
-      const count = getBuildingQuantity(entity, category!, store);
-      return [Number(row), category === BuildingType.ResourceLabor ? count - 1 : count];
-    }),
+    Object.entries(researchRowCategory).map(([row, category]) => [
+      Number(row),
+      standingBuildings(store, entity, category!),
+    ]),
   );

@@ -30,7 +30,6 @@ export const FrontierDesktop = ({
   armies,
   nextUp,
   page,
-  stage,
   foot,
   places,
   children,
@@ -44,8 +43,6 @@ export const FrontierDesktop = ({
   nextUp?: ReactNode;
   /** A nav page (Research, the Season's board): it stands in the rail's panel. */
   page?: ReactNode;
-  /** What floats over the map itself (the last hour's bubble). */
-  stage?: ReactNode;
   /** Over the places: notices, the selected army's state, a visit's Leave. */
   foot?: ReactNode;
   places: ReactNode;
@@ -68,9 +65,6 @@ export const FrontierDesktop = ({
           {places}
         </div>
       </HudFoot>
-      <div className="pointer-events-none fixed inset-x-hud-foot bottom-hud-frontier-stage-bottom top-hud-frontier-stage-top z-hud-foot">
-        {stage}
-      </div>
       <SheetDock.Provider value={panel}>{children}</SheetDock.Provider>
     </div>
   );
