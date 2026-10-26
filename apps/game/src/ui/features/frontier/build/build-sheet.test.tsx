@@ -317,6 +317,9 @@ describe("the build sheet", () => {
     expect(sheet.host.querySelector('[role="status"]')).toBeNull();
     expect(sheet.button("Build")!.textContent).toBe("Build");
     expect(sheet.host.querySelector(".ui-cost")?.textContent).toBe("2,000 labor");
+    // Build and its price stand in the sheet's foot, outside the body that scrolls: the verb never scrolls away.
+    expect(sheet.button("Build")!.closest(".ui-window__foot")).not.toBeNull();
+    expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe("2,000 labor");
     sheet.close();
   });
 
@@ -330,6 +333,7 @@ describe("the build sheet", () => {
     const cost = configManager.getBuildingCategoryConfig(BuildingType.ResourceKnightT1).population_cost;
     expect(sheet.host.querySelector('[role="status"]')!.textContent).toBe(`Needs ${cost} population, 1 free`);
     expect(sheet.button("Build")!.textContent).toContain("Build Hut");
+    expect(sheet.button("Build Hut")!.closest(".ui-window__foot")).not.toBeNull();
     act(() => sheet.button("Build Hut")!.click());
     expect(sheet.card("Hut").getAttribute("aria-pressed")).toBe("true");
     // A Hut takes no population: it is the fix, and Build stands under it.
