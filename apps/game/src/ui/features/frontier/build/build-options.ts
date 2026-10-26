@@ -4,7 +4,8 @@ import {
   getBuildingCosts,
   getBuildingQuantity,
   realmLearned,
-  researchChoice,
+  researchPicks,
+  researchPurchases,
   researchRowOf,
   researchTier,
   ResourceManager,
@@ -94,7 +95,7 @@ export const readBuildOptions = (
   if (learned === undefined) return undefined;
   const wheat = new ResourceManager(store, safeInteger(realm.entity_id)).wheatPerHour(tick);
   const board = store.require("BoardRules", { game_id: realm.game_id });
-  const barracksTier = researchTier(learned, nativeResearchConstants.ROW_BARRACKS);
+  const barracksPurchases = researchPurchases(learned, nativeResearchConstants.ROW_BARRACKS);
   const options: BuildOption[] = [];
   for (const category of FRONTIER_BUILDINGS) {
     const cost = getBuildingCosts(safeInteger(realm.entity_id), store, category, useSimpleCost);
@@ -105,7 +106,9 @@ export const readBuildOptions = (
     const row = researchRowOf(category);
     options.push({
       category,
-      tier: (row === undefined ? 1 : researchTier(learned, row) + 1) as BuildOption["tier"],
+      tier: (row === undefined
+        ? 1
+        : Math.max(TRAINS[category] ? 2 : 1, researchTier(learned, row) + 1)) as BuildOption["tier"],
       cost,
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
       effect,
@@ -114,7 +117,7 @@ export const readBuildOptions = (
         ? "open"
         : getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0
           ? "built"
-          : barracksTier < board.training_gate_tier
+          : barracksPurchases < board.training_gate_tier
             ? { gate: board.training_gate_tier }
             : "open",
       wheat: { change, after: wheat === undefined ? undefined : wheat + change },
@@ -135,14 +138,12 @@ const readBuildingEffect = (
   learned: bigint,
 ): BuildEffect => {
   const row = researchRowOf(category);
-  const tier = row === undefined ? 0 : researchTier(learned, row);
   const trains = TRAINS[category];
   if (trains) return { kind: "trains", attribute: trains };
   if (category === BuildingType.WorkersHut) return { kind: "population", amount: nextHutGrant(store, realm, learned) };
   const resource = getProducedResource(category);
   if (!isProduct(resource)) throw new Error(`Building ${category} makes nothing a Frontier realm stores`);
-  let makes = 0;
-  for (let at = 1; at <= tier; at++) if (researchChoice(learned, row!, at) === 0) makes++;
+  const makes = row === undefined ? 0 : researchPicks(learned, row, 0);
   return { kind: "produces", resource, perHour: buildingOutputPerSecond(store, realm, category, makes) * 3600 };
 };
 

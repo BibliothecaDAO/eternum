@@ -9,6 +9,7 @@ export interface PlaceBuildingInput {
   /** The slot inside the structure's local grid. */
   hex: HexPosition;
   useSimpleCost: boolean;
+  scoutingKind?: 0 | 1 | 2;
 }
 
 export interface BuildingSlotInput {
@@ -25,6 +26,7 @@ export const placeBuilding = async (client: ActionClient, input: PlaceBuildingIn
     input.buildingType,
     input.hex,
     input.useSimpleCost,
+    input.scoutingKind,
   );
 
 export const destroyBuilding = async (client: ActionClient, input: BuildingSlotInput): Promise<void> =>

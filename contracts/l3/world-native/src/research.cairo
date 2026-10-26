@@ -1,7 +1,7 @@
 use crate::resources::ResourceKey;
 
-// Everything a realm has researched, in one word: each row's tier and the choice made at each tier (see `tier_slot`
-// and `choice_slot` for the layout).
+// Two-sided rows store two independent three-bit counts. Scouts retains its ordered kind choices; other rows
+// store their tier. This next-season layout is part of the release schema, not a migration of existing knowledge.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RealmKnowledge {
     pub learned: u64,
@@ -128,15 +128,19 @@ fn tier_slot(row: u8) -> (u64, u64) {
 // Where a row's choices sit: the first tier's scale and the field size of one choice. Later tiers follow in order.
 fn choice_slot(row: u8) -> (u64, u64) {
     match row {
-        0 => (0x8, 2),
-        1 => (0x400, 2),
-        2 => (0x20000, 2),
         6 => (0x1000000000, 4),
         _ => panic!("research row has no choice"),
     }
 }
 
+pub fn independent_sides(row: u8) -> bool {
+    row <= ROW_BARRACKS
+}
+
 pub fn tier(learned: u64, row: u8) -> u8 {
+    if independent_sides(row) {
+        return core::cmp::max(picks(learned, row, 0), picks(learned, row, 1));
+    }
     let (scale, size) = tier_slot(row);
     (learned / scale % size).try_into().unwrap()
 }
@@ -151,8 +155,21 @@ pub fn choice(learned: u64, row: u8, at: u8) -> u8 {
     (learned / scale % size).try_into().unwrap()
 }
 
-// How many of a row's learned tiers took `side`.
+// The upgrades bought on one side; Scouts still counts its ordered kind selections.
 pub fn picks(learned: u64, row: u8, side: u8) -> u8 {
+    assert!(side < choice_count(row), "invalid research choice");
+    if independent_sides(row) {
+        let (scale, _) = tier_slot(row);
+        let scale = if side == 0 {
+            scale
+        } else {
+            scale * 8
+        };
+        return (learned / scale % 8).try_into().unwrap();
+    }
+    if choice_count(row) == 1 {
+        return tier(learned, row);
+    }
     let mut count = 0;
     for at in 1..tier(learned, row) + 1 {
         if choice(learned, row, at) == side {
@@ -175,12 +192,36 @@ pub fn make_picks(learned: u64, category: u8) -> u8 {
     }
 }
 
-// Adds a row's next tier with its choice.
+// Total purchases open training even when the Barracks improvements are split across sides.
+pub fn purchases(learned: u64, row: u8) -> u8 {
+    if independent_sides(row) {
+        picks(learned, row, 0) + picks(learned, row, 1)
+    } else {
+        tier(learned, row)
+    }
+}
+
+pub fn side_tier(learned: u64, row: u8, side: u8) -> u8 {
+    if independent_sides(row) {
+        picks(learned, row, side)
+    } else {
+        tier(learned, row)
+    }
+}
+
+// Adds one upgrade to the chosen side, or the next shared tier for Scouts and single-sided rows.
 pub fn learn(learned: u64, row: u8, side: u8) -> u64 {
-    let next = tier(learned, row) + 1;
-    assert!(next <= max_tier(row), "research row is complete");
     assert!(side < choice_count(row), "invalid research choice");
+    let next = side_tier(learned, row, side) + 1;
+    assert!(next <= max_tier(row), "research side is complete");
     let (scale, _) = tier_slot(row);
+    if independent_sides(row) {
+        return learned + if side == 0 {
+            scale
+        } else {
+            scale * 8
+        };
+    }
     let mut learned = learned + scale;
     if choice_count(row) > 1 {
         let (mut scale, size) = choice_slot(row);

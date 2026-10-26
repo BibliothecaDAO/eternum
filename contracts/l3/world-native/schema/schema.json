@@ -5259,14 +5259,38 @@
           "feltLength": 1
         },
         {
-          "name": "castle_store_deploys",
+          "name": "troop_store_deploys",
           "type": "core::integer::u8",
-          "id": "0x636173746c655f73746f72655f6465706c6f7973",
+          "id": "0x74726f6f705f73746f72655f6465706c6f7973",
+          "feltLength": 1
+        },
+        {
+          "name": "settlement_resource_cap",
+          "type": "core::integer::u32",
+          "id": "0x736574746c656d656e745f7265736f757263655f636170",
+          "feltLength": 1
+        },
+        {
+          "name": "city_resource_cap",
+          "type": "core::integer::u32",
+          "id": "0x636974795f7265736f757263655f636170",
+          "feltLength": 1
+        },
+        {
+          "name": "kingdom_resource_cap",
+          "type": "core::integer::u32",
+          "id": "0x6b696e67646f6d5f7265736f757263655f636170",
+          "feltLength": 1
+        },
+        {
+          "name": "empire_resource_cap",
+          "type": "core::integer::u32",
+          "id": "0x656d706972655f7265736f757263655f636170",
           "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 8,
+      "valueLength": 12,
       "derivedFrom": "preset"
     },
     {
@@ -7887,8 +7911,24 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "castle_store_deploys",
+          "name": "troop_store_deploys",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "settlement_resource_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "city_resource_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "kingdom_resource_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "empire_resource_cap",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -8015,6 +8055,10 @@
         {
           "name": "use_simple",
           "type": "core::bool"
+        },
+        {
+          "name": "scouting_kind",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -13169,5 +13213,5 @@
       ]
     }
   },
-  "identity": "2171a8efb603225a9d3c91ee6f471431ae0965444c4eb6c019618169c088d5cb"
+  "identity": "f9432cf4a52bee62e7434599efd086a054b845208bf4d2183f4b81e95e658fa6"
 }

@@ -68,6 +68,7 @@ export const siteReward = (
 ): { resourceType: ResourcesIds; amount: bigint } | null => {
   if (site.clear) return null;
   if (kind === "Camp") return { resourceType: ResourcesIds.Labor, amount: site.initial_guard_count / 2n };
+  if (kind === "Beasts") return { resourceType: ResourcesIds.Labor, amount: site.initial_guard_count / 4n };
   if (kind === "Rift") return { resourceType: ResourcesIds.Essence, amount: site.initial_guard_count * 3n };
   return null;
 };

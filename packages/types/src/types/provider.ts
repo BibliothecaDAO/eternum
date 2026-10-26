@@ -93,6 +93,7 @@ export interface CreateBuildingProps extends SystemSigner {
   directions: BigNumberish[];
   building_category: BuildingType;
   use_simple: boolean;
+  scouting_kind: 0 | 1 | 2;
 }
 
 export interface DestroyBuildingProps extends SystemSigner {

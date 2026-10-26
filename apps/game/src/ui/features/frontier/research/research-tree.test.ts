@@ -30,27 +30,30 @@ describe("the castle's tree as the contract rules it", () => {
     expect(why(EARLY_REALM, "row-0")).toBe("Essence 300 / 1,000");
     expect(why(EARLY_REALM, "row-1")).toBe("Build a Workshop");
     // A training building can only stand once the Barracks row is rare.
-    expect(why(EARLY_REALM, "row-4")).toBe("Barracks Rare first");
+    expect(why(EARLY_REALM, "row-4")).toBe("Barracks 2 purchases first");
     expect(why(EARLY_REALM, "reach-2")).toBe("Ethereal I first");
     expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(false);
   });
 
   it("locks a tier whose labor the castle's store cannot hold, naming the level that holds it", () => {
     // Barracks epic costs 24,000 labor; a City's labor store holds 18,000, a Kingdom's 50,000.
-    expect(node(MID_REALM, "row-2").state).toBe("locked");
-    expect(why(MID_REALM, "row-2")).toBe("Labor store 18,000 / 24,000 · a Kingdom holds it");
+    const barracks = node(MID_REALM, "row-2");
+    expect(barracks.state).toBe("ready");
+    expect(barracks.sides?.[0].state).toBe("locked");
+    expect(barracks.sides?.[0].needs.map(needLine)).toContain("Labor store 18,000 / 24,000 · a Kingdom holds it");
+    expect(barracks.sides?.[1]).toMatchObject({ state: "ready", price: { essence: 4000, labor: 3000 } });
   });
 
   it("opens the training rows once the Barracks is rare, and prices each next tier from the game's prices", () => {
     const warHall = node(MID_REALM, "row-4");
-    expect([warHall.state, warHall.price]).toEqual(["ready", { essence: 12_000, labor: 3_000 }]);
+    expect([warHall.state, warHall.price]).toEqual(["short", { essence: 48_000, labor: 9_000 }]);
     expect(why(MID_REALM, "row-5")).toBe("Build a Supply yard");
     expect([node(MID_REALM, "row-0").state, node(MID_REALM, "row-0").price]).toEqual([
       "ready",
-      { essence: 12_000, labor: 8_000 },
+      { essence: 4_000, labor: 3_000 },
     ]);
     expect(node(MID_REALM, "shrine").state).toBe("done");
-    expect(node(MID_REALM, "row-2").gate).toEqual({ tier: "Rare", met: true });
+    expect(node(MID_REALM, "row-2").gate).toEqual({ tier: "2 purchases", met: true });
     expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
   });
 
@@ -108,4 +111,27 @@ describe("an army's detail as progression rules it", () => {
     ]);
     expect([army.affordable, army.refill]).toEqual([3, 30]);
   });
+});
+
+it("keeps the cheaper side open after the other reaches Legendary and displays the highest tier", () => {
+  const realm = { ...MID_REALM, learned: { ...MID_REALM.learned, 0: { tier: 4, sides: [0, 0, 0, 0] } } };
+  const farm = node(realm, "row-0");
+  expect(farm).toMatchObject({ tier: 4, state: "ready", price: { essence: 1000, labor: 1000 } });
+  expect(farm.sides?.map(({ tier, state }) => [tier, state])).toEqual([
+    [4, "done"],
+    [0, "ready"],
+  ]);
+  expect(
+    node({ ...realm, learned: { ...realm.learned, 0: { tier: 4, sides: [0, 0, 0, 0, 1, 1, 1, 1] } } }, "row-0").state,
+  ).toBe("done");
+});
+
+it("shows construction as the free first training level, with no research bill", () => {
+  for (const row of [4, 5, 6, 7]) {
+    const training = node(EARLY_REALM, `row-${row}`);
+    expect(training.price).toBeUndefined();
+    expect(training.gives.line).toContain("Building grants Uncommon");
+    expect(training.needs.some((need) => need.kind === "labor" || need.kind === "essence")).toBe(false);
+    expect(training.state).toBe("locked");
+  }
 });

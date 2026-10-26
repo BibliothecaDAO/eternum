@@ -173,6 +173,10 @@ describe("ListRow", () => {
 
 describe("TierChip", () => {
   it("draws the tier's pips and its word alone, or the pips without the word where there is no room", () => {
+    for (const tier of [1, 2, 3, 4, 5] as const) {
+      const markup = renderToStaticMarkup(<TierChip tier={tier} showWord />);
+      expect((markup.match(/bg-kit-gold/g) ?? []).length).toBe(tier - 1);
+    }
     const rare = renderToStaticMarkup(<TierChip tier={3} showWord />);
     expect(text(rare)).toBe("Rare");
     expect(rare).toContain('aria-label="Rare"');

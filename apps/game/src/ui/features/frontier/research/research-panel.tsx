@@ -152,7 +152,7 @@ const NodeTile = ({ node, picked, onPick }: { node: TreeNode; picked: boolean; o
 
 /** The picked node, in the panel under the tree. */
 const NodeDetail = ({
-  node,
+  node: rowNode,
   reveal,
   sending,
   fix,
@@ -164,7 +164,13 @@ const NodeDetail = ({
   fix: (need: Need) => Fix | undefined;
   onResearch: (side: number) => unknown;
 }) => {
-  const [side, setSide] = useState(0);
+  const [side, setSide] = useState(() =>
+    Math.max(0, rowNode.sides?.findIndex((option) => option.state !== "done") ?? 0),
+  );
+  const selected = rowNode.sides?.[side];
+  const node = selected
+    ? { ...rowNode, state: selected.state, needs: selected.needs, price: selected.price, nextWord: selected.nextWord }
+    : rowNode;
   const place = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (reveal) place.current?.scrollIntoView?.({ block: "nearest" });
@@ -178,7 +184,9 @@ const NodeDetail = ({
         <Icon name={node.icon} size={44} />
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="text-hud-title text-hud-ink">{node.name}</span>
-          <span className="text-hud-label text-hud-muted">{levelLine(node)}</span>
+          <span className="text-hud-label text-hud-muted">
+            {node.sides?.length === 2 ? `Highest side: ${TIER_WORDS[rowNode.tier]}` : levelLine(node)}
+          </span>
         </div>
         {node.maxTier === 4 && <HudRarity tier={(node.tier + 1) as 1 | 2 | 3 | 4 | 5} />}
       </div>
@@ -205,15 +213,21 @@ const NodeDetail = ({
                 )}
               >
                 <Icon name={option.icon} size={32} />
-                <span className="text-hud-strong text-hud-ink">{option.name}</span>
+                <span className="text-hud-strong text-hud-ink">
+                  {option.name} · {TIER_WORDS[option.tier]}
+                </span>
+                {option.price && (
+                  <span className="text-hud-label tabular-nums text-hud-ink">
+                    {formatExact(option.price.essence)} {ESSENCE} · {formatExact(option.price.labor)} {LABOR}
+                  </span>
+                )}
                 <span className="text-hud-label text-hud-muted">{option.line}</span>
                 <span className="text-hud-strong tabular-nums text-hud-good">
-                  {RESEARCH_TREE.step(option.now, option.next)}
+                  {option.state === "done" ? option.now : RESEARCH_TREE.step(option.now, option.next)}
                 </span>
               </button>
             ))}
           </div>
-          <span className="text-hud-label text-hud-warn">{RESEARCH_TREE.sideKept}</span>
         </>
       )}
       {node.needs.length > 0 && (
@@ -234,14 +248,16 @@ const NodeDetail = ({
             </HudButton>
           )}
           <span className="flex-1" />
-          <HudButton
-            kind="primary"
-            disabled={node.state !== "ready"}
-            busy={sending ? RESEARCHING : undefined}
-            onClick={() => onResearch(side)}
-          >
-            {RESEARCH_TREE.research(verb)}
-          </HudButton>
+          {node.price && (
+            <HudButton
+              kind="primary"
+              disabled={node.state !== "ready"}
+              busy={sending ? RESEARCHING : undefined}
+              onClick={() => onResearch(side)}
+            >
+              {RESEARCH_TREE.research(verb)}
+            </HudButton>
+          )}
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "2171a8efb603225a9d3c91ee6f471431ae0965444c4eb6c019618169c088d5cb";
+export const nativeFactSchemaIdentity = "f9432cf4a52bee62e7434599efd086a054b845208bf4d2183f4b81e95e658fa6";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "BATTLE_UNCOMMON_BPS": 1000,
@@ -238,7 +238,7 @@ export interface NativeRows {
   ResourceArrival: { readonly game_id: number; readonly entity_id: bigint; readonly day: bigint; readonly slot: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   RealmKnowledge: { readonly game_id: number; readonly structure_id: bigint; readonly learned: bigint };
   ResearchPrice: { readonly game_id: number; readonly row: number; readonly tier: number; readonly essence: bigint; readonly labor: bigint };
-  BoardRules: { readonly game_id: number; readonly demolition_refund_bps: number; readonly workshop_rate: bigint; readonly output_step_bps: number; readonly storage_step_bps: number; readonly population_step_bps: number; readonly ration_step: bigint; readonly training_gate_tier: number; readonly castle_store_deploys: number };
+  BoardRules: { readonly game_id: number; readonly demolition_refund_bps: number; readonly workshop_rate: bigint; readonly output_step_bps: number; readonly storage_step_bps: number; readonly population_step_bps: number; readonly ration_step: bigint; readonly training_gate_tier: number; readonly troop_store_deploys: number; readonly settlement_resource_cap: number; readonly city_resource_cap: number; readonly kingdom_resource_cap: number; readonly empire_resource_cap: number };
   BuildingRule: { readonly game_id: number; readonly category: number; readonly population_cost: number; readonly capacity_grant: number; readonly simple_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly complex_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   Building: { readonly game_id: number; readonly structure_id: bigint; readonly inner_col: number; readonly inner_row: number; readonly category: number; readonly paused: boolean; readonly labor_paid: bigint };
   StructureBuildings: { readonly game_id: number; readonly entity_id: bigint; readonly packed_counts_1: bigint; readonly packed_counts_2: bigint; readonly packed_counts_3: bigint; readonly population: { readonly current: number; readonly max: number } };
@@ -1583,7 +1583,11 @@ export const nativeFactModels = {
       "population_step_bps": "u16",
       "ration_step": "u128",
       "training_gate_tier": "u8",
-      "castle_store_deploys": "u8"
+      "troop_store_deploys": "u8",
+      "settlement_resource_cap": "u32",
+      "city_resource_cap": "u32",
+      "kingdom_resource_cap": "u32",
+      "empire_resource_cap": "u32"
     }
   },
   "BuildingRule": {

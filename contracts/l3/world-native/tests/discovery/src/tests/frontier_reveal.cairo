@@ -68,7 +68,10 @@ fn site_payout_keeps_initial_scaled_guard_count_and_has_no_clock_factor() {
         site_reward(RIFT_CATEGORY, site).unwrap(),
         crate::resources::ResourceAmount { resource_type: ESSENCE, amount: initial * 3 },
     );
-    assert!(site_reward(BEASTS_CATEGORY, site).is_none());
+    assert_eq!(
+        site_reward(BEASTS_CATEGORY, site).unwrap(),
+        crate::resources::ResourceAmount { resource_type: LABOR, amount: initial / 4 },
+    );
     assert!(site_reward(RUIN_CATEGORY, site).is_none());
 }
 
@@ -175,4 +178,25 @@ fn a_site_cannot_clear_again_after_an_army_enters_its_tile() {
     crate::logic::expeditions::clear_site(key, result);
     crate::logic::map::MapState::occupy(tile, 2, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
     crate::logic::expeditions::clear_site(key, result);
+}
+
+#[test]
+fn beast_labor_matches_recorded_guards_and_each_depth_without_an_extra_multiplier() {
+    for (guards, labor) in array![
+        (309_u128, 77250000000_u128), (537, 134250000000), (300, 75000000000), (350, 87500000000), (900, 225000000000),
+        (1050, 262500000000), (2400, 600000000000), (2800, 700000000000), (6000, 1500000000000), (7000, 1750000000000),
+    ] {
+        let site = ExpeditionSite {
+            category: BEASTS_CATEGORY,
+            alt: false,
+            col: 0,
+            row: 0,
+            initial_guard_count: guards * RESOURCE_PRECISION,
+            clear: None,
+        };
+        assert_eq!(
+            site_reward(BEASTS_CATEGORY, site).unwrap(),
+            crate::resources::ResourceAmount { resource_type: LABOR, amount: labor },
+        );
+    }
 }

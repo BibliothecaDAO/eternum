@@ -7,15 +7,14 @@ next to the crate to open it."). `/lab/relic-chest` exercises that single presen
 model, opening pool, panel and native opening story. Run
 `pnpm --dir apps/game prove:relic-chest --port 4199 --out <fresh-dir>` for both renderer captures and behavior proof.
 
-Next-season research proposals: `/lab/kit/research-balance` (UI kit → Research balance proposals). **Storage** compares
-deleting storage research with smaller late-game base stores; pick a realm and plan a Farm or Workshop upgrade.
-**Research paths** compares separate side levels, a shared four-purchase budget and the current rule; start with Drill
-level 2 and try Drill level 3 or Rations level 2. **Beast labor** compares three guard-based clear payouts at every
-depth and replays 28 recorded clears. Plans are local fixtures and send no game commands. Serve the client on an
-assigned port, open the route with `&evidence=/absolute/new/capture/directory` (use `?` without another query), then run
-`scripts/frontier/prove-research-balance.playwright.js` through the Playwright connection with the page as its argument.
-It clicks the proposals, verifies results and captures desktop and phone; keep its returned transcript with the images.
-No gameplay or preset rule changes are part of this study.
+Next-season research: `/lab/kit/research-balance` (UI kit → Research balance). **Storage** shows the approved S2 6k /
+18k / 40k / 80k wheat and labor bases with +50% per storage purchase; choose a realm and plan an upgrade. **Research
+paths** uses independent side levels: start with Drill level 2, then try Drill level 3 or Rations level 2. Both sides
+reach level 5; the building's pips and model show the higher side. **Beast labor** shows one labor per four initial
+guards at each depth and replays 28 recorded clears. Plans are local fixtures and send no game commands. Serve the
+client on an assigned port, open the route with `&evidence=/absolute/new/capture/directory` (use `?` without another
+query), then run `scripts/frontier/prove-research-balance.playwright.js` through the Playwright connection with the page
+as its argument. It verifies the plan results and captures desktop and phone views.
 
 Frontier exploration has a 1/10,000 chance per newly revealed surface tile to find a funded reward chest. Select its
 labelled map tile; an adjacent own living army can Open it. The panel shows its reserved common-share LORDS amount and
@@ -792,3 +791,7 @@ starting untrained gives +10%. One point buys either. Change XP, training or att
 **Spend flat point** or **Spend point**; the XP ring stays independent of spending. Scouting uses its total rank across
 all kinds. No game command is sent. Exercise and capture it with
 `pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <fresh-dir> --only army-levels`.
+
+- Frontier training: build War hall, Supply yard, Scouts’ lodge or Hearth after two Barracks purchases; construction
+  grants Uncommon. Choose the lodge’s free kind on its build sheet. Research pips run from zero at Common to four at
+  Legendary; the realm model uses the highest tier.

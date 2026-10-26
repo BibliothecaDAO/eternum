@@ -637,7 +637,16 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
 }
 
 #[test]
-fn a_beast_clear_keeps_an_xp_only_receipt_and_removes_its_blocker() {
+fn a_beast_clear_pays_labor_once_keeps_xp_and_removes_its_blocker() {
+    beast_clear_payout(false);
+}
+
+#[test]
+fn a_beast_clear_clips_labor_at_storage_but_keeps_all_xp() {
+    beast_clear_payout(true);
+}
+
+fn beast_clear_payout(full: bool) {
     let (d, game_id, key) = setup_frontier_chests();
     let army = strong_frontier_army(d, game_id, key);
     let coord = crate::geometry::neighbor(army.coord, 0);
@@ -650,16 +659,50 @@ fn a_beast_clear_keeps_an_xp_only_receipt_and_removes_its_blocker() {
         );
     stop_cheat_caller_address(d.games);
     let site_key = ResourceKey { game_id, entity_id: id };
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let home = ResourceKey { game_id, entity_id: army.owner };
+    let labor = ResourceSlot { game_id, entity_id: army.owner, resource_type: crate::resources::LABOR };
+    start_cheat_caller_address(d.games, d.games);
+    crate::resources::IResourceOperationsDispatcherTrait::grant_resource(
+        resources,
+        home,
+        crate::resources::LABOR,
+        if full {
+            1000000 * RESOURCE_PRECISION
+        } else {
+            0
+        },
+        361,
+        crate::commands::resource_context(context),
+    );
+    stop_cheat_caller_address(d.games);
+    let before = resources.resource_balance(labor);
+    let xp = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp);
     let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: id });
     assert!(execute_in_game(d, game_id, attack, 361));
     let site = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
     );
+    let amount = if full {
+        0
+    } else {
+        site.initial_guard_count / 4
+    };
     assert_eq!(
         site.clear,
-        Some(crate::expeditions::SiteClear { explorer_id: key.explorer_id, home_id: army.owner, reward: None }),
+        Some(
+            crate::expeditions::SiteClear {
+                explorer_id: key.explorer_id,
+                home_id: army.owner,
+                reward: Some(crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount }),
+            },
+        ),
     );
-    assert!(crate::progression::clear_xp(site.initial_guard_count) > 0);
+    assert_eq!(resources.resource_balance(labor) - before, amount);
+    assert_eq!(
+        snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp),
+        xp + crate::progression::clear_xp(site.initial_guard_count),
+    );
     assert_site_removed(d, site_key);
     assert!(
         snforge_std::interact_with_state(
@@ -668,6 +711,11 @@ fn a_beast_clear_keeps_an_xp_only_receipt_and_removes_its_blocker() {
             .is_none(),
     );
     assert!(!execute_in_game(d, game_id, attack, 362));
+    assert_eq!(resources.resource_balance(labor), before + amount);
+    assert_eq!(
+        snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp),
+        xp + crate::progression::clear_xp(site.initial_guard_count),
+    );
 }
 
 #[test]

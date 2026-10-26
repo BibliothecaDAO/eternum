@@ -78,7 +78,8 @@ export const frontierPreset: NativePreset = {
     populationStepBps: 2500,
     rationStep: 0.25,
     trainingGateTier: 2,
-    castleStoreDeploys: 2,
+    troopStoreDeploys: 2,
+    resourceStoreCaps: [6000, 18000, 40000, 80000],
   },
   research: [
     ...buildingRows.flatMap(({ row, essence, labor }) =>
@@ -91,7 +92,7 @@ export const frontierPreset: NativePreset = {
     ),
     { row: research.ROW_SHRINE, tier: 1, essenceCost: 2000, laborCost: 0 },
     { row: research.ROW_WELL, tier: 1, essenceCost: 6000, laborCost: 0 },
-    ...[160000, 400000, 900000].map((essenceCost, index) => ({
+    ...[100000, 250000, 500000].map((essenceCost, index) => ({
       row: research.ROW_DEPTH,
       tier: index + 1,
       essenceCost,

@@ -11,14 +11,13 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
   BARRACKS,
   BUILD,
   HUT,
   LABOR,
   makes,
-  needsAt,
+  needsResearchPurchases,
   ONE_A_REALM,
   POPULATION,
   priceRaised,
@@ -37,10 +36,12 @@ import {
   getBalance,
   getBuildingQuantity,
   getRealmInfo,
+  realmLearned,
+  researchTier,
   resolveUseSimpleCost,
 } from "@bibliothecadao/eternum";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
-import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, nativeResearchConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -110,7 +111,7 @@ export const BuildSheet = ({
 }: {
   realm: NativeRows["Structure"];
   plot: HexPosition;
-  /** Opens Research, where the Barracks' tier that gates the training buildings is raised. */
+  /** Opens Research, where two Barracks purchases unlock training buildings. */
   onResearch?: () => void;
   onClose: () => void;
 }) => {
@@ -125,6 +126,7 @@ export const BuildSheet = ({
     [realm, facts, tick, useSimpleCost],
   );
   const [chosen, setChosen] = useState(0);
+  const [scoutingKind, setScoutingKind] = useState<0 | 1 | 2>(0);
   const option = options?.[chosen];
   const sending = useInFlight("plot", plotKey(realmId, plot)) !== undefined;
   const goToPlace = useGoToFrontierPlace(realm);
@@ -152,6 +154,7 @@ export const BuildSheet = ({
         type: option.category,
         plot,
         useSimpleCost,
+        scoutingKind: option.category === BuildingType.ScoutsLodge ? scoutingKind : undefined,
         from: { isOpen: stillShowing, close: onClose },
       });
     } catch (error) {
@@ -217,11 +220,11 @@ export const BuildSheet = ({
     };
   };
   /**
-   * A training building waits for the Barracks row's tier (the contract's assert_board_category): Research raises it
+   * A training building waits for the Barracks purchases (the contract's assert_board_category): Research raises it
    * once a Barracks stands, and until one does the fix is to build it.
    */
   const gateRefusal = (gate: number): Refusal => {
-    const reason = { kind: "failed", line: needsAt(BARRACKS, TIER_WORDS[gate]) } as const;
+    const reason = { kind: "failed", line: needsResearchPurchases(BARRACKS, gate) } as const;
     if (getBuildingQuantity(realmId, BuildingType.ResourceKnightT1, setup.store) === 0)
       return {
         reason,
@@ -243,6 +246,15 @@ export const BuildSheet = ({
           free: population && population.total - population.used,
         }),
       )}
+      scouting={
+        option.category === BuildingType.ScoutsLodge &&
+        researchTier(
+          realmLearned(facts.store, realm.game_id, realm.entity_id)!,
+          nativeResearchConstants.ROW_SCOUTS_LODGE,
+        ) === 0
+          ? { kind: scoutingKind, onChoose: setScoutingKind }
+          : undefined
+      }
       chosen={chosen}
       onChoose={setChosen}
       prices={option.cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }))}
@@ -294,8 +306,8 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
  */
 const standingOf = (option: BuildOption, { labor, laborPerHour, free }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
-  // The gate is a research tier above common; the kit counts tiers from common.
-  if (option.standing !== "open") return { kind: "locked", gate: (option.standing.gate + 1) as Tier };
+  // Training counts purchases across both Barracks sides.
+  if (option.standing !== "open") return { kind: "locked", purchases: option.standing.gate };
   const price = option.cost.find(({ resource }) => resource === ResourcesIds.Labor)?.amount ?? 0;
   const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] =
     labor === undefined || labor < price

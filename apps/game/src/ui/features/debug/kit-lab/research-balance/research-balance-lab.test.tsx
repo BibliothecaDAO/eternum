@@ -46,7 +46,7 @@ it("lets the player raise Drill to level 3 then open Rations at level 2 for its 
   expect(host.querySelector("[data-plan-cost]")?.textContent).toBe("Added cost: 20,000 Essence · 12,000 labor");
   expect(button("Add Rations").disabled).toBe(false);
 });
-it("separate levels let both sides reach 5; four shared picks still close the unfinished side", () => {
+it("separate levels let both sides reach 5", () => {
   open("tree");
   for (let i = 0; i < 3; i++) click("Add Drill");
   click("Rations");
@@ -54,26 +54,9 @@ it("separate levels let both sides reach 5; four shared picks still close the un
   expect(button("Drill").textContent).toContain("level 5");
   expect(button("Rations").textContent).toContain("level 5");
   expect(button("Add Rations").disabled).toBe(true);
-  click("T2");
-  for (let i = 0; i < 3; i++) click("Add Drill");
-  click("Rations");
-  expect(button("Rations").textContent).toContain("Four-pick limit reached");
-  expect(button("Add Rations").disabled).toBe(true);
 });
-it("today’s rule charges the next shared tier even when switching; changing the proposal resets the plan", () => {
-  open("tree");
-  click("T3");
-  expect(button("Rations").textContent).toContain("16,000 Essence + 9,000 labor");
-  click("Rations");
-  click("Add Rations");
-  expect(host.querySelector("[data-plan-cost]")?.textContent).toContain("16,000 Essence · 9,000 labor");
-  click("T1");
-  expect(host.querySelector("[data-plan-cost]")?.textContent).toContain("0 Essence · 0 labor");
-});
-it("cut storage removes its choice, while the capacity option previews a real Granary upgrade", () => {
+it("S2 keeps storage research and previews a real Granary upgrade", () => {
   open("storage");
-  expect([...host.querySelectorAll("button")].some((node) => node.textContent?.startsWith("Granary"))).toBe(false);
-  click("S2");
   expect(button("Granary").textContent).toContain("18,000 wheat capacity → 27,000 wheat capacity");
   click("Granary");
   click("Add Granary");
@@ -91,28 +74,30 @@ it("shows the measured beast replay and scales the selected guard reward by dept
     select.dispatchEvent(new Event("change", { bubbles: true }));
   });
   expect(host.textContent).toContain("1,500–1,750 labor");
-  click("B3");
-  expect(host.textContent).toContain("5,614.5 extra labor");
-  expect(host.textContent).toContain("3,000–3,500 labor");
 });
 it("keeps the realm upgrade payable under the alternative storage curve", () => {
-  expect([0, 1, 2, 3].map((level) => capacity(level, 0, "capacity"))).toEqual([6000, 18000, 40000, 80000]);
-  [4000, 15000, 40000].forEach((price, level) => expect(capacity(level, 0, "capacity")).toBeGreaterThanOrEqual(price));
-  expect([0, 1, 2, 3].map((level) => capacity(level, 4, "cut"))).toEqual([6000, 18000, 50000, 120000]);
+  expect([0, 1, 2, 3].map((level) => capacity(level, 0))).toEqual([6000, 18000, 40000, 80000]);
+  [4000, 15000, 40000].forEach((price, level) => expect(capacity(level, 0)).toBeGreaterThanOrEqual(price));
+  expect([0, 1, 2, 3].map((level) => capacity(level, 4))).toEqual([18000, 54000, 120000, 240000]);
 });
 it("preserves exact replay totals and independent-side prices through the last purchase", () => {
-  expect([8, 4, 2].map((divisor) => beastReplay(divisor))).toEqual([
-    { total: 1403.625, median: 42.5625 },
-    { total: 2807.25, median: 85.125 },
-    { total: 5614.5, median: 170.25 },
-  ]);
-  expect(nextPrice(2, [4, 3], 1, "independent")).toEqual({ essence: 120000, labor: 60000 });
-  expect(nextPrice(2, [4, 4], 1, "independent")).toBeUndefined();
-  expect(nextPrice(2, [3, 1], 1, "budget")).toBeUndefined();
+  expect(beastReplay()).toEqual({ total: 2807.25, median: 85.125 });
+  expect(nextPrice(2, [4, 3], 1)).toEqual({ essence: 120000, labor: 60000 });
+  expect(nextPrice(2, [4, 4], 1)).toBeUndefined();
+  expect(nextPrice(2, [4, 0], 1)).toEqual({ essence: 4000, labor: 3000 });
   expect(DEPTHS.map((depth) => depth.strong.map((guard) => guard / 4))).toEqual([
     [112.5, 137.5],
     [337.5, 412.5],
     [900, 1100],
     [2250, 2750],
   ]);
+});
+
+it("explains free training, the retained paid ladder and zero pips at Common", () => {
+  open("tree");
+  expect(host.textContent).toContain("grants Uncommon training immediately");
+  expect(host.textContent).toContain("48,000 Essence + 9,000 labor");
+  expect(host.textContent).toContain("Choose camps, rifts or beasts when building");
+  const common = host.querySelector('.ui-rarity[aria-label="Common"]')!;
+  expect(common.querySelectorAll("i[data-filled]")).toHaveLength(0);
 });

@@ -1,4 +1,4 @@
-import { researchChoice, researchTier } from "../utils/realm-research";
+import { researchPicks } from "../utils/realm-research";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { productionOutput } from "../utils/production-output";
 import { isModeRuleEnabled } from "../utils/mode-rules";
@@ -189,26 +189,24 @@ export class ResourceManager {
   }
 
   /**
-   * What a board realm's castle stores of each of wheat, labor and troops at a level, before the Granary and the
-   * Storeroom: that many of its level's full deploys. Undefined in a game without a realm board.
+   * A board realm's base wheat/labor capacity before Granary and Storeroom research. Undefined in a game without a realm board.
    */
   public static castleStoreLimit(store: NativeFactStore, gameId: number, level: number): bigint | undefined {
     const board = store.get("BoardRules", { game_id: gameId });
     if (!board) return undefined;
-    const limits = store.require("SliceRules", { game_id: gameId }).troop_limit_config;
     const cap = [
-      limits.settlement_deployment_cap,
-      limits.city_deployment_cap,
-      limits.kingdom_deployment_cap,
-      limits.empire_deployment_cap,
+      board.settlement_resource_cap,
+      board.city_resource_cap,
+      board.kingdom_resource_cap,
+      board.empire_resource_cap,
     ][level];
     if (cap === undefined) throw new Error(`Unknown castle level ${level}`);
-    return BigInt(cap) * BigInt(board.castle_store_deploys) * BigInt(RESOURCE_PRECISION);
+    return BigInt(cap) * BigInt(RESOURCE_PRECISION);
   }
 
   /**
-   * A board realm's own limit on its wheat, labor or troops, as the contract's store_limit: its castle stores that many
-   * of its level's full deploys, and a Granary or Storeroom tier raises wheat's or labor's. Undefined for every other
+   * A board realm's resource limit: troops use deployment capacity; Granary and Storeroom increase the separate
+   * wheat/labor base. Undefined for every other
    * store, which only the shared weight bounds.
    */
   public storeLimit(resourceId: ResourcesIds): bigint | undefined {
@@ -224,12 +222,19 @@ export class ResourceManager {
         : resourceId === ResourcesIds.Labor
           ? research.ROW_WORKSHOP
           : undefined;
-    if (row === undefined) return base;
-    const learned = this.store.require("RealmKnowledge", { game_id: this.gameId, structure_id: this.entityId }).learned;
-    let stores = 0;
-    for (let at = 1; at <= researchTier(learned, row); at++) {
-      if (researchChoice(learned, row, at) === research.CHOICE_STORE) stores++;
+    if (row === undefined) {
+      const limits = this.store.require("SliceRules", { game_id: this.gameId }).troop_limit_config;
+      const cap = [
+        limits.settlement_deployment_cap,
+        limits.city_deployment_cap,
+        limits.kingdom_deployment_cap,
+        limits.empire_deployment_cap,
+      ][structure.base.level];
+      if (cap === undefined) throw new Error(`Unknown castle level ${structure.base.level}`);
+      return BigInt(cap) * BigInt(board.troop_store_deploys) * BigInt(RESOURCE_PRECISION);
     }
+    const learned = this.store.require("RealmKnowledge", { game_id: this.gameId, structure_id: this.entityId }).learned;
+    const stores = researchPicks(learned, row, research.CHOICE_STORE);
     return (base * BigInt(10_000 + stores * board.storage_step_bps)) / 10_000n;
   }
 

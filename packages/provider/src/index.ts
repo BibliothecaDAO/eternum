@@ -664,6 +664,7 @@ export class EternumProvider extends EventEmitter {
           directions: props.directions,
           category: props.building_category,
           use_simple: props.use_simple,
+          scouting_kind: props.scouting_kind,
         },
       },
       TransactionType.CREATE_BUILDING,

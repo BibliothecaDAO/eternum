@@ -41,11 +41,13 @@ pub struct SitePayout {
     pub reward: Option<crate::resources::ResourceAmount>,
 }
 
-// Beasts pay only the clear's XP; a ruin pays the chest stored with it (crate::relics::SiteChest).
+// Camps and beasts pay labor on clear; a ruin pays the chest stored with it (crate::relics::SiteChest).
 pub fn site_reward(category: u8, site: ExpeditionSite) -> Option<crate::resources::ResourceAmount> {
     use crate::resources::{ESSENCE, LABOR, ResourceAmount};
     if category == crate::taxonomy::CAMP_CATEGORY {
         Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 2 })
+    } else if category == crate::taxonomy::BEASTS_CATEGORY {
+        Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 4 })
     } else if category == crate::taxonomy::RIFT_CATEGORY {
         Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 3 })
     } else {

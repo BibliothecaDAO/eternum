@@ -13,13 +13,15 @@ const rarity = (node: React.ReactElement) => {
 it("names a chest's rarity and fills one pip a step, common to legendary", () => {
   for (const [tier, name] of [
     [1, "Common"],
+    [2, "Uncommon"],
     [3, "Rare"],
+    [4, "Epic"],
     [5, "Legendary"],
   ] as const) {
     const chip = rarity(<HudRarity tier={tier} />);
     expect(chip.getAttribute("aria-label")).toBe(name);
-    expect(chip.querySelectorAll("i")).toHaveLength(5);
-    expect(chip.querySelectorAll("i[data-filled]")).toHaveLength(tier);
+    expect(chip.querySelectorAll("i")).toHaveLength(4);
+    expect(chip.querySelectorAll("i[data-filled]")).toHaveLength(tier - 1);
     expect(chip.textContent).toBe("");
   }
 });

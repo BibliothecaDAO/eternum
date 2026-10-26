@@ -755,8 +755,8 @@ export const HudTierChip = ({ tier }: { tier: 1 | 2 | 3 }) => (
 export const HudRarity = ({ tier, word = false }: { tier: 1 | 2 | 3 | 4 | 5; word?: boolean }) => (
   <span className="ui-rarity" data-tier={tier} role="img" aria-label={TIER_WORDS[tier - 1]}>
     <span aria-hidden className="ui-rarity__pips">
-      {TIER_WORDS.map((name, index) => (
-        <i key={name} data-filled={index < tier || undefined} />
+      {TIER_WORDS.slice(1).map((name, index) => (
+        <i key={name} data-filled={index < tier - 1 || undefined} />
       ))}
     </span>
     {word && <span aria-hidden>{TIER_WORDS[tier - 1]}</span>}

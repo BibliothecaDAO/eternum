@@ -20,9 +20,6 @@ async (page) => {
         await page.goto(new URL(`/lab/kit/research-balance?part=${part}`, entry).href);
         await page.getByRole("heading", { name: "Make each research pick count" }).waitFor();
         if (part === "storage") {
-          if (await page.getByRole("button", { name: /^Granary/ }).count())
-            throw new Error("Cut option still offers Granary");
-          await page.getByRole("button", { name: /^S2/ }).click();
           await page.getByLabel("Realm level").selectOption("2");
           const granary = page.getByRole("button", { name: /^Granary/ });
           await assertText(granary, "40,000 wheat capacity → 60,000 wheat capacity");

@@ -346,7 +346,7 @@ describe("the build sheet", () => {
     );
     expect(sheet.card("Hut").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
     expect(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
-      /^War hall: new armies start with Battle at Common(, takes \d+ population)?$/,
+      /^War hall: new armies start with Battle at Uncommon(, takes \d+ population)?$/,
     );
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
     expect(sheet.card("Farm").querySelector('[aria-label="price raised"]')).toBeNull();
@@ -391,9 +391,8 @@ describe("the build sheet", () => {
     expect(sheet.card("Farm").querySelector(`[aria-label="population ${farm}"]`)).not.toBeNull();
     expect(band(sheet, "Farm").getAttribute("data-tone")).toBe("bad");
     expect(band(sheet, "Farm").textContent).toMatch(/\d+[mhd]$/);
-    // A training building waits behind the Barracks' tier: a lock and its pips, no price.
-    expect(band(sheet, "War hall").querySelector('[aria-label="Rare"]')).not.toBeNull();
-    expect(band(sheet, "War hall").textContent).not.toMatch(/\d/);
+    // Training names its purchase count instead of a building rarity.
+    expect(band(sheet, "War hall").textContent).toBe("2 research");
     sheet.close();
 
     // Labor for all; the population full: a building that takes some says so in amber, the Hut stands ready.
@@ -473,8 +472,8 @@ describe("the build sheet", () => {
     const gold = () => [...host.querySelectorAll("button")].at(-1)!;
     render();
     act(() => card("War hall").click());
-    // The fixture's board gates training at the Barracks row's third tier, Rare; no Barracks stands yet.
-    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs Barracks at Rare");
+    // Training needs two Barracks purchases; no Barracks stands yet.
+    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 2 Barracks research purchases");
     expect(gold().textContent).toMatch(/^Build Barracks/);
     act(() => gold().click());
     expect(card("Barracks").getAttribute("aria-pressed")).toBe("true");
@@ -512,4 +511,83 @@ describe("the build sheet", () => {
     paying.close();
     vi.restoreAllMocks();
   });
+});
+
+it("chooses the free Scouts kind on the build sheet and submits it with construction", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const { store, realm } = realmBoard();
+  store.applyFacts([
+    {
+      model: "RealmKnowledge",
+      key: "0x77",
+      value: { game_id: 1, structure_id: 7, learned: (1n << 14n) | (1n << 17n) },
+    },
+    {
+      model: "ResourceBalance",
+      key: "0x75",
+      value: {
+        game_id: 1,
+        entity_id: 7,
+        resource_type: ResourcesIds.Labor,
+        balance: 100000n * BigInt(RESOURCE_PRECISION),
+      },
+    },
+  ] as never);
+  const game = store.require("GameRegistry", { game_id: 1 });
+  store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: 5 } }]);
+  configManager.setActiveGame(1, 5);
+  configManager.setStore(store);
+  const lodge = store.require("BuildingRule", { game_id: 1, category: BuildingType.ScoutsLodge });
+  store.applyFacts([
+    {
+      model: "BuildingRule",
+      key: `0x6${BuildingType.ScoutsLodge}`,
+      value: {
+        ...lodge,
+        population_cost: 2,
+        simple_cost: [{ resource_type: ResourcesIds.Labor, amount: 3000n * BigInt(RESOURCE_PRECISION) }],
+      },
+    },
+  ]);
+  const placeBuilding = vi.fn(() => Promise.resolve({ transaction_hash: "0x2" }));
+  installActiveGameClient({
+    connect() {},
+    disconnect() {},
+    dispose() {},
+    actions: { placeBuilding },
+    waitForAction: () => Promise.resolve({ hash: "0x2", block: 10, status: "SUCCEEDED" }),
+  } as unknown as GameClient);
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <BuildSheet realm={realm} plot={{ col: 11, row: 10 }} onClose={() => {}} />
+        </GameProvider>,
+      ),
+    );
+    const card = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find((button) =>
+      button.textContent?.includes("Scouts"),
+    )!;
+    act(() => card.click());
+    expect(card.textContent).toContain("Uncommon");
+    const beasts = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+      (button) => button.textContent === "Beasts",
+    )!;
+    act(() => beasts.click());
+    expect(beasts.getAttribute("aria-pressed")).toBe("true");
+    const build = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+      (button) => button.textContent === "Build",
+    )!;
+    expect(build, host.textContent ?? "").toBeDefined();
+    await act(async () => build.click());
+    expect(placeBuilding).toHaveBeenCalledWith(
+      expect.objectContaining({ buildingType: BuildingType.ScoutsLodge, scoutingKind: 2 }),
+    );
+  } finally {
+    act(() => root.unmount());
+    host.remove();
+  }
 });

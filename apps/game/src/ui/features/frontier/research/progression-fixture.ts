@@ -26,10 +26,10 @@ const BUILDING_BASES: Partial<Record<number, { essence: number; labor: number }>
 const CASTLE_PRICES: Partial<Record<number, readonly number[]>> = {
   [research.ROW_SHRINE]: [2000],
   [research.ROW_WELL]: [6000],
-  [research.ROW_DEPTH]: [160_000, 400_000, 900_000],
+  [research.ROW_DEPTH]: [100_000, 250_000, 500_000],
 };
-/** Settlement, City, Kingdom, Empire: the most troops one deploy takes; the castle's stores hold two. */
-const DEPLOY_CAPS = [3000, 9000, 25_000, 60_000];
+/** Settlement, City, Kingdom, Empire: base wheat/labor storage. */
+const RESOURCE_CAPS = [6000, 18_000, 40_000, 80_000];
 
 const price = (row: number, tier: number) => {
   const base = BUILDING_BASES[row];
@@ -61,7 +61,7 @@ const realmOn = (
     },
     // A Knight deploys for 2 wheat; each Rations pick cuts 0.25.
     wheatPerTroop: (rations) => 2 - rations * 0.25,
-    laborStore: (level) => (DEPLOY_CAPS[level]! * 2 * (10_000 + storeroomPicks * 5000)) / 10_000,
+    laborStore: (level) => (RESOURCE_CAPS[level]! * (10_000 + storeroomPicks * 5000)) / 10_000,
     shrineXp: 200,
     wellStamina: nativeRuleConstants.WELL_STAMINA,
   };
@@ -77,7 +77,7 @@ export const EARLY_REALM = realmOn(
 );
 
 /**
- * Some days in, a City: Farm rare (Fields, Granary), Workshop uncommon (Tools), Barracks rare (Drill, Drill), a Hut
+ * Some days in, a City: Farm uncommon on both sides (Fields, Granary), Workshop uncommon (Tools), Barracks rare (Drill, Drill), a Hut
  * uncommon, a War hall and a Scouts' lodge standing (the lodge uncommon on rifts), the Shrine learned.
  */
 export const MID_REALM = realmOn(
@@ -93,10 +93,11 @@ export const MID_REALM = realmOn(
     [research.ROW_SCOUTS_LODGE]: 1,
   },
   {
-    [research.ROW_FARM]: { tier: 2, sides: [0, 1] },
+    [research.ROW_FARM]: { tier: 1, sides: [0, 1] },
     [research.ROW_WORKSHOP]: { tier: 1, sides: [0] },
     [research.ROW_BARRACKS]: { tier: 2, sides: [0, 0] },
     [research.ROW_HUT]: { tier: 1, sides: [] },
+    [research.ROW_WAR_HALL]: { tier: 1, sides: [] },
     [research.ROW_SCOUTS_LODGE]: { tier: 1, sides: [1] },
     [research.ROW_SHRINE]: { tier: 1, sides: [] },
   },

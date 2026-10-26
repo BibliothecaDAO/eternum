@@ -202,8 +202,9 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
   const pair = formatHeldAgainst(held, need);
   return `${pair.held} / ${pair.need}`;
 };
-/** A training building waits for the Barracks' tier: "Needs Barracks at Rare". */
-export const needsAt = (building: string, tier: string) => `Needs ${building} at ${tier}`;
+/** Training counts purchases across both sides, including one on each. */
+export const needsResearchPurchases = (building: string, count: number) =>
+  `Needs ${count} ${building} research purchases`;
 /** A training building already standing: a realm holds one of each. */
 export const ONE_A_REALM = "Built. A realm holds one.";
 /** The arrow beside a price that has risen (a screen reader's words). */
@@ -1183,8 +1184,7 @@ export const RESEARCH_TREE = {
   /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
   kinds: { camp: structurePlural(StructureType.Camp, undefined, "frontier"), rift: "Rifts", beasts: "Beasts" },
   foundByNewArmies: (kind: string) => `${kind} found by new armies`,
-  sidesLine: (made: string) => `Each tier picks a side for the season: more ${made}, or store more`,
-  sideKept: "The side is kept for the season.",
+  sidesLine: (made: string) => `Improve ${made} output and storage separately`,
   hutLine: "Population from every Hut",
   gateLine: (tier: string) => `${tier} opens the four training buildings`,
   gateOpen: "The four training buildings are open",

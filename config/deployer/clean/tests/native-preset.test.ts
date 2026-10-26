@@ -313,9 +313,9 @@ describe("native presets", () => {
       [`${research.ROW_HEARTH}:4`]: [360000n, 60000n],
       [`${research.ROW_SHRINE}:1`]: [2000n, 0n],
       [`${research.ROW_WELL}:1`]: [6000n, 0n],
-      [`${research.ROW_DEPTH}:1`]: [160000n, 0n],
-      [`${research.ROW_DEPTH}:2`]: [400000n, 0n],
-      [`${research.ROW_DEPTH}:3`]: [900000n, 0n],
+      [`${research.ROW_DEPTH}:1`]: [100000n, 0n],
+      [`${research.ROW_DEPTH}:2`]: [250000n, 0n],
+      [`${research.ROW_DEPTH}:3`]: [500000n, 0n],
     });
     expect(preset.structures.board.unwrap()).toMatchObject({
       output_step_bps: 2500,
@@ -323,7 +323,11 @@ describe("native presets", () => {
       population_step_bps: 2500,
       ration_step: precision / 4n,
       training_gate_tier: 2,
-      castle_store_deploys: 2,
+      troop_store_deploys: 2,
+      settlement_resource_cap: 6000,
+      city_resource_cap: 18000,
+      kingdom_resource_cap: 40000,
+      empire_resource_cap: 80000,
     });
     expect(preset.structures.buildings).toHaveLength(research.HEARTH);
     for (const category of [research.WAR_HALL, research.SUPPLY_YARD, research.SCOUTS_LODGE, research.HEARTH]) {

@@ -112,7 +112,11 @@ export class TileManager {
     buildingType: BuildingType,
     hexCoords: HexPosition,
     useSimpleCost: boolean,
+    scoutingKind?: 0 | 1 | 2,
   ) => {
+    if (buildingType === BuildingType.ScoutsLodge && scoutingKind === undefined) {
+      throw new Error("Choose the Scouts' lodge's first kind before building");
+    }
     const { col, row } = hexCoords;
     if (this.isHexOccupied({ col, row })) {
       throw new OccupiedSpaceError();
@@ -128,6 +132,7 @@ export class TileManager {
         directions,
         building_category: buildingType,
         use_simple: useSimpleCost,
+        scouting_kind: scoutingKind ?? 0,
       });
     } catch (error) {
       console.error(error);

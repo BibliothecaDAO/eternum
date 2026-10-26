@@ -40,8 +40,11 @@ export const TierChip = ({ tier, showWord }: { tier: Tier; showWord: boolean }) 
 
 const Pips = ({ tier }: { tier: Tier }) => (
   <span aria-hidden className="inline-flex gap-[3px]">
-    {TIER_WORDS.map((word, index) => (
-      <i key={word} className={cn("size-[7px] rounded-full border border-kit-gold", index < tier && "bg-kit-gold")} />
+    {TIER_WORDS.slice(1).map((word, index) => (
+      <i
+        key={word}
+        className={cn("size-[7px] rounded-full border border-kit-gold", index < tier - 1 && "bg-kit-gold")}
+      />
     ))}
   </span>
 );

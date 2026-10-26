@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { realmLearned, researchChoice, researchedDepth, researchTier } from "./realm-research";
+import {
+  buildingTypeTier,
+  realmLearned,
+  researchChoice,
+  researchedDepth,
+  researchPicks,
+  researchPurchases,
+  researchTier,
+} from "./realm-research";
 
-// research.cairo's learn(): a row's tier counts up in its field, and each tier's choice follows the row's tier field.
+// Matches the Cairo packing test, with independent Farm side counts and ordered Scouts kinds.
 const learned =
-  2n + // Farm rare
-  (1n << 4n) + // Farm's second tier took Granary
+  1n + // Farm Fields uncommon
+  (1n << 3n) + // Farm Granary uncommon
   (1n << 7n) + // Workshop uncommon, Tools
   (3n << 30n) + // Scouts' lodge epic
   (1n << 36n) + // ...first tier on rifts
@@ -18,7 +26,7 @@ const store = (value: bigint | undefined) =>
 
 describe("realm research", () => {
   it("reads each row's tier from the chain's packing", () => {
-    expect(researchTier(learned, research.ROW_FARM)).toBe(2);
+    expect(researchTier(learned, research.ROW_FARM)).toBe(1);
     expect(researchTier(learned, research.ROW_WORKSHOP)).toBe(1);
     expect(researchTier(learned, research.ROW_BARRACKS)).toBe(0);
     expect(researchTier(learned, research.ROW_SCOUTS_LODGE)).toBe(3);
@@ -28,17 +36,26 @@ describe("realm research", () => {
   });
 
   it("reads the choice made at each learned tier", () => {
-    expect([1, 2].map((tier) => researchChoice(learned, research.ROW_FARM, tier))).toEqual([
-      research.CHOICE_MAKE,
-      research.CHOICE_STORE,
-    ]);
+    expect([0, 1].map((side) => researchPicks(learned, research.ROW_FARM, side))).toEqual([1, 1]);
+    expect(researchPurchases(learned, research.ROW_FARM)).toBe(2);
     expect([1, 2, 3].map((tier) => researchChoice(learned, research.ROW_SCOUTS_LODGE, tier))).toEqual([
       research.KIND_RIFTS,
       research.KIND_CAMPS,
       research.KIND_BEASTS,
     ]);
-    expect(() => researchChoice(learned, research.ROW_FARM, 3)).toThrow("has not learned tier 3");
+    expect(() => researchChoice(learned, research.ROW_FARM, 1)).toThrow("has no choice");
     expect(() => researchChoice(learned, research.ROW_HUT, 1)).toThrow("has no choice");
+  });
+
+  it("uses the higher side for building display and retains all eight purchases", () => {
+    for (let make = 0; make <= 4; make++)
+      for (let other = 0; other <= 4; other++) {
+        const value = BigInt(make) | (BigInt(other) << 3n);
+        expect(buildingTypeTier(store(value), 7, 9, research.FARM)).toBe(Math.max(make, other) + 1);
+        expect(researchPurchases(value, research.ROW_FARM)).toBe(make + other);
+        expect(researchPicks(value, research.ROW_FARM, 0)).toBe(make);
+        expect(researchPicks(value, research.ROW_FARM, 1)).toBe(other);
+      }
   });
 
   it("keeps unknown knowledge unknown", () => {

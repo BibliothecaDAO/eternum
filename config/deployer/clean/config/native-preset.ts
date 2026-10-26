@@ -189,7 +189,11 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
             population_step_bps: board.populationStepBps,
             ration_step: scaled(board.rationStep, precision),
             training_gate_tier: board.trainingGateTier,
-            castle_store_deploys: board.castleStoreDeploys,
+            troop_store_deploys: board.troopStoreDeploys,
+            settlement_resource_cap: board.resourceStoreCaps[0],
+            city_resource_cap: board.resourceStoreCaps[1],
+            kingdom_resource_cap: board.resourceStoreCaps[2],
+            empire_resource_cap: board.resourceStoreCaps[3],
           }),
     research: preset.research.map(({ row, tier, essenceCost, laborCost }) => ({
       row,

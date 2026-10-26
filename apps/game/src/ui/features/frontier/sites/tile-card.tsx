@@ -306,7 +306,7 @@ const useSiteChoices = (selected: AttackTarget, wanted: boolean): SiteChoice[] =
   });
 };
 
-/** What a camp or rift pays home and what of it fits; a ruin pays its chest, beasts only XP. */
+/** What a cleared site pays home and what fits; a ruin pays its chest. */
 const sitePay = (plan: SiteCardPlan) => {
   const icon = plan.payout && PAY_ICONS[plan.payout.resourceId];
   return plan.payout && icon ? { icon, amount: plan.payout.amount, fits: plan.payout.fits } : null;

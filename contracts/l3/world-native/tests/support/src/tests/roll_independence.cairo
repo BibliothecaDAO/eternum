@@ -81,7 +81,7 @@ fn typed_commands() -> Array<Command> {
         ),
         Command::CreateBuilding(
             crate::buildings::CreateBuilding {
-                structure_id: 999999, directions: array![0_u8].span(), category: 0, use_simple: false,
+                scouting_kind: 0, structure_id: 999999, directions: array![0_u8].span(), category: 0, use_simple: false,
             },
         ),
         Command::DestroyBuilding(

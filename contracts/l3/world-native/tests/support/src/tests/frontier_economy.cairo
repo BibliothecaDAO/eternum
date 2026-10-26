@@ -48,7 +48,11 @@ pub fn frontier_realm(preset: crate::presets::PresetDefinition) -> (super::Deplo
 pub fn build(home: ResourceKey, category: u8, direction: u8) -> Command {
     Command::CreateBuilding(
         CreateBuilding {
-            structure_id: home.entity_id, directions: array![direction].span(), category, use_simple: true,
+            scouting_kind: 0,
+            structure_id: home.entity_id,
+            directions: array![direction].span(),
+            category,
+            use_simple: true,
         },
     )
 }

@@ -1,6 +1,6 @@
 import { type IconMeaning } from "@/ui/design-system/icon";
 
-import { researchChoice, researchTier } from "@bibliothecadao/eternum";
+import { researchPicks } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 
 /** Each choosing row's two sides as their marks: make more, or store more (or deploy for less wheat). */
@@ -10,12 +10,9 @@ const SIDE_MARKS: Partial<Record<number, readonly [IconMeaning, IconMeaning]>> =
   [research.ROW_BARRACKS]: ["drill", "rations"],
 };
 
-/** The sides a row has taken, one mark per tier bought, in order; none for a row without a choice. */
+/** One mark per upgrade on each independent side; none for a row without two sides. */
 export const sidesTaken = (learned: bigint, row: number): IconMeaning[] => {
   const marks = SIDE_MARKS[row];
   if (!marks) return [];
-  return Array.from(
-    { length: researchTier(learned, row) },
-    (_, index) => marks[researchChoice(learned, row, index + 1)]!,
-  );
+  return marks.flatMap((mark, side) => Array.from({ length: researchPicks(learned, row, side) }, () => mark));
 };
