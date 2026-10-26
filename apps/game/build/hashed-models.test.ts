@@ -4,6 +4,7 @@ import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { build } from "vite";
+import type { BufferGeometry, Mesh, MeshStandardMaterial } from "three";
 import { afterEach, expect, it, vi } from "vitest";
 import { hashedModels } from "./hashed-models";
 
@@ -17,7 +18,7 @@ afterEach(async () => {
 const hashOf = (bytes: string) => createHash("sha256").update(bytes).digest("hex").slice(0, 12);
 
 /** A client with one model and a glTF whose buffer sits beside it, built as players get it. */
-async function builtClient(models: Record<string, string>) {
+async function builtClient(models: Record<string, string | Uint8Array>) {
   const root = await mkdtemp(join(tmpdir(), "hashed-models-"));
   roots.push(root);
   for (const [path, bytes] of Object.entries(models)) {
@@ -117,4 +118,49 @@ it("fails a model the deployment does not serve after one read of its map", asyn
 
   await expect(tab.gltfLoader.loadAsync("/models/realms/ruin.gltf")).rejects.toThrow();
   expect(tab.asked.filter((path) => path === "/model-urls.json")).toHaveLength(1);
+});
+
+/** A triangle whose material's colour comes from `color.png` beside it; its vertices sit in `scene.bin`. */
+const TEXTURED = JSON.stringify({
+  asset: { version: "2.0" },
+  scene: 0,
+  scenes: [{ nodes: [0] }],
+  nodes: [{ mesh: 0 }],
+  meshes: [{ primitives: [{ attributes: { POSITION: 0 }, material: 0 }] }],
+  accessors: [{ bufferView: 0, componentType: 5126, count: 3, type: "VEC3", min: [0, 0, 0], max: [1, 1, 0] }],
+  bufferViews: [{ buffer: 0, byteLength: 36 }],
+  buffers: [{ uri: "scene.bin", byteLength: 36 }],
+  materials: [{ pbrMetallicRoughness: { baseColorTexture: { index: 0 } } }],
+  textures: [{ source: 0 }],
+  images: [{ uri: "color.png" }],
+});
+const TRIANGLE = new Uint8Array(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]).buffer);
+
+it("gives a model its image a deployment changed, the glTF naming it unchanged", async () => {
+  const before = await builtClient({
+    "dragon/scene.gltf": TEXTURED,
+    "dragon/scene.bin": TRIANGLE,
+    "dragon/color.png": "v1",
+  });
+  const after = await builtClient({
+    "dragon/scene.gltf": TEXTURED,
+    "dragon/scene.bin": TRIANGLE,
+    "dragon/color.png": "v2",
+  });
+  vi.stubGlobal("self", globalThis);
+  // An image decodes unless it is the app's page, which the host answers for a file it does not hold.
+  vi.stubGlobal("createImageBitmap", async (blob: Blob) => {
+    if ((await blob.text()).startsWith("<!doctype")) throw new Error("not an image");
+    return { width: 1, height: 1, close() {} };
+  });
+  const tab = await tabOpenedOn(before, after);
+
+  const dragon = await tab.gltfLoader.loadAsync("/models/dragon/scene.gltf");
+
+  expect((dragon.scene.children[0] as Mesh<BufferGeometry, MeshStandardMaterial>).material.map).not.toBeNull();
+  expect(tab.asked.filter((path) => path.includes("color.") || path === "/model-urls.json")).toEqual([
+    before.urls["/models/dragon/color.png"],
+    "/model-urls.json",
+    after.urls["/models/dragon/color.png"],
+  ]);
 });
