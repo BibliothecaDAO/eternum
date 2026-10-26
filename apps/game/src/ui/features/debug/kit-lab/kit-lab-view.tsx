@@ -23,6 +23,7 @@ import { ResourceIconsLab } from "./resource-icons-lab";
 import { Link } from "react-router-dom";
 
 import { HudLab } from "./hud-lab";
+import { ResearchUxLab } from "./research-ux/research-ux-lab";
 import { UnifiedHudLab } from "./unified-hud-lab";
 import { PanelsLab } from "./panels-lab";
 import { BuildOrderLab } from "./build-order-lab";
@@ -64,6 +65,7 @@ export const KitLabView = () => {
       <Route path="tokens" element={<TokensLab />} />
       <Route path="words" element={<WordsLab />} />
       <Route path="hud/:state" element={<HudLab />} />
+      <Route path="research-ux" element={<ResearchUxLab />} />
       <Route path="unified/:view?" element={<UnifiedHudLab />} />
       <Route path="shell" element={<Components />} />
       <Route path="chat" element={<ChatLab />} />
