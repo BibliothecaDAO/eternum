@@ -28,7 +28,6 @@ import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
 import { RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { LastHourBubble } from "@/ui/features/frontier/rollover/last-hour";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
-import { BuildingsRow } from "@/ui/features/frontier/realm/buildings-row";
 import { CastleView } from "@/ui/features/frontier/upgrade/castle-view";
 import { readArmyDetail } from "@/ui/features/frontier/army/army-detail";
 import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
@@ -36,7 +35,6 @@ import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progres
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
-import { BuildingType } from "@bibliothecadao/types";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
@@ -1004,17 +1002,6 @@ export const HudLab = () => {
         notices={lab.offline && <HudNotice tone="bad" line={OFFLINE} retry={noop} />}
         action={
           <>
-            {lab.realmView === "full" && (
-              <BuildingsRow
-                counts={{
-                  [BuildingType.ResourceWheat]: 18,
-                  [BuildingType.ResourceKnightT1]: 18,
-                  [BuildingType.ResourceLabor]: 8,
-                  [BuildingType.WorkersHut]: 8,
-                }}
-                onOpen={noop}
-              />
-            )}
             {lab.order && !desktop && (
               <OrderBar
                 {...lab.order}
