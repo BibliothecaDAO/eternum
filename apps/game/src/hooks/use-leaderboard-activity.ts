@@ -35,15 +35,14 @@ function useRefetchAfterPointsChange(refetch: () => Promise<unknown>) {
   const pointsRevision = useNativeRevision(["PlayerPoints"]);
   const latest = useLatest({ pointsRevision, refetch });
   const fetchedAtRevision = useRef(pointsRevision);
-  useEffect(
-    () =>
-      useConnectionStore.subscribe((state, previous) => {
-        if (state.lastConfirmedBlock === previous.lastConfirmedBlock) return;
-        const { pointsRevision, refetch } = latest.current;
-        if (pointsRevision === fetchedAtRevision.current) return;
-        fetchedAtRevision.current = pointsRevision;
-        void refetch();
-      }),
-    [latest],
-  );
+  useEffect(() => {
+    const unsubscribe = useConnectionStore.subscribe((state, previous) => {
+      if (state.lastConfirmedBlock === previous.lastConfirmedBlock) return;
+      const { pointsRevision, refetch } = latest.current;
+      if (pointsRevision === fetchedAtRevision.current) return;
+      fetchedAtRevision.current = pointsRevision;
+      void refetch();
+    });
+    return unsubscribe;
+  }, [latest]);
 }
