@@ -38,7 +38,7 @@ export const EventLogPanel = ({
  * The full history: Events' stories behind the player's filter, from the strip's own reads, so what the strip shows the
  * Log shows; newest first, then every world story. The window by Events and a phone's Log page draw it alike.
  */
-export const EventLog = () => {
+const EventLog = () => {
   const events = useEventsFeed();
   const world = useStoryEvents(350);
   const failed = events.isError || world.isError;
