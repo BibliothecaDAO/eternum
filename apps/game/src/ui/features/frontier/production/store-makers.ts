@@ -100,7 +100,8 @@ export const eachBuildingMakes = (
 /**
  * What makes a store's rate, line by line, so its parts add up to the rate the card shows: the buildings standing with
  * what each makes, and for labor the castle's own producer (player, 25 October: "+17" counted a castle no screen
- * showed). None where no building stands and no castle makes it.
+ * showed). None where no building stands and no castle makes it. While the realm's research is unknown, what each
+ * building makes is too: its line says how many stand and nothing more, never the unresearched rate.
  */
 export const storeMakerLines = (
   store: NativeFactStore,
@@ -109,21 +110,26 @@ export const storeMakerLines = (
 ): string[] => {
   const { category } = MAKERS[resource];
   const count = standingBuildings(store, safeInteger(realm.entity_id), category);
-  const research = researchShare(store, realm, resource, realmLearned(store, realm.game_id, realm.entity_id) ?? 0n);
-  const each = buildingOutput(store, realm, category, research?.picks ?? 0);
+  const learned = realmLearned(store, realm.game_id, realm.entity_id);
   const name = buildingName(category);
+  const standing = formatCount(count, name, name.endsWith("s") ? name : `${name}s`);
   const lines =
-    count > 0
-      ? [
-          STORE_MAKERS.buildings(
-            formatCount(count, name, name.endsWith("s") ? name : `${name}s`),
-            formatRate(each.total),
-            outputBasis(each, research),
-          ),
-        ]
-      : [];
+    count > 0 ? [learned === undefined ? standing : eachMakesLine(store, realm, resource, learned, standing)] : [];
   if (resource === ResourcesIds.Labor) lines.push(STORE_MAKERS.castle(formatRate(castleLabor(store, realm))));
   return lines;
+};
+
+/** The buildings standing with what each makes under the realm's research: "3 Workshops · +5/min each (3.4 + …)". */
+const eachMakesLine = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  resource: MadeResource,
+  learned: bigint,
+  standing: string,
+): string => {
+  const research = researchShare(store, realm, resource, learned);
+  const each = buildingOutput(store, realm, MAKERS[resource].category, research?.picks ?? 0);
+  return STORE_MAKERS.buildings(standing, formatRate(each.total), outputBasis(each, research));
 };
 
 /** The castle's own labor a second: Labor's realm rate, which research never raises. */

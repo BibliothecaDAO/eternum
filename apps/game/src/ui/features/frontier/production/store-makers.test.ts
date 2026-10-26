@@ -41,3 +41,24 @@ it("writes a building's output on its build card with what research adds, never 
   expect(outputBasis(farm.effect.output, undefined)).toBeUndefined();
   expect(outputLine({ base: 0.084, total: 0.084 }, undefined)).toBe("+5/min");
 });
+
+it("says only what is known of a store's makers until the realm's research arrives, then what each makes", () => {
+  const { store, row } = realm();
+  const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
+  // The knowledge row is not in yet (the day-end fixture keeps it under 0xd).
+  store.applyFacts([{ model: "RealmKnowledge", key: "0xd", value: null }] as never);
+  expect(storeMakerLines(store, row, ResourcesIds.Labor)).toEqual(["3 Workshops", "Castle · +1.7/min"]);
+  expect(storeMakerLines(store, row, ResourcesIds.Wheat)).toEqual(["3 Farms"]);
+  // It arrives: each building's output, with what research adds.
+  store.applyFacts([
+    {
+      model: "RealmKnowledge",
+      key: "0xd",
+      value: { game_id: 1, structure_id: "7", learned: String(knowledge.learned) },
+    },
+  ] as never);
+  expect(storeMakerLines(store, row, ResourcesIds.Labor)).toEqual([
+    "3 Workshops · +5/min each (3.4 + 50% Tools)",
+    "Castle · +1.7/min",
+  ]);
+});
