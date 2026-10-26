@@ -10,7 +10,7 @@ const HASH_LENGTH = 12;
  * serves it at: the same name carrying the first hex of its content's SHA-256 (`/models/realms/city.1f2e3d4c5b6a.glb`).
  * A changed model is a new URL, so every model can be cached for good.
  */
-export function hashedModelUrls(modelsDirectory: string): Record<string, string> {
+function hashedModelUrls(modelsDirectory: string): Record<string, string> {
   const urls: Record<string, string> = {};
   const walk = (directory: string) => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -30,7 +30,7 @@ export function hashedModelUrls(modelsDirectory: string): Record<string, string>
 }
 
 /** Renames each copied model in the build's output to its hashed name; a file already renamed is left as it is. */
-export function renameHashedModels(outputDirectory: string, urls: Record<string, string>): void {
+function renameHashedModels(outputDirectory: string, urls: Record<string, string>): void {
   for (const [url, hashed] of Object.entries(urls)) {
     const from = join(outputDirectory, url);
     if (existsSync(from)) renameSync(from, join(outputDirectory, hashed));
