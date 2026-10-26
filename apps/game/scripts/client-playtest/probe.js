@@ -58,6 +58,12 @@
   // calls) and bytes uploaded (counted, not timed: uploads run hundreds of times a frame, and a clock read on each would
   // cost the frame-work numbers). Each upload reads its bytes from the call's arguments.
   const byteLength = (data) => data?.byteLength ?? 0;
+  // A range of a source buffer: a typed array's offset and count are in its elements, an ArrayBuffer's or DataView's in
+  // bytes; an absent count runs to the end.
+  const rangeBytes = (data, offset = 0, count) => {
+    const unit = data?.BYTES_PER_ELEMENT ?? 1;
+    return count === undefined ? byteLength(data) - offset * unit : count * unit;
+  };
   const imageBytes = (...args) => {
     const image = args.find((arg) => arg && typeof arg === "object" && "width" in arg && "height" in arg);
     return image ? image.width * image.height * 4 : byteLength(args.find((arg) => ArrayBuffer.isView(arg)));
@@ -92,7 +98,7 @@
     ["createComputePipelineAsync", "pipelines"],
   ]);
   countGpuWork(window.GPUQueue?.prototype, [
-    ["writeBuffer", "upload", (_buffer, _offset, data, _dataOffset, size) => size ?? byteLength(data)],
+    ["writeBuffer", "upload", (_buffer, _offset, data, dataOffset, size) => rangeBytes(data, dataOffset, size)],
     ["writeTexture", "upload", (_destination, data) => byteLength(data)],
     [
       "copyExternalImageToTexture",
@@ -103,8 +109,17 @@
   countGpuWork(window.WebGL2RenderingContext?.prototype, [
     ["compileShader", "shaders"],
     ["linkProgram", "pipelines"],
-    ["bufferData", "upload", (_target, data) => (typeof data === "number" ? data : byteLength(data))],
-    ["bufferSubData", "upload", (_target, _offset, data) => byteLength(data)],
+    [
+      "bufferData",
+      "upload",
+      (_target, data, _usage, srcOffset, length) =>
+        typeof data === "number" ? data : rangeBytes(data, srcOffset, length || undefined),
+    ],
+    [
+      "bufferSubData",
+      "upload",
+      (_target, _offset, data, srcOffset, length) => rangeBytes(data, srcOffset, length || undefined),
+    ],
     ["texImage2D", "upload", (...args) => imageBytes(...args.slice(1))],
     ["texSubImage2D", "upload", (...args) => imageBytes(...args.slice(2))],
     ["texImage3D", "upload", (...args) => imageBytes(...args.slice(1))],
