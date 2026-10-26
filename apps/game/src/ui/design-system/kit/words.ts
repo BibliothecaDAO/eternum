@@ -107,8 +107,6 @@ export const SHOW_MY_REALM = "Show my realm";
 /** A realm's place on its ranks' ladder, as its steps say it: "City, rank 2 of 4". */
 export const rankStep = (rank: string, step: number, of: number) => `${rank}, rank ${step} of ${of}`;
 export const RESEARCH = "Research";
-/** Every event and battle: the Events' history, a phone's place for Events. */
-export const LOG = "Log";
 export const CHAT = "Chat";
 export const MENU = "Menu";
 
@@ -143,6 +141,8 @@ export const EVENTS_WORDS = {
   nothingYet: "Nothing here yet.",
   /** Frontier's one feed in its rail: the world's history, and lenses on it. */
   feed: "Feed",
+  /** Its ×: the Feed goes and leaves its place empty; its place opens it again. */
+  closeFeed: "Close the feed",
   lenses: { world: "World", mine: "Mine", important: "Important" },
   lensTips: {
     world: "Everything players do in the world, yours in gold",

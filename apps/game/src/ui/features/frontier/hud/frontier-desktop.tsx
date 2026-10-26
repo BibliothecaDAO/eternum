@@ -11,7 +11,6 @@ import { HudColumn, HudFoot } from "@/ui/features/world/hud/desktop-hud";
 import { HudMinimap } from "@/ui/features/world/hud/minimap";
 import { type ReactNode, useState } from "react";
 
-import { FrontierFeed } from "./frontier-feed";
 import type { HudSurface } from "./frontier-nav";
 import { useHudScale } from "./hud-scale";
 
@@ -30,6 +29,7 @@ export const FrontierDesktop = ({
   armies,
   nextUp,
   page,
+  feed,
   foot,
   places,
   children,
@@ -43,6 +43,8 @@ export const FrontierDesktop = ({
   nextUp?: ReactNode;
   /** A nav page (Research, the Season's board): it stands in the rail's panel. */
   page?: ReactNode;
+  /** The rail's home, the Feed (FrontierFeed); none while the player has closed it. */
+  feed?: ReactNode;
   /** Over the places: notices, the selected army's state, a visit's Leave. */
   foot?: ReactNode;
   places: ReactNode;
@@ -58,7 +60,7 @@ export const FrontierDesktop = ({
         <div className="flex shrink-0 flex-col">{armies}</div>
         <HudMinimap className="mt-auto min-h-hud-minimap w-full shrink" />
       </HudColumn>
-      <FrontierRail nextUp={nextUp} page={page} onPanel={setPanel} />
+      <FrontierRail nextUp={nextUp} page={page} feed={feed} onPanel={setPanel} />
       <HudFoot>
         <div className="pointer-events-none flex flex-col items-center gap-2">
           {foot}
@@ -80,10 +82,12 @@ export const FrontierDesktop = ({
 const FrontierRail = ({
   nextUp,
   page,
+  feed,
   onPanel,
 }: {
   nextUp?: ReactNode;
   page?: ReactNode;
+  feed?: ReactNode;
   /** The panel's place, where the HUD's sheets stand. */
   onPanel: (panel: HTMLElement | null) => void;
 }) => {
@@ -103,8 +107,8 @@ const FrontierRail = ({
       <div ref={onPanel} data-rail-panel className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden">
         {page && <OpenedFromPanel.Provider value>{page}</OpenedFromPanel.Provider>}
       </div>
-      <div data-rail-home className="flex min-h-0 flex-col">
-        <FrontierFeed />
+      <div data-rail-home className="flex min-h-0 flex-1 flex-col empty:hidden">
+        {feed}
       </div>
       <div className={cn("mt-auto flex shrink-0 flex-col justify-end", chatOpen && "min-h-hud-chat-least")}>
         <HudChatWindow open={chatOpen} onOpenChange={setChatOpen} />
@@ -114,8 +118,8 @@ const FrontierRail = ({
 };
 
 /**
- * Frontier's places as the shared HUD's round bubbles: Research (lit while a node can be bought), the Feed, the rail's
- * home, and the Season. Today opens from the top bar's day. A desktop has no Menu: Map and Realm are the top bar's
+ * Frontier's places as the shared HUD's round bubbles: Research (lit while a node can be bought), the Feed (the rail's
+ * home: lit while it shows, and pressed then it closes), and the Season. Today opens from the top bar's day. A desktop has no Menu: Map and Realm are the top bar's
  * Realm / World, chat the rail's strip, the Realms' labor the realm panel's chip, and leaving the game Settings' Leave
  * game.
  */
@@ -124,11 +128,17 @@ export const FrontierPlaces = ({
   home,
   onSurface,
   onHome,
+  feedOpen,
+  onCloseFeed,
   research,
 }: {
   surface: HudSurface | null;
-  /** Whether the rail is at home, its feed showing. */
+  /** Whether the rail is at home: nothing stands in its panel. */
   home: boolean;
+  /** Whether the Feed stands in the rail's home; the player closes it with its ×, or with its lit place. */
+  feedOpen: boolean;
+  /** Puts the Feed away, leaving the rail's home empty. */
+  onCloseFeed: () => void;
   onSurface: (surface: HudSurface | null) => void;
   /** Back to the rail's home: whatever stands in its panel goes. */
   onHome: () => void;
@@ -153,9 +163,9 @@ export const FrontierPlaces = ({
       <HudBubble
         icon="chronicles"
         word={EVENTS_WORDS.feed}
-        pressed={home}
+        pressed={home && feedOpen}
         aria-label={EVENTS_WORDS.feed}
-        onClick={onHome}
+        onClick={home && feedOpen ? onCloseFeed : onHome}
       />
       {bubble("season", "victory", SEASON)}
     </nav>

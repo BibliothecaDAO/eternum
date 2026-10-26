@@ -11,7 +11,7 @@ import { type Place, PlaceNav } from "./place-nav";
 /** What the HUD has open over the map: a nav page, the Menu, or a way the Menu opens. */
 export type HudSurface =
   | "research"
-  | "log"
+  | "feed"
   | "chat"
   | "menu"
   | "today"
@@ -43,13 +43,13 @@ export const FrontierNav = ({
   board: NativeRows["Structure"] | null;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
-  /** Events arrived since the Log was last read. */
+  /** Events arrived since the Feed was last read. */
   events: number;
   unread: number;
 }) => {
   const { isMapView } = useQuery();
   const place: Place | null =
-    surface === "research" || surface === "log" || surface === "chat" || surface === "menu"
+    surface === "research" || surface === "feed" || surface === "chat" || surface === "menu"
       ? surface
       : surface === "season"
         ? "menu"

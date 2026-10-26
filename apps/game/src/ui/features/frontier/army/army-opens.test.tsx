@@ -135,7 +135,7 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
   const openPage = () => host.querySelector("[data-page]");
   const openSheet = () => host.querySelector("[data-kit-sheet]");
 
-  it.each(["Research", "Log", "Chat"])(
+  it.each(["Research", "Feed", "Chat"])(
     "puts %s's page away for an army picked on the map behind it, so the action row answers the pick",
     async (word) => {
       await renderHud();

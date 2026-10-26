@@ -112,6 +112,23 @@ describe("owner naming", () => {
     );
     expect(unnamed.owner).toBe("Lord cdef");
   });
+
+  it("says where its title names the owner, never where a word only reads like their name", () => {
+    const named = (name: string) => (address: string) => (BigInt(address) === 0x123n ? name : null);
+    const withdrawn = buildStoryEventPresentation(
+      story("LordsWithdrawn", { account: "0x123", amount: 50 }),
+      undefined,
+      named("djizus"),
+    );
+    expect(withdrawn).toMatchObject({ title: "djizus withdrew LORDS", owner: "djizus", ownerAt: 0 });
+    const chest = { pack: "Produce", lucky: false } as const;
+    const opened = buildStoryEventPresentation(
+      story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest) }),
+      undefined,
+      named("realm"),
+    );
+    expect(opened).toMatchObject({ title: "Crate opened: 3 relics to its realm", owner: "realm", ownerAt: null });
+  });
 });
 
 it("names a LORDS withdrawal by its whole amount, and another player's by the player", () => {

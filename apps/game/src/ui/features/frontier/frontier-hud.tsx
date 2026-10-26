@@ -5,8 +5,7 @@ import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { SETTINGS } from "@/ui/design-system/kit/words";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
-import { EventLog } from "@/ui/features/event-feed/event-log-panel";
-import { HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { configManager, researchRowOf } from "@bibliothecadao/eternum";
@@ -32,6 +31,7 @@ import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
 import { useChatKey } from "./hud/chat-key";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
+import { FrontierFeed } from "./hud/frontier-feed";
 import { useResearchTree } from "./research/research-facts";
 import { type TappedBuilding, useTappedBuilding } from "./research/selected-building";
 import { canResearchNow } from "./research/research-tree";
@@ -91,7 +91,15 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // What the map has selected opens its card; the one panel decides which of it, a surface and a deploy order stands.
   const card = useSelectionCard({ realm, onResearch: () => setSurface("research") });
   const desktop = useLayout() === "desktop";
-  const { surface, openSurface: setSurface, showsCard, home, goHome } = useOnePanel(card?.key ?? null, !desktop);
+  const {
+    surface,
+    openSurface: setSurface,
+    showsCard,
+    home,
+    goHome,
+    feedOpen,
+    closeFeed,
+  } = useOnePanel(card?.key ?? null, !desktop);
   const realmLabor = useRealmLabor(rules, realm);
   const research = useResearchTree(realm);
   // A building tapped on the realm's board opens Research on its own row, the building over it with Demolish: one
@@ -246,6 +254,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       armies={dock}
       nextUp={nextUp}
       page={page}
+      feed={feedOpen && <FrontierFeed onClose={closeFeed} />}
       foot={
         <>
           {notices}
@@ -257,6 +266,8 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           <FrontierPlaces
             surface={surface}
             home={home}
+            feedOpen={feedOpen}
+            onCloseFeed={closeFeed}
             onSurface={setSurface}
             onHome={goHome}
             research={realm ? canResearchNow(research?.nodes) : undefined}
@@ -325,7 +336,7 @@ const FrontierPhoneHud = ({
   const chat = useGameChat(surface === "chat");
   const chatPane = useChatKey(() => onSurface("chat"));
   const { stories } = useEventsFeed();
-  const events = useUnreadFeedCount(stories, surface === "log");
+  const events = useUnreadFeedCount(stories, surface === "feed");
   return (
     <HudBands
       {...bands}
@@ -339,8 +350,8 @@ const FrontierPhoneHud = ({
             onSignIn={chat.requestSignIn}
             pane={chatPane}
           />
-        ) : surface === "log" ? (
-          <LogPage />
+        ) : surface === "feed" ? (
+          <FrontierFeed onClose={() => onSurface(null)} />
         ) : (
           page
         )
@@ -364,13 +375,6 @@ const FrontierPhoneHud = ({
     </HudBands>
   );
 };
-
-/** The Log as a phone's page: the Events' history, standing on the place bar under the map. */
-const LogPage = () => (
-  <HudPanel label="Log" title="Log" icon="chronicles" collapsible={false} bodyClassName="flex flex-col gap-2">
-    <EventLog />
-  </HudPanel>
-);
 
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
