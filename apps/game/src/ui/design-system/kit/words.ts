@@ -382,6 +382,10 @@ export const slotBarWhy = (fresh: boolean) => (fresh ? "Its slot is fresh today"
 /** Raise an army from troops at home; with none, the realm's Barracks trains them. */
 export const DEPLOY = "Deploy";
 export const NO_TROOPS_AT_HOME = "No troops at home";
+/** Where a Frontier deploy steps out: the tile its order names, marked on the map among the realm's open tiles. */
+export const DEPLOY_TILE = "Steps out on the bright tile. Tap another lit tile beside the realm to move it there.";
+/** Every tile beside the realm holds something: a deploy has nowhere to step out. */
+export const NO_OPEN_TILE = "No open tile beside the realm";
 export const DEPLOYING = "Deploying…";
 /** A free slot after the lowest: the game fills the lowest free slot first. */
 export const DEPLOY_FILLS_FIRST = (number: number) => `Deploy fills slot ${number} first.`;

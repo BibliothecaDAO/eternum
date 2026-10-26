@@ -57,6 +57,7 @@ import {
 import { type MapControls } from "three/addons/controls/MapControls.js";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { SceneName } from "../types";
+import { inOpenMapArea, openMapArea } from "../utils/labels/hud-clearance";
 import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { CameraView } from "./camera-view";
@@ -971,6 +972,41 @@ export abstract class HexagonScene {
     } else {
       this.placeCamera(newPosition, newTarget);
     }
+  }
+
+  /**
+   * Puts a point of this scene at the centre of the map's open area (openMapArea: between the HUD's columns, under its top
+   * band and above its foot, a phone's open sheet included) instead of the screen's centre, which those cover, at the
+   * same zoom and angle.
+   */
+  protected centerOnOpenMap(point: Vector3): void {
+    this.moveCameraToXYZ(point.x, point.y, point.z, 0);
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    const area = openMapArea(viewport);
+    const aim = new Vector2(
+      (area.left + area.right) / viewport.width - 1,
+      1 - (area.top + area.bottom) / viewport.height,
+    );
+    this.camera.updateMatrixWorld();
+    const raycaster = new Raycaster();
+    raycaster.setFromCamera(aim, this.camera);
+    const ground = raycaster.ray.intersectPlane(new Plane(new Vector3(0, 1, 0), -point.y), new Vector3());
+    if (!ground) return;
+    // The ground now under the open area's centre is where the point should be: move by the difference.
+    this.moveCameraToXYZ(2 * point.x - ground.x, point.y, 2 * point.z - ground.z, 0);
+  }
+
+  /**
+   * A point of this scene the HUD covers (a phone's sheet over the plot it opened for) is brought to the centre of the
+   * map's open area; one in sight keeps the camera where the player put it.
+   */
+  protected keepInOpenMap(point: Vector3): void {
+    this.camera.updateMatrixWorld();
+    const projected = point.clone().project(this.camera);
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    const onScreen = { x: ((projected.x + 1) / 2) * viewport.width, y: ((1 - projected.y) / 2) * viewport.height };
+    if (inOpenMapArea(onScreen, viewport)) return;
+    this.centerOnOpenMap(point);
   }
 
   /**

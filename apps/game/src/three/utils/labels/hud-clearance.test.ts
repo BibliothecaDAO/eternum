@@ -107,3 +107,20 @@ it("starts a phone's open area under its top band and ends it on its foot, and s
   expect(openMapArea(phone)).toEqual({ left: 0, right: 390, top: 150, bottom: 700 });
   expect([inOpenMapArea({ x: 195, y: 400 }, phone), inOpenMapArea({ x: 195, y: 760 }, phone)]).toEqual([true, false]);
 });
+
+it("ends a phone's open area on a sheet standing across its middle, and leaves a desktop's docked sheet beside it", () => {
+  const mark = (attributes: Record<string, string>, rect: Partial<DOMRect>) => {
+    const element = document.createElement("div");
+    Object.entries(attributes).forEach(([name, value]) => element.setAttribute(name, value));
+    element.getBoundingClientRect = () => ({ left: 0, right: 0, top: 0, bottom: 0, height: 0, ...rect }) as DOMRect;
+    document.body.append(element);
+    return element;
+  };
+  mark(HUD_TOP_MARK, { left: 8, right: 382, top: 8, bottom: 76, height: 68 });
+  mark(HUD_FOOT_MARK, { left: 8, right: 382, top: 770, bottom: 836, height: 66 });
+  const sheet = mark({ "data-kit-sheet": "" }, { left: 8, right: 382, top: 384, bottom: 764, height: 380 });
+  expect(openMapArea({ width: 390, height: 844 })).toEqual({ left: 0, right: 390, top: 76, bottom: 384 });
+  // A desktop's sheet stands in the right rail, beside the map: the foot stays where it was.
+  sheet.getBoundingClientRect = () => ({ left: 1500, right: 1900, top: 76, bottom: 900, height: 824 }) as DOMRect;
+  expect(openMapArea({ width: 1920, height: 1080 })).toEqual({ left: 0, right: 1920, top: 76, bottom: 770 });
+});

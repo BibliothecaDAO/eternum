@@ -11,21 +11,28 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
-import { BUILD, DEPLOY, DEPLOYING, marchLine, NO_TROOPS_AT_HOME, STAMINA, TROOPS } from "@/ui/design-system/kit/words";
 import {
-  type DeployTile,
-  RealmHexDeployMap,
-} from "@/ui/features/military/components/unified-army-creation-modal/realm-hex-deploy-map";
-import type { Direction } from "@bibliothecadao/types";
+  BUILD,
+  DEPLOY,
+  DEPLOY_TILE,
+  DEPLOYING,
+  marchLine,
+  NO_OPEN_TILE,
+  NO_TROOPS_AT_HOME,
+  STAMINA,
+  TROOPS,
+} from "@/ui/design-system/kit/words";
 
 import type { SlotStart } from "./deploy-plan";
 import { slotStartWords } from "./slot-start";
 
 /**
  * Deploy, from its props: the two choices a deploy makes and its one verb. How many troops go (the count typed, +500
- * and Max beside it, out of how many can, a slider under them), the stamina the army starts on (its slot's bar),
- * onto which tile beside the realm (the map selector), then Deploy in the foot with its wheat price and how far the
- * wheat left lets the army march: the trade the count makes. With no troops at home, Build is the step.
+ * and Max beside it, out of how many can, a slider under them), the stamina the army starts on (its slot's bar), and
+ * onto which tile beside the realm: picked on the map itself, where the order's tile is marked among the realm's open
+ * ones (owner, 26 October 2026: "we dont need to show another map in the deploy panel"), so the sheet only says so.
+ * Deploy stands in the foot with its wheat price and how far the wheat left lets the army march: the trade the count
+ * makes. With no troops at home, Build is the step.
  */
 export const DeployView = ({
   art,
@@ -36,7 +43,7 @@ export const DeployView = ({
   start,
   wheatCost,
   march,
-  ring,
+  tile,
   canDeploy,
   sending,
   onDeploy,
@@ -55,14 +62,8 @@ export const DeployView = ({
   wheatCost: number | undefined;
   /** The tiles the wheat left at home lets the army march; unknown is undefined. */
   march: number | undefined;
-  ring:
-    | {
-        center: { col: number; row: number };
-        tiles: readonly DeployTile[];
-        chosen: Direction | null;
-        onPick: (direction: Direction) => void;
-      }
-    | undefined;
+  /** Whether the realm has an open tile to step out on; unknown while its plan or ring is. */
+  tile: "open" | "none" | undefined;
   canDeploy: boolean;
   sending: boolean;
   onDeploy: () => void;
@@ -92,15 +93,7 @@ export const DeployView = ({
         </HudButton>
       </>
     ) : (
-      ring && (
-        <RealmHexDeployMap
-          centerCol={ring.center.col}
-          centerRow={ring.center.row}
-          ring={ring.tiles}
-          selectedDirection={ring.chosen}
-          onSelect={ring.onPick}
-        />
-      )
+      tile && <TileLine tile={tile} />
     )}
     {wheatShort && <HudNotice tone="warn" line={shortfallLine({ kind: "short", of: "wheat", ...wheatShort })} />}
     {canDeploy && wheatCost !== undefined && (
@@ -133,3 +126,11 @@ const DeployPrice = ({ wheatCost, march }: { wheatCost: number; march: number | 
     {march !== undefined && <span className={march === 0 ? "text-hud-warn" : undefined}>{marchLine(march)}</span>}
   </span>
 );
+
+/** Where the army steps out: the bright tile on the map, and that another lit one moves it; or that none is open. */
+const TileLine = ({ tile }: { tile: "open" | "none" }) =>
+  tile === "open" ? (
+    <span className="text-hud-muted">{DEPLOY_TILE}</span>
+  ) : (
+    <HudNotice tone="warn" line={NO_OPEN_TILE} />
+  );

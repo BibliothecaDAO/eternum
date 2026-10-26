@@ -2,7 +2,7 @@ import { formatAmount, REALM_LEVELS } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { Icon } from "@/ui/design-system/icon";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
-import { HudButton, HudCard, HudChip, HudCost, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudCard, HudChip, HudCost, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import { CASTLE, TROOPS, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 
@@ -35,8 +35,9 @@ export type CastleSide = {
 
 /**
  * The castle's sheet (wireframe 02): what the castle makes and holds now, the castle now and at its next level side by side, what the next level brings lit,
- * and Upgrade with its labor cost under it. When the realm cannot pay, Upgrade stays, dimmed, with its cost; the line
- * under it says what it needs against what is held and the exact wait; the map is offered where a reveal pays labor.
+ * and Upgrade with its labor cost in the sheet's foot, never scrolled out of view. When the realm cannot pay, the foot
+ * says what it needs against what is held and the exact wait (RefusedVerb), with the map as its button where a reveal
+ * pays labor, else Upgrade dimmed.
  * At the last level there is no next side and no verb.
  */
 export const CastleView = ({
@@ -76,12 +77,11 @@ export const CastleView = ({
       (refusal ? (
         <RefusedVerb word={UPGRADE} prices={prices} refusal={refusal} />
       ) : (
-        <>
+        <HudWindowFoot note={<HudCost line={costLine(prices)} />}>
           <HudButton kind="primary" busy={sending ? UPGRADING : undefined} onClick={onUpgrade}>
             {UPGRADE}
           </HudButton>
-          <HudCost line={costLine(prices)} />
-        </>
+        </HudWindowFoot>
       ))}
   </HudSheet>
 );

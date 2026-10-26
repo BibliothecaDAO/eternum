@@ -19,8 +19,8 @@ export interface DoorwayRealm {
 
 /**
  * The doorway (spec 07): the realm rising under its Order's emblem, and the steps (account → realm → map → play)
- * continuing by themselves, on the app's frame with Back to the app on every step; on desktop one plate over the
- * mode's painting. It holds only for the one thing the
+ * continuing by themselves, on the app's frame with Back to the app on every step, over the mode's painting: on desktop
+ * one plate, on a phone the steps in the middle of the screen. It holds only for the one thing the
  * player must do, whose words come from their owners: sign in, try again, Devices, Watch or Results.
  */
 export const DoorwayScreen = ({
@@ -78,7 +78,7 @@ export const DoorwayScreen = ({
             </AppPanel>
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-doorway flex-col items-center gap-6 py-6">
+          <div className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-doorway flex-col items-center justify-center gap-6 py-6">
             {realm && <RealmRising realm={realm} />}
             <StepTrack steps={view.steps} />
             {hold}

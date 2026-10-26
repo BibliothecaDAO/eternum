@@ -176,3 +176,35 @@ describe.each(SIZES)("the current place at %i × %i", (width) => {
     expect(current(await renderPath("/scroll")).join()).toMatch(/What.s new/);
   });
 });
+
+describe("a stage on a phone", () => {
+  const renderFrame = async (stage: boolean) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    setViewportWidth(390);
+    const container = document.createElement("div");
+    document.body.replaceChildren(container);
+    root = createRoot(container);
+    await act(async () =>
+      root!.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <MemoryRouter>
+            <PageFrame back="/" title="Frontier" tabs={false} painting="dark-plains" stage={stage}>
+              <p>Steps</p>
+            </PageFrame>
+          </MemoryRouter>
+        </QueryClientProvider>,
+      ),
+    );
+    return container;
+  };
+
+  it("stands on its painting as a desktop's does, so the doorway's few steps never sit on a black page", async () => {
+    const staged = await renderFrame(true);
+    expect(staged.querySelector('[data-layout="phone"] .app-frame[data-stage] img.app-frame__painting')).not.toBeNull();
+  });
+
+  it("leaves a page that is no stage on the plain ground", async () => {
+    const plain = await renderFrame(false);
+    expect(plain.querySelector("img.app-frame__painting")).toBeNull();
+  });
+});
