@@ -37,6 +37,7 @@ export function readStandingFrontierBeast(
 /** Every landmark and guard shares its tile center. The fey clears the rift crown. */
 export function frontierSiteComposition(category: StructureType) {
   if (category === StructureType.Ruin) return { baseScale: 1, baseZ: 0, beastZ: 0, beastY: 0 };
-  if (category === StructureType.Rift) return { baseScale: 0.5, baseZ: 0, beastZ: 0, beastY: 0.2 };
+  // The painted slab has a 0.795 apothem; the terrain hex has sqrt(3) / 2.
+  if (category === StructureType.Rift) return { baseScale: 1.09, baseZ: 0, beastZ: 0, beastY: 0.2 };
   return { baseScale: 0, baseZ: 0, beastZ: 0, beastY: 0 };
 }
