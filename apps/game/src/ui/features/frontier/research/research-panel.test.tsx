@@ -154,6 +154,9 @@ it("shows the chosen research shares without a production formula", () => {
   );
   expect(button(/^Fields/)!.textContent).toBe("Fields+25% → +50%");
   expect(button(/^Granary/)!.textContent).not.toContain("Each Farm");
+  // The choice reads from its cards: no line explaining the sides or that they are kept.
+  const lines = [...host.querySelectorAll("[data-lab='node-choice'] > span")].map((line) => line.textContent);
+  expect(lines).toEqual([]);
 });
 
 it("keeps the chosen Research action outside the tree scroll on every pick, including the initial Farm", () => {

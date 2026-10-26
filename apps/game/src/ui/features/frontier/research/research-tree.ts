@@ -91,7 +91,7 @@ export interface TreeNode {
   needs: Need[];
   /** What the node does, one line, and its figure now and after the next tier. */
   gives: { line: string; now: string; next?: string };
-  /** The sides its next tier chooses between, final for the season; the choice sent is the side's index. */
+  /** The sides its next tier chooses between; the choice sent is the side's index. */
   sides?: Side[];
   /** The marks of the sides taken, one per learned tier. */
   taken: IconMeaning[];
@@ -212,12 +212,9 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     };
   };
 
+  type SideRule = { icon: IconMeaning; words: readonly [string, string]; at: (picks: number) => string };
   /** Fields, Tools or Drill against Granary, Storeroom or Rations: what one more pick of each adds. */
-  const twoSides = (
-    row: number,
-    make: { icon: IconMeaning; words: readonly [string, string]; at: (picks: number) => string },
-    other: { icon: IconMeaning; words: readonly [string, string]; at: (picks: number) => string },
-  ) => ({
+  const twoSides = (row: number, make: SideRule, other: SideRule) => ({
     sides: (): Side[] =>
       [make, other].map((side, index) => ({
         icon: side.icon,
@@ -239,11 +236,19 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     next: tier < 4 ? percent((tier + 1) * realm.board.populationStepBps) : undefined,
   });
 
-  const tierLine = (row: number, made: string) => (tier: number) => ({
-    line: RESEARCH_TREE.sidesLine(made),
-    now: tierShown(tier),
-    next: tier < 4 ? tierShown(tier + 1) : undefined,
+  /** What a row's picks give so far, read from its two sides: "Fields +50% · Granary +25%". */
+  const picksGive = (row: number, make: SideRule, other: SideRule) => () => ({
+    line: `${make.words[0]} ${make.at(picks(row, 0))}`,
+    now: `${other.words[0]} ${other.at(picks(row, 1))}`,
   });
+  const farmSides: [SideRule, SideRule] = [
+    { icon: "fields", words: sides.fields, at: output },
+    { icon: "granary", words: sides.granary, at: storage },
+  ];
+  const workshopSides: [SideRule, SideRule] = [
+    { icon: "tools", words: sides.tools, at: output },
+    { icon: "storehouse", words: sides.storeroom, at: storage },
+  ];
   const gateBarracks = `${buildingName(BuildingType.ResourceKnightT1)} ${tierShown(realm.board.trainingGateTier)}`;
   const gateNeed: Need = {
     kind: "tier",
@@ -257,23 +262,15 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       ROWS.farm,
       BuildingType.ResourceWheat,
       "economy",
-      tierLine(ROWS.farm, "wheat"),
-      twoSides(
-        ROWS.farm,
-        { icon: "fields", words: sides.fields, at: output },
-        { icon: "granary", words: sides.granary, at: storage },
-      ),
+      picksGive(ROWS.farm, ...farmSides),
+      twoSides(ROWS.farm, ...farmSides),
     ),
     buildingNode(
       ROWS.workshop,
       BuildingType.ResourceLabor,
       "economy",
-      tierLine(ROWS.workshop, "labor"),
-      twoSides(
-        ROWS.workshop,
-        { icon: "tools", words: sides.tools, at: output },
-        { icon: "storehouse", words: sides.storeroom, at: storage },
-      ),
+      picksGive(ROWS.workshop, ...workshopSides),
+      twoSides(ROWS.workshop, ...workshopSides),
     ),
     buildingNode(
       ROWS.hut,

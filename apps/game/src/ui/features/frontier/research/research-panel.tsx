@@ -196,32 +196,29 @@ const NodeChoice = ({
         </button>
       </div>
       {node.sides ? (
-        <>
-          <div className={cn("grid gap-2", node.sides.length === 3 ? "grid-cols-3" : "grid-cols-2")}>
-            {node.sides.map((option, index) => (
-              <button
-                key={option.name}
-                type="button"
-                onClick={() => setSide(index)}
-                aria-pressed={side === index}
-                title={option.line}
-                className={cn(
-                  "flex items-center gap-2 rounded-md border px-2 py-1.5 text-left",
-                  side === index ? "border-hud-line-strong bg-hud-chosen" : "border-hud-line hover:bg-hud-hover",
-                )}
-              >
-                <Icon name={option.icon} size={28} />
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-hud-strong text-hud-ink">{option.name}</span>
-                  <span className="truncate text-hud-label tabular-nums text-hud-good">
-                    {RESEARCH_TREE.step(option.now, option.next)}
-                  </span>
+        <div className={cn("grid gap-2", node.sides.length === 3 ? "grid-cols-3" : "grid-cols-2")}>
+          {node.sides.map((option, index) => (
+            <button
+              key={option.name}
+              type="button"
+              onClick={() => setSide(index)}
+              aria-pressed={side === index}
+              title={option.line}
+              className={cn(
+                "flex items-center gap-2 rounded-md border px-2 py-1.5 text-left",
+                side === index ? "border-hud-line-strong bg-hud-chosen" : "border-hud-line hover:bg-hud-hover",
+              )}
+            >
+              <Icon name={option.icon} size={28} />
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-hud-strong text-hud-ink">{option.name}</span>
+                <span className="truncate text-hud-label tabular-nums text-hud-good">
+                  {RESEARCH_TREE.step(option.now, option.next)}
                 </span>
-              </button>
-            ))}
-          </div>
-          <span className="text-hud-label text-hud-warn">{RESEARCH_TREE.sideKept}</span>
-        </>
+              </span>
+            </button>
+          ))}
+        </div>
       ) : (
         <span className="text-hud-body text-hud-ink">
           {node.gives.line}

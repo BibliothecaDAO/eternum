@@ -1228,8 +1228,6 @@ export const RESEARCH_TREE = {
   /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
   kinds: { camp: structurePlural(StructureType.Camp, undefined, "frontier"), rift: "Rifts", beasts: "Beasts" },
   foundByNewArmies: (kind: string) => `${kind} found by new armies`,
-  sidesLine: (made: string) => `Each tier picks a side for the season: more ${made}, or more storage`,
-  sideKept: "The side is kept for the season.",
   hutLine: "Population from every Hut",
   population: "Population",
   gateLine: (barracks: string) => `${barracks} opens the four training buildings`,
