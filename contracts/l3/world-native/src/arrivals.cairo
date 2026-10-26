@@ -1,7 +1,7 @@
 use crate::resources::ResourceAmount;
 
 pub const SLOTS_PER_DAY: u8 = 48;
-pub(crate) const INDEX_SCALE: u64 = 0x100000000;
+pub const INDEX_SCALE: u64 = 0x100000000;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ArrivalKey {

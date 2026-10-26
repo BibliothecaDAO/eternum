@@ -2,4 +2,5 @@
 set -euo pipefail
 
 export RAYON_NUM_THREADS=1
-exec snforge test --max-threads 1 "$@"
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")/world-native/tests"
+exec snforge test --package 'world_tests_*' --max-threads 1 "$@"

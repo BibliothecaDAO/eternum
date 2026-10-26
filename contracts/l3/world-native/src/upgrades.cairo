@@ -14,9 +14,9 @@ pub struct UpgradeRecipe {
 
 #[starknet::interface]
 pub trait IUpgradeRules<T> {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn upgrade_limits(self: @T, game_id: u32) -> UpgradeLimits;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn upgrade_recipe(self: @T, game_id: u32, level: u8) -> UpgradeRecipe;
 }
 

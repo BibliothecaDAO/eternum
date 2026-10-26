@@ -8,8 +8,8 @@ pub const UNLIMITED_OUTPUT: u128 = 0xffffffffffffffffffffffffffffffff;
 // Settlements before this rule wore markers down by what they produced; a season never produces this much.
 const UNLIMITED_MARGIN: u128 = 0x10000000000000000;
 pub const RESOURCE_RATE_SCALE: u128 = 0x10000000000000000;
-pub(crate) const FIRST_TROOP_RESOURCE: u8 = 26;
-pub(crate) const LAST_TROOP_RESOURCE: u8 = 34;
+pub const FIRST_TROOP_RESOURCE: u8 = 26;
+pub const LAST_TROOP_RESOURCE: u8 = 34;
 
 /// Whether a producer's output budget is the unlimited marker, the one comparison every reader makes.
 pub fn is_unlimited(output_amount_left: u128) -> bool {
@@ -101,24 +101,24 @@ pub struct ResourceSlot {
 }
 
 #[derive(Copy, Drop)]
-pub(crate) struct SettledResource {
-    pub(crate) balance: u128,
-    pub(crate) production: Production,
-    pub(crate) weight: Weight,
+pub struct SettledResource {
+    pub balance: u128,
+    pub production: Production,
+    pub weight: Weight,
     // A store's own limit, where it has one; the shared weight still bounds every store.
-    pub(crate) limit: Option<u128>,
+    pub limit: Option<u128>,
 }
 
-pub(crate) fn assert_resource(resource_type: u8) {
+pub fn assert_resource(resource_type: u8) {
     assert!(resource_type > 0 && resource_type <= 58, "invalid resource type");
 }
 
-pub(crate) fn assert_production(resource_type: u8) {
+pub fn assert_production(resource_type: u8) {
     assert_resource(resource_type);
     assert!(resource_type < 39 || resource_type > 56, "resource has no production");
 }
 
-pub(crate) fn has_production(resource_type: u8) -> bool {
+pub fn has_production(resource_type: u8) -> bool {
     resource_type != LORDS && (resource_type < 39 || resource_type > 56)
 }
 
@@ -149,7 +149,7 @@ pub fn settle(
 }
 
 /// Stores what fits, under the shared weight and the store's own limit, and returns it: the rest is gone.
-pub(crate) fn add(
+pub fn add(
     resource_type: u8, ref balance: u128, ref weight: Weight, amount: u128, unit_weight: u128, limit: Option<u128>,
 ) -> u128 {
     let unlimited = weight.capacity == 0xffffffffffffffffffffffffffffffff;
@@ -175,7 +175,7 @@ pub(crate) fn add(
     storable
 }
 
-pub(crate) fn spend(resource_type: u8, ref balance: u128, ref weight: Weight, amount: u128, unit_weight: u128) {
+pub fn spend(resource_type: u8, ref balance: u128, ref weight: Weight, amount: u128, unit_weight: u128) {
     assert!(balance >= amount, "insufficient resource balance");
     balance -= amount;
     assert_relic_precision(resource_type, balance);

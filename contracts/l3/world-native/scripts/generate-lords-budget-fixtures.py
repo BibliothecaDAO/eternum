@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """Record bounded season checkpoints with the compiled conservation test; never reimplement its rules."""
 
+import os
 import re
 import subprocess
 from pathlib import Path
 
 WORLD = Path(__file__).resolve().parent.parent
-SOURCE = WORLD / "src/tests/lords_budget.cairo"
+SOURCE = WORLD / "tests/support/src/tests/lords_budget.cairo"
 DIRECTORY = WORLD / "src/tests/fixtures/lords-budget"
 INPUT = WORLD / "target/budget-checkpoint-input.txt"
-PRODUCER = "world_native::tests::lords_budget::record_budget_checkpoint"
+PRODUCER = "world_tests_economy::tests::lords_budget::record_budget_checkpoint"
 
 
 def constant(name):
-    match = re.search(rf"^const {name}: u(?:32|64) = ([0-9]+);$", SOURCE.read_text(), re.M)
+    match = re.search(rf"^pub const {name}: u(?:32|64) = ([0-9]+);$", SOURCE.read_text(), re.M)
     if not match:
         raise ValueError(f"Missing simulation constant {name}")
     return int(match[1])
@@ -24,8 +25,8 @@ def record_chunk(density, quiet, clear, first, past, previous):
     fields += [1] if previous is None else [0, *previous]
     INPUT.write_text("".join(f"{value}\n" for value in fields))
     result = subprocess.run(
-        ["snforge", "test", PRODUCER, "--exact", "--ignored", "--max-threads", "1"],
-        cwd=WORLD, text=True, capture_output=True, check=False,
+        ["snforge", "test", PRODUCER, "--exact", "--ignored", "--max-threads", "1", "--package", "world_tests_economy"],
+        cwd=WORLD / "tests", env={**os.environ, "RAYON_NUM_THREADS": "1"}, text=True, capture_output=True, check=False,
     )
     if result.returncode:
         raise RuntimeError(result.stdout + result.stderr)

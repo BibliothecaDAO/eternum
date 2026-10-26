@@ -1,0 +1,21 @@
+[workspace]
+members = ["support", "capture", "combat", "discovery", "economy", "lifecycle", "registration", "resources", "world"]
+
+[workspace.dependencies]
+world_native = { path = "..", features = ["test_support"] }
+starknet = "=2.17.0"
+snforge_std = "=0.64.0"
+assert_macros = "=2.17.0"
+eternum_cubit = { path = "../vendor/cubit" }
+games_storage = { path = "../storage" }
+realms_vrf_verifier = { path = "../../vrf-verifier" }
+
+[workspace.tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]
+
+[workspace.tool.fmt]
+max-line-length = 120
+sort-module-level-items = true
+
+[workspace.tool.snforge]
+max_n_steps = 500000000

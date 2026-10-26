@@ -1,12 +1,12 @@
 use crate::troops::Coord;
 // Terrain views carry coordinates and biome; occupants have their own canonical fact.
-pub(crate) const REWARD_EXTRACTED_FLAG: u128 = 0x20000000000000000000000000000;
+pub const REWARD_EXTRACTED_FLAG: u128 = 0x20000000000000000000000000000;
 const LAYER_FLAG: u128 = 0x80000000000000000000000000000000;
 const COL_SCALE: u128 = 0x200000000000000000000;
 const ROW_SCALE: u128 = 0x2000000000000;
-pub(crate) const BIOME_SCALE: u128 = 0x20000000000;
-pub(crate) const OCCUPIER_SCALE: u128 = 0x200;
-pub(crate) const BYTE_RANGE: u128 = 0x100;
+pub const BIOME_SCALE: u128 = 0x20000000000;
+pub const OCCUPIER_SCALE: u128 = 0x200;
+pub const BYTE_RANGE: u128 = 0x100;
 
 #[derive(Copy, Drop, Serde, PartialEq, Debug)]
 pub struct TileKey {
@@ -28,7 +28,7 @@ pub struct TileOccupancy {
     pub is_structure: bool,
 }
 
-pub(crate) fn occupancy_bits(occupancy: TileOccupancy) -> u128 {
+pub fn occupancy_bits(occupancy: TileOccupancy) -> u128 {
     occupancy.entity_id.into() * OCCUPIER_SCALE
         + occupancy.category.into() * 2
         + if occupancy.is_structure {
@@ -38,7 +38,7 @@ pub(crate) fn occupancy_bits(occupancy: TileOccupancy) -> u128 {
         }
 }
 
-pub(crate) fn occupancy_from_bits(data: u128) -> Option<TileOccupancy> {
+pub fn occupancy_from_bits(data: u128) -> Option<TileOccupancy> {
     if data == 0 {
         return None;
     }
@@ -52,7 +52,7 @@ pub(crate) fn occupancy_from_bits(data: u128) -> Option<TileOccupancy> {
 }
 
 // Zero is absent; adding one preserves both layers and every u32 coordinate, including the origin.
-pub(crate) fn position_bits(coord: Coord) -> u128 {
+pub fn position_bits(coord: Coord) -> u128 {
     coord.x.into() * 2 + coord.y.into() * 0x200000000 + if coord.alt {
         2
     } else {
@@ -60,7 +60,7 @@ pub(crate) fn position_bits(coord: Coord) -> u128 {
     }
 }
 
-pub(crate) fn position_from_bits(data: u128) -> Option<Coord> {
+pub fn position_from_bits(data: u128) -> Option<Coord> {
     if data == 0 {
         return None;
     }
@@ -97,7 +97,7 @@ pub trait IMapLogic<T> {
     fn expedition_home_ring(self: @T, game_id: u32, region_id: u32, timestamp: u64) -> Span<(Coord, u8)>;
 }
 
-pub(crate) fn coordinate_bits(key: TileKey) -> u128 {
+pub fn coordinate_bits(key: TileKey) -> u128 {
     (if key.alt {
         LAYER_FLAG
     } else {

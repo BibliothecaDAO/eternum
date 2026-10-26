@@ -301,3 +301,31 @@ index 6e58393..9ca27da 100644
 
      // Shared across all test case tasks, so each contract's backtrace data is built once and reused.
      let contract_backtrace_mapping = Arc::new(LazyContractBacktraceDataMapping::new());
+diff --git a/crates/forge/src/run_tests/workspace.rs b/crates/forge/src/run_tests/workspace.rs
+index efd1ffa..102b3d4 100644
+--- a/crates/forge/src/run_tests/workspace.rs
++++ b/crates/forge/src/run_tests/workspace.rs
+@@ -112,9 +112,6 @@ pub async fn execute_workspace(
+
+     let partitioning_config = get_partitioning_config(args, &ui, &packages, &artifacts_dir_path)?;
+
+-    // Spawn config passes for all packages before running any tests so that
+-    // compilation overlaps with test execution across packages.
+-    let mut all_package_args = Vec::with_capacity(packages.len());
+     for pkg in packages {
+         let cwd = env::current_dir()?;
+         env::set_current_dir(&pkg.root)?;
+@@ -127,13 +124,6 @@ pub async fn execute_workspace(
+             partitioning_config.clone(),
+             &ui,
+         )?;
+-        env::set_current_dir(&cwd)?;
+-        all_package_args.push(pkg_args);
+-    }
+-
+-    for pkg_args in all_package_args {
+-        let cwd = env::current_dir()?;
+-        env::set_current_dir(&pkg_args.package_root)?;
+
+         let result = run_for_package(
+             pkg_args,

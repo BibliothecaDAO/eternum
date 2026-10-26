@@ -14,12 +14,12 @@ pub mod SettlementLogic {
         ISettlementPoolDispatcherTrait, ISettlementPoolLibraryDispatcher, RealmCreation, SettlementCreation,
         VillageCreation,
     };
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     use crate::settlement::{PlayerEntry, RealmGrants, SettlementProgress, SettlementRules};
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
     use crate::village::{SettleVillage, VillagePassKey};
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     use crate::village::{VillagePass, VillageRules};
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
@@ -76,11 +76,11 @@ pub mod SettlementLogic {
 
     #[abi(embed_v0)]
     impl UpgradeRules of crate::upgrades::IUpgradeRules<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn upgrade_limits(self: @ContractState, game_id: u32) -> UpgradeLimits {
             self.upgrades.limits(game_id)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn upgrade_recipe(self: @ContractState, game_id: u32, level: u8) -> UpgradeRecipe {
             self.upgrades.recipe(game_id, level)
         }
@@ -88,7 +88,7 @@ pub mod SettlementLogic {
 
     #[abi(embed_v0)]
     impl ExpeditionRules of crate::expeditions::IExpeditionRules<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn depth_rules(self: @ContractState, game_id: u32, depth: u8) -> crate::expeditions::DepthRules {
             crate::logic::expeditions::depth_rules(game_id, depth)
         }
@@ -99,18 +99,18 @@ pub mod SettlementLogic {
             assert!(get_caller_address() == self.release.authority(), "only domain authority");
             self.realms.initialize(first_realm, packed_traits);
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn realm_catalogue(self: @ContractState) -> crate::realms::RealmCatalogue {
             crate::realms::RealmCatalogue {
                 initialized: self.realms.data.realms.catalogue_count.read(),
                 digest: self.realms.data.realms.catalogue_digest.read(),
             }
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn realm_traits(self: @ContractState, realm_id: u32) -> crate::realms::RealmTraits {
             self.realms.traits(realm_id)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn available_realm(self: @ContractState, game_id: u32, index: u32) -> u32 {
             self.realms.available(game_id, index, self.settlements.data.settlements.progress.read(game_id).realm_count)
         }
@@ -184,11 +184,11 @@ pub mod SettlementLogic {
 
     #[abi(embed_v0)]
     impl Villages of crate::village::IVillages<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn village_rules(self: @ContractState, game_id: u32) -> VillageRules {
             self.villages.rules(game_id)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn village_pass(self: @ContractState, key: VillagePassKey) -> Option<VillagePass> {
             self.villages.pass(key)
         }
@@ -248,23 +248,23 @@ pub mod SettlementLogic {
     }
     #[abi(embed_v0)]
     impl SettlementViews of crate::settlement::ISettlementViews<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn blitz_settlement_order(self: @ContractState, game_id: u32) -> Span<u8> {
             crate::logic::settlement::blitz_order(game_id)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn realm_grants(self: @ContractState, game_id: u32) -> RealmGrants {
             crate::logic::settlement::grants(game_id)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn settlement_rules(self: @ContractState, game_id: u32) -> SettlementRules {
             crate::logic::settlement::rules(game_id)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn settlement_progress(self: @ContractState, game_id: u32) -> SettlementProgress {
             self.settlements.data.settlements.progress.read(game_id)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn player_entry(self: @ContractState, key: EntryKey) -> Option<PlayerEntry> {
             crate::logic::settlement::entry(key)
         }

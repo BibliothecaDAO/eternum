@@ -9,7 +9,7 @@ pub mod ProductionLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::resources::ResourceState;
     use crate::ownership::{Story, StoryEvent};
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     use crate::production::{ProductionBonus, ProductionRecipe};
     use crate::production::{RecipeKey, RefillProduction};
     use crate::resources::ResourceKey;
@@ -65,11 +65,11 @@ pub mod ProductionLogic {
 
     #[abi(embed_v0)]
     impl MineRules of crate::mines::IMineRules<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn mine_kind(self: @ContractState, key: crate::mines::MineKindKey) -> crate::mines::MineKindConfig {
             self.mines.kind(key)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn mine_pool(self: @ContractState, key: crate::mines::MinePoolKey) -> Span<crate::mines::MineWeight> {
             self.mines.pool(key)
         }
@@ -115,11 +115,11 @@ pub mod ProductionLogic {
     }
     #[abi(embed_v0)]
     impl ProductionRules of crate::production::IProductionRules<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn production_recipe(self: @ContractState, key: RecipeKey) -> ProductionRecipe {
             self.production.recipe(key)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn production_bonus(self: @ContractState, key: ResourceKey) -> ProductionBonus {
             self.production.bonus(key)
         }

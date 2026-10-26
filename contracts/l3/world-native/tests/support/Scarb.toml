@@ -1,0 +1,22 @@
+test = []
+
+[package]
+name = "world_test_support"
+version = "0.1.0"
+edition = "2024_07"
+cairo-version = "=2.17.0"
+
+[dependencies]
+world_native.workspace = true
+starknet.workspace = true
+snforge_std.workspace = true
+assert_macros.workspace = true
+eternum_cubit.workspace = true
+games_storage.workspace = true
+realms_vrf_verifier.workspace = true
+
+[lib]
+
+[tool]
+scarb.workspace = true
+fmt.workspace = true

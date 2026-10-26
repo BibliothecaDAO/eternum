@@ -26,12 +26,13 @@ bun "$verifier/scripts/pin-class.ts" --check
 node --test "$world/scripts/check-class-sizes.test.mjs" "$world/scripts/check-fact-wire.test.mjs" "$world/scripts/event-layouts.test.mjs" "$world/scripts/taxonomy.test.mjs" "$world/scripts/rule-constants.test.mjs"
 node "$world/scripts/check-class-sizes.mjs"
 
-(cd "$world" && RAYON_NUM_THREADS=1 scarb build --test)
+(cd "$world/tests" && RAYON_NUM_THREADS=1 scarb build --test --package 'world_tests_*')
 node "$world/scripts/check-fact-wire.mjs"
 
 # A regenerated schema or a reformatted source that differs from what is committed fails here, with the diff shown.
 pnpm run schema:native
 (cd "$world" && scarb fmt)
-git diff --exit-code -- "$world/schema" "$world/src" "$world/storage"
+(cd "$world/tests" && scarb fmt)
+git diff --exit-code -- "$world/schema" "$world/src" "$world/storage" "$world/tests"
 
 (cd "$world" && scarb test)
