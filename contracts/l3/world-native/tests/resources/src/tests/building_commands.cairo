@@ -716,14 +716,14 @@ fn workshop_and_barracks_charge_each_sides_own_exact_ladder() {
         for side in 0_u8..2 {
             for at in 0_u32..4 {
                 start_cheat_caller_address(d.games, d.games);
-                resources
-                    .grant_resource(
-                        home,
-                        crate::resources::LABOR,
-                        10000000 * crate::rules::RESOURCE_PRECISION,
-                        40,
-                        crate::commands::resource_context(super::context(d.games, home.game_id)),
-                    );
+                crate::resources::IResourceOperationsDispatcherTrait::grant_resource(
+                    resources,
+                    home,
+                    crate::resources::LABOR,
+                    10000000 * crate::rules::RESOURCE_PRECISION,
+                    40,
+                    crate::commands::resource_context(super::context(d.games, home.game_id)),
+                );
                 stop_cheat_caller_address(d.games);
                 let before_e = resources.resource_balance(essence);
                 let before_l = resources.resource_balance(labor);
