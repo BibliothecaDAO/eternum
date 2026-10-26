@@ -289,6 +289,33 @@ describe("a story read", () => {
     expect(history).toHaveBeenCalledTimes(2);
   });
 
+  it("draws its stories again on a new story, never on a confirmed block that brings none", async () => {
+    const drawn = vi.fn();
+    const Feed = () => {
+      const stories = useStoryEvents(350).data;
+      drawn(stories.length);
+      return <p>{stories.length}</p>;
+    };
+    const feed = createRoot(document.createElement("div"));
+    await act(async () =>
+      feed.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <Feed />
+        </QueryClientProvider>,
+      ),
+    );
+    await act(async () => story(1, { ExplorerMove: {} }));
+    const draws = drawn.mock.calls.length;
+    for (let block = 2; block <= 30; block++) {
+      await act(async () => useConnectionStore.getState().recordConfirmedHead(block));
+    }
+    expect(drawn.mock.calls.length).toBe(draws);
+    await act(async () => story(31, { ExplorerMove: {} }));
+    expect(drawn.mock.calls.length).toBeGreaterThan(draws);
+    expect(drawn).toHaveBeenLastCalledWith(2);
+    await act(async () => feed.unmount());
+  });
+
   it("keeps the season's ending the stream delivered after the stream's ring has moved past it", async () => {
     await act(async () => story(1, { SeasonEnded: {} }, "0x7"));
     expect(host.textContent).toBe("7");

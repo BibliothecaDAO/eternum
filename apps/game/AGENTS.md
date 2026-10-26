@@ -117,31 +117,32 @@ pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --iterations 1  
 ```
 
 Options: `--renderer-modes webgpu-auto,webgpu-force-webgl` (default both), `--iterations` (default 3),
-`--cpu-throttle 4` (Chrome's CPU slowdown of this machine; not a measured laptop), `--chain-id` and `--game-id`,
-`--steps ownership-rings` (the map unselected, the player's realm selected with its owner's holdings ringed, held and
-panned, then cleared: the rings' frame cost; each phase checks the selection and ring count the page reports in
-`window.__eternumMapSelection`, and fails on a build that does not report them), `--steps blitz-orders` (a seated player
-in a Blitz game, entered by its card's **Enter**: the world map, Tab to select the readiest army, then orders by
-right-click on a tile whose hover tooltip offers Move or Explore, each held at the network while the selection is read:
-the army stays selected through an order's confirmation and is offered orders from its new tile, the tile panel's
-selected hex on that tile, a second order goes without selecting it again, a refused one leaves it selected where it
-stood, and one deselected with Escape while its order is in flight is not selected again; the army's id, hex and order
-count come from the same report), `--steps blitz-burst` (a seated Blitz player's orders as fast as keys allow: each army
-Tab lands on gets a tile whose tooltip offers Move or Explore, then every army is taken with Tab and ordered with a
-right-click back to back through DevTools input, nothing held; each order is timed from the click the client recorded to
-its send's answer, Herald's status and its army moving (a move) or its reveal rendered (an explore, which may leave the
-army in place), from `__armyMovementLatencyTraceEntries`; needs two armies that can act), `--steps blitz-spectator` (the
-spectator's map steps in a Blitz game: the world map, idle, pan, zoom, a minute of watching; the matched frame-time run
-for Blitz), `--steps blitz-plates` (the map's labels in a Blitz game as a spectator sees them, opened with the dev
-overlays so the page reports its world: read at the map's zoom, the farthest and the closest, the tiles round the centre
-hovered one by one, and at each zoom a click at each label in view, with the label layer shown then hidden, failing on
-any label not drawn in its side's colour (the page's own green, blue and red; to a spectator, each player's seat colour,
-one per seat, no two alike, nobody's grey), any label that takes a pointer, a click at a token or an open plate that
-selects another tile than the same click with the labels hidden, any label whose foot reaches below its thing's model
-top or whose span is not over its thing, as the renderer places the thing, any token, plate or order line over or within
-4px of another, or an opened plate that does not cover the token read for its thing before the hover;
-`--steps blitz-plates-player` takes the readiest army with Tab first, so each hovered tile shows its order line;
-`--steps frontier-plates` and `frontier-plates-player` the same in a Frontier game, entered on its map),
+`--cpu-throttle 4` (Chrome's CPU slowdown of this machine; not a measured laptop), `--gpu low-power` (WebGPU on the
+machine's integrated GPU instead of its default one; check the screenshots, as a driver may draw the map wrong),
+`--chain-id` and `--game-id`, `--steps ownership-rings` (the map unselected, the player's realm selected with its
+owner's holdings ringed, held and panned, then cleared: the rings' frame cost; each phase checks the selection and ring
+count the page reports in `window.__eternumMapSelection`, and fails on a build that does not report them),
+`--steps blitz-orders` (a seated player in a Blitz game, entered by its card's **Enter**: the world map, Tab to select
+the readiest army, then orders by right-click on a tile whose hover tooltip offers Move or Explore, each held at the
+network while the selection is read: the army stays selected through an order's confirmation and is offered orders from
+its new tile, the tile panel's selected hex on that tile, a second order goes without selecting it again, a refused one
+leaves it selected where it stood, and one deselected with Escape while its order is in flight is not selected again;
+the army's id, hex and order count come from the same report), `--steps blitz-burst` (a seated Blitz player's orders as
+fast as keys allow: each army Tab lands on gets a tile whose tooltip offers Move or Explore, then every army is taken
+with Tab and ordered with a right-click back to back through DevTools input, nothing held; each order is timed from the
+click the client recorded to its send's answer, Herald's status and its army moving (a move) or its reveal rendered (an
+explore, which may leave the army in place), from `__armyMovementLatencyTraceEntries`; needs two armies that can act),
+`--steps blitz-spectator` (the spectator's map steps in a Blitz game: the world map, idle, pan, zoom, a minute of
+watching; the matched frame-time run for Blitz), `--steps blitz-plates` (the map's labels in a Blitz game as a spectator
+sees them, opened with the dev overlays so the page reports its world: read at the map's zoom, the farthest and the
+closest, the tiles round the centre hovered one by one, and at each zoom a click at each label in view, with the label
+layer shown then hidden, failing on any label not drawn in its side's colour (the page's own green, blue and red; to a
+spectator, each player's seat colour, one per seat, no two alike, nobody's grey), any label that takes a pointer, a
+click at a token or an open plate that selects another tile than the same click with the labels hidden, any label whose
+foot reaches below its thing's model top or whose span is not over its thing, as the renderer places the thing, any
+token, plate or order line over or within 4px of another, or an opened plate that does not cover the token read for its
+thing before the hover; `--steps blitz-plates-player` takes the readiest army with Tab first, so each hovered tile shows
+its order line; `--steps frontier-plates` and `frontier-plates-player` the same in a Frontier game, entered on its map),
 `--steps still-map` (a Frontier spectator's map with nothing pressed, its frames recorded for 6 s at the default view
 and again at the closest, the camera distance read and required to be the closest, into `<step>-frames/` with
 `<step>-changes.png`, each pixel's share of frame pairs it changed in: what a still view shimmers with, to compare two
