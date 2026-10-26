@@ -27,7 +27,6 @@ import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
 import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
 import { RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
-import { LastHourBubble } from "@/ui/features/frontier/rollover/last-hour";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
 import { BuildingsRow } from "@/ui/features/frontier/realm/buildings-row";
 import { CastleView } from "@/ui/features/frontier/upgrade/castle-view";
@@ -995,7 +994,6 @@ export const HudLab = () => {
             )
           ) : undefined
         }
-        stage={lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
         nextUp={!lab.visiting && <NextUpView steps={labNextUpSteps(lab, desktop)} compact={!desktop} />}
         notices={lab.offline && <HudNotice tone="bad" line={OFFLINE} retry={noop} />}
         action={
@@ -1234,7 +1232,6 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
           armies={slots.dock}
           nextUp={slots.nextUp}
           page={slots.page}
-          stage={slots.stage}
           foot={
             <>
               {slots.notices}
@@ -1289,6 +1286,9 @@ const LabDock = ({ lab }: { lab: LabState }) => {
   const armyArt = (army: LabArmy) => (army.troops === undefined ? undefined : ("knight-t1" as const));
   const stamina = (army: LabArmy) =>
     army.stamina === undefined ? undefined : { current: army.stamina, max: 150, perExplore: LAB_EXPLORE };
+  // In the last hour each army shows what its Homecoming (Uncommon: 9%) sends home.
+  const returnsHome = (army: LabArmy) =>
+    lab.lastHour && army.troops !== undefined ? Math.floor(army.troops * 0.09) : undefined;
   if (useLayout() === "desktop")
     return (
       <ArmyList used={lab.armies.length} allowed={lab.armies.length + open}>
@@ -1299,6 +1299,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             number={index + 1}
             art={armyArt(army)}
             troops={army.troops}
+            returnsHome={returnsHome(army)}
             stamina={stamina(army)}
             xp={army.xp}
             canBuyTier={army.tier === true}
@@ -1319,6 +1320,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
           xp={army.xp}
           stamina={stamina(army)}
           troops={army.troops}
+          returnsHome={returnsHome(army)}
           canBuyTier={army.tier === true}
           selected={lab.selected === index}
           onPick={noop}

@@ -5,19 +5,20 @@ import { ARMIES, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/
 import type { StaminaBar } from "@/lib/army-stamina/segments";
 import type { ReactNode } from "react";
 
-import { StaminaReading, xpLine, type XpGoal } from "./army-token";
+import { HomecomingReturn, StaminaReading, xpLine, type XpGoal } from "./army-token";
 
 /**
  * One army on a desktop's list: its painting with its number; its name with its XP beside it (what it buys next on
- * hover); under them its troops and its stamina as a bar with the exact count; at its end, while its XP buys a level
- * now, the card fan. A press picks the army and opens its panel, where its levels are bought. The desktop's form of the
- * dock's token; a phone keeps the token. Read-only on a visit.
+ * hover); under them its troops (with what Homecoming sends home in the day's last hour) and its stamina as a bar with
+ * the exact count; at its end, while its XP buys a level now, the card fan. A press picks the army and opens its panel,
+ * where its levels are bought. The desktop's form of the dock's token; a phone keeps the token. Read-only on a visit.
  */
 export const ArmyRow = ({
   label,
   number,
   art,
   troops,
+  returnsHome,
   stamina,
   xp,
   xpGoal,
@@ -30,6 +31,8 @@ export const ArmyRow = ({
   number: number | undefined;
   art: IconMeaning | undefined;
   troops: number | undefined;
+  /** In the day's last hour, the troops its Homecoming sends home when the day ends; none otherwise. */
+  returnsHome?: number;
   stamina: StaminaBar | undefined;
   xp: number | undefined;
   xpGoal?: XpGoal;
@@ -63,6 +66,7 @@ export const ArmyRow = ({
     detail={
       <span className="flex items-center gap-2 whitespace-nowrap tabular-nums">
         <span>{troops === undefined ? "—" : troopCount(troops)}</span>
+        {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
         <StaminaReading stamina={stamina} />
       </span>
     }

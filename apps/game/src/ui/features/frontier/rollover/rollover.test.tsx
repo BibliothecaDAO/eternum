@@ -1,6 +1,5 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { dayOf } from "@bibliothecadao/eternum";
@@ -10,9 +9,6 @@ import { RESTING, useDayEndStore, type DayEndPhase } from "@/hooks/store/use-day
 import { endedDay } from "../hud/day-clock";
 import { DayDoneCard } from "./day-done-card";
 import { DayEndScreen } from "./day-end-screen";
-import { LastHourBubble } from "./last-hour";
-
-const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
 describe("the day's end", () => {
   const rules = { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 };
@@ -55,13 +51,6 @@ describe("the day's end", () => {
     expect(onContinue).toHaveBeenCalled();
     act(() => root.unmount());
     host.remove();
-  });
-
-  it("bubbles the troops still out in the last hour, and leaves out what the facts do not carry", () => {
-    expect(text(renderToStaticMarkup(<LastHourBubble troopsOut={6_021} />))).toBe("6,021");
-    expect(text(renderToStaticMarkup(<LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />))).toBe(
-      "6,021+4702",
-    );
   });
 
   it("draws the day's end over the map: nothing on a plain day, Skip in the mist, the summary until Continue, the black", () => {

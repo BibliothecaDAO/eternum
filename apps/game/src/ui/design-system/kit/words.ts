@@ -430,6 +430,8 @@ export const TRANSFER_TROOPS = {
 export const ARMIES = "Armies";
 /** How many troops an army holds: "1 troop", "5,000 troops". */
 export const troopCount = (count: number) => formatCount(count, "troop", TROOPS);
+/** What an army's Homecoming sends home when the day ends, on its row or token in the day's last hour. */
+export const comesHomeAtDayEnd = (troops: string) => `${troops} come home when the day ends`;
 
 /** The day log's lines for what the player did, in the names the build cards and the dock use. */
 export const revealLine = (gain: string, resource: string) => `${gain} ${resource}`;

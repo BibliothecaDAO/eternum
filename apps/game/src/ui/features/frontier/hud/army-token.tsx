@@ -1,8 +1,8 @@
-import { formatAmount, formatCharge } from "@bibliothecadao/types";
+import { formatAmount, formatCharge, formatExact, formatGain } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { ARMY, STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
+import { ARMY, comesHomeAtDayEnd, STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
 import { type StaminaBar, staminaSegments } from "@/lib/army-stamina/segments";
 
 const TOKEN = "relative flex h-hud-frontier-token w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-xl";
@@ -20,8 +20,9 @@ export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): string
 
 /**
  * One army on a phone's dock: its number, the one its map plate carries; its portrait with its XP balance as the badge,
- * a card fan when a tier is affordable now, its stamina in segments, and its troops; the badge says what the XP buys
- * next when asked. A desktop lists the armies as rows (ArmyRow). Read-only on a visit.
+ * a card fan when a tier is affordable now, its stamina in segments, and its troops, with what its Homecoming sends home
+ * in the day's last hour; the badge says what the XP buys next when asked. A desktop lists the armies as rows
+ * (ArmyRow). Read-only on a visit.
  */
 export const ArmyToken = ({
   label,
@@ -31,6 +32,7 @@ export const ArmyToken = ({
   xpGoal,
   stamina,
   troops,
+  returnsHome,
   canBuyTier,
   selected,
   flyTarget,
@@ -45,6 +47,8 @@ export const ArmyToken = ({
   xpGoal?: XpGoal;
   stamina: StaminaBar | undefined;
   troops: number | undefined;
+  /** In the day's last hour, the troops its Homecoming sends home when the day ends; none otherwise. */
+  returnsHome?: number;
   canBuyTier: boolean;
   selected: boolean;
   /** Where a gain flies into the portrait. */
@@ -78,12 +82,15 @@ export const ArmyToken = ({
         )}
       </span>
       <StaminaSegments stamina={stamina} />
-      <span
-        role="img"
-        aria-label={`${TROOPS} ${formatAmount(troops)}`}
-        className="text-hud-body leading-none text-hud-ink tabular-nums"
-      >
-        {formatAmount(troops)}
+      <span className="flex items-center gap-1">
+        <span
+          role="img"
+          aria-label={`${TROOPS} ${formatAmount(troops)}`}
+          className="text-hud-body leading-none text-hud-ink tabular-nums"
+        >
+          {formatAmount(troops)}
+        </span>
+        {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
       </span>
     </>
   );
@@ -171,6 +178,22 @@ export const OpenSlot = ({
     </button>
   );
 };
+
+/**
+ * In the day's last hour, what an army's Homecoming sends home when the day ends, beside its own troops on its token or
+ * row (player, 25 October: by the army it is about, not a bubble repeating the troops).
+ */
+export const HomecomingReturn = ({ troops }: { troops: number }) => (
+  <span
+    role="img"
+    aria-label={comesHomeAtDayEnd(formatExact(troops))}
+    data-tip={comesHomeAtDayEnd(formatExact(troops))}
+    className="flex shrink-0 items-center text-hud-label leading-none text-hud-good tabular-nums"
+  >
+    <SemanticIcon name="order-enlightenment" size={14} />
+    {formatGain(troops)}
+  </span>
+);
 
 /** A desktop row's stamina: the bar in segments, and its exact count beside it ("58/120"), as a row and a slot read it. */
 export const StaminaReading = ({ stamina }: { stamina: StaminaBar | undefined }) => (
