@@ -20,6 +20,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
+import { DEPLOY_ON_MAP_EVENT, type DeployOnMap, readDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
 import { type GameClient, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { Direction, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -64,11 +65,16 @@ const press = (host: HTMLElement, word: string) =>
 const outOf = (host: HTMLElement) => host.querySelector(".ui-amount__of")?.textContent;
 const foot = (host: HTMLElement) => host.querySelector(".ui-window__foot")?.textContent ?? "";
 
-/** The ring's tiles on the map selector, in spawnRing's order, and the one the sheet aims at. */
-const tiles = (host: HTMLElement) => [...host.querySelectorAll('[aria-label="Deploy tile"] [role="radio"]')];
-const tileToward = (host: HTMLElement, store: unknown, row: unknown, direction: Direction) =>
-  tiles(host)[spawnRing(store as never, row as never, () => 0).findIndex((tile) => tile.direction === direction)];
-const click = (element: Element) => act(() => element.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+/** What the sheet asks the map to show, in the order asked: its realm and tile while open, null once closed. */
+const shownOnMap = () => {
+  const asked: DeployOnMap[] = [];
+  const hear = (event: Event) => asked.push(readDeployOnMap(event));
+  window.addEventListener(DEPLOY_ON_MAP_EVENT, hear);
+  return { asked, stop: () => window.removeEventListener(DEPLOY_ON_MAP_EVENT, hear) };
+};
+/** The direction of the realm's ring tile at this place in spawnRing's order. */
+const ringDirection = (store: unknown, row: unknown, index: number) =>
+  spawnRing(store as never, row as never, () => 0)[index].direction;
 
 const deployButton = (host: HTMLElement) =>
   [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Deploy"));
@@ -249,7 +255,7 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("deploys onto the tile the player picks on the map selector, with taken and unexplored tiles closed", async () => {
+  it("draws no map of its own: it shows its order on the map, the first open tile until one is picked there", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     ring.taken = 0;
     const { store, row } = frontierDay();
@@ -260,37 +266,42 @@ describe("the Deploy sheet", () => {
       dispose() {},
       actions: { createExplorerArmy },
     } as unknown as GameClient);
+    const map = shownOnMap();
     const { host, root, draw } = render(store, row);
-    expect(tiles(host)).toHaveLength(6);
-    // The taken tile cannot be picked; the first open one is chosen until the player picks.
-    expect(tiles(host)[0].getAttribute("aria-disabled")).toBe("true");
-    expect(tiles(host)[1].getAttribute("aria-checked")).toBe("true");
-    click(tileToward(host, store, row, Direction.WEST));
-    expect(tileToward(host, store, row, Direction.WEST).getAttribute("aria-checked")).toBe("true");
+    expect(host.querySelector('[aria-label="Deploy tile"]')).toBeNull();
+    expect(host.textContent).toContain("Steps out on the bright tile. Tap another lit tile beside the realm to move it there.");
+    // The taken tile is passed over: the map marks the first open one.
+    expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: ringDirection(store, row, 1) });
+    // A tap on another lit tile orders again (openArmyDeployment), and the map marks that one.
+    act(() => openArmyDeployment({ structureId: 7, isExplorer: true, direction: Direction.WEST }));
+    expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: Direction.WEST });
     await act(async () => deployButton(host)!.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(expect.objectContaining({ spawnDirection: Direction.WEST }));
 
-    // An unexplored ring leaves no tile to pick, and there is no Deploy to send.
+    // An unexplored ring leaves no tile to step out on, and there is no Deploy to send.
     ring.explored = false;
     draw();
-    expect(tiles(host)).toHaveLength(0);
-    expect(host.textContent).toContain("No adjacent tiles");
+    expect(host.textContent).toContain("No open tile beside the realm");
     expect(deployButton(host)).toBeUndefined();
     act(() => root.unmount());
+    // Closed, the sheet takes its order off the map.
+    expect(map.asked.at(-1)).toBeNull();
+    map.stop();
     host.remove();
   });
 
-  it("opens aimed at the tile an order on the map names, and takes a new aim while open", () => {
+  it("opens aimed at the tile an order on the map names (a hold beside the realm), and takes a new aim while open", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     const order = (direction: Direction) => openArmyDeployment({ structureId: 7, isExplorer: true, direction });
+    const map = shownOnMap();
     order(Direction.WEST);
     const { host, root } = render(store, row);
-    expect(tileToward(host, store, row, Direction.WEST).getAttribute("aria-checked")).toBe("true");
-
+    expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: Direction.WEST });
     act(() => order(Direction.EAST));
-    expect(tileToward(host, store, row, Direction.EAST).getAttribute("aria-checked")).toBe("true");
+    expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: Direction.EAST });
     act(() => root.unmount());
+    map.stop();
     host.remove();
   });
 });

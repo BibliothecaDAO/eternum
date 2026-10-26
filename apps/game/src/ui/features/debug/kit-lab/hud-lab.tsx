@@ -18,7 +18,6 @@ import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
 import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
-import { DEPLOY_RING } from "./deploy-section";
 import { RuinChestMoment } from "@/ui/features/frontier/chest/ruin-chest-moment";
 import type { FightResult } from "@/ui/features/frontier/sites/fight-result";
 import { FightResultCard } from "@/ui/features/frontier/sites/fight-result-card";
@@ -37,7 +36,7 @@ import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progres
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
-import { BuildingType, Direction } from "@bibliothecadao/types";
+import { BuildingType } from "@bibliothecadao/types";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
@@ -1129,7 +1128,6 @@ const useLabNotice = (notice: string | undefined) => {
 /** Deploy on the fiction, live: 2 wheat a troop, 0.02 a troop a tile. */
 const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
   const [count, setCount] = useState(deploy.count);
-  const [chosen, setChosen] = useState<Direction | null>(Direction.EAST);
   const most = Math.min(deploy.troopsAtHome, Math.floor(deploy.wheat / 2));
   const wheatLeft = deploy.wheat - count * 2;
   return (
@@ -1143,7 +1141,7 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       start={{ slot: 2, number: 3, inherited: true, start: { current: 40, max: 150 } }}
       wheatCost={count * 2}
       march={count > 0 ? Math.floor(wheatLeft / (count * 0.02)) : 0}
-      ring={{ center: { col: 10, row: 10 }, tiles: DEPLOY_RING, chosen, onPick: setChosen }}
+      tile="open"
       canDeploy={count > 0}
       sending={false}
       onDeploy={noop}

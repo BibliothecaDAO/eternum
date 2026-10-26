@@ -3,13 +3,13 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { requireActiveGameClient } from "@/sync/active-game-client";
+import { showDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useDeployRing } from "@/ui/features/military/components/unified-army-creation-modal/use-deploy-ring";
-import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { Direction } from "@bibliothecadao/types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { secondsUntilHeld } from "../hud/army-order";
@@ -20,8 +20,9 @@ import { useDeployPlan } from "./use-deploy-plan";
 
 /**
  * Deploy over the game's facts: the realm's plan, the count the player sets, the tile, and the Deploy command. The
- * tile is the deploy order's (openArmyDeployment): the one beside the realm the player ordered on the map, or the one
- * picked on the sheet's map selector, which orders again.
+ * tile is the deploy order's (openArmyDeployment): the one beside the realm the player held or tapped on the map, else
+ * the first open one. While the sheet is open the map shows that order (showDeployOnMap), where a tap on another lit
+ * tile orders again.
  */
 export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
   const { setup } = useGame();
@@ -36,9 +37,8 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   const { center, ring } = useDeployRing(realm);
   const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);
   const direction = deployDirection(ring, ordered);
-  const orderToward = (toward: Direction) =>
-    openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true, direction: toward });
   const realmId = safeInteger(realm.entity_id);
+  useDeployOnMap(realmId, direction);
   const deploying = useInFlight("deploy", realmId) !== undefined;
   const goToPlace = useGoToFrontierPlace(realm);
   const wheatPerHour = new ResourceManager(setup.store, realmId).wheatPerHour(defaultTick);
@@ -68,7 +68,7 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       start={plan?.next ?? undefined}
       wheatCost={preview?.wheatCost}
       march={preview?.tiles}
-      ring={plan?.next && center ? { center, tiles: ring, chosen: direction, onPick: orderToward } : undefined}
+      tile={plan?.next && center ? (direction === null ? "none" : "open") : undefined}
       canDeploy={Boolean(plan?.troops && preview && preview.count > 0 && direction !== null && plan.next)}
       sending={deploying}
       onDeploy={() => void deploy()}
@@ -88,4 +88,10 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       onClose={onClose}
     />
   );
+};
+
+/** The order shown on the map while the sheet is open, its tile again whenever it changes; none once the sheet closes. */
+const useDeployOnMap = (structureId: number, direction: Direction | null) => {
+  useEffect(() => showDeployOnMap({ structureId, direction }), [structureId, direction]);
+  useEffect(() => () => showDeployOnMap(null), []);
 };
