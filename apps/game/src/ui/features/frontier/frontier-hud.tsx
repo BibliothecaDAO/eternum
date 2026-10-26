@@ -44,7 +44,7 @@ import { FrontierNextUp } from "./next-up/frontier-next-up";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
 import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
-import { MenuSheet } from "./hud/menu-sheet";
+import { MenuPage } from "./hud/menu-page";
 import { FrontierRealms } from "./value/frontier-realms";
 import { FrontierWithdraw } from "./value/frontier-withdraw";
 import { SeasonWithdraw } from "./value/season-withdraw";
@@ -153,6 +153,8 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       <FrontierResearch key={researchPick} realm={realm} pick={researchPick} />
     ) : surface === "season" ? (
       <FrontierSeason rules={rules} onBack={close} />
+    ) : surface === "menu" ? (
+      <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
     ) : undefined;
   const stage = dockRealm && !visit && <LastHour rules={rules} realm={dockRealm} />;
   const notices = (
@@ -176,9 +178,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     <>
       <FrontierSurfaces realm={realm} />
       {showsCard && card?.sheet}
-      {surface === "menu" && (
-        <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
-      )}
       {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
       {surface === "realms" && realm && !visit && (
         <FrontierRealms
@@ -464,7 +463,7 @@ const LastHour = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows[
   );
 };
 
-/** The Menu over the game: each row opens its way and closes the menu; Exit leaves for the app. */
+/** The Menu page over the game: each row opens its way and closes the menu; Exit leaves for the app. */
 const HudMenu = ({
   realm,
   laborWaiting,
@@ -480,7 +479,7 @@ const HudMenu = ({
   const navigate = useNavigate();
   const rank = useSeasonRank();
   return (
-    <MenuSheet
+    <MenuPage
       rank={rank}
       onToday={() => onOpen("today")}
       onSeason={() => onOpen("season")}

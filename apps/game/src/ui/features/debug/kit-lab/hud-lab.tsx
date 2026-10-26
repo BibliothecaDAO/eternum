@@ -14,7 +14,7 @@ import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/fron
 import type { HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
 import { LabGame } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
-import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
+import { MenuPage } from "@/ui/features/frontier/hud/menu-page";
 import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
@@ -949,6 +949,16 @@ export const HudLab = () => {
             chat
           ) : lab.research ? (
             <LabResearch />
+          ) : lab.menu ? (
+            <MenuPage
+              rank="#12"
+              onToday={noop}
+              onSeason={noop}
+              realms={lab.menuRealms ? { waiting: true, onOpen: noop } : undefined}
+              onSettings={noop}
+              onExit={noop}
+              onClose={noop}
+            />
           ) : lab.season ? (
             // A realm's detail stands in the list's place, as FrontierSeason shows it.
             lab.season === "detail" ? (
@@ -1084,17 +1094,6 @@ export const HudLab = () => {
         {lab.chest && <RuinChestMoment {...lab.chest} />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
         {lab.realms && <LabRealmsSheet realms={lab.realms} />}
-        {lab.menu && (
-          <MenuSheet
-            rank="#12"
-            onToday={noop}
-            onSeason={noop}
-            realms={lab.menuRealms ? { waiting: true, onOpen: noop } : undefined}
-            onSettings={noop}
-            onExit={noop}
-            onClose={noop}
-          />
-        )}
       </LabBands>
     </>
   );

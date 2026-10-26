@@ -1,5 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudButton, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPanel, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { EXIT, MENU, REALMS, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
@@ -11,11 +11,12 @@ const MENU_WORDS = {
 } as const;
 
 /**
- * The Menu: the ways that are not places (Today, Season with the player's rank, Settings), then Exit to the app and
- * Resume, which closes the menu. Realms, with a dot
- * while their labor waits, opens the Realm holder's labor where its facts are served.
+ * The Menu, a page on the place bar as Research, the Log and Chat are: its title and no close of its own, since the
+ * place bar's Menu closes it as theirs do (player, 25 October: the one window with an X and a tall header). The ways
+ * that are not places (Today, Season with the player's rank, Settings), then Exit to the app and Resume, which closes
+ * it. Realms, with a dot while their labor waits, opens the Realm holder's labor where its facts are served.
  */
-export const MenuSheet = ({
+export const MenuPage = ({
   rank,
   onToday,
   onSeason,
@@ -32,7 +33,7 @@ export const MenuSheet = ({
   onExit: () => void;
   onClose: () => void;
 }) => (
-  <HudSheet label={MENU} onClose={onClose}>
+  <HudPanel label={MENU} title={MENU} icon="menu" collapsible={false} bodyClassName="flex flex-col gap-2">
     <nav className="flex flex-col">
       <MenuRow icon="clock" onClick={onToday} />
       <MenuRow icon="victory" badge={<span className="text-hud-body tabular-nums">{rank}</span>} onClick={onSeason} />
@@ -55,7 +56,7 @@ export const MenuSheet = ({
         </HudButton>
       </span>
     </div>
-  </HudSheet>
+  </HudPanel>
 );
 
 const MenuRow = ({

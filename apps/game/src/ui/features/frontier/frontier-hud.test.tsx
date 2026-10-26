@@ -257,3 +257,19 @@ it("gives a phone no Map slot: Realm opens the realm board, and a second press s
   expect(window.location.pathname).toMatch(/\/map$/);
   expect(realm().getAttribute("aria-current")).toBeNull();
 });
+
+it("opens a phone's Menu as a page on the place bar, its title with no close of its own, and closes it with Menu", async () => {
+  viewport.set(390);
+  await renderHud();
+  const menu = () =>
+    [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].find(
+      (button) => button.textContent === "Menu",
+    )!;
+  const page = () => document.querySelector('[data-page] section[aria-label="Menu"]');
+  await act(async () => menu().click());
+  expect(page()).not.toBeNull();
+  expect(page()!.querySelector('[aria-label="Close"]')).toBeNull();
+  expect(document.querySelector(".ui-sheet")).toBeNull();
+  await act(async () => menu().click());
+  expect(page()).toBeNull();
+});

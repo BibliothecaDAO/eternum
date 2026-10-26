@@ -16,7 +16,7 @@ import { useChatKey } from "./chat-key";
 import { dayClock } from "./day-clock";
 import { HudBands } from "./hud-bands";
 import { useOnePanel } from "./one-panel";
-import { MenuSheet } from "./menu-sheet";
+import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
 import { PlaceNav } from "./place-nav";
 import { StatusStrip, type StoreReading, storeLine } from "./status-strip";
@@ -270,7 +270,7 @@ describe("the Menu", () => {
       onExit: vi.fn(),
       onClose: vi.fn(),
     };
-    act(() => root.render(<MenuSheet rank="#12" {...handlers} />));
+    act(() => root.render(<MenuPage rank="#12" {...handlers} />));
     const button = (word: string) =>
       [...document.querySelectorAll<HTMLButtonElement>("section[aria-label='Menu'] button")].find((candidate) =>
         candidate.textContent?.startsWith(word),
@@ -291,7 +291,7 @@ describe("the Menu", () => {
 
   it("has no Production: each store's card opens from its own plate", () => {
     const ways = { onToday: vi.fn(), onSeason: vi.fn(), onSettings: vi.fn(), onExit: vi.fn(), onClose: vi.fn() };
-    act(() => root.render(<MenuSheet rank="—" {...ways} />));
+    act(() => root.render(<MenuPage rank="—" {...ways} />));
     const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .ui-row")].map(
       (row) => row.textContent,
     );
