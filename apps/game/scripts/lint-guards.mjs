@@ -37,6 +37,25 @@ const HUD_ROLE_OPACITY = [
   },
 ];
 
+// A gain is written by formatGain: one written by hand as "+" before an amount read "+<1 Labor" for a find under a unit,
+// which players took for nothing found (feedback, 25 October). Flags a template, a sum or JSX text joining "+" to an
+// amount writer.
+const AMOUNT_WRITER = "/^format(Amount|Charge)$/";
+const HAND_WRITTEN_GAIN = [
+  {
+    selector: `TemplateLiteral:has(> TemplateElement[value.raw=/\\+$/]):has(> CallExpression[callee.name=${AMOUNT_WRITER}])`,
+    message: 'A gain is formatGain(amount), never "+" before an amount: under a unit it says "under 1".',
+  },
+  {
+    selector: `BinaryExpression[operator='+'][left.value='+'] > CallExpression.right[callee.name=${AMOUNT_WRITER}]`,
+    message: 'A gain is formatGain(amount), never "+" before an amount: under a unit it says "under 1".',
+  },
+  {
+    selector: `JSXElement:has(> JSXText[value=/\\+$/]):has(> JSXExpressionContainer > CallExpression[callee.name=${AMOUNT_WRITER}])`,
+    message: 'A gain is formatGain(amount), never "+" before an amount: under a unit it says "under 1".',
+  },
+];
+
 // A function or an object written into text prints its source or "[object Object]": each resource chip's buttons read
 // "Transfer (id) => {…}" where a words function was written in place of the word it returns. Typed, so client only.
 const TEXT_VALUES = {
@@ -74,11 +93,14 @@ const eslint = new ESLint({
       languageOptions: { parser: tseslint.parser },
       linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
       plugins: { "react-hooks": reactHooks, "@typescript-eslint": tseslint.plugin },
-      rules: { "no-restricted-syntax": ["error", ...NO_BITWISE_ID], ...HOOK_ORDER, ...UNUSED },
+      rules: { "no-restricted-syntax": ["error", ...NO_BITWISE_ID, ...HAND_WRITTEN_GAIN], ...HOOK_ORDER, ...UNUSED },
     },
     {
       files: ["apps/game/src/**/*.{ts,tsx}"],
-      rules: { ...HOOK_DEPENDENCIES, "no-restricted-syntax": ["error", ...NO_BITWISE_ID, ...HUD_ROLE_OPACITY] },
+      rules: {
+        ...HOOK_DEPENDENCIES,
+        "no-restricted-syntax": ["error", ...NO_BITWISE_ID, ...HUD_ROLE_OPACITY, ...HAND_WRITTEN_GAIN],
+      },
     },
     {
       files: ["apps/game/src/**/*.{ts,tsx}"],

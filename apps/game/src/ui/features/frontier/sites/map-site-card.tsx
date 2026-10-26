@@ -12,7 +12,7 @@ import { MOVE, SHRINE, STAMINA, TROOPS, USE, USING, WELL, XP } from "@/ui/design
 import { ActionPaths, ActionType, configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { RESOURCE_PRECISION, formatAmount, formatExact } from "@bibliothecadao/types";
+import { formatAmount, formatExact, formatGain, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { useOrderAt } from "../hud/army-order";
@@ -86,7 +86,7 @@ export const MapSiteCard = ({
           </HudChip>
         ) : (
           <HudChip>
-            {plan.gain === undefined ? "—" : `+${formatAmount(plan.gain)}`} {XP}
+            {formatGain(plan.gain)} {XP}
           </HudChip>
         )}
       </div>
@@ -139,5 +139,5 @@ const wellGain = (gain: number | undefined, stamina: { current: number; max: num
   if (gain === undefined) return "—";
   return stamina
     ? `${formatAmount(stamina.current)} → ${formatAmount(Math.min(stamina.max, stamina.current + gain))}`
-    : `+${formatAmount(gain)}`;
+    : formatGain(gain);
 };

@@ -1,4 +1,4 @@
-import { formatAmount, LORDS, resourceName, ResourcesIds } from "@bibliothecadao/types";
+import { formatAmount, formatGain, LORDS, resourceName, ResourcesIds } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
@@ -48,4 +48,4 @@ export const TotalsGrid = ({ cells }: { cells: readonly TotalCell[] }) => (
   </HudPanel>
 );
 
-const gained = (amount: number | undefined) => (amount === undefined ? "—" : `+${formatAmount(amount)}`);
+const gained = formatGain;

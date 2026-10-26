@@ -44,13 +44,14 @@ import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-clien
 import {
   BUILDINGS_CENTER,
   BuildingType,
-  getHexDistance,
-  type HexPosition,
-  ResourcesIds,
   formatAmount,
   formatCharge,
-  formatRate,
   formatFigure,
+  formatGain,
+  formatRate,
+  getHexDistance,
+  ResourcesIds,
+  type HexPosition,
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 
@@ -317,7 +318,7 @@ const buildingLine = (option: BuildOption): string => {
       ? makes(PRODUCTS[effect.resource].word, formatRate(effect.perHour / 3600))
       : effect.kind === "trains"
         ? startsNewArmies(effect.attribute, TIER_WORDS[option.tier - 1])
-        : `+${formatAmount(effect.amount)} ${POPULATION}`;
+        : `${formatGain(effect.amount)} ${POPULATION}`;
   const takes = option.populationCost > 0 ? `, ${takesPopulation(formatCharge(option.populationCost))}` : "";
   return `${buildingName(option.category)}: ${does}${takes}`;
 };
@@ -342,7 +343,7 @@ const givesOf = ({ effect, tier }: BuildOption): BuildTile["gives"] =>
     ? { icon: PRODUCTS[effect.resource].icon, value: formatRate(effect.perHour / 3600) }
     : effect.kind === "trains"
       ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: TIER_WORDS[tier - 1] }
-      : { icon: "person", value: `+${formatAmount(effect.amount)}` };
+      : { icon: "person", value: formatGain(effect.amount) };
 
 /** A realm's plot, as the actions in flight name it. */
 

@@ -38,6 +38,24 @@ export const formatExact = (value: number | bigint | undefined): string =>
  */
 export const formatCharge = (value: number | undefined): string => formatAmount(value);
 
+/**
+ * A gain: what a find, a reward or a return adds, signed ("+12", "+12.4K"), rounded as an amount is. One under a unit
+ * says so in words ("under 1"): "+<1 Labor" read as nothing found (player, 25 October), and the chain did pay. Every
+ * gain is written here, never as "+" before an amount (lint-guards.mjs).
+ */
+export const formatGain = (value: number | undefined): string => {
+  if (value === undefined) return "—";
+  if (value > 0 && value < 1) return UNDER_ONE;
+  return Math.abs(value) < 10_000 ? signedExact.format(value) : signedCompact.format(value);
+};
+const UNDER_ONE = "under 1";
+const signedExact = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0, signDisplay: "always" });
+const signedCompact = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+  signDisplay: "always",
+});
+
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
 /**

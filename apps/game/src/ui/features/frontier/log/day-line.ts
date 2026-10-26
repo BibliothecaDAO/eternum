@@ -10,7 +10,7 @@ import {
 } from "@/ui/design-system/kit/words";
 import { configManager } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { ResourcesIds, formatCharge, formatExact, LORDS, scaledToUnits } from "@bibliothecadao/types";
+import { formatCharge, formatExact, formatGain, LORDS, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
 
 import { frontierBuildingName } from "../build/building-names";
 import { armyLabel } from "../hud/dock-armies";
@@ -83,5 +83,5 @@ const builtLineOf = (payload: Record<string, unknown>): string | null => {
 const revealPayLine = (payload: Record<string, unknown>): string | null => {
   const word = REVEAL_WORDS[Number(payload.resource_type)];
   if (!word) return null;
-  return revealLine(formatCharge(scaledToUnits(BigInt(String(payload.amount)))), word);
+  return revealLine(formatGain(scaledToUnits(BigInt(String(payload.amount)))), word);
 };

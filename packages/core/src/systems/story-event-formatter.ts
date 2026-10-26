@@ -1,26 +1,27 @@
 import {
-  CHEST_EARNED,
-  frontierSiteName,
-  StructureType,
-  fightVerdict,
-  VERDICT_WORDS,
   buildingName,
+  CHEST_EARNED,
+  fightVerdict,
   formatCharge,
-  scaledToUnits,
   formatClockTime,
   formatDuration,
   formatExact,
+  formatGain,
   formatPoints,
+  frontierSiteName,
   GuardSlot,
   guardSlotName,
   LORDS,
-  RealmLevels,
   rankName,
+  RealmLevels,
   relicChestDelivery,
   relicEffect,
   relicName,
   resourceName,
+  scaledToUnits,
+  StructureType,
   type ResourcesIds,
+  VERDICT_WORDS,
   wholePoints,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -853,6 +854,11 @@ function formatResourceAmount(amount: unknown): string | undefined {
   return formatCharge(scaledToUnits(bigIntAmount));
 }
 
+function formatResourceGain(amount: unknown): string {
+  const bigIntAmount = amountToBigInt(amount);
+  return formatGain(bigIntAmount === null ? undefined : scaledToUnits(bigIntAmount));
+}
+
 function formatSlotLabel(value: unknown): string | undefined {
   const numeric = toNumber(value);
   const label = formatEnum(value);
@@ -891,7 +897,7 @@ const withPoints = (line: string, points: unknown): string => {
  * an explore's points, a grant that never changes (the voice rule "A find says what it gave").
  */
 const findLine = (found: string, payload: Record<string, unknown>): string =>
-  `${found}: +${formatResourceAmount(payload.amount) ?? "—"} ${resourceName(Number(payload.resource_type))}`;
+  `${found}: ${formatResourceGain(payload.amount)} ${resourceName(Number(payload.resource_type))}`;
 
 const TROOP_PLURALS: Record<string, string> = { Knight: "Knights", Paladin: "Paladins", Crossbowman: "Crossbowmen" };
 

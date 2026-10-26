@@ -1,4 +1,4 @@
-import { formatAmount } from "@bibliothecadao/types";
+import { formatGain } from "@bibliothecadao/types";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { getResourceSoundId } from "@/three/sound/utils";
 import type { ResourcesIds } from "@bibliothecadao/types";
@@ -41,7 +41,7 @@ export const playRevealYield = ({
   if (own) playChainedCollect(resourceId, now);
   const counter = own ? findBankedCounter(resourceId) : null;
   if (counter) flyHome(resourceId, counter, from, now);
-  else riseSprite({ at: from, icon: resourceIcon(resourceId), label: `+${formatAmount(amount)}` });
+  else riseSprite({ at: from, icon: resourceIcon(resourceId), label: formatGain(amount) });
 };
 
 const playChainedCollect = (resourceId: ResourcesIds, now: number) => {

@@ -432,7 +432,7 @@ export const ARMIES = "Armies";
 export const troopCount = (count: number) => formatCount(count, "troop", TROOPS);
 
 /** The day log's lines for what the player did, in the names the build cards and the dock use. */
-export const revealLine = (amount: string, resource: string) => `+${amount} ${resource}`;
+export const revealLine = (gain: string, resource: string) => `${gain} ${resource}`;
 export const builtLine = (building: string) => `${building} built`;
 export const deployedLine = (army: string) => `${army} deployed`;
 export const disbandedLine = (army: string) => `${army} disbanded`;

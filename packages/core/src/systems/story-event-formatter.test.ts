@@ -824,7 +824,7 @@ it("says what an explore found, not where nor the points every tile scores", () 
   expect(title).toBe("Explored: +200 Essence");
 });
 
-it("writes a small army's find rounded, as every charge and reward reads", () => {
+it("writes a small army's find rounded, and one under a unit as under 1, never as nothing found", () => {
   const title = buildStoryEventPresentation(
     story("ExplorationReward", { explorer_id: 7, receiver: 5, resource_type: 23, amount: "1200000000" }),
   ).title;
@@ -832,7 +832,8 @@ it("writes a small army's find rounded, as every charge and reward reads", () =>
   const tiny = buildStoryEventPresentation(
     story("ExplorationReward", { explorer_id: 7, receiver: 5, resource_type: 23, amount: "100000000" }),
   ).title;
-  expect(tiny).toBe("Explored: +<1 Labor");
+  // Player, 25 October: "+<1 Labor" read as nothing found; a one-troop army's find is 0.1 Labor.
+  expect(tiny).toBe("Explored: under 1 Labor");
 });
 
 it("adds the points an opened crate scored", () => {
