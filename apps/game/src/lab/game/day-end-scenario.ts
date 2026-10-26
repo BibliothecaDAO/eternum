@@ -14,11 +14,19 @@ import type { LabFact, LabScenario } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
 
 /** The rows changed here, under the keys their fixtures write them by (deploy, kit lab and site fixtures). */
-const FIXTURE_KEYS = { realm: "0x7", knowledge: "0xd", buildings: "0xb7", army: "0x74", board: "0xa" } as const;
+const FIXTURE_KEYS = {
+  realm: "0x7",
+  knowledge: "0xd",
+  buildings: "0xb7",
+  army: "0x74",
+  board: "0xa",
+  rules: "0x100",
+} as const;
 const ruleKey = (resource: ResourcesIds) => `0x5${resource}`;
 
-/** Frontier's production rates a second (config/source/frontier/native.ts and base.ts), not the HUD fixture's. */
+/** Frontier's production rates a second and explore cost (config/source/frontier), not the HUD fixture's. */
 const WORKSHOP_RATE = 0.056;
+const EXPLORE_STAMINA = 20;
 const REALM_RATES: Partial<Record<ResourcesIds, number>> = {
   [ResourcesIds.Labor]: 0.028,
   [ResourcesIds.Knight]: 0.028,
@@ -119,7 +127,21 @@ const realmProducing = (store: NativeFactStore): LabFact[] => {
 
 const scaled = (perSecond: number) => String(BigInt(Math.round(perSecond * RESOURCE_PRECISION)));
 
+/** The game's rules with Frontier's explore cost, so a 120 bar is six explores. */
+const exploreCost = (store: NativeFactStore): LabFact => {
+  const rules = wire(store.require("SliceRules", { game_id: 1 })) as { troop_stamina_config: object };
+  return {
+    model: "SliceRules",
+    key: FIXTURE_KEYS.rules,
+    value: {
+      ...rules,
+      troop_stamina_config: { ...rules.troop_stamina_config, stamina_explore_stamina_cost: EXPLORE_STAMINA },
+    },
+  };
+};
+
 const frontierRates = (store: NativeFactStore): LabFact[] => [
+  exploreCost(store),
   {
     model: "BoardRules",
     key: FIXTURE_KEYS.board,
