@@ -1,4 +1,12 @@
-import { BuildingType, formatExact, formatPopulationInWords, ResourcesIds, type ID } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  formatExact,
+  formatPopulationInWords,
+  ResourcesIds,
+  TroopTier,
+  type ID,
+  type TroopType,
+} from "@bibliothecadao/types";
 
 import { type BuildOrder, type BuildOrderGoal, type BuildOrderStep, DEFAULT_BUILD_ORDER } from "./build-order";
 
@@ -38,6 +46,8 @@ export type BlitzMilitaryTarget = {
   count: number;
   label: string;
   resource: ResourcesIds;
+  /** The T1 troop its barracks trains. */
+  troopType: TroopType;
   bonusPercent?: number;
 };
 
@@ -79,6 +89,8 @@ export type BlitzSuggestionDraft = {
   label: string;
   buildingTypeHint?: BuildingType;
   resourceHint?: ResourcesIds;
+  /** The troops a Deploy step names: the realm's troop, a full army of it, which the deployment opens on. */
+  troops?: { type: TroopType; tier: TroopTier; count: number };
   reason?: string;
   priority: number;
 };
@@ -250,7 +262,10 @@ const resolveArmyStep = (input: BlitzRealmSuggestionInput, count: number): StepV
   const { army, militaryTarget } = input;
   if (!army || !militaryTarget || army.armies >= count || army.armies >= army.maxArmies) return "passes";
   if (army.fullArmy > 0 && army.troops >= army.fullArmy) {
-    return createArmySuggestion(input, "deploy-army", militaryTarget, army);
+    return {
+      ...createArmySuggestion(input, "deploy-army", militaryTarget, army),
+      troops: { type: militaryTarget.troopType, tier: TroopTier.T1, count: army.fullArmy },
+    };
   }
   if (army.training) return "passes";
   if (militaryTarget.count === 0) return resolveBuildingStep(input, "military", 1);

@@ -19,7 +19,7 @@ import {
   buildBlitzRealmSuggestions,
   DEFAULT_BUILD_ORDER_TEXT,
 } from "@bibliothecadao/eternum/automation";
-import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 /**
@@ -140,7 +140,12 @@ const BUILDABLE: BlitzRealmSuggestionInput["buildability"] = {
   wood: { canBuild: true, needsRoom: false },
   workerHut: { canBuild: true, needsRoom: false },
 };
-const KNIGHTS = { buildingType: BuildingType.ResourceKnightT1, label: "Knight T1", resource: ResourcesIds.Knight };
+const KNIGHTS = {
+  buildingType: BuildingType.ResourceKnightT1,
+  label: "Knight T1",
+  resource: ResourcesIds.Knight,
+  troopType: TroopType.Knight,
+};
 const CITY_BUILT = { wheat: 4, wood: 2, coal: 2, copper: 2, workerHut: 1, crossbowmanT1: 0, knightT1: 1, paladinT1: 0 };
 const ARMY: BlitzArmyState = { armies: 0, maxArmies: 3, troops: 0, fullArmy: 3_000, training: false };
 

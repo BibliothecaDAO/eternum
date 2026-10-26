@@ -38,7 +38,8 @@ const completePendingSuggestion = (suggestionId: string): void =>
 
 /**
  * A step's verb: a build submits against its realm without changing the current selection; training opens the realm's
- * Production on the troop, and an army opens its deployment, where the player chooses.
+ * Production on the troop, and an army opens its deployment on the troops the step names, where the player chooses
+ * where it goes and confirms.
  */
 export const useSuggestionActions = () => {
   const { setup } = useGame();
@@ -77,7 +78,8 @@ export const useSuggestionActions = () => {
     async (suggestion: OrderSuggestion) => {
       if (!canIssueOrders() || actNowRefusal()) return;
       const realmId = safeInteger(suggestion.realmId);
-      if (suggestion.action === "deploy-army") openArmyDeployment({ structureId: realmId, isExplorer: true });
+      if (suggestion.action === "deploy-army")
+        openArmyDeployment({ structureId: realmId, isExplorer: true, troops: suggestion.troops });
       else if (suggestion.action === "train-troops") openProduction({ realmId, resource: suggestion.resourceHint });
       else await runAutoBuildSuggestion(suggestion);
     },

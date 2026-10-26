@@ -149,6 +149,7 @@ const resolveRecommendedMilitaryTarget = (
     buildingType: best.buildingType,
     count: buildingCounts[best.countKey],
     label: best.label,
+    troopType: best.troopType,
     resource: best.resource,
     bonusPercent: Math.round((best.bonus - 1) * 100),
   };
@@ -174,7 +175,7 @@ const readBlitzArmyState = (
     maxArmies: Number(structure.base.troop_max_explorer_count),
     troops: held === undefined ? 0 : Math.floor(divideByPrecision(Number(held), false)),
     fullArmy: configManager.getMaxArmySize(Number(structure.base.level), TroopTier.T1),
-    training: resources.isActive(militaryTarget.resource) || automationTrains(militaryTarget.resource),
+    training: resources.isProducingAt(militaryTarget.resource, tick) || automationTrains(militaryTarget.resource),
   };
 };
 

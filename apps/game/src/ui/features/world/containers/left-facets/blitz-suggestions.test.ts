@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import {
   buildBlitzRealmSuggestions,
@@ -122,6 +122,7 @@ describe("a realm's next step on the default build order", () => {
       count: 0,
       label: "Knight T1",
       resource: ResourcesIds.Knight,
+      troopType: TroopType.Knight,
     };
     expect(buildBlitzRealmSuggestions(baseInput({ buildingCounts: builtOut, militaryTarget: knights }))).toEqual([
       expect.objectContaining({
@@ -168,6 +169,7 @@ describe("a realm's first army on the default build order", () => {
     count: 1,
     label: "Knight T1",
     resource: ResourcesIds.Knight,
+    troopType: TroopType.Knight,
   };
   const cityBuilt = counts({ wheat: 4, wood: 2, coal: 2, copper: 2, knightT1: 1 });
   const army = (state: Partial<BlitzArmyState>): BlitzArmyState => ({
@@ -199,7 +201,11 @@ describe("a realm's first army on the default build order", () => {
     expect(nextStep(city({ troops: 3_000, training: true }))).toEqual([
       "deploy-army · Knight T1: 3,000 on hand, a full army of 3,000.",
     ]);
-    expect(buildBlitzRealmSuggestions(city({ troops: 3_000 }))[0]).toMatchObject({ label: "Deploy an army" });
+    // Deploy names its troops: the realm's own, a full army of them, for the deployment to open on.
+    expect(buildBlitzRealmSuggestions(city({ troops: 3_000 }))[0]).toMatchObject({
+      label: "Deploy an army",
+      troops: { type: TroopType.Knight, tier: TroopTier.T1, count: 3_000 },
+    });
   });
 
   it("has no army step once the army stands, or where no slot is free", () => {
