@@ -52,6 +52,7 @@ vi.mock("./hud/view", () => ({
 }));
 vi.mock("./data/view", () => ({ DataRoomView: () => <Tool name="data" /> }));
 vi.mock("./footage/view", () => ({ FootageView: () => <Tool name="footage" /> }));
+vi.mock("./feed/view", () => ({ FeedLabView: () => <Tool name="feed" /> }));
 vi.mock("../ui/features/debug/procedural-character-benchmark-view", () => ({
   ProceduralCharacterBenchmarkView: () => <Tool name="benchmark" />,
   ProceduralWorldGymView: () => <Tool name="world" />,
@@ -156,6 +157,7 @@ it.each([
   ["/lab/kit/unified/blitz-attack", "kit-unified-hud", "HUD", "In game"],
   ["/lab/kit/windows/settings", "kit-windows", "HUD", "In game"],
   ["/lab/app/home/profile", "app", "HUD", "App pages"],
+  ["/lab/feed?option=c&device=phone", "feed", "HUD", "Feed · to pick"],
   ["/lab/day-end?case=late-block", "day-end", "Game", "Day end"],
   ["/lab/endgame?variation=tide&mode=frontier", "endgame", "Game", "Game end"],
   ["/lab/map-labels?zoom=close&hover=28", "map-labels", "Game", "Map labels & sites"],

@@ -245,6 +245,18 @@ export const ROOMS: LabRoom[] = [
         ],
       },
       {
+        title: "Feed · to pick",
+        devices: ["both", "desktop", "phone"],
+        views: [
+          view(
+            "Feed",
+            "/lab/feed",
+            "feed",
+            load(() => import("./feed/view"), "FeedLabView"),
+          ),
+        ],
+      },
+      {
         title: "App pages",
         views: [
           view(
