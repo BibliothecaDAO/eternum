@@ -42,6 +42,7 @@ pub trait IGameLedger<TState> {
     fn pay(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, wallet: ContractAddress, amount: u256);
     fn report_withdrawal(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, amount: u256);
     fn close_frontier(ref self: TState, shard: felt252, season_id: u32);
+    fn extend_frontier(ref self: TState, shard: felt252, season_id: u32);
     fn get_frontier(self: @TState, shard: felt252, season_id: u32) -> FrontierSeason;
     fn frontier_unlocked(self: @TState, shard: felt252, season_id: u32) -> u256;
     fn frontier_claim_deadline(self: @TState, shard: felt252, season_id: u32) -> u64;
@@ -499,6 +500,42 @@ pub mod GameLedger {
             self.payments.entry((shard, claim_id)).write(WithdrawalPayment { paid: true, season_id, wallet, amount });
             self.send_lords(wallet, amount);
             self.emit(WithdrawalPaid { shard, claim_id, season_id, wallet, amount });
+        }
+
+        fn extend_frontier(ref self: ContractState, shard: felt252, season_id: u32) {
+            use crate::approved_frontier_extension as approved;
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            assert!(shard == approved::CHAIN_ID && season_id == approved::GAME_ID, "Ledger: extension target differs");
+            let mut season = self.get_frontier(shard, season_id);
+            let preset = self.get_preset(season.preset_id);
+            assert!(
+                season.start == approved::START
+                    && season.seed == approved::SEED
+                    && season.preset_id == approved::PRESET_ID
+                    && preset.day_unit_seconds == approved::DAY_UNIT
+                    && preset.claim_window_seconds == approved::CLAIM_WINDOW,
+                "Ledger: extension identity differs",
+            );
+            assert!(
+                season.pool == Into::<u128, u256>::into(approved::POOL_LORDS) * 1000000000000000000,
+                "Ledger: extension pool differs",
+            );
+            if season.end == approved::END {
+                return;
+            }
+            assert!(season.end == approved::OLD_END, "Ledger: extension end differs");
+            let now = starknet::get_block_timestamp();
+            assert!(!season.closed && now >= season.start && now < season.end, "Ledger: extension not live");
+            assert!(approved::END > season.end, "Ledger: extension must grow");
+            crate::days::season_days(approved::END - season.start, preset.day_unit_seconds);
+            assert!(
+                Into::<u64, u128>::into(approved::END) + preset.claim_window_seconds.into() <= 0xffffffffffffffff,
+                "Ledger: claim deadline exceeds u64",
+            );
+            season.end = approved::END;
+            // This write and its reduced-unlock check revert together if existing paid custody would be stranded.
+            self.frontier_days.entry((shard, season_id)).write(season);
+            assert!(season.paid <= self.frontier_unlocked(shard, season_id), "Ledger: extension exceeds unlock");
         }
 
         fn close_frontier(ref self: ContractState, shard: felt252, season_id: u32) {

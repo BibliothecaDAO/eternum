@@ -8,6 +8,7 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
 world=contracts/l3/world-native
 verifier=contracts/l3/vrf-verifier
 account=contracts/l3/player-account
+node "$world/scripts/generate-extension.mjs" --check
 runner=$(python3 "$world/toolchain/snforge.py" resolve)
 python3 -m unittest discover -s "$world/toolchain" -p "test_snforge.py"
 
