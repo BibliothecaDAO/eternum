@@ -57,6 +57,7 @@ it("shows distinct and folded troop identities across tokens, plates and transfe
     expect([...host.querySelectorAll("h2")].map((node) => node.textContent)).toEqual([
       "Map tokens",
       "Army plate",
+      "Army attribute · Frontier",
       "Transfer troops",
     ]);
     const rows = [...host.querySelectorAll(".tree-transfer-row")];

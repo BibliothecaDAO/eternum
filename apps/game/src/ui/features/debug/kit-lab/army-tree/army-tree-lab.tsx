@@ -129,7 +129,9 @@ function TroopName({ option, tier }: { option: OptionId; tier: 1 | 2 | 3 }) {
 function Troops({ option }: { option: OptionId }) {
   return (
     <>
-      <p className="tree-explain">Blitz examples · troop class is separate from an army’s Battle rank.</p>
+      <p className="tree-explain">
+        Blitz troop examples, compared with a Frontier attribute. The two modes keep their own rules.
+      </p>
       <section className="tree-troop-surface">
         <h2>Map tokens</h2>
         <div className="tree-tokens">
@@ -147,6 +149,9 @@ function Troops({ option }: { option: OptionId }) {
           <strong>Army 2 · 1,000</strong>
           <TroopName option={option} tier={2} />
         </div>
+      </section>
+      <section className="tree-troop-surface">
+        <h2>Army attribute · Frontier</h2>
         <div className="tree-plate">
           <span>Battle</span>
           <Gem rank={2} today={option === "today"} />
