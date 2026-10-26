@@ -7,11 +7,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Icon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {
+  AmountInput,
   HudButton,
   HudChip,
   HudNotice,
   HudSheet,
-  HudSlider,
   HudTierChip,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
@@ -23,6 +23,7 @@ import { formatAmount, getDirectionBetweenAdjacentHexes, type TroopTier } from "
 import { useState } from "react";
 import type { Account } from "starknet";
 
+import { AmountRange } from "../amount-range";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 
 /** Two of the realm's armies standing side by side: the one picked, the one tapped, and where the tapped one stands. */
@@ -234,13 +235,27 @@ const TransferSplit = ({
         </span>
         {side(tapped)}
       </div>
-      <HudSlider
-        label={TRANSFER_TROOPS.split(picked.label, tapped.label)}
-        value={pickedAfter}
-        max={total}
-        stop={highest}
-        onChange={(value) => chooseSplit(Math.max(lowest, value))}
-      />
+      {/* How many the picked army keeps: typed, or dragged between its two ends, each labelled with its amount. */}
+      <div className="flex items-center gap-2">
+        <AmountInput
+          label={TRANSFER_TROOPS.split(picked.label, tapped.label)}
+          value={pickedAfter}
+          min={lowest}
+          max={highest}
+          onChange={chooseSplit}
+        />
+        <span className="flex-1">
+          <AmountRange
+            label={TRANSFER_TROOPS.split(picked.label, tapped.label)}
+            icon={picked.art}
+            value={pickedAfter}
+            min={lowest}
+            max={total}
+            stop={highest}
+            onChange={(value) => chooseSplit(Math.max(lowest, value))}
+          />
+        </span>
+      </div>
       <HudWindowFoot
         note={
           !merge && total > Math.min(capOf(picked), capOf(tapped))

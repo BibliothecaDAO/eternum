@@ -551,11 +551,12 @@ an eligible player. The lab proof does not establish those live actions.
   sheet as a merge into the army tapped: the map chose which army goes into which. Its two cards show each army's
   troops, stamina and XP now and after; the army a merge empties is faded with the XP it loses struck out (its upgrades'
   cost included), and the one that stays shows the stamina the merge leaves it. **Merge into …** names the army that
-  stays. The slider moves the split either way, down to a partial move that keeps both armies. If the dissolving army
-  has at least one first-tier upgrade more progression (unspent XP plus purchased or trained tiers; 100 XP in the
-  current preset), **Merge into …** turns into **Lose N XP, merge into …**, and a second click sends. Smaller gaps send
-  on the first click. Changing the split or army facts clears confirmation. Dev: `/lab/kit/hud/merge`; tests drive the
-  map’s actual selection card. Browser proof:
+  stays. The split is how many the picked army keeps: typed, or dragged on the slider between its two ends, each
+  labelled with its amount (a press on an end takes it); either way, down to a partial move that keeps both armies. If
+  the dissolving army has at least one first-tier upgrade more progression (unspent XP plus purchased or trained tiers;
+  100 XP in the current preset), **Merge into …** turns into **Lose N XP, merge into …**, and a second click sends.
+  Smaller gaps send on the first click. Changing the split or army facts clears confirmation. Dev: `/lab/kit/hud/merge`;
+  tests drive the map’s actual selection card. Browser proof:
   `pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <new-directory> --only frontier-merge`.
   It takes the loss step, a partial move and the merge the other way by the slider, at desktop and phone sizes,
   preserving screenshots and a transcript without sending.

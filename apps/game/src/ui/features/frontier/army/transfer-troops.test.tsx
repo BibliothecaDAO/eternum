@@ -452,3 +452,30 @@ it("refuses facts arriving just before the final confirmation click", async () =
     "The troops could not be moved.",
   );
 });
+
+it("labels the split's two ends with their amounts, each taking it, and takes a split typed in", async () => {
+  render(transferArmies());
+  // Army 1 keeps none (all to Army 2) at the left end, all 1,100 at the right.
+  const least = host.querySelector<HTMLButtonElement>('button[aria-label="Minimum 0"]')!;
+  const most = host.querySelector<HTMLButtonElement>('button[aria-label="Maximum 1,100"]')!;
+  expect(least.textContent).toBe("0");
+  expect(most.textContent).toBe("1,100");
+
+  const kept = host.querySelector<HTMLInputElement>('input[aria-label^="Troops: Army 1 keeps"]')!;
+  expect(kept.value).toBe("0");
+  act(() => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(kept, "599");
+    kept.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  expect(button("Move 1 to Army 2")).toBeDefined();
+  expect(sides()).toEqual([
+    ["Army 1", "599"],
+    ["Army 2", "501"],
+  ]);
+
+  act(() => most.click());
+  expect(button("Merge into Army 1")).toBeDefined();
+  expect(kept.value).toBe("1,100");
+  act(() => least.click());
+  expect(button("Merge into Army 2")).toBeDefined();
+});
