@@ -1,7 +1,7 @@
 .army-tree,
 .tree-capture {
   color: #eee3ce;
-  background: #17191a;
+  background: #171c1c;
   font-family: var(--hud-font-body, sans-serif);
 }
 .army-tree {
@@ -9,7 +9,7 @@
   padding: 28px 20px 48px;
 }
 .army-tree > * {
-  max-width: 1020px;
+  max-width: 1140px;
   margin: 0 auto 22px;
 }
 .army-tree h1 {
@@ -44,125 +44,107 @@
   border-left: 3px solid #d5ad60;
   padding-left: 16px;
 }
-.tree-comparison {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-}
-.tree-comparison figure {
-  margin: 0;
-  min-width: 0;
-}
-.tree-comparison figcaption {
-  margin-bottom: 10px;
+.tree-still figcaption {
+  margin-bottom: 12px;
   color: #c9b58c;
 }
-.tree-comparison img {
+.tree-still img {
   display: block;
   width: 100%;
-  max-width: 440px;
   height: auto;
   border: 1px solid #59513e;
   border-radius: 12px;
 }
-.tree-cost,
-.tree-numbering {
-  padding-top: 18px;
-  border-top: 1px solid #46483d;
-}
-.tree-numbering > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  align-items: center;
-  margin: 14px 0;
-}
-.tree-numbering > div > span {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
 .tree-note {
-  color: #c3baa9;
+  border-top: 1px solid #46483d;
+  padding-top: 18px;
   font-size: 14px;
+  color: #c3baa9;
 }
 .army-tree .eyebrow,
 .tree-capture .eyebrow {
   font-size: 11px;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #b6a88d;
+  color: #c6b58f;
   margin: 0;
 }
 .tree-capture {
-  width: 390px;
-  min-height: 730px;
-  padding: 22px 18px 16px;
+  width: min(1100px, 100%);
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  background: linear-gradient(155deg, #292b28, #1b201f 70%);
+  padding: 24px;
   border: 1px solid #675c43;
   border-radius: 14px;
+  background: linear-gradient(155deg, #292b28, #1b201f 70%);
 }
 .tree-capture header h1 {
   font-family: var(--hud-font-title, Georgia, serif);
-  font-size: 29px;
-  font-weight: 600;
-  line-height: 1.1;
-  margin: 7px 0 0;
+  font-size: 32px;
+  margin: 7px 0;
 }
 .tree-capture h2 {
-  font-size: 15px;
-  margin: 0;
+  font-size: 17px;
   font-weight: 600;
+  margin: 0 0 10px;
 }
-.tree-strip {
+.tree-capture h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+.tree-capture p {
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 8px 0;
+}
+.tree-explain {
+  color: #c7c9b9;
+}
+.tree-builds {
   display: flex;
-  justify-content: space-between;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 8px 24px;
   font-size: 12px;
-  color: #c7bfac;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #565345;
+  color: #e1c58f;
+  margin: 16px 0;
 }
-.tree-attributes {
+.tree-ladder {
+  margin: 22px 0;
+}
+.tree-rungs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 7px;
 }
-.tree-attribute {
-  background: #191d1c;
-  border: 1px solid #454b40;
-  border-radius: 9px;
-  min-height: 99px;
-  padding: 12px 10px;
+.tree-rung {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 10px;
+  padding: 13px 10px;
+  background: #191d1c;
+  border: 1px solid #535846;
+  border-radius: 8px;
 }
-.tree-attribute > div,
-.tree-detail > div {
+.tree-rung > div {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  gap: 7px;
   min-height: 26px;
 }
-.tree-attribute strong {
+.tree-rung strong {
   font-size: 13px;
-  color: #eee5d4;
   font-weight: 500;
 }
-.tree-attribute small {
-  font-size: 11px;
-  color: #b2b8a7;
-  line-height: 1.45;
+.tree-rung b {
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: #eee5d4;
 }
-.tree-attribute.chosen {
-  border-color: #c6a361;
-  background: #383625;
+.tree-rung small {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #ccb889;
 }
 .tree-gem {
   --stone: var(--hud-rarity-2);
@@ -196,147 +178,78 @@
 .tree-gem[data-rank="4"] {
   --stone: var(--hud-rarity-5);
 }
-.tree-detail {
+.tree-callout {
   border-top: 1px solid #565345;
-  padding-top: 16px;
-  font-size: 14px;
-  line-height: 1.5;
+  margin-top: 20px;
+  padding-top: 18px;
 }
-.tree-detail p {
-  margin: 12px 0;
-}
-.tree-detail dl {
+.tree-unlocks {
   display: flex;
-  gap: 28px;
-  margin-bottom: 0;
+  gap: 14px;
+  margin: 20px 0;
 }
-.tree-detail dt {
-  color: #bdb59f;
-  font-size: 11px;
+.tree-unlocks > div {
+  flex: 1;
+  background: #191d1c;
+  border: 1px solid #535846;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 14px;
 }
-.tree-detail dd {
-  margin: 4px 0 0;
-  color: #f0d4a2;
-  font-size: 19px;
+.tree-capture table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
 }
-.tree-action {
-  background: #d6ae62;
-  border: 1px solid #efce8c;
-  color: #242419;
-  text-align: center;
-  border-radius: 7px;
-  padding: 12px 8px;
-  font-weight: 700;
-  font-size: 15px;
-}
-.tree-action.unavailable {
-  background: #383b34;
-  border-color: #626653;
-  color: #b4b9a8;
-}
-.tree-explain {
-  font-size: 12px;
-  line-height: 1.55;
-  color: #bfc1b1;
-  margin: 0;
+.tree-capture th,
+.tree-capture td {
+  text-align: left;
+  border-bottom: 1px solid #46483d;
+  padding: 10px 8px;
 }
 .tree-capture footer {
-  margin-top: auto;
-  font-size: 11px;
-  color: #b9ab8e;
+  margin-top: 22px;
+  padding-top: 14px;
   border-top: 1px solid #484c40;
-  padding-top: 12px;
-}
-.tree-xp {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.tree-xp strong {
-  font-size: 20px;
-  color: #f0d4a2;
-}
-.tree-xp span,
-.tree-xp small {
+  color: #b9ab8e;
   font-size: 12px;
-  color: #bfc1b1;
-  line-height: 1.45;
-}
-.tree-track {
-  height: 5px;
-  border-radius: 5px;
-  background: #101713;
-}
-.tree-track i {
-  display: block;
-  width: 2%;
-  height: 100%;
-  background: #e1b762;
-}
-.tree-after {
-  font-size: 12px;
-  line-height: 1.4;
-  color: #efce8c;
-  margin: 0;
-}
-.tree-troop-chip {
-  display: inline-flex;
-  padding: 2px 5px;
-  border: 1px solid #9a9d91;
-  border-radius: 4px;
-  color: #e0e1d9;
-  background: #313732;
-  font-size: 12px;
-}
-.tree-troop-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-.tree-troop-surface {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 14px 0;
-  border-top: 1px solid #565345;
-}
-.tree-tokens {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-.tree-tokens > div {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border: 1px solid #555b4c;
-  border-radius: 8px;
-  padding: 10px 6px;
-  font-size: 11px;
-}
-.tree-tokens .tree-troop-name {
-  flex-wrap: wrap;
-}
-.tree-plate,
-.tree-transfer-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-.tree-transfer-row > span:last-child {
-  color: #c3baa9;
-  font-size: 10px;
+  line-height: 1.5;
 }
 @media (max-width: 650px) {
   .army-tree {
     padding: 20px 14px;
   }
-  .tree-comparison {
-    grid-template-columns: 1fr;
-  }
   .army-tree nav button {
     text-align: left;
+  }
+  .tree-capture {
+    padding: 18px 12px;
+  }
+  .tree-capture header h1 {
+    font-size: 28px;
+  }
+  .tree-rungs {
+    grid-template-columns: 1fr !important;
+  }
+  .tree-rung {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr 1fr;
+    align-items: center;
+    padding: 10px 8px;
+    gap: 7px;
+  }
+  .tree-rung > div {
+    gap: 5px;
+  }
+  .tree-rung > small:last-child:nth-child(4) {
+    grid-column: 1 / -1;
+  }
+  .tree-unlocks {
+    flex-direction: column;
+  }
+  .tree-capture th,
+  .tree-capture td {
+    padding: 8px 4px;
+    font-size: 12px;
   }
 }

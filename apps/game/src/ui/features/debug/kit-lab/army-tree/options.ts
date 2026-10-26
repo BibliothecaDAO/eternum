@@ -1,69 +1,100 @@
-export const SCENES = ["Research", "Army", "Level up", "Troops"] as const;
-export const OPTIONS = [
+export const ROUTES = [
   {
-    id: "a",
-    title: "A · Train at the castle",
-    summary: "Research starting ranks. Earn points on expeditions. Remove the four training buildings.",
-    path: "Two Barracks upgrades → castle training → deploy → earn XP → spend a point.",
-    removes: "War hall, Supply yard, Scouts’ lodge and Hearth; their plots, population costs and separate build step.",
-    tradeoff:
-      "First rank costs 3,000 labor with no refund. Today a 3,000-labor building can be demolished for 1,500 back while keeping its training.",
-    troops: "Keep T1 / T2 / T3 as neutral troop-class chips. Gems measure upgrades; XP never changes a troop class.",
+    id: "display",
+    title: "Common I → Legendary V",
+    summary: "Shipping display route: five states, four upgrades. Training buildings grant II.",
+    tradeoff: "No new rank, research price, effect or model. Keep the current research budgets and storage hurdles.",
   },
   {
-    id: "b",
-    title: "B · Learn on expeditions",
-    summary: "Every army starts Common. XP points are its only path to stronger attributes.",
-    path: "Deploy → earn 50 XP → choose a rank. Later points cost 100, 150, 200… XP.",
-    removes: "The four training buildings, their four research rows, trained starts and the training unlock gate.",
+    id: "insert",
+    title: "Add a rank before Legendary",
+    summary: "Next-season alternative: Common has no gem; Uncommon I → Rare II → Epic III → Exalted IV → Legendary V.",
     tradeoff:
-      "The biggest cut, but no permanent investment in future armies. The observed median army still earns less than 50 XP.",
-    troops: "Keep T1 / T2 / T3 as neutral troop-class chips. Removing training does not remove troop classes.",
-  },
-  {
-    id: "c",
-    title: "C · Keep the training buildings",
-    summary: "Build for a starting rank, research better starts, then earn expedition points.",
-    path: "Two Barracks upgrades → training building grants rank I → research → deploy → earn points.",
-    removes: "Per-attribute XP prices and pip rows. Keeps all four buildings, their space and population costs.",
-    tradeoff:
-      "Keeps the longest path: a building is needed to improve its row, but demolition keeps training and refunds half its build labor.",
-    troops:
-      "Fold troop names into rarity: T1 → Common, T2 → Uncommon I, T3 → Rare II. Same rules, new names and colors.",
+      "Exalted is a working name. Split the final payment and effect into two steps. Same total research budget and final power; lower individual storage hurdles.",
   },
 ] as const;
-export type OptionId = "today" | (typeof OPTIONS)[number]["id"];
-export type Scene = (typeof SCENES)[number];
-export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
-export const RANKS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
+export type RouteId = (typeof ROUTES)[number]["id"];
+export const BRANCHES = ["Economy", "Barracks", "Training", "Castle"] as const;
+export type Branch = (typeof BRANCHES)[number];
+const RANKS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
+const INSERT_RANKS = ["Common", "Uncommon", "Rare", "Epic", "Exalted", "Legendary"] as const;
 export const NUMERALS = ["I", "II", "III", "IV", "V"] as const;
-const CUMULATIVE = [0, 100, 180, 240, 280] as const;
-const BASE = [10, 20, 10, 3] as const;
-const TODAY = [
-  [0, 10, 30, 60, 100],
-  [0, 20, 50, 90, 150],
-  [0, 10, 30, 60, 100],
-  [0, 3, 9, 18, 30],
-];
-
-export function bonus(attribute: number, rank: number, today = false) {
-  return today ? TODAY[attribute]![rank]! : (BASE[attribute]! * CUMULATIVE[rank]!) / 100;
+export const BUILDINGS = {
+  farm: { name: "Farm", essence: 1000, labor: 1000, build: 400, population: 1 },
+  workshop: { name: "Workshop", essence: 2000, labor: 2000, build: 2000, population: 2 },
+  barracks: { name: "Barracks", essence: 4000, labor: 3000, build: 400, population: 3 },
+  hut: { name: "Hut", essence: 500, labor: 500, build: 300, population: 0 },
+  training: { name: "Training building", essence: 12000, labor: 3000, build: 3000, population: 2 },
+} as const;
+export type Building = keyof typeof BUILDINGS;
+const ESSENCE = { display: [0, 1, 4, 12, 30], insert: [0, 1, 4, 12, 12, 18] };
+const LABOR = { display: [0, 1, 3, 8, 20], insert: [0, 1, 3, 8, 8, 12] };
+export function ranks(route: RouteId) {
+  return route === "display" ? RANKS : INSERT_RANKS;
 }
-export function gain(attribute: number, rank: number, today = false) {
-  return bonus(attribute, rank + 1, today) - bonus(attribute, rank, today);
+export function steps(route: RouteId) {
+  return route === "display" ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 3.5, 4];
 }
-export function effect(attribute: number, amount: number) {
-  const value = Number(amount.toFixed(1));
-  return [`+${value}% damage`, `+${value} max stamina`, `Beasts +${value}% base chance`, `${value}% survivors return`][
-    attribute
-  ]!;
+export function price(building: Building, rank: number, route: RouteId) {
+  const base = BUILDINGS[building];
+  if (building === "training" && rank === 1) return { essence: 0, labor: base.build, action: "Build" };
+  return {
+    essence: base.essence * ESSENCE[route][rank]!,
+    labor: base.labor * LABOR[route][rank]!,
+    action: rank === 0 ? "Base" : "Research",
+  };
 }
-export function earnedPoints(xp: number, trainedRanks: number) {
-  const cap = 16 - trainedRanks;
-  let points = 0;
-  while (points < cap && xp >= 25 * (points + 1) * (points + 2)) points++;
-  return points;
+export function budget(building: Building, route: RouteId) {
+  return ranks(route).reduce(
+    (total, _, rank) => {
+      const cost = price(building, rank, route);
+      return { essence: total.essence + cost.essence, labor: total.labor + cost.labor };
+    },
+    { essence: 0, labor: 0 },
+  );
 }
-export function stillPath(option: OptionId, scene: Scene) {
-  return `/lab/army-tree/${option}-${scene.toLowerCase().replaceAll(" ", "-")}.png`;
+export function number(value: number) {
+  return value.toLocaleString("en-US", { maximumFractionDigits: 3 });
+}
+export function priceText(building: Building, rank: number, route: RouteId) {
+  const cost = price(building, rank, route);
+  return rank === 0
+    ? "No research"
+    : cost.action === "Build"
+      ? "Build · 3k labor"
+      : `${number(cost.essence / 1000)}k E / ${number(cost.labor / 1000)}k L`;
+}
+export const ECONOMY = [
+  { name: "Fields", building: "farm", effect: "output" },
+  { name: "Granary", building: "farm", effect: "storage" },
+  { name: "Tools", building: "workshop", effect: "output" },
+  { name: "Storeroom", building: "workshop", effect: "storage" },
+  { name: "Hut capacity", building: "hut", effect: "population" },
+] as const;
+export const BARRACKS = [
+  { name: "Drill", building: "barracks", effect: "output" },
+  { name: "Rations", building: "barracks", effect: "rations" },
+] as const;
+export function economyEffect(effect: "output" | "storage" | "population" | "rations", step: number) {
+  if (effect === "output") return `${number(100 + step * 25)}% output`;
+  if (effect === "storage") return `${number(100 + step * 50)}% capacity`;
+  if (effect === "population") return `${6 + Math.floor(6 * step * 0.25)} people / Hut`;
+  return `${number(2 - step * 0.25)} wheat / troop`;
+}
+export const TRAINING = [
+  { name: "War hall", attribute: "Battle", values: [0, 10, 30, 60, 100], unit: "% damage" },
+  { name: "Supply yard", attribute: "Logistics", values: [0, 20, 50, 90, 150], unit: " max stamina" },
+  { name: "Scouts’ lodge", attribute: "Scouting", values: [0, 10, 30, 60, 100], unit: "% of kind’s base chance" },
+  { name: "Hearth", attribute: "Homecoming", values: [0, 3, 9, 18, 30], unit: "% survivors return" },
+] as const;
+export function trainingEffect(index: number, rank: number, route: RouteId) {
+  const step = steps(route)[rank]!;
+  const values = TRAINING[index]!.values;
+  const lower = Math.floor(step),
+    upper = Math.ceil(step);
+  const amount = values[lower]! + (values[upper]! - values[lower]!) * (step - lower);
+  return `${index === 3 ? "" : "+"}${number(amount)}${TRAINING[index]!.unit}`;
+}
+export function stillPath(route: RouteId, branch: Branch, device: "desktop" | "phone" = "desktop") {
+  return `/lab/army-tree/${route}-${branch.toLowerCase()}-${device}.png`;
 }

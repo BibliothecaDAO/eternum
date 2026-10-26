@@ -4,8 +4,18 @@ import { afterEach, beforeEach, expect, it } from "vitest";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { ArmyTreeLab } from "./army-tree-lab";
-import { bonus, earnedPoints, gain, OPTIONS, SCENES, stillPath } from "./options";
-
+import {
+  BRANCHES,
+  ROUTES,
+  budget,
+  economyEffect,
+  price,
+  ranks,
+  steps,
+  stillPath,
+  trainingEffect,
+  type Building,
+} from "./options";
 let host: HTMLDivElement;
 let root: Root;
 beforeEach(() => {
@@ -21,67 +31,82 @@ afterEach(() => {
   host.remove();
 });
 const click = (name: string) =>
-  act(() => [...host.querySelectorAll("button")].find((node) => node.textContent?.startsWith(name))!.click());
-
-it("compares each option and moment using exactly two stills, without live content", () => {
-  for (const option of OPTIONS) {
-    click(option.title);
-    expect(host.querySelector('[aria-label="Selected proposal"]')?.textContent).toContain(option.summary);
-    for (const scene of SCENES) {
-      click(scene);
-      expect([...host.querySelectorAll("figure img")].map((img) => img.getAttribute("src"))).toEqual([
-        stillPath("today", scene),
-        stillPath(option.id, scene),
-      ]);
+  act(() => [...host.querySelectorAll("button")].find((node) => node.textContent === name)!.click());
+it("opens every research branch in both routes using responsive stills only", () => {
+  for (const route of ROUTES) {
+    click(route.title);
+    for (const branch of BRANCHES) {
+      click(branch);
+      expect(host.querySelectorAll("figure img")).toHaveLength(1);
+      expect(host.querySelector("figure img")?.getAttribute("src")).toBe(stillPath(route.id, branch));
+      expect(host.querySelector("source")?.getAttribute("srcset")).toBe(stillPath(route.id, branch, "phone"));
       expect(host.querySelectorAll("canvas,iframe,[data-tree-capture]")).toHaveLength(0);
     }
   }
 });
-it("shows no Common gem and I through IV for the four upgrades", () => {
-  const legend = host.querySelector('[aria-label="One rank language"]')!;
-  expect([...legend.querySelectorAll(".tree-gem")].map((gem) => gem.textContent)).toEqual(["I", "II", "III", "IV"]);
-  expect(legend.textContent).toContain("Common has no gem");
-});
-it("preserves the exact point curve, trained cap and diminishing third-rank gain", () => {
-  expect([49, 50, 149, 150, 299, 300].map((xp) => earnedPoints(xp, 0))).toEqual([0, 1, 1, 2, 2, 3]);
-  expect(earnedPoints(10000, 16)).toBe(0);
-  expect(earnedPoints(10000, 2)).toBe(14);
-  expect([gain(0, 0), gain(0, 2), bonus(0, 2), bonus(0, 3)]).toEqual([10, 6, 18, 24]);
-  expect([gain(1, 0), gain(1, 2), bonus(1, 4)]).toEqual([20, 12, 56]);
-  expect(bonus(0, 4, true)).toBe(100);
-});
-it("shows distinct and folded troop identities across tokens, plates and transfer targets", () => {
-  for (const option of ["today", "a", "b", "c"] as const) {
-    window.history.replaceState({}, "", `/lab/kit/army-tree?capture=Troops&option=${option}`);
+it("shows all trained states including Common and a construction grant before research", () => {
+  for (const route of ROUTES) {
+    window.history.replaceState({}, "", `/lab/kit/army-tree?capture=Training&route=${route.id}`);
     act(() => root.render(<ArmyTreeLab />));
-    expect([...host.querySelectorAll("h2")].map((node) => node.textContent)).toEqual([
-      "Map tokens",
-      "Army plate",
-      "Army attribute · Frontier",
-      "Transfer troops",
-    ]);
-    const rows = [...host.querySelectorAll(".tree-transfer-row")];
-    expect(rows.map((node) => node.lastElementChild?.textContent)).toEqual([
-      "Different troop class",
-      "Can reinforce",
-      "Different troop class",
-    ]);
-    if (option === "c") {
-      expect(rows.map((node) => node.querySelector(".tree-troop-name")?.textContent?.trim())).toEqual([
-        "Common Knights",
-        "Uncommon Knights I",
-        "Rare Knights II",
+    expect(host.querySelectorAll(".tree-ladder")).toHaveLength(4);
+    for (const ladder of host.querySelectorAll(".tree-ladder")) {
+      expect(ladder.querySelectorAll(".tree-rung")).toHaveLength(route.id === "display" ? 5 : 6);
+      expect([...ladder.querySelectorAll(".tree-gem")].map((gem) => gem.textContent)).toEqual([
+        "I",
+        "II",
+        "III",
+        "IV",
+        "V",
       ]);
-      expect(rows[0]!.querySelector(".tree-gem")).toBeNull();
-    } else {
-      expect(
-        rows.map((node) => node.querySelector(option === "today" ? ".ui-chip" : ".tree-troop-chip")?.textContent),
-      ).toEqual(["T1", "T2", "T3"]);
+      expect(ladder.querySelector(".tree-rung")!.textContent).toContain("Common");
+      expect(ladder.querySelector(".tree-rung")!.querySelectorAll(".tree-gem")).toHaveLength(
+        route.id === "display" ? 1 : 0,
+      );
+      expect(ladder.querySelectorAll(".tree-rung")[1]!.textContent).toContain("Build · 3k labor");
     }
   }
 });
-it("has every still on disk in the dev-only artwork directory", () => {
-  for (const option of ["today", "a", "b", "c"] as const)
-    for (const scene of SCENES)
-      expect(existsSync(resolve(process.cwd(), "asset-sources", stillPath(option, scene).slice(1)))).toBe(true);
+it("preserves each full budget while splitting the final payment and effects", () => {
+  const expected = {
+    farm: [47000, 32000],
+    workshop: [94000, 64000],
+    barracks: [188000, 96000],
+    hut: [23500, 16000],
+    training: [552000, 96000],
+  };
+  for (const route of ROUTES)
+    for (const building of Object.keys(expected) as Building[])
+      expect(Object.values(budget(building, route.id))).toEqual(expected[building]);
+  expect([4, 5].map((rank) => price("training", rank, "insert"))).toEqual([
+    { essence: 144000, labor: 24000, action: "Research" },
+    { essence: 216000, labor: 36000, action: "Research" },
+  ]);
+  expect(steps("insert").map((step) => economyEffect("rations", step))).toEqual([
+    "2 wheat / troop",
+    "1.75 wheat / troop",
+    "1.5 wheat / troop",
+    "1.25 wheat / troop",
+    "1.125 wheat / troop",
+    "1 wheat / troop",
+  ]);
+  expect(trainingEffect(0, 4, "insert")).toBe("+80% damage");
+  expect(trainingEffect(1, 4, "insert")).toBe("+120 max stamina");
+  expect(trainingEffect(3, 4, "insert")).toBe("24% survivors return");
+  for (let i = 0; i < 4; i++) expect(trainingEffect(i, 5, "insert")).toBe(trainingEffect(i, 4, "display"));
+});
+it("keeps castle purchases as actual unlocks without invented rarity rungs", () => {
+  window.history.replaceState({}, "", "/lab/kit/army-tree?capture=Castle&route=insert");
+  act(() => root.render(<ArmyTreeLab />));
+  expect(host.querySelectorAll(".tree-rung,.tree-gem")).toHaveLength(0);
+  for (const phrase of ["2,000 E", "6,000 E", "100,000 E", "250,000 E", "500,000 E", "850,000 E", "36k labor"])
+    expect(host.textContent).toContain(phrase);
+  expect(ranks("insert")).toEqual(["Common", "Uncommon", "Rare", "Epic", "Exalted", "Legendary"]);
+});
+it("has every desktop and phone still in the dev-only artwork directory", () => {
+  for (const route of ROUTES)
+    for (const branch of BRANCHES)
+      for (const device of ["desktop", "phone"] as const)
+        expect(existsSync(resolve(process.cwd(), "asset-sources", stillPath(route.id, branch, device).slice(1)))).toBe(
+          true,
+        );
 });

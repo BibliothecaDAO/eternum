@@ -784,14 +784,13 @@ checks decoded triangles for zero masonry contacts at each production scale. All
 `asset-sources/frontier-beasts/refined/`; `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those
 exact eight packed sources. There is one production path per species and no separate study GLB.
 
-Army tree proposals (dev only): **Compare the army tree** in `/lab/kit/progression` opens `/lab/kit/army-tree`. Choose A
-(castle training), B (expedition-only learning) or C (training buildings), then Research, Army, Level up or Troops. Each
-shows a still beside the T1/B1 baseline. Common has no gem in the proposals; Uncommon is I. There are no game commands,
-embedded game frames or live renderers on the pick page. Troops compares map tokens, plates and transfer matching: A/B
-retain neutral T1/T2/T3 chips; C demonstrates Common/no gem, Uncommon/I, Rare/II. Regenerate the sixteen stills and
-verify all choices on desktop and phone with `apps/game/scripts/frontier/prove-army-tree.playwright.js` through
-Playwright against the page, with absolute `repo` and a new `evidence` directory in its query. The existing general
-capture command also opens the pick page:
+Army research review (dev only): **Compare the army tree** in `/lab/kit/progression` opens `/lab/kit/army-tree`.
+Training buildings stay. Choose the shipping Common I–Legendary V display or the next-season alternative with a rank
+before Legendary, then Economy, Barracks, Training or Castle. The page shows one still, with separate desktop and phone
+artwork. Every ranked row shows its whole ladder, effects and per-step prices; castle unlocks retain their own steps.
+Regenerate the sixteen stills and verify both routes and all four branches through Playwright with
+`apps/game/scripts/frontier/prove-army-tree.playwright.js`, after opening this page with absolute `repo` and a fresh
+`evidence` directory in its query. Preserve its returned result. The general capture command also opens the page:
 `pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <fresh-dir> --only army-tree`.
 
 - Frontier training: build War hall, Supply yard, Scouts’ lodge or Hearth after two Barracks purchases; construction
