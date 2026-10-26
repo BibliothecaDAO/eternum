@@ -48,7 +48,6 @@ export function RealmNumberPicker({
           </>
         ) : null}
       </div>
-      <p className="text-hud-label text-hud-cue">Dev mode: settle more realms.</p>
     </div>
   );
 }

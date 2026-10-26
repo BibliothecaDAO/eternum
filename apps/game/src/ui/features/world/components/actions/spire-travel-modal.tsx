@@ -64,7 +64,6 @@ export const SpireTravelModal = ({
                 {crossing.by === "army" ? "An army holds your hex on " : "A structure holds your hex on "}
                 {sideName}
               </p>
-              <p className="text-xs text-gold/70">The hex across is taken.</p>
             </div>
           </div>
         )}

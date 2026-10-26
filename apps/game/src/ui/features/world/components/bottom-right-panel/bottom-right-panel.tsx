@@ -304,9 +304,7 @@ const LocalTilePanel = () => {
   if (!hasBuilding) {
     return (
       <HudPanel title={panelTitle}>
-        <p className="text-hud-body text-hud-muted">
-          {canManageBuilding ? "Open building plot" : "Open building plot"}
-        </p>
+        <p className="text-hud-body text-hud-muted">Open building plot</p>
       </HudPanel>
     );
   }

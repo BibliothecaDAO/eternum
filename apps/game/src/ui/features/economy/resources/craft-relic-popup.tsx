@@ -370,7 +370,6 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
           <HudPanel kind="section" title="Relic Crafted" collapsible={false}>
             <div className="flex flex-col items-start gap-2">
               <HeldRelic relicId={craftedRelicId} held="1" />
-              <p className="text-hud-label text-hud-muted">Added to your relics.</p>
             </div>
           </HudPanel>
         )}

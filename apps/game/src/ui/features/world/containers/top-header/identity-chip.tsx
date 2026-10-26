@@ -259,7 +259,7 @@ const compactLabel = (kind: Exclude<IdentityChipState["kind"], "player">): strin
 const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { kind: "player" | "unnamed" }> }) => {
   switch (state.kind) {
     case "signed-out":
-      return <SignInSurface>View only. Sign in to play.</SignInSurface>;
+      return <SignInSurface>View only.</SignInSurface>;
     case "connecting":
       return (
         <div className="flex flex-col gap-1">
@@ -294,7 +294,7 @@ const SpectatingPanel = ({ state }: { state: Extract<IdentityChipState, { kind: 
   const enterAsPlayer = useEnterActiveGameAsPlayer();
 
   if (state.name === null) {
-    return <SignInSurface>Spectating. Sign in to play.</SignInSurface>;
+    return <SignInSurface>Spectating.</SignInSurface>;
   }
   return (
     <div className="flex flex-col gap-2">

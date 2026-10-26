@@ -292,7 +292,6 @@ export const RaidContainer = ({
             </h3>
             <div className="text-center py-6 flex flex-col items-center">
               <div className="text-hud-display mb-4">🛡️</div>
-              <div className="text-hud-display text-hud-bad mb-2">Target cannot be raided!</div>
               <p className="text-hud-accent mb-4 max-w-md mx-auto">Only other players' structures with resources.</p>
             </div>
           </div>
