@@ -98,7 +98,13 @@ export const DeployView = ({
     {wheatShort && <HudNotice tone="warn" line={shortfallLine({ kind: "short", of: "wheat", ...wheatShort })} />}
     {canDeploy && wheatCost !== undefined && (
       <HudWindowFoot note={<DeployPrice wheatCost={wheatCost} march={march} />}>
-        <HudButton kind="primary" icon="military" busy={sending ? DEPLOYING : undefined} onClick={onDeploy}>
+        <HudButton
+          kind="primary"
+          icon="military"
+          disabled={!count}
+          busy={sending ? DEPLOYING : undefined}
+          onClick={onDeploy}
+        >
           {DEPLOY}
         </HudButton>
       </HudWindowFoot>

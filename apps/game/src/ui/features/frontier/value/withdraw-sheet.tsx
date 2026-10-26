@@ -5,6 +5,7 @@ import { HudButton, HudChip, HudNotice, HudSheet } from "@/ui/design-system/kit/
 import {
   CONTINUE,
   LINK_WALLET,
+  LORDS_GO_TO_WALLET,
   NO_WALLET,
   SENDING,
   TRANSACTION,
@@ -132,6 +133,7 @@ const Pick = ({
 const NoWallet = ({ held, onLinkWallet }: { held: number | undefined; onLinkWallet: () => void }) => (
   <>
     <Hero icon="lords" value={formatExact(held)} />
+    <p className="text-center">{LORDS_GO_TO_WALLET}</p>
     <HudNotice tone="warn" line={NO_WALLET} />
     <HudButton kind="primary" icon="share" onClick={onLinkWallet}>
       {LINK_WALLET}

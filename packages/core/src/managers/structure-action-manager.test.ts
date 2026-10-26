@@ -30,6 +30,7 @@ function findRadiusTwoHex() {
 describe("StructureActionManager.findActionPaths", () => {
   beforeEach(() => {
     vi.spyOn(configManager, "getMapCenter").mockReturnValue(TEST_FELT_CENTER);
+    vi.spyOn(configManager, "isCommandEnabled").mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -100,5 +101,33 @@ describe("StructureActionManager.findActionPaths", () => {
     );
 
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(targetHex)) ?? [])).toBe(ActionType.Attack);
+  });
+
+  it("offers no guard attack where the game leaves GuardAttack out, and says so", () => {
+    vi.spyOn(configManager, "isCommandEnabled").mockImplementation((command) => command !== "GuardAttack");
+    const targetHex = findRadiusTwoHex();
+    const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
+    const exploredHexes = new Map<number, Map<number, BiomeType>>();
+    setNestedMapValue(armyHexes, targetHex.col - TEST_FELT_CENTER, targetHex.row - TEST_FELT_CENTER, {
+      owner: 0x999n,
+    } as HexEntityInfo);
+    setNestedMapValue(
+      exploredHexes,
+      targetHex.col - TEST_FELT_CENTER,
+      targetHex.row - TEST_FELT_CENTER,
+      1 as BiomeType,
+    );
+
+    const actionPaths = new StructureActionManager().findActionPaths(
+      STRUCTURE_POSITION,
+      armyHexes,
+      exploredHexes,
+      0x123n as never,
+      () => false,
+      2,
+    );
+
+    expect(actionPaths.get(ActionPaths.posKey(targetHex))).toBeUndefined();
+    expect(actionPaths.getRefusals().get(ActionPaths.posKey(targetHex))).toEqual({ reason: "no-attack" });
   });
 });

@@ -326,6 +326,8 @@ export default class GameRenderer {
       windowHeight: window.innerHeight,
       windowWidth: window.innerWidth,
     });
+    // The realm view fits its farthest zoom to the screen's shape: a phone turned there refits it at once.
+    this.hexceptionScene?.followScreenShape();
   }
 
   animate() {

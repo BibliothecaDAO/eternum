@@ -41,9 +41,10 @@ import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store"
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { onChestOpenRequest } from "@/three/scenes/worldmap-chest-open-request";
 import { ChestOpenings } from "@/ui/features/military/chest/chest-openings";
-import { campBeside, reloadSiteFacts, SITE, SITE_TILE } from "./sites/site-fixture";
+import { campBeside, otherArmyAt, reloadSiteFacts, SITE, SITE_TILE } from "./sites/site-fixture";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
+  configManager,
   expeditionSpireTile,
   readExpeditionRules,
   setBlockTimestampSource,
@@ -212,6 +213,39 @@ describe("Frontier's selection sheet", () => {
     expect(sheetFor(null)).toBeNull();
     expect(sheetFor(TileOccupier.ExplorerKnightT1)).toBeNull();
     useUIStore.getState().selectOnMap(null);
+  });
+
+  it("opens an attack card on another player's army only where the game takes an army's attack on another", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const enemySheet = (battle: boolean) => {
+      const { store } = campBeside();
+      otherArmyAt(store, 4, 5);
+      const enabled = configManager.isCommandEnabled.bind(configManager);
+      const spy = vi
+        .spyOn(configManager, "isCommandEnabled")
+        .mockImplementation((command) => (command === "Battle" ? battle : enabled(command)));
+      tiles.current = [{ occupierType: TileOccupier.ExplorerKnightT1, occupierId: 301, hexCoords: { col: 4, row: 5 } }];
+      useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 4, row: 5 } });
+      const host = document.createElement("div");
+      const root = createRoot(host);
+      act(() =>
+        root.render(
+          <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+            <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
+          </GameProvider>,
+        ),
+      );
+      const sheet = host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
+      act(() => root.unmount());
+      spy.mockRestore();
+      useUIStore.getState().selectOnMap(null);
+      tiles.current = [];
+      return sheet;
+    };
+
+    // Where the game leaves Battle out, as Frontier's preset does, the contract would refuse the attack: no card offers it.
+    expect(enemySheet(false)).toBeNull();
+    expect(enemySheet(true)).toBe("Army");
   });
 });
 

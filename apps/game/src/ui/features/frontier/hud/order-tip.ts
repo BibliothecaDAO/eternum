@@ -97,6 +97,7 @@ const refusalLine = ({ refusal, staminaWait, explored }: TileOrder): string | nu
 const REFUSALS: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
   food: "Not enough food for the army",
   "off-limits": "Only unclaimed structures can be attacked",
+  "no-attack": "This game allows no attack here",
   "no-transfer": "This game allows no transfer here",
   occupied: "No army can enter this tile",
   "too-far": "Too far: move next to it",

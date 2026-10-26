@@ -59,13 +59,11 @@ function buildTileOptData(input: {
   };
 }
 
-function createTestSetup(systemCalls: Record<string, unknown> = {}, enabled: { InteractSite?: boolean } = {}) {
+function createTestSetup(systemCalls: Record<string, unknown> = {}, enabled: Partial<Record<string, boolean>> = {}) {
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(TEST_FELT_CENTER);
   vi.spyOn(configManager, "attacksOnlyUnownedStructures").mockReturnValue(false);
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
-  vi.spyOn(configManager, "isCommandEnabled").mockImplementation(
-    (command) => command !== "InteractSite" || enabled.InteractSite !== false,
-  );
+  vi.spyOn(configManager, "isCommandEnabled").mockImplementation((command) => enabled[command] !== false);
   const oldFeltStart = { col: TEST_FELT_CENTER, row: TEST_FELT_CENTER };
   const exploredHexes = new Map<number, Map<number, BiomeType>>();
 
@@ -403,6 +401,43 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     expect(actionPaths.getRefusals().get(ActionPaths.posKey(owned))).toEqual({ reason: "off-limits" });
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(site))!)).toBe(ActionType.Attack);
     expect(actionPaths.getRefusals().has(ActionPaths.posKey(site))).toBe(false);
+  });
+
+  it("offers no attack on another player's army where the game leaves Battle out, and still one on a structure", () => {
+    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup(
+      {},
+      { Battle: false },
+    );
+    const [adjacentArmy, site] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
+    const adjacentKeys = new Set(
+      getNeighborHexes(oldFeltStart.col, oldFeltStart.row).map((hex) => ActionPaths.posKey(hex)),
+    );
+    const rangedArmy = getHexesWithinRadius(oldFeltStart.col, oldFeltStart.row, 2).find(
+      (hex) =>
+        !adjacentKeys.has(ActionPaths.posKey(hex)) && ActionPaths.posKey(hex) !== ActionPaths.posKey(oldFeltStart),
+    )!;
+    components.ExplorerTroops.get(TEST_ENTITY_ID.toString())!.troops.category = TroopType.Crossbowman;
+    for (const hex of [adjacentArmy, rangedArmy]) {
+      setNestedMapValue(armyHexes, hex.col - TEST_FELT_CENTER, hex.row - TEST_FELT_CENTER, {
+        owner: 0x999n,
+      } as HexEntityInfo);
+    }
+    setNestedMapValue(structureHexes, site.col - TEST_FELT_CENTER, site.row - TEST_FELT_CENTER, {
+      owner: 0n,
+    } as HexEntityInfo);
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
+      amount: 150n,
+      settled_at: 0,
+      remainder: 0,
+    } as any);
+
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
+
+    for (const hex of [adjacentArmy, rangedArmy]) {
+      expect(actionPaths.get(ActionPaths.posKey(hex))).toBeUndefined();
+      expect(actionPaths.getRefusals().get(ActionPaths.posKey(hex))).toEqual({ reason: "no-attack" });
+    }
+    expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(site))!)).toBe(ActionType.Attack);
   });
 
   it("adds radius-two attack paths for crossbowman armies", () => {

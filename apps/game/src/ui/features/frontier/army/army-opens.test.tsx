@@ -192,6 +192,8 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     );
     expect(openPage()).toBeNull();
     expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Transfer troops")).toBe(true);
+    // Beside a holding the button alone names the transfer: the words stand once.
+    expect(host.textContent?.split("Transfer troops")).toHaveLength(2);
   });
 
   it("keeps a page open on a desktop, where it stands beside the map", async () => {

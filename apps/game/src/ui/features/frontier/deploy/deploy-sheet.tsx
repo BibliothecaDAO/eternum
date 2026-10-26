@@ -31,9 +31,9 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   const plan = useDeployPlan(realm);
   const range = plan ? deployRange(plan) : { troopsMax: 0, wheatMax: 0, max: 0 };
   const [count, setCount] = useState<number | null>(null);
-  // The sheet opens at half of what the realm can field, leaving troops and wheat for the day's other armies; Max is
-  // one tap away. A count being set survives fact revisions.
-  const shown = Math.min(count ?? Math.ceil(range.max / 2), range.max);
+  // The sheet opens at no troops, so +500 gives exactly 500 (owner, 26 October 2026: "it should be 0 so I can press 500
+  // and get 500"); Max is one tap away. A count being set survives fact revisions.
+  const shown = Math.min(count ?? 0, range.max);
   const preview = plan ? previewDeploy(plan, shown) : null;
   const { center, ring } = useDeployRing(realm);
   const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);
@@ -71,7 +71,7 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       wheatCost={preview?.wheatCost}
       march={preview?.tiles}
       tile={plan?.next && center ? (direction === null ? "none" : "open") : undefined}
-      canDeploy={Boolean(plan?.troops && preview && preview.count > 0 && direction !== null && plan.next)}
+      canDeploy={Boolean(plan?.troops && preview && direction !== null && plan.next)}
       sending={deploying}
       onDeploy={() => void deploy()}
       wheatShort={

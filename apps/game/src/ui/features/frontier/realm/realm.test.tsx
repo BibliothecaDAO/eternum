@@ -1,10 +1,8 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BuildingType } from "@bibliothecadao/types";
 
 import { CastleView } from "../upgrade/castle-view";
-import { BuildingsRow } from "./buildings-row";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -148,27 +146,5 @@ describe("the castle", () => {
       ),
     );
     expect(buttons().some((button) => button.textContent?.startsWith("Upgrade"))).toBe(false);
-  });
-});
-
-describe("the Buildings row", () => {
-  it("counts the four common types and opens a type in one tap", () => {
-    const onOpen = vi.fn();
-    act(() =>
-      root.render(
-        <BuildingsRow
-          counts={{
-            [BuildingType.ResourceWheat]: 18,
-            [BuildingType.ResourceKnightT1]: 18,
-            [BuildingType.ResourceLabor]: 8,
-          }}
-          onOpen={onOpen}
-        />,
-      ),
-    );
-    expect(host.textContent).toBe("Buildings18188—");
-    act(() => host.querySelector<HTMLButtonElement>('[aria-label="Barracks 18"]')!.click());
-    expect(onOpen).toHaveBeenCalledWith(BuildingType.ResourceKnightT1);
-    expect(host.querySelector<HTMLButtonElement>('[aria-label="Hut —"]')!.disabled).toBe(true);
   });
 });

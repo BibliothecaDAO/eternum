@@ -301,6 +301,7 @@ describe("a guarded site's card with no army chosen", () => {
     expect(row("Army 2").querySelector('[data-tip="Would be lost"]')).not.toBeNull();
     // Out of reach: the army is still a choice, with no forecast to show and no dash in its place.
     expect(row("Army 3").textContent).toBe("Army 3600 troops");
+    expect(document.body.textContent).toContain("Pick an army to attack it");
     expect(document.querySelector("section[aria-label='Rift']")!.textContent).not.toContain("—");
     act(() => row("Army 1").querySelector("button")!.click());
     expect(onPick).toHaveBeenCalled();
@@ -406,6 +407,28 @@ describe("a cleared ruin's chest", () => {
     act(() => (moment as HTMLButtonElement).click());
     expect(onClose).toHaveBeenCalled();
   });
+});
+
+it("says where an army comes from when the realm has none out, in the place of the rows", () => {
+  act(() =>
+    root.render(
+      <SiteCardView
+        site="Camp"
+        army={null}
+        beast={undefined}
+        guard={1_100}
+        fight={undefined}
+        pay={null}
+        xp={undefined}
+        verb={null}
+        choices={[]}
+        onClose={() => {}}
+      />,
+    ),
+  );
+  expect(document.querySelectorAll(".ui-row")).toHaveLength(0);
+  expect(document.body.textContent).toContain("No army out: deploy one from the realm");
+  expect(document.body.textContent).not.toContain("Pick an army");
 });
 
 it("titles a single roaming Wraith by its species", () => {

@@ -310,7 +310,6 @@ export const TRAINING_BUILDINGS = [
   buildingName(BuildingType.ScoutsLodge, true),
   buildingName(BuildingType.Hearth, true),
 ] as const;
-export const BUILDINGS = "Buildings";
 /** The castle rows that unlock the three depths beyond the spire. */
 const ETHEREAL = "Ethereal";
 export const DEPTH_NUMERALS = ["I", "II", "III"] as const;
@@ -395,6 +394,9 @@ export const NO_TROOPS_AT_HOME = "No troops at home";
 export const DEPLOY_TILE = "Steps out on the bright tile. Tap another lit tile beside the realm to move it there.";
 /** Every tile beside the realm holds something: a deploy has nowhere to step out. */
 export const NO_OPEN_TILE = "No open tile beside the realm";
+/** A site's card with no army selected: what an army does there, or, with none out, where one comes from. */
+export const PICK_AN_ARMY = { attack: "Pick an army to attack it", use: "Pick an army to use it" } as const;
+export const NO_ARMY_OUT = "No army out: deploy one from the realm";
 export const DEPLOYING = "Deploying…";
 /** A free slot after the lowest: the game fills the lowest free slot first. */
 export const DEPLOY_FILLS_FIRST = (number: number) => `Deploy fills slot ${number} first.`;
@@ -525,6 +527,8 @@ export const WITHDRAW = "Withdraw";
 export const SENDING = "Sending…";
 export const LINK_WALLET = "Link wallet";
 export const NO_WALLET = "No wallet linked";
+/** What a linked wallet is for on the LORDS purse, as the Realms sheet says what it is for there. */
+export const LORDS_GO_TO_WALLET = "The LORDS you withdraw go to your linked Starknet wallet.";
 export const TRANSACTION = "Transaction";
 export const PAYOUTS_PAUSED = "Payouts paused. Your LORDS stay here.";
 export const paidWhenResumed = (amount: string) => `Payouts paused. These ${amount} pay when they resume.`;
@@ -1197,6 +1201,8 @@ export const automationRefusal = (ordersAllowed: boolean, hydrated: boolean): st
  * what each side and node gives, and each thing a node's next tier needs, in the order a player meets them.
  */
 export const RESEARCH_TREE = {
+  /** Said while the realm's knowledge, balances, prices or board rules have not all arrived. */
+  onItsWay: "The research tree is on its way",
   branches: { economy: "Economy", army: ARMY, castle: CASTLE },
   states: { ready: "Can research", short: "Saving up", done: "Researched", locked: "Locked" },
   sides: {

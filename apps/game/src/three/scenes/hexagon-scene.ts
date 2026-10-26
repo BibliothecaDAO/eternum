@@ -192,10 +192,8 @@ export abstract class HexagonScene {
     publishCameraTransitionFrame({
       updateControls: () => this.controls.update(),
       syncDistanceVisuals: () => {
-        const distance = this.controls.object.position.distanceTo(this.controls.target);
-        this.updateCameraClipPlanesForDistance(distance);
-        this.updateFogForDistance(distance);
-        this.syncResolvedCameraViewFromDistance(distance);
+        this.syncDistanceVisuals();
+        this.syncResolvedCameraViewFromDistance(this.controls.object.position.distanceTo(this.controls.target));
       },
       emitFallbackChange: () => {
         this.controls.dispatchEvent({ type: "change" });
@@ -1373,6 +1371,13 @@ export abstract class HexagonScene {
 
   public removeCameraTransitionListener(listener: (status: CameraTransitionStatus) => void) {
     this.cameraTransitionListeners.delete(listener);
+  }
+
+  /** The far plane and the fog follow the camera's distance, whatever moved it: a pinch, a wheel or a transition. */
+  protected syncDistanceVisuals(): void {
+    const distance = this.controls.object.position.distanceTo(this.controls.target);
+    this.updateCameraClipPlanesForDistance(distance);
+    this.updateFogForDistance(distance);
   }
 
   private updateCameraClipPlanesForDistance(distance: number): void {

@@ -104,7 +104,7 @@ const ArmiesLine = ({
 }) => (
   <div className="flex items-center justify-center gap-1.5" aria-label={TROOPS}>
     <HudChip icons={["army"]} label={ARMIES_ENDED}>{`×${formatExact(armies)}`}</HudChip>
-    <span className="tabular-nums">−{formatExact(troopsLost)}</span>
+    <HudChip icons={["troops"]} label={TROOPS}>{`−${formatExact(troopsLost)}`}</HudChip>
     {returned && (
       <span className="flex items-center gap-1.5 pl-2.5">
         <HudChip icons={["order-enlightenment", "troops"]}>{`+${formatExact(returned.fitted)}`}</HudChip>

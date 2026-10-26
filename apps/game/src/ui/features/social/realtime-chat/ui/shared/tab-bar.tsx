@@ -1,6 +1,6 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
-import React from "react";
+import React, { type ReactNode } from "react";
 import type { ChatTab } from "../../model/types";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
@@ -16,6 +16,8 @@ interface TabBarProps {
   isExpanded: boolean;
   className?: string;
   showWindowControls?: boolean;
+  /** Buttons that stand first in the row, before the tabs: a game's world zones. */
+  lead?: ReactNode;
 }
 
 export const TabBar: React.FC<TabBarProps> = ({
@@ -30,10 +32,12 @@ export const TabBar: React.FC<TabBarProps> = ({
   isExpanded,
   className = "",
   showWindowControls = true,
+  lead,
 }) => {
   return (
     <div className={`flex items-center justify-between border-b border-hud-line px-2 py-1 ${className}`}>
       <div className="flex items-center gap-1 flex-1 overflow-x-auto">
+        {lead}
         <button
           onClick={onAddDM}
           className="flex-shrink-0 px-2 py-1 text-hud-label text-hud-muted hover:text-hud-accent hover:bg-hud-hover rounded transition-all duration-200 h-7 max-lg:h-11 flex items-center"

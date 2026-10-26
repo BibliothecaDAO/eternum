@@ -198,6 +198,11 @@ export class ArmyActionManager {
     );
   }
 
+  /** Whether the game takes an army's attack on this target: another army (Battle), or a structure's guard (BattleGuard). */
+  private gameTakesAttackOn(targetIsArmy: boolean): boolean {
+    return configManager.isCommandEnabled(targetIsArmy ? "Battle" : "BattleGuard");
+  }
+
   /** Why the army cannot explore now: the explore's stamina, or else its owner's food for it (canExplore). */
   private exploreRefusal(armyStamina: number): OrderRefusal {
     const need = configManager.getExploreStaminaCost();
@@ -228,6 +233,10 @@ export class ArmyActionManager {
       if (!target || isViewerOwner(target.owner, playerAddress)) continue;
       if (!army && this.isStructureOffLimits(structure)) {
         actionPaths.refuse(ActionPaths.posKey({ col, row }), { reason: "off-limits" });
+        continue;
+      }
+      if (!this.gameTakesAttackOn(army !== undefined)) {
+        actionPaths.refuse(ActionPaths.posKey({ col, row }), { reason: "no-attack" });
         continue;
       }
       // A target in range the army cannot yet strike: the attack's stamina is the reason.
@@ -376,6 +385,10 @@ export class ArmyActionManager {
         }
         actionType = ActionType.Help;
       } else if (canAttack) {
+        if (!this.gameTakesAttackOn(hasArmy)) {
+          actionPaths.refuse(key, { reason: "no-attack" });
+          continue;
+        }
         actionType = ActionType.Attack;
         staminaCost = this.getAttackStaminaRequirement();
       } else if (hasChest) {

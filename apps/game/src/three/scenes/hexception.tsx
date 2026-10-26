@@ -151,6 +151,7 @@ import {
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { SceneName } from "../types";
+import { localCameraMaxDistance } from "./local-camera-reach";
 import { LOCAL_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { localHexPosition } from "./hexception-layout";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
@@ -296,6 +297,8 @@ export default class HexceptionScene extends HexagonScene {
   private localZoomPersistTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly handleLocalZoomControlsChange = () => {
     if (this.sceneManager.getCurrentScene() !== SceneName.Hexception) return;
+    // A wheel zooms through the controls alone: the fog and far plane follow it here, as a pinch's do.
+    this.syncDistanceVisuals();
     // Programmatic camera transitions (scene entry, camera-view resets) must
     // not overwrite the player's chosen zoom; only interactive zooms persist.
     if (this.isCameraTransitionInProgress()) return;
@@ -741,7 +744,8 @@ export default class HexceptionScene extends HexagonScene {
     const settlementCenter = LOCAL_HEX_SPACE.positionForHex({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] });
     this.ambienceSystem?.setup(settlementCenter, this.hexceptionRadius);
 
-    this.controls.maxDistance = LOCAL_CAMERA_ZOOM.maxDistance;
+    // The castle's level sets how far the camera may pull back: every plot it reaches fits on the screen.
+    this.updateCastleLevel();
     this.controls.enablePan = false;
     this.controls.enableZoom = true;
     this.controls.zoomToCursor = false;
@@ -1172,6 +1176,34 @@ export default class HexceptionScene extends HexagonScene {
       structureType === StructureType.Hyperstructure
         ? getStructureStage(structureType, useUIStore.getState().structureEntityId, this.game.store)
         : this.tileManager.getRealmLevel(this.state.structureEntityId);
+    this.fitCameraReach();
+  }
+
+  /**
+   * The screen changed shape (a phone turned, a window resized; the renderer has set the camera's aspect): while the
+   * realm is shown, its farthest zoom is fitted again, so the whole board still fits without leaving the realm. A turn
+   * while the realm is still being entered is the map's to ignore; the realm fits again as it becomes the shown scene.
+   */
+  public followScreenShape(): void {
+    if (this.sceneManager.getCurrentScene() === SceneName.Hexception) this.fitCameraReach();
+  }
+
+  /** Shown, the realm fits its farthest zoom to the screen as it is now, whatever turned while it was being entered. */
+  public override activateInputSurface(): void {
+    super.activateInputSurface();
+    this.fitCameraReach();
+  }
+
+  /**
+   * The camera's farthest zoom for the castle's reach on the screen as it is now (localCameraMaxDistance): on entry, when
+   * the castle rises, and when the screen turns. A zoom still inside the new reach stays where the player left it.
+   */
+  private fitCameraReach(): void {
+    this.controls.maxDistance = localCameraMaxDistance({
+      plotRadius: buildableRadius(this.structureStage),
+      aspect: this.camera.aspect,
+      fovDegrees: this.camera.fov,
+    });
   }
 
   private handleBuildingUpdate(update: BuildingSystemUpdate, realmGeneration: number): void {

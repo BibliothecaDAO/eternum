@@ -63,7 +63,6 @@ import { ClearedRuinChest } from "./chest/cleared-ruin-chest";
 import { dayClock } from "./hud/day-clock";
 import { BuildingsInFlight } from "./build/build-sheet";
 import { DayDone } from "./rollover/day-done";
-import { RealmBuildingsRow } from "./realm/buildings-row";
 import { useRealmPopulation } from "./realm/realm-population";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useDocumentClass } from "@/hooks/use-document-class";
@@ -378,8 +377,8 @@ const FrontierPhoneHud = ({
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
  * 2026: mobile direction A): with an order pending, its costs and verb; with the next order queued, its bar; with an
- * army picked, the army, how to give it an order and its details; otherwise a full realm's Buildings row. A desktop has
- * none: its orders go from the map, and the army's state is its panel's.
+ * army picked, the army, how to give it an order and its details; otherwise nothing. A desktop has none: its orders go
+ * from the map, and the army's state is its panel's.
  */
 const ArmyAction = ({
   rules,
@@ -404,7 +403,7 @@ const ArmyAction = ({
   if (selected && nextOrder?.entityId === selected.explorerId)
     return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
   if (acting && onOpenArmy) return <PickedArmy army={acting} onDetails={() => onOpenArmy(acting.explorerId)} />;
-  return <RealmBuildingsRow realm={realm} />;
+  return null;
 };
 
 /** The dock over the realm's armies today; on a phone the action row takes its place while an army is picked. */

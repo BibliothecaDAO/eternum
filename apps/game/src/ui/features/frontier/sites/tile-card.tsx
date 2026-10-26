@@ -9,7 +9,6 @@ import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
-import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 
 import type { Tier } from "@/ui/design-system/kit/words";
@@ -20,7 +19,6 @@ import {
   entityMapPosition,
   getStructureName,
   isViewerOwner,
-  Position,
 } from "@bibliothecadao/eternum";
 import {
   safeInteger,
@@ -48,7 +46,7 @@ import {
   lostArmyResult,
   useFightRefusal,
 } from "./fight-result";
-import { useSelectedOwnArmy } from "./selected-army";
+import { pickArmyFor, useSelectedOwnArmy } from "./selected-army";
 import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan, storeAtLimit } from "./site-card-plan";
 import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
 
@@ -84,7 +82,8 @@ type AttackTarget =
 
 /**
  * The map tile the player tapped, when something an army can attack stands on it: a standing expedition site (a
- * camp, rift, ruin or beasts), or an army that is not the player's own.
+ * camp, rift, ruin or beasts), or an army that is not the player's own where the game takes an army's attack on another
+ * (Battle; Frontier's preset leaves it out).
  */
 export const useSelectedTarget = (): AttackTarget | null => {
   const { setup } = useGame();
@@ -95,7 +94,8 @@ export const useSelectedTarget = (): AttackTarget | null => {
   const [tile] = useWorldSpatialTiles(hexes);
   useNativeRevision(SITE_MODELS);
   if (!isMapView || !tile) return null;
-  return tile.occupierIsStructure ? standingSite(setup.store, tile) : otherArmy(setup.store, tile, viewer);
+  if (tile.occupierIsStructure) return standingSite(setup.store, tile);
+  return configManager.isCommandEnabled("Battle") ? otherArmy(setup.store, tile, viewer) : null;
 };
 
 const standingSite = (store: NativeFactStore, tile: TileSpatialRenderable): AttackTarget | null => {
@@ -194,7 +194,7 @@ export const TileCard = ({
       chest={plan.chest ? { tier: (plan.chest.tier + 1) as Tier, lords: plan.chest.amount } : undefined}
       xp={plan.xp}
       verb={verb}
-      choices={actor ? undefined : choices}
+      choices={actor || !realm ? undefined : choices}
       onRealm={() => {
         onClose();
         goToPlace(false);
@@ -286,11 +286,7 @@ const useSiteChoices = (selected: AttackTarget, wanted: boolean): SiteChoice[] =
       art: army.art,
       troops: army.troops,
       fight,
-      onPick: () =>
-        requestArmySelection(
-          army.explorerId,
-          Position.fromContract({ x: selected.tile.hexCoords.col, y: selected.tile.hexCoords.row }),
-        ),
+      onPick: () => pickArmyFor(army.explorerId, selected.tile.hexCoords),
     };
   });
 };
