@@ -517,9 +517,8 @@ export const settledRealmLabor = (amount: number) =>
 export const claimRealmLaborLabel = (amount: number) => `Claim ${formatExact(amount)} Labor`;
 export const CLAIMING_LABOR = "Claiming";
 export const partialRealmLabor = (fits: number, total: number) =>
-  `${fitOf(formatExact(fits), formatExact(total))}. Claiming uses today's claim.`;
-export const claimedRealmLabor = (secondsLeft: number | undefined) =>
-  `${CLAIMED_TODAY} · ${dayLeft(secondsLeft).reading}`;
+  `${formatExact(fits)} of ${formatExact(total)} fit. Claiming uses today's claim.`;
+export const claimedRealmLabor = (secondsLeft: number | undefined) => `Claimed today · ${dayLeft(secondsLeft).reading}`;
 export const REALM_NUMBER = "Realm number";
 export const OPTIONAL_REALM_NUMBER = "Realm number (optional)";
 export const FREE_REALM_ENTRY = "Leave blank to found a realm with a generated name and no daily Labor claim.";
@@ -527,14 +526,12 @@ export const HELD_REALM_ENTRY =
   "Your linked Starknet wallet must hold this Realm. It can settle once per game and gives 1,000 Labor each UTC day.";
 export const DEV_REALM_ENTRY = "Dev mode: settle additional realms. Each realm number can be used once per game.";
 
-export const CLAIMED_TODAY = "Claimed today";
 /** The Season page's pool: the LORDS deposited for the season; what today releases of them stands under Today. */
 export const SEASON_POOL = "Pool";
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
 /** What one share of a chest pays today, and the most any day can set that price to. */
 export const PER_SHARE = "Per share";
 export const SHARE_CEILING = "Max";
-export const fitOf = (fits: string, of: string) => `${fits} of ${of} fit`;
 // The app's words outside a match (the shell's pages).
 
 /**
