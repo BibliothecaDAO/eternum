@@ -44,7 +44,7 @@ pub fn entry(key: EntryKey) -> Option<PlayerEntry> {
     state.settlements.entries.read((key.game_id, key.owner))
 }
 
-#[cfg(test)]
+#[cfg(feature: "test_support")]
 pub fn blitz_order(game_id: u32) -> Span<u8> {
     let state = crate::state::read();
     let mut players = array![];

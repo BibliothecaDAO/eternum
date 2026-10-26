@@ -9,7 +9,7 @@ const SHARES = { common: 2, uncommon: 4, rare: 8, epic: 20, legendary: 40 };
 // A season of 100 seconds from 1,000; a million LORDS deposited; Day 3 spans five of them.
 const SEASON = { start: 1_000, end: 1_100 };
 const DAY_3 = { index: 3, start: 1_010, end: 1_015 };
-const CHEST_RULES = { price_ceiling: 15n, shares: SHARES };
+const CHEST_RULES = { shares: SHARES };
 
 describe("a Frontier season's pool", () => {
   it("is the amount published to the game's budget row, and nothing before it is", () => {
@@ -42,30 +42,29 @@ describe("a share's price", () => {
   });
 
   it("pays a common chest its tier's shares", () => {
-    expect(commonChestAt(SHARES, 12n)).toEqual({ tier: 1, lords: 24 });
-    expect(commonChestAt({ ...SHARES, common: 1 }, 12n)).toEqual({ tier: 1, lords: 12 });
+    expect(commonChestAt(SHARES, 12n)).toEqual({ lords: 24 });
+    expect(commonChestAt({ ...SHARES, common: 1 }, 12n)).toEqual({ lords: 12 });
   });
 });
 
 describe("the Season page's LORDS", () => {
   const budget = { pool: 1_000_000n, day: 3n, price: 12n };
 
-  it("are the pool, today's release, today's price under the ceiling, and a common chest at today's price", () => {
+  it("are the pool, today's release, and a common chest at today's price", () => {
     expect(seasonLordsOf({ budget, chestRules: CHEST_RULES }, SEASON, DAY_3)).toEqual({
-      pool: { lords: 1_000_000, today: 50_000, price: 12, ceiling: 15 },
-      chest: { tier: 1, lords: 24 },
+      pool: { lords: 1_000_000, today: 50_000 },
+      chest: { lords: 24 },
     });
   });
 
-  it("quote neither a price nor a chest until the day opens: the ceiling is no day's price", () => {
+  it("quote no chest until the day opens, and no today outside the season", () => {
     const yesterday = { ...budget, day: 2n };
     expect(seasonLordsOf({ budget: yesterday, chestRules: CHEST_RULES }, SEASON, DAY_3)).toEqual({
-      pool: { lords: 1_000_000, today: 50_000, price: undefined, ceiling: 15 },
+      pool: { lords: 1_000_000, today: 50_000 },
       chest: undefined,
     });
-    // Before the season starts and after it ends there is no today at all.
     expect(seasonLordsOf({ budget, chestRules: CHEST_RULES }, SEASON, null)).toEqual({
-      pool: { lords: 1_000_000, today: undefined, price: undefined, ceiling: 15 },
+      pool: { lords: 1_000_000, today: undefined },
       chest: undefined,
     });
   });
@@ -80,8 +79,8 @@ describe("the Season page's LORDS", () => {
   });
 });
 
-describe("the Season page", () => {
-  const page = (pool: Parameters<typeof SeasonList>[0]["pool"]) => {
+describe("the Season page's header", () => {
+  const header = (props: Pick<Parameters<typeof SeasonList>[0], "chest" | "pool">) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const host = document.createElement("div");
     const root = createRoot(host);
@@ -89,40 +88,32 @@ describe("the Season page", () => {
       root.render(
         <SeasonList
           rank={12}
-          pool={pool}
+          {...props}
           rows={[]}
           pinned={undefined}
           state="ready"
           onRetry={() => undefined}
           onOpen={() => undefined}
-          onBack={() => undefined}
         />,
       ),
     );
-    const text = host.textContent ?? "";
+    const chip = host.querySelector<HTMLElement>("header [role='img']")!;
+    const read = { text: host.textContent ?? "", name: chip.getAttribute("aria-label"), tip: chip.dataset.tip };
     act(() => root.unmount());
-    return text;
+    return read;
   };
 
-  it("shows the published pool, what today releases of it, and a share's price today beside its ceiling", () => {
-    const text = page({ lords: 1_000_000, today: 50_000, price: 12, ceiling: 15 });
-    expect(text).toContain("Pool1,000,000");
-    expect(text).toContain("Today+50,000");
-    expect(text).toContain("Per share12");
-    expect(text).toContain("Max15");
+  it("shows what a common chest pays and the rank, with the pool behind the chest on the chip's tip, and no row of figures", () => {
+    const read = header({ chest: { lords: 24 }, pool: { lords: 1_000_000, today: 50_000 } });
+    expect(read.name).toBe("LORDS 24, Season #12");
+    expect(read.tip).toBe("A Common chest pays 24 LORDS today. Season pool 1,000,000 LORDS, 50,000 released today");
+    expect(read.text).not.toMatch(/Pool|Today|Per share|Max|1,000,000/);
   });
 
-  it("shows the ceiling alone until the day's price is set, and no today outside the season", () => {
-    const unopened = page({ lords: 1_000_000, today: 50_000, price: undefined, ceiling: 15 });
-    expect(unopened).toContain("Max15");
-    expect(unopened).not.toContain("Per share");
-    expect(page({ lords: 1_000_000, today: undefined, price: undefined, ceiling: 15 })).not.toContain("Today");
-  });
-
-  it("says the pool is not published yet, in the figures' place, and nothing while the game is unknown", () => {
-    const unpublished = page(null);
-    expect(unpublished).toContain("Pool not published yet");
-    expect(unpublished).not.toMatch(/Today|Per share|Max/);
-    expect(page(undefined)).not.toContain("Pool");
+  it("tips the pool alone before the day's price is set, and says when none is published", () => {
+    const unpriced = header({ pool: { lords: 1_000_000, today: undefined } });
+    expect(unpriced.name).toBe("Season #12");
+    expect(unpriced.tip).toBe("Season pool 1,000,000 LORDS");
+    expect(header({ pool: null }).tip).toBe("Pool not published yet");
   });
 });

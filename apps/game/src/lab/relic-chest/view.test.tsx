@@ -76,7 +76,7 @@ it("releases a renderer that finishes loading after the comparison was closed", 
 });
 
 it("focuses and opens a funded Frontier chest, then records zero after rollover without inventing relics", async () => {
-  window.history.replaceState({}, "", "/lab/relic-chest?gameMode=frontier");
+  window.history.replaceState({}, "", "/lab/relic-chest?mode=frontier");
   await mount();
   await click("Focus chest");
   expect(host.textContent).toContain("17 LORDS");

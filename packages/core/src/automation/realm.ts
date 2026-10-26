@@ -5,20 +5,34 @@ import {
   getBalance,
   getRealmInfo,
   getBuildingCount,
+  liveHomeArmies,
   storedBiomeAt,
   type TileManager,
 } from "../index";
-import type { NativeFactStore } from "../client/index";
-import { BuildingType, type ID, ResourcesIds, StructureType, TroopType, BUILDINGS_CENTER } from "@bibliothecadao/types";
+import type { NativeFactStore, NativeRows } from "../client/index";
+import {
+  BuildingType,
+  type ID,
+  ResourcesIds,
+  StructureType,
+  TroopTier,
+  TroopType,
+  BUILDINGS_CENTER,
+} from "@bibliothecadao/types";
 import {
   buildBlitzRealmSuggestions,
+  type BlitzArmyState,
   type BlitzBuildKey,
   type BlitzBuildingCounts,
   type BlitzMilitaryTarget,
   type BlitzRealmSuggestionInput,
   type BlitzSuggestionDraft,
 } from "./blitz-suggestions";
-import { resolveConstructionBuildability, type ConstructionBuildabilityInput } from "./construction";
+import {
+  hasPopulationRoomFor,
+  resolveConstructionBuildability,
+  type ConstructionBuildabilityInput,
+} from "./construction";
 import { generateBuildablePositions } from "./building-spots";
 type StaticBlitzBuildKey = Exclude<BlitzBuildKey, "military">;
 type BuildabilityContext = {
@@ -90,6 +104,7 @@ const resolveBuildabilityForBuilding = (context: BuildabilityContext, buildingTy
   return {
     canBuild: result.canSubmit,
     reason: result.reason,
+    needsRoom: !hasPopulationRoomFor({ entityId: context.entityId, buildingType, store: context.store }),
   };
 };
 
@@ -104,7 +119,7 @@ const resolveBlitzBuildability = (
   coal: resolveStaticBuildability(context, "coal"),
   military: militaryTarget
     ? resolveBuildabilityForBuilding(context, militaryTarget.buildingType)
-    : { canBuild: false, reason: "No biome military target." },
+    : { canBuild: false, reason: "No biome military target.", needsRoom: false },
   wheat: resolveStaticBuildability(context, "wheat"),
   wood: resolveStaticBuildability(context, "wood"),
   workerHut: resolveStaticBuildability(context, "workerHut"),
@@ -133,8 +148,30 @@ const resolveRecommendedMilitaryTarget = (
     buildingType: best.buildingType,
     count: buildingCounts[best.countKey],
     label: best.label,
+    troopType: best.troopType,
     resource: best.resource,
     bonusPercent: Math.round((best.bonus - 1) * 100),
+  };
+};
+
+/**
+ * The realm's field armies of its military target's troop, as Military counts them: living armies against its slots,
+ * whole troops on hand at chain time and a full army at its level.
+ */
+const readBlitzArmyState = (
+  store: NativeFactStore,
+  structure: NativeRows["Structure"],
+  militaryTarget: BlitzMilitaryTarget | null,
+  tick: number,
+): BlitzArmyState | null => {
+  if (!militaryTarget) return null;
+  const realmId = Number(structure.entity_id);
+  const held = getBalance(realmId, militaryTarget.resource, tick, store).balance;
+  return {
+    armies: liveHomeArmies(store, realmId, structure.game_id).length,
+    maxArmies: Number(structure.base.troop_max_explorer_count),
+    troops: held === undefined ? 0 : Math.floor(divideByPrecision(Number(held), false)),
+    fullArmy: configManager.getMaxArmySize(Number(structure.base.level), TroopTier.T1),
   };
 };
 
@@ -145,7 +182,7 @@ export function readBlitzRealmSuggestions(input: {
   isBlitzActive: boolean;
   tiles: Pick<TileManager, "isHexOccupied">;
   mode?: ConstructionBuildabilityInput["mode"];
-  /** The default tick the upgrade's cost is judged at. */
+  /** The default tick the upgrade's cost and the troops on hand are judged at. */
   tick: number;
 }): BlitzSuggestionDraft[] {
   const { store, realmId, realmName, isBlitzActive, tiles, mode, tick } = input;
@@ -182,6 +219,7 @@ export function readBlitzRealmSuggestions(input: {
     population: buildings.population.current,
     populationCapacity: buildings.population.max + configManager.getBasePopulationCapacity(),
     militaryTarget,
+    army: readBlitzArmyState(store, structure, militaryTarget, tick),
     buildability: resolveBlitzBuildability(
       { entityId: realmId, store, realm, mode, useSimpleCost: false, hasAvailableBuildingTile },
       militaryTarget,

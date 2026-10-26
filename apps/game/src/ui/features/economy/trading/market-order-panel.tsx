@@ -39,11 +39,11 @@ import {
   type MarketInterface,
   formatAmount,
   formatCharge,
-  formatExact,
   formatMoment,
   LORDS,
   resourceName,
   formatFigure,
+  formatShort,
 } from "@bibliothecadao/types";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -764,7 +764,7 @@ export const OrderCreation = memo(
           </HudChip>
         </span>
         <span title="Weight">
-          <HudChip>{formatExact(orderWeightKg)} kg</HudChip>
+          <HudChip>{formatShort(orderWeightKg)} kg</HudChip>
         </span>
       </div>
     );

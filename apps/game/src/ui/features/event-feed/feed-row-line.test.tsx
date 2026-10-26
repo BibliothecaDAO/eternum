@@ -98,8 +98,8 @@ beforeEach(() => {
 });
 afterEach(() => host.remove());
 
-/** The Events stories among these, as the card selects them under All. */
-const eventsRows = (stories: ProcessedStoryEvent[]) => selectEventStories(stories, "all", PLAYER, () => false);
+/** The Events stories among these, as the card selects them under Important, its first lens. */
+const eventsRows = (stories: ProcessedStoryEvent[]) => selectEventStories(stories, "important", PLAYER, () => false);
 
 const clickRow = async (event: ProcessedStoryEvent) => {
   const root = createRoot(host);
@@ -170,7 +170,7 @@ describe("A capture in Events", () => {
       participants: ["0xc1", PLAYER],
       presentation,
     } as ProcessedStoryEvent;
-    const [event] = selectEventStories([taken], "mine", PLAYER, () => false);
+    const [event] = selectEventStories([taken], "important", PLAYER, () => false);
     expect(renderToStaticMarkup(<FeedRowLine event={event} />)).toContain(
       "clientlane took a structure from you. Its armies and incoming deliveries went with it",
     );
@@ -226,9 +226,12 @@ it("keeps the player's LORDS chest in Events and opens its receiving realm even 
 });
 
 describe("an activated relic in Events and the Log", () => {
-  it.each(["important", "mine", "all"] as const)(
+  it.each([
+    ["important", { limit: 100, story: "RelicActivated", owner: PLAYER }, []],
+    ["all", { limit: 350 }, ["another's"]],
+  ] as const)(
     "reads and shows the player's activation under %s, with its recorded effect after the army is gone",
-    async (filter) => {
+    async (filter, read, others) => {
       const { buildStoryEventPresentation } = await import("@bibliothecadao/eternum");
       const { toStreamStoryEvent } = await import("@/hooks/store/use-story-events-store");
       const activation = toStreamStoryEvent(
@@ -271,10 +274,12 @@ describe("an activated relic in Events and the Log", () => {
         timestampMs: Number(BigInt(activation.timestamp)) * 1000,
         presentation,
       };
-      expect(eventsReads(filter, PLAYER, [])).toContainEqual({ limit: 100, story: "RelicActivated", owner: PLAYER });
+      expect(eventsReads(filter, PLAYER, [])).toContainEqual(read);
       const [row] = selectEventStories([event], filter, PLAYER, () => false);
       expect(row).toBe(event);
-      expect(selectEventStories([{ ...event, owner: "0x2" }], filter, PLAYER, () => false)).toEqual([]);
+      // Another player's activation is world history, not the player's must-not-miss.
+      const another = { ...event, id: "another's", owner: "0x2" };
+      expect(selectEventStories([another], filter, PLAYER, () => false).map(({ id }) => id)).toEqual(others);
       game.armies = new Set();
       const root = createRoot(host);
       await act(async () =>

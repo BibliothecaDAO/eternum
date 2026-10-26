@@ -111,7 +111,8 @@ it.each(KINDS)(
           { model: "Guard", key: "0x73", value: null },
         ] as never);
       const story = buildStoryEventPresentation(battle(army, guard), store, names);
-      expect(VERDICT_WORDS[result.verdict]).toBe(verdict);
+      // A fight both sides survive has no result to show; its story still says how it ended.
+      expect(result && VERDICT_WORDS[result.verdict]).toBe(guard > 0 && army > 0 ? null : verdict);
       expect(story.title).toBe(`clientlane vs ${siteName(SITE)} · ${verdict}`);
       expect(story.description).toContain(`Defender [${siteName(SITE)}]: ${siteName(SITE)}`);
       expect(story.description).toContain(`Defender forces: ${SPECIES[site]} [`);

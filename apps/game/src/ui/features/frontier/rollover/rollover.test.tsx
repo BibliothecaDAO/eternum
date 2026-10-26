@@ -1,6 +1,5 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { dayOf } from "@bibliothecadao/eternum";
@@ -10,9 +9,6 @@ import { RESTING, useDayEndStore, type DayEndPhase } from "@/hooks/store/use-day
 import { endedDay } from "../hud/day-clock";
 import { DayDoneCard } from "./day-done-card";
 import { DayEndScreen } from "./day-end-screen";
-import { LastHourBubble } from "./last-hour";
-
-const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
 describe("the day's end", () => {
   const rules = { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 };
@@ -49,9 +45,12 @@ describe("the day's end", () => {
     expect(card.textContent).toContain("Realm kept · Day 13 is open");
     expect(card.textContent).toContain("7h 55m");
     expect(card.textContent).toContain("Tomorrow lasts20h");
-    expect(card.textContent).toContain("+6,400");
+    expect(card.textContent).toContain("+6.4K");
     expect(card.textContent).toContain("—");
-    expect(card.textContent).toContain("−6,021");
+    expect(card.textContent).toContain("−6K");
+    // The troops the armies took stand under the troops' mark, with no empty portrait beside them.
+    expect(card.querySelector('[aria-label="troops"] [data-icon="troops"]')).not.toBeNull();
+    expect(card.querySelector(".rounded-full.border")).toBeNull();
     expect(card.textContent).toContain("+200470");
     act(() => host.querySelector<HTMLButtonElement>("button")!.click());
     expect(onContinue).toHaveBeenCalled();
@@ -59,11 +58,34 @@ describe("the day's end", () => {
     host.remove();
   });
 
-  it("bubbles the troops still out in the last hour, and leaves out what the facts do not carry", () => {
-    expect(text(renderToStaticMarkup(<LastHourBubble troopsOut={6_021} />))).toBe("6,021");
-    expect(text(renderToStaticMarkup(<LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />))).toBe(
-      "6,021+4702",
-    );
+  it("counts the armies that ended with the day beside the troops they took, never as a row of empty circles", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    for (const armies of [1, 3, 5]) {
+      act(() =>
+        root.render(
+          <DayDoneCard
+            endedDay={12}
+            clock={{ endsAt: undefined, secondsLeft: 3_600, tomorrowSeconds: 20 * 3_600, tone: "calm" }}
+            totals={{ reveals: 0, cleared: 0, chests: 0, essence: 0, labor: 0, lords: 0 }}
+            history="whole"
+            onRetry={vi.fn()}
+            armies={armies}
+            troopsLost={6_021}
+            returned={undefined}
+            onContinue={vi.fn()}
+          />,
+        ),
+      );
+      const line = host.querySelector("[aria-label='troops']")!;
+      expect(line.querySelector("[role='img']")?.getAttribute("aria-label")).toBe(
+        `Armies ended with the day ×${armies}`,
+      );
+      expect(line.textContent).toBe(`×${armies}−6K`);
+      expect(line.querySelectorAll(".rounded-full")).toHaveLength(0);
+    }
+    act(() => root.unmount());
   });
 
   it("draws the day's end over the map: nothing on a plain day, Skip in the mist, the summary until Continue, the black", () => {

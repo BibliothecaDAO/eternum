@@ -58,7 +58,7 @@ describe("a day ending with the player in the game", () => {
     moment().skip();
     moment().continueDay();
     seconds(DAY_END_TIMING.nightfall + DAY_END_TIMING.blackHold);
-    expect(moment().phase).toBe("dawn");
+    expect(moment()).toMatchObject({ phase: "dawn", landReady: false });
   });
 
   it("skips the mist to the summary, never past it", () => {

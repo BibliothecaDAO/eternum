@@ -4,13 +4,12 @@ import { realmLevelNumber } from "@/ui/lib/realm-level";
 import { structureMapPosition } from "@bibliothecadao/eternum";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { ResourceBurnPopover } from "@/ui/features/economy/resources/resource-burn-popover";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView, RESOURCE_FACTS } from "@/sync/fact-views";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
+import { openProduction } from "@/ui/features/settlement/production/open-production";
 import {
   configManager,
   getBuildingQuantity,
@@ -264,13 +263,8 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   );
 
   const handleManageProduction = useCallback(
-    (structureId: number, resourceId: ResourcesIds) => {
-      openSurface({
-        id: "production",
-        content: <ProductionModal preSelectedRealmId={structureId} preSelectedResource={resourceId} />,
-      });
-    },
-    [openSurface],
+    (structureId: number, resourceId: ResourcesIds) => openProduction({ realmId: structureId, resource: resourceId }),
+    [],
   );
 
   const handleOpenCraftRelic = useCallback(
@@ -689,7 +683,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
             />
           )}
           {isSelectedStructure && (
-            // Transfer and burn show on the hovered cell of the selected holding.
+            // Transfer shows on the hovered cell of the selected holding.
             <span className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
               <HudIconButton
                 icon="swap"
@@ -698,15 +692,6 @@ const TransferCell = React.memo((props: TransferCellProps) => {
                 size="sm"
                 onClick={() => openTransfer({ sourceId: structureId, destinationIds: [], resource: resourceId })}
               />
-              {cell.amount > 0 && (
-                <ResourceBurnPopover
-                  structureId={structureId}
-                  resourceId={resourceId}
-                  trigger={(toggle) => (
-                    <HudIconButton icon="flame" label="Burn" kind="quiet" size="sm" onClick={toggle} />
-                  )}
-                />
-              )}
             </span>
           )}
         </div>

@@ -18,11 +18,13 @@ import { TileCard, useSelectedTarget } from "./sites/tile-card";
 import { SpireCard, useSelectedTileObject } from "./sites/tile-object-cards";
 import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
 import { TransferTroopsSheet, useSelectedTransfer } from "./army/transfer-troops";
+import { BuildingCard } from "./building/building-card";
+import { useTappedBuilding } from "./research/selected-building";
 
 /**
  * What the player tapped, as its Frontier card, with its key: which card it is and for which tile, so the HUD's one
  * panel (useOnePanel) knows when a card opens; null when the selection opens none. An open plot of the realm opens the
- * build sheet, the keep its upgrade sheet, an adjacent friendly army its troop transfer, a standing site or enemy army
+ * build sheet, the keep its card, a standing building its own card, an adjacent friendly army its troop transfer, a standing site or enemy army
  * its tile card, a Shrine or Well its use card, and a spire or reward chest its own card. Cleared sites and opened
  * chests keep their receipts on the tile.
  * A cleared site shows its receipt even with an army on the tile. Other empty tiles and armies the dock already
@@ -34,8 +36,8 @@ export const useSelectionCard = ({
   onResearch,
 }: {
   realm: NativeRows["Structure"] | null;
-  /** Opens Research, for a card whose next step is there. */
-  onResearch: () => void;
+  /** Opens Research, on a node where the card names one, for a card whose next step is there. */
+  onResearch: (node?: string) => void;
 }): { key: string; sheet: ReactNode } | null => {
   const { isMapView } = useQuery();
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -49,6 +51,7 @@ export const useSelectionCard = ({
   const mapSite = useSelectedMapSite();
   const tileObject = useSelectedTileObject();
   const keep = useKeepSelected(realm);
+  const building = useTappedBuilding(realm);
   const spire = useSelectedSpire();
   const transfer = useSelectedTransfer(realm);
   const closeSelectedTile = useUIStore((state) => state.closeSelectedTile);
@@ -99,6 +102,11 @@ export const useSelectionCard = ({
     );
   if (tileObject?.kind === "spire") return card("spire", <SpireCard onClose={close} />);
   if (spire) return card("realm-spire", <RealmSpireSheet spire={spire} onResearch={onResearch} onClose={close} />);
-  if (realm && keep) return card("keep", <CastleUpgrade realm={realm} onClose={close} />);
+  if (realm && keep) return card("keep", <CastleUpgrade realm={realm} onResearchPage={onResearch} onClose={close} />);
+  if (realm && building)
+    return card(
+      "building",
+      <BuildingCard realm={realm} building={building} onResearchPage={onResearch} onClose={close} />,
+    );
   return null;
 };

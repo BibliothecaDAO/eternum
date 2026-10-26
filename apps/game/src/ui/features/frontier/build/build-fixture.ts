@@ -1,6 +1,12 @@
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
+import {
+  type BuildingType,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  StructureType,
+  TileOccupier,
+} from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
@@ -114,4 +120,11 @@ export const realmBoard = () => {
   configManager.setActiveGame(1, 3);
   configManager.setStore(store);
   return { store, realm: store.require("Structure", { game_id: 1, entity_id: 7 }) };
+};
+
+/** The board's packed building counts with `count` of one category standing (eight bits a category). */
+export const buildingCounts = (category: BuildingType, count: number) => {
+  const packed = BigInt(count) << BigInt((category - 1) * 8);
+  const word = (index: number) => String((packed >> BigInt(128 * index)) & ((1n << 128n) - 1n));
+  return { packed_counts_1: word(0), packed_counts_2: word(1), packed_counts_3: word(2) };
 };

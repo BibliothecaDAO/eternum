@@ -21,6 +21,7 @@ import {
   LORDS,
   resourceName,
   formatFigure,
+  formatShort,
 } from "@bibliothecadao/types";
 
 import { lazy, Suspense, useMemo, useState } from "react";
@@ -271,13 +272,13 @@ const TradingStructureHeader = ({
         <span title={LORDS}>
           <HudChip>
             <ResourceIcon resource={ResourcesIds.Lords} size="xs" withTooltip={false} />
-            {formatAmount(knownAmount(balances.lords))}
+            {formatShort(knownAmount(balances.lords))}
           </HudChip>
         </span>
         <span title="Donkeys">
           <HudChip tone={balances.donkeys !== undefined && balances.donkeys > 0 ? undefined : "bad"}>
             <ResourceIcon resource={ResourcesIds.Donkey} size="xs" withTooltip={false} />
-            {formatAmount(knownAmount(balances.donkeys))}
+            {formatShort(knownAmount(balances.donkeys))}
           </HudChip>
         </span>
       </div>

@@ -2,7 +2,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
-import { realmMeaning, structureMeaning, mineMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { realmMeaning, readStructureMeaning, mineMeaning } from "@/ui/design-system/domain-icon-meaning";
 import {
   Position,
   configManager,
@@ -52,6 +52,11 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     "HyperstructureProgress",
     "HyperstructureShares",
     "Structure",
+    "GameRegistry",
+    "ExpeditionSite",
+    "SliceRules",
+    "SettlementRules",
+    "DepthRules",
   ]);
   const playerGuild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), store) : undefined;
   const guards = structure ? getGuardsByStructure(structure, store) : [];
@@ -93,10 +98,10 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
         ? realmMeaning(structure.base.level)
         : structure.base.category === StructureType.Mine
           ? mineMeaning(structure.metadata.mine_kind)
-          : structureMeaning(structure.base.category),
+          : readStructureMeaning(facts.store, structure),
       256,
     );
-  }, [structure]);
+  }, [structure, facts]);
 
   const guardSlots = structureGuardSlots(structure);
 

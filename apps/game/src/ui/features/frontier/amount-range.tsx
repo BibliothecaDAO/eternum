@@ -4,14 +4,15 @@ import { HudButton, HudSlider } from "@/ui/design-system/kit/hud-elements";
 import { MAXIMUM, MINIMUM } from "@/ui/design-system/kit/words";
 
 /**
- * An amount from one up to the most the player can choose: Minimum, the track, Maximum. Each end is a button that
- * takes its amount, and says which it is when asked. Where something runs out before the end, the track marks it, the
- * thumb stops there, and Maximum takes that much.
+ * An amount from the least (one, unless the caller says) up to the most the player can choose: Minimum, the track,
+ * Maximum. Each end is a button that shows and takes its amount, and says which it is when asked. Where something runs
+ * out before the end, the track marks it, the thumb stops there, and Maximum takes that much.
  */
 export const AmountRange = ({
   label,
   icon,
   value,
+  min,
   max,
   stop,
   disabled = false,
@@ -20,12 +21,13 @@ export const AmountRange = ({
   label: string;
   icon: IconMeaning;
   value: number;
+  min?: number;
   max: number;
   stop?: number;
   disabled?: boolean;
   onChange: (amount: number) => void;
 }) => {
-  const least = max > 0 ? 1 : 0;
+  const least = min ?? (max > 0 ? 1 : 0);
   const most = Math.min(stop ?? max, max);
   return (
     <div className="flex items-center gap-2">

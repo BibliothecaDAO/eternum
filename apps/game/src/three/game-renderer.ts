@@ -23,7 +23,7 @@ import {
 } from "./renderer-display-runtime";
 import { type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
 import { initializeRendererBackendRuntime } from "./renderer-backend-runtime";
-import { reloadWithWebGLRenderer } from "./renderer-device-loss-recovery";
+import { rebootAfterDeviceLoss } from "./renderer-device-loss-recovery";
 import { createRendererFoundationRuntime } from "./renderer-foundation-runtime";
 import { runRendererFrame } from "./renderer-frame-runtime";
 import { discardGpuBackendFrame, startGpuBackendFrame } from "./gpu-backend-hot-path-instrumentation";
@@ -170,24 +170,22 @@ export default class GameRenderer {
 
   private handleRendererDeviceLost(event: RendererDeviceLostEvent): void {
     reportRendererDeviceLoss(event, {
-      recoveryAttempted: this.shouldStartDeviceLossFallback(event),
+      recoveryAttempted: this.canRebootAfterDeviceLoss(),
     });
     this.recoverFromRendererDeviceLoss(event);
   }
 
-  private shouldStartDeviceLossFallback(event: RendererDeviceLostEvent): boolean {
-    return event.activeMode === "webgpu" && !this.isDestroyed && !this.isRecoveringFromDeviceLoss;
+  private canRebootAfterDeviceLoss(): boolean {
+    return !this.isDestroyed && !this.isRecoveringFromDeviceLoss;
   }
 
   private recoverFromRendererDeviceLoss(event: RendererDeviceLostEvent): void {
-    if (!this.shouldStartDeviceLossFallback(event)) return;
+    if (!this.canRebootAfterDeviceLoss()) return;
     this.isRecoveringFromDeviceLoss = true;
     this.isRendererRecoveryPaused = true;
     discardGpuBackendFrame();
-    // Native WebGPU instance matrices use storage attributes that cannot be
-    // carried into WebGL. Rebuild the scene and asset caches in a fresh boot.
     try {
-      reloadWithWebGLRenderer();
+      rebootAfterDeviceLoss(event.activeMode, window);
     } catch (error) {
       // Never resume drawing with the lost device or retry navigation in a loop.
       reportRendererRecoveryFailure(error, event.activeMode);
@@ -328,6 +326,8 @@ export default class GameRenderer {
       windowHeight: window.innerHeight,
       windowWidth: window.innerWidth,
     });
+    // The realm view fits its farthest zoom to the screen's shape: a phone turned there refits it at once.
+    this.hexceptionScene?.followScreenShape();
   }
 
   animate() {

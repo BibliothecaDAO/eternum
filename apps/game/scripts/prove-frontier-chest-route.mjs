@@ -84,7 +84,7 @@ export async function proveFrontierChestRoute(browser, { baseUrl, backend, out }
       `(async()=>{const directory=await(await fetch('/api/directory')).json();for(const shard of directory.shards ?? []){const game=shard.games?.find(g=>g.mode==='frontier'&&g.status==='Live');if(game)return {chainId:shard.chainId,gameId:game.game_id};}throw Error('No live Frontier route available');})()`,
     );
     await devtools.send("Page.navigate", {
-      url: `${baseUrl}/lab/relic-chest?gameMode=frontier&rendererMode=${backend}`,
+      url: `${baseUrl}/lab/relic-chest?mode=frontier&rendererMode=${backend}`,
     });
     await wait("document.querySelector('[data-relic-chest-lab]')?.dataset.ready === 'true'");
     await click("button", "Advance to day rollover");

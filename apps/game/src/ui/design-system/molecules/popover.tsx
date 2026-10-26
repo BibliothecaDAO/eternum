@@ -100,14 +100,22 @@ const OpenPanel = ({
 
   const placed = panelStyle !== null;
   useLayoutEffect(() => {
+    let current: CSSProperties | null = null;
     const place = () => {
       setHoldsWindow(isHudWindow(panelRef.current));
-      setPanelStyle(resolvePanelStyle(resolveAnchorRef.current(), align, placement, panelRef.current));
+      current = resolvePanelStyle(resolveAnchorRef.current(), align, placement, panelRef.current);
+      setPanelStyle(current);
+    };
+    // Content that grows after opening (data arriving) raises the panel to fit; content that shrinks (a shorter tab)
+    // leaves it where it stands, so what the player is pressing stays under the pointer.
+    const refit = () => {
+      setHoldsWindow(isHudWindow(panelRef.current));
+      current = holdPlace(current, resolvePanelStyle(resolveAnchorRef.current(), align, placement, panelRef.current));
+      setPanelStyle(current);
     };
     place();
-    // Content that grows or shrinks after opening (data arriving) moves a centred modal and a popover's fit.
     const content = panelRef.current?.firstElementChild;
-    const contentResize = content && typeof ResizeObserver !== "undefined" ? new ResizeObserver(place) : null;
+    const contentResize = content && typeof ResizeObserver !== "undefined" ? new ResizeObserver(refit) : null;
     if (content) contentResize?.observe(content);
     window.addEventListener("resize", place);
     window.visualViewport?.addEventListener("resize", place);
@@ -456,6 +464,12 @@ const resolveAnchoredPanelStyle = (
 };
 
 const viewportHeightBelow = (top: number): number => Math.max(0, window.innerHeight - top - VIEWPORT_MARGIN_PX);
+
+/** A placed panel's top, kept when its content changes: it may rise to fit, never drop back. */
+const holdPlace = (placed: CSSProperties | null, next: CSSProperties): CSSProperties =>
+  typeof placed?.top === "number" && typeof next.top === "number" && next.top > placed.top
+    ? { ...next, top: placed.top, maxHeight: viewportHeightBelow(placed.top) }
+    : next;
 
 /**
  * A surface with a header can be dragged by it while it is open; it opens where its placement puts it every time.

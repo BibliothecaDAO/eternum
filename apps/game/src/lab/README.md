@@ -11,8 +11,8 @@ Lucky are fixture inputs, with no appearance/preview selector. `prove:relic-ches
 controls for Blitz and Frontier on WebGPU and WebGL2, saves evidence in a fresh directory and releases its
 browser/server.
 
-`/lab/relic-chest?gameMode=frontier` uses a 17-LORDS common-share reservation, the real Frontier calendar and the same
-chest panel/model/caller. Advance to day rollover shows the expired zero reward; Open produces the recorded paid amount,
+`/lab/relic-chest?mode=frontier` uses a 17-LORDS common-share reservation, the real Frontier calendar and the same chest
+panel/model/caller. Advance to day rollover shows the expired zero reward; Open produces the recorded paid amount,
 including zero. This is a local native-fact fixture, not a transaction.
 
 App painting comparison: `/lab/kit/app-art` shows Season and Blitz Results beside their existing reference art. Follow
@@ -20,39 +20,66 @@ each page link to see the painting on its real component with local app fixtures
 `pnpm --dir apps/game prove:app-art --port 4199 --out <fresh-dir>` for comparison and page screenshots, loaded-image
 assertions and browser errors; the command owns and closes its server and browser.
 
-Open `/lab` in the dev environment. The Tool selector groups 18 tools by their users' work. Switching tools unmounts the
-previous view and remembers its full URL for the next visit. The Eternum Lab link exits to the game home page.
-`capture=1` keeps the tool's full viewport and removes the shared header.
+## Rooms
 
-`lab-app.tsx` owns the lab's route table, lazy imports, boot state and viewport. Tool views own their controls and
-renderer lifecycles. This replaces the independent app routes, repeated boot setup and graphics-only navigation. App
-fixtures restore their network and identity overrides when you leave them.
+Open `/lab` in the dev environment: it opens on Kit → HUD sheet. The header's first row holds the six rooms and the two
+switches; the second row holds the room's pages and, when a page has several, its views. `src/lab/rooms.ts` lists every
+room, page and view; the header and the routes are drawn from it, and every page loads only when opened. A lane adds a
+page by adding its entry there.
 
-## Feature map
+- **Game** (Blitz, Frontier, Eternum) writes `mode` into the address and opens the page again in that game. It is
+  offered only on a page that draws more than one game, and a page that draws Frontier opens on Frontier.
+- **Device** (Both, Desktop, Phone) writes `device`: on the HUD sheet and on HUD → In game.
+- Changing pages unmounts the previous page and its renderer, and a page reopens where it was left. The Eternum Lab link
+  exits to the game home page. `capture=1` keeps the page's full viewport and removes the header.
 
-The users and routes below were inventoried before the tools were moved. Terrain and model review keep their URLs; the
-former `/debug` tools now live under `/lab`. Their runners and links use the new routes.
+`lab-app.tsx` owns the header, boot state and viewport; pages own their controls and renderer lifecycles. App fixtures
+restore their network and identity overrides when you leave them.
 
-| Tool                | Route                      | Users and workflow                                                                                                                                                                                                                                                                                                                                                                                                            |
-| ------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Terrain & buildings | `/lab`                     | Art: terrain gallery, material/biome inspection, gallery verification and captures                                                                                                                                                                                                                                                                                                                                            |
-| Models & motion     | `/lab/models`              | Art: model review, animation inspection and captures                                                                                                                                                                                                                                                                                                                                                                          |
-| Rewards             | `/lab/rewards`             | Art: reward and chest review with capture controls                                                                                                                                                                                                                                                                                                                                                                            |
-| Terrain props       | `/lab/terrain-props`       | Art: biome prop and material review                                                                                                                                                                                                                                                                                                                                                                                           |
-| Endgame mist        | `/lab/endgame`             | World: production end trigger, orb event, spared realm and busy-map cost proof                                                                                                                                                                                                                                                                                                                                                |
-| Day end             | `/lab/day-end`             | World: the Frontier day end as the game plays it: its rollover on a lab clock over its Frontier day facts, its moment, screen and card, the spires' mist, black, the new day's land (`case` ordinary, together, late-block or later; a narrow window plays the phone)                                                                                                                                                         |
-| World FX            | `/lab/world-fx`            | Art: world effects and capture controls                                                                                                                                                                                                                                                                                                                                                                                       |
-| Studio              | `/lab/studio`              | Film: the reels' shots on the real terrain, models and effects, a free camera, replayable camera paths and takes (see Film studio below)                                                                                                                                                                                                                                                                                      |
-| Character review    | `/lab/characters`          | Character art and animation: frame inspector, smoke checks and animation captures                                                                                                                                                                                                                                                                                                                                             |
-| Character benchmark | `/lab/character-benchmark` | Performance: character benchmark smoke and performance runners                                                                                                                                                                                                                                                                                                                                                                |
-| World integration   | `/lab/world`               | Performance and character integration: world gym smoke runner                                                                                                                                                                                                                                                                                                                                                                 |
-| Chunk fixtures      | `/lab/chunks`              | Renderer: baseline, dense and stress fixtures, renderer smoke runner                                                                                                                                                                                                                                                                                                                                                          |
-| Terrain benchmark   | `/lab/terrain-benchmark`   | Performance: terrain benchmark runner                                                                                                                                                                                                                                                                                                                                                                                         |
-| Map labels          | `/lab/map-labels`          | UI: the map's labels (tokens, a plate opened in place) on the real terrain and models (`zoom`, `hover`, `select`, `focus`, `busy=1`, `game=frontier`, `panel=0`; select and hover for the order line; `sites=1` for an army with a Shrine and a Well under the world map's own input: hover, right-click or hold, click for the card)                                                                                         |
-| Motion primitives   | `/lab/motion`              | UI: motion intensity, reduced motion and site-clear demo                                                                                                                                                                                                                                                                                                                                                                      |
-| UI kit & HUD        | `/lab/kit/*`               | UI: the HUD's style sheet (its tokens, the type scale and every element in every state, mode and device); `/lab/kit/shell` the shell kit's component states (Button, Field, Switch, IconLine, Pill, ViewSwitch joined and split, SectionLabel, Panel, StateCard, Title, Figure, Portrait, PaintedCard, ClockChip, ListRow · SettingRow, Confirm), `/lab/kit/hud/:state` fixtures and `/lab/kit/icons` production icon catalog |
-| Design tokens       | `/lab/kit/tokens`          | UI: every `src/tokens.ts` value drawn from the file: the shell's and the HUD's palettes, faces, type scale, spacing, radii, title shadows, each surface's finish (shadows, gradients, button, sheet, card, chip, plate), widths. How to restyle the shell: the comment at the top of `tokens.ts`                                                                                                                              |
-| App fixtures        | `/lab/app/:screen/*`       | UI: game, lobby, profile and account states; a post, the legal pages, `connect/:step` (start, code, discord, name, name-refused, in the Connect window over Play), `doorway/:state` (map, sign-in, waiting, preparing) and an unknown path                                                                                                                                                                                    |
+| Room   | Page                                    | Views and address                                                                                                 | Users                                                     |
+| ------ | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Kit    | HUD sheet                               | Sheet `/lab/kit` (every HUD element in every state; Game and Device), Tokens `/lab/kit/tokens`                    | Owner; `hud:capture`, `hud:check`                         |
+| Kit    | App sheet                               | Sheet `/lab/kit/app`, Shell kit `/lab/kit/shell`, Paintings `/lab/kit/app-art`                                    | Owner; `prove:app`, `prove:app-art`                       |
+| Kit    | Icons                                   | Catalog `/lab/kit/icons`, Resources `/lab/kit/resource-icons`, Chest tiers `/lab/kit/reward-chests`               | Owner; `icons:prove`                                      |
+| Kit    | Words                                   | `/lab/kit/words`                                                                                                  | Owner                                                     |
+| Kit    | Motion                                  | `/lab/motion`                                                                                                     | UI                                                        |
+| HUD    | In game                                 | `/lab/hud` (`show`, `device`, `mode`): see HUD room below                                                         | Owner; `capture:hud-lab`, `prove:windows`, `prove:chat`   |
+| HUD    | App pages                               | `/lab/app/:screen/*`                                                                                              | Owner; `prove:app`, `prove:shell`, `prove:play`           |
+| Game   | Spire, Realm upgrade, Painted buildings | `/lab/game?scenario=spire`, `realm`, `painted-buildings`: the game itself on a lab chain                          | Owner; `playtest --steps lab-spire`                       |
+| Game   | Day end                                 | `/lab/day-end`                                                                                                    | Owner; `prove:day-end`                                    |
+| Game   | Game end                                | `/lab/endgame`                                                                                                    | `prove:endgame`                                           |
+| Game   | Chest opening                           | `/lab/relic-chest`                                                                                                | `prove:relic-chest`                                       |
+| Game   | Map labels & sites                      | `/lab/map-labels`                                                                                                 | Owner; lanes                                              |
+| Art    | Terrain                                 | Terrain & buildings `/lab/terrain`, Props `/lab/terrain-props`                                                    | Art; `verify:terrain:gallery`                             |
+| Art    | Models                                  | `/lab/models` and its families (`family=`)                                                                        | Art; owner                                                |
+| Art    | Characters                              | `/lab/characters`                                                                                                 | Art; `capture:character-animation`, `smoke:character-gym` |
+| Art    | Chests                                  | `/lab/rewards`                                                                                                    | Art                                                       |
+| Art    | Effects                                 | `/lab/world-fx`                                                                                                   | Art                                                       |
+| Art    | Bench                                   | Characters `/lab/character-benchmark`, World `/lab/world`, Chunks `/lab/chunks`, Terrain `/lab/terrain-benchmark` | The runners below                                         |
+| Data   | Balance & data                          | `/lab/data` (`view` live or balance, `mode`): see Balance & data below                                            | Owner; perf, rules                                        |
+| Studio | Set                                     | `/lab/studio`: see Film studio below                                                                              | Reels; `prove:studio`                                     |
+| Studio | Footage                                 | `/lab/footage`: the footage and marketing pages the showcase serves beside the lab                                | Owner                                                     |
+
+`pnpm --dir apps/game prove:lab-load --port <free> --out <fresh-dir>` opens every page twice and records what each
+fetches (the client's own modules, every script, the bytes), when its last script arrived and whether it drew 3D.
+
+### HUD room
+
+HUD → In game lists every state and part the lab draws for the game switched to: Frontier's HUD as the game mounts it
+(`/lab/kit/unified/frontier`, `frontier-army`), the Frontier HUD lab's states by moment (`/lab/kit/hud/<state>`), then
+its parts; Blitz's HUD as mounted (`/lab/kit/unified/<view>`) and its parts (guidance, build order, building on a plot,
+construction cards, deploy, panels, area D, windows, chat). The picked one (`show`) is drawn in a desktop frame (1440
+× 900) and a phone frame (390 × 844) side by side, or one of them (`device`). Each frame is the state's own address with
+`capture=1` at that size, so the phone's layout and CSS are the game's own; "open alone" opens it in the lab.
+
+### Balance & data
+
+Data → Balance & data reads perf's newest pull at `/live-data/analysis.md`: the output of `live-data.py all` (in
+`evidence/perf/frontier-live-data-1`), which `showcase.sh` links from the newest analysis. Frontier shows Frontier's
+tables, Blitz shows Blitz's, both the value ledger; a server without a pull says how to make one. On Frontier, the
+second tab is next season's research balance study (`view=balance`, `part` storage, tree or beasts): storage, research
+paths and beast labor with their options, played on the research panel; nothing sends a game command.
+`scripts/frontier/prove-research-balance.playwright.js` drives it through the Playwright connection.
 
 The in-game battle calculator stays in the player interface. Physics behavior is unchanged.
 
@@ -105,14 +132,15 @@ pnpm --dir apps/game test src/lab/lab-app.test.tsx src/shell/lab/app-lab.test.ts
 
 ## Release atmosphere comparison
 
-In Terrain & buildings (`/lab`), **World mode** compares Blitz (shipped lighting, new ordinary edge mist) with Frontier
-(Ember lighting, darker mist). Both use the production `ProceduralTerrain` and `WorldAtmosphereController`; biomes,
-props and ground textures remain shipped. The existing Time, Weather, Exploration and quality controls still apply. This
-selector belongs to the dev lab; live games select their presentation from the synced game mode.
+In Art → Terrain (`/lab/terrain`), the lab's **Game** switch compares Blitz (shipped lighting, new ordinary edge mist)
+with Frontier (Ember lighting, darker mist). Both use the production `ProceduralTerrain` and
+`WorldAtmosphereController`; biomes, props and ground textures remain shipped. The existing Time, Weather, Exploration
+and quality controls still apply. This switch belongs to the dev lab; live games select their presentation from the
+synced game mode.
 
 ```sh
-pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?gameMode=blitz' --scenes all-biomes,fog-reveal --ground-modes textured --timing-policy informational --artifact-dir <fresh-blitz-directory>
-pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?gameMode=frontier' --scenes all-biomes,fog-reveal --ground-modes textured --timing-policy informational --artifact-dir <fresh-frontier-directory>
+pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?mode=blitz' --scenes all-biomes,fog-reveal --ground-modes textured --timing-policy informational --artifact-dir <fresh-blitz-directory>
+pnpm --dir apps/game verify:terrain:gallery --base-url 'https://127.0.0.1:4194/?mode=frontier' --scenes all-biomes,fog-reveal --ground-modes textured --timing-policy informational --artifact-dir <fresh-frontier-directory>
 ```
 
 Both renderer backends are checked by default. Each capture records the requested world mode and the actual terrain
@@ -175,7 +203,7 @@ at 2 s, spreads the fractured mist (2–7.5 s), then settles and holds (7.5–9 
 terrain. Orb origins use the model's authored spherical-core transform. There is one production end path; the old global
 frost, variation selector, alternate material library and timeline seeking are deleted.
 
-- `gameMode=frontier` spares the central fixture realm and uses production Frontier lighting. Blitz spares no hex.
+- `mode=frontier` spares the central fixture realm and uses production Frontier lighting. Blitz spares no hex.
 - `spires=materialise` (default) supplies no native spires. Production chooses two actual empty Tile rows on opposite
   sides of the observed map. `spires=awaken` supplies discovered dormant spires. Both have identical terrain.
 - `busy=1` uses 1,008 hexes, 25 realms and 50 armies; the smaller fixture uses 320 hexes, 5 realms and 10 armies.
@@ -241,8 +269,9 @@ them all. The set lives in `src/lab/studio/`; nothing in it ships to players.
 - **Camera:** drag pans, right-drag orbits, the wheel zooms; W/A/S/D move, Q/E turn, R/F tilt, Z/X zoom; Lens sets the
   field of view. Mark key adds the current view to a path, Play runs it, Copy the path puts it on the clipboard as JSON.
 - **Clean frame:** H, or `clean=1&capture=1`, hides the lab's header and the panel.
-- **Light:** World (Blitz or Frontier light, `gameMode=frontier`), time of day, weather, world speed (0.25× to 2×). A
-  take runs on the world's clock, camera included: at 0.25× it plays every moment, four times as long, as slow motion.
+- **Light:** the lab's Game switch (Blitz or Frontier light, `mode=frontier`), time of day, weather, world speed (0.25×
+  to 2×). A take runs on the world's clock, camera included: at 0.25× it plays every moment, four times as long, as slow
+  motion.
 - **Script:** `window.__studio` makes the panel's calls: `take(name)` and `path({keys, cues})` return a promise that
   settles when they end; `trigger(name, args)` plays `rise` (`{progress}`), `attack`, `defeat`, `explore`, `realm`
   (`{level}`) or `strike`; `pose(partial)` reads or moves the camera (`{target, distance, tilt, turn, fov}`, tilt 0

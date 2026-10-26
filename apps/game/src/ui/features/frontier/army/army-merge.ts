@@ -11,41 +11,39 @@ export const progressionValue = (progress: Progress, rules: Rules): number =>
     return value;
   }, progress.xp);
 
-/** Partial transfers use the target's cap; a full merge uses the surviving army's cap. */
+/** Every transfer keeps the chosen target, within that army's capacity. */
 export const explorerTransferPlan = ({
   sourceCount,
   targetCount,
-  sourceCap,
   targetCap,
   sourceProgress,
   targetProgress,
   rules,
-  requiresProgress,
 }: {
   sourceCount: number;
   targetCount: number;
-  sourceCap: number | null;
   targetCap: number | null;
   sourceProgress?: Progress;
   targetProgress?: Progress;
   rules?: Rules;
-  requiresProgress: boolean;
 }) => {
-  const known = !requiresProgress || !!(sourceProgress && targetProgress && rules);
+  const known = !!(sourceProgress && targetProgress && rules);
   const sourceValue = sourceProgress && rules ? progressionValue(sourceProgress, rules) : undefined;
   const targetValue = targetProgress && rules ? progressionValue(targetProgress, rules) : undefined;
-  const sourceWins = sourceValue !== undefined && targetValue !== undefined && sourceValue > targetValue;
-  const survivorCap = sourceWins ? sourceCap : targetCap;
+  // A first upgrade's worth of extra progression is a meaningful loss; tiny gaps need no extra click.
+  const confirmLoss =
+    sourceValue !== undefined &&
+    targetValue !== undefined &&
+    rules !== undefined &&
+    sourceValue > targetValue &&
+    sourceValue - targetValue >= rules.uncommon_xp;
   const total = sourceCount + targetCount;
-  const fullFits = known && survivorCap !== null && total <= survivorCap;
+  const fullFits = known && targetCap !== null && total <= targetCap;
   const partialMax = Math.min(Math.max(0, sourceCount - 1), Math.max(0, (targetCap ?? 0) - targetCount));
   return {
     known,
-    sourceWins,
+    confirmLoss,
     sourceValue,
-    targetValue,
-    survivorCap,
-    maxAmount: known ? (fullFits ? sourceCount : partialMax) : 0,
     partialMax,
     fullFits,
   };

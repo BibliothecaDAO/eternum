@@ -1,11 +1,13 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
-import { InstallSetting } from "@/ui/modules/settings/install-setting";
+import { AppSettings } from "@/ui/modules/settings/app-settings";
 
 import { PwaInstallRuntime } from "./pwa-install-control";
 
 afterEach(() => vi.unstubAllGlobals());
+const installButton = (container: HTMLElement) =>
+  [...container.querySelectorAll("button")].find((button) => button.textContent === "Install");
 async function mount(visible = true) {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div"),
@@ -15,7 +17,7 @@ async function mount(visible = true) {
       root.render(
         <>
           <PwaInstallRuntime />
-          {show && <InstallSetting />}
+          {show && <AppSettings onShowKeys={() => undefined} />}
         </>,
       ),
     );
@@ -23,7 +25,7 @@ async function mount(visible = true) {
   return {
     container,
     render,
-    click: () => act(async () => container.querySelector("button")!.click()),
+    click: () => act(async () => installButton(container)!.click()),
     close: () => act(async () => root.unmount()),
   };
 }
@@ -47,7 +49,7 @@ it("captures an install prompt before the control mounts and opens it only on a 
     await act(async () => {
       window.dispatchEvent(new Event("appinstalled"));
     });
-    expect(ui.container.querySelector("button")).toBeNull();
+    expect(installButton(ui.container)).toBeUndefined();
   } finally {
     await ui.close();
   }

@@ -19,3 +19,9 @@ export const sidesTaken = (learned: bigint, row: number): IconMeaning[] => {
     (_, index) => marks[researchChoice(learned, row, index + 1)]!,
   );
 };
+
+/** The tiers a row spent on its make side (Fields, Tools, Drill): each adds a share of the building's base output. */
+export const makePicks = (learned: bigint, row: number): number =>
+  Array.from({ length: researchTier(learned, row) }, (_, index) => researchChoice(learned, row, index + 1)).filter(
+    (side) => side === 0,
+  ).length;

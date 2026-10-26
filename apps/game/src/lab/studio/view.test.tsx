@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { MemoryRouter } from "react-router-dom";
+import { Link, MemoryRouter } from "react-router-dom";
 import { PerspectiveCamera, Vector3 } from "three";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -47,20 +47,17 @@ async function openStudio() {
     root.render(
       <MemoryRouter initialEntries={["/lab/studio"]}>
         <StudioLabView />
+        <Link to="/lab/studio?mode=frontier">Frontier</Link>
       </MemoryRouter>,
     ),
   );
 }
 
-it("starts the new world idle when the World changes mid-take", async () => {
+it("starts the new world idle when the game changes mid-take", async () => {
   await openStudio();
   await act(async () => void studio()!.take("battle"));
   expect(page().take).toBe("battle");
-  await act(async () => {
-    const world = host.querySelector<HTMLSelectElement>('select[aria-label="World"]')!;
-    world.value = "frontier";
-    world.dispatchEvent(new Event("change", { bubbles: true }));
-  });
+  await act(async () => host.querySelector<HTMLAnchorElement>('a[href="/lab/studio?mode=frontier"]')!.click());
   expect(studio()!.status().playing).toBe(false);
   expect(page()).toEqual({ ready: "true", take: "idle", status: "Ready to roll" });
 });

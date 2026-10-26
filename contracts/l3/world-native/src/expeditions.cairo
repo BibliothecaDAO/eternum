@@ -157,7 +157,7 @@ pub struct DepthRules {
 
 #[starknet::interface]
 pub trait IExpeditionRules<T> {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn depth_rules(self: @T, game_id: u32, depth: u8) -> DepthRules;
 }
 

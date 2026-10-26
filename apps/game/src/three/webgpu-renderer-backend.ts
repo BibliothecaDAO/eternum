@@ -23,6 +23,8 @@ import { instrumentGpuBackendHotPaths } from "./gpu-backend-hot-path-instrumenta
 interface WebGPURendererSurface extends RendererSurfaceLike {
   init(): Promise<void>;
   outputBufferType?: number;
+  /** Three's own report of a lost GPU, from either backend: WebGPU's lost device, WebGL's lost context. */
+  onDeviceLost?: (info: RendererDeviceLostInfo) => void;
 }
 
 interface CreatedWebGPURenderer {
@@ -37,7 +39,7 @@ interface InitializedRendererLane extends CreatedWebGPURenderer {
   releaseDeviceDiagnostics: () => void;
 }
 
-interface WebGpuDeviceLostInfo {
+interface RendererDeviceLostInfo {
   message?: string;
 }
 
@@ -50,7 +52,6 @@ interface WebGpuDeviceUncapturedErrorEvent {
 interface WebGPURendererDevice {
   adapterInfo?: RendererAdapterInfo;
   addEventListener?: (type: "uncapturederror", listener: (event: WebGpuDeviceUncapturedErrorEvent) => void) => void;
-  lost?: Promise<WebGpuDeviceLostInfo>;
   removeEventListener?: (type: "uncapturederror", listener: (event: WebGpuDeviceUncapturedErrorEvent) => void) => void;
 }
 
@@ -223,14 +224,17 @@ function resolveWebGpuAdapterInfo(device?: WebGPURendererDevice): RendererAdapte
   };
 }
 
-function attachWebGpuDeviceDiagnostics(input: {
+/**
+ * Watches the renderer's GPU: WebGPU's uncaptured errors, and a lost GPU on either backend. Both reach three's
+ * `onDeviceLost` (WebGPU's lost device, WebGL's lost context, which a phone takes from a tab it puts in the background);
+ * three's own handler still runs, so nothing draws to the lost GPU, and the game hears of it once, whichever backend lost it.
+ */
+function attachRendererDeviceDiagnostics(input: {
+  renderer: WebGPURendererSurface;
+  activeMode: RendererActiveMode;
   device?: WebGPURendererDevice;
   onDeviceLost?: (event: RendererDeviceLostEvent) => void;
 }): () => void {
-  if (!input.device) {
-    return () => {};
-  }
-
   let disposed = false;
   const handleUncapturedError = (event: WebGpuDeviceUncapturedErrorEvent) => {
     if (disposed) {
@@ -240,18 +244,20 @@ function attachWebGpuDeviceDiagnostics(input: {
     recordRendererDiagnosticUncapturedError(event.error?.message);
   };
 
-  input.device.addEventListener?.("uncapturederror", handleUncapturedError);
-  void input.device.lost?.then((info) => {
+  input.device?.addEventListener?.("uncapturederror", handleUncapturedError);
+  const stopDrawing = input.renderer.onDeviceLost?.bind(input.renderer);
+  input.renderer.onDeviceLost = (info) => {
+    stopDrawing?.(info);
     if (disposed) {
       return;
     }
 
     markRendererDiagnosticDeviceLost(info.message);
     input.onDeviceLost?.({
-      activeMode: "webgpu",
+      activeMode: input.activeMode,
       message: info.message,
     });
-  });
+  };
 
   return () => {
     disposed = true;
@@ -412,7 +418,12 @@ export function createWebGPURendererBackend(
         const activeMode = resolveWebGpuRendererActiveMode(createdRenderer.renderer);
         const device = activeMode === "webgpu" ? resolveWebGpuRendererDevice(createdRenderer.renderer) : undefined;
         const adapterInfo = resolveWebGpuAdapterInfo(device);
-        releaseDeviceDiagnostics = attachWebGpuDeviceDiagnostics({ device, onDeviceLost: options.onDeviceLost });
+        releaseDeviceDiagnostics = attachRendererDeviceDiagnostics({
+          renderer: createdRenderer.renderer,
+          activeMode,
+          device,
+          onDeviceLost: options.onDeviceLost,
+        });
         return { ...createdRenderer, activeMode, adapterInfo, device, releaseDeviceDiagnostics };
       } catch (error) {
         disposeCreatedRenderer();

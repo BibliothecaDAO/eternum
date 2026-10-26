@@ -135,7 +135,7 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
   const openPage = () => host.querySelector("[data-page]");
   const openSheet = () => host.querySelector("[data-kit-sheet]");
 
-  it.each(["Research", "Log", "Chat"])(
+  it.each(["Research", "Feed", "Chat"])(
     "puts %s's page away for an army picked on the map behind it, so the action row answers the pick",
     async (word) => {
       await renderHud();
@@ -152,7 +152,8 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     await renderHud();
     await place("Menu");
     await act(async () =>
-      [...host.querySelectorAll<HTMLButtonElement>("[data-kit-sheet] button")]
+      // The Menu is a page on the place bar; its Today row opens Today's sheet.
+      [...host.querySelectorAll<HTMLButtonElement>('[data-page] section[aria-label="Menu"] button')]
         .find((button) => button.textContent?.includes("Today"))!
         .click(),
     );
@@ -191,6 +192,8 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     );
     expect(openPage()).toBeNull();
     expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Transfer troops")).toBe(true);
+    // Beside a holding the button alone names the transfer: the words stand once.
+    expect(host.textContent?.split("Transfer troops")).toHaveLength(2);
   });
 
   it("keeps a page open on a desktop, where it stands beside the map", async () => {

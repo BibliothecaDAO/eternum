@@ -8,6 +8,13 @@ vi.mock("@/hooks/use-world-spatial-tiles", () => ({
   useWorldSpatialTiles: (hexes: { col: number; row: number }[]) =>
     ring.explored ? hexes.map((hexCoords, index) => ({ hexCoords, occupierId: index === ring.taken ? 5 : 0 })) : [],
 }));
+// Where the sheet opens: the world map, or another view (the Realm board), and the way to the map it takes from there.
+const place = vi.hoisted(() => ({ map: true, goTo: [] as boolean[] }));
+vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: place.map }) }));
+vi.mock("../frontier-home", async (original) => ({
+  ...(await original<typeof import("../frontier-home")>()),
+  useGoToFrontierPlace: () => (expedition: boolean) => place.goTo.push(expedition),
+}));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentDefaultTick: () => 3,
   useCurrentArmiesTick: () => 3,
@@ -20,6 +27,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
+import { DEPLOY_ON_MAP_EVENT, type DeployOnMap, readDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
 import { type GameClient, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { Direction, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -27,6 +35,8 @@ import { frontierDay } from "./deploy-fixture";
 import { DeploySheet } from "./deploy-sheet";
 
 afterEach(() => {
+  place.map = true;
+  place.goTo.length = 0;
   useUIStore.getState().setPendingMilitaryAction(null);
   ring.explored = true;
   ring.taken = -1;
@@ -62,19 +72,34 @@ const typeCount = (host: HTMLElement, value: number) => {
 const press = (host: HTMLElement, word: string) =>
   act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
 const outOf = (host: HTMLElement) => host.querySelector(".ui-amount__of")?.textContent;
+
+/** The stamina the sheet shows the new army starting on: the number beside its bar, and the bar's reading. */
+const startReading = (host: HTMLElement) => {
+  const meter = host.querySelector<HTMLElement>('[role="meter"][aria-label="stamina"]');
+  return {
+    number: meter?.parentElement?.parentElement?.textContent ?? null,
+    meter: meter && [Number(meter.getAttribute("aria-valuenow")), Number(meter.getAttribute("aria-valuemax"))],
+  };
+};
+
 const foot = (host: HTMLElement) => host.querySelector(".ui-window__foot")?.textContent ?? "";
 
-/** The ring's tiles on the map selector, in spawnRing's order, and the one the sheet aims at. */
-const tiles = (host: HTMLElement) => [...host.querySelectorAll('[aria-label="Deploy tile"] [role="radio"]')];
-const tileToward = (host: HTMLElement, store: unknown, row: unknown, direction: Direction) =>
-  tiles(host)[spawnRing(store as never, row as never, () => 0).findIndex((tile) => tile.direction === direction)];
-const click = (element: Element) => act(() => element.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+/** What the sheet asks the map to show, in the order asked: its realm and tile while open, null once closed. */
+const shownOnMap = () => {
+  const asked: DeployOnMap[] = [];
+  const hear = (event: Event) => asked.push(readDeployOnMap(event));
+  window.addEventListener(DEPLOY_ON_MAP_EVENT, hear);
+  return { asked, stop: () => window.removeEventListener(DEPLOY_ON_MAP_EVENT, hear) };
+};
+/** The direction of the realm's ring tile at this place in spawnRing's order. */
+const ringDirection = (store: unknown, row: unknown, index: number) =>
+  spawnRing(store as never, row as never, () => 0)[index].direction;
 
 const deployButton = (host: HTMLElement) =>
   [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Deploy"));
 
 describe("the Deploy sheet", () => {
-  it("opens at half of what the realm can field, with +500, Max and a slider for the count, and deploys the count typed", async () => {
+  it("opens at no troops, with Max and a slider for the count, and deploys the count typed", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
@@ -89,13 +114,15 @@ describe("the Deploy sheet", () => {
     const { host, root } = render(store, row, onClose);
     // 420 knights at home and 1,000 wheat at 2 a troop: all 420 can go.
     expect(outOf(host)).toBe("of 420");
-    expect(countField(host).value).toBe("210");
+    // No troops yet, so nothing to deploy; with 420 at most, +500 would only be Max.
+    expect(countField(host).value).toBe("0");
+    expect(deployButton(host)?.disabled).toBe(true);
     press(host, "Max");
     expect(countField(host).value).toBe("420");
     typeCount(host, 120);
-    // Deploy in the foot, beside its price and how far the wheat left lets the army march.
+    // Deploy in the foot beside its price, and nothing else.
     expect(deployButton(host)?.textContent).toBe("Deploy");
-    expect(foot(host)).toMatch(/^240 wheatLeaves wheat to march [\d.,]+K? tiles?Deploy$/);
+    expect(foot(host)).toBe("240 wheatDeploy");
     // The window shows the decision only: the count's slider over the same range, no stamina, attribute marks or day
     // clock.
     const slider = host.querySelector<HTMLInputElement>("input[type=range]");
@@ -104,9 +131,11 @@ describe("the Deploy sheet", () => {
       "420",
       "120",
     ]);
-    // The day's clock is the top bar's; the stamina the army starts on is the sheet's (the owner: "Show it").
+    // The day's clock is the top bar's; the stamina the army starts on is the sheet's bar and its number, with no line
+    // explaining either (the owner: "good UI/UX doesnt need subtext").
     expect(host.textContent).not.toMatch(/Day ends/i);
-    expect(host.textContent).toContain("Army 2 starts full: 150/150 stamina");
+    expect(startReading(host)).toEqual({ number: "150/150", meter: [150, 150] });
+    expect(host.textContent).not.toMatch(/starts|its slot|Leaves|Steps out/);
     await act(async () => deployButton(host)!.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -136,6 +165,7 @@ describe("the Deploy sheet", () => {
     const refused = vi.spyOn(toast, "error").mockImplementation(() => "");
     const onClose = vi.fn();
     const { host, root } = render(store, row, onClose);
+    press(host, "Max");
     await act(async () => {
       deployButton(host)!.click();
       deployButton(host)!.click();
@@ -156,7 +186,7 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("caps the count where the wheat runs out, and says the army is left no wheat to march", () => {
+  it("caps the count where the wheat runs out", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts([
@@ -172,25 +202,16 @@ describe("the Deploy sheet", () => {
     expect(outOf(host)).toBe("of 50");
     typeCount(host, 300);
     expect(countField(host).value).toBe("50");
-    expect(foot(host)).toBe("100 wheatLeaves no wheat to marchDeploy");
+    expect(foot(host)).toBe("100 wheatDeploy");
     act(() => root.unmount());
     host.remove();
   });
-
-  /** What the sheet says the new army starts on, in words and on its meter. */
-  const startReading = (host: HTMLElement) => {
-    const meter = host.querySelector<HTMLElement>('section[aria-label$="stamina"] [role="meter"]');
-    return {
-      words: host.querySelector('section[aria-label$="stamina"]')?.textContent ?? null,
-      meter: meter && [Number(meter.getAttribute("aria-valuenow")), Number(meter.getAttribute("aria-valuemax"))],
-    };
-  };
 
   it.each([
     {
       case: "a slot fresh today starts its army full",
       facts: [],
-      words: "Army 2 starts full: 150/150 staminaIts slot is fresh today",
+      number: "150/150",
       meter: [150, 150],
     },
     {
@@ -210,7 +231,7 @@ describe("the Deploy sheet", () => {
           },
         },
       ],
-      words: "Army 2 starts on 7/150 staminaThe bar its slot's last army left",
+      number: "7/150",
       meter: [7, 150],
     },
     {
@@ -222,18 +243,34 @@ describe("the Deploy sheet", () => {
           value: { game_id: 1, structure_id: 7, learned: String(1n << 27n) },
         },
       ],
-      words: "Army 2 starts full: 170/170 staminaIts slot is fresh today",
+      number: "170/170",
       meter: [170, 170],
     },
-  ])("says the stamina the new army starts on, its slot's bar: $case", ({ facts, words, meter }) => {
+  ])("shows the stamina bar the new army starts on, its slot's: $case", ({ facts, number, meter }) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts(facts as never);
     const { host, root } = render(store, row);
     // Slot 1 (Army 1) holds an army: the next army fills slot 2, as the contract fills the lowest free slot.
-    expect(startReading(host)).toEqual({ words, meter });
+    expect(startReading(host)).toEqual({ number, meter });
     act(() => root.unmount());
     host.remove();
+  });
+
+  it("brings the map up once as it opens off it (the Realm board's dock), where the tile is picked; not on the map", () => {
+    const { store, row } = frontierDay();
+    place.map = false;
+    const offMap = render(store, row);
+    offMap.draw();
+    expect(place.goTo).toEqual([true]);
+    act(() => offMap.root.unmount());
+
+    place.map = true;
+    place.goTo.length = 0;
+    const onMap = render(store, row);
+    onMap.draw();
+    expect(place.goTo).toEqual([]);
+    act(() => onMap.root.unmount());
   });
 
   it("with no troops at home, takes away Deploy and offers Build", () => {
@@ -249,7 +286,7 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("deploys onto the tile the player picks on the map selector, with taken and unexplored tiles closed", async () => {
+  it("draws no map or tile line of its own: it shows its order on the map, the first open tile until one is picked there", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     ring.taken = 0;
     const { store, row } = frontierDay();
@@ -260,37 +297,43 @@ describe("the Deploy sheet", () => {
       dispose() {},
       actions: { createExplorerArmy },
     } as unknown as GameClient);
+    const map = shownOnMap();
     const { host, root, draw } = render(store, row);
-    expect(tiles(host)).toHaveLength(6);
-    // The taken tile cannot be picked; the first open one is chosen until the player picks.
-    expect(tiles(host)[0].getAttribute("aria-disabled")).toBe("true");
-    expect(tiles(host)[1].getAttribute("aria-checked")).toBe("true");
-    click(tileToward(host, store, row, Direction.WEST));
-    expect(tileToward(host, store, row, Direction.WEST).getAttribute("aria-checked")).toBe("true");
+    expect(host.querySelector('[aria-label="Deploy tile"]')).toBeNull();
+    expect(host.textContent).not.toMatch(/tile/i);
+    // The taken tile is passed over: the map marks the first open one.
+    expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: ringDirection(store, row, 1) });
+    // A tap on another lit tile orders again (openArmyDeployment), and the map marks that one.
+    act(() => openArmyDeployment({ structureId: 7, isExplorer: true, direction: Direction.WEST }));
+    expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: Direction.WEST });
+    press(host, "Max");
     await act(async () => deployButton(host)!.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(expect.objectContaining({ spawnDirection: Direction.WEST }));
 
-    // An unexplored ring leaves no tile to pick, and there is no Deploy to send.
+    // An unexplored ring leaves no tile to step out on, and there is no Deploy to send.
     ring.explored = false;
     draw();
-    expect(tiles(host)).toHaveLength(0);
-    expect(host.textContent).toContain("No adjacent tiles");
+    expect(host.textContent).toContain("No open tile beside the realm");
     expect(deployButton(host)).toBeUndefined();
     act(() => root.unmount());
+    // Closed, the sheet takes its order off the map.
+    expect(map.asked.at(-1)).toBeNull();
+    map.stop();
     host.remove();
   });
 
-  it("opens aimed at the tile an order on the map names, and takes a new aim while open", () => {
+  it("opens aimed at the tile an order on the map names (a hold beside the realm), and takes a new aim while open", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     const order = (direction: Direction) => openArmyDeployment({ structureId: 7, isExplorer: true, direction });
+    const map = shownOnMap();
     order(Direction.WEST);
     const { host, root } = render(store, row);
-    expect(tileToward(host, store, row, Direction.WEST).getAttribute("aria-checked")).toBe("true");
-
+    expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: Direction.WEST });
     act(() => order(Direction.EAST));
-    expect(tileToward(host, store, row, Direction.EAST).getAttribute("aria-checked")).toBe("true");
+    expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: Direction.EAST });
     act(() => root.unmount());
+    map.stop();
     host.remove();
   });
 });

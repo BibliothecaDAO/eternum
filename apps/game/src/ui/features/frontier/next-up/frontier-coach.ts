@@ -55,7 +55,7 @@ const alerts = (facts: NextUpFacts, at: At): FrontierCoachStep[] => [
     ? [
         step(
           "store-full",
-          `Your ${facts.storeFull} store is full: what does not fit is gone. Spend it, or store more.`,
+          `Your ${facts.storeFull} storage is full: what does not fit is gone. Spend it, or add storage.`,
           // Labor is spent on the realm board; wheat and troops by Deploy.
           ...(facts.storeFull === LABOR.toLowerCase()
             ? (["Open the realm", "realm"] as const)

@@ -901,6 +901,37 @@ describe("HeraldGameSyncTransport", () => {
     ]);
   });
 
+  it("drops a live stream gone silent, as a slept phone's is though its socket never closed, and resumes it", async () => {
+    vi.useFakeTimers();
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const harness = streamHarness();
+    const { socket: slept, writer } = await attached(harness, "epoch-a", 5);
+    snapshot("epoch-a", 5, "0x1", 1).forEach((message) => slept.receive(message));
+    // Herald's heads twice a second keep it: twenty seconds of them and the stream is the same socket.
+    for (let seq = 6; seq < 46; seq += 1) {
+      slept.receive({ block: seq, epoch: "epoch-a", preconfirmed: false, seq, timestamp: 100 + seq, type: "head" });
+      await vi.advanceTimersByTimeAsync(500);
+    }
+    expect(harness.sockets).toHaveLength(1);
+
+    // Then nothing, and no close: the tab slept.
+    await vi.advanceTimersByTimeAsync(9_000);
+    expect(harness.sockets).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(slept.closed).toBe(true);
+    expect(harness.sockets).toHaveLength(2);
+    expect(warning).toHaveBeenCalledWith(expect.stringContaining("Nothing heard for 10000ms"));
+
+    const woken = harness.sockets[1]!;
+    woken.receive(hello("epoch-a", 60));
+    expect(woken.sent).toEqual([{ epoch: "epoch-a", seq: 45, type: "resume" }]);
+    woken.receive({ block: 61, epoch: "epoch-a", preconfirmed: false, seq: 46, timestamp: 9_000, type: "head" });
+    expect(harness.heads.at(-1)).toMatchObject({ block: 61, timestamp: 9_000 });
+    expect(harness.reachability).toEqual([true, false, true]);
+    writer.cancel();
+    warning.mockRestore();
+  });
+
   it("asks for a fresh snapshot when a reconnect cuts one short", async () => {
     vi.useFakeTimers();
     const harness = streamHarness();

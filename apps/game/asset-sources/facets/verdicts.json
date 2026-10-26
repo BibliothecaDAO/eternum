@@ -985,8 +985,8 @@
     "officialSource": "apps/web/src/site/data/socials.ts"
   },
   "faceted/beast-troll": {
-    "reason": "Broad tusked jaw and pointed ears match the shipped Troll.",
-    "verdict": "equal"
+    "verdict": "beats shipped",
+    "reason": "Owner-selected troll-b: distinct guard silhouette at HUD sizes, normalized to the production subject-fill contract."
   },
   "faceted/beast-wyvern": {
     "reason": "Red reptile profile and wing distinguish the shipped Wyvern.",
@@ -997,12 +997,12 @@
     "verdict": "beats shipped"
   },
   "faceted/beast-wraith": {
-    "reason": "Pointed indigo hood and long ivory mask match the selected Wraith silhouette.",
-    "verdict": "beats shipped"
+    "verdict": "beats shipped",
+    "reason": "Owner-selected wraith-a: distinct guard silhouette at HUD sizes, normalized to the production subject-fill contract."
   },
   "faceted/beast-cyclops": {
-    "reason": "One central amber eye and olive hide match the approved Cyclops.",
-    "verdict": "beats shipped"
+    "verdict": "beats shipped",
+    "reason": "Owner-selected cyclops-b: distinct guard silhouette at HUD sizes, normalized to the production subject-fill contract."
   },
   "faceted/beast-ammit": {
     "verdict": "beats shipped",

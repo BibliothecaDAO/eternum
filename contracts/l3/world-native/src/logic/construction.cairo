@@ -44,7 +44,7 @@ pub mod ConstructionLogic {
         StoryEvent: StoryEvent,
         RowSet: RowSet,
     }
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     pub fn observed_board_rules(game_id: u32) -> Option<crate::buildings::BoardRules> {
         let state = contract_state_for_testing();
         state.buildings.board(game_id)
@@ -52,7 +52,7 @@ pub mod ConstructionLogic {
 
     #[abi(embed_v0)]
     impl BuildingRules of crate::buildings::IBuildingRules<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn building_rule(
             self: @ContractState, key: crate::buildings::BuildingRuleKey,
         ) -> crate::buildings::BuildingRule {
@@ -219,7 +219,7 @@ pub mod ConstructionLogic {
         fn realm_knowledge(self: @ContractState, key: ResourceKey) -> Option<crate::research::RealmKnowledge> {
             crate::logic::research::knowledge(key)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn research_price(self: @ContractState, game_id: u32, row: u8, tier: u8) -> crate::research::ResearchPrice {
             crate::logic::research::price(game_id, row, tier)
         }

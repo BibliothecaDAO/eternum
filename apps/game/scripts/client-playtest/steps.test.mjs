@@ -99,6 +99,20 @@ describe("the still map's frames", () => {
   });
 });
 
+describe("the Blitz realm load", () => {
+  it("plays the realm-load steps on a live Blitz game, its realm found by the top bar's Realm tab", () => {
+    const blitz = STEP_SETS["blitz-realm-load"];
+    const names = (steps) => steps.map((step) => step.name);
+    const firstRealm = blitz.steps.find((step) => step.name === "first-realm").verify;
+    const onTheRealm = { scene: "hex", rendered: "hex", place: "Realm", dialogs: [], pressed: [] };
+
+    expect(blitz.game.mode).toBe("blitz");
+    expect(names(blitz.steps)).toEqual(names(STEP_SETS["realm-load"].steps));
+    expect(firstRealm({ seen: onTheRealm }).status).toBe("completed");
+    expect(firstRealm({ seen: { ...onTheRealm, rendered: "map" } }).status).toBe("failed");
+  });
+});
+
 describe("the Blitz still map", () => {
   const blitzMap = { scene: "map", rendered: "map", place: null, dialogs: [], pressed: [] };
   const stepNames = (set) => STEP_SETS[set].steps.map((step) => step.name);
@@ -151,27 +165,36 @@ describe("entering Frontier", () => {
 
 describe("reading the season", () => {
   const verify = verifyOf("season");
-  const page = (open, pressed = open ? ["Season"] : []) => ({ page: open, pressed });
+  const seen = (panels, pressed = []) => ({ ...onTheMap, panels, pressed });
+  const desktop = {
+    desktop: true,
+    opened: seen(["Realm", "Season"], ["Season"]),
+    closed: seen(["Realm", "Feed"], ["Feed"]),
+  };
+  const phone = { desktop: false, menu: ["Menu"], opened: seen(["Season"]), closed: seen([]) };
 
-  it("completes on a desktop when the Season place opened its page and a second press closed it", () => {
-    expect(verify({ seen: onTheMap, played: { desktop: true, opened: page(true), closed: page(false) } }).status).toBe(
-      "completed",
-    );
+  it("completes on a desktop when the Season place lit and its board drew in the rail, then closed", () => {
+    expect(verify({ seen: onTheMap, played: desktop }).status).toBe("completed");
   });
 
-  it("fails a desktop whose Season place opened nothing, or whose page stayed open", () => {
-    expect(verify({ seen: onTheMap, played: { desktop: true, opened: page(false), closed: page(false) } }).reason).toBe(
-      "the Season place opened no page",
-    );
-    expect(verify({ seen: onTheMap, played: { desktop: true, opened: page(true), closed: page(true) } }).reason).toBe(
-      "the Season page did not close",
-    );
+  it("fails a desktop whose place stayed dark, whose board never drew, or whose board stayed", () => {
+    const dark = { ...desktop, opened: seen(["Realm", "Season"]) };
+    expect(verify({ seen: onTheMap, played: dark }).reason).toBe("the Season place was not lit");
+    const empty = { ...desktop, opened: seen(["Realm", "Feed"], ["Season"]) };
+    expect(verify({ seen: onTheMap, played: empty }).reason).toBe("the Season's board was not drawn");
+    const stayed = { ...desktop, closed: seen(["Realm", "Season"]) };
+    expect(verify({ seen: onTheMap, played: stayed }).reason).toBe("the Season's board did not close");
   });
 
-  it("reads a phone's season from its Menu sheet", () => {
-    const phone = { desktop: false, opened: ["Menu"], read: ["Season"], closed: [] };
+  it("reads a phone's season from its Menu: the board drew, then its Back closed it", () => {
     expect(verify({ seen: onTheMap, played: phone }).status).toBe("completed");
-    expect(verify({ seen: onTheMap, played: { ...phone, opened: [] } }).status).toBe("failed");
+    expect(verify({ seen: onTheMap, played: { ...phone, menu: [] } }).reason).toBe("no Menu sheet opened");
+    expect(verify({ seen: onTheMap, played: { ...phone, opened: seen([]) } }).reason).toBe(
+      "the Season's board was not drawn",
+    );
+    expect(verify({ seen: onTheMap, played: { ...phone, closed: seen(["Season"]) } }).reason).toBe(
+      "the Season's board did not close",
+    );
   });
 });
 
@@ -185,6 +208,12 @@ describe("a story opened from the Feed", () => {
 
   it("completes on the map at the story's place, selected, in the same page", () => {
     expect(verify({ seen: selected, played }).status).toBe("completed");
+  });
+
+  it("fails a phone whose Log never opened, and is blocked only when an opened Feed holds no story", () => {
+    expect(verify({ seen: selected, played: { log: false, row: null } }).reason).toBe("the Log did not open");
+    expect(verify({ seen: selected, played: { log: true, row: null } }).status).toBe("blocked");
+    expect(verify({ seen: selected, played: { ...played, log: true } }).status).toBe("completed");
   });
 
   it("fails a page that loaded again, a place not selected, another tile selected, or the camera elsewhere", () => {
@@ -504,6 +533,10 @@ describe("the HUD's layout on the map", () => {
       judged({ parts: { ...parts, "LORDS 1,240": { ...parts["LORDS 1,240"], top: 180, bottom: 210 } } }).reason,
     ).toBe("overlapping: LORDS 1,240 over Armies");
     expect(judged({ parts, covered: ["Research: Research"] }).reason).toBe("covered controls: Research: Research");
+  });
+
+  it("fails a part whose content runs past its edge, naming it", () => {
+    expect(judged({ parts, spilled: ["Realm"] }).reason).toBe("content past its edge: Realm");
   });
 
   it("fails a region holding more than seven parts, and holds one of seven", () => {

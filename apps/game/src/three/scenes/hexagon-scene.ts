@@ -57,6 +57,7 @@ import {
 import { type MapControls } from "three/addons/controls/MapControls.js";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { SceneName } from "../types";
+import { inOpenMapArea, openMapArea } from "../utils/labels/hud-clearance";
 import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { CameraView } from "./camera-view";
@@ -76,6 +77,12 @@ type CameraTransitionStatus = "idle" | "transitioning";
 export interface SceneSetupContext {
   isCurrent: () => boolean;
 }
+
+/**
+ * The move under way on each shared camera (keyed by its controls), whichever scene started it: the next writer of the
+ * camera, an animation or a placement, stops it through it, so two scenes never drive one camera at once.
+ */
+const cameraMoves = new WeakMap<object, () => void>();
 
 export abstract class HexagonScene {
   protected animationsPaused = false;
@@ -100,7 +107,6 @@ export abstract class HexagonScene {
   protected thunderBoltManager!: ThunderBoltManager;
   protected worldAtmosphereController!: WorldAtmosphereController;
   protected GUIFolder!: any;
-  protected modelLoadPromises: Array<Promise<void>> = [];
   protected state!: AppStore;
   protected fog!: Fog;
 
@@ -185,10 +191,8 @@ export abstract class HexagonScene {
     publishCameraTransitionFrame({
       updateControls: () => this.controls.update(),
       syncDistanceVisuals: () => {
-        const distance = this.controls.object.position.distanceTo(this.controls.target);
-        this.updateCameraClipPlanesForDistance(distance);
-        this.updateFogForDistance(distance);
-        this.syncResolvedCameraViewFromDistance(distance);
+        this.syncDistanceVisuals();
+        this.syncResolvedCameraViewFromDistance(this.controls.object.position.distanceTo(this.controls.target));
       },
       emitFallbackChange: () => {
         this.controls.dispatchEvent({ type: "change" });
@@ -868,10 +872,7 @@ export abstract class HexagonScene {
     if (transitionStart.cancelledToken !== null) {
       incrementWorldmapRenderCounter("zoomTransitionsCancelled");
     }
-    this.cameraTransitionTimeline?.kill();
-    this.cameraTransitionTimeline = null;
-    gsap.killTweensOf(camera.position);
-    gsap.killTweensOf(target);
+    this.stopCameraMove();
 
     const duration = transitionDuration || 2;
     const transitionToken = this.cameraTransitionState.activeToken;
@@ -889,6 +890,7 @@ export abstract class HexagonScene {
         this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, transitionToken);
         this.cameraTransitionTimeline = null;
         this.setCameraTransitionStatus("idle");
+        if (cameraMoves.get(this.controls) === cancel) cameraMoves.delete(this.controls);
         onFinish?.();
       },
     });
@@ -918,13 +920,37 @@ export abstract class HexagonScene {
       },
       0,
     );
-    return () => {
+    const cancel = () => {
       if (this.cameraTransitionState.activeToken !== transitionToken) return;
       this.cameraTransitionTimeline?.kill();
       this.cameraTransitionTimeline = null;
       this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, transitionToken);
       this.setCameraTransitionStatus("idle");
     };
+    cameraMoves.set(this.controls, cancel);
+    return cancel;
+  }
+
+  /**
+   * Puts the camera at a pose at once, as the latest of its writers: a move still under way on the shared camera,
+   * whichever scene started it (the map's minimap pan as the realm view sets up), is stopped first, its scene's
+   * transition closed, so it cannot carry the camera on past this pose.
+   */
+  protected placeCamera(position: Vector3, target: Vector3): void {
+    this.stopCameraMove();
+    this.controls.target.copy(target);
+    this.controls.object.position.copy(position);
+    this.notifyControlsChanged();
+  }
+
+  /** Stops the shared camera's move under way, through the cancel of the scene that started it, and any stray tween. */
+  private stopCameraMove(): void {
+    cameraMoves.get(this.controls)?.();
+    cameraMoves.delete(this.controls);
+    this.cameraTransitionTimeline?.kill();
+    this.cameraTransitionTimeline = null;
+    gsap.killTweensOf(this.controls.object.position);
+    gsap.killTweensOf(this.controls.target);
   }
 
   public moveCameraToXYZ(x: number, y: number, z: number, duration: number = 2) {
@@ -940,25 +966,44 @@ export abstract class HexagonScene {
 
     if (duration) {
       this.cameraAnimate(newPosition, newTarget, duration);
-      return;
+    } else {
+      this.placeCamera(newPosition, newTarget);
     }
-    // A move that takes the camera now ends any move under way, which would otherwise go on writing its own target.
-    this.endCameraTransition();
-    target.copy(newTarget);
-    pos.copy(newPosition);
-    this.notifyControlsChanged();
   }
 
-  /** The camera's transition under way, if any, stops where it is and the camera is idle again. */
-  private endCameraTransition(): void {
-    this.cameraTransitionTimeline?.kill();
-    this.cameraTransitionTimeline = null;
-    gsap.killTweensOf(this.controls.object.position);
-    gsap.killTweensOf(this.controls.target);
-    const token = this.cameraTransitionState.activeToken;
-    if (token === null) return;
-    this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, token);
-    this.setCameraTransitionStatus("idle");
+  /**
+   * Puts a point of this scene at the centre of the map's open area (openMapArea: between the HUD's columns, under its top
+   * band and above its foot, a phone's open sheet included) instead of the screen's centre, which those cover, at the
+   * same zoom and angle.
+   */
+  protected centerOnOpenMap(point: Vector3): void {
+    this.moveCameraToXYZ(point.x, point.y, point.z, 0);
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    const area = openMapArea(viewport);
+    const aim = new Vector2(
+      (area.left + area.right) / viewport.width - 1,
+      1 - (area.top + area.bottom) / viewport.height,
+    );
+    this.camera.updateMatrixWorld();
+    const raycaster = new Raycaster();
+    raycaster.setFromCamera(aim, this.camera);
+    const ground = raycaster.ray.intersectPlane(new Plane(new Vector3(0, 1, 0), -point.y), new Vector3());
+    if (!ground) return;
+    // The ground now under the open area's centre is where the point should be: move by the difference.
+    this.moveCameraToXYZ(2 * point.x - ground.x, point.y, 2 * point.z - ground.z, 0);
+  }
+
+  /**
+   * A point of this scene the HUD covers (a phone's sheet over the plot it opened for) is brought to the centre of the
+   * map's open area; one in sight keeps the camera where the player put it.
+   */
+  protected keepInOpenMap(point: Vector3): void {
+    this.camera.updateMatrixWorld();
+    const projected = point.clone().project(this.camera);
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    const onScreen = { x: ((projected.x + 1) / 2) * viewport.width, y: ((1 - projected.y) / 2) * viewport.height };
+    if (inOpenMapArea(onScreen, viewport)) return;
+    this.centerOnOpenMap(point);
   }
 
   /**
@@ -1266,9 +1311,6 @@ export abstract class HexagonScene {
     this.cameraViewListeners.clear();
     this.cameraTransitionListeners.clear();
 
-    // Clean up any pending promises or model loading
-    this.modelLoadPromises = [];
-
     // Finally, clear the scene
     this.scene.clear();
     this.interactionOverlayScene.clear();
@@ -1325,6 +1367,13 @@ export abstract class HexagonScene {
 
   public removeCameraTransitionListener(listener: (status: CameraTransitionStatus) => void) {
     this.cameraTransitionListeners.delete(listener);
+  }
+
+  /** The far plane and the fog follow the camera's distance, whatever moved it: a pinch, a wheel or a transition. */
+  protected syncDistanceVisuals(): void {
+    const distance = this.controls.object.position.distanceTo(this.controls.target);
+    this.updateCameraClipPlanesForDistance(distance);
+    this.updateFogForDistance(distance);
   }
 
   private updateCameraClipPlanesForDistance(distance: number): void {

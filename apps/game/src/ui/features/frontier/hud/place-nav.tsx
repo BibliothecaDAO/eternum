@@ -4,10 +4,10 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { useSideways } from "@/shell/frame/layout";
 
-import { CHAT, LOG, MAP, MENU, REALM, RESEARCH } from "@/ui/design-system/kit/words";
+import { CHAT, EVENTS_WORDS, MENU, REALM, RESEARCH, WORLD } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-export type Place = "map" | "realm" | "research" | "log" | "chat" | "menu";
+export type Place = "realm" | "research" | "feed" | "chat" | "menu";
 
 /** A dot on a slot: lit is news (research to buy), amber and ember a store nearing or at its limit. */
 type Dot = "lit" | "amber" | "ember";
@@ -19,24 +19,29 @@ const DOTS: Record<Dot, string> = {
 };
 
 /**
- * The phone's place bar: Map and Realm as one switch (the two places of play), then Research, the Log (the Events'
- * history, with what arrived since it was read), Chat and Menu, an icon and one word each, at the foot of every nav
- * page, or down the left edge of a phone held sideways. The lit slot is where the player is.
+ * The phone's place bar: the Realm / World switch, Research, the Feed (the same as the desktop's, with what arrived since
+ * it was read), Chat and Menu, an icon and one word each, at the foot of every nav page, or down the left edge of a
+ * phone held sideways. The switch shows where it takes the player, World on the realm and Realm on the map (owner, 26
+ * October: "the toggle (button) should switch realms/world icon otherwise its not a toggle"), so it is never lit; each
+ * other slot opens its place over the map and a second press closes it, and the lit slot is what is open.
  */
 export const PlaceNav = ({
   place,
+  onRealm,
   onGo,
   realmDot,
   researchDot,
   events,
   unread,
 }: {
-  place: Place;
+  place: Place | null;
+  /** Whether the realm's board is what the screen shows: the switch then offers the world. */
+  onRealm: boolean;
   onGo: (place: Place) => void;
   realmDot?: Dot;
   /** Whether Research has a node to buy; none leaves the slot out, for a player with no realm to research. */
   researchDot?: boolean;
-  /** Events arrived since the Log was last read. */
+  /** Events arrived since the Feed was last read. */
   events: number;
   /** Chat messages unread; none shows nothing. */
   unread: number;
@@ -56,12 +61,17 @@ export const PlaceNav = ({
         className="flex-1"
         bodyClassName={cn("flex items-stretch justify-between gap-0.5", sideways ? "h-full flex-col" : "min-h-14")}
       >
-        {slot("map", "map", MAP)}
-        {slot("realm", "realm", REALM, realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />)}
-        <i aria-hidden className={cn("shrink-0 self-stretch bg-hud-line", sideways ? "h-px" : "w-px")} />
+        <Slot
+          switchTo={onRealm ? "world" : "realm"}
+          lit={false}
+          icon={onRealm ? "map" : "realm"}
+          word={onRealm ? WORLD : REALM}
+          badge={realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />}
+          onClick={() => onGo("realm")}
+        />
         {researchDot !== undefined &&
           slot("research", "research", RESEARCH, researchDot && <i className={cn("size-2 rounded-full", DOTS.lit)} />)}
-        {slot("log", "chronicles", LOG, count(events))}
+        {slot("feed", "chronicles", EVENTS_WORDS.feed, count(events))}
         {slot("chat", "chat", CHAT, count(unread))}
         {slot("menu", "menu", MENU)}
       </HudPanel>
@@ -70,12 +80,15 @@ export const PlaceNav = ({
 };
 
 const Slot = ({
+  switchTo,
   lit,
   icon,
   word,
   badge,
   onClick,
 }: {
+  /** The Realm / World switch's destination, for what reads where the player is (the playtest); none for a place. */
+  switchTo?: "realm" | "world";
   lit: boolean;
   icon: IconMeaning;
   word: string;
@@ -85,6 +98,7 @@ const Slot = ({
   <button
     type="button"
     aria-current={lit ? "page" : undefined}
+    data-switch={switchTo}
     onClick={onClick}
     className={cn(
       "flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-hud-strong",

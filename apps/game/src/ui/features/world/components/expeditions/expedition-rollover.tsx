@@ -57,8 +57,13 @@ export function watchDayTurn(world: DayTurnWorld): () => void {
   let blockDay: number | null | undefined;
   let reprojectDue = false;
   let siteDue: Position | null = null;
+  /** A day's end is waiting to hear that its new land is in. */
+  let landDue = false;
 
-  /** Brings the new land in once nothing would see it change: re-projected, then the camera on the realm's new site. */
+  /**
+   * Brings the new land in once nothing would see it change: re-projected, then the camera on the realm's new site. The
+   * moment hears it is in once it is, in the black or after it lifted.
+   */
   const bringInTheNewLand = () => {
     const moment = useDayEndStore.getState();
     if (mistRolls(moment)) return;
@@ -71,7 +76,10 @@ export function watchDayTurn(world: DayTurnWorld): () => void {
       world.navigate(siteDue);
       siteDue = null;
     }
-    if (moment.phase === "black" && !reprojectDue && !siteDue) moment.markLandReady();
+    if (landDue && !reprojectDue && !siteDue) {
+      landDue = false;
+      moment.markLandReady();
+    }
   };
 
   /** The player's realm's site on the chain clock's day; null for a viewer with no realm. */
@@ -116,7 +124,10 @@ export function watchDayTurn(world: DayTurnWorld): () => void {
   const id = setInterval(check, POLL_MS);
   const unsubscribe = useDayEndStore.subscribe((moment, before) => {
     if (moment.phase === before.phase) return;
-    if (moment.phase === "black") siteDue = realmSite();
+    if (moment.phase === "black") {
+      siteDue = realmSite();
+      landDue = true;
+    }
     bringInTheNewLand();
   });
   return () => {

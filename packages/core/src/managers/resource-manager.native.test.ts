@@ -49,7 +49,7 @@ describe("native resource facts", () => {
     });
     expect(manager.hasResources()).toBe(true);
     expect(manager.balance(23)).toBe(0n);
-    expect(manager.isActive(23)).toBe(false);
+    expect(manager.isProducingAt(23, 350)).toBe(false);
     store.applyFacts([...upsert("0x2", { ResourceBalance: balance(), ResourceProduction: production })]);
     expect(observedBalance).toBe(9007199254740993n);
     expect(manager.balance(23)).toBe(9007199254740993n);
@@ -69,6 +69,18 @@ describe("native resource facts", () => {
     store.applyFacts([...upsert("0x1", { ResourceWeight: weight(), ResourceBalance: { ...balance(), balance: 9n } })]);
     expect(manager.balance(23)).toBe(9n);
     expect(observedBalance).toBeUndefined();
+  });
+
+  it("produces until a finite batch runs out at the clock, with no later settlement of its row", () => {
+    const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
+    store.applyFacts([...upsert("0x100", { SliceRules: { ...rules, game_id: 1, mode_rules: 0 } })]);
+    store.applyFacts([
+      ...upsert("0x1", { ResourceWeight: weight(), ResourceBalance: balance(), ResourceProduction: production }),
+    ]);
+    const manager = new ResourceManager(store, 7, 1);
+    // 10 output at 2 a second, settled at 100: 2 left at 104, none from 105.
+    expect([104, 105, 1_000].map((at) => manager.isProducingAt(23, at))).toEqual([true, false, false]);
   });
 
   it("answers a Blitz realm's balances as unknown, not as a crash, while the acting account is being selected", () => {

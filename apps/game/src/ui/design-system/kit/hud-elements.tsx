@@ -27,8 +27,8 @@ import {
 import { createPortal } from "react-dom";
 
 import { OpenedFromPanel } from "./opened-from-panel";
-import { SheetHandle, useSheetCloses } from "./sheet-closes";
-import { BACK, CLOSE, TIER_WORDS, TRY_AGAIN } from "./words";
+import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
+import { BACK, CLOSE, type Tier, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -148,8 +148,7 @@ HudField.displayName = "HudField";
 
 /**
  * Whole units typed into an amount field, read as the game has always read them: a sign, digits and thousands commas,
- * the whole part only ("1.5" is 1), held between `min` and `max` ("-500" is 0). Nothing typed yet is null: the field
- * stays blank until it loses focus, and nothing is reported.
+ * the whole part only ("1.5" is 1), held between `min` and `max` ("-500" is 0). Nothing typed yet is null.
  */
 const parseWholeAmount = (text: string, min: number, max: number): number | null =>
   heldBetween(readTypedNumber(text, { whole: true }), min, max);
@@ -166,8 +165,10 @@ const heldBetween = (typed: number | null, min: number, max: number): number | n
   typed === null ? null : Math.min(Math.max(Number.isNaN(typed) ? min : typed, min), max);
 
 /**
- * The one amount input every amount element types into: whole units, formatted, blank while cleared. A decimal one keeps
- * what is typed on screen while it has focus, so a fraction can be typed one digit at a time ("0." stays "0.").
+ * The one amount input every amount element types into: whole units, formatted. A decimal one keeps what is typed on
+ * screen while it has focus, so a fraction can be typed one digit at a time ("0." stays "0."). A cleared field is its
+ * least, `min`: it says so at once and stays blank while it has focus, so its caller never still holds the amount it
+ * showed before. A `display` one is the amount a sheet is about, typed where it is shown large.
  */
 export const AmountInput = ({
   label,
@@ -175,6 +176,7 @@ export const AmountInput = ({
   min = 0,
   max,
   decimals = false,
+  display = false,
   disabled,
   autoFocus,
   onChange,
@@ -184,13 +186,14 @@ export const AmountInput = ({
   min?: number;
   max: number;
   decimals?: boolean;
+  display?: boolean;
   disabled?: boolean;
   autoFocus?: boolean;
   onChange: (amount: number) => void;
 }) => {
   const [draft, setDraft] = useState<string | null>(null);
   return (
-    <label className="ui-field">
+    <label className="ui-field" data-size={display ? "display" : undefined}>
       <span className="sr-only">{label}</span>
       <input
         aria-label={label}
@@ -203,7 +206,7 @@ export const AmountInput = ({
           const amount = decimals ? parseDecimalAmount(text, min, max) : parseWholeAmount(text, min, max);
           if (amount === null) setDraft("");
           else setDraft(decimals ? (typedNumberText(text) ?? formatTypedNumber(amount)) : null);
-          if (amount !== null) onChange(amount);
+          onChange(amount ?? min);
         }}
         onBlur={() => setDraft(null)}
       />
@@ -273,8 +276,8 @@ export const HudNumberField = ({
 const QUICK_ADD = 500;
 
 /**
- * How many troops go, for a quick deploy (the owner's rounds 3 and 4): the count typed with +500 per press and Max
- * right beside it, then out of how many can ("that fit" when the army's room runs out first); under them, a slider
+ * How many troops go, for a quick deploy (the owner's rounds 3 and 4): the count typed with +500 per press (where more
+ * than 500 can go; else it would only be Max) and Max right beside it, then out of how many can ("that fit" when the army's room runs out first); under them, a slider
  * across the same range, to drag the count by hand (the owner, playing dev: "I kinda wish I still had the slider").
  */
 export const HudTroopAmount = ({
@@ -298,9 +301,11 @@ export const HudTroopAmount = ({
   return (
     <div className="ui-amount">
       <AmountInput label={name} value={value} max={most} disabled={disabled} onChange={onChange} />
-      <HudButton kind="secondary" disabled={full} onClick={() => onChange(Math.min(value + QUICK_ADD, most))}>
-        +{QUICK_ADD}
-      </HudButton>
+      {most > QUICK_ADD && (
+        <HudButton kind="secondary" disabled={full} onClick={() => onChange(Math.min(value + QUICK_ADD, most))}>
+          +{QUICK_ADD}
+        </HudButton>
+      )}
       <HudButton kind="secondary" disabled={full} onClick={() => onChange(most)}>
         Max
       </HudButton>
@@ -383,7 +388,7 @@ export const HudDeploy = ({
 };
 
 /** The shares a transfer row's quick steps take of what is held. */
-const TRANSFER_STEPS = [0.25, 0.5, 0.75, 1] as const;
+const TRANSFER_STEPS = [0.5, 1] as const;
 
 /**
  * How much of something, from `min` (none by default) to `max`, dragged: the part taken fills the track in the age's
@@ -749,17 +754,31 @@ export const HudTierChip = ({ tier }: { tier: 1 | 2 | 3 }) => (
 );
 
 /**
- * A chest's rarity, common to legendary: its pips filled to its tier on a frame that thickens and warms with it, its
- * word beside them where there is room. Not a troop tier: a rarity has five steps and no colours of its own kind.
+ * A chest's rarity, common to legendary: its word on a plate whose frame thickens and warms with it. Not a tier of
+ * something the player levels: a chest is found at its rarity and keeps it.
  */
-export const HudRarity = ({ tier, word = false }: { tier: 1 | 2 | 3 | 4 | 5; word?: boolean }) => (
-  <span className="ui-rarity" data-tier={tier} role="img" aria-label={TIER_WORDS[tier - 1]}>
-    <span aria-hidden className="ui-rarity__pips">
-      {TIER_WORDS.map((name, index) => (
-        <i key={name} data-filled={index < tier || undefined} />
-      ))}
-    </span>
-    {word && <span aria-hidden>{TIER_WORDS[tier - 1]}</span>}
+export const HudRarity = ({ tier }: { tier: Tier }) => (
+  <span className="ui-rarity" data-tier={tier}>
+    {TIER_WORDS[tier - 1]}
+  </span>
+);
+
+/**
+ * The tier a player levels something to (a building type's row, an army's attribute): a gem in the tier's rarity
+ * colour with its numeral, Common I to Legendary V.
+ */
+export const HudTier = ({ tier }: { tier: Tier }) => (
+  <span className="ui-tier" data-tier={tier} role="img" aria-label={TIER_WORDS[tier - 1]}>
+    {tierNumeral(tier)}
+  </span>
+);
+
+/** A tier's next step, from the gem it holds to the next one's. */
+export const HudTierStep = ({ from, to }: { from: Tier; to: Tier }) => (
+  <span className="ui-tier-step" role="img" aria-label={`${TIER_WORDS[from - 1]} → ${TIER_WORDS[to - 1]}`}>
+    <HudTier tier={from} />
+    <span aria-hidden>→</span>
+    <HudTier tier={to} />
   </span>
 );
 
@@ -1200,8 +1219,9 @@ export const HudNotice = ({
 );
 
 /**
- * News across the top of the map: what kind it is (its painting and a word over the headline), the headline, a line,
- * and what the player can do about it; its side in the news' tone (bad for a war report, warn for a timer).
+ * News across the top of the map: what kind it is (its painting and a word over the headline), the headline and a
+ * line; its side in the news' tone (bad for a war report, warn for a timer). It is read, never pressed: it takes no
+ * click, so the map and HUD under it stay playable while it shows.
  */
 export const HudBanner = ({
   tone,
@@ -1209,14 +1229,12 @@ export const HudBanner = ({
   eyebrow,
   title,
   line,
-  actions,
 }: {
   tone?: Tone;
   icon: IconMeaning;
   eyebrow: string;
   title: string;
   line?: ReactNode;
-  actions?: ReactNode;
 }) => (
   <section className="ui ui-banner" data-tone={tone} role="status" aria-label={title}>
     <span className="ui-banner__mark" aria-hidden="true">
@@ -1227,7 +1245,6 @@ export const HudBanner = ({
       <span className="ui-banner__title">{title}</span>
       {line && <span className="ui-banner__line">{line}</span>}
     </span>
-    {actions !== undefined && <span className="ui-banner__actions">{actions}</span>}
   </section>
 );
 
@@ -1282,8 +1299,9 @@ export const SheetDock = createContext<HTMLElement | null>(null);
 
 /**
  * A sheet over the stage: the panel's look, its name in the header band and its way out as the cue (a cross, or a back
- * arrow when it opened from another panel, whose place it takes). On a phone it rises from the place bar to at most half
- * the screen with a handle (a tap or a drag down closes it), and the map above it stays playable; from the desktop width
+ * arrow when it opened from another panel, whose place it takes). On a phone it rises from the place bar, as tall as
+ * what it holds and at most the phone panel's height, under that one row (owner, 26 October 2026: layout A), which a
+ * drag down also closes; the map above it stays playable. From the desktop width
  * up it docks under the top bar or in its host's SheetDock, with the stage playable beside it. Escape and system back
  * close it on both. Its foot is a window's (HudWindowFoot), so the verb and cost stay visible while the body scrolls.
  */
@@ -1292,6 +1310,7 @@ export const HudSheet = ({ label, onClose, children }: { label: string; onClose:
   const dock = useContext(SheetDock);
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   useSheetCloses(onClose);
+  const drag = useDragDownCloses(onClose);
   const sheet = (
     <section
       role="dialog"
@@ -1300,22 +1319,21 @@ export const HudSheet = ({ label, onClose, children }: { label: string; onClose:
       data-docked={dock ? "" : undefined}
       className="ui ui-panel ui-sheet"
     >
-      <SheetHandle onClose={onClose}>
-        <i className="ui-sheet__grip" />
-      </SheetHandle>
-      <PanelHead
-        title={label}
-        cue={
-          <HudIconButton
-            icon={back ? "arrow-left" : "close"}
-            label={back ? BACK : CLOSE}
-            kind="quiet"
-            size="sm"
-            onClick={onClose}
-          />
-        }
-        press={null}
-      />
+      <div className="ui-sheet__head" {...drag.handlers}>
+        <PanelHead
+          title={label}
+          cue={
+            <HudIconButton
+              icon={back ? "arrow-left" : "close"}
+              label={back ? BACK : CLOSE}
+              kind="quiet"
+              size="sm"
+              onClick={onClose}
+            />
+          }
+          press={null}
+        />
+      </div>
       <WindowFootContext.Provider value={foot}>
         <div className="ui-sheet__body">{children}</div>
       </WindowFootContext.Provider>

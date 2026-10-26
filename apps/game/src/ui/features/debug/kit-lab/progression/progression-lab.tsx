@@ -66,7 +66,7 @@ export const ProgressionLab = () => {
 /** The game's Research panel on a fixture realm, its picked node the lab's own. */
 const LabResearch = ({ realm }: { realm: RealmResearchFacts }) => {
   const nodes = readResearchTree(realm);
-  const [picked, setPicked] = useState(
+  const [picked, setPicked] = useState<string | null>(
     () => (nodes.find(({ state }) => state === "ready") ?? nodes.find(({ state }) => state === "short"))!.key,
   );
   return (

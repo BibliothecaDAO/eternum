@@ -7,7 +7,7 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { l2TransactionUrl } from "@/runtime/l2-rpc";
+import { L2_BLOCK_MS, l2TransactionUrl } from "@/runtime/l2-rpc";
 import { requireActiveGame } from "@/runtime/world/store";
 import { type EnvironmentLedger, environmentLedger } from "@/shell/value/ledger";
 import { useLedgerPaused } from "@/shell/value/use-ledger-paused";
@@ -115,19 +115,19 @@ export const useWithdrawalsCloseAt = (): number | undefined => {
   return game && chests ? withdrawalsCloseAt(Number(game.end_at), chests.claim_window_seconds) : undefined;
 };
 
-/** The explorer's address of the Starknet transaction that paid a sent withdrawal, asked until the ledger has paid it. */
+/**
+ * The explorer's address of the Starknet transaction that paid a sent withdrawal: its WithdrawalPaid event, which the
+ * ledger emits only as it pays, read each block until it is there.
+ */
 const usePaymentTransaction = (ledger: EnvironmentLedger | null, sent: SentWithdrawal | null): string | undefined =>
   useQuery({
     queryKey: ["ledger", "withdrawal", sent?.claimId],
     queryFn: () => readPaymentTransaction(ledger as EnvironmentLedger, sent as SentWithdrawal),
     enabled: ledger !== null && sent !== null,
-    refetchInterval: (query) => (query.state.data ? false : 5_000),
+    refetchInterval: (query) => (query.state.data ? false : L2_BLOCK_MS),
   }).data ?? undefined;
 
 const readPaymentTransaction = async (ledger: EnvironmentLedger, sent: SentWithdrawal): Promise<string | null> => {
-  const shard = requireActiveGame().chainId;
-  const payment = await ledger.payment(shard, sent.claimId);
-  if (!payment?.paid) return null;
-  const transaction = await ledger.paymentTransaction(shard, sent.claimId, sent.fromBlock);
+  const transaction = await ledger.paymentTransaction(requireActiveGame().chainId, sent.claimId, sent.fromBlock);
   return transaction && l2TransactionUrl(transaction);
 };

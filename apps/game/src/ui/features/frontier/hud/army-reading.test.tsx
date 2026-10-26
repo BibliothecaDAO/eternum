@@ -17,8 +17,8 @@ afterEach(() => {
 
 // Army 1 at 90 of 150 stamina, Army 2 at 100 of 200: Army 2 has more to act with, though less of its maximum.
 const STAMINAS = [
-  { current: 90, max: 150 },
-  { current: 100, max: 200 },
+  { current: 90, max: 150, perExplore: 20 },
+  { current: 100, max: 200, perExplore: 20 },
 ];
 
 it.each([

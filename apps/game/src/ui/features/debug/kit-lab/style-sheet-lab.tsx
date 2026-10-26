@@ -7,7 +7,6 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TipLine } from "@/ui/design-system/kit/named-tips";
 import { Sheet as KitSheet } from "@/ui/design-system/kit/sheet";
-import { TierChip as KitTierChip } from "@/ui/design-system/kit/tier-chip";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
@@ -34,6 +33,7 @@ import {
   HudNotice,
   HudPanel,
   HudRarity,
+  HudTier,
   HudPill,
   HudPortrait,
   HudRelic,
@@ -77,7 +77,7 @@ import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/g
 import { ResourcesIds, siteName } from "@bibliothecadao/types";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { lazy, Suspense, type ReactNode, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import { eventStories, installFixtureGame, PLAYER } from "./fixture-game";
 
@@ -109,8 +109,11 @@ type State = (typeof STATES)[number];
 export const StyleSheetLab = () => {
   useDocumentClass("classic-hud");
   const [store] = useState(installFixtureGame);
-  const [mode, setMode] = useState<HudMode>("blitz");
-  const [device, setDevice] = useState<Device>("desktop");
+  // The lab's Game and Device switches (`mode`, `device`).
+  const [params] = useSearchParams();
+  const asked = params.get("mode");
+  const mode: HudMode = asked !== null && asked in HUD_MODES ? (asked as HudMode) : "blitz";
+  const device: Device = params.get("device") === "phone" ? "phone" : "desktop";
   const sheetRef = useRef<HTMLDivElement>(null);
   return (
     <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: PLAYER } as never}>
@@ -123,39 +126,7 @@ export const StyleSheetLab = () => {
         <header data-lab-chrome className="mb-6 flex flex-wrap items-center gap-4 text-sm text-white/80">
           <h1 className="text-xl font-bold text-white">Style sheet</h1>
           <span>The HUD scope of src/tokens.ts on the left; the type scale, then each element in every state.</span>
-          <label className="flex items-center gap-2">
-            Mode
-            <select
-              value={mode}
-              onChange={(event) => setMode(event.target.value as HudMode)}
-              className="rounded bg-black/60 px-2 py-1"
-            >
-              {(Object.keys(HUD_MODES) as HudMode[]).map((key) => (
-                <option key={key} value={key}>
-                  {AGE_NAMES[key]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center gap-2">
-            Device
-            <select
-              value={device}
-              onChange={(event) => setDevice(event.target.value as Device)}
-              className="rounded bg-black/60 px-2 py-1"
-            >
-              <option value="desktop">Desktop</option>
-              <option value="phone">Phone (390 wide, touch)</option>
-            </select>
-          </label>
-          <nav className="ml-auto flex gap-3 underline">
-            <Link to="/lab/kit/shell">Shell kit</Link>
-            <Link to="/lab/kit/tokens">Tokens</Link>
-            <Link to="/lab/kit/panels">HUD panels</Link>
-            <Link to="/lab/kit/guidance">Guidance</Link>
-            <Link to="/lab/kit/icons">Icons</Link>
-            <Link to="/lab/kit/words">Words</Link>
-          </nav>
+          <span>{AGE_NAMES[mode]}</span>
         </header>
         <div className="flex items-start gap-6">
           <TokenEditor key={mode} target={sheetRef} mode={mode} />
@@ -1084,7 +1055,7 @@ const RelicSection = () => (
 const ChipsSection = () => (
   <Element
     name="Chip"
-    rule="A small tag: a count in gold, a state in its tone, a troop tier in its colour; a chest's rarity, common to legendary, on its own framed chip. An amount of something leads with its painting (two overlap), and is named whole for assistive technology."
+    rule="A small tag: a count in gold, a state in its tone, a troop tier in its colour; a chest's rarity, common to legendary, its word on its own framed chip; a tier the player levels, its pips on that chip. An amount of something leads with its painting (two overlap), and is named whole for assistive technology."
     sheet={
       <div className="flex flex-wrap items-center gap-3">
         <HudChip>3</HudChip>
@@ -1105,17 +1076,11 @@ const ChipsSection = () => (
         <HudTierChip tier={2} />
         <HudTierChip tier={3} />
         <HudRarity tier={1} />
-        <HudRarity tier={2} />
-        <HudRarity tier={3} word />
-        <HudRarity tier={4} />
-        <HudRarity tier={5} word />
+        <HudRarity tier={3} />
+        <HudRarity tier={5} />
+        <HudTier tier={2} />
+        <HudTier tier={4} />
       </div>
-    }
-    today={
-      <>
-        <KitTierChip tier={1} showWord />
-        <KitTierChip tier={3} showWord={false} />
-      </>
     }
   />
 );
@@ -1406,14 +1371,6 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
             eyebrow="War Report"
             title="Xeswet has fallen"
             line="Moonhand took it from Kestrel."
-            actions={
-              <>
-                <HudButton kind="secondary" size="sm" icon="navigation">
-                  View
-                </HudButton>
-                <HudIconButton icon="close" label="Dismiss" kind="quiet" size="sm" />
-              </>
-            }
           />
           <HudBanner tone="warn" icon="hourglass" eyebrow="Timer Warning" title="Five minutes left" />
         </div>

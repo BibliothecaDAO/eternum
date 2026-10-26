@@ -566,10 +566,12 @@ export const HUD_LAYOUT = {
   settings: "420px",
   /** The day's summary over the map at a Frontier day's end, on a desktop (a phone's is a sheet). */
   summary: "400px",
+  /** A phone's top bar, both its rows (Blitz's and Frontier's end by 94px): the game's news stands under it. */
+  "phone-header": "100px",
   /** The phone's minimap tab. */
   "phone-minimap": "clamp(180px, 35dvh, 320px)",
-  /** A phone page or sheet leaves half the map available above it. */
-  "phone-panel": "50dvh",
+  /** The most of a phone's screen a page or a sheet takes, sized to what it holds (owner, 26 October 2026: layout A). */
+  "phone-panel": "45dvh",
   "chat-width": "800px",
   "chat-height": "600px",
   "chat-pane": "min(60vh, 520px)",
@@ -588,11 +590,7 @@ export const HUD_LAYOUT = {
    * for any panel (a page, a sheet) that stands in it ("feed should have the same width as the other panels").
    */
   "frontier-rail": "480px",
-  /** Its feed's height before it scrolls inside: a capped list, so Next up and chat always keep their room. */
-  "frontier-feed": "45vh",
   "frontier-page-top": "76px",
-  "frontier-stage-top": "150px",
-  "frontier-stage-bottom": "140px",
   /** The Frontier HUD's cards: an army token, a site card, and the Build sheet's building card (option B's band). */
   "frontier-token": "72px",
   "frontier-card": "92px",

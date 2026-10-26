@@ -7,7 +7,7 @@ vi.mock("@/hooks/use-world-spatial-tiles", () => ({ useWorldSpatialTiles: () => 
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("./build/build-sheet", () => ({ BuildSheet: () => null, useOpenPlot: () => null }));
 vi.mock("./upgrade/castle-upgrade", () => ({ CastleUpgrade: () => null, useKeepSelected: () => null }));
-vi.mock("./research/selected-building", () => ({ useSelectedBuildingRow: () => null }));
+vi.mock("./research/selected-building", () => ({ useTappedBuilding: () => null }));
 // The order's outcome, as the game client reports it once the chain applies it.
 vi.mock("@/sync/active-game-client", async (original) => ({
   ...(await original<typeof import("@/sync/active-game-client")>()),

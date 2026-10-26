@@ -38,7 +38,7 @@ export function EndgameMistLabView() {
         canvas: canvas.current!,
         captureMode: false,
         endgame: readEndgameSettings(search),
-        gameMode: new URLSearchParams(search).get("gameMode") === "frontier" ? "frontier" : "blitz",
+        gameMode: new URLSearchParams(search).get("mode") === "frontier" ? "frontier" : "blitz",
         forceWebGL: new URLSearchParams(search).get("rendererMode") === "webgpu-force-webgl",
         qualityTier: "detail",
         revealProgress: 0,
@@ -89,17 +89,6 @@ export function EndgameMistLabView() {
       <aside className="endgame-lab-panel">
         <h1>Fractured veil</h1>
         <p>Production effect · fixture facts · 9 seconds.</p>
-        <label>
-          World
-          <select
-            aria-label="World mode"
-            value={settings.spared === "realm" ? "frontier" : "blitz"}
-            onChange={(e) => change("gameMode", e.target.value)}
-          >
-            <option value="blitz">Blitz · whole map</option>
-            <option value="frontier">Frontier · realm spared</option>
-          </select>
-        </label>
         <label>
           Spires
           <select

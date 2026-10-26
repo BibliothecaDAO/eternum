@@ -41,13 +41,13 @@ pub struct PlayerFaithKey {
 
 #[starknet::interface]
 pub trait IFaithOwnershipViews<T> {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn wonder_faith(self: @T, key: crate::resources::ResourceKey) -> WonderFaith;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn faithful_structure(self: @T, key: crate::resources::ResourceKey) -> FaithfulStructure;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn player_faith_points(self: @T, key: PlayerFaithKey) -> PlayerFaithPoints;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn wonder_faith_winners(self: @T, game_id: u32) -> WonderFaithWinners;
 }
 

@@ -1,7 +1,11 @@
-/** The steps of one realm grid build: its cells are laid out once the models load, the page is prepared off-thread. */
+/**
+ * The steps of one realm grid build: its cells are laid out, then the models its buildings draw load while the page is
+ * prepared off-thread.
+ */
 export interface GridBuildSteps<Layout, Page> {
-  modelsLoaded: () => Promise<unknown>;
   layOut: () => Layout;
+  /** Settles once the laid-out buildings' models are loaded or have failed; it never rejects. */
+  loadModels: (layout: Layout) => Promise<unknown>;
   preparePage: (layout: Layout) => Promise<Page>;
   present: (page: Page) => void;
   release: (layout: Layout) => void;
@@ -38,11 +42,9 @@ export class RealmGridBuilds {
 }
 
 async function runGridBuild<Layout, Page>(steps: GridBuildSteps<Layout, Page>, isLatest: () => boolean) {
-  await steps.modelsLoaded();
-  if (!isLatest()) return;
   const layout = steps.layOut();
   try {
-    const page = await steps.preparePage(layout);
+    const [page] = await Promise.all([steps.preparePage(layout), steps.loadModels(layout)]);
     if (isLatest()) steps.present(page);
   } finally {
     steps.release(layout);

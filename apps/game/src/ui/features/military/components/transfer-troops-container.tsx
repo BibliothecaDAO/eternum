@@ -1,3 +1,4 @@
+import { MAX_ARMY_SIZE } from "@/ui/design-system/kit/words";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
@@ -17,17 +18,18 @@ import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
   ActorType,
   DISPLAYED_SLOT_NUMBER_MAP,
+  formatCharge,
+  formatExact,
+  formatGain,
+  formatWait,
   getDirectionBetweenAdjacentHexes,
+  GuardSlot,
+  guardSlotName,
   ID,
   RELICS,
   ResourcesIds,
   TroopTier,
   TroopType,
-  formatWait,
-  formatCharge,
-  formatExact,
-  guardSlotName,
-  GuardSlot,
 } from "@bibliothecadao/types";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -41,7 +43,6 @@ import {
   getTroopTransferBlockReason,
 } from "./transfer-troops/transfer-eligibility";
 import { TransferSlotSelection } from "./transfer-troops/transfer-slot-selection";
-import { DeploymentStrengthSummary } from "./deployment-strength-summary";
 import { toast } from "@/ui/features/event-feed/notify";
 
 interface TransferTroopsContainerProps {
@@ -217,20 +218,6 @@ export const TransferTroopsContainer = ({
     targetStructure?.base?.level,
     targetExplorerConnectedStructure?.base?.level,
   ]);
-
-  const targetStructureLevel = useMemo(() => {
-    if (transferDirection === TransferDirection.ExplorerToStructure) {
-      return targetStructure?.base?.level ?? null;
-    }
-    return targetStructure?.base?.level ?? targetExplorerConnectedStructure?.base?.level ?? null;
-  }, [targetExplorerConnectedStructure?.base?.level, targetStructure?.base?.level, transferDirection]);
-
-  const targetTierForSummary = useMemo(() => {
-    if (transferDirection === TransferDirection.ExplorerToStructure) {
-      return selectedExplorerTroops?.troops?.tier as TroopTier | undefined;
-    }
-    return targetExplorerTroops?.troops?.tier as TroopTier | undefined;
-  }, [selectedExplorerTroops?.troops?.tier, targetExplorerTroops?.troops?.tier, transferDirection]);
 
   const directionLabel = useMemo(() => {
     if (transferDirection === TransferDirection.ExplorerToStructure) {
@@ -486,22 +473,6 @@ export const TransferTroopsContainer = ({
       ? Math.max(0, capacityRemainingTarget - effectiveTroopAmount)
       : null;
 
-  const selectedTargetGuardCount = useMemo(() => {
-    if (typeof guardSlot !== "number") {
-      return 0;
-    }
-    const targetGuard = targetGuards.find((guard) => guard.slot === guardSlot);
-    const targetGuardCountValue = Number(targetGuard?.troops?.count ?? 0);
-    return Number.isFinite(targetGuardCountValue) ? targetGuardCountValue : 0;
-  }, [guardSlot, targetGuards]);
-
-  const projectedTargetTroopCount = useMemo(() => {
-    if (transferDirection === TransferDirection.ExplorerToStructure) {
-      return selectedTargetGuardCount + effectiveTroopAmount;
-    }
-    return targetExplorerCount + effectiveTroopAmount;
-  }, [effectiveTroopAmount, selectedTargetGuardCount, targetExplorerCount, transferDirection]);
-
   const capacityBlockedMessage = useMemo(() => {
     if (troopCapacityLimit === null || !capacityBlocked) {
       return null;
@@ -532,10 +503,10 @@ export const TransferTroopsContainer = ({
 
     if (transferDirection === TransferDirection.StructureToExplorer) {
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
-        return `Destination explorer will hit its deployment cap (${limitText} troops for this tier).`;
+        return `Destination explorer will reach its ${MAX_ARMY_SIZE.toLowerCase()} (${limitText} troops for this tier).`;
       }
 
-      return `Max troops: ${limitText}`;
+      return `${MAX_ARMY_SIZE}: ${limitText}`;
     }
 
     if (transferDirection === TransferDirection.ExplorerToStructure && typeof guardSlot === "number") {
@@ -549,10 +520,10 @@ export const TransferTroopsContainer = ({
 
     if (transferDirection === TransferDirection.ExplorerToExplorer) {
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
-        return `Destination explorer will hit its deployment cap (${limitText} troops for this tier).`;
+        return `Destination explorer will reach its ${MAX_ARMY_SIZE.toLowerCase()} (${limitText} troops for this tier).`;
       }
 
-      return `Max troops: ${limitText}`;
+      return `${MAX_ARMY_SIZE}: ${limitText}`;
     }
 
     return null;
@@ -871,7 +842,7 @@ export const TransferTroopsContainer = ({
 
       if (delta > 0) {
         tone = "positive";
-        changeLabel = `+${formatCharge(delta)} ${gainText}`;
+        changeLabel = `${formatGain(delta)} ${gainText}`;
       } else if (delta < 0) {
         tone = "negative";
         changeLabel = `-${formatCharge(Math.abs(delta))} ${lossText}`;
@@ -980,21 +951,6 @@ export const TransferTroopsContainer = ({
     return { tier: troop.tier as TroopTier, category: troop.category as TroopType, count };
   }, [targetExplorerTroops?.troops]);
 
-  const deploymentStrengthSummary =
-    targetTierForSummary !== undefined &&
-    (transferDirection !== TransferDirection.ExplorerToStructure || typeof guardSlot === "number") ? (
-      <DeploymentStrengthSummary
-        structureLevel={targetStructureLevel}
-        troopTier={targetTierForSummary}
-        troopCount={projectedTargetTroopCount}
-        maxTroopSize={troopCapacityLimit}
-        capacityRemaining={capacityRemainingAfterTransfer ?? capacityRemainingTarget}
-        className="bg-hud-well"
-        collapsible
-        defaultExpanded={false}
-      />
-    ) : null;
-
   return (
     <div className="flex flex-col space-y-4">
       {isTargetLoading || isSelectedLoading ? (
@@ -1057,7 +1013,6 @@ export const TransferTroopsContainer = ({
                     )}
                   </div>
                 </div>
-                {deploymentStrengthSummary}
               </div>
 
               <div className="flex-1 min-w-0 space-y-4 rounded-md border border-hud-line bg-hud-well p-4">

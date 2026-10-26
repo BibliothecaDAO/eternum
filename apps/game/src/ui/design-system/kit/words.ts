@@ -25,6 +25,11 @@ import {
 
 /** One scale for chests, building types and attributes. */
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
+/** A step on that scale, common (1) to legendary (5). */
+export type Tier = 1 | 2 | 3 | 4 | 5;
+/** A tier by its numeral, Common I to Legendary V. */
+const TIER_NUMERALS = ["I", "II", "III", "IV", "V"] as const;
+export const tierNumeral = (tier: Tier): string => TIER_NUMERALS[tier - 1]!;
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
 export { BEAST_NAMES } from "@bibliothecadao/types";
@@ -100,15 +105,15 @@ export const STAMINA = "stamina";
 /** The HUD's tab for everything the player holds. */
 export const EMPIRE = "Empire";
 /** The places: the nav's words. */
-export const MAP = "Map";
+const MAP = "Map";
 export const REALM = "Realm";
+/** The world map, as the Realm / World switch names it. */
+export const WORLD = "World";
 /** The realm's way home from its card's header: the map centred on it. */
 export const SHOW_MY_REALM = "Show my realm";
 /** A realm's place on its ranks' ladder, as its steps say it: "City, rank 2 of 4". */
 export const rankStep = (rank: string, step: number, of: number) => `${rank}, rank ${step} of ${of}`;
 export const RESEARCH = "Research";
-/** Every event and battle: the Events' history, a phone's place for Events. */
-export const LOG = "Log";
 export const CHAT = "Chat";
 export const MENU = "Menu";
 
@@ -117,9 +122,22 @@ export const TODAY = "Today";
 export const PRODUCTION = "Production";
 /** A store at its limit. */
 export const FULL = "Full";
-export const STORE = "Store";
-/** On a payout's Full mark: the store took what it had room for. */
-export const REST_DID_NOT_FIT = "The store is full: the rest did not fit";
+/**
+ * What the castle holds of a resource, and how much: its storage (owner, 26 October: "store its storage"). The one word
+ * for it, on every card that says it.
+ */
+export const STORAGE = "Storage";
+/** On a payout's Full mark: the storage took what it had room for. */
+export const REST_DID_NOT_FIT = "Storage is full: the rest did not fit";
+/** The most troops one army takes, as a castle level sets it (owner, 26 October: "max army size you mean"). */
+export const MAX_ARMY_SIZE = "Max army size";
+/** What a castle level gives, on its card: the one wording for each (owner, 26 October). */
+export const CASTLE_GIVES = {
+  plots: "Plots",
+  armySlots: "Army slots",
+  storage: STORAGE,
+  maxArmySize: MAX_ARMY_SIZE,
+} as const;
 export const SEASON = "Season";
 /** The season board's columns, by their heads; the two number columns' full names on the heads' tooltip. */
 export const RANK = "Rank";
@@ -131,8 +149,9 @@ export const SETTINGS = "Settings";
 /** The Build order panel: its name, and what it says when no realm has a step it can take now. */
 export const BUILD_ORDER_WORDS = {
   title: "Build order",
-  /** A step's verb: the row's reason already names what it builds, or the level it reaches. */
+  /** A step's verb: the row's reason already names what it builds or deploys, or the level it reaches. */
   build: "Build",
+  deploy: "Deploy",
   levelUp: "Level up",
   nothingNow: "Nothing to build now",
 } as const;
@@ -141,15 +160,19 @@ export const EVENTS_WORDS = {
   nothingYet: "Nothing here yet.",
   /** Frontier's one feed in its rail: the world's history, and lenses on it. */
   feed: "Feed",
-  lenses: { world: "World", mine: "Mine", important: "Important" },
+  /** Its ×: the Feed goes and leaves its place empty; its place opens it again. */
+  closeFeed: "Close the feed",
+  /** The lenses' group, for assistive technology: Events, the Log and the Feed alike. */
+  lens: "Show",
+  lenses: { important: "Important", all: "All" },
   lensTips: {
-    world: "Everything players do in the world, yours in gold",
-    mine: "Everything about you: your actions, your realms' news and what happened to them",
-    important: "Your fights and captures, armies lost, crates you opened, refused orders and the game's milestones",
+    important: "Your fights and captures, armies lost, crates you opened and a Hyperstructure taken by anyone",
+    all: "Everything players do in the world",
   },
   failed: "Event history could not load.",
 } as const;
 export const SETTINGS_WORDS = {
+  app: "App",
   shortcuts: "Keyboard shortcuts",
   show: "Show",
 } as const;
@@ -165,6 +188,8 @@ export const RIGHT_CLICK_SENDS = "A right-click sends it at once.";
 export const CANCEL = "Cancel";
 /** A highlighted tile on its tooltip: ground not yet seen, and troops passed to another of the player's armies. */
 export const UNEXPLORED = "Unexplored";
+/** A reveal that paid under a unit, in the day log: what was done, with no amount (findGain). */
+export const EXPLORED = "Explored";
 export const TRANSFER = "Transfer";
 /** A good held whose weight the game has not given: its donkeys cannot be counted, so it cannot be sent. */
 export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
@@ -182,7 +207,7 @@ export const POPULATION = "population";
 export const needsHave = (need: string, noun: string, have: string) => `Needs ${need} ${noun}, have ${have}`;
 export const needsFree = (need: string, noun: string, free: string) => `Needs ${need} ${noun}, ${free} free`;
 export const needsOverLimit = (need: string, noun: string, limit: string) =>
-  `Needs ${need} ${noun}, the store holds ${limit}`;
+  `Needs ${need} ${noun}, storage holds ${limit}`;
 export const inTime = (duration: string) => `in ${duration}`;
 /**
  * Every cost the HUD shows, the cost first and then what is held, as a newcomer reads it: "10 Labor (you have 1,574)".
@@ -202,18 +227,21 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
   return `${pair.held} / ${pair.need}`;
 };
 /** A training building waits for the Barracks' tier: "Needs Barracks at Rare". */
-export const needsAt = (building: string, tier: string) => `Needs ${building} at ${tier}`;
+/** A building that waits on another's tier, by its numeral: "Needs Barracks III". */
+export const needsTier = (building: string, numeral: string) => `Needs ${building} ${numeral}`;
 /** A training building already standing: a realm holds one of each. */
 export const ONE_A_REALM = "Built. A realm holds one.";
 /** The arrow beside a price that has risen (a screen reader's words). */
 export const PRICE_UP = "price raised";
-/** Why a price is above its base, on the arrow beside it: "Base 400 labor, ×5 with 2 standing". */
-export const priceRaised = (base: string, noun: string, times: string, standing: string) =>
-  `Base ${base} ${noun}, ×${times} with ${standing} standing`;
+/** Why a price is above its first, on the arrow beside it, in one line and no sum: "Costs more with each one standing: 2". */
+export const priceRaised = (standing: string) => `Costs more with each one standing: ${standing}`;
+/** A market's price for one unit, as a shop says it, never as an equation: "0.03 LORDS each". */
+export const priceEach = (price: string, currency: string) => `${price} ${currency} each`;
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
 export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
-export const startsNewArmies = (attribute: string, tier: string) => `new armies start with ${attribute} at ${tier}`;
+/** What a training building gives, by its tier's numeral: "new armies start with Battle II". */
+export const startsNewArmies = (attribute: string, numeral: string) => `new armies start with ${attribute} ${numeral}`;
 /** The fix for a short store that the map can fill: "Explore for labor". */
 export const exploreFor = (noun: string) => `${EXPLORE} for ${noun}`;
 
@@ -297,12 +325,11 @@ export const TRAINING_BUILDINGS = [
   buildingName(BuildingType.ScoutsLodge, true),
   buildingName(BuildingType.Hearth, true),
 ] as const;
-export const BUILDINGS = "Buildings";
-/** The castle rows that unlock the three reaches beyond the spire. */
-export const ETHEREAL = "Ethereal";
-export const REACH_NUMERALS = ["I", "II", "III"] as const;
+/** The castle rows that unlock the three depths beyond the spire. */
+const ETHEREAL = "Ethereal";
+export const DEPTH_NUMERALS = ["I", "II", "III"] as const;
 /** A depth by its name: "Ethereal II". */
-export const reachName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${REACH_NUMERALS[depth - 1]}`;
+export const depthName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${DEPTH_NUMERALS[depth - 1]}`;
 
 /**
  * A realm's spire, its card's words: whose it is, the army it acts for, each depth's entry or why not, and what entering
@@ -331,7 +358,7 @@ export const BUILDING_FIGURES = {
   eachMakes: (noun: string) => `${noun} each makes`,
   castleMakes: (noun: string) => `${noun} the castle makes`,
   standing: "standing",
-  held: (noun: string) => `${noun} held of its store's limit`,
+  held: (noun: string) => `${noun} held of its ${STORAGE.toLowerCase()}`,
   eachAdds: `${POPULATION} each adds`,
   eachTakes: `${POPULATION} each takes`,
   startsAt: (attribute: string) => `${attribute} new armies start at`,
@@ -340,15 +367,6 @@ export const BUILDING_FIGURES = {
 /** A slider's two ends, each a button: the least and the most the player can choose. */
 export const MINIMUM = "Minimum";
 export const MAXIMUM = "Maximum";
-
-/**
- * How far the wheat left at home after a deploy lets the new army march (each troop eats wheat a tile), short: a scout
- * eats so little that its reach runs to thousands.
- */
-export const marchLine = (tiles: number) =>
-  tiles === 0
-    ? `Leaves no ${WHEAT} to march`
-    : `Leaves wheat to march ${tiles === 1 ? "1 tile" : `${formatAmount(tiles)} tiles`}`;
 
 /**
  * The stamina a new army starts on, which its army slot holds (the owner, 20 October 2026: "stamina is slot tied"):
@@ -378,6 +396,11 @@ export const slotBarWhy = (fresh: boolean) => (fresh ? "Its slot is fresh today"
 /** Raise an army from troops at home; with none, the realm's Barracks trains them. */
 export const DEPLOY = "Deploy";
 export const NO_TROOPS_AT_HOME = "No troops at home";
+/** Every tile beside the realm holds something: a deploy has nowhere to step out. */
+export const NO_OPEN_TILE = "No open tile beside the realm";
+/** A site's card with no army selected: what an army does there, or, with none out, where one comes from. */
+export const PICK_AN_ARMY = { attack: "Pick an army to attack it", use: "Pick an army to use it" } as const;
+export const NO_ARMY_OUT = "No army out: deploy one from the realm";
 export const DEPLOYING = "Deploying…";
 /** A free slot after the lowest: the game fills the lowest free slot first. */
 export const DEPLOY_FILLS_FIRST = (number: number) => `Deploy fills slot ${number} first.`;
@@ -402,37 +425,40 @@ export const TRANSFER_TROOPS = {
   waiting: "Waiting for both armies’ progress.",
   stale: "The armies changed. Review the merge before confirming again.",
   merge: (army: string) => `Merge into ${army}`,
-  survives: (army: string, col: number, row: number, slot: number) =>
-    `${army} survives at (${col}, ${row}) · slot ${slot}.`,
-  progression: (value: number, xp: number, loser: string) =>
-    `${formatExact(value)} progression value (XP + all upgrades) · ${formatExact(xp)} unspent XP kept. ${loser}’s XP and upgrades are not carried over.`,
-  mergedStamina: (stamina: number | undefined) =>
-    stamina === undefined
-      ? "Stamina —"
-      : `${formatCharge(stamina)} stamina after merging. The other army’s slot is released.`,
-  split: (picked: string, tapped: string) => `Troops: ${picked} keeps this many, ${tapped} the rest`,
-  allTo: (army: string) => `All to ${army}`,
-  even: "Even",
-  pick: "Pick a split",
+  /** The second press of a merge that loses a lot: the XP lost, as the leaving army's card strikes it, and the merge. */
+  confirmMerge: (lost: number, army: string) => `Lose ${formatAmount(lost)} XP, merge into ${army}`,
+  amount: (from: string, to: string) => `Troops ${from} sends to ${to}`,
+  pick: "Pick how many to send",
   move: (count: number, to: string) => `Move ${formatAmount(count)} to ${to}`,
   sending: "Moving…",
-  leaves: (army: string) => `${army} is left with none and leaves the map.`,
   cap: (cap: number) => `An army holds at most ${formatAmount(cap)}.`,
   unalike: (picked: string, tapped: string) =>
     `${picked} and ${tapped} hold different troops: only armies of the same troops and tier join.`,
   failed: "The troops could not be moved.",
-  changed: "The armies' troops changed: the split starts again from what they hold now.",
+  changed: "The armies' troops changed: the amount starts again from what they hold now.",
   /** A phone's action row, a tap on another of the realm's armies beside the picked one. */
   beside: (tapped: string, picked: string) => `${tapped} stands beside ${picked}.`,
   pickArmy: (army: string) => `Pick ${army}`,
 } as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
+/** The day-done card's count of the armies that ended with the day. */
+export const ARMIES_ENDED = "Armies ended with the day";
 /** How many troops an army holds: "1 troop", "5,000 troops". */
 export const troopCount = (count: number) => formatCount(count, "troop", TROOPS);
+/** Why research raises a building's output, without the calculation behind it. */
+export const fromResearch = (share: string, side: string) => `${share} from ${side}`;
+/** The sources of a store's production, each with its combined rate. */
+export const MADE_BY = "Made by";
+export const STORE_MAKERS = {
+  buildings: (count: string, total: string) => `${count} · ${total}`,
+  castle: (rate: string) => `${CASTLE} · ${rate}`,
+};
+/** What an army's Homecoming sends home when the day ends, on its row or token in the day's last hour. */
+export const comesHomeAtDayEnd = (troops: string) => `${troops} come home when the day ends`;
 
 /** The day log's lines for what the player did, in the names the build cards and the dock use. */
-export const revealLine = (amount: string, resource: string) => `+${amount} ${resource}`;
+export const revealLine = (gain: string, resource: string) => `${gain} ${resource}`;
 export const builtLine = (building: string) => `${building} built`;
 export const deployedLine = (army: string) => `${army} deployed`;
 export const disbandedLine = (army: string) => `${army} disbanded`;
@@ -441,8 +467,8 @@ export const xpGainedLine = (line: string, amount: string) => `${line}, +${amoun
 export const xpSpentLine = (line: string, amount: string) => `${line}, −${amount} ${XP}`;
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
-/** How deep a season went, on its total. */
-export const REACH = "Reach";
+/** How deep a realm went beyond the spire, I to III. */
+export const DEPTH = "Depth";
 
 /** The player on any list. */
 export const YOU = "You";
@@ -501,6 +527,8 @@ export const WITHDRAW = "Withdraw";
 export const SENDING = "Sending…";
 export const LINK_WALLET = "Link wallet";
 export const NO_WALLET = "No wallet linked";
+/** What a linked wallet is for on the LORDS purse, as the Realms sheet says what it is for there. */
+export const LORDS_GO_TO_WALLET = "The LORDS you withdraw go to your linked Starknet wallet.";
 export const TRANSACTION = "Transaction";
 export const PAYOUTS_PAUSED = "Payouts paused. Your LORDS stay here.";
 export const paidWhenResumed = (amount: string) => `Payouts paused. These ${amount} pay when they resume.`;
@@ -524,12 +552,11 @@ export const realmsGiveLabor = (perRealm: number, cap: number) =>
 export const CLAIM = "Claim";
 export const CLAIM_ALL = "Claim all";
 export const CLAIMED_TODAY = "Claimed today";
-/** The Season page's pool: the LORDS deposited for the season; what today releases of them stands under Today. */
-export const SEASON_POOL = "Pool";
+/** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */
+export const commonChestPays = (lords: string) => `A Common chest pays ${lords} LORDS today`;
+export const seasonPool = (lords: string, today: string | undefined) =>
+  `Season pool ${lords} LORDS${today === undefined ? "" : `, ${today} released today`}`;
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
-/** What one share of a chest pays today, and the most any day can set that price to. */
-export const PER_SHARE = "Per share";
-export const SHARE_CEILING = "Max";
 export const fitOf = (fits: string, of: string) => `${fits} of ${of} fit`;
 export const REALMS_ELSEWHERE = "Only Realms in this Starknet wallet count. Not on Ethereum, not in another wallet.";
 /** A Realm joins the list by its number, the first time it gives its labor. */
@@ -1174,25 +1201,26 @@ export const automationRefusal = (ordersAllowed: boolean, hydrated: boolean): st
  * what each side and node gives, and each thing a node's next tier needs, in the order a player meets them.
  */
 export const RESEARCH_TREE = {
+  /** Said while the realm's knowledge, balances, prices or board rules have not all arrived. */
+  onItsWay: "The research tree is on its way",
   branches: { economy: "Economy", army: ARMY, castle: CASTLE },
   states: { ready: "Can research", short: "Saving up", done: "Researched", locked: "Locked" },
   sides: {
     fields: ["Fields", "Wheat from every Farm"],
-    granary: ["Granary", "The castle's wheat store"],
+    granary: ["Granary", "The castle's wheat storage"],
     tools: ["Tools", "Labor from every Workshop"],
-    storeroom: ["Storeroom", "The castle's labor store"],
+    storeroom: ["Storeroom", "The castle's labor storage"],
     drill: ["Drill", "Troops from every Barracks"],
     rations: ["Rations", "Wheat a deployed troop costs"],
   },
   /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
   kinds: { camp: structurePlural(StructureType.Camp, undefined, "frontier"), rift: "Rifts", beasts: "Beasts" },
   foundByNewArmies: (kind: string) => `${kind} found by new armies`,
-  sidesLine: (made: string) => `Each tier picks a side for the season: more ${made}, or store more`,
-  sideKept: "The side is kept for the season.",
   hutLine: "Population from every Hut",
-  gateLine: (tier: string) => `${tier} opens the four training buildings`,
+  population: "Population",
+  gateLine: (barracks: string) => `${barracks} opens the four training buildings`,
   gateOpen: "The four training buildings are open",
-  gate: (tier: string) => `${tier} opens`,
+  gate: (barracks: string) => `${barracks} opens`,
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
   /** A level and what it gives: "Uncommon · +10% damage". */
   at: (tier: string, effect: string) => `${tier} · ${effect}`,
@@ -1209,17 +1237,16 @@ export const RESEARCH_TREE = {
   nouns: { essence: ESSENCE, labor: "Labor" },
   armiesFind: (site: string) => `Armies find ${site}s`,
   each: (gain: string) => `${gain} each`,
-  enters: (reach: string) => `Armies enter ${reach} at the spire`,
-  reach: (numeral: string) => `${ETHEREAL} ${numeral}`,
+  enters: (depth: string) => `Armies enter ${depth} at the spire`,
   opens: "Open",
   build: (building: string) => `Build a ${building}`,
   stands: (building: string) => `${building} stands`,
   first: (what: string) => `${what} first`,
-  store: (limit: string, need: string, level: string) => `Labor store ${limit} / ${need} · a ${level} holds it`,
+  store: (limit: string, need: string, level: string) => `Labor storage ${limit} / ${need} · a ${level} holds it`,
   held: (noun: string, have: string, need: string) => `${noun} ${have} / ${need}`,
   research: (what: string) => `Research ${what}`,
   levelUpCastle: "Level up the castle",
-  complete: "Legendary · complete",
+  complete: "Complete",
   step: (from: string, to: string) => `${from} → ${to}`,
   price: (essence: string) => `${essence} ${ESSENCE}`,
 } as const;
@@ -1250,5 +1277,4 @@ export const ARMY_DETAIL = {
   short: (xp: string, short: string) => `${xp} ${XP} · ${short} ${XP} short`,
   refills: (xp: string, stamina: string) => `${xp} ${XP} · refills ${stamina} ${STAMINA}`,
   legendary: (attribute: string) => `${attribute} is legendary`,
-  from: (attribute: string, from: string, to: string) => `${attribute} ${from} → ${to}`,
 } as const;

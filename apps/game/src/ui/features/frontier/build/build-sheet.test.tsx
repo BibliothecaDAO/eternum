@@ -15,7 +15,7 @@ import { configManager, type GameClient, setBlockTimestampSource } from "@biblio
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { realmBoard } from "./build-fixture";
+import { buildingCounts, realmBoard } from "./build-fixture";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
 
 afterEach(() => {
@@ -259,12 +259,7 @@ describe("the build sheet", () => {
       }),
     ] as never);
 
-  /** The board's packed building counts with `count` of one category standing (eight bits a category). */
-  const countsWith = (category: BuildingType, count: number) => {
-    const packed = BigInt(count) << BigInt((category - 1) * 8);
-    const word = (index: number) => String((packed >> BigInt(128 * index)) & ((1n << 128n) - 1n));
-    return { packed_counts_1: word(0), packed_counts_2: word(1), packed_counts_3: word(2) };
-  };
+  const countsWith = buildingCounts;
 
   const open = (store: ReturnType<typeof realmBoard>["store"], realm: ReturnType<typeof realmBoard>["realm"]) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -317,6 +312,9 @@ describe("the build sheet", () => {
     expect(sheet.host.querySelector('[role="status"]')).toBeNull();
     expect(sheet.button("Build")!.textContent).toBe("Build");
     expect(sheet.host.querySelector(".ui-cost")?.textContent).toBe("2,000 labor");
+    // Build and its price stand in the sheet's foot, outside the body that scrolls: the verb never scrolls away.
+    expect(sheet.button("Build")!.closest(".ui-window__foot")).not.toBeNull();
+    expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe("2,000 labor");
     sheet.close();
   });
 
@@ -330,6 +328,11 @@ describe("the build sheet", () => {
     const cost = configManager.getBuildingCategoryConfig(BuildingType.ResourceKnightT1).population_cost;
     expect(sheet.host.querySelector('[role="status"]')!.textContent).toBe(`Needs ${cost} population, 1 free`);
     expect(sheet.button("Build")!.textContent).toContain("Build Hut");
+    // Why, and the way past it, stand together in the foot, in view however many cards the body holds.
+    expect(sheet.button("Build Hut")!.closest(".ui-window__foot")).not.toBeNull();
+    expect(sheet.host.querySelector('.ui-window__foot [role="status"]')!.textContent).toBe(
+      `Needs ${cost} population, 1 free`,
+    );
     act(() => sheet.button("Build Hut")!.click());
     expect(sheet.card("Hut").getAttribute("aria-pressed")).toBe("true");
     // A Hut takes no population: it is the fix, and Build stands under it.
@@ -346,7 +349,7 @@ describe("the build sheet", () => {
     );
     expect(sheet.card("Hut").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
     expect(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
-      /^War hall: new armies start with Battle at Common(, takes \d+ population)?$/,
+      /^War hall: new armies start with Battle I(, takes \d+ population)?$/,
     );
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
     expect(sheet.card("Farm").querySelector('[aria-label="price raised"]')).toBeNull();
@@ -363,8 +366,9 @@ describe("the build sheet", () => {
     ] as never);
     const risen = open(store, realm);
     const arrow = risen.card("Farm").querySelector('[aria-label="price raised"]')!;
-    const rise = 1 + 4 * (configManager.getBuildingBaseCostPercentIncrease() / 10_000);
-    expect(arrow.getAttribute("data-tip")).toBe(`Base ${base} labor, ×${rise} with 2 standing`);
+    // One line of why, never the sum behind it (owner, 26 October: "its a game not a math demo").
+    expect(arrow.getAttribute("data-tip")).toBe("Costs more with each one standing: 2");
+    expect(risen.card("Farm").querySelector(".ui-chip")!.textContent).not.toBe(base);
     risen.close();
   });
 
@@ -391,8 +395,12 @@ describe("the build sheet", () => {
     expect(sheet.card("Farm").querySelector(`[aria-label="population ${farm}"]`)).not.toBeNull();
     expect(band(sheet, "Farm").getAttribute("data-tone")).toBe("bad");
     expect(band(sheet, "Farm").textContent).toMatch(/\d+[mhd]$/);
-    // A training building waits behind the Barracks' tier: a lock and its pips, no price.
-    expect(band(sheet, "War hall").querySelector('[aria-label="Rare"]')).not.toBeNull();
+    // A training building waits behind the Barracks' tier, said in words with its numeral by the lock and whole on the
+    // tip, never as a gem that would read as the card's own tier; no price. The card's own gem is its tier, Common I.
+    expect(band(sheet, "War hall").textContent).toBe("Barracks III");
+    expect(band(sheet, "War hall").getAttribute("data-tip")).toBe("Needs Barracks III");
+    expect(band(sheet, "War hall").querySelector(".ui-tier")).toBeNull();
+    expect([...sheet.card("War hall").querySelectorAll(".ui-tier")].map((gem) => gem.textContent)).toEqual(["I"]);
     expect(band(sheet, "War hall").textContent).not.toMatch(/\d/);
     sheet.close();
 
@@ -473,8 +481,8 @@ describe("the build sheet", () => {
     const gold = () => [...host.querySelectorAll("button")].at(-1)!;
     render();
     act(() => card("War hall").click());
-    // The fixture's board gates training at the Barracks row's third tier, Rare; no Barracks stands yet.
-    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs Barracks at Rare");
+    // The fixture's board gates training at the Barracks row's third tier, Rare (III); no Barracks stands yet.
+    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs Barracks III");
     expect(gold().textContent).toMatch(/^Build Barracks/);
     act(() => gold().click());
     expect(card("Barracks").getAttribute("aria-pressed")).toBe("true");

@@ -1,5 +1,7 @@
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { afterEach, expect, it, vi } from "vitest";
-import { isDeploymentBlock, rpcBatch, SHARD_RPC_MAX_BATCH_CALLS, type ClassHashReader } from "./rpc";
+import { isDeploymentBlock, rpcAt, rpcBatch, SHARD_RPC_MAX_BATCH_CALLS, type ClassHashReader } from "./rpc";
 
 const URL = "https://shard.test/rpc";
 
@@ -75,4 +77,44 @@ it("fails, rather than answering, when the node fails for another reason", async
   await expect(isDeploymentBlock(chainFrom(100, new Error("rate limited")), "0x10", 100)).rejects.toThrow(
     "rate limited",
   );
+});
+
+/** A node on a local port that answers every transaction as accepted, and records the methods asked of it. */
+const acceptingNode = async () => {
+  const asked: string[] = [];
+  const server = createServer((request, response) => {
+    let body = "";
+    request.on("data", (chunk) => (body += chunk));
+    request.on("end", () => {
+      const { id, method } = JSON.parse(body) as { id: number; method: string };
+      asked.push(method);
+      const result =
+        method === "starknet_getTransactionStatus"
+          ? { finality_status: "ACCEPTED_ON_L2", execution_status: "SUCCEEDED" }
+          : {
+              transaction_hash: "0x1",
+              type: "INVOKE",
+              execution_status: "SUCCEEDED",
+              finality_status: "ACCEPTED_ON_L2",
+            };
+      response.setHeader("content-type", "application/json");
+      response.end(JSON.stringify({ jsonrpc: "2.0", id, result }));
+    });
+  });
+  await new Promise<void>((listening) => server.listen(0, "127.0.0.1", listening));
+  const { port } = server.address() as AddressInfo;
+  return { url: `http://127.0.0.1:${port}/rpc`, asked, close: () => server.close() };
+};
+
+it("learns that a sent transaction landed about two seconds after sending, not the library's ten", async () => {
+  const node = await acceptingNode();
+  try {
+    const sent = Date.now();
+    await rpcAt(node.url).waitForTransaction("0x1");
+    // starknet.js waits one interval before the status and one after the receipt: 2 x 1 s here, 2 x 5 s by default.
+    expect(Date.now() - sent).toBeLessThan(5_000);
+    expect(node.asked).toEqual(["starknet_getTransactionStatus", "starknet_getTransactionReceipt"]);
+  } finally {
+    node.close();
+  }
 });

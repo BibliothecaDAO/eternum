@@ -82,6 +82,13 @@ export function useUnreadFeedCount(stories: ProcessedStoryEvent[], logOpen: bool
   return logOpen ? 0 : stories.filter((event) => event.timestampMs > seen.at).length;
 }
 
+/**
+ * What the player must not miss (Important) that arrived since the Log or Feed was last open, whichever lens they read
+ * there; zero while it is open. Events' Log button, a phone's Log tab and Frontier's Feed place each show it.
+ */
+export const useUnreadImportantCount = (open: boolean): number =>
+  useUnreadFeedCount(useEventsFeed("important").stories, open);
+
 export const UnreadFeedBadge = ({ count }: { count: number }) =>
   count > 0 ? (
     <span aria-label="Unread events">

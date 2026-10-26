@@ -11,7 +11,7 @@ export function readEndgameSettings(search: string): EndgameLabSettings {
   return {
     busy: q.get("busy") === "1",
     spires: q.get("spires") === "awaken" ? "awaken" : "materialise",
-    spared: q.get("gameMode") === "frontier" ? "realm" : "none",
+    spared: q.get("mode") === "frontier" ? "realm" : "none",
   };
 }
 

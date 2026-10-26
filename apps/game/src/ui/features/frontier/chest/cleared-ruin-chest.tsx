@@ -1,5 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
+import type { Tier } from "@/ui/design-system/kit/words";
 import { configManager } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";

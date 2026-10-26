@@ -441,6 +441,96 @@ export async function proveResourceIcons(b, out, records, baseUrl) {
   }
 }
 
+function beastDeliveries() {
+  return Object.fromEntries(
+    ["beast-cyclops", "beast-wraith", "beast-troll", "camp"].flatMap((id) =>
+      [64, 128, 256].map((size) => {
+        const path = `/icons/facets/${size}/${id}.webp`;
+        return [
+          path,
+          createHash("sha256")
+            .update(readFileSync(new URL(`../../apps/game/public${path}`, import.meta.url)))
+            .digest("hex"),
+        ];
+      }),
+    ),
+  );
+}
+
+export async function proveBeastIcons(b, out, records, baseUrl, selected = beastDeliveries()) {
+  mkdirSync(out, { recursive: true });
+  for (const [layout, width, height] of [
+    ["desktop", 1440, 1100],
+    ["phone", 390, 844],
+  ]) {
+    const record = { name: `${layout}-beast-icons`, ready: false, presses: [], checks: [] };
+    records.push(record);
+    await b.run("set", "viewport", String(width), String(height));
+    await b.run("open", `${baseUrl}/lab/kit/shell`, "--ignore-https-errors");
+    await b.run("wait", 'a[href="/lab/kit/beast-icons"]');
+    await b.run("click", 'a[href="/lab/kit/beast-icons"]');
+    await b.run("wait", '[data-beast-study="selected"]');
+    record.ready = true;
+    record.presses.push({ page: "Frontier guard icon review", status: "led" });
+    record.state = await b.evaluate(`(async()=>{
+      const selected=${JSON.stringify(selected)};
+      const images=await Promise.all([...document.querySelectorAll('[data-beast-study] img')].map(async image=>{
+        try {await image.decode();} catch {return {loaded:false};}
+        const url=image.getAttribute('src');
+        const meaning=image.dataset.icon;
+        const pixels=image.width>64?256:image.width>32?128:64;
+        const expected='/icons/facets/'+pixels+'/'+meaning+'.webp';
+        const digest=selected[url] ? [...new Uint8Array(await crypto.subtle.digest('SHA-256', await (await fetch(url)).arrayBuffer()))].map(byte=>byte.toString(16).padStart(2,'0')).join('') : null;
+        return {meaning,url,width:image.getBoundingClientRect().width,loaded:image.naturalWidth>0,selected:!selected[expected]||(url===expected&&selected[url]===digest)};
+      }));
+      return {images, overflow:document.documentElement.scrollWidth>innerWidth,
+        columns:[...document.querySelectorAll('[data-beast-option]')].map(column=>{
+          const kind=column.dataset.beastOption,card=column.querySelector('[data-kit-sheet]');
+          const a=column.getBoundingClientRect(),b=card.getBoundingClientRect();
+          return {kind, cardName:card.getAttribute('aria-label'), fits:b.left>=a.left&&b.right<=a.right+1&&b.bottom<=a.bottom+1,
+            meanings:[...column.querySelectorAll('img[data-icon^="beast-"]')].map(i=>i.dataset.icon)};
+        }), blitz:[...document.querySelectorAll('[data-blitz-camp] img')].map(i=>i.dataset.icon)};
+    })()`);
+    const state = record.state;
+    record.checks.push({
+      check: "All rendered paintings decode and selected production bytes match the checkout",
+      ok: state.images.length > 0 && state.images.every((i) => i.loaded && i.selected),
+    });
+    record.checks.push({
+      check: "All three Frontier cards and balance rows use their guard creature",
+      ok:
+        state.columns.length === 3 &&
+        ["cyclops", "wraith", "troll"].every((kind) => {
+          const col = state.columns.find((c) => c.kind === kind);
+          return (
+            col &&
+            col.cardName === kind[0].toUpperCase() + kind.slice(1) &&
+            col.fits &&
+            col.meanings.length >= 8 &&
+            col.meanings.every((m) => m === "beast-" + kind)
+          );
+        }),
+    });
+    record.checks.push({
+      check: "Blitz retains its camp painting",
+      ok: state.blitz.length === 2 && state.blitz.every((m) => m === "camp"),
+    });
+    record.checks.push({
+      check: "Small sizes fit without horizontal overflow",
+      ok:
+        !state.overflow &&
+        ["cyclops", "wraith", "troll"].every((kind) =>
+          [16, 24, 36, 64].every((size) => state.images.some((i) => i.meaning === "beast-" + kind && i.width === size)),
+        ),
+    });
+    const fullHeight = await b.evaluate("Math.ceil(document.querySelector('[data-beast-study]').scrollHeight+80)");
+    await b.run("set", "viewport", String(width), String(fullHeight));
+    await b.run("scrollintoview", "[data-beast-study] > header");
+    await b.run("screenshot", join(out, `${layout}-selected-beasts.png`));
+  }
+  await b.run("open", "about:blank");
+}
+
 export async function proveRewardChests(b, out, records, baseUrl) {
   for (const [layout, width, height] of [
     ["desktop", 1440, 1000],
@@ -509,28 +599,30 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       where: (r) => ({ name: r.name }),
     },
     (b, out, records) =>
-      process.argv.includes("--rewards")
-        ? proveRewardChests(b, out, records, baseUrl)
-        : process.argv.includes("--resources")
-          ? proveResourceIcons(b, out, records, baseUrl)
-          : process.argv.includes("--minimap-url")
-            ? proveMinimapEmblems(b, out, records, process.argv[process.argv.indexOf("--minimap-url") + 1])
-            : proveIcons(
-                b,
-                out,
-                records,
-                baseUrl,
-                missingSvg ? "desktop" : undefined,
-                process.argv.includes("--app")
-                  ? pages.filter(([, path]) => path.startsWith("/lab/app/")).map(([name]) => name)
-                  : process.argv.includes("--glyphs")
-                    ? ["hud", "hud-menu", "play", "settings"]
-                    : missingSvg || process.argv.includes("--catalog")
-                      ? ["catalog"]
-                      : process.argv.includes("--lords")
-                        ? ["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"]
-                        : undefined,
-                missingSvg,
-              ),
+      process.argv.includes("--beasts")
+        ? proveBeastIcons(b, out, records, baseUrl)
+        : process.argv.includes("--rewards")
+          ? proveRewardChests(b, out, records, baseUrl)
+          : process.argv.includes("--resources")
+            ? proveResourceIcons(b, out, records, baseUrl)
+            : process.argv.includes("--minimap-url")
+              ? proveMinimapEmblems(b, out, records, process.argv[process.argv.indexOf("--minimap-url") + 1])
+              : proveIcons(
+                  b,
+                  out,
+                  records,
+                  baseUrl,
+                  missingSvg ? "desktop" : undefined,
+                  process.argv.includes("--app")
+                    ? pages.filter(([, path]) => path.startsWith("/lab/app/")).map(([name]) => name)
+                    : process.argv.includes("--glyphs")
+                      ? ["hud", "hud-menu", "play", "settings"]
+                      : missingSvg || process.argv.includes("--catalog")
+                        ? ["catalog"]
+                        : process.argv.includes("--lords")
+                          ? ["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"]
+                          : undefined,
+                  missingSvg,
+                ),
   );
 }

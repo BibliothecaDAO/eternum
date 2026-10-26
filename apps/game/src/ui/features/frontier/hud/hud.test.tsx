@@ -16,7 +16,7 @@ import { useChatKey } from "./chat-key";
 import { dayClock } from "./day-clock";
 import { HudBands } from "./hud-bands";
 import { useOnePanel } from "./one-panel";
-import { MenuSheet } from "./menu-sheet";
+import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
 import { PlaceNav } from "./place-nav";
 import { StatusStrip, type StoreReading, storeLine } from "./status-strip";
@@ -86,13 +86,32 @@ describe("the status strip", () => {
     flyTarget: `test-${kind}`,
   });
 
-  it("reads a 24-hour day in hours, as Play does: never '1d' (live-qa-night-1 P3-8)", () => {
+  it("reads a 24-hour day in hours on the dial, as Play does: never '1d' (live-qa-night-1 P3-8)", () => {
     const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
     const clock = { ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 };
-    const line = text(renderToStaticMarkup(<StatusStrip clock={clock} stores={[store("essence", 1)]} />));
-    expect(line).toContain("24h left");
-    expect(line).toContain("Tomorrow lasts 24h");
-    expect(line).not.toMatch(/\b1d\b/);
+    const markup = renderToStaticMarkup(<StatusStrip clock={clock} stores={[store("essence", 1)]} />);
+    expect(markup).toContain(`aria-label="Day ${day.day} · 24h left"`);
+    expect(markup).not.toMatch(/\b1d\b/);
+  });
+
+  it("keeps the strip to one row: the day's ring runs down through the day and turns red in its last hour", () => {
+    const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
+    const morning = renderToStaticMarkup(
+      <StatusStrip clock={{ ...day, shareLeft: 0.75, tone: "calm" }} stores={[store("essence", 1)]} />,
+    );
+    // The clock line lives in Today now; the strip says no "Day ends" and no "Tomorrow lasts".
+    expect(text(morning)).not.toContain("Day ends");
+    expect(text(morning)).not.toContain("Tomorrow lasts");
+    expect(morning).toContain('stroke-dashoffset="0.25"');
+    expect(morning).not.toContain('data-tone="bad"');
+    const lastHour = renderToStaticMarkup(
+      <StatusStrip
+        clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }}
+        stores={[store("essence", 1)]}
+      />,
+    );
+    expect(lastHour).toContain('stroke-dashoffset="0.95"');
+    expect(lastHour).toContain('class="ui-dial" data-tone="bad"');
   });
 
   it("shows each store with a limit bar where it has a limit, and dashes the unknown", () => {
@@ -110,28 +129,58 @@ describe("the status strip", () => {
     expect(markup).toContain('role="img" aria-label="labor 9,000 of 18,000"');
     expect(markup).toContain('role="img" aria-label="wheat — of 18,000"');
     expect(text(markup)).toContain("—");
-    expect(text(markup)).toContain("Tomorrow lasts 16h");
   });
 });
 
 describe("the army token", () => {
-  it("wears the XP balance as its badge, its stamina in five segments of its own maximum, and its troops", () => {
-    const markup = renderToStaticMarkup(
+  // Frontier's explore costs 20 stamina (config/source/frontier/base.ts).
+  const token = (stamina: { current: number; max: number }) =>
+    renderToStaticMarkup(
       <ArmyToken
         label="Army 1"
         art={undefined}
         xp={260}
-        stamina={{ current: 90, max: 150 }}
+        stamina={{ ...stamina, perExplore: 20 }}
         troops={5_000}
         canBuyTier
         selected={false}
       />,
     );
+  /** The bar's segments as drawn: each one's length (its flex-grow) and fill. */
+  const segments = (markup: string) =>
+    [...markup.matchAll(/flex-grow:([\d.]+);flex-basis:0[^>]*><b[^>]*width:([\d.]+)%/g)].map(([, size, fill]) => [
+      Number(size),
+      Number(fill),
+    ]);
+
+  it("wears the XP balance as its badge, its stamina a segment per explore its maximum holds, and its troops", () => {
+    const markup = token({ current: 60, max: 120 });
     expect(text(markup)).toBe("2605,000");
     expect(markup).toContain('role="group"');
-    // 90 of 150 is three segments full.
-    expect(markup.match(/width:100%/g)).toHaveLength(3);
-    expect(markup).toContain("width:0%");
+    // 120 is six explores: three of them held.
+    expect(segments(markup)).toEqual([
+      [1, 100],
+      [1, 100],
+      [1, 100],
+      [1, 0],
+      [1, 0],
+      [1, 0],
+    ]);
+  });
+
+  it("adds a segment for each explore's worth of maximum its Logistics adds, a short one for a part", () => {
+    expect(segments(token({ current: 140, max: 140 }))).toHaveLength(7);
+    // 90 of 150: four explores held and half the fifth, then seven and a half explores long.
+    expect(segments(token({ current: 90, max: 150 }))).toEqual([
+      [1, 100],
+      [1, 100],
+      [1, 100],
+      [1, 100],
+      [1, 50],
+      [1, 0],
+      [1, 0],
+      [0.5, 0],
+    ]);
   });
 
   it("says what the XP buys next on its badge's tooltip, and the balance alone once nothing is left to buy", () => {
@@ -163,7 +212,7 @@ describe("the army token", () => {
           art={undefined}
           xp={25}
           xpGoal={{ price: 100, tier: 2 }}
-          stamina={{ current: 90, max: 150 }}
+          stamina={{ current: 90, max: 150, perExplore: 20 }}
           troops={1}
           canBuyTier
           selected
@@ -227,23 +276,44 @@ describe("an open slot whose army is being deployed", () => {
 });
 
 describe("the place bar", () => {
-  it("lights where the player is, dots Research when it can be bought, counts new events and unread chat, and goes", () => {
+  it("lights what is open, none on the map, dots Research when it can be bought, counts news, and goes", () => {
     const onGo = vi.fn();
-    act(() => root.render(<PlaceNav place="map" onGo={onGo} researchDot events={2} unread={3} />));
+    act(() => root.render(<PlaceNav place={null} onRealm={false} onGo={onGo} researchDot events={2} unread={3} />));
     const slots = [...host.querySelectorAll("button")];
-    expect(slots.map((slot) => slot.textContent)).toEqual(["Map", "Realm", "Research", "2Log", "3Chat", "Menu"]);
-    expect(slots[0].getAttribute("aria-current")).toBe("page");
-    expect(slots[2].querySelector("i")).not.toBeNull();
-    act(() => slots[3].click());
-    expect(onGo).toHaveBeenCalledWith("log");
-    act(() => slots[5].click());
+    expect(slots.map((slot) => slot.textContent)).toEqual(["Realm", "Research", "2Feed", "3Chat", "Menu"]);
+    expect(slots.map((slot) => slot.getAttribute("aria-current"))).toEqual([null, null, null, null, null]);
+    expect(slots[1].querySelector("i")).not.toBeNull();
+    act(() => slots[2].click());
+    expect(onGo).toHaveBeenCalledWith("feed");
+    act(() => slots[4].click());
     expect(onGo).toHaveBeenCalledWith("menu");
+    act(() => root.render(<PlaceNav place="research" onRealm={false} onGo={onGo} researchDot events={2} unread={3} />));
+    expect(host.querySelectorAll("button")[1]!.getAttribute("aria-current")).toBe("page");
+  });
+
+  it("switches Realm and World: it names where it takes the player, is never lit, and goes there", () => {
+    const onGo = vi.fn();
+    act(() => root.render(<PlaceNav place={null} onRealm={false} onGo={onGo} researchDot events={0} unread={0} />));
+    const onMap = host.querySelector("button")!;
+    expect(onMap.textContent).toBe("Realm");
+    expect(onMap.querySelector("img")?.getAttribute("src")).toContain("realm");
+    act(() => root.render(<PlaceNav place={null} onRealm onGo={onGo} researchDot events={0} unread={0} />));
+    const onBoard = host.querySelector("button")!;
+    expect(onBoard.textContent).toBe("World");
+    expect(onBoard.getAttribute("aria-current")).toBeNull();
+    act(() => onBoard.click());
+    expect(onGo).toHaveBeenCalledWith("realm");
+  });
+
+  it("draws no divider between its slots, each a toggle alike", () => {
+    act(() => root.render(<PlaceNav place={null} onRealm={false} onGo={vi.fn()} researchDot events={0} unread={0} />));
+    expect(host.querySelectorAll("nav i[aria-hidden]")).toHaveLength(0);
   });
 
   it("leaves Research out for a spectator, who has no realm to research", () => {
-    act(() => root.render(<PlaceNav place="realm" onGo={vi.fn()} events={0} unread={0} />));
+    act(() => root.render(<PlaceNav place={null} onRealm onGo={vi.fn()} events={0} unread={0} />));
     const slots = [...host.querySelectorAll("button")].map((slot) => slot.textContent);
-    expect(slots).toEqual(["Map", "Realm", "Log", "Chat", "Menu"]);
+    expect(slots).toEqual(["World", "Feed", "Chat", "Menu"]);
   });
 
   it("dots Research only while a node can be researched now", () => {
@@ -263,7 +333,7 @@ describe("the Menu", () => {
       onExit: vi.fn(),
       onClose: vi.fn(),
     };
-    act(() => root.render(<MenuSheet rank="#12" {...handlers} />));
+    act(() => root.render(<MenuPage rank="#12" {...handlers} />));
     const button = (word: string) =>
       [...document.querySelectorAll<HTMLButtonElement>("section[aria-label='Menu'] button")].find((candidate) =>
         candidate.textContent?.startsWith(word),
@@ -284,7 +354,7 @@ describe("the Menu", () => {
 
   it("has no Production: each store's card opens from its own plate", () => {
     const ways = { onToday: vi.fn(), onSeason: vi.fn(), onSettings: vi.fn(), onExit: vi.fn(), onClose: vi.fn() };
-    act(() => root.render(<MenuSheet rank="—" {...ways} />));
+    act(() => root.render(<MenuPage rank="—" {...ways} />));
     const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .ui-row")].map(
       (row) => row.textContent,
     );

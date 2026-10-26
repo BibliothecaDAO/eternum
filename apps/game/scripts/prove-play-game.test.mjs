@@ -23,7 +23,7 @@ const WAR_CRATE_PAGES = {
   panel: ["Crate #12", "Contents", "War pack", ...WAR_RELICS, "Victory points", "250", "Open", "Biome", "Bare"],
   opened: ["Crate opened", "Contents", ...WAR_RELICS, "Biome", "Bare"],
   log: [
-    "World history",
+    "Log",
     "War pack opened",
     `Stolsli T1 army · ${WAR_RELICS.join(", ")}`,
     "+120 Essence",
@@ -72,7 +72,7 @@ const crateBrowser = ({ pages = WAR_CRATE_PAGES, feed = EVENTS_CARD, logOpensHis
   };
   const showHistory = () => {
     const history = document.createElement("section");
-    history.setAttribute("aria-label", "World history");
+    history.setAttribute("aria-label", "Log");
     history.innerHTML = pages.log.map((line) => `<p>${line}</p>`).join("");
     document.body.append(history);
   };
@@ -273,7 +273,7 @@ describe("a game's proof", () => {
   });
 
   it("fails a driven crate whose history still titles the opening the old way", async () => {
-    const log = ["World history", "Relic crate opened", `Stolsli T1 army · ${WAR_RELICS.join(", ")}`];
+    const log = ["Log", "Relic crate opened", `Stolsli T1 army · ${WAR_RELICS.join(", ")}`];
     const record = await proveCrate(crateBrowser({ pages: { ...WAR_CRATE_PAGES, log } }));
     expect(record.problem).toBe('the log holds no "War pack opened" after the reload');
   });

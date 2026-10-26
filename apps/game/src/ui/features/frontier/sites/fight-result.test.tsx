@@ -48,13 +48,14 @@ afterEach(() => {
 });
 
 describe("an attack's result, from the battle's own record", () => {
-  it("is a victory that pays when the army stands and the guard is gone, else the guard holding", () => {
+  it("is a victory that pays when the army stands and the guard is gone", () => {
     expect(fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]), paid)).toEqual(
       expect.objectContaining({ verdict: "victory", army: { before: 1_498, after: 1_318 }, gained: PAID }),
     );
-    expect(fightResultOf(SENT, record([1_498, 1_400], [1_100, 600]), paid)).toEqual(
-      expect.objectContaining({ verdict: "guard-holds", gained: null }),
-    );
+  });
+
+  it("is none when both sides stand: the fight goes on in the target's own card", () => {
+    expect(fightResultOf(SENT, record([1_498, 1_400], [1_100, 600]), paid)).toBeNull();
   });
 
   it("is the army's loss whenever the army is gone, whatever is left of the guard, and pays nothing", () => {
@@ -86,7 +87,7 @@ describe("the result card", () => {
     const onClose = vi.fn();
     act(() =>
       root.render(
-        <FightResultCard result={fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]), paid)} onClose={onClose} />,
+        <FightResultCard result={fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]), paid)!} onClose={onClose} />,
       ),
     );
     const card = host.querySelector<HTMLButtonElement>('button[aria-label="Troll: Victory"]')!;
@@ -102,30 +103,30 @@ describe("the result card", () => {
     const full = () => ({ ...PAID, pay: { ...PAID.pay!, storeFull: true } });
     act(() =>
       root.render(
-        <FightResultCard result={fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]), full)} onClose={() => {}} />,
+        <FightResultCard result={fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]), full)!} onClose={() => {}} />,
       ),
     );
     const card = host.querySelector('button[aria-label="Troll: Victory"]')!;
     // The figure is still the reward the record names; the mark says the store could not take all of it.
     expect(card.textContent).toContain("+550");
-    const mark = card.querySelector('[aria-label="Store Full"]')!;
-    expect(mark.getAttribute("data-tip")).toBe("The store is full: the rest did not fit");
+    const mark = card.querySelector('[aria-label="Storage Full"]')!;
+    expect(mark.getAttribute("data-tip")).toBe("Storage is full: the rest did not fit");
     expect(mark.getAttribute("data-tone")).toBe("bad");
   });
 
   it("carries no Full mark while the store has room", () => {
     act(() =>
       root.render(
-        <FightResultCard result={fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]), paid)} onClose={() => {}} />,
+        <FightResultCard result={fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]), paid)!} onClose={() => {}} />,
       ),
     );
-    expect(host.querySelector('[aria-label="Store Full"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Storage Full"]')).toBeNull();
   });
 
   it("names a lost army and pays nothing", () => {
     act(() =>
       root.render(
-        <FightResultCard result={fightResultOf(SENT, record([1_498, 0], [1_100, 1_028]), paid)} onClose={() => {}} />,
+        <FightResultCard result={fightResultOf(SENT, record([1_498, 0], [1_100, 1_028]), paid)!} onClose={() => {}} />,
       ),
     );
     const card = host.querySelector('button[aria-label="Troll: Army lost"]')!;
@@ -147,10 +148,10 @@ it("keeps the Troll portrait and name through its result, including a guard clea
   const sent = { ...SENT, guardIdentity: { name: "Troll", art: "beast-troll" as const } };
   act(() =>
     root.render(
-      <FightResultCard result={fightResultOf(sent, record([1000, 694], [1000, 572]), paid)} onClose={() => {}} />,
+      <FightResultCard result={fightResultOf(sent, record([1000, 0], [1000, 572]), paid)!} onClose={() => {}} />,
     ),
   );
-  expect(host.querySelector('button[aria-label="Troll: Guard holds"]')).not.toBeNull();
+  expect(host.querySelector('button[aria-label="Troll: Army lost"]')).not.toBeNull();
   expect(
     host.querySelector('[aria-label="Troll 1,000 → 572, you killed 428 (43%)"] img')?.getAttribute("data-icon"),
   ).toBe("beast-troll");

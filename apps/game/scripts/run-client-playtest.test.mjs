@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { STEP_SETS } from "./client-playtest/steps.mjs";
-import { allocateRunDirectory, buildRunUrl, readPlaytestOptions } from "./run-client-playtest.mjs";
+import { allocateRunDirectory, browserArgsFor, buildRunUrl, readPlaytestOptions } from "./run-client-playtest.mjs";
 
 describe("allocateRunDirectory", () => {
   it("gives every invocation a new directory and never writes into an existing one", () => {
@@ -21,6 +21,13 @@ describe("allocateRunDirectory", () => {
 });
 
 describe("readPlaytestOptions", () => {
+  it("shapes the page's link only when --network names its bandwidth and round trip", () => {
+    expect(readPlaytestOptions([]).network).toBeNull();
+    expect(readPlaytestOptions(["--network", "20,80"]).network).toEqual({ downMbps: 20, roundTripMs: 80 });
+    expect(readPlaytestOptions(["--network", "1.5,300"]).network).toEqual({ downMbps: 1.5, roundTripMs: 300 });
+    expect(() => readPlaytestOptions(["--network", "fast"])).toThrow(/--network takes <down Mbit\/s>,<round trip ms>/);
+  });
+
   it("plays at 1920 by 1080 unless --viewport names another size", () => {
     expect(readPlaytestOptions([]).viewport).toEqual({ width: 1920, height: 1080 });
     expect(readPlaytestOptions(["--viewport", "1280x800"]).viewport).toEqual({ width: 1280, height: 800 });
@@ -35,6 +42,16 @@ describe("readPlaytestOptions", () => {
       port: 4173,
       rendererModes: ["webgpu-auto", "webgpu-force-webgl"],
     });
+  });
+
+  it("draws on the machine's default GPU unless --gpu low-power asks for its integrated one", () => {
+    expect(readPlaytestOptions([]).gpu).toBe("default");
+    expect(browserArgsFor("default")).not.toContain("--use-webgpu-power-preference=force-low-power");
+    expect(readPlaytestOptions(["--gpu", "low-power"]).gpu).toBe("low-power");
+    expect(browserArgsFor("low-power")).toContain("--use-webgpu-power-preference=force-low-power");
+    expect(() => readPlaytestOptions(["--gpu", "integrated"])).toThrow(
+      '--gpu takes default or low-power, not "integrated"',
+    );
   });
 
   it("reads a player run as the email the player signs in with", () => {

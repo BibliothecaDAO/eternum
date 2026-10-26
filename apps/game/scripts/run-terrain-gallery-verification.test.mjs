@@ -8,7 +8,7 @@ import {
 describe("terrain gallery verification", () => {
   it("builds the auth-free fixed capture URL", () => {
     expect(buildTerrainGalleryUrl("https://localhost:4173/play/anything", "webgpu-force-webgl")).toBe(
-      "https://localhost:4173/lab?capture=1&rendererMode=webgpu-force-webgl&groundMode=textured&scene=all-biomes&quality=detail",
+      "https://localhost:4173/lab/terrain?capture=1&rendererMode=webgpu-force-webgl&groundMode=textured&scene=all-biomes&quality=detail",
     );
   });
 
@@ -16,7 +16,7 @@ describe("terrain gallery verification", () => {
     expect(
       buildTerrainGalleryUrl("https://localhost:4173", "webgpu-auto", "textured", "fog-reveal", "detail", 0.5),
     ).toBe(
-      "https://localhost:4173/lab?capture=1&rendererMode=webgpu-auto&groundMode=textured&scene=fog-reveal&quality=detail&reveal=0.5",
+      "https://localhost:4173/lab/terrain?capture=1&rendererMode=webgpu-auto&groundMode=textured&scene=fog-reveal&quality=detail&reveal=0.5",
     );
   });
 
@@ -325,10 +325,10 @@ function result(rendererMode, activeMode, groundMode) {
 
 it.each(["blitz", "frontier"])("captures the requested production world mode %s", (gameMode) => {
   const url = new URL(
-    buildTerrainGalleryUrl(`https://localhost:4173/?gameMode=${gameMode}&look=dawn&biomes=reworked`, "webgpu-auto"),
+    buildTerrainGalleryUrl(`https://localhost:4173/?mode=${gameMode}&look=dawn&biomes=reworked`, "webgpu-auto"),
   );
-  expect(url.pathname).toBe("/lab");
-  expect(url.searchParams.get("gameMode")).toBe(gameMode);
+  expect(url.pathname).toBe("/lab/terrain");
+  expect(url.searchParams.get("mode")).toBe(gameMode);
   expect(url.searchParams.has("look")).toBe(false);
   expect(url.searchParams.has("biomes")).toBe(false);
   const results = healthyResults();

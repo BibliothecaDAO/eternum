@@ -1,18 +1,19 @@
+test = []
+
 [package]
 name = "world_native"
 version = "0.1.0"
 edition = "2024_07"
 cairo-version = "=2.17.0"
 
+[features]
+test_support = []
+
 [dependencies]
 starknet = "=2.17.0"
 eternum_cubit = { path = "vendor/cubit" }
 games_storage = { path = "storage" }
 realms_vrf_verifier = { path = "../vrf-verifier" }
-
-[dev-dependencies]
-snforge_std = "=0.64.0"
-assert_macros = "=2.17.0"
 
 [lib]
 
@@ -28,10 +29,3 @@ schema = "scarb build && bun scripts/generate-schema.mjs"
 [tool.fmt]
 max-line-length = 120
 sort-module-level-items = true
-
-[tool.scarb]
-allow-prebuilt-plugins = ["snforge_std"]
-
-[tool.snforge]
-# The categorical discovery gate evaluates 100,000 ordinary, Scouting and floor draws.
-max_n_steps = 500000000

@@ -238,6 +238,17 @@ button.ui-panel__name[data-action]:hover {
 .ui-field:has(input:disabled) {
   opacity: 0.45;
 }
+/* The amount a sheet is about (Withdraw's LORDS), typed where it is shown large: the hero's own size, in its field. */
+.ui-field[data-size="display"] {
+  height: auto;
+  padding: theme(spacing.1) theme(spacing.3);
+}
+.ui-field[data-size="display"] input {
+  width: 7ch;
+  font-size: var(--hud-text-display);
+  line-height: var(--hud-leading-display);
+  font-weight: var(--hud-weight-display);
+}
 /* A field on its own (a name, a search, an amount) is as wide as its container; the amount rows size their own. */
 .ui-field[data-fill] {
   display: flex;
@@ -475,7 +486,7 @@ button.ui-panel__name[data-action]:hover {
   color: white;
 }
 
-/* ── Rarity: a chest's tier, common to legendary; its frame thickens and warms with the tier, its pips fill. ── */
+/* ── Rarity: a chest's rarity, common to legendary; its frame thickens and warms with it. ── */
 .ui-rarity {
   --rarity: var(--hud-rarity-1);
   display: inline-flex;
@@ -513,18 +524,46 @@ button.ui-panel__name[data-action]:hover {
   border-style: double;
   box-shadow: 0 0 10px var(--hud-rarity-5);
 }
-.ui-rarity__pips {
+
+/* ── Tier: a gem in its rarity colour with the tier's numeral, Common I to Legendary V. ── */
+.ui-tier {
+  --rarity: var(--hud-rarity-1);
   display: inline-flex;
-  gap: 3px;
+  width: 26px;
+  height: 22px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--rarity) 65%, white),
+    var(--rarity) 55%,
+    color-mix(in srgb, var(--rarity) 70%, black)
+  );
+  color: rgb(var(--hud-dark));
+  font-size: var(--hud-text-label);
+  font-weight: 800;
+  line-height: 1;
 }
-.ui-rarity__pips > i {
-  width: 7px;
-  height: 7px;
-  border: 1px solid rgb(var(--hud-gold));
-  border-radius: var(--hud-radius-round);
+.ui-tier-step {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
+  color: var(--hud-muted);
 }
-.ui-rarity__pips > i[data-filled] {
-  background: rgb(var(--hud-gold));
+.ui-tier[data-tier="2"] {
+  --rarity: var(--hud-rarity-2);
+}
+.ui-tier[data-tier="3"] {
+  --rarity: var(--hud-rarity-3);
+}
+.ui-tier[data-tier="4"] {
+  --rarity: var(--hud-rarity-4);
+}
+.ui-tier[data-tier="5"] {
+  --rarity: var(--hud-rarity-5);
+  filter: drop-shadow(0 0 5px var(--hud-rarity-5));
 }
 
 /* ── Ring: a painting in a round well, its numbers on badges pinned to the rim, all in one badge: buildings top left,
@@ -843,11 +882,33 @@ span.ui-row__choose {
   color: rgb(var(--hud-accent));
   font-weight: var(--hud-weight-strong);
 }
+/* A Feed line (Frontier's Feed, option A): who, what and to what on one line and one baseline, what it paid at its end,
+   every line one height. A painting inside the words sits on the text, never on the line's box, so it moves no word. */
+.ui-feed-line .ui-event__text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ui-feed-line__glyph {
+  display: inline-block;
+  width: 1.15em;
+  height: 1.15em;
+  margin-right: 0.2em;
+  vertical-align: -0.2em;
+}
+.ui-feed-line__reward {
+  flex: none;
+  white-space: nowrap;
+  color: rgb(var(--hud-ink));
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── Window: a panel the size of a task (Military, Transfer), its title bar and a way out. ── */
-/* ── Sheet: a panel over the stage; on a phone it rises from the place bar to at most half the screen, on a desktop it
-   docks under the top bar. It never takes the stage: no backdrop, so the map beside or above it still answers a tap
-   (owner, 22 October 2026: mobile direction A). `--hud-phone-foot` is the height HudBands keeps for its place bar. ── */
+/* ── Sheet: a panel over the stage; on a phone it rises from the place bar, as tall as what it holds and at most the
+   phone panel's height, on a desktop it docks under the top bar. It never takes the stage: no backdrop, so the map
+   beside or above it still answers a tap (owner, 22 October 2026: mobile direction A; 26 October: panel layout A).
+   `--hud-phone-foot` is the height HudBands keeps for its place bar. ── */
 .ui-sheet {
   position: fixed;
   inset-inline: theme(spacing.2);
@@ -863,12 +924,16 @@ span.ui-row__choose {
 .ui-sheet > .ui-window__foot {
   flex-shrink: 0;
 }
-.ui-sheet__grip {
-  display: block;
-  width: theme(spacing.10);
-  height: theme(spacing.1);
-  border-radius: 9999px;
-  background: var(--hud-line-strong);
+/* A phone sheet's head is one control-high row: its name and its way out, and a drag down on it closes the sheet. */
+@media (max-width: 1023px) {
+  .ui-sheet__head {
+    touch-action: none;
+  }
+  .ui-sheet__head > .ui-panel__head {
+    min-height: var(--hud-control);
+    padding-block: 0;
+    padding-inline-end: theme(spacing.1);
+  }
 }
 .ui-sheet__body {
   display: flex;
@@ -1116,6 +1181,15 @@ button.ui-relic:focus-visible {
 .ui-actions > :last-child:not(.ui-actions__note) {
   order: 2;
   margin-left: auto;
+}
+/* A note that says why the verb cannot run takes its own line over the buttons: beside a fix and the verb, a phone's
+   foot would squeeze it into a column a word wide. */
+.ui-actions:has(> .ui-actions__note .ui-notice) {
+  flex-wrap: wrap;
+}
+.ui-actions__note:has(.ui-notice) {
+  order: -1;
+  flex-basis: 100%;
 }
 
 /* ── Window footer: the window's actions, under a rule. ── */
@@ -1485,7 +1559,8 @@ button.ui-relic:focus-visible {
     min-width: var(--hud-control);
   }
   .ui-event__open,
-  .ui-row__choose {
+  .ui-row__choose,
+  .ui-feed-line {
     min-height: var(--hud-control);
     align-items: center;
   }
@@ -2020,7 +2095,7 @@ button.ui-card__choose:disabled {
   background: linear-gradient(90deg, transparent, rgb(var(--hud-ink) / 0.35), transparent);
 }
 
-/* ── Banner: news across the top of the map, its side and mark in the news' tone. ── */
+/* ── Banner: news across the top of the map, its side and mark in the news' tone; it takes no click. ── */
 .ui-banner {
   --banner-tone: rgb(var(--hud-accent));
   display: flex;
@@ -2034,7 +2109,7 @@ button.ui-card__choose:disabled {
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
   padding: theme(spacing.3) theme(spacing.4);
-  pointer-events: auto;
+  pointer-events: none;
 }
 .ui-banner[data-tone="good"] {
   --banner-tone: var(--hud-good);
@@ -2076,15 +2151,6 @@ button.ui-card__choose:disabled {
 }
 .ui-banner__line {
   color: var(--hud-muted);
-}
-.ui-banner__actions {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  align-items: center;
-  gap: theme(spacing.1);
-  border-left: 1px solid var(--hud-divider);
-  padding-left: theme(spacing.3);
 }
 
 /* ── Loading backdrop: the contour lines behind the loading panel, in the age's accent on the dark ground. ── */

@@ -9,7 +9,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudCost, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
-import { ARMY, dayLeft, MOVE, RESEARCH, reachName, SPIRE_WORDS, STAMINA } from "@/ui/design-system/kit/words";
+import { ARMY, dayLeft, MOVE, RESEARCH, depthName, SPIRE_WORDS, STAMINA } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   configManager,
@@ -143,7 +143,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
       )}
       {actor && depthNow > 0 && (
         <p className="text-hud-body text-hud-ink">
-          {SPIRE_WORDS.inDepth(actor.label, reachName(depthNow as 1 | 2 | 3))}
+          {SPIRE_WORDS.inDepth(actor.label, depthName(depthNow as 1 | 2 | 3))}
         </p>
       )}
       {actor && depthNow === 0 && !beside && (
@@ -172,7 +172,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
               <HudRow
                 key={depth}
                 lead={<Icon name={reachMark(depth)} size={22} />}
-                title={reachName(depth)}
+                title={depthName(depth)}
                 detail={why ?? SPIRE_WORDS.cost(formatCharge(cost))}
                 disabled={!open}
                 trail={
@@ -180,7 +180,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
                     kind="secondary"
                     size="sm"
                     disabled={!open}
-                    aria-label={`${SPIRE_WORDS.enter} ${reachName(depth)}`}
+                    aria-label={`${SPIRE_WORDS.enter} ${depthName(depth)}`}
                     onClick={() => actor && enter(actor, depth)}
                   >
                     {SPIRE_WORDS.enter}
@@ -192,7 +192,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
           {next && (
             <HudRow
               lead={<Icon name={reachMark(next)} size={22} />}
-              title={reachName(next)}
+              title={depthName(next)}
               detail={SPIRE_WORDS.locked}
               trail={
                 <HudButton kind="secondary" size="sm" onClick={onResearch}>

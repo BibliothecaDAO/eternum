@@ -148,8 +148,8 @@ describe("the tile card", () => {
     try {
       const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
       expect(card).not.toBeNull();
-      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1,100");
-      expect(host.querySelector('[aria-label="Beast 1,100"]')).not.toBeNull();
+      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1.1K");
+      expect(host.querySelector('[aria-label="Beast 1.1K"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
@@ -169,7 +169,7 @@ describe("the tile card", () => {
       const card = host.querySelector('section[aria-label="North Watch"]')!;
       expect(card).not.toBeNull();
       expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-      expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1,100");
+      expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1.1K");
       expect(card.textContent?.match(/Troll/g)).toHaveLength(1);
       expect(card.textContent).not.toMatch(/\bcamp\b/i);
     } finally {
@@ -346,6 +346,14 @@ describe("the result of the player's attack", () => {
     return { ...card, result };
   };
 
+  it("is none when both sides stand: the site's own card stays, its Attack there to press again", async () => {
+    const { host, result, button, unmount } = await attackThatLands(() => battleArrives([1_498, 1_400], [1_100, 600]));
+    expect(result()).toBeNull();
+    expect(host.querySelector("button[aria-label*='Guard holds']")).toBeNull();
+    expect(button("Attack")).toBeDefined();
+    unmount();
+  });
+
   it("is the army's loss, with the guard as the battle left it, when the army falls and its site is still known", async () => {
     const { result, unmount } = await attackThatLands((store) => {
       battleArrives([1_498, 0], [1_100, 1_028]);
@@ -397,7 +405,7 @@ describe("the result of the player's attack", () => {
     expect(result()!.textContent).toContain("+700");
     expect(result()!.textContent).not.toContain("550");
     expect(result()!.textContent).toMatch(/\+[\d,]+ XP/);
-    expect(result()!.querySelector('[aria-label="Store Full"]')).toBeNull();
+    expect(result()!.querySelector('[aria-label="Storage Full"]')).toBeNull();
     unmount();
   });
 
@@ -408,8 +416,8 @@ describe("the result of the player's attack", () => {
       fillLaborStore(store);
     });
     expect(result()!.textContent).toContain("+550");
-    expect(result()!.querySelector('[aria-label="Store Full"]')?.getAttribute("data-tip")).toBe(
-      "The store is full: the rest did not fit",
+    expect(result()!.querySelector('[aria-label="Storage Full"]')?.getAttribute("data-tip")).toBe(
+      "Storage is full: the rest did not fit",
     );
     unmount();
   });

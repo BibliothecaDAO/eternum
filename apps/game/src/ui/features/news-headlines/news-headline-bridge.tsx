@@ -9,15 +9,12 @@ import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useHeadlineFeedStore } from "./headline-feed-store";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { Position, structureMapPosition } from "@bibliothecadao/eternum";
+import { structureMapPosition } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { StructureType } from "@bibliothecadao/types";
 import { useGame } from "@/hooks/context/game-context";
-import { useQuery } from "@/hooks/helpers/use-query";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { openOnMap } from "@/play/navigation/open-place";
 import { AudioManager } from "@/audio/core/AudioManager";
 
 import { type Headline, HEADLINE_DISPLAY_MS } from "./headline-types";
@@ -29,10 +26,8 @@ import { usePlayerNames } from "@/hooks/use-player-profile";
 
 export function NewsHeadlineBridge() {
   const { setup } = useGame();
-  const { isMapView } = useQuery();
   const winner = useSeasonWinner();
   const endRevision = useNativeRevision(["BlitzResult", "BlitzRoster", "PlayerPoints"]);
-  const goToStructure = useGoToStructure(setup);
   const names = usePlayerNames();
   const entityReader = useMemo(() => {
     const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
@@ -51,12 +46,6 @@ export function NewsHeadlineBridge() {
 
   // Dedup
   const shownIdsRef = useRef(new Set<string>());
-
-  // Navigation refs
-  const navRef = useRef({ goToStructure, isMapView });
-  useEffect(() => {
-    navRef.current = { goToStructure, isMapView };
-  }, [goToStructure, isMapView]);
 
   // --- Banner, then the feed ---
   const announce = useCallback((headline: Headline) => {
@@ -81,17 +70,12 @@ export function NewsHeadlineBridge() {
     return () => useHeadlineFeedStore.setState({ headlines: [] });
   }, []);
 
-  // --- Dismiss ---
-  const dismiss = useCallback(() => {
-    setQueue((prev) => prev.slice(1));
-  }, []);
-
-  // --- Auto-dismiss timer ---
+  // Each headline shows for its time, then gives way to the next: the only way it leaves.
   useEffect(() => {
     if (!currentHeadline) return;
-    const timer = setTimeout(dismiss, HEADLINE_DISPLAY_MS);
+    const timer = setTimeout(() => setQueue((prev) => prev.slice(1)), HEADLINE_DISPLAY_MS);
     return () => clearTimeout(timer);
-  }, [currentHeadline, dismiss]);
+  }, [currentHeadline]);
 
   // Ownership headlines follow the native row transition for realms and hyperstructures. A capture's row in the feed is
   // its story, which history keeps for a player who was away; the headline is only the banner.
@@ -130,14 +114,7 @@ export function NewsHeadlineBridge() {
     }
     if (!wasBeforeStart.current) return;
     wasBeforeStart.current = false;
-    enqueue({
-      id: `game-start:${startAt}`,
-      type: "game-start",
-      icon: "game-start",
-      title: "The game has begun",
-      description: [goal],
-      timestamp: Date.now(),
-    });
+    enqueue(gameStartHeadline(startAt, goal));
   }, [startAt, nowSeconds, enqueue, goal]);
 
   useEffect(() => {
@@ -171,23 +148,6 @@ export function NewsHeadlineBridge() {
     if (headline) enqueue(headline);
   }, [setup.store, winner, endRevision, enqueue]);
 
-  // --- Navigation handler ---
-  const handleNavigate = useCallback(
-    async (location: { x: number; y: number; entityId: number }) => {
-      const { goToStructure, isMapView } = navRef.current;
-      const position = Position.fromContract({ x: location.x, y: location.y });
-
-      try {
-        await goToStructure(location.entityId, position, isMapView);
-      } catch {
-        openOnMap(position, "tile");
-      }
-
-      dismiss();
-    },
-    [dismiss],
-  );
-
   // --- Prune old IDs ---
   useEffect(() => {
     if (shownIdsRef.current.size > 500) {
@@ -199,5 +159,15 @@ export function NewsHeadlineBridge() {
     }
   }, [queue]);
 
-  return <NewsHeadlineBanner headline={currentHeadline} onDismiss={dismiss} onNavigate={handleNavigate} />;
+  return <NewsHeadlineBanner headline={currentHeadline} />;
 }
+
+/** The news that the game has begun, with what it is played for: the game's own, and the lab's Blitz start. */
+export const gameStartHeadline = (startAt: number, goal: string): Headline => ({
+  id: `game-start:${startAt}`,
+  type: "game-start",
+  icon: "game-start",
+  title: "The game has begun",
+  description: [goal],
+  timestamp: Date.now(),
+});

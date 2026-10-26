@@ -33,6 +33,9 @@ export const useOnePanel = (
 ) => {
   const [surface, setSurface] = useState<HudSurface | null>(null);
   const [hidden, setHidden] = useState<string | null>(null);
+  // The desktop rail's Feed, which its × closes (owner, 26 October 2026: "I should also be able to close the feed so I
+  // see nothing on the right panel sometimes").
+  const [feedOpen, setFeedOpen] = useState(true);
   const deploying = useUIStore((state) => state.leftNavigationView === LeftView.MilitaryView);
   const pick = useUIStore((state) => mapPick(state.entityActions));
   // What the last render saw, and whether a surface opened since: what opened is what changed.
@@ -73,16 +76,17 @@ export const useOnePanel = (
     if (deploying && showsCard) closeDeployOrder();
   }, [deploying, showsCard]);
 
-  /** Back to the rail's home: the surface, the tapped tile with its card, and the deploy order all go. */
+  /** Back to the rail's home, its Feed open: the surface, the tapped tile with its card, and the deploy order all go. */
   const goHome = () => {
     letGoOfTheTile();
     closeDeployOrder();
     setSurface(null);
+    setFeedOpen(true);
   };
-  // Nothing stands in the rail's panel: its feed shows.
+  // Nothing stands in the rail's panel: its Feed shows, unless it was closed.
   const home = surface === null && !showsCard && !deploying;
 
-  return { surface, openSurface, showsCard, home, goHome };
+  return { surface, openSurface, showsCard, home, goHome, feedOpen, closeFeed: () => setFeedOpen(false) };
 };
 
 /**

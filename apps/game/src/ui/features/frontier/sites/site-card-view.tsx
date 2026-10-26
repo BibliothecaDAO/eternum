@@ -1,5 +1,5 @@
 import type { FrontierBeast } from "@/three/structures/frontier-beast";
-import { formatAmount, formatExact, formatDuration, LORDS, formatHeldAgainst } from "@bibliothecadao/types";
+import { formatDuration, formatExact, formatHeldAgainst, LORDS, formatShort } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -15,14 +15,16 @@ import {
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
+  type Tier,
   ARMY_WILL_BE_LOST,
   ATTACK,
   ATTACKING,
   FULL,
   MOVE,
   needsStamina,
+  NO_ARMY_OUT,
+  PICK_AN_ARMY,
   ON_ITS_WAY,
   REALM,
   tooFarFrom,
@@ -61,7 +63,8 @@ export type SiteVerb =
 
 /**
  * An army that could take the site, offered when none is selected: the fight it would have from where it stands (the
- * attack preview's own forecast), or none while it is out of reach. Picking it opens the attack with that army.
+ * attack preview's own forecast), or none while it is out of reach or the site is not a fight. Picking it selects that
+ * army for the site, whose card then acts for it.
  */
 export type SiteChoice = {
   label: string;
@@ -117,7 +120,7 @@ export const SiteCardView = ({
   const lost = fight && fight.outcome === "loses";
   const [details, setDetails] = useState(false);
   // With no army selected the realm's armies are the choices, and the guard moves up beside the kind.
-  const picking = choices !== undefined && choices.length > 0;
+  const picking = choices !== undefined;
   const guardIcon = beast ? beastMeaning(beast.beast) : "troops";
   // The army against a guard of known size, with the fight forecast: what option A reads, side by side.
   const facing = picking ? undefined : facingOf(army, guard, fight);
@@ -135,7 +138,7 @@ export const SiteCardView = ({
         {picking && <BeastGuard beast={beast} guard={guard} />}
       </header>
       {picking && choices ? (
-        <Choices choices={choices} guardIcon={guardIcon} />
+        <ArmyChoices does="attack" choices={choices} guardIcon={guardIcon} />
       ) : facing ? (
         <div className="flex gap-2">
           <Side
@@ -161,7 +164,7 @@ export const SiteCardView = ({
         {chest ? <ChestPay chest={chest} /> : pay ? <Pay pay={pay} /> : null}
         {xp !== undefined && !(chest && lost) && (
           <HudChip>
-            {`+${formatAmount(xp)}`} {XP}
+            {formatShort(xp, { signed: true })} {XP}
           </HudChip>
         )}
       </Gain>
@@ -291,7 +294,7 @@ const Matchup = ({
   <div className="flex items-center justify-center gap-2">
     {army && (
       <HudChip icons={[army.art]} label={TROOPS}>
-        {formatExact(army.troops)}
+        {formatShort(army.troops)}
       </HudChip>
     )}
     <SemanticIcon name="attack" size={22} />
@@ -311,14 +314,27 @@ const BeastGuard = ({
     <span className="flex items-center gap-2" data-tip={beast?.combatClass}>
       {beast && <span className="text-hud-strong text-hud-ink">{beast.name}</span>}
       <HudChip icons={[beast ? beastMeaning(beast.beast) : "troops"]} label={beast ? BEAST : TROOPS}>
-        {formatExact(guard)}
+        {formatShort(guard)}
       </HudChip>
     </span>
   );
 
-/** No army selected: each army is a row with the fight it would have, and a tap opens the attack with it. */
-const Choices = ({ choices, guardIcon }: { choices: readonly SiteChoice[]; guardIcon: IconMeaning }) => (
+/**
+ * A site's card with no army selected, whatever the site: what an army does there, then each of the realm's armies as
+ * a row (with the fight it would have, at a guarded site) that a tap picks for it; with none out, where one comes from.
+ */
+export const ArmyChoices = ({
+  does,
+  choices,
+  guardIcon,
+}: {
+  does: keyof typeof PICK_AN_ARMY;
+  choices: readonly SiteChoice[];
+  /** The guard's mark, at a site an army fights; its rows then carry their forecasts. */
+  guardIcon?: IconMeaning;
+}) => (
   <div className="flex flex-col gap-1.5">
+    <p className="text-hud-label text-hud-muted">{choices.length > 0 ? PICK_AN_ARMY[does] : NO_ARMY_OUT}</p>
     {choices.map((choice) => (
       <HudRow
         key={choice.label}
@@ -328,7 +344,7 @@ const Choices = ({ choices, guardIcon }: { choices: readonly SiteChoice[]; guard
         onClick={choice.onPick}
         trail={
           <>
-            <Forecast fight={choice.fight} size="row" guardIcon={guardIcon} />
+            {guardIcon && <Forecast fight={choice.fight} size="row" guardIcon={guardIcon} />}
             <SemanticIcon name="chevron-right" size={16} />
           </>
         }
@@ -338,8 +354,8 @@ const Choices = ({ choices, guardIcon }: { choices: readonly SiteChoice[]; guard
 );
 
 /**
- * One forecast, drawn the same on the attack's plate and on an army's row. The pips beside the flag count the attacks
- * the whole fight takes to win; the figures are the one attack Attack sends now, as its result will show them: the
+ * One forecast, drawn the same on the attack's plate and on an army's row. The flag's count is the attacks the whole
+ * fight takes to win; the figures are the one attack Attack sends now, as its result will show them: the
  * troops it costs and, while the guard still stands after it, the guard left. A fight the army does not win shows
  * both in amber, under a skull that names itself. Unknown is a dash on the plate and nothing on a row.
  */
@@ -369,18 +385,7 @@ const Forecast = ({
   }
   return (
     <>
-      <span className="flex items-center gap-1.5" aria-label={known ? `${known.exchanges}` : "—"}>
-        <SemanticIcon name="flag" size={22} />
-        {known ? (
-          <span aria-hidden className="flex gap-1">
-            {Array.from({ length: known.exchanges }, (_, index) => (
-              <i key={index} className="size-2 rounded-full border border-hud-line-strong" />
-            ))}
-          </span>
-        ) : (
-          <span className="text-hud-title tabular-nums text-hud-ink">—</span>
-        )}
-      </span>
+      <Line icon="flag" value={known ? `×${known.exchanges}` : "—"} name={FIGHT_WORDS.attacks} />
       <Line icon="skull" value={known ? `−${formatExact(known.troopsLost)}` : "—"} />
       {known && known.guardLeft > 0 && <Line icon={guardIcon} value={formatExact(known.guardLeft)} />}
     </>
@@ -436,7 +441,7 @@ const ChestPay = ({ chest }: { chest: { tier: Tier; lords: number } }) => (
       <SemanticIcon name="lords" size={22} />
       <span className="text-hud-display leading-none tabular-nums text-hud-gold">+{formatExact(chest.lords)}</span>
     </span>
-    <HudRarity tier={chest.tier} word />
+    <HudRarity tier={chest.tier} />
   </>
 );
 

@@ -1,5 +1,4 @@
 import { usePlayerNames } from "@/hooks/use-player-profile";
-import { type IconMeaning } from "@/ui/design-system/icon";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
@@ -9,23 +8,23 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { useAllInFlight, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
+import { HudTier } from "@/ui/design-system/kit/hud-elements";
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
+  type Tier,
   BARRACKS,
   BUILD,
   HUT,
-  LABOR,
   makes,
-  needsAt,
+  needsTier,
+  tierNumeral,
   ONE_A_REALM,
   POPULATION,
   priceRaised,
   RESEARCH,
   startsNewArmies,
   takesPopulation,
-  TIER_WORDS,
 } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownAmount } from "@/ui/utils/utils";
@@ -44,20 +43,22 @@ import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-clien
 import {
   BUILDINGS_CENTER,
   BuildingType,
-  getHexDistance,
-  type HexPosition,
-  ResourcesIds,
   formatAmount,
   formatCharge,
+  formatGain,
   formatRate,
-  formatFigure,
+  getHexDistance,
+  ResourcesIds,
+  type HexPosition,
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { readRealmPopulation } from "../realm/realm-population";
 import { exploreFix } from "../frontier-reveal-yield";
+import { outputWhy } from "../production/store-makers";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
+import { ATTRIBUTE_MARKS } from "../research/research-tree";
 import { type BuildOption, PRODUCTS, readBuildOptions } from "./build-options";
 import { type BuildTile, BuildView } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
@@ -221,7 +222,7 @@ export const BuildSheet = ({
    * once a Barracks stands, and until one does the fix is to build it.
    */
   const gateRefusal = (gate: number): Refusal => {
-    const reason = { kind: "failed", line: needsAt(BARRACKS, TIER_WORDS[gate]) } as const;
+    const reason = { kind: "failed", line: needsTier(BARRACKS, tierNumeral(gateTier(gate))) } as const;
     if (getBuildingQuantity(realmId, BuildingType.ResourceKnightT1, setup.store) === 0)
       return {
         reason,
@@ -254,14 +255,6 @@ export const BuildSheet = ({
   );
 };
 
-/** Each attribute's mark, as a training building's gain shows it. */
-const ATTRIBUTE_MARKS: Record<Extract<BuildOption["effect"], { kind: "trains" }>["attribute"], IconMeaning> = {
-  Battle: "order-rage",
-  Logistics: "order-skill",
-  Scouting: "order-detection",
-  Homecoming: "order-enlightenment",
-};
-
 const PRICE_KINDS: Partial<Record<number, PriceKind>> = {
   [ResourcesIds.Labor]: "labor",
   [ResourcesIds.Wheat]: "wheat",
@@ -288,14 +281,16 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
   standing: standingOf(option, holdings),
 });
 
+/** The Barracks tier a training building waits for: a research tier above common, which the kit counts from common. */
+const gateTier = (gate: number) => (gate + 1) as Exclude<Tier, 1>;
+
 /**
  * Where a building stands for the realm, the first that holds: built (a realm holds one), locked behind the Barracks'
  * tier, or its price, with the labor the realm lacks and the wait until it holds it, or else the population it lacks.
  */
 const standingOf = (option: BuildOption, { labor, laborPerHour, free }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
-  // The gate is a research tier above common; the kit counts tiers from common.
-  if (option.standing !== "open") return { kind: "locked", gate: (option.standing.gate + 1) as Tier };
+  if (option.standing !== "open") return { kind: "locked", gate: gateTier(option.standing.gate) };
   const price = option.cost.find(({ resource }) => resource === ResourcesIds.Labor)?.amount ?? 0;
   const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] =
     labor === undefined || labor < price
@@ -303,7 +298,7 @@ const standingOf = (option: BuildOption, { labor, laborPerHour, free }: Holdings
       : free !== undefined && free < option.populationCost
         ? { of: "population" }
         : undefined;
-  return { kind: "price", labor: price, raised: riseLine(option, price), short };
+  return { kind: "price", labor: price, raised: riseLine(option), short };
 };
 
 /**
@@ -314,35 +309,29 @@ const buildingLine = (option: BuildOption): string => {
   const { effect } = option;
   const does =
     effect.kind === "produces"
-      ? makes(PRODUCTS[effect.resource].word, formatRate(effect.perHour / 3600))
+      ? makes(PRODUCTS[effect.resource].word, formatRate(effect.output.total))
       : effect.kind === "trains"
-        ? startsNewArmies(effect.attribute, TIER_WORDS[option.tier - 1])
-        : `+${formatAmount(effect.amount)} ${POPULATION}`;
+        ? startsNewArmies(effect.attribute, tierNumeral(option.tier))
+        : `${formatGain(effect.amount)} ${POPULATION}`;
   const takes = option.populationCost > 0 ? `, ${takesPopulation(formatCharge(option.populationCost))}` : "";
   return `${buildingName(option.category)}: ${does}${takes}`;
 };
 
-/**
- * Why a price is above its base, as the contract charges it: the copies standing multiply it. None when no copy
- * stands yet.
- */
-const riseLine = (option: BuildOption, price: number): string | undefined =>
-  option.rise.times > 1
-    ? priceRaised(
-        formatCharge(price / option.rise.times),
-        LABOR,
-        formatFigure(option.rise.times),
-        formatAmount(option.rise.standing),
-      )
-    : undefined;
+/** Why a price is above its first: the copies standing raise it. None when no copy stands yet. */
+const riseLine = (option: BuildOption): string | undefined =>
+  option.rise.times > 1 ? priceRaised(formatAmount(option.rise.standing)) : undefined;
 
 /** What one more gives: what it makes a minute, the population room it adds, or the tier new armies start at. */
 const givesOf = ({ effect, tier }: BuildOption): BuildTile["gives"] =>
   effect.kind === "produces"
-    ? { icon: PRODUCTS[effect.resource].icon, value: formatRate(effect.perHour / 3600) }
+    ? {
+        icon: PRODUCTS[effect.resource].icon,
+        value: formatRate(effect.output.total),
+        basis: outputWhy(effect.research),
+      }
     : effect.kind === "trains"
-      ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: TIER_WORDS[tier - 1] }
-      : { icon: "person", value: `+${formatAmount(effect.amount)}` };
+      ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: <HudTier tier={tier} /> }
+      : { icon: "person", value: formatGain(effect.amount) };
 
 /** A realm's plot, as the actions in flight name it. */
 

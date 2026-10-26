@@ -10,12 +10,13 @@ const boot = vi.hoisted(() => ({
   } as Record<string, unknown>,
 }));
 vi.mock("@/game-entry/play-route-boot", () => ({ usePlayRouteBootSnapshot: () => boot.snapshot }));
-const facts = vi.hoisted(() => ({ own: [] as unknown[], all: [] as unknown[] }));
+const facts = vi.hoisted(() => ({ own: [] as unknown[] }));
 vi.mock("@/hooks/helpers/use-structures", () => ({ usePlayerStructures: () => facts.own }));
-vi.mock("@/hooks/use-fact-view", () => ({ useFactView: () => facts.all }));
 vi.mock("@/ui/layouts/game-entry-timeline", () => ({ markGameEntryMilestone: () => {} }));
 
+import { resetEntryDestination, settleEntryDestination } from "@/game-entry/entry-destination";
 import { usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
+import { Position } from "@bibliothecadao/eternum";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { overrideSpectateIntent } from "@/utils/spectator-session";
 import { PlaySceneHandoff } from "./play-scene-handoff";
@@ -31,8 +32,11 @@ const Where = () => {
 afterEach(() => {
   useUIStore.setState({ structureEntityId: 0, isSpectating: false, worldMapReturnPosition: null });
   facts.own = [];
-  facts.all = [];
+  resetEntryDestination();
 });
+
+/** The entry's answer for its realm, as the boot's structure choice gives it (initial-structure.ts). */
+const entryOpens = (destination: Position | null) => act(async () => settleEntryDestination(destination));
 
 const convergedMap = () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -74,6 +78,8 @@ it("hands a Frontier player off to their own realm's hex, and not before their r
     await act(async () =>
       useUIStore.setState({ structureEntityId: 1, isSpectating: false, worldMapReturnPosition: { col: 12, row: -3 } }),
     );
+    expect(`${ui.where().pathname}${ui.where().search}`).toBe(ENTRY);
+    await entryOpens(Position.fromContract({ x: 1, y: 1 }));
     expect(ui.where().pathname).toBe(`${GAME}/hex`);
     expect([ui.where().searchParams.get("col"), ui.where().searchParams.get("row")]).toEqual(["12", "-3"]);
     expect(ui.where().searchParams.get("resumeScene")).toBe("hex");
@@ -82,10 +88,33 @@ it("hands a Frontier player off to their own realm's hex, and not before their r
   }
 });
 
+it("hands a spectator off to the realm they watch when it arrives after the map converged", async () => {
+  convergedMap();
+  boot.snapshot = { ...boot.snapshot, resolvedRequest: { entryMode: "spectator", resumeScene: "hex" } };
+  const ui = await mountHandoff();
+  try {
+    // A Frontier spectator's realm streams in with the leader's visit, after the snapshot and after the map converged.
+    expect(`${ui.where().pathname}${ui.where().search}`).toBe(ENTRY);
+
+    await act(async () =>
+      useUIStore.setState({ structureEntityId: 5, isSpectating: true, worldMapReturnPosition: { col: 3, row: 4 } }),
+    );
+    await entryOpens(Position.fromContract({ x: 5, y: 8850 }));
+
+    expect(ui.where().pathname).toBe(`${GAME}/hex`);
+    expect([ui.where().searchParams.get("col"), ui.where().searchParams.get("row")]).toEqual(["3", "4"]);
+  } finally {
+    boot.snapshot = { ...boot.snapshot, resolvedRequest: { entryMode: "player", resumeScene: "hex" } };
+    await ui.unmount();
+  }
+});
+
 it("keeps a player with no realm to open on the map, dropping the resume instead of waiting", async () => {
   convergedMap();
   const ui = await mountHandoff();
   try {
+    expect(`${ui.where().pathname}${ui.where().search}`).toBe(ENTRY);
+    await entryOpens(null);
     expect(ui.where().pathname).toBe(`${GAME}/map`);
     expect(ui.where().searchParams.get("boot")).toBeNull();
     expect(ui.where().searchParams.get("resumeScene")).toBeNull();

@@ -13,10 +13,8 @@ import {
   TODAY,
   TROOPS,
   WHEAT,
-  dayEnds,
   dayLeft,
   phraseText,
-  tomorrowLasts,
 } from "@/ui/design-system/kit/words";
 import { useLandedValue, useLandingDelta } from "@/ui/motion/landing-hold";
 import { EASE } from "@/ui/motion/motion-scale";
@@ -58,9 +56,9 @@ export const STORES: Record<StoreKind, { icon: IconMeaning; word: string }> = {
 };
 
 /**
- * The strip across the top of every Frontier screen: the day's dial, which opens Today where the host gives the way, the
- * four stores against their limits, and the clock line under them. A tap on a store with a card opens it, where the
- * host gives the way.
+ * The strip across the top of every Frontier screen, one row: the day's dial, its ring the share of today still to run,
+ * which opens Today (where the day's clock line is) where the host gives the way, then the four stores against their
+ * limits (owner, 26 October 2026: the slim strip). A tap on a store with a card opens it, where the host gives the way.
  */
 export const StatusStrip = ({
   clock,
@@ -81,12 +79,11 @@ export const StatusStrip = ({
           value={clock.day ?? "—"}
           share={clock.shareLeft ?? 0}
           tone={STORE_TONES[clock.tone].meter}
-          label={clock.day === undefined ? DAY : `${DAY} ${clock.day}`}
+          label={dialLabel(clock)}
         />
       </DayDialSlot>
       <Stores stores={stores} cards={storeCards} />
     </div>
-    <DayClockLine clock={clock} />
   </HudPanel>
 );
 
@@ -100,22 +97,9 @@ const DayDialSlot = ({ onOpen, children }: { onOpen?: () => void; children: Reac
     <span className="flex w-11 shrink-0 justify-center">{children}</span>
   );
 
-/** The day's clock in words, in the day's tone: "Day ends 21:40 · 7h 14m left · Tomorrow lasts 12h"; unknown a dash. */
-const DayClockLine = ({ clock }: { clock: DayClock }) => (
-  <p
-    role="timer"
-    className={cn(
-      "flex flex-wrap items-baseline justify-center gap-x-1 text-hud-label tabular-nums",
-      STORE_TONES[clock.tone].text,
-    )}
-  >
-    <span>{phraseText(dayEnds(clock.endsAt))}</span>
-    <span aria-hidden>·</span>
-    <span>{phraseText(dayLeft(clock.secondsLeft))}</span>
-    <span aria-hidden>·</span>
-    <span>{phraseText(tomorrowLasts(clock.tomorrowSeconds))}</span>
-  </p>
-);
+/** What the dial says it is: the day, and the time left of it ("Day 5 · 7h 14m left"); before the season, Day alone. */
+const dialLabel = (clock: DayClock): string =>
+  clock.day === undefined ? DAY : `${DAY} ${clock.day} · ${phraseText(dayLeft(clock.secondsLeft))}`;
 
 const Stores = ({
   stores,

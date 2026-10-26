@@ -1,5 +1,5 @@
 import { Bone, BufferAttribute, BufferGeometry, Group, Mesh, Skeleton, SkinnedMesh } from "three";
-import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 
 import { resolveHumanoidRigAdapter } from "./humanoid-rig-adapters";
 import { resolveHumanoidRigRequiredBoneNames } from "./humanoid-rig-adapter";
@@ -9,6 +9,7 @@ import type {
   ProceduralCharacterAssetDefinition,
 } from "./procedural-character-assets";
 import { disposeSkinnedSceneTemplates } from "./skinned-asset-resources";
+import { gltfLoader } from "@/three/utils/gltf-loader";
 
 type QuaterniusCharacterAssetId = Extract<ProceduralCharacterAssetId, "base" | "peasant" | "ranger">;
 
@@ -43,7 +44,7 @@ export async function loadQuaterniusCharacterAssetTemplate(
   base?: LoadedProceduralCharacterAssetTemplate,
 ): Promise<LoadedProceduralCharacterAssetTemplate> {
   const definition = QUATERNIUS_CHARACTER_ASSETS[id];
-  const gltf = await new GLTFLoader().loadAsync(definition.url);
+  const gltf = await gltfLoader.loadAsync(definition.url);
   const asset = { ...definition, gltf };
   try {
     validateQuaterniusCharacterAsset(definition, gltf);

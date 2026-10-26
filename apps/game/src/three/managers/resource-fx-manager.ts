@@ -1,5 +1,5 @@
 import { resourceMeaning, iconUrl } from "@/ui/design-system/icon-meaning";
-import { formatCharge, ResourcesIds, type HexPosition } from "@bibliothecadao/types";
+import { formatCharge, formatGain, ResourcesIds, type HexPosition } from "@bibliothecadao/types";
 import type { ChestReward } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { createWorldFxBackend, type WorldFxBackend, type WorldFxHandle } from "../fx/world-fx-backends";
@@ -120,7 +120,7 @@ export class ResourceFXManager {
       floatHeight,
       floatRight: 0.9,
       fontSize: "18px",
-      text: amount > 0 ? `+${formatCharge(amount)}` : formatCharge(amount),
+      text: amount > 0 ? formatGain(amount) : formatCharge(amount),
       x: x + 0.8,
       y: y + 0.2,
       z,

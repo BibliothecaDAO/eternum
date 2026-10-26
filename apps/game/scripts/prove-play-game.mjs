@@ -136,9 +136,9 @@ const pressButton = (b, word, within = "body") => {
   return true;
 };
 
-/** The right column's **All** button in `EventsCard`, labelled Log, and the history its panel opens on. */
+/** The right column's **Log** button in `EventsCard`, and the Log window it opens on the game's history. */
 export const LOG_BUTTON = 'button[aria-label="Log"]';
-export const HISTORY = 'section[aria-label="World history"]';
+export const HISTORY = 'section[aria-label="Log"]';
 
 /** Presses **Log**, as a player would, and returns why the game's history did not open, or null once it shows. */
 const openHistory = async (b) => {

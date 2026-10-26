@@ -61,7 +61,7 @@ const BIOME: Record<Direction, number> = {
 };
 
 /** The six tiles around the realm at (10, 10): four free, one taken, one not yet explored. */
-export const DEPLOY_RING: readonly DeployTile[] = getNeighborHexes(10, 10).map(({ col, row, direction }) => ({
+const DEPLOY_RING: readonly DeployTile[] = getNeighborHexes(10, 10).map(({ col, row, direction }) => ({
   col,
   row,
   direction,

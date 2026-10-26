@@ -45,7 +45,7 @@ const show = async (headline: Headline, check: (line: string) => void) => {
   const root = createRoot(container);
   const line = () => container.querySelector(".ui-banner__line")!;
   try {
-    await act(async () => root.render(<NewsHeadlineBanner headline={headline} onDismiss={() => undefined} />));
+    await act(async () => root.render(<NewsHeadlineBanner headline={headline} />));
     // Waiting on identity: a muted bar where the name goes, never the account's stand-in "Lord ####".
     expect(line().textContent).not.toMatch(/Lord/);
     expect(line().querySelector("[aria-busy]")).not.toBeNull();
@@ -121,9 +121,7 @@ it("heads a game's end 'Game result' in every mode, Blitz included, which has no
   document.body.append(container);
   const root = createRoot(container);
   try {
-    await act(async () =>
-      root.render(<NewsHeadlineBanner headline={ended(0x5eed0154n)} onDismiss={() => undefined} />),
-    );
+    await act(async () => root.render(<NewsHeadlineBanner headline={ended(0x5eed0154n)} />));
     expect(container.querySelector(".ui-banner__eyebrow")?.textContent).toBe("Game result");
     expect(container.textContent).not.toContain("Age");
   } finally {

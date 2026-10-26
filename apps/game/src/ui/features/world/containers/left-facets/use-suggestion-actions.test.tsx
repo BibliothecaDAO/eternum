@@ -11,7 +11,12 @@ vi.mock("@/ui/features/settlement/construction/realm-build-actions", () => ({
     return new Promise<void>((resolve) => (send.land = resolve));
   },
 }));
-vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true, actNowRefusal: () => null }));
+vi.mock("@/utils/can-issue-orders", () => ({
+  canIssueOrders: () => true,
+  actNowRefusal: () => null,
+  refusedBeforePlay: () => false,
+}));
+vi.mock("@/ui/features/settlement/production/production-modal", () => ({ ProductionModal: () => null }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: {} } }) }));
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => ({}) }));
 vi.mock("@bibliothecadao/eternum", async (original) => ({
@@ -22,6 +27,8 @@ vi.mock("@bibliothecadao/eternum", async (original) => ({
 }));
 
 const { useSuggestionActions } = await import("./use-suggestion-actions");
+const { useUIStore } = await import("@/hooks/store/use-ui-store");
+const { LeftView } = await import("@/types");
 
 const WOOD = {
   id: "1-build-wood",
@@ -83,4 +90,33 @@ it("sends a step once while it is in flight, whichever surface presses it, and s
   expect(busy()).toEqual(["false", "false"]);
   await press("Attention");
   expect(send.build).toHaveBeenCalledTimes(2);
+});
+
+/** A realm's army step, as the order offers it once its barracks stands. */
+const armyStep = (action: "deploy-army") =>
+  ({
+    id: `1-${action}`,
+    realmId: 1,
+    realmName: "Egonal",
+    action,
+    label: action,
+    icon: "troops",
+    resourceHint: 7,
+  }) as never;
+
+/** A surface offering one step, pressed once. */
+const pressStep = async (step: never) => {
+  const Step = () => {
+    const { handleSuggestionClick } = useSuggestionActions();
+    return <button onClick={() => void handleSuggestionClick(step)}>Take</button>;
+  };
+  await act(async () => root.render(<Step />));
+  await act(async () => host.querySelector("button")!.click());
+};
+
+it("opens the realm's army deployment for Deploy, building nothing", async () => {
+  await pressStep(armyStep("deploy-army"));
+  expect(useUIStore.getState().leftNavigationView).toBe(LeftView.MilitaryView);
+  expect(useUIStore.getState().pendingMilitaryAction).toEqual({ structureId: 1, isExplorer: true });
+  expect(send.build).not.toHaveBeenCalled();
 });

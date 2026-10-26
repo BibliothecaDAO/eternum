@@ -45,7 +45,7 @@ const step = (browser, name, extra = {}) => {
 };
 
 function openStudio(browser, urlBase) {
-  transcript.url = `${urlBase}/lab/studio?gameMode=${game}`;
+  transcript.url = `${urlBase}/lab/studio?mode=${game}`;
   browser.run(["open", transcript.url, "--ignore-https-errors", "--args", GPU_FLAGS]);
   browser.run(["set", "viewport", String(width), String(height)]);
   // The launch above can leave the first tab blank; opening the address again lands on it.

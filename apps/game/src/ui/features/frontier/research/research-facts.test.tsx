@@ -9,6 +9,7 @@ import { type GameClientSetup, nativeResearchConstants as research } from "@bibl
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
 import { realmBoard } from "../build/build-fixture";
+import { FrontierResearch } from "./frontier-research";
 import { useResearchTree } from "./research-facts";
 
 let host: HTMLDivElement;
@@ -77,4 +78,21 @@ it("keeps the tree unknown while a price it reads is missing, then reads each no
   expect(tree!.essence).toBe(0);
   expect(shrine.state).toBe("short");
   expect(shrine.needs).toContainEqual(expect.objectContaining({ kind: "essence", met: false, have: 0, need: 2_000 }));
+});
+
+it("says the tree is on its way while a fact it reads is missing, and draws the tree once it arrives", () => {
+  const { store, realm } = realmBoard();
+  store.applyFacts([XP_RULES, ...ALL_PRICES.filter(({ value }) => value.row !== research.ROW_SHRINE)] as never);
+  act(() =>
+    root.render(
+      <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+        <FrontierResearch realm={realm} />
+      </GameProvider>,
+    ),
+  );
+  expect(host.textContent).toBe("The research tree is on its way");
+
+  act(() => store.applyFacts(ALL_PRICES.filter(({ value }) => value.row === research.ROW_SHRINE) as never));
+  expect(host.textContent).not.toContain("on its way");
+  expect(host.textContent).toContain("Shrine");
 });

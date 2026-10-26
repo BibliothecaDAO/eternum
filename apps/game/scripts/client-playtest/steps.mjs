@@ -10,6 +10,7 @@ import {
   judgeNextOrder,
   judgePlateStamina,
   refusalErrors,
+  contextLossErrors,
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
@@ -187,17 +188,21 @@ const isIn = (seen, place, scene) =>
 
 /**
  * A place as the top bar's Realm / World names it: a desktop's HUD, every mode's, moves between the map and the realm
- * there; a phone's Frontier HUD has its own place bar's Map and Realm.
+ * there; a phone's Frontier HUD has its place bar's switch, which names where it goes: Realm on the map, World on the
+ * realm (the page reads where the player is from it).
  */
 const PLACE_TABS = { Map: "World", Realm: "Realm" };
 
-/** Presses the place bar's button where there is one (a phone), else the top bar's tab (a desktop). */
+/** Presses the place bar's switch where there is one (a phone, as it names the place), else the top bar's tab (a desktop). */
 function pressPlace(browser, place) {
-  try {
-    browser.click(place);
-  } catch {
-    browser.clickTab(PLACE_TABS[place]);
+  for (const press of [() => browser.click(place), () => browser.click(PLACE_TABS[place])]) {
+    try {
+      return press();
+    } catch {
+      // Not this button: the next way there.
+    }
   }
+  browser.clickTab(PLACE_TABS[place]);
 }
 
 /** Where the HUD's standing parts sit on the map at rest. */
@@ -362,8 +367,8 @@ function recordedStill(onMap) {
 }
 
 /**
- * The season's board as a player reads it: on a desktop its round place opens it as a page and a second press closes
- * it; a phone has it in the Menu, closed with Escape.
+ * The season's board as a player reads it: a desktop's Season place opens it in the rail and a second press closes it;
+ * a phone opens it from the Menu and closes it with the board's Back, as a phone has no Escape key.
  */
 async function readTheSeason(input) {
   if (!onADesktop()) return { desktop: false, ...(await readTheSeasonInTheMenu(input)) };
@@ -388,19 +393,46 @@ const hexesApart = (from, to) =>
 
 /**
  * The Feed's first story that still opens a place (one from a closed Frontier day is no link), pressed as a player
- * presses it: the map goes where it happened. Frontier's realms stand millions of hexes apart, so a story of another
- * realm is a far jump.
+ * presses it: the map goes where it happened. A desktop's Feed stands in the rail. A phone's stories are in the Log: the
+ * player taps Log in the place bar, then the story. A story whose army can be selected puts the Log away for its card;
+ * one that only goes to a place leaves the Log open over the map, and the player taps Log again to look at the place
+ * (the place bar's Map would take the camera home). Frontier's realms stand millions of hexes apart, so a story of
+ * another realm is a far jump.
  */
 async function openAFeedEvent({ browser }) {
   const before = browser.observe();
   const from = browser.read(ROUTE_HEX_EXPRESSION);
+  const log = onADesktop() ? undefined : await tapTheLog(browser);
+  if (log === false) return { log, row: null };
   // A row's button is named by its words, time and line run together; the browser presses the first one where it is.
   const row = browser.read(`JSON.stringify(document.querySelector(".ui-event__open")?.textContent.trim() ?? null)`);
-  if (!row) return { row: null };
+  if (!row) return { log, row: null };
   browser.run(["click", ".ui-event__open"]);
   await waitFor(browser, (seen) => seen.playable && seen.scene === "map", SCENE_WAIT_MS);
   const to = browser.read(ROUTE_HEX_EXPRESSION);
-  return { row, from, to, apart: hexesApart(from, to), reloaded: browser.observe().timeOrigin !== before.timeOrigin };
+  const logLeftOpen = log
+    ? !(await waitFor(browser, (seen) => !seen.panels.includes("Log"), LOG_CLOSES_MS))
+    : undefined;
+  if (logLeftOpen) await tapTheLog(browser);
+  return {
+    log,
+    row,
+    from,
+    to,
+    apart: hexesApart(from, to),
+    logLeftOpen,
+    reloaded: browser.observe().timeOrigin !== before.timeOrigin,
+  };
+}
+
+/** How long an army's card takes to stand in the Log's place once its story is tapped. */
+const LOG_CLOSES_MS = 3_000;
+
+/** A phone's Log slot tapped, as a player taps it; whether the Log's panel is drawn after. */
+async function tapTheLog(browser) {
+  browser.tapPlace("Log");
+  await sleep(1_500);
+  return browser.observe().panels.includes("Log");
 }
 
 /**
@@ -408,6 +440,7 @@ async function openAFeedEvent({ browser }) {
  * the selected tile (a contract hex) is the route's (a normalized hex), one map centre apart on both axes.
  */
 function openedInThePage({ seen, played }) {
+  if (played.log === false) return failed("the Log did not open", played);
   if (!played.row) return blocked("the Feed showed no story that opens a place", played);
   if (played.reloaded) return failed("the page loaded again to open the story", played);
   if (!played.to) return failed("the story's address names no hex", played);
@@ -510,25 +543,29 @@ function visitMissed(visit) {
   return placeMissed(visit.seen, visit.mapHex);
 }
 
-/** A desktop's Season page drew with its place pressed, then closed; a phone's Menu sheet opened, then closed. */
-function seasonReadAndClosed({ played, ...rest }) {
-  if (!played.desktop) return sheetOpenedAndClosed("Menu")({ played, ...rest });
-  if (!played.opened.page || !played.opened.pressed.includes("Season"))
-    return failed("the Season place opened no page", { played });
-  if (played.closed.page) return failed("the Season page did not close", { played });
+/**
+ * The Season's board drew and then closed, wherever the HUD puts it: on a desktop with its place lit, on a phone from an
+ * opened Menu.
+ */
+function seasonReadAndClosed({ played }) {
+  if (played.desktop && !played.opened.pressed.includes("Season"))
+    return failed("the Season place was not lit", played);
+  if (!played.desktop && !played.menu.includes("Menu")) return failed("no Menu sheet opened", played);
+  if (!played.opened.panels.includes("Season")) return failed("the Season's board was not drawn", played);
+  if (played.closed.panels.includes("Season")) return failed("the Season's board did not close", played);
   return completed(played);
 }
 
 async function readTheSeasonInTheMenu({ browser }) {
   browser.click("Menu");
   await sleep(1_500);
-  const opened = browser.observe().dialogs;
+  const menu = browser.observe().dialogs;
   browser.click("Season");
   await sleep(2_000);
-  const read = browser.observe().dialogs;
-  browser.press("Escape");
+  const opened = browser.observe();
+  browser.click("Back");
   await sleep(1_000);
-  return { opened, read, closed: browser.observe().dialogs };
+  return { menu, opened, closed: browser.observe() };
 }
 
 /** A Wheat ring or phone plate opens its store card; pressing it again closes the same card. */
@@ -546,15 +583,6 @@ function storeOpenedAndClosed({ played }) {
   if (!played.opened) return failed("the Wheat store card did not open");
   if (played.closed) return failed("the Wheat store card did not close");
   return completed(played);
-}
-
-function sheetOpenedAndClosed(label) {
-  return ({ played }) => {
-    if (!played.opened.includes(label))
-      return failed(`no ${label} sheet opened (open: ${played.opened.join(", ") || "none"})`);
-    if (played.closed.includes(label)) return failed(`the ${label} sheet did not close`);
-    return completed(played);
-  };
 }
 
 /** The army with the most stamina, as a player picks the one that can act; selecting it centres the camera on it. */
@@ -1108,7 +1136,9 @@ async function readKnightPresentation({ browser }) {
   await sleep(3000);
   return {
     stats: browser.read("window.getProceduralArmyProductionStats?.() ?? null"),
-    assets: browser.read("JSON.parse(window.__playtest.read()).models"),
+    assets: browser.read(
+      'JSON.parse(window.__playtest.read()).resources.filter((entry) => entry.url.startsWith("/models/"))',
+    ),
   };
 }
 
@@ -1287,6 +1317,190 @@ function armyEnteredEtherealII({ played }) {
 
 const SPIRE_WAIT_MS = 5_000;
 
+/** A lab game built on the spire's (src/lab/game): the merge games and the owner's army after its fight. */
+const labSpireGame = (scenario) => ({ ...LAB_SPIRE, lab: scenario });
+/** The spire's army, the one a player picks first: the fixture's SPIRE_ARMY. */
+const PICKED_ARMY = 201;
+const MERGE_WAIT_MS = 10_000;
+/** Where the pointer rests between hovers: high on the map, on no army's tile. */
+const POINTER_PARKED = [0, -300];
+/** An army's tile below its token at the map's default zoom (a player run never zooms): its label point's height. */
+const TOKEN_ABOVE_TILE_PX = 100;
+
+/**
+ * Two of the realm's armies merged as a player merges them, then hovered (owner, 2026-10-25: "due to an army merge I dont
+ * see the hover label"): the spire's army picked, the other right-clicked for the transfer card, its Merge pressed and
+ * answered by the chain; then the surviving army's tile, hovered, opens its plate, and the emptied tile opens none.
+ * merge-keeps-picked keeps the army picked (today's rule when it has more progression); merge-keeps-tapped keeps the
+ * army tapped (the merged-into army, as from release 3).
+ */
+function labMergeSteps() {
+  const tiles = { byArmy: null };
+  return [
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+    { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+    { name: "open-merge", play: (context) => openTheMerge(context, tiles), settleMs: 0, verify: mergeCardOpen },
+    { name: "merge", play: pressMerge, settleMs: 1_000, verify: oneArmyLeft },
+    {
+      name: "hover-survivor",
+      play: (context) => hoverTheTileOf(context, tiles, "survivor"),
+      settleMs: 0,
+      verify: survivorPlateOpens,
+    },
+    {
+      name: "hover-emptied",
+      play: (context) => hoverTheTileOf(context, tiles, "emptied"),
+      settleMs: 0,
+      verify: noArmyPlateOpens,
+    },
+  ];
+}
+
+/**
+ * The owner's army just after its fight (src/lab/game/after-battle-scenario.ts): 4,015 knights on the camp they had
+ * cleared, beside the ruin they attacked, both on battle cooldown. With nothing selected, hovering the army's tile opens
+ * its plate (owner, 2026-10-25: "I hover the tile but no label ?").
+ */
+const LAB_AFTER_BATTLE_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+  { name: "hover-army", play: hoverTheArmyAtRest, settleMs: 0, verify: survivorPlateOpens },
+];
+
+// The open card and its buttons, the commands the lab's chain has been sent, and the army a merge's answer destroyed.
+const MERGE_STATE = `JSON.stringify({
+  sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
+  buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
+  sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
+  destroyed: (window.__labChain?.sent ?? []).flatMap(({ answered }) =>
+    answered.filter(({ model, value }) => model === "ExplorerTroops" && value === null).map(({ key }) => Number(key.split(":")[1]))),
+})`;
+// Each army's token drawn at rest, and the tile under it, as offsets from the screen's centre.
+const ARMY_TILES = `JSON.stringify(Object.fromEntries([...document.querySelectorAll('.mp-at[data-key^="army:"]')]
+  .filter((slot) => slot.querySelector(".mp-token") && getComputedStyle(slot).display !== "none")
+  .map((slot) => {
+    const token = slot.firstElementChild.getBoundingClientRect();
+    return [slot.dataset.key.split(":")[1], [
+      Math.round(token.left + token.width / 2 - innerWidth / 2),
+      Math.round(token.top + token.height / 2 + ${TOKEN_ABOVE_TILE_PX} - innerHeight / 2),
+    ]];
+  })))`;
+
+/** Picks each army from the HUD until the map has the spire's selected: the camera comes onto it. */
+async function pickTheSpireArmy({ browser }) {
+  const armies = browser.armies();
+  for (const { label } of armies) {
+    await pickArmy(browser, label);
+    if (browser.observe().selection?.army?.id === PICKED_ARMY) return { armies, army: label };
+  }
+  return { armies, army: null };
+}
+
+function spireArmyPicked({ played }) {
+  return played.army ? completed(played) : failed(`no army on the HUD selects army ${PICKED_ARMY}`, played);
+}
+
+/** Notes both armies' tiles from their tokens at rest, then right-clicks the other army's, as a player opens the card. */
+async function openTheMerge({ browser }, tiles) {
+  browser.hover(POINTER_PARKED);
+  await sleep(HOVER_SETTLE_MS);
+  tiles.byArmy = browser.read(ARMY_TILES);
+  const other = Object.keys(tiles.byArmy).find((id) => Number(id) !== PICKED_ARMY);
+  if (!other) return { tiles: tiles.byArmy, state: null };
+  browser.rightClick(tiles.byArmy[other]);
+  const state = await readUntil(
+    () => browser.read(MERGE_STATE),
+    (shown) => shown.sheet !== null,
+    MERGE_WAIT_MS,
+  );
+  return { tiles: tiles.byArmy, state };
+}
+
+function mergeCardOpen({ played }) {
+  if (Object.keys(played.tiles ?? {}).length !== 2)
+    return failed("the map does not draw the realm's two armies", played);
+  if (!played.state?.sheet) return failed("the right-click on the other army opened no card", played);
+  const merge = played.state.buttons.find((text) => text.startsWith("Merge into"));
+  return merge ? completed({ ...played, merge }) : failed("the card offers no Merge", played);
+}
+
+/** Presses the card's Merge, then waits for the chain's answer to leave the realm one army. */
+async function pressMerge({ browser }) {
+  const before = browser.read(MERGE_STATE);
+  const merge = before.buttons.find((text) => text.startsWith("Merge into"));
+  if (merge) browser.click(merge);
+  const after = await readUntil(
+    () => ({ ...browser.read(MERGE_STATE), armies: browser.armies() }),
+    (shown) => shown.destroyed.length === 1 && shown.armies.length === 1,
+    MERGE_WAIT_MS,
+  );
+  return { merge, before, after };
+}
+
+function oneArmyLeft({ played }) {
+  if (!played.merge) return failed("no Merge to press", played);
+  if (!played.after.sent.includes("ManageTroops")) return failed("Merge sent no troop transfer", played);
+  if (played.after.destroyed.length !== 1) return failed("the chain's answer destroyed no army", played);
+  if (played.after.armies.length !== 1)
+    return failed(`the HUD lists ${played.after.armies.length} armies after the merge`, played);
+  return completed({
+    merge: played.merge,
+    sent: played.after.sent,
+    destroyed: played.after.destroyed[0],
+    left: played.after.armies,
+  });
+}
+
+/** Rests the pointer off the armies, then hovers a tile, and reads the labels drawn. */
+async function hoverAndRead(browser, extraScreenshot, offset, name) {
+  browser.hover(POINTER_PARKED);
+  await sleep(HOVER_SETTLE_MS);
+  browser.hover(offset);
+  await sleep(HOVER_SETTLE_MS * 2);
+  return { plates: browser.read(PLATES_EXPRESSION), shot: extraScreenshot(name) };
+}
+
+/** Hovers the survivor's tile or the one the merge emptied, both noted before the merge. */
+async function hoverTheTileOf({ browser, extraScreenshot }, tiles, which) {
+  const [emptied] = browser.read(MERGE_STATE).destroyed;
+  const survivor = Object.keys(tiles.byArmy ?? {})
+    .map(Number)
+    .find((id) => id !== emptied);
+  const offset = tiles.byArmy?.[which === "survivor" ? survivor : emptied];
+  if (!offset) return { which, survivor, emptied, offset: null };
+  return { which, survivor, emptied, offset, ...(await hoverAndRead(browser, extraScreenshot, offset, which)) };
+}
+
+/** Lets the army go (Escape), then hovers its tile, found under its token. */
+async function hoverTheArmyAtRest({ browser, extraScreenshot }) {
+  for (let press = 0; press < ESCAPES_TO_DESELECT; press += 1) browser.press("Escape");
+  browser.hover(POINTER_PARKED);
+  await sleep(HOVER_SETTLE_MS);
+  const offset = browser.read(ARMY_TILES)[PICKED_ARMY] ?? null;
+  const selected = browser.observe().selection?.army ?? null;
+  if (!offset) return { survivor: PICKED_ARMY, offset, selected };
+  return { survivor: PICKED_ARMY, offset, selected, ...(await hoverAndRead(browser, extraScreenshot, offset, "army")) };
+}
+
+const openArmyPlates = (plates) =>
+  (plates?.things ?? []).filter((thing) => thing.kind === "plate" && thing.open && thing.key?.startsWith("army:"));
+
+function survivorPlateOpens({ played }) {
+  const opened = openArmyPlates(played.plates).map(({ key, text }) => ({ key, text }));
+  const shown = { survivor: played.survivor, offset: played.offset, selected: played.selected, opened };
+  if (!played.offset) return failed(`no token drawn for army ${played.survivor}`, shown);
+  return opened.some(({ key }) => key === `army:${played.survivor}`)
+    ? completed(shown)
+    : failed(`hovering army ${played.survivor}'s tile opens no plate for it`, shown);
+}
+
+function noArmyPlateOpens({ played }) {
+  const opened = openArmyPlates(played.plates).map(({ key, text }) => ({ key, text }));
+  const shown = { survivor: played.survivor, emptied: played.emptied, offset: played.offset, opened };
+  if (!played.offset) return failed("no tile noted for the emptied army", shown);
+  return opened.length === 0 ? completed(shown) : failed("the emptied tile opens an army's plate", shown);
+}
+
 const labDayTurn = (scenario) => ({
   mode: "frontier",
   lab: scenario,
@@ -1380,6 +1594,223 @@ function cameraOnTheNewSite({ played }) {
   return completed({ before: before.camera, after: on, site: LAB_DAY_3_SITE });
 }
 
+/**
+ * The owner's phone (owner, 2026-10-25: "eventually I go back to mobile and it doesnt reload the map I get a black
+ * screen"): in the game a minute before day 2 ends, the tab goes to the background (its window minimized, the page then
+ * frozen as a phone freezes it), losing its WebGL context as a phone takes it, and Herald's stream goes silent with its
+ * socket still open; past the day's end the tab comes back. On WebGL the lost context must boot the page again and the
+ * map draw; on WebGPU, whose device this machine keeps, the silent stream must be dropped and resumed. Either way the
+ * day's summary shows and Continue brings the camera onto the realm's day-3 site.
+ */
+function labDayTurnAsleepSteps() {
+  /** The night, from the tab going away to the map drawn again: the later steps read what the sleep left. */
+  const night = {};
+  return [
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+    {
+      name: "tab-sleeps",
+      // Each run's night replaces the one before.
+      play: async (context) => Object.assign(night, await sleepThroughTheDayEnd(context)),
+      settleMs: 0,
+      verify: sleptBeforeTheEnd,
+    },
+    {
+      name: "tab-wakes",
+      play: (context) => wakeTheTab(context, night),
+      settleMs: 0,
+      verify: ({ played }) => wokeIntoTheEndedDay(played, night),
+    },
+    { name: "continue", play: continueIntoTheNewDay, settleMs: 0, verify: cameraOnTheNewSite },
+    {
+      name: "map-draws",
+      play: readTheMapDrawn,
+      settleMs: 0,
+      verify: ({ played }) => mapDrawsAsBeforeSleep(played, night),
+    },
+  ];
+}
+
+/**
+ * A device arriving in day 3 with no summary to read (day-later-quiet: day 2 not played; day-later-played-on: the player
+ * played on in day 3 on another device): the day's end still plays, and behind its black the camera comes onto the
+ * realm's day-3 site.
+ */
+const labDayLaterNoSummarySteps = [
+  { name: "enter-on-map", settleMs: 0, verify: inScene("map") },
+  { name: "into-the-new-day", play: waitForTheNewDay, settleMs: 0, verify: cameraOnTheNewSiteWithNoSummary },
+];
+
+/** Long enough past day 2's end, the tab put away up to a minute before it, for the end to pass while it sleeps. */
+const ASLEEP_MS = 80_000;
+/** The page boots again and its history answers after the tab is back. */
+const WOKEN_WAIT_MS = 90_000;
+const DAY_END_PASS_MS = 20_000;
+/** A pixel this dark (0–255 grey) is the black of an undrawn canvas, below the map's darkest drawn ground. */
+const DARK_LEVEL = 12;
+/** The share of the band an undrawn map leaves black past what the map before the night did. */
+const BLACK_MAP_SHARE = 0.5;
+/** The map's middle band on a phone, clear of the HUD's top strip and its foot. */
+const MAP_BAND = { left: 0.1, top: 0.3, width: 0.8, height: 0.3 };
+
+/** What the tab is as it goes away: the game's GPU, Herald's streams and the page's load. */
+const TAB_STATE = `JSON.stringify({
+  visibility: document.visibilityState,
+  gpu: document.getElementById("main-canvas")?.getContext("webgl2") ? "webgl2" : "webgpu",
+  streams: window.__labChain?.streams ?? null,
+  loadedAt: performance.timeOrigin,
+})`;
+/** The phone puts the tab away: its WebGL context is lost, if it has one, and Herald's stream goes silent. */
+const TAB_GOES_AWAY = `(() => {
+  const lost = document.getElementById("main-canvas")?.getContext("webgl2")?.getExtension("WEBGL_lose_context");
+  lost?.loseContext();
+  window.__labChain?.silence();
+  return JSON.stringify({ visibility: document.visibilityState, contextLost: Boolean(lost) });
+})()`;
+
+/** The driven page's value for an expression, read through DevTools: it reaches a page that is not the front tab. */
+async function readInPage(devTools, expression) {
+  const { result } = await devTools.send("Runtime.evaluate", { expression, returnByValue: true });
+  return JSON.parse(result.value ?? "null");
+}
+
+/**
+ * The map's middle band in a screenshot of the page: its share of near-black pixels. A lost canvas draws nothing, so the
+ * band is black but for the labels and HUD over it.
+ */
+async function readTheMapBand(devTools, path) {
+  const { data } = await devTools.send("Page.captureScreenshot", { format: "png" });
+  const image = Buffer.from(data, "base64");
+  const { width, height } = await sharp(image).metadata();
+  const band = {
+    left: Math.round(width * MAP_BAND.left),
+    top: Math.round(height * MAP_BAND.top),
+    width: Math.round(width * MAP_BAND.width),
+    height: Math.round(height * MAP_BAND.height),
+  };
+  await sharp(image).toFile(path);
+  const grey = await sharp(image).extract(band).greyscale().raw().toBuffer();
+  const dark = grey.filter((level) => level < DARK_LEVEL).length / grey.length;
+  return { path, band, dark: Math.round(dark * 1000) / 1000 };
+}
+
+/** The window the page is drawn in, minimized (the page hidden) or brought back (shown). */
+async function setWindowState(devTools, windowState) {
+  const { windowId } = await devTools.sendToBrowser("Browser.getWindowForTarget", { targetId: devTools.targetId });
+  await devTools.sendToBrowser("Browser.setWindowBounds", { windowId, bounds: { windowState } });
+}
+
+/**
+ * Puts the tab away a while: its window minimized, the game's GPU and Herald's stream gone as a phone loses them, the
+ * page frozen; then the tab is left asleep past the day's end.
+ */
+async function sleepThroughTheDayEnd({ base, browser, devTools }) {
+  const awake = { ...browser.read(DAY_END_STATE), tab: await readInPage(devTools, TAB_STATE) };
+  const mapAwake = await readTheMapBand(devTools, `${base}-awake.png`);
+  const loggedBefore = consoleLines(browser).length;
+  await setWindowState(devTools, "minimized");
+  await sleep(500);
+  const away = await readInPage(devTools, TAB_GOES_AWAY);
+  await devTools.send("Page.setWebLifecycleState", { state: "frozen" });
+  await sleep(ASLEEP_MS);
+  return { awake, mapAwake, away, loggedBefore };
+}
+
+const consoleLines = (browser) =>
+  browser
+    .run(["console"], { allowFailure: true })
+    .split("\n")
+    .map((line) => line.trim());
+
+function sleptBeforeTheEnd({ played }) {
+  const { awake, away } = played;
+  if (awake.phase !== "day" || awake.card !== null)
+    return failed(
+      `day 2 had already ended (${awake.phase}, ${awake.card ?? "no card"}) before the tab went away`,
+      played,
+    );
+  if (away.visibility !== "hidden")
+    return failed(`the tab stayed ${away.visibility} with its window minimized`, played);
+  if (awake.tab.gpu === "webgl2" && !away.contextLost)
+    return failed("the tab's WebGL context could not be lost", played);
+  return completed(played);
+}
+
+/**
+ * Brings the tab back: the page let run, its window shown again; then waits for the ended day's summary. The context
+ * loss the sleep provoked is logged by the client as an error, which is this step's outcome.
+ */
+async function wakeTheTab({ browser, devTools, extraScreenshot }, { loggedBefore }) {
+  await devTools.send("Page.setWebLifecycleState", { state: "active" });
+  await setWindowState(devTools, "normal");
+  await sleep(1_000);
+  extraScreenshot("woken");
+  const shown = await readUntil(
+    () => readWhileLoading(browser),
+    (state) => state?.card !== null && state?.card !== undefined,
+    WOKEN_WAIT_MS,
+  );
+  const provokedErrors = contextLossErrors(consoleLines(browser).slice(loggedBefore));
+  return { ...shown, tab: await readInPage(devTools, TAB_STATE), provokedErrors };
+}
+
+/** A read of the day's end that a page booting again may not answer yet. */
+function readWhileLoading(browser) {
+  try {
+    return browser.read(DAY_END_STATE);
+  } catch {
+    return null;
+  }
+}
+
+function wokeIntoTheEndedDay(played, night) {
+  const shown = summaryShows(RECORDED_DAY_2)({ played });
+  if (shown.status !== "completed") return shown;
+  const before = night.awake.tab;
+  const rebooted = played.tab.loadedAt !== before.loadedAt;
+  if (before.gpu === "webgl2" && !rebooted)
+    return failed("the tab lost its WebGL context and did not boot again: its map stays black", played);
+  if (before.gpu === "webgpu" && played.tab.streams < 2)
+    return failed("Herald's silent stream was never dropped: the tab still waits on the slept socket", played);
+  return completed({ ...played, rebooted });
+}
+
+async function readTheMapDrawn({ base, devTools }) {
+  return readTheMapBand(devTools, `${base}-map.png`);
+}
+
+/** The map drawn after the night as before the tab went away: its middle band no more black than it was, near enough. */
+function mapDrawsAsBeforeSleep(played, night) {
+  const awake = night.mapAwake;
+  if (played.dark > awake.dark + BLACK_MAP_SHARE)
+    return failed(`the map is black (${played.dark} of its middle band, ${awake.dark} before the tab slept)`, {
+      awake,
+      drawn: played,
+    });
+  return completed({ awake, drawn: played });
+}
+
+/** Waits for the day's end a device arriving in a new day goes through, and reads where the camera then looks. */
+async function waitForTheNewDay({ browser }) {
+  const before = browser.read(DAY_END_STATE);
+  const phases = [before.phase];
+  let shown = before;
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < DAY_END_PASS_MS) {
+    await sleep(POLL_MS);
+    shown = browser.read(DAY_END_STATE);
+    if (phases.at(-1) !== shown.phase) phases.push(shown.phase);
+    if (shown.card !== null || (phases.length > 1 && shown.phase === "day")) break;
+  }
+  await sleep(CAMERA_REPORT_MS);
+  return { before, after: browser.read(DAY_END_STATE), phases };
+}
+
+function cameraOnTheNewSiteWithNoSummary({ played }) {
+  if (played.after.card !== null) return failed(`a summary shows (${played.after.card}) for a day not played`, played);
+  const camera = cameraOnTheNewSite({ played });
+  return camera.status === "completed" ? completed({ ...camera, phases: played.phases }) : camera;
+}
+
 /** Reads the page until what it shows is done, or the time is up; the last reading either way. */
 async function readUntil(read, done, timeoutMs) {
   const startedAt = Date.now();
@@ -1392,6 +1823,56 @@ async function readUntil(read, done, timeoutMs) {
 }
 
 /** The step lists a run can play, by name, each with its game; a run plays its role's list unless it names another. */
+const STILL_MS = 6_000;
+
+/**
+ * The realm view as a player first meets it: the game entered on its map (a cold cache, as a first visit), the first
+ * press of Realm (the realm's models, ground and props load now), the realm held still, back to the map, the realm
+ * again, and the realm's address loaded again (a warm HTTP cache; the map boots first and hands off). A lab game is
+ * opened again on its realm, its chain being the tab's. Each step reports its downloads, GPU work, long frames, the
+ * frames where the drawn scene changed and the scene marks (requested, presentable); `--viewport 390x844` plays it at
+ * a phone's size.
+ */
+const realmLoadSteps = (labScenario = null) => [
+  { name: "map-still", play: holdStill, settleMs: 0, verify: inScene("map") },
+  { name: "first-realm", play: goTo("Realm", "hex"), settleMs: 0, verify: inScene("hex") },
+  { name: "realm-still", play: holdStill, settleMs: 0, verify: inScene("hex") },
+  { name: "back-to-map", play: goTo("Map", "map"), settleMs: 0, verify: inScene("map") },
+  { name: "realm-again", play: goTo("Realm", "hex"), settleMs: 0, verify: inScene("hex") },
+  { name: "reload-on-realm", play: reloadOnTheRealm(labScenario), settleMs: 0, verify: inScene("hex") },
+];
+
+async function holdStill() {
+  await sleep(STILL_MS);
+  return {};
+}
+
+/** The realm's address loaded again in the same browser, as a player's refresh: it is playable on the realm again. */
+function reloadOnTheRealm(labScenario) {
+  const reload = labScenario
+    ? `(() => {
+        const lab = new URL("/lab/game", location.origin);
+        lab.searchParams.set("scenario", ${JSON.stringify(labScenario)});
+        lab.searchParams.set("scene", "hex");
+        for (const [key, value] of new URLSearchParams(location.search)) {
+          if (key === "rendererMode" || key === "dev") lab.searchParams.set(key, value);
+        }
+        setTimeout(() => location.assign(lab), 0);
+      })()`
+    : "setTimeout(() => location.reload(), 0)";
+  return async ({ browser }) => {
+    const before = browser.observe();
+    browser.run(["eval", reload]);
+    const back = await waitFor(
+      browser,
+      (seen) => seen.timeOrigin !== before.timeOrigin && seen.playable && isIn(seen, "Realm", "hex"),
+      PLAYABLE_WAIT_MS,
+    );
+    if (back) await sleep(SCENE_HOLD_MS);
+    return { reloaded: browser.observe().timeOrigin !== before.timeOrigin };
+  };
+}
+
 export const STEP_SETS = {
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
   "unit-assets-spectator": {
@@ -1418,6 +1899,9 @@ export const STEP_SETS = {
     devOverlays: true,
   },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },
+  "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps() },
+  "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-later": { game: labDayTurn("day-later"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-turn-slow": { game: labDayTurn("day-turn-slow"), steps: labDayTurnSteps(RECORDED_DAY_2) },
@@ -1430,6 +1914,12 @@ export const STEP_SETS = {
       { name: "return-to-map", play: goTo("Map", "map"), settleMs: 3_000, verify: inScene("map") },
     ],
   },
+  "lab-day-turn-asleep": { game: labDayTurn("day-turn-asleep"), steps: labDayTurnAsleepSteps() },
+  "lab-day-later-quiet": { game: labDayTurn("day-later-quiet"), steps: labDayLaterNoSummarySteps },
+  "lab-day-later-played-on": { game: labDayTurn("day-later-played-on"), steps: labDayLaterNoSummarySteps },
+  "realm-load": { game: FRONTIER, steps: realmLoadSteps() },
+  "lab-realm-load": { game: { ...LAB_SPIRE, lab: "painted-buildings" }, steps: realmLoadSteps("painted-buildings") },
+  "blitz-realm-load": { game: BLITZ, steps: realmLoadSteps() },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },

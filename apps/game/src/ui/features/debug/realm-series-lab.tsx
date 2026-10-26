@@ -60,7 +60,7 @@ export function RealmSeriesLab() {
       }}
     >
       <header style={{ padding: 16, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
-        <Link to="/lab">Lab</Link>
+        <Link to="/lab/models">Models</Link>
         <strong>Realms · production series</strong>
         {settings.reference && (
           <label>

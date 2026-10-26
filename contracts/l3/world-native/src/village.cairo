@@ -34,10 +34,10 @@ pub struct VillagePass {
 
 #[starknet::interface]
 pub trait IVillages<T> {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn village_rules(self: @T, game_id: u32) -> VillageRules;
     fn register_village_pass(ref self: T, key: VillagePassKey, owner: ContractAddress);
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn village_pass(self: @T, key: VillagePassKey) -> Option<VillagePass>;
     fn settle_village(
         ref self: T,

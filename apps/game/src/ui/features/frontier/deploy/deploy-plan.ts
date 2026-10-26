@@ -1,5 +1,5 @@
+import { exploreStaminaOf, type StaminaBar } from "@/lib/army-stamina/segments";
 import {
-  computeTravelFoodCosts,
   configManager,
   type ExpeditionRules,
   type GameActions,
@@ -31,7 +31,7 @@ export interface SlotStart {
   /** Whether the slot's bar was left by an army today; a fresh slot starts full. */
   inherited: boolean;
   /** The bar the army starts on, under the game's rules; unknown while the troops it would take are. */
-  start: { current: number; max: number } | undefined;
+  start: StaminaBar | undefined;
 }
 
 /**
@@ -48,8 +48,6 @@ interface DeployPlan {
   troops: { type: TroopType; tier: TroopTier; atHome: number; cap: number } | null;
   /** Whole wheat a troop costs to deploy (0 where deploying costs nothing). */
   wheatPerTroop: number;
-  /** Whole wheat each troop eats a tile. */
-  wheatPerTroopTile: number;
   /** Whole wheat the realm holds. */
   wheat: number;
 }
@@ -79,21 +77,25 @@ export const readDeployPlan = (
   if (troops === undefined) return undefined;
   // A new army's Logistics starts at its realm's Supply yard tier, which raises the bar a fresh slot starts full at.
   const trained = researchTier(learned, research.ROW_SUPPLY_YARD);
-  const starts = open.map((slot) => slotStart(slot, troops, trained, clock.defaultTick));
+  const perExplore = exploreStaminaOf(store, realm.game_id);
+  const starts = open.map((slot) => slotStart(slot, troops, trained, clock.defaultTick, perExplore));
   return {
     open: starts,
     next: starts[0] ?? null,
     troops,
     wheatPerTroop: troops ? wheatToDeploy(store, realm, troops, 1, defaultTick) : 0,
-    wheatPerTroopTile: troops
-      ? Math.abs(computeTravelFoodCosts({ category: troops.type, count: PRECISION }).wheatPayAmount)
-      : 0,
     wheat: Number(BigInt(wheat) / PRECISION),
   };
 };
 
 /** One open slot's start, through the core's one rule for it (musterStamina), on the dock's clock. */
-const slotStart = (slot: OpenArmySlot, troops: DeployPlan["troops"], trained: number, timestamp: number): SlotStart => {
+const slotStart = (
+  slot: OpenArmySlot,
+  troops: DeployPlan["troops"],
+  trained: number,
+  timestamp: number,
+  perExplore: number,
+): SlotStart => {
   const bar =
     troops &&
     musterStamina(
@@ -108,7 +110,7 @@ const slotStart = (slot: OpenArmySlot, troops: DeployPlan["troops"], trained: nu
     slot: slot.slot,
     number: slot.slot + 1,
     inherited: slot.inherited !== null,
-    start: bar ? { current: bar.amount, max: bar.max } : undefined,
+    start: bar ? { current: bar.amount, max: bar.max, perExplore } : undefined,
   };
 };
 
@@ -161,16 +163,10 @@ export const deployRange = (plan: DeployPlan): { troopsMax: number; wheatMax: nu
   return { troopsMax, wheatMax, max: Math.min(troopsMax, wheatMax) };
 };
 
-/** The army a count makes: what it costs in wheat, the wheat left, and how many tiles that wheat moves it. */
-export const previewDeploy = (
-  plan: DeployPlan,
-  count: number,
-): { count: number; wheatCost: number; wheatLeft: number; tiles: number } => {
+/** The army a count makes: the whole troops that go and what they cost in wheat. */
+export const previewDeploy = (plan: DeployPlan, count: number): { count: number; wheatCost: number } => {
   const whole = Math.max(0, Math.min(Math.floor(count), deployRange(plan).max));
-  const wheatCost = whole * plan.wheatPerTroop;
-  const wheatLeft = Math.max(0, plan.wheat - wheatCost);
-  const perTile = whole * plan.wheatPerTroopTile;
-  return { count: whole, wheatCost, wheatLeft, tiles: perTile > 0 ? Math.floor(wheatLeft / perTile) : 0 };
+  return { count: whole, wheatCost: whole * plan.wheatPerTroop };
 };
 
 /**

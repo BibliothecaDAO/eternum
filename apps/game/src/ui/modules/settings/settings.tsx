@@ -27,10 +27,11 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, formatExact } from "@bibliothecadao/types";
 
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { InstallSetting } from "./install-setting";
-import { KeyboardShortcuts, KeyboardShortcutsSetting } from "./keyboard-shortcuts";
+import { AppSettings } from "./app-settings";
+import { SettingsSection } from "./settings-section";
+import { KeyboardShortcuts } from "./keyboard-shortcuts";
 import { NotificationSettings } from "./notification-settings";
 import { VideoSettings } from "./video-settings";
 
@@ -39,8 +40,8 @@ const effectsCategories = Object.values(AudioCategory).filter((category) => cate
 
 /**
  * Player settings first; installing the app and the keys, rarely touched, come last before the session. The keys are
- * one row whose Show opens their list in Settings' place, and the renderer is a row of Video & Graphics, so Settings
- * stays one short page.
+ * one row whose Show opens their list in Settings' place, so Settings stays one short page. A row a device cannot use
+ * (Haptics where nothing vibrates, the keys on a touch-first device) is not drawn there.
  */
 export const SettingsPanel = () => {
   const [shortcuts, setShortcuts] = useState(false);
@@ -56,10 +57,7 @@ export const SettingsPanel = () => {
       <SettingsSection title={PROFILE_WORDS.notifications}>
         <NotificationSettings />
       </SettingsSection>
-      <SettingsSection title="App">
-        <InstallSetting />
-        <KeyboardShortcutsSetting onShow={() => setShortcuts(true)} />
-      </SettingsSection>
+      <AppSettings onShowKeys={() => setShortcuts(true)} />
       <SessionActions />
     </div>
   );
@@ -187,15 +185,6 @@ function UsernameEditor({ name }: { name: string | null }) {
         </div>
       )}
     </form>
-  );
-}
-
-function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section aria-label={title} className="flex flex-col">
-      <h2 className="text-hud-label text-hud-muted">{title}</h2>
-      {children}
-    </section>
   );
 }
 

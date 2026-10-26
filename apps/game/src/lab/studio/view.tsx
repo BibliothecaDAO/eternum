@@ -20,12 +20,12 @@ const RISE_STEPS = [30, 60, 90, 100];
 /**
  * The film studio (`/lab/studio`): the game's terrain, models and effects on a set built for shooting, a camera that
  * goes anywhere, the game's moments played on a call, and camera paths that replay the same for every take. A script
- * films through `window.__studio` (bridge.ts). The address holds the world (`gameMode=frontier` for Frontier's light),
+ * films through `window.__studio` (bridge.ts). The address holds the world (`mode=frontier` for Frontier's light, the lab's Game switch),
  * `take=<name>` plays a take once the set is up, and `capture=1` with `clean=1` shows nothing but the world.
  */
 export function StudioLabView() {
   const [params, setParams] = useSearchParams();
-  const gameMode = params.get("gameMode") === "frontier" ? "frontier" : "blitz";
+  const gameMode = params.get("mode") === "frontier" ? "frontier" : "blitz";
   const forceWebGL = params.get("rendererMode") === "webgpu-force-webgl";
   const clean = params.get("clean") === "1";
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -223,17 +223,6 @@ export function StudioLabView() {
           </Section>
 
           <Section title="Light">
-            <label>
-              World
-              <select
-                aria-label="World"
-                value={gameMode}
-                onChange={(event) => setQuery({ gameMode: event.target.value })}
-              >
-                <option value="blitz">Blitz</option>
-                <option value="frontier">Frontier</option>
-              </select>
-            </label>
             <label>
               Time of day
               <select

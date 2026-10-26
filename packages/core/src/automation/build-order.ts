@@ -1,20 +1,23 @@
 import { REALM_LEVELS } from "@bibliothecadao/types";
 
 /**
- * A build order as a player writes and shares it: plain text, one step a line, "<how many> <building>" (have at least
+ * A build order as a player writes and shares it: plain text, one step a line, "<how many> <goal>" (have at least
  * that many), under the rank heading ("City:") its steps start at; steps before any heading start at Settlement. An
- * optional first "Name: …" line names it; "#" starts a comment. Two rules need no line and always come first, in the
- * suggestions that read an order: level up whenever the realm can, and a worker hut whenever population is 3 from full.
+ * optional first "Name: …" line names it; "#" starts a comment. Level up needs no line: the suggestions that read an
+ * order offer it first whenever the realm can. A worker hut needs none either: it comes when the next step needs room.
  */
 
-/** The buildings an order names; "military" is the realm's best T1 troop building for its biome. */
-const BUILD_ORDER_BUILDINGS = ["farm", "wood", "coal", "copper", "hut", "military"] as const;
-export type BuildOrderBuilding = (typeof BUILD_ORDER_BUILDINGS)[number];
+/**
+ * What an order's steps count: buildings, "military" being the realm's best T1 troop building for its biome, and
+ * "army", the realm's field armies of that troop.
+ */
+const BUILD_ORDER_GOALS = ["farm", "wood", "coal", "copper", "hut", "military", "army"] as const;
+export type BuildOrderGoal = (typeof BUILD_ORDER_GOALS)[number];
 
-/** One step: from `rank` (a realm level) up, have at least `count` of `building`. */
+/** One step: from `rank` (a realm level) up, have at least `count` of `goal`. */
 export interface BuildOrderStep {
   rank: number;
-  building: BuildOrderBuilding;
+  goal: BuildOrderGoal;
   count: number;
 }
 
@@ -37,8 +40,7 @@ const STEP = /^(\d+)\s+([a-z]+)$/;
 const HEADING = /^([A-Za-z]+):$/;
 const NAME = /^Name:\s*(.*)$/;
 
-const isBuilding = (word: string): word is BuildOrderBuilding =>
-  (BUILD_ORDER_BUILDINGS as readonly string[]).includes(word);
+const isGoal = (word: string): word is BuildOrderGoal => (BUILD_ORDER_GOALS as readonly string[]).includes(word);
 
 /** Reads an order's text, or names the first line it cannot read. */
 export const parseBuildOrder = (
@@ -70,20 +72,19 @@ export const parseBuildOrder = (
       continue;
     }
     const step = STEP.exec(line.toLowerCase());
-    if (!step) return refuse("A step is a number and a building, as “2 farm”");
-    const [, count, building] = step;
-    if (!isBuilding(building))
-      return refuse(`“${building}” is not a building of an order: ${BUILD_ORDER_BUILDINGS.join(", ")}`);
+    if (!step) return refuse("A step is a number and a goal, as “2 farm”");
+    const [, count, goal] = step;
+    if (!isGoal(goal)) return refuse(`“${goal}” is not a goal of an order: ${BUILD_ORDER_GOALS.join(", ")}`);
     if (Number(count) < 1 || Number(count) > MAX_COUNT) return refuse(`A count is 1 to ${MAX_COUNT}`);
     if (steps.length === MAX_STEPS) return refuse(`An order holds at most ${MAX_STEPS} steps`);
-    steps.push({ rank, building, count: Number(count) });
+    steps.push({ rank, goal, count: Number(count) });
   }
   return { order: { name, steps } };
 };
 
 /**
  * The owner's order, the default: farms first at each rank, then wood, coal and copper raised together, then the
- * realm's T1 military.
+ * realm's T1 military; at City, its first army of those troops, trained and deployed.
  */
 export const DEFAULT_BUILD_ORDER_TEXT = `Settlement:
 2 farm
@@ -96,6 +97,7 @@ City:
 2 coal
 2 copper
 1 military
+1 army
 Kingdom:
 8 farm
 3 wood

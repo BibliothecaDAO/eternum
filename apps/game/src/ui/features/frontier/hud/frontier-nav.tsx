@@ -11,7 +11,7 @@ import { type Place, PlaceNav } from "./place-nav";
 /** What the HUD has open over the map: a nav page, the Menu, or a way the Menu opens. */
 export type HudSurface =
   | "research"
-  | "log"
+  | "feed"
   | "chat"
   | "menu"
   | "today"
@@ -22,10 +22,11 @@ export type HudSurface =
   | "realms";
 
 /**
- * The place bar over the game: Map and Realm move the camera between the day's map and the realm board, the other
- * slots open their page or the Menu (a second tap closes it). The Realm slot carries a dot while a store the realm
- * spends is full or fills within the hour. A spectator, with no realm of their own, moves between the map and the realm
- * they watch, and has no Research.
+ * The place bar over the game: the Realm / World switch takes the player to the realm's board from the map, and back to
+ * the world from the board, putting any page away; each other slot opens its place over the map and a second tap
+ * closes it. The Realm slot carries a dot
+ * while a store the realm spends is full or fills within the hour. A spectator, with no realm of their own, opens the
+ * realm they watch, and has no Research.
  */
 export const FrontierNav = ({
   rules,
@@ -43,26 +44,24 @@ export const FrontierNav = ({
   board: NativeRows["Structure"] | null;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
-  /** Events arrived since the Log was last read. */
+  /** Events arrived since the Feed was last read. */
   events: number;
   unread: number;
 }) => {
   const { isMapView } = useQuery();
-  const place: Place =
-    surface === "research" || surface === "log" || surface === "chat" || surface === "menu"
+  const place: Place | null =
+    surface === "research" || surface === "feed" || surface === "chat" || surface === "menu"
       ? surface
       : surface === "season"
         ? "menu"
-        : isMapView
-          ? "map"
-          : "realm";
+        : null;
   const goToPlace = useGoToFrontierPlace(board);
   const researchDot = canResearchNow(useResearchTree(realm)?.nodes);
   const stores = useRealmStores(realm, rules);
   const go = (to: Place) => {
-    if (to === "map" || to === "realm") {
+    if (to === "realm") {
       onSurface(null);
-      goToPlace(to === "map");
+      goToPlace(!isMapView);
       return;
     }
     onSurface(surface === to ? null : to);
@@ -70,6 +69,7 @@ export const FrontierNav = ({
   return (
     <PlaceNav
       place={place}
+      onRealm={!isMapView}
       onGo={go}
       realmDot={stores ? realmDot([stores.wheat, stores.labor, stores.troops]) : undefined}
       researchDot={realm ? researchDot : undefined}

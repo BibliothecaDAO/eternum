@@ -34,9 +34,9 @@ pub struct ResourceToken {
 }
 #[starknet::interface]
 pub trait IWithdrawals<T> {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn withdrawal_rules(self: @T, game_id: u32) -> WithdrawalRules;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn resource_token(self: @T, key: crate::market::MarketKey) -> ContractAddress;
 }
 #[starknet::interface]

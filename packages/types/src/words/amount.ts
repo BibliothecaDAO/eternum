@@ -38,6 +38,46 @@ export const formatExact = (value: number | bigint | undefined): string =>
  */
 export const formatCharge = (value: number | undefined): string => formatAmount(value);
 
+/**
+ * A gain: what a reward, a return or a preview adds, signed ("+12", "+12.4K"), rounded as an amount is. One under a
+ * unit says so in words ("under 1"), never "+<1", which players read as nothing (25 October). A find is the exception:
+ * under a unit it says no amount at all, by the story formatter's findGain (owner, 26 October). Every gain is written
+ * here, never as "+" before an amount (lint-guards.mjs).
+ */
+export const formatGain = (value: number | undefined): string => {
+  if (value === undefined) return "—";
+  if (value > 0 && value < 1) return UNDER_ONE;
+  return Math.abs(value) < 10_000 ? signedExact.format(value) : signedCompact.format(value);
+};
+const UNDER_ONE = "under 1";
+const signedExact = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0, signDisplay: "always" });
+const signedCompact = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+  signDisplay: "always",
+});
+
+/**
+ * A number in a chip or a pill, where room is short (owner, 26 October 2026, on "+1,000": "just put 1k instead of
+ * 1000"): compact from a thousand ("1K", "13.9K"), whole below it, signed when it is a gain ("+1K"). Under a unit it
+ * reads as an amount and a gain do ("<1", "under 1").
+ */
+export const formatShort = (value: number | undefined, { signed = false } = {}): string => {
+  if (value === undefined) return "—";
+  if (Math.abs(value) >= 1_000) return (signed ? signedCompact : compact).format(value);
+  return signed ? formatGain(value) : formatAmount(value);
+};
+
+/**
+ * A chip's before and after ("1.2K → 1K"), each short, unless the two would read alike while they differ: a 10 LORDS
+ * price from 1,240 is "1,240 → 1,230", never "1.2K → 1.2K", a change that reads as none.
+ */
+export const formatShortChange = (before: number | undefined, after: number | undefined): string => {
+  const short = `${formatShort(before)} → ${formatShort(after)}`;
+  const alike = before !== after && formatShort(before) === formatShort(after);
+  return alike ? `${formatExact(before)} → ${formatExact(after)}` : short;
+};
+
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
 /**
@@ -126,13 +166,15 @@ export const formatPercent = (fraction: number | undefined, { signed = false } =
 };
 
 /**
- * A rate, from its amount a second: a second when it is one or more ("+2.5/s"), a minute below ("+30/min",
- * "+0.6/min"), signed, never an hour. Nothing gained reads "0/min".
+ * A rate, from its amount a second: a second when it is one or more ("+2.5/s"), a minute below, whole from one a minute
+ * ("+30/min", "+8/min": no decimal a player has to read) and two figures under it ("+0.6/min"), signed, never an hour.
+ * Nothing gained reads "0/min".
  */
 export const formatRate = (perSecond: number | undefined): string => {
   if (perSecond === undefined) return "—";
   if (Math.abs(perSecond) >= 1) return `${formatFigure(perSecond, { signed: true })}/s`;
-  return `${formatFigure(perSecond * 60, { signed: true })}/min`;
+  const perMinute = perSecond * 60;
+  return `${Math.abs(perMinute) >= 1 ? SIGN(WHOLE).format(perMinute) : formatFigure(perMinute, { signed: true })}/min`;
 };
 
 const ORDINAL = new Intl.PluralRules("en-US", { type: "ordinal" });

@@ -11,7 +11,7 @@ import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
-import { FeedToasts, UnreadFeedBadge, useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
+import { FeedToasts, UnreadFeedBadge, useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { MinimapPanel, useSelectedTileDetails } from "@/ui/features/world/components/bottom-right-panel";
 import { useRealtimeChatSelector } from "@/ui/features/social";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -112,8 +112,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   // The minimap is the world map's: the realm view has no Map tab, and a Map sheet left open there closes.
   const { isMapView } = useQuery();
   const open = requested === "map" && !isMapView ? null : requested;
-  const { stories } = useEventsFeed();
-  const unread = useUnreadFeedCount(stories, open === "log");
+  const unread = useUnreadImportantCount(open === "log");
   const chatUnread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
   const logTab = useRef<HTMLButtonElement>(null);
 

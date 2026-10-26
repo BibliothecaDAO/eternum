@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatAmount,
+  formatGain,
   formatCharge,
   formatExact,
   formatFigure,
@@ -15,6 +16,8 @@ import {
   formatPopulation,
   formatPopulationInWords,
   formatRate,
+  formatShort,
+  formatShortChange,
   formatTypedNumber,
   readTypedNumber,
   typedNumberText,
@@ -33,6 +36,33 @@ describe("numbers", () => {
     expect(formatAmount(1.4)).toBe("1");
   });
 
+  it("writes a gain signed, and one under a unit as under 1, never as +<1 or nothing", () => {
+    expect(formatGain(12)).toBe("+12");
+    expect(formatGain(12_400)).toBe("+12.4K");
+    expect(formatGain(0.4)).toBe("under 1");
+    expect(formatGain(0)).toBe("+0");
+    expect(formatGain(undefined)).toBe("—");
+  });
+
+  it("writes a chip's number short from a thousand, signed for a gain", () => {
+    expect(formatShort(1_000, { signed: true })).toBe("+1K");
+    expect(formatShort(1_000)).toBe("1K");
+    expect(formatShort(13_940)).toBe("13.9K");
+    expect(formatShort(999)).toBe("999");
+    expect(formatShort(12, { signed: true })).toBe("+12");
+    expect(formatShort(0.4, { signed: true })).toBe("under 1");
+    expect(formatShort(0.4)).toBe("<1");
+    expect(formatShort(undefined)).toBe("—");
+  });
+
+  it("writes a chip's before and after short, exact where short would read as no change", () => {
+    expect(formatShortChange(1_240, 1_000)).toBe("1.2K → 1K");
+    expect(formatShortChange(1_240, 1_230)).toBe("1,240 → 1,230");
+    expect(formatShortChange(7, 140)).toBe("7 → 140");
+    expect(formatShortChange(2_000, 2_000)).toBe("2K → 2K");
+    expect(formatShortChange(500, undefined)).toBe("500 → —");
+  });
+
   it("writes a percent whole from ten up, to one place below, signed only as a bonus", () => {
     expect(formatPercent(0.45)).toBe("45%");
     expect(formatPercent(0.025)).toBe("2.5%");
@@ -46,6 +76,9 @@ describe("numbers", () => {
     expect(formatRate(2.5)).toBe("+2.5/s");
     expect(formatRate(12.4)).toBe("+12/s");
     expect(formatRate(0.5)).toBe("+30/min");
+    // A minute's rate from one up is whole: a game, not a math demo (owner, 26 October).
+    expect(formatRate(6.3 / 60)).toBe("+6/min");
+    expect(formatRate(8.6 / 60)).toBe("+9/min");
     expect(formatRate(0.01)).toBe("+0.6/min");
     expect(formatRate(-0.25)).toBe("-15/min");
     expect(formatRate(0)).toBe("0/min");

@@ -36,6 +36,7 @@ interface CreateRendererSceneRegistryInput<
 > {
   controls: TControls;
   createHexceptionScene: (input: {
+    compilePipelines: PipelineCompiler;
     controls: TControls;
     game: TGame;
     mouse: TMouse;
@@ -97,7 +98,9 @@ function createRendererSceneRegistry<
 ): RendererSceneRegistry<TTransitionManager, TSceneManager, THexceptionScene, TWorldmapScene> {
   const transitionManager = input.createTransitionManager();
   const sceneManager = input.createSceneManager(transitionManager);
+  const compilePipelines = input.compilePipelines ?? (async () => {});
   const hexceptionScene = input.createHexceptionScene({
+    compilePipelines,
     controls: input.controls,
     game: input.game,
     mouse: input.mouse,
@@ -105,7 +108,7 @@ function createRendererSceneRegistry<
     sceneManager,
   });
   const worldmapScene = input.createWorldmapScene({
-    compilePipelines: input.compilePipelines ?? (async () => {}),
+    compilePipelines,
     controls: input.controls,
     game: input.game,
     markLabelsDirty: input.markLabelsDirty ?? (() => {}),
@@ -139,8 +142,8 @@ export function createGameRendererSceneRegistry(input: {
   return createRendererSceneRegistry({
     compilePipelines: input.compilePipelines,
     controls: input.controls,
-    createHexceptionScene: ({ controls, game, mouse, raycaster, sceneManager }) =>
-      new HexceptionScene(controls, game, mouse, raycaster, sceneManager),
+    createHexceptionScene: ({ compilePipelines, controls, game, mouse, raycaster, sceneManager }) =>
+      new HexceptionScene(controls, game, mouse, raycaster, sceneManager, compilePipelines),
     createSceneManager: (transitionManager) => new SceneManager(transitionManager),
     createTransitionManager: () => new TransitionManager(),
     createWorldmapScene: ({ compilePipelines, controls, game, markLabelsDirty, mouse, raycaster, sceneManager }) =>

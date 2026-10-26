@@ -22,7 +22,7 @@ import { mountChestProof, type ChestProofScene } from "./scene";
 
 export function RelicChestLab() {
   useDocumentClass("classic-hud");
-  const [frontier] = useState(() => new URLSearchParams(location.search).get("gameMode") === "frontier");
+  const [frontier] = useState(() => new URLSearchParams(location.search).get("mode") === "frontier");
   const [store] = useState(() => chestStudyGame(frontier));
   const [pack, setPack] = useState(INITIAL_PACK);
   const [focused, setFocused] = useState(false);

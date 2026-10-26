@@ -1,5 +1,12 @@
 import { RpcProvider, shortString } from "starknet";
 
+/**
+ * How often a sent transaction's status is asked while it is awaited: about a block on Starknet (one every 1.7 s or
+ * so) and on a shard (one a second). starknet.js waits this long before the first ask and again after the receipt, so
+ * its own 5 s held every send at least 10 s: a Frontier withdrawal's payment waited that on its report.
+ */
+const TRANSACTION_POLL_MS = 1_000;
+
 /** Missing configuration must never select the library's default public RPC. */
 export const rpcAt = (rpcUrl: string): RpcProvider => {
   try {
@@ -8,7 +15,7 @@ export const rpcAt = (rpcUrl: string): RpcProvider => {
   } catch {
     throw new Error("RPC URL is missing or invalid");
   }
-  return new RpcProvider({ nodeUrl: rpcUrl });
+  return new RpcProvider({ nodeUrl: rpcUrl, transactionRetryIntervalFallback: TRANSACTION_POLL_MS });
 };
 
 /** The most calls one JSON-RPC batch may carry: the shard's public read RPC refuses a larger one. */

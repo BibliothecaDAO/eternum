@@ -20,8 +20,18 @@ it("opens a Kingdom with eight distinct buildings, tier III production and two u
   for (const category of [TileOccupier.Shrine, TileOccupier.Well]) {
     expect([...store.rows("TileOccupancy")].filter((tile) => tile.category === category)).toHaveLength(1);
   }
-  expect(store.require("Structure", { game_id: 1, entity_id: 711 }).owner).toBe(0x111n);
-  expect(store.require("Structure", { game_id: 1, entity_id: 712 }).owner).toBe(0x222n);
+  // Frontier's sites as its contracts make them: nobody's, standing, guarded.
+  for (const [entityId, guard] of [
+    [711, 300n],
+    [712, 4_000n],
+    [713, 1_600n],
+  ] as const) {
+    expect(store.require("Structure", { game_id: 1, entity_id: entityId }).owner).toBe(0n);
+    expect(store.require("ExpeditionSite", { game_id: 1, entity_id: entityId }).clear).toBeNull();
+    expect(store.require("Guard", { game_id: 1, structure_id: entityId, slot: 0 }).troops.count).toBe(
+      guard * 1_000_000_000n,
+    );
+  }
   expect(store.require("Structure", { game_id: 1, entity_id: 713 }).base.category).toBe(StructureType.Rift);
   expect(readFrontierBeast(store, 1, 710)?.beast).toBe("ammit");
   expect(readFrontierBeast(store, 1, 713)?.beast).toBe("dark-fey");

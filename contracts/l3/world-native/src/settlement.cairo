@@ -69,26 +69,26 @@ pub trait ISettlementEntry<T> {
 
 #[starknet::interface]
 pub trait ISettlementViews<T> {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn blitz_settlement_order(self: @T, game_id: u32) -> Span<u8>;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn settlement_rules(self: @T, game_id: u32) -> SettlementRules;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn realm_grants(self: @T, game_id: u32) -> RealmGrants;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn settlement_progress(self: @T, game_id: u32) -> SettlementProgress;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn player_entry(self: @T, key: EntryKey) -> Option<PlayerEntry>;
 }
 
 #[starknet::interface]
 pub trait ISettlementPool<T> {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn settlement_pool(self: @T, game_id: u32, center: Coord) -> SettlementPool;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn village_pool(self: @T, game_id: u32, center: Coord) -> SettlementPool;
     fn claim_village(ref self: T, game_id: u32, registered: u16, seed: u256, center: Coord) -> Coord;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn reserved_hyperstructures(self: @T, game_id: u32) -> u32;
 }
 
