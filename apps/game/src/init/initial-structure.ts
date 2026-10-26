@@ -4,7 +4,11 @@ import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store
 import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
 
-import { resetEntryDestination, settleEntryDestination } from "@/game-entry/entry-destination";
+import {
+  isEntryDestinationSettled,
+  resetEntryDestination,
+  settleEntryDestination,
+} from "@/game-entry/entry-destination";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 
 import { followRealmsPlayer, readRealmsPlayer } from "@/shell/herald";
@@ -69,7 +73,10 @@ export const followInitialStructure = (setup: SetupResult): (() => void) => {
 const chooseInitialStructure = (setup: SetupResult, state: AppStore, spectatorPick: number | null): number | null => {
   const hasSelection = Boolean(state.structureEntityId);
   const picked = isSpectatorFallback(state) || state.structureEntityId === spectatorPick;
-  if (hasSelection && !picked) return spectatorPick;
+  if (hasSelection && !picked) {
+    completeSelection(setup, state);
+    return spectatorPick;
+  }
 
   const viewer = accountAddress();
   const ownedStructures = viewer === null ? [] : readInitialSelectableStructures(setup, viewer);
@@ -77,7 +84,10 @@ const chooseInitialStructure = (setup: SetupResult, state: AppStore, spectatorPi
   const player = isExplicitSpectateSession() ? readRealmsPlayer() : null;
   const theirs = player === null ? [] : readInitialSelectableStructures(setup, BigInt(player));
   // A spectator's pick yields only to a realm of the player's own.
-  if (hasSelection && ownedStructures.length === 0 && theirs.length === 0) return spectatorPick;
+  if (hasSelection && ownedStructures.length === 0 && theirs.length === 0) {
+    completeSelection(setup, state);
+    return spectatorPick;
+  }
 
   const globalStructures =
     ownedStructures.length > 0 ? [] : theirs.length > 0 ? theirs : readInitialSelectableStructures(setup);
@@ -87,13 +97,39 @@ const chooseInitialStructure = (setup: SetupResult, state: AppStore, spectatorPi
     return spectatorPick;
   }
   const next = spectator ? selectedStructure.entity_id : null;
-  if (selectedStructure.entity_id === state.structureEntityId) return next;
-
   const worldMapPosition = Position.fromContract({ x: selectedStructure.coord_x, y: selectedStructure.coord_y });
-  state.setStructureEntityId(selectedStructure.entity_id, { spectator, worldMapPosition });
+  // The realm already shown can still need this choice's role (a spectator fallback that is the player's own realm)
+  // or its map position; otherwise nothing changes.
+  const unchanged =
+    selectedStructure.entity_id === state.structureEntityId &&
+    state.isSpectating === spectator &&
+    state.worldMapReturnPosition != null;
+  if (!unchanged) {
+    state.setStructureEntityId(selectedStructure.entity_id, { spectator, worldMapPosition });
+    markGameEntryMilestone("initial-structure-selected");
+  }
   settleEntryDestination(worldMapPosition);
-  markGameEntryMilestone("initial-structure-selected");
   return next;
+};
+
+/**
+ * A realm selected before this choice (one the viewer chose, or a fixture's) stays selected; the entry still takes its
+ * map position from it once its facts are here, so the map-first hand-off can open it. Nothing is read once both are
+ * known.
+ */
+const completeSelection = (setup: SetupResult, state: AppStore): void => {
+  if (state.worldMapReturnPosition != null && isEntryDestinationSettled()) return;
+  const structure = setup.store.get("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: state.structureEntityId,
+  });
+  const position = structure ? structureMapPosition(setup.store, structure) : null;
+  if (!position) return;
+  const worldMapPosition = Position.fromContract({ x: position.x, y: position.y });
+  if (state.worldMapReturnPosition == null) {
+    state.setStructureEntityId(state.structureEntityId, { spectator: state.isSpectating, worldMapPosition });
+  }
+  settleEntryDestination(worldMapPosition);
 };
 
 /**

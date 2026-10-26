@@ -3,9 +3,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const ui = {
   structureEntityId: 0,
   isSpectating: false,
-  setStructureEntityId(id: number, options: { spectator: boolean }) {
+  worldMapReturnPosition: null as Position | null,
+  setStructureEntityId(id: number, options: { spectator: boolean; worldMapPosition?: Position }) {
     ui.structureEntityId = id;
     ui.isSpectating = options.spectator;
+    if (options.worldMapPosition) ui.worldMapReturnPosition = options.worldMapPosition;
   },
 };
 
@@ -68,6 +70,7 @@ const factStore = () => {
       listeners.forEach((listener) => listener());
     },
     structuresOwnedBy: (_gameId: number, owner: bigint) => rows.filter((row) => row.owner === owner).values(),
+    get: (_model: string, key: { entity_id: number }) => rows.find((row) => row.entity_id === key.entity_id),
     subscribe: (listener: () => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
@@ -100,6 +103,20 @@ describe("initial structure", () => {
     const stop = followInitialStructure({ store } as never);
     store.land([structure(5, "0x99"), structure(2790, PLAYER)]);
     expect(ui).toMatchObject({ structureEntityId: 5, isSpectating: true });
+
+    setAccount({ address: PLAYER });
+
+    expect(ui).toMatchObject({ structureEntityId: 2790, isSpectating: false });
+    stop();
+  });
+
+  it("makes a spectator fallback that is the player's own realm theirs once the account arrives", () => {
+    Object.assign(ui, { structureEntityId: 0, isSpectating: false, worldMapReturnPosition: null });
+    setAccount(null);
+    const store = factStore();
+    const stop = followInitialStructure({ store } as never);
+    store.land([structure(2790, PLAYER)]);
+    expect(ui).toMatchObject({ structureEntityId: 2790, isSpectating: true });
 
     setAccount({ address: PLAYER });
 
@@ -195,6 +212,22 @@ describe("initial structure", () => {
 
       store.applyScope({ actor: PLAYER, expedition: {} }, [structure(2790, PLAYER)]);
 
+      expect(shown(await settled())).toEqual(siteOf(2790));
+      stop();
+    });
+
+    it("is the realm selected before its facts arrived, which keeps its selection and takes its map position", async () => {
+      // As the lab's fixture selects realm 2790 before the game's boot reads it.
+      Object.assign(ui, { structureEntityId: 2790, isSpectating: false, worldMapReturnPosition: null });
+      setAccount({ address: PLAYER });
+      const store = factStore();
+      const stop = followInitialStructure({ store } as never);
+      expect(await settled()).toBe("waiting");
+
+      store.land([structure(5, "0x99"), structure(2790, PLAYER)]);
+
+      expect(ui.structureEntityId).toBe(2790);
+      expect(shown(ui.worldMapReturnPosition)).toEqual(siteOf(2790));
       expect(shown(await settled())).toEqual(siteOf(2790));
       stop();
     });
