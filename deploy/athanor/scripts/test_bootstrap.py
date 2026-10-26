@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import unittest
 
@@ -51,7 +50,6 @@ class BootstrapTests(unittest.TestCase):
         ])
 
 
-@unittest.skipUnless(shutil.which("dpkg"), "version comparison needs dpkg")
 class CloudflaredFloorTests(unittest.TestCase):
     def require(self, installed):
         return run_bootstrap(f'source "$1"; dpkg-query() {{ echo {installed}; }}; require_safe_cloudflared', "operator")
@@ -61,10 +59,10 @@ class CloudflaredFloorTests(unittest.TestCase):
             self.assertEqual(self.require(installed).returncode, 0, installed)
 
     def test_refuses_releases_that_trust_the_compromised_intermediates(self):
-        for installed in ("2026.10.1", "2026.9.30"):
+        for installed in ("2026.10.1", "2026.9.30", ""):
             result = self.require(installed)
             self.assertNotEqual(result.returncode, 0, installed)
-            self.assertIn(f"cloudflared {installed} is older than 2026.10.2", result.stderr)
+            self.assertIn(f"cloudflared {installed or '(none)'} is older than 2026.10.2", result.stderr)
 
 
 if __name__ == "__main__":
