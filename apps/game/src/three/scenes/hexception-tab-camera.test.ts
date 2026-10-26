@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { StructureType } from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, StructureType } from "@bibliothecadao/types";
 import gsap from "gsap";
 import { PerspectiveCamera, Vector3 } from "three";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -9,6 +9,10 @@ const { configManager } = await import("@bibliothecadao/eternum");
 const { createCameraTransitionState } = await import("./hexagon-scene-camera-transition");
 const { createRendererRouteRuntime } = await import("../renderer-route-runtime");
 const { SceneFlight } = await import("../managers/scene-flight");
+const { TransitionManager } = await import("../managers/transition-manager");
+const { SceneManager } = await import("../scene-manager");
+const { useWorldAppearanceStore } = await import("@/hooks/store/use-world-appearance-store");
+const { HexagonScene } = await import("./hexagon-scene");
 const { SceneName } = await import("../types");
 const { default: HexceptionScene } = await import("./hexception");
 
@@ -117,4 +121,54 @@ it("stands the camera at the realm view's own pitch and the player's zoom on ent
   view = realmView();
   await enterFromMap(view);
   expect(poseOf(view.scene)).toMatchObject({ distance: 14, pitchDegrees: 52, headingDegrees: 0 });
+});
+
+it("lets no move the map left running carry the camera past the realm view's pose: a minimap pan, reduced motion", async () => {
+  view = realmView();
+  await view.setUp();
+  view.route.dispose();
+  const transitions = new TransitionManager();
+  const manager = new SceneManager(transitions);
+  // The world map, sharing the realm view's camera, mid-way through the minimap's 0.25 s pan (worldmap.tsx).
+  const map = Object.assign(Object.create(HexagonScene.prototype), {
+    camera: view.scene.camera,
+    controls: view.scene.controls,
+    cameraTransitionState: createCameraTransitionState(),
+    cameraTransitionTimeline: null,
+    cameraTransitionStatus: "idle",
+    cameraTransitionListeners: new Set(),
+    notifyControlsChanged: () => {},
+    onSwitchOff: () => {},
+    deactivateInputSurface: () => {},
+  });
+  manager.addScene(SceneName.WorldMap, map);
+  manager.addScene(SceneName.Hexception, view.scene);
+  manager._updateCurrentScene(SceneName.WorldMap);
+  view.scene.sceneManager = manager;
+  const motion = useWorldAppearanceStore.getState().reducedMotion;
+  useWorldAppearanceStore.setState({ reducedMotion: true });
+  try {
+    // The map's own pose, 42° at distance 10, from which its pan starts.
+    const { camera, controls } = view.scene;
+    camera.position.copy(controls.target).add(new Vector3(0, Math.sin(MAP_PITCH) * 10, Math.cos(MAP_PITCH) * 10));
+    map.moveCameraToXYZ(100, 0, 100, 0.25);
+    map.cameraTransitionTimeline.progress(0.1);
+    manager.switchScene(SceneName.Hexception);
+    finishCameraMoves();
+    await vi.waitFor(() => expect(manager.getCurrentScene()).toBe(SceneName.Hexception));
+    const centre = view.scene.hexSpace.positionForHex({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] });
+    expect(poseOf(view.scene)).toMatchObject({
+      distance: 14,
+      pitchDegrees: 52,
+      target: [centre.x, centre.y, centre.z].map((value) => Number(value.toFixed(3))),
+    });
+    // The pan was stopped through its own scene, whose transition is closed, not left running.
+    expect(map.cameraTransitionStatus).toBe("idle");
+    const arrived = poseOf(view.scene);
+    finishCameraMoves();
+    expect(poseOf(view.scene)).toEqual(arrived);
+  } finally {
+    transitions.destroy();
+    useWorldAppearanceStore.setState({ reducedMotion: motion });
+  }
 });

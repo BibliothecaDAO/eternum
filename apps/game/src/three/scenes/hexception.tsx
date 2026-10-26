@@ -460,8 +460,7 @@ export default class HexceptionScene extends HexagonScene {
    */
   private standCameraAtPreferredZoom(): void {
     this.cameraAngle = LOCAL_CAMERA_ZOOM.pitchRadians;
-    this.controls.object.position.copy(this.localZoomPosition(this.resolvePreferredLocalZoomDistance()));
-    this.notifyControlsChanged();
+    this.placeCamera(this.localZoomPosition(this.resolvePreferredLocalZoomDistance()), this.controls.target.clone());
   }
 
   private applyLocalZoomPreferenceLive(): void {
