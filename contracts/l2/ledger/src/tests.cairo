@@ -2545,7 +2545,7 @@ fn frontier_split_prizes_and_chest_carry_have_separate_custody() {
     fixture.ledger.register_preset(PRESET_ID, preset, test_bands(), test_items());
     fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, END, 0x5eed, 1100 * unit);
     let season = fixture.ledger.get_frontier('shard', 1);
-    assert_eq!((season.pool, season.prize_pool), (770 * unit, 330 * unit));
+    assert!((season.pool, season.prize_pool) == (770 * unit, 330 * unit), "season split");
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     start_cheat_block_timestamp(fixture.ledger_address, END - 1);
@@ -2561,27 +2561,30 @@ fn frontier_split_prizes_and_chest_carry_have_separate_custody() {
     fixture.ledger.report_withdrawal('shard', 1, 'chest', 70 * unit, 0, 0);
     fixture.ledger.pay('shard', 1, 'chest', player(1), 70 * unit);
     let settled = fixture.ledger.get_frontier('shard', 1);
-    assert_eq!((settled.paid, settled.prize_paid), (70 * unit, 60 * unit));
+    assert!((settled.paid, settled.prize_paid) == (70 * unit, 60 * unit), "separate paid totals");
     let next_start = END + preset.claim_window_seconds.into();
     start_cheat_block_timestamp(fixture.ledger_address, next_start);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.close_frontier('shard', 1);
-    assert_eq!(fixture.ledger.frontier_carry('shard'), 700 * unit);
-    assert_eq!(fixture.lords.balance_of(TREASURY()), 0);
+    assert!(fixture.ledger.frontier_carry('shard') == 700 * unit, "unspent carry");
+    assert!(fixture.lords.balance_of(TREASURY()) == 0, "no treasury sweep");
     // Closing chest claims cannot void a prize whose winner links a wallet later.
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.report_withdrawal('shard', 1, 'late_prize', 54 * unit, 2, 10);
     fixture.ledger.pay('shard', 1, 'late_prize', player(2), 54 * unit);
     let settled = fixture.ledger.get_frontier('shard', 1);
-    assert_eq!(settled.prize_paid, 114 * unit);
+    assert!(settled.prize_paid == 114 * unit, "late prize paid");
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.fund_frontier('shard', 2, PRESET_ID, next_start, next_start + 100, 0x5eed, 1000 * unit);
     let next = fixture.ledger.get_frontier('shard', 2);
-    assert_eq!((next.pool, next.prize_pool), (1400 * unit, 300 * unit));
-    assert_eq!(fixture.ledger.frontier_carry('shard'), 0);
-    assert_eq!(
-        fixture.lords.balance_of(fixture.ledger_address),
-        next.pool + next.prize_pool + settled.prize_pool - settled.prize_paid,
+    assert!((next.pool, next.prize_pool) == (1400 * unit, 300 * unit), "carry is all chests");
+    assert!(fixture.ledger.frontier_carry('shard') == 0, "carry consumed");
+    assert!(
+        fixture.lords.balance_of(fixture.ledger_address) == next.pool
+            + next.prize_pool
+            + settled.prize_pool
+            - settled.prize_paid,
+        "total custody conserved",
     );
 }
 
@@ -2597,7 +2600,7 @@ fn carry_can_arrive_after_the_next_season_starts_without_being_split_again() {
     fixture.ledger.close_frontier('shard', 1);
     fixture.ledger.apply_frontier_carry('shard', 2);
     fixture.ledger.apply_frontier_carry('shard', 2);
-    assert_eq!(fixture.ledger.get_frontier('shard', 2).pool, 2000);
-    assert_eq!(fixture.ledger.get_frontier('shard', 2).prize_pool, 0);
-    assert_eq!(fixture.ledger.frontier_carry('shard'), 0);
+    assert!(fixture.ledger.get_frontier('shard', 2).pool == 2000, "late carry added");
+    assert!(fixture.ledger.get_frontier('shard', 2).prize_pool == 0, "carry does not add prizes");
+    assert!(fixture.ledger.frontier_carry('shard') == 0, "carry consumed");
 }
