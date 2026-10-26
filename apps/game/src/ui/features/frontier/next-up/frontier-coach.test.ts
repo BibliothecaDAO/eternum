@@ -19,12 +19,6 @@ const MORNING: NextUpFacts = {
   armySelected: false,
   guardInReach: false,
   lastHour: false,
-  rules: {
-    hutAdds: 6,
-    stamina: { explore: 30, anHour: 30 },
-    xp: { reveal: 2 },
-    homecomingPercent: 3,
-  },
 };
 
 const lines = (facts: Partial<NextUpFacts>, pointer: "mouse" | "touch" = "mouse", where: "realm" | "map" = "map") =>
@@ -37,27 +31,21 @@ const lines = (facts: Partial<NextUpFacts>, pointer: "mouse" | "touch" = "mouse"
 describe("Frontier's Next up", () => {
   it("starts a realm's first morning with barracks, then the deploy, each with its button", () => {
     expect(lines({})).toEqual([
-      ["Build barracks: only barracks train troops for your armies.", "Open the realm", "realm"],
-      ["Deploy your armies: one strong army, two scouts. They stay out until the day ends.", "Deploy", "deploy"],
+      ["Build barracks", "Open the realm", "realm"],
+      ["Deploy your armies", "Deploy", "deploy"],
     ]);
   });
 
   it("says in the realm what to do there, where the map offers the way in, and offers no button that goes nowhere", () => {
-    expect(lines({}, "mouse", "realm")[0]).toEqual([
-      "Build barracks: click an open plot, then Barracks. Only barracks train troops for your armies.",
-      null,
-      null,
-    ]);
-    expect(lines({}, "touch", "realm")[0][0]).toBe(
-      "Build barracks: tap an open plot, then Barracks. Only barracks train troops for your armies.",
-    );
+    expect(lines({}, "mouse", "realm")[0]).toEqual(["Click an open plot for Barracks", null, null]);
+    expect(lines({}, "touch", "realm")[0][0]).toBe("Tap an open plot for Barracks");
     expect(lines({ barracks: true, armies: 1, populationFull: true }, "mouse", "realm")[0]).toEqual([
-      "No population left: every building takes some. A Hut adds 6: click an open plot to build one.",
+      "Click an open plot for a Hut",
       null,
       null,
     ]);
     expect(lines({ barracks: true, armies: 1, castleAffordable: true }, "mouse", "realm")[0]).toEqual([
-      "Enough labor: click your castle to grow it, with more plots and army slots.",
+      "Click your castle to grow it",
       null,
       null,
     ]);
@@ -69,23 +57,11 @@ describe("Frontier's Next up", () => {
     expect(inRealm.filter((step) => step.act === "realm")).toEqual([]);
   });
 
-  it("sends an army exploring, then says how on the map once it is selected, with the rules' numbers", () => {
+  it("sends an army exploring, then says how on the map once it is selected", () => {
     const out = { barracks: true, armies: 2 };
-    expect(lines(out)).toEqual([
-      [
-        "Your army can explore: each new tile sends Essence or labor home and gives 2 XP.",
-        "Select the army",
-        "select-army",
-      ],
-    ]);
-    expect(lines({ ...out, armySelected: true })).toEqual([
-      [
-        "Click a tile beside your army to explore it (30 stamina): each new tile sends Essence or labor home and gives 2 XP.",
-        null,
-        null,
-      ],
-    ]);
-    expect(lines({ ...out, armySelected: true }, "touch")[0][0]).toMatch(/^Hold a tile beside your army/);
+    expect(lines(out)).toEqual([["Your army can explore", "Select the army", "select-army"]]);
+    expect(lines({ ...out, armySelected: true })).toEqual([["Click a tile beside your army", null, null]]);
+    expect(lines({ ...out, armySelected: true }, "touch")[0][0]).toBe("Hold a tile beside your army");
   });
 
   it("puts the day's alerts first: the last hour, a full store, no population", () => {
@@ -94,9 +70,7 @@ describe("Frontier's Next up", () => {
       { pointer: "mouse", where: "map", tips: true },
     ).map(({ key }) => key);
     expect(keys).toEqual(["frontier:last-hour", "frontier:store-full", "frontier:population-full", "frontier:deploy"]);
-    expect(lines({ barracks: true, lastHour: true })[0][0]).toBe(
-      "The day ends within the hour, and armies still out end with it. Homecoming sends 3% of their troops home.",
-    );
+    expect(lines({ barracks: true, lastHour: true })[0][0]).toBe("The day ends within the hour");
   });
 
   it("offers what can be taken now before exploring: a guard, the army's tier, the castle, a research tier", () => {
@@ -126,7 +100,7 @@ describe("Frontier's Next up", () => {
 
   it("tells armies out of stamina to rest instead of exploring, and says nothing without a realm", () => {
     expect(lines({ barracks: true, armies: 2, armiesTired: true })).toEqual([
-      ["Your armies are out of stamina: 30 come back each hour, while you are away too.", null, null],
+      ["Your armies are out of stamina", null, null],
     ]);
     expect(lines({ realm: false })).toEqual([]);
   });
@@ -139,11 +113,5 @@ describe("Frontier's Next up", () => {
       ).map(({ key }) => key);
     expect(keys(false)).toEqual(["frontier:last-hour", "frontier:store-full"]);
     expect(keys(true)).toEqual(["frontier:last-hour", "frontier:store-full", "frontier:barracks", "frontier:deploy"]);
-  });
-
-  it("states a line without its number while the rules are unknown", () => {
-    expect(lines({ barracks: true, armies: 1, rules: null })[0][0]).toBe(
-      "Your army can explore: each new tile sends Essence or labor home and gives XP.",
-    );
   });
 });

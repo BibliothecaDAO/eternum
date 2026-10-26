@@ -205,7 +205,7 @@ it("sends the way the map chose: picking the other army sends from it, and all e
 
 it("offers nothing to send between armies of different tiers, and says why", () => {
   const { swap } = render(twoArmies({ tier: "T2" }));
-  expect(host.textContent).toContain("only armies of the same troops and tier join");
+  expect(host.textContent).toContain("hold different troops");
   expect(button(/^Move /)).toBeUndefined();
   expect(swap).not.toHaveBeenCalled();
 });
@@ -249,7 +249,7 @@ it("starts the amount again from the armies' new troops when they change while i
     ] as never),
   );
 
-  expect(host.textContent).toContain("The armies' troops changed: the amount starts again from what they hold now.");
+  expect(host.textContent).toContain("The armies' troops changed");
   expect(amount()).toBe("100");
   // Again a merge into the army tapped, over the new counts: never a count below none.
   expect(sides()).toEqual([
@@ -349,7 +349,7 @@ it.each(["progress", "troops", "stamina", "position", "removed", "day"])(
     expect(swap).not.toHaveBeenCalled();
     expect(close).not.toHaveBeenCalled();
     expect(failed).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "The armies changed. Review the merge before confirming again." }),
+      expect.objectContaining({ message: "The armies changed: review the merge" }),
       "The troops could not be moved.",
     );
   },
@@ -465,7 +465,7 @@ it("refuses facts arriving just before the final confirmation click", async () =
   expect(swap).not.toHaveBeenCalled();
   expect(close).not.toHaveBeenCalled();
   expect(failed).toHaveBeenCalledWith(
-    expect.objectContaining({ message: "The armies changed. Review the merge before confirming again." }),
+    expect.objectContaining({ message: "The armies changed: review the merge" }),
     "The troops could not be moved.",
   );
 });

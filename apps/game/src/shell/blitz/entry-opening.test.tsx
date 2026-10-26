@@ -98,7 +98,7 @@ afterEach(async () => {
 it("says a listed slot the ledger does not hold yet is opening, and reads again by itself until it is there", async () => {
   const lobby = await openLobby();
   await pass(0);
-  expect(lobby.textContent).toContain("Entry is opening. It will be ready in a moment.");
+  expect(lobby.textContent).toContain("Entry opens in a moment");
   // Nothing failed: no failure line, no button to press, and nobody is registered in a slot that is not there yet.
   expect(lobby.textContent).not.toContain("did not answer");
   expect(wordsOf(lobby)).toEqual([]);
@@ -107,12 +107,12 @@ it("says a listed slot the ledger does not hold yet is opening, and reads again 
   const asked = ledger.slotReads;
   await pass(4_000);
   expect(ledger.slotReads).toBeGreaterThan(asked);
-  expect(lobby.textContent).toContain("Entry is opening.");
+  expect(lobby.textContent).toContain("Entry opens in a moment");
 
   // The ledger records the slot: the next read, a few seconds on and unasked, opens the entry.
   ledger.slot = "held";
   await pass(5_000);
-  expect(lobby.textContent).not.toContain("Entry is opening.");
+  expect(lobby.textContent).not.toContain("Entry opens in a moment");
   expect(wordsOf(lobby)).toContain("Pay & join");
   expect(lobby.querySelector("[data-registered]")!.textContent).toBe("31");
 });
@@ -123,7 +123,7 @@ it("keeps the failure line, with Try again, for a ledger that did not answer", a
   const lobby = await openLobby();
   await pass(0);
   expect(lobby.textContent).toContain("The ledger did not answer.");
-  expect(lobby.textContent).not.toContain("Entry is opening.");
+  expect(lobby.textContent).not.toContain("Entry opens in a moment");
   expect(wordsOf(lobby)).toEqual(["Try again"]);
   // The count is unknown, not none.
   expect(lobby.querySelector("[data-registered]")!.textContent).toBe("undefined");

@@ -104,9 +104,9 @@ it("clears the gameplay signer when the identity session is absent", async () =>
 
 it.each([
   ["device_revoked", "device_removed"],
-  ["account_not_secured", "Secure your account by signing in with Discord or an email code."],
-  ["not_your_account", "This game account does not belong to your sign-in. Sign in to the account that owns it."],
-  ["device_limit", "This account is signed in on 8 devices."],
+  ["account_not_secured", "Sign in with Discord or a code."],
+  ["not_your_account", "This game account is not yours."],
+  ["device_limit", "Signed in on 8 devices already."],
 ])("shows the recovery for guardian refusal %s", async (code, expected) => {
   provider.getClassHashAt.mockRejectedValueOnce({ code: 20 });
   approveDeviceChange.mockRejectedValueOnce(new IdentityRequestError(403, code));
@@ -191,10 +191,9 @@ it.each(["entry", "boot"] as const)(
           </BrowserRouter>,
         ),
       );
-      expect(container.textContent).toContain("This account is signed in on 8 devices.");
-      expect(container.textContent).toContain("On an already signed-in device");
+      expect(container.textContent).toContain("Signed in on 8 devices already.");
       const link = container.querySelector<HTMLAnchorElement>('a[href="/profile/settings#devices"]');
-      expect(link?.textContent).toBe("Settings → Devices");
+      expect(link?.textContent).toBe("Remove a device");
       expect(link?.target).toBe("_blank");
       expect(container.textContent).not.toContain("Transaction refused");
       expect(execute).toHaveBeenCalledOnce();

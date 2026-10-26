@@ -115,6 +115,7 @@ test("finds each kind of number, time and naming work a player reads, and the fu
     "39 number.plural",
     "40 number.plural",
     "41 number.plural",
+    "41 words.long",
     "42 number.plural",
     "43 number.percent",
     "44 number.plural",
@@ -328,4 +329,34 @@ test("finds a formula a player would read, in a string or across JSX, and leaves
       "6 number.formula",
     ],
   );
+});
+
+test("finds a line past seven words where a player reads it, and lets tips, logs, errors and documents say more", () => {
+  const source = [
+    'const hint = <p className="text-hud-muted">Steps out on the bright tile beside the realm.</p>;', // 1
+    "const line = `Raise an army at ${realm}: it explores for ${points} a tile.`;", // 2
+    'step("barracks", "Build barracks: only barracks train troops for your armies.");', // 3: prose handed to a call
+    'export const PAUSED = "Payouts paused. Your LORDS stay here until they resume.";', // 4: a words-module phrase
+    // 5-12: what stays: a short line, a tooltip, a phrase named for one, a log, an error, a code name, a document, CSS
+    "const short = <p>Needs 300 wheat, have 120</p>;",
+    'const tip = <span data-tip="How XP is earned: explore a tile, visit a shrine or clear a camp" />;',
+    "export const xpTowardTip = (xp: string) => `XP ${xp} buys an uncommon attribute tier for this army`;",
+    'console.warn("Previous global chunk switch failed before the hydrated refresh ran");',
+    'throw new Error("The shard answered with a release this client cannot decode at all");',
+    'const env = "VITE_PUBLIC_L2_RPC_URL is required: the team URL for this chain, from the env";',
+    'const order = "Settlement:\\n2 farm\\nCity:\\n4 farm\\n1 wood\\n1 coal\\n1 copper\\n2 wood";',
+    "const shadow = { title: `0 2px 0 ${ink}, 0 0 24px ${ink}, 0 0 4px ${ink}` };",
+  ].join("\n");
+  const scanAs = (fileName) =>
+    scanSource(source, fileName, { ...context, wordsModule: fileName.endsWith("/words.ts") })
+      .filter(({ category }) => category === "words.long")
+      .map(({ line }) => line);
+  assert.deepEqual(scanAs("/repo/apps/game/src/ui/features/probe/probe.tsx"), [1, 2, 3, 4]);
+  // The legal pages and the patch notes are read as pages.
+  assert.deepEqual(scanAs("/repo/apps/game/src/shell/legal.tsx"), []);
+  const copied = 'export const text = "Help me write a build order for a short match in Realms.";';
+  const longLines = (fileName) =>
+    scanSource(copied, fileName, context).filter(({ category }) => category === "words.long");
+  assert.equal(longLines("/repo/packages/core/src/automation/build-order-prompt.ts").length, 0);
+  assert.equal(longLines("/repo/packages/core/src/automation/build-order.ts").length, 1);
 });

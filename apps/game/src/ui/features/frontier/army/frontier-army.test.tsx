@@ -98,7 +98,7 @@ it("shows the army's figures, then its level-ups one step on, and buys the chose
   expect(host.textContent).toMatch(/\d+ max stamina/);
   expect(host.textContent).toMatch(/% come home/);
   // How XP is earned is on the XP's hover; Frontier's camp is its Troll there as everywhere (the structure naming rule).
-  expect(host.querySelector("[data-tip*='Clear a Troll: more for a stronger guard']")).not.toBeNull();
+  expect(host.querySelector("[data-tip*='Clear a Troll']")).not.toBeNull();
   expect(host.textContent).not.toMatch(/Camp/);
   // Level up counts nothing: the XP buys one level-up, whichever the choices take.
   expect(button(/Level up/)!.textContent).toBe("Level up");

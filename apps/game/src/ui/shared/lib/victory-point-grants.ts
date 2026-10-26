@@ -14,16 +14,16 @@ export type VictoryPointGrants = ReturnType<typeof configManager.getVictoryPoint
 export const describeHyperstructureHold = ({
   hyperstructurePerSecond: rate,
   hyperstructureScale: scale,
-}: VictoryPointGrants): { grant: string; rule: string } => {
+}: VictoryPointGrants): { grant: string; tip: string } => {
   // Each hyperstructure pays its own rate, by the realms around it: no one number is true of all of them.
   if (scale === "per-realm")
     return {
       grant: "x/s",
-      rule: `Hold a Hyperstructure: ${formatPoints(rate)} every second for each realm settled on the six sites around it, split by share among its holders; a realm settled later counts from its next capture or share allocation`,
+      tip: `Hold a Hyperstructure: ${formatPoints(rate)} every second for each realm settled on the six sites around it, split by share among its holders; a realm settled later counts from its next capture or share allocation`,
     };
   const perSecond = scale === "double" ? rate * 2 : rate;
   return {
     grant: formatRate(perSecond),
-    rule: `Hold a Hyperstructure: ${formatPoints(perSecond)} every second, split by share among its holders`,
+    tip: `Hold a Hyperstructure: ${formatPoints(perSecond)} every second, split by share among its holders`,
   };
 };

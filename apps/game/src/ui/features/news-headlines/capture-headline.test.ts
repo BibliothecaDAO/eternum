@@ -23,7 +23,7 @@ it("tells the captor what they took from whom, and that its armies and deliverie
       { player: CAPTOR },
       " took Stolsli from ",
       { player: HOLDER },
-      ". Its armies and incoming deliveries went with it.",
+      ". Its armies and deliveries went with it.",
     ],
     location: { x: 3, y: 4, entityId: 5 },
   });
@@ -32,12 +32,7 @@ it("tells the captor what they took from whom, and that its armies and deliverie
 it("tells the player who lost it that it was taken from them, and what went with it", () => {
   expect(capture(HOLDER, HOLDER)).toMatchObject({
     title: "Realm lost",
-    description: [
-      { player: CAPTOR },
-      " took Stolsli from ",
-      "you",
-      ". Its armies and incoming deliveries went with it.",
-    ],
+    description: [{ player: CAPTOR }, " took Stolsli from ", "you", ". Its armies and deliveries went with it."],
   });
 });
 

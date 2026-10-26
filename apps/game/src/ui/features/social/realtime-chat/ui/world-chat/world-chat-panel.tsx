@@ -337,7 +337,7 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
                   );
                 })}
                 {messages.length === 0 && !zone.isFetchingHistory && !zone.historyError && (
-                  <li className="text-hud-body text-hud-cue">No messages yet. Be the first to say hello!</li>
+                  <li className="text-hud-body text-hud-cue">No messages yet.</li>
                 )}
               </ul>
             </div>

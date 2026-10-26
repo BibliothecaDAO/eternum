@@ -418,7 +418,7 @@ describe("the result of the player's attack", () => {
     });
     expect(result()!.textContent).toContain("+550");
     expect(result()!.querySelector('[aria-label="Storage Full"]')?.getAttribute("data-tip")).toBe(
-      "Storage is full: the rest did not fit",
+      "Storage full: the rest did not fit",
     );
     unmount();
   });

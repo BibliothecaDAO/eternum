@@ -2,7 +2,7 @@ import { formatAmount, formatCharge, formatExact, formatGain } from "@bibliothec
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { ARMY, comesHomeAtDayEnd, STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
+import { ARMY, comesHomeAtDayEnd, STAMINA, TIER_WORDS, TROOPS, XP, xpTowardTip } from "@/ui/design-system/kit/words";
 import { type StaminaBar, staminaSegments } from "@/lib/army-stamina/segments";
 
 // A token grows past its height only for the last hour's Homecoming line.
@@ -18,7 +18,9 @@ export type XpGoal = { price: number; tier: number };
  * army spends; there is no level, so with every attribute at legendary it says the balance alone.
  */
 export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): string =>
-  goal ? xpToward(formatAmount(xp), formatCharge(goal.price), TIER_WORDS[goal.tier - 1]) : `${XP} ${formatAmount(xp)}`;
+  goal
+    ? xpTowardTip(formatAmount(xp), formatCharge(goal.price), TIER_WORDS[goal.tier - 1])
+    : `${XP} ${formatAmount(xp)}`;
 
 /**
  * One army on a phone's dock: its number, the one its map plate carries; its portrait with its XP balance as the badge,

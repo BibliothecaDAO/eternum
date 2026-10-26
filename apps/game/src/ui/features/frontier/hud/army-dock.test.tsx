@@ -71,14 +71,8 @@ it("shows on each open slot of the dock the bar it starts its army on, as the De
         ];
       }),
     ).toEqual([
-      ["Deploy", false, "Army 2 starts full: 150/150 stamina. Its slot is fresh today.", "150", "150"],
-      [
-        "Deploy fills slot 2 first.",
-        true,
-        "Army 3 starts on 7/150 stamina. The bar its slot's last army left. Deploy fills slot 2 first.",
-        "7",
-        "150",
-      ],
+      ["Deploy", false, "Army 2 starts full: 150/150 stamina.", "150", "150"],
+      ["Deploy fills slot 2 first.", true, "Army 3 starts on 7/150 stamina. Deploy fills slot 2 first.", "7", "150"],
     ]);
   } finally {
     act(() => root.unmount());
@@ -102,11 +96,9 @@ it("lists every slot on a desktop, Deploy on the lowest open one the contract fi
   );
   try {
     const deploys = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
-    expect(deploys.map((slot) => slot.dataset.tip)).toEqual([
-      "Army 2 starts full: 150/150 stamina. Its slot is fresh today.",
-    ]);
+    expect(deploys.map((slot) => slot.dataset.tip)).toEqual(["Army 2 starts full: 150/150 stamina."]);
     const waiting = host.querySelector<HTMLElement>('[role="group"][aria-label="Army 3"]')!;
-    expect(waiting.dataset.tip).toBe("Army 3 starts on 7/150 stamina. The bar its slot's last army left.");
+    expect(waiting.dataset.tip).toBe("Army 3 starts on 7/150 stamina.");
     expect(waiting.querySelector("button")).toBeNull();
     expect(waiting.textContent).toMatch(/^3Army 3/);
   } finally {

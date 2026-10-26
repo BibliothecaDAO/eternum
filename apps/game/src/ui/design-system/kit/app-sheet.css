@@ -290,7 +290,7 @@
   gap: theme(spacing.2);
   padding: theme(spacing.1) theme(spacing.1) theme(spacing.1) theme(spacing.3);
 }
-.app-bar__end > [data-band="notice"] .app-notice__words > span {
+.app-bar__end > [data-band="notice"] .app-notice__words {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -747,15 +747,8 @@
   border-left-color: var(--app-warn);
 }
 .app-notice__words {
-  display: flex;
   min-width: 0;
   flex: 1;
-  flex-direction: column;
-}
-.app-notice__why {
-  font-family: var(--app-face-label);
-  font-size: var(--app-text-label);
-  color: var(--app-muted);
 }
 
 /* ── Switch: on or off. ── */

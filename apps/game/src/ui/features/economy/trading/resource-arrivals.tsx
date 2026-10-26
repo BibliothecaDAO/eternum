@@ -16,9 +16,6 @@ export const AllResourceArrivals = memo(
 
     return (
       <div className={`flex flex-col gap-3 overflow-y-auto ${className}`}>
-        <p className="text-hud-label text-hud-muted">
-          Arrived resources are auto-claimed into your structure's balance.
-        </p>
         {playerStructures.map((structure) => (
           <StructureArrivals key={structure.entityId} structure={structure} now={now} />
         ))}

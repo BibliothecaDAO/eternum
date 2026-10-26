@@ -292,10 +292,7 @@ export const RaidContainer = ({
             </h3>
             <div className="text-center py-6 flex flex-col items-center">
               <div className="text-hud-display mb-4">🛡️</div>
-              <div className="text-hud-display text-hud-bad mb-2">Target cannot be raided!</div>
-              <p className="text-hud-accent mb-4 max-w-md mx-auto">
-                You can only raid structures owned by other players that contain resources.
-              </p>
+              <p className="text-hud-accent mb-4 max-w-md mx-auto">Only other players' structures with resources.</p>
             </div>
           </div>
         </HudPanel>
@@ -698,7 +695,7 @@ export const RaidContainer = ({
                           ) : (
                             <div className="text-center py-8 text-hud-muted flex flex-col items-center">
                               <span className="text-hud-display mb-2">🚫</span>
-                              <p>No resources available to raid in this structure.</p>
+                              <p>Nothing to raid here.</p>
                             </div>
                           )}
                         </div>
@@ -739,12 +736,6 @@ export const RaidContainer = ({
                     )}
                   </div>
                 )}
-              </div>
-
-              {/* Help Text */}
-              <div className="text-hud-label text-hud-cue text-center mt-2 max-w-lg mx-auto">
-                Raids allow you to steal resources from enemy structures. Success chance depends on your troops, terrain
-                advantages, and defender forces.
               </div>
             </>
           )}

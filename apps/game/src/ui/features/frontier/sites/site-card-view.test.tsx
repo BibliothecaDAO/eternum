@@ -53,6 +53,9 @@ describe("a guarded site's card", () => {
     expect(card.querySelector(".ui-sheet__body header .opacity-50")).toBeNull();
     const sides = [...card.querySelectorAll(".ui-sheet__body > .flex.gap-2 > *")].map((side) => side.textContent);
     expect(sides).toEqual(["5,000 →4,820", "1,100 →0"]);
+    expect(card.textContent).not.toContain("When cleared");
+    expect(card.textContent).toContain("+550");
+    expect(card.textContent).toContain("+82 XP");
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
     expect(attack.textContent).toBe("Attack");
     expect(card.querySelector(".ui-cost")?.textContent).toBe("30 stamina");
@@ -107,6 +110,7 @@ describe("a guarded site's card", () => {
       "Stamina",
       "90",
     ]);
+    expect(document.body.textContent).not.toContain("When cleared");
     expect(document.body.textContent).not.toContain("Cleared in");
 
     act(() => details.click());
@@ -235,7 +239,7 @@ describe("a guarded site's card", () => {
     );
     const header = document.querySelector(".ui-sheet__body header")!;
     expect(header.textContent).toBe("This attack earns+120Full+82 XP");
-    expect(header.querySelector('[data-tip="Storage is full: the rest did not fit"]')).not.toBeNull();
+    expect(header.querySelector('[data-tip="Storage full: the rest did not fit"]')).not.toBeNull();
     act(() =>
       buttons()
         .find((button) => button.textContent === "Realm")!
@@ -482,7 +486,7 @@ it("says where an army comes from when the realm has none out, in the place of t
     ),
   );
   expect(document.querySelectorAll(".ui-row")).toHaveLength(0);
-  expect(document.body.textContent).toContain("No army out: deploy one from the realm");
+  expect(document.body.textContent).toContain("No army out: deploy one");
   expect(document.body.textContent).not.toContain("Pick an army");
 });
 

@@ -110,7 +110,7 @@ describe("the result card", () => {
     // The figure is still the reward the record names; the mark says the store could not take all of it.
     expect(card.textContent).toContain("+550");
     const mark = card.querySelector('[aria-label="Storage Full"]')!;
-    expect(mark.getAttribute("data-tip")).toBe("Storage is full: the rest did not fit");
+    expect(mark.getAttribute("data-tip")).toBe("Storage full: the rest did not fit");
     expect(mark.getAttribute("data-tone")).toBe("bad");
   });
 

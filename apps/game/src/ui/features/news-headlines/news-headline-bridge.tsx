@@ -19,7 +19,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 
 import { type Headline, HEADLINE_DISPLAY_MS } from "./headline-types";
 import { NewsHeadlineBanner } from "./news-headline-banner";
-import { usePointsGoal } from "@/ui/features/world/hud/points-goal";
+import { useGoalLine } from "@/ui/features/world/hud/points-goal";
 import { buildCaptureHeadline, NEWSWORTHY_CAPTURES } from "./capture-headline";
 import { createWorldEventEntityReader } from "../story-events/world-event-entity-reader";
 import { usePlayerNames } from "@/hooks/use-player-profile";
@@ -36,7 +36,7 @@ export function NewsHeadlineBridge() {
 
   const address = useAccountStore((state) => state.account?.address);
   const startAt = useFactView(seasonClockView).gameStartMainAt;
-  const goal = usePointsGoal();
+  const goal = useGoalLine();
   const nowSeconds = useCurrentBlockTimestamp();
   const wasBeforeStart = useRef(false);
 

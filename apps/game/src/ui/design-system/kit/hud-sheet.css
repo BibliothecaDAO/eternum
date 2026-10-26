@@ -1677,12 +1677,6 @@ button.ui-relic:focus-visible {
   align-self: center;
   flex-shrink: 0;
 }
-.ui-notice__why {
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-weight: var(--hud-weight-label);
-}
 
 /* ── Action bubble: one of the HUD's round actions, its word under it, a count on its rim. ── */
 .ui-bubble {

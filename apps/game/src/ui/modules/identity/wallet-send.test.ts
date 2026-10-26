@@ -62,5 +62,5 @@ it("says the network did not confirm a send whose receipt could not be read, nev
   vi.spyOn(console, "error").mockImplementation(() => {});
   const { account } = wallet();
   const outcome = await sendFromWallet(account, "0x4a1", CALLS, chain(1n, Promise.reject(new Error("503"))), vi.fn());
-  expect(outcome).toEqual({ kind: "refused", reason: "The network did not confirm it. Check again in a moment." });
+  expect(outcome).toEqual({ kind: "refused", reason: "The network has not confirmed it yet" });
 });

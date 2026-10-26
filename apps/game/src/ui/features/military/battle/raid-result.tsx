@@ -405,7 +405,7 @@ export const RaidResult = ({
             </h4>
 
             {/* Show stolen resources only if raid was successful */}
-            {raidResult.success === true && initialStolenResources.length > 0 ? (
+            {raidResult.success === true && initialStolenResources.length > 0 && (
               <div className="mt-3 pt-3 border-t border-hud-divider">
                 <h5 className="text-md text-hud-strong text-hud-accent mb-2">Stolen Resources:</h5>
                 {initialStolenResources.map((resource, index) => (
@@ -418,14 +418,6 @@ export const RaidResult = ({
                   </div>
                 ))}
               </div>
-            ) : (
-              !raidResult.success === true && (
-                <div className="mt-3 pt-3 border-t border-hud-divider">
-                  <div className="flex flex-col items-center text-hud-bad">
-                    <p>Your raid was unsuccessful. No resources were stolen.</p>
-                  </div>
-                </div>
-              )
             )}
 
             {/* Add Twitter Share Button */}

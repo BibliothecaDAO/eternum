@@ -70,7 +70,7 @@ describe.each([1440, 390])("You, signed in, at %i px", (width) => {
 
   it("says how a rating is carried on the player's own card, on a phone as on a desktop (qa-app-1 P3-10)", async () => {
     const page = await open("/profile", width);
-    expect(page.textContent).toContain("Link a wallet in Settings to carry a rating.");
+    expect(page.textContent).toContain("Link a wallet to carry a rating");
   });
 });
 

@@ -141,9 +141,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
         <LiquidityTableHeader />
         <LiquidityResourceRow playerStructureIds={playerStructureIds} entityId={entityId} resourceId={resourceId} />
       </div>
-      {isVillageAndMilitaryResource && (
-        <HudNotice tone="bad" line="Military resources cannot be traded from village structures." />
-      )}
+      {isVillageAndMilitaryResource && <HudNotice tone="bad" line="Villages cannot trade military resources." />}
       {!isNotZero && <HudNotice tone="warn" line="Warning: Amount must be greater than zero" />}
       {!hasEnough && <HudNotice tone="bad" line="Warning: Not enough resources for this operation" />}
       <HudButton

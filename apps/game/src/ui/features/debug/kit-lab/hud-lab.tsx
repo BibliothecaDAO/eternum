@@ -420,7 +420,6 @@ const LAB_NEXT_UP_FACTS: NextUpFacts = {
   lastHour: false,
   storeFull: null,
   populationFull: false,
-  rules: { hutAdds: 6, stamina: { explore: 30, anHour: 30 }, xp: { reveal: 2 }, homecomingPercent: 3 },
 };
 
 /**

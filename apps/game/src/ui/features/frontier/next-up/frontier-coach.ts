@@ -22,9 +22,9 @@ export interface FrontierCoachStep {
  * now (a guard in reach, the army's next tier, the castle's next level, a research tier); then the day's loop,
  * exploring (and how, once the army is selected), today's camp, and rest once every army is out of stamina. It reads
  * the realm's facts (next-up-facts.ts), so a step holds while its state does and goes once it is done; nothing is
- * "seen". A step follows where the player is: in the realm, a realm step says what to do there instead of offering
- * the way in. The numbers come from the game's rules, never typed into a line; a line whose number is unknown says
- * it without one.
+ * "seen". Each line is the action alone, never the rule behind it (owner, 26 October 2026: "good UI/UX doesnt need
+ * subtext"). A step follows where the player is: in the realm, a realm step says where to press instead of offering
+ * the way in.
  */
 export const frontierCoachSteps = (
   facts: NextUpFacts,
@@ -42,20 +42,20 @@ type Pointer = "mouse" | "touch";
 type Where = "realm" | "map";
 type At = { pointer: Pointer; where: Where };
 
-/** A step done in the realm: from the map, its button opens the realm; in the realm, its line says what to do there. */
+/** A step done in the realm: from the map, its button opens the realm; in the realm, its line says where to press. */
 const realmStep = (key: string, line: string, there: string, { where }: At): FrontierCoachStep =>
   where === "realm" ? step(key, there) : step(key, line, "Open the realm", "realm");
 
-/** The word for picking something on screen: a mouse clicks, a touch screen taps. */
-const press = (pointer: Pointer) => (pointer === "touch" ? "tap" : "click");
+/** The word for picking something on screen, capitalised to open a line: a mouse clicks, a touch screen taps. */
+const press = (pointer: Pointer) => (pointer === "touch" ? "Tap" : "Click");
 
 const alerts = (facts: NextUpFacts, at: At): FrontierCoachStep[] => [
-  ...(facts.lastHour ? [lastHour(facts)] : []),
+  ...(facts.lastHour ? [step("last-hour", "The day ends within the hour")] : []),
   ...(facts.storeFull
     ? [
         step(
           "store-full",
-          `Your ${facts.storeFull} storage is full: what does not fit is gone. Spend it, or add storage.`,
+          `Your ${facts.storeFull} storage is full`,
           // Labor is spent on the realm board; wheat and troops by Deploy.
           ...(facts.storeFull === LABOR.toLowerCase()
             ? (["Open the realm", "realm"] as const)
@@ -67,106 +67,46 @@ const alerts = (facts: NextUpFacts, at: At): FrontierCoachStep[] => [
     ? [
         realmStep(
           "population-full",
-          `No population left: every building takes some. A Hut adds ${facts.rules?.hutAdds ?? "more"}.`,
-          `No population left: every building takes some. A Hut adds ${facts.rules?.hutAdds ?? "more"}: ${press(at.pointer)} an open plot to build one.`,
+          "No population left: build a Hut",
+          `${press(at.pointer)} an open plot for a Hut`,
           at,
         ),
       ]
     : []),
 ];
 
-const lastHour = ({ rules }: NextUpFacts): FrontierCoachStep =>
-  step(
-    "last-hour",
-    rules
-      ? `The day ends within the hour, and armies still out end with it. Homecoming sends ${rules.homecomingPercent}% of their troops home.`
-      : "The day ends within the hour, and armies still out end with it.",
-  );
-
 const dayLoop = (facts: NextUpFacts, at: At): FrontierCoachStep[] => {
   const { pointer } = at;
   const steps: FrontierCoachStep[] = [];
   if (!facts.barracks)
-    steps.push(
-      realmStep(
-        "barracks",
-        "Build barracks: only barracks train troops for your armies.",
-        `Build barracks: ${press(at.pointer)} an open plot, then Barracks. Only barracks train troops for your armies.`,
-        at,
-      ),
-    );
+    steps.push(realmStep("barracks", "Build barracks", `${press(pointer)} an open plot for Barracks`, at));
   if (facts.armies === 0 && (facts.troopsAtHome ?? 0) >= 1)
-    steps.push(
-      step(
-        "deploy",
-        "Deploy your armies: one strong army, two scouts. They stay out until the day ends.",
-        "Deploy",
-        "deploy",
-      ),
-    );
-  if (facts.guardInReach)
-    steps.push(
-      step("guard", `A guard stands beside your army: ${press(pointer)} it to see the fight before you choose.`),
-    );
-  if (facts.armyTierAffordable)
-    steps.push(
-      step(
-        "army-tier",
-        "Your army's XP buys a tier: Battle for the main army, Scouting for scouts.",
-        "Open the army",
-        "army",
-      ),
-    );
+    steps.push(step("deploy", "Deploy your armies", "Deploy", "deploy"));
+  if (facts.guardInReach) steps.push(step("guard", `${press(pointer)} the guard beside your army`));
+  if (facts.armyTierAffordable) steps.push(step("army-tier", "Your army's XP buys a tier", "Open the army", "army"));
   if (facts.castleAffordable)
-    steps.push(
-      realmStep(
-        "castle",
-        "Enough labor: your castle can grow, with more plots and army slots.",
-        `Enough labor: ${press(at.pointer)} your castle to grow it, with more plots and army slots.`,
-        at,
-      ),
-    );
+    steps.push(realmStep("castle", "Your castle can grow", `${press(pointer)} your castle to grow it`, at));
   if (facts.typeTierAffordable)
-    steps.push(
-      step(
-        "research",
-        `Research a ${facts.typeTierAffordable} tier: store more, or make more, for every ${facts.typeTierAffordable}.`,
-        "Research",
-        "research",
-      ),
-    );
+    steps.push(step("research", `Research a ${facts.typeTierAffordable} tier`, "Research", "research"));
   if (facts.armies > 0 && !facts.armiesTired) steps.push(explore(facts, pointer));
   if (facts.camp)
     steps.push(
       step(
         "camp",
-        `A ${frontierSiteName(StructureType.Camp)} in today's region: compare its strength with your army. Defeating it teaches your army.`,
+        `A ${frontierSiteName(StructureType.Camp)} in today's region`,
         `Show the ${frontierSiteName(StructureType.Camp)}`,
         "camp",
       ),
     );
-  if (facts.armies > 0 && facts.armiesTired) steps.push(rest(facts));
+  if (facts.armies > 0 && facts.armiesTired) steps.push(step("rest", "Your armies are out of stamina"));
   return steps;
 };
 
-/** Exploring: select the army that can; once one is selected, how to send it on the map, and what a tile pays. */
-const explore = ({ armySelected, rules }: NextUpFacts, pointer: Pointer): FrontierCoachStep => {
-  const pays = rules?.xp
-    ? `each new tile sends Essence or labor home and gives ${rules.xp.reveal} XP`
-    : "each new tile sends Essence or labor home and gives XP";
-  if (!armySelected) return step("explore", `Your army can explore: ${pays}.`, "Select the army", "select-army");
-  const cost = rules ? ` (${rules.stamina.explore} stamina)` : "";
-  const send = pointer === "touch" ? "Hold a tile beside your army" : "Click a tile beside your army";
-  return step("explore-on-map", `${send} to explore it${cost}: ${pays}.`);
-};
-
-const rest = ({ rules }: NextUpFacts): FrontierCoachStep =>
-  step(
-    "rest",
-    rules
-      ? `Your armies are out of stamina: ${rules.stamina.anHour} come back each hour, while you are away too.`
-      : "Your armies are out of stamina: it comes back by the hour, while you are away too.",
-  );
+/** Exploring: select the army that can; once one is selected, how to send it on the map. */
+const explore = ({ armySelected }: NextUpFacts, pointer: Pointer): FrontierCoachStep =>
+  armySelected
+    ? step("explore-on-map", `${pointer === "touch" ? "Hold" : "Click"} a tile beside your army`)
+    : step("explore", "Your army can explore", "Select the army", "select-army");
 
 const step = (
   key: string,

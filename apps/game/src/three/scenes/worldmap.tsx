@@ -1905,7 +1905,7 @@ export default class WorldmapScene extends WarpTravel {
     this.shortcutManager.registerShortcut({
       id: "cycle-armies",
       key: "Tab",
-      description: "Cycle through armies (or structures when army creation is open)",
+      description: "Cycle through armies",
       sceneRestriction: SceneName.WorldMap,
       condition: () => {
         if (shouldCycleStructuresForTab()) {
@@ -1943,7 +1943,7 @@ export default class WorldmapScene extends WarpTravel {
     this.shortcutManager.registerShortcut({
       id: "escape-handler",
       key: "Escape",
-      description: "Back out one step: a pending order, an open view, then the selection",
+      description: "Back out one step",
       sceneRestriction: SceneName.WorldMap,
       action: () => this.backOutOneStep(),
     });
@@ -2509,7 +2509,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const account = useAccountStore.getState().account;
     if (!account) {
-      toast.error("Wait for your gameplay account before creating a Hyperstructure.");
+      toast.error("Your game account is not ready yet.");
       return;
     }
 
@@ -2986,7 +2986,7 @@ export default class WorldmapScene extends WarpTravel {
     }
     if (!actionPaths.has(ActionPaths.posKey(nextOrder.hex, true))) {
       dropNextOrder("out-of-reach", entityId);
-      toast.info("This army's next order is out of its reach now");
+      toast.info("This order is out of reach now");
       return;
     }
     const hex = takeNextOrder(entityId);
@@ -2995,7 +2995,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private onArmyMovement(actionPath: ActionPath[], selectedEntityId: ID) {
     if (actionPath.length > 0 && this.hasOrderInFlight(selectedEntityId)) {
-      toast.info("This army's last order is still on its way");
+      toast.info("The last order is still on its way");
       this.state.updateEntityActionHoveredHex(null);
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
       return;
@@ -4446,11 +4446,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private reportWarpTravelRefreshError(error: unknown, phase: "initial" | "resume"): void {
-    const message =
-      phase === "initial"
-        ? "Failed to update visible chunks during initial setup:"
-        : "Failed to update visible chunks while resuming worldmap scene:";
-    console.error(message, error);
+    console.error(`Failed to update visible chunks (${phase}):`, error);
   }
 
   private resetZoomHardeningRuntimeState(): void {

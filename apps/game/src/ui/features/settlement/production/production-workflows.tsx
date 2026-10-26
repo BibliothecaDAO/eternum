@@ -57,10 +57,6 @@ export const ProductionWorkflows = ({
       icon: "build" as const,
       content: (
         <div className="space-y-3">
-          {!selectedResource && (
-            <p className="text-hud-muted">Pick a resource below to inspect its buildings and start production.</p>
-          )}
-
           <div className="flex flex-col gap-1 lg:hidden">
             <span className="text-hud-label text-hud-muted">Resource</span>
             <HudSelect

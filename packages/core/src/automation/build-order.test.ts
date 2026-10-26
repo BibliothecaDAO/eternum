@@ -65,7 +65,7 @@ describe("a build order's JSON", () => {
   });
 
   it.each([
-    ["two farms", "This isn't JSON. Paste an order copied with Copy JSON, or the JSON an AI wrote."],
+    ["two farms", "This isn't JSON. Use Copy JSON."],
     ['{"name": "Mine"}', 'A build order is { "name": …, "steps": [ … ] }.'],
     [JSON.stringify({ name: " ", steps: [] }), "A name is 1 to 40 characters."],
     [steps(), "An order has 1 to 60 steps."],

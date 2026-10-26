@@ -39,7 +39,7 @@ export const AccountStatePrompt = () => {
 
   return (
     <div className="flex flex-col gap-1.5 rounded-thumb border border-kit-gold/40 p-3 text-sm text-kit-gold/80">
-      <span>This device was removed from your account. Sign in again to add it as a new device.</span>
+      <span>This device was removed.</span>
       <button type="button" disabled={pending} onClick={() => void signInAgain()} className={buttonClass}>
         {pending ? "Signing out…" : "Sign in again"}
       </button>

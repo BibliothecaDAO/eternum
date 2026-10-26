@@ -68,7 +68,7 @@ it("says a spectator's account owns no realm here when none of the game's struct
   resolveSpectateIntent({ search: "?spectate=true" });
   view.structures = [{ owner: 0x77n, base: { category: StructureType.Realm } }];
   const page = await openChip();
-  expect(page.textContent).toContain("Your account owns no realm in this game.");
+  expect(page.textContent).toContain("You hold no realm here.");
   expect([...page.querySelectorAll("button")].map((button) => button.textContent)).not.toContain("Play");
 });
 

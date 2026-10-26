@@ -50,7 +50,7 @@ export function LocalNotificationLifecycle() {
           role="alert"
           className="fixed bottom-4 left-4 z-[200] max-w-sm rounded border border-kit-gold/40 bg-kit-shade p-3 text-sm text-kit-gold"
         >
-          Background notifications need attention. Reconnect or apply the latest game update, then retry.
+          Background notifications need attention.
           <button
             type="button"
             className="ml-2 underline"

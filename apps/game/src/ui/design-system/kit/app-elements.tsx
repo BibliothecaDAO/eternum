@@ -534,21 +534,16 @@ export const AppNotice = ({
   tone,
   icon,
   line,
-  why,
   actions,
 }: {
   tone?: Tone;
   icon?: IconMeaning;
   line: string;
-  why?: ReactNode;
   actions?: ReactNode;
 }) => (
   <div className="app-notice" data-tone={tone} role={tone === "bad" ? "alert" : "status"}>
     {icon && <Icon name={icon} size={22} />}
-    <span className="app-notice__words">
-      <span>{line}</span>
-      {why && <span className="app-notice__why">{why}</span>}
-    </span>
+    <span className="app-notice__words">{line}</span>
     {actions}
   </div>
 );

@@ -14,7 +14,7 @@ export const OutcomeBanner = ({ outcomes }: { outcomes: { worst: BattleOutcome; 
     outcomes.worst === outcomes.best
       ? COPY[outcomes.worst]
       : {
-          label: `The dice decide — ${outcomes.worst} on the worst roll, ${outcomes.best} on the best`,
+          label: `Worst roll ${outcomes.worst} · best ${outcomes.best}`,
           tone: COPY.Draw.tone,
         };
   return <HudNotice tone={tone} line={label} />;

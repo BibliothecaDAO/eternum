@@ -335,11 +335,6 @@ export const BattleLab = ({
           />
         ) : (
           <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
-            {configManager.rollsCombatDice(state.defenderAlt) && (
-              <p className="text-hud-body text-hud-muted">
-                Each side rolls a d20 for +1% to +20% damage; ranges run from the attacker's worst roll to its best.
-              </p>
-            )}
             <label className="flex items-center gap-2 text-hud-body text-hud-muted">
               <HudCheck
                 checked={state.defenderAlt}
@@ -404,11 +399,7 @@ export const BattleLab = ({
             {!state.hasDefender ? (
               <HudNotice
                 tone="good"
-                line={
-                  rangedClaimBlocked
-                    ? "No defending troops — move adjacent to claim. Ranged attacks clear guards but cannot claim structures."
-                    : "No defending troops — this target can be claimed without a battle."
-                }
+                line={rangedClaimBlocked ? "No defenders: move adjacent to claim" : "No defenders: claim it"}
               />
             ) : (
               prediction && <OutcomeBanner outcomes={prediction.outcomes} />

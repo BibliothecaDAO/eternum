@@ -383,7 +383,7 @@ export const useAutomation = () => {
                   const { resourceOver, laborOver } = getAutomationOverallocation(effectivePercentages);
 
                   if (resourceOver || laborOver) {
-                    runStatusNote = "Custom allocation over budget; used Smart for this run";
+                    runStatusNote = "Over budget: Smart used this run";
                     verboseLog("[Automation] Using smart preset for this run due to over-allocation", {
                       realmId: activeRealmConfig.realmId,
                       realmName: realmLabel,

@@ -49,12 +49,10 @@ export const getTroopTransferBlockReason = ({
   if (transferDirection === TransferDirection.ExplorerToStructure) {
     return sourceHomeOwner !== undefined && sourceHomeOwner === targetOwner
       ? null
-      : "Cannot reinforce: Explorer home and target must have the same owner";
+      : "Cannot reinforce: different owners";
   }
   if (transferDirection === TransferDirection.StructureToExplorer && guardSlot === BALANCE_TRANSFER_SLOT) {
-    return idsMatch(targetExplorerOwner, selectedEntityId)
-      ? null
-      : "Cannot use structure balance: Explorer is not owned by this structure";
+    return idsMatch(targetExplorerOwner, selectedEntityId) ? null : "Not this structure's army";
   }
   return null;
 };

@@ -66,10 +66,8 @@ export const CompactBuildingCard = ({
           {build.pending ? "Building…" : "Build"}
         </HudButton>
       </div>
-      <div className="mt-2 flex flex-col gap-1">
-        <p className="text-hud-label text-hud-muted">Cost</p>
+      <div className="mt-2" data-tip={disabledReason}>
         <RequirementChips requirements={requirements} />
-        {disabledReason && <p className="text-hud-muted">{disabledReason}</p>}
       </div>
       <details
         className="mt-2 border-t border-hud-divider"

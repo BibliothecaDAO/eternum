@@ -154,7 +154,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
             onConfirm={handleConfirmDelete}
             onBack={close}
           >
-            <span className="text-hud-body text-hud-muted">Its troops are lost; a deployed army never goes home.</span>
+            <span className="text-hud-body text-hud-muted">Its troops are lost.</span>
           </HudConfirm>
         </div>
       )}

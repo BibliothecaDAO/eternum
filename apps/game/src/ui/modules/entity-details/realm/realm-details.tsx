@@ -65,7 +65,6 @@ export const RealmUpgradeCompact = () => {
         <SectionRow label="Settlement level">
           <HudChip>{upgradeInfo.currentLevelName}</HudChip>
         </SectionRow>
-        <p className="text-hud-label text-hud-muted">Select a building to inspect this settlement’s economy.</p>
       </div>
     );
   }

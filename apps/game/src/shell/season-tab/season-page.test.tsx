@@ -79,7 +79,7 @@ it("titles the page Season and names Frontier's own season on its board; an empt
       (panel) => panel.querySelector("h2")?.textContent === "Frontier",
     )!;
     expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Season 1 · Day 4");
-    expect(frontier.textContent).toContain("No realm on the board yet. Found one from Play.");
+    expect(frontier.textContent).toContain("No realm yet. Found one from Play.");
     expect([...frontier.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Play"]);
   } finally {
     await unmount();

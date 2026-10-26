@@ -12,10 +12,10 @@ import type { DockArmy } from "./dock-armies";
 
 /**
  * A phone's picked army, in the dock's place (owner, 22 October 2026: mobile direction A): the army (a tap lets it
- * go, and the dock comes back), how to give it an order, and its details, which open only when asked for.
+ * go, and the dock comes back), and its details, which open only when asked for.
  */
 export const PickedArmy = ({ army, onDetails }: { army: DockArmy; onDetails: () => void }) => (
-  <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="flex items-center gap-2">
+  <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="flex items-center justify-between gap-2">
     <ArmyToken
       label={PICKED_ARMY.letGo(army.label)}
       number={army.number}
@@ -29,7 +29,6 @@ export const PickedArmy = ({ army, onDetails }: { army: DockArmy; onDetails: () 
       flyTarget={attributeBadgeTarget(army.explorerId)}
       onPick={() => useUIStore.getState().deselectEntity()}
     />
-    <span className="min-w-0 flex-1 text-hud-label text-hud-muted">{PICKED_ARMY.hint}</span>
     <HudIconButton icon="info" label={PICKED_ARMY.details(army.label)} onClick={onDetails} />
   </HudPanel>
 );

@@ -50,7 +50,7 @@ it("reads the reserved amount, changes to zero exactly at rollover, and retains 
   await act(async () => useChainTimeStore.setState({ nowMs: 400_000 }));
   expect(host.querySelector("[data-lords-chest]")?.getAttribute("data-expired")).toBe("true");
   expect(host.textContent).toContain("0 LORDS");
-  expect(host.textContent).toContain("Reservation expired");
+  expect(host.textContent).toContain("Expired");
   await render({
     kind: "lords",
     amount: 0,

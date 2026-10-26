@@ -114,7 +114,7 @@ it("pays the seat and the chosen flags from the payout wallet, a credit paying f
   await press(panel, "Shield");
   expect(panel.textContent).toContain("1,000");
   // Where the 1,000 goes, as the preset splits it: 800 to the season pool, 100 to its chests, 100 to the treasury.
-  const split = panel.querySelector('[aria-label^="Where this entry goes"]')!.textContent;
+  const split = panel.querySelector('[aria-label="Season pool, chests and treasury"]')!.textContent;
   expect(split).toBe("800100100");
   await press(panel, "Pay & join");
   // One press, one prompt of the linked wallet, and no wallet offered to pick.
@@ -179,7 +179,7 @@ it("reads Seated for the whole game, from the roster the shard froze, with the w
   // Between the close and the roster: registered, and no longer promising a draw "when entry closes".
   const drawing = (await mount(closed)).textContent;
   expect(drawing).toContain("Registered");
-  expect(drawing).toContain("Entry has closed. Your seat is being drawn.");
+  expect(drawing).toContain("Entry closed. Drawing seats.");
 
   // Settled: the ledger names the game, which the lobby reads among the player's finished games: its own Results.
   const settled = await mount({ ...closed, registration: { ...during, gameId: 9 } }, WALLET, {

@@ -67,9 +67,5 @@ export const RelicIncompatibilityNotice = ({
   recipientType: RelicRecipientType;
 }) =>
   relicInfo ? (
-    <HudNotice
-      tone="bad"
-      line={`This relic cannot be activated by ${recipientWords(recipientType)}`}
-      why={`${relicInfo.recipientType} relics can only be activated by ${recipientWords(relicInfo.recipientType)}`}
-    />
+    <HudNotice tone="bad" line={`This relic cannot be activated by ${recipientWords(recipientType)}`} />
   ) : null;

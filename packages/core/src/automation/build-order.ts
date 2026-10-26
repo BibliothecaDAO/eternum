@@ -69,7 +69,7 @@ export const readBuildOrderText = (text: string): Read<BuildOrder> => {
   try {
     value = JSON.parse(text);
   } catch {
-    return { error: "This isn't JSON. Paste an order copied with Copy JSON, or the JSON an AI wrote." };
+    return { error: "This isn't JSON. Use Copy JSON." };
   }
   return readBuildOrder(value);
 };

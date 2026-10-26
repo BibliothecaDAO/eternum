@@ -25,7 +25,7 @@ vi.mock("./left-facets/use-structure-actions", () => ({ useStructureActions: () 
 vi.mock("./spectator-standings", () => ({ SpectatorStandingsBody: () => null }));
 // The line for a player whose last realm fell (its reading is out-of-game.test.tsx's); here, only where it shows.
 vi.mock("@/ui/features/world/hud/out-of-game", () => ({
-  OutOfGameLine: () => (viewer.outOfGame ? <p>You hold no realm. Watch until the end.</p> : null),
+  OutOfGameLine: () => (viewer.outOfGame ? <p>You hold no realm.</p> : null),
 }));
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -65,9 +65,9 @@ const tab = (name: string) =>
 it("draws the Details tab's empty state with the explore painting, not a broken image named after it", () => {
   act(() => tab("Details").click());
   const sheet = host.querySelector('section[aria-label="HUD sheet"]')!;
-  expect(sheet.textContent).toContain("Tap a tile on the map to inspect");
+  expect(sheet.textContent).toContain("No tile selected");
   const painting = [...sheet.querySelectorAll("img")].find((img) =>
-    img.parentElement?.textContent?.includes("Tap a tile"),
+    img.parentElement?.textContent?.includes("No tile selected"),
   )!;
   expect(painting.dataset.icon).toBe("explore");
   expect(painting.getAttribute("src")).toMatch(/^\/icons\/facets\/\d+\/explore\.webp$/);
@@ -98,11 +98,11 @@ it("tells a player out of the game so in the Empire sheet, and again in Standing
   act(() => useUIStore.setState({}));
   act(() => tab("Empire").click());
   const sheet = () => host.querySelector('section[aria-label="HUD sheet"]')!;
-  expect(sheet().textContent).toContain("You hold no realm. Watch until the end.");
+  expect(sheet().textContent).toContain("You hold no realm.");
   viewer.ordersAllowed = false;
   act(() => useUIStore.setState({}));
   expect(sheet().querySelector('section[aria-label="Standings"]')).not.toBeNull();
-  expect(sheet().textContent).toContain("You hold no realm. Watch until the end.");
+  expect(sheet().textContent).toContain("You hold no realm.");
 });
 
 it("offers the minimap on the world map only: the realm view has no Map tab, and an open Map sheet closes there", () => {

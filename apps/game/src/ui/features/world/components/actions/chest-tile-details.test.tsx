@@ -19,9 +19,9 @@ const sealed = (open: ChestOpen) =>
 
 it("says in a plain line what opening the crate needs, with no dead button, and opens it once an army stands beside it (live-qa-night-2 B-4)", () => {
   const verbs = (dom: Document) => [...dom.querySelectorAll(".ui-button")].map((button) => button.textContent);
-  const blocked = sealed({ blocked: "Move one of your armies next to the crate to open it." });
+  const blocked = sealed({ blocked: "Needs an army beside it" });
   expect(verbs(blocked)).toEqual([]);
-  expect(blocked.body.textContent).toContain("Move one of your armies next to the crate to open it.");
+  expect(blocked.body.textContent).toContain("Needs an army beside it");
   expect(blocked.body.textContent).not.toContain("Move next to it");
 
   const ready = sealed({ onOpen: () => undefined });

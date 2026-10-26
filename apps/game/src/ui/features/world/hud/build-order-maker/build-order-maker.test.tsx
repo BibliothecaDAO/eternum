@@ -184,15 +184,13 @@ describe("the build order maker", () => {
     const prompt = clipboard.writeText.mock.calls[1][0];
     for (const goal of BUILD_ORDER_GOALS) expect(prompt).toContain(`- ${goal}: `);
     expect(prompt).toContain('"name": "Coal rush"');
-    expect(notices()).toEqual([
-      "Prompt copied: paste it into Claude or ChatGPT, then paste the JSON it answers with back here.",
-    ]);
+    expect(notices()).toEqual(["Prompt copied"]);
   });
 
   it("lets a signed-out player make and copy an order, but saves nothing: they follow the game's order", async () => {
     account(null);
     open();
-    expect(notices()).toEqual(["Sign in to save your own orders; until then you follow the game's order."]);
+    expect(notices()).toEqual(["Sign in to save your orders."]);
     await press("New order");
     await press("Farm");
     expect(button("Save")?.disabled).toBe(true);
@@ -241,9 +239,7 @@ describe("the build order maker", () => {
     };
     service.getBuildOrders.mockResolvedValueOnce(savedElsewhere(elsewhere));
     await press("Save");
-    expect(notices()).toEqual([
-      "Your build orders changed on another device and were read again. Save again to keep this order.",
-    ]);
+    expect(notices()).toEqual(["Reloaded changed orders. Save this draft again."]);
     expect(host.querySelector<HTMLInputElement>('input[aria-label="Name"]')?.value).toBe("Coal rush 2");
     await press("Save");
     const [, [again]] = service.saveBuildOrders.mock.calls;

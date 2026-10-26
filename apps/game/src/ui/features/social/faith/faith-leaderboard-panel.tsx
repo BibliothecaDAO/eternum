@@ -54,14 +54,11 @@ export const FaithLeaderboardPanel = () => {
         <div className="flex flex-col">
           <span className="text-hud-strong text-hud-accent">Faith Leaderboard</span>
           <span className="text-hud-label text-hud-muted">Live from the game stream</span>
-          <span className="text-hud-label text-hud-cue">Total FP includes estimated unclaimed points from FP/sec.</span>
         </div>
       </div>
 
       {!hasEntries ? (
-        <div className="flex h-full items-center justify-center text-hud-label text-hud-muted">
-          No wonder faith data found for this world.
-        </div>
+        <div className="flex h-full items-center justify-center text-hud-label text-hud-muted">No faith data yet</div>
       ) : (
         <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-hud-divider bg-hud-well">
           <div className="min-w-max">
