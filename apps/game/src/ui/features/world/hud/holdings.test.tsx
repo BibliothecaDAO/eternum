@@ -20,7 +20,6 @@ vi.mock("@/ui/features/world/containers/top-header/structure-picker/chip", () =>
 vi.mock("@/ui/features/world/containers/top-header/favorites", () => ({
   useFavoriteStructures: () => ({ toggleFavorite: vi.fn() }),
 }));
-vi.mock("@/ui/design-system/icon", () => ({ Icon: () => null }));
 vi.mock("./medallion", () => ({ Medallion: () => null }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
@@ -77,9 +76,9 @@ describe("the holdings search", () => {
   afterEach(() => act(() => root.unmount()));
 
   it.each([
-    ["frontier", "Trolls"],
-    ["blitz", "Camps"],
-  ])("names the %s list by its encounter", (mode, plural) => {
+    ["frontier", "Trolls", "beast-troll"],
+    ["blitz", "Camps", "camp"],
+  ])("names and paints the %s list by its encounter", (mode, plural, icon) => {
     facts.mode = mode;
     facts.structures = [...realms(1), holding(50, StructureType.Camp, plural === "Trolls" ? "Troll" : "Camp")];
     render();
@@ -87,6 +86,9 @@ describe("the holdings search", () => {
     expect(tab).not.toBeNull();
     act(() => tab!.click());
     expect(shownNames()).toEqual([mode === "frontier" ? "Troll" : "Camp"]);
+    const painting = host.querySelector(`[role="tabpanel"] [role="img"] img`);
+    expect(painting?.getAttribute("data-icon")).toBe(icon);
+    expect(painting?.getAttribute("src")).toBe(`/icons/facets/64/${icon}.webp`);
     if (mode === "frontier") expect(host.textContent).not.toMatch(/\bcamps?\b/i);
   });
 
