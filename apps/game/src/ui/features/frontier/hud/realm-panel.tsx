@@ -77,16 +77,21 @@ export const RealmPanel = ({
     className="pointer-events-auto"
     bodyClassName="flex flex-col gap-2"
   >
-    <div className="flex min-h-9 items-center gap-2 text-hud-strong text-hud-ink">
+    {/* Its readings vary in length (a rank's name, a population, the labor waiting): the row wraps rather than run
+        past the card, the Realms chip keeping to the right on whichever line it lands. */}
+    <div className="flex min-h-9 flex-wrap items-center gap-x-2 gap-y-1 text-hud-strong text-hud-ink">
       {level !== undefined && (
-        <>
+        <span className="flex items-center gap-2">
           <SemanticIcon name={realmMeaning(level)} size={24} />
           {rankName(level)}
-        </>
+        </span>
       )}
       {population && <PopulationReading population={population} />}
-      <span className="flex-1" />
-      {onRealms && <RealmsChip labor={labor} onOpen={onRealms} />}
+      {onRealms && (
+        <span className="ml-auto">
+          <RealmsChip labor={labor} onOpen={onRealms} />
+        </span>
+      )}
     </div>
     <ul aria-label="Stores" className="grid grid-cols-5 justify-items-center gap-y-5 pb-2 pt-2">
       {stores.map((store) => (

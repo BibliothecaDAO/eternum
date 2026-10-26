@@ -47,6 +47,9 @@ export const HUD_LAYOUT_EXPRESSION = `JSON.stringify((() => {
       if (!reached) covered.push(name + ": " + (control.getAttribute("aria-label") || control.textContent.trim().slice(0, 24)));
     }
   }
+  // A part whose content runs past its right edge (a row too long for its card): a box that does not scroll grows its
+  // scroll width by what spills out of it, and a scrolling box keeps its own overflow inside.
+  const spilled = outermost.filter((element) => element.scrollWidth > element.clientWidth + 1).map(nameOf);
   const minimap = shown(document.querySelector('section[aria-label="Minimap"]'));
   const REGIONS = {
     "top bar": 'header[aria-label="Game controls"]',
@@ -59,7 +62,7 @@ export const HUD_LAYOUT_EXPRESSION = `JSON.stringify((() => {
     const homes = [...document.querySelectorAll(selector)].filter((home) => shown(home));
     if (homes.length > 0) regions[region] = outermost.filter((element) => homes.some((home) => home.contains(element))).length;
   }
-  return { viewport: { width: innerWidth, height: innerHeight }, parts, minimap: minimap ? box(minimap) : null, covered, regions };
+  return { viewport: { width: innerWidth, height: innerHeight }, parts, minimap: minimap ? box(minimap) : null, covered, spilled, regions };
 })())`;
 
 /** The desktop width the HUD lays out its left column from (DESKTOP_MIN_PX). */
@@ -70,11 +73,11 @@ const MOST_PARTS_IN_A_REGION = 7;
 
 /**
  * A layout is right when some part is drawn and, on a desktop, the minimap; every drawn part lies whole on the page; no
- * two drawn parts lie over each other; every control of every part takes its own clicks; and no region holds more than
- * seven parts.
+ * two drawn parts lie over each other; no part's content runs past its edge; every control of every part takes its own
+ * clicks; and no region holds more than seven parts.
  */
 export function judgeHudLayout(layout) {
-  const { viewport, parts = {}, minimap = null, covered = [], regions = {} } = layout ?? {};
+  const { viewport, parts = {}, minimap = null, covered = [], spilled = [], regions = {} } = layout ?? {};
   if (!viewport) return blocked("the HUD's layout was not read");
   if (Object.keys(parts).length === 0) return failed("no HUD part drawn", { layout });
   if (viewport.width >= DESKTOP_MIN_WIDTH && !minimap) return failed("not drawn: the minimap", { layout });
@@ -92,6 +95,7 @@ export function judgeHudLayout(layout) {
   const faults = [
     ...(outside.length > 0 ? [`off the page: ${outside.map(([name]) => name).join(", ")}`] : []),
     ...(overlaps.length > 0 ? [`overlapping: ${overlaps.join(", ")}`] : []),
+    ...(spilled.length > 0 ? [`content past its edge: ${spilled.join(", ")}`] : []),
     ...(covered.length > 0 ? [`covered controls: ${covered.join(", ")}`] : []),
     ...(crowded.length > 0
       ? [`more than seven parts: ${crowded.map(([region, count]) => `${region} (${count})`).join(", ")}`]

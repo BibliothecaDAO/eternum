@@ -751,6 +751,14 @@ const STATES = {
   "value-hud": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240, realms: 2_000 } },
   // The purse and Next up at once, as a signed-in player meets them: the layout check holds them apart.
   "purse-next-up": { clock: CLOCK, stores: STORES, armies: [], purse: { lords: 1_240, realms: 2_000 } },
+  // The owner's realm on 26 October 2026: a Kingdom at 27/42 with 1,000 labor to claim, its row the realm card's widest.
+  "realm-claim": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240, realms: 1_000 },
+    realm: { level: 2, population: { used: 27, total: 42 } },
+  },
   "value-hud-claimed": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240 } },
   "value-menu": {
     clock: CLOCK,
@@ -907,6 +915,8 @@ type LabState = {
   chat?: boolean;
   /** The LORDS count under the strip, what a chest just added, and the labor the player's Realms have waiting. */
   purse?: { lords: number; gain?: number; realms?: number };
+  /** The realm's rank and population, in place of the lab's City at 9/18. */
+  realm?: { level: number; population: { used: number; total: number } };
   menuRealms?: boolean;
   withdraw?: LabWithdraw;
   realms?: LabRealms;
@@ -1228,9 +1238,9 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
           realm={
             <RealmPanel
               name={LAB_REALM_NAME}
-              level={1}
+              level={lab.realm?.level ?? 1}
               highest={3}
-              population={LAB_POPULATION}
+              population={lab.realm?.population ?? LAB_POPULATION}
               stores={[...lab.stores]}
               onHome={noop}
               {...(!lab.visiting && {

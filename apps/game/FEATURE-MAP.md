@@ -96,17 +96,18 @@ whose XP buys a level; its panel's Level up sends buy_tier, recorded on the page
 `blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab player's last realm lost, a
 Hyperstructure still held, playing then watching);
 `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
-1280, 1440 and 1920 px (every part whole on the page, none over another, every control reachable, at most seven parts a
-region). `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with
-outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer (no build steps), the panel as built
-(phase 1), a player's imported orders and the import as proposed (phase 2), and the default order as written.
-`/lab/kit/progression` Frontier's Research tree and the army's panel (the owner's picks), the game's own panels on the
-Frontier preset's numbers, on the owner's realm or one some days in (`?realm=mid`); `?part=research|army` one alone at a
-phone's width. `/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame rate, Renderer
-or Shadows change is saved at once and shows **Applies after a reload** with **Reload** under them, in game as here; a
-game loads the address's `rendererMode`, else the saved renderer, else the build's);
-`pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and opens its
-keys with Show and leaves with Back; every window it draws must keep each tab strip inside its panel.
+1280, 1440 and 1920 px (every part whole on the page, none over another, none with content past its edge, every control
+reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42 with 1,000 labor to
+claim, the realm card's widest row. `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's
+route, Events rows with outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer (no build
+steps), the panel as built (phase 1), a player's imported orders and the import as proposed (phase 2), and the default
+order as written. `/lab/kit/progression` Frontier's Research tree and the army's panel (the owner's picks), the game's
+own panels on the Frontier preset's numbers, on the owner's realm or one some days in (`?realm=mid`);
+`?part=research|army` one alone at a phone's width. `/lab/kit/windows/settings` the header's Settings at its popover's
+width (a Quality, Frame rate, Renderer or Shadows change is saved at once and shows **Applies after a reload** with
+**Reload** under them, in game as here; a game loads the address's `rendererMode`, else the saved renderer, else the
+build's); `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and
+opens its keys with Show and leaves with Back; every window it draws must keep each tab strip inside its panel.
 `/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms, villages, a camp, rifts, a
 Hyperstructure). `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window body, Combat and crate
 panel as the game draws them (the crate from afar: a line saying what opening it needs, no button), on the deploy

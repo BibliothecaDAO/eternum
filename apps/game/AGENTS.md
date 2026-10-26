@@ -64,8 +64,8 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   run's transcript and `summary.json` are written, and everything is released.
 - **The page's size.** 1920 by 1080 unless `--viewport <width>x<height>` asks for another (`390x844` plays a phone). On
   the map, the `hud-layout` step reads every part the HUD draws and judges it as the lab's layout check does
-  (`scripts/client-playtest/hud-layout.mjs`): each part whole on the page, none over another, every control reachable,
-  at most seven parts in each region, and on a desktop the minimap.
+  (`scripts/client-playtest/hud-layout.mjs`): each part whole on the page, none over another, none with content past its
+  edge, every control reachable, at most seven parts in each region, and on a desktop the minimap.
 - **As a spectator** (default), from a fresh browser profile (cold cache): enter on the map (a Frontier session opens
   there, the realm one press away), the HUD's layout, map idle, pan (WASD), zoom out and in, the season (a desktop's
   Season place and its page; a phone's Menu), the Feed's first story that is a link (the map on its place, that tile

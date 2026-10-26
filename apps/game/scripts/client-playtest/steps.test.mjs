@@ -506,6 +506,10 @@ describe("the HUD's layout on the map", () => {
     expect(judged({ parts, covered: ["Research: Research"] }).reason).toBe("covered controls: Research: Research");
   });
 
+  it("fails a part whose content runs past its edge, naming it", () => {
+    expect(judged({ parts, spilled: ["Realm"] }).reason).toBe("content past its edge: Realm");
+  });
+
   it("fails a region holding more than seven parts, and holds one of seven", () => {
     expect(judged({ parts, regions: { holdings: 4, commands: 7 } }).status).toBe("completed");
     expect(judged({ parts, regions: { holdings: 4, commands: 8 } }).reason).toBe("more than seven parts: commands (8)");
