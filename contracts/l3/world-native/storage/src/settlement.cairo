@@ -17,5 +17,6 @@ pub struct SettlementStateStorage<TSettlementProgress, TPlayerEntry, TEntryEntit
     pub blitz_order_size: Map<u32, u32>,
     pub entries: Map<(u32, ContractAddress), Option<TPlayerEntry>>,
     pub entitlements: Map<(u32, ContractAddress), Option<TEntryEntitlement>>,
+    pub held_realm_owners: Map<(u32, u32), ContractAddress>,
     pub held_realm_homes: Map<(u32, u32), u64>,
 }

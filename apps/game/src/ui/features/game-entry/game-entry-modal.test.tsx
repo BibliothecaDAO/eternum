@@ -166,3 +166,55 @@ it.each(["", "711", "registered"])(
     }
   },
 );
+
+it.each(["", "712"])("lets a refused Realm claimant found with a new choice (%s)", async (alternative) => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const signer = { address: "0x124" } as never;
+  useAccountStore.setState({ account: signer });
+  useIdentitySessionStore.setState({ status: "signed-in" });
+  const sent: number[] = [];
+  vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {
+    const { realmId } = JSON.parse(String(init.body));
+    sent.push(realmId);
+    return realmId === 711
+      ? Response.json({ error: "realm_registration_refused" }, { status: 409 })
+      : Response.json({ realmId });
+  });
+  const query = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  try {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={query}>
+          <MemoryRouter>
+            <GameEntryModal isOpen game={GAME} />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      ),
+    );
+    const input = () => host.querySelector<HTMLInputElement>('input[aria-label="Realm number"]')!;
+    const choose = async (number: string) =>
+      act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input(), number);
+        input().dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    const found = async () =>
+      act(async () => {
+        [...host.querySelectorAll("button")].find((button) => button.textContent === "Found your realm")!.click();
+      });
+    await choose("711");
+    await found();
+    expect(settlement.calls).toEqual([]);
+    expect(input().disabled).toBe(false);
+    expect(host.textContent).toContain("Choose another Realm or leave the number blank to found a free home.");
+    await choose(alternative);
+    await found();
+    expect(sent).toEqual(alternative === "" ? [711] : [711, 712]);
+    expect(settlement.calls).toEqual([{ signer, selectedRealm: undefined }]);
+    expect(settlement.settled).toBe(true);
+  } finally {
+    await act(async () => root.unmount());
+    query.clear();
+  }
+});

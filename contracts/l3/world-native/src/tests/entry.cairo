@@ -141,9 +141,57 @@ fn held_realm_settlement_uses_catalogue_traits_and_cannot_be_repeated() {
     assert!(!super::resource_commands::execute_in_game(d, game_id, command, 360));
     let other = super::bind_authority(d);
     start_cheat_caller_address(d.games, authority());
-    ledger(d).register_entitlement(EntryKey { game_id, owner: other.actor }, held).unwrap();
-    assert!(!super::resource_commands::execute_in_game(other, game_id, command, 360));
+    let other_key = EntryKey { game_id, owner: other.actor };
+    assert!(ledger(d).register_entitlement(other_key, held).is_err());
+    assert!(ledger(d).entry_entitlement(other_key).unwrap().is_none());
+    assert!(super::resource_commands::execute_in_game(other, game_id, command, 360));
     assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), home);
+}
+
+#[feature("safe_dispatcher")]
+fn resume_reserved_realm_after_a_second_owner_attempts_entry(alternative: Option<u32>) {
+    let (d, game_id) = super::registrar::setup_open_frontier();
+    let buyer = super::bind_authority(d);
+    let first = EntryKey { game_id, owner: d.actor };
+    let second = EntryKey { game_id, owner: buyer.actor };
+    let held = EntryEntitlement { realm_id: 711, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: 2 };
+    set_operator(d, authority());
+    start_cheat_caller_address(d.games, authority());
+    ledger(d).register_entitlement(first, held).unwrap();
+    assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), 0);
+    // Entry stopped after registration. The operator now verifies the NFT's buyer for the same Realm.
+    assert!(ledger(d).register_entitlement(second, held).is_err());
+    assert!(ledger(d).entry_entitlement(second).unwrap().is_none());
+    ledger(d).register_entitlement(first, held).unwrap();
+    if let Some(realm_id) = alternative {
+        ledger(d).register_entitlement(second, EntryEntitlement { realm_id: realm_id.into(), ..held }).unwrap();
+    }
+    let command = crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None });
+    assert!(super::resource_commands::execute_in_game(buyer, game_id, command, 360));
+    assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
+    let first_home = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
+    let second_home = snforge_std::interact_with_state(
+        d.games, || crate::entity_ids::home_for_actor(game_id, buyer.actor),
+    );
+    assert!(first_home != second_home);
+    assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), first_home);
+    if let Some(realm_id) = alternative {
+        assert_eq!(ledger(d).settled_realm(game_id, realm_id).unwrap(), second_home);
+    } else {
+        assert!(ledger(d).entry_entitlement(second).unwrap().is_none());
+    }
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn interrupted_held_entry_keeps_its_claim_and_the_buyer_can_found_a_free_home() {
+    resume_reserved_realm_after_a_second_owner_attempts_entry(None);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn interrupted_held_entry_keeps_its_claim_and_the_buyer_can_register_another_realm() {
+    resume_reserved_realm_after_a_second_owner_attempts_entry(Some(1));
 }
 
 #[test]

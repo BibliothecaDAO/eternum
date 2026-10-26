@@ -346,7 +346,8 @@ pub mod SettlementLogic {
             command: crate::realms::SettleSeason,
             context: DomainContext,
         ) {
-            self.settlements.reserve_entry(EntryKey { game_id, owner: actor }, actor, false);
+            let key = EntryKey { game_id, owner: actor };
+            self.settlements.reserve_entry(key, actor, false);
             let home = crate::state::read().games.open_homes.read((game_id, actor));
             assert!(home != 0, "open home must be assigned before the roll");
             let entitlement = self.settlements.data.settlements.entitlements.read((game_id, actor));
@@ -354,7 +355,7 @@ pub mod SettlementLogic {
                 assert!(held.pass_kind == 2, "held Realm required");
                 assert!(command.selected_realm.is_none(), "held Realm already selected");
                 let realm_id = held.realm_id.try_into().expect('invalid canonical realm');
-                self.settlements.claim_held_realm(game_id, realm_id, home);
+                self.settlements.claim_held_realm(key, realm_id, home);
                 realm_id
             } else if let Some(selected) = command.selected_realm {
                 assert!(context.game.unbox().dev_mode_on, "development mode required");

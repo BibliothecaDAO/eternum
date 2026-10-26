@@ -59,7 +59,6 @@ export async function registerHeldRealm(
     "PlayerEntry",
   ]);
   await requireOpenFrontier(target.connection, snapshot);
-  await requireHeldWallet(target.identity, claim);
   const operator = new ShardOperator({
     ...target.connection,
     accountAddress: target.operatorAddress,
@@ -68,6 +67,7 @@ export async function registerHeldRealm(
   const read = () => operator.view<CairoOption<Entitlement>>("entry_entitlement", [claim.gameId, claim.account]);
   const previous = (await read()).unwrap();
   if (previous) return matchingEntry(previous, claim.realmId);
+  await requireHeldWallet(target.identity, claim);
   if (
     snapshot.models
       .find((model) => model.model === "PlayerEntry")!

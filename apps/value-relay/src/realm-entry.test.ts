@@ -76,7 +76,7 @@ it("registers a live held Realm and answers an exact retry without another write
   });
   expect(await registerHeldRealm(target, claim)).toEqual({ realmId: 711 });
   expect(io.admin).toHaveBeenCalledTimes(1);
-  expect(io.owner).toHaveBeenCalledTimes(2);
+  expect(io.owner).toHaveBeenCalledTimes(1);
 });
 it("refuses a Realm not currently held and a missing linked wallet", async () => {
   io.owner.mockResolvedValue("0x999");
@@ -144,4 +144,49 @@ it.each([0, 8001, 1.5, "711"])("refuses invalid Realm number %s", async (realmId
   const deps = route();
   expect((await handleRealmEntryRequest(request({ gameId: 7, realmId }), deps)).status).toBe(400);
   expect(deps.register).not.toHaveBeenCalled();
+});
+
+it("resumes the first registration after an NFT transfer and leaves a refused buyer free to choose another Realm", async () => {
+  const saved = new Map<string, typeof entitlement>();
+  const buyer = { ...claim, realmsId: "0x3", account: "0x124" };
+  io.account.mockImplementation(async (id: string) => (id === claim.realmsId ? claim.account : buyer.account));
+  io.wallet.mockImplementation(async (id: string) => (id === claim.realmsId ? "0x456" : "0x457"));
+  io.view.mockImplementation(async (method: string, args: (string | number)[]) => {
+    if (method === "settled_realm") return 0n;
+    const entry = saved.get(String(args[1]));
+    return new CairoOption(entry ? CairoOptionVariant.Some : CairoOptionVariant.None, entry);
+  });
+  io.admin.mockImplementation(
+    async (
+      method: string,
+      args: {
+        key: { game_id: number; owner: string };
+        entitlement: { realm_id: number };
+      },
+    ) => {
+      new CallData(gamesAbi).compile(method, args as never);
+      if (args.key.owner === buyer.account && args.entitlement.realm_id === 711)
+        throw new Error("Realm already registered");
+      saved.set(args.key.owner, { ...entitlement, realm_id: BigInt(args.entitlement.realm_id) });
+    },
+  );
+  const firstRoute = route();
+  const buyerRoute = { ...route(), authenticate: async () => ({ realmsId: buyer.realmsId }) };
+  const first = await handleRealmEntryRequest(request({ gameId: 7, realmId: 711 }), firstRoute);
+  expect(first.status).toBe(200);
+  expect(await first.json()).toEqual({ realmId: 711 });
+  io.owner.mockResolvedValue("0x457");
+  const refused = await handleRealmEntryRequest(request({ gameId: 7, realmId: 711 }), buyerRoute);
+  expect(refused.status).toBe(409);
+  expect(await refused.json()).toEqual({ error: "realm_registration_refused" });
+  expect(saved.has(buyer.account)).toBe(false);
+  const resumed = await handleRealmEntryRequest(request({ gameId: 7, realmId: 711 }), firstRoute);
+  expect(resumed.status).toBe(200);
+  expect(await resumed.json()).toEqual({ realmId: 711 });
+  expect(io.owner.mock.calls).toEqual([["711"], ["711"]]);
+  const alternative = await handleRealmEntryRequest(request({ gameId: 7, realmId: 712 }), buyerRoute);
+  expect(alternative.status).toBe(200);
+  expect(await alternative.json()).toEqual({ realmId: 712 });
+  expect(saved.get(claim.account)?.realm_id).toBe(711n);
+  expect(saved.get(buyer.account)?.realm_id).toBe(712n);
 });
