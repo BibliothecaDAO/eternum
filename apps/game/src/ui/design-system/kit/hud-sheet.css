@@ -845,9 +845,10 @@ span.ui-row__choose {
 }
 
 /* ── Window: a panel the size of a task (Military, Transfer), its title bar and a way out. ── */
-/* ── Sheet: a panel over the stage; on a phone it rises from the place bar to at most half the screen, on a desktop it
-   docks under the top bar. It never takes the stage: no backdrop, so the map beside or above it still answers a tap
-   (owner, 22 October 2026: mobile direction A). `--hud-phone-foot` is the height HudBands keeps for its place bar. ── */
+/* ── Sheet: a panel over the stage; on a phone it rises from the place bar, as tall as what it holds and at most the
+   phone panel's height, on a desktop it docks under the top bar. It never takes the stage: no backdrop, so the map
+   beside or above it still answers a tap (owner, 22 October 2026: mobile direction A; 26 October: panel layout A).
+   `--hud-phone-foot` is the height HudBands keeps for its place bar. ── */
 .ui-sheet {
   position: fixed;
   inset-inline: theme(spacing.2);
@@ -863,12 +864,16 @@ span.ui-row__choose {
 .ui-sheet > .ui-window__foot {
   flex-shrink: 0;
 }
-.ui-sheet__grip {
-  display: block;
-  width: theme(spacing.10);
-  height: theme(spacing.1);
-  border-radius: 9999px;
-  background: var(--hud-line-strong);
+/* A phone sheet's head is one control-high row: its name and its way out, and a drag down on it closes the sheet. */
+@media (max-width: 1023px) {
+  .ui-sheet__head {
+    touch-action: none;
+  }
+  .ui-sheet__head > .ui-panel__head {
+    min-height: var(--hud-control);
+    padding-block: 0;
+    padding-inline-end: theme(spacing.1);
+  }
 }
 .ui-sheet__body {
   display: flex;

@@ -27,7 +27,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { OpenedFromPanel } from "./opened-from-panel";
-import { SheetHandle, useSheetCloses } from "./sheet-closes";
+import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
 import { BACK, CLOSE, TIER_WORDS, TRY_AGAIN } from "./words";
 
 /**
@@ -1282,8 +1282,9 @@ export const SheetDock = createContext<HTMLElement | null>(null);
 
 /**
  * A sheet over the stage: the panel's look, its name in the header band and its way out as the cue (a cross, or a back
- * arrow when it opened from another panel, whose place it takes). On a phone it rises from the place bar to at most half
- * the screen with a handle (a tap or a drag down closes it), and the map above it stays playable; from the desktop width
+ * arrow when it opened from another panel, whose place it takes). On a phone it rises from the place bar, as tall as
+ * what it holds and at most the phone panel's height, under that one row (owner, 26 October 2026: layout A), which a
+ * drag down also closes; the map above it stays playable. From the desktop width
  * up it docks under the top bar or in its host's SheetDock, with the stage playable beside it. Escape and system back
  * close it on both. Its foot is a window's (HudWindowFoot), so the verb and cost stay visible while the body scrolls.
  */
@@ -1292,6 +1293,7 @@ export const HudSheet = ({ label, onClose, children }: { label: string; onClose:
   const dock = useContext(SheetDock);
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   useSheetCloses(onClose);
+  const drag = useDragDownCloses(onClose);
   const sheet = (
     <section
       role="dialog"
@@ -1300,10 +1302,8 @@ export const HudSheet = ({ label, onClose, children }: { label: string; onClose:
       data-docked={dock ? "" : undefined}
       className="ui ui-panel ui-sheet"
     >
-      <SheetHandle onClose={onClose}>
-        <i className="ui-sheet__grip" />
-      </SheetHandle>
-      <PanelHead
+      <div className="ui-sheet__head" {...drag.handlers}>
+        <PanelHead
         title={label}
         cue={
           <HudIconButton
@@ -1316,6 +1316,7 @@ export const HudSheet = ({ label, onClose, children }: { label: string; onClose:
         }
         press={null}
       />
+      </div>
       <WindowFootContext.Provider value={foot}>
         <div className="ui-sheet__body">{children}</div>
       </WindowFootContext.Provider>

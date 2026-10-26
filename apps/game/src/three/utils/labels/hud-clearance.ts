@@ -28,17 +28,27 @@ interface ScreenArea {
   bottom: number;
 }
 
+/** An open sheet (the HUD kit's HudSheet and the app kit's Sheet) marks itself with this attribute. */
+const SHEET_ATTRIBUTE = "data-kit-sheet";
+
 /**
  * The map's open area on screen, where what the HUD sends the camera to stays in sight: between the side columns, below
- * their tops and a phone's top band, and above the foot (the order bubbles; a phone's action row, dock and place bar).
- * The whole viewport where the HUD marks nothing.
+ * their tops and a phone's top band, and above the foot (the order bubbles; a phone's action row, dock and place bar,
+ * and a sheet standing on it across the screen's middle, as a phone's does). The whole viewport where the HUD marks
+ * nothing.
  */
 export function openMapArea(viewport: { width: number; height: number }, root: ParentNode = document): ScreenArea {
   const middle = viewport.width / 2;
   const columns = [...root.querySelectorAll(`[${HUD_COLUMN_ATTRIBUTE}]`)].map((column) =>
     column.getBoundingClientRect(),
   );
-  const feet = [...root.querySelectorAll(`[${HUD_FOOT_ATTRIBUTE}]`)].map((foot) => foot.getBoundingClientRect());
+  const sheets = [...root.querySelectorAll(`[${SHEET_ATTRIBUTE}]`)]
+    .map((sheet) => sheet.getBoundingClientRect())
+    .filter((sheet) => sheet.height > 0 && sheet.left < middle && sheet.right > middle);
+  const feet = [
+    ...[...root.querySelectorAll(`[${HUD_FOOT_ATTRIBUTE}]`)].map((foot) => foot.getBoundingClientRect()),
+    ...sheets,
+  ];
   const tops = [...root.querySelectorAll(`[${HUD_TOP_ATTRIBUTE}]`)].map((top) => top.getBoundingClientRect().bottom);
   return {
     left: Math.max(0, ...columns.filter((column) => column.right <= middle).map((column) => column.right)),

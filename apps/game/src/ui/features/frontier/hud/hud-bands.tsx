@@ -37,8 +37,9 @@ type Bands = {
  * row, the notices. Held sideways, the places stand in a rail at the left and the rest in one column at the right, the
  * map between them. A nav page (Research, the Log, Chat, the season) stands where the action row and the dock stood, and
  * the map stays clear of it; a sheet stands in the same place (`--hud-phone-foot` upright, `--hud-sheet-top` sideways,
- * which hud-sheet.css reads). While either is open, the action row and the dock step aside under it; the notices stay.
- * A desktop has the HUD every mode shares (FrontierDesktop).
+ * which hud-sheet.css reads), as tall as what it holds up to the phone panel's height. While either is open, the action
+ * row and the dock step aside under it and Next up's row folds away, so the map keeps what they took (owner, 26 October
+ * 2026: layout A); the notices stay. A desktop has the HUD every mode shares (FrontierDesktop).
  */
 export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />);
 
@@ -49,7 +50,7 @@ const UprightBands = ({ strip, purse, stage, page, nextUp, notices, action, dock
   return (
     <div
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden"
+      className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
       style={{ ...SAFE_AREA, "--hud-phone-foot": `${foot}px` } as CSSProperties}
     >
       <div {...HUD_TOP_MARK} className="flex flex-col gap-1.5">
@@ -59,7 +60,7 @@ const UprightBands = ({ strip, purse, stage, page, nextUp, notices, action, dock
       <div className="relative min-h-0 flex-1">{stage}</div>
       <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5">
         <div className="flex flex-col gap-1.5">{notices}</div>
-        {page ? <PageBand className="h-hud-phone-panel">{page}</PageBand> : <UnderSheet action={action} dock={dock} />}
+        {page ? <PageBand className="max-h-hud-phone-panel">{page}</PageBand> : <UnderSheet action={action} dock={dock} />}
         <div ref={bar}>{nav}</div>
       </div>
       {children}
@@ -74,7 +75,7 @@ const SidewaysBands = ({ strip, purse, stage, page, nextUp, notices, action, doc
   return (
     <div
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-0 z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden"
+      className="pointer-events-none fixed inset-0 z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
       style={{ ...SAFE_AREA, "--hud-sheet-top": `${sheetTop}px` } as CSSProperties}
     >
       <div {...HUD_COLUMN_MARK} className="flex">
@@ -94,9 +95,9 @@ const SidewaysBands = ({ strip, purse, stage, page, nextUp, notices, action, doc
   );
 };
 
-/** Under the strip: Next up's line, and the purse at its right. */
+/** Under the strip: Next up's line, and the purse at its right; folded away while a sheet or a page is open. */
 const TopRow = ({ nextUp, purse }: { nextUp: ReactNode; purse: ReactNode }) => (
-  <div className="flex items-start gap-1.5">
+  <div data-top-row className="flex items-start gap-1.5">
     <div data-next-up className="min-w-0 flex-1">
       {nextUp}
     </div>
