@@ -36,6 +36,26 @@ describe("StructureActionManager.findActionPaths", () => {
     vi.restoreAllMocks();
   });
 
+  it("raises an army only onto an explored neighbour nothing occupies: not beside a site or a chest", () => {
+    const [site, open] = getNeighborHexes(STRUCTURE_POSITION.col, STRUCTURE_POSITION.row);
+    const exploredHexes = new Map<number, Map<number, BiomeType>>();
+    for (const hex of [site, open]) {
+      setNestedMapValue(exploredHexes, hex.col - TEST_FELT_CENTER, hex.row - TEST_FELT_CENTER, 1 as BiomeType);
+    }
+    const isOccupied = (hex: { col: number; row: number }) => hex.col === site.col && hex.row === site.row;
+
+    const actionPaths = new StructureActionManager().findActionPaths(
+      STRUCTURE_POSITION,
+      new Map(),
+      exploredHexes,
+      0x123n as never,
+      isOccupied,
+    );
+
+    expect(actionPaths.get(ActionPaths.posKey(site))).toBeUndefined();
+    expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(open))!)).toBe(ActionType.CreateArmy);
+  });
+
   it("does not add ranged attacks for unexplored enemy armies", () => {
     const targetHex = findRadiusTwoHex();
     const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
@@ -49,6 +69,7 @@ describe("StructureActionManager.findActionPaths", () => {
       armyHexes,
       exploredHexes,
       0x123n as never,
+      () => false,
       2,
     );
 
@@ -74,6 +95,7 @@ describe("StructureActionManager.findActionPaths", () => {
       armyHexes,
       exploredHexes,
       0x123n as never,
+      () => false,
       2,
     );
 
