@@ -123,6 +123,7 @@ describe("StructureActionManager.findActionPaths", () => {
       armyHexes,
       exploredHexes,
       0x123n as never,
+      () => false,
       2,
     );
 
