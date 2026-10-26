@@ -460,6 +460,18 @@ export const ROOMS: LabRoom[] = [
           ),
         ],
       },
+      {
+        title: "UI clutter",
+        modes: ["frontier", "blitz"],
+        views: [
+          view(
+            "UI clutter",
+            "/lab/data/clutter",
+            "data/clutter",
+            load(() => import("./data/ui-clutter"), "UiClutterView"),
+          ),
+        ],
+      },
     ],
   },
   {

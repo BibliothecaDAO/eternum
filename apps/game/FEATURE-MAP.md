@@ -11,15 +11,17 @@ Next-season research proposals: `/lab/data?mode=frontier&view=balance` (Data →
 players never use, ranked from prod's counts with a HUD screenshot beside each: `/lab/data/usage` (Data → UI usage, the
 Game switch picks Blitz or Frontier); every number is the newest live-data pull's:
 `apps/game/scripts/live-data/live-data.py all`, run from the folder that keeps the pulls, writes the pull's `usage.json`
-(read at `/live-data/usage.json`; stills at `/live-data/usage-shots`). **Storage** compares deleting storage research
-with smaller late-game base stores; pick a realm and plan a Farm or Workshop upgrade. **Research paths** compares
-separate side levels, a shared four-purchase budget and the current rule; start with Drill level 2 and try Drill level 3
-or Rations level 2. **Beast labor** compares three guard-based clear payouts at every depth and replays 28 recorded
-clears. Plans are local fixtures and send no game commands. Serve the client on an assigned port, open the route with
-`&evidence=/absolute/new/capture/directory` (use `?` without another query), then run
-`scripts/frontier/prove-research-balance.playwright.js` through the Playwright connection with the page as its argument.
-It clicks the proposals, verifies results and captures desktop and phone; keep its returned transcript with the images.
-No gameplay or preset rule changes are part of this study.
+(read at `/live-data/usage.json`; stills at `/live-data/usage-shots`). What a player sees on each surface and what can
+go, strongest cut first, each surface's still beside a mock with its cuts: `/lab/data/clutter` (Data → UI clutter, the
+Game switch picks Blitz or Frontier; reads `/clutter-audit/clutter.json` and its stills, the audit's page folder).
+**Storage** compares deleting storage research with smaller late-game base stores; pick a realm and plan a Farm or
+Workshop upgrade. **Research paths** compares separate side levels, a shared four-purchase budget and the current rule;
+start with Drill level 2 and try Drill level 3 or Rations level 2. **Beast labor** compares three guard-based clear
+payouts at every depth and replays 28 recorded clears. Plans are local fixtures and send no game commands. Serve the
+client on an assigned port, open the route with `&evidence=/absolute/new/capture/directory` (use `?` without another
+query), then run `scripts/frontier/prove-research-balance.playwright.js` through the Playwright connection with the page
+as its argument. It clicks the proposals, verifies results and captures desktop and phone; keep its returned transcript
+with the images. No gameplay or preset rule changes are part of this study.
 
 Frontier exploration has a 1/10,000 chance per newly revealed surface tile to find a funded reward chest. Select its
 labelled map tile; an adjacent own living army can Open it. The panel shows its reserved common-share LORDS amount and
