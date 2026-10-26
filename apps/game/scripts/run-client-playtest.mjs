@@ -59,6 +59,11 @@ const BROWSER_ARGS = [
   "--js-flags=--expose-gc",
   "--enable-precise-memory-info",
 ];
+/** The GPU WebGPU draws on: the machine's default, or its integrated one (`--gpu low-power`), a laptop's class of GPU. */
+const GPUS = { default: [], "low-power": ["--use-webgpu-power-preference=force-low-power"] };
+
+/** The browser's launch flags for a run on `gpu`. */
+export const browserArgsFor = (gpu) => [...BROWSER_ARGS, ...GPUS[gpu]];
 
 /** The command's options, refused when they cannot describe a run. Paths are taken from where the command was run. */
 export function readPlaytestOptions(argv, callerDir = process.cwd()) {
@@ -87,6 +92,9 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     throw new Error(`--steps takes ${Object.keys(STEP_SETS).join(", ")}, not "${stepSet}"`);
   }
 
+  const gpu = option("--gpu", "default");
+  if (!GPUS[gpu]) throw new Error(`--gpu takes ${Object.keys(GPUS).join(" or ")}, not "${gpu}"`);
+
   const viewport = /^(\d+)x(\d+)$/.exec(option("--viewport", "1920x1080"));
   if (!viewport) throw new Error(`--viewport takes <width>x<height>, not "${option("--viewport")}"`);
 
@@ -96,6 +104,7 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     comparePath: option("--compare", null) && resolve(callerDir, option("--compare")),
     cpuThrottle: integer("--cpu-throttle", DEFAULTS.cpuThrottle, 1),
     gameId: Number(option("--game-id", "0")),
+    gpu,
     headed: argv.includes("--headed"),
     iterations: integer("--iterations", DEFAULTS.iterations, 1),
     outRoot: resolve(callerDir, option("--out", join(REPO_ROOT, ".context/playtest"))),
@@ -278,7 +287,7 @@ async function playRun(context) {
       "--init-script",
       PROBE_PATH,
       "--args",
-      BROWSER_ARGS.join(","),
+      browserArgsFor(context.gpu).join(","),
     ]);
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
@@ -396,6 +405,7 @@ function writeRunEvidence({ browser, context, record }) {
     machine: {
       cpus: availableParallelism(),
       cpuThrottle: context.cpuThrottle,
+      gpu: context.gpu,
       loadAverageMax: Math.max(...record.loadSamples),
       loadSampleEveryMs: LOAD_SAMPLE_MS,
       loadSamples: record.loadSamples,

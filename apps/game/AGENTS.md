@@ -115,7 +115,8 @@ pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --iterations 1  
 ```
 
 Options: `--renderer-modes webgpu-auto,webgpu-force-webgl` (default both), `--iterations` (default 3),
-`--cpu-throttle 4` (Chrome's CPU slowdown of this machine; not a measured laptop), `--chain-id` and `--game-id`,
+`--cpu-throttle 4` (Chrome's CPU slowdown of this machine; not a measured laptop), `--gpu low-power` (WebGPU on the
+machine's integrated GPU instead of its default one; check the screenshots, as a driver may draw the map wrong), `--chain-id` and `--game-id`,
 `--steps ownership-rings` (the map unselected, the player's realm selected with its owner's holdings ringed, held and
 panned, then cleared: the rings' frame cost; each phase checks the selection and ring count the page reports in
 `window.__eternumMapSelection`, and fails on a build that does not report them), `--steps blitz-orders` (a seated player
