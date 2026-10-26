@@ -1122,6 +1122,15 @@ button.ui-relic:focus-visible {
   order: 2;
   margin-left: auto;
 }
+/* A note that says why the verb cannot run takes its own line over the buttons: beside a fix and the verb, a phone's
+   foot would squeeze it into a column a word wide. */
+.ui-actions:has(> .ui-actions__note .ui-notice) {
+  flex-wrap: wrap;
+}
+.ui-actions__note:has(.ui-notice) {
+  order: -1;
+  flex-basis: 100%;
+}
 
 /* ── Window footer: the window's actions, under a rule. ── */
 .ui-window__foot:empty {

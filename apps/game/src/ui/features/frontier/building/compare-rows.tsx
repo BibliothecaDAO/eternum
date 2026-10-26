@@ -72,7 +72,7 @@ export const CompareRows = ({ now, next, rows }: { now: ReactNode; next?: ReactN
             {face}
           </button>
         ) : (
-          <div key={row.word} className={cn(grid, "px-2 py-1")}>
+          <div key={row.word} className={cn(grid, "px-2 py-0.5")}>
             {face}
           </div>
         );

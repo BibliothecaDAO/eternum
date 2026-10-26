@@ -102,7 +102,7 @@ const LaborMade = ({ makes }: { makes: CastleMakes }) => (
 /** A level's head in the table: its painting and its name. */
 const LevelHead = ({ side }: { side: CastleSide }) => (
   <span className="flex flex-col items-center">
-    <Icon name={side.art} alt="" size={40} />
+    <Icon name={side.art} alt="" size={32} />
     {REALM_LEVELS[side.level]}
   </span>
 );

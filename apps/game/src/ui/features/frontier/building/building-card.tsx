@@ -139,14 +139,14 @@ export const BuildingCardView = ({
             </span>
             {node && <HudRarity tier={tierOf(node.tier)} />}
           </div>
+          {makes && (
+            <span data-tip={makes.why} className="flex items-center gap-1.5 text-hud-title tabular-nums text-hud-ink">
+              <Icon name={makes.icon} size={28} />
+              {makes.rate}
+            </span>
+          )}
           {demolish}
         </div>
-        {makes && (
-          <span data-tip={makes.why} className="flex w-fit items-center gap-2 text-hud-title tabular-nums text-hud-ink">
-            <Icon name={makes.icon} size={32} />
-            {makes.rate}
-          </span>
-        )}
         {node && (
           <CompareRows
             now={<HudRarity tier={tierOf(node.tier)} />}
