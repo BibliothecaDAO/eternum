@@ -8,6 +8,7 @@ import {
   buildingName,
   CHEST_EARNED,
   fightVerdict,
+  formatCharge,
   formatGain,
   resourceName,
   type ResourcesIds,
@@ -20,10 +21,13 @@ import {
  * A Feed row as Frontier's Feed draws it (owner, 26 October 2026: "in the feed I wanna see the player names even for
  * exploring"; option A): who did it, what they did and to what, what came of it, and what it paid.
  */
-export interface FeedReading {
+export type FeedReading = ToldReading | OwnWords;
+
+/** A story taken apart: who did it, what they did and to what, what came of it, and what it paid. */
+export interface ToldReading {
   /** The player who acted: a fight's attacker, any other story's owner. */
   actor: string;
-  /** The act after the name: "explored", "cleared", "attacked". Empty for a story told in its own words. */
+  /** The act after the name: "explored", "cleared", "attacked". */
   verb: string;
   /** The act's painting, at the row's head. */
   act: IconMeaning;
@@ -32,8 +36,15 @@ export interface FeedReading {
   outcome?: { word: string; tone: "good" | "bad" | "neutral" };
   /** What it paid, as its story's rule writes it: a find under a unit pays nothing to show (findGain). */
   reward?: { amount: string; icon: IconMeaning; name: string };
-  /** A story this reading does not take apart: its own words stand after the name. */
-  words?: string;
+}
+
+/**
+ * A story this reading does not take apart, in its own words alone: they name the player wherever they do not name a
+ * place ("Maelis moved troops", "Qeuvaingauv founded"), so a name before them would say it twice.
+ */
+interface OwnWords {
+  act: IconMeaning;
+  words: string;
 }
 
 const BUILDING_CHANGES: Record<string, string> = {
@@ -108,6 +119,13 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
           icon: attributeMark(String(payload.attribute).toLowerCase() as AttributeKey),
         },
       };
+    case "TroopsTransferred":
+      return {
+        actor,
+        verb: "moved",
+        act: "military",
+        object: { name: `${formatCharge(scaledToUnits(BigInt(String(payload.amount ?? 0))))} troops` },
+      };
     case "BuildingPaymentStory":
     case "BuildingPlacementStory": {
       const change = story.story === "BuildingPaymentStory" ? "Created" : String(payload.change);
@@ -116,7 +134,7 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
       return { actor, verb, act: "build", object: { name: buildingName(Number(payload.category), true) } };
     }
     default:
-      return { actor, verb: "", act: "chronicles", words: story.presentation.title };
+      return { act: "chronicles", words: story.presentation.title };
   }
 };
 
@@ -131,7 +149,7 @@ const paid = (
   resource: unknown,
   amount: unknown,
   rule: (units: number | undefined) => string | null,
-): FeedReading["reward"] => {
+): ToldReading["reward"] => {
   const written = rule(scaledToUnits(BigInt(String(amount ?? 0))));
   if (written === null) return undefined;
   const id = Number(resource) as ResourcesIds;
@@ -148,7 +166,7 @@ const siteAt = (coord: unknown, store: NativeFactStore) => {
 };
 
 /** A site by its one name, with its guard's painting where a beast guards it, else its kind's. */
-const siteObject = (entityId: unknown, store: NativeFactStore): FeedReading["object"] => {
+const siteObject = (entityId: unknown, store: NativeFactStore): ToldReading["object"] => {
   const id = Number(entityId);
   const gameId = configManager.getActiveGameId();
   const site = store.get("ExpeditionSite", { game_id: gameId, entity_id: BigInt(id) });

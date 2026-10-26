@@ -82,7 +82,7 @@ const draw = async (row: ProcessedStoryEvent, own = false) => {
   return {
     words: line.querySelector(".ui-event__text")!.textContent,
     reward: line.querySelector(".ui-feed-line__reward")?.textContent ?? null,
-    gold: line.querySelector("strong")!.className.includes("text-hud-gold"),
+    gold: line.querySelector("strong")?.className.includes("text-hud-gold") ?? null,
   };
 };
 
@@ -140,4 +140,18 @@ it("says what an army trained in the story's own words", async () => {
   const row = story(KRUMP, "TierBought", { explorer_id: 71, attribute: "Logistics", tier: 2, price: 100, kind: null });
   expect((await draw(row)).words).toBe("Krump trained Logistics uncommon");
   expect(host.querySelector(".ui-event__text .ui-feed-line__glyph")!.getAttribute("data-icon")).toBe("order-skill");
+});
+
+it("names who moved troops once, with how many moved (prod's day: 'Maelis Maelis moved 1,095 troops')", async () => {
+  const row = story(KRUMP, "TroopsTransferred", {
+    amount: "0xfef3160600",
+    source: { Explorer: "0x1703b000000026" },
+    target: { Explorer: "0x1703b00000002a" },
+  });
+  expect(await draw(row)).toEqual({ words: "Krump moved 1,095 troops", reward: null, gold: false });
+});
+
+it("writes a story it does not take apart in its own words, which name the player once", async () => {
+  const row = story(KRUMP, "RealmCreatedStory", { coord: { x: 2147483650, y: 2147483652, alt: false } });
+  expect(await draw(row)).toEqual({ words: "Krump founded a realm", reward: null, gold: null });
 });

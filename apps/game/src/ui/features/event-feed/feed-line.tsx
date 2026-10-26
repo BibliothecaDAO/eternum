@@ -4,7 +4,7 @@ import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Icon } from "@/ui/design-system/icon";
 import { formatClockTime } from "@bibliothecadao/types";
 
-import { readFeedStory, type FeedReading } from "./feed-reading";
+import { readFeedStory, type ToldReading } from "./feed-reading";
 import { useStoryOpener } from "./story-feed-row";
 
 const OUTCOME_TONES = { good: "text-hud-good", bad: "text-hud-bad", neutral: "text-hud-muted" } as const;
@@ -27,10 +27,15 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
       <span className="ui-event__time">{formatClockTime(story.timestampMs / 1000)}</span>
       <Icon name={reading.act} size={16} className="ui-event__icon" />
       <span className="ui-event__text">
-        <strong className={own ? "text-hud-gold" : undefined}>{names.text(reading.actor)}</strong>{" "}
-        {reading.words ?? reading.verb}
-        {reading.object && <ObjectWords object={reading.object} names={names.text} />}
-        {reading.outcome && <span className={OUTCOME_TONES[reading.outcome.tone]}> · {reading.outcome.word}</span>}
+        {"words" in reading ? (
+          reading.words
+        ) : (
+          <>
+            <strong className={own ? "text-hud-gold" : undefined}>{names.text(reading.actor)}</strong> {reading.verb}
+            {reading.object && <ObjectWords object={reading.object} names={names.text} />}
+            {reading.outcome && <span className={OUTCOME_TONES[reading.outcome.tone]}> · {reading.outcome.word}</span>}
+          </>
+        )}
       </span>
     </>
   );
@@ -43,7 +48,7 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
       ) : (
         words
       )}
-      {reading.reward && (
+      {"reward" in reading && reading.reward && (
         <span className="ui-feed-line__reward" data-tip={reading.reward.name}>
           <Icon name={reading.reward.icon} size={16} alt={reading.reward.name} className="ui-feed-line__glyph" />
           {reading.reward.amount}
@@ -58,7 +63,7 @@ const ObjectWords = ({
   object,
   names,
 }: {
-  object: NonNullable<FeedReading["object"]>;
+  object: NonNullable<ToldReading["object"]>;
   names: (address: string) => string;
 }) => (
   <>
