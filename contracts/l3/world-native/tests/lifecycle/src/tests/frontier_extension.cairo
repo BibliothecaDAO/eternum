@@ -27,7 +27,7 @@ fn setup() -> super::Deployment {
     let release = releases.release(1);
     releases.register_release(2, release);
     releases.register_release(3, release);
-    for id in 1..3 {
+    for id in 1_u32..3 {
         releases.apply_release(id, 2);
         releases.apply_release(id, 3);
     }
