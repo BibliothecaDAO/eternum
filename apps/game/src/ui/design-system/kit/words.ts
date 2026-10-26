@@ -141,15 +141,17 @@ export const EVENTS_WORDS = {
   feed: "Feed",
   /** Its ×: the Feed goes and leaves its place empty; its place opens it again. */
   closeFeed: "Close the feed",
-  lenses: { world: "World", mine: "Mine", important: "Important" },
+  /** The lenses' group, for assistive technology: Events, the Log and the Feed alike. */
+  lens: "Show",
+  lenses: { important: "Important", all: "All" },
   lensTips: {
-    world: "Everything players do in the world, yours in gold",
-    mine: "Everything about you: your actions, your realms' news and what happened to them",
-    important: "Your fights and captures, armies lost, crates you opened, refused orders and the game's milestones",
+    important: "Your fights and captures, armies lost, crates you opened and a Hyperstructure taken by anyone",
+    all: "Everything players do in the world",
   },
   failed: "Event history could not load.",
 } as const;
 export const SETTINGS_WORDS = {
+  app: "App",
   shortcuts: "Keyboard shortcuts",
   show: "Show",
 } as const;

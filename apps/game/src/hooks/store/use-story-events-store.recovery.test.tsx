@@ -455,7 +455,7 @@ it("reads the world's stories again each time a reader opens, so another player'
   });
   history.mockResolvedValue(answer([chestOpened(10, "0xd1")], 10));
   const client = new QueryClient();
-  // The Log's World history: every player's stories, which a Frontier client's stream never carries.
+  // All's world history: every player's stories, which a Frontier client's stream never carries.
   const World = () => (
     <ol>
       {useStoryEvents(350).data.map((event) => (

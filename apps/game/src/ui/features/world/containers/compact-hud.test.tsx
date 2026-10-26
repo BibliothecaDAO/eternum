@@ -14,8 +14,7 @@ vi.mock("@/ui/features/world/components/bottom-right-panel", () => ({
 vi.mock("@/ui/features/event-feed/quick-feed", () => ({
   FeedToasts: () => null,
   UnreadFeedBadge: () => null,
-  useEventsFeed: () => ({ stories: [] }),
-  useUnreadFeedCount: () => 0,
+  useUnreadImportantCount: () => 0,
 }));
 vi.mock("@/ui/features/event-feed/event-log-panel", () => ({ EventLogPanel: () => null }));
 vi.mock("@/ui/features/social", () => ({ useRealtimeChatSelector: () => 0 }));
