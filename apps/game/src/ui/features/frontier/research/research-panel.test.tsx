@@ -107,3 +107,23 @@ it("brings the picked node's Research button into view on each pick, back to the
   expect(detailButtons.at(-1)?.textContent).toMatch(/^Research/);
   vi.restoreAllMocks();
 });
+
+it("says on the Farm's make side what each Farm makes now, its base and its research share, and nothing on Granary", () => {
+  const withOutput = readResearchTree({ ...MID_REALM, eachMakes: { 0: "+6.3/min (5 + 25% Fields)" } });
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={withOutput}
+        essence={MID_REALM.essence}
+        labor={MID_REALM.labor}
+        picked="row-0"
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={vi.fn()}
+      />,
+    ),
+  );
+  expect(button(/^Fields/)!.textContent).toContain("Each Farm: +6.3/min (5 + 25% Fields)");
+  expect(button(/^Granary/)!.textContent).not.toContain("Each Farm");
+});

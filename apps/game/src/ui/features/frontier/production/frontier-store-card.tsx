@@ -7,6 +7,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { useGoToFrontierPlace } from "../frontier-home";
 import { useRealmStores } from "../realm-stores";
 import { sidesTaken } from "../research/sides-taken";
+import { storeMakerLines } from "./store-makers";
 import { type SpentAt, StoreCard, type StoreLine } from "./store-card";
 
 /** The stores a card opens for: the resource each reads, its research row and where it is spent when full. */
@@ -52,6 +53,7 @@ export const FrontierStoreCard = ({
     tone: reading?.tone ?? "calm",
     fullIn: reading?.fullIn,
     noBuilding: manager.current(resource)?.production?.building_count === 0,
+    makers: storeMakerLines(setup.store, realm, resource),
     spentAt,
   };
   return (

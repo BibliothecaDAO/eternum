@@ -221,6 +221,11 @@ const NodeDetail = ({
                 <span className="text-hud-strong tabular-nums text-hud-good">
                   {RESEARCH_TREE.step(option.now, option.next)}
                 </span>
+                {option.output && (
+                  <span className="text-hud-label tabular-nums text-hud-muted">
+                    {RESEARCH_TREE.eachMakes(node.name, option.output)}
+                  </span>
+                )}
               </button>
             ))}
           </div>
