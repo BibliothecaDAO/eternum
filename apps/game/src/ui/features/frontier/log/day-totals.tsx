@@ -29,7 +29,7 @@ export const DayTotalsGrid = ({ totals }: { totals: DayTotals }) => (
 );
 
 /** One total: its icon, the name the icon stands for, and its figure. */
-type TotalCell = { icon: IconMeaning; name: string; value: string };
+export type TotalCell = { icon: IconMeaning; name: string; value: string };
 
 /**
  * Totals, three to a row: a day's, or a season's. Each cell is its icon beside its figure, named in words under it

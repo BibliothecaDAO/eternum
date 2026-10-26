@@ -44,11 +44,11 @@ describe("a lord and a realm's Order on the HUD", () => {
     expect(render(<LordName account="0xabc" you />).textContent).toBe("You");
   });
 
-  it("shows a realm's rank by its castle, with its deepest reach as a badge, and no badge before the first", () => {
-    const deep = render(<RealmBadge level={1} reach={2} />);
+  it("shows a realm's rank by its castle, with its depth as a badge, and no badge before the first", () => {
+    const deep = render(<RealmBadge level={1} depth={2} />);
     expect(deep.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe("City · Ethereal II");
     expect(deep.textContent).toBe("II");
-    const home = render(<RealmBadge level={0} reach={0} />);
+    const home = render(<RealmBadge level={0} depth={0} />);
     expect(home.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe("Settlement");
     expect(home.textContent).toBe("");
   });

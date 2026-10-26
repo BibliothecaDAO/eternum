@@ -152,7 +152,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     surface === "research" && realm ? (
       <FrontierResearch key={researchPick} realm={realm} pick={researchPick} />
     ) : surface === "season" ? (
-      <FrontierSeason rules={rules} onBack={close} />
+      <FrontierSeason rules={rules} onVisited={close} />
     ) : undefined;
   const stage = dockRealm && !visit && <LastHour rules={rules} realm={dockRealm} />;
   const notices = (

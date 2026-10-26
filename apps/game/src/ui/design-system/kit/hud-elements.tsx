@@ -28,7 +28,7 @@ import { createPortal } from "react-dom";
 
 import { OpenedFromPanel } from "./opened-from-panel";
 import { SheetHandle, useSheetCloses } from "./sheet-closes";
-import { BACK, CLOSE, TIER_WORDS, TRY_AGAIN } from "./words";
+import { BACK, CLOSE, type Tier, TIER_WORDS, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -749,17 +749,26 @@ export const HudTierChip = ({ tier }: { tier: 1 | 2 | 3 }) => (
 );
 
 /**
- * A chest's rarity, common to legendary: its pips filled to its tier on a frame that thickens and warms with it, its
- * word beside them where there is room. Not a troop tier: a rarity has five steps and no colours of its own kind.
+ * A chest's rarity, common to legendary: its word on a plate whose frame thickens and warms with it. Not a tier of
+ * something the player levels: a chest is found at its rarity and keeps it.
  */
-export const HudRarity = ({ tier, word = false }: { tier: 1 | 2 | 3 | 4 | 5; word?: boolean }) => (
+export const HudRarity = ({ tier }: { tier: Tier }) => (
+  <span className="ui-rarity" data-tier={tier}>
+    {TIER_WORDS[tier - 1]}
+  </span>
+);
+
+/**
+ * The tier a player levels something to, common to legendary (a building type's row, a Barracks gate, an army's
+ * attribute): its pips filled to the tier on the rarity's plate.
+ */
+export const HudTier = ({ tier }: { tier: Tier }) => (
   <span className="ui-rarity" data-tier={tier} role="img" aria-label={TIER_WORDS[tier - 1]}>
     <span aria-hidden className="ui-rarity__pips">
       {TIER_WORDS.map((name, index) => (
         <i key={name} data-filled={index < tier || undefined} />
       ))}
     </span>
-    {word && <span aria-hidden>{TIER_WORDS[tier - 1]}</span>}
   </span>
 );
 

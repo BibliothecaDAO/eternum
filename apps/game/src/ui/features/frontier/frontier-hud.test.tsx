@@ -178,7 +178,7 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
   }
 });
 
-it("draws every realm on the Season board with its rank and reach, from Herald's entry, though no realm is streamed", async () => {
+it("draws every realm on the Season board with its rank and depth, from Herald's entry, though no realm is streamed", async () => {
   // Three realms the lab's game streams none of: their Structure rows are absent from the store.
   const entry = (rank: number, level: number, depth: number) => ({
     address: `0x${(0xa00 + rank).toString(16)}`,

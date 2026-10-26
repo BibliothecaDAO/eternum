@@ -3,20 +3,20 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
 import { iconDefinition, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudPortrait } from "@/ui/design-system/kit/hud-elements";
-import { REACH_NUMERALS, RESEARCH_TREE, YOU } from "@/ui/design-system/kit/words";
+import { DEPTH_NUMERALS, depthName, YOU } from "@/ui/design-system/kit/words";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { rankName } from "@bibliothecadao/types";
 
-/** Each reach's painting, I to III. */
-const REACH_ICONS = ["depth-1", "depth-2", "depth-3"] as const;
+/** Each depth's painting, I to III. */
+const DEPTH_ICONS = ["depth-1", "depth-2", "depth-3"] as const;
 
 /**
- * A realm on the season's board as the owner asked (22 October): its rank's painting, and the deepest Ethereal reach it
- * has gone to as a badge on its corner (none before the first).
+ * A realm on the season's board as the owner asked (22 October): its rank's painting, and the deepest depth it has
+ * gone to as a badge on its corner (none before the first).
  */
-export const RealmBadge = ({ level, reach }: { level: number; reach: number }) => {
-  const step = Math.min(reach, REACH_NUMERALS.length);
-  const line = step > 0 ? `${rankName(level)} · ${RESEARCH_TREE.reach(REACH_NUMERALS[step - 1])}` : rankName(level);
+export const RealmBadge = ({ level, depth }: { level: number; depth: number }) => {
+  const step = Math.min(depth, DEPTH_NUMERALS.length) as 0 | 1 | 2 | 3;
+  const line = step === 0 ? rankName(level) : `${rankName(level)} · ${depthName(step)}`;
   return (
     <span role="img" aria-label={line} data-tip={line} className="relative inline-flex size-7 shrink-0">
       <Icon name={realmMeaning(level)} size={28} />
@@ -25,8 +25,8 @@ export const RealmBadge = ({ level, reach }: { level: number; reach: number }) =
           aria-hidden
           className="absolute -bottom-1 -right-2 inline-flex items-center rounded-full border border-hud-line-strong bg-hud-surface pl-0.5 pr-1 text-hud-badge leading-4 text-hud-accent"
         >
-          <Icon name={REACH_ICONS[step - 1]} size={12} />
-          {REACH_NUMERALS[step - 1]}
+          <Icon name={DEPTH_ICONS[step - 1]} size={12} />
+          {DEPTH_NUMERALS[step - 1]}
         </span>
       )}
     </span>

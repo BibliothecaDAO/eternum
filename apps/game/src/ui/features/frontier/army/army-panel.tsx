@@ -1,6 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudMeter, HudPortrait, HudRarity } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudMeter, HudPortrait, HudTier } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY_DETAIL,
   BACK,
@@ -125,7 +125,7 @@ const StatusLine = ({ army }: { army: ArmyView }) => (
 );
 
 /**
- * An attribute as a tile: its mark filling the frame, its name, its tier's pips and what it gives; its hover says what
+ * An attribute as a tile: its mark filling the frame, its name, its tier and what it gives; its hover says what
  * its next tier gives and costs, and a press opens its level-up.
  */
 const AttributeTile = ({ attribute, onOpen }: { attribute: AttributeView; onOpen: () => void }) => (
@@ -142,7 +142,7 @@ const AttributeTile = ({ attribute, onOpen }: { attribute: AttributeView; onOpen
   >
     <Icon name={attribute.mark} size={40} />
     <span className="text-hud-label text-hud-ink">{attribute.name}</span>
-    <HudRarity tier={attribute.level as 1 | 2 | 3 | 4 | 5} />
+    <HudTier tier={attribute.level as 1 | 2 | 3 | 4 | 5} />
     <span className="text-center text-hud-label tabular-nums text-hud-good">{attribute.now}</span>
   </button>
 );

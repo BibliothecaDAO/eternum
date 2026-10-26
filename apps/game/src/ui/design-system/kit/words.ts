@@ -25,6 +25,8 @@ import {
 
 /** One scale for chests, building types and attributes. */
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
+/** A step on that scale, common (1) to legendary (5). */
+export type Tier = 1 | 2 | 3 | 4 | 5;
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
 export { BEAST_NAMES } from "@bibliothecadao/types";
@@ -298,11 +300,11 @@ export const TRAINING_BUILDINGS = [
   buildingName(BuildingType.Hearth, true),
 ] as const;
 export const BUILDINGS = "Buildings";
-/** The castle rows that unlock the three reaches beyond the spire. */
+/** The castle rows that unlock the three depths beyond the spire. */
 export const ETHEREAL = "Ethereal";
-export const REACH_NUMERALS = ["I", "II", "III"] as const;
+export const DEPTH_NUMERALS = ["I", "II", "III"] as const;
 /** A depth by its name: "Ethereal II". */
-export const reachName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${REACH_NUMERALS[depth - 1]}`;
+export const depthName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${DEPTH_NUMERALS[depth - 1]}`;
 
 /**
  * A realm's spire, its card's words: whose it is, the army it acts for, each depth's entry or why not, and what entering
@@ -441,8 +443,8 @@ export const xpGainedLine = (line: string, amount: string) => `${line}, +${amoun
 export const xpSpentLine = (line: string, amount: string) => `${line}, −${amount} ${XP}`;
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
-/** How deep a season went, on its total. */
-export const REACH = "Reach";
+/** How deep a realm went beyond the spire, I to III. */
+export const DEPTH = "Depth";
 
 /** The player on any list. */
 export const YOU = "You";
@@ -524,12 +526,11 @@ export const realmsGiveLabor = (perRealm: number, cap: number) =>
 export const CLAIM = "Claim";
 export const CLAIM_ALL = "Claim all";
 export const CLAIMED_TODAY = "Claimed today";
-/** The Season page's pool: the LORDS deposited for the season; what today releases of them stands under Today. */
-export const SEASON_POOL = "Pool";
+/** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */
+export const commonChestPays = (lords: string) => `A Common chest pays ${lords} LORDS today`;
+export const seasonPool = (lords: string, today: string | undefined) =>
+  `Season pool ${lords} LORDS${today === undefined ? "" : `, ${today} released today`}`;
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
-/** What one share of a chest pays today, and the most any day can set that price to. */
-export const PER_SHARE = "Per share";
-export const SHARE_CEILING = "Max";
 export const fitOf = (fits: string, of: string) => `${fits} of ${of} fit`;
 export const REALMS_ELSEWHERE = "Only Realms in this Starknet wallet count. Not on Ethereum, not in another wallet.";
 /** A Realm joins the list by its number, the first time it gives its labor. */
@@ -1209,8 +1210,7 @@ export const RESEARCH_TREE = {
   nouns: { essence: ESSENCE, labor: "Labor" },
   armiesFind: (site: string) => `Armies find ${site}s`,
   each: (gain: string) => `${gain} each`,
-  enters: (reach: string) => `Armies enter ${reach} at the spire`,
-  reach: (numeral: string) => `${ETHEREAL} ${numeral}`,
+  enters: (depth: string) => `Armies enter ${depth} at the spire`,
   opens: "Open",
   build: (building: string) => `Build a ${building}`,
   stands: (building: string) => `${building} stands`,

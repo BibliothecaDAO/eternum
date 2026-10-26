@@ -49,6 +49,42 @@ export const SURFACES = [
   { name: "frontier-site-camp", path: "/lab/kit/hud/site-camp", mark: "frontier" },
   { name: "frontier-fight-won", path: "/lab/kit/hud/fight-won", mark: "frontier" },
   { name: "frontier-army-refill", path: "/lab/kit/hud/army-refill", mark: "frontier" },
+  {
+    name: "frontier-season",
+    path: "/lab/kit/hud/season",
+    mark: "frontier",
+    sizes: [
+      [1600, 900],
+      [390, 844],
+    ],
+  },
+  {
+    name: "frontier-site-pick",
+    path: "/lab/kit/hud/site-pick",
+    mark: "frontier",
+    sizes: [
+      [1600, 900],
+      [390, 844],
+    ],
+  },
+  {
+    name: "frontier-site-ruin",
+    path: "/lab/kit/hud/site-ruin",
+    mark: "frontier",
+    sizes: [
+      [1600, 900],
+      [390, 844],
+    ],
+  },
+  {
+    name: "frontier-clear-ruin",
+    path: "/lab/kit/hud/clear-ruin",
+    mark: "frontier",
+    sizes: [
+      [1600, 900],
+      [390, 844],
+    ],
+  },
 ];
 
 /**

@@ -7,8 +7,8 @@ import {
   CHESTS,
   ESSENCE,
   EXIT,
-  REACH,
-  REACH_NUMERALS,
+  DEPTH,
+  DEPTH_NUMERALS,
   SEASON,
   SEASON_ENDINGS,
   SEASON_OVER,
@@ -17,7 +17,7 @@ import {
 } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-import { TotalsGrid } from "../log/day-totals";
+import { type TotalCell, TotalsGrid } from "../log/day-totals";
 
 /** One of the season's first three: its place, the player's name drawn by the one rule, and sites cleared. */
 export type PodiumPlace = { key: string; rank: number; name: ReactNode; sitesCleared: number };
@@ -27,8 +27,8 @@ export type SeasonTotals = {
   sitesCleared: number;
   chests: number;
   lords: number;
-  /** The deepest reach beyond the spire, 1 to 3; 0 for none. */
-  reach: number;
+  /** The deepest depth beyond the spire, 1 to 3; 0 for none. */
+  depth: number;
   essence: number;
   labor: number;
 };
@@ -83,9 +83,9 @@ export const SeasonOverCard = ({
             { icon: "flag", name: SITES_CLEARED, value: formatAmount(totals.sitesCleared) },
             { icon: "chest", name: CHESTS, value: formatAmount(totals.chests) },
             { icon: "lords", name: LORDS, value: formatAmount(totals.lords) },
-            { icon: "portal", name: REACH, value: REACH_NUMERALS[totals.reach - 1] ?? "—" },
             { icon: "essence", name: ESSENCE, value: formatAmount(totals.essence) },
             { icon: "labor", name: resourceName(ResourcesIds.Labor), value: formatAmount(totals.labor) },
+            ...depthCell(totals.depth),
           ]}
         />
       </div>
@@ -105,6 +105,10 @@ export const SeasonOverCard = ({
     </div>
   </section>
 );
+
+/** How deep the realm went, once it went through the spire: a realm that never did has no Depth to show. */
+const depthCell = (depth: number): TotalCell[] =>
+  depth > 0 ? [{ icon: "portal", name: DEPTH, value: DEPTH_NUMERALS[depth - 1]! }] : [];
 
 /** The card covers the screen: its edges keep clear of a phone's notch and home bar. */
 const SAFE_AREA = {

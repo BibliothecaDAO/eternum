@@ -53,11 +53,10 @@ export const useSeasonRank = (): string => {
 };
 
 /**
- * Season over the board: the season's pool, what today releases of it and a share's price today, a common chest at
- * that price, the first fifty realms and the player's own, a row's detail with Visit. Visiting closes the page for the
- * visited realm.
+ * Season over the board: a common chest at today's price with the season's pool behind it, the first fifty realms and
+ * the player's own, a row's detail with Visit. Visiting closes the page for the visited realm.
  */
-export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBack: () => void }) => {
+export const FrontierSeason = ({ rules, onVisited }: { rules: ExpeditionRules; onVisited: () => void }) => {
   const board = useSeasonBoard();
   const viewer = useViewer();
   const { pool, chest } = useSeasonLords(rules);
@@ -68,7 +67,7 @@ export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBa
   const chosen = entries.find((entry) => entry.address === opened);
   const visit = (entry: Entry) => {
     startRealmVisit({ player: entry.address, structureId: safeInteger(entry.structure_id), opensOn: "realm" });
-    onBack();
+    onVisited();
   };
   // A realm's detail stands in the list's place, never over it; its Back returns to the list.
   if (chosen)
@@ -89,7 +88,6 @@ export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBa
       state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
       onRetry={() => void board.refetch()}
       onOpen={setOpened}
-      onBack={onBack}
     />
   );
 };
@@ -135,14 +133,14 @@ const useSeasonListRows = (
 };
 
 /**
- * Each realm's rank and deepest reach as the board's own entry gives them, whether or not the realm is streamed to this
+ * Each realm's rank and depth as the board's own entry gives them, whether or not the realm is streamed to this
  * viewer (Herald reads both from the realm's Structure row).
  */
 const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow => ({
   key: entry.address,
   rank: entry.rank,
   order: entry.order,
-  realm: { level: entry.level, reach: entry.deepest_depth },
+  realm: { level: entry.level, depth: entry.deepest_depth },
   name: (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
       <PlayerSeatMark account={entry.address} name={names.text(entry.address)} />
@@ -172,7 +170,7 @@ const seasonDetail = (entry: Entry): SeasonDetail => ({
   },
   chests: entry.chests_earned,
   lords: wholeLords(entry.rewards.lords),
-  reach: entry.deepest_depth,
+  depth: entry.deepest_depth,
   essence: earnedResource(entry.rewards.essence),
   labor: earnedResource(entry.rewards.labor),
 });
@@ -214,7 +212,7 @@ const seasonTotals = (entry: Entry): SeasonTotals => ({
   sitesCleared: entry.sites_cleared.total,
   chests: entry.chests_earned,
   lords: wholeLords(entry.rewards.lords),
-  reach: entry.deepest_depth,
+  depth: entry.deepest_depth,
   essence: earnedResource(entry.rewards.essence),
   labor: earnedResource(entry.rewards.labor),
 });

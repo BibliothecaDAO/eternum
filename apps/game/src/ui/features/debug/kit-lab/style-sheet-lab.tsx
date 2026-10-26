@@ -7,7 +7,6 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TipLine } from "@/ui/design-system/kit/named-tips";
 import { Sheet as KitSheet } from "@/ui/design-system/kit/sheet";
-import { TierChip as KitTierChip } from "@/ui/design-system/kit/tier-chip";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
@@ -34,6 +33,7 @@ import {
   HudNotice,
   HudPanel,
   HudRarity,
+  HudTier,
   HudPill,
   HudPortrait,
   HudRelic,
@@ -1084,7 +1084,7 @@ const RelicSection = () => (
 const ChipsSection = () => (
   <Element
     name="Chip"
-    rule="A small tag: a count in gold, a state in its tone, a troop tier in its colour; a chest's rarity, common to legendary, on its own framed chip. An amount of something leads with its painting (two overlap), and is named whole for assistive technology."
+    rule="A small tag: a count in gold, a state in its tone, a troop tier in its colour; a chest's rarity, common to legendary, its word on its own framed chip; a tier the player levels, its pips on that chip. An amount of something leads with its painting (two overlap), and is named whole for assistive technology."
     sheet={
       <div className="flex flex-wrap items-center gap-3">
         <HudChip>3</HudChip>
@@ -1105,17 +1105,11 @@ const ChipsSection = () => (
         <HudTierChip tier={2} />
         <HudTierChip tier={3} />
         <HudRarity tier={1} />
-        <HudRarity tier={2} />
-        <HudRarity tier={3} word />
-        <HudRarity tier={4} />
-        <HudRarity tier={5} word />
+        <HudRarity tier={3} />
+        <HudRarity tier={5} />
+        <HudTier tier={2} />
+        <HudTier tier={4} />
       </div>
-    }
-    today={
-      <>
-        <KitTierChip tier={1} showWord />
-        <KitTierChip tier={3} showWord={false} />
-      </>
     }
   />
 );

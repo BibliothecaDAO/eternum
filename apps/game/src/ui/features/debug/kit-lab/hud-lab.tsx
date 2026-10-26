@@ -358,7 +358,7 @@ const SEASON_NAMES = [
 ];
 const SEASON_SITES = [148, 132, 127, 121, 116, 110, 104, 99, 95, 92, 90];
 const SEASON_LORDS = [704, 640, 576, 512, 448, 416, 384, 352, 320, 288, 256];
-/** Each realm's rank (Settlement 0 to Empire 3) and deepest reach, the leaders the furthest on. */
+/** Each realm's rank (Settlement 0 to Empire 3) and depth, the leaders the furthest on. */
 const SEASON_REALMS = [
   [3, 3],
   [3, 2],
@@ -376,7 +376,7 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
   key: name,
   rank: index + 1,
   order: index + 1,
-  realm: { level: SEASON_REALMS[index][0], reach: SEASON_REALMS[index][1] },
+  realm: { level: SEASON_REALMS[index][0], depth: SEASON_REALMS[index][1] },
   name,
   label: name,
   sitesCleared: SEASON_SITES[index],
@@ -384,16 +384,16 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
   own: false,
 }));
 /**
- * A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. Yesterday's
- * rolls set today's share at 12 LORDS, under the ceiling of 16; a common chest holds two shares.
+ * A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. Today's
+ * share is 12 LORDS and a common chest holds two shares.
  */
-const SEASON_POOL_FIGURES = { lords: 1_000_000, today: 50_000, price: 12, ceiling: 16 };
-const SEASON_COMMON_CHEST = { tier: 1 as const, lords: 24 };
+const SEASON_POOL_FIGURES = { lords: 1_000_000, today: 50_000 };
+const SEASON_COMMON_CHEST = { lords: 24 };
 const OWN_ROW: SeasonListRow = {
   key: "you",
   rank: 12,
   order: 12,
-  realm: { level: 1, reach: 1 },
+  realm: { level: 1, depth: 1 },
   name: YOU,
   label: YOU,
   sitesCleared: 88,
@@ -978,7 +978,7 @@ export const HudLab = () => {
                   sites: { total: 132, camps: 70, rifts: 43, ruins: 9, beasts: 10 },
                   chests: 9,
                   lords: 640,
-                  reach: 0,
+                  depth: 0,
                   essence: 212_000,
                   labor: 96_000,
                 }}
@@ -995,7 +995,6 @@ export const HudLab = () => {
                 state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}
                 onRetry={noop}
                 onOpen={noop}
-                onBack={noop}
               />
             )
           ) : undefined
@@ -1363,7 +1362,7 @@ const LabResults = ({
         { key: "2", rank: 2, name: "Aldric", sitesCleared: 412 },
         { key: "3", rank: 3, name: "Corwin", sitesCleared: 397 },
       ]}
-      totals={{ sitesCleared: 288, chests: 61, lords: 2_003, reach: 2, essence: 2_100_000, labor: 1_400_000 }}
+      totals={{ sitesCleared: 288, chests: 61, lords: 2_003, depth: 2, essence: 2_100_000, labor: 1_400_000 }}
       withdraw={
         seasonLords && (
           <SeasonWithdrawRow

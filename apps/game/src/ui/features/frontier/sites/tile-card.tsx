@@ -12,7 +12,7 @@ import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 
-import type { Tier } from "@/ui/design-system/kit/tier-chip";
+import type { Tier } from "@/ui/design-system/kit/words";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
   biomeTypeOf,
