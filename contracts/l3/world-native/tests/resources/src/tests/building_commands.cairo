@@ -418,7 +418,7 @@ fn realm_knowledge_packs_each_row_tier_and_choice_where_the_client_reads_them() 
     let mut full = 0;
     for row in 0..crate::research::ROW_COUNT {
         if crate::research::independent_sides(row) {
-            for _ in 0..4 {
+            for _ in 0_u8..4 {
                 full = crate::research::learn(full, row, 0);
             }
         }
@@ -648,6 +648,7 @@ fn frontier_storage_grants_clip_at_each_exact_s2_cap_without_changing_troops() {
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     let mut preset = building_preset(frontier.structures.board);
     preset.rules.troop_limit_config = frontier.rules.troop_limit_config;
+    let preset = preset;
     let (d, home) = building_world_with_preset(preset);
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     for level in 0_u32..4 {
@@ -657,6 +658,7 @@ fn frontier_storage_grants_clip_at_each_exact_s2_cap_without_changing_troops() {
                 knowledge = crate::research::learn(knowledge, crate::research::ROW_FARM, 1);
                 knowledge = crate::research::learn(knowledge, crate::research::ROW_WORKSHOP, 1);
             }
+            let knowledge = knowledge;
             snforge_std::interact_with_state(
                 d.games,
                 || {
