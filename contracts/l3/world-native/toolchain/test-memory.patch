@@ -35,6 +35,22 @@ index a56a0ef..9b61d87 100644
              ),
              RunResult::Error(run_error) => {
                  let mut message = format!(
+diff --git a/crates/forge-runner/src/running/target.rs b/crates/forge-runner/src/running/target.rs
+index 32020b3..db8afc0 100644
+--- a/crates/forge-runner/src/running/target.rs
++++ b/crates/forge-runner/src/running/target.rs
+@@ -52,8 +52,10 @@ pub fn prepare_test_target(
+         .and_then(|info| info.executables.get("snforge_internal_test_executable"))
+         .unwrap_or(&default_executables);
+
+-    let (matched_cases, prefiltered_out_count) =
++    let (mut matched_cases, prefiltered_out_count) =
+         collect_matched_cases(executables, name_filter, partition_config);
++    matched_cases
++        .retain(|case| partition_config.is_in_partition(&sanitize_test_case_name(&case.name)));
+
+     if matched_cases.is_empty() {
+         return Ok(PrepareTestTargetResult {
 diff --git a/crates/forge-runner/src/scarb.rs b/crates/forge-runner/src/scarb.rs
 index 6d68f26..fba9a6f 100644
 --- a/crates/forge-runner/src/scarb.rs
@@ -54,13 +70,13 @@ index 6d68f26..fba9a6f 100644
 +    fs,
 +    io::{BufReader, ErrorKind},
 +};
- 
+
  use crate::package_tests::{TestTargetLocation, raw::TestTargetRaw};
- 
+
 @@ -26,13 +33,10 @@ pub fn load_test_artifacts(
          let target_file = format!("{target_name}.test.sierra.json");
          let sierra_program_path = target_dir.join(target_file);
- 
+
 -        match fs::read_to_string(&sierra_program_path) {
 -            Ok(value) => {
 -                let versioned_program = serde_json::from_str::<VersionedProgram>(&value)?;
@@ -72,11 +88,11 @@ index 6d68f26..fba9a6f 100644
 +            Ok(file) => {
 +                let sierra_program =
 +                    serde_json::from_reader::<_, TestProgram>(BufReader::new(file))?.into_program();
- 
+
                  let test_target = TestTargetRaw {
                      sierra_program,
 @@ -49,3 +53,65 @@ pub fn load_test_artifacts(
- 
+
      Ok(targets)
  }
 +
@@ -163,7 +179,7 @@ index 95c2830..b644b30 100644
 -    type TraceData = VersionedProfilerCallTrace;
 +    type TraceData = Option<VersionedProfilerCallTrace>;
  }
- 
+
  /// Summary of running a single test case
 @@ -381,11 +382,11 @@ impl TestCaseSummary<Single> {
          contracts_data: &ContractsData,
@@ -181,7 +197,7 @@ index 95c2830..b644b30 100644
          // Keep this lazy so normal test runs do not parse and extract contract artifacts for every test case.
          let contracts_data_store = (gas_report_enabled || trace_components.is_some()).then(|| {
 @@ -398,6 +399,19 @@ impl TestCaseSummary<Single> {
- 
+
          let empty = ForkData::default();
          let fork_data_ref = fork_data.as_ref().unwrap_or(&empty);
 +        let profiler_trace = || {
@@ -228,3 +244,60 @@ index 95c2830..b644b30 100644
                              debugging_trace,
                          }
                      } else {
+diff --git a/crates/forge/src/lib.rs b/crates/forge/src/lib.rs
+index 4be2424..4611d88 100644
+--- a/crates/forge/src/lib.rs
++++ b/crates/forge/src/lib.rs
+@@ -330,7 +330,7 @@ pub fn main_execution(ui: Arc<UI>) -> Result<ExitStatus> {
+             args.normalize();
+             check_requirements(false, &ui)?;
+
+-            let cores = resolve_thread_count(args.max_threads, &ui);
++            let cores = configure_test_threads(args.max_threads, &ui)?;
+             let rt = Builder::new_multi_thread()
+                 .max_blocking_threads(cores)
+                 .enable_all()
+@@ -347,7 +347,7 @@ pub fn main_execution(ui: Arc<UI>) -> Result<ExitStatus> {
+             Ok(ExitStatus::Success)
+         }
+         ForgeSubcommand::OptimizeInlining { args } => {
+-            let cores = resolve_thread_count(args.test_args.max_threads, &ui);
++            let cores = configure_test_threads(args.test_args.max_threads, &ui)?;
+             check_requirements(false, &ui)?;
+             optimize_inlining::optimize_inlining(&args, cores, &ui)
+         }
+@@ -385,8 +385,8 @@ fn check_requirements(output_on_success: bool, ui: &UI) -> Result<()> {
+     Ok(())
+ }
+
+-fn resolve_thread_count(max_threads: Option<NonZeroUsize>, ui: &UI) -> usize {
+-    match (available_parallelism(), max_threads) {
++fn configure_test_threads(max_threads: Option<NonZeroUsize>, ui: &UI) -> Result<usize> {
++    let cores = match (available_parallelism(), max_threads) {
+         (Ok(available_cores), Some(max_threads)) => {
+             let available = available_cores.get();
+             let max = max_threads.get();
+@@ -410,5 +410,11 @@ fn resolve_thread_count(max_threads: Option<NonZeroUsize>, ui: &UI) -> usize {
+             ));
+             1
+         }
++    };
++    if max_threads.is_some() {
++        rayon::ThreadPoolBuilder::new()
++            .num_threads(cores)
++            .build_global()?;
+     }
++    Ok(cores)
+ }
+diff --git a/crates/forge/src/run_tests/test_target.rs b/crates/forge/src/run_tests/test_target.rs
+index 6e58393..9ca27da 100644
+--- a/crates/forge/src/run_tests/test_target.rs
++++ b/crates/forge/src/run_tests/test_target.rs
+@@ -71,6 +71,7 @@ pub async fn run_for_test_target(
+             .then_some(tests.sierra_program.debug_info.as_ref())
+             .flatten(),
+     );
++    drop(tests.sierra_program);
+
+     // Shared across all test case tasks, so each contract's backtrace data is built once and reused.
+     let contract_backtrace_mapping = Arc::new(LazyContractBacktraceDataMapping::new());
