@@ -149,10 +149,12 @@ it("gives a phone the Feed on its place bar, the desktop's own Feed as a page un
   expect(page()).toBeNull();
   await act(async () => feed()!.click());
   expect(page()).not.toBeNull();
-  expect([...page()!.querySelectorAll('[aria-label="Feed lens"] button')].map((button) => button.textContent)).toEqual([
-    "World",
-    "Mine",
-    "Important",
+  // Owner, 26 October 2026: "Agree about the three event lenses rework for the clutter": Important and All, as in Blitz,
+  // opening on All, the world's history.
+  const lenses = [...page()!.querySelectorAll('[aria-label="Show"] button')];
+  expect(lenses.map((button) => [button.textContent, button.getAttribute("aria-pressed")])).toEqual([
+    ["Important", "false"],
+    ["All", "true"],
   ]);
   expect(feed()!.getAttribute("aria-current")).toBe("page");
   // Owner, 22 October 2026 (mobile direction A): the page stands on the place bar and leaves the map above it; its ×

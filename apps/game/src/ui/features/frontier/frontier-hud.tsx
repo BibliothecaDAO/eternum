@@ -6,7 +6,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { SETTINGS } from "@/ui/design-system/kit/words";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
+import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { configManager, researchRowOf } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -335,8 +335,7 @@ const FrontierPhoneHud = ({
 }) => {
   const chat = useGameChat(surface === "chat");
   const chatPane = useChatKey(() => onSurface("chat"));
-  const { stories } = useEventsFeed();
-  const events = useUnreadFeedCount(stories, surface === "feed");
+  const events = useUnreadImportantCount(surface === "feed");
   return (
     <HudBands
       {...bands}

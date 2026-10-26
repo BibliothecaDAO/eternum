@@ -383,7 +383,7 @@ export const HudDeploy = ({
 };
 
 /** The shares a transfer row's quick steps take of what is held. */
-const TRANSFER_STEPS = [0.25, 0.5, 0.75, 1] as const;
+const TRANSFER_STEPS = [0.5, 1] as const;
 
 /**
  * How much of something, from `min` (none by default) to `max`, dragged: the part taken fills the track in the age's

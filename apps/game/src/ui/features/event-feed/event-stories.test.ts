@@ -1,4 +1,4 @@
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { type EventsFilter, eventsReads, oneStoryPerAction, selectEventStories } from "./event-stories";
 
@@ -32,25 +32,13 @@ const capture = (id: string, at: number, taker: string, holder: string, extra: P
 const ids = (stories: ProcessedStoryEvent[], filter: EventsFilter, hyper = false) =>
   selectEventStories(stories, filter, "0x1", (structureId) => hyper && structureId === 900).map(({ id }) => id);
 
-it("keeps the feed usable in production when a newer server emits an unknown story", () => {
-  vi.stubEnv("NODE_ENV", "production");
-  try {
-    expect(ids([story("future", 30, "FutureStory", "0x1", {}), fight("fight", 20, "0x1", "0x2")], "all")).toEqual([
-      "fight",
-    ]);
-  } finally {
-    vi.unstubAllEnvs();
-  }
-});
-
-it("shows the player's fights under Important and Mine, another player's only under All, newest first", () => {
+it("shows the player's fights under Important, another player's only under All, newest first", () => {
   const stories = [
     fight("theirs", 30, "0x7", "0x8"),
     fight("mine", 20, "0x1", "0x2"),
     fight("defended", 10, "0x2", "0x01"),
   ];
   expect(ids(stories, "important")).toEqual(["mine", "defended"]);
-  expect(ids(stories, "mine")).toEqual(["mine", "defended"]);
   expect(ids(stories, "all")).toEqual(["theirs", "mine", "defended"]);
 });
 
@@ -63,24 +51,22 @@ it("shows under Important a crate the player opened and their captures, not a le
     story("up", 10, "StructureLevelUpStory", "0x1", {}),
   ];
   expect(ids(stories, "important")).toEqual(["crate", "took", "lost"]);
-  expect(ids(stories, "mine")).toEqual(["crate", "took", "lost", "up"]);
 });
 
-it("shows a Hyperstructure taken by two other players under Important and All, not Mine, as one row", () => {
+it("shows a Hyperstructure taken by two other players under Important and All, as one row", () => {
   const taken = capture("seized", 30, "0xb", "0xc");
   expect(ids([taken], "important", true)).toEqual(["seized"]);
-  expect(ids([taken], "mine", true)).toEqual([]);
   expect(ids([taken], "all", true)).toEqual(["seized"]);
   // Another player's camp is not everyone's news.
   expect(ids([taken], "important", false)).toEqual([]);
 });
 
-it("tells a capture and the fight that won it, one transaction, as one row by its capture, whichever came first", () => {
+it("tells under Important a capture and the fight that won it, one transaction, as one row by its capture, whichever came first", () => {
   const tx = { tx_hash: "0xc1a" };
   const won = fight("fight", 31, "0x1", "0x2");
   const taken = capture("taken", 30, "0x1", "0x2", tx);
-  expect(ids([{ ...won, ...tx }, taken], "all")).toEqual(["taken"]);
-  expect(ids([taken, { ...won, ...tx }], "all")).toEqual(["taken"]);
+  expect(ids([{ ...won, ...tx }, taken], "important")).toEqual(["taken"]);
+  expect(ids([taken, { ...won, ...tx }], "important")).toEqual(["taken"]);
 });
 
 it("tells each capture of a structure on its own, however often it changes the same hands", () => {
@@ -90,9 +76,11 @@ it("tells each capture of a structure on its own, however often it changes the s
     capture("first", 100, "0xb", "0xc"),
   ];
   expect(ids(stories, "all")).toEqual(["again", "back", "first"]);
+  expect(ids(stories, "important", true)).toEqual(["again", "back", "first"]);
 });
 
-it("tells the player's own actions their stories write, and leaves routine production and others' news out", () => {
+it("shows under All the world's history as it came, every player's routine too, and none of it under Important", () => {
+  // Newest on the chain first, as a history read holds them.
   const stories = [
     story("paid", 60, "BuildingPaymentStory", "0x1", { coord: { x: 1, y: 1 } }),
     story("found", 50, "ExplorationReward", "0x1", {}),
@@ -100,7 +88,7 @@ it("tells the player's own actions their stories write, and leaves routine produ
     story("made", 30, "ProductionStory", "0x1", {}),
     story("their-level", 20, "StructureLevelUpStory", "0x2", {}),
   ];
-  expect(ids(stories, "mine")).toEqual(["paid", "found", "raised"]);
+  expect(ids(stories, "all")).toEqual(["paid", "found", "raised", "made", "their-level"]);
   expect(ids(stories, "important")).toEqual([]);
 });
 
@@ -139,32 +127,7 @@ it("reads under Important the player's fights, raids, captures, crates and relic
   ]);
 });
 
-it("reads under Mine each Events story naming the player, and under All the world's fights and the player's stories", () => {
-  const mine = eventsReads("mine", "0x1", [900]);
-  expect(mine.every((read) => read.owner === "0x1" && read.entityId === undefined)).toBe(true);
-  expect(mine.map((read) => read.story)).toEqual([
-    "BattleEvent",
-    "RaidEvent",
-    "StructureCapturedStory",
-    "RealmCreatedStory",
-    "SpireDiscovered",
-    "BuildingPlacementStory",
-    "StructureLevelUpStory",
-    "ResourceReceiveArrivalStory",
-    "RelicChestOpened",
-    "RelicActivated",
-    "RewardChestOpened",
-    "BuildingPaymentStory",
-    "ExplorationReward",
-    "ExplorerCreateStory",
-    "ResourceTransferStory",
-  ]);
-  const all = eventsReads("all", "0x1", [900]);
-  expect(all.slice(0, 3)).toEqual([
-    { limit: 100, story: "BattleEvent" },
-    { limit: 100, story: "RaidEvent" },
-    { limit: 100, story: "StructureCapturedStory" },
-  ]);
-  expect(all.slice(3)).toEqual(mine.slice(3));
-  expect(eventsReads("mine", null, [900])).toEqual([]);
+it("reads under All one read of the world's newest stories, whoever the viewer is", () => {
+  expect(eventsReads("all", "0x1", [900])).toEqual([{ limit: 350 }]);
+  expect(eventsReads("all", null, [])).toEqual([{ limit: 350 }]);
 });

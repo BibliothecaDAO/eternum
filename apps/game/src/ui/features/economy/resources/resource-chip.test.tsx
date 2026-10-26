@@ -1,6 +1,5 @@
 import { configManager, type ResourceManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
-import type { ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -10,9 +9,6 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: (
 vi.mock("@/ui/design-system/molecules/resource-icon", () => ({ ResourceIcon: () => null }));
 vi.mock("@/ui/features/economy/transfers/transfer-window", () => ({ openTransfer: vi.fn() }));
 vi.mock("@/ui/features/settlement/production/production-modal", () => ({ ProductionModal: () => null }));
-vi.mock("@/ui/features/economy/resources/resource-burn-popover", () => ({
-  ResourceBurnPopover: ({ trigger }: { trigger: (toggle: () => void) => ReactNode }) => trigger(() => {}),
-}));
 
 import { ResourceChip } from "./resource-chip";
 
@@ -49,16 +45,12 @@ afterEach(() => {
 });
 
 describe("a resource chip's actions", () => {
-  it("name the resource they act on", () => {
-    expect(renderChip(ResourcesIds.Wood)).toEqual(["Transfer Wood", "Burn Wood"]);
+  it("name the resource they act on: Transfer, and no Burn", () => {
+    expect(renderChip(ResourcesIds.Wood)).toEqual(["Transfer Wood"]);
   });
 
   it("name the relic they activate", () => {
     vi.spyOn(configManager, "getRelicActivation").mockReturnValue({ durationSeconds: 3_600, essenceCost: 100 });
-    expect(renderChip(ResourcesIds.StaminaRelic1)).toEqual([
-      "Transfer Stamina Relic I",
-      "Burn Stamina Relic I",
-      "Activate Stamina Relic I",
-    ]);
+    expect(renderChip(ResourcesIds.StaminaRelic1)).toEqual(["Transfer Stamina Relic I", "Activate Stamina Relic I"]);
   });
 });

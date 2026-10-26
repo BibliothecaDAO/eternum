@@ -1046,17 +1046,6 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async structure_burn(props: SystemProps.StructureBurnProps) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "BurnStructureResources",
-        value: { entity_id: props.structure_id, resources: resourceAmounts(props.resources) },
-      },
-      TransactionType.STRUCTURE_BURN,
-    );
-  }
-
   public async destroy_building(props: SystemProps.DestroyBuildingProps) {
     return this.submitCommand(
       props.signer,

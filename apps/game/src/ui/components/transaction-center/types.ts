@@ -59,7 +59,6 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.REMOVE_GUILD_MEMBER]: "Member removed from the tribe",
   [TransactionType.SET_ENTITY_NAME]: "Renamed",
   [TransactionType.TRANSFER_STRUCTURE_OWNERSHIP]: "Structure ownership transferred",
-  [TransactionType.STRUCTURE_BURN]: "Resources burned",
   [TransactionType.CREATE_HYPERSTRUCTURE]: "Hyperstructure founded",
   [TransactionType.INITIALIZE_HYPERSTRUCTURE]: "Hyperstructure construction started",
   [TransactionType.CONTRIBUTE]: "Resources given to the hyperstructure",

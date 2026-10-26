@@ -2,13 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   buildRendererDebugUrl,
   buildRendererRecoveryUrl,
-  buildRendererUrl,
   DEFAULT_RENDERER_BUILD_MODE,
-  readRendererPreference,
   removeRetiredRendererModePreference,
   resolveRendererBuildMode,
   resolveRendererBuildModeFromSearch,
-  writeRendererPreference,
 } from "./renderer-build-mode";
 
 describe("renderer build mode", () => {
@@ -26,49 +23,22 @@ describe("renderer build mode", () => {
     expect(
       resolveRendererBuildModeFromSearch({
         envBuildMode: "webgpu-auto",
-        saved: null,
         search: "?rendererMode=webgpu-force-webgl",
       }),
     ).toBe("webgpu-force-webgl");
     expect(resolveRendererBuildMode("bogus")).toBe("webgpu-auto");
   });
 
-  it("asks for the address's renderer first, then the one saved in Settings, then the build's", () => {
-    const ask = (search: string, saved: "webgpu-auto" | "webgpu-force-webgl" | null) =>
-      resolveRendererBuildModeFromSearch({ envBuildMode: "webgpu-auto", saved, search });
-    expect(ask("?rendererMode=webgpu-auto", "webgpu-force-webgl")).toBe("webgpu-auto");
-    expect(ask("?col=4", "webgpu-force-webgl")).toBe("webgpu-force-webgl");
-    expect(ask("?col=4", null)).toBe("webgpu-auto");
+  it("asks for the address's renderer, else the build's: nothing a page saved decides it", () => {
+    const ask = (search: string) => resolveRendererBuildModeFromSearch({ envBuildMode: "webgpu-auto", search });
+    expect(ask("?rendererMode=webgpu-force-webgl")).toBe("webgpu-force-webgl");
+    expect(ask("?col=4")).toBe("webgpu-auto");
   });
 
-  it("saves the renderer chosen in Settings and reads back only a renderer it knows", () => {
-    const stored = new Map<string, string>();
-    const storage = {
-      getItem: (key: string) => stored.get(key) ?? null,
-      setItem: (key: string, value: string) => void stored.set(key, value),
-    };
-    expect(readRendererPreference(storage)).toBeNull();
-    writeRendererPreference(storage, "webgpu-force-webgl");
-    expect(readRendererPreference(storage)).toBe("webgpu-force-webgl");
-    stored.set("eternum-renderer", "bogus");
-    expect(readRendererPreference(storage)).toBeNull();
-  });
-
-  it("reloads onto a renderer with the page's match, camera and spectator intent kept, and no debug logs", () => {
-    const url = new URL(
-      buildRendererUrl("https://game.test/g/0x1/6/map?spectate=true&col=4#world", "webgpu-force-webgl"),
-    );
-    expect([url.pathname, Object.fromEntries(url.searchParams), url.hash]).toEqual([
-      "/g/0x1/6/map",
-      { spectate: "true", col: "4", rendererMode: "webgpu-force-webgl" },
-      "#world",
-    ]);
-  });
-
-  it("removes the retired renderer preference", () => {
+  it("removes the renderer choices a page once saved: the old mode key and Settings' cut Renderer row", () => {
     const removeItem = vi.fn();
     removeRetiredRendererModePreference({ removeItem });
-    expect(removeItem).toHaveBeenCalledWith("RENDERER_MODE");
+    expect(removeItem.mock.calls).toEqual([["RENDERER_MODE"], ["eternum-renderer"]]);
   });
 
   it("recovers the same game and camera in WebGL without enabling debug logs", () => {

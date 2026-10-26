@@ -360,6 +360,20 @@ describe("a transfer row", () => {
     expect(host.querySelector('input[aria-label="Wheat: share to send"]')).not.toBeNull();
     expect(document.activeElement?.getAttribute("aria-label")).toBe("Wood: total to send");
   });
+
+  it("offers two quick shares, half and Max, and sends what each takes of what is held", () => {
+    const changed = vi.fn();
+    act(() =>
+      root.render(<HudTransfer rows={[{ icon: "wheat", name: "Wheat", held: 6_401, value: 0 }]} onChange={changed} />),
+    );
+    const steps = [...host.querySelectorAll<HTMLButtonElement>(".ui-transfer__steps button")];
+    expect(steps.map((step) => step.textContent)).toEqual(["50%", "Max"]);
+    steps.forEach((step) => act(() => step.click()));
+    expect(changed.mock.calls).toEqual([
+      [0, 3_201],
+      [0, 6_401],
+    ]);
+  });
 });
 
 describe("a tab's count", () => {
