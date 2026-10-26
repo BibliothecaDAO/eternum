@@ -83,20 +83,6 @@ export const outputLine = (output: BuildingOutput, research: ResearchShare | und
   return basis ? withResearch(formatRate(output.total), basis) : formatRate(output.total);
 };
 
-/** What one building of each make row's type makes now, by research row: "+6.3/min (5 + 25% Fields)". */
-export const eachBuildingMakes = (
-  store: NativeFactStore,
-  realm: NativeRows["Structure"],
-  learned: bigint,
-): Partial<Record<number, string>> =>
-  Object.fromEntries(
-    (Object.keys(MAKERS) as unknown as MadeResource[]).map((resource) => {
-      const { category, row } = MAKERS[Number(resource) as MadeResource];
-      const research = researchShare(store, realm, Number(resource) as MadeResource, learned);
-      return [row, outputLine(buildingOutput(store, realm, category, research?.picks ?? 0), research)];
-    }),
-  );
-
 /**
  * What makes a store's rate, line by line, so its parts add up to the rate the card shows: the buildings standing with
  * what each makes, and for labor the castle's own producer (player, 25 October: "+17" counted a castle no screen

@@ -20,7 +20,7 @@ import {
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
-import { eachBuildingMakes, standingBuildings } from "../production/store-makers";
+import { standingBuildings } from "../production/store-makers";
 import { type LearnedRow, readResearchTree, type RealmResearchFacts, type TreeNode } from "./research-tree";
 
 const RESEARCH_MODELS = [
@@ -90,7 +90,6 @@ const readResearchFacts = (
     labor,
     standing: standingByRow(store, entity),
     learned: rows,
-    eachMakes: eachBuildingMakes(store, realm, learned),
     price: (row, tier) => {
       const price = store.get("ResearchPrice", { game_id: realm.game_id, row, tier });
       if (!price) throw new PricePending(`ResearchPrice row ${row} tier ${tier}`);

@@ -1199,7 +1199,6 @@ export const RESEARCH_TREE = {
   sidesLine: (made: string) => `Each tier picks a side for the season: more ${made}, or store more`,
   sideKept: "The side is kept for the season.",
   /** What one building of a row's type makes now, under its make side: "Each Farm: +6.3/min (5 + 25% Fields)". */
-  eachMakes: (building: string, output: string) => `Each ${building}: ${output}`,
   hutLine: "Population from every Hut",
   gateLine: (tier: string) => `${tier} opens the four training buildings`,
   gateOpen: "The four training buildings are open",
