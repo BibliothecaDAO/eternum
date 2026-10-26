@@ -12,12 +12,13 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const DJIZUS = "0x510";
 const KRUMP = "0x344";
 const NAMES: Record<string, string> = { [DJIZUS]: "djizus", [KRUMP]: "Krump" };
+const nameOf = (address: string | bigint) => NAMES[`0x${BigInt(address).toString(16)}`];
 const CAMP = 9001;
 
 const game = vi.hoisted(() => ({ store: null as unknown as NativeFactStore }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: game.store } }) }));
 vi.mock("@/hooks/use-player-profile", () => ({
-  usePlayerNames: () => ({ text: (address: string) => NAMES[`0x${BigInt(address).toString(16)}`] ?? "?" }),
+  usePlayerNames: () => ({ text: (address: string) => nameOf(address) ?? "?" }),
 }));
 // Where a row opens is the opener's, covered by its own tests (feed-row-line.test.tsx).
 vi.mock("./story-feed-row", () => ({ useStoryOpener: () => null }));
@@ -69,7 +70,7 @@ const story = (owner: string, kind: string, payload: Record<string, unknown>): P
     presentation: buildStoryEventPresentation(
       { storyType: kind, storyPayload: payload, ownerAddress: owner, viewerAddress: DJIZUS, timestamp: 0 } as never,
       game.store,
-      (address) => NAMES[address] ?? null,
+      (address) => nameOf(address) ?? null,
     ),
   }) as unknown as ProcessedStoryEvent;
 
