@@ -57,7 +57,7 @@ export const MapLabelLabView = () => {
   const hovered = pointerHover ?? params.get("hover");
   const busy = params.get("busy") === "1";
   const forceWebGL = params.get("rendererMode") === "webgpu-force-webgl";
-  const frontier = params.get("game") === "frontier";
+  const frontier = params.get("mode") === "frontier";
   const sites = params.get("sites") === "1";
   // The HUD's sheet stands where the labels' panel does: the sites view leaves it the place.
   const panel = params.get("panel") !== "0" && !sites;

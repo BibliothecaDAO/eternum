@@ -34,6 +34,11 @@ const VIEWS = {
 } as const;
 
 type View = keyof typeof VIEWS;
+/** Every view, by the name in its address, with the game it plays: the HUD room lists them. */
+export const UNIFIED_VIEWS = (Object.keys(VIEWS) as View[]).map((name) => ({
+  name,
+  frontier: VIEWS[name].preset === VIEWS.frontier.preset,
+}));
 
 /**
  * Dev only: the in-game HUD on a desktop as the game mounts it, every mode's, on the lab's game, at

@@ -21,7 +21,7 @@ async (page) => {
         { biome: "Scene biomes", relationship: "enemy" },
       ];
       for (const scenario of cases) {
-        const url = new URL("/lab?scene=tropical-coast&rendererMode=webgpu-force-webgl", entry);
+        const url = new URL("/lab/terrain?scene=tropical-coast&rendererMode=webgpu-force-webgl", entry);
         const requests = [];
         const onResponse = (response) => {
           if (response.url().includes("/models/outposts/"))

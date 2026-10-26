@@ -7,6 +7,16 @@ next to the crate to open it."). `/lab/relic-chest` exercises that single presen
 model, opening pool, panel and native opening story. Run
 `pnpm --dir apps/game prove:relic-chest --port 4199 --out <fresh-dir>` for both renderer captures and behavior proof.
 
+Next-season research proposals: `/lab/data?mode=frontier&view=balance` (Data → Balance & data → Research balance).
+**Storage** compares deleting storage research with smaller late-game base stores; pick a realm and plan a Farm or
+Workshop upgrade. **Research paths** compares separate side levels, a shared four-purchase budget and the current rule;
+start with Drill level 2 and try Drill level 3 or Rations level 2. **Beast labor** compares three guard-based clear
+payouts at every depth and replays 28 recorded clears. Plans are local fixtures and send no game commands. Serve the
+client on an assigned port, open the route with `&evidence=/absolute/new/capture/directory` (use `?` without another
+query), then run `scripts/frontier/prove-research-balance.playwright.js` through the Playwright connection with the page
+as its argument. It clicks the proposals, verifies results and captures desktop and phone; keep its returned transcript
+with the images. No gameplay or preset rule changes are part of this study.
+
 Frontier exploration has a 1/10,000 chance per newly revealed surface tile to find a funded reward chest. Select its
 labelled map tile; an adjacent own living army can Open it. The panel shows its reserved common-share LORDS amount and
 day-rollover expiry; opening credits the army’s home realm and leaves a receipt in Frontier’s selection sheet, including
@@ -16,8 +26,8 @@ and the expired reservation on the controlled lab calendar before entering the l
 advanced by this proof. The selection-sheet tests cross the exact clock rollover. Route proof uses local reward facts, a
 fixture release catalogue and a non-signing command transport; it does not prove a live payout. Blitz retains its visual
 lab proof. Both renderer backends are checked. The route waits for the mounted Guided rail and canvas; it frames the
-chest through the minimap's Position bridge before clicking its tile. `/lab/relic-chest?gameMode=frontier` holds its
-clock until **Advance to day rollover**; **Reset chest** restores the funded time.
+chest through the minimap's Position bridge before clicking its tile. `/lab/relic-chest?mode=frontier` holds its clock
+until **Advance to day rollover**; **Reset chest** restores the funded time.
 
 Frontier fight cards and Events share **Victory**, **Army lost** and **Guard holds**. Events, the Log and Today name a
 site by its one name, the map label's (and a rename): "clientlane2 vs Ashford · Victory", "Ashford: Victory, lost 84,
@@ -40,8 +50,8 @@ same page. The spectator playtest presses a Feed story and visits the board's se
 
 ## Cleared-site standard
 
-Open `/lab/models?family=cleared-sites` through **Models & motion → Cleared sites**. **Site** compares the shipped Troll
-or roaming beasts with the production standard. **View** uses the world camera at gameplay distance 20 or detail
+Open `/lab/models?family=cleared-sites` through **Art → Models → Cleared sites**. **Site** compares the shipped Troll or
+roaming beasts with the production standard. **View** uses the world camera at gameplay distance 20 or detail
 distance 8. Click a model or its selection button to open the reward panel; Close site dismisses it. The selected
 standard uses the production receipt component over native clear-result facts, with the Structure and guard removed. In
 the game a clear leaves the biome and a walkable tile; the standard and its reward receipt survive an army walking
@@ -54,30 +64,32 @@ model requests, saves four captures and closes each WebGL page. Strip the file's
 function as browser code. Keep the returned result beside the captures. Reuse this proof when revising the marker.
 
 What a player can do and how they get there, so a report or a screenshot can be reproduced. Update it in the change that
-adds, moves or removes a feature. Local dev: `pnpm --dir apps/game dev --host 127.0.0.1 --port <port>`. In the dev
-build, `/lab/app/<screen>/<page>` shows the shell pages over fixtures (`src/shell/lab/app-lab-fixtures.ts`), and
-`/lab/kit` the HUD's style sheet, the HUD scope of `src/tokens.ts` (HUD_TYPE, HUD_SHEET, HUD_MODES, HUD_PHONE): its
-tokens, editable live (Copy gives the changed values); each game as its age of the lore (Blitz I, Frontier II, Eternum
-III: Blitz torch amber, Frontier violet, Eternum gold, each an accent and a surface); the type scale by role; then every
-element the HUD draws (button, action bubble and badge, troop amount (+500, Max and a slider), transfer sliders with
-quick shares, field, select, switch, checkbox and settings, tooltip and the map's order line, panel, tabs, chip, ring
-badge, meter, list row, event row and notice, window, confirm (Frontier only), loading and empty, top bar and portrait,
-map plate, minimap frame) in every state, beside the versions the game draws today; Mode switches the age, Device a
-phone. `pnpm --dir apps/game styles:inventory` counts the client's distinct button, input, tab, panel and chip looks.
-`/lab/kit/shell` the shell kit's components (`/lab/kit/tokens` the token file). `/lab/kit/app` the app's style sheet
-(the pages outside a game): the research behind it (shipped game launchers and menus, desktop then mobile), its spec,
-the app scope of `src/tokens.ts` (APP_TYPE, APP_SHEET), every element in every state beside today's (the reward chest at
-each tier, sealed and opened, among them), and links to the real pages on the sheet over the app lab's fixtures;
-`pnpm --dir apps/game prove:app <base-url> <out-dir>` captures those pages on a desktop and a phone and checks them
-(nothing spills out of its block, every picture loads, one gold verb at most, the page's place the one lit, the painting
-and the bar on a desktop, each place's word whole on a phone), the bar with the longest name beside the install notice
-at 1024 and 1440 px (`/lab/app/long-name`), the phone's five places at 360 px, the lobby's entry with every choice taken
-at 1920, 1024 and 390 px, the account's pages on a desktop and a phone (`account`: sign-in's steps, You signed in, out
-and unnamed, Settings and what its Name, Portrait, Payout wallet and Sign out rows open), the doorway into a game at
-each of its holds (`doorway`: `/lab/app/home/doorway/<state>`, the map booting, sign-in, the season awaited, a roster
-filling, the map failed with the realm to open, the device limit, a Blitz to watch, one ended), and every element of the
-sheet; `prove:app <base-url> <out-dir> end-map`, on the live stack, opens the newest finished game's Results, presses
-**See the end map** and holds the map to its scene being ready, watched and finished.
+adds, moves or removes a feature. Local dev: `pnpm --dir apps/game dev --host 127.0.0.1 --port <port>`. The dev build's
+lab (`/lab`, `src/lab/README.md`) is six rooms, Kit, HUD, Game, Art, Data and Studio, with one Game and one Device
+switch. Kit → Icons → Frontier guards retains the painting review at `/lab/kit/beast-icons`. In it,
+`/lab/app/<screen>/<page>` shows the shell pages over fixtures (`src/shell/lab/app-lab-fixtures.ts`), and `/lab/kit` the
+HUD's style sheet, the HUD scope of `src/tokens.ts` (HUD_TYPE, HUD_SHEET, HUD_MODES, HUD_PHONE): its tokens, editable
+live (Copy gives the changed values); each game as its age of the lore (Blitz I, Frontier II, Eternum III: Blitz torch
+amber, Frontier violet, Eternum gold, each an accent and a surface); the type scale by role; then every element the HUD
+draws (button, action bubble and badge, troop amount (+500, Max and a slider), transfer sliders with quick shares,
+field, select, switch, checkbox and settings, tooltip and the map's order line, panel, tabs, chip, ring badge, meter,
+list row, event row and notice, window, confirm (Frontier only), loading and empty, top bar and portrait, map plate,
+minimap frame) in every state, beside the versions the game draws today; the lab's Game switch changes the age, its
+Device switch a phone. `pnpm --dir apps/game styles:inventory` counts the client's distinct button, input, tab, panel
+and chip looks. `/lab/kit/shell` the shell kit's components (`/lab/kit/tokens` the token file). `/lab/kit/app` the app's
+style sheet (the pages outside a game): the research behind it (shipped game launchers and menus, desktop then mobile),
+its spec, the app scope of `src/tokens.ts` (APP_TYPE, APP_SHEET), every element in every state beside today's (the
+reward chest at each tier, sealed and opened, among them), and links to the real pages on the sheet over the app lab's
+fixtures; `pnpm --dir apps/game prove:app <base-url> <out-dir>` captures those pages on a desktop and a phone and checks
+them (nothing spills out of its block, every picture loads, one gold verb at most, the page's place the one lit, the
+painting and the bar on a desktop, each place's word whole on a phone), the bar with the longest name beside the install
+notice at 1024 and 1440 px (`/lab/app/long-name`), the phone's five places at 360 px, the lobby's entry with every
+choice taken at 1920, 1024 and 390 px, the account's pages on a desktop and a phone (`account`: sign-in's steps, You
+signed in, out and unnamed, Settings and what its Name, Portrait, Payout wallet and Sign out rows open), the doorway
+into a game at each of its holds (`doorway`: `/lab/app/home/doorway/<state>`, the map booting, sign-in, the season
+awaited, a roster filling, the map failed with the realm to open, the device limit, a Blitz to watch, one ended), and
+every element of the sheet; `prove:app <base-url> <out-dir> end-map`, on the live stack, opens the newest finished
+game's Results, presses **See the end map** and holds the map to its scene being ready, watched and finished.
 `prove:app <base-url> <out-dir> qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone:
 Share on Results, a release picked on What's new, a legal page's places, a Season row's chips, Settings' Name, You with
 no finished game (`/lab/app/no-games`) and a session with no name (`/lab/app/unnamed`), the phone's own card and a
@@ -352,7 +364,8 @@ it keeps its own bands (`frontier/hud/hud-bands.tsx`): a strip at the top, a pla
 on both (`frontier/hud/one-panel.ts`): a page or sheet the HUD opens, the card of what the map selected, or the deploy
 order; the one opened last stands alone and puts the others away, so no panel opens over another. A detail opened from a
 page (a Research row's sheet, a realm on the Season's board) stands in the page's place, and its Back returns to the
-page. Dev: `/lab/kit/unified/frontier`, and Frontier's states on the same HUD at `/lab/kit/hud/<state>`.
+page. Dev: HUD → In game (`/lab/hud?mode=frontier`) draws the HUD as the game mounts it and every Frontier state
+(`/lab/kit/hud/<state>`) on a desktop and a phone side by side.
 
 | Feature                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Where                                                                                    | How to reach it                                                                                                                                                                                                                                                                                                   |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -433,7 +446,7 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   attached, or a row or two straight up, in the arrangement that rises least, the same whatever order they arrive in,
   and the others yield to them. Elsewhere an unnamed army or structure is called by its kind, never by its entity id
   (`getEntityName`, `packages/core/src/utils/entities.ts`). The dev build's lab draws the same labels over a fixture
-  world, `/lab/map-labels` (`zoom` play, close or far, `hover`, `select`, `battle`, `focus`, `busy=1`, `game=frontier`,
+  world, `/lab/map-labels` (`zoom` play, close or far, `hover`, `select`, `battle`, `focus`, `busy=1`, `mode=frontier`,
   `panel=0`, `spectate=1` in the address, or the panel's **Viewer · Playing | Spectating**: a watching viewer over the
   fixture's 24 seats, the seats listed; with a thing selected, the hovered tile shows the order line). In a live game,
   `playtest --steps blitz-plates` or `frontier-plates` (a spectator), or `blitz-plates-player` or
@@ -447,15 +460,15 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 
 ## Outposts
 
-| Feature                 | How to reach it                                                                                                                                                                 |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Camp                    | Map → select a discovered canvas camp. Its standard and roof edging show ownership.                                                                                             |
-| Village                 | Map → select a discovered Canvas & Thatch village. The yard standard and tent edging show ownership; local views use the same model.                                            |
-| Beasts                  | Frontier Map → select a beast encounter. Weak and stronger bands both scale with depth; both are below the other site guards.                                                   |
-| Shrine                  | Frontier Map → select an army beside a discovered sun arch → right-click it (press and hold on a phone): Use, +XP, the army stays. Tap it for its card and Use, army kept.      |
-| Well                    | Frontier Map → select an army beside a discovered stone well → right-click it (hold on a phone): Use, +stamina; the hover warns at a full bar. Tap it for its card, army kept.  |
-| Spire                   | Frontier Map → tap your lit spire (army selected or beside it): each researched depth, its stamina, Enter, and that the army stays there for the day.                           |
-| Ownership and placement | `/lab` → Building model → choose an outpost → Ownership where available → Place on selected tile → Focus selected tile. Biome and Fog controls exercise terrain and visibility. |
+| Feature                 | How to reach it                                                                                                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Camp                    | Map → select a discovered canvas camp. Its standard and roof edging show ownership.                                                                                                     |
+| Village                 | Map → select a discovered Canvas & Thatch village. The yard standard and tent edging show ownership; local views use the same model.                                                    |
+| Beasts                  | Frontier Map → select a beast encounter. Weak and stronger bands both scale with depth; both are below the other site guards.                                                           |
+| Shrine                  | Frontier Map → select an army beside a discovered sun arch → right-click it (press and hold on a phone): Use, +XP, the army stays. Tap it for its card and Use, army kept.              |
+| Well                    | Frontier Map → select an army beside a discovered stone well → right-click it (hold on a phone): Use, +stamina; the hover warns at a full bar. Tap it for its card, army kept.          |
+| Spire                   | Frontier Map → tap your lit spire (army selected or beside it): each researched depth, its stamina, Enter, and that the army stays there for the day.                                   |
+| Ownership and placement | `/lab/terrain` → Building model → choose an outpost → Ownership where available → Place on selected tile → Focus selected tile. Biome and Fog controls exercise terrain and visibility. |
 
 `pnpm --dir apps/game playtest --base-url https://127.0.0.1:<port> --steps lab-spire --iterations 1` plays the spire in
 the lab's game on a fixture (`/lab/game?scenario=spire`, `src/lab/game/`): the game's own map and HUD, the army
@@ -481,7 +494,7 @@ a phone) to use it; click it for its card with the army kept. Each use is the In
 recorded where the game would sign it (`window.__siteUseLab`); the site then goes.
 `src/three/scenes/worldmap-site-use.test.tsx` runs the same handlers as the regression test.
 
-With the local client running, open `/lab?evidence=/absolute/capture/directory` and run
+With the local client running, open `/lab/terrain?evidence=/absolute/capture/directory` and run
 `scripts/outposts/prove-runtime.playwright.js` through the browser connection with the page as its argument (remove the
 trailing statement semicolon when supplying it as an expression). The directory must exist. It drives the visible
 controls, checks delivered model responses, captures the six models on grassland and a tropical-coast transition, and
@@ -493,9 +506,10 @@ Asset gates: `pnpm --dir apps/game verify:assets scripts/outposts/outpost-assets
 watched player's revealed tiles. Spectators can inspect selection and presentation; capture and single-use rewards need
 an eligible player. The lab proof does not establish those live actions.
 
-- Ruin: Frontier Map → a discovered fallen realm; its beast still follows the same depth table. In `/lab`, choose **Ruin
-  · Fallen realm** and place it on the selected tile. Add `&asset=ruin` to the runtime proof URL to capture only the
-  ruin on grassland and the tropical-coast transition. The collision gate covers its four runtime beasts.
+- Ruin: Frontier Map → a discovered fallen realm; its beast still follows the same depth table. In `/lab/terrain`,
+  choose **Ruin · Fallen realm** and place it on the selected tile. Add `&asset=ruin` to the runtime proof URL to
+  capture only the ruin on grassland and the tropical-coast transition. The collision gate covers its four runtime
+  beasts.
 
 ### Blitz rules a player meets
 
@@ -525,9 +539,9 @@ On the world map, unexplored ground uses moving edge mist through the existing d
 darker mist and Ember lighting; Blitz retains the shipped day/night lighting. Ground biomes, relief, textures and props
 are unchanged. The realm scene retains its shipped lighting.
 
-For an auth-free comparison, open `/lab` → **World mode** → **Blitz** or **Frontier**, then select a scene and use
-Exploration or Time. The lab calls the production terrain and atmosphere constructors. See `src/lab/README.md` for the
-gallery proof command; live game selection comes only from the game's synced mode.
+For an auth-free comparison, open Art → Terrain (`/lab/terrain`) and switch **Game** to **Blitz** or **Frontier**, then
+select a scene and use Exploration or Time. The lab calls the production terrain and atmosphere constructors. See
+`src/lab/README.md` for the gallery proof command; live game selection comes only from the game's synced mode.
 
 ## Facets icons
 
@@ -567,11 +581,11 @@ building's thumbnail against the scene's model selection.
 
 ## Realm models
 
-`/lab` → **Models & motion** → **Realm ladder** shows the production settlement, city, kingdom and empire at true scale.
-City and kingdom have warm upper glass; empire has four lower oak shutters and six upper warm windows. The treatment is
-baked into the three production models; there is no window-treatment selector. Settlement and wonders keep their own
-materials. Choose **Age**, **Series**, **Order**, **Ownership** and **Distance**; drag to orbit and scroll to zoom. With
-an external reference directory in the URL, **Revision** offers Before, After and the pair. See
+Art → **Models** → **Realm ladder** (`/lab/models?family=realms`) shows the production settlement, city, kingdom and
+empire at true scale. City and kingdom have warm upper glass; empire has four lower oak shutters and six upper warm
+windows. The treatment is baked into the three production models; there is no window-treatment selector. Settlement and
+wonders keep their own materials. Choose **Age**, **Series**, **Order**, **Ownership** and **Distance**; drag to orbit
+and scroll to zoom. With an external reference directory in the URL, **Revision** offers Before, After and the pair. See
 [src/lab/README.md](src/lab/README.md#realm-revision-comparison) for the retained capture driver and reference setup.
 
 ### T1 Knight
@@ -704,7 +718,7 @@ uses the same `Icon` / `IconMeaning` contract; its page migration needs no icon 
 
 ## Workshop — Craft Yard
 
-Open `/lab/models?family=workshops` (Models & motion → Workshop · Craft Yard). The scene shows the production Workshop
+Open `/lab/models?family=workshops` (Art → Models → Workshop · Craft Yard). The scene shows the production Workshop
 beside the shipped Farm and Workers Hut, at scale one on game terrain through `InstancedModel`. View selects gameplay
 distance 14, closer/farther lineups or Workshop detail; Turn and Light inspect the roofs, clear yard and other faces.
 Drag to orbit and scroll to inspect.
@@ -723,9 +737,9 @@ To regenerate only the Workshop thumbnail with the shared 85% fill normalizer:
 
 ## Frontier buildings — painted set
 
-Open `/lab/models?family=frontier-painted` (Models & motion → Frontier buildings · painted set). Set shows one group of
-the set at scale one on game terrain through `InstancedModel`: the realm castles, Farm, Workshop, Barracks or Workers'
-hut at tiers I–V, the four training buildings, or the map sites. Compare puts the models the game draws today in a row
+Open `/lab/models?family=frontier-painted` (Art → Models → Frontier buildings · painted set). Set shows one group of the
+set at scale one on game terrain through `InstancedModel`: the realm castles, Farm, Workshop, Barracks or Workers' hut
+at tiers I–V, the four training buildings, or the map sites. Compare puts the models the game draws today in a row
 behind (none yet for the Farm, Barracks and Workers' hut at tiers IV and V). Focus and View (Detail) inspect one
 building closely; Turn steps through the board's six headings while each tier banner holds its heading, broadside to the
 camera. Realm castles do not turn: they face the camera, as realm models do in the game. A Farm's sails turn.

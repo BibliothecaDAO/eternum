@@ -1,0 +1,78 @@
+.hud-room {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  height: var(--lab-viewport-height);
+  font:
+    13px/1.4 system-ui,
+    sans-serif;
+}
+.hud-room-list {
+  overflow-y: auto;
+  padding: 12px 8px;
+  border-right: 1px solid #a8bbc020;
+}
+.hud-room-list h2 {
+  margin: 12px 8px 4px;
+  color: #8e9b97;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.hud-room-list button {
+  display: block;
+  width: 100%;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: #c9d2cf;
+  font: inherit;
+  text-align: left;
+}
+.hud-room-list button:hover {
+  background: #18252e;
+}
+.hud-room-list button[aria-current="true"] {
+  background: #18252e;
+  color: #d4b986;
+}
+.hud-room-stage {
+  min-width: 0;
+  padding: 12px 16px;
+  overflow: hidden;
+}
+.hud-room-stage p {
+  height: 24px;
+  margin: 0 0 8px;
+}
+.hud-room-stage a {
+  color: #d4b986;
+}
+.hud-room-frames {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+.hud-room-frames figure {
+  margin: 0;
+}
+.hud-room-frames figure > div {
+  overflow: hidden;
+  border: 1px solid #a8bbc040;
+  border-radius: 6px;
+}
+.hud-room-frames iframe {
+  border: 0;
+  transform-origin: 0 0;
+}
+.hud-room-frames figcaption {
+  margin-top: 4px;
+  color: #8e9b97;
+}
+@media (max-width: 700px) {
+  .hud-room {
+    grid-template-columns: 1fr;
+    grid-template-rows: 30% 1fr;
+  }
+}

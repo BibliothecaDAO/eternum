@@ -1,264 +1,93 @@
-import { lazy, Suspense, useEffect, useRef } from "react";
-import { Link, matchPath, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Suspense, useEffect, useRef } from "react";
+import { Link, matchPath, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { SceneRoute } from "../scene-route";
 import { useBootDocumentState } from "../ui/modules/boot-loader";
 import "./lab-app.css";
+import { type Device, type LabPage, type LabRoom, type LabView, type Mode, ROOMS } from "./rooms";
 
-const TOOLS = [
-  {
-    group: "Art",
-    label: "Terrain & buildings",
-    path: "/lab",
-    route: "",
-    View: lazy(() =>
-      import("../ui/features/debug/procedural-terrain-debug-view").then((module) => ({
-        default: module.ProceduralTerrainDebugView,
-      })),
-    ),
-  },
-  {
-    group: "Art",
-    label: "Models & motion",
-    path: "/lab/models",
-    route: "models",
-    View: lazy(() =>
-      import("../ui/features/debug/model-lab-view").then((module) => ({ default: module.ModelLabView })),
-    ),
-  },
-  {
-    group: "Art",
-    label: "Rewards",
-    path: "/lab/rewards",
-    route: "rewards",
-    View: lazy(() =>
-      import("../ui/features/debug/reward-lab-view").then((module) => ({ default: module.RewardLabView })),
-    ),
-  },
-  {
-    group: "Art",
-    label: "Terrain props",
-    path: "/lab/terrain-props",
-    route: "terrain-props",
-    View: lazy(() =>
-      import("../ui/features/debug/terrain-prop-debug-view").then((module) => ({
-        default: module.TerrainPropDebugView,
-      })),
-    ),
-  },
-  {
-    group: "Art",
-    label: "Relic chest",
-    path: "/lab/relic-chest",
-    route: "relic-chest",
-    View: lazy(() => import("./relic-chest/view").then((module) => ({ default: module.RelicChestLab }))),
-  },
-  {
-    group: "Art",
-    label: "Endgame mist",
-    path: "/lab/endgame",
-    route: "endgame",
-    View: lazy(() => import("./endgame-mist/view").then((module) => ({ default: module.EndgameMistLabView }))),
-  },
-  {
-    group: "Art",
-    label: "Day end",
-    path: "/lab/day-end",
-    route: "day-end",
-    View: lazy(() => import("./day-end/view").then((module) => ({ default: module.DayEndLabView }))),
-  },
-  {
-    group: "Art",
-    label: "World FX",
-    path: "/lab/world-fx",
-    route: "world-fx",
-    View: lazy(() =>
-      import("../ui/features/debug/world-fx-gym-view").then((module) => ({ default: module.WorldFxGymView })),
-    ),
-  },
-  {
-    group: "Film",
-    label: "Studio",
-    path: "/lab/studio",
-    route: "studio",
-    View: lazy(() => import("./studio/view").then((module) => ({ default: module.StudioLabView }))),
-  },
-  {
-    group: "Characters",
-    label: "Character review",
-    path: "/lab/characters",
-    route: "characters",
-    View: lazy(() =>
-      import("../ui/features/debug/procedural-character-gym-view").then((module) => ({
-        default: module.ProceduralCharacterGymView,
-      })),
-    ),
-  },
-  {
-    group: "Characters",
-    label: "Character benchmark",
-    path: "/lab/character-benchmark",
-    route: "character-benchmark",
-    View: lazy(() =>
-      import("../ui/features/debug/procedural-character-benchmark-view").then((module) => ({
-        default: module.ProceduralCharacterBenchmarkView,
-      })),
-    ),
-  },
-  {
-    group: "Characters",
-    label: "World integration",
-    path: "/lab/world",
-    route: "world",
-    View: lazy(() =>
-      import("../ui/features/debug/procedural-character-benchmark-view").then((module) => ({
-        default: module.ProceduralWorldGymView,
-      })),
-    ),
-  },
-  {
-    group: "Renderer",
-    label: "Chunk fixtures",
-    path: "/lab/chunks",
-    route: "chunks",
-    View: lazy(() =>
-      import("../ui/features/debug/three-chunk-debug-view").then((module) => ({ default: module.ThreeChunkDebugView })),
-    ),
-  },
-  {
-    group: "Renderer",
-    label: "Terrain benchmark",
-    path: "/lab/terrain-benchmark",
-    route: "terrain-benchmark",
-    View: lazy(() =>
-      import("../ui/features/debug/procedural-terrain-benchmark-view").then((module) => ({
-        default: module.ProceduralTerrainBenchmarkView,
-      })),
-    ),
-  },
-  {
-    group: "Renderer",
-    label: "Map labels",
-    path: "/lab/map-labels",
-    route: "map-labels",
-    View: lazy(() =>
-      import("../ui/features/debug/map-label-lab/map-label-lab-view").then((module) => ({
-        default: module.MapLabelLabView,
-      })),
-    ),
-  },
-  {
-    group: "Interface",
-    label: "Motion primitives",
-    path: "/lab/motion",
-    route: "motion",
-    View: lazy(() =>
-      import("../ui/features/debug/motion-lab/motion-lab-view").then((module) => ({ default: module.MotionLabView })),
-    ),
-  },
-  {
-    group: "Interface",
-    label: "UI kit & HUD",
-    path: "/lab/kit",
-    route: "kit/*",
-    View: lazy(() =>
-      import("../ui/features/debug/kit-lab/kit-lab-view").then((module) => ({ default: module.KitLabView })),
-    ),
-  },
-  {
-    group: "Interface",
-    label: "Game on a fixture",
-    path: "/lab/game",
-    route: "game",
-    View: lazy(() => import("./game/game-lab-view").then((module) => ({ default: module.GameLabView }))),
-  },
-  {
-    group: "Interface",
-    label: "App fixtures",
-    path: "/lab/app/home",
-    route: "app/:screen/*",
-    View: lazy(() => import("../shell/lab/app-lab").then((module) => ({ default: module.AppLabView }))),
-  },
-] as const;
+const MODE_NAMES: Record<Mode, string> = { blitz: "Blitz", frontier: "Frontier", eternum: "Eternum" };
+/** The Game switch lists the ages in their order, whichever a page draws first. */
+const GAMES: readonly Mode[] = ["blitz", "frontier", "eternum"];
+const DEVICE_NAMES: Record<Device, string> = { desktop: "Desktop", phone: "Phone", both: "Both" };
+
+/**
+ * Every view with its page and room: the header and the routes read the lab from here. A page's `inside` routes (the HUD
+ * room's frames) are `alone` when opened by themselves: they belong to the page but are not where it reopens.
+ */
+const VIEWS = ROOMS.flatMap((room) =>
+  room.pages.flatMap((page) => [
+    ...page.views.map((view) => ({ room, page, view, alone: false })),
+    ...(page.inside ?? []).map((view) => ({ room, page, view, alone: true })),
+  ]),
+);
+/** The page-wide choices a page keeps across its views. */
+const SHARED = ["mode", "device"] as const;
+/** One route per address pattern: the Game room's two lab games share theirs. */
+const ROUTES = VIEWS.filter(({ view }, index) => VIEWS.findIndex((other) => other.view.route === view.route) === index);
 
 const LoadingTool = () => (
   <div className="lab-loading" role="status">
-    Loading tool…
+    Loading…
   </div>
 );
 
-/** One bootstrap owns the viewport and boot shell; changing tools unmounts the previous renderer before loading another. */
+/** One bootstrap owns the viewport and boot shell; changing pages unmounts the previous renderer before loading another. */
 export function LabApp() {
   useBootDocumentState("app-ready", "lab_ready");
   return (
     <SceneRoute fallback={<LoadingTool />}>
-      <LabTools />
+      <LabRooms />
     </SceneRoute>
   );
 }
 
-function LabTools() {
+const withQuery = (path: string, changes: Record<string, string>) => {
+  const [pathname, search = ""] = path.split("?");
+  const params = new URLSearchParams(search);
+  Object.entries(changes).forEach(([key, value]) => params.set(key, value));
+  return params.size > 0 ? `${pathname}?${params}` : pathname!;
+};
+
+/** Where a page opens: where it was last left, else its first view, on Frontier when it draws Frontier. */
+const opening = (page: LabPage, saved: Map<LabPage, string>) =>
+  saved.get(page) ??
+  (page.modes?.includes("frontier") ? withQuery(page.views[0]!.path, { mode: "frontier" }) : page.views[0]!.path);
+
+function LabRooms() {
   const { pathname: rawPathname, search } = useLocation();
   const pathname = rawPathname.replace(/\/$/, "");
   const navigate = useNavigate();
-  const savedAddresses = useRef(new Map<string, string>());
-  const tool = TOOLS.find((entry) =>
-    matchPath({ path: entry.route ? `/lab/${entry.route}` : "/lab", end: true }, pathname),
-  );
-  const capture = new URLSearchParams(search).get("capture") === "1";
+  const saved = useRef(new Map<LabPage, string>());
+  const shown = VIEWS.find(({ view }) => matchPath({ path: `/lab/${view.route}`, end: true }, pathname));
+  const params = new URLSearchParams(search);
+  const capture = params.get("capture") === "1";
   useEffect(() => {
-    if (tool) savedAddresses.current.set(tool.path, `${pathname}${search}`);
-  }, [pathname, search, tool]);
+    if (shown && !shown.alone) saved.current.set(shown.page, `${pathname}${search}`);
+  }, [pathname, search, shown]);
 
   return (
     <div className="lab-app" data-capture={capture}>
       {!capture && (
-        <header className="lab-header">
-          <Link to="/" aria-label="Exit lab to home">
-            Eternum Lab
-          </Link>
-          <label>
-            Tool{" "}
-            <select
-              aria-label="Lab tool"
-              value={tool?.path ?? ""}
-              onChange={(event) => {
-                const path = event.target.value;
-                navigate(savedAddresses.current.get(path) ?? path);
-              }}
-            >
-              {!tool && (
-                <option value="" disabled>
-                  Choose a tool
-                </option>
-              )}
-              {[...new Set(TOOLS.map((entry) => entry.group))].map((group) => (
-                <optgroup key={group} label={group}>
-                  {TOOLS.filter((entry) => entry.group === group).map((entry) => (
-                    <option key={entry.path} value={entry.path}>
-                      {entry.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </label>
-        </header>
+        <LabHeader
+          shown={shown}
+          params={params}
+          open={(page) => navigate(opening(page, saved.current))}
+          set={(changes) => navigate(withQuery(`${pathname}${search}`, changes))}
+        />
       )}
       <div className="lab-tool">
-        <Suspense key={tool?.path ?? pathname} fallback={<LoadingTool />}>
+        {/* A page reads its game as it opens; another game opens it again. */}
+        <Suspense key={`${shown?.view.route ?? pathname}|${params.get("mode")}`} fallback={<LoadingTool />}>
           <Routes>
-            {TOOLS.map(({ route, path, View }) =>
-              route === "" ? (
-                <Route key={path} index element={<View />} />
-              ) : (
-                <Route key={path} path={route} element={<View />} />
-              ),
-            )}
+            <Route index element={<Navigate to="/lab/kit" replace />} />
+            {ROUTES.map(({ view: { route, View } }) => (
+              <Route key={route} path={route} element={<View />} />
+            ))}
             <Route
               path="*"
               element={
                 <div className="lab-loading">
-                  Tool not found. <Link to="/lab">Open terrain tools</Link>
+                  No lab page here. <Link to="/lab/kit">Open the kit</Link>
                 </div>
               }
             />
@@ -266,5 +95,129 @@ function LabTools() {
         </Suspense>
       </div>
     </div>
+  );
+}
+
+function LabHeader({
+  shown,
+  params,
+  open,
+  set,
+}: {
+  shown: { room: LabRoom; page: LabPage; view: LabView; alone: boolean } | undefined;
+  params: URLSearchParams;
+  open: (page: LabPage) => void;
+  set: (changes: Record<string, string>) => void;
+}) {
+  const page = shown?.page;
+  // A route opened alone picks its game from its path and its layout from the window: no switch would change it.
+  const modes = (!shown?.alone && page?.modes) || [];
+  const mode = (params.get("mode") as Mode | null) ?? modes[0];
+  const devices = (!shown?.alone && page?.devices) || [];
+  const device = (params.get("device") as Device | null) ?? devices[0];
+  return (
+    <header className="lab-header">
+      <div className="lab-row">
+        <Link to="/" aria-label="Exit lab to home">
+          Eternum Lab
+        </Link>
+        <nav aria-label="Rooms">
+          {ROOMS.map((room) => (
+            <button
+              key={room.title}
+              type="button"
+              aria-current={room === shown?.room ? "page" : undefined}
+              onClick={() => open(room.pages[0]!)}
+            >
+              {room.title}
+            </button>
+          ))}
+        </nav>
+        <span className="lab-switches">
+          {modes.length > 1 && (
+            <Switch
+              label="Game"
+              options={GAMES.filter((each) => modes.includes(each))}
+              names={MODE_NAMES}
+              value={mode}
+              onChange={(next) => set({ mode: next })}
+            />
+          )}
+          {devices.length > 1 && (
+            <Switch
+              label="Device"
+              options={devices}
+              names={DEVICE_NAMES}
+              value={device}
+              onChange={(next) => set({ device: next })}
+            />
+          )}
+        </span>
+      </div>
+      {shown && (
+        <div className="lab-row">
+          <nav aria-label="Pages">
+            {shown.room.pages.map((each) => (
+              <button
+                key={each.title}
+                type="button"
+                aria-current={each === page ? "page" : undefined}
+                onClick={() => open(each)}
+              >
+                {each.title}
+              </button>
+            ))}
+          </nav>
+          {shown.alone && (
+            <nav aria-label="Views">
+              <button type="button" onClick={() => open(shown.page)}>
+                ← Back to {shown.page.title}
+              </button>
+            </nav>
+          )}
+          {!shown.alone && shown.page.views.length > 1 && (
+            <nav aria-label="Views">
+              {shown.page.views.map((each) => (
+                <Link
+                  key={each.path}
+                  to={withQuery(
+                    each.path,
+                    Object.fromEntries(SHARED.flatMap((key) => (params.has(key) ? [[key, params.get(key)!]] : []))),
+                  )}
+                  aria-current={each === shown.view ? "page" : undefined}
+                >
+                  {each.label}
+                </Link>
+              ))}
+            </nav>
+          )}
+        </div>
+      )}
+    </header>
+  );
+}
+
+function Switch<K extends string>({
+  label,
+  options,
+  names,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: readonly K[];
+  names: Record<K, string>;
+  value: K | undefined;
+  onChange: (next: K) => void;
+}) {
+  return (
+    <span role="group" aria-label={label}>
+      {label}
+      {options.map((key) => (
+        <button key={key} type="button" aria-pressed={key === value} onClick={() => onChange(key)}>
+          {names[key]}
+        </button>
+      ))}
+    </span>
   );
 }

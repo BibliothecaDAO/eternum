@@ -33,7 +33,7 @@ await withDevClient({ base, port, out }, async (baseUrl) => {
         }
         browser.run([
           "open",
-          `${baseUrl}/lab/relic-chest?capture=1&rendererMode=${backend}&gameMode=${game}`,
+          `${baseUrl}/lab/relic-chest?capture=1&rendererMode=${backend}&mode=${game}`,
           "--ignore-https-errors",
           "--args",
           "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",

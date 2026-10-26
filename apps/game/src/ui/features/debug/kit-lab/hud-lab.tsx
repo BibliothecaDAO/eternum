@@ -912,6 +912,9 @@ type LabState = {
   realms?: LabRealms;
 };
 
+/** Every state the HUD lab draws, by the name in its address: the HUD room lists them. */
+export const HUD_LAB_STATES = Object.keys(STATES);
+
 const SLOTS = 4;
 const noop = () => undefined;
 
