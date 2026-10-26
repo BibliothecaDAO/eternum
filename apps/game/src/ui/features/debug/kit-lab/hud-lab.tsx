@@ -677,6 +677,7 @@ const STATES = {
   "building-farm": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "farm" },
   "building-barracks": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "barracks" },
   "building-war-hall": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "war-hall" },
+  "building-scouts-lodge": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "scouts-lodge" },
   "realm-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "full" },
   "army-refill": {
     clock: CLOCK,
@@ -1187,7 +1188,7 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
   );
 };
 
-/** The lab realm's Farms, Barracks and War hall, each as its card shows it: how many stand and what they make. */
+/** The lab realm's Farms, Barracks, War hall and Scouts' lodge, each as its card shows it: how many stand and what they make. */
 const LAB_BUILDINGS = {
   farm: {
     category: BuildingType.ResourceWheat,
@@ -1202,6 +1203,7 @@ const LAB_BUILDINGS = {
     makes: { icon: "troops", rate: "+10/min", why: "+50% from Drill" },
   },
   "war-hall": { category: BuildingType.WarHall, row: research.ROW_WAR_HALL, standing: 1, makes: undefined },
+  "scouts-lodge": { category: BuildingType.ScoutsLodge, row: research.ROW_SCOUTS_LODGE, standing: 1, makes: undefined },
 } satisfies Record<string, { category: BuildingType; row: number; standing: number; makes?: CardMakes }>;
 
 /** A building's card on the realm some days in, its Delete drawn as it rests. */

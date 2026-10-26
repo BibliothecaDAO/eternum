@@ -54,12 +54,14 @@ export const SURFACES = [
   { name: "frontier-site-camp", path: "/lab/kit/hud/site-camp", mark: "frontier" },
   { name: "frontier-fight-won", path: "/lab/kit/hud/fight-won", mark: "frontier" },
   { name: "frontier-army-refill", path: "/lab/kit/hud/army-refill", mark: "frontier" },
-  ...["castle", "castle-short", "building-farm", "building-barracks", "building-war-hall"].map((state) => ({
-    name: `frontier-${state}`,
-    path: `/lab/kit/hud/${state}`,
-    mark: "frontier",
-    sizes: CARDS,
-  })),
+  ...["castle", "castle-short", "building-farm", "building-barracks", "building-war-hall", "building-scouts-lodge"].map(
+    (state) => ({
+      name: `frontier-${state}`,
+      path: `/lab/kit/hud/${state}`,
+      mark: "frontier",
+      sizes: CARDS,
+    }),
+  ),
   { name: "frontier-research", path: "/lab/kit/hud/research", mark: "frontier", sizes: CARDS },
   { name: "frontier-build-locked", path: "/lab/kit/hud/build-early", mark: "frontier", sizes: CARDS },
   { name: "frontier-army", path: "/lab/kit/hud/selected", mark: "frontier", sizes: CARDS },
