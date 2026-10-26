@@ -7,12 +7,14 @@ export default defineConfig({
   // module instance would split the active-game-id mirror the helpers read.
   // troop-stamina, expeditions and combat-exchange are too: services and the docs read a game's own rules without the
   // client's config state.
+  // build-order too: the identity worker reads a player's saved orders with the game's own reader.
   entry: [
     "src/index.ts",
     "src/account/device-signer.ts",
     "src/account/transaction-resource-bounds.ts",
     "src/account/realms-account.ts",
     "src/automation/index.ts",
+    "src/automation/build-order.ts",
     "src/utils/biome/biome.ts",
     "src/managers/game-entity-keys.ts",
     "src/managers/troop-stamina.ts",

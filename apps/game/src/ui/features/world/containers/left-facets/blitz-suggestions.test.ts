@@ -4,7 +4,7 @@ import { BuildingType, ResourcesIds, TroopTier, TroopType } from "@bibliothecada
 import { describe, expect, it } from "vitest";
 import {
   buildBlitzRealmSuggestions,
-  parseBuildOrder,
+  readBuildOrder,
   type BlitzArmyState,
   type BlitzBuildingCounts,
   type BlitzRealmSuggestionInput,
@@ -52,10 +52,11 @@ const counts = (built: Partial<BlitzBuildingCounts>) => ({ ...emptyCounts, ...bu
 const nextStep = (input: BlitzRealmSuggestionInput, order?: BuildOrder) =>
   buildBlitzRealmSuggestions(input, order).map(({ action, reason }) => `${action} · ${reason}`);
 
-const order = (text: string): BuildOrder => {
-  const read = parseBuildOrder(text, "Mine");
-  if ("error" in read) throw new Error(read.error.message);
-  return read.order;
+/** A player's order from its steps, as the language reads its JSON: [rank, goal, count]; a level up has no count. */
+const order = (...steps: [rank: string, goal: string, count?: number][]): BuildOrder => {
+  const read = readBuildOrder({ name: "Mine", steps: steps.map(([rank, goal, count]) => ({ rank, goal, count })) });
+  if ("error" in read) throw new Error(read.error);
+  return read.ok;
 };
 
 describe("a realm's next step on the default build order", () => {
@@ -149,7 +150,7 @@ describe("a realm's next step on the default build order", () => {
   });
 
   it("follows a player's own order instead, a level-up still first and a hut when its step needs room", () => {
-    const coalRush = order("City:\n2 coal\n4 farm");
+    const coalRush = order(["City", "coal", 2], ["City", "farm", 4]);
     expect(nextStep(baseInput(), coalRush)).toEqual(["build-coal · Coal mines: 0 of 2 built."]);
     expect(nextStep(baseInput({ buildingCounts: counts({ coal: 2 }) }), coalRush)).toEqual([
       "build-wheat · Wheat farms: 0 of 4 built.",
@@ -160,6 +161,23 @@ describe("a realm's next step on the default build order", () => {
     ]);
     // Done with its order, the realm has no step.
     expect(nextStep(baseInput({ buildingCounts: counts({ coal: 2, wheat: 4 }) }), coalRush)).toEqual([]);
+  });
+
+  it("levels up first whenever it can, unless the order places the level up itself, which then waits its turn", () => {
+    const canLevel = { canAffordUpgrade: true };
+    // No level up in the order: it comes first.
+    expect(nextStep(baseInput(canLevel), order(["City", "coal", 2]))).toEqual(["upgrade · It can level up now."]);
+    // Placed after the coal: the coal first, then the level up.
+    const coalThenLevel = order(["City", "coal", 2], ["City", "levelUp"], ["City", "farm", 4]);
+    expect(nextStep(baseInput(canLevel), coalThenLevel)).toEqual(["build-coal · Coal mines: 0 of 2 built."]);
+    const coalDone = { ...canLevel, buildingCounts: counts({ coal: 2 }) };
+    expect(nextStep(baseInput(coalDone), coalThenLevel)).toEqual(["upgrade · It can level up now."]);
+    // Not yet paid for, it holds the farms after it: the order saves for its level up.
+    expect(nextStep(baseInput({ ...coalDone, canAffordUpgrade: false }), coalThenLevel)).toEqual([]);
+    // Past that rank, its level up is done and the steps after it come.
+    expect(nextStep(baseInput({ ...coalDone, realmLevel: 2, canAffordUpgrade: false }), coalThenLevel)).toEqual([
+      "build-wheat · Wheat farms: 0 of 4 built.",
+    ]);
   });
 });
 
@@ -202,7 +220,7 @@ describe("a realm's first army on the default build order", () => {
   });
 
   it("builds the barracks first in a player's order that asks for an army before one", () => {
-    const armyFirst = order("City:\n1 army\n4 farm");
+    const armyFirst = order(["City", "army", 1], ["City", "farm", 4]);
     expect(
       nextStep(city({}, { buildingCounts: counts({}), militaryTarget: { ...knights, count: 0 } }), armyFirst),
     ).toEqual(["build-military · Knight T1 buildings: 0 of 1 built."]);
