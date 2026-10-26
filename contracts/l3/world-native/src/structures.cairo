@@ -122,13 +122,13 @@ pub trait IStructureOperations<T> {
         timestamp: u64,
         game_context: crate::commands::ActionContext,
     ) -> u64;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn provision_realm(
         ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
     ) -> u64;
 }
 
-pub(crate) fn discovered_structure(
+pub fn discovered_structure(
     coord: Coord,
     discovery: crate::discovery::Discovery,
     capacities: crate::rules::StructureCapacityConfig,

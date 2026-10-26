@@ -83,9 +83,9 @@ pub fn bonus_output(bonus: ProductionBonus, resource_type: u8, amount: u128, tim
 
 #[starknet::interface]
 pub trait IProductionRules<T> {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn production_recipe(self: @T, key: RecipeKey) -> ProductionRecipe;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn production_bonus(self: @T, key: crate::resources::ResourceKey) -> ProductionBonus;
 }
 

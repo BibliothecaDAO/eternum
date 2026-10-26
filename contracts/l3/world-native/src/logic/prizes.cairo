@@ -3,10 +3,10 @@ pub mod PrizesLogic {
     use starknet::storage::StoragePointerReadAccess;
     const MAX_PHASES_PER_CLAIM: u32 = 8;
     use starknet::ContractAddress;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     use starknet::storage::StorageMapReadAccess;
     use crate::events::RowSet;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     use crate::faith::{FaithfulStructure, PlayerFaithKey, PlayerFaithPoints, WonderFaith, WonderFaithWinners};
     use crate::game::assert_playing;
     use crate::logic::blitz_results::BlitzResultState;
@@ -49,19 +49,19 @@ pub mod PrizesLogic {
     }
     #[abi(embed_v0)]
     impl FaithViews of crate::faith::IFaithOwnershipViews<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn wonder_faith(self: @ContractState, key: ResourceKey) -> WonderFaith {
             self.faith.data.faith.faith_wonders.read((key.game_id, key.entity_id))
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn faithful_structure(self: @ContractState, key: ResourceKey) -> FaithfulStructure {
             self.faith.data.faith.faith_pledges.read((key.game_id, key.entity_id))
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn player_faith_points(self: @ContractState, key: PlayerFaithKey) -> PlayerFaithPoints {
             self.faith.data.faith.faith_players.read((key.game_id, key.player, key.wonder_id))
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn wonder_faith_winners(self: @ContractState, game_id: u32) -> WonderFaithWinners {
             self.faith.winners(game_id)
         }
@@ -84,25 +84,25 @@ pub mod PrizesLogic {
     }
     #[abi(embed_v0)]
     impl BitcoinViews of crate::bitcoin::IBitcoinViews<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn bitcoin_mine(self: @ContractState, key: ResourceKey) -> crate::bitcoin::MineFunding {
             self.bitcoin.mine(key)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn bitcoin_claimed(self: @ContractState, key: crate::bitcoin::ClaimKey) -> bool {
             self.bitcoin.was_claimed(key)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn bitcoin_phase(self: @ContractState, key: crate::bitcoin::PhaseKey) -> crate::bitcoin::Phase {
             self.bitcoin.phase(key)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn bitcoin_contribution(
             self: @ContractState, key: crate::bitcoin::ContributionKey,
         ) -> crate::bitcoin::Contribution {
             self.bitcoin.contribution(key)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn bitcoin_contributor(self: @ContractState, key: crate::bitcoin::PhaseKey, index: u32) -> ContractAddress {
             self.bitcoin.contributor(key, index)
         }

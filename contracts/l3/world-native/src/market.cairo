@@ -76,12 +76,12 @@ pub struct LiquidityStory {
 }
 #[starknet::interface]
 pub trait IBank<T> {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn bank_rules(self: @T, game_id: u32) -> BankRules;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn bank_name(self: @T, key: crate::resources::ResourceKey) -> felt252;
     fn market(self: @T, key: MarketKey) -> Market;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn liquidity(self: @T, key: LiquidityKey) -> u128;
     fn create_banks(
         ref self: T,

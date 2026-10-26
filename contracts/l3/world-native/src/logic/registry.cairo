@@ -1,10 +1,10 @@
 #[starknet::contract]
 pub mod RegistryLogic {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     use crate::game::GameRegistry;
     use crate::logic::registrar::RegistrarState;
     use crate::logic::release::ReleaseState;
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     use crate::rules::SliceRules;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     component!(path: RegistrarState, storage: registrar, event: RegistrarEvent);
@@ -40,7 +40,7 @@ pub mod RegistryLogic {
         ReleaseEvent: ReleaseState::Event,
         RegistrarEvent: RegistrarState::Event,
     }
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     #[abi(embed_v0)]
     impl Games of crate::game::IGame<ContractState> {
         fn write_game(ref self: ContractState, game_id: u32, game: GameRegistry) {

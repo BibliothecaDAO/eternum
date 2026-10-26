@@ -15,7 +15,7 @@ async function fixture(t, artifacts, indexed) {
   for (const [name, type] of Object.entries(artifacts))
     await writeFile(join(directory, name), JSON.stringify({ abi: [type] }));
   await writeFile(
-    join(directory, "world_native_unittest.test.starknet_artifacts.json"),
+    join(directory, "world_tests_capture_contracts.test.starknet_artifacts.json"),
     JSON.stringify({
       contracts: indexed.map((sierra) => ({ artifacts: { sierra } })),
     }),
@@ -39,4 +39,17 @@ test("an unindexed old class cannot supply missing coverage or hide wire drift",
     checkFactWire(await fixture(t, artifacts, ["current.test.contract_class.json"]), [current]),
     /Fact wire drift/,
   );
+});
+
+test("checks every test package and rejects conflicts between packages", async (t) => {
+  const directory = await fixture(t, { "first.json": current, "second.json": current }, ["first.json"]);
+  await writeFile(
+    new URL("second.test.starknet_artifacts.json", directory),
+    JSON.stringify({
+      contracts: [{ artifacts: { sierra: "second.json" } }],
+    }),
+  );
+  assert.equal(await checkFactWire(directory, [current]), 1);
+  await writeFile(new URL("second.json", directory), JSON.stringify({ abi: [stale] }));
+  await assert.rejects(checkFactWire(directory, [current]), /Conflicting test ABI/);
 });

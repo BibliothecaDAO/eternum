@@ -78,7 +78,7 @@ pub fn category_count(counts: StructureBuildings, category: u8) -> u8 {
     (packed / scale % BYTE_SCALE).try_into().unwrap()
 }
 
-pub(crate) fn change_count(ref counts: StructureBuildings, category: u8, adding: bool) {
+pub fn change_count(ref counts: StructureBuildings, category: u8, adding: bool) {
     let (index, scale) = count_position(category);
     let old = category_count(counts, category);
     let count = if adding {
@@ -148,7 +148,7 @@ pub struct BuildingEffect {
 
 #[starknet::interface]
 pub trait IBuildingRules<T> {
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     fn building_rule(self: @T, key: BuildingRuleKey) -> BuildingRule;
 }
 

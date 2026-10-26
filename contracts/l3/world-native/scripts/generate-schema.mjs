@@ -176,9 +176,7 @@ const mapSource = await readFile(new URL("src/map.cairo", root), "utf8");
 
 const tilePackingConstants = Object.fromEntries(
   ["BIOME_SCALE", "BYTE_RANGE", "REWARD_EXTRACTED_FLAG"].map((name) => {
-    const value = mapSource.match(
-      new RegExp(`^(?:pub\\(crate\\) )?const ${name}: u128 = (0x[0-9a-fA-F]+);$`, "m"),
-    )?.[1];
+    const value = mapSource.match(new RegExp(`^pub const ${name}: u128 = (0x[0-9a-fA-F]+);$`, "m"))?.[1];
     if (!value) throw new Error(`Missing Cairo tile packing constant ${name}`);
     return [name, value];
   }),

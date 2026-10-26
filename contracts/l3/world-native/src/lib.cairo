@@ -53,9 +53,6 @@ pub mod state;
 pub mod structures;
 pub mod taxonomy;
 
-#[cfg(test)]
-mod tests;
-
 pub mod trade;
 pub mod transport;
 pub mod troop_management;

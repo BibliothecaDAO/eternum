@@ -7,7 +7,7 @@ pub mod PlacementLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::settlement::SettlementPoolState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE};
-    #[cfg(test)]
+    #[cfg(feature: "test_support")]
     use crate::settlement::SettlementPool;
     use crate::troops::Coord;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
@@ -78,7 +78,7 @@ pub mod PlacementLogic {
                 self.create_spire(game_id, crate::spires::location(center, layout, ordinal), game_context);
             }
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn spire_layout(self: @ContractState, game_id: u32) -> Option<crate::spires::SpireLayout> {
             crate::logic::preset_record::for_game(game_id).spires.read()
         }
@@ -104,15 +104,15 @@ pub mod PlacementLogic {
     }
     #[abi(embed_v0)]
     impl Settlements of crate::settlement::ISettlementPool<ContractState> {
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn reserved_hyperstructures(self: @ContractState, game_id: u32) -> u32 {
             self.settlements.data.settlement_pool.reserved_hyperstructures.read(game_id)
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn settlement_pool(self: @ContractState, game_id: u32, center: Coord) -> SettlementPool {
             self.settlements.pool(game_id, center, crate::logic::settlement::rules(game_id))
         }
-        #[cfg(test)]
+        #[cfg(feature: "test_support")]
         fn village_pool(self: @ContractState, game_id: u32, center: Coord) -> SettlementPool {
             self.settlements.village_pool(game_id, center, crate::logic::settlement::rules(game_id))
         }
