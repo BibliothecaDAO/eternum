@@ -1,5 +1,5 @@
 import type { FrontierBeast } from "@/three/structures/frontier-beast";
-import { formatAmount, formatExact, formatDuration, LORDS, formatHeldAgainst } from "@bibliothecadao/types";
+import { formatDuration, formatExact, formatGain, formatHeldAgainst, LORDS } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -161,7 +161,7 @@ export const SiteCardView = ({
         {chest ? <ChestPay chest={chest} /> : pay ? <Pay pay={pay} /> : null}
         {xp !== undefined && !(chest && lost) && (
           <HudChip>
-            {`+${formatAmount(xp)}`} {XP}
+            {formatGain(xp)} {XP}
           </HudChip>
         )}
       </Gain>

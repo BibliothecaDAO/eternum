@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
-import { MenuSheet } from "./menu-sheet";
+import { MenuPage } from "./menu-page";
 
 it("opens Today and Settings from their own semantic glyphs, and has no Guide or Production row", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -13,7 +13,7 @@ it("opens Today and Settings from their own semantic glyphs, and has no Guide or
   try {
     await act(async () =>
       root.render(
-        <MenuSheet
+        <MenuPage
           rank="#12"
           onToday={onToday}
           onSeason={() => {}}

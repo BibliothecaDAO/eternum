@@ -44,7 +44,7 @@ import { FrontierNextUp } from "./next-up/frontier-next-up";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
 import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
-import { MenuSheet } from "./hud/menu-sheet";
+import { MenuPage } from "./hud/menu-page";
 import { FrontierRealms } from "./value/frontier-realms";
 import { FrontierWithdraw } from "./value/frontier-withdraw";
 import { SeasonWithdraw } from "./value/season-withdraw";
@@ -65,7 +65,6 @@ import { BuildingsInFlight } from "./build/build-sheet";
 import { DayDone } from "./rollover/day-done";
 import { RealmBuildingsRow } from "./realm/buildings-row";
 import { useRealmPopulation } from "./realm/realm-population";
-import { LastHourBubble } from "./rollover/last-hour";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useDocumentClass } from "@/hooks/use-document-class";
 
@@ -162,8 +161,9 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       </>
     ) : surface === "season" ? (
       <FrontierSeason rules={rules} onBack={close} />
+    ) : surface === "menu" ? (
+      <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
     ) : undefined;
-  const stage = dockRealm && !visit && <LastHour rules={rules} realm={dockRealm} />;
   const notices = (
     <>
       <ClearedRuinChest />
@@ -180,14 +180,11 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     </>
   );
   // A phone's dock picks an army, the map first; a desktop's opens its panel too.
-  const dock = dockRealm && <DockFor realm={dockRealm} onOpenArmy={desktop ? openArmy : pickArmy} />;
+  const dock = dockRealm && <DockFor rules={rules} realm={dockRealm} onOpenArmy={desktop ? openArmy : pickArmy} />;
   const sheets = (
     <>
       <FrontierSurfaces realm={realm} />
       {showsCard && card?.sheet}
-      {surface === "menu" && (
-        <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
-      )}
       {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
       {surface === "realms" && realm && !visit && (
         <FrontierRealms
@@ -249,7 +246,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       armies={dock}
       nextUp={nextUp}
       page={page}
-      stage={stage}
       foot={
         <>
           {notices}
@@ -281,7 +277,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       strip={strip}
       purse={purse}
       page={page}
-      stage={stage}
       nextUp={nextUp}
       notices={notices}
       action={action}
@@ -321,7 +316,6 @@ const FrontierPhoneHud = ({
   strip: ReactNode;
   purse: ReactNode;
   page: ReactNode;
-  stage: ReactNode;
   nextUp: ReactNode;
   notices: ReactNode;
   action: ReactNode;
@@ -412,17 +406,20 @@ const ArmyAction = ({
 
 /** The dock over the realm's armies today; on a phone the action row takes its place while an army is picked. */
 const DockFor = ({
+  rules,
   realm,
   onOpenArmy,
 }: {
+  rules: ExpeditionRules;
   realm: NativeRows["Structure"];
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const armies = useDockArmies(realm);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
   const phone = useLayout() === "phone";
+  const lastHour = dayClock(rules, useNowSeconds()).tone === "ember";
   if (phone && armies.some((army) => army.explorerId === selectedId)) return null;
-  return <ArmyDock realm={realm} armies={armies} onOpenArmy={onOpenArmy} />;
+  return <ArmyDock realm={realm} armies={armies} lastHour={lastHour} onOpenArmy={onOpenArmy} />;
 };
 
 const PendingOrder = ({
@@ -455,25 +452,7 @@ const PendingOrder = ({
   );
 };
 
-/**
- * In the day's last hour, the bubble of what the day's end takes and returns: the troops still out, what their
- * Homecoming returns, and the armies that can still buy a tier.
- */
-const LastHour = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Structure"] }) => {
-  const armies = useDockArmies(realm);
-  const clock = dayClock(rules, useNowSeconds());
-  if (clock.tone !== "ember" || armies.length === 0) return null;
-  const returns = armies.map(({ returnsHome }) => returnsHome);
-  return (
-    <LastHourBubble
-      troopsOut={armies.reduce((sum, army) => sum + army.troops, 0)}
-      returned={returns.every((back) => back !== undefined) ? returns.reduce((sum, back) => sum + back!, 0) : undefined}
-      tiersToBuy={armies.filter(({ canBuyTier }) => canBuyTier).length}
-    />
-  );
-};
-
-/** The Menu over the game: each row opens its way and closes the menu; Exit leaves for the app. */
+/** The Menu page over the game: each row opens its way and closes the menu; Exit leaves for the app. */
 const HudMenu = ({
   realm,
   laborWaiting,
@@ -489,7 +468,7 @@ const HudMenu = ({
   const navigate = useNavigate();
   const rank = useSeasonRank();
   return (
-    <MenuSheet
+    <MenuPage
       rank={rank}
       onToday={() => onOpen("today")}
       onSeason={() => onOpen("season")}

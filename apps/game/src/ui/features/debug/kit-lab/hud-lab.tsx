@@ -14,7 +14,7 @@ import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/fron
 import type { HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
 import { LabGame, useLabPlayer } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
-import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
+import { MenuPage } from "@/ui/features/frontier/hud/menu-page";
 import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
@@ -27,7 +27,6 @@ import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
 import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
 import { RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
-import { LastHourBubble } from "@/ui/features/frontier/rollover/last-hour";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
 import { BuildingsRow } from "@/ui/features/frontier/realm/buildings-row";
 import { CastleView } from "@/ui/features/frontier/upgrade/castle-view";
@@ -126,6 +125,8 @@ const ARMIES: LabArmy[] = [
   { troops: 1_200, xp: 120, stamina: 21, tier: true },
 ];
 const UNKNOWN_ARMIES: LabArmy[] = [{}, {}, {}];
+/** The lab's explore cost, as its rules say it: a 150 bar is five explores. */
+const LAB_EXPLORE = 30;
 
 /** Army 1 (5,000 troops, 90 stamina) explores a new tile, or moves three tiles over known ground. */
 const EXPLORE: LabOrder = {
@@ -979,6 +980,16 @@ export const HudLab = () => {
             chat
           ) : lab.research ? (
             <LabResearch />
+          ) : lab.menu ? (
+            <MenuPage
+              rank="#12"
+              onToday={noop}
+              onSeason={noop}
+              realms={lab.menuRealms ? { waiting: true, onOpen: noop } : undefined}
+              onSettings={noop}
+              onExit={noop}
+              onClose={noop}
+            />
           ) : lab.season ? (
             // A realm's detail stands in the list's place, as FrontierSeason shows it.
             lab.season === "detail" ? (
@@ -1013,7 +1024,6 @@ export const HudLab = () => {
             )
           ) : undefined
         }
-        stage={lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
         nextUp={!lab.visiting && <NextUpView steps={labNextUpSteps(lab, desktop)} compact={!desktop} />}
         notices={lab.offline && <HudNotice tone="bad" line={OFFLINE} retry={noop} />}
         action={
@@ -1055,7 +1065,7 @@ export const HudLab = () => {
                       ? "research"
                       : lab.realmView
                         ? "realm"
-                        : "map"
+                        : null
               }
               onGo={noop}
               realmDot={lab.realmDot}
@@ -1114,17 +1124,6 @@ export const HudLab = () => {
         {lab.chest && <RuinChestMoment {...lab.chest} />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
         {lab.realms && <LabRealmsSheet realms={lab.realms} />}
-        {lab.menu && (
-          <MenuSheet
-            rank="#12"
-            onToday={noop}
-            onSeason={noop}
-            realms={lab.menuRealms ? { waiting: true, onOpen: noop } : undefined}
-            onSettings={noop}
-            onExit={noop}
-            onClose={noop}
-          />
-        )}
       </LabBands>
     </>
   );
@@ -1153,7 +1152,7 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
       onCount={setCount}
       // The next army fills a slot whose army was released today with 40 stamina left.
-      start={{ slot: 2, number: 3, inherited: true, start: { current: 40, max: 150 } }}
+      start={{ slot: 2, number: 3, inherited: true, start: { current: 40, max: 150, perExplore: LAB_EXPLORE } }}
       wheatCost={count * 2}
       march={count > 0 ? Math.floor(wheatLeft / (count * 0.02)) : 0}
       ring={{ center: { col: 10, row: 10 }, tiles: DEPLOY_RING, chosen, onPick: setChosen }}
@@ -1263,7 +1262,6 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
           armies={slots.dock}
           nextUp={slots.nextUp}
           page={slots.page}
-          stage={slots.stage}
           foot={
             <>
               {slots.notices}
@@ -1316,7 +1314,11 @@ const labSurface = (lab: LabState): HudSurface | null =>
 const LabDock = ({ lab }: { lab: LabState }) => {
   const open = lab.visiting ? 0 : SLOTS - lab.armies.length;
   const armyArt = (army: LabArmy) => (army.troops === undefined ? undefined : ("knight-t1" as const));
-  const stamina = (army: LabArmy) => (army.stamina === undefined ? undefined : { current: army.stamina, max: 150 });
+  const stamina = (army: LabArmy) =>
+    army.stamina === undefined ? undefined : { current: army.stamina, max: 150, perExplore: LAB_EXPLORE };
+  // In the last hour each army shows what its Homecoming (Uncommon: 9%) sends home.
+  const returnsHome = (army: LabArmy) =>
+    lab.lastHour && army.troops !== undefined ? Math.floor(army.troops * 0.09) : undefined;
   if (useLayout() === "desktop")
     return (
       <ArmyList used={lab.armies.length} allowed={lab.armies.length + open}>
@@ -1327,6 +1329,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             number={index + 1}
             art={armyArt(army)}
             troops={army.troops}
+            returnsHome={returnsHome(army)}
             stamina={stamina(army)}
             xp={army.xp}
             canBuyTier={army.tier === true}
@@ -1347,6 +1350,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
           xp={army.xp}
           stamina={stamina(army)}
           troops={army.troops}
+          returnsHome={returnsHome(army)}
           canBuyTier={army.tier === true}
           selected={lab.selected === index}
           onPick={noop}

@@ -5,7 +5,7 @@ import { NativeFactStore } from "../client/native-fact-store";
 import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 // The package index first, so the config singleton the utils read through it is evaluated before any story runs.
 import { configManager } from "..";
-import { buildStoryEventPresentation } from "./story-event-formatter";
+import { buildStoryEventPresentation, findGain } from "./story-event-formatter";
 import type { NativeStoryVariant } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 // Structure names check the player's local renames first; core tests have no DOM.
@@ -824,15 +824,21 @@ it("says what an explore found, not where nor the points every tile scores", () 
   expect(title).toBe("Explored: +200 Essence");
 });
 
-it("writes a small army's find rounded, as every charge and reward reads", () => {
+it("writes a small army's find rounded, and one under a unit with no amount, as who explored", () => {
   const title = buildStoryEventPresentation(
     story("ExplorationReward", { explorer_id: 7, receiver: 5, resource_type: 23, amount: "1200000000" }),
   ).title;
   expect(title).toBe("Explored: +1 Labor");
+  // Owner, 26 October: a one-troop army's 0.1 Labor says no amount at all, "djizus explored".
   const tiny = buildStoryEventPresentation(
     story("ExplorationReward", { explorer_id: 7, receiver: 5, resource_type: 23, amount: "100000000" }),
+    undefined,
+    (address) => (address === "0x123" ? "djizus" : null),
   ).title;
-  expect(tiny).toBe("Explored: +<1 Labor");
+  expect(tiny).toBe("djizus explored");
+  expect(findGain(0.4)).toBeNull();
+  expect(findGain(1)).toBe("+1");
+  expect(findGain(undefined)).toBe("—");
 });
 
 it("adds the points an opened crate scored", () => {

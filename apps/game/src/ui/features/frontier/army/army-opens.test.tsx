@@ -152,7 +152,8 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     await renderHud();
     await place("Menu");
     await act(async () =>
-      [...host.querySelectorAll<HTMLButtonElement>("[data-kit-sheet] button")]
+      // The Menu is a page on the place bar; its Today row opens Today's sheet.
+      [...host.querySelectorAll<HTMLButtonElement>('[data-page] section[aria-label="Menu"] button')]
         .find((button) => button.textContent?.includes("Today"))!
         .click(),
     );

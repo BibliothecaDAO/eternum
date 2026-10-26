@@ -491,6 +491,11 @@ check that hovering the army's tile opens its plate, and that a tile a merge emp
 light, and the realm view stands at City (18 plots), as it does after going to the World and back.
 `src/three/scenes/hexception-castle-level.test.ts` is its regression test.
 
+`/lab/game?scenario=day-end` is the same game 40 minutes before the day ends, the realm a City at Frontier's rates:
+three Workshops (Tools twice), three Farms (Fields) and two Barracks (Drill) beside the castle's own labor, explores at
+20 stamina, and the army at Uncommon Logistics and Homecoming. It shows the last hour's troops, each store's card (a
+ring), Research, the build sheet (**Realm**, an open plot) and the phone's dock and place bar (390 wide).
+
 `/lab/map-labels?sites=1` shows both on the lab's drawn world: an army with a Shrine and a Well beside it (and a Shrine
 three tiles off), under the world map's own input and handlers. Hover a site for its order line; right-click it (hold on
 a phone) to use it; click it for its card with the army kept. Each use is the InteractSite call the provider builds,

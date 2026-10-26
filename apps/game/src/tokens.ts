@@ -591,8 +591,6 @@ export const HUD_LAYOUT = {
   /** Its feed's height before it scrolls inside: a capped list, so Next up and chat always keep their room. */
   "frontier-feed": "45vh",
   "frontier-page-top": "76px",
-  "frontier-stage-top": "150px",
-  "frontier-stage-bottom": "140px",
   /** The Frontier HUD's cards: an army token, a site card, and the Build sheet's building card (option B's band). */
   "frontier-token": "72px",
   "frontier-card": "92px",

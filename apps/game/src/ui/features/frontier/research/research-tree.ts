@@ -30,6 +30,8 @@ export interface RealmResearchFacts {
   labor: number;
   /** Buildings of each building row's type standing (the castle's own labor producer is not a Workshop). */
   standing: Partial<Record<number, number>>;
+  /** What one building of the Farm, Workshop and Barracks rows makes now, by row ("+6.3/min (5 + 25% Fields)"). */
+  eachMakes?: Partial<Record<number, string>>;
   learned: Partial<Record<number, LearnedRow>>;
   /** A row's tier's price, as the game's preset sets it. */
   price: (row: number, tier: number) => { essence: number; labor: number };
@@ -58,8 +60,11 @@ export type Need =
   | { kind: "store"; met: boolean; limit: number; need: number; level: string }
   | { kind: "essence" | "labor"; met: boolean; have: number; need: number };
 
-/** A side a tier can take: its mark, its word, what it does, and its figure now and with one more pick. */
-export type Side = { icon: IconMeaning; name: string; line: string; now: string; next: string };
+/**
+ * A side a tier can take: its mark, its word, what it does, and its figure now and with one more pick; a make side
+ * (Fields, Tools, Drill) also says what one building makes now, its base and its share in it.
+ */
+export type Side = { icon: IconMeaning; name: string; line: string; now: string; next: string; output?: string };
 
 export interface TreeNode {
   key: string;
@@ -190,6 +195,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         line: side.words[1],
         now: side.at(picks(row, index)),
         next: side.at(picks(row, index) + 1),
+        output: index === 0 ? realm.eachMakes?.[row] : undefined,
       })),
     taken: () => learned(row).sides.map((side) => (side === 0 ? make.icon : other.icon)),
   });

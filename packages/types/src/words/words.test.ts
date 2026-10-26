@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatAmount,
+  formatGain,
   formatCharge,
   formatExact,
   formatFigure,
@@ -31,6 +32,14 @@ describe("numbers", () => {
     expect(formatAmount(-0.4)).toBe("-<1");
     expect(formatAmount(0)).toBe("0");
     expect(formatAmount(1.4)).toBe("1");
+  });
+
+  it("writes a gain signed, and one under a unit as under 1, never as +<1 or nothing", () => {
+    expect(formatGain(12)).toBe("+12");
+    expect(formatGain(12_400)).toBe("+12.4K");
+    expect(formatGain(0.4)).toBe("under 1");
+    expect(formatGain(0)).toBe("+0");
+    expect(formatGain(undefined)).toBe("—");
   });
 
   it("writes a percent whole from ten up, to one place below, signed only as a bonus", () => {

@@ -22,10 +22,10 @@ export type HudSurface =
   | "realms";
 
 /**
- * The place bar over the game: Map and Realm move the camera between the day's map and the realm board, the other
- * slots open their page or the Menu (a second tap closes it). The Realm slot carries a dot while a store the realm
- * spends is full or fills within the hour. A spectator, with no realm of their own, moves between the map and the realm
- * they watch, and has no Research.
+ * The place bar over the game: each slot opens its place over the map and a second tap closes it. Realm opens the
+ * realm board and closes it back to the map; the others open their page or the Menu. The Realm slot carries a dot
+ * while a store the realm spends is full or fills within the hour. A spectator, with no realm of their own, opens the
+ * realm they watch, and has no Research.
  */
 export const FrontierNav = ({
   rules,
@@ -48,21 +48,21 @@ export const FrontierNav = ({
   unread: number;
 }) => {
   const { isMapView } = useQuery();
-  const place: Place =
+  const place: Place | null =
     surface === "research" || surface === "log" || surface === "chat" || surface === "menu"
       ? surface
       : surface === "season"
         ? "menu"
         : isMapView
-          ? "map"
+          ? null
           : "realm";
   const goToPlace = useGoToFrontierPlace(board);
   const researchDot = canResearchNow(useResearchTree(realm)?.nodes);
   const stores = useRealmStores(realm, rules);
   const go = (to: Place) => {
-    if (to === "map" || to === "realm") {
+    if (to === "realm") {
       onSurface(null);
-      goToPlace(to === "map");
+      goToPlace(place === "realm");
       return;
     }
     onSurface(surface === to ? null : to);
