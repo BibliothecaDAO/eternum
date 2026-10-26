@@ -43,7 +43,7 @@ const BOTH: readonly Mode[] = ["blitz", "frontier"];
 const FRONTIER: readonly Mode[] = ["frontier"];
 
 /** Every route the HUD room's In game page draws in its frames, by address. */
-export const HUD_INSIDE = {
+const HUD_INSIDE = {
   state: view(
     "Frontier states",
     "/lab/kit/hud/idle",
