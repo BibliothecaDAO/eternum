@@ -107,14 +107,17 @@ const useSeasonLords = (rules: ExpeditionRules): Partial<SeasonLords> => {
   const game = setup.store.get("GameRegistry", { game_id: gameId });
   if (!game) return {};
   const season = { start: Number(game.start_main_at), end: Number(game.end_at) };
+  const prize = setup.store.get("FrontierPrize", { game_id: gameId });
+  const chests = setup.store.get("ChestRules", { game_id: gameId });
   const facts = {
+    prize: prize && chests ? { pool: prize.pool, topN: chests.top_n } : undefined,
     budget: setup.store.get("LordsBudget", { game_id: gameId }),
     chestRules: setup.store.get("ChestRules", { game_id: gameId }),
   };
   return seasonLordsOf(facts, season, now < season.end ? dayOf(rules, now) : null);
 };
 
-const LORDS_MODELS = ["GameRegistry", "LordsBudget", "ChestRules"] as const;
+const LORDS_MODELS = ["GameRegistry", "LordsBudget", "ChestRules", "FrontierPrize"] as const;
 
 /**
  * The season's first rows as SeasonRow draws them, the player's own lit in place, or pinned under them when it ranks

@@ -434,6 +434,10 @@ pub fn store_relics(
             day_unit_seconds != 0 && mode_rules & crate::rules::DEPTH_CONTENTS != 0, "chest tables require depth rules",
         );
         assert!(value.price_ceiling != 0, "empty chest rules");
+        assert!(
+            value.pool_bps > 0 && value.pool_bps < 10000 && value.top_n > 0 && value.top_n <= 100,
+            "invalid Frontier prize split",
+        );
         let shares = value.shares;
         assert!(
             shares.common != 0

@@ -246,7 +246,7 @@ fn typed_commands() -> Array<Command> {
                 explorer_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
             },
         ),
-        Command::RefillStamina(crate::relics::RefillStamina { explorer_id: 999999 }),
+        Command::RefillStamina(crate::relics::RefillStamina { explorer_id: 999999, amount: 1 }),
         Command::WithdrawLords(crate::relics::WithdrawLords { structure_id: 999999, amount: 1 }),
     ]
 }

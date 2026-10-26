@@ -53,7 +53,7 @@ describe("native row decoder", () => {
   it("keys LORDS withdrawals by transaction hash in both overlays", () => {
     const { native, fold } = setup();
     const rewards = ["9007199254740993", "9007199254740994"].map((claimId) =>
-      rowEvent("LordsWithdrawal", ["1", claimId], { account: "0x111", amount: 200 }),
+      rowEvent("LordsWithdrawal", ["1", claimId], { account: "0x111", amount: 200, prize_rank: 0, prize_count: 0 }),
     );
     const overlay = fold.overlay();
     native.applyReceipt(overlay, receipt(rewards), null, 0);

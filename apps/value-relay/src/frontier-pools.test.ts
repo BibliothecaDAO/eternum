@@ -60,6 +60,8 @@ const snapshot = (id: number) => ({
         {
           key: String(id),
           value: {
+            pool_bps: 7000,
+            top_n: 10,
             game_id: id,
             price_ceiling: "10",
             shares: { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 },
@@ -90,6 +92,11 @@ const snapshot = (id: number) => ({
                 },
               },
             ],
+    },
+    {
+      model: "FrontierPrize",
+      rows:
+        snapshotPool === null ? [] : [{ key: String(id), value: { game_id: id, pool: "0", issued: "0", count: null } }],
     },
   ],
 });
@@ -137,6 +144,8 @@ beforeEach(() => {
       entrypoint,
       entrypoint === "get_frontier"
         ? {
+            prize_pool: { low: 0, high: 0 },
+            prize_paid: { low: 0, high: 0 },
             funded: true,
             start,
             end: 110,
@@ -147,6 +156,8 @@ beforeEach(() => {
             seed,
           }
         : {
+            frontier_top_n: 10,
+            frontier_chest_bps: 7000,
             entry_fee: { low: 0, high: 0 },
             protocol_cut_bps: 0,
             chest_lords_bps: 0,
@@ -182,8 +193,12 @@ it.each([null, "0"])(
   async (pool) => {
     snapshotPool = pool;
     await publish();
-    const calldata = new CallData(gamesAbi).compile("publish_frontier_pool", { game_id: 7, amount: 123 });
-    expect(calldata.map(BigInt)).toEqual([7n, 123n]);
+    const calldata = new CallData(gamesAbi).compile("publish_frontier_pool", {
+      game_id: 7,
+      amount: 123,
+      prize_pool: 0,
+    });
+    expect(calldata.map(BigInt)).toEqual([7n, 123n, 0n]);
     expect(rpc.execute).toHaveBeenCalledWith(
       { contractAddress: "0x10", entrypoint: "publish_frontier_pool", calldata },
       expect.anything(),
@@ -192,32 +207,28 @@ it.each([null, "0"])(
     expect(rpc.execute).toHaveBeenCalledOnce();
   },
 );
-it("does not read funding or invoke when the snapshot already has a published pool", async () => {
+it("checks custody for a possible carry but does not invoke when the total is unchanged", async () => {
   snapshotPool = "123";
   await publish();
-  expect(rpc.ledger).not.toHaveBeenCalled();
+  expect(rpc.ledger).toHaveBeenCalledTimes(2);
   expect(rpc.execute).not.toHaveBeenCalled();
 });
-it.each(["start", "end", "seed", "fraction", "empty", "ended"])(
-  "never publishes invalid or ended funding: %s",
-  async (kind) => {
-    if (kind === "start") start = 11;
-    if (kind === "end") end = 210;
-    if (kind === "seed") seed = 154;
-    if (kind === "fraction") deposit++;
-    if (kind === "empty") deposit = 0n;
-    if (kind === "ended") end = 49;
-    if (kind === "ended") await publish();
-    else await expect(publish()).rejects.toThrow();
-    expect(rpc.execute).not.toHaveBeenCalled();
-  },
-);
+it.each(["start", "end", "seed", "empty", "ended"])("never publishes invalid or ended funding: %s", async (kind) => {
+  if (kind === "start") start = 11;
+  if (kind === "end") end = 210;
+  if (kind === "seed") seed = 154;
+  if (kind === "empty") deposit = 0n;
+  if (kind === "ended") end = 49;
+  if (kind === "ended") await publish();
+  else await expect(publish()).rejects.toThrow();
+  expect(rpc.execute).not.toHaveBeenCalled();
+});
 it("keeps trying other seasons when an unfunded view refuses, and retries funding next tick", async () => {
   ids = [7, 8];
   rpc.ledger.mockRejectedValueOnce(new Error("Ledger: unknown Frontier season"));
   await expect(publish()).rejects.toThrow("unknown Frontier season");
   expect(rpc.execute).toHaveBeenCalledOnce();
-  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual([8n, 123n]);
+  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual([8n, 123n, 0n]);
   published = null;
   snapshotPool = null;
   ids = [7];
@@ -248,7 +259,7 @@ it("does not report success when the publication is absent at readback", async (
 it("publishes before the game starts as well as after days have elapsed", async () => {
   rpc.now = 0;
   await publish();
-  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual([7n, 123n]);
+  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual([7n, 123n, 0n]);
 });
 
 it("never publishes while the ledger transport is unavailable", async () => {
@@ -278,4 +289,10 @@ it("does not treat another contract refusal as already published", async () => {
     events: [],
   });
   await expect(publish()).rejects.toMatchObject({ message: "shard_invoke_reverted", cause: "only ledger operator" });
+});
+
+it("keeps sub-LORDS custody on the ledger while publishing spendable whole LORDS", async () => {
+  deposit++;
+  await publish();
+  expect(snapshotPool).toBe("123");
 });

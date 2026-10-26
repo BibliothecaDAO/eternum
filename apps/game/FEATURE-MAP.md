@@ -795,3 +795,15 @@ all kinds. No game command is sent. Exercise and capture it with
 - Frontier training: build War hall, Supply yard, Scouts’ lodge or Hearth after two Barracks purchases; construction
   grants Uncommon. Choose the lodge’s free kind on its build sheet. Research pips run from zero at Common to four at
   Legendary; the realm model uses the highest tier.
+
+## Partial stamina and season LORDS
+
+Frontier: select an army → **Refill** → choose stamina on the slider → **Refill**. Each point costs one LORDS; missing
+stamina and the realm's balance bound the choice. The Season board shows **Chests** and **Top 10** separately. The
+preset supplies the split and winner count. After season end, the relay creates each winner's withdrawal receipt; the
+existing payout service sends it to the linked wallet. Dev previews: `/lab/kit/hud/army-refill` and
+`/lab/kit/hud/season`; the same refill sheet and season figures render there.
+
+Capture both with
+`pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:4235 --out <fresh-evidence-dir> --only frontier-army-refill,frontier-season`;
+the refill proof selects 25 points and checks both balances.

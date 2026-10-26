@@ -232,7 +232,7 @@ pub mod RelicState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::relics::ILords<ComponentState<TContractState>> {
-        // A full refill at 1 LORDS per missing stamina point, paid from the realm's LORDS back into the season pool.
+        // Each purchased stamina point returns one LORDS from the realm to the season's chest pool.
         // It is always allowed, including while the day's ruin stands.
         fn refill_stamina(
             ref self: ComponentState<TContractState>,
@@ -253,18 +253,19 @@ pub mod RelicState {
             );
             let mut stamina = explorer.troops.stamina.inline();
             assert!(stamina.amount < maximum, "stamina is already full");
-            let missing: u128 = (maximum - stamina.amount).into();
+            assert!(command.amount > 0 && command.amount <= maximum - stamina.amount, "invalid refill amount");
+            let purchased: u128 = command.amount.into();
             self
                 .resources(game_id)
                 .spend_resource(
                     ResourceKey { game_id, entity_id: explorer.owner },
                     crate::resources::LORDS,
-                    missing * crate::rules::RESOURCE_PRECISION,
+                    purchased * crate::rules::RESOURCE_PRECISION,
                     context.timestamp,
                     crate::commands::resource_context(context),
                 );
-            crate::logic::lords_budget::return_to_pool(game_id, missing, context);
-            stamina.amount = maximum;
+            crate::logic::lords_budget::return_to_pool(game_id, purchased, context);
+            stamina.amount += command.amount;
             stamina.clamp(maximum);
             crate::troops::IArmySlotStaminaDispatcherTrait::army_slot_stamina(
                 crate::troops::IArmySlotStaminaLibraryDispatcher {
@@ -302,7 +303,9 @@ pub mod RelicState {
                     context.timestamp,
                     crate::commands::resource_context(context),
                 );
-            let withdrawal = crate::relics::LordsWithdrawal { account: actor, amount: command.amount };
+            let withdrawal = crate::relics::LordsWithdrawal {
+                account: actor, amount: command.amount, prize_rank: 0, prize_count: 0,
+            };
             self.record_lords_withdrawal(realm, withdrawal, context.timestamp);
             ()
         }

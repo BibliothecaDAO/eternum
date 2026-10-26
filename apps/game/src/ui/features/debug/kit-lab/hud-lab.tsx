@@ -377,7 +377,13 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
  * A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. Yesterday's
  * rolls set today's share at 12 LORDS, under the ceiling of 16; a common chest holds two shares.
  */
-const SEASON_POOL_FIGURES = { lords: 1_000_000, today: 50_000, price: 12, ceiling: 16 };
+const SEASON_POOL_FIGURES = {
+  lords: 700_000,
+  prize: { lords: 300_000, topN: 10 },
+  today: 35_000,
+  price: 12,
+  ceiling: 16,
+};
 const SEASON_COMMON_CHEST = { tier: 1 as const, lords: 24 };
 const OWN_ROW: SeasonListRow = {
   key: "you",
@@ -1005,7 +1011,7 @@ export const HudLab = () => {
                 {...lab.order}
                 revealYield={500}
                 xp={2}
-                refill={lab.refill ? <RefillButton price={140} held={1_240} onRefill={noop} /> : undefined}
+                refill={lab.refill ? <RefillButton held={1_240} onRefill={noop} /> : undefined}
                 onCancel={noop}
                 onGo={noop}
               />
@@ -1152,11 +1158,7 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
     <HudSheet label={VETERAN_ARMY.name} onClose={noop}>
       <ArmyDetail
         army={readArmyDetail({ ...VETERAN_ARMY, stamina })}
-        refill={
-          army.lords === undefined ? undefined : (
-            <RefillButton price={stamina.max - stamina.current} held={army.lords} onRefill={noop} />
-          )
-        }
+        refill={army.lords === undefined ? undefined : <RefillButton held={army.lords} onRefill={noop} />}
         sending={false}
         onLevelUp={noop}
       />

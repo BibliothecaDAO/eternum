@@ -24,7 +24,7 @@ export const shardConservationPort =
           connection,
           heraldUrl,
           gameId,
-          ["ChestRules", "LordsBudget", "LordsWithdrawal"],
+          ["ChestRules", "LordsBudget", "LordsWithdrawal", "FrontierPrize"],
           network,
         );
         if (snapshot.confirmed_block < directory.confirmedBlock)
@@ -40,7 +40,8 @@ export const shardConservationPort =
 const balanceOf = (snapshot: ConfirmedSnapshot, gameId: number): Omit<ConservationBalance, "chainId"> => {
   const rules = singleRow(snapshot, "ChestRules");
   const budget = optionalRow(snapshot, "LordsBudget");
-  requireFields(rules, ["game_id", "price_ceiling", "shares", "claim_window_seconds"]);
+  const prize = optionalRow(snapshot, "FrontierPrize");
+  requireFields(rules, ["game_id", "price_ceiling", "shares", "claim_window_seconds", "pool_bps", "top_n"]);
   if (budget)
     requireFields(budget, [
       "game_id",
@@ -53,6 +54,10 @@ const balanceOf = (snapshot: ConfirmedSnapshot, gameId: number): Omit<Conservati
       "yesterday_shares",
       "yesterday_ticks",
     ]);
+  if (prize) requireFields(prize, ["game_id", "pool", "issued", "count"]);
+  const prizePool = prize ? rowUint(prize.pool, 128) : 0n;
+  const prizeIssued = prize ? rowUint(prize.issued, 128) : 0n;
+  if (prizeIssued > prizePool) throw new Error("invalid_prize_conservation");
   const pool = budget ? rowUint(budget.pool, 128) : 0n;
   const poolLeft = budget ? rowUint(budget.pool_left, 128) : 0n;
   rowUint(rules.price_ceiling, 128);
@@ -67,21 +72,27 @@ const balanceOf = (snapshot: ConfirmedSnapshot, gameId: number): Omit<Conservati
   const receipts = snapshot.models.find((model) => model.model === "LordsWithdrawal")!;
   const claims = new Set<string>();
   let withdrawn = 0n;
+  let prizeWithdrawn = 0n;
   for (const { value } of receipts.rows) {
-    requireFields(value, ["game_id", "claim_id", "account", "amount"]);
+    requireFields(value, ["game_id", "claim_id", "account", "amount", "prize_rank", "prize_count"]);
     const claim = felt(String(value.claim_id));
     const amount = rowUint(value.amount, 128);
     if (BigInt(claim) === 0n || BigInt(felt(String(value.account))) === 0n || claims.has(claim) || amount === 0n)
       throw new Error("invalid_conservation_receipt");
     claims.add(claim);
     withdrawn += amount;
+    const rank = rowUint(value.prize_rank, 16),
+      count = rowUint(value.prize_count, 16);
+    if ((rank === 0n) !== (count === 0n) || rank > count || count > 100n) throw new Error("invalid_prize_rank");
+    if (rank > 0n) prizeWithdrawn += amount;
   }
+  if (prizeWithdrawn !== prizeIssued) throw new Error("invalid_prize_conservation");
   return {
     gameId,
     confirmedBlock: snapshot.confirmed_block,
     pool: String(pool),
     receipts: String(withdrawn),
-    netIssued: String(pool - poolLeft),
+    netIssued: String(pool - poolLeft + prizeIssued),
   };
 };
 

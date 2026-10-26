@@ -153,8 +153,8 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     expected: { explorer_id: 7n, attribute: "Logistics", kind: null, tier: 3n, price: 200n },
   },
   LordsWithdrawn: {
-    fields: [17, 200],
-    expected: { account: 17n, amount: 200n },
+    fields: [17, 200, 0, 0],
+    expected: { account: 17n, amount: 200n, prize_rank: 0n, prize_count: 0n },
   },
   ExplorerCreateStory: {
     fields: [7, 3, 1, 2, 100, 4],

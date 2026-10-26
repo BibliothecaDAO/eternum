@@ -75,6 +75,8 @@ export interface NativePreset {
   };
   labor: null | { amount: number; accountDailyLimit: number };
   chests: null | {
+    poolBps: number;
+    topN: number;
     priceCeiling: number;
     shares: ChestTiers;
     claimWindowSeconds: number;

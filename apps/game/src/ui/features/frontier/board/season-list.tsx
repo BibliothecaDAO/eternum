@@ -23,7 +23,6 @@ import {
   REALM,
   SEASON,
   SEASON_ERROR,
-  SEASON_POOL,
   SHARE_CEILING,
   SITES,
   SITES_CLEARED,
@@ -123,6 +122,7 @@ export const SeasonList = ({
  * then a share's price: today's once the day has opened, and the ceiling no day's price passes.
  */
 export type SeasonPoolFigures = {
+  prize?: { lords: number; topN: number };
   lords: number;
   today: number | undefined;
   price: number | undefined;
@@ -143,7 +143,8 @@ const PoolLine = ({ pool }: { pool: SeasonPoolFigures | null }) =>
     </p>
   ) : (
     <dl className="flex shrink-0 flex-wrap gap-x-5 gap-y-1.5 whitespace-nowrap px-1 py-1.5 text-hud-body">
-      <PoolFigure word={SEASON_POOL} value={formatExact(pool.lords)} />
+      <PoolFigure word="Chests" value={formatExact(pool.lords)} />
+      {pool.prize && <PoolFigure word={`Top ${pool.prize.topN}`} value={formatExact(pool.prize.lords)} />}
       {pool.today !== undefined && <PoolFigure word={TODAY} value={`+${formatExact(pool.today)}`} />}
       {pool.price !== undefined && <PoolFigure word={PER_SHARE} value={formatCharge(pool.price)} />}
       {pool.ceiling !== undefined && <PoolFigure word={SHARE_CEILING} value={formatExact(pool.ceiling)} />}

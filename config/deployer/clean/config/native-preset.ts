@@ -290,6 +290,15 @@ function buildEconomy(
   if (chests === undefined || (chests !== null) !== (preset.dayUnitSeconds !== 0))
     throw new Error("Explicit chest rules are required for expedition presets only");
   if (chests !== null) {
+    if (
+      !Number.isInteger(chests.poolBps) ||
+      chests.poolBps <= 0 ||
+      chests.poolBps >= 10_000 ||
+      !Number.isInteger(chests.topN) ||
+      chests.topN < 1 ||
+      chests.topN > 100
+    )
+      throw new Error("Invalid Frontier prize split");
     const shares = [
       chests.shares.common,
       chests.shares.uncommon,
@@ -353,6 +362,8 @@ function buildEconomy(
             price_ceiling: BigInt(chests.priceCeiling),
             shares: chests.shares,
             claim_window_seconds: chests.claimWindowSeconds,
+            pool_bps: chests.poolBps,
+            top_n: chests.topN,
           }),
     trade: { max_count: config.trade.maxCount },
     banks: {

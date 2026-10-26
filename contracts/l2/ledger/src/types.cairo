@@ -22,6 +22,8 @@ pub struct Preset {
     pub mmr: MmrParams,
     pub day_unit_seconds: u32,
     pub claim_window_seconds: u32,
+    pub frontier_top_n: u16,
+    pub frontier_chest_bps: u16,
 }
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
@@ -117,6 +119,8 @@ pub struct FrontierSeason {
     pub closed: bool,
     pub preset_id: u32,
     pub seed: felt252,
+    pub prize_pool: u256,
+    pub prize_paid: u256,
 }
 
 #[derive(Copy, Drop, Serde, starknet::Store)]
@@ -125,6 +129,8 @@ pub struct WithdrawalPayment {
     pub season_id: u32,
     pub wallet: ContractAddress,
     pub amount: u256,
+    pub prize_rank: u16,
+    pub prize_count: u16,
 }
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]

@@ -1,47 +1,29 @@
-import { formatCharge, formatExact, LORDS } from "@bibliothecadao/types";
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudMeter, HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { CANCEL, REFILL, REFILLING, STAMINA, heldAgainstNeed, refillShort } from "@/ui/design-system/kit/words";
+import { useState } from "react";
+import { formatExact, LORDS } from "@bibliothecadao/types";
+import { HudButton, HudChip, HudSheet, HudSlider } from "@/ui/design-system/kit/hud-elements";
+import { CANCEL, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
 
-/**
- * Refill's control (wireframes 05, 08): the missing points as a LORDS price, one LORDS a point; when the realm holds
- * fewer LORDS, what it holds against the price takes the button's place, named Refill, its hover saying what it counts.
- */
 export const RefillButton = ({
-  price,
   held,
   refilling = false,
   onRefill,
 }: {
-  price: number;
   held: number | undefined;
-  /** A refill of this army is in flight: sent, its outcome not known yet. */
   refilling?: boolean;
   onRefill: () => void;
-}) =>
-  held !== undefined && held < price ? (
-    <span role="img" aria-label={refillShort(formatExact(held), formatCharge(price))} className="flex shrink-0">
-      <HudPanel collapsible={false} bodyClassName="flex items-center gap-1.5">
-        <SemanticIcon name="lords" size={18} />
-        <span className="flex min-w-14 flex-col gap-1">
-          <span className="text-hud-label text-hud-muted">{REFILL}</span>
-          <span className="whitespace-nowrap text-hud-body tabular-nums text-hud-ink">
-            {heldAgainstNeed(held, price)}
-          </span>
-          <HudMeter share={price > 0 ? held / price : 0} label={LORDS} />
-        </span>
-      </HudPanel>
-    </span>
-  ) : (
-    <HudButton kind="secondary" icon="stamina" busy={refilling ? REFILLING : undefined} onClick={onRefill}>
-      {REFILL}
-    </HudButton>
-  );
+}) => (
+  <HudButton
+    kind="secondary"
+    icon="stamina"
+    disabled={held === undefined || held < 1}
+    busy={refilling ? REFILLING : undefined}
+    onClick={onRefill}
+  >
+    {REFILL}
+  </HudButton>
+);
 
-/**
- * Refill's confirm (wireframe 08): the bar now → full, the realm's LORDS before → after, then Cancel and Refill with its
- * price. A full refill only.
- */
+/** Purchase whole stamina points, up to the missing bar or the realm's available LORDS. */
 export const RefillConfirm = ({
   stamina,
   held,
@@ -52,29 +34,46 @@ export const RefillConfirm = ({
   stamina: { current: number; max: number };
   held: number | undefined;
   sending: boolean;
-  onRefill: () => void;
+  onRefill: (amount: number) => void;
   onCancel: () => void;
 }) => {
-  const price = Math.max(0, stamina.max - stamina.current);
+  const missing = Math.max(0, Math.floor(stamina.max - stamina.current));
+  const affordable = Math.min(missing, Math.max(0, Math.floor(held ?? 0)));
+  const [selected, setSelected] = useState(affordable);
+  const amount = Math.min(selected, affordable);
   return (
     <HudSheet label={REFILL} onClose={onCancel}>
       <div className="flex items-center justify-center gap-2">
         <HudChip
           icons={["stamina"]}
           label={STAMINA}
-        >{`${formatExact(stamina.current)} → ${formatExact(stamina.max)}`}</HudChip>
+        >{`${formatExact(stamina.current)} → ${formatExact(stamina.current + amount)}`}</HudChip>
         <HudChip
           icons={["lords"]}
           label={LORDS}
-        >{`${formatExact(held)} → ${held === undefined ? "—" : formatExact(held - price)}`}</HudChip>
+        >{`${formatExact(held)} → ${held === undefined ? "—" : formatExact(held - amount)}`}</HudChip>
       </div>
+      <HudSlider
+        label="Stamina to refill"
+        value={amount}
+        min={0}
+        max={missing}
+        stop={affordable}
+        disabled={sending || affordable === 0}
+        onChange={setSelected}
+      />
       <div className="grid grid-cols-3 gap-2">
         <HudButton kind="quiet" onClick={onCancel}>
           {CANCEL}
         </HudButton>
         <span className="col-span-2 grid">
-          <HudButton kind="primary" busy={sending ? REFILLING : undefined} onClick={onRefill}>
-            {REFILL}
+          <HudButton
+            kind="primary"
+            disabled={amount <= 0 || held === undefined}
+            busy={sending ? REFILLING : undefined}
+            onClick={() => onRefill(amount)}
+          >
+            {REFILL} · {formatExact(amount)} {LORDS}
           </HudButton>
         </span>
       </div>

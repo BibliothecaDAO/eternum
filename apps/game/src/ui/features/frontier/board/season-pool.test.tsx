@@ -105,8 +105,9 @@ describe("the Season page", () => {
   };
 
   it("shows the published pool, what today releases of it, and a share's price today beside its ceiling", () => {
-    const text = page({ lords: 1_000_000, today: 50_000, price: 12, ceiling: 15 });
-    expect(text).toContain("Pool1,000,000");
+    const text = page({ lords: 1_000_000, today: 50_000, price: 12, ceiling: 15, prize: { lords: 300_000, topN: 10 } });
+    expect(text).toContain("Chests1,000,000");
+    expect(text).toContain("Top 10300,000");
     expect(text).toContain("Today+50,000");
     expect(text).toContain("Per share12");
     expect(text).toContain("Max15");

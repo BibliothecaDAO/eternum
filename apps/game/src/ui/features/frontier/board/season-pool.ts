@@ -63,7 +63,7 @@ export interface SeasonLords {
  * price. The pool is null while none is published. Without today's price there is no chest to quote.
  */
 export const seasonLordsOf = (
-  facts: { budget: Budget | undefined; chestRules: ChestRules | undefined },
+  facts: { budget: Budget | undefined; chestRules: ChestRules | undefined; prize?: { pool: bigint; topN: number } },
   season: Span,
   today: (Span & { index: number }) | null,
 ): SeasonLords => {
@@ -73,6 +73,7 @@ export const seasonLordsOf = (
   return {
     pool: {
       lords: Number(budget.pool),
+      ...(facts.prize ? { prize: { lords: Number(facts.prize.pool), topN: facts.prize.topN } } : {}),
       today: today ? Number(releasedInDay(budget.pool, season, today)) : undefined,
       price: price === null ? undefined : Number(price),
       ceiling: chestRules && Number(chestRules.price_ceiling),

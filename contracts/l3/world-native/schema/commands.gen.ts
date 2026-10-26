@@ -145,7 +145,7 @@ export interface NativeCommandPayloads {
   Research: { readonly structure_id: BigNumberish; readonly row: BigNumberish; readonly choice: BigNumberish };
   BuyTier: { readonly explorer_id: BigNumberish; readonly attribute: { readonly kind: "Battle"; readonly value: undefined } | { readonly kind: "Logistics"; readonly value: undefined } | { readonly kind: "Scouting"; readonly value: undefined } | { readonly kind: "Homecoming"; readonly value: undefined }; readonly kind: { readonly kind: "Some"; readonly value: { readonly kind: "Camp"; readonly value: undefined } | { readonly kind: "Rift"; readonly value: undefined } | { readonly kind: "Beasts"; readonly value: undefined } } | { readonly kind: "None"; readonly value: undefined } };
   InteractSite: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
-  RefillStamina: { readonly explorer_id: BigNumberish };
+  RefillStamina: { readonly explorer_id: BigNumberish; readonly amount: BigNumberish };
   WithdrawLords: { readonly structure_id: BigNumberish; readonly amount: BigNumberish };
 }
 export type NativeCommand = { [K in keyof NativeCommandPayloads]: { kind: K; value: NativeCommandPayloads[K] } }[keyof NativeCommandPayloads];

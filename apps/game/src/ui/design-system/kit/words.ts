@@ -483,14 +483,8 @@ export const BACK = "Back";
 export const VISIT = "Visit";
 export const LEAVE = "Leave";
 
-/** Filling an army's stamina for LORDS, a full refill only. */
+/** Buying stamina points for LORDS. */
 export const REFILL = "Refill";
-/**
- * A refill the realm cannot pay yet, as its chip's name says it: what the LORDS held count against, and why that is the
- * price ("Refill to full: 20 LORDS, one a missing stamina point. The realm holds 0.").
- */
-export const refillShort = (held: string, price: string) =>
-  `Refill to full: ${price} LORDS, one a missing stamina point. The realm holds ${held}.`;
 export const REFILLING = "Refilling…";
 
 /** LORDS leaving the game for the wallet linked to the account. */
@@ -522,7 +516,6 @@ export const CLAIM = "Claim";
 export const CLAIM_ALL = "Claim all";
 export const CLAIMED_TODAY = "Claimed today";
 /** The Season page's pool: the LORDS deposited for the season; what today releases of them stands under Today. */
-export const SEASON_POOL = "Pool";
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
 /** What one share of a chest pays today, and the most any day can set that price to. */
 export const PER_SHARE = "Per share";

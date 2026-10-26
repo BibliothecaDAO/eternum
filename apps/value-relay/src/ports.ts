@@ -7,6 +7,8 @@ import type { LedgerPayDecision } from "@realms-world/identity";
 
 export type RelayEffect<A> = Effect.Effect<A, RelayFailure>;
 export interface Withdrawal {
+  prizeRank: number;
+  prizeCount: number;
   blockNumber?: number;
   chainId: string;
   seasonId: number;
@@ -142,9 +144,14 @@ export interface RelayPorts {
     linkedWallet(realmsId: string): RelayEffect<string | null>;
   };
   ledger: {
-    payment(
-      withdrawal: Withdrawal,
-    ): RelayEffect<{ paid: boolean; seasonId: number; wallet: string; amount: string } | null>;
+    payment(withdrawal: Withdrawal): RelayEffect<{
+      paid: boolean;
+      seasonId: number;
+      wallet: string;
+      amount: string;
+      prizeRank: number;
+      prizeCount: number;
+    } | null>;
     voided(withdrawal: Withdrawal): RelayEffect<boolean>;
     reportMany(withdrawals: readonly Withdrawal[]): RelayEffect<ClaimOutcome[]>;
     payMany(rows: readonly PayableClaim[]): RelayEffect<ClaimOutcome[]>;

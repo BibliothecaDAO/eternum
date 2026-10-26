@@ -1,3 +1,4 @@
+vi.mock("./frontier-prizes", () => ({ awardFrontierPrizes: vi.fn(async () => {}) }));
 const pools = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("./frontier-pools", () => ({ publishFrontierPools: pools }));
 const address = vi.hoisted(() => vi.fn(() => "0x10"));

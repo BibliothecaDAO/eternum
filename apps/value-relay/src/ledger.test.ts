@@ -102,6 +102,8 @@ it("decodes confirmed payments and pins the event head across pagination", async
           block_number: 100,
           block_hash: "0xa",
           ...ledgerEvent("WithdrawalPaid", {
+            prize_rank: 0,
+            prize_count: 0,
             shard: 1,
             claim_id: "0xabc",
             season_id: 7,
@@ -117,6 +119,8 @@ it("decodes confirmed payments and pins the event head across pagination", async
   const page = await Effect.runPromise(reads.paidClaims(null));
   expect(page.rows).toEqual([
     {
+      prizeRank: 0,
+      prizeCount: 0,
       chainId: "0x1",
       transactionHash: "0xabc",
       seasonId: 7,
@@ -158,7 +162,7 @@ it("decodes result commitments and refuses malformed payment events", async () =
         from_address: "0x10",
         transaction_hash: "0xdef",
         keys: [hash.getSelectorFromName("WithdrawalPaid"), "0x1", "0xabc"],
-        data: ["7", "0x123", String(2n ** 128n), "0"],
+        data: ["7", "0x123", String(2n ** 128n), "0", "0", "0"],
       },
     ],
   });
@@ -175,6 +179,8 @@ it("reads the funded deposit through the committed ledger ABI at a confirmed hea
   const pool = 123n * 10n ** 18n;
   rpc.call.mockResolvedValue(
     response(ledgerAbi, "get_frontier", {
+      prize_pool: { low: 0, high: 0 },
+      prize_paid: { low: 0, high: 0 },
       funded: true,
       start: 10,
       end: 110,

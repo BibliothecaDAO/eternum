@@ -39,6 +39,20 @@ pub fn publish_pool(game_id: u32, amount: u128) {
     write(game_id, first_day(chest_rules(game_id), amount, day));
 }
 
+/// Confirmed carry-over only grows the chest pool; retrying the same total changes nothing.
+pub fn top_up_pool(game_id: u32, amount: u128) {
+    let game = crate::logic::game::game(game_id);
+    assert!(starknet::get_block_timestamp() < game.end_at, "Frontier season ended");
+    let mut value = budget(game_id).expect('Frontier pool not published');
+    assert!(amount >= value.pool, "Frontier pool cannot shrink");
+    if amount == value.pool {
+        return;
+    }
+    value.pool_left += amount - value.pool;
+    value.pool = amount;
+    write(game_id, value);
+}
+
 /// Draw a tier at the frozen daily price; reservation counts an actual reward roll towards tomorrow.
 pub fn candidate(game_id: u32, odds: ChestTiers, seed: u256, context: ExecutionContext) -> SiteChest {
     priced_chest(game_id, roll_tier(odds, seed), context)

@@ -581,11 +581,11 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  /** Fills an army's stamina to its maximum for one LORDS a missing point, from its realm's LORDS. */
-  public async refill_stamina(props: SystemProps.SystemSigner & { explorerId: number }) {
+  /** Buys the chosen whole stamina points for one LORDS each from the army's realm. */
+  public async refill_stamina(props: SystemProps.SystemSigner & { explorerId: number; amount: number }) {
     return this.submitCommand(
       props.signer,
-      { kind: "RefillStamina", value: { explorer_id: props.explorerId } },
+      { kind: "RefillStamina", value: { explorer_id: props.explorerId, amount: props.amount } },
       TransactionType.REFILL_STAMINA,
     );
   }

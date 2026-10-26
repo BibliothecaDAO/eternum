@@ -4,7 +4,7 @@ import { readFrontierFunding } from "./frontier-funding";
 import { ledgerAbi } from "../test-support/ledger-abi";
 import { response } from "../test-support/abi";
 
-const terms = { start: 10, end: 110, seed: "0x99", dayUnit: 5, claimWindow: 604800 };
+const terms = { chestPoolBps: 7000, topN: 10, start: 10, end: 110, seed: "0x99", dayUnit: 5, claimWindow: 604800 };
 const call = vi.fn();
 let closed = false;
 let end = 110;
@@ -20,6 +20,8 @@ beforeEach(() => {
   call.mockImplementation(async ({ entrypoint }) =>
     entrypoint === "get_frontier"
       ? response(ledgerAbi, entrypoint, {
+          prize_pool: { low: 0, high: 0 },
+          prize_paid: { low: 0, high: 0 },
           funded: true,
           start: 10,
           end,
@@ -30,6 +32,8 @@ beforeEach(() => {
           seed: 153,
         })
       : response(ledgerAbi, "get_preset", {
+          frontier_top_n: 10,
+          frontier_chest_bps: 7000,
           entry_fee: { low: 0, high: 0 },
           protocol_cut_bps: 0,
           chest_lords_bps: 0,

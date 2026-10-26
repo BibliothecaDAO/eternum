@@ -815,7 +815,7 @@ pub fn publish_test_pool(d: super::Deployment, game_id: u32, amount: u128, times
     start_cheat_caller_address(d.games, super::authority());
     snforge_std::start_cheat_block_timestamp(d.games, timestamp);
     crate::entry::ILedgerOperatorDispatcherTrait::publish_frontier_pool(
-        crate::entry::ILedgerOperatorDispatcher { contract_address: d.games }, game_id, amount,
+        crate::entry::ILedgerOperatorDispatcher { contract_address: d.games }, game_id, amount, 0,
     );
     snforge_std::stop_cheat_block_timestamp(d.games);
     stop_cheat_caller_address(d.games);

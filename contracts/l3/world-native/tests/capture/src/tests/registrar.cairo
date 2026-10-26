@@ -958,7 +958,7 @@ fn a_full_refill_costs_one_lords_a_point_returns_to_the_pool_and_is_allowed_besi
             crate::logic::army_slot_storage::persist(key, record, tired);
         },
     );
-    let refill = Command::RefillStamina(crate::relics::RefillStamina { explorer_id: key.explorer_id });
+    let refill = Command::RefillStamina(crate::relics::RefillStamina { explorer_id: key.explorer_id, amount: 110 });
     // LORDS can only be earned: without them the refill is refused.
     assert!(!execute_in_game(d, game_id, refill, 362));
     let home = ResourceKey { game_id, entity_id: army.owner };
@@ -987,7 +987,19 @@ fn a_full_refill_costs_one_lords_a_point_returns_to_the_pool_and_is_allowed_besi
     );
     let relics = IRelicsDispatcher { contract_address: d.games };
     let pool_before = relics.lords_budget(game_id).unwrap().pool_left;
-    assert!(execute_in_game(d, game_id, refill, 362));
+    for amount in array![0_u64, 111].span() {
+        let invalid = Command::RefillStamina(
+            crate::relics::RefillStamina { explorer_id: key.explorer_id, amount: *amount },
+        );
+        assert!(!execute_in_game(d, game_id, invalid, 362));
+    }
+    let partial = Command::RefillStamina(crate::relics::RefillStamina { explorer_id: key.explorer_id, amount: 30 });
+    assert!(execute_in_game(d, game_id, partial, 362));
+    let partly_filled = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    assert_eq!(partly_filled.troops.stamina.inline().amount, 70);
+    assert_eq!(relics.lords_budget(game_id).unwrap().pool_left, pool_before + 30);
+    let remainder = Command::RefillStamina(crate::relics::RefillStamina { explorer_id: key.explorer_id, amount: 80 });
+    assert!(execute_in_game(d, game_id, remainder, 362));
     let filled = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     assert_eq!(Into::<u64, u128>::into(filled.troops.stamina.inline().amount), maximum);
     let lords = ResourceSlot { game_id, entity_id: army.owner, resource_type: crate::resources::LORDS };
@@ -1050,7 +1062,10 @@ fn a_lords_withdrawal_after_season_end_spends_the_realm_once() {
             let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
             if let crate::ownership::Story::LordsWithdrawn(withdrawal) = story.story {
                 withdrawals += 1;
-                assert_eq!(withdrawal, crate::relics::LordsWithdrawal { account: d.actor, amount: 200 });
+                assert_eq!(
+                    withdrawal,
+                    crate::relics::LordsWithdrawal { account: d.actor, amount: 200, prize_rank: 0, prize_count: 0 },
+                );
                 assert_eq!(story.version, 2);
                 assert_eq!(story.tx_hash, 56789);
                 let stored = snforge_std::interact_with_state(

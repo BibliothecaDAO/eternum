@@ -240,7 +240,7 @@ const readCursor = (value: string): { head: number; token: string; hash?: string
 const decodePayment = (event: EmittedEvent): Omit<PaidClaim, "paidAt"> => {
   if (
     event.keys.length !== 3 ||
-    event.data.length !== 4 ||
+    event.data.length !== 6 ||
     typeof event.transaction_hash !== "string" ||
     !/^0x[0-9a-fA-F]{1,64}$/.test(event.transaction_hash) ||
     BigInt(event.transaction_hash) === 0n
@@ -253,6 +253,8 @@ const decodePayment = (event: EmittedEvent): Omit<PaidClaim, "paidAt"> => {
     seasonId: ledgerInteger(event.data[0]!),
     wallet: event.data[1]!,
     amount: ledgerU256(event.data[2]!, event.data[3]!),
+    prizeRank: ledgerInteger(event.data[4]!),
+    prizeCount: ledgerInteger(event.data[5]!),
   };
 };
 const decodeResult = (event: EmittedEvent): BlitzCommitment => {

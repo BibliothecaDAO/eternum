@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "f9432cf4a52bee62e7434599efd086a054b845208bf4d2183f4b81e95e658fa6";
+export const nativeFactSchemaIdentity = "613e11d19aa31c39d7813b35de1a6f03fdb13f35adb177865fd59f37bf60de98";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "BATTLE_UNCOMMON_BPS": 1000,
@@ -187,11 +187,12 @@ export interface NativeRows {
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_cleared: boolean };
   LaborRules: { readonly game_id: number; readonly amount: bigint; readonly account_daily_limit: number };
   LaborGrant: { readonly realm_id: number; readonly day: bigint; readonly game_id: number; readonly account: bigint; readonly home: bigint; readonly amount: bigint };
-  ChestRules: { readonly game_id: number; readonly price_ceiling: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number };
+  ChestRules: { readonly game_id: number; readonly price_ceiling: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number; readonly pool_bps: number; readonly top_n: number };
+  FrontierPrize: { readonly game_id: number; readonly pool: bigint; readonly issued: bigint; readonly count: (number) | null };
   LordsBudget: { readonly game_id: number; readonly pool: bigint; readonly pool_left: bigint; readonly open: bigint; readonly day: bigint; readonly price: bigint; readonly rolled_shares: bigint; readonly yesterday_shares: bigint; readonly yesterday_ticks: bigint };
   SiteChest: { readonly game_id: number; readonly entity_id: bigint; readonly tier: number; readonly amount: bigint; readonly reservation_day: bigint };
   RelicChest: { readonly game_id: number; readonly entity_id: bigint; readonly pack: "War" | "Explore" | "Produce" | "Fortress"; readonly lucky: boolean };
-  LordsWithdrawal: { readonly game_id: number; readonly claim_id: bigint; readonly account: bigint; readonly amount: bigint };
+  LordsWithdrawal: { readonly game_id: number; readonly claim_id: bigint; readonly account: bigint; readonly amount: bigint; readonly prize_rank: number; readonly prize_count: number };
   RelicDiscovery: { readonly game_id: number; readonly last_at: bigint };
   DepositRules: { readonly game_id: number; readonly paused: boolean; readonly realm_fee_bps: number; readonly velords_fee_bps: number; readonly season_fee_bps: number; readonly client_fee_bps: number };
   WithdrawalRules: { readonly game_id: number; readonly paused: boolean; readonly bank_fee_bps: number; readonly velords_fee_bps: number; readonly season_fee_bps: number; readonly client_fee_bps: number; readonly velords_recipient: bigint; readonly season_recipient: bigint; readonly retention: readonly ({ readonly troop_percent: number; readonly resource_percent: number })[] };
@@ -280,6 +281,7 @@ export interface NativeKeys {
   LaborRules: { readonly game_id: number };
   LaborGrant: { readonly realm_id: number; readonly day: bigint };
   ChestRules: { readonly game_id: number };
+  FrontierPrize: { readonly game_id: number };
   LordsBudget: { readonly game_id: number };
   SiteChest: { readonly game_id: number; readonly entity_id: bigint };
   RelicChest: { readonly game_id: number; readonly entity_id: bigint };
@@ -614,7 +616,23 @@ export const nativeFactModels = {
         "epic": "u16",
         "legendary": "u16"
       },
-      "claim_window_seconds": "u32"
+      "claim_window_seconds": "u32",
+      "pool_bps": "u16",
+      "top_n": "u16"
+    }
+  },
+  "FrontierPrize": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "pool": "u128",
+      "issued": "u128",
+      "count": {
+        "option": "u16"
+      }
     }
   },
   "LordsBudget": {
@@ -678,7 +696,9 @@ export const nativeFactModels = {
       "game_id": "u32",
       "claim_id": "felt",
       "account": "felt",
-      "amount": "u128"
+      "amount": "u128",
+      "prize_rank": "u16",
+      "prize_count": "u16"
     }
   },
   "RelicDiscovery": {
@@ -2118,6 +2138,7 @@ export const nativeSyncScopes = {
   "LaborRules": "shared",
   "ArmyProgressionRules": "shared",
   "LordsBudget": "shared",
+  "FrontierPrize": "shared",
   "FrontierDiscoveryRules": "shared",
   "RelicDiscovery": "shared",
   "DepositRules": "shared",

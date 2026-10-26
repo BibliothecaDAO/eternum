@@ -40,8 +40,18 @@ pub trait IGameLedger<TState> {
         amount: u256,
     );
     fn pay(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, wallet: ContractAddress, amount: u256);
-    fn report_withdrawal(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, amount: u256);
+    fn report_withdrawal(
+        ref self: TState,
+        shard: felt252,
+        season_id: u32,
+        claim_id: felt252,
+        amount: u256,
+        prize_rank: u16,
+        prize_count: u16,
+    );
     fn close_frontier(ref self: TState, shard: felt252, season_id: u32);
+    fn apply_frontier_carry(ref self: TState, shard: felt252, season_id: u32);
+    fn frontier_carry(self: @TState, shard: felt252) -> u256;
     fn get_frontier(self: @TState, shard: felt252, season_id: u32) -> FrontierSeason;
     fn frontier_unlocked(self: @TState, shard: felt252, season_id: u32) -> u256;
     fn frontier_claim_deadline(self: @TState, shard: felt252, season_id: u32) -> u64;
@@ -134,6 +144,10 @@ pub mod GameLedger {
     #[storage]
     struct Storage {
         frontier_days: Map<(felt252, u32), FrontierSeason>,
+        frontier_carry_pool: Map<felt252, u256>,
+        frontier_carry_end: Map<felt252, u64>,
+        frontier_prize_claims: Map<(felt252, u32, u16), felt252>,
+        frontier_prize_count: Map<(felt252, u32), u16>,
         payments: Map<(felt252, felt252), WithdrawalPayment>,
         treasury: ContractAddress,
         lords: ContractAddress,
@@ -220,6 +234,8 @@ pub mod GameLedger {
         season_id: u32,
         wallet: ContractAddress,
         amount: u256,
+        prize_rank: u16,
+        prize_count: u16,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -439,37 +455,94 @@ pub mod GameLedger {
             );
             assert!(starknet::get_block_timestamp() < end, "Ledger: season ended");
             assert!(amount > 0 && amount <= 0xffffffffffffffffffffffffffffffff, "Ledger: invalid season funding");
+            let prize = amount
+                * (BPS - preset.frontier_chest_bps.into())
+                / BPS
+                / 1000000000000000000
+                * 1000000000000000000;
+            let chest = amount - prize;
+            let carry = self.frontier_carry_pool.entry(shard).read();
+            assert!(chest + carry <= 0xffffffffffffffffffffffffffffffff, "Ledger: season pool exceeds u128");
+            assert!(
+                carry == 0 || start >= self.frontier_carry_end.entry(shard).read(),
+                "Ledger: carry belongs to later season",
+            );
+            self.frontier_carry_pool.entry(shard).write(0);
             self
                 .frontier_days
                 .entry((shard, season_id))
                 .write(
-                    FrontierSeason { funded: true, preset_id, start, end, seed, pool: amount, ..Default::default() },
+                    FrontierSeason {
+                        funded: true,
+                        preset_id,
+                        start,
+                        end,
+                        seed,
+                        pool: chest + carry,
+                        prize_pool: amount - chest,
+                        ..Default::default(),
+                    },
                 );
             self.pull_lords(starknet::get_caller_address(), amount);
             self.emit(FrontierFunded { shard, season_id, start, end, amount });
         }
 
-        fn report_withdrawal(ref self: ContractState, shard: felt252, season_id: u32, claim_id: felt252, amount: u256) {
+        fn report_withdrawal(
+            ref self: ContractState,
+            shard: felt252,
+            season_id: u32,
+            claim_id: felt252,
+            amount: u256,
+            prize_rank: u16,
+            prize_count: u16,
+        ) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
             let previous = self.get_payment(shard, claim_id);
             if previous.amount != 0 {
                 assert!(
-                    previous.season_id == season_id && previous.amount == amount,
+                    previous.season_id == season_id
+                        && previous.amount == amount
+                        && previous.prize_rank == prize_rank
+                        && previous.prize_count == prize_count,
                     "Ledger: conflicting withdrawal report",
                 );
                 return;
             }
             assert!(claim_id != 0 && amount > 0, "Ledger: invalid withdrawal");
             let season = self.get_frontier(shard, season_id);
-            assert!(!season.closed, "Ledger: season closed");
-            assert!(
-                starknet::get_block_timestamp() < self.frontier_claim_deadline(shard, season_id),
-                "Ledger: claim window ended",
-            );
+            if prize_rank == 0 {
+                assert!(!season.closed, "Ledger: season closed");
+                assert!(
+                    starknet::get_block_timestamp() < self.frontier_claim_deadline(shard, season_id),
+                    "Ledger: claim window ended",
+                );
+                assert!(prize_count == 0, "Ledger: invalid prize rank");
+            } else {
+                assert!(starknet::get_block_timestamp() >= season.end, "Ledger: season has not ended");
+                let top_n = self.get_preset(season.preset_id).frontier_top_n;
+                assert!(
+                    prize_count > 0 && prize_count <= top_n && prize_rank <= prize_count, "Ledger: invalid prize rank",
+                );
+                let fixed_count = self.frontier_prize_count.entry((shard, season_id)).read();
+                assert!(fixed_count == 0 || fixed_count == prize_count, "Ledger: conflicting prize count");
+                assert!(
+                    self.frontier_prize_claims.entry((shard, season_id, prize_rank)).read() == 0,
+                    "Ledger: prize already reported",
+                );
+                let whole: u128 = (season.prize_pool / 1000000000000000000).try_into().unwrap();
+                let expected: u256 = crate::frontier_prizes::prize_amount(whole, prize_count, prize_rank).into();
+                assert!(amount == expected * 1000000000000000000, "Ledger: incorrect prize amount");
+                self.frontier_prize_count.entry((shard, season_id)).write(prize_count);
+                self.frontier_prize_claims.entry((shard, season_id, prize_rank)).write(claim_id);
+            }
             self
                 .payments
                 .entry((shard, claim_id))
-                .write(WithdrawalPayment { paid: false, season_id, wallet: 0.try_into().unwrap(), amount });
+                .write(
+                    WithdrawalPayment {
+                        paid: false, season_id, wallet: 0.try_into().unwrap(), amount, prize_rank, prize_count,
+                    },
+                );
         }
 
         fn pay(
@@ -487,24 +560,48 @@ pub mod GameLedger {
             self.pausable.assert_not_paused();
             assert!(claim_id != 0 && wallet.is_non_zero() && amount > 0, "Ledger: invalid withdrawal");
             let mut season = self.get_frontier(shard, season_id);
-            assert!(!season.closed, "Ledger: season closed");
             let reported = self.get_payment(shard, claim_id);
             assert!(reported.amount != 0, "Ledger: withdrawal unreported");
             assert!(
                 reported.season_id == season_id && reported.amount == amount, "Ledger: conflicting withdrawal report",
             );
-            assert!(amount <= self.frontier_unlocked(shard, season_id) - season.paid, "Ledger: unlock exceeded");
-            season.paid += amount;
+            if reported.prize_rank == 0 {
+                assert!(!season.closed, "Ledger: season closed");
+                assert!(amount <= self.frontier_unlocked(shard, season_id) - season.paid, "Ledger: unlock exceeded");
+                season.paid += amount;
+            } else {
+                assert!(
+                    starknet::get_block_timestamp() >= season.end && amount <= season.prize_pool - season.prize_paid,
+                    "Ledger: unlock exceeded",
+                );
+                season.prize_paid += amount;
+            }
             self.frontier_days.entry((shard, season_id)).write(season);
-            self.payments.entry((shard, claim_id)).write(WithdrawalPayment { paid: true, season_id, wallet, amount });
+            self
+                .payments
+                .entry((shard, claim_id))
+                .write(WithdrawalPayment { paid: true, season_id, wallet, amount, ..reported });
             self.send_lords(wallet, amount);
-            self.emit(WithdrawalPaid { shard, claim_id, season_id, wallet, amount });
+            self
+                .emit(
+                    WithdrawalPaid {
+                        shard,
+                        claim_id,
+                        season_id,
+                        wallet,
+                        amount,
+                        prize_rank: reported.prize_rank,
+                        prize_count: reported.prize_count,
+                    },
+                );
         }
 
         fn close_frontier(ref self: ContractState, shard: felt252, season_id: u32) {
             self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
             let mut season = self.get_frontier(shard, season_id);
-            assert!(!season.closed, "Ledger: season closed");
+            if season.closed {
+                return;
+            }
             assert!(
                 starknet::get_block_timestamp() >= self.frontier_claim_deadline(shard, season_id),
                 "Ledger: claim window open",
@@ -512,8 +609,32 @@ pub mod GameLedger {
             let returned = season.pool - season.paid;
             season.closed = true;
             self.frontier_days.entry((shard, season_id)).write(season);
-            self.send_lords(self.treasury.read(), returned);
+            self.frontier_carry_pool.entry(shard).write(self.frontier_carry_pool.entry(shard).read() + returned);
+            self
+                .frontier_carry_end
+                .entry(shard)
+                .write(core::cmp::max(season.end, self.frontier_carry_end.entry(shard).read()));
             self.emit(FrontierClosed { shard, season_id, returned });
+        }
+
+        fn frontier_carry(self: @ContractState, shard: felt252) -> u256 {
+            self.frontier_carry_pool.entry(shard).read()
+        }
+        fn apply_frontier_carry(ref self: ContractState, shard: felt252, season_id: u32) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            let amount = self.frontier_carry_pool.entry(shard).read();
+            if amount == 0 {
+                return;
+            }
+            let mut season = self.get_frontier(shard, season_id);
+            assert!(!season.closed && starknet::get_block_timestamp() < season.end, "Ledger: season ended");
+            assert!(
+                season.start >= self.frontier_carry_end.entry(shard).read(), "Ledger: carry belongs to later season",
+            );
+            assert!(season.pool + amount <= 0xffffffffffffffffffffffffffffffff, "Ledger: season pool exceeds u128");
+            season.pool += amount;
+            self.frontier_carry_pool.entry(shard).write(0);
+            self.frontier_days.entry((shard, season_id)).write(season);
         }
 
         fn get_frontier(self: @ContractState, shard: felt252, season_id: u32) -> FrontierSeason {
@@ -916,6 +1037,14 @@ pub mod GameLedger {
             );
             assert!(preset.protocol_cut_bps <= 10_000, "Ledger: invalid protocol cut");
             assert!(preset.chest_lords_bps <= 10_000, "Ledger: invalid chest share");
+            assert!(preset.frontier_top_n <= 100, "Ledger: invalid Frontier top count");
+            assert!(
+                preset.day_unit_seconds == 0
+                    || (preset.frontier_top_n > 0
+                        && preset.frontier_chest_bps > 0
+                        && preset.frontier_chest_bps <= 10000),
+                "Ledger: invalid Frontier split",
+            );
             assert!(preset.protocol_cut_bps + preset.chest_lords_bps <= 10_000, "Ledger: combined shares exceed pot");
             assert!(
                 preset.paid_fraction_bps > 0 && preset.paid_fraction_bps <= 10_000, "Ledger: invalid paid fraction",

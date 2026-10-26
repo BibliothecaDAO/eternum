@@ -19,6 +19,8 @@ pub mod expeditions;
 pub mod exploration_rewards;
 pub mod faith;
 pub mod fixed_constants;
+
+pub mod frontier_prizes;
 pub mod game;
 pub mod games;
 pub mod games_entry;

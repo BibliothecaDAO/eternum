@@ -14,3 +14,5 @@ pub mod types;
 mod game {
     pub use crate::types::FrontierClock as GameRegistry;
 }
+
+mod frontier_prizes;
