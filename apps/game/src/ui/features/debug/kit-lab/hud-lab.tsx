@@ -707,6 +707,8 @@ const STATES = {
     realmDot: "ember",
     storeCard: { ...STORE_LINES[1], held: 18_000, tone: "ember" },
   },
+  // Labor's card filling at 500 an hour: a rate under ten a minute, as a store's rate reads it.
+  "stores-labor": { clock: CLOCK, stores: STORES, armies: ARMIES, storeCard: STORE_LINES[1] },
   "stores-empty": {
     clock: CLOCK,
     stores: STORES,
