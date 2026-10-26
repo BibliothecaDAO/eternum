@@ -89,7 +89,7 @@ const deployButton = (host: HTMLElement) =>
   [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Deploy"));
 
 describe("the Deploy sheet", () => {
-  it("opens at half of what the realm can field, with +500, Max and a slider for the count, and deploys the count typed", async () => {
+  it("opens at no troops, with Max and a slider for the count, and deploys the count typed", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
@@ -104,7 +104,9 @@ describe("the Deploy sheet", () => {
     const { host, root } = render(store, row, onClose);
     // 420 knights at home and 1,000 wheat at 2 a troop: all 420 can go.
     expect(outOf(host)).toBe("of 420");
-    expect(countField(host).value).toBe("210");
+    // No troops yet, so nothing to deploy; with 420 at most, +500 would only be Max.
+    expect(countField(host).value).toBe("0");
+    expect(deployButton(host)?.disabled).toBe(true);
     press(host, "Max");
     expect(countField(host).value).toBe("420");
     typeCount(host, 120);
@@ -151,6 +153,7 @@ describe("the Deploy sheet", () => {
     const refused = vi.spyOn(toast, "error").mockImplementation(() => "");
     const onClose = vi.fn();
     const { host, root } = render(store, row, onClose);
+    press(host, "Max");
     await act(async () => {
       deployButton(host)!.click();
       deployButton(host)!.click();
@@ -302,6 +305,7 @@ describe("the Deploy sheet", () => {
     // A tap on another lit tile orders again (openArmyDeployment), and the map marks that one.
     act(() => openArmyDeployment({ structureId: 7, isExplorer: true, direction: Direction.WEST }));
     expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: Direction.WEST });
+    press(host, "Max");
     await act(async () => deployButton(host)!.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(expect.objectContaining({ spawnDirection: Direction.WEST }));
 
