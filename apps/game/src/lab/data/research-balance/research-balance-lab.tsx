@@ -265,7 +265,7 @@ function ResearchPlan({
 }
 
 function CurrentPanel() {
-  const [picked, setPicked] = useState("row-0");
+  const [picked, setPicked] = useState<string | null>("row-0");
   return (
     <section className="flex max-w-lg flex-col gap-2">
       <h2 className="text-hud-title">Today’s full panel · example City</h2>
