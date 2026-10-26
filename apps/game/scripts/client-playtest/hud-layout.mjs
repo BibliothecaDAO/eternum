@@ -7,9 +7,11 @@ import { blocked, completed, failed } from "./evidence.mjs";
  * Every part the player sees is read, whatever the mode puts in it: each panel, pill, round order, notice and docked
  * sheet the HUD draws (the HUD sheet's elements: .ui-panel, .ui-pill, .ui-bubble, .ui-notice), a part inside another
  * read as that one, a part not drawn (absent, empty, hidden) left out. Each is named for what it says it is. Each
- * part's enabled controls are hit-tested: a point near each end and at the centre of every one must reach that control,
- * not something drawn over it. The minimap is read by name: a desktop must draw it. Each of the HUD's regions (issue
- * 5067's top bar, holdings column, rail and commands) counts the parts drawn in it.
+ * part's enabled controls are hit-tested where a player sees them: on the part of each left in view by the page and by
+ * every box that scrolls or clips it (a long feed's rows below its fold are not seen, so not tested), a point near each
+ * end and at the centre must reach that control, not something drawn over it. The minimap is read by name: a desktop
+ * must draw it. Each of the HUD's regions (issue 5067's top bar, holdings column, rail and commands) counts the parts
+ * drawn in it.
  */
 export const HUD_LAYOUT_EXPRESSION = `JSON.stringify((() => {
   const shown = (element) => {
@@ -20,6 +22,20 @@ export const HUD_LAYOUT_EXPRESSION = `JSON.stringify((() => {
     return rect.width > 0 && rect.height > 0 ? rect : null;
   };
   const box = (rect) => ({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom });
+  const within = (a, b) => ({
+    left: Math.max(a.left, b.left),
+    top: Math.max(a.top, b.top),
+    right: Math.min(a.right, b.right),
+    bottom: Math.min(a.bottom, b.bottom),
+  });
+  const inView = (element) => {
+    let seen = within(box(element.getBoundingClientRect()), { left: 0, top: 0, right: innerWidth, bottom: innerHeight });
+    for (let holder = element.parentElement; holder; holder = holder.parentElement) {
+      const style = getComputedStyle(holder);
+      if (style.overflowX !== "visible" || style.overflowY !== "visible") seen = within(seen, holder.getBoundingClientRect());
+    }
+    return seen.right - seen.left > 6 && seen.bottom > seen.top ? seen : null;
+  };
   const PART = ".ui-panel, .ui-pill, .ui-bubble, .ui-notice, [data-kit-sheet]";
   const candidates = [...document.querySelectorAll(PART)].filter((element) => shown(element));
   const outermost = candidates.filter((element) => !candidates.some((other) => other !== element && other.contains(element)));
@@ -36,10 +52,10 @@ export const HUD_LAYOUT_EXPRESSION = `JSON.stringify((() => {
     for (let index = 2; parts[name]; index += 1) name = nameOf(element) + " " + index;
     parts[name] = box(shown(element));
     for (const control of element.querySelectorAll("button:not([disabled]), input:not([disabled]), textarea, select, a[href]")) {
-      const at = shown(control);
-      if (!at || at.right < 0 || at.bottom < 0 || at.left > innerWidth || at.top > innerHeight) continue;
-      const y = at.top + at.height / 2;
-      const points = [[at.left + 3, y], [at.left + at.width / 2, y], [at.right - 3, y]];
+      const at = shown(control) && inView(control);
+      if (!at) continue;
+      const y = (at.top + at.bottom) / 2;
+      const points = [[at.left + 3, y], [(at.left + at.right) / 2, y], [at.right - 3, y]];
       const reached = points.every(([x, py]) => {
         const hit = document.elementFromPoint(x, py);
         return hit === control || control.contains(hit);

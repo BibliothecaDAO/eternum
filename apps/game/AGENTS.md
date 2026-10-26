@@ -64,14 +64,16 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   run's transcript and `summary.json` are written, and everything is released.
 - **The page's size.** 1920 by 1080 unless `--viewport <width>x<height>` asks for another (`390x844` plays a phone). On
   the map, the `hud-layout` step reads every part the HUD draws and judges it as the lab's layout check does
-  (`scripts/client-playtest/hud-layout.mjs`): each part whole on the page, none over another, every control reachable,
-  at most seven parts in each region, and on a desktop the minimap.
+  (`scripts/client-playtest/hud-layout.mjs`): each part whole on the page, none over another, every control reachable
+  where it is in view (a row scrolled out of its panel is not seen, so not tested), at most seven parts in each region,
+  and on a desktop the minimap.
 - **As a spectator** (default), from a fresh browser profile (cold cache): enter on the map (a Frontier session opens
-  there, the realm one press away), the HUD's layout, map idle, pan (WASD), zoom out and in, the season (a desktop's
-  Season place and its page; a phone's Menu), the Feed's first story that is a link (the map on its place, that tile
-  selected, the page never loaded again), visits to the board's second and third realms in turn (each by Visit, its
-  realm, then the map on it, in the same page, that realm selected and the camera on it), the realm and back to the map,
-  then a minute of watching.
+  there, the realm one press away), the HUD's layout, map idle, pan (WASD), zoom out and in, the season (its board
+  drawn, then closed: from a desktop's Season place, in the rail; from a phone's Menu), the Feed's first story that is a
+  link (a phone's from its Log, put away again if the story leaves it open; the map on its place, that tile selected,
+  the page never loaded again), visits to the board's second and third realms in turn (each by Visit, its realm, then
+  the map on it, in the same page, that realm selected and the camera on it), the realm and back to the map, then a
+  minute of watching.
 - **As a player** (`--player <email>`), entering through the Frontier card's Resume or Play on the home page with the
   browser's own click, and past a new day's summary (Continue): enter on the map, select the army with the most stamina,
   open and close production, the next order's life (below), explore twice (tap a tile beside the army, Enter; on a
