@@ -26,6 +26,7 @@ bun "$verifier/scripts/pin-class.ts" --check
 node --test "$world/scripts/check-class-sizes.test.mjs" "$world/scripts/check-fact-wire.test.mjs" "$world/scripts/event-layouts.test.mjs" "$world/scripts/taxonomy.test.mjs" "$world/scripts/rule-constants.test.mjs"
 node "$world/scripts/check-class-sizes.mjs"
 
+(cd "$world/tests" && RAYON_NUM_THREADS=1 scarb build --package 'world_tests_*')
 (cd "$world/tests" && RAYON_NUM_THREADS=1 scarb build --test --package 'world_tests_*')
 node "$world/scripts/check-fact-wire.mjs"
 
