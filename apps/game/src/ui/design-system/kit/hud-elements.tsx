@@ -771,15 +771,9 @@ export const HudTier = ({ tier }: { tier: Tier }) =>
 
 /** A tier's next step, from the gem it holds (none at Common) to the next one's. */
 export const HudTierStep = ({ from, to }: { from: Tier; to: Tier }) => (
-  <span
-    className="inline-flex items-center gap-1"
-    role="img"
-    aria-label={`${TIER_WORDS[from - 1]} → ${TIER_WORDS[to - 1]}`}
-  >
+  <span className="ui-tier-step" role="img" aria-label={`${TIER_WORDS[from - 1]} → ${TIER_WORDS[to - 1]}`}>
     <HudTier tier={from} />
-    <span aria-hidden className="text-hud-muted">
-      →
-    </span>
+    <span aria-hidden>→</span>
     <HudTier tier={to} />
   </span>
 );

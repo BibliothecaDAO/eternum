@@ -535,6 +535,12 @@ button.ui-panel__name[data-action]:hover {
   font-weight: 800;
   line-height: 1;
 }
+.ui-tier-step {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
+  color: var(--hud-muted);
+}
 .ui-tier[data-tier="3"] {
   --rarity: var(--hud-rarity-3);
 }
