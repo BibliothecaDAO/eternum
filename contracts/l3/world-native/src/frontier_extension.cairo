@@ -9,9 +9,10 @@ pub mod ReleaseMigration {
     impl Migration of crate::logic::release::IReleaseMigration<ContractState> {
         fn migrate(ref self: ContractState, game_id: u32, previous_release: u32, release_id: u32) {
             crate::logic::release::assert_launcher();
-            assert!(
-                previous_release + 1 == approved::RELEASE && release_id == approved::RELEASE, "wrong extension release",
-            );
+            if release_id != approved::RELEASE {
+                return;
+            }
+            assert!(previous_release + 1 == approved::RELEASE, "wrong extension release");
             if starknet::get_tx_info().unbox().chain_id != approved::CHAIN_ID || game_id != approved::GAME_ID {
                 return;
             }
