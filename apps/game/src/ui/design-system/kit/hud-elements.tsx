@@ -273,8 +273,8 @@ export const HudNumberField = ({
 const QUICK_ADD = 500;
 
 /**
- * How many troops go, for a quick deploy (the owner's rounds 3 and 4): the count typed with +500 per press and Max
- * right beside it, then out of how many can ("that fit" when the army's room runs out first); under them, a slider
+ * How many troops go, for a quick deploy (the owner's rounds 3 and 4): the count typed with +500 per press (where more
+ * than 500 can go; else it would only be Max) and Max right beside it, then out of how many can ("that fit" when the army's room runs out first); under them, a slider
  * across the same range, to drag the count by hand (the owner, playing dev: "I kinda wish I still had the slider").
  */
 export const HudTroopAmount = ({
@@ -298,9 +298,11 @@ export const HudTroopAmount = ({
   return (
     <div className="ui-amount">
       <AmountInput label={name} value={value} max={most} disabled={disabled} onChange={onChange} />
-      <HudButton kind="secondary" disabled={full} onClick={() => onChange(Math.min(value + QUICK_ADD, most))}>
-        +{QUICK_ADD}
-      </HudButton>
+      {most > QUICK_ADD && (
+        <HudButton kind="secondary" disabled={full} onClick={() => onChange(Math.min(value + QUICK_ADD, most))}>
+          +{QUICK_ADD}
+        </HudButton>
+      )}
       <HudButton kind="secondary" disabled={full} onClick={() => onChange(most)}>
         Max
       </HudButton>
