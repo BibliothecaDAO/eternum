@@ -1,3 +1,4 @@
+import { BuildingType } from "@bibliothecadao/types";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { transferArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";
