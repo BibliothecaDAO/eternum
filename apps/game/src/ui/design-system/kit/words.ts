@@ -430,6 +430,8 @@ export const TRANSFER_TROOPS = {
 } as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
+/** The day-done card's count of the armies that ended with the day. */
+export const ARMIES_ENDED = "Armies ended with the day";
 /** How many troops an army holds: "1 troop", "5,000 troops". */
 export const troopCount = (count: number) => formatCount(count, "troop", TROOPS);
 
