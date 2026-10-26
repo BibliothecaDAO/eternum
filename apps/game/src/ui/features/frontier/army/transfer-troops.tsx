@@ -9,7 +9,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {
   AmountInput,
   HudButton,
-  HudChip,
   HudNotice,
   HudSheet,
   HudTierChip,
@@ -62,13 +61,12 @@ export const useSelectedTransfer = (realm: NativeRows["Structure"] | null): Tran
 };
 
 /**
- * Troops between two of the realm's armies side by side, as one split (owner, 22 October 2026: "the merge panel can be
- * redone for desktop & mobile"; direction A): the slider is where the line between them falls, so one control moves
- * troops either way and nothing needs a Swap. It opens as a merge into the army tapped: the map has chosen which army
- * goes into which (owner, 26 October 2026: the quick splits are "not needed since the player do it from the map").
- * The cards say what happens, not a paragraph: each army's troops, stamina and XP now and after, and an army a merge
- * empties faded with its XP struck out. The one verb names the army that stays. The game moves troops between alike
- * armies only, each within its realm's limit. A full merge keeps the chosen target.
+ * Troops sent from the picked army to the one tapped beside it: the map has chosen which army goes into which (owner,
+ * 26 October 2026: the quick splits are "not needed since the player do it from the map"). The one control is the
+ * amount sent, from none up to all the picked army holds, typed or dragged, and it opens at all: a merge (owner, the
+ * same evening: "why doesnt it go from 0 to 600 with 600 (max picked)"). The cards say what happens, not a paragraph:
+ * each army's troops, stamina and XP now and after, and an army a merge empties faded with its XP struck out. The one
+ * verb names the army that stays. The game moves troops between alike armies only, within the receiving realm's limit.
  */
 export const TransferTroopsSheet = ({
   realm,
@@ -79,19 +77,19 @@ export const TransferTroopsSheet = ({
   pair: TransferPair;
   onClose: () => void;
 }) => {
-  // The split is a choice over the troops the armies hold when it is made: when either count changes (a fight, an
+  // The amount is a choice over the troops the armies hold when it is made: when either count changes (a fight, an
   // order landing) it starts again over the new counts, and says so, so no old choice turns into an impossible move.
   const counts = `${pair.picked.explorerId}:${pair.picked.troops}:${pair.tapped.explorerId}:${pair.tapped.troops}`;
   const [first] = useState(counts);
   return (
     <HudSheet label={TRANSFER_TROOPS.title} onClose={onClose}>
       {counts !== first && <HudNotice tone="warn" line={TRANSFER_TROOPS.changed} />}
-      <TransferSplit key={counts} realm={realm} pair={pair} onSent={onClose} />
+      <TransferAmount key={counts} realm={realm} pair={pair} onSent={onClose} />
     </HudSheet>
   );
 };
 
-const TransferSplit = ({
+const TransferAmount = ({
   realm,
   pair: { picked, tapped, pickedAt, tappedAt },
   onSent,
@@ -144,64 +142,55 @@ const TransferSplit = ({
   const choice = readChoice();
   const account = useAccountStore((state) => state.account);
   const sending = useInFlight("army", picked.explorerId) !== undefined;
-  const total = picked.troops + tapped.troops;
   const capOf = (army: DockArmy) => configManager.getMaxArmySize(realm.base.level, army.troopsFact.tier as TroopTier);
-  const lowest = Math.max(0, total - capOf(tapped));
-  const highest = Math.min(total, capOf(picked));
-  const [split, setSplit] = useState(lowest);
-  const pickedAfter = split;
-  const [confirmation, setConfirmation] = useState<{ split: number; facts: unknown[] } | null>(null);
-  const confirmed = confirmation?.split === split && confirmation.facts.every((fact, index) => fact === choice[index]);
-  const chooseSplit = (value: number) => {
+  // The tapped army takes what fits under its realm's limit; the picked army can send no more than it holds.
+  const room = Math.max(0, capOf(tapped) - tapped.troops);
+  const most = Math.min(picked.troops, room);
+  const [sent, setSent] = useState(most);
+  const [confirmation, setConfirmation] = useState<{ sent: number; facts: unknown[] } | null>(null);
+  const confirmed = confirmation?.sent === sent && confirmation.facts.every((fact, index) => fact === choice[index]);
+  const chooseAmount = (value: number) => {
     setConfirmation(null);
-    setSplit(value);
+    setSent(value);
   };
   const alike =
     picked.troopsFact.category === tapped.troopsFact.category && picked.troopsFact.tier === tapped.troopsFact.tier;
-  const moved = picked.troops - pickedAfter;
-  const [from, to] = moved > 0 ? [picked, tapped] : [tapped, picked];
-  const [fromAt, toAt] = moved > 0 ? [pickedAt, tappedAt] : [tappedAt, pickedAt];
 
   const plan = explorerTransferPlan({
-    sourceCount: from.troops,
-    targetCount: to.troops,
-    targetCap: capOf(to),
-    sourceProgress: progress(from.explorerId),
-    targetProgress: progress(to.explorerId),
+    sourceCount: picked.troops,
+    targetCount: tapped.troops,
+    targetCap: capOf(tapped),
+    sourceProgress: progress(picked.explorerId),
+    targetProgress: progress(tapped.explorerId),
     rules,
   });
-  const fullMerge = moved !== 0 && Math.abs(moved) === from.troops;
-  const survivor = fullMerge ? to : null;
-  const loser = fullMerge ? from : null;
+  const fullMerge = sent > 0 && sent === picked.troops;
   const mergedStamina =
-    survivor?.stamina && loser?.stamina
-      ? Math.min(survivor.stamina.current, loser.stamina.current, survivor.stamina.max)
+    fullMerge && tapped.stamina && picked.stamina
+      ? Math.min(tapped.stamina.current, picked.stamina.current, tapped.stamina.max)
       : undefined;
-  const valid =
-    plan.known && (fullMerge ? plan.fullFits && mergedStamina !== undefined : Math.abs(moved) <= plan.partialMax);
-  const after = (army: DockArmy) =>
-    survivor && plan.known ? (army === survivor ? total : 0) : army === picked ? pickedAfter : total - pickedAfter;
+  const valid = plan.known && (fullMerge ? plan.fullFits && mergedStamina !== undefined : sent <= plan.partialMax);
+  const after = (army: DockArmy) => (army === picked ? picked.troops - sent : tapped.troops + sent);
 
   const send = async () => {
-    const direction = getDirectionBetweenAdjacentHexes(fromAt, toAt);
-    // What goes leaves an army that holds it, and the split stands within both armies' limits.
-    const holds = Math.abs(moved) <= from.troops && pickedAfter >= lowest && pickedAfter <= highest;
-    if (!account || direction === null || moved === 0 || !holds || !valid) return;
+    const direction = getDirectionBetweenAdjacentHexes(pickedAt, tappedAt);
+    // What goes leaves the picked army, which holds it, and fits the tapped army's limit.
+    if (!account || direction === null || sent <= 0 || sent > most || !valid) return;
     try {
       if (readChoice().some((fact, index) => fact !== choice[index])) {
         throw new Error(TRANSFER_TROOPS.stale);
       }
       if (fullMerge && plan.confirmLoss && !confirmed) {
-        setConfirmation({ split, facts: choice });
+        setConfirmation({ sent, facts: choice });
         return;
       }
       await sendOnce("army", picked.explorerId, { order: "move" }, () =>
         systemCalls.explorer_explorer_swap({
           signer: account as unknown as Account,
-          from_explorer_id: from.explorerId,
-          to_explorer_id: to.explorerId,
+          from_explorer_id: picked.explorerId,
+          to_explorer_id: tapped.explorerId,
           to_explorer_direction: direction,
-          count: multiplyByPrecision(Math.abs(moved)),
+          count: multiplyByPrecision(sent),
         }),
       );
       onSent();
@@ -212,7 +201,7 @@ const TransferSplit = ({
 
   if (!alike) return <HudNotice tone="warn" line={TRANSFER_TROOPS.unalike(picked.label, tapped.label)} />;
   // A full merge whose progress is known: the army that stays and the one that leaves.
-  const merge = survivor && loser && plan.known ? { survivor, loser } : null;
+  const merge = fullMerge && plan.known ? { survivor: tapped, loser: picked } : null;
   // The XP a merge loses with the army that leaves: its own and what its upgrades cost, the figure the confirm weighs.
   const lostXp = plan.sourceValue ?? 0;
   const side = (army: DockArmy) => (
@@ -229,54 +218,44 @@ const TransferSplit = ({
       {!plan.known && <HudNotice tone="warn" line={TRANSFER_TROOPS.waiting} />}
       <div className="ui-transfer__preview">
         {side(picked)}
-        <span className="flex flex-col items-center gap-1">
-          <Icon name="transfer" size={28} className={cn(moved < 0 && "-scale-x-100")} />
-          <HudChip tone={moved === 0 ? undefined : "good"}>{formatAmount(Math.abs(moved))}</HudChip>
-        </span>
+        <Icon name="transfer" size={28} />
         {side(tapped)}
       </div>
-      {/* How many the picked army keeps: typed, or dragged between its two ends, each labelled with its amount. */}
+      {/* How many the picked army sends: typed, or dragged between none and all it holds, each end labelled. */}
       <div className="flex items-center gap-2">
         <AmountInput
-          label={TRANSFER_TROOPS.split(picked.label, tapped.label)}
-          value={pickedAfter}
-          min={lowest}
-          max={highest}
-          onChange={chooseSplit}
+          label={TRANSFER_TROOPS.amount(picked.label, tapped.label)}
+          value={sent}
+          max={most}
+          onChange={chooseAmount}
         />
         <span className="flex-1">
           <AmountRange
-            label={TRANSFER_TROOPS.split(picked.label, tapped.label)}
+            label={TRANSFER_TROOPS.amount(picked.label, tapped.label)}
             icon={picked.art}
-            value={pickedAfter}
-            min={lowest}
-            max={total}
-            stop={highest}
-            onChange={(value) => chooseSplit(Math.max(lowest, value))}
+            value={sent}
+            min={0}
+            max={picked.troops}
+            stop={most}
+            onChange={chooseAmount}
           />
         </span>
       </div>
-      <HudWindowFoot
-        note={
-          !merge && total > Math.min(capOf(picked), capOf(tapped))
-            ? TRANSFER_TROOPS.cap(Math.min(capOf(picked), capOf(tapped)))
-            : undefined
-        }
-      >
+      <HudWindowFoot note={room < picked.troops ? TRANSFER_TROOPS.cap(capOf(tapped)) : undefined}>
         <HudButton
           kind={confirmed && merge ? "danger" : "primary"}
           icon="transfer"
-          disabled={moved === 0 || !valid}
+          disabled={sent === 0 || !valid}
           busy={sending ? TRANSFER_TROOPS.sending : undefined}
           onClick={send}
         >
-          {moved === 0
+          {sent === 0
             ? TRANSFER_TROOPS.pick
             : merge
               ? confirmed
                 ? TRANSFER_TROOPS.confirmMerge(lostXp, merge.survivor.label)
                 : TRANSFER_TROOPS.merge(merge.survivor.label)
-              : TRANSFER_TROOPS.move(Math.abs(moved), to.label)}
+              : TRANSFER_TROOPS.move(sent, tapped.label)}
         </HudButton>
       </HudWindowFoot>
     </div>

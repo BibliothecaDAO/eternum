@@ -89,11 +89,14 @@ const Card = ({ realm, onClose }: { realm: never; onClose: () => void }) => {
   return pair && <TransferTroopsSheet realm={realm} pair={pair} onClose={onClose} />;
 };
 
-/** The player picked army 201 and tapped the army beside it: the map acts on that tile with 201 (its Help order). */
-const render = (store: ReturnType<typeof twoArmies>) => {
+/**
+ * The player picked army 201 and tapped the army beside it: the map acts on that tile with 201 (its Help order). Or,
+ * picking the other way, army 202 acting on 201's tile.
+ */
+const render = (store: ReturnType<typeof twoArmies>, { picked = 201 }: { picked?: 201 | 202 } = {}) => {
   const swap = vi.fn().mockResolvedValue({ transaction_hash: "0x1" });
   const close = vi.fn();
-  useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: TAPPED });
+  useUIStore.getState().selectOnMap({ kind: "army", entityId: picked, tile: picked === 201 ? TAPPED : PICKED });
   act(() =>
     root.render(
       <GameProvider
@@ -111,11 +114,18 @@ const button = (text: string | RegExp) =>
   [...host.querySelectorAll<HTMLButtonElement>("button")].find((each) =>
     typeof text === "string" ? each.textContent === text : text.test(each.textContent ?? ""),
   );
-/** The split slider dragged to where the picked army keeps `keeps`, as a player drags it. */
-const slide = (keeps: number) => {
-  const slider = host.querySelector<HTMLInputElement>('input[type="range"]')!;
-  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, String(keeps));
-  act(() => slider.dispatchEvent(new Event("input", { bubbles: true })));
+const slider = () => host.querySelector<HTMLInputElement>('input[type="range"]')!;
+/** The amount box: how many the picked army sends, as the player types it. */
+const typed = () => host.querySelector<HTMLInputElement>('input[aria-label^="Troops "]')!;
+/** The slider dragged to `sent`, as a player drags it. */
+const slide = (sent: number) => {
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider(), String(sent));
+  act(() => slider().dispatchEvent(new Event("input", { bubbles: true })));
+};
+/** The amount the control holds, read from both its box and its slider, which must agree. */
+const amount = () => {
+  expect(slider().value).toBe(typed().value.replaceAll(",", ""));
+  return typed().value;
 };
 /** The XP a merge takes off the map with the army it empties, struck out on that army's card; null when none. */
 const struckXp = () => host.querySelector("s")?.textContent ?? null;
@@ -126,7 +136,7 @@ const sides = () =>
     name.parentElement!.querySelector(".text-hud-title")!.textContent,
   ]);
 
-it("opens as a merge into the army tapped, and moves the split the player slides, either way", async () => {
+it("opens at all the tapped army can take, and sends the amount the player slides", async () => {
   const store = twoArmies();
   const { swap, close } = render(store);
   const [[picked], [tapped]] = sides() as [string, string][];
@@ -135,11 +145,13 @@ it("opens as a merge into the army tapped, and moves the split the player slides
     [picked, "298"],
     [tapped, "1,500"],
   ]);
+  expect(amount()).toBe("1,200");
   expect(button(`Move 1,200 to ${tapped}`)).toBeDefined();
   expect(host.textContent).toContain("An army holds at most 1,500.");
 
-  // 899 each, so 599 leave the picked army.
-  slide(899);
+  // 599 leave the picked army: 899 each.
+  slide(599);
+  expect(amount()).toBe("599");
   expect(sides()).toEqual([
     [picked, "899"],
     [tapped, "899"],
@@ -156,7 +168,7 @@ it("opens as a merge into the army tapped, and moves the split the player slides
   expect(close).toHaveBeenCalledOnce();
 });
 
-it("sends the other way when the split gives the picked army more, and empties an army that gives all", async () => {
+it("sends the way the map chose: picking the other army sends from it, and all empties it", async () => {
   const store = twoArmies();
   // The picked army a scout of 200: everything the tapped army holds fits in it.
   const first = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
@@ -171,15 +183,16 @@ it("sends the other way when the split gives the picked army more, and empties a
       ),
     },
   ] as never);
-  const { swap } = render(store);
+  // The player picks the 300 and taps the scout: all 300 go into it.
+  const { swap } = render(store, { picked: 202 });
   const [[picked], [tapped]] = sides() as [string, string][];
-  slide(500);
+  expect(amount()).toBe("300");
   expect(sides()).toEqual([
-    [picked, "500"],
-    [tapped, "0"],
+    [picked, "0"],
+    [tapped, "500"],
   ]);
   expect(struckXp()).toBe("100 XP");
-  await act(async () => button(`Merge into ${picked}`)!.click());
+  await act(async () => button(`Merge into ${tapped}`)!.click());
   expect(swap).toHaveBeenCalledWith(
     expect.objectContaining({
       from_explorer_id: 202,
@@ -210,11 +223,11 @@ it("is no card for an army acting on a tile with none of the realm's armies on i
   expect(host.querySelector("[data-kit-sheet]")).toBeNull();
 });
 
-it("starts the split again from the armies' new troops when they change while it is open, and sends only what one holds", async () => {
+it("starts the amount again from the armies' new troops when they change while it is open, and sends only what one holds", async () => {
   const store = twoArmies();
   const { swap } = render(store);
   const [[picked], [tapped]] = sides() as [string, string][];
-  slide(899);
+  slide(599);
   expect(button(`Move 599 to ${tapped}`)).toBeDefined();
 
   // A fight and an order land while the card is open: each army now holds 100.
@@ -236,7 +249,8 @@ it("starts the split again from the armies' new troops when they change while it
     ] as never),
   );
 
-  expect(host.textContent).toContain("The armies' troops changed: the split starts again from what they hold now.");
+  expect(host.textContent).toContain("The armies' troops changed: the amount starts again from what they hold now.");
+  expect(amount()).toBe("100");
   // Again a merge into the army tapped, over the new counts: never a count below none.
   expect(sides()).toEqual([
     [picked, "0"],
@@ -272,7 +286,8 @@ it.each([99, 101, 100])(
 
 it("keeps partial transfers free of a merge's losses", async () => {
   const { swap } = render(transferArmies());
-  slide(550);
+  slide(50);
+  expect(amount()).toBe("50");
   expect(struckXp()).toBeNull();
   expect(host.textContent).not.toContain("→7");
   expect(sides()).toEqual([
@@ -379,14 +394,16 @@ it("asks before dissolving an army with a whole upgrade more progression, then s
   expect(close).toHaveBeenCalledOnce();
 });
 
-it("clears confirmation when the split changes and still lets the stronger target survive without it", async () => {
-  const { swap } = render(transferArmies(100, 0));
+it("clears confirmation when the amount changes, and lets the stronger army survive without it, picked the other way", async () => {
+  const first = render(transferArmies(100, 0));
   await act(async () => button("Merge into Army 2")!.click());
-  slide(550);
+  slide(50);
   expect(button(/^Lose /)).toBeUndefined();
-  slide(0);
+  slide(600);
   expect(button("Merge into Army 2")).toBeDefined();
-  slide(1_100);
+  expect(first.swap).not.toHaveBeenCalled();
+  // Picked the other way on the map, Army 2 goes into Army 1, which keeps its XP: one click sends.
+  const { swap } = render(transferArmies(100, 0), { picked: 202 });
   await act(async () => button("Merge into Army 1")!.click());
   expect(swap).toHaveBeenCalledOnce();
   expect(swap).toHaveBeenCalledWith(
@@ -453,29 +470,30 @@ it("refuses facts arriving just before the final confirmation click", async () =
   );
 });
 
-it("labels the split's two ends with their amounts, each taking it, and takes a split typed in", async () => {
-  render(transferArmies());
-  // Army 1 keeps none (all to Army 2) at the left end, all 1,100 at the right.
+it("labels the amount's two ends, none and all the picked army holds, each taking it, and takes an amount typed in", async () => {
+  const { swap } = render(transferArmies());
+  // Army 1 sends none at the left end, all its 600 at the right, where the control opens; only Army 2's card says 1,100.
   const least = host.querySelector<HTMLButtonElement>('button[aria-label="Minimum 0"]')!;
-  const most = host.querySelector<HTMLButtonElement>('button[aria-label="Maximum 1,100"]')!;
+  const most = host.querySelector<HTMLButtonElement>('button[aria-label="Maximum 600"]')!;
   expect(least.textContent).toBe("0");
-  expect(most.textContent).toBe("1,100");
+  expect(most.textContent).toBe("600");
+  expect(amount()).toBe("600");
 
-  const kept = host.querySelector<HTMLInputElement>('input[aria-label^="Troops: Army 1 keeps"]')!;
-  expect(kept.value).toBe("0");
   act(() => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(kept, "599");
-    kept.dispatchEvent(new Event("input", { bubbles: true }));
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(typed(), "1");
+    typed().dispatchEvent(new Event("input", { bubbles: true }));
   });
-  expect(button("Move 1 to Army 2")).toBeDefined();
+  expect(amount()).toBe("1");
   expect(sides()).toEqual([
     ["Army 1", "599"],
     ["Army 2", "501"],
   ]);
 
-  act(() => most.click());
-  expect(button("Merge into Army 1")).toBeDefined();
-  expect(kept.value).toBe("1,100");
   act(() => least.click());
-  expect(button("Merge into Army 2")).toBeDefined();
+  expect(amount()).toBe("0");
+  expect(button("Pick how many to send")!.disabled).toBe(true);
+  act(() => most.click());
+  expect(amount()).toBe("600");
+  await act(async () => button("Merge into Army 2")!.click());
+  expect(swap).toHaveBeenCalledWith(expect.objectContaining({ count: 600 * Number(PRECISION) }));
 });

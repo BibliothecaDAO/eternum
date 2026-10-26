@@ -438,15 +438,15 @@ export const TRANSFER_TROOPS = {
   merge: (army: string) => `Merge into ${army}`,
   /** The second press of a merge that loses a lot: the XP lost, as the leaving army's card strikes it, and the merge. */
   confirmMerge: (lost: number, army: string) => `Lose ${formatAmount(lost)} XP, merge into ${army}`,
-  split: (picked: string, tapped: string) => `Troops: ${picked} keeps this many, ${tapped} the rest`,
-  pick: "Pick a split",
+  amount: (from: string, to: string) => `Troops ${from} sends to ${to}`,
+  pick: "Pick how many to send",
   move: (count: number, to: string) => `Move ${formatAmount(count)} to ${to}`,
   sending: "Moving…",
   cap: (cap: number) => `An army holds at most ${formatAmount(cap)}.`,
   unalike: (picked: string, tapped: string) =>
     `${picked} and ${tapped} hold different troops: only armies of the same troops and tier join.`,
   failed: "The troops could not be moved.",
-  changed: "The armies' troops changed: the split starts again from what they hold now.",
+  changed: "The armies' troops changed: the amount starts again from what they hold now.",
   /** A phone's action row, a tap on another of the realm's armies beside the picked one. */
   beside: (tapped: string, picked: string) => `${tapped} stands beside ${picked}.`,
   pickArmy: (army: string) => `Pick ${army}`,
