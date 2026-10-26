@@ -17,7 +17,7 @@ export interface LabPage {
   title: string;
   /** Its views, a tab each when there are several. */
   views: LabView[];
-  /** The games it draws, the first its own default; none, and the Game switch is not offered. */
+  /** The games it draws, the first the one it draws with no `mode` in its address; one or none, and no Game switch. */
   modes?: readonly Mode[];
   devices?: readonly Device[];
   /** Routes it opens inside itself (the HUD's frames), which belong to it but have no tab. */
@@ -220,7 +220,7 @@ export const ROOMS: LabRoom[] = [
     pages: [
       {
         title: "In game",
-        modes: BOTH,
+        modes: ["frontier", "blitz"],
         devices: ["both", "desktop", "phone"],
         views: [
           view(

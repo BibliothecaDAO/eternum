@@ -193,6 +193,13 @@ it("opens a page that draws Frontier on Frontier, and its Game switch opens it a
   expect(lifecycle.active).toEqual(new Set(["studio"]));
 });
 
+it("shows on the Game switch the game a page draws when its address names none", async () => {
+  await openLab("/lab/hud");
+  await settle();
+  expect(labels("Game")).toEqual(["Blitz", "Frontier"]);
+  expect(container.querySelector('[aria-label="Game"] [aria-pressed="true"]')?.textContent).toBe("Frontier");
+});
+
 it("offers the Device switch only on a page drawn for several devices", async () => {
   await openLab("/lab/kit/words");
   await settle();

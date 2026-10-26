@@ -6,6 +6,8 @@ import "./lab-app.css";
 import { type Device, type LabPage, type LabRoom, type LabView, type Mode, ROOMS } from "./rooms";
 
 const MODE_NAMES: Record<Mode, string> = { blitz: "Blitz", frontier: "Frontier", eternum: "Eternum" };
+/** The Game switch lists the ages in their order, whichever a page draws first. */
+const GAMES: readonly Mode[] = ["blitz", "frontier", "eternum"];
 const DEVICE_NAMES: Record<Device, string> = { desktop: "Desktop", phone: "Phone", both: "Both" };
 
 /** Every view with its page and room: the header and the routes read the lab from here. */
@@ -126,7 +128,7 @@ function LabHeader({
           {modes.length > 1 && (
             <Switch
               label="Game"
-              options={modes}
+              options={GAMES.filter((each) => modes.includes(each))}
               names={MODE_NAMES}
               value={mode}
               onChange={(next) => set({ mode: next })}
