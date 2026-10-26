@@ -82,7 +82,11 @@ describe("the castle", () => {
     expect(sheet.textContent).toContain("Kingdom");
     expect(sheet.querySelector('[aria-label="plots 36"]')).not.toBeNull();
     expect(host.querySelector(".ui-cost")?.textContent).toBe("15K labor");
-    expect(buttons().find((button) => button.textContent === "Upgrade")!.closest(".ui-window__foot")).not.toBeNull();
+    expect(
+      buttons()
+        .find((button) => button.textContent === "Upgrade")!
+        .closest(".ui-window__foot"),
+    ).not.toBeNull();
     act(() =>
       buttons()
         .find((button) => button.textContent === "Upgrade")!

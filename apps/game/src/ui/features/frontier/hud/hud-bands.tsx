@@ -60,7 +60,11 @@ const UprightBands = ({ strip, purse, stage, page, nextUp, notices, action, dock
       <div className="relative min-h-0 flex-1">{stage}</div>
       <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5">
         <div className="flex flex-col gap-1.5">{notices}</div>
-        {page ? <PageBand className="max-h-hud-phone-panel">{page}</PageBand> : <UnderSheet action={action} dock={dock} />}
+        {page ? (
+          <PageBand className="max-h-hud-phone-panel">{page}</PageBand>
+        ) : (
+          <UnderSheet action={action} dock={dock} />
+        )}
         <div ref={bar}>{nav}</div>
       </div>
       {children}

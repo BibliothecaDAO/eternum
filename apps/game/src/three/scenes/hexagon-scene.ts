@@ -971,7 +971,10 @@ export abstract class HexagonScene {
     this.moveCameraToXYZ(point.x, point.y, point.z, 0);
     const viewport = { width: window.innerWidth, height: window.innerHeight };
     const area = openMapArea(viewport);
-    const aim = new Vector2((area.left + area.right) / viewport.width - 1, 1 - (area.top + area.bottom) / viewport.height);
+    const aim = new Vector2(
+      (area.left + area.right) / viewport.width - 1,
+      1 - (area.top + area.bottom) / viewport.height,
+    );
     this.camera.updateMatrixWorld();
     const raycaster = new Raycaster();
     raycaster.setFromCamera(aim, this.camera);

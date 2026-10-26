@@ -269,7 +269,9 @@ describe("the Deploy sheet", () => {
     const map = shownOnMap();
     const { host, root, draw } = render(store, row);
     expect(host.querySelector('[aria-label="Deploy tile"]')).toBeNull();
-    expect(host.textContent).toContain("Steps out on the bright tile. Tap another lit tile beside the realm to move it there.");
+    expect(host.textContent).toContain(
+      "Steps out on the bright tile. Tap another lit tile beside the realm to move it there.",
+    );
     // The taken tile is passed over: the map marks the first open one.
     expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: ringDirection(store, row, 1) });
     // A tap on another lit tile orders again (openArmyDeployment), and the map marks that one.

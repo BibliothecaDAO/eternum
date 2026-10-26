@@ -1304,18 +1304,18 @@ export const HudSheet = ({ label, onClose, children }: { label: string; onClose:
     >
       <div className="ui-sheet__head" {...drag.handlers}>
         <PanelHead
-        title={label}
-        cue={
-          <HudIconButton
-            icon={back ? "arrow-left" : "close"}
-            label={back ? BACK : CLOSE}
-            kind="quiet"
-            size="sm"
-            onClick={onClose}
-          />
-        }
-        press={null}
-      />
+          title={label}
+          cue={
+            <HudIconButton
+              icon={back ? "arrow-left" : "close"}
+              label={back ? BACK : CLOSE}
+              kind="quiet"
+              size="sm"
+              onClick={onClose}
+            />
+          }
+          press={null}
+        />
       </div>
       <WindowFootContext.Provider value={foot}>
         <div className="ui-sheet__body">{children}</div>

@@ -105,7 +105,10 @@ describe("the status strip", () => {
     expect(morning).toContain('stroke-dashoffset="0.25"');
     expect(morning).not.toContain('data-tone="bad"');
     const lastHour = renderToStaticMarkup(
-      <StatusStrip clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} stores={[store("essence", 1)]} />,
+      <StatusStrip
+        clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }}
+        stores={[store("essence", 1)]}
+      />,
     );
     expect(lastHour).toContain('stroke-dashoffset="0.95"');
     expect(lastHour).toContain('class="ui-dial" data-tone="bad"');
