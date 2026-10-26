@@ -20,6 +20,7 @@ import { ConstructionModal } from "@/ui/features/world/containers/construction-m
 import { buildingCounts } from "@/ui/features/frontier/build/build-fixture";
 import { BuildSheet } from "@/ui/features/frontier/build/build-sheet";
 import { HelpModal } from "@/ui/features/military/components/help-modal";
+import { ResourceSwap } from "@/ui/features/economy/banking/swap";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { createGameViews, type GameClient, structureMapPosition } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -156,8 +157,99 @@ const twoFarms = (): unknown[] => [
   },
 ];
 
-/** The transfer between the lab army, out beside the realm's site, and the realm. */
-const ArmyTransfer = () => {
+/**
+ * A second army of the lab realm beside the first, and two army relics the first carries, with their weight rules and
+ * both armies' loads: relics between two armies draw the receiving army's load bar.
+ */
+const SECOND_ARMY_ID = 92;
+const ARMY_ONLY_RELICS: number[] = [ResourcesIds.StaminaRelic1, ResourcesIds.DamageRelic1];
+const secondArmyAndRelics = (store: NativeFactStore): unknown[] => {
+  const [troops, occupancy] = labArmyOut(store) as { model: string; key: string; value: Record<string, unknown> }[];
+  const load = (entity: number, key: string) => ({
+    model: "ResourceWeight",
+    key,
+    value: { game_id: 1, entity_id: entity, capacity: "100000000000000", weight: "0" },
+  });
+  return [
+    { ...troops, key: "0x9e0", value: { ...troops.value, explorer_id: SECOND_ARMY_ID } },
+    {
+      ...occupancy,
+      key: "0x9e1",
+      value: { ...occupancy.value, col: Number(occupancy.value.col) + 1, entity_id: SECOND_ARMY_ID },
+    },
+    load(LAB_ARMY_ID, "0x9e2"),
+    load(SECOND_ARMY_ID, "0x9e3"),
+    ...ARMY_ONLY_RELICS.map((resource) => ({
+      model: "ResourceBalance",
+      key: `0x9e${resource}`,
+      value: { game_id: 1, entity_id: LAB_ARMY_ID, resource_type: resource, balance: String(3n * 1_000_000_000n) },
+    })),
+    ...preset.resources
+      .filter((rule) => ARMY_ONLY_RELICS.includes(rule.resource_type))
+      .map((rule) => ({ model: "ResourceRule", key: `0x5${rule.resource_type}`, value: { ...rule, game_id: 1 } })),
+  ];
+};
+
+/** A bank three tiles from the lab realm, its fees, a Wood market, and the realm's LORDS and donkeys to trade with. */
+const BANK_ID = 60;
+const bankBeside = (store: NativeFactStore): unknown[] => {
+  const realm = store.require("Structure", { game_id: 1, entity_id: REALM });
+  const site = structureMapPosition(store, realm)!;
+  const precision = 1_000_000_000n;
+  const held = (resource: number, amount: bigint) => ({
+    model: "ResourceBalance",
+    key: `0x9f${resource}`,
+    value: { game_id: 1, entity_id: REALM, resource_type: resource, balance: String(amount * precision) },
+  });
+  return [
+    {
+      model: "Structure",
+      key: "0x9f0",
+      value: { ...realm, entity_id: BANK_ID, base: { ...realm.base, category: StructureType.Bank } },
+    },
+    {
+      model: "TileOccupancy",
+      key: "0x9f1",
+      value: {
+        game_id: 1,
+        alt: false,
+        col: site.x + 3,
+        row: site.y,
+        entity_id: BANK_ID,
+        category: TileOccupier.Bank,
+        is_structure: true,
+      },
+    },
+    {
+      model: "BankRules",
+      key: "0x9f2",
+      value: { game_id: 1, lp_fee_num: 3, lp_fee_denom: 100, owner_fee_num: 1, owner_fee_denom: 100 },
+    },
+    {
+      model: "Market",
+      key: "0x9f3",
+      value: {
+        game_id: 1,
+        resource_type: ResourcesIds.Wood,
+        lords: String(30_000n * precision),
+        resource: String(1_000_000n * precision),
+        shares: "1",
+      },
+    },
+    held(ResourcesIds.Lords, 5_000n),
+    held(ResourcesIds.Donkey, 40n),
+  ];
+};
+
+/** The bank's swap, as the Market's AMM tab draws it, on the lab realm. */
+const BankSwap = () => (
+  <div className="mx-auto w-[32rem] p-3">
+    <ResourceSwap entityId={REALM} listResourceId={ResourcesIds.Wood} />
+  </div>
+);
+
+/** The transfer between the lab army, out beside the realm's site, and the realm (or, `toArmy`, the army beside it). */
+const ArmyTransfer = ({ toArmy = false }: { toArmy?: boolean }) => {
   const {
     setup: { store },
   } = useGame();
@@ -166,7 +258,18 @@ const ArmyTransfer = () => {
   const realm = { type: ActorType.Structure, id: REALM, hex: site };
   return (
     <Opened
-      open={() => openWindow("army-transfer", <HelpModal selected={army} target={realm} allowBothDirections />)}
+      open={() =>
+        openWindow(
+          "army-transfer",
+          <HelpModal
+            selected={army}
+            target={
+              toArmy ? { type: ActorType.Explorer, id: SECOND_ARMY_ID, hex: { x: site.x + 2, y: site.y } } : realm
+            }
+            allowBothDirections
+          />,
+        )
+      }
     />
   );
 };
@@ -205,6 +308,10 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
   },
   // Blitz's army beside its realm (the unified lab's) and the window that moves troops and relics between them.
   "army-transfer": { name: "Army transfer", draw: () => <ArmyTransfer /> },
+  // The same window between two of the realm's armies, relics in the first: the receiving army's load bar draws.
+  "army-to-army": { name: "Army to army", draw: () => <ArmyTransfer toArmy /> },
+  // The bank's swap on the lab realm, a bank beside it and a Wood market: its price and the donkeys a pickup takes.
+  "bank-swap": { name: "Bank swap", draw: () => <BankSwap /> },
   // Frontier's build sheet on its own realm, two farms standing, so a farm's price is raised above its first.
   "frontier-build": { name: "Frontier build", draw: () => <FrontierBuild /> },
   "structure-edit": {
@@ -315,6 +422,9 @@ export const WindowsLab = () => {
     ] as never);
     if (surface === "transfer-holdings") fixture.applyFacts(holdingsOfEveryKind() as never);
     if (surface === "frontier-build") fixture.applyFacts(twoFarms() as never);
+    if (surface === "army-to-army")
+      fixture.applyFacts([...labArmyOut(fixture), ...secondArmyAndRelics(fixture)] as never);
+    if (surface === "bank-swap") fixture.applyFacts(bankBeside(fixture) as never);
     if (surface === "army-transfer") fixture.applyFacts([...labArmyOut(fixture), ...armyRelics()] as never);
     installLabGameClient(fixture);
     return fixture;
