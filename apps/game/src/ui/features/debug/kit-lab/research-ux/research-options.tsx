@@ -114,6 +114,7 @@ const OverlayPanel = ({ nodes, essence, labor }: PanelProps) => {
 const CardsPanel = ({ nodes, essence, labor }: PanelProps) => (
   <ResearchFrame essence={essence} labor={labor} option="cards">
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pb-3">
+      <span className="text-hud-label text-hud-warn">{RESEARCH_TREE.sideKept}</span>
       {(Object.keys(RESEARCH_TREE.branches) as Branch[]).map((branch) => {
         const rows = nodes.filter((node) => node.branch === branch);
         const open = rows.filter(({ state }) => state === "ready" || state === "short");
@@ -307,13 +308,13 @@ const ChoiceCard = ({ node, onClose }: { node: TreeNode; onClose?: () => void })
             </button>
           ))}
         </div>
-      ) : (
-        node.gives.next && (
-          <span className="text-hud-body text-hud-ink">
-            {node.gives.line} ·{" "}
-            <span className="tabular-nums text-hud-good">{RESEARCH_TREE.step(node.gives.now, node.gives.next)}</span>
-          </span>
-        )
+      ) : null}
+      {node.sides && <span className="text-hud-label text-hud-warn">{RESEARCH_TREE.sideKept}</span>}
+      {!node.sides && node.gives.next && (
+        <span className="text-hud-body text-hud-ink">
+          {node.gives.line} ·{" "}
+          <span className="tabular-nums text-hud-good">{RESEARCH_TREE.step(node.gives.now, node.gives.next)}</span>
+        </span>
       )}
       {node.state !== "done" && (
         <div className="flex items-center gap-2">
