@@ -20,6 +20,7 @@ import gzip
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 import time
@@ -293,27 +294,40 @@ def pull_chain(folder, base, first_block, last_block):
     save(folder, "chain.json", cache)
 
 
+EVENT_SEGMENT = re.compile(r"^(\d+)-(\d+)\.jsonl\.gz$")
+
+
+def events_folder(games_contract):
+    """Where one Games contract's events are kept across pulls: one immutable segment a pull, named by its blocks."""
+    return os.path.join(RAW, "games-events", hex(int(games_contract, 16)))
+
+
+def events_scanned_through(folder):
+    """The last block a published segment holds; a segment cut short is only ever a .part file, never counted."""
+    ends = [int(m.group(2)) for m in map(EVENT_SEGMENT.match, os.listdir(folder)) if m]
+    return max(ends, default=-1)
+
+
 def pull_events(folder, base, last_block):
     """Every event the Games contract emitted, through `last_block`, and the schema that decodes them (getEvents).
 
     A command's story is not enough to name it (a move writes rows but tells no story), so the usage step reads the
-    rows too. Events are kept in raw/games-events.jsonl.gz across pulls and a rerun reads only the blocks added since;
-    a run cut short may leave a duplicate, which the usage step drops."""
+    rows too. Each pull writes the blocks it adds as one segment, raw/games-events/<contract>/<from>-<to>.jsonl.gz,
+    staged as .part and published by one rename: the segment is the checkpoint, so a run stopped at any point leaves
+    every published segment whole and the next run starts after the last one."""
     manifest = get(f"{base}/manifest")
     games_contract = manifest["contracts"]["games"]
     newest_release = max(manifest["releaseSchemas"], key=int)
     save(folder, "manifest.json", manifest)
     save(folder, "schema.json", get(f"{base}/schemas/{manifest['releaseSchemas'][newest_release]}"))
-    state_path = os.path.join(RAW, "games-events.json")
-    state = {"contract": games_contract, "scanned_through": -1}
-    if os.path.exists(state_path):
-        with open(state_path) as f:
-            state = json.load(f)
-    if state["contract"] != games_contract:
-        raise SystemExit(f"raw/games-events.* hold another Games contract ({state['contract']}); move them aside")
+    segments = events_folder(games_contract)
+    os.makedirs(segments, exist_ok=True)
+    first = events_scanned_through(segments) + 1
+    if first > last_block:
+        return
     token, events = None, []
-    while state["scanned_through"] < last_block:
-        flt = {"from_block": {"block_number": state["scanned_through"] + 1}, "to_block": {"block_number": last_block},
+    while True:
+        flt = {"from_block": {"block_number": first}, "to_block": {"block_number": last_block},
                "address": games_contract, "chunk_size": 1000}
         if token:
             flt["continuation_token"] = token
@@ -323,12 +337,10 @@ def pull_events(folder, base, last_block):
         token = page.get("continuation_token")
         if not token:
             break
-    with gzip.open(os.path.join(RAW, "games-events.jsonl.gz"), "at") as out:
+    segment = os.path.join(segments, f"{first}-{last_block}.jsonl.gz")
+    with gzip.open(segment + ".part", "wt") as out:
         out.writelines(json.dumps(e, separators=(",", ":")) + "\n" for e in events)
-    state["scanned_through"] = max(state["scanned_through"], last_block)
-    with open(state_path + ".part", "w") as f:
-        json.dump(state, f)
-    os.replace(state_path + ".part", state_path)
+    os.replace(segment + ".part", segment)
 
 
 def usage(folder):

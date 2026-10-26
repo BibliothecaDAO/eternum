@@ -146,3 +146,37 @@ describe("the page's evidence, counted from the named rows", () => {
     );
   });
 });
+
+describe("what the page claims about how amounts were chosen", () => {
+  it("counts a deploy capped by the army's capacity as an amount with troops left, never as a Max press", () => {
+    const deploy = (amount: number, left: number) =>
+      story("ExplorerCreateStory", {
+        structure_id: "0x1",
+        category: { variant: { Knight: {} } },
+        tier: { variant: { T1: {} } },
+        amount: hex(BigInt(amount) * UNIT),
+      });
+    const rows = named([
+      // Max pressed with 6,000 held where 3,000 fit: 3,000 sent, 3,000 left.
+      ...tx(2, deploy(3000, 3000), balance("0x1", 26, 3000n)),
+      ...tx(2, deploy(1200, 0), {
+        kind: "delete",
+        model: "ResourceBalance",
+        key: { entity_id: "0x1", resource_type: hex(26) },
+      }),
+    ]);
+    const report = usageReport(new Counts(rows, [], []), "2026-10-26 09:09 UTC", 100);
+    expect(report.kept[1]).toBe(
+      "Deploy amounts, of 0 / 2 deploys: 0 / 1 sent every troop of their kind, 0 / 1 a multiple of 500 with troops left. Which control set them (Max, +500, the field, the slider) is not recorded.",
+    );
+  });
+
+  it("calls a send burst what was measured, not one Transfer", () => {
+    const send = (to: string) =>
+      story("ResourceTransferStory", { from_entity_id: "0x1", to_entity_id: to, resources: [] });
+    const rows = named([...tx(2, send("0x2")), ...tx(2, send("0x3"))]);
+    expect(usageReport(new Counts(rows, [], []), "", 100).kept[3]).toBe(
+      "Sends from one holding to different holdings within three blocks of each other: 1 burst by 1 player, as one multi-destination Transfer would send them; that one Transfer sent each burst is not recorded.",
+    );
+  });
+});

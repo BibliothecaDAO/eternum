@@ -9,7 +9,7 @@ export interface LeaderboardEntry {
   deepest_depth: number;
   rewards: { lords: string };
 }
-export interface UsageReport {
+interface UsageReport {
   title: string;
   pulled: string;
   source: string;
@@ -97,7 +97,7 @@ const deploys = (c: Counts, tier: string) => c.count("blitz", "Deploy army", (o)
 
 type Finding = Omit<UsageReport["findings"][number], "evidence"> & { evidence: (c: Counts) => string };
 
-export const FINDINGS: Finding[] = [
+const FINDINGS: Finding[] = [
   {
     title: "Burn a resource (the flame)",
     modes: ["blitz"],
@@ -274,8 +274,10 @@ export const FINDINGS: Finding[] = [
 
 /** The page's data, every number counted from this pull. */
 export function usageReport(c: Counts, pulled: string, throughBlock: number): UsageReport {
-  const deployMax = (mode: Mode) => c.count(mode, "Deploy army", (o) => o.left === 0);
-  const deploy500 = (mode: Mode) =>
+  // What a deploy left and sent, not the control that set it: Max, +500, the field and the slider can each give any of
+  // these amounts (Max stops at what the army holds, +500 at what is on hand).
+  const deployedAll = (mode: Mode) => c.count(mode, "Deploy army", (o) => o.left === 0);
+  const deployedHundreds = (mode: Mode) =>
     c.count(mode, "Deploy army", (o) => o.left !== 0 && o.left !== null && o.amount % 500 === 0);
   const bursts = c.sendBursts();
   const named = c.rows.filter((row) => !row.command.startsWith("(unclassified"));
@@ -289,9 +291,9 @@ export function usageReport(c: Counts, pulled: string, throughBlock: number): Us
     findings: FINDINGS.map((finding) => ({ ...finding, evidence: finding.evidence(c) })),
     kept: [
       `Explore ${n(c.count("frontier", "Explore"))} / ${n(c.count("blitz", "Explore"))}, Move ${n(c.count("frontier", "Move"))} / ${n(c.count("blitz", "Move"))}, Attack ${n(c.count("frontier", "Attack"))} / ${n(c.count("blitz", "Attack"))} (Frontier / Blitz).`,
-      `Deploy: Max ${n(deployMax("frontier"))} / ${n(deployMax("blitz"))} and +500 ${n(deploy500("frontier"))} / ${n(deploy500("blitz"))} of ${n(c.count("frontier", "Deploy army"))} / ${n(c.count("blitz", "Deploy army"))} deploys.`,
+      `Deploy amounts, of ${n(c.count("frontier", "Deploy army"))} / ${n(c.count("blitz", "Deploy army"))} deploys: ${n(deployedAll("frontier"))} / ${n(deployedAll("blitz"))} sent every troop of their kind, ${n(deployedHundreds("frontier"))} / ${n(deployedHundreds("blitz"))} a multiple of 500 with troops left. Which control set them (Max, +500, the field, the slider) is not recorded.`,
       `Army level-ups: ${n(c.count("frontier", "Army level up"))} by ${n(c.players("frontier", "Army level up"))} players.`,
-      `Sends to several holdings at once: ${n(bursts.bursts)} bursts by ${n(bursts.players)} players.`,
+      `Sends from one holding to different holdings within three blocks of each other: ${of(bursts.bursts, "burst")} by ${of(bursts.players, "player")}, as one multi-destination Transfer would send them; that one Transfer sent each burst is not recorded.`,
       `Holdings kind tabs and search: Blitz peaks at ${n(c.peakHoldings("blitz"))} holdings; ${n(c.holdingsAtLeast("blitz", 12))} of ${n(c.holdingsTotal("blitz"))} player-games passed 12.`,
       `Automation: ${n(c.players("blitz", "Produce", (o) => o.outputs >= 2))} of ${n(c.players("blitz", "Produce"))} producing players.`,
       `Relic crates ${n(c.count("blitz", "Open relic crate"))}, relics used ${n(c.count("blitz", "Use relic"))}, disband ${n(c.count("blitz", "Disband army"))}, Shrine ${n(c.count("frontier", "Use Shrine"))}, Well ${n(c.count("frontier", "Use Well"))}, Realm labor claims ${n(c.count("frontier", "Claim Realm labor"))}.`,

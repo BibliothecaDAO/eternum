@@ -33,6 +33,9 @@ jobs:
       - name: Check that only a landing validation run validates a publish
         run: python3 -m unittest discover -s deploy/athanor/scripts -p "test_revision.py"
 
+      - name: Check the live-data pull keeps the chain's events whole across a stopped run
+        run: python3 -m unittest discover -s apps/game/scripts/live-data -p "test_*.py"
+
       - name: Check that each validation area covers every file its checks read and owns the CI files that run it
         run: python3 .github/scripts/check_validation_areas.py
 

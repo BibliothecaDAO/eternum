@@ -1,7 +1,7 @@
 // The pull's usage.json for the lab's Data → UI usage: its Games events decoded with Herald's own decoder, every
 // transaction named by its command, then counted. live-data.py runs it after each analysis:
 //   bun usage.ts <pull folder> <raw folder>
-import { createReadStream, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { createReadStream, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { createGunzip } from "node:zlib";
@@ -28,40 +28,59 @@ function decoderFor(schema: any, gamesContract: string, releaseSchemas: Record<s
   } as never);
 }
 
+/** One Games contract's published event segments (live-data.py's pull_events), oldest first; a .part is never read. */
+function segmentsOf(raw: string, gamesContract: string) {
+  const folder = join(raw, "games-events", `0x${BigInt(gamesContract).toString(16)}`);
+  return readdirSync(folder)
+    .map((name) => ({ name, match: /^(\d+)-(\d+)\.jsonl\.gz$/.exec(name) }))
+    .filter(({ match }) => match)
+    .sort((a, b) => Number(a.match![1]) - Number(b.match![1]))
+    .map(({ name }) => join(folder, name));
+}
+
 async function decodeEvents(raw: string, folder: string, throughBlock: number) {
-  const { contract } = readJson(join(raw, "games-events.json"));
-  const decoder = decoderFor(
-    readJson(join(folder, "schema.json")),
-    contract,
-    readJson(join(folder, "manifest.json")).releaseSchemas,
-  );
+  const manifest = readJson(join(folder, "manifest.json"));
+  const contract: string = manifest.contracts.games;
+  const decoder = decoderFor(readJson(join(folder, "schema.json")), contract, manifest.releaseSchemas);
   const events: DecodedEvent[] = [];
   const failures = new Map<string, number>();
-  const lines = createInterface({ input: createReadStream(join(raw, "games-events.jsonl.gz")).pipe(createGunzip()) });
-  for await (const line of lines) {
-    const event = JSON.parse(line);
-    if (event.block_number > throughBlock) continue;
-    try {
-      const decoded = decoder.decode({ ...event, from_address: contract });
-      events.push({
-        block: event.block_number,
-        tx: event.transaction_hash,
-        ei: event.event_index,
-        kind: decoded.kind as DecodedEvent["kind"],
-        model: decoded.model.name,
-        member: "member" in decoded ? decoded.member : undefined,
-        key: plain(decoded.key),
-        value: "value" in decoded ? plain(decoded.value) : undefined,
-      });
-    } catch (error) {
-      const reason = (error as Error).message;
-      failures.set(reason, (failures.get(reason) ?? 0) + 1);
+  for (const segment of segmentsOf(raw, contract)) {
+    for await (const line of createInterface({ input: createReadStream(segment).pipe(createGunzip()) })) {
+      const event = JSON.parse(line);
+      if (event.block_number > throughBlock) continue;
+      try {
+        const decoded = decoder.decode({ ...event, from_address: contract });
+        events.push({
+          block: event.block_number,
+          tx: event.transaction_hash,
+          ei: event.event_index,
+          kind: decoded.kind as DecodedEvent["kind"],
+          model: decoded.model.name,
+          member: "member" in decoded ? decoded.member : undefined,
+          key: plain(decoded.key),
+          value: "value" in decoded ? plain(decoded.value) : undefined,
+        });
+      } catch (error) {
+        const reason = (error as Error).message;
+        failures.set(reason, (failures.get(reason) ?? 0) + 1);
+      }
     }
   }
   return { events: events.sort((a, b) => a.block - b.block), failures };
 }
 
-async function main([folder, raw]: string[]) {
+/** Some events did not decode: counting the rest would read a schema change as a control nobody used. */
+export class IncompleteDecode extends Error {
+  constructor(readonly failures: Map<string, number>) {
+    const total = [...failures.values()].reduce((sum, count) => sum + count, 0);
+    super(
+      `${total} ${total === 1 ? "event" : "events"} did not decode (${[...failures].map(([reason, count]) => `${reason}: ${count}`).join("; ")}); usage.json left as it was`,
+    );
+  }
+}
+
+/** Writes the pull's usage.json, replacing it only once every event through the pull's block has decoded. */
+export async function writeUsage(folder: string, raw: string) {
   const throughBlock = Number(readJson(join(folder, "history.json")).complete_through_block);
   const modes: Record<string, Mode> = Object.fromEntries(
     readJson(join(folder, "games.json")).games.map((game: { game_id: number; mode: Mode }) => [
@@ -71,18 +90,22 @@ async function main([folder, raw]: string[]) {
   );
   const leaderboard: LeaderboardEntry[] = readJson(join(folder, "leaderboard.json")).entries;
   const { events, failures } = await decodeEvents(raw, folder, throughBlock);
-  // A decode failure means the schema no longer reads some events: say so rather than count around them.
-  if (failures.size) console.error("usage: events the schema could not decode", Object.fromEntries(failures));
+  if (failures.size) throw new IncompleteDecode(failures);
   const rows = nameCommands(events, modes);
   const counts = new Counts(rows, peakHoldings(events, modes), leaderboard);
-  const report = usageReport(
-    counts,
-    readJson(join(folder, "pulled.json")).at.slice(0, 16).replace("T", " ") + " UTC",
-    throughBlock,
-  );
-  writeFileSync(join(folder, "usage.json.part"), JSON.stringify(report, null, 1));
+  const pulled = readJson(join(folder, "pulled.json")).at.slice(0, 16).replace("T", " ") + " UTC";
+  writeFileSync(join(folder, "usage.json.part"), JSON.stringify(usageReport(counts, pulled, throughBlock), null, 1));
   renameSync(join(folder, "usage.json.part"), join(folder, "usage.json"));
-  console.error(`usage: ${rows.length} transactions named, ${join(folder, "usage.json")}`);
+  return rows.length;
 }
 
-await main(process.argv.slice(2));
+// Run by bun from live-data.py; a test imports writeUsage without running it.
+if ((import.meta as { main?: boolean }).main) {
+  const [folder, raw] = process.argv.slice(2);
+  try {
+    console.error(`usage: ${await writeUsage(folder, raw)} transactions named, ${join(folder, "usage.json")}`);
+  } catch (error) {
+    console.error(`usage: ${(error as Error).message}`);
+    process.exit(1);
+  }
+}

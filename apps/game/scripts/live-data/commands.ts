@@ -18,7 +18,7 @@ export interface DecodedEvent {
   value?: any;
 }
 export type Mode = "blitz" | "frontier" | "eternum";
-export type Share = "Max" | "75%" | "50%" | "25%" | "typed";
+type Share = "Max" | "75%" | "50%" | "25%" | "typed";
 export interface CommandRow {
   tx: string;
   block: number;
