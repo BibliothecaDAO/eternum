@@ -35,7 +35,7 @@ export interface ToldReading {
   object?: { name: string; icon?: IconMeaning } | { player: string; icon: IconMeaning };
   outcome?: { word: string; tone: "good" | "bad" | "neutral" };
   /** What it paid, as its story's rule writes it: a find under a unit pays nothing to show (findGain). */
-  reward?: { amount: string; icon: IconMeaning; name: string };
+  reward?: { amountText: string; icon: IconMeaning; name: string };
 }
 
 /**
@@ -171,7 +171,7 @@ const paid = (
   const written = rule(scaledToUnits(BigInt(String(amount ?? 0))));
   if (written === null) return undefined;
   const id = Number(resource) as ResourcesIds;
-  return { amount: written, icon: resourceMeaning(id), name: resourceName(id) };
+  return { amountText: written, icon: resourceMeaning(id), name: resourceName(id) };
 };
 
 /** The site the revealed tile holds, as the game's facts keep it. */

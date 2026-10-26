@@ -56,7 +56,7 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
       {"reward" in reading && reading.reward && (
         <span className="ui-feed-line__reward" data-tip={reading.reward.name}>
           <Icon name={reading.reward.icon} size={16} alt={reading.reward.name} className="ui-feed-line__glyph" />
-          {reading.reward.amount}
+          {reading.reward.amountText}
         </span>
       )}
     </div>
