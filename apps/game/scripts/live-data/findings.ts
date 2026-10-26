@@ -146,10 +146,10 @@ const FINDINGS: Finding[] = [
     title: "Demolish a building",
     modes: ["blitz", "frontier"],
     kind: "command",
-    where: "Realm view → a building → Demolish (Blitz).",
+    where: "Realm view → a building: Demolish in Blitz; Research → Delete → OK in Frontier.",
     evidence: (c) =>
-      `Blitz: ${n(c.count("blitz", "Demolish building"))} demolitions by ${of(c.players("blitz", "Demolish building"), "player")}. Frontier: not exposed in the client (owner: a mistake, being fixed).`,
-    replace: "Nothing in Blitz; Frontier gets it.",
+      `Blitz: ${n(c.count("blitz", "Demolish building"))} demolitions by ${of(c.players("blitz", "Demolish building"), "player")}. Frontier: ${n(c.count("frontier", "Demolish building"))} demolitions by ${of(c.players("frontier", "Demolish building"), "player")}. Initial Frontier observations predate its client action; judge its use only on observations after that action ships.`,
+    replace: "Nothing proposed in Frontier: collect observations after the action ships. Nothing in Blitz.",
     risk: "Medium: a misplaced building can no longer be undone.",
     shot: null,
   },

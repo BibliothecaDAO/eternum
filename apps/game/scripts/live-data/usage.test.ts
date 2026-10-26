@@ -141,10 +141,27 @@ describe("the page's evidence, counted from the named rows", () => {
     expect(manual.evidence).toBe(
       "Automation sent at least 2 of 3 production commands (67%), for 1 of the 2 players who produced. A manual run carries exactly one output, so manual runs were at most 1.",
     );
-    expect(report.findings.find((finding) => finding.title.startsWith("Demolish"))!.evidence).toContain(
-      "Frontier: not exposed in the client (owner: a mistake, being fixed).",
-    );
   });
+});
+
+it("counts demolitions in both formats without treating the old Frontier sample as a choice", () => {
+  const demolish = (owner = PLAYER) =>
+    story(
+      "BuildingPlacementStory",
+      {
+        change: { variant: { Destroyed: {} } },
+        category: hex(1),
+      },
+      owner,
+    );
+  const rows = named([...tx(1, demolish()), ...tx(1, demolish()), ...tx(1, demolish(OTHER)), ...tx(2, demolish())]);
+  const finding = usageReport(new Counts(rows, [], []), "", 100).findings.find((finding) =>
+    finding.title.startsWith("Demolish"),
+  )!;
+  expect(finding.evidence).toBe(
+    "Blitz: 1 demolitions by 1 player. Frontier: 3 demolitions by 2 players. Initial Frontier observations predate its client action; judge its use only on observations after that action ships.",
+  );
+  expect(finding.where).toBe("Realm view → a building: Demolish in Blitz; Research → Delete → OK in Frontier.");
 });
 
 describe("what the page claims about how amounts were chosen", () => {
