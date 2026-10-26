@@ -114,7 +114,13 @@ const eslint = new ESLint({
       files: ["apps/game/src/**/*.{ts,tsx}"],
       rules: {
         ...HOOK_DEPENDENCIES,
-        "no-restricted-syntax": ["error", ...NO_BITWISE_ID, ...HUD_ROLE_OPACITY, ...NO_HEAD_RENDER, ...HAND_WRITTEN_GAIN],
+        "no-restricted-syntax": [
+          "error",
+          ...NO_BITWISE_ID,
+          ...HUD_ROLE_OPACITY,
+          ...NO_HEAD_RENDER,
+          ...HAND_WRITTEN_GAIN,
+        ],
       },
     },
     {

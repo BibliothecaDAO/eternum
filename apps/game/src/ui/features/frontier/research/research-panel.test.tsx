@@ -158,13 +158,24 @@ it("says on the Farm's make side what each Farm makes now, its base and its rese
 it("keeps the chosen Research action outside the tree scroll on every pick, including the initial Farm", () => {
   const Picking = () => {
     const [picked, setPicked] = useState<string | null>("row-0");
-    return <ResearchPanel nodes={nodes} essence={MID_REALM.essence} labor={MID_REALM.labor} picked={picked} onPick={setPicked} sending={new Set()} fixFor={() => undefined} onResearch={vi.fn()} />;
+    return (
+      <ResearchPanel
+        nodes={nodes}
+        essence={MID_REALM.essence}
+        labor={MID_REALM.labor}
+        picked={picked}
+        onPick={setPicked}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={vi.fn()}
+      />
+    );
   };
   act(() => root.render(<Picking />));
   for (const row of ["row-1", "row-2", "row-0"]) {
     act(() => host.querySelector<HTMLButtonElement>(`[data-node='${row}']`)!.click());
     const choice = host.querySelector("[data-lab='node-choice']")!;
-    expect(choice.textContent).toContain(nodes.find(({key}) => key === row)!.name);
+    expect(choice.textContent).toContain(nodes.find(({ key }) => key === row)!.name);
     expect(host.querySelector(".overflow-y-auto")!.contains(choice)).toBe(false);
     expect([...choice.querySelectorAll("button")].at(-1)?.textContent).toMatch(/^Research/);
   }
