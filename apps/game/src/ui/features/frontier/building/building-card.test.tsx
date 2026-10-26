@@ -21,6 +21,16 @@ afterEach(() => {
   host.remove();
 });
 
+/**
+ * Rifts took Uncommon and Rare, Beasts Epic, Trolls Legendary: each kind holds its own tiers' Scouting steps
+ * (rules.cairo: +10%, +20%, +30%, +40%), Rifts 10 + 20.
+ */
+const LODGE_LEGENDARY = [
+  ["Trolls", "+40%"],
+  ["Rifts", "+30%"],
+  ["Beasts", "+30%"],
+];
+
 const nodeOf = (realm: RealmResearchFacts, row: number) =>
   readResearchTree(realm).find((node) => node.row === row && node.maxTier === 4)!;
 
@@ -54,6 +64,8 @@ const rows = () =>
   [...card().querySelectorAll("[data-compare] > :not(:first-child)")].map((row) =>
     [...row.children].map((cell) => cell.textContent),
   );
+/** The tier gems as drawn: the head's, then the table's now and next. */
+const gems = () => [...card().querySelectorAll(".ui-tier")].map((gem) => gem.textContent);
 const button = (text: RegExp) => [...host.querySelectorAll("button")].find((each) => text.test(each.textContent ?? ""));
 
 it("says what all the Farms make as one number, with research's share only as its why", () => {
@@ -76,7 +88,8 @@ it("reads each side now against the next tier, picks a side by its row, and rese
   expect(button(/^Granary/)!.getAttribute("aria-pressed")).toBe("true");
   act(() => button(/^Research Granary$/)!.click());
   expect(onResearch).toHaveBeenCalledWith(1);
-  // The tier is a mark, never its word.
+  // The tier is its gem, never its word: a Rare Farm holds II, its next tier III.
+  expect(gems()).toEqual(["II", "II", "III"]);
   expect(card().textContent).not.toMatch(/Common|Uncommon|Rare|Epic|Legendary/);
 });
 
@@ -95,6 +108,8 @@ it("shows a training building's one figure, what every new army starts with, now
   draw(research.ROW_WAR_HALL, { standing: 1 });
   expect(rows()).toEqual([["Battle", "0% damage", "→", "+10% damage"]]);
   expect(button(/^Research$/)).toBeDefined();
+  // Common has no gem: only the next tier's, I.
+  expect(gems()).toEqual(["I"]);
 });
 
 it("at Legendary shows what research gave, with no next column and no Research", () => {
@@ -107,5 +122,35 @@ it("at Legendary shows what research gave, with no next column and no Research",
     ["Fields", "+75%"],
     ["Granary", "+50%"],
   ]);
+  expect(button(/^Research/)).toBeUndefined();
+  expect(gems()).toEqual(["IV", "IV"]);
+});
+
+/** The lab's realm with the Essence and labor for a Scouts' lodge tier. */
+const RICH: RealmResearchFacts = { ...MID_REALM, essence: 1_000_000, labor: 15_000 };
+
+it("shows the Scouts' lodge's three kinds, each held now and next, and researches the kind picked by its row", () => {
+  const { onResearch } = draw(research.ROW_SCOUTS_LODGE, { realm: RICH, standing: 1 });
+  // The lodge took Rifts at Uncommon.
+  expect(rows()).toEqual([
+    ["Trolls", "0%", "→", "+20%"],
+    ["Rifts", "+10%", "→", "+30%"],
+    ["Beasts", "0%", "→", "+20%"],
+  ]);
+  act(() => button(/^Rifts/)!.click());
+  act(() => button(/^Research Rifts$/)!.click());
+  expect(onResearch).toHaveBeenLastCalledWith(1);
+  act(() => button(/^Beasts/)!.click());
+  act(() => button(/^Research Beasts$/)!.click());
+  expect(onResearch).toHaveBeenLastCalledWith(2);
+});
+
+it("at the lodge's Legendary says which kind holds what research gave it", () => {
+  const legendary: RealmResearchFacts = {
+    ...MID_REALM,
+    learned: { ...MID_REALM.learned, [research.ROW_SCOUTS_LODGE]: { tier: 4, sides: [1, 1, 2, 0] } },
+  };
+  draw(research.ROW_SCOUTS_LODGE, { realm: legendary, standing: 1 });
+  expect(rows()).toEqual(LODGE_LEGENDARY);
   expect(button(/^Research/)).toBeUndefined();
 });

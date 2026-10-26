@@ -175,7 +175,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       extra?: Need[];
       sides?: (tier: number, done: boolean) => Side[];
       taken?: () => IconMeaning[];
-      /** The row's figures where it has no sides. */
+      /** The row's figures where it has no sides; a row with sides shows its sides. */
       figures?: (tier: number) => Figure[];
       leadsTo?: string[];
       gate?: TreeNode["gate"];
@@ -203,14 +203,11 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       gives: gives(tier),
       sides: done ? undefined : sides,
       taken: options.taken?.() ?? [],
-      figures:
-        options.figures?.(tier) ??
-        (sides ?? []).map((side) => ({
-          icon: side.icon,
-          name: side.name,
-          now: side.now,
-          next: done ? undefined : side.next,
-        })),
+      // A row with sides shows each side, with what its picks hold: one figure for the row would hide which side
+      // holds what, and leave the others no way to be picked (the Scouts' lodge's three kinds).
+      figures: sides
+        ? sides.map((side) => ({ icon: side.icon, name: side.name, now: side.now, next: done ? undefined : side.next }))
+        : (options.figures?.(tier) ?? []),
       leadsTo: options.leadsTo ?? [],
       gate: options.gate,
     };

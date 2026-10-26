@@ -2,10 +2,17 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudCost, HudRarity, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudCost, HudSheet, HudTier, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
-import { BUILDING_FIGURES, fromResearch, RESEARCH, RESEARCH_TREE, RESEARCHING } from "@/ui/design-system/kit/words";
+import {
+  BUILDING_FIGURES,
+  fromResearch,
+  RESEARCH,
+  RESEARCH_TREE,
+  RESEARCHING,
+  type Tier,
+} from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { DestroyBuildingButton } from "@/ui/features/world/components/bottom-right-panel/destroy-building-button";
 import { requireActiveGameClient } from "@/sync/active-game-client";
@@ -137,7 +144,7 @@ export const BuildingCardView = ({
             <span className="text-hud-strong text-hud-ink">
               {formatAmount(standing)} {BUILDING_FIGURES.standing}
             </span>
-            {node && <HudRarity tier={tierOf(node.tier)} />}
+            {node && <HudTier tier={tierOf(node.tier)} />}
           </div>
           {makes && (
             <span data-tip={makes.why} className="flex items-center gap-1.5 text-hud-title tabular-nums text-hud-ink">
@@ -149,8 +156,8 @@ export const BuildingCardView = ({
         </div>
         {node && (
           <CompareRows
-            now={<HudRarity tier={tierOf(node.tier)} />}
-            next={top ? undefined : <HudRarity tier={tierOf(node.tier + 1)} />}
+            now={<HudTier tier={tierOf(node.tier)} />}
+            next={top ? undefined : <HudTier tier={tierOf(node.tier + 1)} />}
             rows={node.figures.map((figure, index) => ({
               icon: figure.icon,
               word: figure.name,
@@ -175,8 +182,8 @@ export const BuildingCardView = ({
   );
 };
 
-/** A row's tiers learned (0 to 4) as the rarity mark's step (1 to 5). */
-const tierOf = (tier: number) => Math.min(5, tier + 1) as 1 | 2 | 3 | 4 | 5;
+/** A row's tiers learned (0 to 4) as the tier its gem shows (Common, none, to Legendary IV). */
+const tierOf = (tier: number) => Math.min(5, tier + 1) as Tier;
 
 /** The next tier's Research in the card's foot, with its price; or, while it cannot run, why, with the fix. */
 const ResearchFoot = ({
