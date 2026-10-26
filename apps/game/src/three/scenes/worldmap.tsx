@@ -267,7 +267,13 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "./worldmap-army-select-request";
-import { DEPLOY_ON_MAP_EVENT, type DeployOnMap, markDeployTile, readDeployOnMap } from "./worldmap-deploy-request";
+import {
+  DEPLOY_ON_MAP_EVENT,
+  type DeployOnMap,
+  deployShownOnMap,
+  markDeployTile,
+  readDeployOnMap,
+} from "./worldmap-deploy-request";
 import { cameraHexOf } from "./worldmap-camera-target";
 import { offerSelectedArmyOrdersAtOutcome, sendSelectedArmyTravel } from "./worldmap-army-order-selection";
 import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-order";
@@ -911,10 +917,20 @@ export default class WorldmapScene extends WarpTravel {
     if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) this.selectAwaitedArmy();
   };
 
-  /** Shown, the map takes the army selection asked while another view was showing. */
+  /** Shown, the map takes the army selection asked while another view was showing, and an open deploy order. */
   public override activateInputSurface(): void {
     super.activateInputSurface();
     this.selectAwaitedArmy();
+    if (this.isFrontierHud()) this.showAwaitedDeployOrder();
+  }
+
+  /** The deploy sheet opened before the map was shown: its order, framed once the map's first frames have settled. */
+  private showAwaitedDeployOrder(): void {
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) this.showDeployOrder(deployShownOnMap());
+      }),
+    );
   }
 
   private selectAwaitedArmy(): void {
@@ -4479,7 +4495,9 @@ export default class WorldmapScene extends WarpTravel {
       count: 6, // Many thunder bolts for dramatic effect
     });
 
-    useUIStore.getState().setLeftNavigationView(LeftView.None);
+    // Frontier's deploy order stays open as the map comes up: its tile is picked here.
+    if (!this.isFrontierHud() || deployShownOnMap() === null)
+      useUIStore.getState().setLeftNavigationView(LeftView.None);
   }
 
   private reportWarpTravelRefreshError(error: unknown, phase: "initial" | "resume"): void {

@@ -3,7 +3,13 @@ import type { ActionHighlightDescriptor } from "@bibliothecadao/eternum";
 import { Direction } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
-import { DEPLOY_ON_MAP_EVENT, markDeployTile, readDeployOnMap, showDeployOnMap } from "./worldmap-deploy-request";
+import {
+  DEPLOY_ON_MAP_EVENT,
+  deployShownOnMap,
+  markDeployTile,
+  readDeployOnMap,
+  showDeployOnMap,
+} from "./worldmap-deploy-request";
 
 const lit = (col: number, row: number, kind: ActionHighlightDescriptor["kind"] = "create-army") =>
   ({
@@ -37,5 +43,12 @@ describe("a deploy order on the map", () => {
     showDeployOnMap(null);
     window.removeEventListener(DEPLOY_ON_MAP_EVENT, hear);
     expect(heard).toEqual([{ structureId: 7, direction: Direction.WEST }, null]);
+  });
+
+  it("keeps the open sheet's order for a map shown after it, until the sheet closes", () => {
+    showDeployOnMap({ structureId: 7, direction: Direction.EAST });
+    expect(deployShownOnMap()).toEqual({ structureId: 7, direction: Direction.EAST });
+    showDeployOnMap(null);
+    expect(deployShownOnMap()).toBeNull();
   });
 });

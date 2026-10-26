@@ -8,6 +8,13 @@ vi.mock("@/hooks/use-world-spatial-tiles", () => ({
   useWorldSpatialTiles: (hexes: { col: number; row: number }[]) =>
     ring.explored ? hexes.map((hexCoords, index) => ({ hexCoords, occupierId: index === ring.taken ? 5 : 0 })) : [],
 }));
+// Where the sheet opens: the world map, or another view (the Realm board), and the way to the map it takes from there.
+const place = vi.hoisted(() => ({ map: true, goTo: [] as boolean[] }));
+vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: place.map }) }));
+vi.mock("../frontier-home", async (original) => ({
+  ...(await original<typeof import("../frontier-home")>()),
+  useGoToFrontierPlace: () => (expedition: boolean) => place.goTo.push(expedition),
+}));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentDefaultTick: () => 3,
   useCurrentArmiesTick: () => 3,
@@ -28,6 +35,8 @@ import { frontierDay } from "./deploy-fixture";
 import { DeploySheet } from "./deploy-sheet";
 
 afterEach(() => {
+  place.map = true;
+  place.goTo.length = 0;
   useUIStore.getState().setPendingMilitaryAction(null);
   ring.explored = true;
   ring.taken = -1;
@@ -240,6 +249,22 @@ describe("the Deploy sheet", () => {
     expect(startReading(host)).toEqual({ words, meter });
     act(() => root.unmount());
     host.remove();
+  });
+
+  it("brings the map up once as it opens off it (the Realm board's dock), where the tile is picked; not on the map", () => {
+    const { store, row } = frontierDay();
+    place.map = false;
+    const offMap = render(store, row);
+    offMap.draw();
+    expect(place.goTo).toEqual([true]);
+    act(() => offMap.root.unmount());
+
+    place.map = true;
+    place.goTo.length = 0;
+    const onMap = render(store, row);
+    onMap.draw();
+    expect(place.goTo).toEqual([]);
+    act(() => onMap.root.unmount());
   });
 
   it("with no troops at home, takes away Deploy and offers Build", () => {
