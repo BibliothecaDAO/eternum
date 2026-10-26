@@ -88,12 +88,17 @@ export const rowsOf = (store: NativeFactStore): LabFact[] =>
  * game's own: its client, scenes, input and HUD. Installed once per page load; the chain's clock started at `startedAt`
  * (wall time), so a reload of the game goes on where the chain stood, its commands' answers gone with the page.
  */
-export const installLabChain = async (makeScenario: () => LabScenario, startedAt: number): Promise<LabScenario> => {
-  // Building a scenario seats its fixture's player, so it is built only here, once: a route that finds the chain
-  // installed (the map's own route after /lab/game) must not seat that player over the lab's signing account.
-  if (installed) return installed;
+export const installLabChain = (makeScenario: () => LabScenario, startedAt: number): Promise<LabScenario> =>
+  // One install per page, and every caller waits for all of it: a route that sees an install begun (the map's own route
+  // after /lab/game, or a route's effect run twice) must not open the game before the tab answers its directory.
+  (installing ??= installOnce(makeScenario, startedAt));
+
+/** This page's install of the chain, begun or done. */
+let installing: Promise<LabScenario> | undefined;
+
+const installOnce = async (makeScenario: () => LabScenario, startedAt: number): Promise<LabScenario> => {
+  // Building a scenario seats its fixture's player, so it is built only here, once, never over the lab's signing account.
   const scenario = makeScenario();
-  installed = scenario;
   const record: LabChainRecord = { sent: [], streams: 0, silence: () => herald.silence() };
   window.__labChain = record;
   const { nativeBindings } = await import("@/runtime/world/native-bindings");
@@ -110,9 +115,6 @@ export const installLabChain = async (makeScenario: () => LabScenario, startedAt
   seatPlayer(labAccount(scenario, chain, nativeBindings, record, herald, now));
   return scenario;
 };
-
-/** The scenario this page's chain plays, once installed. */
-let installed: LabScenario | undefined;
 
 /**
  * The tab's directory and guardian, and the lab shard's own reads (its manifest, games, history and ranks): the lab
