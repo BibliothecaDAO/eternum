@@ -3,7 +3,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
-import { ARMY, FIGHT_WORDS, FULL, REST_DID_NOT_FIT, STORE, TROOPS, XP } from "@/ui/design-system/kit/words";
+import { ARMY, FIGHT_WORDS, FULL, REST_DID_NOT_FIT, STORAGE, TROOPS, XP } from "@/ui/design-system/kit/words";
 
 import type { ReactNode } from "react";
 
@@ -76,7 +76,7 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
                 +{formatCharge(result.gained.pay.amount)}
               </span>
               {result.gained.pay.storeFull && (
-                <HudChip label={STORE} tone="bad" tip={REST_DID_NOT_FIT}>
+                <HudChip label={STORAGE} tone="bad" tip={REST_DID_NOT_FIT}>
                   {FULL}
                 </HudChip>
               )}

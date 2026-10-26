@@ -397,7 +397,7 @@ describe("the result of the player's attack", () => {
     expect(result()!.textContent).toContain("+700");
     expect(result()!.textContent).not.toContain("550");
     expect(result()!.textContent).toMatch(/\+[\d,]+ XP/);
-    expect(result()!.querySelector('[aria-label="Store Full"]')).toBeNull();
+    expect(result()!.querySelector('[aria-label="Storage Full"]')).toBeNull();
     unmount();
   });
 
@@ -408,8 +408,8 @@ describe("the result of the player's attack", () => {
       fillLaborStore(store);
     });
     expect(result()!.textContent).toContain("+550");
-    expect(result()!.querySelector('[aria-label="Store Full"]')?.getAttribute("data-tip")).toBe(
-      "The store is full: the rest did not fit",
+    expect(result()!.querySelector('[aria-label="Storage Full"]')?.getAttribute("data-tip")).toBe(
+      "Storage is full: the rest did not fit",
     );
     unmount();
   });

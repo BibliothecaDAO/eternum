@@ -1,3 +1,4 @@
+import { MAX_ARMY_SIZE } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager } from "@bibliothecadao/eternum";
@@ -60,7 +61,7 @@ export const DeploymentStrengthSummary = ({
       <Metric label="Tier strength" value={`${troopTier} = ${tierStrength}`} />
       <Metric label="Projected strength" value={formatExact(projectedArmyStrength)} />
       <Metric
-        label="Max troops (tier)"
+        label={`${MAX_ARMY_SIZE} (tier)`}
         value={resolvedMaxTroopSize !== null ? formatExact(resolvedMaxTroopSize) : "—"}
       />
       {resolvedCapacityRemaining !== null && (

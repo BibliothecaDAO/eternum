@@ -108,8 +108,8 @@ describe("the result card", () => {
     const card = host.querySelector('button[aria-label="Troll: Victory"]')!;
     // The figure is still the reward the record names; the mark says the store could not take all of it.
     expect(card.textContent).toContain("+550");
-    const mark = card.querySelector('[aria-label="Store Full"]')!;
-    expect(mark.getAttribute("data-tip")).toBe("The store is full: the rest did not fit");
+    const mark = card.querySelector('[aria-label="Storage Full"]')!;
+    expect(mark.getAttribute("data-tip")).toBe("Storage is full: the rest did not fit");
     expect(mark.getAttribute("data-tone")).toBe("bad");
   });
 
@@ -119,7 +119,7 @@ describe("the result card", () => {
         <FightResultCard result={fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]), paid)} onClose={() => {}} />,
       ),
     );
-    expect(host.querySelector('[aria-label="Store Full"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Storage Full"]')).toBeNull();
   });
 
   it("names a lost army and pays nothing", () => {

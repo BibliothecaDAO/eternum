@@ -1,3 +1,4 @@
+import { MAX_ARMY_SIZE } from "@/ui/design-system/kit/words";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
@@ -533,10 +534,10 @@ export const TransferTroopsContainer = ({
 
     if (transferDirection === TransferDirection.StructureToExplorer) {
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
-        return `Destination explorer will hit its deployment cap (${limitText} troops for this tier).`;
+        return `Destination explorer will reach its ${MAX_ARMY_SIZE.toLowerCase()} (${limitText} troops for this tier).`;
       }
 
-      return `Max troops: ${limitText}`;
+      return `${MAX_ARMY_SIZE}: ${limitText}`;
     }
 
     if (transferDirection === TransferDirection.ExplorerToStructure && typeof guardSlot === "number") {
@@ -550,10 +551,10 @@ export const TransferTroopsContainer = ({
 
     if (transferDirection === TransferDirection.ExplorerToExplorer) {
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
-        return `Destination explorer will hit its deployment cap (${limitText} troops for this tier).`;
+        return `Destination explorer will reach its ${MAX_ARMY_SIZE.toLowerCase()} (${limitText} troops for this tier).`;
       }
 
-      return `Max troops: ${limitText}`;
+      return `${MAX_ARMY_SIZE}: ${limitText}`;
     }
 
     return null;
