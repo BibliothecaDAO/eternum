@@ -327,56 +327,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.state = useUIStore.getState();
 
-    this.shortcutManager = new SceneShortcutManager("hexception", this.sceneManager);
-
-    // Only register shortcuts if they haven't been registered already
-    if (!this.shortcutManager.hasShortcuts()) {
-      const shouldCycleRealmsForTab = () => useUIStore.getState().leftNavigationView === LeftView.MilitaryView;
-      const getRealmStructuresForTab = () =>
-        this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
-
-      this.shortcutManager.registerShortcut({
-        id: "cycle-structures",
-        key: "Tab",
-        description: "Cycle through structures",
-        sceneRestriction: SceneName.Hexception,
-        condition: () => {
-          if (shouldCycleRealmsForTab()) {
-            return getRealmStructuresForTab().length > 0;
-          }
-          return this.playerStructures.length > 0;
-        },
-        action: () => {
-          if (shouldCycleRealmsForTab()) {
-            this.selectNextRealmStructure();
-            return;
-          }
-          this.selectNextStructure();
-        },
-      });
-
-      this.shortcutManager.registerShortcut({
-        id: "toggle-view",
-        key: "v",
-        description: "Toggle between world and local view",
-        sceneRestriction: SceneName.Hexception,
-        action: () => toggleMapHexView(),
-      });
-
-      this.shortcutManager.registerShortcut({
-        id: "escape-handler",
-        key: "Escape",
-        description: "Return to world view from local view",
-        sceneRestriction: SceneName.Hexception,
-        action: () => {
-          if (this.isNavigationViewOpen()) {
-            this.closeNavigationViews();
-          } else {
-            this.clearBuildingMode();
-          }
-        },
-      });
-    }
+    this.registerRealmShortcuts();
 
     if (this.GUIFolder) {
       this.GUIFolder.add(this, "structureStage", 0, 3).onFinishChange((value: RealmLevels) => {
@@ -448,13 +399,71 @@ export default class HexceptionScene extends HexagonScene {
     );
   }
 
+  /** The realm view's keys: Tab cycles the player's structures (their realms from the military view), V the view, Escape backs out. */
+  private registerRealmShortcuts(): void {
+    this.shortcutManager = new SceneShortcutManager("hexception", this.sceneManager);
+
+    if (this.shortcutManager.hasShortcuts()) return;
+
+    const shouldCycleRealmsForTab = () => useUIStore.getState().leftNavigationView === LeftView.MilitaryView;
+    const getRealmStructuresForTab = () =>
+      this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
+
+    this.shortcutManager.registerShortcut({
+      id: "cycle-structures",
+      key: "Tab",
+      description: "Cycle through structures",
+      sceneRestriction: SceneName.Hexception,
+      condition: () => {
+        if (shouldCycleRealmsForTab()) {
+          return getRealmStructuresForTab().length > 0;
+        }
+        return this.playerStructures.length > 0;
+      },
+      action: () => {
+        if (shouldCycleRealmsForTab()) {
+          this.selectNextRealmStructure();
+          return;
+        }
+        this.selectNextStructure();
+      },
+    });
+
+    this.shortcutManager.registerShortcut({
+      id: "toggle-view",
+      key: "v",
+      description: "Toggle between world and local view",
+      sceneRestriction: SceneName.Hexception,
+      action: () => toggleMapHexView(),
+    });
+
+    this.shortcutManager.registerShortcut({
+      id: "escape-handler",
+      key: "Escape",
+      description: "Return to world view from local view",
+      sceneRestriction: SceneName.Hexception,
+      action: () => {
+        if (this.isNavigationViewOpen()) {
+          this.closeNavigationViews();
+        } else {
+          this.clearBuildingMode();
+        }
+      },
+    });
+  }
+
   public override getTerrainSurface(): TerrainSurface {
     return this.proceduralTerrain;
   }
 
-  private alignLocalCameraToPreferredZoom(): void {
+  /**
+   * Stands the camera at the realm view's own pose, its pitch at the player's zoom, at once. Setup runs out of sight
+   * (behind the flight's held frame, or the fade) and the flight reveals the camera where setup left it, so the pose
+   * is the same however the view is entered: from the map, or again from itself (Tab cycling to the realm shown).
+   */
+  private standCameraAtPreferredZoom(): void {
     this.cameraAngle = LOCAL_CAMERA_ZOOM.pitchRadians;
-    this.animateCameraToLocalZoomDistance(this.resolvePreferredLocalZoomDistance());
+    this.placeCamera(this.localZoomPosition(this.resolvePreferredLocalZoomDistance()), this.controls.target.clone());
   }
 
   private applyLocalZoomPreferenceLive(): void {
@@ -477,11 +486,17 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private animateCameraToLocalZoomDistance(distance: number): void {
+    this.cameraAnimate(this.localZoomPosition(distance), this.controls.target.clone(), 0.6);
+  }
+
+  /** Where the camera stands to look at its target from the realm view's pitch, at this distance. */
+  private localZoomPosition(distance: number): Vector3 {
     const target = this.controls.target;
-    const cameraHeight = Math.sin(this.cameraAngle) * distance;
-    const cameraDepth = Math.cos(this.cameraAngle) * distance;
-    const newPosition = new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
-    this.cameraAnimate(newPosition, target.clone(), 0.6);
+    return new Vector3(
+      target.x,
+      target.y + Math.sin(this.cameraAngle) * distance,
+      target.z + Math.cos(this.cameraAngle) * distance,
+    );
   }
 
   private scheduleLocalZoomPersist(): void {
@@ -732,7 +747,7 @@ export default class HexceptionScene extends HexagonScene {
     this.controls.zoomToCursor = false;
 
     this.moveCameraToURLLocation();
-    this.alignLocalCameraToPreferredZoom();
+    this.standCameraAtPreferredZoom();
 
     // Configure thunder bolts for hexception - focused storm effect
     this.getThunderBoltManager().setConfig({

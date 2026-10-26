@@ -77,6 +77,12 @@ export interface SceneSetupContext {
   isCurrent: () => boolean;
 }
 
+/**
+ * The move under way on each shared camera (keyed by its controls), whichever scene started it: the next writer of the
+ * camera, an animation or a placement, stops it through it, so two scenes never drive one camera at once.
+ */
+const cameraMoves = new WeakMap<object, () => void>();
+
 export abstract class HexagonScene {
   protected animationsPaused = false;
   private frozenCycleProgress = 0;
@@ -868,10 +874,7 @@ export abstract class HexagonScene {
     if (transitionStart.cancelledToken !== null) {
       incrementWorldmapRenderCounter("zoomTransitionsCancelled");
     }
-    this.cameraTransitionTimeline?.kill();
-    this.cameraTransitionTimeline = null;
-    gsap.killTweensOf(camera.position);
-    gsap.killTweensOf(target);
+    this.stopCameraMove();
 
     const duration = transitionDuration || 2;
     const transitionToken = this.cameraTransitionState.activeToken;
@@ -889,6 +892,7 @@ export abstract class HexagonScene {
         this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, transitionToken);
         this.cameraTransitionTimeline = null;
         this.setCameraTransitionStatus("idle");
+        if (cameraMoves.get(this.controls) === cancel) cameraMoves.delete(this.controls);
         onFinish?.();
       },
     });
@@ -918,13 +922,37 @@ export abstract class HexagonScene {
       },
       0,
     );
-    return () => {
+    const cancel = () => {
       if (this.cameraTransitionState.activeToken !== transitionToken) return;
       this.cameraTransitionTimeline?.kill();
       this.cameraTransitionTimeline = null;
       this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, transitionToken);
       this.setCameraTransitionStatus("idle");
     };
+    cameraMoves.set(this.controls, cancel);
+    return cancel;
+  }
+
+  /**
+   * Puts the camera at a pose at once, as the latest of its writers: a move still under way on the shared camera,
+   * whichever scene started it (the map's minimap pan as the realm view sets up), is stopped first, its scene's
+   * transition closed, so it cannot carry the camera on past this pose.
+   */
+  protected placeCamera(position: Vector3, target: Vector3): void {
+    this.stopCameraMove();
+    this.controls.target.copy(target);
+    this.controls.object.position.copy(position);
+    this.notifyControlsChanged();
+  }
+
+  /** Stops the shared camera's move under way, through the cancel of the scene that started it, and any stray tween. */
+  private stopCameraMove(): void {
+    cameraMoves.get(this.controls)?.();
+    cameraMoves.delete(this.controls);
+    this.cameraTransitionTimeline?.kill();
+    this.cameraTransitionTimeline = null;
+    gsap.killTweensOf(this.controls.object.position);
+    gsap.killTweensOf(this.controls.target);
   }
 
   public moveCameraToXYZ(x: number, y: number, z: number, duration: number = 2) {
@@ -940,25 +968,9 @@ export abstract class HexagonScene {
 
     if (duration) {
       this.cameraAnimate(newPosition, newTarget, duration);
-      return;
+    } else {
+      this.placeCamera(newPosition, newTarget);
     }
-    // A move that takes the camera now ends any move under way, which would otherwise go on writing its own target.
-    this.endCameraTransition();
-    target.copy(newTarget);
-    pos.copy(newPosition);
-    this.notifyControlsChanged();
-  }
-
-  /** The camera's transition under way, if any, stops where it is and the camera is idle again. */
-  private endCameraTransition(): void {
-    this.cameraTransitionTimeline?.kill();
-    this.cameraTransitionTimeline = null;
-    gsap.killTweensOf(this.controls.object.position);
-    gsap.killTweensOf(this.controls.target);
-    const token = this.cameraTransitionState.activeToken;
-    if (token === null) return;
-    this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, token);
-    this.setCameraTransitionStatus("idle");
   }
 
   /**
