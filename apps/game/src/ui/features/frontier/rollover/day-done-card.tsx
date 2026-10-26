@@ -79,7 +79,7 @@ export const DayDoneCard = ({
         <SemanticIcon name="victory" size={24} />#{rank.from} → #{rank.to}
       </p>
     )}
-    {armies > 0 && <ArmiesLine armies={armies} troopsLost={troopsLost} returned={returned} />}
+    {armies > 0 && <ArmiesLine troopsLost={troopsLost} returned={returned} />}
     <div className="grid w-full">
       <HudButton kind="primary" onClick={onContinue}>
         {CONTINUE}
@@ -88,21 +88,16 @@ export const DayDoneCard = ({
   </HudPanel>
 );
 
-/** The ended armies, gone, the troops they took, and the troops returned beside it: what fitted, by a full bar. */
+/** The troops the ended armies took, under the troops' mark, and the troops returned beside it: what fitted, by a full bar. */
 const ArmiesLine = ({
-  armies,
   troopsLost,
   returned,
 }: {
-  armies: number;
   troopsLost: number;
   returned: { sent: number; fitted: number } | undefined;
 }) => (
   <div className="flex items-center justify-center gap-1.5" aria-label={TROOPS}>
-    {Array.from({ length: armies }, (_, index) => (
-      <span key={index} className="size-8 rounded-full border border-hud-line" />
-    ))}
-    <span className="tabular-nums">−{formatExact(troopsLost)}</span>
+    <HudChip icons={["troops"]} label={TROOPS}>{`−${formatExact(troopsLost)}`}</HudChip>
     {returned && (
       <span className="flex items-center gap-1.5 pl-2.5">
         <HudChip icons={["order-enlightenment", "troops"]}>{`+${formatExact(returned.fitted)}`}</HudChip>

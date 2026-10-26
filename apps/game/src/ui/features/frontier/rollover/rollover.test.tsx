@@ -52,6 +52,9 @@ describe("the day's end", () => {
     expect(card.textContent).toContain("+6,400");
     expect(card.textContent).toContain("—");
     expect(card.textContent).toContain("−6,021");
+    // The troops the armies took stand under the troops' mark, with no empty portrait beside them.
+    expect(card.querySelector('[aria-label="troops"] [data-icon="troops"]')).not.toBeNull();
+    expect(card.querySelector(".rounded-full.border")).toBeNull();
     expect(card.textContent).toContain("+200470");
     act(() => host.querySelector<HTMLButtonElement>("button")!.click());
     expect(onContinue).toHaveBeenCalled();
