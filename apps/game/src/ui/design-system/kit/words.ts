@@ -297,7 +297,6 @@ export const TRAINING_BUILDINGS = [
   buildingName(BuildingType.ScoutsLodge, true),
   buildingName(BuildingType.Hearth, true),
 ] as const;
-export const BUILDINGS = "Buildings";
 /** The castle rows that unlock the three reaches beyond the spire. */
 export const ETHEREAL = "Ethereal";
 export const REACH_NUMERALS = ["I", "II", "III"] as const;
