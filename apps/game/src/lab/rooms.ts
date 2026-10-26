@@ -233,6 +233,18 @@ export const ROOMS: LabRoom[] = [
         inside: Object.values(HUD_INSIDE),
       },
       {
+        title: "Phone panels · to pick",
+        modes: ["frontier"],
+        views: [
+          view(
+            "Phone panels",
+            "/lab/kit/mobile-panels",
+            "kit/mobile-panels",
+            load(() => import("../ui/features/debug/kit-lab/mobile-panels/mobile-panels-lab"), "MobilePanelsLab"),
+          ),
+        ],
+      },
+      {
         title: "App pages",
         views: [
           view(
