@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 import { LAUNCHER_OPTIONS } from "./launcher-options";
 import { RESEARCH_OPTIONS } from "./research-options";
 
@@ -67,16 +69,33 @@ const DraftRow = ({
   </section>
 );
 
-const Frame = ({ state, size }: { state: string; size: { width: number; height: number; scale: number } }) => (
-  <div
-    className="overflow-hidden rounded-md border border-hud-line"
-    style={{ width: size.width * size.scale, height: size.height * size.scale }}
-  >
-    <iframe
-      title={`${state} at ${size.width}×${size.height}`}
-      src={`/lab/kit/hud/${state}`}
-      loading="lazy"
-      style={{ width: size.width, height: size.height, transform: `scale(${size.scale})`, transformOrigin: "0 0" }}
-    />
-  </div>
-);
+/** A live HUD lab state at a size, scaled to the lab's width where a phone opens the page. */
+const Frame = ({ state, size }: { state: string; size: { width: number; height: number; scale: number } }) => {
+  const scale = Math.min(size.scale, (useViewportWidth() - PAGE_GUTTERS) / size.width);
+  return (
+    <div
+      className="overflow-hidden rounded-md border border-hud-line"
+      style={{ width: size.width * scale, height: size.height * scale }}
+    >
+      <iframe
+        title={`${state} at ${size.width}×${size.height}`}
+        src={`/lab/kit/hud/${state}`}
+        loading="lazy"
+        style={{ width: size.width, height: size.height, transform: `scale(${scale})`, transformOrigin: "0 0" }}
+      />
+    </div>
+  );
+};
+
+/** The page's side padding, both sides: what a frame leaves of the window's width. */
+const PAGE_GUTTERS = 32;
+
+const useViewportWidth = () => {
+  const [width, setWidth] = useState(() => window.innerWidth);
+  useEffect(() => {
+    const resize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+  return width;
+};
