@@ -4,10 +4,10 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { useSideways } from "@/shell/frame/layout";
 
-import { CHAT, LOG, MENU, REALM, RESEARCH } from "@/ui/design-system/kit/words";
+import { CHAT, EVENTS_WORDS, MENU, REALM, RESEARCH } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-export type Place = "realm" | "research" | "log" | "chat" | "menu";
+export type Place = "realm" | "research" | "feed" | "chat" | "menu";
 
 /** A dot on a slot: lit is news (research to buy), amber and ember a store nearing or at its limit. */
 type Dot = "lit" | "amber" | "ember";
@@ -19,7 +19,7 @@ const DOTS: Record<Dot, string> = {
 };
 
 /**
- * The phone's place bar: Realm, Research, the Log (the Events' history, with what arrived since it was read), Chat and
+ * The phone's place bar: Realm, Research, the Feed (the same as the desktop's, with what arrived since it was read), Chat and
  * Menu, an icon and one word each, at the foot of every nav page, or down the left edge of a phone held sideways. The
  * map is where play is, so it has no slot: each slot opens its place over it and a second press closes it, Realm
  * included (owner, 25 October). The lit slot is what is open; none is lit on the map.
@@ -37,7 +37,7 @@ export const PlaceNav = ({
   realmDot?: Dot;
   /** Whether Research has a node to buy; none leaves the slot out, for a player with no realm to research. */
   researchDot?: boolean;
-  /** Events arrived since the Log was last read. */
+  /** Events arrived since the Feed was last read. */
   events: number;
   /** Chat messages unread; none shows nothing. */
   unread: number;
@@ -60,7 +60,7 @@ export const PlaceNav = ({
         {slot("realm", "realm", REALM, realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />)}
         {researchDot !== undefined &&
           slot("research", "research", RESEARCH, researchDot && <i className={cn("size-2 rounded-full", DOTS.lit)} />)}
-        {slot("log", "chronicles", LOG, count(events))}
+        {slot("feed", "chronicles", EVENTS_WORDS.feed, count(events))}
         {slot("chat", "chat", CHAT, count(unread))}
         {slot("menu", "menu", MENU)}
       </HudPanel>
