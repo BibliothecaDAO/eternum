@@ -1171,10 +1171,17 @@ export default class HexceptionScene extends HexagonScene {
 
   /**
    * The screen changed shape (a phone turned, a window resized; the renderer has set the camera's aspect): while the
-   * realm is shown, its farthest zoom is fitted again, so the whole board still fits without leaving the realm.
+   * realm is shown, its farthest zoom is fitted again, so the whole board still fits without leaving the realm. A turn
+   * while the realm is still being entered is the map's to ignore; the realm fits again as it becomes the shown scene.
    */
   public followScreenShape(): void {
     if (this.sceneManager.getCurrentScene() === SceneName.Hexception) this.fitCameraReach();
+  }
+
+  /** Shown, the realm fits its farthest zoom to the screen as it is now, whatever turned while it was being entered. */
+  public override activateInputSurface(): void {
+    super.activateInputSurface();
+    this.fitCameraReach();
   }
 
   /**

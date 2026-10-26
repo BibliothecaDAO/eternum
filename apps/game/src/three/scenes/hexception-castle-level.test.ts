@@ -43,6 +43,7 @@ const realmView = ({ store }: Fixture) => {
     // A phone held upright: the castle's reach decides how far the camera may pull back.
     camera: { aspect: 390 / 844, fov: 45 },
     sceneManager: { getCurrentScene: () => shown.scene },
+    inputManager: { activate: () => {} },
     tileManager: TileManager.forStructure(store, {} as never, REALM),
     gridBuilds: {
       start: () => builds.push({ level: scene.structureStage, ringToLight: scene.newRingRadius }),
@@ -140,4 +141,28 @@ it("leaves the zoom limit alone when the screen turns while the map is shown, wh
   view.scene.camera.aspect = 844 / 390;
   view.scene.followScreenShape();
   expect(view.scene.controls.maxDistance).toBe(65);
+});
+
+it("fits the farthest zoom to a phone turned while the realm was still being entered, once the realm is shown", () => {
+  const fixture = frontierDay();
+  const realm = fixture.store.require("Structure", { game_id: 1, entity_id: REALM });
+  fixture.store.applyFacts([
+    { model: "Structure", key: "0x7", value: { ...realm, base: { ...realm.base, level: 2 } } },
+  ] as never);
+  view = realmView(fixture);
+  // Entry has begun from the map with the phone on its side: setup fits the Kingdom to landscape, its presentation pending.
+  shown.scene = SceneName.WorldMap;
+  view.scene.camera.aspect = 844 / 390;
+  view.scene.updateCastleLevel();
+  expect(view.scene.controls.maxDistance).toBe(20);
+  // The phone turns upright before the realm is shown: the renderer's resize reaches a scene the map still owns.
+  view.scene.camera.aspect = 390 / 844;
+  view.scene.followScreenShape();
+  expect(view.scene.controls.maxDistance).toBe(20);
+  // Entry completes: the scene manager makes the realm current and activates it, and the limit is the upright Kingdom's.
+  shown.scene = SceneName.Hexception;
+  view.scene.activateInputSurface();
+  expect(view.scene.controls.maxDistance).toBe(
+    localCameraMaxDistance({ plotRadius: 3, aspect: 390 / 844, fovDegrees: 45 }),
+  );
 });
