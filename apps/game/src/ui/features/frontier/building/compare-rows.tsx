@@ -18,7 +18,7 @@ type CompareRow = {
 /** One row's cells: the thing's word takes what is left, each figure a fixed column so the rows read across. */
 const ROW = "flex items-center gap-2";
 const WORD = "flex min-w-0 flex-1 items-center gap-1.5";
-const FIGURE = "w-24 shrink-0 text-center";
+const FIGURE = "min-w-16 shrink-0 whitespace-nowrap text-center";
 const ARROW = "w-4 shrink-0 text-center";
 
 /**
