@@ -56,6 +56,8 @@ const CATEGORIES = {
     'a written figure read back as a number (Number(formatAmount(x)), parseFloat(text.replace(/,/g, "")))',
   "number.formula":
     "two figures joined by an operator in JSX ({count} × {rate}, {base} + {share}): a player reads the one result, never the sum",
+  "words.long":
+    "a line past seven words where a player reads it: a panel shows the control, the number and the action, never a sentence under them (a tooltip may say more)",
   "number.population":
     'a population written by hand ("1 / 6", "2 free of 6"): formatPopulation writes it one way, used of all it can hold',
 };
@@ -720,8 +722,80 @@ const jsxFormula = (node) => {
   return ts.isJsxExpression(siblings[index - 1] ?? node) && ts.isJsxExpression(siblings[index + 1] ?? node);
 };
 
+// A line, never a paragraph (owner, 26 October 2026: "good UI/UX doesnt need subtext"): a panel shows the control, the
+// number and the action, and a hint a player needs once is a tutorial's, not a line that stays. A string a player reads
+// on screen holds at most LINE_WORDS words (the design rules' "seven at most"), each substitution one. A tooltip may say
+// more: a hover attribute, a `tooltip` field, or a phrase named for one (…Tip, …Tooltip). Left out: pages read as text
+// (the legal pages, the patch notes), a post the player shares (x-share-messages) and the renderer's diagnostics
+// (game-renderer-policy).
+const LINE_WORDS = 7;
+const HOVER_ATTRIBUTES = /^(title|tooltip|tip|data-tip|aria-[\w-]+|alt)$/;
+const HOVER_NAME = /(?:Tips?|Tooltip|TIPS?|TOOLTIP)$/;
+const READ_AS_PAGES = /\/shell\/(?:legal\.tsx|generated\/)|\/x-share-messages\.ts$|\/game-renderer-policy\.ts$/;
+const wordCount = (text) => text.split(/\s+/).filter((word) => /[\p{L}\d]/u.test(word)).length;
+// Words for a developer, not a player: an error's or a log's message (super(…) in an Error class, new …Exception(…),
+// a call to …warn or …log), a line that opens with a code name (VITE_PUBLIC_…, UNKNOWN_RELEASE_SCHEMA:) or names a
+// function to call (captureBaseline(label)), and a value with fewer than two words in it (a CSS shadow, an SVG path). A
+// text of several lines (a build order's default in its field) is a document the player edits, not a line.
+const DEVELOPER_WORDS = /^[A-Z][A-Z\d]*_[A-Z\d_]+\b|\b[a-z]+[A-Z]\w*\([^)]*\)|\n/;
+const LOG_OR_ERROR = /(?:^|\.)(?:warn|log|debug|info|error)$/;
+const forDevelopers = (node, text) => {
+  if (DEVELOPER_WORDS.test(text) || (text.match(/\b[A-Za-z]{2,}\b/g) ?? []).length < 2) return true;
+  for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent) {
+    if (ts.isCallExpression(up) && up.expression.kind === ts.SyntaxKind.SuperKeyword) return true;
+    if (ts.isCallExpression(up) && LOG_OR_ERROR.test(calleeName(up))) return true;
+    if (ts.isNewExpression(up) && /(?:Error|Exception)$/.test(up.expression.getText())) return true;
+    if (ts.isBlock(up)) break;
+  }
+  return false;
+};
+// Prose, wherever it is handed (a coach's step(key, line), a refusal's reason): it starts with a capital, and few of its
+// words are code (a class name, a key, a path, a camelCase name).
+const CODE_WORD = /[-:[\]/_=<>{}]|[a-z][A-Z]/;
+const isProse = (text) => {
+  const words = text.trim().split(/\s+/);
+  return /^[A-Z]/.test(text.trim()) && words.filter((word) => CODE_WORD.test(word)).length * 4 < words.length;
+};
+const onHover = (node) => {
+  for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent) {
+    if (ts.isJsxAttribute(up)) return HOVER_ATTRIBUTES.test(up.name.getText());
+    if (ts.isPropertyAssignment(up) && /^(?:tooltip|tip)$|(?:Tips?|Tooltip)$/.test(up.name.getText())) return true;
+    if ((ts.isVariableDeclaration(up) || ts.isFunctionDeclaration(up)) && up.name && HOVER_NAME.test(up.name.getText()))
+      return true;
+  }
+  return false;
+};
+/** A JSX element's run of text and values from this child on, a value as one word; none past the run's first text. */
+const jsxRun = (node) => {
+  const siblings = node.parent.children ?? [];
+  const at = siblings.indexOf(node);
+  const inRun = (child) => child !== undefined && (ts.isJsxText(child) || ts.isJsxExpression(child));
+  let first = at;
+  while (inRun(siblings[first - 1])) first -= 1;
+  if (siblings.slice(first, at).some((child) => ts.isJsxText(child) && child.text.trim())) return null;
+  let text = "";
+  for (let index = first; inRun(siblings[index]); index += 1)
+    text += ts.isJsxText(siblings[index]) ? siblings[index].text : " 7 ";
+  return text.replace(/\s+/g, " ").trim();
+};
+/** The words a node puts on screen when they run past a line, else null. */
+const longLine = (node, wordsModule) => {
+  let text = null;
+  if (ts.isJsxText(node) && node.text.trim()) text = jsxRun(node);
+  else if (
+    (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateExpression(node)) &&
+    !isCodeString(node) &&
+    !inDiagnostic(node) &&
+    !inConsole(node)
+  ) {
+    const written = ts.isTemplateExpression(node) ? templateText(node) : node.text;
+    if ((wordsModule || readsAsText(node) || isProse(written)) && !forDevelopers(node, written)) text = written;
+  }
+  return text !== null && wordCount(text) > LINE_WORDS && !onHover(node) ? text : null;
+};
+
 /** Every hit in one file's source: { category, line, text }. */
-export function scanSource(source, fileName, { nouns, voiceRules }) {
+export function scanSource(source, fileName, { nouns, voiceRules, wordsModule = false }) {
   const file = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, fileName.endsWith("x") ? 4 : 3);
   const hits = [];
   const hit = (category, node, text = node.getText(file)) =>
@@ -829,6 +903,8 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
         hit(/^\s*%/.test(node.text) ? "number.percent" : "number.rate", before);
     }
     if (jsxFormula(node)) hit("number.formula", node.parent.children[node.parent.children.indexOf(node) - 1]);
+    const long = READ_AS_PAGES.test(fileName) ? null : longLine(node, wordsModule);
+    if (long) hit("words.long", node, long);
     if (ts.isJsxText(node) && node.text.trim()) {
       const text = node.text.trim();
       if (nouns.has(text)) hit("name.literal", node, text);
@@ -868,9 +944,10 @@ async function inventory() {
     for (const path of sourceFiles(dir)) {
       const file = relative(root === "client" ? GAME : join(REPO, "packages/core"), path);
       if (LEFT_OUT.test(`/${file}`)) continue;
-      const found = scanSource(readFileSync(path, "utf8"), path, context);
       const own = WORDS_MODULE.includes(file);
-      for (const each of found) if (!own || each.category.startsWith("voice")) hits.push({ root, file, ...each });
+      const found = scanSource(readFileSync(path, "utf8"), path, { ...context, wordsModule: own });
+      const kept = (each) => !own || each.category.startsWith("voice") || each.category === "words.long";
+      for (const each of found) if (kept(each)) hits.push({ root, file, ...each });
     }
   }
   for (const path of sourceFiles(RULES)) {
