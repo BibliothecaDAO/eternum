@@ -32,7 +32,7 @@ vi.mock("./build/build-sheet", () => ({ BuildSheet: () => null, useOpenPlot: () 
 vi.mock("./sites/map-site-card", () => ({ MapSiteCard: () => null, useSelectedMapSite: () => null }));
 vi.mock("./upgrade/castle-upgrade", () => ({ CastleUpgrade: () => null, useKeepSelected: () => null }));
 vi.mock("@/ui/features/military/chest/use-adjacent-own-explorer", () => ({ useAdjacentOwnExplorer: () => 201 }));
-vi.mock("./research/selected-building", () => ({ useSelectedBuildingRow: () => null }));
+vi.mock("./research/selected-building", () => ({ useTappedBuilding: () => null }));
 
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
