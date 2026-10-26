@@ -7,23 +7,17 @@ import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliotheca
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
-import { BUILDING_FIGURES, LABOR } from "@/ui/design-system/kit/words";
 import { knownAmount } from "@/ui/utils/utils";
 import { buildablePlotCount, configManager, getBalance, ResourceManager } from "@bibliothecadao/eternum";
-import {
-  BUILDINGS_CENTER,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  TroopTier,
-  formatExact,
-  formatRate,
-} from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier, formatRate } from "@bibliothecadao/types";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
-import { type CastleSide, CastleView } from "./castle-view";
-import type { Figure } from "./castle-view";
+import { type CastleMakes, type CastleSide, CastleView } from "./castle-view";
+import { useResearchTree } from "../research/research-facts";
+import { NodeTile } from "../research/research-panel";
+import type { TreeNode } from "../research/research-tree";
 
 /** Whether the player tapped their own realm's keep in the realm view. */
 export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean => {
@@ -41,11 +35,21 @@ export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean 
 };
 
 /** The castle's sheet over the game's facts: its level now and next, and the upgrade recipe's price. */
-export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
+export const CastleUpgrade = ({
+  realm,
+  onResearchPage,
+  onClose,
+}: {
+  realm: NativeRows["Structure"];
+  /** Opens the Research page on one of the castle's own nodes. */
+  onResearchPage: (node: string) => void;
+  onClose: () => void;
+}) => {
   const { setup } = useGame();
   const tick = useCurrentDefaultTick();
   const levelUp = useRealmLevelUp(safeInteger(realm.entity_id));
   const goToPlace = useGoToFrontierPlace(realm);
+  const tree = useResearchTree(realm);
   if (!levelUp) return null;
   const held = (resource: number) =>
     knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
@@ -54,7 +58,12 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
     <CastleView
       now={castleSide(setup.store, realm.game_id, levelUp.currentLevel)}
       next={levelUp.mode === "max" ? null : castleSide(setup.store, realm.game_id, levelUp.nextLevel)}
-      makes={castleFigures(setup.store, realm, held(ResourcesIds.Labor))}
+      makes={castleMakes(setup.store, realm, held(ResourcesIds.Labor))}
+      research={
+        tree && (
+          <CastleResearch nodes={tree.nodes.filter(({ branch }) => branch === "castle")} onOpen={onResearchPage} />
+        )
+      }
       prices={levelUp.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount }))}
       refusal={
         (short && {
@@ -96,37 +105,41 @@ const castleSide = (store: NativeFactStore, gameId: number, level: number): Cast
     plots: buildablePlotCount(level),
     slots: configManager.getArmySlots(level),
     limit: wholeOrUnknown(ResourceManager.castleStoreLimit(store, gameId, level)),
-    deployCap: configManager.getMaxArmySize(level, TroopTier.T1),
+    maxArmySize: configManager.getMaxArmySize(level, TroopTier.T1),
   };
 };
 
 /**
  * What the castle itself makes and holds: a realm is provisioned with its own labor producer at the labor rule's realm
- * rate (the contract's provision_realm_economy), apart from any Workshop on the board, and the castle's store holds it.
+ * rate (the contract's provision_realm_economy), apart from any Workshop on the board, and the castle's storage holds it.
  */
-const castleFigures = (
+const castleMakes = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   laborHeld: number | undefined,
-): Figure[] => {
+): CastleMakes => {
   const perSecond = store.require("ResourceRule", {
     game_id: realm.game_id,
     resource_type: ResourcesIds.Labor,
   }).realm_rate;
-  const limit = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(ResourcesIds.Labor);
-  return [
-    {
-      icons: ["labor"],
-      label: BUILDING_FIGURES.castleMakes(LABOR),
-      value: formatRate(Number(perSecond) / RESOURCE_PRECISION),
-    },
-    {
-      icons: ["labor", "resources"],
-      label: BUILDING_FIGURES.held(LABOR),
-      value: `${formatExact(laborHeld)} / ${formatExact(limit === undefined ? undefined : Number(limit / BigInt(RESOURCE_PRECISION)))}`,
-    },
-  ];
+  const storage = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(
+    ResourcesIds.Labor,
+  );
+  return {
+    rate: formatRate(Number(perSecond) / RESOURCE_PRECISION),
+    held: laborHeld,
+    storage: wholeOrUnknown(storage),
+  };
 };
+
+/** The castle's own research (the Shrine, the Well, the reaches), each tile opening it on the Research page. */
+const CastleResearch = ({ nodes, onOpen }: { nodes: readonly TreeNode[]; onOpen: (node: string) => void }) => (
+  <div className="grid grid-cols-3 gap-1.5">
+    {nodes.map((node) => (
+      <NodeTile key={node.key} node={node} picked={false} onPick={() => onOpen(node.key)} />
+    ))}
+  </div>
+);
 
 /** The castle is priced in labor (and Essence on presets that ask it); anything else is loud. */
 const castlePriceKind = (resource: number): PriceKind => {

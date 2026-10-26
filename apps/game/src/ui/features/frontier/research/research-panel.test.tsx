@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, useState } from "react";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -62,7 +62,7 @@ it("researches the Farm's next tier with the side picked", () => {
 it("holds a locked node's verb, says why, and offers the step that opens it", () => {
   const onFix = vi.fn();
   draw("row-2", vi.fn(), vi.fn(), onFix);
-  expect(host.textContent).toContain("Labor store 18,000 / 24,000 · a Kingdom holds it");
+  expect(host.textContent).toContain("Labor storage 18,000 / 24,000 · a Kingdom holds it");
   expect(button(/^Research /)!.disabled).toBe(true);
   act(() => button(/Level up the castle/)!.click());
   expect(onFix).toHaveBeenCalledOnce();

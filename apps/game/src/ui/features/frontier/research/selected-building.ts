@@ -14,9 +14,8 @@ export interface TappedBuilding {
 }
 
 /**
- * The standing building the player tapped in their realm's view: Research opens on its row, and the building stands
- * over that page with Demolish. None for the keep (it has its own sheet), an empty plot, another realm, the map, or a
- * viewer.
+ * The standing building the player tapped in their realm's view, whose own card opens. None for the keep (it has its
+ * own card), an empty plot, another realm, the map, or a viewer.
  */
 export const useTappedBuilding = (realm: NativeRows["Structure"] | null): TappedBuilding | null => {
   const { setup } = useGame();
@@ -35,20 +34,4 @@ export const useTappedBuilding = (realm: NativeRows["Structure"] | null): Tapped
   });
   const category = building ? Number(building.category) : BuildingType.None;
   return category === BuildingType.None ? null : { category, innerCol: selected.innerCol, innerRow: selected.innerRow };
-};
-
-/**
- * Whether the building a tap kept still stands on its plot, as it was: false once it is demolished or replaced, so
- * what the tap opened for it goes with it.
- */
-export const useStillStands = (realm: NativeRows["Structure"], building: TappedBuilding): boolean => {
-  const { setup } = useGame();
-  useNativeRevision(["Building"]);
-  const standing = setup.store.get("Building", {
-    game_id: realm.game_id,
-    structure_id: realm.entity_id,
-    inner_col: building.innerCol,
-    inner_row: building.innerRow,
-  });
-  return standing !== undefined && Number(standing.category) === building.category;
 };

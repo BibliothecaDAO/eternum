@@ -4,7 +4,7 @@ import { transferArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/tra
 import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier/army/transfer-troops";
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { HudNotice, HudSheet, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudNotice, HudSheet, HudTier } from "@/ui/design-system/kit/hud-elements";
 import { OFFLINE, PAYOUTS_PAUSED, TRAINING_BUILDINGS, WITHDRAWALS_CLOSED, YOU } from "@/ui/design-system/kit/words";
 import { ArmyList, ArmyRow } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
@@ -32,7 +32,10 @@ import { CastleView } from "@/ui/features/frontier/upgrade/castle-view";
 import { readArmyDetail } from "@/ui/features/frontier/army/army-detail";
 import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
 import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
-import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
+import { NodeTile, ResearchPanel } from "@/ui/features/frontier/research/research-panel";
+import { BuildingCardView, type CardMakes } from "@/ui/features/frontier/building/building-card";
+import { buildingIcon, buildingName } from "@/ui/features/frontier/build/building-names";
+import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
@@ -311,7 +314,7 @@ const CASTLE_SIDE = (level: number, limit: number) => ({
   plots: [6, 18, 36, 60][level],
   slots: [3, 4, 5, 6][level],
   limit,
-  deployCap: [3_000, 9_000, 25_000, 50_000][level],
+  maxArmySize: [3_000, 9_000, 25_000, 50_000][level],
 });
 
 /** The veteran army's panel; with `lords` its refill is offered, with `confirm` the refill's confirm is open. */
@@ -670,6 +673,10 @@ const STATES = {
   "build-early": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-early" },
   castle: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle" },
   "castle-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle-short" },
+  "building-farm": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "farm" },
+  "building-barracks": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "barracks" },
+  "building-war-hall": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "war-hall" },
+  "building-scouts-lodge": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "scouts-lodge" },
   "realm-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "full" },
   "army-refill": {
     clock: CLOCK,
@@ -894,6 +901,8 @@ type LabState = {
   storeCard?: StoreLine;
   army?: LabArmySheet;
   realmView?: "build" | "build-early" | "castle" | "castle-short" | "full";
+  /** A building tapped on the realm's board: its own card. */
+  building?: keyof typeof LAB_BUILDINGS;
   dayDone?: Parameters<typeof DayDoneCard>[0];
   lastHour?: boolean;
   order?: LabOrder;
@@ -1047,7 +1056,7 @@ export const HudLab = () => {
                     ? "menu"
                     : lab.research
                       ? "research"
-                      : lab.realmView
+                      : lab.realmView || lab.building
                         ? "realm"
                         : null
               }
@@ -1081,10 +1090,7 @@ export const HudLab = () => {
           <CastleView
             now={CASTLE_SIDE(1, 18_000)}
             next={CASTLE_SIDE(2, 50_000)}
-            makes={[
-              { icons: ["labor"], label: "labor the castle makes an hour", value: "+101/h" },
-              { icons: ["labor", "resources"], label: "labor held of its store's limit", value: "9,640 / 18,000" },
-            ]}
+            makes={{ rate: "+1.7/min", held: 9_640, storage: 18_000 }}
             prices={[{ of: "labor", amount: 15_000 }]}
             refusal={
               lab.realmView === "castle-short"
@@ -1094,11 +1100,13 @@ export const HudLab = () => {
                   }
                 : undefined
             }
+            research={<LabCastleResearch />}
             sending={false}
             onUpgrade={noop}
             onClose={noop}
           />
         )}
+        {lab.building && <LabBuildingCard building={lab.building} />}
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
         {lab.fight && (
           <HudSheet label={TARGET_MARKS[lab.fight.site].word} onClose={noop}>
@@ -1169,6 +1177,55 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
     </HudSheet>
   );
 };
+
+/** The lab realm's Farms, Barracks, War hall and Scouts' lodge, each as its card shows it: how many stand and what they make. */
+const LAB_BUILDINGS = {
+  farm: {
+    category: BuildingType.ResourceWheat,
+    row: research.ROW_FARM,
+    standing: 4,
+    makes: { icon: "wheat", rate: "+25/min", why: "+25% from Fields" },
+  },
+  barracks: {
+    category: BuildingType.ResourceKnightT1,
+    row: research.ROW_BARRACKS,
+    standing: 3,
+    makes: { icon: "troops", rate: "+10/min", why: "+50% from Drill" },
+  },
+  "war-hall": { category: BuildingType.WarHall, row: research.ROW_WAR_HALL, standing: 1, makes: undefined },
+  "scouts-lodge": { category: BuildingType.ScoutsLodge, row: research.ROW_SCOUTS_LODGE, standing: 1, makes: undefined },
+} satisfies Record<string, { category: BuildingType; row: number; standing: number; makes?: CardMakes }>;
+
+/** A building's card on the realm some days in, its Delete drawn as it rests. */
+const LabBuildingCard = ({ building }: { building: keyof typeof LAB_BUILDINGS }) => {
+  const { category, row, standing, makes } = LAB_BUILDINGS[building];
+  const node = readResearchTree(MID_REALM).find((each) => each.row === row && each.maxTier === 4);
+  return (
+    <BuildingCardView
+      name={buildingName(category)}
+      icon={buildingIcon(category)}
+      standing={standing}
+      makes={makes}
+      node={node}
+      sending={false}
+      fix={() => undefined}
+      onResearch={noop}
+      demolish={<HudIconButton kind="danger" icon="trash" label="Delete" title="Delete" size="sm" onClick={noop} />}
+      onClose={noop}
+    />
+  );
+};
+
+/** The castle's own research on the realm some days in: the Shrine learned, the Well and the reaches to come. */
+const LabCastleResearch = () => (
+  <div className="grid grid-cols-3 gap-1.5">
+    {readResearchTree(MID_REALM)
+      .filter(({ branch }) => branch === "castle")
+      .map((node) => (
+        <NodeTile key={node.key} node={node} picked={false} onPick={noop} />
+      ))}
+  </div>
+);
 
 /** Research's page on the realm some days in: the game's tree, the picked node under it. */
 const LabResearch = () => {

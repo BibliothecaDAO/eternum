@@ -69,6 +69,33 @@ export const researchShare = (
 export const outputWhy = (research: ResearchShare | undefined): string | undefined =>
   research && fromResearch(formatPercent(research.share, { signed: true }), research.side);
 
+/** What all of a type's standing buildings make: their product, its rate a second, and the side that raises it. */
+type BuildingsMake = { resource: MadeResource; perSecond: number; research?: ResearchShare };
+
+/**
+ * What every standing building of a type makes together, the one figure its card shows ("+25/min"), with the research
+ * side behind it for the card's why. None for a type that makes nothing stored, or while the realm's research is
+ * unknown (never the unresearched rate).
+ */
+export const buildingsMake = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  category: BuildingType,
+): BuildingsMake | undefined => {
+  const resource = (Object.keys(MAKERS).map(Number) as MadeResource[]).find(
+    (each) => MAKERS[each].category === category,
+  );
+  const learned = realmLearned(store, realm.game_id, realm.entity_id);
+  if (resource === undefined || learned === undefined) return undefined;
+  const research = researchShare(store, realm, resource, learned);
+  const each = buildingOutput(store, realm, category, research?.picks ?? 0);
+  return {
+    resource,
+    perSecond: each.total * standingBuildings(store, safeInteger(realm.entity_id), category),
+    research,
+  };
+};
+
 /**
  * What makes a store's rate, line by line, so its parts add up to the rate the card shows: the buildings standing with
  * their combined production, and for labor the castle's own producer (player, 25 October: "+17" counted a castle no screen

@@ -120,9 +120,22 @@ export const TODAY = "Today";
 export const PRODUCTION = "Production";
 /** A store at its limit. */
 export const FULL = "Full";
-export const STORE = "Store";
-/** On a payout's Full mark: the store took what it had room for. */
-export const REST_DID_NOT_FIT = "The store is full: the rest did not fit";
+/**
+ * What the castle holds of a resource, and how much: its storage (owner, 26 October: "store its storage"). The one word
+ * for it, on every card that says it.
+ */
+export const STORAGE = "Storage";
+/** On a payout's Full mark: the storage took what it had room for. */
+export const REST_DID_NOT_FIT = "Storage is full: the rest did not fit";
+/** The most troops one army takes, as a castle level sets it (owner, 26 October: "max army size you mean"). */
+export const MAX_ARMY_SIZE = "Max army size";
+/** What a castle level gives, on its card: the one wording for each (owner, 26 October). */
+export const CASTLE_GIVES = {
+  plots: "Plots",
+  armySlots: "Army slots",
+  storage: STORAGE,
+  maxArmySize: MAX_ARMY_SIZE,
+} as const;
 export const SEASON = "Season";
 /** The season board's columns, by their heads; the two number columns' full names on the heads' tooltip. */
 export const RANK = "Rank";
@@ -192,7 +205,7 @@ export const POPULATION = "population";
 export const needsHave = (need: string, noun: string, have: string) => `Needs ${need} ${noun}, have ${have}`;
 export const needsFree = (need: string, noun: string, free: string) => `Needs ${need} ${noun}, ${free} free`;
 export const needsOverLimit = (need: string, noun: string, limit: string) =>
-  `Needs ${need} ${noun}, the store holds ${limit}`;
+  `Needs ${need} ${noun}, storage holds ${limit}`;
 export const inTime = (duration: string) => `in ${duration}`;
 /**
  * Every cost the HUD shows, the cost first and then what is held, as a newcomer reads it: "10 Labor (you have 1,574)".
@@ -344,7 +357,7 @@ export const BUILDING_FIGURES = {
   eachMakes: (noun: string) => `${noun} each makes`,
   castleMakes: (noun: string) => `${noun} the castle makes`,
   standing: "standing",
-  held: (noun: string) => `${noun} held of its store's limit`,
+  held: (noun: string) => `${noun} held of its ${STORAGE.toLowerCase()}`,
   eachAdds: `${POPULATION} each adds`,
   eachTakes: `${POPULATION} each takes`,
   startsAt: (attribute: string) => `${attribute} new armies start at`,
@@ -1205,18 +1218,19 @@ export const RESEARCH_TREE = {
   states: { ready: "Can research", short: "Saving up", done: "Researched", locked: "Locked" },
   sides: {
     fields: ["Fields", "Wheat from every Farm"],
-    granary: ["Granary", "The castle's wheat store"],
+    granary: ["Granary", "The castle's wheat storage"],
     tools: ["Tools", "Labor from every Workshop"],
-    storeroom: ["Storeroom", "The castle's labor store"],
+    storeroom: ["Storeroom", "The castle's labor storage"],
     drill: ["Drill", "Troops from every Barracks"],
     rations: ["Rations", "Wheat a deployed troop costs"],
   },
   /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
   kinds: { camp: structurePlural(StructureType.Camp, undefined, "frontier"), rift: "Rifts", beasts: "Beasts" },
   foundByNewArmies: (kind: string) => `${kind} found by new armies`,
-  sidesLine: (made: string) => `Each tier picks a side for the season: more ${made}, or store more`,
+  sidesLine: (made: string) => `Each tier picks a side for the season: more ${made}, or more storage`,
   sideKept: "The side is kept for the season.",
   hutLine: "Population from every Hut",
+  population: "Population",
   gateLine: (barracks: string) => `${barracks} opens the four training buildings`,
   gateOpen: "The four training buildings are open",
   gate: (barracks: string) => `${barracks} opens`,
@@ -1241,7 +1255,7 @@ export const RESEARCH_TREE = {
   build: (building: string) => `Build a ${building}`,
   stands: (building: string) => `${building} stands`,
   first: (what: string) => `${what} first`,
-  store: (limit: string, need: string, level: string) => `Labor store ${limit} / ${need} · a ${level} holds it`,
+  store: (limit: string, need: string, level: string) => `Labor storage ${limit} / ${need} · a ${level} holds it`,
   held: (noun: string, have: string, need: string) => `${noun} ${have} / ${need}`,
   research: (what: string) => `Research ${what}`,
   levelUpCastle: "Level up the castle",

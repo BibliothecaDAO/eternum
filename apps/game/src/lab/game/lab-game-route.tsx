@@ -17,7 +17,7 @@ export const LabGameRoute = () => {
     const kept = keptLabGame();
     const scenario = kept && LAB_SCENARIOS[kept.name];
     if (!kept || !scenario) return setState("This tab started no lab game: open one from /lab/game.");
-    installLabChain(scenario(), kept.startedAt).then(
+    installLabChain(scenario, kept.startedAt).then(
       () => setState("ready"),
       (error: unknown) => setState(String(error)),
     );

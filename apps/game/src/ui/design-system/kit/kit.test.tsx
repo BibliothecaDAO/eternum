@@ -77,7 +77,7 @@ describe("a shortfall's line", () => {
       "Needs 3 population, 2 free",
     );
     expect(shortfallLine({ kind: "short", of: "labor", counted: "limit", held: 18_000, need: 24_000 })).toBe(
-      "Needs 24K labor, the store holds 18K",
+      "Needs 24K labor, storage holds 18K",
     );
     expect(shortfallLine({ kind: "short", of: "essence", held: undefined, need: 48_000 })).toBe(
       "Needs 48K Essence, have —",

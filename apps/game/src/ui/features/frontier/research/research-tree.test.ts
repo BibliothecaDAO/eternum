@@ -38,7 +38,7 @@ describe("the castle's tree as the contract rules it", () => {
   it("locks a tier whose labor the castle's store cannot hold, naming the level that holds it", () => {
     // Barracks epic costs 24,000 labor; a City's labor store holds 18,000, a Kingdom's 50,000.
     expect(node(MID_REALM, "row-2").state).toBe("locked");
-    expect(why(MID_REALM, "row-2")).toBe("Labor store 18,000 / 24,000 · a Kingdom holds it");
+    expect(why(MID_REALM, "row-2")).toBe("Labor storage 18,000 / 24,000 · a Kingdom holds it");
   });
 
   it("opens the training rows once the Barracks is rare, and prices each next tier from the game's prices", () => {
