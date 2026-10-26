@@ -1,4 +1,4 @@
-import { TileOccupier } from "@bibliothecadao/types";
+import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
 import { setBlockTimestampSource } from "../utils/timestamp";
@@ -53,7 +53,7 @@ const createHarness = () => {
     }
   };
   const write = (
-    model: "TileOpt" | "TileOccupancy" | "ExplorerTroops" | "Structure",
+    model: "TileOpt" | "TileOccupancy" | "ExplorerTroops" | "Structure" | "ExpeditionSite",
     alias: string,
     keys: (number | boolean)[],
     row: object,
@@ -192,9 +192,28 @@ const createHarness = () => {
       },
       false,
     );
+  /** A site an army cleared, as clear_site leaves it: its row with the receipt, its tile vacated. */
+  const writeClearedSite = (entityId: number, input: { col: number; row: number }) =>
+    write(
+      "ExpeditionSite",
+      `site-${entityId}`,
+      [13, entityId],
+      {
+        game_id: 13,
+        entity_id: entityId,
+        category: StructureType.Camp,
+        initial_guard_count: 1_600n,
+        alt: false,
+        col: input.col,
+        row: input.row,
+        clear: { explorer_id: 74n, home_id: 7n, reward: null },
+      },
+      false,
+    );
   return {
     source,
     projection: new WorldSpatialProjection({ store: source, bucketSize: 4 }),
+    writeClearedSite,
     writeTile,
     writeArmy,
     writeExpeditionRules,
@@ -369,6 +388,27 @@ describe("WorldSpatialProjection", () => {
         .map(({ spatialId }) => spatialId),
     ).toEqual(["entity:7", "reserved:0:101:200", "reserved:0:102:200"]);
     expect(projection.getStructures(false)).toHaveLength(3);
+  });
+
+  it("answers the structure standing on a hex: never a reserved site, nor a cleared site's marker an army stands on", () => {
+    const { projection, writeTile, writeArmy, writeClearedSite } = createHarness();
+    writeTile("realm", { col: 100, row: 200, occupierId: 7, occupierType: TileOccupier.RealmWonderLevel2 });
+    writeTile("reserved", { col: 101, row: 200, occupierId: 0, occupierType: TileOccupier.ReservedHyperstructure });
+    // The owner's army on prod, 25 October 2026: on the camp it had cleared, beside the ruin it went on to attack.
+    writeTile("cleared-camp", { col: 102, row: 200, occupierId: 0, occupierType: 0 });
+    writeClearedSite(76, { col: 102, row: 200 });
+    writeArmy("army", { explorerId: 74, col: 102, row: 200 });
+
+    projection.start();
+
+    const at = (col: number) => ({ alt: false, col, row: 200 });
+    expect(projection.getStandingStructureAtHex(at(100))?.entityId).toBe(7);
+    expect(projection.getStandingStructureAtHex(at(101))).toBeUndefined();
+    expect(
+      projection.getStructuresAtHex(at(102)).map(({ entityId, clearedSite }) => ({ entityId, clearedSite })),
+    ).toEqual([{ entityId: 76, clearedSite: true }]);
+    expect(projection.getStandingStructureAtHex(at(102))).toBeUndefined();
+    expect(projection.getArmiesAtHex(at(102)).map(({ entityId }) => entityId)).toEqual([74]);
   });
 
   it("indexes live surface armies from ExplorerTroops only", () => {

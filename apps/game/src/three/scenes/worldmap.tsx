@@ -96,6 +96,7 @@ import {
   type WorldSpatialHex,
   type TileSpatialRenderable,
   type WorldSpatialProjection,
+  isStandingStructure,
   projectionChangesForLayer,
 } from "@bibliothecadao/eternum/game-sync";
 import {
@@ -174,8 +175,6 @@ import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movemen
 import { env } from "../../../env";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager, type HoverLabelReconcileResult } from "../managers/hover-label-manager";
-import { resolveWorldmapHoverLabelEntity } from "./worldmap-hover-label-entities";
-import { resolveWorldmapHoverLabelTargets } from "./worldmap-hover-label-targets";
 import {
   shouldReconcileWorldmapHover,
   type WorldmapHoverReconciliationSnapshot,
@@ -1067,7 +1066,6 @@ export default class WorldmapScene extends WarpTravel {
   private worldUpdateUnsubscribes: Array<() => void> = [];
   private visibilityChangeHandler?: () => void;
   private unregisterWorldmapRecoveryHandle: (() => void) | null = null;
-  private readonly hoverLabelRaycaster: Raycaster;
   private currentHoverLabelHex: HexPosition | null = null;
   private hoverLabelRecovery!: WorldmapHoverLabelRecovery;
 
@@ -1083,7 +1081,6 @@ export default class WorldmapScene extends WarpTravel {
     super(SceneName.WorldMap, controls, gameContext, mouse, raycaster, sceneManager);
 
     this.game = gameContext;
-    this.hoverLabelRaycaster = raycaster;
     this.logWorldmapSceneConstruction();
     this.registerWorldmapRecoveryHandle();
     this.initializeWorldmapSceneServices();
@@ -1340,7 +1337,7 @@ export default class WorldmapScene extends WarpTravel {
           hideAll: () => this.chestManager.hideAllLabels(),
         },
       },
-      (hexCoords: HexPosition) => this.resolveHoverLabelEntities(hexCoords),
+      (hexCoords: HexPosition) => this.getHexagonEntity(hexCoords),
       this.getCurrentCameraView(),
       this.markLabelsDirty,
     );
@@ -2531,13 +2528,14 @@ export default class WorldmapScene extends WarpTravel {
     const hex = position.getNormalized();
     const contractHex = position.getContract();
     const army = this.getArmyAtHex({ col: hex.x, row: hex.y });
-    const projectedStructure = this.worldSpatialProjection
-      .getStructuresAtHex({ alt: activeMapLayer(), col: contractHex.x, row: contractHex.y })
-      .find((candidate) => !candidate.reserved && !candidate.clearedSite);
-    const structure =
-      projectedStructure && !projectedStructure.reserved
-        ? { id: projectedStructure.entityId, owner: this.getStructureOwnerAddress(projectedStructure.entityId) }
-        : undefined;
+    const standing = this.worldSpatialProjection.getStandingStructureAtHex({
+      alt: activeMapLayer(),
+      col: contractHex.x,
+      row: contractHex.y,
+    });
+    const structure = standing
+      ? { id: standing.entityId, owner: this.getStructureOwnerAddress(standing.entityId) }
+      : undefined;
     const projectedChest = this.worldSpatialProjection.getChestsAtHex({
       alt: activeMapLayer(),
       col: contractHex.x,
@@ -2546,59 +2544,6 @@ export default class WorldmapScene extends WarpTravel {
     const chest = projectedChest ? { id: projectedChest.entityId, owner: 0n } : undefined;
 
     return { army, structure, chest };
-  }
-
-  private resolveHoverLabelEntities(hexCoords: HexPosition) {
-    const cachedEntities = this.getHexagonEntity(hexCoords);
-    const managerEntities = this.resolveManagerHoverLabelEntities(hexCoords, cachedEntities);
-    const targets = resolveWorldmapHoverLabelTargets({
-      cachedEntities,
-      hoveredHex: hexCoords,
-      managerEntities,
-      raycastArmy: cachedEntities.army ? undefined : this.resolveRaycastArmyHoverTarget(),
-    });
-
-    return {
-      army: resolveWorldmapHoverLabelEntity(targets.armyId, cachedEntities.army),
-      structure: resolveWorldmapHoverLabelEntity(targets.structureId, cachedEntities.structure),
-      chest: resolveWorldmapHoverLabelEntity(targets.chestId, cachedEntities.chest),
-    };
-  }
-
-  private resolveManagerHoverLabelEntities(
-    hexCoords: HexPosition,
-    cachedEntities: { army?: HexEntityInfo; structure?: HexEntityInfo; chest?: HexEntityInfo },
-  ) {
-    return {
-      army: cachedEntities.army ? undefined : this.resolveArmyHoverLabelEntityFromManager(hexCoords),
-      structure: cachedEntities.structure ? undefined : this.resolveStructureHoverLabelEntityFromManager(hexCoords),
-    };
-  }
-
-  private resolveArmyHoverLabelEntityFromManager(hexCoords: HexPosition): HexEntityInfo | undefined {
-    const army = this.armyManager.getArmies().find((candidate) => {
-      const normalized = candidate.hexCoords.getNormalized();
-      return normalized.x === hexCoords.col && normalized.y === hexCoords.row;
-    });
-
-    return army ? { id: army.entityId, owner: army.owner.address ?? 0n } : undefined;
-  }
-
-  private resolveStructureHoverLabelEntityFromManager(hexCoords: HexPosition): HexEntityInfo | undefined {
-    const structure = this.structureManager.getStructureByHexCoords(hexCoords);
-    return structure ? { id: structure.entityId, owner: structure.owner.address } : undefined;
-  }
-
-  private resolveRaycastArmyHoverTarget() {
-    const entityId = this.armyManager.onMouseMove(this.hoverLabelRaycaster);
-    if (entityId === undefined) {
-      return undefined;
-    }
-
-    return {
-      entityId,
-      position: this.getArmyDisplayPosition(entityId),
-    };
   }
 
   private reconcileHoverLabels(reason: HoverLabelRecoveryReason = "hover"): HoverLabelReconcileResult | null {
@@ -3895,7 +3840,7 @@ export default class WorldmapScene extends WarpTravel {
   private buildProjectedStructureActionIndex(): Map<number, Map<number, HexEntityInfo>> {
     const index = new Map<number, Map<number, HexEntityInfo>>();
     this.worldSpatialProjection.getStructures(activeMapLayer()).forEach((structure) => {
-      if (structure.reserved || structure.clearedSite) return;
+      if (!isStandingStructure(structure)) return;
 
       const normalized = Position.fromContract({
         x: structure.hexCoords.col,
@@ -6457,7 +6402,7 @@ export default class WorldmapScene extends WarpTravel {
     retainedBounds.forEach((bounds) => {
       const contractBounds = this.toContractBounds(bounds);
       this.worldSpatialProjection.getStructuresInBounds(contractBounds).forEach((structure) => {
-        if (structure.reserved || structure.clearedSite || retainedStructureIds.has(structure.entityId)) {
+        if (!isStandingStructure(structure) || retainedStructureIds.has(structure.entityId)) {
           return;
         }
         retainedStructureIds.add(structure.entityId);

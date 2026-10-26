@@ -412,29 +412,31 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   Frontier's **Season**) carry the same colour and initial. An undefended one shows a dashed ring. No label element
   takes the pointer (`map-plates.css`): a hover or a click, on a token or an open plate, lands on the tile under the
   pointer, on desktop and phone (owner, 2026-10-20: "we click the tile and that's it"). Hover a tile and its full plate
-  opens where its token was drawn: on the token's foot (hung from the top bar's edge only where it would reach under the
-  bar), slid aside but always covering the token's middle (`map-plate-layout.ts`). Select it and it goes back to rest,
-  its token ringed in gold: its detail is the HUD's panel; selected while hovered, it rests until the pointer leaves it,
-  and opens again when it comes back. The open plate and the order line are placed together, clear of each other, the
-  screen's edges and the HUD; where the hovered plate cannot fit beside the line, it stays its token. The plate, on the
-  HUD panel's surface, has at most three rows (`map-plate-rows.ts`) and never an id. An army: "player | home realm" as
-  its realm's plate writes them, then its troops, then its stamina bar and exact "84/150". A realm or hyperstructure:
-  "player | name", its guard slots in the order an attacker meets them, each with its stamina bar under it (read at the
-  chain's tick, following regeneration), or "Undefended"; in Frontier, whose realms have no guard slots and are never
-  attacked, "player | name" alone; then the troops on their way, each time before its troops ("Arriving 13m T2 300"). A
-  camp or rift: its owner (the Vanguard for nobody's), its lore name, read off its id on every client (`site-name.ts`),
-  and kind ("Grimtear Camp"), and what it holds beside its guard ("T2 300 | 1,200 Essence", a camp's Labor, a Frontier
-  site's payout). With a thing selected, the hovered tile's order line stands beside the tile, clear of the opened
-  plates and of every token kept in view, or is not drawn; the tokens under it step aside. Crowded tokens slide aside
-  only as far as keeps their thing's label point under them, else are not drawn; the selected thing, the player's own
-  armies and anything in battle (on its battle cooldown) always stay in view: placed first, together (`placeKept`), each
-  on its own point, slid while attached, or a row or two straight up, in the arrangement that rises least, the same
-  whatever order they arrive in, and the others yield to them. Elsewhere an unnamed army or structure is called by its
-  kind, never by its entity id (`getEntityName`, `packages/core/src/utils/entities.ts`). The dev build's lab draws the
-  same labels over a fixture world, `/lab/map-labels` (`zoom` play, close or far, `hover`, `select`, `battle`, `focus`,
-  `busy=1`, `game=frontier`, `panel=0`, `spectate=1` in the address, or the panel's **Viewer · Playing | Spectating**: a
-  watching viewer over the fixture's 24 seats, the seats listed; with a thing selected, the hovered tile shows the order
-  line). In a live game, `playtest --steps blitz-plates` or `frontier-plates` (a spectator), or `blitz-plates-player` or
+  opens where its token was drawn (one plate a tile: the army standing on it before any structure; a cleared site's
+  marker never counts as one, so an army on a cleared site opens its own): on the token's foot (hung from the top bar's
+  edge only where it would reach under the bar), slid aside but always covering the token's middle
+  (`map-plate-layout.ts`). Select it and it goes back to rest, its token ringed in gold: its detail is the HUD's panel;
+  selected while hovered, it rests until the pointer leaves it, and opens again when it comes back. The open plate and
+  the order line are placed together, clear of each other, the screen's edges and the HUD; where the hovered plate
+  cannot fit beside the line, it stays its token. The plate, on the HUD panel's surface, has at most three rows
+  (`map-plate-rows.ts`) and never an id. An army: "player | home realm" as its realm's plate writes them, then its
+  troops, then its stamina bar and exact "84/150". A realm or hyperstructure: "player | name", its guard slots in the
+  order an attacker meets them, each with its stamina bar under it (read at the chain's tick, following regeneration),
+  or "Undefended"; in Frontier, whose realms have no guard slots and are never attacked, "player | name" alone; then the
+  troops on their way, each time before its troops ("Arriving 13m T2 300"). A camp or rift: its owner (the Vanguard for
+  nobody's), its lore name, read off its id on every client (`site-name.ts`), and kind ("Grimtear Camp"), and what it
+  holds beside its guard ("T2 300 | 1,200 Essence", a camp's Labor, a Frontier site's payout). With a thing selected,
+  the hovered tile's order line stands beside the tile, clear of the opened plates and of every token kept in view, or
+  is not drawn; the tokens under it step aside. Crowded tokens slide aside only as far as keeps their thing's label
+  point under them, else are not drawn; the selected thing, the player's own armies and anything in battle (on its
+  battle cooldown) always stay in view: placed first, together (`placeKept`), each on its own point, slid while
+  attached, or a row or two straight up, in the arrangement that rises least, the same whatever order they arrive in,
+  and the others yield to them. Elsewhere an unnamed army or structure is called by its kind, never by its entity id
+  (`getEntityName`, `packages/core/src/utils/entities.ts`). The dev build's lab draws the same labels over a fixture
+  world, `/lab/map-labels` (`zoom` play, close or far, `hover`, `select`, `battle`, `focus`, `busy=1`, `game=frontier`,
+  `panel=0`, `spectate=1` in the address, or the panel's **Viewer · Playing | Spectating**: a watching viewer over the
+  fixture's 24 seats, the seats listed; with a thing selected, the hovered tile shows the order line). In a live game,
+  `playtest --steps blitz-plates` or `frontier-plates` (a spectator), or `blitz-plates-player` or
   `frontier-plates-player` (a seated player, the readiest army selected), reads every drawn token, plate and order line
   at the map's zoom, the farthest and the closest, the tiles round the centre hovered one by one, clicks at the labels
   in view, and fails on any label not drawn in its side's colour (to a spectator, its seat's: one colour per seat, no
@@ -460,6 +462,13 @@ the lab's game on a fixture (`/lab/game?scenario=spire`, `src/lab/game/`): the g
 selected, the spire found by its hover (Enter a depth) and tapped, Ethereal II entered, the EnterDepth command recorded
 and the army shown in Ethereal II; add `--viewport 390x844` for a phone. No live game, account or transaction is
 involved.
+
+`/lab/game?scenario=merge-keeps-picked` and `merge-keeps-tapped` stand the realm's two armies side by side (1,498 and
+2,517 knights): pick the spire's army, right-click the other for **Transfer troops**, **Merge into …**; the merge keeps
+the army picked or the army tapped (the merged-into army, as from release 3). `scenario=after-battle` is the owner's
+army after its fight on prod (25 October 2026): 4,015 knights on the camp they cleared, beside the ruin they attacked
+(guard 999), both on battle cooldown. `--steps lab-merge-keeps-picked`, `lab-merge-keeps-tapped` and `lab-after-battle`
+check that hovering the army's tile opens its plate, and that a tile a merge emptied opens none.
 
 `/lab/game?scenario=realm` is the same game with the realm a full Settlement (six plots built) and the labor for a City:
 **Realm**, tap the castle, **Upgrade**. The LevelUp command is recorded and applied, the second ring's twelve plots

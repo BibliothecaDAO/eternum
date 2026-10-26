@@ -392,8 +392,8 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
     /** A click on a contract hex as the map handles it: the tile, then the structure standing on it, if any. */
     click: (col: number, row: number) => {
       adapter.selectHex({ contractHexPosition: { x: col, y: row }, isMine: false });
-      const [structure] = projection.getStructuresAtHex({ alt: useUIStore.getState().mapLayer, col, row });
-      if (structure?.entityId != null) {
+      const structure = projection.getStandingStructureAtHex({ alt: useUIStore.getState().mapLayer, col, row });
+      if (structure) {
         useUIStore.getState().selectOnMap({ kind: "structure", entityId: structure.entityId });
       }
     },

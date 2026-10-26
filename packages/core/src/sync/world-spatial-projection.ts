@@ -77,6 +77,17 @@ interface ReservedHyperstructureSpatialRenderable {
 
 export type StructureSpatialRenderable = EntityStructureSpatialRenderable | ReservedHyperstructureSpatialRenderable;
 
+/** A structure standing on its hex: what the hex shows and answers for. */
+export type StandingStructureSpatialRenderable = EntityStructureSpatialRenderable & { readonly clearedSite?: never };
+
+/**
+ * Whether a structure stands on its hex: neither a reserved construction site (no entity yet) nor a cleared site's
+ * marker, whose tile is empty and open to an army (clear_site vacates it).
+ */
+export const isStandingStructure = (
+  structure: StructureSpatialRenderable,
+): structure is StandingStructureSpatialRenderable => !structure.reserved && !structure.clearedSite;
+
 export interface ChestSpatialProjectionChange {
   readonly kind: "chest";
   readonly entityId: ID;
@@ -820,6 +831,11 @@ export class WorldSpatialProjection {
 
   public getStructuresAtHex(hexCoords: WorldSpatialHex): readonly StructureSpatialRenderable[] {
     return this.structureIndex.getAtHex(hexCoords);
+  }
+
+  /** The structure standing on a hex (`isStandingStructure`), if any. */
+  public getStandingStructureAtHex(hexCoords: WorldSpatialHex): StandingStructureSpatialRenderable | undefined {
+    return this.structureIndex.getAtHex(hexCoords).find(isStandingStructure);
   }
 
   public getStructuresInBounds(bounds: WorldSpatialBounds): readonly StructureSpatialRenderable[] {

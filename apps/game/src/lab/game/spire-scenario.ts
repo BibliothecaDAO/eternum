@@ -1,9 +1,9 @@
 import { installLabGame } from "@/ui/features/debug/kit-lab/fixture-game";
 import { SPIRE_DAY_NOW, spireDay } from "@/ui/features/frontier/spire-fixture";
 import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum";
-import { BiomeType, BiomeTypeToId, getHexesWithinRadius } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, getHexesWithinRadius, getNeighborHexes } from "@bibliothecadao/types";
 
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { nativeTilePackingConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeCommandBits } from "../../../../../contracts/l3/world-native/schema/commands.gen";
@@ -103,4 +103,16 @@ export const spireScenario = (): LabScenario => {
       ];
     },
   };
+};
+
+/** A tile beside the one given, revealed and empty: where a lab game stands a second thing by the spire's army. */
+export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; row: number }) => {
+  const taken = new Set([...store.entries("TileOccupancy")].map(([, row]) => `${row.col},${row.row}`));
+  const open = getNeighborHexes(beside.col, beside.row).find(
+    (hex) =>
+      !taken.has(`${hex.col},${hex.row}`) &&
+      store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }),
+  );
+  if (!open) throw new Error("The lab finds no open tile beside the spire's army");
+  return { col: open.col, row: open.row };
 };
