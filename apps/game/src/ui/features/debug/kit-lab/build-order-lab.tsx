@@ -191,7 +191,7 @@ const labBook = () => ({
 /** The maker as the game opens it, on a signed-in fixture account: its saves reach no service here. */
 const LabMaker = () => {
   useState(() => {
-    useBuildOrderStore.setState({ owner: "0x1ab", status: "ready", book: labBook(), revision: 1, error: null });
+    useBuildOrderStore.setState({ owner: "0x1ab", status: "ready", book: labBook(), revision: 1, notice: null });
   });
   return <BuildOrderMaker />;
 };

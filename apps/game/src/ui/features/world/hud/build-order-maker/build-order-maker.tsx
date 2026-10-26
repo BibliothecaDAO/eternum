@@ -1,4 +1,4 @@
-import { saveBuildOrders, useBuildOrders } from "@/hooks/use-build-orders";
+import { reloadBuildOrders, saveBuildOrders, useBuildOrders } from "@/hooks/use-build-orders";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import {
@@ -70,7 +70,7 @@ export const BuildOrderMaker = () => {
 
 /** The account's orders, the game's own last; Use makes one the panel's, and the default needs no saving. */
 const OrderList = ({ onView }: { onView: (view: View) => void }) => {
-  const { status, book, error } = useBuildOrders();
+  const { status, book, notice } = useBuildOrders();
   const signedIn = status !== "signed-out";
   const orders = book?.orders ?? [];
   // Each press hands its save back, so its button holds until the account answers.
@@ -86,7 +86,7 @@ const OrderList = ({ onView }: { onView: (view: View) => void }) => {
   return (
     <div className="flex flex-col gap-2">
       {!signedIn && <HudNotice line={BUILD_ORDER_WORDS.signInToSave} />}
-      {error && <HudNotice tone="bad" line={error} />}
+      {notice && <RequestNotice status={status} line={notice} retry={reloadBuildOrders} />}
       {orders.map(({ id, order }) => (
         <OrderRow
           key={id}
@@ -185,21 +185,27 @@ const OrderRow = ({
  * the panel follows.
  */
 const OrderEditor = ({ view, onView }: { view: Extract<View, { kind: "edit" }>; onView: (view: View) => void }) => {
-  const { status, book } = useBuildOrders();
+  const { status, book, notice } = useBuildOrders();
+  // One id for the draft's life: a save retried after its answer was lost replaces the order instead of adding it twice.
+  const [id] = useState(() => view.id ?? crypto.randomUUID());
   const [order, setOrder] = useState(view.order);
   const [rank, setRank] = useState(order.steps[0]?.rank ?? 0);
   const [note, setNote] = useState<string | null>(null);
   const read = readBuildOrderText(buildOrderJson(order));
   const problem = "error" in read ? read.error : null;
+  /**
+   * The draft written into the book the account holds now (read again after another device saved): in its place, or
+   * added, and followed, when the book has no such order.
+   */
   const save = async () => {
     if (!book || problem) return;
-    const id = view.id ?? crypto.randomUUID();
-    const orders = view.id
-      ? book.orders.map((entry) => (entry.id === id ? { id, order } : entry))
-      : [...book.orders, { id, order }];
-    const saved: BuildOrderBook = { orders, active: view.id ? book.active : id };
+    const held = book.orders.some((entry) => entry.id === id);
+    const saved: BuildOrderBook = held
+      ? { ...book, orders: book.orders.map((entry) => (entry.id === id ? { id, order } : entry)) }
+      : { orders: [...book.orders, { id, order }], active: id };
     if (await saveBuildOrders(saved)) onView({ kind: "list" });
   };
+  const busy = status === "loading" || status === "saving";
   const copy = async (text: string, done: string) =>
     setNote((await copied(text)) ? done : BUILD_ORDER_WORDS.noClipboard);
   return (
@@ -296,11 +302,12 @@ const OrderEditor = ({ view, onView }: { view: Extract<View, { kind: "edit" }>; 
       </div>
       {note && <HudNotice line={note} />}
       {status === "signed-out" && <HudNotice line={BUILD_ORDER_WORDS.signInToSave} />}
+      {notice && <RequestNotice status={status} line={notice} retry={book ? save : reloadBuildOrders} />}
       <HudWindowFoot>
         <HudButton kind="secondary" icon="arrow-left" onClick={() => onView({ kind: "list" })}>
           {BACK}
         </HudButton>
-        <HudButton kind="primary" disabled={problem !== null || !book} onClick={save}>
+        <HudButton kind="primary" disabled={problem !== null || !book || busy} onClick={save}>
           {BUILD_ORDER_WORDS.save}
         </HudButton>
       </HudWindowFoot>
@@ -340,6 +347,13 @@ const PasteOrder = ({ onView }: { onView: (view: View) => void }) => {
     </div>
   );
 };
+
+/**
+ * What the account's last read or save left to say: a failure, with its way to try again; or that the orders were read
+ * again after another device saved, where Save is the way on.
+ */
+const RequestNotice = ({ status, line, retry }: { status: string; line: string; retry: () => unknown }) =>
+  status === "error" ? <HudNotice tone="bad" line={line} retry={retry} /> : <HudNotice tone="warn" line={line} />;
 
 /** Writes to the clipboard; false where the page may not. */
 const copied = async (text: string): Promise<boolean> => {

@@ -162,6 +162,10 @@ export const BUILD_ORDER_WORDS = {
   promptCopied: "Prompt copied: paste it into Claude or ChatGPT, then paste the JSON it answers with back here.",
   noClipboard: "The clipboard is not available here.",
   signInToSave: "Sign in to save your own orders; until then you follow the game's order.",
+  unreachable: "Your build orders could not be reached.",
+  accountChanged: "Your account changed. Your build orders were not read.",
+  /** Another device saved first: the account's orders were read again, and this draft is kept. */
+  savedElsewhere: "Your build orders changed on another device and were read again. Save again to keep this order.",
   full: (limit: number) => `You keep ${limit} orders at most: delete one to add another.`,
   /** Each goal as its card and palette name it. */
   goals: {

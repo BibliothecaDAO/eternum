@@ -3,20 +3,33 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-/** The account's build orders as the identity service answers them: each save comes back at the next revision. */
+/**
+ * The account's build orders as the identity service answers them: each save comes back at the next revision, and a
+ * read gives what a test sets. The account 0xa1 is signed in.
+ */
 const service = vi.hoisted(() => ({
   saveBuildOrders: vi.fn(async (saved: { owner: string; revision: number; book: unknown }) => ({
     ...saved,
     revision: saved.revision + 1,
   })),
+  getBuildOrders: vi.fn(async (): Promise<{ owner: string; revision: number; book: unknown }> => {
+    throw new Error("No read expected");
+  }),
 }));
 vi.mock("@/hooks/context/identity-session", async (original) => ({
   ...(await original<typeof import("@/hooks/context/identity-session")>()),
   identityClient: service,
+  useIdentitySession: () => ({ status: "signed-in", session: { user: { realmsId: "0xa1" } } }),
 }));
 
-import { useActiveBuildOrder, useBuildOrderStore } from "@/hooks/use-build-orders";
-import { BUILD_ORDER_GOALS, readBuildOrderText, type BuildOrderBook } from "@bibliothecadao/eternum/automation";
+import { useActiveBuildOrder, useBuildOrderAccount, useBuildOrderStore } from "@/hooks/use-build-orders";
+import { IdentityRequestError } from "@realms-world/identity";
+import {
+  BUILD_ORDER_GOALS,
+  buildOrderJson,
+  readBuildOrderText,
+  type BuildOrderBook,
+} from "@bibliothecadao/eternum/automation";
 
 import { BuildOrderMaker } from "./build-order-maker";
 
@@ -44,6 +57,7 @@ afterEach(() => {
   act(() => root.unmount());
   host.remove();
   service.saveBuildOrders.mockClear();
+  service.getBuildOrders.mockReset();
   clipboard.writeText.mockClear();
 });
 
@@ -51,9 +65,19 @@ afterEach(() => {
 const account = (book: BuildOrderBook | null) =>
   useBuildOrderStore.setState(
     book
-      ? { owner: "0xa1", status: "ready", book, revision: 3, error: null }
-      : { owner: null, status: "signed-out", book: null, revision: 0, error: null },
+      ? { owner: "0xa1", status: "ready", book, revision: 3, notice: null }
+      : { owner: null, status: "signed-out", book: null, revision: 0, notice: null },
   );
+
+/** The account's book as the service would hold it after another device saved: Wood first added, at revision 5. */
+const WOOD_FIRST = { name: "Wood first", steps: [{ rank: "Settlement", goal: "wood", count: 2 }] };
+/** Coal rush as the service holds it: its steps' ranks by name. */
+const COAL_RUSH_SAVED = JSON.parse(buildOrderJson(COAL_RUSH));
+const savedElsewhere = (book: { orders: { id: string; order: unknown }[]; active: string | null }) => ({
+  owner: "0xa1",
+  revision: 5,
+  book,
+});
 
 /** The panel's order, read where the panel reads it. */
 let followed = "";
@@ -174,5 +198,95 @@ describe("the build order maker", () => {
     expect(button("Save")?.disabled).toBe(true);
     expect(button("Copy JSON")?.disabled).toBe(false);
     expect(service.saveBuildOrders).not.toHaveBeenCalled();
+  });
+  it("says where Save was pressed why the account refused it, keeps the draft, and saves it with Try again", async () => {
+    account({ orders: [{ id: "o1", order: COAL_RUSH }], active: "o1" });
+    open();
+    await press("Edit");
+    type("Name", "Coal rush 2");
+    // The service's own code ("build_orders_unavailable") is never what a player reads.
+    service.saveBuildOrders.mockRejectedValueOnce(new IdentityRequestError(503, "build_orders_unavailable"));
+    await press("Save");
+    expect(notices()).toEqual(["Your build orders could not be reached.Try again"]);
+    expect(host.querySelector<HTMLInputElement>('input[aria-label="Name"]')?.value).toBe("Coal rush 2");
+    await press("Try again");
+    expect(service.saveBuildOrders.mock.calls.map(([saved]) => saved.revision)).toEqual([3, 3]);
+    expect(rows()[0]).toContain("Coal rush 2");
+  });
+
+  it("shows the account's own reason when it refuses an order", async () => {
+    account({ orders: [{ id: "o1", order: COAL_RUSH }], active: "o1" });
+    open();
+    await press("Edit");
+    const reason = "Step 1: “mill” is not a goal: farm, wood, coal, copper, hut, barracks, army, levelUp.";
+    service.saveBuildOrders.mockRejectedValueOnce(new IdentityRequestError(400, "invalid_build_orders", reason));
+    await press("Save");
+    expect(notices()).toEqual([`${reason}Try again`]);
+  });
+
+  it("reads the account again when another device saved first, and saves the draft into that book, overwriting nothing", async () => {
+    account({ orders: [{ id: "o1", order: COAL_RUSH }], active: "o1" });
+    open();
+    await press("Edit");
+    type("Name", "Coal rush 2");
+    service.saveBuildOrders.mockRejectedValueOnce(
+      new IdentityRequestError(409, "build_order_conflict", "Your build orders changed on another device."),
+    );
+    const elsewhere = {
+      orders: [
+        { id: "o1", order: COAL_RUSH_SAVED },
+        { id: "o2", order: WOOD_FIRST },
+      ],
+      active: "o2",
+    };
+    service.getBuildOrders.mockResolvedValueOnce(savedElsewhere(elsewhere));
+    await press("Save");
+    expect(notices()).toEqual([
+      "Your build orders changed on another device and were read again. Save again to keep this order.",
+    ]);
+    expect(host.querySelector<HTMLInputElement>('input[aria-label="Name"]')?.value).toBe("Coal rush 2");
+    await press("Save");
+    const [, [again]] = service.saveBuildOrders.mock.calls;
+    expect(again.revision).toBe(5);
+    expect(again.book).toMatchObject({
+      orders: [
+        { id: "o1", order: { name: "Coal rush 2" } },
+        { id: "o2", order: { name: "Wood first" } },
+      ],
+      active: "o2",
+    });
+  });
+
+  it("adds an order the other device deleted meanwhile back, rather than losing the draft", async () => {
+    account({ orders: [{ id: "o1", order: COAL_RUSH }], active: "o1" });
+    open();
+    await press("Edit");
+    service.saveBuildOrders.mockRejectedValueOnce(new IdentityRequestError(409, "build_order_conflict"));
+    service.getBuildOrders.mockResolvedValueOnce(savedElsewhere({ orders: [], active: null }));
+    await press("Save");
+    await press("Save");
+    expect(service.saveBuildOrders.mock.calls[1][0].book).toMatchObject({
+      orders: [{ id: "o1", order: { name: "Coal rush" } }],
+      active: "o1",
+    });
+  });
+
+  it("says when the account's orders could not be read, and reads them with Try again", async () => {
+    useBuildOrderStore.setState({ owner: null, status: "signed-out", book: null, revision: 0, notice: null });
+    service.getBuildOrders.mockRejectedValueOnce(new Error("Your build orders could not be reached."));
+    const Panel = () => {
+      useBuildOrderAccount();
+      return <BuildOrderMaker />;
+    };
+    await act(async () => root.render(<Panel />));
+    expect(notices()).toEqual(["Your build orders could not be reached.Try again"]);
+    expect(button("New order")?.disabled).toBe(false);
+    service.getBuildOrders.mockResolvedValueOnce(
+      savedElsewhere({ orders: [{ id: "o2", order: WOOD_FIRST }], active: "o2" }),
+    );
+    await press("Try again");
+    expect(notices()).toEqual([]);
+    expect(rows()[0]).toContain("Wood first");
+    expect(rows()[0]).toContain("Active");
   });
 });
