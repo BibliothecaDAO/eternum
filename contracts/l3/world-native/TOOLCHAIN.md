@@ -1,10 +1,11 @@
 # Native contract toolchain
 
-The world runner is built from Foundry 0.64.0 at commit
-`ab78eeeb51a991ffd4b65e7be30b8791009066d5`, with both patches in `toolchain/`:
+The world runner is built from Foundry 0.64.0 at commit `ab78eeeb51a991ffd4b65e7be30b8791009066d5`, with both patches in
+`toolchain/`:
 
 - `library-call-rollback.patch` restores the storage contract's class hash after a failed library call, matching
-  Blockifier and Madara. Upstream fix: [starknet-foundry #4601](https://github.com/foundry-rs/starknet-foundry/pull/4601).
+  Blockifier and Madara. Upstream fix:
+  [starknet-foundry #4601](https://github.com/foundry-rs/starknet-foundry/pull/4601).
 - `test-memory.patch` bounds artifact/summary retention and prepares one test package at a time.
 
 An upstream or older patched binary also prints `snforge 0.64.0`; its version alone is insufficient.
@@ -13,8 +14,8 @@ An upstream or older patched binary also prints `snforge 0.64.0`; its version al
 
 On Linux, install Python 3.11+, Git, rustup, a C compiler/linker, pkg-config, and the system OpenSSL development
 headers/libraries (for example `build-essential pkg-config libssl-dev` on Debian/Ubuntu). Install the Scarb and Sierra
-compiler versions in `.tool-versions`. The builder installs Rust 1.94.1 and explicitly sets `OPENSSL_NO_VENDOR=1`;
-no external environment override or vendored OpenSSL/Perl build is required.
+compiler versions in `.tool-versions`. The builder installs Rust 1.94.1 and explicitly sets `OPENSSL_NO_VENDOR=1`; no
+external environment override or vendored OpenSSL/Perl build is required.
 
 From the repository root:
 
@@ -25,8 +26,8 @@ bash contracts/l3/world-native/build-snforge.sh
 The command prints the installed binary's absolute path. It keys the installation by the pinned source, both patch
 contents, Rust version, `.tool-versions`, platform and build options, under
 `${XDG_DATA_HOME:-$HOME/.local/share}/eternum-native-tools/snforge/`. A manifest records those inputs and the binary's
-SHA-256. Repeating setup verifies the existing binary and returns without cloning or compiling. Changed inputs select
-a new installation. An invalid existing installation is rebuilt.
+SHA-256. Repeating setup verifies the existing binary and returns without cloning or compiling. Changed inputs select a
+new installation. An invalid existing installation is rebuilt.
 
 Build scratch and Cargo output live under `${XDG_CACHE_HOME:-$HOME/.cache}/eternum-native-tools/`; an existing
 `CARGO_TARGET_DIR` can supply a dependency cache. The builder uses two Cargo jobs, disables release LTO and uses 16
@@ -41,9 +42,9 @@ between binary and manifest publication, resolution refuses the incomplete insta
 bash contracts/l3/check-native.sh
 ```
 
-Both entrypoints resolve and verify the required installation before starting expensive work, regardless of `snforge`
-on `PATH`. A missing or stale installation stops with the rebuild command. The landing gate uses this runner for the
-native verifier too; the ledger keeps its separate toolchain. GitHub does not build or test the world package.
+Both entrypoints resolve and verify the required installation before starting expensive work, regardless of `snforge` on
+`PATH`. A missing or stale installation stops with the rebuild command. The landing gate uses this runner for the native
+verifier too; the ledger keeps its separate toolchain. GitHub does not build or test the world package.
 
 Use the same entrypoint for ignored fixture producers, for example from the repository root:
 
