@@ -1,4 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
+import { createRequire } from "node:module";
+import { NodeIO } from "@gltf-transform/core";
+import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { BEAST_NAMES } from "@/ui/design-system/kit/words";
@@ -7,6 +10,8 @@ import { describe, expect, it } from "vitest";
 import { basename } from "node:path";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import { getStructureModelPaths } from "../constants/scene-constants";
+import { getGameModeConfig } from "@/config/game-modes";
+import { resolveStructureRotationY } from "./structure-orientation";
 import {
   FRONTIER_BEASTS,
   FALLEN_REALM_DEPTHS,
@@ -49,6 +54,37 @@ const without = (store: ReturnType<typeof facts>, missing: string) => {
 };
 
 describe("Frontier guard identity", () => {
+  it("fits the painted rift to all six terrain edges and corners at its live composition", async () => {
+    const { createDecoderModule } = createRequire(import.meta.url)("draco3dgltf");
+    const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
+      "draco3d.decoder": await createDecoderModule(),
+    });
+    const paths = getGameModeConfig(5).assets.structureModelPaths[StructureType.Rift];
+    const root = (await io.readBinary(readFileSync(new URL(`../../../public${paths[0]}`, import.meta.url)))).getRoot();
+    const composition = frontierSiteComposition(StructureType.Rift);
+    const points = root.listMeshes().flatMap((mesh) =>
+      mesh.listPrimitives().flatMap((primitive) => {
+        const positions = primitive.getAttribute("POSITION")!;
+        return Array.from({ length: positions.getCount() }, (_, index) => {
+          const [x, , z] = positions.getElement(index, [0, 0, 0]);
+          return [x * composition.baseScale, z * composition.baseScale + composition.baseZ];
+        });
+      }),
+    );
+    for (let direction = 0; direction < 6; direction++) {
+      expect(resolveStructureRotationY([paths[0], FRONTIER_BEASTS["dark-fey"].path], (direction * Math.PI) / 3)).toBe(
+        0,
+      );
+      const angle = (direction * Math.PI) / 3;
+      const edge = Math.max(...points.map(([x, z]) => x * Math.cos(angle) + z * Math.sin(angle)));
+      expect(edge).toBeCloseTo(Math.sqrt(3) / 2, 2);
+      const corner = angle + Math.PI / 6;
+      expect(Math.min(...points.map(([x, z]) => Math.hypot(x - Math.cos(corner), z - Math.sin(corner))))).toBeLessThan(
+        0.015,
+      );
+    }
+  });
+
   it("ships only the beast names and models reachable from live encounters", () => {
     const species = [
       ...new Set(
@@ -117,7 +153,7 @@ describe("Frontier guard identity", () => {
       name: "Dark fey",
       scale: 0.75,
     });
-    expect(frontierSiteComposition(StructureType.Rift)).toEqual({ baseScale: 0.5, baseZ: 0, beastZ: 0, beastY: 0.2 });
+    expect(frontierSiteComposition(StructureType.Rift)).toEqual({ baseScale: 1.09, baseZ: 0, beastZ: 0, beastY: 0.2 });
   });
   it.each(DEPTH_BOUNDS.map((bounds, depth) => ({ depth, bounds })))(
     "keeps both ranged encounters' identities at depth $depth through casualties",
