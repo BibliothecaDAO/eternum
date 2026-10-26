@@ -346,6 +346,14 @@ describe("the result of the player's attack", () => {
     return { ...card, result };
   };
 
+  it("is none when both sides stand: the site's own card stays, its Attack there to press again", async () => {
+    const { host, result, button, unmount } = await attackThatLands(() => battleArrives([1_498, 1_400], [1_100, 600]));
+    expect(result()).toBeNull();
+    expect(host.querySelector("button[aria-label*='Guard holds']")).toBeNull();
+    expect(button("Attack")).toBeDefined();
+    unmount();
+  });
+
   it("is the army's loss, with the guard as the battle left it, when the army falls and its site is still known", async () => {
     const { result, unmount } = await attackThatLands((store) => {
       battleArrives([1_498, 0], [1_100, 1_028]);

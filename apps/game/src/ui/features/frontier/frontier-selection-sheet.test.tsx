@@ -459,9 +459,9 @@ it.each([
       tile: { col: 4, row: 5 },
       site,
       guardIdentity: { name, art },
-      verdict: "guard-holds",
+      verdict: "army-lost",
       armyArt: "knight-t1",
-      army: { before: 1_000, after: 694 },
+      army: { before: 1_000, after: 0 },
       guard: { before: 1_000, after: 572 },
       gained: null,
     });
@@ -499,9 +499,9 @@ it("opens a new pick's own card at once over a fight's result, which stands only
     tile: { col: 4, row: 5 },
     site: "Camp",
     guardIdentity: { name: "Troll", art: "beast-troll" },
-    verdict: "guard-holds",
+    verdict: "army-lost",
     armyArt: "knight-t1",
-    army: { before: 1_000, after: 694 },
+    army: { before: 1_000, after: 0 },
     guard: { before: 1_000, after: 572 },
     gained: null,
   });

@@ -323,7 +323,7 @@ const readFightResult = (store: NativeFactStore, sent: FightSent, transactionHas
   const record = readFightRecord(transactionHash);
   if (!record) return armyIsGone(store, sent.armyId) ? lostArmyResult(sent) : null;
   const result = fightResultOf(sent, record, () => readFightGain(store, sent, transactionHash));
-  return result.verdict === "victory" && result.site === "Ruin" ? null : result;
+  return result?.verdict === "victory" && result.site === "Ruin" ? null : result;
 };
 
 /**

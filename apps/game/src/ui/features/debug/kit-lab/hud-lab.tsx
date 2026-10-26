@@ -604,19 +604,20 @@ const STATES = {
       gained: { pay: { icon: "labor", amount: 550, storeFull: false }, xp: 22 },
     },
   },
+  // After a fight both sides survive: no result, the site's own card with both sides as the attack left them (500 → 432
+  // troops, a guard of 334 → 150), and Attack again.
   "fight-goes-on": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    fight: {
-      targetId: 29,
-      tile: { col: 0, row: 0 },
+    site: {
+      ...CAMP_CARD,
       site: "Beasts",
-      verdict: "guard-holds",
-      armyArt: ARMY_CHIP.art,
-      army: { before: 500, after: 432 },
-      guard: { before: 334, after: 150 },
-      gained: null,
+      army: { art: ARMY_CHIP.art, troops: 432 },
+      guard: 150,
+      fight: WIN(1, 40, 150),
+      pay: null,
+      xp: 50,
     },
   },
   "fight-army-lost": {
