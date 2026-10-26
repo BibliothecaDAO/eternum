@@ -44,8 +44,8 @@ export const ProgressionLab = () => {
       <div className="flex flex-col gap-6 p-6">
         <header className="flex flex-wrap items-center gap-4">
           <h1 className="text-hud-display text-hud-ink">Progression</h1>
-          <Link to="/lab/kit/research-balance/army-levels" className="text-hud-label text-hud-gold underline">
-            Compare army levels
+          <Link to="/lab/kit/army-tree" className="text-hud-label text-hud-gold underline">
+            Compare the army tree
           </Link>
           <HudTabs
             tabs={[

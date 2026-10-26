@@ -784,13 +784,13 @@ checks decoded triangles for zero masonry contacts at each production scale. All
 `asset-sources/frontier-beasts/refined/`; `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those
 exact eight packed sources. There is one production path per species and no separate study GLB.
 
-Army level proposals (dev only): **Compare army levels** in `/lab/kit/progression` opens
-`/lab/kit/research-balance/army-levels`. Today's tier purchases, the previous flat-gain proposal and the revised
-proposal appear together. Set **Starts trained → Battle +2**: the revised next Battle rank gives +6% damage, while
-starting untrained gives +10%. One point buys either. Change XP, training or attribute, then use **Upgrade today**,
-**Spend flat point** or **Spend point**; the XP ring stays independent of spending. Scouting uses its total rank across
-all kinds. No game command is sent. Exercise and capture it with
-`pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <fresh-dir> --only army-levels`.
+Army tree proposals (dev only): **Compare the army tree** in `/lab/kit/progression` opens `/lab/kit/army-tree`. Choose A
+(castle training), B (expedition-only learning) or C (training buildings), then Research, Army or Level up. Each shows a
+still beside the T1/B1 baseline. Common has no gem in the proposals; Uncommon is I. There are no game commands, embedded
+game frames or live renderers on the pick page. Regenerate the twelve stills and verify all choices on desktop and phone
+with `apps/game/scripts/frontier/prove-army-tree.playwright.js` through Playwright against the page, with absolute
+`repo` and a new `evidence` directory in its query. The existing general capture command also opens the pick page:
+`pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <fresh-dir> --only army-tree`.
 
 - Frontier training: build War hall, Supply yard, Scouts’ lodge or Hearth after two Barracks purchases; construction
   grants Uncommon. Choose the lodge’s free kind on its build sheet. Research pips run from zero at Common to four at
