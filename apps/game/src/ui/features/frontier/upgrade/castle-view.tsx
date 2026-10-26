@@ -54,7 +54,7 @@ export const CastleView = ({
   onClose: () => void;
 }) => (
   <HudSheet label={CASTLE} onClose={onClose}>
-    <div data-castle-card className="flex flex-col gap-3">
+    <div data-castle-card className="flex flex-col gap-2">
       <LaborMade makes={makes} />
       <CompareRows
         now={<LevelHead side={now} />}
@@ -79,7 +79,7 @@ export const CastleView = ({
 /** The castle's labor a minute over its storage's meter: held against what it holds. */
 const LaborMade = ({ makes }: { makes: CastleMakes }) => (
   <div className="flex items-center gap-2">
-    <Icon name="labor" size={32} />
+    <Icon name="labor" size={28} />
     <div className="flex flex-1 flex-col gap-1">
       <span className="flex items-baseline justify-between gap-2">
         <span className="text-hud-title tabular-nums text-hud-ink">{makes.rate}</span>
@@ -102,7 +102,7 @@ const LaborMade = ({ makes }: { makes: CastleMakes }) => (
 /** A level's head in the table: its painting and its name. */
 const LevelHead = ({ side }: { side: CastleSide }) => (
   <span className="flex flex-col items-center">
-    <Icon name={side.art} alt="" size={32} />
+    <Icon name={side.art} alt="" size={28} />
     {REALM_LEVELS[side.level]}
   </span>
 );
