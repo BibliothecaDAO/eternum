@@ -54,7 +54,7 @@ describe("army merge choice", () => {
         sourceProgress: { ...common, xp: sourceXp },
         targetProgress: { ...common, xp: targetXp },
       }),
-    ).toMatchObject({ known: true, confirmLoss, sourceValue: sourceXp, targetValue: targetXp });
+    ).toMatchObject({ known: true, confirmLoss, sourceValue: sourceXp });
   });
   it("counts spent tiers in the confirmation gap and follows the game's first-tier price", () => {
     expect(explorerTransferPlan({ ...base, sourceProgress: { ...common, homecoming: 2 } }).confirmLoss).toBe(true);

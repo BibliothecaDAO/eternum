@@ -603,16 +603,19 @@ it("the map's actual transfer selection shows the survivor before the player con
       ),
     );
     expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Transfer troops");
-    // The cards say it: Army 1 leaves with its XP struck out, Army 2 stays with the stamina the merge leaves it.
-    expect(host.querySelector("s")?.textContent).toBe("100 XP");
+    // The cards say it: Army 1 leaves, its 200 XP lost (100 unspent, 100 in an upgrade) struck out; Army 2 stays with
+    // the stamina the merge leaves it.
+    expect(host.querySelector("s")?.textContent).toBe("200 XP");
     expect(host.textContent).toContain("100/120→7");
     expect(swap).not.toHaveBeenCalled();
     const confirm = [...host.querySelectorAll("button")].find((button) => button.textContent === "Merge into Army 2")!;
     await act(async () => confirm.click());
     expect(swap).not.toHaveBeenCalled();
-    expect(host.textContent).toContain("Army 1 loses 200 progression value");
+    // The second press says what happens, and no sentence stands over the cards.
+    expect(host.querySelector(".ui-notice")).toBeNull();
+    expect(host.querySelector("s")?.textContent).toBe("200 XP");
     const final = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Confirm merge into Army 2",
+      (button) => button.textContent === "Lose 200 XP, merge into Army 2",
     )!;
     await act(async () => final.click());
     expect(swap).toHaveBeenCalledWith(

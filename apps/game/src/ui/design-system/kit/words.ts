@@ -422,9 +422,8 @@ export const TRANSFER_TROOPS = {
   waiting: "Waiting for both armies’ progress.",
   stale: "The armies changed. Review the merge before confirming again.",
   merge: (army: string) => `Merge into ${army}`,
-  confirmMerge: (army: string) => `Confirm merge into ${army}`,
-  confirmLoss: (army: string, lost: number, kept: number) =>
-    `${army} loses ${formatExact(lost)} progression value (XP + upgrades). The surviving army keeps ${formatExact(kept)}. Confirm to merge.`,
+  /** The second press of a merge that loses a lot: the XP lost, as the leaving army's card strikes it, and the merge. */
+  confirmMerge: (lost: number, army: string) => `Lose ${formatAmount(lost)} XP, merge into ${army}`,
   split: (picked: string, tapped: string) => `Troops: ${picked} keeps this many, ${tapped} the rest`,
   pick: "Pick a split",
   move: (count: number, to: string) => `Move ${formatAmount(count)} to ${to}`,
