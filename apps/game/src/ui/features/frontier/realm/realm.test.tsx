@@ -24,16 +24,9 @@ afterEach(() => {
 const buttons = () => [...host.querySelectorAll<HTMLButtonElement>("button")];
 
 describe("the castle", () => {
-  const CASTLE_MAKES = [
-    { icons: ["labor" as const], label: "labor the castle makes an hour", value: "+101/h" },
-    {
-      icons: ["labor" as const, "resources" as const],
-      label: "labor held of its store's limit",
-      value: "2,011 / 6,000",
-    },
-  ];
+  const CASTLE_MAKES = { rate: "+1.7/min", held: 2_011, storage: 6_000 };
 
-  it("shows what the castle itself makes an hour and what its store holds, each named for the tooltip", () => {
+  it("shows the labor the castle makes a minute, and what it holds on its storage's meter", () => {
     act(() =>
       root.render(
         <CastleView
@@ -48,8 +41,12 @@ describe("the castle", () => {
         />,
       ),
     );
-    expect(host.querySelector('[aria-label="labor the castle makes an hour +101/h"]')!.textContent).toBe("+101/h");
-    expect(host.querySelector('[aria-label="labor held of its store\'s limit 2,011 / 6,000"]')).not.toBeNull();
+    const card = host.querySelector("[data-castle-card]")!;
+    expect(card.textContent).toContain("+1.7/min");
+    expect(card.textContent).toContain("2,011 / 6,000");
+    const meter = host.querySelector('[role="meter"]')!;
+    expect(meter.getAttribute("aria-label")).toBe("labor held of its storage");
+    expect([meter.getAttribute("aria-valuenow"), meter.getAttribute("aria-valuemax")]).toEqual(["2011", "6000"]);
   });
 
   const side = (level: number) => ({
@@ -57,8 +54,8 @@ describe("the castle", () => {
     art: "realm-1" as const,
     plots: [6, 18, 36, 60][level],
     slots: [3, 4, 5, 6][level],
-    limit: undefined,
-    deployCap: [3_000, 9_000, 25_000, 50_000][level],
+    limit: [6_000, 18_000, 50_000, 120_000][level],
+    maxArmySize: [3_000, 9_000, 25_000, 60_000][level],
   });
 
   it("shows the level now and next with what it brings, and upgrades for its labor", () => {
@@ -80,7 +77,16 @@ describe("the castle", () => {
     const sheet = host.querySelector("section[aria-label='Castle']")!;
     expect(sheet.textContent).toContain("City");
     expect(sheet.textContent).toContain("Kingdom");
-    expect(sheet.querySelector('[aria-label="plots 36"]')).not.toBeNull();
+    // One table read across, each thing the level gives now → next, in the owner's words (no "troops a deploy").
+    const rows = [...sheet.querySelectorAll("[data-compare] > div:not(:first-child)")].map((row) =>
+      [...row.children].map((cell) => cell.textContent),
+    );
+    expect(rows).toEqual([
+      ["Plots", "18", "→", "36"],
+      ["Army slots", "4", "→", "5"],
+      ["Storage", "18K", "→", "50K"],
+      ["Max army size", "9,000", "→", "25K"],
+    ]);
     expect(host.querySelector(".ui-cost")?.textContent).toBe("15K labor");
     expect(
       buttons()

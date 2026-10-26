@@ -1,5 +1,4 @@
 import { usePlayerNames } from "@/hooks/use-player-profile";
-import { type IconMeaning } from "@/ui/design-system/icon";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
@@ -60,6 +59,7 @@ import { readRealmPopulation } from "../realm/realm-population";
 import { exploreFix } from "../frontier-reveal-yield";
 import { outputBasis, outputLine } from "../production/store-makers";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
+import { ATTRIBUTE_MARKS } from "../research/research-tree";
 import { type BuildOption, PRODUCTS, readBuildOptions } from "./build-options";
 import { type BuildTile, BuildView } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
@@ -254,14 +254,6 @@ export const BuildSheet = ({
       onClose={onClose}
     />
   );
-};
-
-/** Each attribute's mark, as a training building's gain shows it. */
-const ATTRIBUTE_MARKS: Record<Extract<BuildOption["effect"], { kind: "trains" }>["attribute"], IconMeaning> = {
-  Battle: "order-rage",
-  Logistics: "order-skill",
-  Scouting: "order-detection",
-  Homecoming: "order-enlightenment",
 };
 
 const PRICE_KINDS: Partial<Record<number, PriceKind>> = {

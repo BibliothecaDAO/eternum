@@ -126,6 +126,13 @@ export const STORAGE = "Storage";
 export const REST_DID_NOT_FIT = "Storage is full: the rest did not fit";
 /** The most troops one army takes, as a castle level sets it (owner, 26 October: "max army size you mean"). */
 export const MAX_ARMY_SIZE = "Max army size";
+/** What a castle level gives, on its card: the one wording for each (owner, 26 October). */
+export const CASTLE_GIVES = {
+  plots: "Plots",
+  armySlots: "Army slots",
+  storage: STORAGE,
+  maxArmySize: MAX_ARMY_SIZE,
+} as const;
 export const SEASON = "Season";
 /** The season board's columns, by their heads; the two number columns' full names on the heads' tooltip. */
 export const RANK = "Rank";
@@ -440,6 +447,11 @@ export const troopCount = (count: number) => formatCount(count, "troop", TROOPS)
 export const researchBasis = (base: string, share: string, side: string) => `${base} + ${share} ${side}`;
 /** One building's output with that basis: "+6.3/min (5 + 25% Fields)". */
 export const withResearch = (rate: string, basis: string) => `${rate} (${basis})`;
+/**
+ * Why a building's rate is what it is, said as a player thinks it, never as a sum (owner, 26 October: "its a game not a
+ * math demo"): "+25% from Fields".
+ */
+export const fromResearch = (share: string, side: string) => `${share} from ${side}`;
 /** What makes a store's rate, line by line on its card: "3 Workshops · +5/min each (3.4 + 50% Tools)", "Castle · +1.7/min". */
 export const MADE_BY = "Made by";
 export const STORE_MAKERS = {
@@ -1210,6 +1222,7 @@ export const RESEARCH_TREE = {
   sideKept: "The side is kept for the season.",
   /** What one building of a row's type makes now, under its make side: "Each Farm: +6.3/min (5 + 25% Fields)". */
   hutLine: "Population from every Hut",
+  population: "Population",
   gateLine: (tier: string) => `${tier} opens the four training buildings`,
   gateOpen: "The four training buildings are open",
   gate: (tier: string) => `${tier} opens`,

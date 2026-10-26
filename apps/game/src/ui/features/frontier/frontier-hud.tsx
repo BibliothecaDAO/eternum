@@ -9,13 +9,12 @@ import { EventLog } from "@/ui/features/event-feed/event-log-panel";
 import { HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
-import { configManager, researchRowOf } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
 import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ComponentProps, type ReactNode, useEffect, useState } from "react";
-import { useLatest } from "@/hooks/use-latest";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
@@ -33,7 +32,6 @@ import { ArmyDock } from "./hud/army-dock";
 import { useChatKey } from "./hud/chat-key";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
 import { useResearchTree } from "./research/research-facts";
-import { type TappedBuilding, useTappedBuilding } from "./research/selected-building";
 import { canResearchNow } from "./research/research-tree";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
@@ -57,7 +55,6 @@ import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy, TransferChoice, usePinnedTransfer } from "./hud/picked-army";
 import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
-import { TappedBuildingBar } from "./build/tapped-building-bar";
 import { FrontierResearch } from "./research/frontier-research";
 import { ClearedRuinChest } from "./chest/cleared-ruin-chest";
 import { dayClock } from "./hud/day-clock";
@@ -89,28 +86,22 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // A spectator watches their own realm when they have one this season, else the leader; the strip reads it.
   useSpectatorWatch();
   // What the map has selected opens its card; the one panel decides which of it, a surface and a deploy order stands.
-  const card = useSelectionCard({ realm, onResearch: () => setSurface("research") });
+  // A card's way to Research may name the node it opens on (the castle's own research, a building's gate).
+  const [researchPick, setResearchPick] = useState<string | undefined>();
+  const card = useSelectionCard({
+    realm,
+    onResearch: (node) => {
+      setResearchPick(node);
+      setSurface("research");
+    },
+  });
   const desktop = useLayout() === "desktop";
   const { surface, openSurface: setSurface, showsCard, home, goHome } = useOnePanel(card?.key ?? null, !desktop);
   const realmLabor = useRealmLabor(rules, realm);
   const research = useResearchTree(realm);
-  // A building tapped on the realm's board opens Research on its own row, the building over it with Demolish: one
-  // panel, whichever way the player came. Opening it lets go of the tap, so the building is kept here.
-  const tapped = useTappedBuilding(realm);
-  const tappedNow = useLatest(tapped);
-  const tappedKey = tapped && `${tapped.innerCol}:${tapped.innerRow}:${tapped.category}`;
-  const [researchFrom, setResearchFrom] = useState<TappedBuilding | null>(null);
-  const surfaceOpener = useLatest(setSurface);
   useEffect(() => {
-    const building = tappedNow.current;
-    if (!building || researchRowOf(building.category) === undefined) return;
-    setResearchFrom(building);
-    surfaceOpener.current("research");
-  }, [tappedKey, tappedNow, surfaceOpener]);
-  useEffect(() => {
-    if (surface !== "research") setResearchFrom(null);
+    if (surface !== "research") setResearchPick(undefined);
   }, [surface]);
-  const researchPick = researchFrom ? `row-${researchRowOf(researchFrom.category)}` : undefined;
   // Selecting one of the realm's armies opens its panel; a pick in the dock, Today or Next up goes the same way.
   const openArmy = useArmyPanelOpens(visit ? null : realm, () => setSurface("army"), desktop);
   const pickArmy = usePickArmy();
@@ -155,10 +146,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   );
   const page =
     surface === "research" && realm ? (
-      <>
-        {researchFrom && <TappedBuildingBar realm={realm} building={researchFrom} />}
-        <FrontierResearch key={researchPick} realm={realm} pick={researchPick} />
-      </>
+      <FrontierResearch key={researchPick} realm={realm} pick={researchPick} />
     ) : surface === "season" ? (
       <FrontierSeason rules={rules} onBack={close} />
     ) : surface === "menu" ? (

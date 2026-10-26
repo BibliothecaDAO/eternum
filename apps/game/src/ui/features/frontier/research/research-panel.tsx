@@ -118,7 +118,7 @@ const Gate = ({ met, word }: { met: boolean; word: string }) => (
 );
 
 /** A node as a tile: its painting with its state's mark, its name under it, then its level pips or its price. */
-const NodeTile = ({ node, picked, onPick }: { node: TreeNode; picked: boolean; onPick: () => void }) => {
+export const NodeTile = ({ node, picked, onPick }: { node: TreeNode; picked: boolean; onPick: () => void }) => {
   const look = STATE_LOOK[node.state];
   return (
     <button

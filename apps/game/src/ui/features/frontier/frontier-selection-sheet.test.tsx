@@ -32,7 +32,13 @@ vi.mock("./build/build-sheet", () => ({ BuildSheet: () => null, useOpenPlot: () 
 vi.mock("./sites/map-site-card", () => ({ MapSiteCard: () => null, useSelectedMapSite: () => null }));
 vi.mock("./upgrade/castle-upgrade", () => ({ CastleUpgrade: () => null, useKeepSelected: () => null }));
 vi.mock("@/ui/features/military/chest/use-adjacent-own-explorer", () => ({ useAdjacentOwnExplorer: () => 201 }));
-vi.mock("./research/selected-building", () => ({ useTappedBuilding: () => null }));
+const { tapped } = vi.hoisted(() => ({
+  tapped: { current: null as { category: number; innerCol: number; innerRow: number } | null },
+}));
+vi.mock("./research/selected-building", () => ({ useTappedBuilding: () => tapped.current }));
+vi.mock("./building/building-card", () => ({
+  BuildingCard: ({ building }: { building: { category: number } }) => <div data-building-card={building.category} />,
+}));
 
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -49,7 +55,7 @@ import {
   setBlockTimestampSource,
   setEntityNameLocalStorage,
 } from "@bibliothecadao/eternum";
-import { getNeighborHexes, siteName, TileOccupier } from "@bibliothecadao/types";
+import { BuildingType, getNeighborHexes, siteName, TileOccupier } from "@bibliothecadao/types";
 import { transferArmies, TRANSFER_TAPPED } from "./army/transfer-fixture";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useOnePanel } from "./hud/one-panel";
@@ -590,4 +596,27 @@ it("the map's actual transfer selection shows the survivor before the player con
     useUIStore.getState().selectOnMap(null);
     useAccountStore.setState({ account: null });
   }
+});
+
+it("opens a building tapped on the realm's board as its own card, never the Research page", () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const { store } = campBeside();
+  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+  tapped.current = { category: BuildingType.ResourceWheat, innerCol: 11, innerRow: 10 };
+  const onResearch = vi.fn();
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  act(() =>
+    root.render(
+      <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+        <FrontierSelectionSheet realm={realm} onResearch={onResearch} />
+      </GameProvider>,
+    ),
+  );
+  expect(host.querySelector("[data-building-card]")?.getAttribute("data-building-card")).toBe(
+    String(BuildingType.ResourceWheat),
+  );
+  expect(onResearch).not.toHaveBeenCalled();
+  act(() => root.unmount());
+  tapped.current = null;
 });
