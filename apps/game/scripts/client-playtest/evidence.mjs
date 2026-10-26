@@ -207,13 +207,13 @@ const RESOURCE_KINDS = [
 const SLOWEST_LOADS = 8;
 
 /** What a download is, by its file's extension; anything else (an API call, a socket) is "other". */
-export const resourceKind = (url) => RESOURCE_KINDS.find(([, pattern]) => pattern.test(url))?.[0] ?? "other";
+const resourceKind = (url) => RESOURCE_KINDS.find(([, pattern]) => pattern.test(url))?.[0] ?? "other";
 
 /**
  * The downloads a window started: how many, their bytes on the wire and as served (a cache hit costs no wire bytes),
  * by kind, when the last one finished, and the slowest ones by their own span.
  */
-export function summarizeLoads(entries, from) {
+function summarizeLoads(entries, from) {
   const byKind = {};
   for (const entry of entries) {
     const kind = (byKind[resourceKind(entry.url)] ??= { count: 0, kb: 0, wireKb: 0 });
@@ -241,7 +241,7 @@ export function summarizeLoads(entries, from) {
 }
 
 /** The GPU work a window's frames asked for: pipelines and shaders compiled, the time spent asking, bytes uploaded. */
-export function summarizeGpuWork(frames) {
+function summarizeGpuWork(frames) {
   return {
     pipelines: sum(frames.map((frame) => frame.pipelines)),
     shaders: sum(frames.map((frame) => frame.shaders)),

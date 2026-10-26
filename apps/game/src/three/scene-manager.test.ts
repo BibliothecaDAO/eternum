@@ -56,6 +56,7 @@ function createScene(overrides: Partial<HexagonScene> = {}) {
     setup: vi.fn(async () => {}),
     onSwitchOff: vi.fn(),
     moveCameraToURLLocation: vi.fn(),
+    whenPresentable: vi.fn(async () => {}),
     ...overrides,
   } as unknown as HexagonScene;
 }
@@ -155,6 +156,22 @@ describe("SceneManager transitions", () => {
 
     expect(sceneManager.getCurrentScene()).toBe(SceneName.WorldMap);
     expect(transitionManager.fadeIn).toHaveBeenCalledOnce();
+  });
+
+  it("marks a scene requested at the switch and presentable once the scene says it can be shown", async () => {
+    performance.clearMarks();
+    const presentable = createDeferred<void>();
+    const { fadeOuts, sceneManager } = createTransitionHarness();
+    sceneManager.addScene(SceneName.Hexception, createScene({ whenPresentable: () => presentable.promise }));
+    const marked = () => performance.getEntriesByType("mark").map((mark) => mark.name);
+
+    sceneManager.switchScene(SceneName.Hexception);
+    await completeFade(fadeOuts[0]);
+    expect(marked()).toEqual(["scene:hex:requested"]);
+
+    presentable.resolve();
+    await flushTransitionWork();
+    expect(marked()).toEqual(["scene:hex:requested", "scene:hex:presentable"]);
   });
 
   it("keeps the previous scene hidden until slower setup finishes", async () => {
