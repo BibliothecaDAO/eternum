@@ -116,23 +116,24 @@ Hyperstructure still held, playing then watching);
 reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42 with 1,000 labor to
 claim, the realm card's widest row. `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's
 route, Events rows with outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer (no build
-steps), the panel as built (phase 1, each row the game's own rule on a realm's case: population short or not, an army short of full, a full army), a player's imported orders and the import as proposed (phase 2), and the default order as written.
-`/lab/kit/progression` Frontier's Research tree and the army's panel (the owner's picks), the game's own panels on the
-Frontier preset's numbers, on the owner's realm or one some days in (`?realm=mid`); `?part=research|army` one alone at a
-phone's width. `/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame rate or
-Shadows change is saved at once and shows **Applies after a reload** with **Reload** under them, in game as here; a game
-loads the address's `rendererMode`, else the build's WebGPU with its own WebGL2 fallback; Haptics only on a phone that
-vibrates, the keys only where there is a keyboard); `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings`
-measures it against a 1080 px screen and opens its keys with Show and leaves with Back; every window it draws must keep
-each tab strip inside its panel. `/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms,
-villages, a camp, rifts, a Hyperstructure). `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window
-body, Combat and crate panel as the game draws them (the crate from afar: a line saying what opening it needs, no
-button), on the deploy fixture's realm; capture them with
-`pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words sheet: every voice,
-number, time, noun and name rule of the words module (the rules in `packages/types/src/words`, shared with core's story
-text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs. `pnpm words:check` fails on any
-number, time or name written outside it where a player reads it, and on any string that breaks a voice rule;
-`node scripts/words/check.mjs` counts them by kind.
+steps), the panel as built (phase 1, each row the game's own rule on a realm's case: population short or not, an army
+short of full, a full army), a player's imported orders and the import as proposed (phase 2), and the default order as
+written. `/lab/kit/progression` Frontier's Research tree and the army's panel (the owner's picks), the game's own panels
+on the Frontier preset's numbers, on the owner's realm or one some days in (`?realm=mid`); `?part=research|army` one
+alone at a phone's width. `/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame
+rate or Shadows change is saved at once and shows **Applies after a reload** with **Reload** under them, in game as
+here; a game loads the address's `rendererMode`, else the build's WebGPU with its own WebGL2 fallback; Haptics only on a
+phone that vibrates, the keys only where there is a keyboard);
+`pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and opens its
+keys with Show and leaves with Back; every window it draws must keep each tab strip inside its panel.
+`/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms, villages, a camp, rifts, a
+Hyperstructure). `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window body, Combat and crate
+panel as the game draws them (the crate from afar: a line saying what opening it needs, no button), on the deploy
+fixture's realm; capture them with `pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`.
+`/lab/kit/words` the words sheet: every voice, number, time, noun and name rule of the words module (the rules in
+`packages/types/src/words`, shared with core's story text; the client's phrases in `src/ui/design-system/kit/words.ts`)
+on sample inputs. `pnpm words:check` fails on any number, time or name written outside it where a player reads it, and
+on any string that breaks a voice rule; `node scripts/words/check.mjs` counts them by kind.
 
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read
