@@ -44,7 +44,9 @@ async function awardGamePrizes(
   ]);
   if (snapshot.confirmed_block < directoryBlock) throw new Error("frontier_snapshot_behind_directory");
   const prize = optionalRow(snapshot, "FrontierPrize");
-  if (!prize || prize.count === 0 || uint(String(prize.pool), 128) === uint(String(prize.issued), 128)) return;
+  if (!prize) return;
+  const count = prize.count === null ? null : Number(uint(String(prize.count), 16));
+  if (count === 0 || uint(String(prize.pool), 128) === uint(String(prize.issued), 128)) return;
   const terms = frontierTerms(snapshot);
   const funding = await readFrontierFunding(
     rpcAt(ledger.rpcUrl),

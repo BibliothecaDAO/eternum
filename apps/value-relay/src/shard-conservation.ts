@@ -60,6 +60,7 @@ const balanceOf = (snapshot: ConfirmedSnapshot, gameId: number): Omit<Conservati
   if (prizeIssued > prizePool) throw new Error("invalid_prize_conservation");
   const pool = budget ? rowUint(budget.pool, 128) : 0n;
   const poolLeft = budget ? rowUint(budget.pool_left, 128) : 0n;
+  if (pool > 0n && !prize) throw new Error("frontier_prize_missing");
   rowUint(rules.price_ceiling, 128);
   if (budget) {
     rowUint(budget.open, 128);

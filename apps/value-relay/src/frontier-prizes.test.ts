@@ -136,3 +136,15 @@ it("does not let an unavailable old season starve another season's prizes", asyn
   await expect(run()).rejects.toThrow("old snapshot unavailable");
   expect(calls.admin).toHaveBeenCalledWith("award_frontier_prize", { game_id: 7, rank: 3 });
 });
+
+it.each([0, "0x0"])("does not repost an empty final board encoded as %s", async (count) => {
+  const empty = snapshot();
+  calls.snapshot.mockResolvedValue({
+    ...empty,
+    models: [{ model: "FrontierPrize", rows: [{ value: { pool: "0x12c", issued: "0x0", count } }] }],
+  });
+  await run();
+  expect(calls.admin).not.toHaveBeenCalled();
+  expect(calls.funding).not.toHaveBeenCalled();
+  expect(fetch).not.toHaveBeenCalled();
+});
