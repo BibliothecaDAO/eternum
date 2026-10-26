@@ -318,6 +318,13 @@ it("keeps the extended season live past its old end and reloads its final day fr
     vi.fn(async () => Response.json({ blocked: [], entries: [] })),
   );
   const approved = approvedExtension;
+  let currentTime = approved.start;
+  const advance = async (now: number) =>
+    act(async () => {
+      currentTime = now;
+      useChainTimeStore.getState().anchor({ timestamp: now * 1000 });
+      useBlockTimestampStore.getState().tick();
+    });
   const boot = async (now: number) => {
     await act(async () => root.render(null));
     await act(async () =>
@@ -328,7 +335,8 @@ it("keeps the extended season live past its old end and reloads its final day fr
               preset={5}
               facts={(store) => {
                 useChainTimeStore.getState().anchor({ timestamp: now * 1000 });
-                setBlockTimestampSource(() => now);
+                currentTime = now;
+                setBlockTimestampSource(() => currentTime);
                 useBlockTimestampStore.setState({ currentBlockTimestamp: now });
                 return [
                   LABOR_RULES,
@@ -363,6 +371,11 @@ it("keeps the extended season live past its old end and reloads its final day fr
     );
   };
   viewport.set(1440);
+  await boot(approved.oldEnd - 1);
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 10");
+  await advance(approved.oldEnd);
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 11");
+  expect(host.textContent).not.toContain("Game finished");
   await boot(approved.oldEnd);
   expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 11");
   expect(host.textContent).not.toContain("Game finished");
@@ -370,6 +383,8 @@ it("keeps the extended season live past its old end and reloads its final day fr
   await boot(approved.end - 1);
   expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 15");
   expect(host.textContent).not.toContain("Game finished");
+  await advance(approved.end);
+  expect(host.textContent).toContain("Game finished");
   await boot(approved.end);
   expect(host.textContent).toContain("Game finished");
   expect(host.querySelector('button[aria-label="Today"]')).toBeNull();

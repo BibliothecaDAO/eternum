@@ -89,6 +89,12 @@ fn approved_extension_changes_only_end_emits_row_and_retries_without_events() {
     );
     assert!(super::resource_commands::execute_in_game(d, 1, crate::commands::Command::MarkGameSettled, approved::END));
     assert!(game(d).settled);
+    let ended = game(d);
+    start_cheat_caller_address(d.games, authority());
+    releases.register_release(5, releases.release(4));
+    releases.apply_release(1, 5);
+    assert_eq!(releases.game_release(1), 5);
+    assert_eq!(game(d), ended);
 }
 
 #[test]
