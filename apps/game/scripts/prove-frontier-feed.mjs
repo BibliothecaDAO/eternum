@@ -1,7 +1,7 @@
 /**
  * The Frontier Feed as a player meets it: the lab's game on prod's recorded day (`/lab/game?scenario=day-later`), on a
  * desktop (1440 × 900) and a phone (390 × 844). On each: the Feed opened as a player opens it (the desktop's rail, the
- * phone's place), its rows measured (each row's height, and how far apart its words' baselines sit), its × pressed when
+ * phone's place, past the day card), its rows measured (each row's height, and how far apart its words' baselines sit), its × pressed when
  * it has one and its place pressed to open it again, and a screenshot at each step.
  *
  *   pnpm --dir apps/game prove:frontier-feed --out <fresh-dir> [--port 4199 | --base-url <url>]
@@ -83,6 +83,12 @@ await withDevClient({ base: values["base-url"], port: values.port, out: values.o
         record.ready = await waitFor(b, `${FEED} !== undefined`, READY_MS);
         if (!record.ready) continue;
         await sleep(3_000);
+        // The recorded day opens on its "Day 2 done" card over the Feed; a player continues past it first.
+        record.presses.push({
+          press: "the day card's Continue",
+          status: b.evaluate(press("Continue")) ? "led" : "none",
+        });
+        await sleep(1_000);
         b.run("screenshot", join(out, `${device.name}-open.png`));
         record.feedBox = b.evaluate(`JSON.stringify(${FEED}.getBoundingClientRect())`);
         record.rows = b.evaluate(MEASURE);
