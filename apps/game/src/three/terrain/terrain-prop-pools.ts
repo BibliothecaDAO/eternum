@@ -344,7 +344,7 @@ function requireSlotCapacity(pool: PropPool, archetype: TerrainPropArchetypeId, 
   if (count <= pool.slotCapacity) return;
   throw new Error(
     `Terrain page ${pageKey} needs ${count} ${archetype} props; a page slot holds ${pool.slotCapacity} ` +
-      `(${TERRAIN_PROP_POOL_PAGE_SLOTS} slots × ${pool.slotCapacity} = ${pool.mesh.instanceMatrix.count} pool instances)`,
+      `(the pool holds ${pool.mesh.instanceMatrix.count} instances in ${TERRAIN_PROP_POOL_PAGE_SLOTS} slots)`,
   );
 }
 

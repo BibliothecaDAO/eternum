@@ -1,4 +1,4 @@
-import { GameProvider } from "@/hooks/context/game-context";
+import { GameProvider, useGame } from "@/hooks/context/game-context";
 import { installActiveGameClient } from "@/sync/active-game-client";
 import { ErrorBoundary } from "@/ui/shared/error-boundary";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -17,15 +17,27 @@ import { ProductionPopupShell } from "@/ui/features/settlement/production/produc
 import { RealmAutomationPanel } from "@/ui/features/settlement/production/realm-automation-panel";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
 import { ConstructionModal } from "@/ui/features/world/containers/construction-modal";
+import { buildingCounts } from "@/ui/features/frontier/build/build-fixture";
+import { BuildSheet } from "@/ui/features/frontier/build/build-sheet";
+import { HelpModal } from "@/ui/features/military/components/help-modal";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
-import { createGameViews, type GameClient } from "@bibliothecadao/eternum";
+import { createGameViews, type GameClient, structureMapPosition } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { EntityType, RelicRecipientType, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
+import {
+  ActorType,
+  BuildingType,
+  EntityType,
+  RelicRecipientType,
+  ResourcesIds,
+  StructureType,
+  TileOccupier,
+} from "@bibliothecadao/types";
 import { type ReactNode, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { installFixtureGame, PLAYER } from "./fixture-game";
+import { LAB_ARMY_ID, labArmyOut } from "./unified-hud-lab";
 
 /**
  * The lab's game client: the fixture's store, the game's own views over it, and no way to
@@ -96,6 +108,69 @@ const openWindow = (id: string, content: ReactNode) => usePopoverStore.getState(
 const close = () => usePopoverStore.getState().close();
 
 /** Opens a window that lives on the popover host, the way its button opens it in the game. */
+/** Two realm relics the lab army carries, its load and their weight rules, so its relic tab has something to send home. */
+const ARMY_RELICS: number[] = [ResourcesIds.ProductionRelic1, ResourcesIds.LaborProductionRelic1];
+const armyRelics = (): unknown[] => [
+  {
+    model: "ResourceWeight",
+    key: "0x9cf",
+    value: { game_id: 1, entity_id: LAB_ARMY_ID, capacity: "100000000000000", weight: "0" },
+  },
+  ...ARMY_RELICS.map((resource) => ({
+    model: "ResourceBalance",
+    key: `0x9c${resource}`,
+    value: { game_id: 1, entity_id: LAB_ARMY_ID, resource_type: resource, balance: String(2n * 1_000_000_000n) },
+  })),
+  ...preset.resources
+    .filter((rule) => ARMY_RELICS.includes(rule.resource_type))
+    .map((rule) => ({ model: "ResourceRule", key: `0x5${rule.resource_type}`, value: { ...rule, game_id: 1 } })),
+];
+
+/** Frontier's real build sheet on the lab realm, two farms standing. */
+const FrontierBuild = () => {
+  const {
+    setup: { store },
+  } = useGame();
+  return (
+    <div className="mx-auto w-[22rem] p-3">
+      <BuildSheet
+        realm={store.require("Structure", { game_id: 1, entity_id: REALM })}
+        plot={{ col: 11, row: 10 }}
+        onClose={() => undefined}
+      />
+    </div>
+  );
+};
+
+/** The lab realm's board with two farms standing: a farm's price is then above its first. */
+const twoFarms = (): unknown[] => [
+  {
+    model: "StructureBuildings",
+    key: "0x9d0",
+    value: {
+      game_id: 1,
+      entity_id: REALM,
+      ...buildingCounts(BuildingType.ResourceWheat, 2),
+      population: { current: 2, max: 6 },
+    },
+  },
+];
+
+/** The transfer between the lab army, out beside the realm's site, and the realm. */
+const ArmyTransfer = () => {
+  const {
+    setup: { store },
+  } = useGame();
+  const site = structureMapPosition(store, store.require("Structure", { game_id: 1, entity_id: REALM }))!;
+  const army = { type: ActorType.Explorer, id: LAB_ARMY_ID, hex: { x: site.x + 1, y: site.y } };
+  const realm = { type: ActorType.Structure, id: REALM, hex: site };
+  return (
+    <Opened
+      open={() => openWindow("army-transfer", <HelpModal selected={army} target={realm} allowBothDirections />)}
+    />
+  );
+};
+
 const Opened = ({ open }: { open: () => void }) => {
   const [first] = useState(() => open);
   useEffect(first, [first]);
@@ -128,6 +203,10 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
     name: "Transfer, many holdings",
     draw: () => <Opened open={() => openTransfer({ sourceId: REALM, destinationIds: [] })} />,
   },
+  // Blitz's army beside its realm (the unified lab's) and the window that moves troops and relics between them.
+  "army-transfer": { name: "Army transfer", draw: () => <ArmyTransfer /> },
+  // Frontier's build sheet on its own realm, two farms standing, so a farm's price is raised above its first.
+  "frontier-build": { name: "Frontier build", draw: () => <FrontierBuild /> },
   "structure-edit": {
     name: "Edit structure",
     draw: () => (
@@ -235,6 +314,8 @@ export const WindowsLab = () => {
       })),
     ] as never);
     if (surface === "transfer-holdings") fixture.applyFacts(holdingsOfEveryKind() as never);
+    if (surface === "frontier-build") fixture.applyFacts(twoFarms() as never);
+    if (surface === "army-transfer") fixture.applyFacts([...labArmyOut(fixture), ...armyRelics()] as never);
     installLabGameClient(fixture);
     return fixture;
   });

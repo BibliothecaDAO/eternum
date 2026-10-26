@@ -17,7 +17,6 @@ import {
   BARRACKS,
   BUILD,
   HUT,
-  LABOR,
   makes,
   needsTier,
   tierNumeral,
@@ -47,7 +46,6 @@ import {
   BuildingType,
   formatAmount,
   formatCharge,
-  formatFigure,
   formatGain,
   formatRate,
   getHexDistance,
@@ -308,7 +306,7 @@ const standingOf = (option: BuildOption, { labor, laborPerHour, free }: Holdings
       : free !== undefined && free < option.populationCost
         ? { of: "population" }
         : undefined;
-  return { kind: "price", labor: price, raised: riseLine(option, price), short };
+  return { kind: "price", labor: price, raised: riseLine(option), short };
 };
 
 /**
@@ -327,19 +325,9 @@ const buildingLine = (option: BuildOption): string => {
   return `${buildingName(option.category)}: ${does}${takes}`;
 };
 
-/**
- * Why a price is above its base, as the contract charges it: the copies standing multiply it. None when no copy
- * stands yet.
- */
-const riseLine = (option: BuildOption, price: number): string | undefined =>
-  option.rise.times > 1
-    ? priceRaised(
-        formatCharge(price / option.rise.times),
-        LABOR,
-        formatFigure(option.rise.times),
-        formatAmount(option.rise.standing),
-      )
-    : undefined;
+/** Why a price is above its first: the copies standing raise it. None when no copy stands yet. */
+const riseLine = (option: BuildOption): string | undefined =>
+  option.rise.times > 1 ? priceRaised(formatAmount(option.rise.standing)) : undefined;
 
 /** What one more gives: what it makes a minute, the population room it adds, or the tier new armies start at (above Common). */
 const givesOf = ({ effect, tier }: BuildOption): BuildTile["gives"] =>

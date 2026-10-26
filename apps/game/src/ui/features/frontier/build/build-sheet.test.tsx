@@ -15,7 +15,7 @@ import { configManager, type GameClient, setBlockTimestampSource } from "@biblio
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { realmBoard } from "./build-fixture";
+import { buildingCounts, realmBoard } from "./build-fixture";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
 
 afterEach(() => {
@@ -259,12 +259,7 @@ describe("the build sheet", () => {
       }),
     ] as never);
 
-  /** The board's packed building counts with `count` of one category standing (eight bits a category). */
-  const countsWith = (category: BuildingType, count: number) => {
-    const packed = BigInt(count) << BigInt((category - 1) * 8);
-    const word = (index: number) => String((packed >> BigInt(128 * index)) & ((1n << 128n) - 1n));
-    return { packed_counts_1: word(0), packed_counts_2: word(1), packed_counts_3: word(2) };
-  };
+  const countsWith = buildingCounts;
 
   const open = (store: ReturnType<typeof realmBoard>["store"], realm: ReturnType<typeof realmBoard>["realm"]) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -371,8 +366,9 @@ describe("the build sheet", () => {
     ] as never);
     const risen = open(store, realm);
     const arrow = risen.card("Farm").querySelector('[aria-label="price raised"]')!;
-    const rise = 1 + 4 * (configManager.getBuildingBaseCostPercentIncrease() / 10_000);
-    expect(arrow.getAttribute("data-tip")).toBe(`Base ${base} labor, ×${rise} with 2 standing`);
+    // One line of why, never the sum behind it (owner, 26 October: "its a game not a math demo").
+    expect(arrow.getAttribute("data-tip")).toBe("Costs more with each one standing: 2");
+    expect(risen.card("Farm").querySelector(".ui-chip")!.textContent).not.toBe(base);
     risen.close();
   });
 

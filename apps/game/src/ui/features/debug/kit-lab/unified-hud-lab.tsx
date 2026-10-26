@@ -84,7 +84,7 @@ const ViewLab = ({ view }: { view: View }) => {
         finished={finished}
         facts={
           army
-            ? (store) => [...armyOut(store), ...(attack ? enemyArmyBeside(store) : [])]
+            ? (store) => [...labArmyOut(store), ...(attack ? enemyArmyBeside(store) : [])]
             : stocked
               ? stockedRealm
               : out
@@ -170,9 +170,9 @@ const lastRealmLost = (store: NativeFactStore): unknown[] => {
 };
 
 /** The lab realm's army out today: beside the realm's site, 5,000 Knights, 90 stamina, and 260 XP, which buys a tier. */
-const ARMY_ID = 90;
+export const LAB_ARMY_ID = 90;
 
-const armyOut = (store: NativeFactStore): unknown[] => {
+export const labArmyOut = (store: NativeFactStore): unknown[] => {
   const site = structureMapPosition(store, store.require("Structure", { game_id: 1, entity_id: 7 }));
   if (!site) throw new Error("The lab realm has no site today");
   return [
@@ -181,7 +181,7 @@ const armyOut = (store: NativeFactStore): unknown[] => {
       key: "0x9a0",
       value: {
         game_id: 1,
-        explorer_id: ARMY_ID,
+        explorer_id: LAB_ARMY_ID,
         owner: 7,
         troops: {
           ...ROW_SET.expected.value.troops,
@@ -198,12 +198,12 @@ const armyOut = (store: NativeFactStore): unknown[] => {
         alt: false,
         col: site.x + 1,
         row: site.y,
-        entity_id: ARMY_ID,
+        entity_id: LAB_ARMY_ID,
         category: 15,
         is_structure: false,
       },
     },
-    { model: "ArmyProgress", key: "0x9a2", value: { ...LAB_PROGRESS, explorer_id: ARMY_ID } },
+    { model: "ArmyProgress", key: "0x9a2", value: { ...LAB_PROGRESS, explorer_id: LAB_ARMY_ID } },
     { model: "ArmyProgressionRules", key: "0x9a3", value: LAB_PROGRESSION_RULES },
   ];
 };
@@ -260,7 +260,7 @@ const AttackForecast = ({ store }: { store: NativeFactStore }) => {
       id: "quick-attack",
       content: (
         <QuickAttackPreview
-          attacker={{ type: ActorType.Explorer, ...on(ARMY_ID, site.x + 1) }}
+          attacker={{ type: ActorType.Explorer, ...on(LAB_ARMY_ID, site.x + 1) }}
           target={{ type: ActorType.Explorer, ...on(ENEMY_ARMY_ID, site.x + 2) }}
         />
       ),
