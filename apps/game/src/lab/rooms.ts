@@ -266,6 +266,18 @@ export const ROOMS: LabRoom[] = [
         ],
       },
       {
+        title: "Tier indicator · to pick",
+        devices: ["both", "desktop", "phone"],
+        views: [
+          view(
+            "Tier indicator",
+            "/lab/tier-indicator",
+            "tier-indicator",
+            load(() => import("./tier-indicator/view"), "TierIndicatorLabView"),
+          ),
+        ],
+      },
+      {
         title: "App pages",
         views: [
           view(
