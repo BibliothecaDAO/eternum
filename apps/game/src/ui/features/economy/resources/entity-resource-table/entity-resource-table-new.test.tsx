@@ -52,7 +52,7 @@ it("keeps drawing Balances as the player's holdings go from none to one and back
   holdings.none = false;
   await draw();
   expect(host.textContent).not.toContain(empty);
-  expect(host.textContent).toContain("1 structures synced • Stolsli highlighted");
+  expect(host.textContent).toContain("1 structures synced • Temtinos highlighted");
   // And the last one goes (lost in a raid): the table says so again.
   holdings.none = true;
   await draw();
