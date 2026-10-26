@@ -10,10 +10,18 @@ const MODE_NAMES: Record<Mode, string> = { blitz: "Blitz", frontier: "Frontier",
 const GAMES: readonly Mode[] = ["blitz", "frontier", "eternum"];
 const DEVICE_NAMES: Record<Device, string> = { desktop: "Desktop", phone: "Phone", both: "Both" };
 
-/** Every view with its page and room: the header and the routes read the lab from here. */
+/**
+ * Every view with its page and room: the header and the routes read the lab from here. A page's `inside` routes (the HUD
+ * room's frames) are `alone` when opened by themselves: they belong to the page but are not where it reopens.
+ */
 const VIEWS = ROOMS.flatMap((room) =>
-  room.pages.flatMap((page) => [...page.views, ...(page.inside ?? [])].map((view) => ({ room, page, view }))),
+  room.pages.flatMap((page) => [
+    ...page.views.map((view) => ({ room, page, view, alone: false })),
+    ...(page.inside ?? []).map((view) => ({ room, page, view, alone: true })),
+  ]),
 );
+/** The page-wide choices a page keeps across its views. */
+const SHARED = ["mode", "device"] as const;
 /** One route per address pattern: the Game room's two lab games share theirs. */
 const ROUTES = VIEWS.filter(({ view }, index) => VIEWS.findIndex((other) => other.view.route === view.route) === index);
 
@@ -37,7 +45,7 @@ const withQuery = (path: string, changes: Record<string, string>) => {
   const [pathname, search = ""] = path.split("?");
   const params = new URLSearchParams(search);
   Object.entries(changes).forEach(([key, value]) => params.set(key, value));
-  return `${pathname}?${params}`;
+  return params.size > 0 ? `${pathname}?${params}` : pathname!;
 };
 
 /** Where a page opens: where it was last left, else its first view, on Frontier when it draws Frontier. */
@@ -54,7 +62,7 @@ function LabRooms() {
   const params = new URLSearchParams(search);
   const capture = params.get("capture") === "1";
   useEffect(() => {
-    if (shown) saved.current.set(shown.page, `${pathname}${search}`);
+    if (shown && !shown.alone) saved.current.set(shown.page, `${pathname}${search}`);
   }, [pathname, search, shown]);
 
   return (
@@ -96,15 +104,16 @@ function LabHeader({
   open,
   set,
 }: {
-  shown: { room: LabRoom; page: LabPage; view: LabView } | undefined;
+  shown: { room: LabRoom; page: LabPage; view: LabView; alone: boolean } | undefined;
   params: URLSearchParams;
   open: (page: LabPage) => void;
   set: (changes: Record<string, string>) => void;
 }) {
   const page = shown?.page;
-  const modes = page?.modes ?? [];
+  // A route opened alone picks its game from its path and its layout from the window: no switch would change it.
+  const modes = (!shown?.alone && page?.modes) || [];
   const mode = (params.get("mode") as Mode | null) ?? modes[0];
-  const devices = page?.devices ?? [];
+  const devices = (!shown?.alone && page?.devices) || [];
   const device = (params.get("device") as Device | null) ?? devices[0];
   return (
     <header className="lab-header">
@@ -159,12 +168,22 @@ function LabHeader({
               </button>
             ))}
           </nav>
-          {shown.page.views.length > 1 && (
+          {shown.alone && (
+            <nav aria-label="Views">
+              <button type="button" onClick={() => open(shown.page)}>
+                ← Back to {shown.page.title}
+              </button>
+            </nav>
+          )}
+          {!shown.alone && shown.page.views.length > 1 && (
             <nav aria-label="Views">
               {shown.page.views.map((each) => (
                 <Link
                   key={each.path}
-                  to={params.has("mode") ? withQuery(each.path, { mode: params.get("mode")! }) : each.path}
+                  to={withQuery(
+                    each.path,
+                    Object.fromEntries(SHARED.flatMap((key) => (params.has(key) ? [[key, params.get(key)!]] : []))),
+                  )}
                   aria-current={each === shown.view ? "page" : undefined}
                 >
                   {each.label}
