@@ -1,4 +1,4 @@
-import { frontierPreset } from "./frontier/native";
+import { buildingIds, frontierPreset } from "./frontier/native";
 import { blitzPreset } from "./blitz/native";
 import { eternumPreset } from "./eternum/native";
 import { duelPreset } from "./duel/native";
@@ -9,7 +9,6 @@ import {
   FRONTIER_PLAYGROUND_PRESET_ID,
   nativeGameModeOf,
 } from "./common/native-preset-modes";
-import { buildingIds } from "./frontier/base";
 import { ResourcesIds } from "../../packages/types/src/constants";
 import type { GameType } from "./common/types";
 

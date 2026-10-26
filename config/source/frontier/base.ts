@@ -1,5 +1,5 @@
 import { FRONTIER_ARMIES_TICK_SECONDS } from "./clock";
-import { frontierPreset } from "./native";
+import { buildingIds, frontierPreset } from "./native";
 import { nativeResearchConstants as research } from "../../../contracts/l3/world-native/schema/client.gen";
 import { RESOURCE_PRECISION } from "../../../packages/types/src/constants";
 import type { ConfigPatch } from "../common/merge-config";
@@ -7,8 +7,6 @@ import { mergeConfigPatches } from "../common/merge-config";
 import { arenaBaseConfig } from "../common/arena/base";
 
 const resourceIds = Array.from({ length: 58 }, (_, index) => index + 1);
-/** Every building a Frontier board can raise, by its category id. */
-export const buildingIds = Array.from({ length: research.HEARTH }, (_, index) => index + 1);
 const trainingBuildings = [research.WAR_HALL, research.SUPPLY_YARD, research.SCOUTS_LODGE, research.HEARTH];
 const laborCosts: Record<number, number> = {
   [research.HUT]: 300,
