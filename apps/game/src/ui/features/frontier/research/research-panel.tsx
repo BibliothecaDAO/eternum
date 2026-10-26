@@ -278,7 +278,7 @@ const isPrice = (need: Need): need is Extract<Need, { kind: "essence" | "labor" 
 const needIcon = (need: Need): IconMeaning =>
   need.kind === "essence" ? "essence" : need.kind === "labor" ? "labor" : "lock";
 
-/** The node's tier and its next as gems (none at Common), complete at Legendary, or a one-off node's price. */
+/** The node's tier and its next as gems, complete at Legendary, or a one-off node's price. */
 const LevelLine = ({ node }: { node: TreeNode }) => {
   if (node.maxTier === 4 && node.nextTier) return <HudTierStep from={tierOf(node)} to={node.nextTier} />;
   if (node.maxTier === 4)

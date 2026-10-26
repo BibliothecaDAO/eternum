@@ -38,11 +38,8 @@ export type BuildTile = {
   name: string;
   /** What the building does, in one line, on the card's tooltip. */
   tip: string;
-  /**
-   * What one more gives: a production rate with its research reason, population, or a training tier gem.
-   * Common training adds no tier, so it has no output marker.
-   */
-  gives?: { icon: IconMeaning; value: ReactNode; basis?: string };
+  /** What one more gives: a production rate with its research reason, population, or a training tier gem. */
+  gives: { icon: IconMeaning; value: ReactNode; basis?: string };
   /** The population it takes; 0 takes none. */
   takes: number;
   standing:
@@ -186,7 +183,7 @@ const bandTone = (standing: BuildTile["standing"]) =>
 
 /**
  * Where a building stands, along its card's foot: its price and what it lacks, the Barracks tier it waits for in words
- * with its numeral ("Barracks II" by the lock, "Needs Barracks II" on its tip and refusal: never a gem, which would
+ * with its numeral ("Barracks III" by the lock, "Needs Barracks III" on its tip and refusal: never a gem, which would
  * read as the card's own tier), or a tick.
  */
 const Band = ({ standing }: { standing: BuildTile["standing"] }) => (

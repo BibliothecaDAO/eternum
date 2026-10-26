@@ -27,9 +27,9 @@ import {
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
 /** A step on that scale, common (1) to legendary (5). */
 export type Tier = 1 | 2 | 3 | 4 | 5;
-/** A tier a player levels, by its numeral: Common has none (nothing levelled yet), Uncommon I to Legendary IV. */
-const TIER_NUMERALS = ["I", "II", "III", "IV"] as const;
-export const tierNumeral = (tier: Exclude<Tier, 1>): string => TIER_NUMERALS[tier - 2]!;
+/** A tier by its numeral, Common I to Legendary V. */
+const TIER_NUMERALS = ["I", "II", "III", "IV", "V"] as const;
+export const tierNumeral = (tier: Tier): string => TIER_NUMERALS[tier - 1]!;
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
 export { BEAST_NAMES } from "@bibliothecadao/types";
@@ -212,7 +212,7 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
   return `${pair.held} / ${pair.need}`;
 };
 /** A training building waits for the Barracks' tier: "Needs Barracks at Rare". */
-/** A building that waits on another's tier, by its numeral: "Needs Barracks II". */
+/** A building that waits on another's tier, by its numeral: "Needs Barracks III". */
 export const needsTier = (building: string, numeral: string) => `Needs ${building} ${numeral}`;
 /** A training building already standing: a realm holds one of each. */
 export const ONE_A_REALM = "Built. A realm holds one.";
@@ -225,9 +225,8 @@ export const priceEach = (price: string, currency: string) => `${price} ${curren
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
 export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
-/** What a training building gives, by its tier's numeral: "new armies start with Battle II" (none at Common). */
-export const startsNewArmies = (attribute: string, numeral: string | undefined) =>
-  `new armies start with ${attribute}${numeral === undefined ? "" : ` ${numeral}`}`;
+/** What a training building gives, by its tier's numeral: "new armies start with Battle II". */
+export const startsNewArmies = (attribute: string, numeral: string) => `new armies start with ${attribute} ${numeral}`;
 /** The fix for a short store that the map can fill: "Explore for labor". */
 export const exploreFor = (noun: string) => `${EXPLORE} for ${noun}`;
 

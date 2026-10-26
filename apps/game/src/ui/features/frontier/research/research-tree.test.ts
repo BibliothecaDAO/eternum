@@ -30,7 +30,7 @@ describe("the castle's tree as the contract rules it", () => {
     expect(why(EARLY_REALM, "row-0")).toBe("Essence 300 / 1,000");
     expect(why(EARLY_REALM, "row-1")).toBe("Build a Workshop");
     // A training building can only stand once the Barracks row is rare.
-    expect(why(EARLY_REALM, "row-4")).toBe("Barracks II first");
+    expect(why(EARLY_REALM, "row-4")).toBe("Barracks III first");
     expect(why(EARLY_REALM, "reach-2")).toBe("Ethereal I first");
     expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(false);
   });
@@ -50,7 +50,7 @@ describe("the castle's tree as the contract rules it", () => {
       { essence: 12_000, labor: 8_000 },
     ]);
     expect(node(MID_REALM, "shrine").state).toBe("done");
-    expect(node(MID_REALM, "row-2").gate).toEqual({ name: "Barracks II", met: true });
+    expect(node(MID_REALM, "row-2").gate).toEqual({ name: "Barracks III", met: true });
     expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
   });
 

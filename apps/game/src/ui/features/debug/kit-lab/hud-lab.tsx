@@ -269,7 +269,9 @@ const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "pric
   ({ kind: "price", labor, short }) as const;
 /** An open training building at Uncommon: new armies start one tier up in its attribute. */
 const TRAINS = { icon: "order-rage", value: <HudTier tier={2} /> } as const;
-/** A training building waiting for the Barracks at Rare (II). */
+/** A training building at Common: new armies start at I in its attribute. */
+const COMMON_TRAINS = { icon: "order-rage", value: <HudTier tier={1} /> } as const;
+/** A training building waiting for the Barracks at Rare (III). */
 const LOCKED = { kind: "locked", gate: 3 } as const;
 
 /**
@@ -299,11 +301,11 @@ const EARLY_TILES: LabTile[] = [
   tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, 1, price(2_000)),
   tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(800)),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(300)),
-  // The training buildings are still at Common, which gives new armies nothing more: no gives, only the Barracks lock.
-  tile("war", "war-hall", TRAINING_BUILDINGS[0], undefined, 2, LOCKED),
-  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], undefined, 2, LOCKED),
-  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], undefined, 2, LOCKED),
-  tile("hearth", "hearth", TRAINING_BUILDINGS[3], undefined, 2, LOCKED),
+  // The training buildings are still at Common (I), each locked behind the Barracks.
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], COMMON_TRAINS, 2, LOCKED),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...COMMON_TRAINS, icon: "order-skill" }, 2, LOCKED),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...COMMON_TRAINS, icon: "order-detection" }, 2, LOCKED),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...COMMON_TRAINS, icon: "order-enlightenment" }, 2, LOCKED),
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,

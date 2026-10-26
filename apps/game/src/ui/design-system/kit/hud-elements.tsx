@@ -765,16 +765,15 @@ export const HudRarity = ({ tier }: { tier: Tier }) => (
 
 /**
  * The tier a player levels something to (a building type's row, an army's attribute): a gem in the tier's rarity
- * colour with its numeral, Uncommon I to Legendary IV. Common draws nothing: nothing has been levelled yet.
+ * colour with its numeral, Common I to Legendary V.
  */
-export const HudTier = ({ tier }: { tier: Tier }) =>
-  tier === 1 ? null : (
-    <span className="ui-tier" data-tier={tier} role="img" aria-label={TIER_WORDS[tier - 1]}>
-      {tierNumeral(tier)}
-    </span>
-  );
+export const HudTier = ({ tier }: { tier: Tier }) => (
+  <span className="ui-tier" data-tier={tier} role="img" aria-label={TIER_WORDS[tier - 1]}>
+    {tierNumeral(tier)}
+  </span>
+);
 
-/** A tier's next step, from the gem it holds (none at Common) to the next one's. */
+/** A tier's next step, from the gem it holds to the next one's. */
 export const HudTierStep = ({ from, to }: { from: Tier; to: Tier }) => (
   <span className="ui-tier-step" role="img" aria-label={`${TIER_WORDS[from - 1]} → ${TIER_WORDS[to - 1]}`}>
     <HudTier tier={from} />
