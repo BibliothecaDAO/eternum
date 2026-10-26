@@ -84,7 +84,7 @@ export const outputLine = (output: BuildingOutput, research: ResearchShare | und
 };
 
 /** What all of a type's standing buildings make: their product, its rate a second, and the side that raises it. */
-export type BuildingsMake = { resource: MadeResource; perSecond: number; research?: ResearchShare };
+type BuildingsMake = { resource: MadeResource; perSecond: number; research?: ResearchShare };
 
 /**
  * What every standing building of a type makes together, the one figure its card shows ("+25/min"), with the research

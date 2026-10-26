@@ -21,7 +21,7 @@ import {
  * A Feed row as Frontier's Feed draws it (owner, 26 October 2026: "in the feed I wanna see the player names even for
  * exploring"; option A): who did it, what they did and to what, what came of it, and what it paid.
  */
-export type FeedReading = ToldReading | OwnWords;
+type FeedReading = ToldReading | OwnWords;
 
 /** A story taken apart: who did it, what they did and to what, what came of it, and what it paid. */
 export interface ToldReading {
