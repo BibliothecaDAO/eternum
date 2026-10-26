@@ -716,10 +716,13 @@ behind (none yet for the Farm, Barracks and Workers' hut at tiers IV and V). Foc
 building closely; Turn steps through the board's six headings while each tier banner holds its heading, broadside to the
 camera. Realm castles do not turn: they face the camera, as realm models do in the game. A Farm's sails turn.
 
-The set is delivered for integration but not yet drawn on the board or the map. The board and the placement preview
-already keep any part with a `poleAxis` at its authored heading (`src/three/structures/held-heading.ts`), as
-`InstancedModel` does. `pnpm --dir apps/game verify:painted-buildings` checks the deliveries
-(`public/models/frontier/painted/SOURCE.md`).
+In a Frontier game a player meets the set here (the paths are chosen in `src/config/game-modes/index.ts`,
+`src/three/scenes/hexception-building-model.ts` and `src/three/managers/map-site-manager.ts`): on the realm board
+(Realm), the Farm, Workshop, Barracks and Workers' hut at their tier, the four training buildings and the Essence rift;
+on the world map, each Shrine, Well, Essence rift and fallen realm's ruin. The realm castles and the camp are drawn only
+in the lab. The board and the placement preview keep any part with a `poleAxis` at its authored heading
+(`src/three/structures/held-heading.ts`), as `InstancedModel` does. `pnpm --dir apps/game verify:painted-buildings`
+checks the deliveries (`public/models/frontier/painted/SOURCE.md`).
 
 ## Frontier day end
 

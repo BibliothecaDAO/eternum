@@ -151,27 +151,36 @@ describe("entering Frontier", () => {
 
 describe("reading the season", () => {
   const verify = verifyOf("season");
-  const page = (open, pressed = open ? ["Season"] : []) => ({ page: open, pressed });
+  const seen = (panels, pressed = []) => ({ ...onTheMap, panels, pressed });
+  const desktop = {
+    desktop: true,
+    opened: seen(["Realm", "Season"], ["Season"]),
+    closed: seen(["Realm", "Feed"], ["Feed"]),
+  };
+  const phone = { desktop: false, menu: ["Menu"], opened: seen(["Season"]), closed: seen([]) };
 
-  it("completes on a desktop when the Season place opened its page and a second press closed it", () => {
-    expect(verify({ seen: onTheMap, played: { desktop: true, opened: page(true), closed: page(false) } }).status).toBe(
-      "completed",
-    );
+  it("completes on a desktop when the Season place lit and its board drew in the rail, then closed", () => {
+    expect(verify({ seen: onTheMap, played: desktop }).status).toBe("completed");
   });
 
-  it("fails a desktop whose Season place opened nothing, or whose page stayed open", () => {
-    expect(verify({ seen: onTheMap, played: { desktop: true, opened: page(false), closed: page(false) } }).reason).toBe(
-      "the Season place opened no page",
-    );
-    expect(verify({ seen: onTheMap, played: { desktop: true, opened: page(true), closed: page(true) } }).reason).toBe(
-      "the Season page did not close",
-    );
+  it("fails a desktop whose place stayed dark, whose board never drew, or whose board stayed", () => {
+    const dark = { ...desktop, opened: seen(["Realm", "Season"]) };
+    expect(verify({ seen: onTheMap, played: dark }).reason).toBe("the Season place was not lit");
+    const empty = { ...desktop, opened: seen(["Realm", "Feed"], ["Season"]) };
+    expect(verify({ seen: onTheMap, played: empty }).reason).toBe("the Season's board was not drawn");
+    const stayed = { ...desktop, closed: seen(["Realm", "Season"]) };
+    expect(verify({ seen: onTheMap, played: stayed }).reason).toBe("the Season's board did not close");
   });
 
-  it("reads a phone's season from its Menu sheet", () => {
-    const phone = { desktop: false, opened: ["Menu"], read: ["Season"], closed: [] };
+  it("reads a phone's season from its Menu: the board drew, then its Back closed it", () => {
     expect(verify({ seen: onTheMap, played: phone }).status).toBe("completed");
-    expect(verify({ seen: onTheMap, played: { ...phone, opened: [] } }).status).toBe("failed");
+    expect(verify({ seen: onTheMap, played: { ...phone, menu: [] } }).reason).toBe("no Menu sheet opened");
+    expect(verify({ seen: onTheMap, played: { ...phone, opened: seen([]) } }).reason).toBe(
+      "the Season's board was not drawn",
+    );
+    expect(verify({ seen: onTheMap, played: { ...phone, closed: seen(["Season"]) } }).reason).toBe(
+      "the Season's board did not close",
+    );
   });
 });
 

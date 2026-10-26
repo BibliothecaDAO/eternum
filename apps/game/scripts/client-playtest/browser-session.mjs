@@ -94,7 +94,7 @@ function rightClickCommands(offset) {
 
 /**
  * What a player can see that says where they are: the route's scene, the scene the renderer last drew, the lit place,
- * open sheets, selection, zoom.
+ * open sheets, the HUD's panels drawn (each by its name), selection, zoom.
  */
 const OBSERVE_EXPRESSION = `JSON.stringify({
   path: location.pathname,
@@ -106,7 +106,9 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
     document.querySelector('[aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ??
     null,
   dialogs: [...document.querySelectorAll('[role="dialog"]')].map((dialog) => dialog.getAttribute("aria-label")),
-  page: Boolean(document.querySelector("[data-page]")),
+  panels: [...document.querySelectorAll("section.ui-panel[aria-label]")]
+    .filter((panel) => panel.checkVisibility({ visibilityProperty: true }))
+    .map((panel) => panel.getAttribute("aria-label")),
   pressed: [...document.querySelectorAll('button[aria-pressed="true"]')].map((button) => button.getAttribute("aria-label")),
   worldmapDistance: JSON.parse(localStorage.getItem("eternum-camera-zoom") ?? "null")?.state?.worldmapDistance ?? null,
   playable: (window.__eternumGameEntryTimeline ?? []).some((milestone) => milestone.name === "world-interactive"),

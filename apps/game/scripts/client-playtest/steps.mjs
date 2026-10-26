@@ -362,8 +362,8 @@ function recordedStill(onMap) {
 }
 
 /**
- * The season's board as a player reads it: on a desktop its round place opens it as a page and a second press closes
- * it; a phone has it in the Menu, closed with Escape.
+ * The season's board as a player reads it: a desktop's Season place opens it in the rail and a second press closes it;
+ * a phone opens it from the Menu and closes it with the board's Back, as a phone has no Escape key.
  */
 async function readTheSeason(input) {
   if (!onADesktop()) return { desktop: false, ...(await readTheSeasonInTheMenu(input)) };
@@ -510,25 +510,29 @@ function visitMissed(visit) {
   return placeMissed(visit.seen, visit.mapHex);
 }
 
-/** A desktop's Season page drew with its place pressed, then closed; a phone's Menu sheet opened, then closed. */
-function seasonReadAndClosed({ played, ...rest }) {
-  if (!played.desktop) return sheetOpenedAndClosed("Menu")({ played, ...rest });
-  if (!played.opened.page || !played.opened.pressed.includes("Season"))
-    return failed("the Season place opened no page", { played });
-  if (played.closed.page) return failed("the Season page did not close", { played });
+/**
+ * The Season's board drew and then closed, wherever the HUD puts it: on a desktop with its place lit, on a phone from an
+ * opened Menu.
+ */
+function seasonReadAndClosed({ played }) {
+  if (played.desktop && !played.opened.pressed.includes("Season"))
+    return failed("the Season place was not lit", played);
+  if (!played.desktop && !played.menu.includes("Menu")) return failed("no Menu sheet opened", played);
+  if (!played.opened.panels.includes("Season")) return failed("the Season's board was not drawn", played);
+  if (played.closed.panels.includes("Season")) return failed("the Season's board did not close", played);
   return completed(played);
 }
 
 async function readTheSeasonInTheMenu({ browser }) {
   browser.click("Menu");
   await sleep(1_500);
-  const opened = browser.observe().dialogs;
+  const menu = browser.observe().dialogs;
   browser.click("Season");
   await sleep(2_000);
-  const read = browser.observe().dialogs;
-  browser.press("Escape");
+  const opened = browser.observe();
+  browser.click("Back");
   await sleep(1_000);
-  return { opened, read, closed: browser.observe().dialogs };
+  return { menu, opened, closed: browser.observe() };
 }
 
 /** A Wheat ring or phone plate opens its store card; pressing it again closes the same card. */
@@ -546,15 +550,6 @@ function storeOpenedAndClosed({ played }) {
   if (!played.opened) return failed("the Wheat store card did not open");
   if (played.closed) return failed("the Wheat store card did not close");
   return completed(played);
-}
-
-function sheetOpenedAndClosed(label) {
-  return ({ played }) => {
-    if (!played.opened.includes(label))
-      return failed(`no ${label} sheet opened (open: ${played.opened.join(", ") || "none"})`);
-    if (played.closed.includes(label)) return failed(`the ${label} sheet did not close`);
-    return completed(played);
-  };
 }
 
 /** The army with the most stamina, as a player picks the one that can act; selecting it centres the camera on it. */
