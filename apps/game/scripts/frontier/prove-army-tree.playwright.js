@@ -1,14 +1,10 @@
 async (page) => {
-  const fs = require("node:fs/promises");
-  const path = require("node:path");
   const url = new URL(page.url());
   const out = url.searchParams.get("evidence");
   const repo = url.searchParams.get("repo");
-  if (!out || !repo || !path.isAbsolute(out) || !path.isAbsolute(repo))
+  if (!out?.startsWith("/") || !repo?.startsWith("/"))
     throw new Error("Open the army-tree lab with absolute evidence and repo paths in its query");
-  await fs.mkdir(out);
-  const artwork = path.join(repo, "apps/game/asset-sources/lab/army-tree");
-  await fs.mkdir(artwork, { recursive: true });
+  const artwork = `${repo}/apps/game/asset-sources/lab/army-tree`;
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   const scenes = ["Research", "Army", "Level up", "Troops"];
@@ -23,9 +19,14 @@ async (page) => {
       const panel = page.locator("[data-tree-capture]");
       await panel.waitFor();
       await page.evaluate(() => document.fonts.ready);
+      const bounds = await panel.boundingBox();
+      await page.setViewportSize({ width: 440, height: Math.ceil(bounds.height + 150) });
+      const footer = await panel.locator("footer").boundingBox();
+      if (!footer || footer.y + footer.height > (await page.viewportSize()).height)
+        throw new Error(`Capture footer clipped: ${option} ${scene}`);
       const file = `${option}-${scene.toLowerCase().replaceAll(" ", "-")}.png`;
-      await panel.screenshot({ path: path.join(out, file) });
-      await fs.copyFile(path.join(out, file), path.join(artwork, file));
+      await panel.screenshot({ path: `${out}/${file}` });
+      await panel.screenshot({ path: `${artwork}/${file}` });
       captures.push({ option, scene, file, text: await panel.innerText() });
     }
   }
@@ -60,13 +61,23 @@ async (page) => {
         )
           throw new Error(`Broken comparison: ${JSON.stringify({ option, scene, width, state })}`);
         checks.push({ option, scene, width, ...state });
+        if (width === 1440 && option === "a" && scene !== "Troops") {
+          const contentHeight = await page.locator('[data-lab="army-tree"]').evaluate((node) => node.scrollHeight);
+          await page.setViewportSize({ width, height: contentHeight + 150 });
+          await page.screenshot({
+            path: `${out}/a-${scene.toLowerCase().replaceAll(" ", "-")}-desktop.png`,
+            fullPage: true,
+          });
+          await page.setViewportSize({ width, height });
+        }
       }
-      await page.screenshot({ path: path.join(out, `${option}-${width}.png`), fullPage: true });
+      const contentHeight = await page.locator('[data-lab="army-tree"]').evaluate((node) => node.scrollHeight);
+      await page.setViewportSize({ width, height: contentHeight + 150 });
+      await page.screenshot({ path: `${out}/${option}-${width}.png`, fullPage: true });
+      await page.setViewportSize({ width, height });
     }
   }
   if (errors.length) throw new Error(errors.join("\n"));
-  const result = { captures, checks, errors };
-  await fs.writeFile(path.join(out, "result.json"), JSON.stringify(result, null, 2));
   await page.goto("about:blank");
-  return { captures: captures.length, checks: checks.length, errors, out };
+  return { captures, checks, errors, out };
 };

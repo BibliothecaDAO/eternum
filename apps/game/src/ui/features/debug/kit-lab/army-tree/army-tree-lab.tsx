@@ -173,7 +173,7 @@ function Troops({ option }: { option: OptionId }) {
       </section>
       <p className="tree-explain">
         {option === "c"
-          ? "Common: no gem. Uncommon I is green; Rare II is blue. Troop classes stop at Rare; attribute ranks continue to Legendary."
+          ? "Common: no gem. Uncommon I and Rare II use the shared rarity palette. Troop classes stop at Rare; attribute ranks continue to Legendary."
           : option === "today"
             ? "Troop colors today: T1 blue · T2 green · T3 purple. These colors do not follow the rarity order."
             : "A rectangular T chip identifies troop class. Colored numeral gems identify attribute, research and rarity upgrades."}
