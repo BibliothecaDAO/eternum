@@ -174,18 +174,14 @@ it("shows a dash for each total, and says why, when the player's history no long
   }));
   herald.history = [...later, ...BEFORE_PLAYING_ON.history];
   expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Chests", "—Essence", "—Labor", "—LORDS"]);
-  expect(host.querySelector(`${SUMMARY} [role="status"]`)?.textContent).toBe(
-    "Your history no longer reaches back to this day's start, so its totals are unknown.",
-  );
+  expect(host.querySelector(`${SUMMARY} [role="status"]`)?.textContent).toBe("This day's totals are unknown");
 });
 
 it("shows a dash for each total, and says history did not answer, with Try again, when the read fails", async () => {
   herald.withheld = Promise.reject(new Error("Herald is down"));
   herald.withheld.catch(() => undefined);
   expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Chests", "—Essence", "—Labor", "—LORDS"]);
-  expect(host.querySelector(`${SUMMARY} [role="alert"]`)?.textContent).toBe(
-    "Your history did not answer, so this day's totals are unknown.Try again",
-  );
+  expect(host.querySelector(`${SUMMARY} [role="alert"]`)?.textContent).toBe("This day's totals are unknownTry again");
 });
 
 describe("history answering late as the day ends in the game", () => {

@@ -104,7 +104,7 @@ const mapCraftRelicError = (error: unknown): string => {
   }
 
   if (normalized.includes("not owner")) {
-    return "You must own this structure to craft relics.";
+    return "You must own this structure.";
   }
 
   if (normalized.includes("season is over")) {
@@ -158,7 +158,7 @@ const resolveCraftingRequirements = ({
       id: "ownership",
       label: "You own this structure",
       satisfied: isOwnedByCaller,
-      failureMessage: "You must own this structure to craft relics.",
+      failureMessage: "You must own this structure.",
     },
     {
       id: "season-started",
@@ -254,7 +254,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
 
   const canCraft = preflightErrors.length === 0;
   const actionHint = canCraft
-    ? `Burn ${formatCharge(knownAmount(configuredResearchCost))} research to mint one random relic.`
+    ? `Burn ${formatCharge(knownAmount(configuredResearchCost))} research for one random relic`
     : (preflightErrors[0] ?? "Cannot craft relic right now.");
 
   const craftButtonLabel = craftedRelicId || craftedWithoutReveal ? "Craft Again" : "Craft Relic";
@@ -320,7 +320,6 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
       <div className="flex flex-col gap-3">
         <HudPanel kind="section" title="Relic Forge" icon="research" collapsible={false}>
           <div className="flex flex-col gap-2">
-            <p>Burn research to craft one random relic.</p>
             {shouldShowResearchProgress && (
               <>
                 <HudRow
@@ -371,20 +370,12 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
           <HudPanel kind="section" title="Relic Crafted" collapsible={false}>
             <div className="flex flex-col items-start gap-2">
               <HeldRelic relicId={craftedRelicId} held="1" />
-              <p className="text-hud-label text-hud-muted">
-                Added to your relic inventory. Open the relic action to activate it.
-              </p>
+              <p className="text-hud-label text-hud-muted">Added to your relics.</p>
             </div>
           </HudPanel>
         )}
 
-        {craftedWithoutReveal && !craftedRelicId && (
-          <HudNotice
-            tone="good"
-            line="Relic crafted successfully."
-            why="Reveal data is syncing and will appear in inventory shortly."
-          />
-        )}
+        {craftedWithoutReveal && !craftedRelicId && <HudNotice tone="good" line="Relic crafted" />}
 
         {error && <HudNotice tone="bad" line={error} />}
       </div>

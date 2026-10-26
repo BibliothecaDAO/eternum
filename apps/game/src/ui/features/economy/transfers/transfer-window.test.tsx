@@ -212,7 +212,7 @@ const type = async (label: string, value: string) => {
   });
 };
 const sendButton = () =>
-  [...host.querySelectorAll("button")].find((button) => /^(Send|Choose|Not enough)/.test(button.textContent!))!;
+  [...host.querySelectorAll("button")].find((button) => /^(Send|Choose|Needs)/.test(button.textContent!))!;
 const send = async () => act(async () => sendButton().click());
 /** Anything the window says in the sheet's bad tone: a refusal notice, a red word. */
 const redText = () =>
@@ -306,7 +306,7 @@ describe("the transfer window's amounts", () => {
     expect(sendButton().disabled).toBe(false);
     await type(`${DONKEYS}: total to send`, "9");
     expect(sendButton().disabled).toBe(true);
-    expect(sendButton().textContent).toBe("Not enough donkeys: these loads need 11, 10 here");
+    expect(sendButton().textContent).toBe("Needs 11 donkeys, 10 here");
     expect(redText()).toEqual([]);
   });
 

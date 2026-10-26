@@ -238,11 +238,7 @@ const ImportWindow = () => (
       <pre className="rounded border border-hud-line bg-hud-well p-3 font-mono text-hud-label text-hud-ink">
         {`Name: Mill first\nCity:\n2 mill\n4 farm`}
       </pre>
-      <HudNotice
-        tone="bad"
-        line="Line 3: “mill” is not a goal of an order"
-        why="Farm, wood, coal, copper, hut, military or army."
-      />
+      <HudNotice tone="bad" line="Line 3: “mill” is not a goal of an order" />
     </div>
   </HudWindow>
 );

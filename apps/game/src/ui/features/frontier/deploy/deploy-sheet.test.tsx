@@ -110,9 +110,9 @@ describe("the Deploy sheet", () => {
     press(host, "Max");
     expect(countField(host).value).toBe("420");
     typeCount(host, 120);
-    // Deploy in the foot, beside its price and how far the wheat left lets the army march.
+    // Deploy in the foot, beside its price alone while the wheat left lets the army march.
     expect(deployButton(host)?.textContent).toBe("Deploy");
-    expect(foot(host)).toMatch(/^240 wheatLeaves wheat to march [\d.,]+K? tiles?Deploy$/);
+    expect(foot(host)).toBe("240 wheatDeploy");
     // The window shows the decision only: the count's slider over the same range, no stamina, attribute marks or day
     // clock.
     const slider = host.querySelector<HTMLInputElement>("input[type=range]");
@@ -208,7 +208,7 @@ describe("the Deploy sheet", () => {
     {
       case: "a slot fresh today starts its army full",
       facts: [],
-      words: "Army 2 starts full: 150/150 staminaIts slot is fresh today",
+      words: "Army 2 starts full: 150/150 stamina",
       meter: [150, 150],
     },
     {
@@ -228,7 +228,7 @@ describe("the Deploy sheet", () => {
           },
         },
       ],
-      words: "Army 2 starts on 7/150 staminaThe bar its slot's last army left",
+      words: "Army 2 starts on 7/150 stamina",
       meter: [7, 150],
     },
     {
@@ -240,7 +240,7 @@ describe("the Deploy sheet", () => {
           value: { game_id: 1, structure_id: 7, learned: String(1n << 27n) },
         },
       ],
-      words: "Army 2 starts full: 170/170 staminaIts slot is fresh today",
+      words: "Army 2 starts full: 170/170 stamina",
       meter: [170, 170],
     },
   ])("says the stamina the new army starts on, its slot's bar: $case", ({ facts, words, meter }) => {
@@ -297,9 +297,7 @@ describe("the Deploy sheet", () => {
     const map = shownOnMap();
     const { host, root, draw } = render(store, row);
     expect(host.querySelector('[aria-label="Deploy tile"]')).toBeNull();
-    expect(host.textContent).toContain(
-      "Steps out on the bright tile. Tap another lit tile beside the realm to move it there.",
-    );
+    expect(host.textContent).not.toContain("bright tile");
     // The taken tile is passed over: the map marks the first open one.
     expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: ringDirection(store, row, 1) });
     // A tap on another lit tile orders again (openArmyDeployment), and the map marks that one.

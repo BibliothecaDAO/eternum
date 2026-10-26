@@ -79,12 +79,10 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
               disabled={pending}
             />
           </div>
-          <p className="text-hud-label text-hud-muted">
-            Transfer this structure and its inventory to this gameplay account. This cannot be undone.
-          </p>
+          <p className="text-hud-label text-hud-muted">Its inventory goes too. Cannot be undone.</p>
           {recipient && !validRecipient && (
             <p role="alert" className="text-hud-label text-hud-bad">
-              Enter a valid, nonzero gameplay account other than your own.
+              Enter another player's game account.
             </p>
           )}
           <div className="flex gap-2">

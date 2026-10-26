@@ -101,7 +101,7 @@ it("tells a reader with no wallet how to carry a rating, never a rating of its o
   top.current = answered(null);
   const container = await mount();
   expect(top.askedFor).toBeNull();
-  expect(container.textContent).toContain("Link a wallet in Settings to carry a rating.");
+  expect(container.textContent).toContain("Link a wallet to carry a rating");
   expect(rows(container)).toEqual(TOP_ROWS);
 });
 
@@ -116,6 +116,6 @@ it("says no one has a rating yet when the board holds no one, rather than an emp
   const empty = answered(null);
   top.current = { ...empty, data: { ...empty.data, total: 0, entries: [] } };
   const container = await mount();
-  expect(container.textContent).toContain("No one has a rating yet.");
+  expect(container.textContent).toContain("No ratings yet");
   expect(rows(container)).toEqual([]);
 });

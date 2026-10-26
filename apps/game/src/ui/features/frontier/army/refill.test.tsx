@@ -25,9 +25,7 @@ describe("the refill", () => {
     expect(short.host.querySelector("button")).toBeNull();
     // Named Refill, and its hover says what the two numbers are: the LORDS held, against the refill's whole price.
     const chip = short.host.querySelector('[role="img"]')!;
-    expect(chip.getAttribute("aria-label")).toBe(
-      "Refill to full: 130 LORDS, one a missing stamina point. The realm holds 40.",
-    );
+    expect(chip.getAttribute("aria-label")).toBe("Refill needs 130 LORDS, has 40");
     expect(chip.textContent).toBe("Refill40 / 130");
     short.unmount();
   });

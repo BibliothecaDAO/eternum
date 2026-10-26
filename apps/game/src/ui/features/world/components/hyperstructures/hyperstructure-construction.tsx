@@ -136,10 +136,7 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
       <h4>Construction</h4>
       {hyperstructure.stage === "Foundation" ? (
         <>
-          <p>
-            Supply this hyperstructure with {displayAmount(rules.initialize_shards)} Ancient Fragments to begin
-            construction.
-          </p>
+          <p>Needs {displayAmount(rules.initialize_shards)} Ancient Fragments to start</p>
           {owned && (
             <HudButton kind="secondary" size="sm" disabled={pending} onClick={initialize}>
               Start construction

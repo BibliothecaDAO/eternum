@@ -1192,22 +1192,9 @@ export const HudEventRow = ({
  * A line the game says about the screen it sits in: a refusal, a warning, a success, and why. A failure the player can
  * recover from carries Try again (`retry`), so the recovery sits on the line that names what failed.
  */
-export const HudNotice = ({
-  tone,
-  line,
-  why,
-  retry,
-}: {
-  tone?: Tone;
-  line: string;
-  why?: string;
-  retry?: () => unknown;
-}) => (
+export const HudNotice = ({ tone, line, retry }: { tone?: Tone; line: string; retry?: () => unknown }) => (
   <div className="ui-notice" data-tone={tone} role={tone === "bad" ? "alert" : "status"}>
-    <span className="flex flex-col">
-      <span>{line}</span>
-      {why && <span className="ui-notice__why">{why}</span>}
-    </span>
+    <span>{line}</span>
     {retry && (
       <span className="ui-notice__retry">
         <HudButton kind="secondary" size="sm" onClick={retry}>

@@ -84,7 +84,7 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
                   <span className="flex justify-center">
                     {registeredPoints === null ? "—" : formatExact(registeredPoints)} / {formatExact(pointsForWin)}
                   </span>
-                  {!hasReachedFinalPoints && <span>Not enough registered points to end the season</span>}
+                  {!hasReachedFinalPoints && <span>Not enough points to end the season</span>}
                   {isSeasonOver && <span>Season is already over</span>}
                 </span>
               ),

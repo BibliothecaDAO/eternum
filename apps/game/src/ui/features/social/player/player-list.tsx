@@ -282,12 +282,12 @@ export const PlayerList = ({
   );
 };
 
-/** A column of the table: its name, and for an activity the points it grants, with the rule in full on hover. */
+/** A column of the table: its name, and for an activity the points it grants, with the rule in full on its tip. */
 interface PlayerListColumn {
   label: string;
   align: string;
   grant?: string;
-  rule?: string;
+  tip?: string;
 }
 
 /**
@@ -305,19 +305,19 @@ const resolveColumns = (
     { label: "Rank", align: "justify-center text-center" },
     { label: "Name", align: "justify-start text-left" },
     ...(showTribeDetails ? [{ label: "Tribe", align: "hidden text-left md:block" }] : []),
-    { label: "Tiles", align: activity, grant: each(grants.exploreTile), rule: "Explore a tile" },
-    { label: "Crates", align: activity, grant: each(grants.openRelicCrate), rule: "Open a relic crate" },
+    { label: "Tiles", align: activity, grant: each(grants.exploreTile), tip: "Explore a tile" },
+    { label: "Crates", align: activity, grant: each(grants.openRelicCrate), tip: "Open a relic crate" },
     {
       label: "Camps & Rifts",
       align: activity,
       grant: each(grants.claimCampFromBandits),
-      rule: `Claim an Essence Rift or Camp from ${NEUTRAL_OWNER_NAME}`,
+      tip: `Claim an Essence Rift or Camp from ${NEUTRAL_OWNER_NAME}`,
     },
     {
       label: "HS taken",
       align: activity,
       grant: each(grants.claimHyperstructureFromBandits),
-      rule: `Claim a Hyperstructure from ${NEUTRAL_OWNER_NAME}`,
+      tip: `Claim a Hyperstructure from ${NEUTRAL_OWNER_NAME}`,
     },
     {
       label: "HS held",
@@ -332,7 +332,7 @@ const resolveColumns = (
             label: "MMR",
             align: "flex flex-col justify-center text-center",
             grant: mmr === "unavailable" ? "unavailable" : "if it ended now",
-            rule: "The rating each player would gain or lose if the game ended with these standings, as the ledger settles it",
+            tip: "The rating each player would gain or lose if the game ended with these standings, as the ledger settles it",
           },
         ]),
   ];
@@ -367,16 +367,16 @@ const PlayerListHeader = ({
 
   return (
     <HudTableHead cols={grid.cols} colsWide={grid.colsWide}>
-      {columns.map(({ label, align, grant, rule }) => (
+      {columns.map(({ label, align, grant, tip }) => (
         <div
           key={label}
           className={clsx("w-full items-center", align)}
           onMouseEnter={
-            rule
-              ? () => setTooltip({ content: <div className="text-hud-accent">{rule}</div>, position: "top" })
+            tip
+              ? () => setTooltip({ content: <div className="text-hud-accent">{tip}</div>, position: "top" })
               : undefined
           }
-          onMouseLeave={rule ? () => setTooltip(null) : undefined}
+          onMouseLeave={tip ? () => setTooltip(null) : undefined}
         >
           <span className="whitespace-nowrap text-hud-body text-hud-accent">{label}</span>
           {grant && <span className="whitespace-nowrap">{grant}</span>}

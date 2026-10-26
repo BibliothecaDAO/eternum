@@ -48,7 +48,7 @@ describe("the doorway", () => {
     expect(doorwayView({ source: "boot", phase: "reconnect_required", audience: "player" }).blocker?.kind).toBe(
       "sign-in",
     );
-    const unset = "Your account could not be set up for this game. Try again in a moment.";
+    const unset = "Your account could not be set up.";
     expect(
       doorwayView({ source: "boot", phase: "reconnect_required", audience: "player", accountError: unset }).blocker,
     ).toEqual({ kind: "retry", line: unset });
@@ -82,7 +82,7 @@ describe("the doorway", () => {
       source: "boot",
       phase: "reconnect_required",
       audience: "player",
-      accountError: "This account is signed in on 8 devices.",
+      accountError: "Signed in on 8 devices already.",
     });
     expect(view.blocker).toEqual({ kind: "devices" });
   });

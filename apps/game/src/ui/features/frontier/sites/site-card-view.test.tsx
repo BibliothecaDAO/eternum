@@ -50,8 +50,8 @@ describe("a guarded site's card", () => {
     const card = document.querySelector("section[aria-label='Troll']")!;
     expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("This attack clears itTroll");
     const sides = [...card.querySelectorAll(".ui-sheet__body > .flex.gap-2 > *")].map((side) => side.textContent);
-    expect(sides).toEqual(["5,000 →4,820you lose 180 (3.6%)", "1,100 →0you kill 1,100 (100%)"]);
-    expect(card.textContent).toContain("When cleared");
+    expect(sides).toEqual(["5,000 →4,820", "1,100 →0"]);
+    expect(card.textContent).not.toContain("When cleared");
     expect(card.textContent).toContain("+550");
     expect(card.textContent).toContain("+82 XP");
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
@@ -108,7 +108,7 @@ describe("a guarded site's card", () => {
       "Stamina",
       "90",
     ]);
-    expect(document.body.textContent).toContain("When cleared");
+    expect(document.body.textContent).not.toContain("When cleared");
     expect(document.body.textContent).not.toContain("Cleared in");
 
     act(() => details.click());
@@ -427,7 +427,7 @@ it("says where an army comes from when the realm has none out, in the place of t
     ),
   );
   expect(document.querySelectorAll(".ui-row")).toHaveLength(0);
-  expect(document.body.textContent).toContain("No army out: deploy one from the realm");
+  expect(document.body.textContent).toContain("No army out: deploy one");
   expect(document.body.textContent).not.toContain("Pick an army");
 });
 

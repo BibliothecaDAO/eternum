@@ -239,9 +239,7 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
   return (
     <div className="flex flex-col gap-2">
       <p className="text-hud-title text-hud-ink">Reserved Hyperstructure</p>
-      <p className="text-hud-body text-hud-ink">
-        Reserved for a future Hyperstructure. Create it here or double-click the tile.
-      </p>
+      <p className="text-hud-body text-hud-ink">Reserved for a Hyperstructure.</p>
       <div>
         <HudButton
           kind="secondary"
@@ -261,9 +259,7 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
 const SpireTravelPanel = ({ mapLayer, onLookAtOtherLayer }: { mapLayer: boolean; onLookAtOtherLayer: () => void }) => (
   <div className="flex flex-col gap-2">
     <p className="text-hud-title text-hud-ink">Spire</p>
-    <p className="text-hud-body text-hud-ink">
-      This spire stands on both layers. An army next to it crosses to the same hex on the other side.
-    </p>
+    <p className="text-hud-body text-hud-ink">Crosses between layers.</p>
     <div>
       <HudButton kind="secondary" size="sm" onClick={onLookAtOtherLayer}>
         {mapLayer ? "Look at the surface" : "Look at the ethereal layer"}

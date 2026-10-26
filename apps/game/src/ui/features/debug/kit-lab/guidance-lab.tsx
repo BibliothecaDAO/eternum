@@ -198,7 +198,7 @@ const nextUpStates = (): { label: string; steps: NextStep[]; refusal?: string }[
       {
         key: "lost",
         kind: "order",
-        line: "Army lost: 1,000 Paladins. Raise another at 'oak Leukue (1,000 troops on hand).",
+        line: "Army lost: 1,000 Paladins",
         verb: "Raise an army",
         busy: false,
         run: () => undefined,

@@ -135,7 +135,7 @@ it("offers Open alone on a sealed chest, waits on the draw, and shows what an op
   expect(pending.textContent).toContain("Arrives with the results");
 });
 
-it("fills the draw's bar block by block, says why it waits, and asks the relay to finish the moment it can", async () => {
+it("fills the draw's bar block by block, with no line on why it waits, and asks the relay to finish the moment it can", async () => {
   const relay = vi.fn(async (_url: string, _init?: RequestInit) => Response.json({ status: "finished" }));
   vi.stubGlobal("fetch", relay);
   const drawing = { ...SEALED, chest: { ...OPENED, finished: false }, held: false };
@@ -144,9 +144,7 @@ it("fills the draw's bar block by block, says why it waits, and asks the relay t
     const bar = waiting.querySelector('[role="progressbar"]')!;
     expect(waiting.textContent).toContain("7 blocks to go");
     expect([bar.getAttribute("aria-valuenow"), bar.getAttribute("aria-valuemax")]).toEqual(["4", "11"]);
-    expect(waiting.textContent).toContain(
-      "The draw waits for new blocks, so nobody can know or pick what's inside in advance.",
-    );
+    expect(waiting.textContent).not.toContain("The draw waits");
     expect(relay).not.toHaveBeenCalled();
 
     const drawn = await mount({ ...drawing, drawBlocksLeft: 0 });

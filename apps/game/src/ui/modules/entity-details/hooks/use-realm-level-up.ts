@@ -53,7 +53,7 @@ const resolveLevelUpStep = (upgrade: Upgrade, provision: Provision, closed: stri
 
 const levelUpRefusal = (upgrade: Upgrade): string => {
   if (!upgrade.isOwner) return "Not your realm";
-  if (!upgrade.hasRecipe) return "This game has no recipe for the next level";
+  if (!upgrade.hasRecipe) return "No recipe for the next level";
   return "Need resources";
 };
 
@@ -70,7 +70,7 @@ export const useRealmLevelUp = (structureEntityId: ID | null): RealmLevelUp | nu
   const signer = account.account;
   const provisionRealm = () =>
     sendRealmProvision(setup.systemCalls, signer, entityId, upgrade.canUpgrade).catch((error) =>
-      toast.failed(error, "Realm setup failed. Wait a moment and try again."),
+      toast.failed(error, "Realm setup failed."),
     );
   const levelUp = () =>
     sendRealmLevelUp(setup.systemCalls, signer, entityId).catch((error) => toast.failed(error, "Level up failed."));

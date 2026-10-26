@@ -23,8 +23,8 @@ export type RealmPresetId = "smart" | "idle" | "custom";
  * Production window) names and explains them from here. Idle reads as Off, since an idle realm's automation is off.
  */
 export const REALM_PRESETS: { id: RealmPresetId; label: string; description: string }[] = [
-  { id: "smart", label: "Smart", description: "Production runs itself, spread across the realm's buildings." },
-  { id: "custom", label: "Custom", description: "Production follows the shares you set in Production." },
+  { id: "smart", label: "Smart", description: "Production runs itself across buildings." },
+  { id: "custom", label: "Custom", description: "Production follows the shares you set." },
   { id: "idle", label: "Off", description: "Nothing is produced automatically." },
 ];
 

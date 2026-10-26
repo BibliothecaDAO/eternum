@@ -107,7 +107,7 @@ describe("a realm's spire, from the player's path", () => {
       ]);
       // What entering commits the army to, before it goes: the rest of the day, with no way back up.
       expect(hud.host.querySelector("[data-spire-commitment]")?.textContent).toMatch(
-        /^Entering keeps Army( \d+)? in that depth for the rest of the day \(.+ left\): there is no way back up$/,
+        /^Army( \d+)? stays until the day ends \(.+\)$/,
       );
 
       await hud.press("Enter Ethereal II");
@@ -128,7 +128,7 @@ describe("a realm's spire, from the player's path", () => {
       );
       const at = store.entityOccupancy(1, ARMY)!;
       expect(expeditionDepth(rules, { y: at.row })).toBe(2);
-      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? is in Ethereal II until the day ends/);
+      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? is in Ethereal II today/);
       expect(hud.depths()).toEqual([]);
     } finally {
       hud.unmount();
@@ -188,7 +188,7 @@ describe("a realm's spire, from the player's path", () => {
     try {
       // No army selected and none beside: what to do, and every depth's price still shown.
       act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: away.spire }));
-      expect(hud.sheet()!.textContent).toContain("Select one of your armies beside the spire to enter a depth");
+      expect(hud.sheet()!.textContent).toContain("Select an army beside the spire");
       expect(hud.depths().map(({ line, enabled }) => ({ line, enabled }))).toEqual([
         { line: "30 stamina", enabled: false },
         { line: "40 stamina", enabled: false },
@@ -196,7 +196,7 @@ describe("a realm's spire, from the player's path", () => {
       ]);
       // The army selected away from the spire: it must stand beside it, and nothing commits it yet.
       tapSpireWithArmy(away.spire);
-      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? must stand beside the spire to enter/);
+      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? must be beside the spire/);
       expect(hud.host.querySelector("[data-spire-commitment]")).toBeNull();
       expect(
         hud
@@ -215,7 +215,7 @@ describe("a realm's spire, from the player's path", () => {
     try {
       act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: spire }));
       expect(hud.sheet()?.getAttribute("aria-label")).toBe("Spire");
-      expect(hud.sheet()!.textContent).toContain("Another realm's spire: only that realm's armies enter it");
+      expect(hud.sheet()!.textContent).toContain("Another realm's spire");
       expect(hud.depths()).toEqual([]);
     } finally {
       hud.unmount();

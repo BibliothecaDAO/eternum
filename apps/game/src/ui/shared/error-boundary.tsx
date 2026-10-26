@@ -58,9 +58,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       const isDynamicImportError = isDynamicImportChunkError(this.state.error);
       const title = isDynamicImportError ? "Game update detected" : "Something went wrong";
-      const description = isDynamicImportError
-        ? "A game update changed some files while this tab was open. Reload to fetch the latest assets."
-        : "An unexpected error occurred. The development team has been notified.";
+      const description = isDynamicImportError ? "The game was updated. Reload." : "Something went wrong.";
       const buttonLabel = isDynamicImportError ? "Reload Latest Assets" : "Reload Game";
 
       return (

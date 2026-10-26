@@ -39,12 +39,11 @@ export const NotificationsCard = () => {
       <div className={cn(waiting && "pointer-events-none opacity-50")}>
         <AppTabs
           label={PROFILE_WORDS.notifications}
-          tabs={LEVELS.map((key) => ({ key, label: LEVEL_WORDS[key].word }))}
+          tabs={LEVELS.map((key) => ({ key, label: LEVEL_WORDS[key] }))}
           value={level ?? NO_LEVEL}
           onChange={(next) => void preferences.save(next)}
         />
       </div>
-      <p className="min-h-6 text-app-body text-app-muted">{level ? LEVEL_WORDS[level].line : "—"}</p>
       <div className="-mx-5">
         <AppSetting
           icon="monitor"

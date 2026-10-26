@@ -105,11 +105,7 @@ function LordsChestContents({ entityId }: { entityId: ID }) {
         <Icon name="lords" alt="LORDS" className="h-9 w-9" />
         <p>{formatExact(expired ? 0 : chest.amount)} LORDS</p>
       </div>
-      <p className="text-hud-muted">
-        {expired
-          ? "Reservation expired at day rollover. No LORDS remain."
-          : "Paid to the opening army's home realm. Expires at day rollover."}
-      </p>
+      <p className="text-hud-muted">{expired ? "Expired" : "Expires at day's end"}</p>
     </div>
   );
 }

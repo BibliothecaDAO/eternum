@@ -139,7 +139,7 @@ it("says a withdrawal with no answer may still apply, sends it no second time, a
 
   expect(game.withdraw).toHaveBeenCalledOnce();
   expect(game.paymentTransaction).not.toHaveBeenCalled();
-  expect(host.textContent).toContain("may still apply");
+  expect(host.textContent).toContain("No answer yet for these");
   expect(picker()).toBeNull();
   expect(withdrawButton()).toBeUndefined();
 });

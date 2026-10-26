@@ -109,9 +109,7 @@ const RelicActivationHolderCard = ({
           hasEnoughEssence={hasEnoughEssence}
         />
         {!compatible && <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={holder.recipientType} />}
-        {compatible && relicInfo?.type === "Stamina" && staminaFull && (
-          <HudNotice tone="warn" line={STAMINA_FULL.line} why={STAMINA_FULL.why} />
-        )}
+        {compatible && relicInfo?.type === "Stamina" && staminaFull && <HudNotice tone="warn" line={STAMINA_FULL} />}
         {armyUnknown && <HudNotice tone="warn" line="Army data unavailable. Waiting for synchronization." />}
         {refusal !== null && <HudNotice line={refusal} />}
         {failure && <ActionFailureNotice failure={failure} />}

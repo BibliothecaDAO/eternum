@@ -40,7 +40,7 @@ describe("a build order's text", () => {
   it.each([
     ["City:\n2 mill", 2, "“mill” is not a goal of an order: farm, wood, coal, copper, hut, military, army"],
     ["Castle:\n2 farm", 1, "“Castle” is not a rank: Settlement, City, Kingdom, Empire"],
-    ["2 farm\nfarm 2", 2, "A step is a number and a goal, as “2 farm”"],
+    ["2 farm\nfarm 2", 2, "Write a step as “2 farm”"],
     ["0 farm", 1, "A count is 1 to 99"],
     ["2 farm\nName: Late", 2, "The name comes first"],
   ])("names the first line it cannot read: %j", (text, line, message) => {

@@ -57,8 +57,8 @@ describe("the Military window once the field army cap is full", () => {
 
   // A level 1 realm has one slot of each: the note counts it as one ("All 1 field army slots" before).
   it.each([
-    { slots: 1, note: "Your 1 field army slot is in use. Level up the realm or disband an army to raise another." },
-    { slots: 3, note: "Your 3 field army slots are in use. Level up the realm or disband an army to raise another." },
+    { slots: 1, note: "Your 1 field army slot is in use" },
+    { slots: 3, note: "Your 3 field army slots are in use" },
   ])("says a cap of $slots plainly, as a note and not an error, with what lifts it", ({ slots, note }) => {
     const html = renderToStaticMarkup(
       <ArmyTypeToggle
@@ -79,8 +79,8 @@ describe("the Military window once the field army cap is full", () => {
   });
 
   it.each([
-    { slots: 1, note: "Your 1 defense slot holds troops. Pick a slot to reinforce it." },
-    { slots: 2, note: "Your 2 defense slots hold troops. Pick a slot to reinforce it." },
+    { slots: 1, note: "Your 1 defense slot holds troops" },
+    { slots: 2, note: "Your 2 defense slots hold troops" },
   ])("counts $slots full defense slots in the same rule", ({ slots, note }) => {
     const html = renderToStaticMarkup(
       <ArmyTypeToggle

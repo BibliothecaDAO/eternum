@@ -192,7 +192,7 @@ it("sends the other way when the split gives the picked army more, and empties a
 
 it("offers nothing to send between armies of different tiers, and says why", () => {
   const { swap } = render(twoArmies({ tier: "T2" }));
-  expect(host.textContent).toContain("only armies of the same troops and tier join");
+  expect(host.textContent).toContain("hold different troops");
   expect(button(/^Move /)).toBeUndefined();
   expect(swap).not.toHaveBeenCalled();
 });
@@ -236,7 +236,7 @@ it("starts the split again from the armies' new troops when they change while it
     ] as never),
   );
 
-  expect(host.textContent).toContain("The armies' troops changed: the split starts again from what they hold now.");
+  expect(host.textContent).toContain("The armies' troops changed");
   // Again a merge into the army tapped, over the new counts: never a count below none.
   expect(sides()).toEqual([
     [picked, "0"],
@@ -334,7 +334,7 @@ it.each(["progress", "troops", "stamina", "position", "removed", "day"])(
     expect(swap).not.toHaveBeenCalled();
     expect(close).not.toHaveBeenCalled();
     expect(failed).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "The armies changed. Review the merge before confirming again." }),
+      expect.objectContaining({ message: "The armies changed: review the merge" }),
       "The troops could not be moved.",
     );
   },
@@ -448,7 +448,7 @@ it("refuses facts arriving just before the final confirmation click", async () =
   expect(swap).not.toHaveBeenCalled();
   expect(close).not.toHaveBeenCalled();
   expect(failed).toHaveBeenCalledWith(
-    expect.objectContaining({ message: "The armies changed. Review the merge before confirming again." }),
+    expect.objectContaining({ message: "The armies changed: review the merge" }),
     "The troops could not be moved.",
   );
 });
@@ -461,7 +461,7 @@ it("labels the split's two ends with their amounts, each taking it, and takes a 
   expect(least.textContent).toBe("0");
   expect(most.textContent).toBe("1,100");
 
-  const kept = host.querySelector<HTMLInputElement>('input[aria-label^="Troops: Army 1 keeps"]')!;
+  const kept = host.querySelector<HTMLInputElement>('input[aria-label^="Army 1 keeps"]')!;
   expect(kept.value).toBe("0");
   act(() => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(kept, "599");

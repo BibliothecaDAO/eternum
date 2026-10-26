@@ -19,7 +19,6 @@ import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from ".
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
 import { combatTitle, describeFightCost, forecastAttack } from "./fight-forecast";
-import { readSurvivalAdvice } from "./survival-advice";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
 
@@ -152,7 +151,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const attackerStamina = attackerArmyData
     ? StaminaManager.getStamina(attackerArmyData.troops, executionSecond).amount
     : undefined;
-  const attackerStaminaValue = attackerStamina === undefined ? undefined : Number(attackerStamina);
   const requiredAttackStamina = Number(combatConfig.stamina_attack_req);
   const readyAt = attackerArmyData
     ? StaminaManager.getAffordableAt(attackerArmyData.troops, requiredAttackStamina, executionSecond)
@@ -215,19 +213,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const attackerSide = fight?.sides?.attacker ?? null;
   const defenderSide = fight?.sides?.defender ?? null;
-  // The army falls at every roll: Attack steps back and the forecast says what would survive.
+  // The army falls at every roll: Attack steps back.
   const certainLoss = fight?.certainLoss ?? false;
-  // What would survive it, within what the player can raise.
-  const survivalAdvice = useMemo(() => {
-    if (!fight?.extraToSurvive || !attackerArmyData) return null;
-    const armyId = attackerType === AttackerType.Army ? attacker.id : null;
-    return readSurvivalAdvice(
-      facts.store,
-      { id: armyId, troops: attackerArmyData.troops },
-      fight.extraToSurvive,
-      executionSecond,
-    );
-  }, [fight, attackerArmyData, attackerType, attacker.id, facts, executionSecond]);
 
   // Capture and garrison are judged on the attacker's worst roll, so the atomic claim never counts on luck.
   const attackerRemaining = attackerSide ? attackerSide.worst.remaining : attackerTroopsTotal;
@@ -469,11 +456,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         <div className="py-6 text-center text-hud-body text-hud-muted">No target detected.</div>
       ) : (
         <div className="space-y-1.5">
-          {rollsDice && (
-            <p className="text-hud-label text-hud-muted">
-              Each side rolls a d20 for +1% to +20% damage; ranges run from your worst roll to your best.
-            </p>
-          )}
           {targetArmyData ? (
             attackerSide &&
             defenderSide && (
@@ -486,11 +468,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           ) : (
             <HudNotice
               tone="good"
-              line={
-                rangedClaimBlocked
-                  ? "No defending troops. Move adjacent to claim this structure."
-                  : "No defending troops. You can claim without resistance."
-              }
+              line={rangedClaimBlocked ? "No defenders: move adjacent to claim" : "No defenders: claim it"}
             />
           )}
 
@@ -520,18 +498,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           {attackDisabled && (
             <HudNotice
               tone="bad"
-              line={attackButtonLabel}
-              why={
-                [
-                  cooldownBlocksAttack && attackerCooldownRemaining > 0
-                    ? `${formatWait(attackerCooldownRemaining)} remaining`
-                    : null,
-                  isLowStamina ? `Current: ${attackerStaminaValue ?? "—"} / Required: ${requiredAttackStamina}` : null,
-                  isLowStamina && staminaWaitSeconds !== null ? `Ready in: ${formatWait(staminaWaitSeconds)}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ") || undefined
-              }
+              line={[
+                attackButtonLabel,
+                cooldownBlocksAttack && attackerCooldownRemaining > 0 ? formatWait(attackerCooldownRemaining) : null,
+                isLowStamina && staminaWaitSeconds !== null ? `Ready in ${formatWait(staminaWaitSeconds)}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             />
           )}
         </div>
@@ -549,11 +522,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
       {certainLoss && (
         <div className="modal-no-drag mt-2">
-          <HudNotice
-            tone="bad"
-            line="Certain loss: your army is wiped out at any roll."
-            why={survivalAdvice ? `${survivalAdvice[0].toUpperCase()}${survivalAdvice.slice(1)}.` : undefined}
-          />
+          <HudNotice tone="bad" line="Certain loss at any roll" />
         </div>
       )}
 

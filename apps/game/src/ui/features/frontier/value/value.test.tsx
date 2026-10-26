@@ -82,18 +82,17 @@ describe("Withdraw", () => {
   it("sends a player with no wallet to link one", () => {
     const ways = render({ wallet: null });
     expect(button("Withdraw")).toBeUndefined();
-    // What linking is for, as the Realms sheet says it for its own.
-    expect(host.textContent).toContain("The LORDS you withdraw go to your linked Starknet wallet.");
+    expect(host.textContent).toContain("No wallet linked");
     act(() => button("Link wallet")!.click());
     expect(ways.onLinkWallet).toHaveBeenCalledTimes(1);
   });
 
   it("says why nothing can leave, and that a withdrawal recorded in a pause pays when payouts resume", () => {
-    render({ refusal: "Payouts paused. Your LORDS stay here." });
-    expect(host.textContent).toContain("Payouts paused. Your LORDS stay here.");
+    render({ refusal: "Payouts paused" });
+    expect(host.textContent).toContain("Payouts paused");
     expect(button("Withdraw")!.disabled).toBe(true);
     render({ step: { kind: "waiting", amount: 500 } });
-    expect(host.textContent).toContain("These 500 pay when they resume.");
+    expect(host.textContent).toContain("Payouts paused: 500 waiting");
   });
 });
 
@@ -105,12 +104,12 @@ describe("a withdrawal's rules", () => {
   it("closes withdrawals in the claim window's last hour, as the shard does", () => {
     expect(closesAt).toBe(10_000 + 7 * 86_400 - 3_600);
     expect(withdrawalRefusal(open)).toBeNull();
-    expect(withdrawalRefusal({ ...open, now: closesAt })).toBe("Withdrawals have closed for this season.");
+    expect(withdrawalRefusal({ ...open, now: closesAt })).toBe("Withdrawals have closed");
   });
 
   it("refuses while the ledger cannot be read or its payouts are paused, the season's close first", () => {
     expect(withdrawalRefusal({ ...open, ledgerReadable: false })).toContain("cannot be read");
-    expect(withdrawalRefusal({ ...open, paused: true })).toBe("Payouts paused. Your LORDS stay here.");
+    expect(withdrawalRefusal({ ...open, paused: true })).toBe("Payouts paused");
     expect(withdrawalRefusal({ ...open, now: closesAt, paused: true })).toContain("closed");
     // Facts not read yet refuse nothing.
     expect(withdrawalRefusal({ ...open, closesAt: undefined, paused: undefined })).toBeNull();
@@ -157,7 +156,7 @@ describe("the realm's LORDS on the season-over card", () => {
 
   it("says withdrawals have closed from that moment, and offers nothing to press", () => {
     show(1_240, 10_000);
-    expect(host.textContent).toContain("Withdrawals have closed for this season.");
+    expect(host.textContent).toContain("Withdrawals have closed");
     expect(host.querySelector("button")).toBeNull();
   });
 
@@ -224,7 +223,7 @@ describe("the Realm holder's labor", () => {
     ).toBe("claimed");
   });
 
-  it("says what Realms are for before anything else, with no wallet linked too (live-qa-night-1 P3-3)", () => {
+  it("offers the wallet link to a holder with no wallet linked, with no line on what Realms are for", () => {
     const onLinkWallet = vi.fn();
     const show = (wallet: string | null, cap: number) =>
       act(() =>
@@ -247,14 +246,13 @@ describe("the Realm holder's labor", () => {
         ),
       );
     show(null, 3);
-    expect(host.textContent).toContain("Each Realm in your Starknet wallet gives 1,000 labor a day, up to 3 Realms.");
     expect(host.textContent).toContain("No wallet linked");
     act(() => button("Link wallet")!.click());
     expect(onLinkWallet).toHaveBeenCalledTimes(1);
-    // With no cap on the day's Realms, the line says none; a linked wallet reads the same line at its head.
+    // A linked wallet: no prompt to link one, and no line on what Realms give.
     show(ADDRESS, 0);
-    expect(host.textContent).toContain("Each Realm in your Starknet wallet gives 1,000 labor a day.");
     expect(host.textContent).not.toContain("No wallet linked");
+    expect(host.textContent).not.toContain("Each Realm");
   });
 
   it("adds a Realm by its number, its first claim, and offers nothing to add once the day's cap is spent", () => {
@@ -279,9 +277,9 @@ describe("the Realm holder's labor", () => {
           />,
         ),
       );
-    // An account that never claimed: no Realm listed, the wallet rule said, and the number field.
+    // An account that never claimed: no Realm listed, said so, and the number field.
     show([], 5);
-    expect(host.textContent).toContain("Only Realms in this Starknet wallet count.");
+    expect(host.textContent).toContain("No Realms in this wallet");
     const field = host.querySelector<HTMLInputElement>('input[aria-label="Realm number"]')!;
     const type = (value: string) =>
       act(() => {

@@ -284,7 +284,7 @@ const LocalTilePanel = () => {
   if (!selectedBuildingHex) {
     return (
       <HudPanel collapsible={false} bodyClassName="text-center">
-        <p className="text-hud-body text-hud-ink">Tap a building tile to view its details.</p>
+        <p className="text-hud-body text-hud-ink">No building selected</p>
       </HudPanel>
     );
   }
@@ -305,9 +305,7 @@ const LocalTilePanel = () => {
     return (
       <HudPanel title={panelTitle}>
         <p className="text-hud-body text-hud-muted">
-          {canManageBuilding
-            ? "Open building plot. Choose a building in the plot picker."
-            : "Open building plot. Select a completed building to inspect its production."}
+          {canManageBuilding ? "Open building plot" : "Open building plot"}
         </p>
       </HudPanel>
     );
@@ -353,7 +351,7 @@ const LocalTilePanel = () => {
   const buildBlockedReason = !canManageBuilding
     ? "Not your structure"
     : !hasAvailableTile
-      ? "No empty tiles available — destroy a building to free a slot"
+      ? "No empty plots"
       : !canBuildAnother
         ? "Not enough resources to build another"
         : "";

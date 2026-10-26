@@ -41,7 +41,6 @@ import { type ReactNode, useState } from "react";
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import { FightBar } from "./fight-bar";
-import { shareTaken } from "./fight-record";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
 
@@ -141,18 +140,11 @@ export const SiteCardView = ({
         <ArmyChoices does="attack" choices={choices} guardIcon={guardIcon} />
       ) : facing ? (
         <div className="flex gap-2">
-          <Side
-            art={facing.army.art}
-            before={facing.army.troops}
-            change={facing.fight.troopsLost}
-            word={FIGHT_WORDS.youLose}
-            side="ours"
-          />
+          <Side art={facing.army.art} before={facing.army.troops} change={facing.fight.troopsLost} side="ours" />
           <Side
             art={guardIcon}
             before={facing.guard}
             change={facing.guard - facing.fight.guardLeft}
-            word={FIGHT_WORDS.youKill}
             side="theirs"
             tip={beast?.combatClass}
           />
@@ -205,20 +197,18 @@ const Outcome = ({ facing: { army, fight }, line }: { facing: Facing; line: stri
 
 /**
  * One side of this attack: its troops before → after, the after in red when none are left, its bar in its colour with
- * the part the attack takes in grey, and what it loses with its share of the side; a beast's combat class on its hover.
+ * the part the attack takes in grey; a beast's combat class on its hover.
  */
 const Side = ({
   art,
   before,
   change,
-  word,
   side,
   tip,
 }: {
   art: IconMeaning;
   before: number;
   change: number;
-  word: (troops: string, share: string) => string;
   side: "ours" | "theirs";
   tip?: string;
 }) => {
@@ -233,20 +223,18 @@ const Side = ({
         </span>
       </span>
       <FightBar before={before} after={after} side={side} />
-      <span className="text-hud-label text-hud-muted">{word(formatExact(change), shareTaken(change, before))}</span>
     </HudPanel>
   );
 };
 
-/** What the clear pays, "When cleared" however many attacks it takes (Details counts them); dimmed when the fight is lost. */
+/** What the clear pays, however many attacks it takes (Details counts them); dimmed when the fight is lost. */
 const Gain = ({ dimmed, children }: { dimmed: boolean; children: ReactNode }) => (
   <HudPanel
     collapsible={false}
     className={cn(dimmed && "opacity-50")}
-    bodyClassName="flex items-center justify-between gap-3 py-2"
+    bodyClassName="flex flex-wrap items-center justify-center gap-3 py-2"
   >
-    <span className="text-hud-label text-hud-muted">{FIGHT_WORDS.whenCleared}</span>
-    <span className="flex flex-wrap items-center justify-end gap-3">{children}</span>
+    {children}
   </HudPanel>
 );
 

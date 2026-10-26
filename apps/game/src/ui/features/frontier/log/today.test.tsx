@@ -124,9 +124,7 @@ describe("Today", () => {
 
   it("says when the player's history no longer reaches back to the day's start, and keeps the log it has", () => {
     const { host, unmount } = render({ history: "short", totals: { ...totals, reveals: undefined } });
-    expect(host.querySelector('[role="status"]')?.textContent).toBe(
-      "Your history no longer reaches back to this day's start, so its totals are unknown.",
-    );
+    expect(host.querySelector('[role="status"]')?.textContent).toBe("This day's totals are unknown");
     expect(host.textContent).toContain("Army 1 cleared a camp");
     unmount();
   });

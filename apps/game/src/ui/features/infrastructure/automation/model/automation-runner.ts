@@ -126,7 +126,7 @@ const observeSubmission = async <Action>(
             orElse: () =>
               Effect.fail(
                 new AutomationPending({
-                  message: "No answer yet. Automation is waiting for the submitted action.",
+                  message: "No answer yet: automation is waiting.",
                 }),
               ),
           }),

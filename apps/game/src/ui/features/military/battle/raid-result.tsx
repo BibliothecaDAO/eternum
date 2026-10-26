@@ -422,7 +422,7 @@ export const RaidResult = ({
               !raidResult.success === true && (
                 <div className="mt-3 pt-3 border-t border-hud-divider">
                   <div className="flex flex-col items-center text-hud-bad">
-                    <p>Your raid was unsuccessful. No resources were stolen.</p>
+                    <p>Raid failed. Nothing stolen.</p>
                   </div>
                 </div>
               )

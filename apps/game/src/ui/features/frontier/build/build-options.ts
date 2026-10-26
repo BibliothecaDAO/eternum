@@ -151,7 +151,7 @@ const readBuildingEffect = (
  * Hut bonus from the Huts standing to one more. That bonus is every standing Hut's grant × the Hut row's tier × the
  * board's step, rounded down over them all, so the next Hut's share alternates (+8, then +7 at the first tier).
  */
-export const nextHutGrant = (store: NativeFactStore, realm: NativeRows["Structure"], learned: bigint): number => {
+const nextHutGrant = (store: NativeFactStore, realm: NativeRows["Structure"], learned: bigint): number => {
   const rule = store.require("BuildingRule", { game_id: realm.game_id, category: BuildingType.WorkersHut });
   const board = store.require("BoardRules", { game_id: realm.game_id });
   const tier = researchTier(learned, nativeResearchConstants.ROW_HUT);

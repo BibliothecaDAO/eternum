@@ -187,11 +187,7 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
     return <p className={cn("text-hud-body text-hud-muted", className)}>Structure data unavailable.</p>;
   }
   if (!eligibleForDevotion) {
-    return (
-      <p className={cn("text-hud-body text-hud-muted", className)}>
-        Only realms and villages can devote themselves to a wonder.
-      </p>
-    );
+    return <p className={cn("text-hud-body text-hud-muted", className)}>Only realms and villages can devote.</p>;
   }
   if (isWonderStructure) {
     return (
@@ -242,9 +238,6 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
       ) : (
         <div className="flex flex-col gap-1">
           <span className="text-hud-label text-hud-muted">Not devoted</span>
-          <p className="text-hud-body text-hud-ink">
-            Devote this structure to a wonder and both you and the wonder's owner earn faith every second.
-          </p>
         </div>
       )}
       {isMine ? (

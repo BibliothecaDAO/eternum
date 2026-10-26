@@ -52,7 +52,6 @@ const MORNING: NextUpFacts = {
   lastHour: false,
   storeFull: null,
   populationFull: false,
-  rules: { hutAdds: 6, stamina: { explore: 30, anHour: 30 }, xp: { reveal: 2 }, homecomingPercent: 3 },
 };
 
 let host: HTMLDivElement;
@@ -138,7 +137,7 @@ it("opens the realm for barracks, Research where a step names it, and a full sto
 it("says in the realm how to build the barracks there, with no button back into the realm", () => {
   show({ barracks: false, armies: 1 }, { onMap: false });
   const panel = host.querySelector('section[aria-label="Next up"]')!;
-  expect(panel.textContent).toContain("Build barracks: click an open plot, then Barracks.");
+  expect(panel.textContent).toContain("Click an open plot for Barracks");
   expect([...panel.querySelectorAll("button")].map((button) => button.textContent)).not.toContain("Open the realm");
 });
 

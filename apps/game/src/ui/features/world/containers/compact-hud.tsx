@@ -140,11 +140,6 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
       >
         <div className={cn("flex min-h-0 flex-col justify-end", layout.panels)}>
           <div className="flex flex-col items-end gap-1 px-2 pb-1">
-            {open === null && ordersAllowed && (
-              <p className="pointer-events-none self-center rounded-full bg-[#101c23] px-3 py-1.5 font-sans text-xs text-gold/85">
-                Tap to select · Hold to move
-              </p>
-            )}
             <FeedToasts />
           </div>
           {/* The chat window stays mounted so the client keeps its connection; its strip only shows while open. */}
@@ -289,7 +284,7 @@ const SheetContent = ({
     return (
       <div className="flex flex-col items-center gap-2 px-4 py-6 text-center font-sans text-sm text-gold/80">
         <SemanticIcon name={COMPACT_TAB_IMAGES.details} size={28} />
-        <p>Tap a tile on the map to inspect its army, structure, or terrain.</p>
+        <p>No tile selected</p>
       </div>
     );
   if (tab === "details") return tileDetails;

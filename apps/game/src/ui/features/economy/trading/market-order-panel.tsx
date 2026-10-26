@@ -514,8 +514,7 @@ const TakeOfferForm = memo(
 );
 
 /** Why a village's order for troops is refused, wherever the market says so. */
-const VILLAGE_MILITARY_REFUSAL =
-  "Villages cannot buy or sell military resources. You can only transfer them with your connected realm.";
+const VILLAGE_MILITARY_REFUSAL = "Villages cannot trade military resources.";
 
 /** How the form lays out: three inputs in a row on the desk, two inputs plus a computed total on a phone. */
 type OrderCreationLayout = "desktop" | "compact";
@@ -709,8 +708,7 @@ export const OrderCreation = memo(
           onBack={() => setShowConfirmation(false)}
         >
           <span>
-            {formatCharge(resource)} {name} for {formatCharge(lords)} {LORDS}, at {formatFigure(Number(bid))} {LORDS}{" "}
-            each.
+            {formatCharge(resource)} {name} for {formatCharge(lords)} {LORDS}
           </span>
         </HudConfirm>
       </OrderDialog>

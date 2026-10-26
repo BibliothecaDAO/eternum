@@ -72,7 +72,7 @@ export const parseBuildOrder = (
       continue;
     }
     const step = STEP.exec(line.toLowerCase());
-    if (!step) return refuse("A step is a number and a goal, as “2 farm”");
+    if (!step) return refuse("Write a step as “2 farm”");
     const [, count, goal] = step;
     if (!isGoal(goal)) return refuse(`“${goal}” is not a goal of an order: ${BUILD_ORDER_GOALS.join(", ")}`);
     if (Number(count) < 1 || Number(count) > MAX_COUNT) return refuse(`A count is 1 to ${MAX_COUNT}`);

@@ -31,9 +31,9 @@ export const ArmyTypeToggle = ({
   const limitMessage = armyType
     ? maxExplorers === undefined
       ? "This structure's army limit is unknown."
-      : `Your ${formatCount(maxExplorers, "field army slot is", "field army slots are")} in use. Level up the realm or disband an army to raise another.`
+      : `Your ${formatCount(maxExplorers, "field army slot is", "field army slots are")} in use`
     : hasDefenseArmies
-      ? `Your ${formatCount(maxGuards, "defense slot holds", "defense slots hold")} troops. Pick a slot to reinforce it.`
+      ? `Your ${formatCount(maxGuards, "defense slot holds", "defense slots hold")} troops`
       : `This structure has no defense slots.`;
 
   const shouldShowLimitWarning = (armyType && !canCreateAttackArmy) || (!armyType && !canCreateDefenseArmy);

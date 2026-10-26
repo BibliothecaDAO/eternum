@@ -97,7 +97,7 @@ it("keeps Research, dimmed, when the labor storage cannot hold the tier's price,
   const { onResearch, onFix } = draw(research.ROW_BARRACKS);
   const verb = button(/^Research Drill$/)!;
   expect(verb.disabled).toBe(true);
-  expect(host.querySelector('[role="status"]')!.textContent).toBe("Labor storage 18,000 / 24,000 · a Kingdom holds it");
+  expect(host.querySelector('[role="status"]')!.textContent).toBe("Labor storage 18,000 / 24,000 · Kingdom");
   act(() => verb.click());
   expect(onResearch).not.toHaveBeenCalled();
   act(() => button(/^Level up the castle$/)!.click());

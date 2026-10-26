@@ -14,9 +14,8 @@ import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import {
   BUILD,
   DEPLOY,
-  DEPLOY_TILE,
   DEPLOYING,
-  marchLine,
+  LEAVES_NO_WHEAT,
   NO_OPEN_TILE,
   NO_TROOPS_AT_HOME,
   STAMINA,
@@ -24,7 +23,7 @@ import {
 } from "@/ui/design-system/kit/words";
 
 import type { SlotStart } from "./deploy-plan";
-import { slotStartWords } from "./slot-start";
+import { slotStartLine } from "./slot-start";
 
 /**
  * Deploy, from its props: the two choices a deploy makes and its one verb. How many troops go (the count typed, +500
@@ -93,7 +92,7 @@ export const DeployView = ({
         </HudButton>
       </>
     ) : (
-      tile && <TileLine tile={tile} />
+      tile === "none" && <HudNotice tone="warn" line={NO_OPEN_TILE} />
     )}
     {wheatShort && <HudNotice tone="warn" line={shortfallLine({ kind: "short", of: "wheat", ...wheatShort })} />}
     {canDeploy && wheatCost !== undefined && (
@@ -112,31 +111,22 @@ export const DeployView = ({
   </HudSheet>
 );
 
-/** The stamina the new army starts on: its slot's bar, as its card will show it once out, and why it is that bar. */
+/** The stamina the new army starts on: its slot's bar, as its card will show it once out. */
 const SlotStartReading = ({ start }: { start: SlotStart }) => {
-  const words = slotStartWords(start);
-  if (!words || !start.start) return null;
+  const line = slotStartLine(start);
+  if (!line || !start.start) return null;
   return (
-    <section aria-label={words.line} className="flex flex-col gap-1">
-      <span>{words.line}</span>
+    <section aria-label={line} className="flex flex-col gap-1">
+      <span>{line}</span>
       <HudMeter amount={start.start} tone="good" label={STAMINA} />
-      <span className="text-hud-muted">{words.why}</span>
     </section>
   );
 };
 
-/** The wheat Deploy takes, and under it how far the wheat left lets the army march (none reads as a warning). */
+/** The wheat Deploy takes, and under it a warning when the wheat left lets the army march nowhere. */
 const DeployPrice = ({ wheatCost, march }: { wheatCost: number; march: number | undefined }) => (
   <span className="flex flex-col items-start">
     <HudCost line={costLine([{ of: "wheat", amount: wheatCost }])} />
-    {march !== undefined && <span className={march === 0 ? "text-hud-warn" : undefined}>{marchLine(march)}</span>}
+    {march === 0 && <span className="text-hud-warn">{LEAVES_NO_WHEAT}</span>}
   </span>
 );
-
-/** Where the army steps out: the bright tile on the map, and that another lit one moves it; or that none is open. */
-const TileLine = ({ tile }: { tile: "open" | "none" }) =>
-  tile === "open" ? (
-    <span className="text-hud-muted">{DEPLOY_TILE}</span>
-  ) : (
-    <HudNotice tone="warn" line={NO_OPEN_TILE} />
-  );

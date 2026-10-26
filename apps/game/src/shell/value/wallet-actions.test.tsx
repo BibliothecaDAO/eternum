@@ -73,16 +73,14 @@ it("refuses a wallet that answers with another account, naming the linked addres
   rememberOpened(LINKED, "argentX");
   const ready = installWallet("argentX", { account: OTHER });
   const { container, landed } = await openSend();
-  await settled(() => expect(container.textContent).toContain("Open 0x04a1…3e9f: only that wallet can sign this."));
+  await settled(() => expect(container.textContent).toContain("Only 0x04a1…3e9f can sign this"));
   expect(ready.transactions()).toEqual([]);
   expect(landed).not.toHaveBeenCalled();
   expect(buttonsOf(container)).toEqual(["Try again"]);
 
   // The other account's visit does not unseat the linked wallet: the next send refuses it again, and offers no wallets.
   const next = await openSend();
-  await settled(() =>
-    expect(next.container.textContent).toContain("Open 0x04a1…3e9f: only that wallet can sign this."),
-  );
+  await settled(() => expect(next.container.textContent).toContain("Only 0x04a1…3e9f can sign this"));
   expect(buttonsOf(next.container)).toEqual(["Try again"]);
 });
 
@@ -115,7 +113,7 @@ it("leaves one Try again when the wallet declines, which prompts the same wallet
   vi.spyOn(console, "error").mockImplementation(() => {});
   const ready = installWallet("argentX", { account: LINKED, approves: false });
   const { container, landed } = await openSend();
-  await settled(() => expect(container.textContent).toContain("The wallet did not confirm it."));
+  await settled(() => expect(container.textContent).toContain("The wallet did not confirm it"));
   expect(ready.transactions()).toHaveLength(1);
   await press(container, "Try again");
   await settled(() => expect(ready.transactions()).toHaveLength(2));
@@ -145,7 +143,7 @@ it("keeps every wallet open to try while one never answers, and says what to do"
   await settled(() => expect(container.textContent).toContain("Opening…"));
   const braavos = [...container.querySelectorAll("button")].find((b) => b.textContent?.includes("Braavos"))!;
   expect(braavos.disabled).toBe(false);
-  expect(container.textContent).toContain("Nothing opened? Choose it again, or another wallet.");
+  expect(container.textContent).toContain("Nothing opened? Choose again.");
 
   await press(container, "Braavos");
   await settled(() => expect(proven).toHaveBeenCalledOnce());

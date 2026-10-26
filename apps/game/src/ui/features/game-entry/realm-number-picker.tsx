@@ -36,7 +36,7 @@ export function RealmNumberPicker({
       />
       <div aria-live="polite" className="text-hud-body text-hud-ink">
         {!valid ? (
-          <p>Choose a realm number from 1 to 8000.</p>
+          <p>Choose a realm number, 1 to 8000.</p>
         ) : error ? (
           <HudNotice tone="bad" line={error.message} />
         ) : isPending ? (
@@ -48,9 +48,7 @@ export function RealmNumberPicker({
           </>
         ) : null}
       </div>
-      <p className="text-hud-label text-hud-cue">
-        Dev mode: settle additional realms. Each realm number can be used once per game.
-      </p>
+      <p className="text-hud-label text-hud-cue">Dev mode: settle more realms.</p>
     </div>
   );
 }

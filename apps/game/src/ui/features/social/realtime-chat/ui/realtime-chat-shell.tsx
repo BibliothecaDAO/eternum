@@ -236,7 +236,7 @@ export function RealtimeChatShell({
                 <DirectMessagesPanel threadId={activeTab.targetId} />
               ) : (
                 <div className="flex items-center justify-center h-full text-hud-cue text-hud-body">
-                  No chat selected. Click "+ DM" to start a conversation.
+                  No chat selected
                 </div>
               )}
             </div>

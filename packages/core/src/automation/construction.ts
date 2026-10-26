@@ -216,7 +216,7 @@ const validateMode = ({ buildingType, mode }: ConstructionBuildabilityInput) => 
   const buildingTypeKey = resolveBuildingTypeKey(buildingType);
   if (mode.rules.isBuildingTypeAllowed(buildingTypeKey)) return pass();
 
-  return fail("mode_excluded", "This building is not available in the current game mode.");
+  return fail("mode_excluded", "Not available in this game mode.");
 };
 
 const validateTargetSpot = (input: ConstructionBuildabilityInput) => {
@@ -229,13 +229,13 @@ const validateTargetSpot = (input: ConstructionBuildabilityInput) => {
   }
 
   if (isCenterSpot(targetSpot)) {
-    return fail("center_tile", "Buildings cannot be placed on the center tile.");
+    return fail("center_tile", "Not on the center tile.");
   }
 
   const radius = resolveConstructionRadius(input);
   const distance = resolveDistanceFromCenter(targetSpot, radius);
   if (distance === null || distance > radius) {
-    return fail("out_of_radius", "This tile is outside the current structure level radius.");
+    return fail("out_of_radius", "This tile is out of reach.");
   }
 
   const isOccupied = input.tileManager?.isHexOccupied?.(targetSpot) ?? false;
@@ -251,7 +251,7 @@ const validateCosts = (input: ConstructionBuildabilityInput): ConstructionBuilda
     getBuildingCosts(input.entityId, input.store, input.buildingType, input.useSimpleCost),
   );
   if (buildingCosts.length === 0) {
-    return fail("missing_cost", "No construction cost is configured for this building.");
+    return fail("missing_cost", "This building has no cost set.");
   }
 
   const { currentDefaultTick } = getBlockTimestamp();
@@ -345,7 +345,7 @@ export const resolveConstructionBuildability = (
   }
 
   if (!isProductionStructure(input.realm.category)) {
-    return fail("invalid_structure", "Only realms, villages, and camps can construct buildings.");
+    return fail("invalid_structure", "Only realms, villages and camps can build.");
   }
 
   const modeResult = validateMode(input);
@@ -355,7 +355,7 @@ export const resolveConstructionBuildability = (
   if (!targetResult.canSubmit) return targetResult;
 
   if (isSimpleCostLockedBuilding(input.buildingType, input.useSimpleCost)) {
-    return fail("simple_cost_locked", "Switch to Resource mode to create this building.");
+    return fail("simple_cost_locked", "Switch to Resource mode first.");
   }
 
   const costResult = validateCosts(input);

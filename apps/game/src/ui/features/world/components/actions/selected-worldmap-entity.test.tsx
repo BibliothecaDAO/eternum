@@ -105,9 +105,7 @@ describe("a reserved Hyperstructure site", () => {
     founding.create = create;
     const { host, unmount } = mount(TileOccupier.ReservedHyperstructure);
     try {
-      expect(host.textContent).toContain(
-        "Reserved for a future Hyperstructure. Create it here or double-click the tile.",
-      );
+      expect(host.textContent).toContain("Reserved for a Hyperstructure.");
       const createHere = [...host.querySelectorAll("button")].find((button) => button.textContent === "Create here")!;
       await act(async () => createHere.click());
       expect(create.mock.calls).toEqual([[{ col: 4, row: 5 }]]);

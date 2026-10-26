@@ -6,8 +6,7 @@ import {
   CONTINUE,
   DAY,
   DAY_DONE,
-  DAY_HISTORY_FAILED,
-  DAY_HISTORY_SHORT,
+  DAY_TOTALS_UNKNOWN,
   DAY_OPEN,
   REALM_KEPT,
   TROOPS,
@@ -73,8 +72,8 @@ export const DayDoneCard = ({
     <div className="w-full">
       <DayTotalsGrid totals={totals} />
     </div>
-    {history === "short" && <HudNotice line={DAY_HISTORY_SHORT} />}
-    {history === "failed" && <HudNotice tone="bad" line={DAY_HISTORY_FAILED} retry={onRetry} />}
+    {history === "short" && <HudNotice line={DAY_TOTALS_UNKNOWN} />}
+    {history === "failed" && <HudNotice tone="bad" line={DAY_TOTALS_UNKNOWN} retry={onRetry} />}
     {rank && (
       <p className="flex items-center gap-1.5 text-hud-title tabular-nums">
         <SemanticIcon name="victory" size={24} />#{rank.from} → #{rank.to}

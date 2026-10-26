@@ -64,7 +64,7 @@ it("lists no key in Settings, only the row that opens them, one press away", asy
 });
 
 it("lists every meaning of a key bound twice whole, a line each, never cut short (qa-app-1 P3-2)", async () => {
-  const long = "Back out one step: a pending order, an open view, then the selection";
+  const long = "Back out one step";
   useShortcutStore.getState().addShortcut({
     id: "test.back-local",
     key: "Escape",

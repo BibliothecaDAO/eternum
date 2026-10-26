@@ -259,11 +259,7 @@ const compactLabel = (kind: Exclude<IdentityChipState["kind"], "player">): strin
 const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { kind: "player" | "unnamed" }> }) => {
   switch (state.kind) {
     case "signed-out":
-      return (
-        <SignInSurface>
-          You are not signed in, so this game is view only. Sign in with your Realms account to play.
-        </SignInSurface>
-      );
+      return <SignInSurface>View only. Sign in to play.</SignInSurface>;
     case "connecting":
       return (
         <div className="flex flex-col gap-1">
@@ -298,7 +294,7 @@ const SpectatingPanel = ({ state }: { state: Extract<IdentityChipState, { kind: 
   const enterAsPlayer = useEnterActiveGameAsPlayer();
 
   if (state.name === null) {
-    return <SignInSurface>You are spectating this game. Sign in to play your own realms.</SignInSurface>;
+    return <SignInSurface>Spectating. Sign in to play.</SignInSurface>;
   }
   return (
     <div className="flex flex-col gap-2">
@@ -309,7 +305,7 @@ const SpectatingPanel = ({ state }: { state: Extract<IdentityChipState, { kind: 
           Play
         </HudButton>
       ) : (
-        <span className="text-hud-body text-hud-muted">Your account owns no realm in this game.</span>
+        <span className="text-hud-body text-hud-muted">You hold no realm here.</span>
       )}
     </div>
   );

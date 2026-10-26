@@ -38,7 +38,7 @@ describe("the castle's tree as the contract rules it", () => {
   it("locks a tier whose labor the castle's store cannot hold, naming the level that holds it", () => {
     // Barracks epic costs 24,000 labor; a City's labor store holds 18,000, a Kingdom's 50,000.
     expect(node(MID_REALM, "row-2").state).toBe("locked");
-    expect(why(MID_REALM, "row-2")).toBe("Labor storage 18,000 / 24,000 · a Kingdom holds it");
+    expect(why(MID_REALM, "row-2")).toBe("Labor storage 18,000 / 24,000 · Kingdom");
   });
 
   it("opens the training rows once the Barracks is rare, and prices each next tier from the game's prices", () => {
@@ -91,7 +91,7 @@ describe("Frontier's camp is its Troll on the progression views (the shared stru
 
   it("names the army's camp clear and its Scouting kind by the Troll", () => {
     const army = readArmyDetail({ ...VETERAN_ARMY, progress: { ...VETERAN_ARMY.progress, scoutingKinds: ["camp"] } });
-    expect(army.earn.map(({ line }) => line)).toContain("Clear a Troll: more for a stronger guard");
+    expect(army.earn.map(({ line }) => line)).toContain("Clear a Troll");
     expect(army.attributes.find(({ key }) => key === "scouting")?.now).toBe("+10% discovery on Trolls");
     expect(JSON.stringify(army)).not.toMatch(/Camp/);
   });

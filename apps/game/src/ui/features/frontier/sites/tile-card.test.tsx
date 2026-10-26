@@ -360,8 +360,8 @@ describe("the result of the player's attack", () => {
       store.applyFacts(ARMY_GONE as never);
     });
     expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
-    expect(result()!.querySelector('[aria-label^="Army 1,498 → 0, "]')).not.toBeNull();
-    expect(result()!.querySelector('[aria-label^="Troll 1,100 → 1,028, "]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Troll 1,100 → 1,028"]')).not.toBeNull();
     unmount();
   });
 
@@ -371,7 +371,7 @@ describe("the result of the player's attack", () => {
       store.applyFacts([...ARMY_GONE, ...SITE_OUT_OF_SCOPE] as never);
     });
     expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
-    expect(result()!.querySelector('[aria-label^="Troll 1,100 → 1,028, "]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Troll 1,100 → 1,028"]')).not.toBeNull();
     expect(result()!.textContent).not.toContain("+550");
     expect(result()!.querySelector('[aria-label^="XP"]')).toBeNull();
     unmount();
@@ -382,7 +382,7 @@ describe("the result of the player's attack", () => {
       store.applyFacts([...ARMY_GONE, ...SITE_OUT_OF_SCOPE] as never),
     );
     expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
-    expect(result()!.querySelector('[aria-label^="Army 1,498 → 0, "]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
     expect(result()!.querySelector('[aria-label^="troops"]')).toBeNull();
     expect(result()!.textContent).not.toContain("+");
     unmount();
@@ -401,7 +401,7 @@ describe("the result of the player's attack", () => {
       payoutArrives({ resource_type: ResourcesIds.Labor, amount: whole(700) });
     });
     expect(result()?.getAttribute("aria-label")).toBe("Troll: Victory");
-    expect(result()!.querySelector('[aria-label^="Army 1,498 → 1,318, "]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Army 1,498 → 1,318"]')).not.toBeNull();
     expect(result()!.textContent).toContain("+700");
     expect(result()!.textContent).not.toContain("550");
     expect(result()!.textContent).toMatch(/\+[\d,]+ XP/);
@@ -417,7 +417,7 @@ describe("the result of the player's attack", () => {
     });
     expect(result()!.textContent).toContain("+550");
     expect(result()!.querySelector('[aria-label="Storage Full"]')?.getAttribute("data-tip")).toBe(
-      "Storage is full: the rest did not fit",
+      "Storage full: the rest did not fit",
     );
     unmount();
   });
@@ -485,7 +485,7 @@ describe("an attack on another player's army", () => {
     await act(async () => apply(APPLIED));
     const result = host.querySelector("button[aria-label^='Army:']")!;
     expect(result.getAttribute("aria-label")).toBe("Army: Army lost");
-    expect(result.querySelector('[aria-label^="troops 300 → 120, "]')).not.toBeNull();
+    expect(result.querySelector('[aria-label="troops 300 → 120"]')).not.toBeNull();
     act(() => root.unmount());
     host.remove();
   });

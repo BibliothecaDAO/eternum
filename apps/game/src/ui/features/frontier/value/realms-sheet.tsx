@@ -22,7 +22,6 @@ import {
   dayLeft,
   fitOf,
   realmsADay,
-  realmsGiveLabor,
 } from "@/ui/design-system/kit/words";
 
 import type { RealmLaborPlan, RealmLaborState } from "./realm-labor";
@@ -69,7 +68,6 @@ export const RealmsSheet = ({
   onClose: () => void;
 }) => (
   <HudSheet label={REALMS} onClose={onClose}>
-    <p className="text-center">{realmsGiveLabor(perRealm, cap)}</p>
     {wallet !== null && (
       <span className="flex justify-end">
         <HudChip icons={["backpack"]} label={REALMS}>
