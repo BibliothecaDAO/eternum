@@ -9,8 +9,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const game = vi.hoisted(() => ({
   withdraw: vi.fn(async () => ({ transaction_hash: "0x123", statusReceipt: "PENDING" })),
   outcome: vi.fn(),
-  payment: vi.fn(),
-  paymentTransaction: vi.fn(async () => "0xpaid"),
+  paymentTransaction: vi.fn(),
 }));
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
@@ -31,12 +30,14 @@ vi.mock("@/shell/value/use-ledger-paused", () => ({ useLedgerPaused: () => false
 vi.mock("./use-realm-lords", () => ({ useRealmLords: () => 200 }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn() }));
 vi.mock("@/runtime/world/store", () => ({ requireActiveGame: () => ({ chainId: "0xabc" }) }));
-vi.mock("@/runtime/l2-rpc", () => ({ l2TransactionUrl: (hash: string) => `https://explorer/tx/${hash}` }));
+vi.mock("@/runtime/l2-rpc", () => ({
+  L2_BLOCK_MS: 2_000,
+  l2TransactionUrl: (hash: string) => `https://explorer/tx/${hash}`,
+}));
 vi.mock("@/sync/active-game-client", () => ({ requireActiveGameClient: () => ({ waitForAction: game.outcome }) }));
 vi.mock("@/shell/value/ledger", () => ({
   environmentLedger: () => ({
     latestBlock: async () => 10,
-    payment: game.payment,
     paymentTransaction: game.paymentTransaction,
   }),
 }));
@@ -78,17 +79,47 @@ const withdrawAll = async () => {
 const withdrawButton = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Withdraw");
 const picker = () => host.querySelector('button[aria-label="Maximum 200"]');
 
-it("follows an applied withdrawal to its payment on Starknet, polling the ledger only for its claim", async () => {
+it("follows an applied withdrawal to its payment on Starknet, one read of its claim's payment", async () => {
   game.outcome.mockResolvedValue({ status: "SUCCEEDED" });
-  game.payment.mockResolvedValue({ paid: true });
+  game.paymentTransaction.mockResolvedValue("0xpaid");
   await withdrawAll();
 
   expect(game.withdraw).toHaveBeenCalledWith(expect.objectContaining({ amount: 200, structureId: 7 }));
   expect(game.outcome).toHaveBeenCalledWith("0x123");
-  expect(game.payment).toHaveBeenCalledWith("0xabc", "0x123");
+  expect(game.paymentTransaction).toHaveBeenCalledOnce();
   expect(game.paymentTransaction).toHaveBeenCalledWith("0xabc", "0x123", 10);
   expect(host.textContent).toContain("+200");
   expect(picker()).toBeNull();
+});
+
+it("reads a claim not paid yet again a block later, and shows the payment in that block", async () => {
+  game.outcome.mockResolvedValue({ status: "SUCCEEDED" });
+  game.paymentTransaction.mockResolvedValueOnce(null).mockResolvedValue("0xpaid");
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
+  try {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <FrontierWithdraw realm={{ entity_id: 7n } as never} onClose={() => {}} />
+        </QueryClientProvider>,
+      ),
+    );
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Maximum 200"]')!.click());
+    await act(async () => withdrawButton()!.click());
+    await act(async () => await vi.advanceTimersByTimeAsync(0));
+    expect(game.paymentTransaction).toHaveBeenCalledOnce();
+    expect(host.textContent).not.toContain("+200");
+
+    await act(async () => await vi.advanceTimersByTimeAsync(1_999));
+    expect(game.paymentTransaction).toHaveBeenCalledOnce();
+    await act(async () => await vi.advanceTimersByTimeAsync(1));
+    expect(game.paymentTransaction).toHaveBeenCalledTimes(2);
+    // React Query hands its answer to the page on a timer of its own.
+    await act(async () => await vi.advanceTimersByTimeAsync(10));
+    expect(host.textContent).toContain("+200");
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 it("returns a reverted withdrawal to the amount's choice with the game's reason, and never asks the ledger", async () => {
@@ -96,7 +127,7 @@ it("returns a reverted withdrawal to the amount's choice with the game's reason,
   await withdrawAll();
 
   expect(game.outcome).toHaveBeenCalledWith("0x123");
-  expect(game.payment).not.toHaveBeenCalled();
+  expect(game.paymentTransaction).not.toHaveBeenCalled();
   expect(picker()).not.toBeNull();
   expect(host.textContent).toContain("Insufficient LORDS");
   expect(withdrawButton()!.disabled).toBe(false);
@@ -107,7 +138,7 @@ it("says a withdrawal with no answer may still apply, sends it no second time, a
   await withdrawAll();
 
   expect(game.withdraw).toHaveBeenCalledOnce();
-  expect(game.payment).not.toHaveBeenCalled();
+  expect(game.paymentTransaction).not.toHaveBeenCalled();
   expect(host.textContent).toContain("may still apply");
   expect(picker()).toBeNull();
   expect(withdrawButton()).toBeUndefined();

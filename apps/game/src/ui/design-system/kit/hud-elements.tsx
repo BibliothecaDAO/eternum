@@ -167,7 +167,8 @@ const heldBetween = (typed: number | null, min: number, max: number): number | n
 
 /**
  * The one amount input every amount element types into: whole units, formatted, blank while cleared. A decimal one keeps
- * what is typed on screen while it has focus, so a fraction can be typed one digit at a time ("0." stays "0.").
+ * what is typed on screen while it has focus, so a fraction can be typed one digit at a time ("0." stays "0."). A
+ * `display` one is the amount a sheet is about, typed where it is shown large.
  */
 export const AmountInput = ({
   label,
@@ -175,6 +176,7 @@ export const AmountInput = ({
   min = 0,
   max,
   decimals = false,
+  display = false,
   disabled,
   autoFocus,
   onChange,
@@ -184,13 +186,14 @@ export const AmountInput = ({
   min?: number;
   max: number;
   decimals?: boolean;
+  display?: boolean;
   disabled?: boolean;
   autoFocus?: boolean;
   onChange: (amount: number) => void;
 }) => {
   const [draft, setDraft] = useState<string | null>(null);
   return (
-    <label className="ui-field">
+    <label className="ui-field" data-size={display ? "display" : undefined}>
       <span className="sr-only">{label}</span>
       <input
         aria-label={label}

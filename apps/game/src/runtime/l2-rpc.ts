@@ -36,6 +36,12 @@ export const L2_CHAIN = { name: ENVIRONMENT_L2.chain, ...L2_CHAINS[ENVIRONMENT_L
  */
 export const L2_LEDGER = ENVIRONMENT_L2.ledger;
 
+/**
+ * About one Starknet block (11 blocks took 19 s on mainnet, reports/chest-open-1.md): how often a screen reads the
+ * ledger while a result it waits for is due, so it shows in the block it lands in.
+ */
+export const L2_BLOCK_MS = 2_000;
+
 /** Where a player reads one of this build's L2 transactions. */
 export const l2TransactionUrl = (hash: string): string => `${L2_CHAIN.explorer}/tx/${hash}`;
 

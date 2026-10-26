@@ -60,6 +60,25 @@ describe("Withdraw", () => {
     expect(ways.onWithdraw).toHaveBeenCalledTimes(1);
   });
 
+  it("takes an amount typed where it shows, at most what the realm holds, and withdraws it from the keyboard", () => {
+    const ways = render({});
+    const amount = host.querySelector<HTMLInputElement>('input[aria-label="LORDS"]')!;
+    expect(amount.value).toBe("500");
+    expect(amount.inputMode).toBe("numeric");
+    const type = (text: string) =>
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(amount, text);
+        amount.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    type("320");
+    expect(ways.onAmount).toHaveBeenLastCalledWith(320);
+    type("5000");
+    expect(ways.onAmount).toHaveBeenLastCalledWith(1_240);
+    // Enter in a form's field submits it: the amount's form withdraws.
+    act(() => amount.form!.requestSubmit());
+    expect(ways.onWithdraw).toHaveBeenCalledTimes(1);
+  });
+
   it("sends a player with no wallet to link one", () => {
     const ways = render({ wallet: null });
     expect(button("Withdraw")).toBeUndefined();
