@@ -382,6 +382,9 @@ export const NO_TROOPS_AT_HOME = "No troops at home";
 export const DEPLOY_TILE = "Steps out on the bright tile. Tap another lit tile beside the realm to move it there.";
 /** Every tile beside the realm holds something: a deploy has nowhere to step out. */
 export const NO_OPEN_TILE = "No open tile beside the realm";
+/** A site's card with no army selected: what an army does there, or, with none out, where one comes from. */
+export const PICK_AN_ARMY = { attack: "Pick an army to attack it", use: "Pick an army to use it" } as const;
+export const NO_ARMY_OUT = "No army out: deploy one from the realm";
 export const DEPLOYING = "Deploying…";
 /** A free slot after the lowest: the game fills the lowest free slot first. */
 export const DEPLOY_FILLS_FIRST = (number: number) => `Deploy fills slot ${number} first.`;

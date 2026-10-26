@@ -23,6 +23,8 @@ import {
   FULL,
   MOVE,
   needsStamina,
+  NO_ARMY_OUT,
+  PICK_AN_ARMY,
   ON_ITS_WAY,
   REALM,
   tooFarFrom,
@@ -61,7 +63,8 @@ export type SiteVerb =
 
 /**
  * An army that could take the site, offered when none is selected: the fight it would have from where it stands (the
- * attack preview's own forecast), or none while it is out of reach. Picking it opens the attack with that army.
+ * attack preview's own forecast), or none while it is out of reach or the site is not a fight. Picking it selects that
+ * army for the site, whose card then acts for it.
  */
 export type SiteChoice = {
   label: string;
@@ -117,7 +120,7 @@ export const SiteCardView = ({
   const lost = fight && fight.outcome === "loses";
   const [details, setDetails] = useState(false);
   // With no army selected the realm's armies are the choices, and the guard moves up beside the kind.
-  const picking = choices !== undefined && choices.length > 0;
+  const picking = choices !== undefined;
   const guardIcon = beast ? beastMeaning(beast.beast) : "troops";
   // The army against a guard of known size, with the fight forecast: what option A reads, side by side.
   const facing = picking ? undefined : facingOf(army, guard, fight);
@@ -135,7 +138,7 @@ export const SiteCardView = ({
         {picking && <BeastGuard beast={beast} guard={guard} />}
       </header>
       {picking && choices ? (
-        <Choices choices={choices} guardIcon={guardIcon} />
+        <ArmyChoices does="attack" choices={choices} guardIcon={guardIcon} />
       ) : facing ? (
         <div className="flex gap-2">
           <Side
@@ -316,9 +319,22 @@ const BeastGuard = ({
     </span>
   );
 
-/** No army selected: each army is a row with the fight it would have, and a tap opens the attack with it. */
-const Choices = ({ choices, guardIcon }: { choices: readonly SiteChoice[]; guardIcon: IconMeaning }) => (
+/**
+ * A site's card with no army selected, whatever the site: what an army does there, then each of the realm's armies as
+ * a row (with the fight it would have, at a guarded site) that a tap picks for it; with none out, where one comes from.
+ */
+export const ArmyChoices = ({
+  does,
+  choices,
+  guardIcon,
+}: {
+  does: keyof typeof PICK_AN_ARMY;
+  choices: readonly SiteChoice[];
+  /** The guard's mark, at a site an army fights; its rows then carry their forecasts. */
+  guardIcon?: IconMeaning;
+}) => (
   <div className="flex flex-col gap-1.5">
+    <p className="text-hud-label text-hud-muted">{choices.length > 0 ? PICK_AN_ARMY[does] : NO_ARMY_OUT}</p>
     {choices.map((choice) => (
       <HudRow
         key={choice.label}
@@ -328,7 +344,7 @@ const Choices = ({ choices, guardIcon }: { choices: readonly SiteChoice[]; guard
         onClick={choice.onPick}
         trail={
           <>
-            <Forecast fight={choice.fight} size="row" guardIcon={guardIcon} />
+            {guardIcon && <Forecast fight={choice.fight} size="row" guardIcon={guardIcon} />}
             <SemanticIcon name="chevron-right" size={16} />
           </>
         }

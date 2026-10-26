@@ -9,7 +9,6 @@ import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
-import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
@@ -20,7 +19,6 @@ import {
   entityMapPosition,
   getStructureName,
   isViewerOwner,
-  Position,
 } from "@bibliothecadao/eternum";
 import {
   safeInteger,
@@ -48,7 +46,7 @@ import {
   lostArmyResult,
   useFightRefusal,
 } from "./fight-result";
-import { useSelectedOwnArmy } from "./selected-army";
+import { pickArmyFor, useSelectedOwnArmy } from "./selected-army";
 import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan, storeAtLimit } from "./site-card-plan";
 import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
 
@@ -196,7 +194,7 @@ export const TileCard = ({
       chest={plan.chest ? { tier: (plan.chest.tier + 1) as Tier, lords: plan.chest.amount } : undefined}
       xp={plan.xp}
       verb={verb}
-      choices={actor ? undefined : choices}
+      choices={actor || !realm ? undefined : choices}
       onRealm={() => {
         onClose();
         goToPlace(false);
@@ -288,11 +286,7 @@ const useSiteChoices = (selected: AttackTarget, wanted: boolean): SiteChoice[] =
       art: army.art,
       troops: army.troops,
       fight,
-      onPick: () =>
-        requestArmySelection(
-          army.explorerId,
-          Position.fromContract({ x: selected.tile.hexCoords.col, y: selected.tile.hexCoords.row }),
-        ),
+      onPick: () => pickArmyFor(army.explorerId, selected.tile.hexCoords),
     };
   });
 };
