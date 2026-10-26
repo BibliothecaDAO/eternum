@@ -92,6 +92,10 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
 
 /** The order shown on the map while the sheet is open, its tile again whenever it changes; none once the sheet closes. */
 const useDeployOnMap = (structureId: number, direction: Direction | null) => {
-  useEffect(() => showDeployOnMap({ structureId, direction }), [structureId, direction]);
-  useEffect(() => () => showDeployOnMap(null), []);
+  useEffect(() => {
+    showDeployOnMap({ structureId, direction });
+  }, [structureId, direction]);
+  useEffect(() => {
+    return () => showDeployOnMap(null);
+  }, []);
 };
