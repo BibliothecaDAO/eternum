@@ -843,6 +843,27 @@ span.ui-row__choose {
   color: rgb(var(--hud-accent));
   font-weight: var(--hud-weight-strong);
 }
+/* A Feed line (Frontier's Feed, option A): who, what and to what on one line and one baseline, what it paid at its end,
+   every line one height. A painting inside the words sits on the text, never on the line's box, so it moves no word. */
+.ui-feed-line .ui-event__text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ui-feed-line__glyph {
+  display: inline-block;
+  width: 1.15em;
+  height: 1.15em;
+  margin-right: 0.2em;
+  vertical-align: -0.2em;
+}
+.ui-feed-line__reward {
+  flex: none;
+  white-space: nowrap;
+  color: rgb(var(--hud-ink));
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── Window: a panel the size of a task (Military, Transfer), its title bar and a way out. ── */
 /* ── Sheet: a panel over the stage; on a phone it rises from the place bar, as tall as what it holds and at most the
@@ -1499,7 +1520,8 @@ button.ui-relic:focus-visible {
     min-width: var(--hud-control);
   }
   .ui-event__open,
-  .ui-row__choose {
+  .ui-row__choose,
+  .ui-feed-line {
     min-height: var(--hud-control);
     align-items: center;
   }

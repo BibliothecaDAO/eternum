@@ -588,8 +588,6 @@ export const HUD_LAYOUT = {
    * for any panel (a page, a sheet) that stands in it ("feed should have the same width as the other panels").
    */
   "frontier-rail": "480px",
-  /** Its feed's height before it scrolls inside: a capped list, so Next up and chat always keep their room. */
-  "frontier-feed": "45vh",
   "frontier-page-top": "76px",
   /** The Frontier HUD's cards: an army token, a site card, and the Build sheet's building card (option B's band). */
   "frontier-token": "72px",

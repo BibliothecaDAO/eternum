@@ -134,28 +134,54 @@ it("keeps one chat connection and its unread count from desktop to phone and bac
   expect(wire.close).not.toHaveBeenCalled();
 });
 
-it("gives a phone the Events' Log on its place bar as a page under the map, with the desktop Events' filter", async () => {
+it("gives a phone the Feed on its place bar, the desktop's own Feed as a page under the map, which its × closes", async () => {
   viewport.set(390);
   await renderHud();
-  const log = () =>
+  const feed = () =>
     [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].find((button) =>
-      button.textContent?.endsWith("Log"),
+      button.textContent?.endsWith("Feed"),
     );
-  const page = () => document.querySelector('[data-page] section[aria-label="Log"]');
-  expect(log()).toBeDefined();
+  const page = () => document.querySelector('[data-page] section[aria-label="Feed"]');
+  // Owner, 26 October 2026: "Rename mobile log to feed as well btw it should be the same".
+  expect(
+    [...host.querySelectorAll('nav[aria-label="Places"] button')].some((button) => button.textContent?.endsWith("Log")),
+  ).toBe(false);
   expect(page()).toBeNull();
-  await act(async () => log()!.click());
+  await act(async () => feed()!.click());
   expect(page()).not.toBeNull();
-  expect([...page()!.querySelectorAll("button")].map((button) => button.textContent)).toEqual(
-    expect.arrayContaining(["Important", "Mine", "All"]),
-  );
-  expect(log()!.getAttribute("aria-current")).toBe("page");
-  // Owner, 22 October 2026 (mobile direction A): the page stands on the place bar and leaves the map above it; the
-  // place bar's Log takes it away again.
-  expect(document.querySelector('[aria-label="Event log"]')).toBeNull();
-  await act(async () => log()!.click());
+  expect([...page()!.querySelectorAll('[aria-label="Feed lens"] button')].map((button) => button.textContent)).toEqual([
+    "World",
+    "Mine",
+    "Important",
+  ]);
+  expect(feed()!.getAttribute("aria-current")).toBe("page");
+  // Owner, 22 October 2026 (mobile direction A): the page stands on the place bar and leaves the map above it; its ×
+  // or the place bar's Feed takes it away again.
+  await act(async () => page()!.querySelector<HTMLButtonElement>('button[aria-label="Close the feed"]')!.click());
   expect(page()).toBeNull();
-  expect(log()!.getAttribute("aria-current")).toBeNull();
+  expect(feed()!.getAttribute("aria-current")).toBeNull();
+  await act(async () => feed()!.click());
+  await act(async () => feed()!.click());
+  expect(page()).toBeNull();
+});
+
+it("closes the desktop's Feed with its ×, leaving the rail empty under Next up, and opens it again from its place", async () => {
+  viewport.set(1920);
+  await renderHud();
+  const rail = () => host.querySelector("[data-frontier-rail]")!;
+  const feedPlace = () => host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Feed"]')!;
+  const feed = () => rail().querySelector('[data-rail-home] section[aria-label="Feed"]');
+  expect(feed()).not.toBeNull();
+  expect(feedPlace().getAttribute("aria-pressed")).toBe("true");
+  await act(async () => feed()!.querySelector<HTMLButtonElement>('button[aria-label="Close the feed"]')!.click());
+  expect(feed()).toBeNull();
+  expect(rail().querySelector("[data-rail-home]")!.childElementCount).toBe(0);
+  expect(feedPlace().getAttribute("aria-pressed")).toBe("false");
+  await act(async () => feedPlace().click());
+  expect(feed()).not.toBeNull();
+  // Lit, its place closes it too, as Research's and the Season's close theirs.
+  await act(async () => feedPlace().click());
+  expect(feed()).toBeNull();
 });
 
 it("keeps a refused order in sight on a desktop, over the feed and over a panel the rail holds", async () => {

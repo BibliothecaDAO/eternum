@@ -73,6 +73,9 @@ const ATTRIBUTE_ROWS: { key: AttributeKey; mark: IconMeaning }[] = [
   { key: "homecoming", mark: "order-enlightenment" },
 ];
 
+/** An attribute's mark, as its tile on the army's panel and its line in the Feed draw it. */
+export const attributeMark = (key: AttributeKey): IconMeaning => ATTRIBUTE_ROWS.find((row) => row.key === key)!.mark;
+
 export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
   const attributes = ATTRIBUTE_ROWS.map(({ key, mark }, index): AttributeView => {
     const level = army.progress[key];

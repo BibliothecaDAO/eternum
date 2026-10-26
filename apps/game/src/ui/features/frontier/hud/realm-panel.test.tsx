@@ -136,12 +136,35 @@ it("reads a 24-hour day in hours on the top bar and its hover, as Play does (liv
   expect(pill.getAttribute("data-tip")).toMatch(/ · Tomorrow lasts 24h$/);
 });
 
-it("offers a desktop's places, Research, the Feed and the Season, the Feed lit at the rail's home", () => {
+it("offers a desktop's places, Research, the Feed and the Season; the lit Feed closes, an unlit one goes home", () => {
   const onHome = vi.fn();
-  act(() => root.render(<FrontierPlaces surface={null} home onSurface={vi.fn()} onHome={onHome} research={false} />));
-  const places = [...host.querySelectorAll("nav button")];
-  expect(places.map((button) => button.getAttribute("aria-label"))).toEqual(["Research", "Feed", "Season"]);
-  expect(places[1].getAttribute("aria-pressed")).toBe("true");
-  act(() => (places[1] as HTMLButtonElement).click());
-  expect(onHome).toHaveBeenCalledTimes(1);
+  const onCloseFeed = vi.fn();
+  const places = (home: boolean, feedOpen: boolean) => {
+    act(() =>
+      root.render(
+        <FrontierPlaces
+          surface={home ? null : "research"}
+          home={home}
+          feedOpen={feedOpen}
+          onCloseFeed={onCloseFeed}
+          onSurface={vi.fn()}
+          onHome={onHome}
+          research={false}
+        />,
+      ),
+    );
+    return [...host.querySelectorAll("nav button")] as HTMLButtonElement[];
+  };
+  const open = places(true, true);
+  expect(open.map((button) => button.getAttribute("aria-label"))).toEqual(["Research", "Feed", "Season"]);
+  expect(open[1].getAttribute("aria-pressed")).toBe("true");
+  act(() => open[1].click());
+  expect(onCloseFeed).toHaveBeenCalledTimes(1);
+  const closed = places(true, false);
+  expect(closed[1].getAttribute("aria-pressed")).toBe("false");
+  act(() => closed[1].click());
+  const research = places(false, true);
+  act(() => research[1].click());
+  expect(onHome).toHaveBeenCalledTimes(2);
+  expect(onCloseFeed).toHaveBeenCalledTimes(1);
 });

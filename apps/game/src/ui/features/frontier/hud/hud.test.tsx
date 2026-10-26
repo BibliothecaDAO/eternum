@@ -280,11 +280,11 @@ describe("the place bar", () => {
     const onGo = vi.fn();
     act(() => root.render(<PlaceNav place={null} onGo={onGo} researchDot events={2} unread={3} />));
     const slots = [...host.querySelectorAll("button")];
-    expect(slots.map((slot) => slot.textContent)).toEqual(["Realm", "Research", "2Log", "3Chat", "Menu"]);
+    expect(slots.map((slot) => slot.textContent)).toEqual(["Realm", "Research", "2Feed", "3Chat", "Menu"]);
     expect(slots.map((slot) => slot.getAttribute("aria-current"))).toEqual([null, null, null, null, null]);
     expect(slots[1].querySelector("i")).not.toBeNull();
     act(() => slots[2].click());
-    expect(onGo).toHaveBeenCalledWith("log");
+    expect(onGo).toHaveBeenCalledWith("feed");
     act(() => slots[4].click());
     expect(onGo).toHaveBeenCalledWith("menu");
     act(() => root.render(<PlaceNav place="realm" onGo={onGo} researchDot events={2} unread={3} />));
@@ -299,7 +299,7 @@ describe("the place bar", () => {
   it("leaves Research out for a spectator, who has no realm to research", () => {
     act(() => root.render(<PlaceNav place="realm" onGo={vi.fn()} events={0} unread={0} />));
     const slots = [...host.querySelectorAll("button")].map((slot) => slot.textContent);
-    expect(slots).toEqual(["Realm", "Log", "Chat", "Menu"]);
+    expect(slots).toEqual(["Realm", "Feed", "Chat", "Menu"]);
   });
 
   it("dots Research only while a node can be researched now", () => {
