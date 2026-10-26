@@ -17,7 +17,8 @@ import { researchKey, sendResearch } from "./send-research";
 /**
  * The castle's tree over the game's facts, Frontier's Research page: the tree, the picked node under it, and Research
  * with the side picked. `pick` opens on a node (a building tapped on the board opens its own row); otherwise the page
- * opens on the first node the realm can research, else the first it is saving for.
+ * opens on the first node the realm can research, else the first it is saving for. Until every fact the tree reads has
+ * arrived, the page says so rather than standing empty.
  */
 export const FrontierResearch = ({ realm, pick }: { realm: NativeRows["Structure"]; pick?: string }) => {
   const { setup, account } = useGame();
@@ -25,7 +26,7 @@ export const FrontierResearch = ({ realm, pick }: { realm: NativeRows["Structure
   const goToPlace = useGoToFrontierPlace(realm);
   const researching = useAllInFlight("research");
   const [picked, setPicked] = useState<string | undefined>(pick);
-  if (!tree) return null;
+  if (!tree) return <p className="text-hud-label text-hud-muted">{RESEARCH_TREE.onItsWay}</p>;
   const { nodes } = tree;
   const sending = new Set(nodes.flatMap(({ row }) => (researching.has(researchKey(realm, row)) ? [row] : [])));
 

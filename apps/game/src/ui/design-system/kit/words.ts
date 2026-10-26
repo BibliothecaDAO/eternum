@@ -1181,6 +1181,8 @@ export const automationRefusal = (ordersAllowed: boolean, hydrated: boolean): st
  * what each side and node gives, and each thing a node's next tier needs, in the order a player meets them.
  */
 export const RESEARCH_TREE = {
+  /** Said while the realm's knowledge, balances, prices or board rules have not all arrived. */
+  onItsWay: "The research tree is on its way",
   branches: { economy: "Economy", army: ARMY, castle: CASTLE },
   states: { ready: "Can research", short: "Saving up", done: "Researched", locked: "Locked" },
   sides: {
