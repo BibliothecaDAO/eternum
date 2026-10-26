@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
-// Record on the landing machine with snforge test record_spatial_replay --ignored --max-threads 1,
+// In world-native, record with scarb test record_spatial_replay --ignored,
 // then pass that log here. Normal tests compare the same executed commands against these fixtures.
 const log = readFileSync(process.argv[2], "utf8");
 for (const name of ["armies", "buildings"]) {
