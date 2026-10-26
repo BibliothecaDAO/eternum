@@ -39,6 +39,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveStructureRotationY } from "@/three/structures/structure-orientation";
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
 import { RealmGridBuilds } from "./hexception-grid-builds";
+import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { awaitLocalScenePresentable } from "./local-scene-presentation";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
@@ -304,6 +305,7 @@ export default class HexceptionScene extends HexagonScene {
     mouse: Vector2,
     raycaster: Raycaster,
     sceneManager: SceneManager,
+    private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
     super(SceneName.Hexception, controls, game, mouse, raycaster, sceneManager);
 
@@ -576,6 +578,9 @@ export default class HexceptionScene extends HexagonScene {
       this.settlementPresentations.set(path, { appearance, animation: new SettlementAnimation(model, meshes) });
       model.userData.settlementModelPath = path;
     }
+    // Its pipelines compile now, behind the held map frame, rather than on the realm's first frame. Only the loaded
+    // model is compiled, never the placed buildings: their render objects are made on their own first draw.
+    await this.compilePipelines(model, this.scene);
     return { model, animations: gltf.animations };
   }
 
@@ -1144,8 +1149,8 @@ export default class HexceptionScene extends HexagonScene {
 
   /**
    * The first local frame is empty until the grid build presents terrain and buildings, so the world frame is held
-   * until then. Its pipelines compile on that first frame: a scene-wide warm-up compile ahead of it left some
-   * buildings' render objects broken on WebGPU (they drew solid black until rebuilt).
+   * until then. Each building model's pipelines compile as it loads (loadBuildingModel); a scene-wide warm-up compile
+   * of the placed buildings left some of their render objects broken on WebGPU (they drew solid black until rebuilt).
    */
   public override whenPresentable(): Promise<void> {
     return this.localPresentation;

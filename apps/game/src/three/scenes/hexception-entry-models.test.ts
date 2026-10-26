@@ -1,8 +1,15 @@
 // @vitest-environment jsdom
 import { BUILDINGS_CENTER, BuildingType, StructureType } from "@bibliothecadao/types";
-import { expect, it } from "vitest";
+import { Group, Mesh, MeshStandardMaterial, BoxGeometry } from "three";
+import { expect, it, vi } from "vitest";
 
 import { FRONTIER_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
+
+// A model as the loader hands it over: one mesh, standing for a building's file.
+const loaded = vi.hoisted(() => ({ scene: null as unknown }));
+vi.mock("@/three/utils/gltf-loader", () => ({
+  gltfLoader: { loadAsync: async () => ({ scene: loaded.scene, animations: [] }) },
+}));
 
 const { getGameModeConfig } = await import("@/config/game-modes");
 const { default: HexceptionScene } = await import("./hexception");
@@ -46,4 +53,24 @@ it("loads the models a realm's keep and buildings draw, each once and at its tie
     "/models/frontier/painted/workers-hut-1.glb",
     "/models/realms/settlement.glb",
   ]);
+});
+
+it("compiles a loaded model's pipelines against the realm scene before it hands the model to the board", async () => {
+  const model = new Group().add(new Mesh(new BoxGeometry(), new MeshStandardMaterial()));
+  loaded.scene = model;
+  const events: string[] = [];
+  const scene = Object.assign(Object.create(HexceptionScene.prototype), {
+    destroyed: false,
+    scene: { name: "realm scene" },
+    settlementPresentations: new Map(),
+    compilePipelines: async (object: unknown, target: unknown) => {
+      events.push(object === model && target === scene.scene ? "compiled against the realm" : "compiled elsewhere");
+    },
+  });
+
+  const building = await scene.loadBuildingModel("/models/frontier/painted/farm-1.glb");
+  events.push("handed to the board");
+
+  expect(building.model).toBe(model);
+  expect(events).toEqual(["compiled against the realm", "handed to the board"]);
 });
