@@ -1,11 +1,11 @@
-import { Color, Matrix4, Mesh, PerspectiveCamera, Scene, Vector3 } from "three";
+import { BufferGeometry, Color, Matrix4, Mesh, PerspectiveCamera, Scene, Vector3 } from "three";
 import type { MeshStandardNodeMaterial } from "three/webgpu";
 import type { RendererSurfaceLike } from "../../renderer-backend";
 import { StructureType } from "@bibliothecadao/types";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
 import { getRendererDiagnosticActiveMode } from "../../renderer-diagnostics";
 import { configureRendererColorOutput } from "../../renderer-color-output";
-import { resetGameEnd } from "../../effects/endgame/state";
+import { mapAnimationTime, resetGameEnd } from "../../effects/endgame/state";
 import InstancedModel from "../../managers/instanced-model";
 import { FrontierModel } from "../../structures/frontier-model";
 import { FRONTIER_BEASTS, frontierBeast, frontierSiteComposition } from "../../structures/frontier-beast";
@@ -17,6 +17,7 @@ import {
 } from "../../scenes/worldmap-camera-view-profile";
 import { ModelLabEnvironment } from "./model-lab-environment";
 import { readModelLabSettings } from "./model-lab-settings";
+import { createRiftGroundGeometry, riftGeometryBytes, sampleRiftGround } from "./rift-ground-geometry";
 import { createRiftGroundMaterial } from "./rift-ground-material";
 
 export interface RiftGroundLabSettings {
@@ -45,7 +46,13 @@ export async function mountRiftGroundLab(
   const environment = new ModelLabEnvironment(scene);
   const cameras = panels.map(() => new PerspectiveCamera(resolveWorldmapCameraFieldOfViewDegrees(), 1, 0.1, 150));
   const models: InstancedModel[] = [];
-  const ground: { mesh: Mesh; source: MeshStandardNodeMaterial; proposal: MeshStandardNodeMaterial }[] = [];
+  const ground: {
+    mesh: Mesh;
+    source: MeshStandardNodeMaterial;
+    proposal: MeshStandardNodeMaterial;
+    sourceGeometry: BufferGeometry;
+    proposalGeometry: BufferGeometry;
+  }[] = [];
   const treatments = new Map<MeshStandardNodeMaterial, MeshStandardNodeMaterial>();
   let frame = 0;
   let disposed = false;
@@ -60,8 +67,10 @@ export async function mountRiftGroundLab(
     cancelAnimationFrame(frame);
     observer.disconnect();
     models.forEach((model) => model.dispose());
-    ground.forEach(({ mesh, source }) => {
+    ground.forEach(({ mesh, source, sourceGeometry, proposalGeometry }) => {
       mesh.material = source;
+      mesh.geometry = sourceGeometry;
+      proposalGeometry.dispose();
     });
     environment.dispose();
     treatments.forEach((material) => material.dispose());
@@ -84,7 +93,13 @@ export async function mountRiftGroundLab(
         treatment = createRiftGroundMaterial(source);
         treatments.set(source, treatment);
       }
-      ground.push({ mesh: object, source, proposal: treatment });
+      ground.push({
+        mesh: object,
+        source,
+        proposal: treatment,
+        sourceGeometry: object.geometry,
+        proposalGeometry: createRiftGroundGeometry(object.geometry),
+      });
     });
     if (!ground.length) throw new Error("Rift comparison has no terrain surface");
     const base = new InstancedModel(await gltfLoader.loadAsync(frontierPaintedPath("essence-rift")), 1, false, "Rift");
@@ -153,8 +168,9 @@ export async function mountRiftGroundLab(
         camera.aspect = rect.width / rect.height;
         camera.updateProjectionMatrix();
         base.group.visible = index === 0;
-        ground.forEach(({ mesh, source, proposal }) => {
+        ground.forEach(({ mesh, source, proposal, sourceGeometry, proposalGeometry }) => {
           mesh.material = index === 0 ? source : proposal;
+          mesh.geometry = index === 0 ? sourceGeometry : proposalGeometry;
         });
         drawCounts.base = drawCounts.beast = 0;
         renderer.info.reset();
@@ -175,6 +191,29 @@ export async function mountRiftGroundLab(
               y: rect.top + ((1 - projected.y) * rect.height) / 2,
             };
           }),
+          creepProbes: [
+            [-0.995, -0.912],
+            [1.114, -0.762],
+          ].map(([x, z]) => {
+            const projected = new Vector3(x, environment.terrain.sampleSurface(x, z).height, z).project(camera);
+            return {
+              x: rect.left + ((projected.x + 1) * rect.width) / 2,
+              y: rect.top + ((1 - projected.y) * rect.height) / 2,
+            };
+          }),
+          pulseProbe: (() => {
+            const x = 0.04,
+              z = 0.65;
+            const projected = new Vector3(
+              x,
+              environment.terrain.sampleSurface(x, z).height - (index ? sampleRiftGround(x, z).depth : 0),
+              z,
+            ).project(camera);
+            return {
+              x: rect.left + ((projected.x + 1) * rect.width) / 2,
+              y: rect.top + ((1 - projected.y) * rect.height) / 2,
+            };
+          })(),
           outsideProbes: [-1.35, 1.35].map((x) => {
             const projected = new Vector3(x, environment.terrain.sampleSurface(x, 0).height, 0).project(camera);
             return {
@@ -192,6 +231,19 @@ export async function mountRiftGroundLab(
           panels: measurements,
           beastScale: frontierBeast(0, StructureType.Rift).scale,
           beastY: composition.beastY,
+          pulse: ((Math.sin(mapAnimationTime.value * 2.6) + 1) / 2) ** 3,
+          depth: Math.max(...ground.map(({ proposalGeometry }) => Number(proposalGeometry.userData.riftDepth))),
+          geometryBytes: ground.reduce((sum, { proposalGeometry }) => sum + riftGeometryBytes(proposalGeometry), 0),
+          extraGeometryBytes: ground.reduce(
+            (sum, { sourceGeometry, proposalGeometry }) =>
+              sum + riftGeometryBytes(proposalGeometry) - riftGeometryBytes(sourceGeometry),
+            0,
+          ),
+          extraTerrainTriangles: ground.reduce(
+            (sum, { sourceGeometry, proposalGeometry }) =>
+              sum + (proposalGeometry.index!.count - sourceGeometry.index!.count) / 3,
+            0,
+          ),
         });
       frame = requestAnimationFrame(render);
     };

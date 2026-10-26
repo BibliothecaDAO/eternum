@@ -5,18 +5,19 @@ import { MeshStandardNodeMaterial } from "three/webgpu";
 import { createRiftGroundMaterial } from "./rift-ground-material";
 
 describe("the lab rift ground treatment", () => {
-  it("keeps the biome's textures, normals and roughness without changing the original material", () => {
+  it("keeps the biome's textures and roughness while lighting the carved normals without changing the original material", () => {
     const source = new MeshStandardNodeMaterial();
     source.map = new Texture();
     source.colorNode = color("#51733e");
     source.normalNode = vec3(0, 1, 0);
     source.roughnessNode = float(0.9);
     source.emissiveNode = vec3(0);
-    const previous = { color: source.colorNode, emission: source.emissiveNode };
+    const previous = { color: source.colorNode, emission: source.emissiveNode, normal: source.normalNode };
     const proposal = createRiftGroundMaterial(source);
     expect(proposal).not.toBe(source);
     expect(proposal.map).toBe(source.map);
-    expect(proposal.normalNode).toBe(source.normalNode);
+    expect(proposal.normalNode).not.toBe(source.normalNode);
+    expect(source.normalNode).toBe(previous.normal);
     expect(proposal.roughnessNode).toBe(source.roughnessNode);
     expect(proposal.positionNode).toBe(source.positionNode);
     expect(source.colorNode).toBe(previous.color);
