@@ -82,6 +82,30 @@ it("names the Scouts' lodge's camp kind Trolls, never Camp", () => {
 describe("the picked building's choice, at the panel's foot (the owner's pick C)", () => {
   const choice = () => host.querySelector("[data-lab='node-choice']");
 
+  it("keeps what a finished node gives: the Shrine researched, a Hut at Legendary", () => {
+    draw("shrine");
+    expect(choice()!.textContent).toContain("Armies find Shrines · +200 XP each");
+    const legendaryHut = readResearchTree({
+      ...MID_REALM,
+      learned: { ...MID_REALM.learned, 3: { tier: 4, sides: [] } },
+    });
+    act(() =>
+      root.render(
+        <ResearchPanel
+          nodes={legendaryHut}
+          essence={MID_REALM.essence}
+          labor={MID_REALM.labor}
+          picked="row-3"
+          onPick={vi.fn()}
+          sending={new Set()}
+          fixFor={() => undefined}
+          onResearch={vi.fn()}
+        />,
+      ),
+    );
+    expect(choice()!.textContent).toContain("Population from every Hut · +100%");
+  });
+
   it("stands after the whole tree, outside its scroll, with the price held against and Research", () => {
     draw("row-0");
     const tree = host.querySelector("[data-node]")!.closest(".overflow-y-auto")!;

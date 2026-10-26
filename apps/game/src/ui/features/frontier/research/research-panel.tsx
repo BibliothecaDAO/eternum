@@ -216,12 +216,10 @@ const NodeChoice = ({
       ) : (
         <span className="text-hud-body text-hud-ink">
           {node.gives.line}
-          {node.gives.next && (
-            <>
-              {" · "}
-              <span className="tabular-nums text-hud-good">{RESEARCH_TREE.step(node.gives.now, node.gives.next)}</span>
-            </>
-          )}
+          {" · "}
+          <span className="tabular-nums text-hud-good">
+            {node.gives.next ? RESEARCH_TREE.step(node.gives.now, node.gives.next) : node.gives.now}
+          </span>
         </span>
       )}
       {missing && !isPrice(missing) && (
