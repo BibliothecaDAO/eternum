@@ -26,6 +26,7 @@ import { HudLab } from "./hud-lab";
 import { UnifiedHudLab } from "./unified-hud-lab";
 import { PanelsLab } from "./panels-lab";
 import { BuildOrderLab } from "./build-order-lab";
+import { BuildOrderMakerLab } from "./build-order-maker-lab";
 import { BlitzBuildLab } from "./blitz-build-lab";
 import { ProgressionLab } from "./progression/progression-lab";
 import { GuidanceLab } from "./guidance-lab";
@@ -59,6 +60,7 @@ export const KitLabView = () => {
       <Route path="windows/:surface?" element={<WindowsLab />} />
       <Route path="guidance" element={<GuidanceLab />} />
       <Route path="build-order" element={<BuildOrderLab />} />
+      <Route path="build-order-maker" element={<BuildOrderMakerLab />} />
       <Route path="blitz-build" element={<BlitzBuildLab />} />
       <Route path="progression" element={<ProgressionLab />} />
       <Route path="tokens" element={<TokensLab />} />
