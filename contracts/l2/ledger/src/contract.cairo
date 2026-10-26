@@ -561,12 +561,12 @@ pub mod GameLedger {
             assert!(claim_id != 0 && wallet.is_non_zero() && amount > 0, "Ledger: invalid withdrawal");
             let mut season = self.get_frontier(shard, season_id);
             let reported = self.get_payment(shard, claim_id);
+            assert!(reported.prize_rank > 0 || !season.closed, "Ledger: season closed");
             assert!(reported.amount != 0, "Ledger: withdrawal unreported");
             assert!(
                 reported.season_id == season_id && reported.amount == amount, "Ledger: conflicting withdrawal report",
             );
             if reported.prize_rank == 0 {
-                assert!(!season.closed, "Ledger: season closed");
                 assert!(amount <= self.frontier_unlocked(shard, season_id) - season.paid, "Ledger: unlock exceeded");
                 season.paid += amount;
             } else {
