@@ -51,16 +51,18 @@ export type PlayBoardFacts = {
 export const gameKey = (game: Pick<DirectoryGame, "chainId" | "game_id">) => `${game.chainId}:${game.game_id}`;
 
 /**
- * The lead, first match wins: a Blitz seat to enter; a Frontier day under way; a result of the player's not yet opened
- * (any mode); a Blitz seat still being prepared (its lobby); Frontier's season to play (free when signed out); a Blitz
- * to join, else one to watch; Eternum, open or opening. With none of these, nothing is running and there is no lead.
+ * The lead, first match wins: a Blitz seat to enter; a Frontier day under way; a Blitz seat still being prepared (its
+ * lobby); Frontier's season to play (free when signed out), so a player with no realm finds it first rather than under
+ * Blitz's cards (owner, 26 October 2026); a result of the player's not yet opened (any mode), which otherwise stays in
+ * its age's column; a Blitz to join, else one to watch; Eternum, open or opening. With none of these, nothing is running
+ * and there is no lead.
  */
 const LEAD_ORDER: readonly ((item: PlayItem) => boolean)[] = [
   (item) => item.mode === "blitz" && item.verb === "enter",
   (item) => item.verb === "resume",
-  (item) => item.verb === "results",
   (item) => item.verb === "lobby",
   (item) => item.mode === "frontier" && item.verb === "play",
+  (item) => item.verb === "results",
   (item) => item.mode === "blitz" && item.verb === "join",
   (item) => item.mode === "blitz" && item.verb === "watch",
   (item) => item.mode === "eternum",
