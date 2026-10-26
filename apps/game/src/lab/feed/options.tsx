@@ -117,14 +117,14 @@ const StripLine = ({ reading, names, own }: RowProps) => (
 
 /** C: one card per run of a player's play, newest first. */
 const RunCard = ({ run, names, own }: { run: FeedRun; names: PlayerNames; own: boolean }) => {
-  const newest = run.readings[0]!.at;
-  const oldest = run.readings.at(-1)!.at;
+  const newest = formatClockTime(run.readings[0]!.at);
+  const oldest = formatClockTime(run.readings.at(-1)!.at);
   return (
     <article className="rounded-md border border-hud-line bg-hud-well px-2.5 py-2" data-feed-run>
       <header className="flex items-center gap-2">
         <Face address={run.actor} names={names} own={own} size={28} />
         <span className="ml-auto text-hud-label tabular-nums text-hud-muted">
-          {oldest === newest ? formatClockTime(newest) : `${formatClockTime(oldest)}–${formatClockTime(newest)}`}
+          {oldest === newest ? newest : `${oldest}–${newest}`}
         </span>
       </header>
       <ul className="mt-1.5 flex flex-col gap-1 pl-9">
