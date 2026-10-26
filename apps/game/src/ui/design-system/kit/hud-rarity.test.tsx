@@ -2,12 +2,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vitest";
 
-import { HudRarity, HudTier } from "./hud-elements";
+import { HudRarity, HudTier, HudTierStep } from "./hud-elements";
 
-const plate = (node: React.ReactElement) => {
+const drawn = (node: React.ReactElement) => {
   const host = document.createElement("div");
   host.innerHTML = renderToStaticMarkup(node);
-  return host.querySelector<HTMLElement>(".ui-rarity")!;
+  return host;
 };
 
 it("says a chest's rarity by its word, on a plate of its colour, with no pips", () => {
@@ -16,17 +16,30 @@ it("says a chest's rarity by its word, on a plate of its colour, with no pips", 
     [3, "Rare"],
     [5, "Legendary"],
   ] as const) {
-    const chip = plate(<HudRarity tier={tier} />);
+    const chip = drawn(<HudRarity tier={tier} />).querySelector<HTMLElement>(".ui-rarity")!;
     expect(chip.textContent).toBe(name);
     expect(chip.dataset.tier).toBe(String(tier));
     expect(chip.querySelectorAll("i")).toHaveLength(0);
   }
 });
 
-it("fills one pip a step for a tier the player levels, named for assistive technology", () => {
-  const chip = plate(<HudTier tier={2} />);
-  expect(chip.getAttribute("aria-label")).toBe("Uncommon");
-  expect(chip.querySelectorAll("i")).toHaveLength(5);
-  expect(chip.querySelectorAll("i[data-filled]")).toHaveLength(2);
-  expect(chip.textContent).toBe("");
+it("draws a levelled tier as a gem with its numeral, Uncommon I to Legendary IV, and nothing at Common", () => {
+  expect(drawn(<HudTier tier={1} />).innerHTML).toBe("");
+  for (const [tier, numeral, name] of [
+    [2, "I", "Uncommon"],
+    [3, "II", "Rare"],
+    [5, "IV", "Legendary"],
+  ] as const) {
+    const gem = drawn(<HudTier tier={tier} />).querySelector<HTMLElement>(".ui-tier")!;
+    expect(gem.textContent).toBe(numeral);
+    expect(gem.getAttribute("aria-label")).toBe(name);
+    expect(gem.dataset.tier).toBe(String(tier));
+  }
+});
+
+it("steps from the gem held to the next, with none before the first", () => {
+  expect(drawn(<HudTierStep from={1} to={2} />).textContent).toBe("→I");
+  const step = drawn(<HudTierStep from={3} to={4} />);
+  expect(step.textContent).toBe("II→III");
+  expect(step.querySelector("[role='img']")?.getAttribute("aria-label")).toBe("Rare → Epic");
 });

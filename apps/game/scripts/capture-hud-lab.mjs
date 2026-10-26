@@ -63,6 +63,8 @@ export const SURFACES = [
       [390, 844],
     ],
   },
+  { name: "frontier-build-locked", path: "/lab/kit/hud/build-early", mark: "frontier", sizes: CARDS },
+  { name: "frontier-army", path: "/lab/kit/hud/selected", mark: "frontier", sizes: CARDS },
   { name: "frontier-season", path: "/lab/kit/hud/season", mark: "frontier", sizes: CARDS },
   { name: "frontier-site-pick", path: "/lab/kit/hud/site-pick", mark: "frontier", sizes: CARDS },
   { name: "frontier-site-ruin", path: "/lab/kit/hud/site-ruin", mark: "frontier", sizes: CARDS },

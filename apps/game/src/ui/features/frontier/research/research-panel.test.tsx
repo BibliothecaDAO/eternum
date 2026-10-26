@@ -113,6 +113,8 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     expect(tree.contains(choice())).toBe(false);
     expect(tree.compareDocumentPosition(choice()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(choice()!.textContent).toContain("Farm");
+    expect(choice()!.querySelector(".ui-tier-step")?.getAttribute("aria-label")).toBe("Rare → Epic");
+    expect([...choice()!.querySelectorAll(".ui-tier")].map((gem) => gem.textContent)).toEqual(["II", "III"]);
     expect(button(/^Research Fields$/)).toBeDefined();
     const price = nodes
       .find(({ key }) => key === "row-0")!

@@ -4,7 +4,7 @@ import { transferArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/tra
 import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier/army/transfer-troops";
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudNotice, HudSheet, HudTier } from "@/ui/design-system/kit/hud-elements";
 import { OFFLINE, PAYOUTS_PAUSED, TRAINING_BUILDINGS, WITHDRAWALS_CLOSED, YOU } from "@/ui/design-system/kit/words";
 import { ArmyList, ArmyRow } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
@@ -269,7 +269,10 @@ const tile = (
 ): LabTile => ({ key, icon, name, tip: "", gives, takes, standing });
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"]) =>
   ({ kind: "price", labor, short }) as const;
-const TRAINS = { icon: "order-rage", value: "Common" } as const;
+/** An open training building at Uncommon: new armies start one tier up in its attribute. */
+const TRAINS = { icon: "order-rage", value: <HudTier tier={2} /> } as const;
+/** A training building waiting for the Barracks at Rare (II). */
+const LOCKED = { kind: "locked", gate: 3 } as const;
 
 /**
  * A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor, the
@@ -298,19 +301,11 @@ const EARLY_TILES: LabTile[] = [
   tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, 1, price(2_000)),
   tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(800)),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(300)),
-  tile("war", "war-hall", TRAINING_BUILDINGS[0], TRAINS, 2, { kind: "locked", gate: 3 }),
-  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, {
-    kind: "locked",
-    gate: 3,
-  }),
-  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, {
-    kind: "locked",
-    gate: 3,
-  }),
-  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...TRAINS, icon: "order-enlightenment" }, 2, {
-    kind: "locked",
-    gate: 3,
-  }),
+  // The training buildings are still at Common, which gives new armies nothing more: no gives, only the Barracks lock.
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], undefined, 2, LOCKED),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], undefined, 2, LOCKED),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], undefined, 2, LOCKED),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], undefined, 2, LOCKED),
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,

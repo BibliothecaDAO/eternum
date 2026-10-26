@@ -2,13 +2,13 @@ import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { StructureType } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudMeter, HudPortrait, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudMeter, HudPortrait, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY_DETAIL,
   BACK,
   RESEARCH_TREE,
   STAMINA,
-  TIER_WORDS,
+  tierNumeral,
   TROOPS,
   UPGRADING,
   XP,
@@ -136,7 +136,7 @@ const AttributeTile = ({ attribute, onOpen }: { attribute: AttributeView; onOpen
     aria-label={`${attribute.name} ${attribute.now}`}
     data-tip={
       attribute.next
-        ? ARMY_DETAIL.nextTier(attribute.next.word, attribute.next.change, formatExact(attribute.next.xp))
+        ? ARMY_DETAIL.nextTier(tierNumeral(attribute.next.tier), attribute.next.change, formatExact(attribute.next.xp))
         : ARMY_DETAIL.legendary(attribute.name)
     }
     onClick={onOpen}
@@ -144,7 +144,7 @@ const AttributeTile = ({ attribute, onOpen }: { attribute: AttributeView; onOpen
   >
     <Icon name={attribute.mark} size={40} />
     <span className="text-hud-label text-hud-ink">{attribute.name}</span>
-    <HudTier tier={attribute.level as 1 | 2 | 3 | 4 | 5} />
+    <HudTier tier={attribute.level} />
     <span className="text-center text-hud-label tabular-nums text-hud-good">{attribute.now}</span>
   </button>
 );
@@ -217,10 +217,15 @@ const Choice = ({
   >
     <Icon name={attribute.mark} size={32} />
     <span className="flex min-w-0 flex-1 flex-col">
-      <span className="text-hud-strong text-hud-ink">
-        {attribute.next
-          ? RESEARCH_TREE.step(attribute.name, attribute.next.word)
-          : ARMY_DETAIL.legendary(attribute.name)}
+      <span className="flex items-center gap-1.5 text-hud-strong text-hud-ink">
+        {attribute.next ? (
+          <>
+            {attribute.name}
+            <HudTierStep from={attribute.level} to={attribute.next.tier} />
+          </>
+        ) : (
+          ARMY_DETAIL.legendary(attribute.name)
+        )}
       </span>
       <span className="text-hud-label tabular-nums text-hud-good">{attribute.next?.change ?? attribute.now}</span>
     </span>
@@ -273,8 +278,9 @@ const LevelUpFoot = ({
   chosen.next ? (
     <div className="flex items-center gap-2 border-t border-hud-divider pt-3">
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-hud-body text-hud-ink">
-          {ARMY_DETAIL.from(chosen.name, TIER_WORDS[chosen.level - 1]!, chosen.next.word)}
+        <span className="flex items-center gap-1.5 text-hud-body text-hud-ink">
+          {chosen.name}
+          <HudTierStep from={chosen.level} to={chosen.next.tier} />
         </span>
         <span className={cn("text-hud-label tabular-nums", chosen.next.affordable ? "text-hud-muted" : "text-hud-bad")}>
           {chosen.next.affordable
