@@ -559,22 +559,27 @@ export const AppFigure = ({
 
 /**
  * Something the page must say: its icon where one tells it at a glance, its line, why, and what the player can do about
- * it (Try again where trying again can help; Update, Later).
+ * it (Try again where trying again can help; Update, Later). Where its icon and actions already say it all (Install),
+ * it has no line, only a name for assistive technology, so it stays one row in a desktop's bar and above a phone's tabs.
  */
 export const AppNotice = ({
   tone,
   icon,
-  line,
   actions,
+  ...words
 }: {
   tone?: Tone;
   icon?: IconMeaning;
-  line: string;
   actions?: ReactNode;
-}) => (
-  <div className="app-notice" data-tone={tone} role={tone === "bad" ? "alert" : "status"}>
+} & ({ line: string } | { label: string })) => (
+  <div
+    className="app-notice"
+    data-tone={tone}
+    role={tone === "bad" ? "alert" : "status"}
+    aria-label={"label" in words ? words.label : undefined}
+  >
     {icon && <Icon name={icon} size={22} />}
-    <span className="app-notice__words">{line}</span>
+    {"line" in words && <span className="app-notice__words">{words.line}</span>}
     {actions}
   </div>
 );

@@ -48,12 +48,14 @@ const SOCIALS = ["X", "Discord", "Telegram", "CoinGecko", "GitHub"].map(
 
 /**
  * The bars at their limits: on the desktop, the longest name an account takes beside Play's install notice, at the
- * desktop's narrowest width and a laptop's; on a phone, the places at the narrowest phone the app is held to.
+ * desktop's narrowest width and a laptop's; on a phone, the places and Play's install notice at the narrowest phone the
+ * app is held to.
  */
 const BAR_CASES = [
   { name: "bar-long-name-1024", path: "long-name", viewport: ["1024", "768"], desktop: true, place: "Play" },
   { name: "bar-long-name-1440", path: "long-name", viewport: ["1440", "900"], desktop: true, place: "Play" },
   { name: "tabs-phone-360", path: "home/scroll", viewport: ["360", "640"], desktop: false, place: "What's new" },
+  { name: "notice-phone-360", path: "home", viewport: ["360", "640"], desktop: false, place: "Play" },
 ];
 
 /**
@@ -204,17 +206,28 @@ const sheetPageChecks = (page) => (b) => {
       goldVerbs: [...document.querySelectorAll('.app-button[data-kind="primary"], .frontier-primary')].filter((verb) => !verb.closest("[inert]")).length,
       // Each age column's band of painting above its games, as computed.
       ageBands: [...document.querySelectorAll(".app-age-column__body")].map((body) => getComputedStyle(body).paddingTop),
-      // A phone's first screen loses what its notice or foot row covers: a control straddling the top of either is half
-      // hidden by it. The tab bar ends every phone screen, as a window's edge does, so a list folding there is cut by
-      // neither.
+      // A phone's first screen loses what its notice or foot row covers: a verb straddling the top of either is half
+      // hidden by it (qa-fresh-2: Play's first Join under the install notice). A list row folding there is a list
+      // folding at a screen's edge, as one does at the tab bar, which ends every phone screen.
       cutAtEdge: (() => {
         const bands = ["notice", "foot"].map((name) => document.querySelector('[data-band="' + name + '"]')).filter(Boolean);
         if (!body || bands.length === 0) return [];
         const edge = Math.min(...bands.map((band) => band.getBoundingClientRect().top));
-        return [...document.querySelectorAll('[data-band="body"] :is(a[href], button), [data-band="footer"] a[href]')]
+        return [...document.querySelectorAll('[data-band="body"] .app-button')]
           .map((control) => ({ word: control.innerText.trim().slice(0, 30), rect: control.getBoundingClientRect() }))
           .filter(({ rect }) => rect.height > 0 && rect.top < edge - 1 && rect.bottom > edge + 1)
           .map(({ word, rect }) => word + " " + Math.round(rect.top) + "→" + Math.round(rect.bottom) + " at " + Math.round(edge));
+      })(),
+      // A phone's notice above its tabs is one row: inside its frame it is no taller than its tallest control, so a line
+      // wrapping onto rows shows.
+      noticeOneRow: (() => {
+        const notice = document.querySelector('[data-band="notice"] .app-notice');
+        if (!notice) return true;
+        const style = getComputedStyle(notice);
+        const inner = notice.getBoundingClientRect().height - ["paddingTop", "paddingBottom", "borderTopWidth", "borderBottomWidth"].reduce((sum, side) => sum + parseFloat(style[side]), 0);
+        // The row's height is its tallest control's; a line taller than that has wrapped.
+        const row = Math.max(0, ...[...notice.querySelectorAll("button")].map((control) => control.getBoundingClientRect().height));
+        return row === 0 || inner <= row + 1;
       })(),
       places: document.querySelectorAll('[data-band="bar"] [data-role="tab"]').length,
       // The places lit as the page's own, by their word ("You: Maelis" is You), and any place whose word is cut.
@@ -259,7 +272,13 @@ const sheetPageChecks = (page) => (b) => {
     ...(desktop
       ? []
       : [
-          { check: "no control cut by the phone's notice or foot", ok: measure.cutAtEdge.length === 0 },
+          {
+            check: "no verb cut by the phone's notice or foot",
+            ok: measure.cutAtEdge.length === 0,
+            measure: measure.cutAtEdge,
+          },
+          // Audit 10-27 (18): the install notice's line wrapped to three rows over Play's Blitz card.
+          { check: "the phone's notice is one row", ok: measure.noticeOneRow },
           { check: "each place's word reads whole", ok: measure.placesCut.length === 0 },
         ]),
     ...(desktop
@@ -294,19 +313,27 @@ const barChecks = (b) => {
       .map(({ element, rect }) => element.tagName.toLowerCase() + " " + (element.textContent ?? "").slice(0, 30) + " " + Math.round(rect.top) + "→" + Math.round(rect.bottom));
     const controls = [...bar.querySelectorAll("a[href], button")].map((control) => {
       const rect = control.getBoundingClientRect();
-      return { text: control.textContent.trim().slice(0, 30), whole: control.scrollWidth <= control.clientWidth + 1, onScreen: rect.left >= 0 && rect.right <= innerWidth && rect.width >= 24 };
+      return { text: control.textContent.trim().slice(0, 30), whole: control.scrollWidth <= control.clientWidth + 1, onScreen: rect.left >= 0 && rect.right <= innerWidth && rect.width >= 24, rect };
     });
+    // Two controls drawn over each other (audit 10-27, 18: Install under the player's name at 1024).
+    const overlapping = controls.flatMap((one, index) =>
+      controls.slice(index + 1)
+        .filter((other) => one.rect.left < other.rect.right - 1 && other.rect.left < one.rect.right - 1 && one.rect.top < other.rect.bottom - 1 && other.rect.top < one.rect.bottom - 1)
+        .map((other) => one.text + " over " + other.text),
+    );
     return {
       height: Math.round(box.height),
       outside,
       markWidth: Math.round(bar.querySelector('[data-role="lockup"] img')?.getBoundingClientRect().width ?? 0),
       controls,
+      overlapping,
     };
   })()`);
   return [
     { check: "the bar's contents stay inside it", ok: bar.outside.length === 0, bar },
     { check: "the bar's mark keeps its width", ok: bar.markWidth >= 100 },
     { check: "the bar's controls are whole and on the screen", ok: bar.controls.every((control) => control.onScreen) },
+    { check: "no control in the bar over another", ok: bar.overlapping.length === 0, overlapping: bar.overlapping },
   ];
 };
 

@@ -190,7 +190,7 @@ lockup alone. Every page's content starts at the top, under the bar; a painting 
 `Enter` presses the page's step button (the one marked as its step) when it is enabled, nothing has focus that answers
 Enter itself, and no dialog is open. On a phone the places are a tab bar at the foot. The app's notice (offline, an
 update ready, or Install, which only Play offers) sits in the desktop's top bar before You, and on a phone just above
-the foot.
+the foot, one row: Install is its icon, Later and Install; under 1280 wide the bar shows a notice's icon and verbs only.
 
 | Feature                                                                                                                                                                                                 | Route                                                          | How to reach it                                                                                                                                                         |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

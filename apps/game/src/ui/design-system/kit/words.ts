@@ -979,7 +979,7 @@ export const NEWS_WORDS = {
 /** The app's own states: install, update, offline, a page that does not exist. */
 export const APP_STATE_WORDS = {
   install: "Install",
-  /** The install notice's one line: where the app will live. */
+  /** The install notice's name for assistive technology: where the app will live (its icon and Install say it on screen). */
   onHomeScreen: "Realms on your home screen",
   updateReady: "Update ready",
   update: "Update",
