@@ -91,6 +91,8 @@ const pageSession = (html) => {
       return this.textContent;
     },
   });
+  // Nor does it stand anything at a point: no control is ever covered.
+  dom.window.document.elementFromPoint = () => null;
   const pointer = [];
   const run = (command, ...args) => {
     if (command === "eval") return JSON.stringify(dom.window.eval(args[0]) ?? null, null, 2);

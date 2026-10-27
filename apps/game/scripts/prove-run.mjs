@@ -50,12 +50,27 @@ const browserError = (error) =>
     .join(" ");
 
 /**
+ * What the pointer meets at the centre of the control `selector` names, when it is not that control: its name, or its tag
+ * and first classes. Null when the control is what the pointer meets there.
+ */
+const coverOf = (selector) => `(() => {
+  const control = document.querySelector(${JSON.stringify(selector)});
+  const box = control?.getBoundingClientRect();
+  const top = box && document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+  if (!top || control.contains(top)) return null;
+  return top.getAttribute("aria-label") || [top.tagName.toLowerCase(), ...[...top.classList].slice(0, 4)].join(".");
+})()`;
+
+/**
  * Scrolls to the control `selector` names and clicks it through the browser, so a control the pointer cannot reach (off
- * screen past scrolling, covered) is not pressed. Null when the click landed, else what the browser said.
+ * screen past scrolling, covered) is not pressed: the browser clicks whatever stands at the control's centre, so a
+ * control something else covers there is reported, never clicked. Null when the click landed, else what stopped it.
  */
 export const clickAsPlayer = (b, selector) => {
   try {
     b.run("scrollintoview", selector);
+    const cover = b.evaluate(coverOf(selector));
+    if (cover) return `click: covered by ${cover}`;
     b.run("click", selector);
     return null;
   } catch (error) {
