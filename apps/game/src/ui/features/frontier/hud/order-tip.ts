@@ -53,11 +53,13 @@ export const orderTip = (order: TileOrder): OrderTip | null => {
   return refused === null ? null : { line: refused, cost: null };
 };
 
+const OPEN_CRATE = "Open crate";
+
 const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.Explore]: EXPLORE,
   [ActionType.Move]: MOVE,
   [ActionType.Attack]: ATTACK,
-  [ActionType.Chest]: "Open crate",
+  [ActionType.Chest]: OPEN_CRATE,
   [ActionType.Help]: `${TRANSFER} troops`,
   [ActionType.SpireTravel]: "Travel through the spire",
   [ActionType.EnterDepth]: "Enter a depth",
@@ -79,6 +81,22 @@ const orderOf = ({ path, exploreStamina, food, site }: TileOrder): OrderTip | nu
     ...(food.fish > 0 ? [`${formatCharge(food.fish)} fish`] : []),
   ];
   return { line, cost: pieces.length > 0 ? pieces.join(" · ") : null };
+};
+
+/**
+ * The order a tile the planner refused would take, by what it holds: an attack on a target, a crate's opening, else a
+ * move onto revealed land or an explore into the fog.
+ */
+export const refusedOrderVerb = ({
+  holds,
+  explored,
+}: {
+  holds: "target" | "crate" | null;
+  explored: boolean;
+}): string => {
+  if (holds === "target") return ATTACK;
+  if (holds === "crate") return OPEN_CRATE;
+  return explored ? MOVE : EXPLORE;
 };
 
 /**

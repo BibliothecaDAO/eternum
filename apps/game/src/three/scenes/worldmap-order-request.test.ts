@@ -56,6 +56,38 @@ describe("a tap on a tile with an army selected", () => {
   });
 });
 
+describe("a click on a tile whose order the selected army can't take now (owner, 27 October 2026)", () => {
+  const refused = (reason: "attack" | "order", { onPhone = false, armySelected = true } = {}) =>
+    orderOnTap({ path: undefined, armySelected, site: false, ownSpire: false, onPhone, refused: reason });
+
+  it("opens the attack's preview on a target its stamina can't pay for yet, on a desktop", () => {
+    expect(refused("attack")).toBe("attack");
+  });
+
+  it("opens the refused order's preview anywhere else the rules said why, on a desktop", () => {
+    expect(refused("order")).toBe("refused");
+  });
+
+  it("leaves a phone's tap and a holding's click as they were", () => {
+    expect(refused("attack", { onPhone: true })).toBeNull();
+    expect(refused("order", { onPhone: true })).toBeNull();
+    expect(refused("order", { armySelected: false })).toBeNull();
+  });
+
+  it("still opens a standing site's card, which says what the army lacks", () => {
+    expect(
+      orderOnTap({
+        path: undefined,
+        armySelected: true,
+        site: true,
+        ownSpire: false,
+        onPhone: false,
+        refused: "order",
+      }),
+    ).toBe("site-card");
+  });
+});
+
 describe("a tap on a lit tile beside the realm selected (owner, 27 October 2026: phone only)", () => {
   const beside = [step(ActionType.Move), step(ActionType.CreateArmy)];
   const onRealm = (onPhone: boolean, hud?: { pinned: boolean; refused: boolean }) =>
