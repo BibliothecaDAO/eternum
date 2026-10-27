@@ -10,7 +10,9 @@ pub // Every value is a fully typed command. Missing entities and unavailable li
 fn typed_commands() -> Array<Command> {
     array![
         Command::CreateExplorer(
-            crate::commands::CreateExplorer { structure_id: 999999, category: 0, tier: 0, amount: 1, direction: 0 },
+            crate::commands::CreateExplorer {
+                slot: 0, structure_id: 999999, category: 0, tier: 0, amount: 1, direction: 0,
+            },
         ),
         Command::Explore(crate::commands::Explore { explorer_id: 999999, direction: 0 }),
         Command::Battle(
@@ -79,7 +81,7 @@ fn typed_commands() -> Array<Command> {
         ),
         Command::CreateBuilding(
             crate::buildings::CreateBuilding {
-                structure_id: 999999, directions: array![0_u8].span(), category: 0, use_simple: false,
+                scouting_kind: 0, structure_id: 999999, directions: array![0_u8].span(), category: 0, use_simple: false,
             },
         ),
         Command::DestroyBuilding(
@@ -244,7 +246,7 @@ fn typed_commands() -> Array<Command> {
                 explorer_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
             },
         ),
-        Command::RefillStamina(crate::relics::RefillStamina { explorer_id: 999999 }),
+        Command::RefillStamina(crate::relics::RefillStamina { explorer_id: 999999, amount: 1 }),
         Command::WithdrawLords(crate::relics::WithdrawLords { structure_id: 999999, amount: 1 }),
     ]
 }
@@ -314,7 +316,12 @@ pub fn explorer_case(explore: bool) -> (Deployment, TestAction, u64) {
     }
     let create = Command::CreateExplorer(
         crate::commands::CreateExplorer {
-            structure_id: home.entity_id, category: 0, tier: 0, amount: crate::rules::RESOURCE_PRECISION, direction: 0,
+            slot: 0,
+            structure_id: home.entity_id,
+            category: 0,
+            tier: 0,
+            amount: crate::rules::RESOURCE_PRECISION,
+            direction: 0,
         },
     );
     let command = if explore {

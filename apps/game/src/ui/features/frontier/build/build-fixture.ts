@@ -48,7 +48,11 @@ export const realmBoard = () => {
       population_step_bps: 2500,
       ration_step: String(PRECISION / 4n),
       training_gate_tier: 2,
-      castle_store_deploys: 2,
+      troop_store_deploys: 2,
+      settlement_resource_cap: 6000,
+      city_resource_cap: 18000,
+      kingdom_resource_cap: 40000,
+      empire_resource_cap: 80000,
     }),
     set("0x71", "ProductionRecipe", {
       game_id: 1,

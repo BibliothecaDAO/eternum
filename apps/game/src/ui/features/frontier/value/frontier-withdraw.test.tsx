@@ -17,7 +17,8 @@ vi.mock("@/hooks/context/game-context", () => ({
     setup: {
       systemCalls: { withdraw_lords: game.withdraw },
       store: {
-        get: (model: string) => (model === "GameRegistry" ? { end_at: 100_000 } : { claim_window_seconds: 86_400 }),
+        get: (model: string) =>
+          model === "GameRegistry" ? { end_at: 100_000 } : { pool_bps: 7000, top_n: 10, claim_window_seconds: 86_400 },
       },
     },
   }),

@@ -75,7 +75,7 @@ export const nativeCommandBits = {
   "WithdrawLords": "2361183241434822606848"
 } as const;
 export interface NativeCommandPayloads {
-  CreateExplorer: { readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
+  CreateExplorer: { readonly slot: BigNumberish; readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
   Explore: { readonly explorer_id: BigNumberish; readonly direction: BigNumberish };
   Battle: { readonly attacker_id: BigNumberish; readonly defender_id: BigNumberish; readonly steal_resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };
   Move: { readonly explorer_id: BigNumberish; readonly directions: readonly (BigNumberish)[] };
@@ -96,7 +96,7 @@ export interface NativeCommandPayloads {
   TransferExplorerResourcesToStructure: { readonly from_entity_id: BigNumberish; readonly to_entity_id: BigNumberish; readonly resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };
   BurnLaborForResourceProduction: { readonly structure_id: BigNumberish; readonly resource_types: readonly (BigNumberish)[]; readonly amounts: readonly (BigNumberish)[] };
   BurnResourceForResourceProduction: { readonly structure_id: BigNumberish; readonly resource_types: readonly (BigNumberish)[]; readonly amounts: readonly (BigNumberish)[] };
-  CreateBuilding: { readonly structure_id: BigNumberish; readonly directions: readonly (BigNumberish)[]; readonly category: BigNumberish; readonly use_simple: boolean };
+  CreateBuilding: { readonly structure_id: BigNumberish; readonly directions: readonly (BigNumberish)[]; readonly category: BigNumberish; readonly use_simple: boolean; readonly scouting_kind: BigNumberish };
   DestroyBuilding: { readonly structure_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
   PauseBuildingProduction: { readonly structure_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
   ResumeBuildingProduction: { readonly structure_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
@@ -145,7 +145,7 @@ export interface NativeCommandPayloads {
   Research: { readonly structure_id: BigNumberish; readonly row: BigNumberish; readonly choice: BigNumberish };
   BuyTier: { readonly explorer_id: BigNumberish; readonly attribute: { readonly kind: "Battle"; readonly value: undefined } | { readonly kind: "Logistics"; readonly value: undefined } | { readonly kind: "Scouting"; readonly value: undefined } | { readonly kind: "Homecoming"; readonly value: undefined }; readonly kind: { readonly kind: "Some"; readonly value: { readonly kind: "Camp"; readonly value: undefined } | { readonly kind: "Rift"; readonly value: undefined } | { readonly kind: "Beasts"; readonly value: undefined } } | { readonly kind: "None"; readonly value: undefined } };
   InteractSite: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
-  RefillStamina: { readonly explorer_id: BigNumberish };
+  RefillStamina: { readonly explorer_id: BigNumberish; readonly amount: BigNumberish };
   WithdrawLords: { readonly structure_id: BigNumberish; readonly amount: BigNumberish };
 }
 export type NativeCommand = { [K in keyof NativeCommandPayloads]: { kind: K; value: NativeCommandPayloads[K] } }[keyof NativeCommandPayloads];

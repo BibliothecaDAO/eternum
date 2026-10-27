@@ -1,78 +1,41 @@
-import { formatCharge, formatExact, formatShort, LORDS, formatShortChange } from "@bibliothecadao/types";
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { CANCEL, REFILL, REFILLING, STAMINA, heldAgainstNeed, refillShort } from "@/ui/design-system/kit/words";
+import { useState } from "react";
+import { formatExact, LORDS } from "@bibliothecadao/types";
+import { HudButton, HudChip, HudSheet, HudSlider } from "@/ui/design-system/kit/hud-elements";
+import { CANCEL, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
 
-/**
- * Refill's control (wireframes 05, 08): the missing points as a LORDS price, one LORDS a point; when the realm holds
- * fewer LORDS, what it holds against the price takes the button's place in two lines, "Refill" over "40 / 150", its
- * hover saying what the two numbers count. The order bar's; the army card's is the chip below.
- */
 export const RefillButton = ({
-  price,
   held,
   refilling = false,
   onRefill,
 }: {
-  price: number;
   held: number | undefined;
-  /** A refill of this army is in flight: sent, its outcome not known yet. */
   refilling?: boolean;
   onRefill: () => void;
-}) =>
-  held !== undefined && held < price ? (
-    <span
-      role="img"
-      aria-label={refillShort(formatExact(held), formatCharge(price))}
-      className="flex shrink-0 items-center gap-1.5"
-    >
-      <SemanticIcon name="lords" size={18} />
-      <span className="flex flex-col whitespace-nowrap">
-        <span className="text-hud-label text-hud-muted">{REFILL}</span>
-        <span className="text-hud-body tabular-nums text-hud-ink">{heldAgainstNeed(held, price)}</span>
-      </span>
-    </span>
-  ) : (
-    <HudButton kind="secondary" icon="stamina" busy={refilling ? REFILLING : undefined} onClick={onRefill}>
-      {REFILL}
-    </HudButton>
-  );
+}) => (
+  <HudButton
+    kind="secondary"
+    icon="stamina"
+    disabled={held === undefined || held < 1}
+    busy={refilling ? REFILLING : undefined}
+    onClick={onRefill}
+  >
+    {REFILL}
+  </HudButton>
+);
 
-/**
- * The army card's Refill (the owner's option 2, 27 October): on the chips' row at a chip's size, framed as a press, its
- * price in LORDS; short of them, the LORDS held against the price in red, and no press.
- */
-export const RefillChip = ({
-  price,
-  held,
-  refilling = false,
-  onRefill,
-}: {
+/** The army card's compact refill opens the same partial purchase as the order bar. */
+export const RefillChip = ({ price, held, refilling = false, onRefill }: {
   price: number;
   held: number | undefined;
-  /** A refill of this army is in flight: sent, its outcome not known yet. */
   refilling?: boolean;
   onRefill: () => void;
-}) => {
-  const short = held !== undefined && held < price;
-  return (
-    <HudChip
-      icons={["stamina", "lords"]}
-      label={REFILL}
-      tone={short ? "bad" : undefined}
-      tip={short ? refillShort(formatExact(held), formatCharge(price)) : undefined}
-      disabled={short || refilling}
-      onPress={onRefill}
-    >
-      {refilling ? REFILLING : short ? heldAgainstNeed(held, price) : formatShort(price)}
-    </HudChip>
-  );
-};
+}) => (
+  <HudChip icons={["stamina", "lords"]} label={REFILL} disabled={held === undefined || held < 1 || refilling} onPress={onRefill}>
+    {refilling ? REFILLING : held === undefined ? "—" : formatExact(Math.min(price, Math.floor(held)))}
+  </HudChip>
+);
 
-/**
- * Refill's confirm (wireframe 08): the bar now → full, the realm's LORDS before → after, then Cancel and Refill with its
- * price. A full refill only.
- */
+/** Purchase whole stamina points, up to the missing bar or the realm's available LORDS. */
 export const RefillConfirm = ({
   stamina,
   held,
@@ -83,27 +46,46 @@ export const RefillConfirm = ({
   stamina: { current: number; max: number };
   held: number | undefined;
   sending: boolean;
-  onRefill: () => void;
+  onRefill: (amount: number) => void;
   onCancel: () => void;
 }) => {
-  const price = Math.max(0, stamina.max - stamina.current);
+  const missing = Math.max(0, Math.floor(stamina.max - stamina.current));
+  const affordable = Math.min(missing, Math.max(0, Math.floor(held ?? 0)));
+  const [selected, setSelected] = useState(affordable);
+  const amount = Math.min(selected, affordable);
   return (
     <HudSheet label={REFILL} onClose={onCancel}>
       <div className="flex items-center justify-center gap-2">
-        <HudChip icons={["stamina"]} label={STAMINA}>
-          {formatShortChange(stamina.current, stamina.max)}
-        </HudChip>
-        <HudChip icons={["lords"]} label={LORDS}>
-          {formatShortChange(held, held === undefined ? undefined : held - price)}
-        </HudChip>
+        <HudChip
+          icons={["stamina"]}
+          label={STAMINA}
+        >{`${formatExact(stamina.current)} → ${formatExact(stamina.current + amount)}`}</HudChip>
+        <HudChip
+          icons={["lords"]}
+          label={LORDS}
+        >{`${formatExact(held)} → ${held === undefined ? "—" : formatExact(held - amount)}`}</HudChip>
       </div>
+      <HudSlider
+        label="Stamina to refill"
+        value={amount}
+        min={0}
+        max={missing}
+        stop={affordable}
+        disabled={sending || affordable === 0}
+        onChange={setSelected}
+      />
       <div className="grid grid-cols-3 gap-2">
         <HudButton kind="quiet" onClick={onCancel}>
           {CANCEL}
         </HudButton>
         <span className="col-span-2 grid">
-          <HudButton kind="primary" busy={sending ? REFILLING : undefined} onClick={onRefill}>
-            {REFILL}
+          <HudButton
+            kind="primary"
+            disabled={amount <= 0 || held === undefined}
+            busy={sending ? REFILLING : undefined}
+            onClick={() => onRefill(amount)}
+          >
+            {REFILL} · {formatExact(amount)} {LORDS}
           </HudButton>
         </span>
       </div>

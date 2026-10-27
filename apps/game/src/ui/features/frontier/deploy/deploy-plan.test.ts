@@ -19,7 +19,7 @@ describe("Frontier's deploy", () => {
     const { store, row } = frontierDay();
     const plan = planOf(store, row)!;
     // The fixture's preset explores for 30 stamina: a 150 bar is five explores.
-    expect(plan.next).toEqual({
+    expect(plan.open[0]).toEqual({
       slot: 1,
       number: 2,
       inherited: false,
@@ -118,13 +118,14 @@ describe("Frontier's deploy", () => {
     const { store, row } = frontierDay();
     const troops = planOf(store, row)!.troops!;
     const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" } as never));
-    await deployArmy({ createExplorerArmy }, row, troops, 120, 2);
+    await deployArmy({ createExplorerArmy }, row, troops, 120, 2, 2);
     expect(createExplorerArmy).toHaveBeenCalledWith({
       structureId: 7,
       troopType: TroopType.Knight,
       troopTier: TroopTier.T1,
       troopCount: 120,
       spawnDirection: 2,
+      slot: 2,
     });
   });
 });

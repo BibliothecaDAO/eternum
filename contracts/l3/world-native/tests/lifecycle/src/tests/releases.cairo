@@ -119,6 +119,7 @@ fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
             game_id,
             crate::commands::Command::CreateExplorer(
                 crate::commands::CreateExplorer {
+                    slot: 0,
                     structure_id: other_home.entity_id,
                     category: guard.troops.category.into(),
                     tier: 0,
@@ -196,7 +197,7 @@ fn hotfix_refuses_old_release_pins_and_accepts_current_pins() {
     super::execute(d, super::action(d, 1));
     let action = super::play_fixture::TestAction {
         command: crate::commands::Command::CreateExplorer(
-            crate::commands::CreateExplorer { structure_id: 8, category: 0, tier: 0, amount: 0, direction: 0 },
+            crate::commands::CreateExplorer { slot: 0, structure_id: 8, category: 0, tier: 0, amount: 0, direction: 0 },
         ),
         ..super::action(d, 1),
     };

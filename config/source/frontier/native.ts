@@ -81,7 +81,8 @@ export const frontierPreset: NativePreset = {
     populationStepBps: 2500,
     rationStep: 0.25,
     trainingGateTier: 2,
-    castleStoreDeploys: 2,
+    troopStoreDeploys: 2,
+    resourceStoreCaps: [6000, 18000, 40000, 80000],
   },
   research: [
     ...buildingRows.flatMap(({ row, essence, labor }) =>
@@ -94,7 +95,7 @@ export const frontierPreset: NativePreset = {
     ),
     { row: research.ROW_SHRINE, tier: 1, essenceCost: 2000, laborCost: 0 },
     { row: research.ROW_WELL, tier: 1, essenceCost: 6000, laborCost: 0 },
-    ...[160000, 400000, 900000].map((essenceCost, index) => ({
+    ...[100000, 250000, 500000].map((essenceCost, index) => ({
       row: research.ROW_DEPTH,
       tier: index + 1,
       essenceCost,
@@ -114,6 +115,8 @@ export const frontierPreset: NativePreset = {
   labor: { amount: 1000, accountDailyLimit: 0 },
   // Daily chest prices cannot exceed 50 LORDS per share.
   chests: {
+    poolBps: 7_000,
+    topN: 10,
     priceCeiling: 50,
     shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
     claimWindowSeconds: 7 * 86400,
@@ -147,7 +150,7 @@ export const frontierPreset: NativePreset = {
       beastStrongUpper: 1650,
       revealSiteNeighbors: false,
       entryStamina: 30,
-      chest: { common: 4000, uncommon: 3000, rare: 1700, epic: 900, legendary: 400 },
+      chest: { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
     },
     {
       revealPercent: 20,
@@ -162,7 +165,7 @@ export const frontierPreset: NativePreset = {
       beastStrongUpper: 4400,
       revealSiteNeighbors: false,
       entryStamina: 40,
-      chest: { common: 3000, uncommon: 3000, rare: 2200, epic: 1200, legendary: 600 },
+      chest: { common: 0, uncommon: 0, rare: 5500, epic: 3000, legendary: 1500 },
     },
     {
       revealPercent: 25,
@@ -177,7 +180,7 @@ export const frontierPreset: NativePreset = {
       beastStrongUpper: 11000,
       revealSiteNeighbors: false,
       entryStamina: 50,
-      chest: { common: 2000, uncommon: 3000, rare: 2500, epic: 1600, legendary: 900 },
+      chest: { common: 0, uncommon: 0, rare: 0, epic: 6400, legendary: 3600 },
     },
   ],
 };

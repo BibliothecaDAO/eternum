@@ -10,6 +10,7 @@ import {
   getGuardsByStructure,
   realmLearned,
   researchTier,
+  ruinDisappeared,
   isCurrentExpeditionArmy,
   liveHomeArmies,
   StaminaManager,
@@ -71,6 +72,7 @@ const NEXT_UP_MODELS = [
   "ResourceProduction",
   "ArmyProgress",
   "ExpeditionSite",
+  "ExpeditionDiscovery",
   "RealmKnowledge",
   "ResearchPrice",
   "BoardRules",
@@ -155,7 +157,7 @@ const guardBesideAnArmy = (
     }),
   );
   for (const site of store.inGame("ExpeditionSite", gameId)) {
-    if (site.clear) continue;
+    if (site.clear || ruinDisappeared(store, site)) continue;
     const structure = store.get("Structure", { game_id: gameId, entity_id: site.entity_id });
     const position = structure && isGuarded(structure, store) ? structureMapPosition(store, structure) : null;
     if (position && beside.has(`${position.x},${position.y}`)) return true;

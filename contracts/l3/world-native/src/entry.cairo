@@ -4,7 +4,11 @@ use starknet::ContractAddress;
 pub trait ILedgerOperator<T> {
     fn ledger_operator(self: @T) -> ContractAddress;
     fn set_ledger_operator(ref self: T, operator: ContractAddress);
-    fn publish_frontier_pool(ref self: T, game_id: u32, amount: u128);
+    fn publish_frontier_pool(ref self: T, game_id: u32, amount: u128, prize_pool: u128);
+    fn top_up_frontier_pool(ref self: T, game_id: u32, amount: u128);
+    fn post_frontier_top(ref self: T, game_id: u32, winners: Array<ContractAddress>);
+    fn award_frontier_prize(ref self: T, game_id: u32, rank: u16);
+    fn frontier_prize(self: @T, game_id: u32) -> FrontierPrize;
     fn grant_labor(ref self: T, realms: Array<LaborRealm>, day: u64, account: ContractAddress) -> Array<LaborGrant>;
     fn labor_grant(self: @T, realm: LaborRealm, day: u64) -> Option<LaborGrant>;
 }
@@ -35,4 +39,11 @@ pub struct LaborGrant {
 // Holding a Realm earns one daily claim on the shard, independently of any game's seeded day schedule.
 pub fn labor_day(timestamp: u64) -> u64 {
     timestamp / 86400
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct FrontierPrize {
+    pub pool: u128,
+    pub issued: u128,
+    pub count: Option<u16>,
 }

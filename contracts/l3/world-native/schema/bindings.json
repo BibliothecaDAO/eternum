@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e",
+  "schemaIdentity": "613e11d19aa31c39d7813b35de1a6f03fdb13f35adb177865fd59f37bf60de98",
   "commandAbi": [
     {
       "type": "interface",
@@ -318,6 +318,10 @@
       "name": "world_native::commands::CreateExplorer",
       "members": [
         {
+          "name": "slot",
+          "type": "core::integer::u8"
+        },
+        {
           "name": "structure_id",
           "type": "core::integer::u64"
         },
@@ -622,6 +626,10 @@
         {
           "name": "use_simple",
           "type": "core::bool"
+        },
+        {
+          "name": "scouting_kind",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -1434,6 +1442,10 @@
         {
           "name": "explorer_id",
           "type": "core::integer::u64"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -1549,6 +1561,10 @@
     },
     {
       "name": "ChestRules",
+      "scope": "game"
+    },
+    {
+      "name": "FrontierPrize",
       "scope": "game"
     },
     {

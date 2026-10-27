@@ -90,6 +90,8 @@ describe("native presets", () => {
         price_ceiling: 50n,
         shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
         claim_window_seconds: 604800,
+        pool_bps: 7000,
+        top_n: 10,
       });
     }
   });
@@ -169,15 +171,31 @@ describe("native presets", () => {
       price_ceiling: 50n,
       shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
       claim_window_seconds: 604800,
+      pool_bps: 7000,
+      top_n: 10,
     });
-    expect(preset.settlement.depths.map(({ chest }) => Object.values(chest))).toEqual([
-      [5000, 2700, 1400, 600, 300],
-      [4000, 3000, 1700, 900, 400],
-      [3000, 3000, 2200, 1200, 600],
-      [2000, 3000, 2500, 1600, 900],
-    ]);
     expect(config.season.durationSeconds).toBe(0);
   });
+
+  test.each([FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID])(
+    "Frontier preset %i removes one chest rarity at each depth and preserves the remaining proportions",
+    (id) => {
+      const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
+      const tables = preset.settlement.depths.map(({ chest }) => chest);
+      expect(tables).toEqual([
+        { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
+        { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
+        { common: 0, uncommon: 0, rare: 5500, epic: 3000, legendary: 1500 },
+        { common: 0, uncommon: 0, rare: 0, epic: 6400, legendary: 3600 },
+      ]);
+      for (const [depth, table] of tables.entries()) {
+        const weights = [table.common, table.uncommon, table.rare, table.epic, table.legendary];
+        expect(weights.every(Number.isInteger)).toBe(true);
+        expect(weights.reduce((sum, weight) => sum + weight, 0)).toBe(10000);
+        expect(weights.slice(0, depth)).toEqual(Array(depth).fill(0));
+      }
+    },
+  );
 
   test("every preset supplies its cooldown explicitly, independent of the stamina clock", () => {
     for (const [network, id, expected] of [
@@ -302,9 +320,9 @@ describe("native presets", () => {
       [`${research.ROW_HEARTH}:4`]: [360000n, 60000n],
       [`${research.ROW_SHRINE}:1`]: [2000n, 0n],
       [`${research.ROW_WELL}:1`]: [6000n, 0n],
-      [`${research.ROW_DEPTH}:1`]: [160000n, 0n],
-      [`${research.ROW_DEPTH}:2`]: [400000n, 0n],
-      [`${research.ROW_DEPTH}:3`]: [900000n, 0n],
+      [`${research.ROW_DEPTH}:1`]: [100000n, 0n],
+      [`${research.ROW_DEPTH}:2`]: [250000n, 0n],
+      [`${research.ROW_DEPTH}:3`]: [500000n, 0n],
     });
     expect(preset.structures.board.unwrap()).toMatchObject({
       output_step_bps: 2500,
@@ -312,7 +330,11 @@ describe("native presets", () => {
       population_step_bps: 2500,
       ration_step: precision / 4n,
       training_gate_tier: 2,
-      castle_store_deploys: 2,
+      troop_store_deploys: 2,
+      settlement_resource_cap: 6000,
+      city_resource_cap: 18000,
+      kingdom_resource_cap: 40000,
+      empire_resource_cap: 80000,
     });
     expect(preset.structures.buildings).toHaveLength(research.HEARTH);
     for (const category of [research.WAR_HALL, research.SUPPLY_YARD, research.SCOUTS_LODGE, research.HEARTH]) {

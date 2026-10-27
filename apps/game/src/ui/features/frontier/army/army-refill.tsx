@@ -30,12 +30,12 @@ export const ArmyRefill = ({
   if (!stamina || stamina.current >= stamina.max) return null;
 
   /** The confirm closes as the refill leaves; the army's Refill carries the wait, and a refusal says why. */
-  const refill = async () => {
+  const refill = async (amount: number) => {
     const signer = account.account;
     if (!signer) return;
     try {
       await sendOnce("refill", army.explorerId, true, async () => {
-        const sent = await setup.systemCalls.refill_stamina({ signer, explorerId: army.explorerId });
+        const sent = await setup.systemCalls.refill_stamina({ signer, explorerId: army.explorerId, amount });
         close();
         return sent;
       });
@@ -50,8 +50,7 @@ export const ArmyRefill = ({
         <RefillChip price={Math.ceil(stamina.max - stamina.current)} held={held} refilling={refilling} onRefill={ask} />
       ) : (
         <RefillButton
-          price={Math.ceil(stamina.max - stamina.current)}
-          held={held}
+                    held={held}
           refilling={refilling}
           onRefill={ask}
         />
@@ -61,7 +60,7 @@ export const ArmyRefill = ({
           stamina={stamina}
           held={held}
           sending={refilling}
-          onRefill={() => void refill()}
+          onRefill={(amount) => void refill(amount)}
           onCancel={close}
         />
       )}

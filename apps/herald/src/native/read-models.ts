@@ -30,6 +30,7 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "HyperstructureShares",
   "ChestRules",
   "LordsBudget",
+  "FrontierPrize",
   "LordsWithdrawal",
 ]);
 

@@ -59,7 +59,8 @@ export type SiteVerb =
     }
   | { kind: "move"; prices: readonly Price[]; onMove: () => void }
   | { kind: "short"; stamina: Cost }
-  | { kind: "far" };
+  | { kind: "far" }
+  | { kind: "blocked"; reason: string };
 
 /**
  * An army that could take the site, offered when none is selected: the fight it would have from where it stands (the
@@ -91,6 +92,7 @@ export const SiteCardView = ({
   fight,
   pay,
   chest,
+  ruinChoice,
   xp,
   verb,
   choices,
@@ -109,6 +111,7 @@ export const SiteCardView = ({
   pay: { icon: IconMeaning; amount: number; fits?: number } | null;
   /** A ruin's chest: its tier and the exact LORDS stored with it; undefined until the facts carry them. */
   chest?: { tier: Tier; lords: number };
+  ruinChoice?: { depth: string };
   xp: number | undefined;
   verb: SiteVerb | null;
   choices?: readonly SiteChoice[];
@@ -506,6 +509,7 @@ export const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFl
  * or why the step is not Attack.
  */
 const verbLine = (verb: SiteVerb, site: string, warns: boolean): { line: string | undefined; warns: boolean } => {
+  if (verb.kind === "blocked") return { line: verb.reason, warns: true };
   if (verb.kind === "attack" && verb.refused && !verb.inFlight) return { line: verb.refused, warns: true };
   return { line: warns ? ARMY_WILL_BE_LOST : verbReason(verb, site), warns };
 };
@@ -518,6 +522,7 @@ const attackPrices = (verb: Exclude<SiteVerb, { kind: "move" }>): readonly Price
 /** Why the step is not Attack, or cannot run: the stamina missing and when it is back, or the site out of reach. */
 const verbReason = (verb: SiteVerb, site: string): string | undefined => {
   if (verb.kind === "attack") return undefined;
+  if (verb.kind === "blocked") return verb.reason;
   if (verb.kind !== "short") return tooFarFrom(site);
   const { cost, held, wait } = verb.stamina;
   return staminaShortfall(held, cost, wait);

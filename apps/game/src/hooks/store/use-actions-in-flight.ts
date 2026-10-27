@@ -17,7 +17,7 @@ type ArmyOrderInFlight = { order: OrderInFlight; to?: { col: number; row: number
 interface InFlight {
   army: ArmyOrderInFlight;
   plot: { type: BuildingType; plot: { col: number; row: number } };
-  deploy: true;
+  deploy: number;
   research: true;
   castle: true;
   refill: true;

@@ -587,6 +587,7 @@ async function createBotExplorer({
     send: () =>
       game.submit(harnessAccount.account, () =>
         actions.createExplorerArmy({
+          slot: 0,
           structureId: structure.structureId,
           troopType,
           troopTier: TroopTier.T1,

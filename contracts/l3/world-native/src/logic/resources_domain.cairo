@@ -62,7 +62,7 @@ pub mod ResourcesLogic {
             assert!(site.clear.is_none(), "site already cleared");
             let category = site.category;
             let reward = if category == crate::taxonomy::RUIN_CATEGORY {
-                Some(crate::logic::lords_budget::pay(key, context))
+                Some(crate::logic::lords_budget::pay_ruin(key, home_id, context))
             } else {
                 crate::expeditions::site_reward(category, site)
             };
@@ -91,6 +91,18 @@ pub mod ResourcesLogic {
                 explorer,
                 crate::progression::XpAward::Clear(site.initial_guard_count),
             );
+            if category == crate::taxonomy::RUIN_CATEGORY {
+                crate::logic::expeditions::close_ruins(
+                    crate::expeditions::ExpeditionDiscoveryKey {
+                        game_id: key.game_id,
+                        structure_id: home_id,
+                        epoch: crate::expeditions::region_day(
+                            crate::troops::Coord { alt: site.alt, x: site.col, y: site.row },
+                            crate::logic::settlement::rules(key.game_id).spacing,
+                        ),
+                    },
+                );
+            }
             let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;
             crate::logic::stories::emit_entity_story(
                 key,

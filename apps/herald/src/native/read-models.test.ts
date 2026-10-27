@@ -616,8 +616,10 @@ it.each(["Frontier", "check-frontier-abc"])(
   "finalizes %s and keeps custody facts through checkpoint recovery",
   (name) => {
     const state = world();
-    const models = ["ChestRules", "LordsBudget", "LordsWithdrawal"];
+    const models = ["ChestRules", "LordsBudget", "LordsWithdrawal", "FrontierPrize"];
     const chests = {
+      pool_bps: 7000,
+      top_n: 10,
       price_ceiling: 50n,
       claim_window_seconds: 604800n,
       shares: { common: 1n, uncommon: 2n, rare: 4n, epic: 10n, legendary: 20n },
@@ -643,7 +645,8 @@ it.each(["Frontier", "check-frontier-abc"])(
           ),
           rowEvent("ChestRules", ["1"], chests),
           rowEvent("LordsBudget", ["1"], budget),
-          rowEvent("LordsWithdrawal", ["1", "85"], { account: 273n, amount: 100n }),
+          rowEvent("FrontierPrize", ["1"], { pool: 300n, issued: 0n, count: new CairoOption(CairoOptionVariant.None) }),
+          rowEvent("LordsWithdrawal", ["1", "85"], { account: 273n, amount: 100n, prize_rank: 0, prize_count: 0 }),
           gameEvent("1", "1", "0", "5", name),
         ]),
       ),
@@ -660,7 +663,9 @@ it.each(["Frontier", "check-frontier-abc"])(
     expect(restored.snapshot("1", 12, models).models).toEqual(before);
     state.native.applyReceipt(
       restored,
-      receipt([rowEvent("LordsWithdrawal", ["1", "86"], { account: 273n, amount: 50n })]),
+      receipt([
+        rowEvent("LordsWithdrawal", ["1", "86"], { account: 273n, amount: 50n, prize_rank: 1, prize_count: 10 }),
+      ]),
       12,
       0,
     );

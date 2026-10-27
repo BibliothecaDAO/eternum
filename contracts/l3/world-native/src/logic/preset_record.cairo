@@ -259,7 +259,14 @@ fn write_buildings(
         assert!(board.demolition_refund_bps <= 10000, "invalid demolition refund");
         assert!(board.workshop_rate != 0, "zero workshop rate");
         assert!(board.training_gate_tier <= 4, "invalid training gate tier");
-        assert!(board.castle_store_deploys != 0, "zero castle store");
+        assert!(board.troop_store_deploys != 0, "zero troop store");
+        assert!(
+            board.settlement_resource_cap > 0
+                && board.city_resource_cap > 0
+                && board.kingdom_resource_cap > 0
+                && board.empire_resource_cap > 0,
+            "zero resource store",
+        );
         preset.board_terms.write(Some(board));
     }
 }
@@ -427,6 +434,10 @@ pub fn store_relics(
             day_unit_seconds != 0 && mode_rules & crate::rules::DEPTH_CONTENTS != 0, "chest tables require depth rules",
         );
         assert!(value.price_ceiling != 0, "empty chest rules");
+        assert!(
+            value.pool_bps > 0 && value.pool_bps < 10000 && value.top_n > 0 && value.top_n <= 100,
+            "invalid Frontier prize split",
+        );
         let shares = value.shares;
         assert!(
             shares.common != 0

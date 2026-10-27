@@ -92,7 +92,12 @@ pub fn deploy(d: super::Deployment, game_id: u32, category: u8, direction: u8) -
     let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
     let command = crate::commands::Command::CreateExplorer(
         crate::commands::CreateExplorer {
-            structure_id: 1, category, tier: 0, amount: 3 * crate::rules::RESOURCE_PRECISION, direction,
+            slot: direction,
+            structure_id: 1,
+            category,
+            tier: 0,
+            amount: 3 * crate::rules::RESOURCE_PRECISION,
+            direction,
         },
     );
     assert!(super::resource_commands::execute_in_game(d, game_id, command, 351));

@@ -1,4 +1,5 @@
 import {
+  siteUsedLine,
   buildingName,
   CHEST_EARNED,
   fightVerdict,
@@ -243,6 +244,17 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       title: category === StructureType.Ruin ? `${cleared}: ${CHEST_EARNED}` : cleared,
       description: joinPieces([label, describeExplorer(payload.explorer_id, components, player), reward]),
       icon: "prize",
+    };
+  },
+  SiteUsed: (event, payload, components, resolvePlayerName) => {
+    const benefit = payload.benefit as Record<string, unknown> | undefined;
+    const kind = benefit?.Shrine !== undefined ? "Shrine" : benefit?.Well !== undefined ? "Well" : null;
+    const amount = kind && toNumber(benefit![kind]);
+    if (kind === null || amount === null) throw new Error("Incomplete site use story");
+    return {
+      title: siteUsedLine(kind, formatExact(amount)),
+      description: describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
+      icon: "scroll",
     };
   },
   TierBought: (event, payload, components, resolvePlayerName) => {

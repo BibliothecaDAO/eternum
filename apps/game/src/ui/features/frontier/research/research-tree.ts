@@ -11,7 +11,7 @@ import {
   WELL,
   XP,
 } from "@/ui/design-system/kit/words";
-import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
+import { battleBonusBps, homecomingBps, logisticsStamina, researchHasIndependentSides, scoutingIncrementBps } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from "@bibliothecadao/types";
 
@@ -23,13 +23,13 @@ import { buildingIcon, buildingName } from "../build/building-names";
  * what it gives now and next.
  *
  *   - A building row opens once a building of its type stands, and climbs common to legendary (four buys);
- *   - the four training buildings can only stand once the Barracks row reaches the board's gate tier (rare);
+ *   - the four training buildings open after two Barracks purchases, in any combination;
  *   - a tier's labor must fit the castle's labor store, which grows with the castle's level and Storeroom picks;
  *   - the Shrine and the Well are one buy each, Essence only;
  *   - the Ethereal reaches are bought in order, I then II then III, Essence only.
  */
 
-/** A row as the realm has learned it: its tier, and the side taken at each tier (0 make, 1 store; the lodge's kind). */
+/** A row's highest tier and bought sides. Only Scouts retains purchase order. */
 export type LearnedRow = { tier: number; sides: number[] };
 
 /** What the tree reads of a realm and its game, in whole units. */
@@ -67,10 +67,15 @@ export type Need =
   | { kind: "store"; met: boolean; limit: number; need: number; level: string }
   | { kind: "essence" | "labor"; met: boolean; have: number; need: number };
 
-/**
- * A side a tier can take: its mark, its word, what it does, and its figure now and with one more pick.
- */
-export type Side = { icon: IconMeaning; name: string; line: string; now: string; next: string };
+/** A side a tier can take: its mark, its word, what it does, and its figure now and with one more pick. */
+type SideEffect = { icon: IconMeaning; name: string; line: string; now: string; next: string };
+export type Side = SideEffect & {
+  tier: number;
+  nextTier?: Exclude<Tier, 1>;
+  price?: { essence: number; labor: number };
+  state: NodeState;
+  needs: Need[];
+};
 
 /** One thing a building row's research gives: its mark and word, its figure now, and with the next tier (none at the top). */
 export type Figure = { icon: IconMeaning; name: string; now: string; next?: string };
@@ -91,9 +96,9 @@ export interface TreeNode {
   needs: Need[];
   /** What the node does, one line, and its figure now and after the next tier. */
   gives: { line: string; now: string; next?: string };
-  /** The sides its next tier chooses between; the choice sent is the side's index. */
+  /** Side upgrades with their own price and availability; the command choice is the side's index. */
   sides?: Side[];
-  /** The marks of the sides taken, one per learned tier. */
+  /** The marks of bought sides; only Scouts keeps purchase order. */
   taken: IconMeaning[];
   /**
    * What a building row's research gives, without its tier's word: each side, or its one figure (a Hut's population, a
@@ -172,7 +177,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     gives: (tier: number) => TreeNode["gives"],
     options: {
       extra?: Need[];
-      sides?: (tier: number, done: boolean) => Side[];
+      sides?: (tier: number, done: boolean) => SideEffect[];
       taken?: () => IconMeaning[];
       /** The row's figures where it has no sides; a row with sides shows its sides. */
       figures?: (tier: number) => Figure[];
@@ -180,13 +185,31 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       gate?: TreeNode["gate"];
     } = {},
   ): TreeNode => {
-    const { tier } = learned(row);
+    const tier = researchHasIndependentSides(row) ? Math.max(picks(row, 0), picks(row, 1)) : learned(row).tier;
     const name = buildingName(category);
     const icon = buildingIcon(category);
+    const constructionGrant = tier === 0 && TRAINING.some((training) => training.row === row);
     const next = tier < 4 ? tier + 1 : undefined;
-    const done = next === undefined;
-    const needs = done ? [] : buildingNeeds(row, name, icon, next, options.extra ?? []);
-    const sides = options.sides?.(tier, done);
+    const nextNeeds = (at: number) => {
+      const needs = buildingNeeds(row, name, icon, at, options.extra ?? []);
+      return constructionGrant ? needs.filter((need) => need.kind === "stands" || need.kind === "tier") : needs;
+    };
+    const needs = next === undefined ? [] : nextNeeds(next);
+    const sides = options.sides?.(tier, next === undefined).map((side, index): Side => {
+      const sideTier = researchHasIndependentSides(row) ? picks(row, index) : tier;
+      const done = sideTier === 4;
+      const sideNeeds = done ? [] : nextNeeds(sideTier + 1);
+      return {
+        ...side,
+        tier: sideTier,
+        nextTier: done ? undefined : ((sideTier + 2) as Exclude<Tier, 1>),
+        price: done || constructionGrant ? undefined : realm.price(row, sideTier + 1),
+        needs: sideNeeds,
+        state: constructionGrant ? "locked" : stateOf(done, sideNeeds),
+      };
+    });
+    const available =
+      sides && ["ready", "short", "locked", "done"].flatMap((state) => sides.filter((side) => side.state === state))[0];
     return {
       key: `row-${row}`,
       row,
@@ -195,12 +218,18 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       name,
       tier,
       maxTier: 4,
-      state: stateOf(next === undefined, needs),
-      nextTier: next === undefined ? undefined : ((next + 1) as Exclude<Tier, 1>),
-      price: next === undefined ? undefined : realm.price(row, next),
-      needs,
+      state: constructionGrant ? "locked" : (available?.state ?? stateOf(next === undefined, needs)),
+      nextTier: available ? available.nextTier : next === undefined ? undefined : ((next + 1) as Exclude<Tier, 1>),
+      price: constructionGrant
+        ? undefined
+        : available
+          ? available.price
+          : next === undefined
+            ? undefined
+            : realm.price(row, next),
+      needs: available?.needs ?? needs,
       gives: gives(tier),
-      sides: done ? undefined : sides,
+      sides,
       taken: options.taken?.() ?? [],
       // A row with sides shows each side, with what its picks hold: one figure for the row would hide which side
       // holds what, and leave the others no way to be picked (the Scouts' lodge's three kinds).
@@ -215,13 +244,13 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   type SideRule = { icon: IconMeaning; words: readonly [string, string]; at: (picks: number) => string };
   /** Fields, Tools or Drill against Granary, Storeroom or Rations: what one more pick of each adds. */
   const twoSides = (row: number, make: SideRule, other: SideRule) => ({
-    sides: (): Side[] =>
+    sides: (): SideEffect[] =>
       [make, other].map((side, index) => ({
         icon: side.icon,
         name: side.words[0],
         line: side.words[1],
         now: side.at(picks(row, index)),
-        next: side.at(picks(row, index) + 1),
+        next: side.at(Math.min(4, picks(row, index) + 1)),
       })),
     taken: () => learned(row).sides.map((side) => (side === 0 ? make.icon : other.icon)),
   });
@@ -249,10 +278,10 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     { icon: "tools", words: sides.tools, at: output },
     { icon: "storehouse", words: sides.storeroom, at: storage },
   ];
-  const gateBarracks = `${buildingName(BuildingType.ResourceKnightT1)} ${tierShown(realm.board.trainingGateTier)}`;
+  const gateBarracks = `${buildingName(BuildingType.ResourceKnightT1)} ${realm.board.trainingGateTier} purchases`;
   const gateNeed: Need = {
     kind: "tier",
-    met: learned(ROWS.barracks).tier >= realm.board.trainingGateTier,
+    met: learned(ROWS.barracks).sides.length >= realm.board.trainingGateTier,
     node: gateBarracks,
     icon: buildingIcon(BuildingType.ResourceKnightT1),
   };
@@ -284,7 +313,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       BuildingType.ResourceKnightT1,
       "army",
       (tier) => ({
-        line: tier < realm.board.trainingGateTier ? RESEARCH_TREE.gateLine(gateBarracks) : RESEARCH_TREE.gateOpen,
+        line: !gateNeed.met ? RESEARCH_TREE.gateLine(gateBarracks) : RESEARCH_TREE.gateOpen,
         now: tierShown(tier),
         next: tier < 4 ? tierShown(tier + 1) : undefined,
       }),
@@ -431,7 +460,7 @@ const stateOf = (done: boolean, needs: Need[]): NodeState => {
 /** The first thing a node waits on: the one line a locked or short node shows, and the step its fix takes. */
 export const firstMissing = (node: TreeNode): Need | undefined => node.needs.find((need) => !need.met);
 
-/** A need in a player's words: "Build a Workshop", "Barracks Rare first", "Essence 300 / 1,000". */
+/** A need in a player's words: "Build a Workshop", "Barracks 2 purchases first", "Essence 300 / 1,000". */
 export const needLine = (need: Need): string => {
   switch (need.kind) {
     case "stands":

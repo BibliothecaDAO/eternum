@@ -52,16 +52,16 @@ describe("Frontier's build options", () => {
     const farm = option(BuildingType.ResourceWheat);
     const hut = option(BuildingType.WorkersHut);
     expect(farm.tier).toBe(1);
-    // research.cairo: Farm rare (Fields, then Granary) at bits 0 and 3-4; Hut epic at bit 21.
+    // One upgrade on each Farm side; Hut epic at bit 21.
     store.applyFacts([
       {
         model: "RealmKnowledge",
         key: "0x77",
-        value: { game_id: 1, structure_id: 7, learned: 2n | (1n << 4n) | (3n << 21n) },
+        value: { game_id: 1, structure_id: 7, learned: 1n | (1n << 3n) | (3n << 21n) },
       },
     ] as never);
     const farmAfter = option(BuildingType.ResourceWheat);
-    expect(farmAfter.tier).toBe(3);
+    expect(farmAfter.tier).toBe(2);
     expect((farmAfter.effect as { perHour: number }).perHour).toBeCloseTo(
       (farm.effect as { perHour: number }).perHour * 1.25,
       6,
@@ -81,18 +81,18 @@ describe("Frontier's build options", () => {
     expect(readBuildOptions(store, realm, true, 350)).toBeUndefined();
   });
 
-  it("offers each training building once the Barracks row reaches the board's gate tier, trained at its own tier", () => {
+  it("opens training after mixed Barracks purchases, trained at the training building’s own tier", () => {
     const { store, realm } = realmBoard();
     const warHall = () =>
       readBuildOptions(store, realm, true, 350)!.find(({ category }) => category === BuildingType.WarHall)!;
     const gate = store.require("BoardRules", { game_id: 1 }).training_gate_tier;
-    expect(warHall()).toMatchObject({ standing: { gate }, effect: { kind: "trains", attribute: "Battle" }, tier: 1 });
-    // research.cairo: the Barracks row's tier sits at 0x4000.
+    expect(warHall()).toMatchObject({ standing: { gate }, effect: { kind: "trains", attribute: "Battle" }, tier: 2 });
+    // One Drill and one Rations purchase meet the two-purchase gate.
     store.applyFacts([
       {
         model: "RealmKnowledge",
         key: "0x77",
-        value: { game_id: 1, structure_id: realm.entity_id, learned: BigInt(gate) * 0x4000n },
+        value: { game_id: 1, structure_id: realm.entity_id, learned: (1n << 14n) | (1n << 17n) },
       },
     ] as never);
     expect(warHall().standing).toBe("open");

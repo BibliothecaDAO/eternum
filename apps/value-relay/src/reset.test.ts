@@ -34,6 +34,8 @@ const setup = () => {
   return { data, store: new DurableRelayStore(storage as unknown as DurableObjectStorage) };
 };
 const withdrawal = (number: number): Withdrawal => ({
+  prizeRank: 0,
+  prizeCount: 0,
   blockNumber: number,
   chainId: "0x1",
   seasonId: 1,

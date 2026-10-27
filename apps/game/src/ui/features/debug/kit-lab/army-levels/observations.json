@@ -1,0 +1,74 @@
+[
+  {
+    "day": 0,
+    "n": 68,
+    "xp_median": 12,
+    "xp_p90": 80,
+    "xp_max": 255,
+    "today_eligible": 5,
+    "flat_eligible": 10
+  },
+  {
+    "day": 1,
+    "n": 54,
+    "xp_median": 12,
+    "xp_p90": 125,
+    "xp_max": 841,
+    "today_eligible": 8,
+    "flat_eligible": 12
+  },
+  {
+    "day": 2,
+    "n": 75,
+    "xp_median": 12,
+    "xp_p90": 118,
+    "xp_max": 615,
+    "today_eligible": 10,
+    "flat_eligible": 18
+  },
+  {
+    "day": 3,
+    "n": 39,
+    "xp_median": 14,
+    "xp_p90": 101,
+    "xp_max": 495,
+    "today_eligible": 5,
+    "flat_eligible": 7
+  },
+  {
+    "day": 4,
+    "n": 51,
+    "xp_median": 24,
+    "xp_p90": 304,
+    "xp_max": 704,
+    "today_eligible": 11,
+    "flat_eligible": 15
+  },
+  {
+    "day": 5,
+    "n": 42,
+    "xp_median": 46,
+    "xp_p90": 320,
+    "xp_max": 860,
+    "today_eligible": 18,
+    "flat_eligible": 20
+  },
+  {
+    "day": 6,
+    "n": 27,
+    "xp_median": 24,
+    "xp_p90": 297,
+    "xp_max": 728,
+    "today_eligible": 8,
+    "flat_eligible": 9
+  },
+  {
+    "day": 7,
+    "n": 25,
+    "xp_median": 20,
+    "xp_p90": 271,
+    "xp_max": 636,
+    "today_eligible": 6,
+    "flat_eligible": 10
+  }
+]

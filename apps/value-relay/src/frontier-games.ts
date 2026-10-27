@@ -51,5 +51,7 @@ export function frontierTerms(snapshot: ConfirmedSnapshot): FrontierFundingTerms
     seed: String(game.seed),
     dayUnit: ledgerInteger(String(rules.day_unit_seconds)),
     claimWindow: ledgerInteger(String(chests.claim_window_seconds)),
+    chestPoolBps: ledgerInteger(String(chests.pool_bps)),
+    topN: ledgerInteger(String(chests.top_n)),
   };
 }

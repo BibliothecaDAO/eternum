@@ -29,7 +29,7 @@ import type { RealmPopulation } from "../realm/realm-population";
 /**
  * One building on the build sheet (the owner's pick, option B · Cards): its painting and name, what one more gives
  * and the population it takes, and a band for where it stands: its labor price, with the wait while the realm holds
- * too little or the population it lacks, a lock with the gate it waits for (Barracks at a tier), or a tick when the
+ * too little or the population it lacks, a lock with the gate it waits for (Barracks research purchases), or a tick when the
  * realm already holds its one copy.
  */
 export type BuildTile = {
@@ -52,7 +52,7 @@ export type BuildTile = {
         short?: { of: "labor"; wait: number | undefined } | { of: "population" };
       }
     | { kind: "built" }
-    | { kind: "locked"; gate: Exclude<Tier, 1> };
+    | { kind: "locked"; purchases: number };
 };
 
 /**
@@ -64,6 +64,7 @@ export type BuildTile = {
  */
 export const BuildView = ({
   population,
+  scouting,
   tiles,
   chosen,
   onChoose,
@@ -75,6 +76,7 @@ export const BuildView = ({
 }: {
   /** The realm's population, used of all it can hold; unknown is left out. */
   population: RealmPopulation | undefined;
+  scouting?: { kind: 0 | 1 | 2; onChoose: (kind: 0 | 1 | 2) => void };
   tiles: BuildTile[];
   chosen: number;
   onChoose: (index: number) => void;
@@ -97,6 +99,23 @@ export const BuildView = ({
         <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
       ))}
     </div>
+    {scouting && (
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-hud-label">Free Uncommon Scouting · find more</legend>
+        <div className="flex gap-2">
+          {(["Camps", "Rifts", "Beasts"] as const).map((name, kind) => (
+            <HudButton
+              key={name}
+              kind={kind === scouting.kind ? "secondary" : "quiet"}
+              aria-pressed={kind === scouting.kind}
+              onClick={() => scouting.onChoose(kind as 0 | 1 | 2)}
+            >
+              {name}
+            </HudButton>
+          ))}
+        </div>
+      </fieldset>
+    )}
     {refusal ? (
       <HudWindowFoot note={<RefusalNote refusal={refusal} />}>
         {refusal.fix && (
@@ -182,9 +201,8 @@ const bandTone = (standing: BuildTile["standing"]) =>
       : undefined;
 
 /**
- * Where a building stands, along its card's foot: its price and what it lacks, the Barracks tier it waits for in words
- * with its numeral ("Barracks III" by the lock, "Needs Barracks III" on its tip and refusal: never a gem, which would
- * read as the card's own tier), or a tick.
+ * Where a building stands, along its card's foot: its price and what it lacks, the Barracks purchases it waits for (its
+ * refusal names the Barracks), or a tick.
  */
 const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
   <HudChip
@@ -196,7 +214,7 @@ const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
       {standing.kind === "locked" && (
         <>
           <SemanticIcon name="lock" size={14} />
-          {`${BARRACKS} ${tierNumeral(standing.gate)}`}
+          {standing.purchases} research
         </>
       )}
       {standing.kind === "price" && <Price standing={standing} />}

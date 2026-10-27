@@ -39,7 +39,16 @@ beforeEach(() => {
 it("waits for the Frontier payment to confirm before completing", async () => {
   await Effect.runPromise(
     ledgerPaymentAdapter(credentials, async () => {})(
-      { chainId: "0x1", seasonId: 7, transactionHash: "0xdef", realmsId: "0x3", amount: "17", confirmedAt: 1000 },
+      {
+        prizeRank: 0,
+        prizeCount: 0,
+        chainId: "0x1",
+        seasonId: 7,
+        transactionHash: "0xdef",
+        realmsId: "0x3",
+        amount: "17",
+        confirmedAt: 1000,
+      },
       "0x456",
     ),
   );
@@ -58,6 +67,8 @@ it("waits for the Frontier payment to confirm before completing", async () => {
 it("does not mark a reverted payment successful or expose a transport's error", async () => {
   const pay = ledgerPaymentAdapter(credentials, async () => {});
   const withdrawal = {
+    prizeRank: 0,
+    prizeCount: 0,
     chainId: "0x1",
     seasonId: 7,
     transactionHash: "0xdef",
@@ -83,6 +94,8 @@ it("makes a monitor pause retry harmless once the pause already landed", async (
 
 it("distinguishes a permanent close from the retryable whole-day unlock gate without leaking revert text", async () => {
   const claim = {
+    prizeRank: 0,
+    prizeCount: 0,
     chainId: "0x1",
     seasonId: 7,
     transactionHash: "0xdef",
@@ -99,6 +112,8 @@ it("distinguishes a permanent close from the retryable whole-day unlock gate wit
 
 it("confirms an immutable withdrawal report separately from payment and recognizes reported-unpaid versus unseen", async () => {
   const claim = {
+    prizeRank: 0,
+    prizeCount: 0,
     chainId: "0x1",
     seasonId: 7,
     transactionHash: "0xdef",
@@ -106,21 +121,30 @@ it("confirms an immutable withdrawal report separately from payment and recogniz
     amount: "17",
     confirmedAt: 1000,
   };
-  rpc.call.mockResolvedValueOnce(["0", "0", "0", "0", "0"]);
+  rpc.call.mockResolvedValueOnce(["0", "0", "0", "0", "0", "0", "0"]);
   expect(await Effect.runPromise(ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(claim))).toBeNull();
-  rpc.call.mockResolvedValueOnce(["0", "0", "0", "0", "0"]).mockResolvedValue(["0", "7", "0", "17", "0"]);
+  rpc.call
+    .mockResolvedValueOnce(["0", "0", "0", "0", "0", "0", "0"])
+    .mockResolvedValue(["0", "7", "0", "17", "0", "0", "0"]);
   await Effect.runPromise(ledgerReportAdapter(credentials)(claim));
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x10",
     entrypoint: "report_withdrawal",
-    calldata: ["0x1", "7", "0xdef", "17", "0"],
+    calldata: ["0x1", "7", "0xdef", "17", "0", "0", "0"],
   });
   expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
-    ledgerCall("report_withdrawal", { shard: 1, season_id: 7, claim_id: "0xdef", amount: { low: 17, high: 0 } }).map(
-      BigInt,
-    ),
+    ledgerCall("report_withdrawal", {
+      prize_rank: 0,
+      prize_count: 0,
+      shard: 1,
+      season_id: 7,
+      claim_id: "0xdef",
+      amount: { low: 17, high: 0 },
+    }).map(BigInt),
   );
   expect(await Effect.runPromise(ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(claim))).toEqual({
+    prizeRank: 0,
+    prizeCount: 0,
     paid: false,
     seasonId: 7,
     wallet: "0",
@@ -140,7 +164,16 @@ it("refuses a pay before broadcast when identity cannot record ready authority",
   await expect(
     Effect.runPromise(
       pay(
-        { chainId: "0x1", seasonId: 1, transactionHash: "0xabc", realmsId: "0x2", amount: "1", confirmedAt: 1 },
+        {
+          prizeRank: 0,
+          prizeCount: 0,
+          chainId: "0x1",
+          seasonId: 1,
+          transactionHash: "0xabc",
+          realmsId: "0x2",
+          amount: "1",
+          confirmedAt: 1,
+        },
         "0x123",
       ),
     ),
@@ -151,7 +184,16 @@ it("journals the exact signed claim decision before broadcast without an inclusi
   const record = vi.fn(async () => {});
   await Effect.runPromise(
     ledgerPaymentAdapter(credentials, record)(
-      { chainId: "0x1", seasonId: 1, transactionHash: "0xdef", realmsId: "0x2", amount: "17", confirmedAt: 999999 },
+      {
+        prizeRank: 0,
+        prizeCount: 0,
+        chainId: "0x1",
+        seasonId: 1,
+        transactionHash: "0xdef",
+        realmsId: "0x2",
+        amount: "17",
+        confirmedAt: 999999,
+      },
       "0x123",
     ),
   );
@@ -169,11 +211,13 @@ it("journals the exact signed claim decision before broadcast without an inclusi
 });
 
 it("sets aside a first report that permanently missed the ledger claim window", async () => {
-  rpc.call.mockResolvedValue(["0", "0", "0", "0", "0"]);
+  rpc.call.mockResolvedValue(["0", "0", "0", "0", "0", "0", "0"]);
   rpc.wait.mockResolvedValue({ isReverted: () => true, revert_reason: "Ledger: claim window ended" });
   await expect(
     Effect.runPromise(
       ledgerReportAdapter(credentials)({
+        prizeRank: 0,
+        prizeCount: 0,
         chainId: "0x1",
         seasonId: 7,
         transactionHash: "0xdef",
@@ -187,6 +231,8 @@ it("sets aside a first report that permanently missed the ledger claim window", 
 
 it("derives voided debt from an unpaid report and its confirmed closed pool", async () => {
   const row = {
+    prizeRank: 0,
+    prizeCount: 0,
     chainId: "0x1",
     seasonId: 7,
     transactionHash: "0xdef",
@@ -198,8 +244,8 @@ it("derives voided debt from an unpaid report and its confirmed closed pool", as
   let closed = true;
   rpc.call.mockImplementation(async (call) =>
     call.entrypoint === "get_payment"
-      ? [paid ? "1" : "0", "7", paid ? "0x123" : "0", "17", "0"]
-      : ["1", "10", "20", "100", "0", "0", "0", closed ? "1" : "0", "5", "9"],
+      ? [paid ? "1" : "0", "7", paid ? "0x123" : "0", "17", "0", "0", "0"]
+      : ["1", "10", "20", "100", "0", "0", "0", closed ? "1" : "0", "5", "9", "0", "0", "0", "0"],
   );
   const read = () => Effect.runPromise(ledgerWithdrawalVoided(credentials.rpcUrl, credentials.contractAddress)(row));
   expect(await read()).toBe(true);
@@ -217,7 +263,7 @@ it("derives voided debt from an unpaid report and its confirmed closed pool", as
 
 it("does not treat an unfunded season as open or voided debt", async () => {
   rpc.call.mockImplementation(async (query) => {
-    if (query.entrypoint === "get_payment") return ["0", "0", "0", "0", "0"];
+    if (query.entrypoint === "get_payment") return ["0", "0", "0", "0", "0", "0", "0"];
     throw new Error("Ledger: unknown Frontier season");
   });
   await expect(
@@ -226,6 +272,8 @@ it("does not treat an unfunded season as open or voided debt", async () => {
         credentials.rpcUrl,
         credentials.contractAddress,
       )({
+        prizeRank: 0,
+        prizeCount: 0,
         chainId: "0x1",
         seasonId: 7,
         transactionHash: "0xdef",

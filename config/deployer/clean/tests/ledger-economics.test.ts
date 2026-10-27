@@ -35,8 +35,8 @@ describe("ledger economics", () => {
     });
     expect(preset.mmr).toEqual({ enabled: true, mean: 1_500, spread: 450, max_delta: 45, k: 50, regression_bps: 150 });
     expect(BigInt(preset.entry_fee.low)).toBe(100_000_000_000_000_000_000n);
-    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(81);
-    expect(buildRegisterLedgerPresetCalldata(1, preset)[19]).toBe("5");
+    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(83);
+    expect(buildRegisterLedgerPresetCalldata(1, preset)[21]).toBe("5");
   });
 
   it("serializes each mode's economic preset exactly as the ledger ABI", () => {
@@ -124,4 +124,10 @@ it("keeps the existing duel price outside the first-deployment environment chang
   const preset = buildLedgerEconomicPreset("duel");
   expect(BigInt(preset.entry_fee.low)).toBe(500n * 10n ** 18n);
   expect(preset.protocol_cut_bps).toBe(2000);
+});
+
+it("funds Frontier chests at 70 percent and reserves the remainder for the top ten", () => {
+  const preset = buildLedgerEconomicPreset("frontier");
+  expect(preset.frontier_chest_bps).toBe(7000);
+  expect(preset.frontier_top_n).toBe(10);
 });

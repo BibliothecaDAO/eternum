@@ -12,7 +12,7 @@ import {
 
 interface ReceiptBindings {
   realmsIdForAccount(account: string): Promise<string | null>;
-  frontierSeason(gameId: number, confirmedAt: number): RelayEffect<number>;
+  frontierSeason(gameId: number, confirmedAt: number, prizeRank: number): RelayEffect<number>;
 }
 
 /** Receipt fields are immutable shard facts; identity and funding bindings are resolved separately. */
@@ -94,19 +94,23 @@ export const shardWithdrawalPorts = (
 const resolveWithdrawal = (reader: ShardReader, bindings: ReceiptBindings, row: ValueRow, confirmedAt: number) =>
   Effect.gen(function* () {
     const receipt = yield* relayOperation("decode withdrawal receipt", async () => {
-      if (row.keys.length !== 2 || row.values.length !== 2 || !sameFelt(row.keys[1]!, row.transactionHash))
+      if (row.keys.length !== 2 || row.values.length !== 4 || !sameFelt(row.keys[1]!, row.transactionHash))
         throw new Error("invalid_withdrawal_receipt");
       const gameId = Number(uint(row.keys[0]!, 32));
       const account = felt(row.values[0]!);
       const amount = uint(row.values[1]!, 128);
       if (!gameId || BigInt(account) === 0n || amount === 0n) throw new Error("invalid_withdrawal_receipt");
-      return { gameId, account, amount: String(amount * 10n ** 18n) };
+      const prizeRank = Number(uint(row.values[2]!, 16));
+      const prizeCount = Number(uint(row.values[3]!, 16));
+      if ((prizeRank === 0) !== (prizeCount === 0) || prizeRank > prizeCount || prizeCount > 100)
+        throw new Error("invalid_prize_rank");
+      return { gameId, account, amount: String(amount * 10n ** 18n), prizeRank, prizeCount };
     });
     const realmsId = yield* relayOperation("resolve withdrawal account", () =>
       bindings.realmsIdForAccount(receipt.account),
     );
     if (!realmsId) return yield* Effect.fail(new RelayFailure({ operation: "withdrawal_account_unknown" }));
-    const seasonId = yield* bindings.frontierSeason(receipt.gameId, confirmedAt);
+    const seasonId = yield* bindings.frontierSeason(receipt.gameId, confirmedAt, receipt.prizeRank);
     return {
       ...(row.blockNumber === undefined ? {} : { blockNumber: row.blockNumber }),
       chainId: felt(reader.connection.chainId),
@@ -114,6 +118,8 @@ const resolveWithdrawal = (reader: ShardReader, bindings: ReceiptBindings, row: 
       transactionHash: row.transactionHash,
       realmsId,
       amount: receipt.amount,
+      prizeRank: receipt.prizeRank,
+      prizeCount: receipt.prizeCount,
       confirmedAt,
     };
   });

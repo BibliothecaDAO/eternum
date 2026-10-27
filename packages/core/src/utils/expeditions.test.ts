@@ -205,7 +205,10 @@ describe("siteReward", () => {
     });
     // An odd scaled count halves as the contract's integer division does.
     expect(siteReward("Camp", { initial_guard_count: 3n, clear: null })?.amount).toBe(1n);
-    expect(siteReward("Beasts", { initial_guard_count: guard, clear: null })).toBeNull();
+    expect(siteReward("Beasts", { initial_guard_count: guard, clear: null })).toEqual({
+      resourceType: ResourcesIds.Labor,
+      amount: guard / 4n,
+    });
     expect(siteReward("Ruin", { initial_guard_count: guard, clear: null })).toBeNull();
   });
 

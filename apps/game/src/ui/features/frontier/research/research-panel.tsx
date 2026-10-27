@@ -170,7 +170,7 @@ const tileTip = (node: TreeNode) =>
 
 /** The picked node's choice, at the panel's foot: what its next tier gives or which side it takes, its price, Research. */
 const NodeChoice = ({
-  node,
+  node: rowNode,
   sending,
   fix,
   onResearch,
@@ -182,7 +182,13 @@ const NodeChoice = ({
   onResearch: (side: number) => unknown;
   onClose: () => void;
 }) => {
-  const [side, setSide] = useState(0);
+  const [side, setSide] = useState(() =>
+    Math.max(0, rowNode.sides?.findIndex((option) => option.state !== "done") ?? 0),
+  );
+  const selected = rowNode.sides?.[side];
+  const node = selected
+    ? { ...rowNode, state: selected.state, needs: selected.needs, price: selected.price, nextTier: selected.nextTier }
+    : rowNode;
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
   const verb = node.sides?.[side]?.name ?? (node.nextTier ? `${node.name} ${tierNumeral(node.nextTier)}` : node.name);
@@ -220,7 +226,7 @@ const NodeChoice = ({
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-hud-strong text-hud-ink">{option.name}</span>
                 <span className="truncate text-hud-label tabular-nums text-hud-good">
-                  {RESEARCH_TREE.step(option.now, option.next)}
+                  {option.state === "done" ? option.now : RESEARCH_TREE.step(option.now, option.next)}
                 </span>
               </span>
             </button>

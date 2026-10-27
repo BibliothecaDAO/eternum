@@ -33,6 +33,8 @@ const snapshot = (poolLeft = "83", amount = "17"): ConfirmedSnapshot => ({
         {
           key: "7",
           value: {
+            pool_bps: 7000,
+            top_n: 10,
             game_id: 7,
             price_ceiling: "10",
             shares: { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 },
@@ -62,8 +64,14 @@ const snapshot = (poolLeft = "83", amount = "17"): ConfirmedSnapshot => ({
     },
     {
       model: "LordsWithdrawal",
-      rows: [{ key: "7:0xabc", value: { game_id: 7, claim_id: "0xabc", account: "0x123", amount } }],
+      rows: [
+        {
+          key: "7:0xabc",
+          value: { prize_rank: 0, prize_count: 0, game_id: 7, claim_id: "0xabc", account: "0x123", amount },
+        },
+      ],
     },
+    { model: "FrontierPrize", rows: [{ key: "7", value: { game_id: 7, pool: "0", issued: "0", count: null } }] },
   ],
 });
 const network = (body = snapshot(), games = directory()) =>
@@ -90,7 +98,9 @@ it("uses complete chest and budget fixtures matching the committed shard schema"
       { type: "function", name: "fixture", inputs: fields, outputs: [], state_mutability: "view" },
     ]).compile("fixture", value as never);
     expect(calldata.map(BigInt)).toEqual(
-      name === "ChestRules" ? [7n, 10n, 1n, 2n, 3n, 4n, 5n, 604800n] : [7n, 100n, 83n, 3n, 1n, 2n, 7n, 50n, 10n],
+      name === "ChestRules"
+        ? [7n, 10n, 1n, 2n, 3n, 4n, 5n, 604800n, 7000n, 10n]
+        : [7n, 100n, 83n, 3n, 1n, 2n, 7n, 50n, 10n],
     );
   }
 });
@@ -384,10 +394,10 @@ it("a new Frontier game with no budget has issued nothing and does not pause the
   await expect(Effect.runPromise(f.ports.shard.conservation())).rejects.toThrow();
 });
 
-it("pauses only for a proven difference between the published pool and the ledger deposit", async () => {
+it("pauses when the published pool exceeds its ledger custody", async () => {
   const f = monitorFixture();
   f.ports.shard.conservation = shardConservationPort(connection, "https://shard.test", network());
-  f.ports.ledger.frontierPool = () => Effect.succeed(String(101n * 10n ** 18n));
+  f.ports.ledger.frontierPool = () => Effect.succeed(String(99n * 10n ** 18n));
   expect(await Effect.runPromise(runMonitor(f.ports, f.store))).toMatchObject({
     halted: "frontier_pool_mismatch:0x1:7",
   });
@@ -414,9 +424,34 @@ it("continues to a proven mismatch after another pool cannot be checked", async 
   f.ports.ledger.frontierPool = (_chain, game) =>
     game === 7
       ? Effect.fail(new RelayFailure({ operation: "funding_unavailable" }))
-      : Effect.succeed(String(101n * 10n ** 18n));
+      : Effect.succeed(String(99n * 10n ** 18n));
   expect(await Effect.runPromise(runMonitor(f.ports, f.store))).toMatchObject({
     halted: "frontier_pool_mismatch:0x1:8",
   });
   expect(f.ports.ledger.pause).toHaveBeenCalledOnce();
+});
+
+it("audits prize receipts separately and refuses missing funded prize state", async () => {
+  const state = snapshot();
+  state.models[3]!.rows[0]!.value = { game_id: 7, pool: "300", issued: "50", count: 10 };
+  state.models[2]!.rows.push({
+    key: "7:0xdef",
+    value: {
+      game_id: 7,
+      claim_id: "0xdef",
+      account: "0x456",
+      amount: "50",
+      prize_rank: 1,
+      prize_count: 10,
+    },
+  });
+  const read = () => Effect.runPromise(shardConservationPort(connection, "https://shard.test", network(state))());
+  expect(await read()).toEqual([
+    { chainId: "0x1", gameId: 7, confirmedBlock: 10, pool: "100", receipts: "67", netIssued: "67" },
+  ]);
+  state.models[3]!.rows[0]!.value.issued = "51";
+  await expect(read()).rejects.toThrow();
+  state.models[3]!.rows = [];
+  state.models[2]!.rows.pop();
+  await expect(read()).rejects.toThrow();
 });

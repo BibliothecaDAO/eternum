@@ -93,10 +93,7 @@ const payoutArrives = (reward: { resource_type: number; amount: string } | null)
 
 /** The realm's labor store as a payout leaves it when it could not take all of it: at its own limit. */
 const fillLaborStore = (store: ReturnType<typeof campBeside>["store"]) => {
-  const limit =
-    BigInt(store.require("SliceRules", { game_id: 1 }).troop_limit_config.settlement_deployment_cap) *
-    BigInt(store.require("BoardRules", { game_id: 1 }).castle_store_deploys) *
-    1_000_000_000n;
+  const limit = BigInt(store.require("BoardRules", { game_id: 1 }).settlement_resource_cap) * 1_000_000_000n;
   store.applyFacts([
     {
       model: "ResourceBalance",

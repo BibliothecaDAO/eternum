@@ -1,3 +1,4 @@
+import { openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
 import { entityHomeNamespace } from "@bibliothecadao/eternum/expeditions";
 import { attachAcceptedBlocks } from "./gas-collector";
@@ -830,6 +831,12 @@ function planMuster(client: GameClient, player: Player): Action | undefined {
     realm.base.level
   ]!;
   if (armies.length >= slots) return;
+  const slot = known(
+    openArmySlots(client.setup.store, { game_id: client.gameId, entity_id: realm.entity_id, allowedSlots: slots }),
+    player.realmId,
+    "army slots",
+  )[0]?.slot;
+  if (slot === undefined) return;
   // One troop type: every army deploys Knight T1.
   const cap = BigInt(configManager.getMaxArmySize(realm.base.level, TroopTier.T1));
   const available = balance(client, player, ResourcesIds.Knight) / precision;
@@ -866,6 +873,7 @@ function planMuster(client: GameClient, player: Player): Action | undefined {
           tier: 0,
           amount: troops * precision,
           direction: spawn.direction,
+          slot,
         },
       },
       TransactionType.EXPLORER_CREATE,

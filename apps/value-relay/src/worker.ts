@@ -22,6 +22,7 @@ import { currentLaborDay, writeLaborGrants } from "./shard-labor";
 import { handleLaborRequest } from "./labor-route";
 import { ShardReader } from "./shard-rpc";
 import { publishFrontierPools } from "./frontier-pools";
+import { awardFrontierPrizes } from "./frontier-prizes";
 import { frontierReceiptBindings } from "./frontier-binding";
 import approvedExtension from "../../../config/source/frontier/extension.json";
 import { readFrontierExtension, requireExtendedFrontier } from "./frontier-extension";
@@ -201,15 +202,21 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
   private async publishPools(chainId: string) {
     const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
-    return publishFrontierPools(
-      {
-        ...connectionOf(shard),
-        accountAddress: relayAccountAddress(shard),
-        privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
-      },
-      shard.url,
-      { rpcUrl: this.env.L2_RPC_URL, address: ledgerAddress(this.env.ENVIRONMENT) },
-    );
+    const target = {
+      ...connectionOf(shard),
+      accountAddress: relayAccountAddress(shard),
+      privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
+    };
+    const ledger = { rpcUrl: this.env.L2_RPC_URL, address: ledgerAddress(this.env.ENVIRONMENT) };
+    let unavailable: unknown;
+    for (const publish of [publishFrontierPools, awardFrontierPrizes]) {
+      try {
+        await publish(target, shard.url, ledger);
+      } catch (error) {
+        unavailable ??= error;
+      }
+    }
+    if (unavailable) throw unavailable;
   }
   async alarm() {
     await this.tick();

@@ -1884,10 +1884,78 @@
           {
             "name": "amount",
             "type": "core::integer::u128"
+          },
+          {
+            "name": "prize_pool",
+            "type": "core::integer::u128"
           }
         ],
         "outputs": [],
         "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "top_up_frontier_pool",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "amount",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "post_frontier_top",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "winners",
+            "type": "core::array::Array::<core::starknet::contract_address::ContractAddress>"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "award_frontier_prize",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "rank",
+            "type": "core::integer::u16"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "frontier_prize",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "world_native::entry::FrontierPrize"
+          }
+        ],
+        "state_mutability": "view"
       },
       {
         "type": "function",
@@ -2863,9 +2931,9 @@
           "feltLength": 1
         },
         {
-          "name": "ruin_found",
+          "name": "ruin_cleared",
           "type": "core::bool",
-          "id": "0x7275696e5f666f756e64",
+          "id": "0x7275696e5f636c6561726564",
           "feltLength": 1
         }
       ],
@@ -2984,11 +3052,57 @@
           "type": "core::integer::u32",
           "id": "0x636c61696d5f77696e646f775f7365636f6e6473",
           "feltLength": 1
+        },
+        {
+          "name": "pool_bps",
+          "type": "core::integer::u16",
+          "id": "0x706f6f6c5f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "top_n",
+          "type": "core::integer::u16",
+          "id": "0x746f705f6e",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 7,
+      "valueLength": 9,
       "derivedFrom": "preset"
+    },
+    {
+      "name": "FrontierPrize",
+      "identity": "0x46726f6e746965725072697a65",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "pool",
+          "type": "core::integer::u128",
+          "id": "0x706f6f6c",
+          "feltLength": 1
+        },
+        {
+          "name": "issued",
+          "type": "core::integer::u128",
+          "id": "0x697373756564",
+          "feltLength": 1
+        },
+        {
+          "name": "count",
+          "type": "core::option::Option::<core::integer::u16>",
+          "id": "0x636f756e74",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null
     },
     {
       "name": "LordsBudget",
@@ -3154,10 +3268,22 @@
           "type": "core::integer::u128",
           "id": "0x616d6f756e74",
           "feltLength": 1
+        },
+        {
+          "name": "prize_rank",
+          "type": "core::integer::u16",
+          "id": "0x7072697a655f72616e6b",
+          "feltLength": 1
+        },
+        {
+          "name": "prize_count",
+          "type": "core::integer::u16",
+          "id": "0x7072697a655f636f756e74",
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 2
+      "valueLength": 4
     },
     {
       "name": "RelicDiscovery",
@@ -5259,14 +5385,38 @@
           "feltLength": 1
         },
         {
-          "name": "castle_store_deploys",
+          "name": "troop_store_deploys",
           "type": "core::integer::u8",
-          "id": "0x636173746c655f73746f72655f6465706c6f7973",
+          "id": "0x74726f6f705f73746f72655f6465706c6f7973",
+          "feltLength": 1
+        },
+        {
+          "name": "settlement_resource_cap",
+          "type": "core::integer::u32",
+          "id": "0x736574746c656d656e745f7265736f757263655f636170",
+          "feltLength": 1
+        },
+        {
+          "name": "city_resource_cap",
+          "type": "core::integer::u32",
+          "id": "0x636974795f7265736f757263655f636170",
+          "feltLength": 1
+        },
+        {
+          "name": "kingdom_resource_cap",
+          "type": "core::integer::u32",
+          "id": "0x6b696e67646f6d5f7265736f757263655f636170",
+          "feltLength": 1
+        },
+        {
+          "name": "empire_resource_cap",
+          "type": "core::integer::u32",
+          "id": "0x656d706972655f7265736f757263655f636170",
           "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 8,
+      "valueLength": 12,
       "derivedFrom": "preset"
     },
     {
@@ -7008,6 +7158,20 @@
         }
       ]
     },
+    "core::option::Option::<core::integer::u16>": {
+      "type": "enum",
+      "name": "core::option::Option::<core::integer::u16>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<core::integer::u32>": {
       "type": "enum",
       "name": "core::option::Option::<core::integer::u32>",
@@ -7887,8 +8051,24 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "castle_store_deploys",
+          "name": "troop_store_deploys",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "settlement_resource_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "city_resource_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "kingdom_resource_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "empire_resource_cap",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -8015,6 +8195,10 @@
         {
           "name": "use_simple",
           "type": "core::bool"
+        },
+        {
+          "name": "scouting_kind",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -8505,6 +8689,10 @@
       "name": "world_native::commands::CreateExplorer",
       "members": [
         {
+          "name": "slot",
+          "type": "core::integer::u8"
+        },
+        {
           "name": "structure_id",
           "type": "core::integer::u64"
         },
@@ -8672,6 +8860,24 @@
         }
       ]
     },
+    "world_native::entry::FrontierPrize": {
+      "type": "struct",
+      "name": "world_native::entry::FrontierPrize",
+      "members": [
+        {
+          "name": "pool",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "issued",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "count",
+          "type": "core::option::Option::<core::integer::u16>"
+        }
+      ]
+    },
     "world_native::entry::LaborGrant": {
       "type": "struct",
       "name": "world_native::entry::LaborGrant",
@@ -8793,7 +8999,7 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "ruin_found",
+          "name": "ruin_cleared",
           "type": "core::bool"
         }
       ]
@@ -10301,6 +10507,10 @@
         {
           "name": "RelicActivated",
           "type": "world_native::relics::RelicActivated"
+        },
+        {
+          "name": "SiteUsed",
+          "type": "world_native::relics::SiteUsed"
         }
       ]
     },
@@ -10985,6 +11195,14 @@
         {
           "name": "claim_window_seconds",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "pool_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "top_n",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -11077,6 +11295,14 @@
         {
           "name": "amount",
           "type": "core::integer::u128"
+        },
+        {
+          "name": "prize_rank",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "prize_count",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -11118,6 +11344,10 @@
       "members": [
         {
           "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "amount",
           "type": "core::integer::u64"
         }
       ]
@@ -11232,6 +11462,20 @@
         }
       ]
     },
+    "world_native::relics::SiteBenefit": {
+      "type": "enum",
+      "name": "world_native::relics::SiteBenefit",
+      "variants": [
+        {
+          "name": "Shrine",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "Well",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
     "world_native::relics::SiteChest": {
       "type": "struct",
       "name": "world_native::relics::SiteChest",
@@ -11247,6 +11491,24 @@
         {
           "name": "reservation_day",
           "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::relics::SiteUsed": {
+      "type": "struct",
+      "name": "world_native::relics::SiteUsed",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "benefit",
+          "type": "world_native::relics::SiteBenefit"
         }
       ]
     },
@@ -12681,6 +12943,10 @@
       "name": "world_native::troops::ArmySlotAllocation",
       "members": [
         {
+          "name": "slot",
+          "type": "core::integer::u8"
+        },
+        {
           "name": "home",
           "type": "core::integer::u64"
         },
@@ -13125,5 +13391,5 @@
       ]
     }
   },
-  "identity": "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e"
+  "identity": "613e11d19aa31c39d7813b35de1a6f03fdb13f35adb177865fd59f37bf60de98"
 }

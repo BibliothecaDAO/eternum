@@ -1,4 +1,5 @@
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
+import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
 
 import { campBeside, SITE } from "../sites/site-fixture";
@@ -95,4 +96,21 @@ describe("the day log's line for a story", () => {
       "Building Constructed",
     );
   });
+});
+
+it.each([
+  [{ Shrine: 200 }, "Shrine used, +200 XP"],
+  [{ Well: 60 }, "Well used, +60 stamina"],
+  [{ Well: 5 }, "Well used, +5 stamina"],
+  [{ Well: 0 }, "Well used, +0 stamina"],
+])("Today and the Log use the same recorded site gain after the site and army are gone (%j)", (benefit, expected) => {
+  const { store } = campBeside();
+  store.applyFacts([{ model: "ExplorerTroops", key: "0x74", value: null }]);
+  const storyPayload = { explorer_id: 201, coord: { x: 3, y: 4 }, benefit };
+  const presentation = buildStoryEventPresentation(
+    { storyType: "SiteUsed", storyPayload, entityId: 201, ownerAddress: "0x111", viewerAddress: "0x111" } as never,
+    store,
+  );
+  expect(presentation.title).toBe(expected);
+  expect(dayLogLine({ story: "SiteUsed", storyPayload, presentation }, store)).toBe(expected);
 });

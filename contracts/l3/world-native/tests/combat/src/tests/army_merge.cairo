@@ -144,7 +144,8 @@ fn a_full_merge_over_the_survivor_cap_is_atomic_and_expired_armies_cannot_merge(
             };
             army
                 .troops
-                .stamina = crate::logic::army_slot_storage::allocate(source, other_home, 0, 4, stamina, stamina.amount);
+                .stamina =
+                    crate::logic::army_slot_storage::allocate(source, other_home, 0, 4, 0, stamina, stamina.amount);
             crate::logic::troops::TroopState::create(source, crate::troops::ExplorerRecordTrait::into_record(army));
         },
     );

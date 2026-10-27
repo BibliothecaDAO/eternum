@@ -581,11 +581,11 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  /** Fills an army's stamina to its maximum for one LORDS a missing point, from its realm's LORDS. */
-  public async refill_stamina(props: SystemProps.SystemSigner & { explorerId: number }) {
+  /** Buys the chosen whole stamina points for one LORDS each from the army's realm. */
+  public async refill_stamina(props: SystemProps.SystemSigner & { explorerId: number; amount: number }) {
     return this.submitCommand(
       props.signer,
-      { kind: "RefillStamina", value: { explorer_id: props.explorerId } },
+      { kind: "RefillStamina", value: { explorer_id: props.explorerId, amount: props.amount } },
       TransactionType.REFILL_STAMINA,
     );
   }
@@ -664,6 +664,7 @@ export class EternumProvider extends EventEmitter {
           directions: props.directions,
           category: props.building_category,
           use_simple: props.use_simple,
+          scouting_kind: props.scouting_kind,
         },
       },
       TransactionType.CREATE_BUILDING,
@@ -707,6 +708,7 @@ export class EternumProvider extends EventEmitter {
         kind: "CreateExplorer",
         value: {
           structure_id: props.for_structure_id,
+          slot: props.slot,
           category: props.category,
           tier: props.tier,
           amount: props.amount,

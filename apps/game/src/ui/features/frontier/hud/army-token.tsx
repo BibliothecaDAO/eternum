@@ -109,17 +109,14 @@ export const ArmyToken = ({
 };
 
 /**
- * An open army slot on a phone's dock: a plus in a dashed ring that opens Deploy, and under it the stamina the slot
- * starts its army on, in the same segments an army's token carries, said in words when asked. The first one pulses
- * while no army is out. A slot Deploy does not fill next shows its army's number in the ring and opens nothing. A
- * desktop's list draws the same slot as a row (OpenSlotRow).
+ * An open army slot: a plus in a dashed ring that opens Deploy, and under it the stamina the slot starts its army on,
+ * in the same segments an army's token carries, said in words when asked. The first one pulses while no army is out.
  */
 export const OpenSlot = ({
   label,
   pulse,
   filling,
   start,
-  waits,
   onDeploy,
 }: {
   label: string;
@@ -128,20 +125,18 @@ export const OpenSlot = ({
   filling?: string;
   /** The bar the slot starts its army on, and that in words ("Army 2 starts on 7/150 stamina…"); none while unknown. */
   start?: { bar: StaminaBar; words: string };
-  /** A later free slot: its army number and why Deploy cannot fill it yet. */
-  waits?: { number: number; words: string };
   onDeploy: () => void;
 }) => (
   <button
     type="button"
-    aria-label={filling ?? waits?.words ?? label}
+    aria-label={filling ?? label}
     aria-busy={filling !== undefined}
-    disabled={filling !== undefined || waits !== undefined}
-    data-tip={filling === undefined ? [start?.words, waits?.words].filter(Boolean).join(" ") || undefined : undefined}
+    disabled={filling !== undefined}
+    data-tip={filling === undefined ? start?.words : undefined}
     onClick={onDeploy}
-    className={cn(TOKEN, "border border-hud-line bg-hud-surface", waits && "border-dashed")}
+    className={cn(TOKEN, "border border-hud-line bg-hud-surface")}
   >
-    <SlotRing pulse={pulse} filling={filling} waits={waits} />
+    <SlotRing pulse={pulse} filling={filling} />
     {start && filling === undefined && <TokenStamina stamina={start.bar} />}
   </button>
 );

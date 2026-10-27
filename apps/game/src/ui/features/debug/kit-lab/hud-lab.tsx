@@ -52,7 +52,7 @@ import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
-import { ownerDayLog } from "./today-log-fixture";
+import { ownerDayLog, siteUseDayLog } from "./today-log-fixture";
 import { SeasonList, type SeasonListRow } from "@/ui/features/frontier/board/season-list";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
@@ -318,11 +318,19 @@ const EARLY_TILES: LabTile[] = [
   tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, 1, price(2_000)),
   tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(800)),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(300)),
-  // The training buildings are still at Common (I), each locked behind the Barracks.
-  tile("war", "war-hall", TRAINING_BUILDINGS[0], COMMON_TRAINS, 2, LOCKED),
-  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...COMMON_TRAINS, icon: "order-skill" }, 2, LOCKED),
-  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...COMMON_TRAINS, icon: "order-detection" }, 2, LOCKED),
-  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...COMMON_TRAINS, icon: "order-enlightenment" }, 2, LOCKED),
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], TRAINS, 2, { kind: "locked", purchases: 2 }),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, {
+    kind: "locked",
+    purchases: 2,
+  }),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, {
+    kind: "locked",
+    purchases: 2,
+  }),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...TRAINS, icon: "order-enlightenment" }, 2, {
+    kind: "locked",
+    purchases: 2,
+  }),
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,
@@ -400,7 +408,7 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
  * A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. Today's
  * share is 12 LORDS and a common chest holds two shares.
  */
-const SEASON_POOL_FIGURES = { lords: 1_000_000, today: 50_000 };
+const SEASON_POOL_FIGURES = { lords: 700_000, prize: { lords: 300_000, topN: 10 }, today: 35_000 };
 const SEASON_COMMON_CHEST = { lords: 24 };
 const OWN_ROW: SeasonListRow = {
   key: "you",
@@ -477,6 +485,7 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
 
 const STATES = {
   ...FIGHT_STATES,
+  "today-sites": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-sites" },
   merge: { clock: CLOCK, stores: STORES, armies: ARMIES, merge: true },
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   "armies-open": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 2) },
@@ -932,7 +941,7 @@ type LabState = {
   refill?: number;
   /** What Next up reads beyond the state's armies, selection, hour and stores. */
   nextUp?: Partial<NextUpFacts>;
-  results?: "today" | "today-earlier" | "today-failed" | "over" | "over-strong";
+  results?: "today" | "today-sites" | "today-earlier" | "today-failed" | "over" | "over-strong";
   /** The realm's LORDS on the season-over card: still to withdraw, or past the season's close. */
   seasonLords?: "open" | "closed";
   season?: "list" | "detail" | "unpublished" | "loading" | "failed";
@@ -1082,7 +1091,7 @@ export const HudLab = () => {
                 revealYield={500}
                 xp={2}
                 refill={
-                  lab.refill === undefined ? undefined : <RefillButton price={140} held={lab.refill} onRefill={noop} />
+                  lab.refill === undefined ? undefined : <RefillButton held={lab.refill} onRefill={noop} />
                 }
                 onCancel={noop}
                 onGo={noop}
@@ -1166,6 +1175,11 @@ const useLabNotice = (notice: string | undefined) => {
 
 /** Deploy on the fiction, live: 2 wheat a troop. */
 const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
+  const [slot, setSlot] = useState<number | null>(null);
+  const open = [
+    { slot: 1, number: 2, inherited: true, start: { current: 40, max: 150 } },
+    { slot: 2, number: 3, inherited: false, start: { current: 150, max: 150 } },
+  ];
   const [count, setCount] = useState(deploy.count);
   const most = Math.min(deploy.troopsAtHome, Math.floor(deploy.wheat / 2));
   return (
@@ -1175,11 +1189,11 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       count={count}
       amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
       onCount={setCount}
-      // The next army fills a slot whose army was released today with 40 stamina left.
-      start={{ slot: 2, number: 3, inherited: true, start: { current: 40, max: 150, perExplore: LAB_EXPLORE } }}
+      start={open.find((entry) => entry.slot === slot)}
+      slots={{ allowed: 3, open, onPick: setSlot }}
       wheatCost={count * 2}
       tile="open"
-      canDeploy={count > 0}
+      canDeploy={count > 0 && slot !== null}
       sending={false}
       onDeploy={noop}
       wheatShort={undefined}
@@ -1501,7 +1515,7 @@ const LabResults = ({
       clock={CLOCK}
       totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}
       armiesToUpgrade={2}
-      lines={readTodayLog()}
+      lines={results === "today-sites" ? siteUseDayLog(NOW) : readTodayLog()}
       history={results === "today-failed" ? "failed" : "whole"}
       onRetry={noop}
       onEarlier={noop}

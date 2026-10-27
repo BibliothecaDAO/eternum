@@ -38,10 +38,13 @@ site by its one name, the map label's (and a rename): "clientlane2 vs Ashford ·
 guard 154 to 0", "Ashford cleared", "Ashford found"; its guard's species is the fight's forces ("507 T1 Knight vs 154
 Wraith") and a find's kind. A roaming beast's card is titled by its species; the fight result retains that species'
 portrait after the guard clears. Today writes the XP each line moved: "+79 labor, +2 XP" (a reveal), "Ashford cleared,
-+82 XP" (a clear, from the guard the site started with), "Battle Uncommon, −100 XP" (a level-up's price). A Shrine's 200
-XP and the XP an emptied army takes with it in a merge leave no story, so no line. Dev: `/lab/kit/hud/today` (the
-owner's 22 October day, through the log's own lines). A Frontier founding line names the settler without the realm's
-off-map settlement coordinate.
++82 XP" (a clear, from the guard the site started with), "Battle Uncommon, −100 XP" (a level-up's price). A Shrine's use
+and a Well's use record the army, historical tile and actual XP or stamina gained, including a capped well. Today and
+the Log share the same gain line, even after the army is gone; a Log click returns to the recorded tile. Site use
+appears under the Log's Mine and All filters, and in World history; it sends no push alert. Dev:
+`/lab/kit/hud/today-sites`. The XP an emptied army takes with it in a merge leaves no story. Dev: `/lab/kit/hud/today`
+(the owner's 22 October day, through the log's own lines). A Frontier founding line names the settler without the
+realm's off-map settlement coordinate.
 
 Every link inside a match (a Feed or Log row, a toast, the standings, the Season's Visit, a chat coordinate, Next up's
 camp) opens its place through `play/navigation/open-place.ts`: the address carries the normalized hex
@@ -885,3 +888,27 @@ on native WebGPU. `verify:beasts` checks all eight deliveries, budgets and edita
 checks decoded triangles for zero masonry contacts at each production scale. All authoring sources and paint live in
 `asset-sources/frontier-beasts/refined/`; `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those
 exact eight packed sources. There is one production path per species and no separate study GLB.
+
+Army level proposals (dev only): **Compare army levels** in `/lab/kit/progression` opens
+`/lab/kit/research-balance/army-levels`. Today's tier purchases, the previous flat-gain proposal and the revised
+proposal appear together. Set **Starts trained → Battle +2**: the revised next Battle rank gives +6% damage, while
+starting untrained gives +10%. One point buys either. Change XP, training or attribute, then use **Upgrade today**,
+**Spend flat point** or **Spend point**; the XP ring stays independent of spending. Scouting uses its total rank across
+all kinds. No game command is sent. Exercise and capture it with
+`pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <fresh-dir> --only army-levels`.
+
+- Frontier training: build War hall, Supply yard, Scouts’ lodge or Hearth after two Barracks purchases; construction
+  grants Uncommon. Choose the lodge’s free kind on its build sheet. Research pips run from zero at Common to four at
+  Legendary; the realm model uses the highest tier.
+
+## Partial stamina and season LORDS
+
+Frontier: select an army → **Refill** → choose stamina on the slider → **Refill**. Each point costs one LORDS; missing
+stamina and the realm's balance bound the choice. The Season board shows **Chests** and **Top 10** separately. The
+preset supplies the split and winner count. After season end, the relay creates each winner's withdrawal receipt; the
+existing payout service sends it to the linked wallet. Dev previews: `/lab/kit/hud/army-refill` and
+`/lab/kit/hud/season`; the same refill sheet and season figures render there.
+
+Capture both with
+`pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:4235 --out <fresh-evidence-dir> --only frontier-army-refill,frontier-season`;
+the refill proof selects 25 points and checks both balances.

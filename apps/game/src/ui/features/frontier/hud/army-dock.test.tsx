@@ -7,9 +7,10 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentArmiesTick: () => 3,
   useNowSeconds: () => 350,
 }));
-const layout = vi.hoisted(() => ({ is: "phone" as "phone" | "desktop" }));
-vi.mock("@/shell/frame/layout", () => ({ useLayout: () => layout.is }));
+const layout = { current: "phone" };
+vi.mock("@/shell/frame/layout", () => ({ useLayout: () => layout.current }));
 
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
@@ -21,13 +22,15 @@ import { ArmyDock } from "./army-dock";
 afterEach(() => {
   setBlockTimestampSource(null);
   vi.restoreAllMocks();
-  layout.is = "phone";
+  useUIStore.getState().setPendingMilitaryAction(null);
 });
 
-/** The fixture's realm with slot 2 fresh today and slot 3's army released this second with 7 stamina left. */
-const dayWithTwoOpenSlots = () => {
-  const day = frontierDay();
-  day.store.applyFacts([
+it.each(["phone", "desktop"])("shows every open slot and its bar on %s, and opens the chosen slot", (mode) => {
+  layout.current = mode;
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const { store, row } = frontierDay();
+  // Slot 2 is fresh today; slot 3's army was released this second with 7 stamina left.
+  store.applyFacts([
     {
       model: "ArmySlot",
       key: "0x92",
@@ -41,12 +44,6 @@ const dayWithTwoOpenSlots = () => {
       },
     },
   ] as never);
-  return day;
-};
-
-it("shows on each open slot of the dock the bar it starts its army on, as the Deploy sheet reads it", () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const { store, row } = dayWithTwoOpenSlots();
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -58,17 +55,11 @@ it("shows on each open slot of the dock the bar it starts its army on, as the De
     ),
   );
   try {
-    const slots = [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Armies"] button')];
+    const slots = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label^="Deploy Army"]')];
     expect(
       slots.map((slot) => {
         const meter = slot.querySelector('[role="meter"]');
-        return [
-          slot.getAttribute("aria-label"),
-          slot.disabled,
-          slot.dataset.tip,
-          meter?.getAttribute("aria-valuenow"),
-          meter?.getAttribute("aria-valuemax"),
-        ];
+        return [slot.dataset.tip, meter?.getAttribute("aria-valuenow"), meter?.getAttribute("aria-valuemax")];
       }),
     ).toEqual([
       ["Deploy", false, "Army 2 starts full: 150/150 stamina.", "150", "150"],

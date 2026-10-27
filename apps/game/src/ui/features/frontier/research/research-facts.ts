@@ -6,6 +6,8 @@ import {
   rationedWheatPerTroop,
   realmLearned,
   researchChoice,
+  researchHasIndependentSides,
+  researchPicks,
   researchRowCategory,
   researchTier,
   ResourceManager,
@@ -112,14 +114,16 @@ const readResearchFacts = (
   };
 };
 
-/** Every row's tier and the side taken at each tier, as RealmKnowledge packs them. */
+/** Each row's highest tier and bought sides; only Scouts retains purchase order. */
 const decodeLearned = (learned: bigint): Partial<Record<number, LearnedRow>> =>
   Object.fromEntries(
     Array.from({ length: research.ROW_COUNT }, (_, row) => {
       const tier = researchTier(learned, row);
-      const sides = CHOOSING_ROWS.has(row)
-        ? Array.from({ length: tier }, (_, index) => researchChoice(learned, row, index + 1))
-        : [];
+      const sides = researchHasIndependentSides(row)
+        ? [0, 1].flatMap((side) => Array.from({ length: researchPicks(learned, row, side) }, () => side))
+        : CHOOSING_ROWS.has(row)
+          ? Array.from({ length: tier }, (_, index) => researchChoice(learned, row, index + 1))
+          : [];
       return [row, { tier, sides }];
     }),
   );
