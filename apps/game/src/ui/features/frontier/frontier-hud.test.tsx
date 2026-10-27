@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import approvedExtension from "../../../../../../config/source/frontier/extension.json";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -306,4 +307,85 @@ it("opens a phone's Menu as a page on the place bar, its title with no close of 
   expect(document.querySelector(".ui-sheet")).toBeNull();
   await act(async () => menu().click());
   expect(page()).toBeNull();
+});
+
+it("keeps the extended season live past its old end and reloads its final day from fresh facts", async () => {
+  const { useChainTimeStore } = await import("@/hooks/store/use-chain-time-store");
+  const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
+  const { configManager, setBlockTimestampSource } = await import("@bibliothecadao/eternum");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ blocked: [], entries: [] })),
+  );
+  const approved = approvedExtension;
+  let currentTime = approved.start;
+  const advance = async (now: number) =>
+    act(async () => {
+      currentTime = now;
+      useChainTimeStore.getState().anchor({ timestamp: now * 1000 });
+      useBlockTimestampStore.getState().tick();
+    });
+  const boot = async (now: number) => {
+    await act(async () => root.render(null));
+    await act(async () =>
+      root.render(
+        <MemoryRouter>
+          <QueryClientProvider client={new QueryClient()}>
+            <LabGame
+              preset={5}
+              facts={(store) => {
+                useChainTimeStore.getState().anchor({ timestamp: now * 1000 });
+                currentTime = now;
+                setBlockTimestampSource(() => currentTime);
+                useBlockTimestampStore.setState({ currentBlockTimestamp: now });
+                return [
+                  LABOR_RULES,
+                  {
+                    model: "GameRegistry",
+                    key: "0x3",
+                    value: {
+                      ...store.require("GameRegistry", { game_id: 1 }),
+                      start_main_at: String(approved.start),
+                      start_settling_at: String(approved.start),
+                      end_at: String(approved.end),
+                      seed: approved.seed,
+                      settled: false,
+                    },
+                  },
+                  {
+                    model: "SliceRules",
+                    key: "0x100",
+                    value: {
+                      ...store.require("SliceRules", { game_id: 1 }),
+                      day_unit_seconds: approved.dayUnit,
+                    },
+                  },
+                ];
+              }}
+            >
+              {(store) => <FrontierHud rules={readExpeditionRules(store, 1)!} />}
+            </LabGame>
+          </QueryClientProvider>
+        </MemoryRouter>,
+      ),
+    );
+  };
+  viewport.set(1440);
+  await boot(approved.oldEnd - 1);
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 10");
+  await advance(approved.oldEnd);
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 11");
+  expect(host.textContent).not.toContain("Game finished");
+  await boot(approved.oldEnd);
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 11");
+  expect(host.textContent).not.toContain("Game finished");
+  expect(configManager.getSeasonConfig().endAt).toBe(approved.end);
+  await boot(approved.end - 1);
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 15");
+  expect(host.textContent).not.toContain("Game finished");
+  await advance(approved.end);
+  expect(host.textContent).toContain("Game finished");
+  await boot(approved.end);
+  expect(host.textContent).toContain("Game finished");
+  expect(host.querySelector('button[aria-label="Today"]')).toBeNull();
 });

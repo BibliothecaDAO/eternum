@@ -665,6 +665,22 @@
       },
       {
         "type": "function",
+        "name": "extend_frontier",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "season_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
         "name": "get_frontier",
         "inputs": [
           {

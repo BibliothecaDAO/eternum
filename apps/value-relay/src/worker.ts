@@ -23,6 +23,8 @@ import { handleLaborRequest } from "./labor-route";
 import { ShardReader } from "./shard-rpc";
 import { publishFrontierPools } from "./frontier-pools";
 import { frontierReceiptBindings } from "./frontier-binding";
+import approvedExtension from "../../../config/source/frontier/extension.json";
+import { readFrontierExtension, requireExtendedFrontier } from "./frontier-extension";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { DurableChestStore, finishChestNow, finishRequestedChests } from "./chests";
@@ -522,6 +524,11 @@ export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   }
   refundSlot(key: LedgerSlotKey) {
     return ledgerOf(this.env).refundSlot(key);
+  }
+  async verifyFrontierExtension() {
+    await requireActiveChain(this.env.IDENTITY, approvedExtension.chainId);
+    const shard = await readRegisteredShard(this.env.IDENTITY, approvedExtension.chainId);
+    return requireExtendedFrontier(await readFrontierExtension(connectionOf(shard), shard.url, this.env.L2_RPC_URL));
   }
 }
 export default {
