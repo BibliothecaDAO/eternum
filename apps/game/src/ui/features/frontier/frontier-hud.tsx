@@ -1,10 +1,11 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { canIssueOrders } from "@/utils/can-issue-orders";
+import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { SETTINGS } from "@/ui/design-system/kit/words";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
+import { IdentityChip } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
@@ -75,6 +76,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // Parts shared with the Blitz and Eternum HUD read upright, untracked and in sentence case here (index.css).
   useDocumentClass("frontier-hud");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const spectating = useUIStore(isWatching);
   const realm = useFrontierRealm();
   // On a visit the dock shows the visited realm's armies; no order renders for a realm the player does not own.
   const visit = useRealmVisit();
@@ -143,13 +145,19 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       {storeCards?.open && storeCards.card}
     </>
   );
-  const purse = realm && !visit && (
-    <RealmPurse
-      realm={realm}
-      laborWaiting={realmLabor?.plan.total ?? 0}
-      onWithdraw={() => setSurface("withdraw")}
-      onRealms={() => setSurface("realms")}
-    />
+  // A phone's purse: the player's realm's LORDS; a spectator sees there what the desktop's top bar says of them.
+  const purse = spectating ? (
+    <IdentityChip compact />
+  ) : (
+    realm &&
+    !visit && (
+      <RealmPurse
+        realm={realm}
+        laborWaiting={realmLabor?.plan.total ?? 0}
+        onWithdraw={() => setSurface("withdraw")}
+        onRealms={() => setSurface("realms")}
+      />
+    )
   );
   const page =
     surface === "research" && realm ? (
@@ -178,7 +186,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const dock = dockRealm && <DockFor rules={rules} realm={dockRealm} onOpenArmy={desktop ? openArmy : pickArmy} />;
   const sheets = (
     <>
-      <FrontierSurfaces realm={realm} />
+      <FrontierSurfaces realm={realm} rules={rules} />
       {showsCard && card?.sheet}
       {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
       {surface === "realms" && realm && !visit && (

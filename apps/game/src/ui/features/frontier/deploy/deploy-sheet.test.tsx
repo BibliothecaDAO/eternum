@@ -28,9 +28,9 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { DEPLOY_ON_MAP_EVENT, type DeployOnMap, readDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
-import { type GameClient, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
+import { type GameClient, readExpeditionRules, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { Direction, TroopTier, TroopType } from "@bibliothecadao/types";
+import { Direction, RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
 import { frontierDay } from "./deploy-fixture";
 import { DeploySheet } from "./deploy-sheet";
 
@@ -53,7 +53,7 @@ const render = (store: unknown, row: unknown, onClose = () => {}) => {
     act(() =>
       root.render(
         <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-          <DeploySheet realm={row as never} onClose={onClose} />
+          <DeploySheet realm={row as never} rules={readExpeditionRules(store as never, 1)!} onClose={onClose} />
         </GameProvider>,
       ),
     );
@@ -94,6 +94,13 @@ const shownOnMap = () => {
 /** The direction of the realm's ring tile at this place in spawnRing's order. */
 const ringDirection = (store: unknown, row: unknown, index: number) =>
   spawnRing(store as never, row as never, () => 0)[index].direction;
+
+/** The realm's knights spent: none at home. */
+const noTroops = {
+  model: "ResourceBalance",
+  key: "0x8",
+  value: { game_id: 1, entity_id: 7, resource_type: 26, balance: "0" },
+};
 
 const deployButton = (host: HTMLElement) =>
   [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Deploy"));
@@ -273,15 +280,45 @@ describe("the Deploy sheet", () => {
     act(() => onMap.root.unmount());
   });
 
-  it("with no troops at home, takes away Deploy and offers Build", () => {
+  it("with no troops at home and none being made, takes away Deploy and offers Build with the Barracks' mark", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
+    store.applyFacts([noTroops] as never);
+    const { host, root } = render(store, row);
+    expect(deployButton(host)).toBeUndefined();
+    expect(host.querySelector(".ui-notice")!.textContent).toBe("No troops at home");
+    const build = [...host.querySelectorAll("button")].find((button) => button.textContent === "Build")!;
+    expect(build.querySelector("[data-icon]")!.getAttribute("data-icon")).toBe("barracks");
+    act(() => build.click());
+    expect(place.goTo).toEqual([false]);
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it("with no troops at home while the Barracks make them, says when the next is home and offers no Build", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, row } = frontierDay();
+    // 360 knights an hour: the next is home in 10 seconds.
     store.applyFacts([
-      { model: "ResourceBalance", key: "0x8", value: { game_id: 1, entity_id: 7, resource_type: 26, balance: "0" } },
+      noTroops,
+      {
+        model: "ResourceProduction",
+        key: "0x826",
+        value: {
+          game_id: 1,
+          entity_id: 7,
+          resource_type: 26,
+          building_count: 1,
+          production_rate: String((360n * BigInt(RESOURCE_PRECISION)) / 3_600n),
+          output_amount_left: "0",
+          last_settled_at: 3,
+        },
+      },
     ] as never);
     const { host, root } = render(store, row);
     expect(deployButton(host)).toBeUndefined();
-    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Build")).toBe(true);
+    expect(host.querySelector(".ui-notice")!.textContent).toBe("No troops at home · in 10s");
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Build")).toBe(false);
     act(() => root.unmount());
     host.remove();
   });
