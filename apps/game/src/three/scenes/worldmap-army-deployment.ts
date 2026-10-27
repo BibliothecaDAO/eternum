@@ -3,7 +3,7 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { ActionPaths, ActionType, type ActionPath } from "@bibliothecadao/eternum";
 import type { HexPosition } from "@bibliothecadao/types";
 
-const DEPLOY_TOOLTIP = "Deploy an army here";
+const DEPLOY_TOOLTIP = "Deploy an army here. Right-click.";
 
 export function resolveSpawnActionPath(
   hex: HexPosition | null,

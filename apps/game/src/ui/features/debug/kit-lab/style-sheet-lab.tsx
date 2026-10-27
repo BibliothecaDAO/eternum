@@ -863,7 +863,7 @@ const TooltipSection = () => (
           label="named tip (TipLine)"
           content={<TipLine line="Needs 30 stamina, ready in under a minute" />}
         />
-        <TodayTipAnchor label="plain string" content="Deploy an army here" />
+        <TodayTipAnchor label="plain string" content="Deploy an army here. Right-click." />
         <TodayTipAnchor label="caller's gold div" content={<div className="text-gold">Invite to tribe</div>} />
         <TodayTipAnchor
           label="order tip"
