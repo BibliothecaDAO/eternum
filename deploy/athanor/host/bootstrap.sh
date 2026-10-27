@@ -15,6 +15,8 @@ set -euo pipefail
 HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 BUN_VERSION=1.4.0
 NODE_MAJOR=22
+# The tunnel's version floor (CLOUDFLARED_MIN, require_safe_cloudflared) lives with the tunnel's upgrade.
+source "$HERE/upgrade-tunnel.sh"
 
 install_packages() {
   apt-get update -q
@@ -73,6 +75,7 @@ create_workspace() {
 }
 
 install_tunnel() {
+  require_safe_cloudflared
   [ -f /etc/cloudflared/tunnel-token ] || { echo "Write /etc/cloudflared/tunnel-token first" >&2; exit 1; }
   chmod 0600 /etc/cloudflared/tunnel-token
   install -m 0644 "$HERE/cloudflared.service" /etc/systemd/system/cloudflared.service
