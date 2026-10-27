@@ -5,6 +5,8 @@
  *
  *   pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <dir> [--only <surface>,...]
  *
+ * A size under a desktop's (1024) is shot with a phone's touch, so its finger-size rules draw (touchAtPhoneWidth).
+ *
  * Run it on the commit before a change and again after; the two directories hold the same file names. A surface the
  * page does not draw (its `[data-lab]` mark missing) fails the run, so a broken surface never passes as a picture. The
  * desktop HUD's stage is also held to its bottom-left rule at each size (scripts/hud-sheet/clearance.mjs): the minimap in
@@ -21,6 +23,7 @@ import { parseArgs } from "node:util";
 
 import { hudClearanceProblems, READ_HUD_BOXES } from "../../../scripts/hud-sheet/clearance.mjs";
 
+import { openPageDevTools, touchAtPhoneWidth } from "./client-playtest/browser-session.mjs";
 import { HUD_LAYOUT_EXPRESSION, judgeHudLayout } from "./client-playtest/hud-layout.mjs";
 import { runAgentBrowser } from "./run-renderer-scene-smoke.mjs";
 
@@ -28,15 +31,72 @@ const VIEWPORT = [1920, 1080];
 /** The desktop sizes the HUD's layout is held at: the narrowest desktop, a small laptop, a laptop, a full HD screen. */
 const DESKTOPS = [[1024, 768], [1280, 720], [1440, 900], VIEWPORT];
 const SETTLE_MS = "1200";
-/** A Frontier card or page as a laptop and a phone show it. */
-const CARDS = [
-  [1600, 900],
+/** Two phones: a common one and the owner's Galaxy S22+, the narrowest the HUD is held at. */
+const PHONES = [
   [390, 844],
+  [384, 832],
 ];
+/** A Frontier card or page as a laptop and the phones show it. */
+const CARDS = [[1440, 900], ...PHONES];
 
-/** Each surface: the lab page that draws it, the mark the page puts on it, and its sizes when not just 1920×1080. */
+/** The Armies list or dock: how many entries it holds (armies and open slots), and each stamina bar's start, top and width. */
+const READ_ARMY_BARS = `(() => {
+  const nav = document.querySelector('nav[aria-label="Armies"]');
+  const bars = nav ? [...nav.querySelectorAll('[role="meter"][aria-label="stamina"]')] : [];
+  return {
+    entries: nav ? nav.children.length : 0,
+    bars: bars.map((bar) => {
+      const box = bar.getBoundingClientRect();
+      return { left: box.left, top: box.top, width: box.width };
+    }),
+  };
+})()`;
+
+/**
+ * Every army and open slot carries a stamina bar, and the bars line up whatever each entry's words say (owner, 27
+ * October): one width, and one left edge down a list (or one top along a phone's row of tokens).
+ */
+const armyBarsProblems = ({ entries, bars }) => {
+  if (bars.length < 2 || bars.length !== entries) return [`${bars.length} stamina bars on ${entries} armies and slots`];
+  const same = (key) => bars.every((bar) => Math.abs(bar[key] - bars[0][key]) <= 0.5);
+  const problems = [];
+  if (!same("width")) problems.push(`stamina bars' widths differ: ${bars.map(({ width }) => width.toFixed(1))}`);
+  if (!same("left") && !same("top")) problems.push(`stamina bars start at ${bars.map(({ left }) => left.toFixed(1))}`);
+  return problems;
+};
+
+/** The open sheet: how far its body scrolls, and where its verb stands against the page's height. */
+const READ_SHEET_FIT = `(() => {
+  const sheet = document.querySelector("[data-kit-sheet]");
+  if (!sheet) return { sheet: false };
+  const body = sheet.querySelector(".ui-sheet__body");
+  const verb = sheet.querySelector(".ui-window__foot > button:last-of-type")?.getBoundingClientRect();
+  return { sheet: true, scrolls: body.scrollHeight - body.clientHeight, verb: verb && { top: verb.top, bottom: verb.bottom }, height: innerHeight };
+})()`;
+
+/** A card fits the screen whole (owner, 27 October: "it doesnt fit on my s22+ screen"): no scroll, its verb in view. */
+const sheetFitProblems = ({ sheet, scrolls, verb, height }) => {
+  if (!sheet) return ["no sheet open"];
+  const problems = [];
+  if (scrolls > 1) problems.push(`the sheet's body scrolls ${scrolls}px`);
+  if (verb && (verb.top < 0 || verb.bottom > height)) problems.push(`its verb stands at ${verb.top}-${verb.bottom}`);
+  return problems;
+};
+const FITS = { read: READ_SHEET_FIT, rule: sheetFitProblems };
+
+/**
+ * Each surface: the lab page that draws it, the mark the page puts on it, its sizes when not just 1920×1080, and what
+ * the run holds it to: a `read` of the page judged by its `rule`, each fault failing the run.
+ */
 export const SURFACES = [
-  { name: "blitz-hud", path: "/lab/kit/panels?part=hud", mark: "hud", sizes: DESKTOPS, rule: hudClearanceProblems },
+  {
+    name: "blitz-hud",
+    path: "/lab/kit/panels?part=hud",
+    mark: "hud",
+    sizes: DESKTOPS,
+    read: READ_HUD_BOXES,
+    rule: hudClearanceProblems,
+  },
   { name: "blitz-left-column", path: "/lab/kit/panels", mark: "left-column" },
   { name: "blitz-top-header", path: "/lab/kit/panels?part=top-header", mark: "top-header" },
   { name: "blitz-tile-army", path: "/lab/kit/panels?tile=army", mark: "tile" },
@@ -46,6 +106,15 @@ export const SURFACES = [
   { name: "blitz-realm-production", path: "/lab/kit/panels?tile=production", mark: "tile" },
   { name: "blitz-next-up-and-events", path: "/lab/kit/guidance", mark: "next-up" },
   { name: "frontier-hud", path: "/lab/kit/hud/idle", mark: "frontier" },
+  {
+    name: "frontier-armies",
+    path: "/lab/kit/hud/armies-open",
+    mark: "frontier",
+    sizes: CARDS,
+    read: READ_ARMY_BARS,
+    rule: armyBarsProblems,
+  },
+  // Transfer troops: 500 into 1,500, both total XP values, loss confirmation and a partial transfer.
   { name: "frontier-merge", path: "/lab/kit/hud/merge", mark: "frontier-merge", sizes: [VIEWPORT, [390, 844]] },
   { name: "frontier-selected", path: "/lab/kit/hud/selected", mark: "frontier" },
   { name: "frontier-menu", path: "/lab/kit/hud/menu", mark: "frontier" },
@@ -54,14 +123,21 @@ export const SURFACES = [
   { name: "frontier-site-camp", path: "/lab/kit/hud/site-camp", mark: "frontier" },
   { name: "frontier-fight-won", path: "/lab/kit/hud/fight-won", mark: "frontier" },
   { name: "frontier-army-refill", path: "/lab/kit/hud/army-refill", mark: "frontier" },
-  ...["castle", "castle-short", "building-farm", "building-barracks", "building-war-hall", "building-scouts-lodge"].map(
-    (state) => ({
-      name: `frontier-${state}`,
-      path: `/lab/kit/hud/${state}`,
-      mark: "frontier",
-      sizes: CARDS,
-    }),
-  ),
+  ...[
+    "castle",
+    "castle-short",
+    "building-farm",
+    "building-workshop-short",
+    "building-barracks",
+    "building-war-hall",
+    "building-scouts-lodge",
+  ].map((state) => ({
+    name: `frontier-${state}`,
+    path: `/lab/kit/hud/${state}`,
+    mark: "frontier",
+    sizes: CARDS,
+    ...FITS,
+  })),
   { name: "frontier-research", path: "/lab/kit/hud/research", mark: "frontier", sizes: CARDS },
   { name: "frontier-build-locked", path: "/lab/kit/hud/build-early", mark: "frontier", sizes: CARDS },
   { name: "frontier-army", path: "/lab/kit/hud/selected", mark: "frontier", sizes: CARDS },
@@ -117,7 +193,7 @@ const holdHudLayout = ({ baseUrl, out, run }) => {
 /** How long the HUD's parts take to settle once its column is drawn (panels that size to what they read). */
 const HUD_SETTLE_MS = "1500";
 
-const main = () => {
+const main = async () => {
   const { values } = parseArgs({
     options: {
       "base-url": { type: "string" },
@@ -148,11 +224,16 @@ const main = () => {
   const missing = [];
   const broken = [];
   const interactions = [];
+  let devTools = null;
   try {
-    for (const { name, path, mark, sizes = [VIEWPORT], rule } of surfaces) {
+    // A phone's size is shot with a phone's touch (its finger-size rules), over a DevTools connection held open.
+    run("open", "about:blank");
+    devTools = await openPageDevTools({ run: (args) => run(...args) });
+    for (const { name, path, mark, sizes = [VIEWPORT], read, rule } of surfaces) {
       for (const [width, height] of sizes) {
         const shot = sizes.length > 1 ? `${name}-${width}x${height}` : name;
         run("set", "viewport", String(width), String(height));
+        await touchAtPhoneWidth(devTools, width);
         run("open", `${values["base-url"]}${path}`, "--ignore-https-errors");
         run("wait", SETTLE_MS);
         if (name === "frontier-merge") run("wait", '[role="dialog"][aria-label="Transfer troops"]');
@@ -160,14 +241,12 @@ const main = () => {
         if (!drawn) missing.push(shot);
         run("screenshot", join(values.out, `${shot}.png`));
         if (name === "frontier-merge") {
-          // Army 1 leaves with its 100 XP and its upgrade's 100: the second press names the 200 lost.
-          const confirmLabel = "Lose 200 XP, merge into Army 2";
-          run("find", "role", "button", "click", "--name", "Merge into Army 2", "--exact");
+          // Army 1 has 22 unspent XP and two upgrades; Army 3 has 20 unspent XP and one upgrade.
+          const confirmLabel = "Lose 222 XP, merge into Army 3";
+          run("find", "role", "button", "click", "--name", "Merge into Army 3", "--exact");
           run("wait", "--text", confirmLabel);
 
-          // What the sheet shows: its text, the XP struck out on the card of the army a merge empties, whether the
-          // confirmation stands in view, whether any notice stands over the cards (none should), and the amount sent as
-          // its box and its slider hold it.
+          // Read the visible totals, loss message, confirmation reachability and the amount in both controls.
           const readSheet = () =>
             JSON.parse(
               run(
@@ -179,41 +258,52 @@ const main = () => {
               const box = element?.getBoundingClientRect();
               return !!box && box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight;
             };
-            return { text: sheet.textContent, struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), notice: sheet.querySelector('.ui-notice')?.textContent ?? null, typed: sheet.querySelector('input[aria-label^="Troops "]').value, slid: sheet.querySelector('input[type="range"]').value };
+            return { text: sheet.textContent, totals: [...sheet.querySelectorAll('[role="group"][aria-label$="total XP"]')].map(group => group.textContent), struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), notice: sheet.querySelector('.ui-notice')?.textContent ?? null, typed: sheet.querySelector('input[aria-label^="Troops "]').value, slid: sheet.querySelector('input[type="range"]').value };
           })()`,
               ),
             );
           const confirmed = readSheet();
           writeFileSync(join(values.out, `${shot}-confirmation.json`), JSON.stringify(confirmed, null, 2));
-          if (!confirmed.reachable || confirmed.notice !== null || confirmed.struck !== "200 XP") {
-            throw new Error(`${shot}: the XP lost struck on the leaving card, a reachable confirmation and no notice`);
+          if (
+            !confirmed.reachable ||
+            confirmed.notice !== "Army 1 loses its XP and upgrades." ||
+            confirmed.struck !== null ||
+            JSON.stringify(confirmed.totals) !== JSON.stringify(["Total XP222→0", "Total XP120→120"])
+          ) {
+            throw new Error(`${shot}: both total XP values and their outcomes must agree with the loss confirmation`);
           }
-          // It opens at all Army 1 holds: the box and the slider both say 600, what the merge sends.
-          if (confirmed.typed !== "600" || confirmed.slid !== "600") {
-            throw new Error(`${shot}: the amount opens at the 600 Army 1 sends, in the box and on the slider`);
+          // It opens at all Army 1 holds: the box and the slider both say 500, what the merge sends.
+          if (confirmed.typed !== "500" || confirmed.slid !== "500") {
+            throw new Error(`${shot}: the amount opens at the 500 Army 1 sends, in the box and on the slider`);
           }
           run("screenshot", join(values.out, `${shot}-confirm.png`));
           // The slider moved one step, by key: Army 1 sends one fewer and keeps one troop, so the merge becomes a move.
           run("focus", 'input[type="range"]');
           run("press", "ArrowLeft");
-          run("wait", "--text", "Move 599 to Army 2");
+          run("wait", "--text", "Move 499 to Army 3");
           const partial = readSheet();
-          if (partial.text.includes(confirmLabel) || partial.struck !== null) {
+          if (
+            partial.text.includes(confirmLabel) ||
+            partial.struck !== null ||
+            partial.notice !== null ||
+            JSON.stringify(partial.totals) !== JSON.stringify(["Total XP222→222", "Total XP120→120"])
+          ) {
             throw new Error(`${shot}: changing the amount must clear confirmation and the merge's losses`);
           }
-          if (partial.typed !== "599" || partial.slid !== "599") {
-            throw new Error(`${shot}: the box and the slider hold the 599 the button sends`);
+          if (partial.typed !== "499" || partial.slid !== "499") {
+            throw new Error(`${shot}: the box and the slider hold the 499 the button sends`);
           }
           run("screenshot", join(values.out, `${shot}-partial.png`));
           interactions.push({ shot, confirmed, partial });
           writeFileSync(join(values.out, "merge-interactions.json"), JSON.stringify(interactions, null, 2));
         }
-        const problems = rule ? rule(JSON.parse(run("eval", READ_HUD_BOXES))) : [];
+        const problems = rule ? rule(JSON.parse(run("eval", read))) : [];
         problems.forEach((problem) => broken.push(`${shot}: ${problem}`));
         console.log(`${!drawn ? "MISSING" : problems.length > 0 ? "BROKEN" : "shot"} ${shot}`);
       }
     }
   } finally {
+    devTools?.close();
     run("close");
   }
   if (missing.length > 0) console.error(`Not drawn: ${missing.join(", ")}`);
@@ -221,4 +311,4 @@ const main = () => {
   if (missing.length > 0 || broken.length > 0) process.exit(1);
 };
 
-main();
+await main();

@@ -6,13 +6,22 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import type { DockArmy } from "../hud/dock-armies";
 import { useRealmLords } from "../value/use-realm-lords";
-import { RefillButton, RefillConfirm } from "./refill";
+import { RefillButton, RefillChip, RefillConfirm } from "./refill";
 
 /**
- * An army's Refill over the game's facts: the button priced at its missing points from the realm's LORDS, its confirm,
- * and refill_stamina. Nothing for a full bar or one not known yet.
+ * An army's Refill over the game's facts: the button (the army card's chip) priced at its missing points from the
+ * realm's LORDS, its confirm, and refill_stamina. Nothing for a full bar or one not known yet.
  */
-export const ArmyRefill = ({ army, realm }: { army: DockArmy; realm: NativeRows["Structure"] }) => {
+export const ArmyRefill = ({
+  army,
+  realm,
+  chip = false,
+}: {
+  army: DockArmy;
+  realm: NativeRows["Structure"];
+  /** On the army card's chips row. */
+  chip?: boolean;
+}) => {
   const { setup, account } = useGame();
   const held = useRealmLords(realm);
   const { confirming, ask, close } = useConfirmFor(army.explorerId);
@@ -37,7 +46,16 @@ export const ArmyRefill = ({ army, realm }: { army: DockArmy; realm: NativeRows[
 
   return (
     <>
-      <RefillButton price={Math.ceil(stamina.max - stamina.current)} held={held} refilling={refilling} onRefill={ask} />
+      {chip ? (
+        <RefillChip price={Math.ceil(stamina.max - stamina.current)} held={held} refilling={refilling} onRefill={ask} />
+      ) : (
+        <RefillButton
+          price={Math.ceil(stamina.max - stamina.current)}
+          held={held}
+          refilling={refilling}
+          onRefill={ask}
+        />
+      )}
       {confirming && (
         <RefillConfirm
           stamina={stamina}

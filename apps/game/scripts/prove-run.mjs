@@ -11,6 +11,7 @@ import { join } from "node:path";
 
 export { sleep, waitFor } from "./proof-wait.mjs";
 
+import { holdPageTouch } from "./lib/page-touch.mjs";
 import { runAgentBrowser } from "./run-renderer-scene-smoke.mjs";
 
 /**
@@ -24,7 +25,16 @@ export const commandsOf = (run) => ({
   url: () => run("get", "url").split("\n").pop().trim(),
 });
 
-const browser = (session) => commandsOf((...args) => runAgentBrowser(session, args));
+/** A proof's session: a size under a desktop's is set with a phone's touch, as a phone draws it. */
+const browser = (session) => {
+  const touch = holdPageTouch(session);
+  const run = (...args) => {
+    const said = runAgentBrowser(session, args);
+    if (args[0] === "set" && args[1] === "viewport") touch.at(Number(args[2]));
+    return said;
+  };
+  return { ...commandsOf(run), releaseTouch: touch.close };
+};
 
 /** An address as a player reads it: its path and query, decoded. */
 export const pathOf = (url) => {
@@ -40,12 +50,27 @@ const browserError = (error) =>
     .join(" ");
 
 /**
+ * What the pointer meets at the centre of the control `selector` names, when it is not that control: its name, or its tag
+ * and first classes. Null when the control is what the pointer meets there.
+ */
+const coverOf = (selector) => `(() => {
+  const control = document.querySelector(${JSON.stringify(selector)});
+  const box = control?.getBoundingClientRect();
+  const top = box && document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+  if (!top || control.contains(top)) return null;
+  return top.getAttribute("aria-label") || [top.tagName.toLowerCase(), ...[...top.classList].slice(0, 4)].join(".");
+})()`;
+
+/**
  * Scrolls to the control `selector` names and clicks it through the browser, so a control the pointer cannot reach (off
- * screen past scrolling, covered) is not pressed. Null when the click landed, else what the browser said.
+ * screen past scrolling, covered) is not pressed: the browser clicks whatever stands at the control's centre, so a
+ * control something else covers there is reported, never clicked. Null when the click landed, else what stopped it.
  */
 export const clickAsPlayer = (b, selector) => {
   try {
     b.run("scrollintoview", selector);
+    const cover = b.evaluate(coverOf(selector));
+    if (cover) return `click: covered by ${cover}`;
     b.run("click", selector);
     return null;
   } catch (error) {
@@ -89,6 +114,7 @@ export const runProof = async ({ parent, name, baseUrl, where }, prove) => {
   } catch (error) {
     records.push({ name, ready: false, presses: [], error: String(error.message ?? error) });
   } finally {
+    b.releaseTouch();
     try {
       b.run("open", "about:blank");
       b.run("close");

@@ -421,6 +421,25 @@ button.ui-panel__name[data-action]:hover {
   background: color-mix(in srgb, var(--hud-warn) 14%, transparent);
   color: var(--hud-warn);
 }
+/* A chip that acts: a chip's size, so it stands level with the tags beside it, with a secondary button's frame and
+   no fill, so it reads as a press among them. */
+button.ui-chip {
+  border-color: var(--hud-line-strong);
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color var(--hud-fast) var(--hud-ease);
+}
+button.ui-chip:is(:hover, :active):not(:disabled) {
+  background: var(--hud-chosen);
+}
+button.ui-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+button.ui-chip:disabled {
+  cursor: not-allowed;
+}
 /* A chip on a primary button's gold: its tones are washes over the dark, so on gold it takes the dark under it. */
 .ui-button[data-kind="primary"] .ui-chip {
   background: rgb(var(--hud-dark));
@@ -1182,12 +1201,13 @@ button.ui-relic:focus-visible {
   order: 2;
   margin-left: auto;
 }
-/* A note that says why the verb cannot run takes its own line over the buttons: beside a fix and the verb, a phone's
-   foot would squeeze it into a column a word wide. */
-.ui-actions:has(> .ui-actions__note .ui-notice) {
+/* A note that says why the verb cannot run stands beside the verb alone, so a card's foot stays one row on a phone
+   (owner, 27 October: "it doesnt fit on my s22+ screen"). Beside a fix and the verb it takes its own line over them:
+   there a phone's foot would squeeze it into a column a word wide. */
+.ui-actions:has(> .ui-actions__note .ui-notice):has(> :nth-child(3)) {
   flex-wrap: wrap;
 }
-.ui-actions__note:has(.ui-notice) {
+.ui-actions:has(> :nth-child(3)) > .ui-actions__note:has(.ui-notice) {
   order: -1;
   flex-basis: 100%;
 }
@@ -1559,10 +1579,21 @@ button.ui-relic:focus-visible {
     min-width: var(--hud-control);
   }
   .ui-event__open,
-  .ui-row__choose,
   .ui-feed-line {
     min-height: var(--hud-control);
     align-items: center;
+  }
+  /* A Feed line is the finger's target whole: no padding over its height, its open button as tall as it, so a line
+     that opens its story is the height of one that does not. */
+  .ui-feed-line {
+    padding-block: 0;
+  }
+  .ui-feed-line .ui-event__open {
+    align-self: stretch;
+  }
+  /* A column: its own rule centres its lines up and down, and they stay at the row's start, as on a desktop. */
+  .ui-row__choose {
+    min-height: var(--hud-control);
   }
   .ui-slider input[type="range"] {
     height: var(--hud-control);

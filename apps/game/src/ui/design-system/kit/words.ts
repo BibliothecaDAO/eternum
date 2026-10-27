@@ -154,7 +154,11 @@ export const BUILD_ORDER_WORDS = {
   levelUp: "Level up",
   nothingNow: "Nothing to build now",
   /** The maker: the player's orders, saved on their account, one of them followed. */
+  page: "Build orders",
   yourOrders: "Your build orders",
+  /** The panel's choice of the order to follow, and its way to the page where orders are made. */
+  follow: "Order to follow",
+  makeOrders: "Make build orders",
   theGamesOrder: "The game's order",
   steps: (count: number) => (count === 1 ? "1 step" : `${count} steps`),
   active: "Active",
@@ -171,7 +175,11 @@ export const BUILD_ORDER_WORDS = {
   addTo: (rank: string) => `Add to ${rank}`,
   earlier: "Earlier",
   later: "Later",
-  count: (goal: string) => `How many: ${goal}`,
+  fewer: (goal: string) => `Fewer: ${goal}`,
+  more: (goal: string) => `More: ${goal}`,
+  removeStep: (goal: string) => `Delete: ${goal}`,
+  ranks: "Ranks",
+  gone: "This order was deleted.",
   save: "Save",
   copyJson: "Copy JSON",
   askAi: "Get help from an AI",
@@ -209,6 +217,15 @@ export const EVENTS_WORDS = {
   lensTips: {
     important: "Your fights and captures, armies lost, crates you opened and a Hyperstructure taken by anyone",
     all: "Everything players do in the world",
+  },
+  /**
+   * Frontier's Feed: its default first, and Important called Mine, since a Frontier game has no Hyperstructure and the
+   * lens holds only the player's own (owner, 27 October: "important (which is mine, not important tbh)").
+   */
+  feedLenses: { all: "All", important: "Mine" },
+  feedLensTips: {
+    all: "Everything players do in the world",
+    important: "Your fights, captures and chests",
   },
   failed: "Event history could not load.",
 } as const;
@@ -283,8 +300,6 @@ export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
 /** What a training building gives, by its tier's numeral: "new armies start with Battle II". */
 export const startsNewArmies = (attribute: string, numeral: string) => `new armies start with ${attribute} ${numeral}`;
-/** The fix for a short store that the map can fill: "Explore for labor". */
-export const exploreFor = (noun: string) => `${EXPLORE} for ${noun}`;
 
 /**
  * An army's XP on its tooltip, against the attribute tier it buys next: "XP 8 of 100 · buys an Uncommon attribute
@@ -319,7 +334,6 @@ export const AFTER_THIS_ONE = "After this one";
 export const fightLine = (site: string, verdict: string, lost: string, guardBefore: string, guardAfter: string) =>
   `${site}: ${verdict}, lost ${lost}, guard ${guardAfter} left`;
 /** Why an attack cannot run, or what it costs, in one line under its button. */
-export const needsStamina = (need: string, held: string) => `Needs ${need} stamina, has ${held}`;
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;
 export const ARMY_WILL_BE_LOST = "Army will be lost";
 /** The skull beside an army on a site's card, on its tooltip. */
@@ -378,7 +392,6 @@ export const SPIRE_WORDS = {
   away: (army: string) => `${army} must be beside the spire`,
   inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
   cost: (stamina: string) => `${stamina} ${STAMINA}`,
-  needs: (need: string, have: string) => `Needs ${need} ${STAMINA}, has ${have}`,
   landingTaken: "Its landing is taken",
   locked: "Research it to open it",
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
@@ -392,7 +405,6 @@ export const BUILDING_FIGURES = {
   eachMakes: (noun: string) => `${noun} each makes`,
   castleMakes: (noun: string) => `${noun} the castle makes`,
   standing: "standing",
-  held: (noun: string) => `${noun} held of its ${STORAGE.toLowerCase()}`,
   eachAdds: `${POPULATION} each adds`,
   eachTakes: `${POPULATION} each takes`,
   startsAt: (attribute: string) => `${attribute} new armies start at`,
@@ -454,7 +466,10 @@ export const TRANSFER_TROOPS = {
   waiting: "Waiting for both armies’ progress.",
   stale: "The armies changed: review the merge",
   merge: (army: string) => `Merge into ${army}`,
-  /** The second press of a merge that loses a lot: the XP lost, as the leaving army's card strikes it, and the merge. */
+  totalXp: "Total XP",
+  totalXpFor: (army: string) => `${army} total XP`,
+  losesProgress: (army: string) => `${army} loses its XP and upgrades.`,
+  /** The second press of a merge that loses a lot: the leaving army's total XP and the chosen target. */
   confirmMerge: (lost: number, army: string) => `Lose ${formatAmount(lost)} XP, merge into ${army}`,
   amount: (from: string, to: string) => `Troops ${from} sends to ${to}`,
   pick: "Pick how many to send",

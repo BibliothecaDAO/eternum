@@ -4,7 +4,6 @@ import { type MouseEvent, useEffect, useMemo, useState } from "react";
 
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useNowSeconds, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HudActions, HudButton, HudCheck, HudIconButton, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -15,7 +14,8 @@ import { configManager, getGuardsByStructure, getTroopResourceId, StaminaManager
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
-import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
+import { resolveAttackStaminaState } from "./attack-stamina-state";
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
 import { combatTitle, describeFightCost, forecastAttack } from "./fight-forecast";
@@ -79,10 +79,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   ]);
 
   const accountName = usePlayerDisplayName(account?.address);
-  const selectedHex = useUIStore((state) => state.selectedHex);
+  // The attacker's own tile, never the map's selected one: a selected army can show another tile's card.
+  const attackerHex = useMemo(() => ({ col: attacker.hex.x, row: attacker.hex.y }), [attacker.hex.x, attacker.hex.y]);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
-  const deselectEntity = useUIStore((state) => state.deselectEntity);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Opt-in toggle: when on, the Claim action also garrisons the surviving troops. Off by default.
@@ -124,12 +124,11 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // Hex distance from the attacker to the target. Crossbowmen can poke at range 2; everything else
   // is adjacency-only, so this drives which guards may fire and whether a structure can be claimed.
   const targetDistance = useMemo(() => {
-    if (!selectedHex) return Infinity;
     return getLayeredAttackDistance(
-      { ...selectedHex, alt: attacker.alt },
+      { ...attackerHex, alt: attacker.alt },
       { col: target.hex.x, row: target.hex.y, alt: target.alt },
     );
-  }, [selectedHex, attacker.alt, target.alt, target.hex.x, target.hex.y]);
+  }, [attackerHex, attacker.alt, target.alt, target.hex.x, target.hex.y]);
 
   // When a structure is the aggressor, only guards whose attack range reaches the target can fire.
   const eligibleStructureGuards = useMemo(
@@ -294,14 +293,17 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const attackDisabled =
     rangedClaimBlocked || cooldownBlocksAttack || attackStaminaState.isBlocked || !attackerArmyData;
 
-  const isLowStamina = attackStaminaState.isBlocked;
-
   const attackButtonLabel = (() => {
     if (rangedClaimBlocked) return "Move adjacent to claim";
     if (attackerType === AttackerType.Structure && !activeGuard) return "No guard in range";
     if (!attackerArmyData) return "No troops selected";
     if (cooldownBlocksAttack) return "On cooldown";
-    if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
+    if (attackStaminaState.isBlocked)
+      return staminaShortfall(
+        attackStaminaState.currentStamina,
+        attackStaminaState.requiredStamina,
+        staminaWaitSeconds ?? undefined,
+      );
     if (!hasDefenders) return "Claim";
     return attackStaminaState.actionLabel;
   })();
@@ -319,10 +321,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const runWorldmapAttack = async (
     performCall: (ctx: { direction: number | null; resolvedTarget: AttackTarget }) => Promise<unknown>,
   ) => {
-    if (!selectedHex || !targetData || attackDisabled) return;
+    if (!targetData || attackDisabled) return;
     // Range-2 pokes are not adjacent, so direction is null for them; only the adjacency-only
     // garrison multicall requires it, and it guards for null itself.
-    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
+    const direction = getDirectionBetweenAdjacentHexes(attackerHex, { col: target.hex.x, row: target.hex.y });
     const resolvedTarget = targetData;
 
     try {
@@ -331,7 +333,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       playUnitCommandSound("attack");
       await performCall({ direction, resolvedTarget });
 
-      deselectEntity();
       closeSurface();
     } catch (error) {
       toast.failed(error, "The attack failed.");
@@ -501,7 +502,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               line={[
                 attackButtonLabel,
                 cooldownBlocksAttack && attackerCooldownRemaining > 0 ? formatWait(attackerCooldownRemaining) : null,
-                isLowStamina && staminaWaitSeconds !== null ? `Ready in ${formatWait(staminaWaitSeconds)}` : null,
               ]
                 .filter(Boolean)
                 .join(" · ")}

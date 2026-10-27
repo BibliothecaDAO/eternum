@@ -172,9 +172,7 @@ const NOTICE_TONES: Record<NoticeKind, "good" | "bad" | "warn" | undefined> = {
 /** The red offline row, with the way to reconnect now. */
 function OfflineRow() {
   const status = useConnectionStore((state) => state.status);
-  const reconnecting = useConnectionStore(
-    (state) => state.spatialStatus === "reconnecting" || state.globalStatus === "reconnecting",
-  );
+  const reconnecting = useConnectionStore((state) => state.globalStatus === "reconnecting");
   if (status !== "disconnected") return null;
   return (
     <HudEventRow

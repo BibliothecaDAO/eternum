@@ -10,6 +10,7 @@ import {
   openPageDevTools,
   recordRpcSends,
   setViewport,
+  touchAtPhoneWidth,
   VIEWPORT,
 } from "./client-playtest/browser-session.mjs";
 import { startClient } from "./client-playtest/client-server.mjs";
@@ -296,6 +297,7 @@ async function playRun(context) {
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
     releaseDevTools = owner.adopt(`DevTools ${label}`, () => devTools.close());
+    await touchAtPhoneWidth(devTools, VIEWPORT.width);
     if (cpuThrottle > 1) await devTools.send("Emulation.setCPUThrottlingRate", { rate: cpuThrottle });
     if (context.network) await emulateNetwork(devTools, context.network);
     record.rpcSends = await recordRpcSends(devTools);

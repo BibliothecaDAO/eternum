@@ -194,7 +194,8 @@
         "src/main.tsx",
         "src/ui/features/debug/kit-lab/render-model.ts",
         "scripts/relic-chest-route-fixture.mjs",
-        "scripts/frontier-painted/stamp-source.mjs"
+        "scripts/frontier-painted/stamp-source.mjs",
+        "scripts/lib/page-touch-worker.mjs"
       ]
     },
     "apps/herald": {

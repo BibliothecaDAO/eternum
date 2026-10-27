@@ -62,6 +62,7 @@ const line = (order: Partial<Parameters<typeof orderTip>[0]>) => {
     explored: true,
     refusal: undefined,
     staminaWait: undefined,
+    staminaHeld: undefined,
     site: undefined,
     ...order,
   });
@@ -270,7 +271,7 @@ export const MapContextSection = ({ world }: { world?: ReactNode }) => (
             {line({ path: [step(ActionType.Move), step(ActionType.Help)] })}
           </OnMap>
           <OnMap name="Refusals" when="The same line where no order leads: why, and when it will, to the second.">
-            {line({ refusal: { reason: "stamina", need: 30 }, staminaWait: 24 })}
+            {line({ refusal: { reason: "stamina", need: 30 }, staminaWait: 24, staminaHeld: 12 })}
             {line({ refusal: { reason: "too-far" } })}
             {line({ explored: false })}
           </OnMap>

@@ -4,7 +4,8 @@ import { logicalStoryIdentity, storyRecipients } from "@bibliothecadao/notificat
 
 /**
  * The two lenses on the game's stories, one meaning in every mode and on every surface (Blitz's Events and Log,
- * Frontier's Feed): Important, what the player must not miss; All, the world's history.
+ * Frontier's Feed): Important, what the player must not miss (the Feed's Mine: a Frontier game has no Hyperstructure, so
+ * it holds only the player's own); All, the world's history.
  */
 export type EventsFilter = "important" | "all";
 

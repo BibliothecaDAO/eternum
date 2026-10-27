@@ -10,18 +10,15 @@ const formatAge = (timestamp: number, now: number): string => {
 };
 
 /**
- * Dev-mode sync readout (bottom-left): connection status plus the age of the
- * last data on each stream — the fastest way to tell "the world is quiet"
- * from "sync is dead". FPS/memory live in the stats panel.
+ * Dev-mode sync readout (bottom-left). Herald heads a live stream every second, so the head's age tells "sync is
+ * dead" (it grows) from "the world is quiet" (only the data's age grows). FPS/memory live in the stats panel.
  */
 export const DevSyncOverlay = () => {
   const status = useConnectionStore((state) => state.status);
-  const spatialStatus = useConnectionStore((state) => state.spatialStatus);
-  const globalStatus = useConnectionStore((state) => state.globalStatus);
-  const lastSpatialUpdate = useConnectionStore((state) => state.lastSpatialUpdate);
-  const lastGlobalUpdate = useConnectionStore((state) => state.lastGlobalUpdate);
-  const reconnectAttempts = useConnectionStore((state) => state.reconnectAttempts);
-  const streamReconnectVersion = useConnectionStore((state) => state.streamReconnectVersion);
+  const lastHeadAt = useConnectionStore((state) => state.lastHeadAt);
+  const lastDataAt = useConnectionStore((state) => state.lastGlobalUpdate);
+  const reconnects = useConnectionStore((state) => state.reconnects);
+  const failedAttempts = useConnectionStore((state) => state.failedAttempts);
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -39,13 +36,11 @@ export const DevSyncOverlay = () => {
       data-testid="dev-sync-overlay"
     >
       <div>
-        sync <span style={{ color: statusColor }}>{status}</span> · spatial {spatialStatus} · global {globalStatus}
+        sync <span style={{ color: statusColor }}>{status}</span> · last head {formatAge(lastHeadAt, now)}
       </div>
+      <div>last data {formatAge(lastDataAt, now)}</div>
       <div>
-        last data: spatial {formatAge(lastSpatialUpdate, now)} · global {formatAge(lastGlobalUpdate, now)}
-      </div>
-      <div>
-        reconnects {streamReconnectVersion} · failed attempts {reconnectAttempts}
+        reconnects {reconnects} · failed attempts {failedAttempts}
       </div>
     </div>
   );

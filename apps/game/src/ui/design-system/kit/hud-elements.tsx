@@ -700,12 +700,17 @@ export const HudTabs = <K extends string | number>({
   </div>
 );
 
-/** A small tag: a count in the age's accent, or a state in its tone. */
+/**
+ * A small tag: a count in the age's accent, or a state in its tone. With `onPress` it is a press at a chip's size, framed
+ * as a button, for an action that stands among the tags (the army card's Refill).
+ */
 export const HudChip = ({
   tone,
   icons,
   label,
   tip,
+  onPress,
+  disabled = false,
   children,
 }: {
   tone?: Tone;
@@ -715,25 +720,48 @@ export const HudChip = ({
   label?: string;
   /** A fuller line for the hover than the chip's words, where the facts have one. */
   tip?: string;
+  /** Its action: the chip is then a button. */
+  onPress?: () => void;
+  disabled?: boolean;
   children: ReactNode;
-}) => (
-  <span
-    className="ui-chip"
-    data-tone={tone}
-    data-tip={tip}
-    role={label === undefined ? undefined : "img"}
-    aria-label={label === undefined ? undefined : `${label} ${textOf(children)}`}
-  >
-    {icons && icons.length > 0 && (
-      <span className="ui-chip__icons" aria-hidden="true">
-        {icons.map((icon) => (
-          <Icon key={icon} name={icon} size={16} />
-        ))}
-      </span>
-    )}
-    {children}
-  </span>
-);
+}) => {
+  const name = label === undefined ? undefined : `${label} ${textOf(children)}`;
+  const inside = (
+    <>
+      {icons && icons.length > 0 && (
+        <span className="ui-chip__icons" aria-hidden="true">
+          {icons.map((icon) => (
+            <Icon key={icon} name={icon} size={16} />
+          ))}
+        </span>
+      )}
+      {children}
+    </>
+  );
+  return onPress ? (
+    <button
+      type="button"
+      className="ui-chip"
+      data-tone={tone}
+      data-tip={tip}
+      aria-label={name}
+      disabled={disabled}
+      onClick={onPress}
+    >
+      {inside}
+    </button>
+  ) : (
+    <span
+      className="ui-chip"
+      data-tone={tone}
+      data-tip={tip}
+      role={name === undefined ? undefined : "img"}
+      aria-label={name}
+    >
+      {inside}
+    </span>
+  );
+};
 
 /** The words a chip's children say, for its name: its strings and numbers, joined. */
 const textOf = (node: ReactNode): string =>
@@ -908,6 +936,7 @@ export const HudRow = ({
   selected = false,
   state,
   disabled,
+  busy,
   tip,
   onClick,
 }: {
@@ -925,6 +954,8 @@ export const HudRow = ({
   selected?: boolean;
   state?: string;
   disabled?: boolean;
+  /** What the row's press started is under way (an army being deployed into a slot). */
+  busy?: boolean;
   /** What the row stands for in full, on the app's hover (a research row's next tier). */
   tip?: string;
   onClick?: () => void;
@@ -939,6 +970,7 @@ export const HudRow = ({
             className="ui-row__choose"
             aria-label={label}
             aria-pressed={selected}
+            aria-busy={busy}
             disabled={disabled}
             onClick={onClick}
           >

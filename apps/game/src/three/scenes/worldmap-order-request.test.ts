@@ -12,7 +12,7 @@ import {
 
 const step = (actionType: ActionType) => ({ hex: { col: 0, row: 0 }, actionType });
 const tap = (path: ReturnType<typeof step>[] | undefined, site = false, ownSpire = false) =>
-  orderOnTap({ path, armySelected: true, site, ownSpire });
+  orderOnTap({ path, armySelected: true, site, ownSpire, onPhone: false });
 
 describe("a tap on a tile with an army selected", () => {
   it("pins an order on a tile to explore or move to", () => {
@@ -28,14 +28,18 @@ describe("a tap on a tile with an army selected", () => {
   it("opens a standing site out of reach for the army, so its card can say what the army lacks", () => {
     expect(tap(undefined, true)).toBe("site-card");
     expect(tap([step(ActionType.Move), step(ActionType.UseSite)], true)).toBe("site-card");
-    expect(orderOnTap({ path: undefined, armySelected: false, site: true, ownSpire: false })).toBeNull();
+    expect(
+      orderOnTap({ path: undefined, armySelected: false, site: true, ownSpire: false, onPhone: false }),
+    ).toBeNull();
   });
 
   it("opens its realm's spire for the army wherever it stands, ahead of a move onto the spire's tile", () => {
     expect(tap([step(ActionType.Move), step(ActionType.EnterDepth)], false, true)).toBe("site-card");
     expect(tap([step(ActionType.Move), step(ActionType.Move)], false, true)).toBe("site-card");
     expect(tap(undefined, false, true)).toBe("site-card");
-    expect(orderOnTap({ path: undefined, armySelected: false, site: false, ownSpire: true })).toBeNull();
+    expect(
+      orderOnTap({ path: undefined, armySelected: false, site: false, ownSpire: true, onPhone: false }),
+    ).toBeNull();
   });
 
   it("counts as an order to a tile only a path that explores or moves there", () => {
@@ -52,6 +56,53 @@ describe("a tap on a tile with an army selected", () => {
   });
 });
 
+describe("a click on a tile whose order the selected army can't take now (owner, 27 October 2026)", () => {
+  const refused = (reason: "attack" | "order", { onPhone = false, armySelected = true } = {}) =>
+    orderOnTap({ path: undefined, armySelected, site: false, ownSpire: false, onPhone, refused: reason });
+
+  it("opens the attack's preview on a target its stamina can't pay for yet, on a desktop", () => {
+    expect(refused("attack")).toBe("attack");
+  });
+
+  it("opens the refused order's preview anywhere else the rules said why, on a desktop", () => {
+    expect(refused("order")).toBe("refused");
+  });
+
+  it("leaves a phone's tap and a holding's click as they were", () => {
+    expect(refused("attack", { onPhone: true })).toBeNull();
+    expect(refused("order", { onPhone: true })).toBeNull();
+    expect(refused("order", { armySelected: false })).toBeNull();
+  });
+
+  it("still opens a standing site's card, which says what the army lacks", () => {
+    expect(
+      orderOnTap({
+        path: undefined,
+        armySelected: true,
+        site: true,
+        ownSpire: false,
+        onPhone: false,
+        refused: "order",
+      }),
+    ).toBe("site-card");
+  });
+});
+
+describe("a tap on a lit tile beside the realm selected (owner, 27 October 2026: phone only)", () => {
+  const beside = [step(ActionType.Move), step(ActionType.CreateArmy)];
+  const onRealm = (onPhone: boolean, hud?: { pinned: boolean; refused: boolean }) =>
+    orderOnTap({ path: beside, armySelected: false, site: false, ownSpire: false, onPhone, hud });
+
+  it("deploys there on a Frontier phone and on a Blitz phone", () => {
+    expect(onRealm(true, { pinned: false, refused: false })).toBe("deploy");
+    expect(onRealm(true)).toBe("deploy");
+  });
+
+  it("leaves a desktop's click its own tap: right-click deploys there", () => {
+    expect(onRealm(false)).toBeNull();
+  });
+});
+
 describe("a tap on a phone, where the HUD carries the verb (owner, 22 October 2026: mobile direction A)", () => {
   const onPhone = (path: ReturnType<typeof step>[] | undefined, hud: { pinned?: boolean; refused?: boolean } = {}) =>
     orderOnTap({
@@ -59,6 +110,7 @@ describe("a tap on a phone, where the HUD carries the verb (owner, 22 October 20
       armySelected: true,
       site: false,
       ownSpire: false,
+      onPhone: true,
       hud: { pinned: hud.pinned ?? false, refused: hud.refused ?? false },
     });
   const explore = [step(ActionType.Move), step(ActionType.Explore)];
@@ -86,6 +138,7 @@ describe("a tap on a phone, where the HUD carries the verb (owner, 22 October 20
           armySelected: true,
           site: actionType === ActionType.UseSite,
           ownSpire: actionType === ActionType.EnterDepth,
+          onPhone: true,
           hud: { pinned: true, refused: false },
         }),
       ).toBe("site-card");

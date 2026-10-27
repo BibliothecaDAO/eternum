@@ -10,7 +10,6 @@ import {
   HudStamina,
   HudTier,
   HudTierStep,
-  type StaminaBar,
 } from "@/ui/design-system/kit/hud-elements";
 import { ARMY_DETAIL, BACK, RESEARCH_TREE, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
@@ -25,9 +24,9 @@ const KINDS: { key: ScoutKind; icon: IconMeaning }[] = [
 ];
 
 /**
- * An army's detail (the owner's picks, 20 and 22 October), in two steps in one place. First its status: its stamina
- * under its portrait; its troops, when its stamina is full again and what each tile explored sends home on one line
- * over the stamina bar, with the refill; its four attributes as tiles (each its tier and what it gives, a press
+ * An army's detail (the owner's picks, 20 and 22 October), in two steps in one place. First its status, beside its
+ * portrait in two rows: its troops, what each tile explored sends home and the refill, then its stamina line; its four attributes
+ * as tiles (each its tier and what it gives, a press
  * opening its level-up); its XP with how XP is earned on its hover, and Level up: the primary once the XP buys a level,
  * else a way to see what it will buy. Level up turns the same place to the four choices, each with what it gives next
  * and its XP, Scouting's kind, and the verb, with a way back.
@@ -40,7 +39,7 @@ export const ArmyDetail = ({
   onLevelUp,
 }: {
   army: ArmyView;
-  /** The refill's control on the stamina row. */
+  /** The refill's control, at the end of the chips' row, so the stamina line keeps its width. */
   refill?: ReactNode;
   sending: boolean;
   /** Opens on the choices (the lab's second step). */
@@ -84,15 +83,14 @@ export const ArmyDetail = ({
   return (
     <div data-army-step="stats" className="flex flex-col gap-3 pt-1">
       <div className="flex items-center gap-3">
-        <span className="flex shrink-0 flex-col items-center gap-1">
-          <HudPortrait icon={army.art} label={TROOPS} />
-          <StaminaCount stamina={army.stamina} />
-        </span>
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
-          <StatusLine army={army} />
-          <HudStamina stamina={army.stamina} />
+        <HudPortrait icon={army.art} label={TROOPS} />
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <span className="flex items-center gap-2">
+            <StatusChips army={army} />
+            {refill && <span className="ml-auto flex">{refill}</span>}
+          </span>
+          <StaminaLine army={army} />
         </div>
-        {refill}
       </div>
       <div className="grid grid-cols-4 gap-1.5">
         {army.attributes.map((attribute) => (
@@ -104,29 +102,34 @@ export const ArmyDetail = ({
   );
 };
 
-/** Under the portrait (the owner, 26 October): the stamina held of its maximum, "18/140". */
-const StaminaCount = ({ stamina }: { stamina: StaminaBar }) => (
-  <span className="flex items-center gap-0.5 whitespace-nowrap text-hud-label tabular-nums text-hud-ink">
-    <Icon name="stamina" size={14} />
-    {`${formatExact(stamina.current)}/${formatExact(stamina.max)}`}
-  </span>
-);
-
-/**
- * Over the stamina bar, on one line (the owner, 22 October): the army's troops, when its stamina is full again, and what
- * each tile explored sends home (none in a game whose reveals pay none).
- */
-const StatusLine = ({ army }: { army: ArmyView }) => (
+/** Over the stamina line: the army's troops, and what each tile explored sends home (none where reveals pay none). */
+const StatusChips = ({ army }: { army: ArmyView }) => (
   <span className="flex flex-wrap items-center gap-1.5">
     <HudChip icons={["troops"]} label={TROOPS}>
       {formatShort(army.troops)}
     </HudChip>
-    {army.secondsToFull !== undefined && army.secondsToFull > 0 && <FullIn seconds={army.secondsToFull} />}
     {army.revealYield !== null && (
       <HudChip icons={["essence", "labor"]} label={ARMY_DETAIL.revealPaysLabel}>
         {army.revealYield === undefined ? "—" : ARMY_DETAIL.revealPays(formatShort(army.revealYield))}
       </HudChip>
     )}
+  </span>
+);
+
+/**
+ * The stamina on one line (the owner's layout A, 27 October): "96/170", the bar in a segment per explore, and when it is
+ * full again.
+ */
+const StaminaLine = ({ army }: { army: ArmyView }) => (
+  <span data-stamina-line className="flex items-center gap-2">
+    <span className="flex items-center gap-0.5 whitespace-nowrap text-hud-label tabular-nums text-hud-ink">
+      <Icon name="stamina" size={14} />
+      {`${formatExact(army.stamina.current)}/${formatExact(army.stamina.max)}`}
+    </span>
+    <span className="min-w-0 flex-1">
+      <HudStamina stamina={army.stamina} />
+    </span>
+    {army.secondsToFull !== undefined && army.secondsToFull > 0 && <FullIn seconds={army.secondsToFull} />}
   </span>
 );
 

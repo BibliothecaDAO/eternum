@@ -1,35 +1,21 @@
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudCost, HudNotice, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
+import { HudButton, HudNotice, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 
 /**
- * A Frontier verb that cannot run yet still ends its sheet, in the sheet's foot so it never scrolls out of view: the
- * verb itself, dimmed, with what it costs; the one line that says why; and the fix where there is one, with its own
- * cost, beside the verb.
+ * A Frontier verb that cannot run yet still ends its sheet, in the sheet's foot so it never scrolls out of view: the one
+ * line that says why ("Needs 24K Essence, have 22.8K"), the fix where there is one, and the verb itself, dimmed. What
+ * the realm holds is the top bar's, and the shortfall names the price that stops it, so no price line repeats them
+ * (owner, 27 October: "just need x essence, have x is alright, then research x").
  */
-export const RefusedVerb = ({
-  word,
-  icon,
-  prices,
-  refusal,
-}: {
-  word: string;
-  icon?: IconMeaning;
-  prices: readonly Price[];
-  refusal: Refusal;
-}) => (
+export const RefusedVerb = ({ word, icon, refusal }: { word: string; icon?: IconMeaning; refusal: Refusal }) => (
   <HudWindowFoot
     note={
-      <span className="flex flex-col items-start gap-1">
-        <HudNotice
-          tone="warn"
-          line={refusal.reason.kind === "short" ? shortfallLine(refusal.reason) : refusal.reason.line}
-        />
-        <HudCost line={costLine(prices)} />
-        {refusal.fix?.prices && <HudCost line={costLine(refusal.fix.prices)} />}
-      </span>
+      <HudNotice
+        tone="warn"
+        line={refusal.reason.kind === "short" ? shortfallLine(refusal.reason) : refusal.reason.line}
+      />
     }
   >
     {refusal.fix && (
