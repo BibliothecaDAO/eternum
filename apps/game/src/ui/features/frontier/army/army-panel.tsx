@@ -85,9 +85,9 @@ export const ArmyDetail = ({
       <div className="flex items-center gap-3">
         <HudPortrait icon={army.art} label={TROOPS} />
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <span className="flex items-start gap-2">
+          <span className="flex items-center gap-2">
             <StatusChips army={army} />
-            {refill && <span className="ml-auto">{refill}</span>}
+            {refill && <span className="ml-auto flex">{refill}</span>}
           </span>
           <StaminaLine army={army} />
         </div>

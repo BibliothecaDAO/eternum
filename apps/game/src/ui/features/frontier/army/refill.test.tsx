@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
-import { RefillButton, RefillConfirm } from "./refill";
+import { RefillButton, RefillChip, RefillConfirm } from "./refill";
 
 const render = (node: React.ReactNode) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -31,6 +31,33 @@ describe("the refill", () => {
     expect([...chip.lastElementChild!.children].map((line) => line.textContent)).toEqual(["Refill", "40 / 130"]);
     expect(chip.querySelector(".ui-panel")).toBeNull();
     short.unmount();
+  });
+
+  it("on the army card is a chip that presses: its price, or short of LORDS what is held against it, unpressable", () => {
+    const onRefill = vi.fn();
+    const enough = render(<RefillChip price={150} held={1_240} onRefill={onRefill} />);
+    const chip = enough.host.querySelector("button")!;
+    // A chip's size, so it stands level with the troops and +120 a tile beside it.
+    expect(chip.className).toBe("ui-chip");
+    expect(chip.getAttribute("aria-label")).toBe("Refill 150");
+    act(() => chip.click());
+    expect(onRefill).toHaveBeenCalledTimes(1);
+    enough.unmount();
+
+    const short = render(<RefillChip price={150} held={40} onRefill={onRefill} />);
+    const shortChip = short.host.querySelector("button")!;
+    expect(shortChip.textContent).toBe("40 / 150");
+    expect(shortChip.getAttribute("data-tone")).toBe("bad");
+    expect(shortChip.getAttribute("data-tip")).toBe("Refill needs 150 LORDS, has 40");
+    expect(shortChip.disabled).toBe(true);
+    act(() => shortChip.click());
+    expect(onRefill).toHaveBeenCalledTimes(1);
+    short.unmount();
+
+    const sending = render(<RefillChip price={150} held={1_240} refilling onRefill={onRefill} />);
+    expect(sending.host.querySelector("button")!.textContent).toBe("Refilling…");
+    expect(sending.host.querySelector("button")!.disabled).toBe(true);
+    sending.unmount();
   });
 
   it("reads Refilling… and cannot be pressed while the army's refill is in flight", () => {

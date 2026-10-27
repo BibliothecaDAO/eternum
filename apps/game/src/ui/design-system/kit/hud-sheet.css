@@ -421,6 +421,25 @@ button.ui-panel__name[data-action]:hover {
   background: color-mix(in srgb, var(--hud-warn) 14%, transparent);
   color: var(--hud-warn);
 }
+/* A chip that acts: a chip's size, so it stands level with the tags beside it, with a secondary button's frame and
+   no fill, so it reads as a press among them. */
+button.ui-chip {
+  border-color: var(--hud-line-strong);
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color var(--hud-fast) var(--hud-ease);
+}
+button.ui-chip:is(:hover, :active):not(:disabled) {
+  background: var(--hud-chosen);
+}
+button.ui-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+button.ui-chip:disabled {
+  cursor: not-allowed;
+}
 /* A chip on a primary button's gold: its tones are washes over the dark, so on gold it takes the dark under it. */
 .ui-button[data-kind="primary"] .ui-chip {
   background: rgb(var(--hud-dark));
