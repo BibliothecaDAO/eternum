@@ -273,7 +273,7 @@ const priceKind = (resource: number): PriceKind => {
   return kind;
 };
 
-/** What the realm holds that a card weighs its building against: labor and how fast it comes, and free population. */
+/** What the realm holds that a card weighs its building against: resources and how fast they arrive, and free population. */
 type Holdings = {
   held: (resource: number) => number | undefined;
   perHour: (resource: number) => number | undefined;
@@ -292,7 +292,7 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
 
 /**
  * Where a building stands for the realm, the first that holds: built (a realm holds one), locked behind the Barracks'
- * tier, or its price, with the labor the realm lacks and the wait until it holds it, or else the population it lacks.
+ * purchases, or its price, with a resource shortfall and its wait, or else the population it lacks.
  */
 const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };

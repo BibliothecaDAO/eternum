@@ -25,7 +25,7 @@ import type { RealmPopulation } from "../realm/realm-population";
 
 /**
  * One building on the build sheet (the owner's pick, option B · Cards): its painting and name, what one more gives
- * and the population it takes, and a band for where it stands: its labor price, with the wait while the realm holds
+ * and the population it takes, and a band for where it stands: its resource prices, with the wait while the realm holds
  * too little or the population it lacks, a lock with the gate it waits for (Barracks research purchases), or a tick when the
  * realm already holds its one copy.
  */
@@ -45,7 +45,7 @@ export type BuildTile = {
         prices: readonly Price[];
         /** Why the price is above its base, when it is. */
         raised?: string;
-        /** What the realm lacks: labor, with the wait until it holds it (unknown when nothing fills it), or population. */
+        /** The missing resource and its wait (unknown when nothing fills it), or population. */
         short?: { of: Price["of"]; wait: number | undefined } | { of: "population" };
       }
     | { kind: "built" }
@@ -98,7 +98,7 @@ export const BuildView = ({
     </div>
     {scouting && (
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-hud-label">Free Uncommon Scouting · find more</legend>
+        <legend className="text-hud-label">Uncommon Scouting · find more</legend>
         <div className="flex gap-2">
           {(["Camps", "Rifts", "Beasts"] as const).map((name, kind) => (
             <HudButton
