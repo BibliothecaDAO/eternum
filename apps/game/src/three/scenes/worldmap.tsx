@@ -2763,8 +2763,8 @@ export default class WorldmapScene extends WarpTravel {
 
   /**
    * With an army selected, a tap previews its order or opens its site card. A second tap on a phone's pinned movement
-   * order sends it; attacks and site cards keep their own confirmation. With the realm selected, a lit tile beside it
-   * opens Deploy aimed there, and another lit tile aims it again. False leaves the tile its own tap.
+   * order sends it; attacks and site cards keep their own confirmation. On a phone, with the realm selected, a lit tile
+   * beside it opens Deploy aimed there, and another lit tile aims it again. False leaves the tile its own tap.
    */
   private answerTapWithSelectedOrder(hexCoords: HexPosition): boolean {
     if (!canIssueOrders()) return false;
@@ -2782,6 +2782,7 @@ export default class WorldmapScene extends WarpTravel {
         (structure !== undefined && this.isStandingExpeditionSite(structure.id)) ||
         this.usableSiteAt(hexCoords) !== null,
       ownSpire: this.isArmysSpire(selectedEntityId, hexCoords),
+      onPhone: layoutNow() === "phone",
       hud: this.hudCarriesOrderVerb()
         ? {
             pinned: pinned?.col === hexCoords.col && pinned.row === hexCoords.row,

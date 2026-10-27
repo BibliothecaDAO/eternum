@@ -206,11 +206,11 @@ describe("a tap on a lit tile beside the realm selected", () => {
   });
 
   it.each([
-    ["phone", false],
-    ["desktop", true],
-  ])("on a Frontier %s, opens Deploy aimed at that tile, and another lit tile aims it again", (_, desktop) => {
-    screen(desktop);
-    const { scene, sent } = worldMap(true);
+    ["Frontier's HUD", true],
+    ["the shared HUD (Blitz)", false],
+  ])("on a phone with %s, orders Deploy at that tile, and another lit tile aims it again", (_, frontier) => {
+    screen(false);
+    const { scene, sent } = worldMap(frontier);
     Object.assign(scene, { worldSpatialProjection: { getArmy: () => undefined, getStructuresAtHex: () => [] } });
 
     expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(true);
@@ -224,6 +224,17 @@ describe("a tap on a lit tile beside the realm selected", () => {
     expect(scene.answerTapWithSelectedOrder(SOUTH_EAST)).toBe(true);
     expect(useUIStore.getState().pendingMilitaryAction?.direction).toBe(Direction.SOUTH_EAST);
     expect(sent).toEqual([]);
+  });
+
+  it("on a desktop, leaves the click its own tap and opens nothing (owner: right-click deploys there)", () => {
+    screen(true);
+    const { scene, sent } = worldMap(true);
+    Object.assign(scene, { worldSpatialProjection: { getArmy: () => undefined, getStructuresAtHex: () => [] } });
+
+    expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(false);
+    expect(useUIStore.getState().pendingMilitaryAction).toBeNull();
+    expect(useUIStore.getState().leftNavigationView).toBe(LeftView.None);
+    expect([usePopoverStore.getState().surface, sent]).toEqual([null, []]);
   });
 });
 

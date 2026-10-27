@@ -29,9 +29,10 @@ export const pinsOrder = (path: ActionPath[] | undefined): boolean => {
 
 /**
  * A tap opens the selected army's spire card or previews its order. On a phone, tapping the pinned tile again sends
- * it, a friendly neighbour offers transfer, and a refused tile explains why. Sites keep the army as actor. With the
- * realm selected, a lit tile beside it opens Deploy aimed there (owner, 27 October 2026: "when I click on the castle
- * then on a tile next to it it should bring up the deploy on that tile").
+ * it, a friendly neighbour offers transfer, and a refused tile explains why. Sites keep the army as actor. On a phone,
+ * with the realm selected, a lit tile beside it opens Deploy aimed there (owner, 27 October 2026: "when I click on the
+ * castle then on a tile next to it it should bring up the deploy on that tile", in every mode; a desktop keeps
+ * right-click: "change is phone only for now").
  */
 type TapOrder = "pin" | "go" | "attack" | "deploy" | "transfer" | "site-card" | "why";
 
@@ -40,6 +41,7 @@ export const orderOnTap = ({
   armySelected,
   site,
   ownSpire,
+  onPhone,
   hud,
 }: {
   path: ActionPath[] | undefined;
@@ -47,6 +49,7 @@ export const orderOnTap = ({
   site: boolean;
   /** The tile is the selected army's realm's spire today. */
   ownSpire: boolean;
+  onPhone: boolean;
   /** Where the HUD carries the verb: whether this tile is the order already pinned, and whether the rules refused one. */
   hud?: { pinned: boolean; refused: boolean };
 }): TapOrder | null => {
@@ -54,7 +57,7 @@ export const orderOnTap = ({
   if (pinsOrder(path)) return hud?.pinned ? "go" : "pin";
   const actionType = path && ActionPaths.getActionType(path);
   if (actionType === ActionType.Attack) return "attack";
-  if (actionType === ActionType.CreateArmy) return "deploy";
+  if (onPhone && actionType === ActionType.CreateArmy) return "deploy";
   if (hud && actionType === ActionType.Help) return "transfer";
   if (armySelected && site) return "site-card";
   return hud?.refused ? "why" : null;
