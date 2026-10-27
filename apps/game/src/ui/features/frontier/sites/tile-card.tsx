@@ -1,4 +1,3 @@
-import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
@@ -27,27 +26,17 @@ import {
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { fightVerdict, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo, type ReactNode } from "react";
 
 import { useFrontierRealm, useGoToFrontierPlace } from "../frontier-home";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { armyArt, type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
-import { readFightRecord, readPayoutRecord } from "./fight-record";
-import {
-  fightEnded,
-  type FightGain,
-  fightIsSent,
-  type FightResult,
-  fightResultOf,
-  type FightSent,
-  fightWasNotSent,
-  lostArmyResult,
-  useFightRefusal,
-} from "./fight-result";
+import { readFightRecord } from "./fight-record";
+import { fightIsSent, fightWasNotSent, useFightRefusal } from "./fight-refusal";
 import { pickArmyFor, useSelectedOwnArmy } from "./selected-army";
-import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan, storeAtLimit } from "./site-card-plan";
+import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
 import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
 
 const SITE_MODELS = [
@@ -156,14 +145,13 @@ export const TileCard = ({
   const attackSite = async () => {
     if (!attack || !account.account || armyId === null) return;
     const signer = account.account;
-    const sent = fightSentBy(attack.army, selected, plan);
     try {
       const fought = await sendOnce("army", armyId, { order: "attack" }, () => {
         fightIsSent();
         playUnitCommandSound("attack");
         return sendAttack(setup.systemCalls, signer, armyId, selected);
       });
-      if (fought !== null) fightEnded(readFightResult(setup.store, sent, fought));
+      if (fought !== null && targetFell(setup.store, selected, fought)) backToTheArmy(armyId);
     } catch (error) {
       fightWasNotSent({
         armyId,
@@ -297,48 +285,25 @@ const sitePay = (plan: SiteCardPlan) => {
   return plan.payout && icon ? { icon, amount: plan.payout.amount, fits: plan.payout.fits } : null;
 };
 
-/** The attack as it leaves, for its result: who fights whom, for which realm, and the XP a clear of it gives. */
-const fightSentBy = (army: NativeRows["ExplorerTroops"], selected: AttackTarget, plan: SiteCardPlan): FightSent => ({
-  targetId: targetId(selected),
-  tile: { col: selected.tile.hexCoords.col, row: selected.tile.hexCoords.row },
-  site: plan.kind,
-  armyId: safeInteger(army.explorer_id),
-  armyArt: armyArt(army.troops),
-  guardIdentity: plan.beast ? { name: plan.beast.name, art: beastMeaning(plan.beast.beast) } : undefined,
-  army: wholeTroops(army),
-  homeId: safeInteger(army.owner),
-  clearXp: plan.xp,
-});
-
 /**
- * The applied attack's result, from evidence that exists. The battle's own record says what it did to both sides.
- * With no record, only the army's own row speaks: gone, the army was lost; still there, nothing is claimed. A ruin's
- * clear shows as its chest opening, which is that fight's result.
+ * The target fell to this attack: its battle's record says the army stands over a fallen guard, or, before any record
+ * reaches this screen, the site stands cleared. A fight both sides survive goes on in the target's card.
  */
-const readFightResult = (store: NativeFactStore, sent: FightSent, transactionHash: string): FightResult | null => {
+const targetFell = (store: NativeFactStore, selected: AttackTarget, transactionHash: string): boolean => {
   const record = readFightRecord(transactionHash);
-  if (!record) return armyIsGone(store, sent.armyId) ? lostArmyResult(sent) : null;
-  const result = fightResultOf(sent, record, () => readFightGain(store, sent, transactionHash));
-  return result?.verdict === "victory" && result.site === "Ruin" ? null : result;
+  if (record) return fightVerdict({ army: record.army.after, guard: record.guard.after }) === "victory";
+  if (selected.kind !== "site") return false;
+  const id = safeInteger(selected.site.entity_id);
+  return store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: id })?.clear != null;
 };
 
 /**
- * What the victory paid: the reward the clear's own payout record names, never the preview's figure, and whether the
- * store that took it stands at its limit now (the store's own fact, not a sum of what it held and what it got).
+ * After a clear the panel is the still-selected army's again, not the cleared site's (owner, 27 October 2026: "when I
+ * clear a camp, the panel on the right should go back to my army panel since its still selected"); selecting the site
+ * shows its own card. An army lost lets go of the map itself.
  */
-const readFightGain = (store: NativeFactStore, sent: FightSent, transactionHash: string): FightGain | null => {
-  if (sent.clearXp === undefined) return null;
-  const paid = readPayoutRecord(transactionHash);
-  const icon = paid && PAY_ICONS[paid.resourceId];
-  return {
-    pay:
-      paid && icon ? { icon, amount: paid.amount, storeFull: storeAtLimit(store, sent.homeId, paid.resourceId) } : null,
-    xp: sent.clearXp,
-  };
-};
-
-const armyIsGone = (store: NativeFactStore, armyId: number): boolean =>
-  store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: armyId }) === undefined;
+const backToTheArmy = (armyId: number): void =>
+  useUIStore.getState().selectOnMap({ kind: "army", entityId: armyId, tile: "own" });
 
 const wholeTroops = (army: NativeRows["ExplorerTroops"]): number =>
   Number(army.troops.count / BigInt(RESOURCE_PRECISION));

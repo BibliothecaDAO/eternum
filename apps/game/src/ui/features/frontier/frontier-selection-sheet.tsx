@@ -6,14 +6,10 @@ import { formatTilePanelTitle } from "@/ui/features/world/components/bottom-righ
 import { RealmSpireSheet, useSelectedSpire } from "./spire-card";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { ReactNode } from "react";
-import { siteDisplayName } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildSheet, useOpenPlot } from "./build/build-sheet";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { closeFightResult, useFightResult } from "./sites/fight-result";
-import { FightResultCard } from "./sites/fight-result-card";
 import { MapSiteCard, useSelectedMapSite } from "./sites/map-site-card";
-import { attackTargetName } from "./sites/site-marks";
 import { TileCard, useSelectedTarget } from "./sites/tile-card";
 import { SpireCard, useSelectedTileObject } from "./sites/tile-object-cards";
 import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
@@ -28,9 +24,9 @@ import { useTappedBuilding } from "./research/selected-building";
  * its tile card, a Shrine or Well its use card, and a spire or reward chest its own card; so does an army selected on or
  * beside its realm's spire, the spire's (useSelectedSpire). Cleared sites and opened
  * chests keep their receipts on the tile.
- * A cleared site shows its receipt even with an army on the tile. Other empty tiles and armies the dock already
- * shows open no card. The player's own attack result stands in its tile's card while that tile is selected: any other
- * pick opens its own card at once, and coming back to the tile shows the result again until it is closed.
+ * A cleared site shows its receipt even with an army on the tile, when the player selects it (owner, 27 October 2026:
+ * "this stays of course"). Other empty tiles and armies the dock already shows open no card. No card takes the panel
+ * after a fight: a clear hands it back to the army (tile-card.tsx), and the Feed tells how the fight went.
  */
 export const useSelectionCard = ({
   realm,
@@ -45,7 +41,6 @@ export const useSelectionCard = ({
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const mapLayer = useUIStore((state) => state.mapLayer);
   const opening = useChestOpening(selectedHex);
-  const fight = useFightResult();
   const openPlot = useOpenPlot(realm);
   const target = useSelectedTarget();
   const cleared = useSelectedClearedSite();
@@ -67,24 +62,8 @@ export const useSelectionCard = ({
     selectOnMap(null);
     setSelectedBuildingHex(null);
   };
-  // The result stands in the target's card, under the card's name: closing it (its close, Escape) closes the card, not
-  // back to before the fight.
-  const closeFight = () => {
-    closeFightResult();
-    close();
-  };
   const at = `${selectedHex?.col},${selectedHex?.row}:${selectedBuildingHex?.innerCol},${selectedBuildingHex?.innerRow}`;
   const card = (kind: string, sheet: ReactNode) => ({ key: `${kind}@${at}`, sheet });
-  if (fight && selectedHex && fight.tile.col === selectedHex.col && fight.tile.row === selectedHex.row)
-    return card(
-      "fight",
-      <HudSheet
-        label={fight.site === "Army" ? attackTargetName(fight.site) : siteDisplayName(fight.targetId)}
-        onClose={closeFight}
-      >
-        <FightResultCard result={fight} onClose={closeFight} />
-      </HudSheet>,
-    );
   if (realm && transfer) return card("transfer", <TransferTroopsSheet realm={realm} pair={transfer} onClose={close} />);
   if (realm && openPlot)
     return card("plot", <BuildSheet realm={realm} plot={openPlot} onResearch={onResearch} onClose={close} />);

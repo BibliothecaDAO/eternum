@@ -121,7 +121,6 @@ export const SURFACES = [
   { name: "frontier-explore", path: "/lab/kit/hud/explore", mark: "frontier" },
   { name: "frontier-stores", path: "/lab/kit/hud/stores", mark: "frontier" },
   { name: "frontier-site-camp", path: "/lab/kit/hud/site-camp", mark: "frontier" },
-  { name: "frontier-fight-won", path: "/lab/kit/hud/fight-won", mark: "frontier" },
   { name: "frontier-army-refill", path: "/lab/kit/hud/army-refill", mark: "frontier" },
   ...[
     "castle",

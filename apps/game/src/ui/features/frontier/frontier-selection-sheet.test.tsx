@@ -60,7 +60,6 @@ import { BuildingType, getNeighborHexes, siteName, TileOccupier } from "@bibliot
 import { transferArmies, TRANSFER_TAPPED } from "./army/transfer-fixture";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useOnePanel } from "./hud/one-panel";
-import { fightEnded } from "./sites/fight-result";
 
 /** The selection's card as the HUD draws it. */
 const FrontierSelectionSheet = (props: Parameters<typeof useSelectionCard>[0]) =>
@@ -479,108 +478,6 @@ it("selects a Frontier chest, follows missing metadata and expiry across clock t
     useAccountStore.setState({ account: null });
     performanceNow.mockRestore();
     useChainTimeStore.setState(previousClock);
-  }
-});
-
-it.each([
-  ["Camp", "Troll", "beast-troll", siteName(SITE)],
-  ["Beasts", "Wraith", "beast-wraith", siteName(SITE)],
-  ["Rift", "Rift", "beast-dark-fey", siteName(SITE)],
-  ["Army", "Army", "attack", "Army"],
-] as const)(
-  "titles the %s result sheet as its card was, by the site's map name, and closes it on Escape",
-  (site, name, art, title) => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    const { store } = campBeside();
-    tiles.current = [];
-    useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } });
-    fightEnded({
-      targetId: SITE,
-      tile: { col: 4, row: 5 },
-      site,
-      guardIdentity: { name, art },
-      verdict: "army-lost",
-      armyArt: "knight-t1",
-      army: { before: 1_000, after: 0 },
-      guard: { before: 1_000, after: 572 },
-      gained: null,
-    });
-    const host = document.createElement("div");
-    const root = createRoot(host);
-    act(() =>
-      root.render(
-        <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
-          <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
-        </GameProvider>,
-      ),
-    );
-    expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(title);
-
-    act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
-
-    expect(host.querySelector("[data-kit-sheet]")).toBeNull();
-    expect(useUIStore.getState().mapSelection).toEqual({
-      kind: "army",
-      entityId: 201,
-      tile: null,
-    });
-    act(() => root.unmount());
-    useUIStore.getState().selectOnMap(null);
-  },
-);
-
-it("opens a new pick's own card at once over a fight's result, which stands only in its own tile's card", async () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const { store } = campBeside();
-  useAccountStore.setState({ account: { address: "0x111" } as never });
-  useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } });
-  fightEnded({
-    targetId: SITE,
-    tile: { col: 4, row: 5 },
-    site: "Camp",
-    guardIdentity: { name: "Troll", art: "beast-troll" },
-    verdict: "army-lost",
-    armyArt: "knight-t1",
-    army: { before: 1_000, after: 0 },
-    guard: { before: 1_000, after: 572 },
-    gained: null,
-  });
-  // The HUD's way: the selection's card, through the one panel that decides what stands.
-  const Hud = () => {
-    const card = useSelectionCard({ realm: null, onResearch: () => undefined });
-    const { showsCard } = useOnePanel(card?.key ?? null);
-    return showsCard ? card!.sheet : null;
-  };
-  const host = document.createElement("div");
-  const root = createRoot(host);
-  const sheet = () => host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
-  try {
-    await act(async () =>
-      root.render(
-        <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
-          <Hud />
-        </GameProvider>,
-      ),
-    );
-    expect(sheet()).toBe(siteName(SITE));
-    // Another target: its own card, with nothing to close first.
-    tiles.current = [{ occupierType: TileOccupier.Spire, occupierId: 0, hexCoords: { col: 8, row: 9, alt: false } }];
-    await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 8, row: 9 } }));
-    expect(sheet()).toBe("Spire");
-    // An ordinary tile: nothing stands, the result does not come back over the map.
-    await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 11, row: 2 } }));
-    expect(sheet()).toBeNull();
-    // Back on the fight's tile, its card shows the result again.
-    await act(async () => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } }));
-    expect(sheet()).toBe(siteName(SITE));
-  } finally {
-    act(() => {
-      fightEnded(null);
-      root.unmount();
-    });
-    useUIStore.getState().selectOnMap(null);
-    useAccountStore.setState({ account: null });
-    tiles.current = [];
   }
 });
 

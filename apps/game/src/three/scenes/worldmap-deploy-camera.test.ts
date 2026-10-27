@@ -8,7 +8,8 @@ vi.mock("@/utils/can-issue-orders", async (original) => ({
 }));
 
 const { configManager } = await import("@bibliothecadao/eternum");
-const { Direction } = await import("@bibliothecadao/types");
+const { Direction, getNeighborHexes } = await import("@bibliothecadao/types");
+const { getWorldPositionForHex } = await import("../utils/utils");
 const { attachMapSelectionPositions } = await import("@/hooks/store/map-selection");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { DEPLOY_ON_MAP_EVENT, readDeployOnMap, showDeployOnMap } = await import("./worldmap-deploy-request");
@@ -63,6 +64,8 @@ const worldMap = () => {
     highlightHexManager: { highlightHexes: () => {} },
     showSelectedHexRing: (hex: unknown) => selectedTiles.push(hex),
     refreshSelectedPlate: () => {},
+    worldSpatialProjection: { getStructure: () => ({ hexCoords: contract(REALM_HEX) }) },
+    orderTargetRing: { setHoverColor: () => {}, showHover: () => {}, hideHover: () => {} },
   }) as unknown as {
     camera: { position: { clone: () => unknown } };
     showDeployOrder: (order: unknown) => void;
@@ -126,6 +129,45 @@ it.each([
     expect(world.selectedTiles.at(-1)).toEqual(contract(REALM_HEX));
     expect(world.aimed).toEqual([]);
     expect(world.map.camera.position).toEqual(before);
+  },
+);
+
+// Audit hud 12 (27 October 2026): Deploy "lands on a neighbouring tile the player never picked, nothing names the target".
+it.each([
+  ["a desktop", true],
+  ["a phone", false],
+])(
+  "on %s, Deploy rings the tile its army steps out on, follows another pick, and lets the ring go when it closes",
+  (_, desktop) => {
+    screen(desktop);
+    const world = worldMap();
+    cleanups.push(world.stop);
+    const rings: ({ x: number; z: number } | null)[] = [];
+    Object.assign(world.map, {
+      // Closing also lets go of the realm the sheet selected; here only the ring is read.
+      clearEntitySelection: () => {},
+      orderTargetRing: {
+        setHoverColor: () => {},
+        showHover: (x: number, z: number) => rings.push({ x, z }),
+        hideHover: () => rings.push(null),
+      },
+    });
+    /** Where a tile beside the realm stands in the world, as the map draws it. */
+    const beside = (direction: number) => {
+      const tile = getNeighborHexes(contract(REALM_HEX).col, contract(REALM_HEX).row).find(
+        (neighbor) => neighbor.direction === direction,
+      )!;
+      const { x, z } = getWorldPositionForHex({ col: tile.col - MAP_CENTER, row: tile.row - MAP_CENTER });
+      return { x, z };
+    };
+
+    // Opened with the sheet's own pick, the first open tile: the player picked none.
+    showDeployOnMap({ structureId: REALM, direction: Direction.EAST });
+    expect(rings.at(-1)).toEqual(beside(Direction.EAST));
+    showDeployOnMap({ structureId: REALM, direction: Direction.SOUTH_EAST });
+    expect(rings.at(-1)).toEqual(beside(Direction.SOUTH_EAST));
+    showDeployOnMap(null);
+    expect(rings.at(-1)).toBeNull();
   },
 );
 

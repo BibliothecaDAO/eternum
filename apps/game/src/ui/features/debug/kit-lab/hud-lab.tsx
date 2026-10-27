@@ -30,9 +30,6 @@ import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
 import { RuinChestMoment } from "@/ui/features/frontier/chest/ruin-chest-moment";
-import type { FightResult } from "@/ui/features/frontier/sites/fight-result";
-import { FightResultCard } from "@/ui/features/frontier/sites/fight-result-card";
-import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
 import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
 import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
@@ -602,22 +599,7 @@ const STATES = {
     armies: ARMIES,
     site: { ...CAMP_CARD, verb: { kind: "short", stamina: { cost: 30, held: 10, wait: 40 * 60 } } },
   },
-  "fight-won": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    fight: {
-      targetId: 29,
-      tile: { col: 0, row: 0 },
-      site: "Camp",
-      verdict: "victory",
-      armyArt: ARMY_CHIP.art,
-      army: { before: 1_498, after: 1_318 },
-      guard: { before: 1_100, after: 0 },
-      gained: { pay: { icon: "labor", amount: 550, storeFull: false }, xp: 22 },
-    },
-  },
-  // After a fight both sides survive: no result, the site's own card with both sides as the attack left them (500 → 432
+  // After a fight both sides survive: the site's own card with both sides as the attack left them (500 → 432
   // troops, a guard of 334 → 150), and Attack again.
   "fight-goes-on": {
     clock: CLOCK,
@@ -631,21 +613,6 @@ const STATES = {
       fight: WIN(1, 40, 150),
       pay: null,
       xp: 50,
-    },
-  },
-  "fight-army-lost": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    fight: {
-      targetId: 29,
-      tile: { col: 0, row: 0 },
-      site: "Rift",
-      verdict: "army-lost",
-      armyArt: ARMY_CHIP.art,
-      army: { before: 154, after: 0 },
-      guard: { before: 1_100, after: 1_028 },
-      gained: null,
     },
   },
   "clear-ruin": {
@@ -951,7 +918,6 @@ type LabState = {
   lastHour?: boolean;
   order?: LabOrder;
   site?: LabSite;
-  fight?: FightResult;
   chest?: LabChest;
   deploy?: LabDeploy;
   clock: DayClock;
@@ -1142,11 +1108,6 @@ export const HudLab = () => {
         )}
         {lab.building && <LabBuildingCard building={lab.building} />}
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
-        {lab.fight && (
-          <HudSheet label={TARGET_MARKS[lab.fight.site].word} onClose={noop}>
-            <FightResultCard result={lab.fight} onClose={noop} />
-          </HudSheet>
-        )}
         {lab.chest && <RuinChestMoment {...lab.chest} />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
         {lab.realms && <LabRealmsSheet realms={lab.realms} />}

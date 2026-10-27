@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 vi.mock("@/ui/features/debug/kit-lab/hud-lab", () => ({
-  HUD_LAB_STATES: ["idle", "selected", "site-camp", "fight-won", "deploy", "season", "next-up-rest"],
+  HUD_LAB_STATES: ["idle", "selected", "site-camp", "fight-goes-on", "deploy", "season", "next-up-rest"],
 }));
 vi.mock("@/ui/features/debug/kit-lab/unified-hud-lab", () => ({
   UNIFIED_VIEWS: [

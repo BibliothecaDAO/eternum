@@ -167,12 +167,12 @@ it("on a Frontier phone, a double tap on a tile beside the army explores it: the
 });
 
 it.each([
-  ["a Frontier phone", false, [BESIDE, null]],
-  ["a desktop", true, []],
-])("on %s, the pinned order's tile wears the hover ring until the pin goes", (_, desktop, ringed) => {
+  ["a Frontier phone", false, ["ringed", "none"]],
+  ["a desktop", true, ["none", "none"]],
+])("on %s, the pinned order's tile wears the order's ring until the pin goes", (_, desktop, ringed) => {
   screen(desktop);
   const { scene } = worldMap(true);
-  const rings: unknown[] = [];
+  const rings: string[] = [];
   Object.assign(scene, {
     isInteractionOwner: () => true,
     isSceneExitInteractionResetInProgress: false,
@@ -180,14 +180,21 @@ it.each([
     syncEntityActionPathsTransitionToken: () => {},
     logInteractionDebug: () => {},
     getInteractionDebugSnapshot: () => ({}),
-    interactiveHexManager: { applyHoverPalette: () => {}, showHover: (hex: unknown) => rings.push(hex) },
+    deployTileOf: () => null,
+    orderTargetRing: {
+      setHoverColor: () => {},
+      showHover: () => rings.push("ringed"),
+      hideHover: () => rings.push("none"),
+    },
   });
   const storeUpdate = scene as unknown as {
     handleEntityActionsStoreUpdate: (next: object, previous: object) => void;
   };
   const actions = useUIStore.getState().entityActions;
 
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, hoveredHex: BESIDE } }));
   storeUpdate.handleEntityActionsStoreUpdate({ ...actions, hoveredHex: BESIDE }, { ...actions, hoveredHex: null });
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, hoveredHex: null } }));
   storeUpdate.handleEntityActionsStoreUpdate({ ...actions, hoveredHex: null }, { ...actions, hoveredHex: BESIDE });
 
   expect(rings).toEqual(ringed);
