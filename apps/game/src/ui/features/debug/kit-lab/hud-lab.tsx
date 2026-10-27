@@ -1,7 +1,7 @@
 import { BuildingType } from "@bibliothecadao/types";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { transferArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";
+import { transferXpArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";
 import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier/army/transfer-troops";
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
@@ -1499,7 +1499,7 @@ function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {
 /** The same transfer selection as the map, on two adjacent armies; this lab never sends a transaction. */
 const LabMerge = () => {
   useLabPlayer();
-  const [store] = useState(() => transferArmies(100, 0));
+  const [store] = useState(transferXpArmies);
   useEffect(() => {
     useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: TRANSFER_TAPPED });
     return () => useUIStore.getState().selectOnMap(null);
