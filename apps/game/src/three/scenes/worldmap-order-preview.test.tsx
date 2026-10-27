@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import type { ActionPath } from "@bibliothecadao/eternum";
 import { PerspectiveCamera } from "three";
@@ -20,7 +20,10 @@ const { realmBoard } = await import("@/ui/features/frontier/build/build-fixture"
 const { LeftView } = await import("@/types");
 const { Direction } = await import("@bibliothecadao/types");
 
+const { ARMY_DEPLOYMENT_SURFACE_ID } = await import("@/ui/features/military/utils/open-army-deployment");
+
 const FRONTIER_PRESET_ID = 5;
+const BLITZ_PRESET_ID = 2;
 
 const ARMY = 7;
 /** The army's tile and the unexplored tile beside it, as the scene's hexes. */
@@ -186,12 +189,11 @@ describe("a tap on a lit tile beside the realm selected", () => {
     ],
   ];
 
-  beforeEach(() => {
+  /** The game's preset, which picks its deploy surface (openArmyDeployment), with the realm selected and its tiles lit. */
+  const playRealm = (presetId: number) => {
     const { store } = realmBoard();
     const game = store.require("GameRegistry", { game_id: 1 });
-    store.applyFacts([
-      { model: "GameRegistry", key: "0x3", value: { ...game, preset_id: FRONTIER_PRESET_ID } },
-    ] as never);
+    store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: presetId } }] as never);
     useUIStore.setState((state) => ({
       entityActions: {
         ...state.entityActions,
@@ -199,19 +201,29 @@ describe("a tap on a lit tile beside the realm selected", () => {
         actionPaths: new Map([deployTo(BESIDE), deployTo(SOUTH_EAST)]),
       },
     }));
-  });
+  };
+  /** The map with the realm, not an army, selected. */
+  const realmMap = (frontier: boolean) => {
+    const map = worldMap(frontier);
+    Object.assign(map.scene, { worldSpatialProjection: { getArmy: () => undefined, getStructuresAtHex: () => [] } });
+    return map;
+  };
+  /** The deploy picker open over the map: the order it was opened with. */
+  const pickerOrder = () => {
+    const surface = usePopoverStore.getState().surface;
+    return surface?.id === ARMY_DEPLOYMENT_SURFACE_ID ? (surface.content as ReactElement).props : null;
+  };
+
   afterEach(() => {
+    usePopoverStore.getState().close();
     useUIStore.getState().setPendingMilitaryAction(null);
     useUIStore.getState().setLeftNavigationView(LeftView.None);
   });
 
-  it.each([
-    ["Frontier's HUD", true],
-    ["the shared HUD (Blitz)", false],
-  ])("on a phone with %s, orders Deploy at that tile, and another lit tile aims it again", (_, frontier) => {
+  it("on a Frontier phone, orders Frontier's Deploy sheet at that tile, and another lit tile aims it again", () => {
+    playRealm(FRONTIER_PRESET_ID);
     screen(false);
-    const { scene, sent } = worldMap(frontier);
-    Object.assign(scene, { worldSpatialProjection: { getArmy: () => undefined, getStructuresAtHex: () => [] } });
+    const { scene, sent } = realmMap(true);
 
     expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(true);
     expect(useUIStore.getState().leftNavigationView).toBe(LeftView.MilitaryView);
@@ -220,16 +232,47 @@ describe("a tap on a lit tile beside the realm selected", () => {
       isExplorer: true,
       direction: Direction.EAST,
     });
+    expect(pickerOrder()).toBeNull();
 
     expect(scene.answerTapWithSelectedOrder(SOUTH_EAST)).toBe(true);
     expect(useUIStore.getState().pendingMilitaryAction?.direction).toBe(Direction.SOUTH_EAST);
     expect(sent).toEqual([]);
   });
 
+  it("on a Blitz phone, opens Blitz's deploy picker at that tile, and a tap on another lit tile aims it there", () => {
+    playRealm(BLITZ_PRESET_ID);
+    screen(false);
+    const { scene, sent } = realmMap(false);
+    // The tile under the next finger, as the map's hexes name it.
+    Object.assign(scene, {
+      interactiveHexManager: { onClick: () => ({ hexCoords: SOUTH_EAST }) },
+      chunkTransitionToken: 1,
+      actionPathsTransitionToken: 1,
+    });
+
+    expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(true);
+    expect(pickerOrder()).toEqual({ structureId: REALM, isExplorer: true, direction: Direction.EAST });
+    expect(useUIStore.getState().pendingMilitaryAction).toBeNull();
+    expect(useUIStore.getState().leftNavigationView).toBe(LeftView.None);
+
+    // The next tap lands on the map's canvas while the picker is open: the picker takes it (popover.tsx) and aims
+    // there, and the map's own tap stands aside.
+    const canvas = document.getElementById("main-canvas")!;
+    const tap = new PointerEvent("pointerdown", { clientX: 700, clientY: 500 });
+    Object.defineProperty(tap, "target", { value: canvas });
+    const { mapClick } = usePopoverStore.getState().surface!;
+    expect(mapClick !== undefined && mapClick !== "dismiss" && mapClick.reanchor(tap)).toBe(true);
+    (scene as unknown as { onHexagonClick: (hex: unknown) => void }).onHexagonClick(SOUTH_EAST);
+
+    expect(pickerOrder()).toEqual({ structureId: REALM, isExplorer: true, direction: Direction.SOUTH_EAST });
+    expect(useUIStore.getState().entityActions.selectedEntityId).toBe(REALM);
+    expect(sent).toEqual([]);
+  });
+
   it("on a desktop, leaves the click its own tap and opens nothing (owner: right-click deploys there)", () => {
+    playRealm(FRONTIER_PRESET_ID);
     screen(true);
-    const { scene, sent } = worldMap(true);
-    Object.assign(scene, { worldSpatialProjection: { getArmy: () => undefined, getStructuresAtHex: () => [] } });
+    const { scene, sent } = realmMap(true);
 
     expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(false);
     expect(useUIStore.getState().pendingMilitaryAction).toBeNull();
