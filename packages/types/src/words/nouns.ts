@@ -18,6 +18,11 @@ import { StructureType } from "../constants/structure-type";
 const UNKNOWN = "—";
 
 export const LORDS = "LORDS";
+export const XP = "XP";
+/** Gains and purchases in both the history Log and Frontier's Today sheet. */
+export const xpGainedLine = (line: string, amount: string) => `${line}, +${amount} ${XP}`;
+export const siteUsedLine = (kind: "Shrine" | "Well", amount: string) =>
+  kind === "Shrine" ? xpGainedLine("Shrine used", amount) : `Well used, +${amount} stamina`;
 /** What scores: "250 points", "1 point" (formatPoints). Never VP or pts. */
 export const POINTS = "points";
 export const POINT = "point";

@@ -160,6 +160,8 @@ pub struct ChestRules {
     pub price_ceiling: u128,
     pub shares: ChestTiers,
     pub claim_window_seconds: u32,
+    pub pool_bps: u16,
+    pub top_n: u16,
 }
 
 // A ruin's chest, fixed when the ruin is found: its tier and the whole LORDS its clear pays.
@@ -186,6 +188,7 @@ pub struct LordsBudget {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RefillStamina {
     pub explorer_id: u64,
+    pub amount: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -199,6 +202,8 @@ pub struct WithdrawLords {
 pub struct LordsWithdrawal {
     pub account: ContractAddress,
     pub amount: u128,
+    pub prize_rank: u16,
+    pub prize_count: u16,
 }
 
 #[starknet::interface]
@@ -413,4 +418,17 @@ pub fn assert_claim_window(game: crate::game::GameRegistry, rules: ChestRules, t
             + Into::<u32, u64>::into(rules.claim_window_seconds - crate::days::FRONTIER_REPORT_GRACE_SECONDS),
         "LORDS claim window closed",
     );
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum SiteBenefit {
+    Shrine: u32,
+    Well: u64,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct SiteUsed {
+    pub explorer_id: u64,
+    pub coord: Coord,
+    pub benefit: SiteBenefit,
 }

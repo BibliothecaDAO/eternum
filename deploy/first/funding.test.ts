@@ -80,6 +80,8 @@ test.each([
   spyOn(main, "signer").mockReturnValue(account as unknown as Account);
   spyOn(box, "nativeDocument").mockImplementation(async () => ({ shard: { chainId }, world: { address: "0x20" } }));
   spyOn(native, "readFrontierGame").mockResolvedValue({
+    chestPoolBps: 7000,
+    topN: 10,
     presetId: 2,
     start: startSeconds,
     end: startSeconds + 20 * 86400,
@@ -90,7 +92,9 @@ test.each([
   spyOn(funding, "readFrontierFunding").mockImplementation(async (_provider, _ledger, _key, _native, block) => {
     if (!stateAt(block).funded) throw new Error("frontier_funding_missing");
     return {
-      pool: String(1000n * WEI),
+      pool: String(700n * WEI),
+      prizePool: String(300n * WEI),
+      prizePaid: "0",
       paid: "0",
       closed: false,
       presetId: 2,
@@ -121,7 +125,7 @@ test.each([
     provider: {
       getBlockNumber: async () => observedBlock ?? nonce,
       callContract: async ({ entrypoint }: { entrypoint: string }) => {
-        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "86400", "86400"];
+        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "86400", "86400", "10", "7000"];
         if (entrypoint === "lords") return ["0x2"];
         throw new Error("Unexpected ledger read");
       },
@@ -193,6 +197,8 @@ test.each([
     world: { address: "0x20" },
   }));
   spyOn(native, "readFrontierGame").mockResolvedValue({
+    chestPoolBps: 7000,
+    topN: 10,
     presetId: 5,
     start: startSeconds,
     end: startSeconds + 20 * 86400,
@@ -219,7 +225,7 @@ test.each([
     provider: {
       getBlockNumber: async () => 7,
       callContract: async ({ entrypoint }: { entrypoint: string }) => {
-        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "86400", "86400"];
+        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "86400", "86400", "10", "7000"];
         if (entrypoint === "lords") return ["0x2"];
         throw new Error("Unexpected ledger read");
       },

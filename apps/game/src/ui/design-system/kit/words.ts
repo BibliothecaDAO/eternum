@@ -6,6 +6,7 @@
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import {
   BuildingType,
+  XP,
   buildingName,
   formatAmount,
   formatCount,
@@ -26,9 +27,10 @@ import {
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
 /** A step on that scale, common (1) to legendary (5). */
 export type Tier = 1 | 2 | 3 | 4 | 5;
+export type Rank = 0 | Tier;
 /** A tier by its numeral, Common I to Legendary V. */
 const TIER_NUMERALS = ["I", "II", "III", "IV", "V"] as const;
-export const tierNumeral = (tier: Tier): string => TIER_NUMERALS[tier - 1]!;
+export const tierNumeral = (tier: Rank): string => (tier === 0 ? "0" : TIER_NUMERALS[tier - 1]!);
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
 export { BEAST_NAMES } from "@bibliothecadao/types";
@@ -94,7 +96,7 @@ export const CLOSE = "Close";
 /** The safe choice on a confirm: the primary. */
 export const KEEP = "Keep";
 
-export const XP = "XP";
+export { XP, xpGainedLine } from "@bibliothecadao/types";
 export const ESSENCE = "Essence";
 export const LABOR = "labor";
 export const WHEAT = "wheat";
@@ -284,9 +286,9 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
   const pair = formatHeldAgainst(held, need);
   return `${pair.held} / ${pair.need}`;
 };
-/** A training building waits for the Barracks' tier: "Needs Barracks at Rare". */
-/** A building that waits on another's tier, by its numeral: "Needs Barracks III". */
-export const needsTier = (building: string, numeral: string) => `Needs ${building} ${numeral}`;
+/** Training counts purchases across both sides, including one on each. */
+export const needsResearchPurchases = (building: string, count: number) =>
+  `Needs ${count} ${building} research purchases`;
 /** A training building already standing: a realm holds one of each. */
 export const ONE_A_REALM = "Built. A realm holds one.";
 /** The arrow beside a price that has risen (a screen reader's words). */
@@ -305,10 +307,8 @@ export const startsNewArmies = (attribute: string, numeral: string) => `new armi
  * An army's XP on its tooltip, against the attribute tier it buys next: "XP 8 of 100 · buys an Uncommon attribute
  * tier". XP is a balance an army spends on its attributes; it has no level.
  */
-export const xpTowardTip = (held: string, price: string, tier: string) =>
-  `${XP} ${held} ${OF} ${price} · buys ${/^[AEIOU]/.test(tier) ? "an" : "a"} ${tier} attribute tier`;
-/** The four attributes, each wearing its Aspect's mark. */
-export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
+export const xpTowardTip = (held: string, milestone: string, tier: string) =>
+  `${XP} ${held} of ${milestone} · next ${tier} point`;
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
 export const RIFT = "Rift";
@@ -447,8 +447,6 @@ export const NO_OPEN_TILE = "No open tile beside the realm";
 export const PICK_AN_ARMY = { attack: "Pick an army to attack it", use: "Pick an army to use it" } as const;
 export const NO_ARMY_OUT = "No army out: deploy one";
 export const DEPLOYING = "Deploying…";
-/** A free slot after the lowest: the game fills the lowest free slot first. */
-export const DEPLOY_FILLS_FIRST = (number: number) => `Deploy fills slot ${number} first.`;
 export const BUILD = "Build";
 
 /** Default army names: "Army" and its place. */
@@ -468,9 +466,9 @@ export const TRANSFER_TROOPS = {
   merge: (army: string) => `Merge into ${army}`,
   totalXp: "Total XP",
   totalXpFor: (army: string) => `${army} total XP`,
-  losesProgress: (army: string) => `${army} loses its XP and upgrades.`,
+  losesProgress: (army: string) => `${army} loses its XP, points and upgrades.`,
   /** The second press of a merge that loses a lot: the leaving army's total XP and the chosen target. */
-  confirmMerge: (lost: number, army: string) => `Lose ${formatAmount(lost)} XP, merge into ${army}`,
+  confirmMerge: (army: string) => `Confirm merge into ${army}`,
   amount: (from: string, to: string) => `Troops ${from} sends to ${to}`,
   pick: "Pick how many to send",
   move: (count: number, to: string) => `Move ${formatAmount(count)} to ${to}`,
@@ -505,9 +503,6 @@ export const revealLine = (gain: string, resource: string) => `${gain} ${resourc
 export const builtLine = (building: string) => `${building} built`;
 export const deployedLine = (army: string) => `${army} deployed`;
 export const disbandedLine = (army: string) => `${army} disbanded`;
-/** A day log line with the XP its story gave or spent: "+98 labor, +2 XP", "Battle Uncommon, −100 XP". */
-export const xpGainedLine = (line: string, amount: string) => `${line}, +${amount} ${XP}`;
-export const xpSpentLine = (line: string, amount: string) => `${line}, −${amount} ${XP}`;
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
 /** How deep a realm went beyond the spire, I to III. */
@@ -554,13 +549,8 @@ export const BACK = "Back";
 export const VISIT = "Visit";
 export const LEAVE = "Leave";
 
-/** Filling an army's stamina for LORDS, a full refill only. */
+/** Buying stamina points for LORDS. */
 export const REFILL = "Refill";
-/**
- * A refill the realm cannot pay yet, as its chip's name says it: what the LORDS held count against, and why that is the
- * price ("Refill to full: 20 LORDS, one a missing stamina point. The realm holds 0.").
- */
-export const refillShort = (held: string, price: string) => `Refill needs ${price} LORDS, has ${held}`;
 export const REFILLING = "Refilling…";
 
 /** LORDS leaving the game for the wallet linked to the account. */
@@ -1239,6 +1229,7 @@ export const RESEARCH_TREE = {
   /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
   kinds: { camp: structurePlural(StructureType.Camp, undefined, "frontier"), rift: "Rifts", beasts: "Beasts" },
   foundByNewArmies: (kind: string) => `${kind} found by new armies`,
+  sidesLine: (made: string) => `Improve ${made} output and storage separately`,
   hutLine: "Population from every Hut",
   population: "Population",
   gateLine: (barracks: string) => `${barracks} opens the four training buildings`,
@@ -1290,14 +1281,7 @@ export const ARMY_DETAIL = {
   /** What each tile the army explores sends home, on its stamina row. */
   revealPays: (amount: string) => `+${amount} a tile`,
   revealPaysLabel: `${ESSENCE} and ${LABOR} a tile`,
-  toNext: (xp: string) => `${xp} ${XP} to the next level-up`,
-  allLegendary: "Every attribute is legendary",
   levelUp: "Level up",
-  levelUps: "Level-ups",
   /** An attribute tile's hover: what its next tier gives and costs, "Rare: +10% → +20% damage · 200 XP". */
-  nextTier: (tier: string, change: string, xp: string) => `${tier}: ${change} · ${xp} ${XP}`,
-  price: (xp: string) => `${xp} ${XP}`,
-  short: (xp: string, short: string) => `${xp} ${XP} · ${short} ${XP} short`,
-  refills: (xp: string, stamina: string) => `${xp} ${XP} · refills ${stamina} ${STAMINA}`,
   legendary: (attribute: string) => `${attribute} is legendary`,
 } as const;

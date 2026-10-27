@@ -1,21 +1,27 @@
 {
   "ruleConstants": {
     "ATTRIBUTE_CAP": 5,
-    "BATTLE_UNCOMMON_BPS": 1000,
-    "BATTLE_RARE_BPS": 3000,
-    "BATTLE_EPIC_BPS": 6000,
+    "SKILL_POINT_REFILL_BASE": 10,
+    "SKILL_POINT_REFILL_STEP": 10,
+    "BATTLE_COMMON_BPS": 1000,
+    "BATTLE_UNCOMMON_BPS": 2500,
+    "BATTLE_RARE_BPS": 4500,
+    "BATTLE_EPIC_BPS": 7000,
     "BATTLE_LEGENDARY_BPS": 10000,
-    "LOGISTICS_UNCOMMON_STAMINA": 20,
-    "LOGISTICS_RARE_STAMINA": 50,
-    "LOGISTICS_EPIC_STAMINA": 90,
+    "LOGISTICS_COMMON_STAMINA": 20,
+    "LOGISTICS_UNCOMMON_STAMINA": 45,
+    "LOGISTICS_RARE_STAMINA": 75,
+    "LOGISTICS_EPIC_STAMINA": 110,
     "LOGISTICS_LEGENDARY_STAMINA": 150,
-    "SCOUTING_UNCOMMON_BPS": 1000,
+    "SCOUTING_COMMON_BPS": 1000,
+    "SCOUTING_UNCOMMON_BPS": 1500,
     "SCOUTING_RARE_BPS": 2000,
-    "SCOUTING_EPIC_BPS": 3000,
-    "SCOUTING_LEGENDARY_BPS": 4000,
-    "HOMECOMING_UNCOMMON_BPS": 300,
-    "HOMECOMING_RARE_BPS": 900,
-    "HOMECOMING_EPIC_BPS": 1800,
+    "SCOUTING_EPIC_BPS": 2500,
+    "SCOUTING_LEGENDARY_BPS": 3000,
+    "HOMECOMING_COMMON_BPS": 300,
+    "HOMECOMING_UNCOMMON_BPS": 800,
+    "HOMECOMING_RARE_BPS": 1400,
+    "HOMECOMING_EPIC_BPS": 2100,
     "HOMECOMING_LEGENDARY_BPS": 3000,
     "MAX_BLITZ_ROSTER_PLAYERS": 24,
     "DUEL_ROSTER_PLAYERS": 2,
@@ -42,7 +48,6 @@
     "HYPERSTRUCTURE_MULTIPLIERS": 32768,
     "PRODUCTION_START": 131072,
     "WELL_STAMINA": 60,
-    "TIER_STAMINA_REFILL": 30,
     "FRONTIER_REPORT_GRACE_SECONDS": 3600
   },
   "researchConstants": {
@@ -1884,10 +1889,78 @@
           {
             "name": "amount",
             "type": "core::integer::u128"
+          },
+          {
+            "name": "prize_pool",
+            "type": "core::integer::u128"
           }
         ],
         "outputs": [],
         "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "top_up_frontier_pool",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "amount",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "post_frontier_top",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "winners",
+            "type": "core::array::Array::<core::starknet::contract_address::ContractAddress>"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "award_frontier_prize",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "rank",
+            "type": "core::integer::u16"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "frontier_prize",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "world_native::entry::FrontierPrize"
+          }
+        ],
+        "state_mutability": "view"
       },
       {
         "type": "function",
@@ -2747,6 +2820,12 @@
           "feltLength": 1
         },
         {
+          "name": "common_xp",
+          "type": "core::integer::u32",
+          "id": "0x636f6d6d6f6e5f7870",
+          "feltLength": 1
+        },
+        {
           "name": "uncommon_xp",
           "type": "core::integer::u32",
           "id": "0x756e636f6d6d6f6e5f7870",
@@ -2772,7 +2851,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 6,
+      "valueLength": 7,
       "derivedFrom": "preset"
     },
     {
@@ -2863,9 +2942,9 @@
           "feltLength": 1
         },
         {
-          "name": "ruin_found",
+          "name": "ruin_cleared",
           "type": "core::bool",
-          "id": "0x7275696e5f666f756e64",
+          "id": "0x7275696e5f636c6561726564",
           "feltLength": 1
         }
       ],
@@ -2984,11 +3063,57 @@
           "type": "core::integer::u32",
           "id": "0x636c61696d5f77696e646f775f7365636f6e6473",
           "feltLength": 1
+        },
+        {
+          "name": "pool_bps",
+          "type": "core::integer::u16",
+          "id": "0x706f6f6c5f627073",
+          "feltLength": 1
+        },
+        {
+          "name": "top_n",
+          "type": "core::integer::u16",
+          "id": "0x746f705f6e",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 7,
+      "valueLength": 9,
       "derivedFrom": "preset"
+    },
+    {
+      "name": "FrontierPrize",
+      "identity": "0x46726f6e746965725072697a65",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "pool",
+          "type": "core::integer::u128",
+          "id": "0x706f6f6c",
+          "feltLength": 1
+        },
+        {
+          "name": "issued",
+          "type": "core::integer::u128",
+          "id": "0x697373756564",
+          "feltLength": 1
+        },
+        {
+          "name": "count",
+          "type": "core::option::Option::<core::integer::u16>",
+          "id": "0x636f756e74",
+          "feltLength": null
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": null
     },
     {
       "name": "LordsBudget",
@@ -3154,10 +3279,22 @@
           "type": "core::integer::u128",
           "id": "0x616d6f756e74",
           "feltLength": 1
+        },
+        {
+          "name": "prize_rank",
+          "type": "core::integer::u16",
+          "id": "0x7072697a655f72616e6b",
+          "feltLength": 1
+        },
+        {
+          "name": "prize_count",
+          "type": "core::integer::u16",
+          "id": "0x7072697a655f636f756e74",
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 2
+      "valueLength": 4
     },
     {
       "name": "RelicDiscovery",
@@ -4561,6 +4698,36 @@
           "feltLength": 1
         },
         {
+          "name": "common_points",
+          "type": "core::integer::u32",
+          "id": "0x636f6d6d6f6e5f706f696e7473",
+          "feltLength": 1
+        },
+        {
+          "name": "uncommon_points",
+          "type": "core::integer::u32",
+          "id": "0x756e636f6d6d6f6e5f706f696e7473",
+          "feltLength": 1
+        },
+        {
+          "name": "rare_points",
+          "type": "core::integer::u32",
+          "id": "0x726172655f706f696e7473",
+          "feltLength": 1
+        },
+        {
+          "name": "epic_points",
+          "type": "core::integer::u32",
+          "id": "0x657069635f706f696e7473",
+          "feltLength": 1
+        },
+        {
+          "name": "legendary_points",
+          "type": "core::integer::u32",
+          "id": "0x6c6567656e646172795f706f696e7473",
+          "feltLength": 1
+        },
+        {
           "name": "battle",
           "type": "core::integer::u8",
           "id": "0x626174746c65",
@@ -4579,20 +4746,20 @@
           "feltLength": 1
         },
         {
-          "name": "scouting_kinds",
-          "type": "core::integer::u8",
-          "id": "0x73636f7574696e675f6b696e6473",
-          "feltLength": 1
-        },
-        {
           "name": "homecoming",
           "type": "core::integer::u8",
           "id": "0x686f6d65636f6d696e67",
           "feltLength": 1
+        },
+        {
+          "name": "scouting_kinds",
+          "type": "core::integer::u16",
+          "id": "0x73636f7574696e675f6b696e6473",
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 6
+      "valueLength": 11
     },
     {
       "name": "ArmySlot",
@@ -5259,14 +5426,38 @@
           "feltLength": 1
         },
         {
-          "name": "castle_store_deploys",
+          "name": "troop_store_deploys",
           "type": "core::integer::u8",
-          "id": "0x636173746c655f73746f72655f6465706c6f7973",
+          "id": "0x74726f6f705f73746f72655f6465706c6f7973",
+          "feltLength": 1
+        },
+        {
+          "name": "settlement_resource_cap",
+          "type": "core::integer::u32",
+          "id": "0x736574746c656d656e745f7265736f757263655f636170",
+          "feltLength": 1
+        },
+        {
+          "name": "city_resource_cap",
+          "type": "core::integer::u32",
+          "id": "0x636974795f7265736f757263655f636170",
+          "feltLength": 1
+        },
+        {
+          "name": "kingdom_resource_cap",
+          "type": "core::integer::u32",
+          "id": "0x6b696e67646f6d5f7265736f757263655f636170",
+          "feltLength": 1
+        },
+        {
+          "name": "empire_resource_cap",
+          "type": "core::integer::u32",
+          "id": "0x656d706972655f7265736f757263655f636170",
           "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 8,
+      "valueLength": 12,
       "derivedFrom": "preset"
     },
     {
@@ -7008,6 +7199,20 @@
         }
       ]
     },
+    "core::option::Option::<core::integer::u16>": {
+      "type": "enum",
+      "name": "core::option::Option::<core::integer::u16>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<core::integer::u32>": {
       "type": "enum",
       "name": "core::option::Option::<core::integer::u32>",
@@ -7029,6 +7234,20 @@
         {
           "name": "Some",
           "type": "core::integer::u64"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<core::integer::u8>": {
+      "type": "enum",
+      "name": "core::option::Option::<core::integer::u8>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "core::integer::u8"
         },
         {
           "name": "None",
@@ -7225,20 +7444,6 @@
         {
           "name": "Some",
           "type": "world_native::progression::ArmyProgressionRules"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
-    "core::option::Option::<world_native::progression::ScoutingKind>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::progression::ScoutingKind>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::progression::ScoutingKind"
         },
         {
           "name": "None",
@@ -7887,8 +8092,24 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "castle_store_deploys",
+          "name": "troop_store_deploys",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "settlement_resource_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "city_resource_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "kingdom_resource_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "empire_resource_cap",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -8015,6 +8236,10 @@
         {
           "name": "use_simple",
           "type": "core::bool"
+        },
+        {
+          "name": "scouting_kind",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -8483,8 +8708,8 @@
           "type": "world_native::research::Research"
         },
         {
-          "name": "BuyTier",
-          "type": "world_native::progression::BuyTier"
+          "name": "SpendSkillPoint",
+          "type": "world_native::progression::SpendSkillPoint"
         },
         {
           "name": "InteractSite",
@@ -8504,6 +8729,10 @@
       "type": "struct",
       "name": "world_native::commands::CreateExplorer",
       "members": [
+        {
+          "name": "slot",
+          "type": "core::integer::u8"
+        },
         {
           "name": "structure_id",
           "type": "core::integer::u64"
@@ -8672,6 +8901,24 @@
         }
       ]
     },
+    "world_native::entry::FrontierPrize": {
+      "type": "struct",
+      "name": "world_native::entry::FrontierPrize",
+      "members": [
+        {
+          "name": "pool",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "issued",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "count",
+          "type": "core::option::Option::<core::integer::u16>"
+        }
+      ]
+    },
     "world_native::entry::LaborGrant": {
       "type": "struct",
       "name": "world_native::entry::LaborGrant",
@@ -8793,7 +9040,7 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "ruin_found",
+          "name": "ruin_cleared",
           "type": "core::bool"
         }
       ]
@@ -10283,8 +10530,8 @@
           "type": "world_native::relics::LordsWithdrawal"
         },
         {
-          "name": "TierBought",
-          "type": "world_native::progression::TierBought"
+          "name": "SkillPointSpent",
+          "type": "world_native::progression::SkillPointSpent"
         },
         {
           "name": "SitePayout",
@@ -10301,6 +10548,10 @@
         {
           "name": "RelicActivated",
           "type": "world_native::relics::RelicActivated"
+        },
+        {
+          "name": "SiteUsed",
+          "type": "world_native::relics::SiteUsed"
         }
       ]
     },
@@ -10659,6 +10910,26 @@
           "type": "core::integer::u32"
         },
         {
+          "name": "common_points",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "uncommon_points",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "rare_points",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "epic_points",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "legendary_points",
+          "type": "core::integer::u32"
+        },
+        {
           "name": "battle",
           "type": "core::integer::u8"
         },
@@ -10671,12 +10942,12 @@
           "type": "core::integer::u8"
         },
         {
-          "name": "scouting_kinds",
+          "name": "homecoming",
           "type": "core::integer::u8"
         },
         {
-          "name": "homecoming",
-          "type": "core::integer::u8"
+          "name": "scouting_kinds",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -10690,6 +10961,10 @@
         },
         {
           "name": "fixed_xp",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "common_xp",
           "type": "core::integer::u32"
         },
         {
@@ -10707,46 +10982,6 @@
         {
           "name": "legendary_xp",
           "type": "core::integer::u32"
-        }
-      ]
-    },
-    "world_native::progression::Attribute": {
-      "type": "enum",
-      "name": "world_native::progression::Attribute",
-      "variants": [
-        {
-          "name": "Battle",
-          "type": "()"
-        },
-        {
-          "name": "Logistics",
-          "type": "()"
-        },
-        {
-          "name": "Scouting",
-          "type": "()"
-        },
-        {
-          "name": "Homecoming",
-          "type": "()"
-        }
-      ]
-    },
-    "world_native::progression::BuyTier": {
-      "type": "struct",
-      "name": "world_native::progression::BuyTier",
-      "members": [
-        {
-          "name": "explorer_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "attribute",
-          "type": "world_native::progression::Attribute"
-        },
-        {
-          "name": "kind",
-          "type": "core::option::Option::<world_native::progression::ScoutingKind>"
         }
       ]
     },
@@ -10768,29 +11003,69 @@
         }
       ]
     },
-    "world_native::progression::TierBought": {
+    "world_native::progression::SkillPointSpent": {
       "type": "struct",
-      "name": "world_native::progression::TierBought",
+      "name": "world_native::progression::SkillPointSpent",
       "members": [
         {
           "name": "explorer_id",
           "type": "core::integer::u64"
         },
         {
-          "name": "attribute",
-          "type": "world_native::progression::Attribute"
+          "name": "choice",
+          "type": "world_native::progression::SkillPointUse"
         },
         {
-          "name": "kind",
-          "type": "core::option::Option::<world_native::progression::ScoutingKind>"
-        },
-        {
-          "name": "tier",
+          "name": "point_rank",
           "type": "core::integer::u8"
         },
         {
-          "name": "price",
-          "type": "core::integer::u32"
+          "name": "tier",
+          "type": "core::option::Option::<core::integer::u8>"
+        },
+        {
+          "name": "stamina",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::progression::SkillPointUse": {
+      "type": "enum",
+      "name": "world_native::progression::SkillPointUse",
+      "variants": [
+        {
+          "name": "Battle",
+          "type": "()"
+        },
+        {
+          "name": "Logistics",
+          "type": "()"
+        },
+        {
+          "name": "Scouting",
+          "type": "world_native::progression::ScoutingKind"
+        },
+        {
+          "name": "Homecoming",
+          "type": "()"
+        },
+        {
+          "name": "Stamina",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::progression::SpendSkillPoint": {
+      "type": "struct",
+      "name": "world_native::progression::SpendSkillPoint",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "choice",
+          "type": "world_native::progression::SkillPointUse"
         }
       ]
     },
@@ -10985,6 +11260,14 @@
         {
           "name": "claim_window_seconds",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "pool_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "top_n",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -11077,6 +11360,14 @@
         {
           "name": "amount",
           "type": "core::integer::u128"
+        },
+        {
+          "name": "prize_rank",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "prize_count",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -11118,6 +11409,10 @@
       "members": [
         {
           "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "amount",
           "type": "core::integer::u64"
         }
       ]
@@ -11232,6 +11527,20 @@
         }
       ]
     },
+    "world_native::relics::SiteBenefit": {
+      "type": "enum",
+      "name": "world_native::relics::SiteBenefit",
+      "variants": [
+        {
+          "name": "Shrine",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "Well",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
     "world_native::relics::SiteChest": {
       "type": "struct",
       "name": "world_native::relics::SiteChest",
@@ -11247,6 +11556,24 @@
         {
           "name": "reservation_day",
           "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::relics::SiteUsed": {
+      "type": "struct",
+      "name": "world_native::relics::SiteUsed",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "benefit",
+          "type": "world_native::relics::SiteBenefit"
         }
       ]
     },
@@ -12681,6 +13008,10 @@
       "name": "world_native::troops::ArmySlotAllocation",
       "members": [
         {
+          "name": "slot",
+          "type": "core::integer::u8"
+        },
+        {
           "name": "home",
           "type": "core::integer::u64"
         },
@@ -13125,5 +13456,5 @@
       ]
     }
   },
-  "identity": "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e"
+  "identity": "8099889bbe1af8fe5983939273c29a50b3063018827db38225a70526d0d72a56"
 }

@@ -100,7 +100,7 @@ export const SeasonList = ({
 );
 
 /** The season's pool in whole LORDS and what today releases of it (absent before the season starts and after it ends). */
-export type SeasonPoolFigures = { lords: number; today: number | undefined };
+export type SeasonPoolFigures = { lords: number; prize?: { lords: number; topN: number }; today: number | undefined };
 
 /** Rank, the realm's rank and depth, name, sites cleared (what ranks) and LORDS: the head and rows share these columns. */
 const COLS = "2.25rem 1.75rem minmax(0, 1fr) 3rem 3.5rem";
@@ -177,7 +177,13 @@ const SeasonChip = ({
 const poolLine = (pool: SeasonPoolFigures | null | undefined) =>
   pool === null
     ? POOL_NOT_PUBLISHED
-    : pool && seasonPool(formatExact(pool.lords), pool.today === undefined ? undefined : formatExact(pool.today));
+    : pool &&
+      [
+        seasonPool(formatExact(pool.lords), pool.today === undefined ? undefined : formatExact(pool.today)),
+        pool.prize && `Top ${pool.prize.topN}: ${formatExact(pool.prize.lords)} LORDS at season end`,
+      ]
+        .filter(Boolean)
+        .join(". ");
 
 /** What failed, by name, with Try again on the card itself. */
 const Failed = ({ onRetry }: { onRetry: () => void }) => (

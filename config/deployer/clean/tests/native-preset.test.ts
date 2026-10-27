@@ -93,6 +93,8 @@ describe("native presets", () => {
         price_ceiling: 50n,
         shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
         claim_window_seconds: 604800,
+        pool_bps: 7000,
+        top_n: 10,
       });
     }
   });
@@ -172,15 +174,31 @@ describe("native presets", () => {
       price_ceiling: 50n,
       shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
       claim_window_seconds: 604800,
+      pool_bps: 7000,
+      top_n: 10,
     });
-    expect(preset.settlement.depths.map(({ chest }) => Object.values(chest))).toEqual([
-      [5000, 2700, 1400, 600, 300],
-      [4000, 3000, 1700, 900, 400],
-      [3000, 3000, 2200, 1200, 600],
-      [2000, 3000, 2500, 1600, 900],
-    ]);
     expect(config.season.durationSeconds).toBe(0);
   });
+
+  test.each([FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID])(
+    "Frontier preset %i removes one chest rarity at each depth and preserves the remaining proportions",
+    (id) => {
+      const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
+      const tables = preset.settlement.depths.map(({ chest }) => chest);
+      expect(tables).toEqual([
+        { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
+        { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
+        { common: 0, uncommon: 0, rare: 5500, epic: 3000, legendary: 1500 },
+        { common: 0, uncommon: 0, rare: 0, epic: 6400, legendary: 3600 },
+      ]);
+      for (const [depth, table] of tables.entries()) {
+        const weights = [table.common, table.uncommon, table.rare, table.epic, table.legendary];
+        expect(weights.every(Number.isInteger)).toBe(true);
+        expect(weights.reduce((sum, weight) => sum + weight, 0)).toBe(10000);
+        expect(weights.slice(0, depth)).toEqual(Array(depth).fill(0));
+      }
+    },
+  );
 
   test("every preset supplies its cooldown explicitly, independent of the stamina clock", () => {
     for (const [network, id, expected] of [
@@ -294,33 +312,44 @@ describe("native presets", () => {
         [BigInt(price.essence) / precision, BigInt(price.labor) / precision],
       ]),
     );
-    expect(preset.structures.research).toHaveLength(37);
+    expect(preset.structures.research).toHaveLength(45);
     expect(prices).toMatchObject({
-      [`${research.ROW_FARM}:1`]: [1000n, 1000n],
-      [`${research.ROW_FARM}:4`]: [30000n, 20000n],
-      [`${research.ROW_WORKSHOP}:2`]: [8000n, 6000n],
-      [`${research.ROW_BARRACKS}:3`]: [48000n, 24000n],
-      [`${research.ROW_HUT}:4`]: [15000n, 10000n],
-      [`${research.ROW_WAR_HALL}:1`]: [12000n, 3000n],
-      [`${research.ROW_HEARTH}:4`]: [360000n, 60000n],
+      [`${research.ROW_FARM}:1`]: [500n, 500n],
+      [`${research.ROW_FARM}:5`]: [30000n, 20000n],
+      [`${research.ROW_WORKSHOP}:3`]: [8000n, 6000n],
+      [`${research.ROW_BARRACKS}:4`]: [48000n, 24000n],
+      [`${research.ROW_HUT}:5`]: [15000n, 10000n],
+      [`${research.ROW_WAR_HALL}:1`]: [6000n, 1500n],
+      [`${research.ROW_WAR_HALL}:2`]: [16000n, 3000n],
+      [`${research.ROW_HEARTH}:5`]: [360000n, 60000n],
       [`${research.ROW_SHRINE}:1`]: [2000n, 0n],
       [`${research.ROW_WELL}:1`]: [6000n, 0n],
-      [`${research.ROW_DEPTH}:1`]: [160000n, 0n],
-      [`${research.ROW_DEPTH}:2`]: [400000n, 0n],
-      [`${research.ROW_DEPTH}:3`]: [900000n, 0n],
+      [`${research.ROW_DEPTH}:1`]: [100000n, 0n],
+      [`${research.ROW_DEPTH}:2`]: [250000n, 0n],
+      [`${research.ROW_DEPTH}:3`]: [500000n, 0n],
     });
     expect(preset.structures.board.unwrap()).toMatchObject({
-      output_step_bps: 2500,
-      storage_step_bps: 5000,
-      population_step_bps: 2500,
-      ration_step: precision / 4n,
+      output_step_bps: 2000,
+      storage_step_bps: 4000,
+      population_step_bps: 2000,
+      ration_step: precision / 5n,
       training_gate_tier: 2,
-      castle_store_deploys: 2,
+      troop_store_deploys: 2,
+      settlement_resource_cap: 6000,
+      city_resource_cap: 18000,
+      kingdom_resource_cap: 40000,
+      empire_resource_cap: 80000,
     });
     expect(preset.structures.buildings).toHaveLength(research.HEARTH);
     for (const category of [research.WAR_HALL, research.SUPPLY_YARD, research.SCOUTS_LODGE, research.HEARTH]) {
       const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
-      expect([rule.population_cost, rule.simple_cost]).toEqual([2, [{ resource_type: 23, amount: 3000n * precision }]]);
+      expect([rule.population_cost, rule.simple_cost]).toEqual([
+        2,
+        [
+          { resource_type: 38, amount: 6000n * precision },
+          { resource_type: 23, amount: 1500n * precision },
+        ],
+      ]);
     }
     for (const category of [31, 34]) {
       const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
@@ -492,12 +521,13 @@ describe("native presets", () => {
     });
     expect(design.economy.relics).toEqual([]);
     expect(design.economy.progression.unwrap()).toEqual({
+      common_xp: 100,
       reveal_xp: 2,
       fixed_xp: 200,
-      uncommon_xp: 100,
-      rare_xp: 200,
-      epic_xp: 400,
-      legendary_xp: 800,
+      uncommon_xp: 250,
+      rare_xp: 500,
+      epic_xp: 900,
+      legendary_xp: 1500,
     });
     expect(design.settlement.realms.resources).toEqual([
       { resource_type: 26, amount: 1_500_000_000_000n },
@@ -882,13 +912,13 @@ describe("the Frontier playground preset", () => {
       (sum, { price }) => sum + whole(price.essence),
       0,
     );
-    expect(essenceForEveryTier).toBe(4_076_500);
+    expect(essenceForEveryTier).toBe(3_510_250);
     expect(start.get(ResourcesIds.Essence)).toBeGreaterThan(essenceForEveryTier);
     // A castle stores two full deploys of its level; a Settlement's stores hold what the realm starts with, no more.
     const config = load(FRONTIER_PLAYGROUND_PRESET_ID);
     const settlementStore =
       config.troop.limit.settlementDeploymentCap *
-      nativePresets[FRONTIER_PLAYGROUND_PRESET_ID]!.board!.castleStoreDeploys;
+      nativePresets[FRONTIER_PLAYGROUND_PRESET_ID]!.board!.troopStoreDeploys;
     for (const resource of [ResourcesIds.Labor, ResourcesIds.Wheat, ResourcesIds.Knight])
       expect(start.get(resource)).toBe(settlementStore);
   });

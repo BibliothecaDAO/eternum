@@ -15,6 +15,8 @@ import {
 import type { RelayStore, RelayProgress } from "./state";
 
 const withdrawal: Withdrawal = {
+  prizeRank: 0,
+  prizeCount: 0,
   chainId: "0x1",
   seasonId: 4,
   transactionHash: "0xabc",
@@ -456,7 +458,8 @@ it("reports without a wallet and pays reported debt to the linked wallet at paym
   await f.run();
   expect(f.single.report).toHaveBeenCalledWith(withdrawal);
   expect(f.single.pay).not.toHaveBeenCalled();
-  f.ports.ledger.payment = () => Effect.succeed({ paid: false, seasonId: 4, wallet: "0", amount: "17" });
+  f.ports.ledger.payment = () =>
+    Effect.succeed({ prizeRank: 0, prizeCount: 0, paid: false, seasonId: 4, wallet: "0", amount: "17" });
   f.ports.identity.linkedWallet = () => Effect.succeed("0x999");
   await f.run();
   expect(f.single.pay).toHaveBeenCalledWith(withdrawal, "0x999");
@@ -573,7 +576,8 @@ it("persists a halt when the head falls below an unfinished page's observed anch
 it("voids closed unpaid reports even when the account has no payout wallet and never retries them", async () => {
   const f = fixture();
   f.ports.identity.linkedWallet = vi.fn(() => Effect.succeed(null));
-  f.ports.ledger.payment = () => Effect.succeed({ paid: false, seasonId: 4, wallet: "0x0", amount: "17" });
+  f.ports.ledger.payment = () =>
+    Effect.succeed({ prizeRank: 0, prizeCount: 0, paid: false, seasonId: 4, wallet: "0x0", amount: "17" });
   Object.assign(f.ports.ledger, { voided: () => Effect.succeed(true) });
   await Effect.runPromise(runRelay("0x1", f.ports, f.store));
   expect(await f.store.withdrawals()).toHaveLength(0);

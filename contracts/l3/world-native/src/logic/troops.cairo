@@ -707,6 +707,9 @@ pub mod TroopsLogic {
                         ResourceKey { game_id, entity_id: command.structure_id }, rules, context.timestamp, context,
                     );
             }
+            if rules.day_unit_seconds == 0 {
+                assert!(command.slot == 0, "slots require expedition");
+            }
             let category = troop_type(command.category);
             let tier = troop_tier(command.tier);
             let id = crate::entity_ids::allocate_home(game_id, command.structure_id);
@@ -747,6 +750,7 @@ pub mod TroopsLogic {
                         crate::logic::army_slots::allocate(
                             ExplorerKey { game_id, explorer_id: id },
                             crate::troops::ArmySlotAllocation {
+                                slot: command.slot,
                                 home: command.structure_id,
                                 epoch: today,
                                 allowance: home

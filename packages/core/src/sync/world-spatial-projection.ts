@@ -1,3 +1,4 @@
+import { activeTileOccupancy } from "../utils/ruins";
 import { safeInteger } from "../utils/safe-integer";
 import type { ID, Tile, TroopTier, TroopType } from "@bibliothecadao/types";
 import { TileOccupier } from "@bibliothecadao/types";
@@ -140,7 +141,7 @@ export type WorldSpatialProjectionChange =
   | ArmySpatialProjectionChange;
 
 export interface WorldSpatialProjectionOptions {
-  store: Pick<NativeFactStore, "entries" | "subscribe" | "get" | "require" | "entityOccupancy">;
+  store: Pick<NativeFactStore, "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame">;
   bucketSize?: number;
 }
 
@@ -536,7 +537,10 @@ const toArmyChange = ({
  * `flush()`, which the sync runtime calls after each applied ingest slice.
  */
 export class WorldSpatialProjection {
-  private readonly store: Pick<NativeFactStore, "entries" | "subscribe" | "get" | "require" | "entityOccupancy">;
+  private readonly store: Pick<
+    NativeFactStore,
+    "entries" | "subscribe" | "get" | "require" | "entityOccupancy" | "inGame"
+  >;
   private readonly chestIndex: SpatialIndex<ID, ChestSpatialRenderable>;
   private readonly structureIndex: SpatialIndex<StructureSpatialRenderable["spatialId"], StructureSpatialRenderable>;
   private readonly armyIndex: SpatialIndex<ID, ArmySpatialRenderable>;
@@ -584,6 +588,16 @@ export class WorldSpatialProjection {
   }
 
   private applyChanges(changes: readonly NativeFactChange[]): void {
+    if (
+      changes.some(
+        (change) =>
+          change.model === "ExpeditionDiscovery" && change.current?.ruin_cleared !== change.previous?.ruin_cleared,
+      )
+    ) {
+      for (const [key, occupancy] of this.store.entries("TileOccupancy")) {
+        if (occupancy.category === TileOccupier.Ruin) this.applyTileUpdate(key, occupancy);
+      }
+    }
     for (const change of changes) {
       if (change.model === "TileOpt" || change.model === "TileOccupancy") {
         const tile = change.current ?? change.previous;
@@ -675,7 +689,7 @@ export class WorldSpatialProjection {
   }
 
   private tileAt(key: NativeKeys["TileOccupancy"]): Tile | undefined {
-    return tileFactsToTile(key, this.store.get("TileOpt", key), this.store.get("TileOccupancy", key));
+    return tileFactsToTile(key, this.store.get("TileOpt", key), activeTileOccupancy(this.store, key));
   }
 
   private applyTileUpdate(tileEntity: string, key: NativeKeys["TileOccupancy"]): void {

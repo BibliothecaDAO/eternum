@@ -29,19 +29,19 @@ troops, larger the deeper it is. Each reveal also gives the army {FRONTIER.xp.re
 
 ## What a reveal can find
 
-| Find   | Chance                                      | What it is                                                                                                                                                                                                           |
-| ------ | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Beasts | {FRONTIER.discovery.beasts}                 | A roaming band, the weakest guard. Clearing it pays XP only.                                                                                                                                                         |
-| Camp   | {FRONTIER.discovery.camp}                   | A camp guarded by a {FRONTIER.guards.camp}. Clearing it pays labor: half its guard's starting troops.                                                                                                                |
-| Rift   | {FRONTIER.discovery.rift}                   | A fissure guarded by a {FRONTIER.guards.rift}. Clearing it pays Essence: three times its guard's starting troops.                                                                                                    |
-| Ruin   | {FRONTIER.discovery.ruin}                   | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. At most one a day per realm, surface and depths together, and only while the day's budget can fund its chest ([Chests](/frontier/chests)). |
-| Shrine | {FRONTIER.discovery.shrine}                 | Once researched: an army beside it uses it for {FRONTIER.xp.shrine} XP, then it is gone.                                                                                                                             |
-| Well   | {FRONTIER.discovery.well}                   | Once researched: an army beside it uses it for {FRONTIER.stamina.well} stamina, then it is gone.                                                                                                                     |
-| Chest  | 1 in {FRONTIER.discovery.exploreChestOneIn} | On the surface only, while the day's budget can fund it ([Chests](/frontier/chests)).                                                                                                                                |
+| Find   | Chance                                      | What it is                                                                                                                                                                                        |
+| ------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Beasts | {FRONTIER.discovery.beasts}                 | A roaming band, the weakest guard. Clearing it pays XP and labor: one quarter of its starting troops.                                                                                             |
+| Camp   | {FRONTIER.discovery.camp}                   | A camp guarded by a {FRONTIER.guards.camp}. Clearing it pays labor: half its guard's starting troops.                                                                                             |
+| Rift   | {FRONTIER.discovery.rift}                   | A fissure guarded by a {FRONTIER.guards.rift}. Clearing it pays Essence: three times its guard's starting troops.                                                                                 |
+| Ruin   | {FRONTIER.discovery.ruin}                   | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. Find any number; clear one per realm per day. The other ruins disappear across all depths ([Chests](/frontier/chests)). |
+| Shrine | {FRONTIER.discovery.shrine}                 | Once researched: an army beside it uses it for {FRONTIER.xp.shrine} XP, then it is gone.                                                                                                          |
+| Well   | {FRONTIER.discovery.well}                   | Once researched: an army beside it uses it for {FRONTIER.stamina.well} stamina, then it is gone.                                                                                                  |
+| Chest  | 1 in {FRONTIER.discovery.exploreChestOneIn} | On the surface only, while the day's budget can fund it ([Chests](/frontier/chests)).                                                                                                             |
 
 After {FRONTIER.discovery.emptyRevealLimit} empty reveals in a row, the next reveal draws only among the sites, shrines
-and wells above, so it finds one unless it draws a ruin the budget cannot fund. Scouting makes the kinds you pick for it
-more likely ([Armies](/frontier/armies#xp-and-attributes)).
+and wells above, so it finds one. After a ruin clear, no further ruins appear that day. Scouting makes the kinds you
+pick for it more likely ([Armies](/frontier/armies#xp-and-attributes)).
 
 To use a shrine or a well, select an army beside it and right-click it (on a phone, press and hold), or tap it and press
 **Use**.

@@ -51,7 +51,14 @@ describe("committed contract readbacks", () => {
     });
     expect(
       decodeWithdrawalPayment(
-        response(ledgerAbi, "get_payment", { paid: false, season_id: 0, wallet: 0, amount: { low: 0, high: 0 } }),
+        response(ledgerAbi, "get_payment", {
+          prize_rank: 0,
+          prize_count: 0,
+          paid: false,
+          season_id: 0,
+          wallet: 0,
+          amount: { low: 0, high: 0 },
+        }),
       ),
     ).toBeNull();
     expect(decodeCredits(response(ledgerAbi, "get_credits", { swords: 0, shields: 0 }))).toEqual({
@@ -139,6 +146,8 @@ describe("committed contract readbacks", () => {
   });
   it("reads the preset calendar immediately after the compiled rating parameters", () => {
     const fields = response(ledgerAbi, "get_preset", {
+      frontier_top_n: 10,
+      frontier_chest_bps: 7000,
       entry_fee: { low: 11, high: 1 },
       protocol_cut_bps: 1000,
       chest_lords_bps: 2000,
@@ -151,6 +160,8 @@ describe("committed contract readbacks", () => {
       claim_window_seconds: 3600,
     });
     expect(decodeLedgerPreset(fields)).toEqual({
+      frontierTopN: 10,
+      frontierChestBps: 7000,
       entryFee: String(11n + (1n << 128n)),
       protocolCut: 1000,
       chestLords: 2000,
@@ -203,9 +214,23 @@ describe("committed contract readbacks", () => {
     });
     expect(
       decodeWithdrawalPayment(
-        response(ledgerAbi, "get_payment", { paid: true, season_id: 3, wallet: 17, amount: { low: 7, high: 2 } }),
+        response(ledgerAbi, "get_payment", {
+          prize_rank: 0,
+          prize_count: 0,
+          paid: true,
+          season_id: 3,
+          wallet: 17,
+          amount: { low: 7, high: 2 },
+        }),
       ),
-    ).toEqual({ paid: true, seasonId: 3, wallet: "17", amount: String(7n + (2n << 128n)) });
+    ).toEqual({
+      prizeRank: 0,
+      prizeCount: 0,
+      paid: true,
+      seasonId: 3,
+      wallet: "17",
+      amount: String(7n + (2n << 128n)),
+    });
     expect(
       decodeChest(
         response(ledgerAbi, "get_chest", {
@@ -240,6 +265,8 @@ describe("committed contract readbacks", () => {
     expect(
       decodeFrontierSeason(
         response(ledgerAbi, "get_frontier", {
+          prize_pool: { low: 0, high: 0 },
+          prize_paid: { low: 0, high: 0 },
           funded: true,
           start: 60,
           end: 300,

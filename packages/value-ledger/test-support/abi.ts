@@ -62,7 +62,14 @@ export const gamesEventAbi: Abi = (() => {
     })),
   ];
 })();
-export function withdrawalEvent(gameId: number, claimId: string, account: string, amount: number) {
+export function withdrawalEvent(
+  gameId: number,
+  claimId: string,
+  account: string,
+  amount: number,
+  prizeRank = 0,
+  prizeCount = 0,
+) {
   const model = schema.models.find((model) => model.name === "LordsWithdrawal");
   const layout = schema.games.events.find(
     (event) =>
@@ -72,6 +79,11 @@ export function withdrawalEvent(gameId: number, claimId: string, account: string
   );
   if (!model || !layout) throw new Error("Missing generated withdrawal layout");
   const keys = serialize(gamesAbi, model.keys, { game_id: gameId, claim_id: claimId });
-  const values = serialize(gamesAbi, model.members, { account, amount });
+  const values = serialize(gamesAbi, model.members, {
+    account,
+    amount,
+    prize_rank: prizeRank,
+    prize_count: prizeCount,
+  });
   return eventFields(gamesAbi, layout, { version: 1, model: model.identity, keys, values });
 }

@@ -30,12 +30,12 @@ tile costs {FRONTIER.stamina.reveal}, a step over known ground {FRONTIER.stamina
 big army needs farms behind it.
 
 **Refill** tops an army's stamina up at once for {FRONTIER.stamina.refillLords} LORDS a missing point, paid from your
-realm's LORDS. A well gives {FRONTIER.stamina.well} stamina, buying an attribute tier gives
-{FRONTIER.stamina.tierBought}, and Logistics raises an army's maximum by up to {FRONTIER.stamina.logisticsMax}.
+realm's LORDS. A well gives {FRONTIER.stamina.well} stamina. Skill points also restore stamina, and Logistics raises an
+army's maximum by up to {FRONTIER.stamina.logisticsMax}.
 
 ### Stamina stays with the slot
 
-Stamina belongs to the army slot, not to the army in it. A new army takes your realm's lowest free slot.
+Stamina belongs to the army slot, not to the army in it. Choose an open slot when deploying.
 
 - A slot's first army of the day starts with a full bar: {FRONTIER.stamina.max} stamina, plus what your Supply yard's
   Logistics adds.
@@ -54,19 +54,23 @@ its troops; Frontier asks first.
 
 ## XP and attributes
 
-An army earns {FRONTIER.xp.reveal} XP for each tile it reveals, XP for each guard it clears (more for a stronger guard),
-and {FRONTIER.xp.shrine} XP from a shrine. It spends XP on the attribute tiers you choose, up to legendary:
-{FRONTIER.xp.tierPrices[0]}, {FRONTIER.xp.tierPrices[1]}, {FRONTIER.xp.tierPrices[2]}, then
-{FRONTIER.xp.tierPrices[3]}{" "} XP for each next tier.
+An army earns {FRONTIER.xp.reveal} XP per revealed tile, XP for cleared guards, and {FRONTIER.xp.shrine} XP from a
+shrine. XP only increases. At {FRONTIER.xp.pointThresholds.join(" / ")} XP it earns Common, Uncommon, Rare, Epic and
+Legendary skill points. The same milestones repeat every {FRONTIER.xp.pointThresholds[4]} XP.
+
+Each attribute starts at 0, an empty socket. A point raises one attribute one rank, up to the point's own rank. Level up
+uses the lowest fitting point you hold. Raising restores {FRONTIER.stamina.pointRefills.join(" / ")} stamina according
+to the point spent. Choose Stamina instead to restore double that amount, up to your current maximum.
 
 - **Battle** hits up to {FRONTIER.attributes.battleMax} harder.
 - **Logistics** carries up to {FRONTIER.stamina.logisticsMax} more stamina.
-- **Scouting** adds {FRONTIER.attributes.scouting[0]}, {FRONTIER.attributes.scouting[1]},
-  {FRONTIER.attributes.scouting[2]}, then {FRONTIER.attributes.scouting[3]} to the find rate of the camps, rifts or
-  beasts you pick for each tier, so all four on one kind add {FRONTIER.attributes.scoutingOneKind}.
-- **Homecoming** sends survivors home when the day ends ([The expedition](/frontier/expedition#the-days-end)).
+- **Scouting** adds {FRONTIER.attributes.scouting.join(" / ")} to the chosen kind's find rate at each rank. Putting all
+  five ranks into one kind adds {FRONTIER.attributes.scoutingOneKind}.
+- **Homecoming** sends a share of survivors home when the day ends
+  ([The expedition](/frontier/expedition#the-days-end)).
 
-An army's XP and tiers end with it. Your realm's training buildings start every new army a tier higher
+XP, ranks and unspent points end with the army. A full merge keeps the receiving army's progress and discards the
+source's. Training buildings grant new armies rank I, and research raises their starting rank through V
 ([Your realm](/frontier/realm#research)).
 
 <Shot

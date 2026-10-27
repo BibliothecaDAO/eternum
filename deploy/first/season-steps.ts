@@ -117,9 +117,12 @@ async function funding(context: Season) {
       native,
       block,
     );
-    if (BigInt(pool.pool) !== BigInt(context.inputs!.amount) * WEI)
+    const deposit = BigInt(context.inputs!.amount) * WEI;
+    const prize = ((deposit * BigInt(10_000 - native.chestPoolBps)) / 10_000n / WEI) * WEI;
+    const chest = deposit - prize;
+    if (BigInt(pool.pool) < chest || BigInt(pool.prizePool) !== deposit - chest)
       throw new PublicError("Existing Frontier deposit differs; never add a second deposit");
-    return { gameId, shard, native, block, funded: true };
+    return { gameId, shard, native, block, funded: true, pool };
   } catch (error) {
     if (error instanceof Error && error.message === "frontier_funding_missing")
       return { gameId, shard, native, block, funded: false };
@@ -287,10 +290,16 @@ async function poolPublished(context: Season) {
   if (!state?.funded) return false;
   const snapshot = await readConfirmedSnapshot(state.shard, releaseInputs(context)!.public_herald_url, state.gameId, [
     "LordsBudget",
+    "FrontierPrize",
   ]);
   const budget = optionalRow(snapshot, "LordsBudget");
   if (!budget || BigInt(String(budget.pool)) === 0n) return false;
-  if (BigInt(String(budget.pool)) !== BigInt(context.inputs!.amount))
+  const prize = optionalRow(snapshot, "FrontierPrize");
+  if (
+    BigInt(String(budget.pool)) !== BigInt(state.pool!.pool) / WEI ||
+    !prize ||
+    BigInt(String(prize.pool)) !== BigInt(state.pool!.prizePool) / WEI
+  )
     throw new PublicError("Published pool differs from the deposit");
   const slots = await service<{ slots: unknown[] }>(context, "/api/slots");
   if (!slots.slots.length) return false;

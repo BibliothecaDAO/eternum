@@ -52,10 +52,11 @@ export interface NativePreset {
     populationStepBps: number;
     /** Wheat a Rations pick takes off each deployed troop. */
     rationStep: number;
-    /** The Barracks tier a training building needs. */
+    /** Total Barracks purchases needed to construct training. */
     trainingGateTier: number;
-    /** The castle base is this many full deploys of its level. */
-    castleStoreDeploys: number;
+    /** Troop storage in full deployments; wheat/labor base caps by realm level, in whole units. */
+    troopStoreDeploys: number;
+    resourceStoreCaps: readonly [number, number, number, number];
   };
   /** One price per research row tier above common; rows are research.cairo's ROW_* ids. */
   research: readonly { row: number; tier: number; essenceCost: number; laborCost: number }[];
@@ -68,10 +69,11 @@ export interface NativePreset {
     wellBps: number;
     emptyRevealLimit: number;
   };
-  /** XP per reveal, the fixed award (a shrine, and a relic chest until relics leave chests), and each tier's price. */
+  /** XP per reveal, the fixed award (a shrine, and a relic chest until relics leave chests), and the five cumulative skill-point thresholds. */
   progression: null | {
     revealXp: number;
     fixedXp: number;
+    commonXp: number;
     uncommonXp: number;
     rareXp: number;
     epicXp: number;
@@ -79,6 +81,8 @@ export interface NativePreset {
   };
   labor: null | { amount: number; accountDailyLimit: number };
   chests: null | {
+    poolBps: number;
+    topN: number;
     priceCeiling: number;
     shares: ChestTiers;
     claimWindowSeconds: number;

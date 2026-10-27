@@ -2,7 +2,6 @@
 pub mod PlacementLogic {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use crate::geometry::{spire_neighbor, tile_key};
-    use crate::logic::entry::EntryAdministration;
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
     use crate::logic::settlement::SettlementPoolState;
@@ -14,10 +13,6 @@ pub mod PlacementLogic {
     component!(path: SettlementPoolState, storage: settlements, event: SettlementEvent);
     impl SettlementInternal = SettlementPoolState::InternalImpl<ContractState>;
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
-    component!(path: EntryAdministration, storage: administration, event: AdministrationEvent);
-    #[abi(embed_v0)]
-    impl LedgerOperator = EntryAdministration::LedgerOperatorImpl<ContractState>;
-    impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
 
     #[abi(embed_v0)]
     impl CommandIngress of crate::commands::ICommandIngress<ContractState> {
@@ -50,8 +45,6 @@ pub mod PlacementLogic {
         #[flat]
         pub data: crate::state::Storage,
         #[substorage(v0)]
-        administration: EntryAdministration::Storage,
-        #[substorage(v0)]
         release: ReleaseState::Storage,
         #[substorage(v0)]
         settlements: SettlementPoolState::Storage,
@@ -59,7 +52,6 @@ pub mod PlacementLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        AdministrationEvent: EntryAdministration::Event,
         ReleaseEvent: ReleaseState::Event,
         MapEvent: MapState::Event,
         SettlementEvent: SettlementPoolState::Event,

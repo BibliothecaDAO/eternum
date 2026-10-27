@@ -35,7 +35,11 @@ const boardRealm = (wheat: bigint) => {
         demolition_refund_bps: 0,
         workshop_rate: 0n,
         output_step_bps: 2500,
-        castle_store_deploys: 2,
+        troop_store_deploys: 2,
+        settlement_resource_cap: 6000,
+        city_resource_cap: 18000,
+        kingdom_resource_cap: 40000,
+        empire_resource_cap: 80000,
         storage_step_bps: 5000,
         population_step_bps: 2500,
         ration_step: PRECISION / 4n,
@@ -64,10 +68,10 @@ describe("a board realm's store limits", () => {
 
   it("adds half the castle base per store choice, independently of troop storage", () => {
     const { store, manager } = boardRealm(0n);
-    // Farm rare: Granary, Fields. Workshop uncommon: Storeroom.
+    // One upgrade on each Farm and Workshop side.
     store.applyFacts(
       upsert("0x6", {
-        RealmKnowledge: { game_id: 1, structure_id: 7, learned: 2n | (1n << 3n) | (1n << 7n) | (1n << 10n) },
+        RealmKnowledge: { game_id: 1, structure_id: 7, learned: 1n | (1n << 3n) | (1n << 7n) | (1n << 10n) },
       }),
     );
     expect(manager.storeLimit(ResourcesIds.Wheat)).toBe((settlementLimit * 3n) / 2n);
@@ -78,9 +82,41 @@ describe("a board realm's store limits", () => {
   it("raises the limits with the castle's level", () => {
     const { store, manager } = boardRealm(0n);
     store.applyFacts(upsert("0x3", { Structure: realm(1) }));
-    expect(manager.storeLimit(ResourcesIds.Wheat)).toBe(
-      2n * BigInt(preset.rules.troop_limit_config.city_deployment_cap) * PRECISION,
+    expect(manager.storeLimit(ResourcesIds.Wheat)).toBe(18000n * PRECISION);
+  });
+
+  it("applies the exact S2 caps at every realm level and storage count, leaving troop caps unchanged", () => {
+    const { store, manager } = boardRealm(0n);
+    store.applyFacts(
+      upsert("0x1", {
+        SliceRules: {
+          ...preset.rules,
+          game_id: 1,
+          mode_rules: 0,
+          troop_limit_config: {
+            ...preset.rules.troop_limit_config,
+            settlement_deployment_cap: 3000,
+            city_deployment_cap: 9000,
+            kingdom_deployment_cap: 25000,
+            empire_deployment_cap: 60000,
+          },
+        },
+      }),
     );
+    for (let level = 0; level < 4; level++) {
+      store.applyFacts(upsert("0x3", { Structure: realm(level) }));
+      for (let picks = 0; picks <= 4; picks++) {
+        store.applyFacts(
+          upsert("0x6", {
+            RealmKnowledge: { game_id: 1, structure_id: 7, learned: (BigInt(picks) << 3n) | (BigInt(picks) << 10n) },
+          }),
+        );
+        const cap = (BigInt([6000, 18000, 40000, 80000][level]!) * PRECISION * BigInt(2 + picks)) / 2n;
+        expect(manager.storeLimit(ResourcesIds.Wheat)).toBe(cap);
+        expect(manager.storeLimit(ResourcesIds.Labor)).toBe(cap);
+        expect(manager.storeLimit(ResourcesIds.Knight)).toBe(BigInt([6000, 18000, 50000, 120000][level]!) * PRECISION);
+      }
+    }
   });
 
   it("keeps nothing more in a store at its limit, and shows it full", () => {

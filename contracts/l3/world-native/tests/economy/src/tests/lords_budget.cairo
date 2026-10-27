@@ -1,3 +1,4 @@
+use starknet::storage::StorageMapReadAccess;
 pub use world_test_support::tests::lords_budget::*;
 
 
@@ -122,7 +123,7 @@ fn refused_chests_reserve_nothing_and_clearing_spends_only_the_hold() {
 }
 
 #[test]
-fn chest_tiers_follow_each_depths_odds_over_10k_rolls() {
+fn chest_tiers_follow_each_depths_odds_and_never_roll_removed_tiers_over_10k_rolls() {
     let (_, preset) = super::preset_projection::current_definition("frontier");
     for depth in preset.settlement.depths {
         let odds = *depth.chest;
@@ -134,6 +135,9 @@ fn chest_tiers_follow_each_depths_odds_over_10k_rolls() {
         for tier in 0_u8..5 {
             let expected: u32 = tier_value(odds, tier).into();
             let actual = counts.get(tier.into());
+            if expected == 0 {
+                assert_eq!(actual, 0, "a removed chest tier rolled");
+            }
             let difference = core::cmp::max(actual, expected) - core::cmp::min(actual, expected);
             let variance = expected * (10000 - expected) / 10000;
             assert!(difference * difference <= 16 * variance + 1, "chest tier outside four sigma");
@@ -420,17 +424,19 @@ fn a_frontier_preset_requires_more_than_the_reporting_hour() {
 fn publishing_a_pool_requires_the_current_operator_and_a_frontier_game() {
     let (d, game_id, _) = super::registrar::setup_unfunded_frontier_chests();
     let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
-    assert!(operator.publish_frontier_pool(game_id, 700000).is_err());
+    assert!(operator.publish_frontier_pool(game_id, 700000, 0).is_err());
     super::entry::set_operator(d, super::authority());
     snforge_std::start_cheat_caller_address(d.games, d.actor);
-    assert!(operator.publish_frontier_pool(game_id, 700000).is_err());
+    assert!(operator.publish_frontier_pool(game_id, 700000, 0).is_err());
     snforge_std::start_cheat_caller_address(d.games, super::authority());
-    assert!(operator.publish_frontier_pool(game_id, 0).is_err());
-    assert!(operator.publish_frontier_pool(9999, 700000).is_err());
+    assert!(operator.publish_frontier_pool(game_id, 0, 0).is_err());
+    assert!(operator.publish_frontier_pool(9999, 700000, 0).is_err());
     let other = super::registrar::setup();
     super::entry::set_operator(other, super::authority());
     snforge_std::start_cheat_caller_address(other.games, super::authority());
-    assert!(ILedgerOperatorSafeDispatcher { contract_address: other.games }.publish_frontier_pool(1, 700000).is_err());
+    assert!(
+        ILedgerOperatorSafeDispatcher { contract_address: other.games }.publish_frontier_pool(1, 700000, 0).is_err(),
+    );
 }
 
 #[test]
@@ -444,8 +450,11 @@ fn the_published_deposit_is_per_game_immutable_and_emits_the_budget_fact() {
     let budget = relics.lords_budget(game_id).unwrap();
     assert_eq!((budget.pool, budget.pool_left, budget.open, budget.day), (700000, 700000, 0, 0));
     let events = spy.get_events().emitted_by(d.games);
-    assert_eq!(events.events.len(), 1);
+    assert_eq!(events.events.len(), 2);
     for (_, event) in events.events.span() {
+        if *event.keys.at(3) != 'LordsBudget' {
+            continue;
+        }
         assert_eq!(event.keys.span(), array![selector!("MapEvent"), selector!("RowSet"), 1, 'LordsBudget'].span());
         assert_eq!(
             event.data.span(),
@@ -455,8 +464,8 @@ fn the_published_deposit_is_per_game_immutable_and_emits_the_budget_fact() {
     assert_eq!(relics.lords_budget(game_id + 1), None);
     snforge_std::start_cheat_caller_address(d.games, super::authority());
     let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
-    assert!(operator.publish_frontier_pool(game_id, 700000).is_err());
-    assert!(operator.publish_frontier_pool(game_id, 900000).is_err());
+    assert!(operator.publish_frontier_pool(game_id, 700000, 0).is_err());
+    assert!(operator.publish_frontier_pool(game_id, 900000, 0).is_err());
     // Exhaustion cannot reopen publication.
     snforge_std::interact_with_state(
         d.games,
@@ -464,7 +473,7 @@ fn the_published_deposit_is_per_game_immutable_and_emits_the_budget_fact() {
             crate::state::write().relics.rollover_budget.write(game_id, Some(LordsBudget { pool_left: 0, ..budget }));
         },
     );
-    assert!(operator.publish_frontier_pool(game_id, 700000).is_err());
+    assert!(operator.publish_frontier_pool(game_id, 700000, 0).is_err());
     let (second, second_id, _) = super::registrar::setup_unfunded_frontier_chests();
     super::registrar::publish_test_pool(second, second_id, 230000, 0);
     assert_eq!(IRelicsDispatcher { contract_address: second.games }.lords_budget(second_id).unwrap().pool, 230000);
@@ -523,7 +532,7 @@ fn publication_refuses_at_the_season_end() {
     snforge_std::start_cheat_caller_address(d.games, super::authority());
     snforge_std::start_cheat_block_timestamp(d.games, game.end_at);
     assert!(
-        ILedgerOperatorSafeDispatcher { contract_address: d.games }.publish_frontier_pool(game_id, 700000).is_err(),
+        ILedgerOperatorSafeDispatcher { contract_address: d.games }.publish_frontier_pool(game_id, 700000, 0).is_err(),
     );
 }
 
@@ -622,4 +631,74 @@ fn real_rolls_include_refusals_but_candidates_do_not_change_the_rate_or_price() 
             assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap().price, before.price);
         },
     );
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn season_prizes_issue_once_after_the_end_without_spending_chest_funds() {
+    let (d, game_id, _) = super::registrar::setup_unfunded_frontier_chests();
+    super::entry::set_operator(d, super::authority());
+    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    snforge_std::start_cheat_caller_address(d.games, super::authority());
+    assert!(operator.publish_frontier_pool(game_id, 700, 300).is_ok());
+    let end = crate::game::IGameDispatcherTrait::game(
+        crate::game::IGameDispatcher { contract_address: d.games }, game_id,
+    )
+        .end_at;
+    assert!(operator.post_frontier_top(game_id, array![d.actor]).is_err());
+    snforge_std::start_cheat_block_timestamp(d.games, end);
+    snforge_std::start_cheat_caller_address(d.games, d.actor);
+    assert!(operator.post_frontier_top(game_id, array![d.actor]).is_err());
+    snforge_std::start_cheat_caller_address(d.games, super::authority());
+    assert!(operator.post_frontier_top(game_id, array![d.actor, d.actor]).is_err());
+    assert!(operator.post_frontier_top(game_id, array![d.actor]).is_ok());
+    assert!(operator.post_frontier_top(game_id, array![d.actor]).is_ok());
+    assert!(operator.post_frontier_top(game_id, array![]).is_err());
+    snforge_std::start_cheat_transaction_hash(d.games, 88101);
+    assert!(operator.award_frontier_prize(game_id, 1).is_ok());
+    assert!(operator.award_frontier_prize(game_id, 1).is_ok());
+    assert!(operator.award_frontier_prize(game_id, 2).is_err());
+    let prize = operator.frontier_prize(game_id).unwrap();
+    assert_eq!((prize.pool, prize.issued, prize.count), (300, 300, Some(1)));
+    let chest = IRelicsDispatcher { contract_address: d.games }.lords_budget(game_id).unwrap();
+    assert_eq!((chest.pool, chest.pool_left), (700, 700));
+    let receipt = snforge_std::interact_with_state(
+        d.games, || crate::state::read().relics.lords_withdrawals.read(88101).unwrap(),
+    );
+    assert_eq!((receipt.account, receipt.amount, receipt.prize_rank, receipt.prize_count), (d.actor, 300, 1, 1));
+}
+
+#[test]
+fn descending_prize_shares_conserve_every_whole_lords() {
+    for count in 1_u16..101 {
+        for pool in array![1_u128, 19, 300, 1000000] {
+            let mut total = 0;
+            let mut previous = pool;
+            for rank in 1..count + 1 {
+                let amount = crate::frontier_prizes::prize_amount(pool, count, rank);
+                assert!(amount <= previous);
+                previous = amount;
+                total += amount;
+            }
+            assert_eq!(total, pool);
+        }
+    }
+    assert_eq!(crate::frontier_prizes::prize_amount(550, 10, 1), 100);
+    assert_eq!(crate::frontier_prizes::prize_amount(550, 10, 10), 10);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_late_carry_grows_only_the_chest_pool_and_is_safe_to_retry() {
+    let (d, game_id, _) = super::registrar::setup_unfunded_frontier_chests();
+    super::entry::set_operator(d, super::authority());
+    snforge_std::start_cheat_caller_address(d.games, super::authority());
+    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    assert!(operator.publish_frontier_pool(game_id, 700, 300).is_ok());
+    assert!(operator.top_up_frontier_pool(game_id, 900).is_ok());
+    assert!(operator.top_up_frontier_pool(game_id, 900).is_ok());
+    assert!(operator.top_up_frontier_pool(game_id, 899).is_err());
+    let chest = IRelicsDispatcher { contract_address: d.games }.lords_budget(game_id).unwrap();
+    assert_eq!((chest.pool, chest.pool_left), (900, 900));
+    assert_eq!(operator.frontier_prize(game_id).unwrap().pool, 300);
 }

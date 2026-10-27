@@ -129,7 +129,13 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
         continue;
       }
       const saved = result.success;
-      if (saved && (saved.seasonId !== withdrawal.seasonId || BigInt(saved.amount) !== BigInt(withdrawal.amount))) {
+      if (
+        saved &&
+        (saved.seasonId !== withdrawal.seasonId ||
+          BigInt(saved.amount) !== BigInt(withdrawal.amount) ||
+          saved.prizeRank !== withdrawal.prizeRank ||
+          saved.prizeCount !== withdrawal.prizeCount)
+      ) {
         yield* setAsideOrDefer(store, withdrawal, "ledger_report_mismatch", deferred);
         continue;
       }

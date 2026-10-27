@@ -1,4 +1,5 @@
 import {
+  siteUsedLine,
   buildingName,
   CHEST_EARNED,
   fightVerdict,
@@ -78,7 +79,7 @@ type StoryEventModel = "BattleEvent" | "RaidEvent";
  * One presentation for every story the chain can tell: each generated Story variant and each story model. A new
  * variant is a type error here until it has its line, so no story ever reaches the feed as raw fields.
  */
-const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> = {
+const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", StoryFormatter> = {
   ExplorationReward: (event, payload, components, resolvePlayerName) => {
     const site = discoveredSite(payload, components);
     return {
@@ -243,6 +244,40 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       title: category === StructureType.Ruin ? `${cleared}: ${CHEST_EARNED}` : cleared,
       description: joinPieces([label, describeExplorer(payload.explorer_id, components, player), reward]),
       icon: "prize",
+    };
+  },
+  SiteUsed: (event, payload, components, resolvePlayerName) => {
+    const benefit = payload.benefit as Record<string, unknown> | undefined;
+    const kind = benefit?.Shrine !== undefined ? "Shrine" : benefit?.Well !== undefined ? "Well" : null;
+    const amount = kind && toNumber(benefit![kind]);
+    if (kind === null || amount === null) throw new Error("Incomplete site use story");
+    return {
+      title: siteUsedLine(kind, formatExact(amount)),
+      description: describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
+      icon: "scroll",
+    };
+  },
+  SkillPointSpent: (event, payload, components, resolvePlayerName) => {
+    const choice = formatEnum(payload.choice);
+    const point = toNumber(payload.point_rank);
+    const stamina = toNumber(payload.stamina);
+    const tierIndex = toNumber(payload.tier);
+    const tier = tierIndex === null ? undefined : ATTRIBUTE_TIER_LABELS[tierIndex];
+    if (
+      !choice ||
+      point === null ||
+      !ATTRIBUTE_TIER_LABELS[point] ||
+      stamina === null ||
+      (choice !== "Stamina" && !tier)
+    )
+      throw new Error("Incomplete skill point story");
+    return {
+      title: choice === "Stamina" ? `Stamina +${stamina}` : `${choice} ${tier}`,
+      description: joinPieces([
+        describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
+        `${ATTRIBUTE_TIER_LABELS[point]} point · +${stamina} stamina`,
+      ]),
+      icon: "scroll",
     };
   },
   TierBought: (event, payload, components, resolvePlayerName) => {

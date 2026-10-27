@@ -2,7 +2,7 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { ResourceManager } from "../managers";
-import { realmLearned, researchChoice, researchTier } from "./realm-research";
+import { realmLearned, researchPicks } from "./realm-research";
 
 /** The contract's refusal when a structure cannot pay what deploying troops costs it. */
 export const TROOP_RAISE_SHORT_REASON = "Realm cannot pay to raise troops.";
@@ -75,12 +75,8 @@ export const rationedWheatPerTroop = (
 };
 
 // The Barracks row's Rations picks, as resources_domain.cairo's ration_cut counts them.
-const rationPicks = (learned: bigint): bigint => {
-  let picks = 0n;
-  for (let tier = 1; tier <= researchTier(learned, research.ROW_BARRACKS); tier++)
-    if (researchChoice(learned, research.ROW_BARRACKS, tier) === research.CHOICE_RATIONS) picks++;
-  return picks;
-};
+const rationPicks = (learned: bigint): bigint =>
+  BigInt(researchPicks(learned, research.ROW_BARRACKS, research.CHOICE_RATIONS));
 
 /** Whether the structure holds every cost; unknown costs cannot be paid yet. */
 export const canPayTroopRaise = (costs: TroopRaiseCost[] | undefined): boolean =>

@@ -93,6 +93,7 @@ export interface CreateBuildingProps extends SystemSigner {
   directions: BigNumberish[];
   building_category: BuildingType;
   use_simple: boolean;
+  scouting_kind: 0 | 1 | 2;
 }
 
 export interface DestroyBuildingProps extends SystemSigner {
@@ -410,6 +411,8 @@ export interface GuardDeleteProps extends SystemSigner {
  * Properties for creating an explorer
  */
 export interface ExplorerCreateProps extends SystemSigner {
+  /** Selected zero-based daily army slot; zero in games without daily slots. */
+  slot: number;
   /** ID of the structure creating the explorer */
   for_structure_id: number;
   /** Type of troops to add */

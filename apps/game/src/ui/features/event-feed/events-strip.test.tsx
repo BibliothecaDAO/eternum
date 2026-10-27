@@ -117,6 +117,41 @@ const routineStories = (count: number, from: number) =>
     at: from + index,
   }));
 
+it.each(["all"] as const)(
+  "the Log reads the player's site benefits under %s without requiring push notifications",
+  (filter) => {
+    world.filter = filter;
+    history.push(
+      {
+        id: "shrine",
+        story: "SiteUsed",
+        owner: PLAYER,
+        participants: [PLAYER],
+        at: 80_000,
+        payload: { explorer_id: 9, benefit: { Shrine: 200 } },
+      },
+      {
+        id: "well",
+        story: "SiteUsed",
+        owner: PLAYER,
+        participants: [PLAYER],
+        at: 90_000,
+        payload: { explorer_id: 9, benefit: { Well: 5 } },
+      },
+      {
+        id: "theirs",
+        story: "SiteUsed",
+        owner: "0x2",
+        participants: ["0x2"],
+        at: 95_000,
+        payload: { explorer_id: 10, benefit: { Shrine: 200 } },
+      },
+    );
+    act(() => root.render(<EventLogPanel onDismiss={() => undefined} isInsideAnchor={() => false} />));
+    expect(rows()).toEqual(["theirs", "well", "shrine"]);
+  },
+);
+
 let host: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 const draw = () => act(() => root.render(<QuickFeedRows />));

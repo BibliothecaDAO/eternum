@@ -111,15 +111,15 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
           icon: troopMeaning({ category: String(payload.category), tier: String(payload.tier) }),
         },
       };
-    case "TierBought":
+    case "SkillPointSpent":
       return {
         actor,
-        verb: "trained",
+        verb: "spent a point",
         act: "research",
         // The attribute and its tier as the story says them: "Logistics uncommon".
         object: {
           name: story.presentation.title,
-          icon: attributeMark(String(payload.attribute).toLowerCase() as AttributeKey),
+          icon: skillPointIcon(payload.choice),
         },
       };
     case "TroopsTransferred":
@@ -193,4 +193,9 @@ const siteObject = (entityId: unknown, store: NativeFactStore): ToldReading["obj
     name: siteDisplayName(id),
     icon: beast ? beastMeaning(beast.beast) : site ? structureMeaning(site.category) : "beasts",
   };
+};
+
+const skillPointIcon = (choice: unknown): IconMeaning => {
+  const name = typeof choice === "string" ? choice : Object.keys((choice ?? {}) as object)[0];
+  return name === "Stamina" ? "stamina" : attributeMark(String(name).toLowerCase() as AttributeKey);
 };

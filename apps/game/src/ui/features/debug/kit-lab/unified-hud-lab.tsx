@@ -8,7 +8,7 @@ import { ArenaHud } from "@/ui/features/world/hud/arena-hud";
 import { useGoalLine } from "@/ui/features/world/hud/points-goal";
 import { gameStartHeadline } from "@/ui/features/news-headlines/news-headline-bridge";
 import { NewsHeadlineBanner } from "@/ui/features/news-headlines/news-headline-banner";
-import { readExpeditionRules, structureMapPosition } from "@bibliothecadao/eternum";
+import { readExpeditionRules, structureMapPosition, type SkillPointChoice } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ActorType, RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { useEffect } from "react";
@@ -21,7 +21,7 @@ import { LabGame } from "./lab-game";
 /**
  * The views the lab draws: each mode's player (Blitz's, its Build order panel read from the lab realm, and its army's
  * attack forecast on an enemy army beside it, or stocked for its build steps, also as the game begins with its news
- * over the HUD; Frontier's, and with an army out whose XP buys a tier), a spectator
+ * over the HUD; Frontier's, and with an army out holding skill points), a spectator
  * of a game running and of one finished, and a Blitz player whose last realm fell, still holding a Hyperstructure, then watching.
  */
 const VIEWS = {
@@ -91,7 +91,7 @@ const ViewLab = ({ view }: { view: View }) => {
                 ? lastRealmLost
                 : undefined
         }
-        systemCalls={army ? (store) => ({ buy_tier: recordTierBought(store) }) : undefined}
+        systemCalls={army ? () => ({ spend_skill_point: recordSkillPointSpent }) : undefined}
       >
         {(store) => {
           const rules = frontier ? readExpeditionRules(store, 1) : null;
@@ -271,36 +271,35 @@ const AttackForecast = ({ store }: { store: NativeFactStore }) => {
   return <SurfaceHost />;
 };
 
-const LAB_PROGRESS = { game_id: 1, xp: 260, battle: 1, logistics: 1, scouting: 1, scouting_kinds: 0, homecoming: 1 };
+const LAB_PROGRESS = {
+  common_points: 1,
+  uncommon_points: 1,
+  rare_points: 0,
+  epic_points: 0,
+  legendary_points: 0,
+  game_id: 1,
+  xp: 260,
+  battle: 1,
+  logistics: 1,
+  scouting: 0,
+  scouting_kinds: 0,
+  homecoming: 1,
+};
 const LAB_PROGRESSION_RULES = {
+  common_xp: 100,
   game_id: 1,
   reveal_xp: 2,
   fixed_xp: 200,
-  uncommon_xp: 100,
-  rare_xp: 200,
-  epic_xp: 400,
-  legendary_xp: 800,
+  uncommon_xp: 250,
+  rare_xp: 500,
+  epic_xp: 900,
+  legendary_xp: 1500,
 };
 
-/**
- * buy_tier as the lab proves it: what the sheet sent, kept on the page (window.__labTierBought) for the proof to read,
- * and the tier applied to the army's progress as the game's facts would bring it.
- */
-const recordTierBought =
-  (store: NativeFactStore) => (call: { explorerId: number; attribute: string; scoutingKind?: string }) => {
-    const sent = { explorerId: call.explorerId, attribute: call.attribute, scoutingKind: call.scoutingKind ?? null };
-    (window as unknown as { __labTierBought?: unknown[] }).__labTierBought = [
-      ...((window as unknown as { __labTierBought?: unknown[] }).__labTierBought ?? []),
-      sent,
-    ];
-    const progress = store.require("ArmyProgress", { game_id: 1, explorer_id: call.explorerId });
-    const key = call.attribute.toLowerCase() as "battle" | "logistics" | "scouting" | "homecoming";
-    store.applyFacts([
-      {
-        model: "ArmyProgress",
-        key: "0x9a2",
-        value: { ...progress, [key]: progress[key] + 1, xp: progress.xp - LAB_PROGRESSION_RULES.uncommon_xp },
-      },
-    ] as never);
-    return Promise.resolve();
-  };
+/** Records the army panel's command at the network boundary; native tests prove its state changes. */
+const recordSkillPointSpent = (call: { explorerId: number; choice: SkillPointChoice }) => {
+  const sent = { explorerId: call.explorerId, choice: call.choice };
+  const target = window as unknown as { __labSkillPointSpent?: unknown[] };
+  target.__labSkillPointSpent = [...(target.__labSkillPointSpent ?? []), sent];
+  return Promise.resolve();
+};

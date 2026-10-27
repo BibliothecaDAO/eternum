@@ -47,13 +47,6 @@ export type SitePayoutSystemUpdate = {
   /** Whole troops the army lost in the winning exchange. */
   troopsLost: number;
 };
-/** An army's Upgrade: the attribute raised, the tier it reached and the XP it paid. */
-export type TierBoughtSystemUpdate = {
-  explorerId: ID;
-  attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming";
-  tier: number;
-  price: number;
-};
 export type ChestReward = { kind: "relics"; relics: ResourcesIds[] } | { kind: "lords"; amount: number };
 
 /** The actual opening result; LORDS amounts are whole units, as the reward-chest story records them. */

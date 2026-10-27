@@ -1,0 +1,47 @@
+import type { SkillPointChoice, SkillPointRank } from "@bibliothecadao/eternum";
+import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
+import { StructureType } from "@bibliothecadao/types";
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
+import type { IconMeaning } from "@/ui/design-system/icon";
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
+
+type SpendKind = SkillPointChoice["kind"];
+type ScoutingChoice = Extract<SkillPointChoice, { kind: "Scouting" }>["value"];
+export type AttributeKey = Lowercase<Exclude<SpendKind, "Stamina">>;
+export type ScoutKind = Lowercase<ScoutingChoice["kind"]>;
+
+/** Presentation and command construction for every permitted point use. */
+export const POINT_CHOICES = {
+  Battle: { key: "battle", mark: "order-rage", choice: () => ({ kind: "Battle", value: undefined }) },
+  Logistics: { key: "logistics", mark: "order-skill", choice: () => ({ kind: "Logistics", value: undefined }) },
+  Scouting: { key: "scouting", mark: "order-detection", choice: (kind) => ({ kind: "Scouting", value: kind }) },
+  Homecoming: {
+    key: "homecoming",
+    mark: "order-enlightenment",
+    choice: () => ({ kind: "Homecoming", value: undefined }),
+  },
+  Stamina: { key: "stamina", mark: "stamina", choice: (_kind, rank) => ({ kind: "Stamina", value: rank }) },
+} satisfies {
+  [K in SpendKind]: {
+    key: Lowercase<K>;
+    mark: IconMeaning;
+    choice: (kind: ScoutingChoice, rank: SkillPointRank) => Extract<SkillPointChoice, { kind: K }>;
+  };
+};
+
+/** Research side codes keep the lodge's choices in contract order. */
+export const SCOUTING_CHOICES = {
+  Camp: { key: "camp", side: research.KIND_CAMPS, icon: structureMeaning(StructureType.Camp, "frontier") },
+  Rift: { key: "rift", side: research.KIND_RIFTS, icon: structureMeaning(StructureType.Rift, "frontier") },
+  Beasts: { key: "beasts", side: research.KIND_BEASTS, icon: structureMeaning(StructureType.Beasts, "frontier") },
+} satisfies { [K in ScoutingChoice["kind"]]: { key: Lowercase<K>; side: number; icon: IconMeaning } };
+
+export const scoutingChoices = Object.entries(SCOUTING_CHOICES)
+  .map(([kind, option]) => ({
+    ...option,
+    name: RESEARCH_TREE.kinds[option.key],
+    choice: { kind: kind as ScoutingChoice["kind"], value: undefined },
+  }))
+  .sort((a, b) => a.side - b.side);
+
+export const pointChoices = Object.entries(POINT_CHOICES).map(([name, option]) => ({ ...option, name }));

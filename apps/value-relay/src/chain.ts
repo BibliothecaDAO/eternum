@@ -42,7 +42,7 @@ export const ledgerWithdrawalVoided =
       const provider = rpcAt(rpcUrl);
       const head = await readConfirmedLedgerHead(provider);
       const payment = await Effect.runPromise(ledgerPaymentRead(rpcUrl, address, head.number)(withdrawal));
-      if (payment?.paid) return false;
+      if (payment?.paid || withdrawal.prizeRank > 0) return false;
       if (payment && payment.seasonId !== withdrawal.seasonId) throw new Error("ledger_report_mismatch");
       const fields = await provider.callContract(
         {
@@ -65,7 +65,12 @@ export const ledgerReportAdapter =
       );
       if (previous?.paid) return;
       if (previous) {
-        if (previous.seasonId !== withdrawal.seasonId || BigInt(previous.amount) !== BigInt(withdrawal.amount))
+        if (
+          previous.seasonId !== withdrawal.seasonId ||
+          BigInt(previous.amount) !== BigInt(withdrawal.amount) ||
+          previous.prizeRank !== withdrawal.prizeRank ||
+          previous.prizeCount !== withdrawal.prizeCount
+        )
           throw new RelayFailure({ operation: "ledger_report_mismatch" });
         return;
       }
@@ -81,6 +86,8 @@ export const ledgerReportAdapter =
             withdrawal.transactionHash,
             String(amount & (2n ** 128n - 1n)),
             String(amount >> 128n),
+            String(withdrawal.prizeRank),
+            String(withdrawal.prizeCount),
           ],
         });
         const receipt = await provider.waitForTransaction(transaction.transaction_hash, { errorStates: [] });
@@ -92,7 +99,13 @@ export const ledgerReportAdapter =
       const reported = await Effect.runPromise(
         ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(withdrawal),
       );
-      if (!reported || reported.seasonId !== withdrawal.seasonId || BigInt(reported.amount) !== amount)
+      if (
+        !reported ||
+        reported.seasonId !== withdrawal.seasonId ||
+        BigInt(reported.amount) !== amount ||
+        reported.prizeRank !== withdrawal.prizeRank ||
+        reported.prizeCount !== withdrawal.prizeCount
+      )
         throw new Error("withdrawal_report_not_recorded");
     });
 

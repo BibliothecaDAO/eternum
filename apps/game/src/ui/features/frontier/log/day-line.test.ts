@@ -1,4 +1,5 @@
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
+import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
 
 import { campBeside, SITE } from "../sites/site-fixture";
@@ -61,13 +62,14 @@ describe("the day log's line for a story", () => {
         model: "ArmyProgressionRules",
         key: "0x101",
         value: {
+          common_xp: 100,
           game_id: 1,
           reveal_xp: 2,
           fixed_xp: 200,
-          uncommon_xp: 100,
-          rare_xp: 200,
-          epic_xp: 400,
-          legendary_xp: 800,
+          uncommon_xp: 250,
+          rare_xp: 500,
+          epic_xp: 900,
+          legendary_xp: 1500,
         },
       },
     ] as never);
@@ -76,11 +78,9 @@ describe("the day log's line for a story", () => {
     expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store)).toBe(
       "Troll cleared, +82 XP",
     );
-    expect(dayLogLine(story("TierBought", { price: "0x64" }, "Battle Uncommon"), store)).toBe(
-      "Battle Uncommon, −100 XP",
-    );
-    expect(dayLogLine(story("TierBought", { price: "12500" }, "Battle Legendary"), store)).toBe(
-      "Battle Legendary, −12.5K XP",
+    expect(dayLogLine(story("SkillPointSpent", { price: "0x64" }, "Battle Uncommon"), store)).toBe("Battle Uncommon");
+    expect(dayLogLine(story("SkillPointSpent", { price: "12500" }, "Battle Legendary"), store)).toBe(
+      "Battle Legendary",
     );
     // A clear of a site this client no longer holds keeps its title: no figure is guessed.
     expect(dayLogLine(story("SitePayout", { site_id: 999, reward: null }, "Troll cleared"), store)).toBe(
@@ -95,4 +95,21 @@ describe("the day log's line for a story", () => {
       "Building Constructed",
     );
   });
+});
+
+it.each([
+  [{ Shrine: 200 }, "Shrine used, +200 XP"],
+  [{ Well: 60 }, "Well used, +60 stamina"],
+  [{ Well: 5 }, "Well used, +5 stamina"],
+  [{ Well: 0 }, "Well used, +0 stamina"],
+])("Today and the Log use the same recorded site gain after the site and army are gone (%j)", (benefit, expected) => {
+  const { store } = campBeside();
+  store.applyFacts([{ model: "ExplorerTroops", key: "0x74", value: null }]);
+  const storyPayload = { explorer_id: 201, coord: { x: 3, y: 4 }, benefit };
+  const presentation = buildStoryEventPresentation(
+    { storyType: "SiteUsed", storyPayload, entityId: 201, ownerAddress: "0x111", viewerAddress: "0x111" } as never,
+    store,
+  );
+  expect(presentation.title).toBe(expected);
+  expect(dayLogLine({ story: "SiteUsed", storyPayload, presentation }, store)).toBe(expected);
 });

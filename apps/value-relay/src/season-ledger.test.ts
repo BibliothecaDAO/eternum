@@ -42,7 +42,7 @@ beforeEach(() => {
     request.entrypoint === "get_season"
       ? season
       : request.entrypoint === "get_preset"
-        ? [...Array(4).fill("0"), "5000", ...Array(13).fill("0")]
+        ? [...Array(4).fill("0"), "5000", ...Array(15).fill("0")]
         : request.entrypoint === "get_season_mmr"
           ? ["200"]
           : ["0x2", "0", "0"],

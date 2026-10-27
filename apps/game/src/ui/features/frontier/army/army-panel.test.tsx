@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+
+import bindings from "../../../../../../../contracts/l3/world-native/schema/bindings.json";
 
 import { EARLY_ARMY } from "../research/progression-fixture";
 import { type ArmyDetailFacts, readArmyDetail } from "./army-detail";
@@ -31,31 +33,66 @@ const footFor = (army: ArmyDetailFacts, attribute: string) => {
   return host.textContent;
 };
 
-// buy_tier writes the new level first, then refills up to 30 under the maximum that level gives (relics.cairo).
 it.each([
   [120, 20],
-  [119, 21],
-  [90, 30],
-])("previews buying uncommon Logistics at %s/120 with the %s stamina it refills under 140", (current, refill) => {
-  expect(footFor({ ...EARLY_ARMY, xp: 100, stamina: { current, max: 120, perExplore: 20 } }, "logistics")).toContain(
-    `100 XP · refills ${refill} stamina`,
+  [119, 20],
+  [90, 20],
+])("previews Common Logistics at %s/120 with +%s stamina", (current, refill) => {
+  const army = { ...EARLY_ARMY, xp: 100, points: [1, 0, 0, 0, 0], stamina: { current, max: 120, perExplore: 20 } };
+  footFor(army, "logistics");
+  expect(readArmyDetail(army).attributes.find(({ key }) => key === "logistics")?.next).toMatchObject({
+    point: 1,
+    refill,
+  });
+  expect(host.textContent).toContain(`+${refill}`);
+});
+
+it("uses the lowest fitting point and clamps its refill to the new Logistics maximum", () => {
+  const army = {
+    ...EARLY_ARMY,
+    points: [1, 0, 1, 1, 0],
+    progress: { ...EARLY_ARMY.progress, logistics: 1 },
+    stamina: { current: 140, max: 140, perExplore: 20 },
+  };
+  expect(readArmyDetail(army).attributes.find(({ key }) => key === "logistics")?.next).toMatchObject({
+    point: 3,
+    tier: 2,
+    refill: 25,
+  });
+});
+
+it("spends the selected point on Stamina, doubles its refill and prevents wasting it on a full bar", () => {
+  const spent = vi.fn();
+  const army = { ...EARLY_ARMY, points: [1, 0, 1, 0, 0], stamina: { current: 30, max: 120, perExplore: 20 } };
+  act(() => root.render(<ArmyDetail army={readArmyDetail(army)} sending={false} choosing onLevelUp={spent} />));
+  act(() => host.querySelector<HTMLButtonElement>('[data-attribute="stamina"]')!.click());
+  act(() => host.querySelector<HTMLButtonElement>('[aria-label="Spend III point"]')!.click());
+  const refill = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Refill")!;
+  expect(host.textContent).toContain("+80");
+  act(() => refill().click());
+  expect(spent).toHaveBeenCalledWith({ kind: "Stamina", value: 3 });
+  act(() =>
+    root.render(
+      <ArmyDetail
+        army={readArmyDetail({ ...army, stamina: { ...army.stamina, current: 120 } })}
+        sending={false}
+        choosing
+        onLevelUp={spent}
+      />,
+    ),
+  );
+  expect(refill().disabled).toBe(true);
+  act(() => host.querySelector<HTMLButtonElement>('[data-attribute="battle"]')!.click());
+  expect([...host.querySelectorAll("button")].find((button) => button.textContent === "Level up")!.disabled).toBe(
+    false,
   );
 });
 
-it("refills under a later Logistics level's raised maximum: rare from 140/140 refills 30, not nothing", () => {
-  const uncommon: ArmyDetailFacts = {
-    ...EARLY_ARMY,
-    xp: 200,
-    stamina: { current: 140, max: 140, perExplore: 20 },
-    progress: { ...EARLY_ARMY.progress, logistics: 2 },
-  };
-  expect(footFor(uncommon, "logistics")).toContain("200 XP · refills 30 stamina");
-});
-
-it("refills nothing for a full army buying any other attribute, whose maximum it does not raise", () => {
-  const full = { ...EARLY_ARMY, xp: 100, stamina: { current: 120, max: 120, perExplore: 20 } };
-  expect(readArmyDetail(full).refill).toBe(0);
-  expect(footFor(full, "battle")).toContain("100 XP · refills 0 stamina");
+it("shows empty sockets and the inventory beside a cumulative XP milestone", () => {
+  act(() => root.render(<ArmyDetail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
+  expect(host.querySelectorAll('.ui-tier[data-tier="0"]')).toHaveLength(4);
+  expect(host.querySelector('[aria-label="Skill points"]')!.textContent).toBe("I0II0III0IV0V0");
+  expect(host.textContent).toContain("12 / 100 XP");
 });
 
 it("reads on its first step when the stamina is full again and what each tile explored sends home", () => {
@@ -107,4 +144,41 @@ it("reads its stamina on one line: 18/140, a bar of one segment per explore's 20
   const over = line.previousElementSibling!;
   expect(over.textContent).toMatch(/\+75 a tile.*Refill$/);
   expect(over.textContent).not.toMatch(/18\/140|Full in/);
+});
+
+const variants = (name: string) =>
+  bindings.commandAbi.find((item) => item.name === `world_native::progression::${name}`)!.variants!;
+
+it("offers and submits every skill-point use and Scouting kind in the generated command catalog", () => {
+  const spent = vi.fn();
+  const army = readArmyDetail({ ...EARLY_ARMY, points: [1, 1, 1, 1, 1] });
+  act(() => root.render(<ArmyDetail army={army} sending={false} choosing onLevelUp={spent} />));
+  const uses = variants("SkillPointUse");
+  expect([...host.querySelectorAll("[data-attribute]")].map((button) => button.getAttribute("data-attribute"))).toEqual(
+    uses.map(({ name }) => name.toLowerCase()),
+  );
+  const submit = () =>
+    act(() =>
+      [...host.querySelectorAll("button")]
+        .find((button) => /^(Level up|Refill)$/.test(button.textContent ?? ""))!
+        .click(),
+    );
+  for (const { name } of uses) {
+    act(() => host.querySelector<HTMLButtonElement>(`[data-attribute="${name.toLowerCase()}"]`)!.click());
+    if (name === "Scouting") {
+      const kinds = variants("ScoutingKind");
+      expect(
+        [...host.querySelectorAll("[data-scout-kind]")].map((button) => button.getAttribute("data-scout-kind")),
+      ).toEqual(kinds.map(({ name }) => name.toLowerCase()));
+      for (const kind of kinds) {
+        act(() => host.querySelector<HTMLButtonElement>(`[data-scout-kind="${kind.name.toLowerCase()}"]`)!.click());
+        submit();
+        expect(spent).toHaveBeenLastCalledWith({ kind: name, value: { kind: kind.name, value: undefined } });
+      }
+    } else {
+      submit();
+      expect(spent).toHaveBeenLastCalledWith({ kind: name, value: name === "Stamina" ? 1 : undefined });
+    }
+  }
+  expect(spent).toHaveBeenCalledTimes(uses.length - 1 + variants("ScoutingKind").length);
 });

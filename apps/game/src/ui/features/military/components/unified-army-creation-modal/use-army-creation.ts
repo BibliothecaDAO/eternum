@@ -573,6 +573,6 @@ async function submitArmyCreation(
     await actions.addTroopsToGuard({ ...troops, slot: target.slot });
     return;
   }
-  await actions.createExplorerArmy({ ...troops, spawnDirection: target.direction });
+  await actions.createExplorerArmy({ ...troops, spawnDirection: target.direction, slot: 0 });
   useUIStore.getState().bumpMilitaryMapVersion();
 }

@@ -263,8 +263,10 @@ it.each([
 
 it("shows the tier an Upgrade reached and the XP it cost from history", () => {
   expect(
-    buildStoryEventPresentation(story("TierBought", { explorer_id: 7, attribute: "Logistics", tier: 3, price: 200 })),
-  ).toMatchObject({ title: "Logistics rare", description: "Lord 0123's army · 200 XP" });
+    buildStoryEventPresentation(
+      story("SkillPointSpent", { explorer_id: 7, choice: "Logistics", tier: 3, point_rank: 3, stamina: 30 }),
+    ),
+  ).toMatchObject({ title: "Logistics rare", description: "Lord 0123's army · rare point · +30 stamina" });
 });
 
 /** A story the viewer's own account told. */
@@ -438,7 +440,8 @@ describe("every story the chain can tell", () => {
     GuardDeleteStory: { structure_id: 5, slot: 0 },
     TroopsTransferred: { source: { Explorer: 7 }, target: { Explorer: 8 }, amount },
     LordsWithdrawn: { account: "0x111", amount },
-    TierBought: { explorer_id: 7, attribute: "Battle", tier: 2, price: 100 },
+    SiteUsed: { explorer_id: 7, coord, benefit: { Shrine: 200 } },
+    SkillPointSpent: { explorer_id: 7, choice: "Battle", tier: 2, point_rank: 2, stamina: 30 },
     RewardChestOpened: { explorer_id: 7, structure_id: 5, coord, amount: 17 },
     SitePayout: {
       structure_id: 5,
@@ -884,4 +887,15 @@ it("writes a hyperstructure share's points whole, from the contract's millionths
   expect(
     buildStoryEventPresentation(story("HyperstructurePoints", { player: "0x0", points: "5000000000" })).description,
   ).toMatch(/ \+5,000 points$/);
+});
+
+it.each([
+  [{ Shrine: 200 }, "Shrine used, +200 XP"],
+  [{ Well: 60 }, "Well used, +60 stamina"],
+  [{ Well: 5 }, "Well used, +5 stamina"],
+  [{ Well: 0 }, "Well used, +0 stamina"],
+])("shows the recorded site benefit without needing the consumed site or a surviving army (%j)", (benefit, title) => {
+  expect(
+    buildStoryEventPresentation(story("SiteUsed", { explorer_id: 7, coord: { x: 3, y: 4 }, benefit })),
+  ).toMatchObject({ title, description: "Lord 0123's army" });
 });

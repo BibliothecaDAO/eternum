@@ -2,11 +2,19 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPanel, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
-import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Tier, tierNumeral } from "@/ui/design-system/kit/words";
+import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { useState } from "react";
 
-import { type Branch, firstMissing, type Need, needLine, type NodeState, type TreeNode } from "./research-tree";
+import {
+  type Branch,
+  researchSideNode,
+  firstMissing,
+  type Need,
+  needLine,
+  type NodeState,
+  type TreeNode,
+} from "./research-tree";
 
 /**
  * Research as a tree (the owner's pick, 20 October: "Branches"): three branches side by side, Economy, Army and Castle;
@@ -129,8 +137,23 @@ export const NodeTile = ({
 }) => {
   const look = STATE_LOOK[node.state];
   const reading =
-    node.maxTier === 4 ? (
-      <HudTier tier={tierOf(node)} />
+    node.maxTier === 5 ? (
+      node.sides?.length === 2 ? (
+        <span className="flex gap-2">
+          {node.sides.map((side) => (
+            <span
+              key={side.name}
+              className="flex items-center gap-0.5"
+              aria-label={`${side.name} ${tierNumeral(side.tier as Rank)}`}
+            >
+              <Icon name={side.icon} size={14} />
+              <HudTier tier={side.tier as Rank} />
+            </span>
+          ))}
+        </span>
+      ) : (
+        <HudTier tier={tierOf(node)} />
+      )
     ) : (
       <span className="text-hud-label tabular-nums text-hud-muted">
         {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}
@@ -170,7 +193,7 @@ const tileTip = (node: TreeNode) =>
 
 /** The picked node's choice, at the panel's foot: what its next tier gives or which side it takes, its price, Research. */
 const NodeChoice = ({
-  node,
+  node: rowNode,
   sending,
   fix,
   onResearch,
@@ -182,7 +205,10 @@ const NodeChoice = ({
   onResearch: (side: number) => unknown;
   onClose: () => void;
 }) => {
-  const [side, setSide] = useState(0);
+  const [side, setSide] = useState(() =>
+    Math.max(0, rowNode.sides?.findIndex((option) => option.state !== "done") ?? 0),
+  );
+  const node = researchSideNode(rowNode, side);
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
   const verb = node.sides?.[side]?.name ?? (node.nextTier ? `${node.name} ${tierNumeral(node.nextTier)}` : node.name);
@@ -220,7 +246,7 @@ const NodeChoice = ({
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-hud-strong text-hud-ink">{option.name}</span>
                 <span className="truncate text-hud-label tabular-nums text-hud-good">
-                  {RESEARCH_TREE.step(option.now, option.next)}
+                  {option.state === "done" ? option.now : RESEARCH_TREE.step(option.now, option.next)}
                 </span>
               </span>
             </button>
@@ -287,8 +313,8 @@ const needIcon = (need: Need): IconMeaning =>
 
 /** The node's tier and its next as gems, complete at Legendary, or a one-off node's price. */
 const LevelLine = ({ node }: { node: TreeNode }) => {
-  if (node.maxTier === 4 && node.nextTier) return <HudTierStep from={tierOf(node)} to={node.nextTier} />;
-  if (node.maxTier === 4)
+  if (node.maxTier === 5 && node.nextTier) return <HudTierStep from={tierOf(node)} to={node.nextTier} />;
+  if (node.maxTier === 5)
     return (
       <span className="flex items-center gap-1.5 text-hud-label text-hud-muted">
         <HudTier tier={tierOf(node)} />
@@ -303,4 +329,4 @@ const LevelLine = ({ node }: { node: TreeNode }) => {
 };
 
 /** A tiered row's tier as the kit counts it, common (1) to legendary (5). */
-const tierOf = (node: TreeNode) => (node.tier + 1) as Tier;
+const tierOf = (node: TreeNode) => node.tier as Rank;

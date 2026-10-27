@@ -1,15 +1,20 @@
 import { formatFigure } from "@bibliothecadao/types";
-import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
+import {
+  battleBonusBps,
+  homecomingBps,
+  logisticsStamina,
+  scoutingIncrementBps,
+  lowestFittingPoint,
+} from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 /** An army's XP and attribute tiers, and the game's XP rules, exactly as the native store carries them. */
 export type ArmyProgressFacts = NativeRows["ArmyProgress"];
 type Attribute = "Battle" | "Logistics" | "Scouting" | "Homecoming";
-type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
 
 const ATTRIBUTES: readonly Attribute[] = ["Battle", "Logistics", "Scouting", "Homecoming"];
 
-/** The army's tier in one attribute, 1 (common) to 5 (legendary). */
+/** The army's tier in one attribute, 0 (untrained) to 5 (legendary). */
 const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute): number =>
   ({
     Battle: progress.battle,
@@ -26,31 +31,11 @@ export const attributeTiers = (progress: ArmyProgressFacts): readonly [number, n
   progress.homecoming,
 ];
 
-/**
- * What the army's XP goes toward next: the cheapest tier it can still buy, which is the next tier of its lowest
- * attribute (every attribute shares the contract's one price table). None once all four are legendary.
- */
-export const nextTierGoal = (
-  progress: ArmyProgressFacts,
-  rules: ProgressionRulesFacts,
-): { price: number; tier: number } | undefined => {
-  const lowest = Math.min(...attributeTiers(progress));
-  const price = nextTierPrice(rules, lowest);
-  return price === null ? undefined : { price, tier: lowest + 1 };
-};
+/** Attributes for which the army holds a fitting point. */
+export const availableRankUps = (progress: ArmyProgressFacts): Attribute[] =>
+  ATTRIBUTES.filter((attribute) => lowestFittingPoint(progress, attributeLevel(progress, attribute) + 1) !== undefined);
 
-/** What the next tier above `tier` costs in XP, as the contract prices it; null at legendary. */
-export const nextTierPrice = (rules: ProgressionRulesFacts, tier: number): number | null =>
-  [rules.uncommon_xp, rules.rare_xp, rules.epic_xp, rules.legendary_xp][tier - 1] ?? null;
-
-/** The attributes the army can Upgrade now: below legendary, with the next tier's price in hand. */
-export const affordableUpgrades = (progress: ArmyProgressFacts, rules: ProgressionRulesFacts): Attribute[] =>
-  ATTRIBUTES.filter((attribute) => {
-    const price = nextTierPrice(rules, attributeLevel(progress, attribute));
-    return price !== null && progress.xp >= price;
-  });
-
-/** The XP an army earned between two readings; an Upgrade spends XP and earns none. */
+/** Lifetime XP earned between two readings. */
 export const xpGained = (before: Pick<ArmyProgressFacts, "xp">, after: Pick<ArmyProgressFacts, "xp">): number =>
   Math.max(0, after.xp - before.xp);
 
@@ -66,7 +51,7 @@ const ATTRIBUTE_LOOK: Record<Attribute, { atTier: (tier: number) => number; unit
   Battle: { atTier: (tier) => battleBonusBps(tier) / 100, unit: "%" },
   Logistics: { atTier: logisticsStamina, unit: "" },
   Scouting: {
-    // Cumulative on one kind: +10%, +30%, +60%, +100%.
+    // Cumulative on one kind across all five ranks.
     atTier: (tier) =>
       Array.from({ length: tier }, (_, index) => scoutingIncrementBps(index + 1)).reduce((sum, bps) => sum + bps, 0) /
       100,

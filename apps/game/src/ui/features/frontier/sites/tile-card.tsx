@@ -19,6 +19,7 @@ import {
   entityMapPosition,
   getStructureName,
   isViewerOwner,
+  ruinDisappeared,
 } from "@bibliothecadao/eternum";
 import {
   safeInteger,
@@ -52,6 +53,8 @@ import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
 
 const SITE_MODELS = [
   "ExpeditionSite",
+  "ExpeditionDiscovery",
+  "LordsBudget",
   "SiteChest",
   "ExplorerTroops",
   "ArmyProgress",
@@ -101,7 +104,7 @@ export const useSelectedTarget = (): AttackTarget | null => {
 const standingSite = (store: NativeFactStore, tile: TileSpatialRenderable): AttackTarget | null => {
   const key = { game_id: configManager.getActiveGameId(), entity_id: tile.occupierId };
   const site = store.get("ExpeditionSite", key);
-  if (!site || site.clear) return null;
+  if (!site || site.clear || ruinDisappeared(store, site)) return null;
   return { kind: "site", site, structure: store.require("Structure", key), tile };
 };
 
@@ -158,6 +161,10 @@ export const TileCard = ({
     const signer = account.account;
     const sent = fightSentBy(attack.army, selected, plan);
     try {
+      if (selected.kind === "site" && ruinDisappeared(setup.store, selected.site))
+        throw new Error("This ruin has disappeared.");
+      if (readTarget(setup.store, selected, attack).chest?.funded === false)
+        throw new Error("Today's LORDS budget cannot fund this ruin.");
       const fought = await sendOnce("army", armyId, { order: "attack" }, () => {
         fightIsSent();
         playUnitCommandSound("attack");
@@ -173,13 +180,16 @@ export const TileCard = ({
     }
   };
 
-  const verb = siteVerb({
-    hasArmy: actor !== null,
-    inReach: plan.fight !== undefined,
-    approach,
-    stamina,
-    attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
-  });
+  const verb: SiteVerb | null =
+    plan.chest?.funded === false
+      ? { kind: "blocked", reason: "Today's LORDS budget cannot fund this ruin." }
+      : siteVerb({
+          hasArmy: actor !== null,
+          inReach: plan.fight !== undefined,
+          approach,
+          stamina,
+          attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
+        });
 
   return (
     <SiteCardView
@@ -192,6 +202,7 @@ export const TileCard = ({
       fight={plan.fight}
       pay={sitePay(plan)}
       chest={plan.chest ? { tier: (plan.chest.tier + 1) as Tier, lords: plan.chest.amount } : undefined}
+      ruinChoice={plan.chest ? { depth: plan.chest.depth } : undefined}
       xp={plan.xp}
       verb={verb}
       choices={actor || !realm ? undefined : choices}
@@ -291,7 +302,7 @@ const useSiteChoices = (selected: AttackTarget, wanted: boolean): SiteChoice[] =
   });
 };
 
-/** What a camp or rift pays home and what of it fits; a ruin pays its chest, beasts only XP. */
+/** What a cleared site pays home and what fits; a ruin pays its chest. */
 const sitePay = (plan: SiteCardPlan) => {
   const icon = plan.payout && PAY_ICONS[plan.payout.resourceId];
   return plan.payout && icon ? { icon, amount: plan.payout.amount, fits: plan.payout.fits } : null;

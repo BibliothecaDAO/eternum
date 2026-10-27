@@ -58,6 +58,8 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
       durableObjectsPersist: join(root, "storage"),
     });
   const withdrawal = {
+    prizeRank: 0,
+    prizeCount: 0,
     blockNumber: 0,
     chainId: "0x1",
     seasonId: 1,

@@ -24,9 +24,28 @@ const story = (
     ...extra,
   }) as unknown as ProcessedStoryEvent;
 const fight = (id: string, at: number, attacker: string, defender: string) =>
-  story(id, at, "BattleEvent", attacker, { attacker: { player: attacker }, defender: { player: defender } });
+  story(
+    id,
+    at,
+    "BattleEvent",
+    attacker,
+    { attacker: { player: attacker }, defender: { player: defender } },
+    {
+      participants: [attacker, defender],
+    },
+  );
 const capture = (id: string, at: number, taker: string, holder: string, extra: Partial<ProcessedStoryEvent> = {}) =>
-  story(id, at, "StructureCapturedStory", taker, { previous_owner: holder, new_owner: taker }, extra);
+  story(
+    id,
+    at,
+    "StructureCapturedStory",
+    taker,
+    { previous_owner: holder, new_owner: taker },
+    {
+      participants: [taker, holder],
+      ...extra,
+    },
+  );
 
 /** The ids Events shows for these stories, as viewer 0x1, with structure 900 a Hyperstructure when `hyper`. */
 const ids = (stories: ProcessedStoryEvent[], filter: EventsFilter, hyper = false) =>

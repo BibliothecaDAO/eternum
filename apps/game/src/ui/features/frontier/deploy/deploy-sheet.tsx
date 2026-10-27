@@ -6,6 +6,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { showDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
 import { toast } from "@/ui/features/event-feed/notify";
+import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { useDeployRing } from "@/ui/features/military/components/unified-army-creation-modal/use-deploy-ring";
 import { ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -38,6 +39,15 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   const { center, ring } = useDeployRing(realm);
   const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);
   const direction = deployDirection(ring, ordered);
+  const pickedSlot = useUIStore((state) => state.pendingMilitaryAction?.slot);
+  const start = plan?.open.find((slot) => slot.slot === pickedSlot);
+  const pickSlot = (slot: number) =>
+    openArmyDeployment({
+      structureId: safeInteger(realm.entity_id),
+      isExplorer: true,
+      slot,
+      direction: direction ?? undefined,
+    });
   const realmId = safeInteger(realm.entity_id);
   const goToPlace = useGoToFrontierPlace(realm);
   useMapUnderDeploy(goToPlace);
@@ -48,10 +58,17 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   /** The sheet closes as the army leaves; its slot on the dock carries the wait, and a refusal says why there. */
   const deploy = async () => {
     const troops = plan?.troops;
-    if (!troops || direction === null || !preview) return;
+    if (!troops || direction === null || !preview || !start) return;
     try {
-      await sendOnce("deploy", realmId, true, async () => {
-        const sent = await deployArmy(requireActiveGameClient().actions, realm, troops, preview.count, direction);
+      await sendOnce("deploy", realmId, start.slot, async () => {
+        const sent = await deployArmy(
+          requireActiveGameClient().actions,
+          realm,
+          troops,
+          preview.count,
+          direction,
+          start.slot,
+        );
         onClose();
         return sent;
       });
@@ -67,10 +84,11 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       count={preview?.count}
       amount={{ most: range.max, held: range.wheatMax < range.troopsMax ? range.max : (plan?.troops?.atHome ?? 0) }}
       onCount={setCount}
-      start={plan?.next ?? undefined}
+      start={start}
+      slots={{ allowed: realm.base.troop_max_explorer_count, open: plan?.open, onPick: pickSlot }}
       wheatCost={preview?.wheatCost}
-      tile={plan?.next && center ? (direction === null ? "none" : "open") : undefined}
-      canDeploy={Boolean(plan?.troops && preview && direction !== null && plan.next)}
+      tile={start && center ? (direction === null ? "none" : "open") : undefined}
+      canDeploy={Boolean(plan?.troops && preview && direction !== null && start)}
       sending={deploying}
       onDeploy={() => void deploy()}
       wheatShort={

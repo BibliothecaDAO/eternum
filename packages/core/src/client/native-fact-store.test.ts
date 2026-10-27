@@ -553,22 +553,27 @@ describe("declared fact absence", () => {
     store.applyFacts([
       set("0x70", "ArmySlot", occupied),
       set("0x72", "ArmyProgress", {
+        common_points: 0,
+        uncommon_points: 0,
+        rare_points: 0,
+        epic_points: 0,
+        legendary_points: 0,
         game_id: 1,
         explorer_id: army.explorer_id,
         xp: 17,
         battle: 3,
         logistics: 3,
-        scouting: 1,
+        scouting: 0,
         scouting_kinds: 0,
         homecoming: 1,
       }),
     ]);
     expect(resolveExplorerTroops(store, army)?.stamina).toEqual({ amount: 7n, settled_at: 17, remainder: 0 });
     expect(resolveExplorerTroops(store, army)?.staminaMax).toBe(
-      Number(preset.rules.troop_stamina_config.stamina_knight_max) + 50,
+      Number(preset.rules.troop_stamina_config.stamina_knight_max) + 75,
     );
-    // Rare Battle deals 30% more, in the basis points Combat and the forecast read; rare Logistics adds 50.
-    expect(resolveExplorerTroops(store, army)?.boosts.incr_damage_dealt_percent_num).toBe(3_000);
+    // Rare Battle deals 45% more, in the basis points Combat and the forecast read; Rare Logistics adds 75.
+    expect(resolveExplorerTroops(store, army)?.boosts.incr_damage_dealt_percent_num).toBe(4_500);
     store.applyFacts([set("0x70", "ArmySlot", { ...occupied, explorer_id: army.explorer_id + 1n })]);
     expect(() => resolveExplorerTroops(store, army)).toThrow("occupant mismatch");
     store.applyFacts([remove("0x70", "ArmySlot")]);
@@ -578,7 +583,7 @@ describe("declared fact absence", () => {
         structure_id: 7,
         epoch: "0",
         empty_reveals: 1,
-        ruin_found: true,
+        ruin_cleared: true,
       }),
     ]);
     const counter = { game_id: 1, structure_id: 7, epoch: 0n };
@@ -595,7 +600,7 @@ describe("declared fact absence", () => {
     store.setSnapshot({ gameId: 1, complete: true, timestamp: 350 });
     expect(resolveExplorerTroops(store, army)).toBeUndefined();
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
-    expect(store.requireOrAbsent("ExpeditionDiscovery", counter).known?.ruin_found).toBe(true);
+    expect(store.requireOrAbsent("ExpeditionDiscovery", counter).known?.ruin_cleared).toBe(true);
     for (const epoch of [1n, 2n])
       expect(store.requireOrAbsent("ExpeditionDiscovery", { ...counter, epoch }).unknown).toContain(
         "OUTSIDE_SNAPSHOT_SCOPE",

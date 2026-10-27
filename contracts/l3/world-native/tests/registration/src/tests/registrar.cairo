@@ -823,12 +823,25 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     let guards = IGuardsDispatcher { contract_address: d.games };
     let category: u8 = guards.guard(GuardKey { game_id, structure_id: home.entity_id, slot: 0 }).troops.category.into();
     assert!(
+        !execute_in_game(
+            d,
+            game_id,
+            Command::CreateExplorer(
+                CreateExplorer {
+                    slot: 1, structure_id: home.entity_id, category, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                },
+            ),
+            301,
+        ),
+    );
+    assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).len(), 0);
+    assert!(
         execute_in_game(
             d,
             game_id,
             Command::CreateExplorer(
                 CreateExplorer {
-                    structure_id: home.entity_id, category, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                    slot: 0, structure_id: home.entity_id, category, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
                 },
             ),
             301,
@@ -988,13 +1001,13 @@ fn yesterdays_armies_leave_todays_army_cap_free() {
     let troops = GameState { contract_address: d.games };
     let home = ResourceKey { game_id, entity_id: 1 };
     assert!(execute_in_game(d, game_id, muster_command(category, 0), 351));
-    assert!(execute_in_game(d, game_id, muster_command(category, 1), 352));
-    assert!(!execute_in_game(d, game_id, muster_command(category, 2), 353));
+    assert!(execute_in_game(d, game_id, muster_slot_command(category, 1, 1), 352));
+    assert!(!execute_in_game(d, game_id, muster_slot_command(category, 2, 2), 353));
     let yesterday = structures.home_armies(home);
     // The next day both armies are dead by rule; the realm musters its full cap again.
     let tomorrow = day_start(d, game_id, 1);
     assert!(execute_in_game(d, game_id, muster_command(category, 0), tomorrow + 1));
-    assert!(execute_in_game(d, game_id, muster_command(category, 1), tomorrow + 2));
+    assert!(execute_in_game(d, game_id, muster_slot_command(category, 1, 1), tomorrow + 2));
     for id in yesterday {
         assert!(troops.resolved_explorer(ExplorerKey { game_id, explorer_id: *id }).is_none());
     }

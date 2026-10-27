@@ -141,9 +141,10 @@ describe("verified preset configuration facts", () => {
     for (const [trained, maximum, explores, attacks] of [
       [0, 120, 6, 4],
       [1, 140, 7, 4],
-      [2, 170, 8, 5],
-      [3, 210, 10, 7],
-      [4, 270, 13, 9],
+      [2, 165, 8, 5],
+      [3, 195, 9, 6],
+      [4, 230, 11, 7],
+      [5, 270, 13, 9],
     ] as const) {
       const bar = musterStamina({ slot: 0, inherited: null }, troop, 100, stamina, trained, tick);
       expect(bar).toEqual({ amount: maximum, max: maximum });

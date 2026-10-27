@@ -72,6 +72,8 @@ beforeEach(() => {
         closed,
         approved.presetId,
         ledgerSeed,
+        { low: 0, high: 0 },
+        { low: 0, high: 0 },
       ]);
     if (entrypoint === "get_preset")
       return [
@@ -93,6 +95,8 @@ beforeEach(() => {
         150,
         approved.dayUnit,
         approved.claimWindow,
+        10000,
+        0,
       ].map(String);
     throw new Error(`unexpected ${entrypoint}`);
   });

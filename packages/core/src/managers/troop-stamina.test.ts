@@ -112,7 +112,7 @@ describe("stamina under one game's rules", () => {
     for (const tier of [TroopTier.T1, TroopTier.T2, TroopTier.T3]) {
       const troop = { category: TroopType.Knight, tier };
       expect(musterStamina({ slot: 0, inherited: null }, troop, 101, rules, 0, 60)).toEqual({ amount: 120, max: 120 });
-      expect(musterStamina({ slot: 0, inherited: null }, troop, 101, rules, 2, 60)).toEqual({ amount: 170, max: 170 });
+      expect(musterStamina({ slot: 0, inherited: null }, troop, 101, rules, 2, 60)).toEqual({ amount: 165, max: 165 });
       expect(musterStamina({ slot: 0, inherited: knight(180, 101).stamina }, troop, 102, rules, 0, 60)).toEqual({
         amount: 120,
         max: 120,

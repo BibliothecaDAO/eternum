@@ -8,7 +8,6 @@ import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { HudIconButton, HudNotice, HudSheet, HudTier } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
-  DEPLOY_FILLS_FIRST,
   OFFLINE,
   PAYOUTS_PAUSED,
   startsOn,
@@ -52,7 +51,7 @@ import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
-import { ownerDayLog } from "./today-log-fixture";
+import { ownerDayLog, siteUseDayLog } from "./today-log-fixture";
 import { SeasonList, type SeasonListRow } from "@/ui/features/frontier/board/season-list";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
@@ -215,6 +214,7 @@ const RUIN_CARD: LabSite = {
   fight: WIN(2, 1_250, 3_400, 1_520),
   pay: null,
   chest: { tier: 3, lords: 128 },
+  ruinChoice: { depth: "Surface" },
   xp: 145,
   verb: ATTACK_30,
 };
@@ -283,14 +283,9 @@ const tile = (
   standing: LabTile["standing"],
 ): LabTile => ({ key, icon, name, tip: "", gives, takes, standing });
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"]) =>
-  ({ kind: "price", labor, short }) as const;
-/** An open training building at Uncommon: new armies start one tier up in its attribute. */
-const TRAINS = { icon: "order-rage", value: <HudTier tier={2} /> } as const;
-/** A training building at Common: new armies start at I in its attribute. */
-const COMMON_TRAINS = { icon: "order-rage", value: <HudTier tier={1} /> } as const;
-/** A training building waiting for the Barracks at Rare (III). */
-const LOCKED = { kind: "locked", gate: 3 } as const;
-
+  ({ kind: "price", prices: [{ of: "labor", amount: labor }], short }) as const;
+/** A training building grants Common to new armies. */
+const TRAINS = { icon: "order-rage", value: <HudTier tier={1} /> } as const;
 /**
  * A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor, the
  * Workshop 3h 10m from its 10,000.
@@ -308,8 +303,20 @@ const BUILD_TILES: LabTile[] = [
   tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(6_800)),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(5_100)),
   tile("war", "war-hall", TRAINING_BUILDINGS[0], TRAINS, 2, { kind: "built" }),
-  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, price(3_000)),
-  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, price(3_000)),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, {
+    kind: "price",
+    prices: [
+      { of: "essence", amount: 6_000 },
+      { of: "labor", amount: 1_500 },
+    ],
+  }),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, {
+    kind: "price",
+    prices: [
+      { of: "essence", amount: 6_000 },
+      { of: "labor", amount: 1_500 },
+    ],
+  }),
   tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...TRAINS, icon: "order-enlightenment" }, 2, { kind: "built" }),
 ];
 /** A fresh realm: the training buildings locked behind the Barracks at Rare. */
@@ -318,11 +325,19 @@ const EARLY_TILES: LabTile[] = [
   tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, 1, price(2_000)),
   tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(800)),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(300)),
-  // The training buildings are still at Common (I), each locked behind the Barracks.
-  tile("war", "war-hall", TRAINING_BUILDINGS[0], COMMON_TRAINS, 2, LOCKED),
-  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...COMMON_TRAINS, icon: "order-skill" }, 2, LOCKED),
-  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...COMMON_TRAINS, icon: "order-detection" }, 2, LOCKED),
-  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...COMMON_TRAINS, icon: "order-enlightenment" }, 2, LOCKED),
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], TRAINS, 2, { kind: "locked", purchases: 2 }),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, {
+    kind: "locked",
+    purchases: 2,
+  }),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, {
+    kind: "locked",
+    purchases: 2,
+  }),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...TRAINS, icon: "order-enlightenment" }, 2, {
+    kind: "locked",
+    purchases: 2,
+  }),
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,
@@ -400,7 +415,7 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
  * A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. Today's
  * share is 12 LORDS and a common chest holds two shares.
  */
-const SEASON_POOL_FIGURES = { lords: 1_000_000, today: 50_000 };
+const SEASON_POOL_FIGURES = { lords: 700_000, prize: { lords: 300_000, topN: 10 }, today: 35_000 };
 const SEASON_COMMON_CHEST = { lords: 24 };
 const OWN_ROW: SeasonListRow = {
   key: "you",
@@ -477,6 +492,7 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
 
 const STATES = {
   ...FIGHT_STATES,
+  "today-sites": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-sites" },
   merge: { clock: CLOCK, stores: STORES, armies: ARMIES, merge: true },
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   "armies-open": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 2) },
@@ -686,6 +702,7 @@ const STATES = {
     armies: [],
   },
   build: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build" },
+  "build-training": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-training" },
   "build-early": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-early" },
   castle: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle" },
   "castle-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle-short" },
@@ -932,7 +949,7 @@ type LabState = {
   refill?: number;
   /** What Next up reads beyond the state's armies, selection, hour and stores. */
   nextUp?: Partial<NextUpFacts>;
-  results?: "today" | "today-earlier" | "today-failed" | "over" | "over-strong";
+  results?: "today" | "today-sites" | "today-earlier" | "today-failed" | "over" | "over-strong";
   /** The realm's LORDS on the season-over card: still to withdraw, or past the season's close. */
   seasonLords?: "open" | "closed";
   season?: "list" | "detail" | "unpublished" | "loading" | "failed";
@@ -944,7 +961,7 @@ type LabState = {
   /** The card a store's ring or plate opened. */
   storeCard?: StoreLine;
   army?: LabArmySheet;
-  realmView?: "build" | "build-early" | "castle" | "castle-short" | "full";
+  realmView?: "build-training" | "build" | "build-early" | "castle" | "castle-short" | "full";
   /** A building tapped on the realm's board: its own card. */
   building?: keyof typeof LAB_BUILDINGS;
   dayDone?: Parameters<typeof DayDoneCard>[0];
@@ -1081,9 +1098,7 @@ export const HudLab = () => {
                 {...lab.order}
                 revealYield={500}
                 xp={2}
-                refill={
-                  lab.refill === undefined ? undefined : <RefillButton price={140} held={lab.refill} onRefill={noop} />
-                }
+                refill={lab.refill === undefined ? undefined : <RefillButton held={lab.refill} onRefill={noop} />}
                 onCancel={noop}
                 onGo={noop}
               />
@@ -1110,13 +1125,20 @@ export const HudLab = () => {
         {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} />}
         {lab.dayDone && <LabDaySummary card={lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
-        {(lab.realmView === "build" || lab.realmView === "build-early") && (
+        {(lab.realmView === "build" || lab.realmView === "build-early" || lab.realmView === "build-training") && (
           <BuildView
-            population={lab.realmView === "build" ? LAB_POPULATION : { used: 0, total: 6 }}
-            tiles={lab.realmView === "build" ? BUILD_TILES : EARLY_TILES}
-            chosen={lab.realmView === "build" ? 0 : 2}
+            population={lab.realmView === "build-early" ? { used: 0, total: 6 } : LAB_POPULATION}
+            tiles={lab.realmView === "build-early" ? EARLY_TILES : BUILD_TILES}
+            chosen={lab.realmView === "build-training" ? 5 : lab.realmView === "build" ? 0 : 2}
             onChoose={noop}
-            prices={[{ of: "labor", amount: lab.realmView === "build" ? 6_800 : 800 }]}
+            prices={
+              lab.realmView === "build-training"
+                ? [
+                    { of: "essence", amount: 6_000 },
+                    { of: "labor", amount: 1_500 },
+                  ]
+                : [{ of: "labor", amount: lab.realmView === "build" ? 6_800 : 800 }]
+            }
             refusal={undefined}
             sending={false}
             onBuild={noop}
@@ -1166,6 +1188,11 @@ const useLabNotice = (notice: string | undefined) => {
 
 /** Deploy on the fiction, live: 2 wheat a troop. */
 const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
+  const [slot, setSlot] = useState<number | null>(null);
+  const open = [
+    { slot: 1, number: 2, inherited: true, start: { current: 40, max: 150, perExplore: LAB_EXPLORE } },
+    { slot: 2, number: 3, inherited: false, start: { current: 150, max: 150, perExplore: LAB_EXPLORE } },
+  ];
   const [count, setCount] = useState(deploy.count);
   const most = Math.min(deploy.troopsAtHome, Math.floor(deploy.wheat / 2));
   return (
@@ -1175,11 +1202,11 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       count={count}
       amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
       onCount={setCount}
-      // The next army fills a slot whose army was released today with 40 stamina left.
-      start={{ slot: 2, number: 3, inherited: true, start: { current: 40, max: 150, perExplore: LAB_EXPLORE } }}
+      start={open.find((entry) => entry.slot === slot)}
+      slots={{ allowed: 3, open, onPick: setSlot }}
       wheatCost={count * 2}
       tile="open"
-      canDeploy={count > 0}
+      canDeploy={count > 0 && slot !== null}
       sending={false}
       onDeploy={noop}
       wheatShort={undefined}
@@ -1244,7 +1271,7 @@ type LabBuilding = { category: BuildingType; row: number; standing: number; make
 /** A building's card on the realm some days in, its Delete drawn as it rests. */
 const LabBuildingCard = ({ building }: { building: keyof typeof LAB_BUILDINGS }) => {
   const { category, row, standing, makes, essence = MID_REALM.essence }: LabBuilding = LAB_BUILDINGS[building];
-  const node = readResearchTree({ ...MID_REALM, essence }).find((each) => each.row === row && each.maxTier === 4);
+  const node = readResearchTree({ ...MID_REALM, essence }).find((each) => each.row === row && each.maxTier === 5);
   return (
     <BuildingCardView
       name={buildingName(category)}
@@ -1412,7 +1439,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             returnsHome={returnsHome(army)}
             stamina={stamina(army)}
             xp={army.xp}
-            canBuyTier={army.tier === true}
+            canSpendSkillPoint={army.tier === true}
             selected={lab.selected === index}
             onPick={lab.visiting ? undefined : noop}
           />
@@ -1433,7 +1460,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
           stamina={stamina(army)}
           troops={army.troops}
           returnsHome={returnsHome(army)}
-          canBuyTier={army.tier === true}
+          canSpendSkillPoint={army.tier === true}
           selected={lab.selected === index}
           onPick={noop}
         />
@@ -1446,8 +1473,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
 };
 
 /**
- * The lab realm's open slots as the dock reads them: each starts its army on 60 of 150 stamina, the first is Deploy's,
- * and every later one waits for it.
+ * The lab realm's open slots as the dock reads them: each starts its army on 60 of 150 stamina and can be chosen.
  */
 const labSlots = (lab: LabState, open: number) =>
   Array.from({ length: open }, (_, index) => {
@@ -1459,7 +1485,6 @@ const labSlots = (lab: LabState, open: number) =>
         bar: { current: 60, max: 150, perExplore: LAB_EXPLORE },
         words: `${startsOn(`${ARMY} ${number}`, "60/150", true)}.`,
       },
-      waits: index === 0 ? undefined : { number, words: DEPLOY_FILLS_FIRST(lab.armies.length + 1) },
     };
   });
 
@@ -1501,7 +1526,7 @@ const LabResults = ({
       clock={CLOCK}
       totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}
       armiesToUpgrade={2}
-      lines={readTodayLog()}
+      lines={results === "today-sites" ? siteUseDayLog(NOW) : readTodayLog()}
       history={results === "today-failed" ? "failed" : "whole"}
       onRetry={noop}
       onEarlier={noop}

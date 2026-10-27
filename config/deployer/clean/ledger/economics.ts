@@ -10,6 +10,8 @@ const LORDS = 10n ** 18n;
 export interface LedgerEconomicPreset {
   day_unit_seconds: number;
   claim_window_seconds: number;
+  frontier_top_n: number;
+  frontier_chest_bps: number;
   entry_fee: ReturnType<typeof uint256.bnToUint256>;
   protocol_cut_bps: number;
   chest_lords_bps: number;
@@ -71,6 +73,8 @@ export function buildLedgerEconomicPreset(
     },
     day_unit_seconds: clockScaled(native.dayUnitSeconds, native.clockScale ?? 1, "day_unit_seconds"),
     claim_window_seconds: native.chests?.claimWindowSeconds ?? 0,
+    frontier_top_n: native.chests?.topN ?? 0,
+    frontier_chest_bps: native.chests?.poolBps ?? 0,
   };
 }
 

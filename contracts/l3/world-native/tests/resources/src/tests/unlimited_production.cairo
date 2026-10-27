@@ -22,7 +22,11 @@ fn frontier_board_buildings_stay_unlimited_through_every_settlement() {
             deployment,
             Command::CreateBuilding(
                 CreateBuilding {
-                    structure_id: home.entity_id, directions: array![0_u8].span(), category: BARRACKS, use_simple: true,
+                    scouting_kind: 0,
+                    structure_id: home.entity_id,
+                    directions: array![0_u8].span(),
+                    category: BARRACKS,
+                    use_simple: true,
                 },
             ),
             40,
