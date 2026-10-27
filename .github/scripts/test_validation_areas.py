@@ -47,6 +47,14 @@ class CiFileOwnership(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(areas_run_by(path), {"client", "herald", "services", "native", "runtime", "docs"})
 
+    def test_launch_migrations_select_every_area_that_reads_the_launch_tests(self):
+        for migration in ("0004_season_calendar.sql", "0013_calendar_preset.sql", "future.sql"):
+            with self.subTest(migration=migration):
+                self.assertEqual(
+                    areas_run_by(f"apps/launch-service/migrations/{migration}"),
+                    {"client", "services", "native", "runtime"},
+                )
+
     def test_docs_build_runs_when_a_number_it_states_changes(self):
         # The production Blitz price lives here; changing it once broke the docs build unseen.
         self.assertIn("docs", areas_run_by("deploy/first/environments.json"))
