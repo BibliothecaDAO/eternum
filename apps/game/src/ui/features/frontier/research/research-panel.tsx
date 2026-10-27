@@ -1,6 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudPanel, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudIconButton, HudPanel, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
+import { useSheetCloses } from "@/ui/design-system/kit/sheet-closes";
 import type { Fix } from "@/ui/design-system/kit/refusal";
 import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Tier, tierNumeral } from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact } from "@bibliothecadao/types";
@@ -23,6 +24,7 @@ export const ResearchPanel = ({
   sending,
   fixFor,
   onResearch,
+  onClose,
 }: {
   nodes: readonly TreeNode[];
   /** The node whose choice is open; null with the choice put away. */
@@ -34,7 +36,10 @@ export const ResearchPanel = ({
   fixFor: (need: Need, node: TreeNode) => Fix | undefined;
   /** Research the node's next tier, with the side picked (0 where it has none). */
   onResearch: (node: TreeNode, side: number) => unknown;
+  /** Puts the page away, as every panel closes: its X, Escape or back. */
+  onClose: () => void;
 }) => {
+  useSheetCloses(onClose);
   const node = picked === null ? undefined : nodes.find(({ key }) => key === picked);
   const tile = (item: TreeNode) => (
     <NodeTile key={item.key} node={item} picked={item.key === node?.key} onPick={() => onPick(item.key)} />
@@ -45,6 +50,7 @@ export const ResearchPanel = ({
     <HudPanel
       title={RESEARCH}
       icon="research"
+      cue={<HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />}
       collapsible={false}
       className="pointer-events-auto flex min-h-0 flex-1 flex-col"
       bodyClassName="flex min-h-0 flex-1 flex-col"

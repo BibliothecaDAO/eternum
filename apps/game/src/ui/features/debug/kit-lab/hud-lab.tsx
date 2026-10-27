@@ -1070,6 +1070,7 @@ export const HudLab = () => {
                 state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}
                 onRetry={noop}
                 onOpen={noop}
+                onClose={noop}
               />
             )
           ) : undefined
@@ -1280,6 +1281,7 @@ const LabResearch = () => {
       sending={new Set()}
       fixFor={() => undefined}
       onResearch={noop}
+      onClose={noop}
     />
   );
 };

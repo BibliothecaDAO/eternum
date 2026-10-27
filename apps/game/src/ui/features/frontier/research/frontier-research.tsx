@@ -12,7 +12,15 @@ import { ResearchPanel } from "./research-panel";
  * tree alone, to browse (owner, 27 October: "it shouldnt open up the one I can research I just wanna browse").
  * Until every fact the tree reads has arrived, the page says so.
  */
-export const FrontierResearch = ({ realm, pick }: { realm: NativeRows["Structure"]; pick?: string }) => {
+export const FrontierResearch = ({
+  realm,
+  pick,
+  onClose,
+}: {
+  realm: NativeRows["Structure"];
+  pick?: string;
+  onClose: () => void;
+}) => {
   const tree = useResearchTree(realm);
   const [picked, setPicked] = useState<string | null>(pick ?? null);
   const actions = useResearchActions(realm, setPicked);
@@ -28,6 +36,7 @@ export const FrontierResearch = ({ realm, pick }: { realm: NativeRows["Structure
       sending={sending}
       fixFor={(need, node) => actions.fixFor(need, node, nodes)}
       onResearch={actions.research}
+      onClose={onClose}
     />
   );
 };

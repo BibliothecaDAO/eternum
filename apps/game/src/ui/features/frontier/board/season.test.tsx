@@ -41,6 +41,7 @@ describe("the season list", () => {
         state="ready"
         onRetry={vi.fn()}
         onOpen={onOpen}
+        onClose={vi.fn()}
       />,
     );
     expect([...host.querySelectorAll(".ui-table-head > span")].map((head) => head.textContent)).toEqual([
@@ -64,10 +65,38 @@ describe("the season list", () => {
     unmount();
   });
 
+  it("closes as every panel does: its X and Escape (audit 10-27: the desktop Season had neither)", () => {
+    const onClose = vi.fn();
+    const { host, unmount } = render(
+      <SeasonList
+        rank={1}
+        rows={[row(1, true)]}
+        pinned={undefined}
+        state="ready"
+        onRetry={vi.fn()}
+        onOpen={vi.fn()}
+        onClose={onClose}
+      />,
+    );
+    act(() => host.querySelector<HTMLButtonElement>("button[aria-label='Close']")!.click());
+    expect(onClose).toHaveBeenCalledTimes(1);
+    act(() => void window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    expect(onClose).toHaveBeenCalledTimes(2);
+    unmount();
+  });
+
   it("says the season did not answer, with Try again on the card", () => {
     const onRetry = vi.fn();
     const { host, unmount } = render(
-      <SeasonList rank={undefined} rows={[]} pinned={undefined} state="failed" onRetry={onRetry} onOpen={vi.fn()} />,
+      <SeasonList
+        rank={undefined}
+        rows={[]}
+        pinned={undefined}
+        state="failed"
+        onRetry={onRetry}
+        onOpen={vi.fn()}
+        onClose={vi.fn()}
+      />,
     );
     expect(host.textContent).toContain("Season did not answer.");
     expect(host.querySelector("[aria-label='Season —']")).not.toBeNull();
