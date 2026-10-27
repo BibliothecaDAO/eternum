@@ -13,7 +13,7 @@ import type { HudSurface } from "./frontier-nav";
  *
  * - a surface lets go of the tapped tile and its card, and closes the deploy order;
  * - a new card (a new tap) closes the surface and the deploy order;
- * - on a phone, a new pick on the map (an army, or the tile its order or transfer is pinned on) closes the surface, so
+ * - on a phone, a new pick on the map (an army, or the tile its order is pinned on) closes the surface, so
  *   the action row that answers the pick stands where the surface stood;
  * - the deploy order closes the surface and stands over the card;
  * - the deploy order is its realm's: a pick of anything else, or letting the realm go, closes it (owner, 27 October
@@ -103,7 +103,7 @@ export const useOnePanel = (
 };
 
 /**
- * What the map has picked for the action row to answer: the army selected, and the tile its order or transfer is
+ * What the map has picked for the action row to answer: the army selected, and the tile its order is
  * pinned on. Null while nothing is picked.
  */
 const mapPick = ({

@@ -339,7 +339,7 @@ describe("an open preview whose order changes before its verb is pressed", () =>
   });
 });
 
-it.each([ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.Help, ActionType.Chest])(
+it.each([ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.Chest])(
   "on a Frontier phone, a hold on %s shows facts without sending",
   (actionType) => {
     useUIStore.setState((state) => ({
@@ -643,12 +643,14 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
  */
 describe("the click matrix: what is selected × what is clicked", () => {
   const OTHER_ARMY = 8;
+  const FAR_ARMY = 10;
   const REALM = 9;
   const ENEMY = 99;
   const OWN = 0x111n;
   const tiles = {
-    "own army": { col: 3, row: 5 },
-    "own realm": { col: 4, row: 4 },
+    "your army beside": { col: 3, row: 5 },
+    "your army far": { col: 9, row: 9 },
+    "your realm beside": { col: 4, row: 4 },
     "enemy army": BESIDE,
     "bare ground in reach": { col: 4, row: 6 },
     "bare ground far": { col: 12, row: 9 },
@@ -660,23 +662,36 @@ describe("the click matrix: what is selected × what is clicked", () => {
     const at = Position.fromNormalized({ x: hex.col, y: hex.row }).getContract();
     return { col: at.x, row: at.y };
   };
+  /** The selected army's order at a tile: one step from its own tile. */
+  const order = (tile: { col: number; row: number }, actionType: ActionPath["actionType"]): [string, ActionPath[]] => [
+    ActionPaths.posKey(tile, true),
+    [
+      { hex: contract(ARMY_HEX), actionType: ActionType.Move },
+      { hex: contract(tile), actionType, staminaCost: 20 },
+    ],
+  ];
 
-  /** The map with the player's two armies and realm, an enemy army beside the first, and the selection given. */
+  /**
+   * The map with the player's three armies (one selectable beside the first, one out of its reach) and realm beside
+   * it, an enemy army beside it, and the selection given. The first army's orders are the planner's: a transfer to the
+   * army and the realm beside it, an attack, an explore, and its reason for the army out of reach.
+   */
   const mapWith = (selected: Selected, frontier: boolean) => {
     const map = worldMap(frontier);
     const did: string[] = [];
     const entities = new Map<string, object>([
       [key(ARMY_HEX), { army: { id: ARMY, owner: OWN } }],
-      [key(tiles["own army"]), { army: { id: OTHER_ARMY, owner: OWN } }],
-      [key(tiles["own realm"]), { structure: { id: REALM, owner: OWN } }],
+      [key(tiles["your army beside"]), { army: { id: OTHER_ARMY, owner: OWN } }],
+      [key(tiles["your army far"]), { army: { id: FAR_ARMY, owner: OWN } }],
+      [key(tiles["your realm beside"]), { structure: { id: REALM, owner: OWN } }],
       [key(tiles["enemy army"]), { army: { id: ENEMY, owner: 0x999n } }],
     ]);
     const armies = new Map([
       [ARMY, ARMY_HEX],
-      [OTHER_ARMY, tiles["own army"]],
+      [OTHER_ARMY, tiles["your army beside"]],
+      [FAR_ARMY, tiles["your army far"]],
     ]);
     const selectedId = selected === "army" ? ARMY : selected === "realm" ? REALM : null;
-    const near = tiles["bare ground in reach"];
     useUIStore.setState((state) => ({
       entityActions: {
         ...state.entityActions,
@@ -684,24 +699,20 @@ describe("the click matrix: what is selected × what is clicked", () => {
         actionPaths:
           selected === "army"
             ? new Map([
-                [
-                  ActionPaths.posKey(near, true),
-                  [
-                    { hex: contract(ARMY_HEX), actionType: ActionType.Move },
-                    { hex: contract(near), actionType: ActionType.Explore, staminaCost: 20 },
-                  ],
-                ],
-                [
-                  ActionPaths.posKey(tiles["enemy army"], true),
-                  [
-                    { hex: contract(ARMY_HEX), actionType: ActionType.Move },
-                    { hex: contract(tiles["enemy army"]), actionType: ActionType.Attack },
-                  ],
-                ],
+                order(tiles["bare ground in reach"], ActionType.Explore),
+                order(tiles["enemy army"], ActionType.Attack),
+                order(tiles["your army beside"], ActionType.Help),
+                order(tiles["your realm beside"], ActionType.Help),
               ])
             : new Map(),
       },
     }));
+    // The planner's reason for the army out of reach, as it records one for a transfer it can't give.
+    if (selected === "army")
+      (map.scene as unknown as { orderRefusals: Map<string, unknown> }).orderRefusals.set(
+        ActionPaths.posKey(tiles["your army far"], true),
+        { reason: "too-far" },
+      );
     Object.assign(map.scene, {
       worldSpatialProjection: {
         getArmy: (id: number) => (armies.has(id) ? { hexCoords: contract(armies.get(id)!) } : undefined),
@@ -752,7 +763,10 @@ describe("the click matrix: what is selected × what is clicked", () => {
   });
   afterEach(() => usePopoverStore.getState().close());
 
-  const play = (layout: "desktop" | "phone", gesture: "click" | "right-click", frontier: boolean) => {
+  /** A finger held on the tile: the touch recognizer sends it as a right-click from a touch. */
+  const hold = () => Object.assign(new MouseEvent("contextmenu", { button: 2 }), { pointerType: "touch" });
+
+  const play = (layout: "desktop" | "phone", gesture: "click" | "right-click" | "hold", frontier: boolean) => {
     const rows = {} as Record<Selected, Record<Clicked, string>>;
     for (const selected of ["nothing", "army", "realm"] as const) {
       rows[selected] = {} as Record<Clicked, string>;
@@ -761,6 +775,7 @@ describe("the click matrix: what is selected × what is clicked", () => {
         usePopoverStore.getState().close();
         const { scene, outcome } = mapWith(selected, frontier);
         if (gesture === "click") scene.onHexagonClick(tiles[clicked]);
+        else if (gesture === "hold") scene.onHexagonRightClick(hold(), tiles[clicked]);
         else scene.onHexagonRightClick(new MouseEvent("contextmenu", { button: 2 }), tiles[clicked]);
         rows[selected][clicked] = outcome();
       }
@@ -770,44 +785,67 @@ describe("the click matrix: what is selected × what is clicked", () => {
 
   /** A click on what is not the player's own lets go of the army or realm, as a click with nothing selected. */
   const letsGo = "tile selected, let go";
-  const selects = { "own army": "tile selected, select army 8", "own realm": "tile selected, select realm 9" };
+  /** A click or tap on the player's own army or realm selects it, whatever order the selection has there. */
+  const selects = {
+    "your army beside": "tile selected, select army 8",
+    "your army far": "tile selected, select army 10",
+    "your realm beside": "tile selected, select realm 9",
+  };
+  const elsewhere = { "enemy army": letsGo, "bare ground in reach": letsGo, "bare ground far": letsGo };
 
   it.each([
     ["Frontier", true],
     ["Blitz", false],
   ])("%s desktop, a click: selects the player's own, keeps the army on a target, lets go elsewhere", (_, frontier) => {
     expect(play("desktop", "click", frontier)).toEqual({
-      nothing: { ...selects, "enemy army": letsGo, "bare ground in reach": letsGo, "bare ground far": letsGo },
-      army: { ...selects, "enemy army": "attack card", "bare ground in reach": letsGo, "bare ground far": letsGo },
-      realm: { ...selects, "enemy army": letsGo, "bare ground in reach": letsGo, "bare ground far": letsGo },
+      nothing: { ...selects, ...elsewhere },
+      army: { ...selects, ...elsewhere, "enemy army": "attack card" },
+      realm: { ...selects, ...elsewhere },
     });
   });
 
   it("Frontier desktop, a right-click: the army's order or why it has none, everywhere", () => {
-    const none = { "own army": "", "enemy army": "", "bare ground in reach": "", "bare ground far": "" };
+    const none = {
+      "your army beside": "",
+      "your army far": "",
+      "enemy army": "",
+      "bare ground in reach": "",
+      "bare ground far": "",
+    };
     expect(play("desktop", "right-click", true)).toEqual({
-      nothing: { ...none, "own realm": "realm menu" },
+      nothing: { ...none, "your realm beside": "realm menu" },
       army: {
-        "own army": "order-preview: Too far: move closerTransfer troops",
-        "own realm": "realm menu",
+        "your army beside": "its order runs",
+        "your army far": "order-preview: Too far: move closerTransfer troops",
+        "your realm beside": "its order runs",
         "enemy army": "its order runs",
         "bare ground in reach": "its order runs",
         "bare ground far": "order-preview: Too far: move closerExplore",
       },
-      realm: { ...none, "own realm": "realm menu" },
+      realm: { ...none, "your realm beside": "realm menu" },
     });
   });
 
-  it("Frontier phone, a tap: the phone's own rules, unchanged", () => {
+  // Reviewer, 27 October 2026: a friendly army or realm the army can transfer to must still be selected by a tap.
+  it("Frontier phone, a tap: selects the player's own even beside the army, and keeps the phone's order rules elsewhere", () => {
     expect(play("phone", "click", true)).toEqual({
-      nothing: { ...selects, "enemy army": letsGo, "bare ground in reach": letsGo, "bare ground far": letsGo },
+      nothing: { ...selects, ...elsewhere },
       army: {
         ...selects,
         "enemy army": "attack card",
         "bare ground in reach": "order pinned, its facts",
         "bare ground far": letsGo,
       },
-      realm: { ...selects, "enemy army": letsGo, "bare ground in reach": letsGo, "bare ground far": letsGo },
+      realm: { ...selects, ...elsewhere },
+    });
+  });
+
+  it("Frontier phone, a hold: the transfer to the player's own beside the army, else the tile's facts", () => {
+    const facts = Object.fromEntries(Object.keys(tiles).map((tile) => [tile, "its facts"])) as Record<Clicked, string>;
+    expect(play("phone", "hold", true)).toEqual({
+      nothing: facts,
+      army: { ...facts, "your army beside": "its order runs", "your realm beside": "its order runs" },
+      realm: facts,
     });
   });
 });

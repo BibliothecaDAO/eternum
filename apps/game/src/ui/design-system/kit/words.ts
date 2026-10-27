@@ -477,9 +477,6 @@ export const TRANSFER_TROOPS = {
   unalike: (picked: string, tapped: string) => `${picked} and ${tapped} hold different troops`,
   failed: "The troops could not be moved.",
   changed: "The armies' troops changed",
-  /** A phone's action row, a tap on another of the realm's armies beside the picked one. */
-  beside: (tapped: string, picked: string) => `${tapped} stands beside ${picked}.`,
-  pickArmy: (army: string) => `Pick ${army}`,
 } as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";

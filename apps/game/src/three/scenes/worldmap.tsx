@@ -2723,12 +2723,15 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * Whether a tap or click acts for what is selected. A desktop's click orders nothing: a right-click does. There a
-   * click on bare ground lets go of the selected army or structure, as a click with nothing selected (owner, 27 October
-   * 2026: "Left clicking should remove the selected army/structure"); one on a thing opens it for the army. A phone's
-   * tap keeps its rules: it previews or pins the order at the tile.
+   * Whether a tap or click acts for what is selected. The player's own army or structure is selected, on every device,
+   * whatever order the selection has there (owner, 27 October 2026: "tapping/clicking any selectable thing … always
+   * selects it"); a right-click or a phone's hold gives that order, a transfer. A desktop's click orders nothing: a
+   * right-click does. There a click on bare ground lets go of the selected army or structure, as a click with nothing
+   * selected ("Left clicking should remove the selected army/structure"); one on a thing opens it for the army. A
+   * phone's tap keeps its rules elsewhere: it previews or pins the order at the tile.
    */
   private tapActsForSelection(hexCoords: HexPosition): boolean {
+    if (this.holdsOwnSelectable(hexCoords)) return false;
     return layoutNow() === "phone" || !this.isBareGround(hexCoords);
   }
 
@@ -2751,16 +2754,22 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * The holds that act: a site's (an adjacent Shrine or Well used, a spire's depth choice) and, with the realm selected,
-   * a lit tile beside it, which opens Deploy aimed there (owner, 26 October 2026: "When I touch the realm and long press
-   * a tile it should deploy an army on that tile"). Other phone holds show the tile's facts.
+   * The holds that act: a site's (an adjacent Shrine or Well used, a spire's depth choice), a transfer to the player's
+   * own army or holding beside the army (its tap selects it instead) and, with the realm selected, a lit tile beside
+   * it, which opens Deploy aimed there (owner, 26 October 2026: "When I touch the realm and long press a tile it should
+   * deploy an army on that tile"). Other phone holds show the tile's facts.
    */
   private hasHoldAction(hexCoords: HexPosition): boolean {
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     if (selectedEntityId === null || selectedEntityId === undefined) return false;
     const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
     const action = path && ActionPaths.getActionType(path);
-    return action === ActionType.UseSite || action === ActionType.EnterDepth || action === ActionType.CreateArmy;
+    return (
+      action === ActionType.UseSite ||
+      action === ActionType.EnterDepth ||
+      action === ActionType.CreateArmy ||
+      action === ActionType.Help
+    );
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
@@ -2857,9 +2866,6 @@ export default class WorldmapScene extends WarpTravel {
     });
     if (order === "go") {
       this.actAtHex(hexCoords);
-    } else if (order === "transfer") {
-      // The action row offers the transfer, or picking the army there.
-      this.state.updateEntityActionHoveredHex(hexCoords);
     } else if (order === "why") {
       this.showTileFacts(hexCoords);
       return true;
