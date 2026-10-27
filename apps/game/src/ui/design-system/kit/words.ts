@@ -27,9 +27,10 @@ import {
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
 /** A step on that scale, common (1) to legendary (5). */
 export type Tier = 1 | 2 | 3 | 4 | 5;
+export type Rank = 0 | Tier;
 /** A tier by its numeral, Common I to Legendary V. */
 const TIER_NUMERALS = ["I", "II", "III", "IV", "V"] as const;
-export const tierNumeral = (tier: Tier): string => TIER_NUMERALS[tier - 1]!;
+export const tierNumeral = (tier: Rank): string => (tier === 0 ? "0" : TIER_NUMERALS[tier - 1]!);
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
 export { BEAST_NAMES } from "@bibliothecadao/types";
@@ -95,7 +96,7 @@ export const CLOSE = "Close";
 /** The safe choice on a confirm: the primary. */
 export const KEEP = "Keep";
 
-export { XP, xpGainedLine, xpSpentLine } from "@bibliothecadao/types";
+export { XP, xpGainedLine } from "@bibliothecadao/types";
 export const ESSENCE = "Essence";
 export const LABOR = "labor";
 export const WHEAT = "wheat";
@@ -306,8 +307,8 @@ export const startsNewArmies = (attribute: string, numeral: string) => `new armi
  * An army's XP on its tooltip, against the attribute tier it buys next: "XP 8 of 100 · buys an Uncommon attribute
  * tier". XP is a balance an army spends on its attributes; it has no level.
  */
-export const xpTowardTip = (held: string, price: string, tier: string) =>
-  `${XP} ${held} ${OF} ${price} · buys ${/^[AEIOU]/.test(tier) ? "an" : "a"} ${tier} attribute tier`;
+export const xpTowardTip = (held: string, milestone: string, tier: string) =>
+  `${XP} ${held} of ${milestone} · next ${tier} point`;
 /** The four attributes, each wearing its Aspect's mark. */
 export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
 
@@ -467,9 +468,9 @@ export const TRANSFER_TROOPS = {
   merge: (army: string) => `Merge into ${army}`,
   totalXp: "Total XP",
   totalXpFor: (army: string) => `${army} total XP`,
-  losesProgress: (army: string) => `${army} loses its XP and upgrades.`,
+  losesProgress: (army: string) => `${army} loses its XP, points and upgrades.`,
   /** The second press of a merge that loses a lot: the leaving army's total XP and the chosen target. */
-  confirmMerge: (lost: number, army: string) => `Lose ${formatAmount(lost)} XP, merge into ${army}`,
+  confirmMerge: (army: string) => `Confirm merge into ${army}`,
   amount: (from: string, to: string) => `Troops ${from} sends to ${to}`,
   pick: "Pick how many to send",
   move: (count: number, to: string) => `Move ${formatAmount(count)} to ${to}`,
@@ -1282,14 +1283,7 @@ export const ARMY_DETAIL = {
   /** What each tile the army explores sends home, on its stamina row. */
   revealPays: (amount: string) => `+${amount} a tile`,
   revealPaysLabel: `${ESSENCE} and ${LABOR} a tile`,
-  toNext: (xp: string) => `${xp} ${XP} to the next level-up`,
-  allLegendary: "Every attribute is legendary",
   levelUp: "Level up",
-  levelUps: "Level-ups",
   /** An attribute tile's hover: what its next tier gives and costs, "Rare: +10% → +20% damage · 200 XP". */
-  nextTier: (tier: string, change: string, xp: string) => `${tier}: ${change} · ${xp} ${XP}`,
-  price: (xp: string) => `${xp} ${XP}`,
-  short: (xp: string, short: string) => `${xp} ${XP} · ${short} ${XP} short`,
-  refills: (xp: string, stamina: string) => `${xp} ${XP} · refills ${stamina} ${STAMINA}`,
   legendary: (attribute: string) => `${attribute} is legendary`,
 } as const;

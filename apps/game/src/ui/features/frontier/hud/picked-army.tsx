@@ -24,7 +24,7 @@ export const PickedArmy = ({ army, onDetails }: { army: DockArmy; onDetails: () 
       xpGoal={army.xpGoal}
       stamina={army.stamina}
       troops={army.troops}
-      canBuyTier={army.canBuyTier}
+      canSpendSkillPoint={army.canSpendSkillPoint}
       selected
       flyTarget={attributeBadgeTarget(army.explorerId)}
       onPick={() => useUIStore.getState().deselectEntity()}

@@ -50,8 +50,8 @@ it("supplies the realm model with the highest side tier, from Common through Leg
     [25, 7n],
     [28, 14n],
   ] as const) {
-    for (let a = 0; a <= 4; a++)
-      for (let b = 0; b <= 4; b++) {
+    for (let a = 0; a <= 5; a++)
+      for (let b = 0; b <= 5; b++) {
         const store = {
           require: () => ({ entity_id: 1 }),
           get: (model: string, key: { inner_col?: number; inner_row?: number }) =>
@@ -62,7 +62,7 @@ it("supplies the realm model with the highest side tier, from Common through Leg
                 : undefined,
         } as unknown as NativeFactStore;
         const manager = TileManager.forStructure(store, {} as SystemCalls, 1);
-        expect(manager.existingBuildings()).toEqual([expect.objectContaining({ category, tier: Math.max(a, b) + 1 })]);
+        expect(manager.existingBuildings()).toEqual([expect.objectContaining({ category, tier: Math.max(1, a, b) })]);
       }
   }
 });

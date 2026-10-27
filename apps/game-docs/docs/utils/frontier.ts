@@ -89,7 +89,7 @@ export const FRONTIER = {
     attack: n(stamina.staminaAttackReq),
     wheatPerTroop: n(stamina.staminaExploreWheatCost),
     well: n(rule.WELL_STAMINA),
-    tierBought: n(rule.TIER_STAMINA_REFILL),
+    pointRefills: [1, 2, 3, 4, 5].map((rank) => n(rule.SKILL_POINT_REFILL_BASE + rank * rule.SKILL_POINT_REFILL_STEP)),
     refillLords: n(REFILL_LORDS_PER_POINT),
     logisticsMax: n(rule.LOGISTICS_LEGENDARY_STAMINA),
   },
@@ -123,7 +123,8 @@ export const FRONTIER = {
   xp: {
     reveal: n(frontierPreset.progression.revealXp),
     shrine: n(frontierPreset.progression.fixedXp),
-    tierPrices: [
+    pointThresholds: [
+      frontierPreset.progression.commonXp,
       frontierPreset.progression.uncommonXp,
       frontierPreset.progression.rareXp,
       frontierPreset.progression.epicXp,
@@ -159,7 +160,7 @@ export const FRONTIER = {
     shrine: researchRow(research.ROW_SHRINE)[0],
     well: researchRow(research.ROW_WELL)[0],
     depths: researchRow(research.ROW_DEPTH),
-    trainingGate: TIERS[frontierPreset.board.trainingGateTier],
+    trainingGate: frontierPreset.board.trainingGateTier,
     outputStep: pct(frontierPreset.board.outputStepBps),
     rationWheat: n(frontierPreset.board.rationStep),
     troopWheat: n(wheatPerTroop),
@@ -168,13 +169,18 @@ export const FRONTIER = {
   attributes: {
     battleMax: pct(rule.BATTLE_LEGENDARY_BPS),
     scouting: [
+      rule.SCOUTING_COMMON_BPS,
       rule.SCOUTING_UNCOMMON_BPS,
       rule.SCOUTING_RARE_BPS,
       rule.SCOUTING_EPIC_BPS,
       rule.SCOUTING_LEGENDARY_BPS,
     ].map(pct),
     scoutingOneKind: pct(
-      rule.SCOUTING_UNCOMMON_BPS + rule.SCOUTING_RARE_BPS + rule.SCOUTING_EPIC_BPS + rule.SCOUTING_LEGENDARY_BPS,
+      rule.SCOUTING_COMMON_BPS +
+        rule.SCOUTING_UNCOMMON_BPS +
+        rule.SCOUTING_RARE_BPS +
+        rule.SCOUTING_EPIC_BPS +
+        rule.SCOUTING_LEGENDARY_BPS,
     ),
   },
   claimWindow: {

@@ -62,13 +62,14 @@ describe("the day log's line for a story", () => {
         model: "ArmyProgressionRules",
         key: "0x101",
         value: {
+          common_xp: 100,
           game_id: 1,
           reveal_xp: 2,
           fixed_xp: 200,
-          uncommon_xp: 100,
-          rare_xp: 200,
-          epic_xp: 400,
-          legendary_xp: 800,
+          uncommon_xp: 250,
+          rare_xp: 500,
+          epic_xp: 900,
+          legendary_xp: 1500,
         },
       },
     ] as never);
@@ -77,11 +78,9 @@ describe("the day log's line for a story", () => {
     expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store)).toBe(
       "Troll cleared, +82 XP",
     );
-    expect(dayLogLine(story("TierBought", { price: "0x64" }, "Battle Uncommon"), store)).toBe(
-      "Battle Uncommon, −100 XP",
-    );
-    expect(dayLogLine(story("TierBought", { price: "12500" }, "Battle Legendary"), store)).toBe(
-      "Battle Legendary, −12.5K XP",
+    expect(dayLogLine(story("SkillPointSpent", { price: "0x64" }, "Battle Uncommon"), store)).toBe("Battle Uncommon");
+    expect(dayLogLine(story("SkillPointSpent", { price: "12500" }, "Battle Legendary"), store)).toBe(
+      "Battle Legendary",
     );
     // A clear of a site this client no longer holds keeps its title: no figure is guessed.
     expect(dayLogLine(story("SitePayout", { site_id: 999, reward: null }, "Troll cleared"), store)).toBe(

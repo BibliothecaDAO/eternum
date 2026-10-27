@@ -91,7 +91,7 @@ const ARMIES_OUT = [
   tiers: undefined,
   stamina: { current: 60, max: 120, perExplore: 20 },
   secondsToFull: undefined,
-  canBuyTier: false,
+  canSpendSkillPoint: false,
 }));
 
 it.each(["phone", "desktop"] as const)(

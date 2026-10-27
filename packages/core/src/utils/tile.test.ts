@@ -42,6 +42,11 @@ it("accepts safe numeric native keys with the same identity as bigint and refuse
       model: "ArmyProgress",
       key: "0x13",
       value: {
+        common_points: 0,
+        uncommon_points: 0,
+        rare_points: 0,
+        epic_points: 0,
+        legendary_points: 0,
         game_id: 1,
         explorer_id: id,
         xp: 0,

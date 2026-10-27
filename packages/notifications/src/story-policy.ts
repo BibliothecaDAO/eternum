@@ -15,7 +15,7 @@ import {
   sitePayoutCopy,
   spireDiscoveredCopy,
   type StoryCopy,
-  tierBoughtCopy,
+  skillPointSpentCopy,
   transferStoryCopy,
 } from "./story-copy";
 import type { NativeStoryVariant } from "../../../contracts/l3/world-native/schema/client.gen";
@@ -48,7 +48,7 @@ const STORY_RULES = {
   BankLiquidity: { level: "all", recipients: "owner", copy: bankLiquidityCopy },
   HyperstructurePoints: { level: "all", recipients: "owner", copy: hyperstructurePointsCopy },
   SitePayout: { level: "all", recipients: "owner", copy: sitePayoutCopy },
-  TierBought: { level: "all", recipients: "owner", copy: tierBoughtCopy },
+  SkillPointSpent: { level: "all", recipients: "owner", copy: skillPointSpentCopy },
   ExplorationReward: { level: "all", recipients: "owner", copy: explorationRewardCopy },
   SeasonEnded: { level: "all", recipients: "owner", copy: says("The season has ended", "The final standings are in.") },
   FaithPledged: {

@@ -81,11 +81,12 @@ pub fn validate(preset: PresetDefinition) {
         assert!(
             progression.reveal_xp != 0
                 && progression.fixed_xp != 0
-                && progression.uncommon_xp != 0
-                && progression.rare_xp != 0
-                && progression.epic_xp != 0
-                && progression.legendary_xp != 0,
-            "empty progression rules",
+                && progression.common_xp > 0
+                && progression.uncommon_xp > progression.common_xp
+                && progression.rare_xp > progression.uncommon_xp
+                && progression.epic_xp > progression.rare_xp
+                && progression.legendary_xp > progression.epic_xp,
+            "invalid progression thresholds",
         );
     }
     assert!(

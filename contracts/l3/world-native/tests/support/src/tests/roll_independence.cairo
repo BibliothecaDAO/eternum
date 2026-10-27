@@ -236,9 +236,9 @@ fn typed_commands() -> Array<Command> {
         Command::SetEntityName(crate::names::SetEntityName { entity_id: 999999, name: 'route' }),
         Command::EnterDepth(crate::commands::EnterDepth { explorer_id: 999999, depth: 0 }),
         Command::Research(crate::research::Research { structure_id: 999999, row: 0, choice: 0 }),
-        Command::BuyTier(
-            crate::progression::BuyTier {
-                explorer_id: 999999, attribute: crate::progression::Attribute::Battle, kind: None,
+        Command::SpendSkillPoint(
+            crate::progression::SpendSkillPoint {
+                explorer_id: 999999, choice: crate::progression::SkillPointUse::Battle,
             },
         ),
         Command::InteractSite(

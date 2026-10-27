@@ -70,10 +70,11 @@ export interface NativePreset {
     wellBps: number;
     emptyRevealLimit: number;
   };
-  /** XP per reveal, the fixed award (a shrine, and a relic chest until relics leave chests), and each tier's price. */
+  /** XP per reveal, the fixed award (a shrine, and a relic chest until relics leave chests), and the five cumulative skill-point thresholds. */
   progression: null | {
     revealXp: number;
     fixedXp: number;
+    commonXp: number;
     uncommonXp: number;
     rareXp: number;
     epicXp: number;

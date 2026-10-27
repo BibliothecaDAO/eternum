@@ -140,8 +140,14 @@ it("reads a fight as its attacker's: who attacked what, and how it went", async 
 });
 
 it("says what an army trained in the story's own words", async () => {
-  const row = story(KRUMP, "TierBought", { explorer_id: 71, attribute: "Logistics", tier: 2, price: 100, kind: null });
-  expect((await draw(row)).words).toBe("Krump trained Logistics uncommon");
+  const row = story(KRUMP, "SkillPointSpent", {
+    explorer_id: 71,
+    choice: "Logistics",
+    tier: 2,
+    point_rank: 2,
+    stamina: 30,
+  });
+  expect((await draw(row)).words).toBe("Krump spent a point Logistics uncommon");
   expect(host.querySelector(".ui-event__text .ui-feed-line__glyph")!.getAttribute("data-icon")).toBe("order-skill");
 });
 

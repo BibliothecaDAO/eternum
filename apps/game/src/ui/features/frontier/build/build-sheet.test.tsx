@@ -349,7 +349,7 @@ describe("the build sheet", () => {
     );
     expect(sheet.card("Hut").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
     expect(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
-      /^War hall: new armies start with Battle II(, takes \d+ population)?$/,
+      /^War hall: new armies start with Battle I(, takes \d+ population)?$/,
     );
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
     expect(sheet.card("Farm").querySelector('[aria-label="price raised"]')).toBeNull();
@@ -546,8 +546,8 @@ it("chooses the free Scouts kind on the build sheet and submits it with construc
         ...lodge,
         population_cost: 2,
         simple_cost: [
-          { resource_type: ResourcesIds.Essence, amount: 12000n * BigInt(RESOURCE_PRECISION) },
-          { resource_type: ResourcesIds.Labor, amount: 3000n * BigInt(RESOURCE_PRECISION) },
+          { resource_type: ResourcesIds.Essence, amount: 6000n * BigInt(RESOURCE_PRECISION) },
+          { resource_type: ResourcesIds.Labor, amount: 1500n * BigInt(RESOURCE_PRECISION) },
         ],
       },
     },
@@ -587,9 +587,9 @@ it("chooses the free Scouts kind on the build sheet and submits it with construc
       button.textContent?.includes("Scouts"),
     )!;
     act(() => card.click());
-    expect(card.querySelector(".ui-tier")?.textContent).toBe("II");
-    expect(card.querySelector('[aria-label="12,000 Essence"]')).not.toBeNull();
-    expect(card.querySelector('[aria-label="3,000 labor"]')).not.toBeNull();
+    expect(card.querySelector(".ui-tier")?.textContent).toBe("I");
+    expect(card.querySelector('[aria-label="6,000 Essence"]')).not.toBeNull();
+    expect(card.querySelector('[aria-label="1,500 labor"]')).not.toBeNull();
     const beasts = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
       (button) => button.textContent === "Beasts",
     )!;

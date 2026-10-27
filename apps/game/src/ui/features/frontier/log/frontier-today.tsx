@@ -41,7 +41,7 @@ export const FrontierToday = ({
   // Only a read that answered and reaches the day counts, an empty day as zero; otherwise every total is a dash.
   const played = usePlayerDay(player, day === undefined ? null : dayBounds(rules, now, day));
   const step = (to: number) => setChosen(to === today ? null : to);
-  const buyers = useDockArmies(onOpenArmy ? realm : null).filter(({ canBuyTier }) => canBuyTier);
+  const buyers = useDockArmies(onOpenArmy ? realm : null).filter(({ canSpendSkillPoint }) => canSpendSkillPoint);
   return (
     <TodaySheet
       day={day}

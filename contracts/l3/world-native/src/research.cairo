@@ -7,7 +7,7 @@ pub struct RealmKnowledge {
     pub learned: u64,
 }
 
-// The rows of the castle's tree. A building row climbs from common to legendary for every building of its type; the
+// The rows of the castle's tree. A building row climbs from 0 to Legendary V for every building of its type; the
 // castle rows unlock shrines, wells and the three depths.
 pub const ROW_FARM: u8 = 0;
 pub const ROW_WORKSHOP: u8 = 1;
@@ -93,7 +93,7 @@ pub fn max_tier(row: u8) -> u8 {
         10 => 3,
         _ => {
             assert!(row < ROW_COUNT, "invalid research row");
-            4
+            5
         },
     }
 }
@@ -118,9 +118,9 @@ fn tier_slot(row: u8) -> (u64, u64) {
         5 => (0x8000000, 8),
         6 => (0x40000000, 8),
         7 => (0x200000000, 8),
-        8 => (0x100000000000, 2),
-        9 => (0x200000000000, 2),
-        10 => (0x400000000000, 4),
+        8 => (0x400000000000, 2),
+        9 => (0x800000000000, 2),
+        10 => (0x1000000000000, 4),
         _ => panic!("invalid research row"),
     }
 }
@@ -148,7 +148,7 @@ pub fn tier(learned: u64, row: u8) -> u8 {
     }
 }
 
-// The choice made at a tier, from 1 (uncommon) up to the row's tier.
+// The choice made at a tier, from 1 (Common) up to the row's tier.
 pub fn choice(learned: u64, row: u8, at: u8) -> u8 {
     assert!(at > 0 && at <= tier(learned, row), "tier is not learned");
     let (mut scale, size) = choice_slot(row);

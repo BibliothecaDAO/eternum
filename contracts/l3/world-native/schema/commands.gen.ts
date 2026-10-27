@@ -69,7 +69,7 @@ export const nativeCommandBits = {
   "SetEntityName": "36893488147419103232",
   "EnterDepth": "73786976294838206464",
   "Research": "147573952589676412928",
-  "BuyTier": "295147905179352825856",
+  "SpendSkillPoint": "295147905179352825856",
   "InteractSite": "590295810358705651712",
   "RefillStamina": "1180591620717411303424",
   "WithdrawLords": "2361183241434822606848"
@@ -143,7 +143,7 @@ export interface NativeCommandPayloads {
   SetEntityName: { readonly entity_id: BigNumberish; readonly name: BigNumberish };
   EnterDepth: { readonly explorer_id: BigNumberish; readonly depth: BigNumberish };
   Research: { readonly structure_id: BigNumberish; readonly row: BigNumberish; readonly choice: BigNumberish };
-  BuyTier: { readonly explorer_id: BigNumberish; readonly attribute: { readonly kind: "Battle"; readonly value: undefined } | { readonly kind: "Logistics"; readonly value: undefined } | { readonly kind: "Scouting"; readonly value: undefined } | { readonly kind: "Homecoming"; readonly value: undefined }; readonly kind: { readonly kind: "Some"; readonly value: { readonly kind: "Camp"; readonly value: undefined } | { readonly kind: "Rift"; readonly value: undefined } | { readonly kind: "Beasts"; readonly value: undefined } } | { readonly kind: "None"; readonly value: undefined } };
+  SpendSkillPoint: { readonly explorer_id: BigNumberish; readonly choice: { readonly kind: "Battle"; readonly value: undefined } | { readonly kind: "Logistics"; readonly value: undefined } | { readonly kind: "Scouting"; readonly value: { readonly kind: "Camp"; readonly value: undefined } | { readonly kind: "Rift"; readonly value: undefined } | { readonly kind: "Beasts"; readonly value: undefined } } | { readonly kind: "Homecoming"; readonly value: undefined } | { readonly kind: "Stamina"; readonly value: BigNumberish } };
   InteractSite: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
   RefillStamina: { readonly explorer_id: BigNumberish; readonly amount: BigNumberish };
   WithdrawLords: { readonly structure_id: BigNumberish; readonly amount: BigNumberish };

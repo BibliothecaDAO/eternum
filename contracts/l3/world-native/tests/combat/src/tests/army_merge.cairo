@@ -14,9 +14,9 @@ fn full_merges_keep_the_chosen_target_even_with_less_progression() {
         } else {
             (first, second, 0, 1)
         };
-        let veteran = ArmyProgress { battle: 2, scouting: 2, scouting_kinds: 3, ..crate::progression::initial() };
-        write_progress(d, source, ArmyProgress { xp: source_xp, ..veteran });
-        write_progress(d, target, ArmyProgress { xp: target_xp, ..veteran });
+        let veteran = ArmyProgress { battle: 2, scouting: 2, scouting_kinds: 15, ..crate::progression::initial() };
+        write_progress(d, source, ArmyProgress { xp: source_xp, rare_points: 2, ..veteran });
+        write_progress(d, target, ArmyProgress { xp: target_xp, uncommon_points: 1, ..veteran });
         let (winner, loser) = (target, source);
         let state = GameState { contract_address: d.games };
         let before = state.explorer(winner).unwrap();
@@ -60,7 +60,7 @@ fn partial_transfers_keep_both_progress_bundles_and_slots() {
     let d = setup();
     let (game_id, _, category) = expedition_home(d);
     let (source, target) = expedition_armies(d, game_id, category);
-    let veteran = ArmyProgress { xp: 900, ..crate::progression::initial() };
+    let veteran = ArmyProgress { xp: 900, common_points: 1, rare_points: 1, ..crate::progression::initial() };
     write_progress(d, source, veteran);
     timers(d, source, 0, 390);
     timers(d, target, 100, 400);

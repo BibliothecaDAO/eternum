@@ -1,3 +1,4 @@
+import { lowestFittingPoint } from "@bibliothecadao/eternum";
 import { openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
 import { entityHomeNamespace } from "@bibliothecadao/eternum/expeditions";
@@ -912,18 +913,16 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
         client,
         player,
         {
-          kind: "BuyTier",
+          kind: "SpendSkillPoint",
           value: {
             explorer_id: army.explorer_id,
-            attribute: { kind: upgrade, value: undefined },
-            // A bot's Scouting raises rifts, the Essence it spends on research and depths.
-            kind:
+            choice:
               upgrade === "Scouting"
-                ? { kind: "Some", value: { kind: "Rift", value: undefined } }
-                : { kind: "None", value: undefined },
+                ? { kind: "Scouting", value: { kind: "Rift", value: undefined } }
+                : { kind: upgrade, value: undefined },
           },
         },
-        TransactionType.BUY_TIER,
+        TransactionType.SPEND_SKILL_POINT,
       );
     const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);
     const neighbors = getNeighborHexes(coord.x, coord.y);
@@ -1078,8 +1077,6 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
 /** The army's lowest attribute it can afford to Upgrade, as a player spreading XP would; none while it cannot pay. */
 function affordableUpgrade(client: GameClient, explorerId: number) {
   const progress = client.setup.store.require("ArmyProgress", { game_id: client.gameId, explorer_id: explorerId });
-  const rules = client.setup.store.require("ArmyProgressionRules", { game_id: client.gameId });
-  const prices = [rules.uncommon_xp, rules.rare_xp, rules.epic_xp, rules.legendary_xp];
   const tiers = [
     ["Battle", progress.battle],
     ["Logistics", progress.logistics],
@@ -1088,7 +1085,7 @@ function affordableUpgrade(client: GameClient, explorerId: number) {
   ] as const;
   const [attribute] =
     tiers
-      .filter(([, tier]) => tier < prices.length + 1 && progress.xp >= prices[tier - 1]!)
+      .filter(([, tier]) => lowestFittingPoint(progress, tier + 1) !== undefined)
       .toSorted((a, b) => a[1] - b[1])[0] ?? [];
   return attribute;
 }

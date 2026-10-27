@@ -260,6 +260,9 @@ pub /// A board realm with its castle, every command open, room for many buildin
     let mut preset = building_preset(Some(board_rules()));
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     preset.structures.buildings = frontier.structures.buildings;
+    preset
+        .structures
+        .board = Some(crate::buildings::BoardRules { workshop_rate: 20, ..frontier.structures.board.unwrap() });
     preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
     preset.rules.building_config.base_population = 40;
     // Farms and barracks make 40 a second, so each quarter of the base is whole.

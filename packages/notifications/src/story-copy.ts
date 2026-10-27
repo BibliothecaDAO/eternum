@@ -81,14 +81,22 @@ export const bitcoinAwardCopy: StoryCopy = ({ payload }) => {
 /** An attribute's tiers, by the names the army's Level up panel gives them (tier 1 is Common). */
 const TIER_NAMES = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
 
-/** A Level up raises one attribute of one army a tier, for XP; the troops' own T1–T3 tier never changes. */
-export const tierBoughtCopy: StoryCopy = ({ payload }) => {
-  const attribute = enumName(payload.attribute);
+/** Spending a point changes a rank or restores stamina; XP stays with the army. */
+export const skillPointSpentCopy: StoryCopy = ({ payload }) => {
+  const choice = enumName(payload.choice);
   const tier = integer(payload.tier);
-  const price = integer(payload.price);
+  const point = integer(payload.point_rank);
+  const stamina = integer(payload.stamina);
   const name = tier === null ? undefined : TIER_NAMES[Number(tier) - 1];
-  if (!attribute || !name || price === null) throw new Error("Incomplete tier purchase story");
-  return { title: `Level up: ${attribute}`, body: `Your army's ${attribute} is now ${name}, for ${price} XP.` };
+  const pointName = point === null ? undefined : TIER_NAMES[Number(point) - 1];
+  if (!choice || !pointName || stamina === null || (choice !== "Stamina" && !name))
+    throw new Error("Incomplete skill point story");
+  return choice === "Stamina"
+    ? { title: "Stamina restored", body: `Your army used a ${pointName} point for ${stamina} stamina.` }
+    : {
+        title: `Level up: ${choice}`,
+        body: `Your army's ${choice} is now ${name}. ${pointName} point spent; ${stamina} stamina restored.`,
+      };
 };
 
 /**

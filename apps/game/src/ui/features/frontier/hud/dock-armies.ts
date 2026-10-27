@@ -1,3 +1,4 @@
+import { nextSkillPoint, heldSkillPoints } from "@bibliothecadao/eternum";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { useGame } from "@/hooks/context/game-context";
@@ -15,7 +16,7 @@ import { useMemo } from "react";
 
 import { ARMY } from "@/ui/design-system/kit/words";
 
-import { affordableUpgrades, attributeTiers, nextTierGoal } from "../attributes/attributes";
+import { availableRankUps, attributeTiers } from "../attributes/attributes";
 
 const ARMY_MODELS = ["ArmySlot", "ArmyProgress", "ExplorerTroops", "TileOccupancy", "EntityName"] as const;
 
@@ -29,14 +30,14 @@ export type DockArmy = {
   art: IconMeaning;
   xp: number | undefined;
   /** The attribute tier its XP buys next: its XP price and the tier it reaches; none at legendary or while unknown. */
-  xpGoal: { price: number; tier: number } | undefined;
+  xpGoal: ReturnType<typeof nextSkillPoint> | undefined;
   /** Its four attribute tiers (Battle, Logistics, Scouting, Homecoming), 1 to 5; unknown while its progress is. */
   tiers: readonly [number, number, number, number] | undefined;
   stamina: StaminaBar | undefined;
   secondsToFull: number | undefined;
   troops: number;
   /** Its XP buys a tier of an attribute now: the card fan on its token. */
-  canBuyTier: boolean;
+  canSpendSkillPoint: boolean;
   /** The whole troops its Homecoming returns when its day ends; unknown while its progress is. */
   returnsHome: number | undefined;
 };
@@ -75,7 +76,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       label: armyName(setup.store, explorerId, number),
       art: armyArt(army.troops),
       xp: progress?.xp,
-      xpGoal: progress && xpRules && nextTierGoal(progress, xpRules),
+      xpGoal: progress && xpRules && nextSkillPoint(progress.xp, xpRules),
       tiers: progress && attributeTiers(progress),
       stamina: stamina
         ? {
@@ -86,7 +87,12 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
         : undefined,
       secondsToFull: stamina?.secondsUntilFull,
       troops: Number(army.troops.count / BigInt(RESOURCE_PRECISION)),
-      canBuyTier: progress !== undefined && xpRules !== undefined && affordableUpgrades(progress, xpRules).length > 0,
+      canSpendSkillPoint:
+        progress !== undefined &&
+        (availableRankUps(progress).length > 0 ||
+          (heldSkillPoints(progress).some((count) => count > 0) &&
+            stamina !== null &&
+            stamina.committedCurrent < stamina.committedMax)),
       returnsHome:
         progress && homecomingReturn(Number(army.troops.count / BigInt(RESOURCE_PRECISION)), progress.homecoming),
     };

@@ -28,18 +28,18 @@ export const REVEAL_LABOR = 20002;
 export const number = (value: number) => value.toLocaleString("en-US", { maximumFractionDigits: 3 });
 
 export function nextPrice(row: StudyRow, counts: Counts, side: number) {
-  if (counts[side]! >= 4) return undefined;
+  if (counts[side]! >= 5) return undefined;
   return EARLY_REALM.price(row, counts[side]! + 1);
 }
 
 export function capacity(level: number, picks: number) {
-  return RESOURCE_CAPACITY[level]! * (1 + picks * 0.5);
+  return RESOURCE_CAPACITY[level]! * (1 + picks * 0.4);
 }
 
 export function effect(row: StudyRow, side: number, picks: number, level: number) {
   const item = ROWS[row];
-  if (side === 0) return `${number(item.baseRate * (1 + picks * 0.25))} ${item.unit}`;
-  if (row === 2) return `${number(2 - picks * 0.25)} wheat / deployed troop`;
+  if (side === 0) return `${number(item.baseRate * (1 + picks * 0.2))} ${item.unit}`;
+  if (row === 2) return `${number(2 - picks * 0.2)} wheat / deployed troop`;
   return `${number(capacity(level, picks))} ${row === 0 ? "wheat" : "labor"} capacity`;
 }
 

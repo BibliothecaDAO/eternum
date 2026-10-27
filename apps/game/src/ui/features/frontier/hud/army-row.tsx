@@ -22,7 +22,7 @@ export const ArmyRow = ({
   stamina,
   xp,
   xpGoal,
-  canBuyTier,
+  canSpendSkillPoint,
   selected,
   flyTarget,
   onPick,
@@ -36,7 +36,7 @@ export const ArmyRow = ({
   stamina: StaminaBar | undefined;
   xp: number | undefined;
   xpGoal?: XpGoal;
-  canBuyTier: boolean;
+  canSpendSkillPoint: boolean;
   selected: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;
@@ -68,7 +68,7 @@ export const ArmyRow = ({
     }
     detail={<RowDetail words={troops === undefined ? "—" : troopCount(troops)} stamina={stamina} />}
     // The trail is the card fan while a level is affordable now: the row itself opens the panel that buys it.
-    trail={<RowTrail>{canBuyTier && <SemanticIcon name="picks" size={20} data-tip={UPGRADE} />}</RowTrail>}
+    trail={<RowTrail>{canSpendSkillPoint && <SemanticIcon name="picks" size={20} data-tip={UPGRADE} />}</RowTrail>}
     selected={selected}
     onClick={onPick}
   />

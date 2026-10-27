@@ -553,12 +553,17 @@ describe("declared fact absence", () => {
     store.applyFacts([
       set("0x70", "ArmySlot", occupied),
       set("0x72", "ArmyProgress", {
+        common_points: 0,
+        uncommon_points: 0,
+        rare_points: 0,
+        epic_points: 0,
+        legendary_points: 0,
         game_id: 1,
         explorer_id: army.explorer_id,
         xp: 17,
         battle: 3,
         logistics: 3,
-        scouting: 1,
+        scouting: 0,
         scouting_kinds: 0,
         homecoming: 1,
       }),

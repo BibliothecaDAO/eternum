@@ -11,7 +11,7 @@ import {
   RESEARCH,
   RESEARCH_TREE,
   RESEARCHING,
-  type Tier,
+  type Rank,
 } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { DestroyBuildingButton } from "@/ui/features/world/components/bottom-right-panel/destroy-building-button";
@@ -55,7 +55,7 @@ export const BuildingCard = ({
   const actions = useResearchActions(realm, onResearchPage);
   const demolish = useDemolish(realm, building);
   const row = researchRowOf(building.category);
-  const node = tree?.nodes.find((each) => each.row === row && each.maxTier === 4);
+  const node = tree?.nodes.find((each) => each.row === row && each.maxTier === 5);
   return (
     <BuildingCardView
       name={buildingName(building.category)}
@@ -184,7 +184,7 @@ export const BuildingCardView = ({
 };
 
 /** A row's tiers learned (0 to 4) as the tier its gem shows (Common I to Legendary V). */
-const tierOf = (tier: number) => Math.min(5, tier + 1) as Tier;
+const tierOf = (tier: number) => Math.min(5, tier) as Rank;
 
 /** The next tier's Research in the card's foot, with its price; or, while it cannot run, why, with the fix. */
 const ResearchFoot = ({

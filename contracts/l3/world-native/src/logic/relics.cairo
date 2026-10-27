@@ -140,11 +140,11 @@ pub mod RelicState {
         ) {
             crate::logic::progression::award_xp(key, award);
         }
-        fn buy_tier(
+        fn spend_skill_point(
             ref self: ComponentState<TContractState>,
             game_id: u32,
             actor: ContractAddress,
-            command: crate::progression::BuyTier,
+            command: crate::progression::SpendSkillPoint,
             context: crate::commands::ActionContext,
         ) -> () {
             let context = crate::commands::execution_context(game_id, context);
@@ -152,11 +152,15 @@ pub mod RelicState {
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
             let mut progress = crate::logic::progression::require(key);
-            let bought = crate::progression::buy_tier(
-                ref progress, crate::logic::progression::rules(game_id).expect('missing progression rules'), command,
-            );
+            if let crate::progression::SkillPointUse::Stamina(_) = command.choice {
+                let maximum = crate::progression::stamina_max(
+                    progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
+                );
+                assert!(explorer.troops.stamina.inline().amount < maximum, "stamina is full");
+            }
+            let mut bought = crate::progression::spend_skill_point(ref progress, command);
             crate::logic::progression::write(key, progress);
-            self.grant_stamina(key, explorer, crate::rules::TIER_STAMINA_REFILL, context);
+            bought.stamina = self.grant_stamina(key, explorer, bought.stamina.try_into().unwrap(), context);
             self
                 .emit(
                     crate::ownership::StoryEvent {
@@ -166,7 +170,7 @@ pub mod RelicState {
                         owner: Some(actor),
                         timestamp: context.timestamp,
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                        story: crate::ownership::Story::TierBought(bought),
+                        story: crate::ownership::Story::SkillPointSpent(bought),
                     },
                 );
             ()
@@ -453,7 +457,7 @@ pub mod RelicState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        /// Adds stamina to a slot army's bar, up to its own maximum: a well's, and a bought tier's.
+        /// Adds stamina to a slot army's bar, up to its own maximum: a well's or a skill point's.
         fn grant_stamina(
             self: @ComponentState<TContractState>,
             key: ExplorerKey,

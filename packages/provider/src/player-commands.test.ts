@@ -51,19 +51,25 @@ describe("player command callers", () => {
     expect(decoded()).toEqual({ structure_id: 12n, category: 0n, tier: 0n, amount: 100n, direction: 4n, slot: 2n });
   });
 
-  it("sends the army sheet's Upgrade as the contract's BuyTier: the army, its attribute, a Scouting tier's kind", async () => {
+  it("sends the army sheet's Upgrade as the contract's SpendSkillPoint: the army, its attribute, a Scouting tier's kind", async () => {
     const { calls, signer, submit, decoded } = setup();
-    await calls.buy_tier({ signer, explorerId: 90, attribute: "Battle" });
-    expect(submit.mock.calls.at(-1)![1]).toMatchObject({ entrypoint: "BuyTier" });
+    await calls.spend_skill_point({ signer, explorerId: 90, choice: { kind: "Battle", value: undefined } });
+    expect(submit.mock.calls.at(-1)![1]).toMatchObject({ entrypoint: "SpendSkillPoint" });
     const battle = decoded();
     expect(battle.explorer_id).toBe(90n);
-    expect(battle.attribute.activeVariant()).toBe("Battle");
-    expect(battle.kind.isNone()).toBe(true);
+    expect(battle.choice.activeVariant()).toBe("Battle");
 
-    await calls.buy_tier({ signer, explorerId: 90, attribute: "Scouting", scoutingKind: "Rift" });
+    await calls.spend_skill_point({
+      signer,
+      explorerId: 90,
+      choice: { kind: "Scouting", value: { kind: "Rift", value: undefined } },
+    });
     const scouting = decoded();
-    expect(scouting.attribute.activeVariant()).toBe("Scouting");
-    expect(scouting.kind.unwrap().activeVariant()).toBe("Rift");
+    expect(scouting.choice.activeVariant()).toBe("Scouting");
+    expect(scouting.choice.variant.Scouting.activeVariant()).toBe("Rift");
+    await calls.spend_skill_point({ signer, explorerId: 90, choice: { kind: "Stamina", value: 5 } });
+    expect(decoded().choice.activeVariant()).toBe("Stamina");
+    expect(decoded().choice.variant.Stamina).toBe(5n);
   });
 
   it("preserves exact contribution units through the compiled command ABI", async () => {

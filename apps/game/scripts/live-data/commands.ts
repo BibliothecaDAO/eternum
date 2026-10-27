@@ -234,8 +234,8 @@ function nameFight(t: Transaction, mode: Mode | null, owners: Owners): Named | n
 
 function nameArmy(t: Transaction, owners: Owners): Named | null {
   const owner = t.storyOwner;
-  if (t.has("TierBought")) {
-    const b = t.story("TierBought");
+  if (t.has("SkillPointSpent")) {
+    const b = t.story("SkillPointSpent");
     return [
       "Army level up",
       { attribute: variantOf(b.attribute), tier: small(b.tier), kind: b.kind?.Some ? variantOf(b.kind.Some) : null },

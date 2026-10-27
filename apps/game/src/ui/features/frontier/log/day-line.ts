@@ -7,11 +7,10 @@ import {
   LABOR,
   revealLine,
   xpGainedLine,
-  xpSpentLine,
 } from "@/ui/design-system/kit/words";
 import { configManager, findGain } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { formatCharge, formatExact, LORDS, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
+import { formatExact, LORDS, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
 
 import { frontierBuildingName } from "../build/building-names";
 import { armyLabel } from "../hud/dock-armies";
@@ -33,7 +32,7 @@ const REVEAL_WORDS: Partial<Record<number, string>> = {
  * how it ended, a reveal's pay as a whole number, a building by its build card's name, an army by its number. Null for
  * a story that only repeats another (a building's placement beside its payment); any other story keeps its title.
  * Each story that moved XP says how much, as the contract counted it: a reveal's `reveal_xp`, a clear's XP from the
- * guard its site started with, a level-up's price.
+ * guard its site started with, a point spent keeps XP unchanged.
  */
 export const dayLogLine = (story: LoggedStory, store: NativeFactStore): string | null => {
   const payload = story.storyPayload;
@@ -44,10 +43,8 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore): string |
       return withRevealXp(revealPayLine(payload) ?? story.presentation.title, store);
     case "SitePayout":
       return withClearXp(story.presentation.title, payload.site_id, store);
-    case "TierBought":
-      return payload.price === undefined
-        ? story.presentation.title
-        : xpSpentLine(story.presentation.title, formatCharge(Number(payload.price)));
+    case "SkillPointSpent":
+      return story.presentation.title;
     case "BuildingPaymentStory":
       return builtLineOf(payload) ?? story.presentation.title;
     case "BuildingPlacementStory":

@@ -2,7 +2,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPanel, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
-import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Tier, tierNumeral } from "@/ui/design-system/kit/words";
+import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { useState } from "react";
 
@@ -137,8 +137,23 @@ export const NodeTile = ({
 }) => {
   const look = STATE_LOOK[node.state];
   const reading =
-    node.maxTier === 4 ? (
-      <HudTier tier={tierOf(node)} />
+    node.maxTier === 5 ? (
+      node.sides?.length === 2 ? (
+        <span className="flex gap-2">
+          {node.sides.map((side) => (
+            <span
+              key={side.name}
+              className="flex items-center gap-0.5"
+              aria-label={`${side.name} ${tierNumeral(side.tier as Rank)}`}
+            >
+              <Icon name={side.icon} size={14} />
+              <HudTier tier={side.tier as Rank} />
+            </span>
+          ))}
+        </span>
+      ) : (
+        <HudTier tier={tierOf(node)} />
+      )
     ) : (
       <span className="text-hud-label tabular-nums text-hud-muted">
         {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}
@@ -298,8 +313,8 @@ const needIcon = (need: Need): IconMeaning =>
 
 /** The node's tier and its next as gems, complete at Legendary, or a one-off node's price. */
 const LevelLine = ({ node }: { node: TreeNode }) => {
-  if (node.maxTier === 4 && node.nextTier) return <HudTierStep from={tierOf(node)} to={node.nextTier} />;
-  if (node.maxTier === 4)
+  if (node.maxTier === 5 && node.nextTier) return <HudTierStep from={tierOf(node)} to={node.nextTier} />;
+  if (node.maxTier === 5)
     return (
       <span className="flex items-center gap-1.5 text-hud-label text-hud-muted">
         <HudTier tier={tierOf(node)} />
@@ -314,4 +329,4 @@ const LevelLine = ({ node }: { node: TreeNode }) => {
 };
 
 /** A tiered row's tier as the kit counts it, common (1) to legendary (5). */
-const tierOf = (node: TreeNode) => (node.tier + 1) as Tier;
+const tierOf = (node: TreeNode) => node.tier as Rank;

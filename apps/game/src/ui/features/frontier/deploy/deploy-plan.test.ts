@@ -76,19 +76,24 @@ describe("Frontier's deploy", () => {
         model: "ArmyProgress",
         key: "0x82",
         value: {
+          common_points: 0,
+          uncommon_points: 0,
+          rare_points: 0,
+          epic_points: 0,
+          legendary_points: 0,
           game_id: 1,
           explorer_id: 80,
           xp: 0,
           battle: 1,
           logistics: 1,
-          scouting: 1,
+          scouting: 0,
           scouting_kinds: 0,
           homecoming: 4,
         },
       },
     ] as never);
-    // An epic Homecoming returns 18% of its 100 whole troops.
-    expect(planOf(store, row)!.troops!.atHome).toBe(438);
+    // An epic Homecoming returns 21% of its 100 whole troops.
+    expect(planOf(store, row)!.troops!.atHome).toBe(441);
   });
 
   it("deploys onto the picked tile while it stays open, else the first open one, never onto unknown or taken ground", () => {

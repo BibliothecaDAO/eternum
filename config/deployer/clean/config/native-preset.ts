@@ -350,6 +350,7 @@ function buildEconomy(
         : new CairoOption(CairoOptionVariant.Some, {
             reveal_xp: progression.revealXp,
             fixed_xp: progression.fixedXp,
+            common_xp: progression.commonXp,
             uncommon_xp: progression.uncommonXp,
             rare_xp: progression.rareXp,
             epic_xp: progression.epicXp,

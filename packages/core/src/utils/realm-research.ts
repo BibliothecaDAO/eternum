@@ -15,9 +15,9 @@ const tierFields: Record<number, readonly [offset: bigint, width: bigint]> = {
   [research.ROW_SUPPLY_YARD]: [27n, 3n],
   [research.ROW_SCOUTS_LODGE]: [30n, 3n],
   [research.ROW_HEARTH]: [33n, 3n],
-  [research.ROW_SHRINE]: [44n, 1n],
-  [research.ROW_WELL]: [45n, 1n],
-  [research.ROW_DEPTH]: [46n, 2n],
+  [research.ROW_SHRINE]: [46n, 1n],
+  [research.ROW_WELL]: [47n, 1n],
+  [research.ROW_DEPTH]: [48n, 2n],
 };
 const choiceFields: Record<number, readonly [offset: bigint, width: bigint]> = {
   [research.ROW_SCOUTS_LODGE]: [36n, 2n],
@@ -25,7 +25,7 @@ const choiceFields: Record<number, readonly [offset: bigint, width: bigint]> = {
 
 const field = (learned: bigint, offset: bigint, width: bigint) => Number((learned >> offset) & ((1n << width) - 1n));
 
-/** A row's tier: 0 is common, 4 legendary; castle rows count shrines, wells and depths unlocked. */
+/** A row's tier: 0 is unresearched, 5 legendary; castle rows count shrines, wells and depths unlocked. */
 export function researchTier(learned: bigint, row: number): number {
   const slot = tierFields[row];
   if (!slot) throw new Error(`Unknown research row ${row}`);
@@ -58,7 +58,7 @@ export function researchPurchases(learned: bigint, row: number): number {
     : researchTier(learned, row);
 }
 
-/** The kind chosen at a shared Scouts tier, from 1 (uncommon). */
+/** The kind chosen at a shared Scouts tier, from 1 (Common). */
 export function researchChoice(learned: bigint, row: number, tier: number): number {
   const slot = choiceFields[row];
   if (!slot) throw new Error(`Research row ${row} has no choice`);
@@ -99,7 +99,7 @@ export const researchRowCategory: Readonly<Partial<Record<number, number>>> = {
   [research.ROW_HEARTH]: research.HEARTH,
 };
 
-/** A building type's tier on a realm, 1 (common) to 5 (legendary): every building of the type stands at it. */
+/** The building model's tier: unresearched 0 and Common I share the first of five models. */
 export function buildingTypeTier(
   store: Pick<NativeFactStore, "get">,
   gameId: number,
@@ -108,7 +108,7 @@ export function buildingTypeTier(
 ): number {
   const row = researchRowOf(category);
   const learned = realmLearned(store, gameId, structureId);
-  return row === undefined || learned === undefined ? 1 : researchTier(learned, row) + 1;
+  return row === undefined || learned === undefined ? 1 : Math.max(1, researchTier(learned, row));
 }
 
 /** The research row whose tiers apply to a building type, if it has one. */

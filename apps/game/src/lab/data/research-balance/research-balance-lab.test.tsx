@@ -38,31 +38,31 @@ function click(prefix: string) {
 it("lets the player raise Drill to level 3 then open Rations at level 2 for its own first price", () => {
   open("tree");
   click("Add Drill");
-  expect(button("Drill").textContent).toContain("level 3");
-  expect(button("Rations").textContent).toContain("4,000 Essence + 3,000 labor");
+  expect(button("Drill").textContent).toContain("rank 2");
+  expect(button("Rations").textContent).toContain("2,000 Essence + 1,500 labor");
   click("Rations");
   click("Add Rations");
-  expect(button("Rations").textContent).toContain("level 2");
-  expect(host.querySelector("[data-plan-cost]")?.textContent).toBe("Added cost: 20,000 Essence · 12,000 labor");
+  expect(button("Rations").textContent).toContain("rank 1");
+  expect(host.querySelector("[data-plan-cost]")?.textContent).toBe("Added cost: 6,000 Essence · 4,500 labor");
   expect(button("Add Rations").disabled).toBe(false);
 });
 it("separate levels let both sides reach 5", () => {
   open("tree");
-  for (let i = 0; i < 3; i++) click("Add Drill");
+  for (let i = 0; i < 4; i++) click("Add Drill");
   click("Rations");
-  for (let i = 0; i < 4; i++) click("Add Rations");
-  expect(button("Drill").textContent).toContain("level 5");
-  expect(button("Rations").textContent).toContain("level 5");
+  for (let i = 0; i < 5; i++) click("Add Rations");
+  expect(button("Drill").textContent).toContain("rank 5");
+  expect(button("Rations").textContent).toContain("rank 5");
   expect(button("Add Rations").disabled).toBe(true);
 });
 it("S2 keeps storage research and previews a real Granary upgrade", () => {
   open("storage");
-  expect(button("Granary").textContent).toContain("18,000 wheat capacity → 27,000 wheat capacity");
+  expect(button("Granary").textContent).toContain("18,000 wheat capacity → 25,200 wheat capacity");
   click("Granary");
   click("Add Granary");
-  expect(button("Granary").textContent).toContain("27,000 wheat capacity → 36,000 wheat capacity");
+  expect(button("Granary").textContent).toContain("25,200 wheat capacity → 32,400 wheat capacity");
   click("Reset plan");
-  expect(button("Granary").textContent).toContain("level 1");
+  expect(button("Granary").textContent).toContain("rank 0");
 });
 it("shows the measured beast replay and scales the selected guard reward by depth", () => {
   open("beasts");
@@ -78,13 +78,13 @@ it("shows the measured beast replay and scales the selected guard reward by dept
 it("keeps the realm upgrade payable under the alternative storage curve", () => {
   expect([0, 1, 2, 3].map((level) => capacity(level, 0))).toEqual([6000, 18000, 40000, 80000]);
   [4000, 15000, 40000].forEach((price, level) => expect(capacity(level, 0)).toBeGreaterThanOrEqual(price));
-  expect([0, 1, 2, 3].map((level) => capacity(level, 4))).toEqual([18000, 54000, 120000, 240000]);
+  expect([0, 1, 2, 3].map((level) => capacity(level, 5))).toEqual([18000, 54000, 120000, 240000]);
 });
 it("preserves exact replay totals and independent-side prices through the last purchase", () => {
   expect(beastReplay()).toEqual({ total: 2807.25, median: 85.125 });
-  expect(nextPrice(2, [4, 3], 1)).toEqual({ essence: 120000, labor: 60000 });
-  expect(nextPrice(2, [4, 4], 1)).toBeUndefined();
-  expect(nextPrice(2, [4, 0], 1)).toEqual({ essence: 4000, labor: 3000 });
+  expect(nextPrice(2, [5, 4], 1)).toEqual({ essence: 120000, labor: 60000 });
+  expect(nextPrice(2, [5, 5], 1)).toBeUndefined();
+  expect(nextPrice(2, [5, 0], 1)).toEqual({ essence: 2000, labor: 1500 });
   expect(DEPTHS.map((depth) => depth.strong.map((guard) => guard / 4))).toEqual([
     [112.5, 137.5],
     [337.5, 412.5],
@@ -95,7 +95,7 @@ it("preserves exact replay totals and independent-side prices through the last p
 
 it("shows paid training, the retained ladder and Common I", () => {
   open("tree");
-  expect(host.textContent).toContain("grants Uncommon training immediately");
+  expect(host.textContent).toContain("grants Common training immediately");
   expect(host.textContent).toContain("48,000 Essence + 9,000 labor");
   expect(host.textContent).toContain("Choose camps, rifts or beasts when building");
   const common = host.querySelector('.ui-tier[aria-label="Common"]')!;

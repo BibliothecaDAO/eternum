@@ -11,13 +11,14 @@ export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
       model: "ArmyProgressionRules",
       key: "0xf1",
       value: {
+        common_xp: 100,
         game_id: 1,
         reveal_xp: 2,
         fixed_xp: 200,
-        uncommon_xp: 100,
-        rare_xp: 200,
-        epic_xp: 400,
-        legendary_xp: 800,
+        uncommon_xp: 250,
+        rare_xp: 500,
+        epic_xp: 900,
+        legendary_xp: 1500,
       },
     },
     ...[201, 202].flatMap((id, slot) => [
@@ -34,12 +35,17 @@ export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
         model: "ArmyProgress",
         key: `0xf${id}2`,
         value: {
+          common_points: 0,
+          uncommon_points: 0,
+          rare_points: 0,
+          epic_points: 0,
+          legendary_points: 0,
           game_id: 1,
           explorer_id: id,
           xp: slot === 0 ? pickedXp : tappedXp,
           battle: 1,
-          logistics: slot === 0 ? 2 : 1,
-          scouting: 1,
+          logistics: slot === 0 ? 1 : 0,
+          scouting: 0,
           homecoming: 1,
           scouting_kinds: 0,
         },
@@ -79,7 +85,7 @@ export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
 
 /** The reported 500 into 1,500 transfer: 222 total XP against 20 unspent XP, with logistics on both armies. */
 export const transferXpArmies = () => {
-  const store = transferArmies(22, 20);
+  const store = transferArmies(222, 120);
   store.applyFacts([{ model: "ArmySlot", key: "0xf2023", value: null }]);
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   const facts = [
@@ -104,7 +110,7 @@ export const transferXpArmies = () => {
         {
           model: "ArmyProgress",
           key: `0xf${id}2`,
-          value: { ...progress, logistics: 2, homecoming: index === 0 ? 2 : 1 },
+          value: { ...progress, logistics: 1, homecoming: index === 0 ? 1 : 0 },
         },
         {
           model: "ArmySlot",

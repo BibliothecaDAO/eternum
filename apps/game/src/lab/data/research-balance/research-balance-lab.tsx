@@ -87,7 +87,7 @@ function StorageStudy() {
         </div>
         <div className="flex flex-col gap-5">
           <Evidence title="Two Granary buyers; neither needs it yet">
-            Krump holds 6,582 wheat and Volcanic 6,035. Their City holds 18,000 without research, or 27,000 with their
+            Krump holds 6,582 wheat and Volcanic 6,035. Their City holds 18,000 without research, or 25,200 with their
             one Granary pick. Ten idle Settlements are full; none of the 28 labor stores is full.
           </Evidence>
           <div className="overflow-x-auto">
@@ -112,7 +112,7 @@ function StorageStudy() {
             </table>
           </div>
           <p className="text-hud-body text-hud-muted">
-            Storage research stays at +50% per pick. At Kingdom, a full 25,000-troop deployment costs 50,000 wheat: take
+            Storage research adds +40% per rank. At Kingdom, a full 25,000-troop deployment costs 50,000 wheat: take
             Granary, Rations or deploy less. The 40,000-labor Empire upgrade fits the unresearched Kingdom store.
           </p>
         </div>
@@ -129,18 +129,18 @@ function TreeStudy() {
         <ResearchPlan row={2} level={1} initial={[1, 0]} />
         <div className="flex flex-col gap-5">
           <p className="text-hud-body">
-            Drill starts at level 2 and Rations at level 1. Each side has its own next price; both can reach level 5.
-            The building’s model shows the higher side. Gems run from Common I to Legendary V.
+            Drill starts at I and Rations at 0. Each side has its own next price; both can reach V. The building’s model
+            shows the higher side. Gems run from 0 to Legendary V.
           </p>
           <p className="text-hud-body">
             Two Barracks purchases in any combination open training buildings. Building a War hall, Supply yard, Scouts’
-            lodge or Hearth costs 12,000 Essence + 3,000 labor and grants Uncommon training immediately. Choose camps,
-            rifts or beasts when building the lodge; its next three selections share the same ladder.
+            lodge or Hearth costs 6,000 Essence + 1,500 labor and grants Common training immediately. Choose camps,
+            rifts or beasts when building the lodge; its next four selections share the same ladder.
           </p>
           <p className="text-hud-body">
-            The former 12,000 Essence + 3,000 labor first research purchase disappears. After construction, Rare costs
-            48,000 Essence + 9,000 labor, Epic 144,000 + 24,000, and Legendary 360,000 + 60,000. Rebuilding keeps the
-            realm’s training and grants no extra level.
+            After construction, Uncommon costs 16,000 Essence + 3,000 labor. Rare costs 48,000 Essence + 9,000 labor,
+            Epic 144,000 + 24,000, and Legendary 360,000 + 60,000. Rebuilding keeps the realm’s training and grants no
+            extra level.
           </p>
           <p className="text-hud-label text-hud-muted">
             The plan records added costs. The game also checks your balances, storage capacity and standing buildings.
@@ -166,7 +166,7 @@ function ResearchPlan({ row, level, initial }: { row: StudyRow; level: number; i
   return (
     <HudPanel
       title={`${item.name} research`}
-      cue={<HudTier tier={(Math.max(...counts) + 1) as 1 | 2 | 3 | 4 | 5} />}
+      cue={<HudTier tier={Math.max(...counts) as 0 | 1 | 2 | 3 | 4 | 5} />}
       icon={item.icon}
       collapsible={false}
       bodyClassName="flex flex-col gap-4 px-3 pb-3"
@@ -185,9 +185,9 @@ function ResearchPlan({ row, level, initial }: { row: StudyRow; level: number; i
             >
               <span className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-hud-strong">
-                  {name} · level {counts[index]! + 1}
+                  {name} · rank {counts[index]!}
                 </span>
-                <HudTier tier={(counts[index]! + 1) as 1 | 2 | 3 | 4 | 5} />
+                <HudTier tier={counts[index]! as 0 | 1 | 2 | 3 | 4 | 5} />
               </span>
               <span className="text-hud-body">
                 {effect(row, index, counts[index]!, level)}

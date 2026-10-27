@@ -19,7 +19,7 @@ const asked = vi.hoisted(() => ({
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => NOW }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: new NativeFactStore() } }) }));
 vi.mock("../hud/dock-armies", () => ({
-  useDockArmies: (realm: unknown) => (realm ? [{ explorerId: 9, canBuyTier: true }] : []),
+  useDockArmies: (realm: unknown) => (realm ? [{ explorerId: 9, canSpendSkillPoint: true }] : []),
 }));
 // History answers for the owner it is asked about: the watched player cleared a camp today.
 vi.mock("@/hooks/store/use-story-events-store", () => ({

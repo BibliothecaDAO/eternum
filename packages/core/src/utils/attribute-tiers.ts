@@ -1,14 +1,15 @@
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 
-/** An attribute tier as the contract stores it: 1 (common) to 5 (legendary). */
+/** An attribute tier as the contract stores it: 0 (untrained) to 5 (legendary). */
 const tierIndex = (tier: number): number => {
-  if (!Number.isInteger(tier) || tier < 1 || tier > nativeRuleConstants.ATTRIBUTE_CAP)
+  if (!Number.isInteger(tier) || tier < 0 || tier > nativeRuleConstants.ATTRIBUTE_CAP)
     throw new Error(`Invalid attribute tier ${tier}`);
-  return tier - 1;
+  return tier;
 };
 
 const BATTLE_BPS = [
   0,
+  nativeRuleConstants.BATTLE_COMMON_BPS,
   nativeRuleConstants.BATTLE_UNCOMMON_BPS,
   nativeRuleConstants.BATTLE_RARE_BPS,
   nativeRuleConstants.BATTLE_EPIC_BPS,
@@ -16,6 +17,7 @@ const BATTLE_BPS = [
 ];
 const SCOUTING_BPS = [
   0,
+  nativeRuleConstants.SCOUTING_COMMON_BPS,
   nativeRuleConstants.SCOUTING_UNCOMMON_BPS,
   nativeRuleConstants.SCOUTING_RARE_BPS,
   nativeRuleConstants.SCOUTING_EPIC_BPS,
@@ -23,6 +25,7 @@ const SCOUTING_BPS = [
 ];
 const HOMECOMING_BPS = [
   0,
+  nativeRuleConstants.HOMECOMING_COMMON_BPS,
   nativeRuleConstants.HOMECOMING_UNCOMMON_BPS,
   nativeRuleConstants.HOMECOMING_RARE_BPS,
   nativeRuleConstants.HOMECOMING_EPIC_BPS,
@@ -30,6 +33,7 @@ const HOMECOMING_BPS = [
 ];
 const LOGISTICS_STAMINA = [
   0,
+  nativeRuleConstants.LOGISTICS_COMMON_STAMINA,
   nativeRuleConstants.LOGISTICS_UNCOMMON_STAMINA,
   nativeRuleConstants.LOGISTICS_RARE_STAMINA,
   nativeRuleConstants.LOGISTICS_EPIC_STAMINA,
@@ -41,7 +45,7 @@ export const battleBonusBps = (tier: number): number => BATTLE_BPS[tierIndex(tie
 
 /**
  * What reaching a Scouting tier adds to the kind chosen for it, in basis points of that kind's base rate
- * (rules::scouting_increment_bps); common adds nothing.
+ * (rules::scouting_increment_bps); rank 0 adds nothing.
  */
 export const scoutingIncrementBps = (tier: number): number => SCOUTING_BPS[tierIndex(tier)]!;
 
@@ -63,13 +67,13 @@ const SCOUTING_KINDS = ["Camp", "Rift", "Beasts"] as const;
 export type ScoutingKind = (typeof SCOUTING_KINDS)[number];
 
 /**
- * The kind each Scouting tier above common went to, uncommon first, as progression.cairo packs `scouting_kinds`: two
- * bits a tier, from uncommon up.
+ * The kind each Scouting tier went to, Common first, as progression.cairo packs `scouting_kinds`: two
+ * bits a tier, from Common up.
  */
 export const scoutingKindsOf = (scouting: number, packed: number): ScoutingKind[] =>
-  Array.from({ length: Math.max(0, scouting - 1) }, (_, index) => {
+  Array.from({ length: Math.max(0, scouting) }, (_, index) => {
     const kind = SCOUTING_KINDS[(Math.floor(packed / 4 ** index) % 4) - 1];
-    if (!kind) throw new Error(`Scouting tier ${index + 2} has no kind`);
+    if (!kind) throw new Error(`Scouting tier ${index + 1} has no kind`);
     return kind;
   });
 
@@ -79,6 +83,6 @@ export const scoutingKindsOf = (scouting: number, packed: number): ScoutingKind[
  */
 export const scoutingBonusBps = (scouting: number, packed: number): Record<ScoutingKind, number> => {
   const bonus: Record<ScoutingKind, number> = { Camp: 0, Rift: 0, Beasts: 0 };
-  scoutingKindsOf(scouting, packed).forEach((kind, index) => (bonus[kind] += scoutingIncrementBps(index + 2)));
+  scoutingKindsOf(scouting, packed).forEach((kind, index) => (bonus[kind] += scoutingIncrementBps(index + 1)));
   return bonus;
 };

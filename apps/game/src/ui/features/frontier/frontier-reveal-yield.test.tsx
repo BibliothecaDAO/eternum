@@ -84,13 +84,14 @@ it("writes the same 57.6 reveal on Today's line, and keeps its fraction until th
       model: "ArmyProgressionRules",
       key: "0x101",
       value: {
+        common_xp: 100,
         game_id: 1,
         reveal_xp: 2,
         fixed_xp: 200,
-        uncommon_xp: 100,
-        rare_xp: 200,
-        epic_xp: 400,
-        legendary_xp: 800,
+        uncommon_xp: 250,
+        rare_xp: 500,
+        epic_xp: 900,
+        legendary_xp: 1500,
       },
     },
   ] as never);

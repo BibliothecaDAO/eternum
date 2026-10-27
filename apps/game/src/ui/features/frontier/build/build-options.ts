@@ -71,7 +71,7 @@ export type BuildEffect =
 export interface BuildOption {
   category: BuildingType;
   /** Its type's tier, 1 (common) to 5 (legendary): tiers apply to every building of the type. */
-  tier: 1 | 2 | 3 | 4 | 5;
+  tier: 0 | 1 | 2 | 3 | 4 | 5;
   cost: { resource: number; amount: number }[];
   /** How the price has risen: the copies already standing and what they multiply the base price by (1 with none). */
   rise: { standing: number; times: number };
@@ -109,7 +109,7 @@ export const readBuildOptions = (
       category,
       tier: (row === undefined
         ? 1
-        : Math.max(TRAINS[category] ? 2 : 1, researchTier(learned, row) + 1)) as BuildOption["tier"],
+        : Math.max(TRAINS[category] ? 1 : 0, researchTier(learned, row))) as BuildOption["tier"],
       cost,
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
       effect,

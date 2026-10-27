@@ -263,8 +263,10 @@ it.each([
 
 it("shows the tier an Upgrade reached and the XP it cost from history", () => {
   expect(
-    buildStoryEventPresentation(story("TierBought", { explorer_id: 7, attribute: "Logistics", tier: 3, price: 200 })),
-  ).toMatchObject({ title: "Logistics rare", description: "Lord 0123's army · 200 XP" });
+    buildStoryEventPresentation(
+      story("SkillPointSpent", { explorer_id: 7, choice: "Logistics", tier: 3, point_rank: 3, stamina: 30 }),
+    ),
+  ).toMatchObject({ title: "Logistics rare", description: "Lord 0123's army · rare point · +30 stamina" });
 });
 
 /** A story the viewer's own account told. */
@@ -439,7 +441,7 @@ describe("every story the chain can tell", () => {
     TroopsTransferred: { source: { Explorer: 7 }, target: { Explorer: 8 }, amount },
     LordsWithdrawn: { account: "0x111", amount },
     SiteUsed: { explorer_id: 7, coord, benefit: { Shrine: 200 } },
-    TierBought: { explorer_id: 7, attribute: "Battle", tier: 2, price: 100 },
+    SkillPointSpent: { explorer_id: 7, choice: "Battle", tier: 2, point_rank: 2, stamina: 30 },
     RewardChestOpened: { explorer_id: 7, structure_id: 5, coord, amount: 17 },
     SitePayout: {
       structure_id: 5,

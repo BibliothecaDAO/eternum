@@ -44,3 +44,5 @@ export * from "./production-output";
 export * from "./frontier-beast";
 
 export * from "./ruins";
+
+export * from "./skill-points";

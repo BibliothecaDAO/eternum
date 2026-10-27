@@ -10,17 +10,11 @@ import { comesHomeAtDayEnd, TIER_WORDS, TROOPS, XP, xpTowardTip } from "@/ui/des
 const TOKEN =
   "relative flex min-h-hud-frontier-token w-14 shrink-0 flex-col items-center justify-start gap-1 rounded-xl py-1";
 
-/** What XP buys next: the attribute tier's XP price and the tier it reaches, 2 (uncommon) to 5 (legendary). */
-export type XpGoal = { price: number; tier: number };
+/** The next cumulative XP milestone and the point it awards. */
+export type XpGoal = { at: number; rank: number };
 
-/**
- * An army's XP in words, for its tooltip: what it holds against the attribute tier it buys next. XP is a balance the
- * army spends; there is no level, so with every attribute at legendary it says the balance alone.
- */
 export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): string =>
-  goal
-    ? xpTowardTip(formatAmount(xp), formatCharge(goal.price), TIER_WORDS[goal.tier - 1])
-    : `${XP} ${formatAmount(xp)}`;
+  goal ? xpTowardTip(formatAmount(xp), formatCharge(goal.at), TIER_WORDS[goal.rank - 1]) : `${XP} ${formatAmount(xp)}`;
 
 /**
  * One army on a phone's dock: its number, the one its map plate carries; its portrait with its XP balance as the badge,
@@ -37,7 +31,7 @@ export const ArmyToken = ({
   stamina,
   troops,
   returnsHome,
-  canBuyTier,
+  canSpendSkillPoint,
   selected,
   flyTarget,
   onPick,
@@ -53,7 +47,7 @@ export const ArmyToken = ({
   troops: number | undefined;
   /** In the day's last hour, the troops its Homecoming sends home when the day ends; none otherwise. */
   returnsHome?: number;
-  canBuyTier: boolean;
+  canSpendSkillPoint: boolean;
   selected: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;
@@ -79,7 +73,7 @@ export const ArmyToken = ({
             {number}
           </span>
         )}
-        {canBuyTier && (
+        {canSpendSkillPoint && (
           <span className="absolute -right-2 -top-1.5 size-5">
             <SemanticIcon name="picks" className="size-full" />
           </span>

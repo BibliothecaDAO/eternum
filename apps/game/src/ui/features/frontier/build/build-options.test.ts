@@ -51,7 +51,7 @@ describe("Frontier's build options", () => {
       readBuildOptions(store, realm, true, 350)!.find((candidate) => candidate.category === category)!;
     const farm = option(BuildingType.ResourceWheat);
     const hut = option(BuildingType.WorkersHut);
-    expect(farm.tier).toBe(1);
+    expect(farm.tier).toBe(0);
     // One upgrade on each Farm side; Hut epic at bit 21.
     store.applyFacts([
       {
@@ -61,7 +61,7 @@ describe("Frontier's build options", () => {
       },
     ] as never);
     const farmAfter = option(BuildingType.ResourceWheat);
-    expect(farmAfter.tier).toBe(2);
+    expect(farmAfter.tier).toBe(1);
     expect((farmAfter.effect as { perHour: number }).perHour).toBeCloseTo(
       (farm.effect as { perHour: number }).perHour * 1.25,
       6,
@@ -86,7 +86,7 @@ describe("Frontier's build options", () => {
     const warHall = () =>
       readBuildOptions(store, realm, true, 350)!.find(({ category }) => category === BuildingType.WarHall)!;
     const gate = store.require("BoardRules", { game_id: 1 }).training_gate_tier;
-    expect(warHall()).toMatchObject({ standing: { gate }, effect: { kind: "trains", attribute: "Battle" }, tier: 2 });
+    expect(warHall()).toMatchObject({ standing: { gate }, effect: { kind: "trains", attribute: "Battle" }, tier: 1 });
     // One Drill and one Rations purchase meet the two-purchase gate.
     store.applyFacts([
       {

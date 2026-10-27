@@ -94,7 +94,7 @@ const useTakeStep = (
         return readiest && selectArmy(readiest.explorerId);
       }
       case "army": {
-        const tiered = armies.find((army) => army.canBuyTier);
+        const tiered = armies.find((army) => army.canSpendSkillPoint);
         return tiered && onOpenArmy(tiered.explorerId);
       }
       case "camp":

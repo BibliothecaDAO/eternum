@@ -38,7 +38,16 @@ const PRECISION = BigInt(RESOURCE_PRECISION);
 const XP_RULES = {
   model: "ArmyProgressionRules",
   key: "0xa1",
-  value: { game_id: 1, reveal_xp: 2, fixed_xp: 200, uncommon_xp: 100, rare_xp: 200, epic_xp: 400, legendary_xp: 800 },
+  value: {
+    common_xp: 100,
+    game_id: 1,
+    reveal_xp: 2,
+    fixed_xp: 200,
+    uncommon_xp: 250,
+    rare_xp: 500,
+    epic_xp: 900,
+    legendary_xp: 1500,
+  },
 };
 /** Every row's price at every tier, the Shrine's at 2,000 Essence and 0 labor; each building tier 4,000 and 3,000. */
 const price = (row: number, tier: number) => ({

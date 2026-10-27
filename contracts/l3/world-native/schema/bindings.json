@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "613e11d19aa31c39d7813b35de1a6f03fdb13f35adb177865fd59f37bf60de98",
+  "schemaIdentity": "8099889bbe1af8fe5983939273c29a50b3063018827db38225a70526d0d72a56",
   "commandAbi": [
     {
       "type": "interface",
@@ -296,8 +296,8 @@
           "type": "world_native::research::Research"
         },
         {
-          "name": "BuyTier",
-          "type": "world_native::progression::BuyTier"
+          "name": "SpendSkillPoint",
+          "type": "world_native::progression::SpendSkillPoint"
         },
         {
           "name": "InteractSite",
@@ -1351,25 +1351,21 @@
     },
     {
       "type": "struct",
-      "name": "world_native::progression::BuyTier",
+      "name": "world_native::progression::SpendSkillPoint",
       "members": [
         {
           "name": "explorer_id",
           "type": "core::integer::u64"
         },
         {
-          "name": "attribute",
-          "type": "world_native::progression::Attribute"
-        },
-        {
-          "name": "kind",
-          "type": "core::option::Option::<world_native::progression::ScoutingKind>"
+          "name": "choice",
+          "type": "world_native::progression::SkillPointUse"
         }
       ]
     },
     {
       "type": "enum",
-      "name": "world_native::progression::Attribute",
+      "name": "world_native::progression::SkillPointUse",
       "variants": [
         {
           "name": "Battle",
@@ -1381,25 +1377,15 @@
         },
         {
           "name": "Scouting",
-          "type": "()"
+          "type": "world_native::progression::ScoutingKind"
         },
         {
           "name": "Homecoming",
           "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::progression::ScoutingKind>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::progression::ScoutingKind"
         },
         {
-          "name": "None",
-          "type": "()"
+          "name": "Stamina",
+          "type": "core::integer::u8"
         }
       ]
     },

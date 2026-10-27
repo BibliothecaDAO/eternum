@@ -148,9 +148,9 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     fields: [7, 1, 12, 34, 0, 200],
     expected: { explorer_id: 7n, coord, benefit: { Shrine: 200n } },
   },
-  TierBought: {
-    fields: [7, 1, 1, 3, 200],
-    expected: { explorer_id: 7n, attribute: "Logistics", kind: null, tier: 3n, price: 200n },
+  SkillPointSpent: {
+    fields: [7, 1, 3, 0, 3, 40],
+    expected: { explorer_id: 7n, choice: "Logistics", point_rank: 3n, tier: 3n, stamina: 40n },
   },
   LordsWithdrawn: {
     fields: [17, 200, 0, 0],

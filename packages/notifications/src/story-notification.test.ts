@@ -116,7 +116,7 @@ const PAYLOADS: Record<string, Record<string, unknown>> = {
   BankLiquidity: { add: true },
   HyperstructurePoints: { points: 40_000_000 },
   BitcoinAwardStory: { winner_paid: 5 },
-  TierBought: { attribute: "Battle", tier: 2, price: 100 },
+  SkillPointSpent: { choice: "Battle", tier: 2, point_rank: 2, stamina: 30 },
   SitePayout: { reward: null },
   ExplorationReward: { receiver: 7, explorer_id: 9 },
   SpireDiscovered: { receiver: 7, explorer_id: 9 },
@@ -212,17 +212,17 @@ it.each([
 
 it.each([
   [
-    { attribute: "Logistics", tier: 2, price: 100 },
+    { choice: "Logistics", tier: 2, point_rank: 2, stamina: 30 },
     "Level up: Logistics",
-    "Your army's Logistics is now Uncommon, for 100 XP.",
+    "Your army's Logistics is now Uncommon. Uncommon point spent; 30 stamina restored.",
   ],
   [
-    { attribute: { Homecoming: {} }, tier: "0x5", price: 800 },
+    { choice: "Homecoming", tier: "0x5", point_rank: 5, stamina: 60 },
     "Level up: Homecoming",
-    "Your army's Homecoming is now Legendary, for 800 XP.",
+    "Your army's Homecoming is now Legendary. Legendary point spent; 60 stamina restored.",
   ],
 ] as const)("names the attribute a Level up raised and its new tier: %o", (payload, title, body) => {
-  expect(storyNotificationCopy("TierBought", payload, {})).toEqual({ title, body });
+  expect(storyNotificationCopy("SkillPointSpent", payload, {})).toEqual({ title, body });
 });
 
 it.each([
@@ -275,7 +275,7 @@ it.each([
 it.each([
   ["BankLiquidity", { add: false }],
   ["BitcoinAwardStory", {}],
-  ["TierBought", { attribute: "Battle", tier: 9, price: 1 }],
+  ["SkillPointSpent", { choice: "Battle", tier: 9, point_rank: 9, stamina: 30 }],
   ["ExplorationReward", { explorer_id: 9 }],
   ["SitePayout", {}],
   ["ResourceTransferStory", { to_entity_id: 11 }],

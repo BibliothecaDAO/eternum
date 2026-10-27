@@ -22,7 +22,7 @@ afterEach(() => {
   host.remove();
 });
 
-const nodes = readResearchTree(MID_REALM);
+const nodes = readResearchTree({ ...MID_REALM, learned: { ...MID_REALM.learned, 2: { tier: 3, sides: [0, 0, 0] } } });
 const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onFix = vi.fn()) =>
   act(() =>
     root.render(
@@ -85,7 +85,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     expect(choice()!.textContent).toContain("Armies find Shrines · +200 XP each");
     const legendaryHut = readResearchTree({
       ...MID_REALM,
-      learned: { ...MID_REALM.learned, 3: { tier: 4, sides: [] } },
+      learned: { ...MID_REALM.learned, 3: { tier: 5, sides: [] } },
     });
     act(() =>
       root.render(
@@ -109,8 +109,8 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     expect(tree.contains(choice())).toBe(false);
     expect(tree.compareDocumentPosition(choice()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(choice()!.textContent).toContain("Farm");
-    expect(choice()!.querySelector(".ui-tier-step")?.getAttribute("aria-label")).toBe("Uncommon → Rare");
-    expect([...choice()!.querySelectorAll(".ui-tier")].map((gem) => gem.textContent)).toEqual(["II", "III"]);
+    expect(choice()!.querySelector(".ui-tier-step")?.getAttribute("aria-label")).toBe("Common → Uncommon");
+    expect([...choice()!.querySelectorAll(".ui-tier")].map((gem) => gem.textContent)).toEqual(["I", "II"]);
     expect(button(/^Research Fields$/)).toBeDefined();
     const price = nodes
       .find(({ key }) => key === "row-0")!
@@ -146,7 +146,7 @@ it("shows the chosen research shares without a production formula", () => {
       />,
     ),
   );
-  expect(button(/^Fields/)!.textContent).toBe("Fields+25% → +50%");
+  expect(button(/^Fields/)!.textContent).toBe("Fields+20% → +40%");
   expect(button(/^Granary/)!.textContent).not.toContain("Each Farm");
   // The choice reads from its cards: no line explaining the sides or that they are kept.
   const lines = [...host.querySelectorAll("[data-lab='node-choice'] > span")].map((line) => line.textContent);

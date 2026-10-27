@@ -309,15 +309,16 @@ describe("native presets", () => {
         [BigInt(price.essence) / precision, BigInt(price.labor) / precision],
       ]),
     );
-    expect(preset.structures.research).toHaveLength(37);
+    expect(preset.structures.research).toHaveLength(45);
     expect(prices).toMatchObject({
-      [`${research.ROW_FARM}:1`]: [1000n, 1000n],
-      [`${research.ROW_FARM}:4`]: [30000n, 20000n],
-      [`${research.ROW_WORKSHOP}:2`]: [8000n, 6000n],
-      [`${research.ROW_BARRACKS}:3`]: [48000n, 24000n],
-      [`${research.ROW_HUT}:4`]: [15000n, 10000n],
-      [`${research.ROW_WAR_HALL}:1`]: [12000n, 3000n],
-      [`${research.ROW_HEARTH}:4`]: [360000n, 60000n],
+      [`${research.ROW_FARM}:1`]: [500n, 500n],
+      [`${research.ROW_FARM}:5`]: [30000n, 20000n],
+      [`${research.ROW_WORKSHOP}:3`]: [8000n, 6000n],
+      [`${research.ROW_BARRACKS}:4`]: [48000n, 24000n],
+      [`${research.ROW_HUT}:5`]: [15000n, 10000n],
+      [`${research.ROW_WAR_HALL}:1`]: [6000n, 1500n],
+      [`${research.ROW_WAR_HALL}:2`]: [16000n, 3000n],
+      [`${research.ROW_HEARTH}:5`]: [360000n, 60000n],
       [`${research.ROW_SHRINE}:1`]: [2000n, 0n],
       [`${research.ROW_WELL}:1`]: [6000n, 0n],
       [`${research.ROW_DEPTH}:1`]: [100000n, 0n],
@@ -325,10 +326,10 @@ describe("native presets", () => {
       [`${research.ROW_DEPTH}:3`]: [500000n, 0n],
     });
     expect(preset.structures.board.unwrap()).toMatchObject({
-      output_step_bps: 2500,
-      storage_step_bps: 5000,
-      population_step_bps: 2500,
-      ration_step: precision / 4n,
+      output_step_bps: 2000,
+      storage_step_bps: 4000,
+      population_step_bps: 2000,
+      ration_step: precision / 5n,
       training_gate_tier: 2,
       troop_store_deploys: 2,
       settlement_resource_cap: 6000,
@@ -342,8 +343,8 @@ describe("native presets", () => {
       expect([rule.population_cost, rule.simple_cost]).toEqual([
         2,
         [
-          { resource_type: 38, amount: 12000n * precision },
-          { resource_type: 23, amount: 3000n * precision },
+          { resource_type: 38, amount: 6000n * precision },
+          { resource_type: 23, amount: 1500n * precision },
         ],
       ]);
     }
@@ -517,12 +518,13 @@ describe("native presets", () => {
     });
     expect(design.economy.relics).toEqual([]);
     expect(design.economy.progression.unwrap()).toEqual({
+      common_xp: 100,
       reveal_xp: 2,
       fixed_xp: 200,
-      uncommon_xp: 100,
-      rare_xp: 200,
-      epic_xp: 400,
-      legendary_xp: 800,
+      uncommon_xp: 250,
+      rare_xp: 500,
+      epic_xp: 900,
+      legendary_xp: 1500,
     });
     expect(design.settlement.realms.resources).toEqual([
       { resource_type: 26, amount: 1_500_000_000_000n },
@@ -812,7 +814,7 @@ describe("the Frontier playground preset", () => {
       (sum, { price }) => sum + whole(price.essence),
       0,
     );
-    expect(essenceForEveryTier).toBe(3_466_500);
+    expect(essenceForEveryTier).toBe(3_510_250);
     expect(start.get(ResourcesIds.Essence)).toBeGreaterThan(essenceForEveryTier);
     // A castle stores two full deploys of its level; a Settlement's stores hold what the realm starts with, no more.
     const config = load(FRONTIER_PLAYGROUND_PRESET_ID);

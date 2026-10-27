@@ -11,8 +11,8 @@ import type { LearnedRow, RealmResearchFacts } from "./research-tree";
  */
 
 /** A building row's tier, uncommon to legendary, costs its base times these ladders. */
-const ESSENCE_LADDER = [1, 4, 12, 30];
-const LABOR_LADDER = [1, 3, 8, 20];
+const ESSENCE_LADDER = [0.5, 1, 4, 12, 30];
+const LABOR_LADDER = [0.5, 1, 3, 8, 20];
 const BUILDING_BASES: Partial<Record<number, { essence: number; labor: number }>> = {
   [research.ROW_FARM]: { essence: 1000, labor: 1000 },
   [research.ROW_WORKSHOP]: { essence: 2000, labor: 2000 },
@@ -33,7 +33,14 @@ const RESOURCE_CAPS = [6000, 18_000, 40_000, 80_000];
 
 const price = (row: number, tier: number) => {
   const base = BUILDING_BASES[row];
-  if (base) return { essence: base.essence * ESSENCE_LADDER[tier - 1]!, labor: base.labor * LABOR_LADDER[tier - 1]! };
+  if (base)
+    return {
+      essence:
+        row >= research.ROW_WAR_HALL && row <= research.ROW_HEARTH && tier === 2
+          ? 16000
+          : base.essence * ESSENCE_LADDER[tier - 1]!,
+      labor: base.labor * LABOR_LADDER[tier - 1]!,
+    };
   return { essence: CASTLE_PRICES[row]![tier - 1]!, labor: 0 };
 };
 
@@ -54,14 +61,14 @@ const realmOn = (
     learned,
     price,
     board: {
-      outputStepBps: 2500,
-      storageStepBps: 5000,
-      populationStepBps: 2500,
+      outputStepBps: 2000,
+      storageStepBps: 4000,
+      populationStepBps: 2000,
       trainingGateTier: 2,
     },
-    // A Knight deploys for 2 wheat; each Rations pick cuts 0.25.
-    wheatPerTroop: (rations) => 2 - rations * 0.25,
-    laborStore: (level) => (RESOURCE_CAPS[level]! * (10_000 + storeroomPicks * 5000)) / 10_000,
+    // A Knight deploys for 2 wheat; each Rations pick cuts 0.2.
+    wheatPerTroop: (rations) => 2 - rations * 0.2,
+    laborStore: (level) => (RESOURCE_CAPS[level]! * (10_000 + storeroomPicks * 4000)) / 10_000,
     shrineXp: 200,
     wellStamina: nativeRuleConstants.WELL_STAMINA,
   };
@@ -104,10 +111,18 @@ export const MID_REALM = realmOn(
 );
 
 const ARMY_RULES = {
-  levelXp: [100, 200, 400, 800] as const,
+  rules: {
+    game_id: 1,
+    reveal_xp: 2,
+    fixed_xp: 200,
+    common_xp: 100,
+    uncommon_xp: 250,
+    rare_xp: 500,
+    epic_xp: 900,
+    legendary_xp: 1500,
+  },
   revealXp: 2,
   shrineXp: 200,
-  refillOnLevel: nativeRuleConstants.TIER_STAMINA_REFILL,
 };
 
 /** The owner's Army 1: 1,500 troops, 12 XP, 4 of 120 stamina, every attribute common. */
@@ -119,7 +134,8 @@ export const EARLY_ARMY: ArmyDetailFacts = {
   stamina: { current: 4, max: 120, perExplore: 20 },
   secondsToFull: 4 * 3_600,
   revealYield: 75,
-  progress: { battle: 1, logistics: 1, scouting: 1, homecoming: 1, scoutingKinds: [] },
+  progress: { battle: 0, logistics: 0, scouting: 0, homecoming: 0, scoutingKinds: [] },
+  points: [0, 0, 0, 0, 0],
   ...ARMY_RULES,
 };
 
@@ -128,10 +144,11 @@ export const VETERAN_ARMY: ArmyDetailFacts = {
   name: "Army 2",
   art: "knight-t1",
   troops: 1_240,
-  xp: 260,
-  stamina: { current: 96, max: 170, perExplore: 20 },
+  xp: 620,
+  stamina: { current: 96, max: 120, perExplore: 20 },
   secondsToFull: 2 * 3_600,
   revealYield: 120,
-  progress: { battle: 2, logistics: 3, scouting: 2, homecoming: 1, scoutingKinds: ["rift"] },
+  progress: { battle: 2, logistics: 0, scouting: 0, homecoming: 0, scoutingKinds: [] },
+  points: [1, 0, 1, 0, 0],
   ...ARMY_RULES,
 };

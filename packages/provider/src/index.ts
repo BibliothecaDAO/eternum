@@ -556,28 +556,17 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  /** Upgrades one attribute of an army by one tier, paid from its XP; a Scouting tier names the kind it raises. */
-  public async buy_tier(
+  /** Spends an army's point on one rank, or on stamina alone. */
+  public async spend_skill_point(
     props: SystemProps.SystemSigner & {
       explorerId: number;
-      attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming";
-      scoutingKind?: "Camp" | "Rift" | "Beasts";
+      choice: NativeCommandPayloads["SpendSkillPoint"]["choice"];
     },
   ) {
     return this.submitCommand(
       props.signer,
-      {
-        kind: "BuyTier",
-        value: {
-          explorer_id: props.explorerId,
-          attribute: { kind: props.attribute, value: undefined },
-          kind:
-            props.scoutingKind === undefined
-              ? { kind: "None", value: undefined }
-              : { kind: "Some", value: { kind: props.scoutingKind, value: undefined } },
-        },
-      },
-      TransactionType.BUY_TIER,
+      { kind: "SpendSkillPoint", value: { explorer_id: props.explorerId, choice: props.choice } },
+      TransactionType.SPEND_SKILL_POINT,
     );
   }
 

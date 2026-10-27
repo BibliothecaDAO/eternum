@@ -22,19 +22,19 @@ async (page) => {
         if (part === "storage") {
           await page.getByLabel("Realm level").selectOption("2");
           const granary = page.getByRole("button", { name: /^Granary/ });
-          await assertText(granary, "40,000 wheat capacity → 60,000 wheat capacity");
+          await assertText(granary, "40,000 wheat capacity → 56,000 wheat capacity");
           await granary.click();
           await page.getByRole("button", { name: "Add Granary to plan", exact: true }).click();
-          await assertText(granary, "60,000 wheat capacity → 80,000 wheat capacity");
+          await assertText(granary, "56,000 wheat capacity → 72,000 wheat capacity");
         } else if (part === "tree") {
           await page.getByRole("button", { name: "Add Drill to plan", exact: true }).click();
-          await assertText(page.getByRole("button", { name: /^Drill/ }), "level 3");
+          await assertText(page.getByRole("button", { name: /^Drill/ }), "rank 2");
           const rations = page.getByRole("button", { name: /^Rations/ });
-          await assertText(rations, "4,000 Essence + 3,000 labor");
+          await assertText(rations, "2,000 Essence + 1,500 labor");
           await rations.click();
           await page.getByRole("button", { name: "Add Rations to plan", exact: true }).click();
-          await assertText(rations, "level 2");
-          await assertText(page.locator("[data-plan-cost]"), "20,000 Essence · 12,000 labor");
+          await assertText(rations, "rank 1");
+          await assertText(page.locator("[data-plan-cost]"), "6,000 Essence · 4,500 labor");
         } else {
           await assertText(page.locator("main"), "2,807.25 extra labor");
           await page.getByLabel("Depth", { exact: true }).selectOption("3");
@@ -46,6 +46,38 @@ async (page) => {
         await page.screenshot({ path: screenshot, fullPage: true });
         captures.push(screenshot);
       }
+      await page.goto(new URL("/lab/kit/hud/selected", entry).href);
+      const army = page.locator("[data-army-step]");
+      await army.waitFor();
+      await assertText(army, "620 / 900 XP");
+      if ((await army.locator('.ui-tier[data-tier="0"]').count()) !== 3)
+        throw new Error("Expected three untrained sockets");
+      const stats = `${output}/army-${viewport.width}.png`;
+      await page.screenshot({ path: stats });
+      captures.push(stats);
+      await army.getByRole("button", { name: "Level up", exact: true }).click();
+      await army.locator('[data-attribute="logistics"]').click();
+      await assertText(army, "+20");
+      const rank = `${output}/level-up-${viewport.width}.png`;
+      await page.screenshot({ path: rank });
+      captures.push(rank);
+      await army.locator('[data-attribute="stamina"]').click();
+      await army.getByRole("button", { name: "Spend III point", exact: true }).click();
+      await assertText(army, "+24");
+      if (await army.getByRole("button", { name: "Refill", exact: true }).isDisabled())
+        throw new Error("Held point cannot refill");
+      const stamina = `${output}/stamina-${viewport.width}.png`;
+      await page.screenshot({ path: stamina });
+      captures.push(stamina);
+      await page.goto("about:blank");
+      await page.goto(new URL("/lab/kit/hud/research", entry).href);
+      const farm = page.locator('[data-node="row-0"]');
+      await farm.waitFor();
+      if ((await farm.locator(".ui-tier").count()) !== 2) throw new Error("Research sides need separate gems");
+      const research = `${output}/research-${viewport.width}.png`;
+      await page.screenshot({ path: research });
+      captures.push(research);
+      await page.goto("about:blank");
       for (const state of ["site-ruin", "build-training"]) {
         await page.goto(new URL(`/lab/kit/hud/${state}`, entry).href);
         const sheet = page.locator("[data-kit-sheet]");
@@ -54,9 +86,9 @@ async (page) => {
           await assertText(sheet, "First ruin clear or day end");
           await assertText(sheet, "+128");
         } else {
-          await assertText(sheet, "12K");
-          await assertText(sheet, "3,000");
-          if ((await sheet.locator('.ui-tier[aria-label="Uncommon"]').count()) < 4)
+          await assertText(sheet, "6,000");
+          await assertText(sheet, "1,500");
+          if ((await sheet.locator('.ui-tier[aria-label="Common"]').count()) < 4)
             throw new Error("Training ranks missing");
         }
         const outside = await sheet.evaluate((node) => {

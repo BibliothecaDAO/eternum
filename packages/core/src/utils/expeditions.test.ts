@@ -161,7 +161,7 @@ describe("expedition spire", () => {
       ...storeWith(expeditionRules),
       get: (model: string, key: { structure_id: number }) =>
         model === "RealmKnowledge"
-          ? { learned: key.structure_id === 3 ? 1n << 46n : 0n }
+          ? { learned: key.structure_id === 3 ? 1n << 48n : 0n }
           : storeWith(expeditionRules).get(model),
       inGame: (model: string) => (model === "Structure" ? [realm(1), realm(3)] : [])[Symbol.iterator](),
     };

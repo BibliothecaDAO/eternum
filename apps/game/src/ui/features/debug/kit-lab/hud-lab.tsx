@@ -284,8 +284,8 @@ const tile = (
 ): LabTile => ({ key, icon, name, tip: "", gives, takes, standing });
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"]) =>
   ({ kind: "price", prices: [{ of: "labor", amount: labor }], short }) as const;
-/** An open training building at Uncommon: new armies start one tier up in its attribute. */
-const TRAINS = { icon: "order-rage", value: <HudTier tier={2} /> } as const;
+/** A training building grants Common to new armies. */
+const TRAINS = { icon: "order-rage", value: <HudTier tier={1} /> } as const;
 /**
  * A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor, the
  * Workshop 3h 10m from its 10,000.
@@ -306,15 +306,15 @@ const BUILD_TILES: LabTile[] = [
   tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, {
     kind: "price",
     prices: [
-      { of: "essence", amount: 12_000 },
-      { of: "labor", amount: 3_000 },
+      { of: "essence", amount: 6_000 },
+      { of: "labor", amount: 1_500 },
     ],
   }),
   tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, {
     kind: "price",
     prices: [
-      { of: "essence", amount: 12_000 },
-      { of: "labor", amount: 3_000 },
+      { of: "essence", amount: 6_000 },
+      { of: "labor", amount: 1_500 },
     ],
   }),
   tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...TRAINS, icon: "order-enlightenment" }, 2, { kind: "built" }),
@@ -1134,8 +1134,8 @@ export const HudLab = () => {
             prices={
               lab.realmView === "build-training"
                 ? [
-                    { of: "essence", amount: 12_000 },
-                    { of: "labor", amount: 3_000 },
+                    { of: "essence", amount: 6_000 },
+                    { of: "labor", amount: 1_500 },
                   ]
                 : [{ of: "labor", amount: lab.realmView === "build" ? 6_800 : 800 }]
             }
@@ -1271,7 +1271,7 @@ type LabBuilding = { category: BuildingType; row: number; standing: number; make
 /** A building's card on the realm some days in, its Delete drawn as it rests. */
 const LabBuildingCard = ({ building }: { building: keyof typeof LAB_BUILDINGS }) => {
   const { category, row, standing, makes, essence = MID_REALM.essence }: LabBuilding = LAB_BUILDINGS[building];
-  const node = readResearchTree({ ...MID_REALM, essence }).find((each) => each.row === row && each.maxTier === 4);
+  const node = readResearchTree({ ...MID_REALM, essence }).find((each) => each.row === row && each.maxTier === 5);
   return (
     <BuildingCardView
       name={buildingName(category)}
@@ -1439,7 +1439,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             returnsHome={returnsHome(army)}
             stamina={stamina(army)}
             xp={army.xp}
-            canBuyTier={army.tier === true}
+            canSpendSkillPoint={army.tier === true}
             selected={lab.selected === index}
             onPick={lab.visiting ? undefined : noop}
           />
@@ -1460,7 +1460,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
           stamina={stamina(army)}
           troops={army.troops}
           returnsHome={returnsHome(army)}
-          canBuyTier={army.tier === true}
+          canSpendSkillPoint={army.tier === true}
           selected={lab.selected === index}
           onPick={noop}
         />

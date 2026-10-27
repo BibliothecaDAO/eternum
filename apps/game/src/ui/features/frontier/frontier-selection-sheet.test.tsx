@@ -267,7 +267,7 @@ const armyAtSpire = () => {
   const beside = getNeighborHexes(spire.col, spire.row)[0];
   store.applyFacts([
     // research.cairo: the depth row's tier sits at bit 46; Ethereal I is researched.
-    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 46n } },
+    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 48n } },
     {
       model: "DepthRules",
       key: "0x901",
@@ -611,9 +611,9 @@ it("the map's actual transfer selection shows the survivor before the player con
     expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Transfer troops");
     // Army 1 loses its 200 total XP (100 unspent, 100 in an upgrade); Army 2 keeps its progression and merged stamina.
     const expectMergePreview = () => {
-      expect(host.querySelector('[aria-label="Army 1 total XP"]')?.textContent).toBe("Total XP200→0");
+      expect(host.querySelector('[aria-label="Army 1 total XP"]')?.textContent).toBe("Total XP100→0");
       expect(host.querySelector('[aria-label="Army 2 total XP"]')?.textContent).toBe("Total XP0→0");
-      expect(host.querySelector(".ui-notice")?.textContent).toBe("Army 1 loses its XP and upgrades.");
+      expect(host.querySelector(".ui-notice")?.textContent).toBe("Army 1 loses its XP, points and upgrades.");
       expect(host.querySelector("s")).toBeNull();
       expect(host.textContent).toContain("100/120→7");
     };
@@ -625,7 +625,7 @@ it("the map's actual transfer selection shows the survivor before the player con
     // Confirming the loss preserves the preview; only the final press sends the transfer.
     expectMergePreview();
     const final = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Lose 200 XP, merge into Army 2",
+      (button) => button.textContent === "Confirm merge into Army 2",
     )!;
     await act(async () => final.click());
     expect(swap).toHaveBeenCalledWith(

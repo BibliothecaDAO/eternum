@@ -22,13 +22,14 @@ export const ownerDayLog = (now: number) => {
       model: "ArmyProgressionRules",
       key: "0x101",
       value: {
+        common_xp: 100,
         game_id: 1,
         reveal_xp: 2,
         fixed_xp: 200,
-        uncommon_xp: 100,
-        rare_xp: 200,
-        epic_xp: 400,
-        legendary_xp: 800,
+        uncommon_xp: 250,
+        rare_xp: 500,
+        epic_xp: 900,
+        legendary_xp: 1500,
       },
     },
     ...BEASTS.map(({ id, guard }, index) => ({
@@ -47,7 +48,7 @@ export const ownerDayLog = (now: number) => {
     })),
   ] as never);
   const reveal = { resource_type: ResourcesIds.Labor, amount: "78500000000" };
-  const tier = (title: string, price: string) => ({ story: "TierBought", storyPayload: { price }, title });
+  const tier = (title: string) => ({ story: "SkillPointSpent", storyPayload: {}, title });
   const cleared = (site: number, title: string) => ({
     story: "SitePayout",
     storyPayload: { site_id: site, reward: null },
@@ -55,7 +56,7 @@ export const ownerDayLog = (now: number) => {
   });
   const day = [
     cleared(SITE, "Rift cleared"),
-    tier("Scouting Uncommon", "0x64"),
+    tier("Scouting Uncommon"),
     {
       story: "BattleEvent",
       storyPayload: {
@@ -65,13 +66,13 @@ export const ownerDayLog = (now: number) => {
       },
       title: "Guard holds",
     },
-    tier("Battle Uncommon", "0x64"),
+    tier("Battle Uncommon"),
     { story: "ExplorationReward", storyPayload: reveal, title: "Explored" },
     cleared(BEASTS[1].id, "Beasts cleared"),
     { story: "ExplorationReward", storyPayload: reveal, title: "Explored" },
     cleared(BEASTS[0].id, "Beasts cleared"),
-    tier("Logistics Rare", "0xc8"),
-    tier("Logistics Uncommon", "0x64"),
+    tier("Logistics Rare"),
+    tier("Logistics Uncommon"),
   ];
   return day.flatMap(({ story, storyPayload, title }, index) => {
     const text = dayLogLine({ story, storyPayload, presentation: { title } }, store);

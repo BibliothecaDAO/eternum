@@ -18,8 +18,8 @@ const learned =
   (3n << 30n) + // Scouts' lodge epic
   (1n << 36n) + // ...first tier on rifts
   (2n << 40n) + // ...third tier on beasts
-  (1n << 44n) + // Shrine
-  (2n << 46n); // Ethereal II
+  (1n << 46n) + // Shrine
+  (2n << 48n); // Ethereal II
 
 const store = (value: bigint | undefined) =>
   ({ get: () => (value === undefined ? undefined : { game_id: 7, structure_id: 9, learned: value }) }) as never;
@@ -47,11 +47,11 @@ describe("realm research", () => {
     expect(() => researchChoice(learned, research.ROW_HUT, 1)).toThrow("has no choice");
   });
 
-  it("uses the higher side for building display and retains all eight purchases", () => {
-    for (let make = 0; make <= 4; make++)
-      for (let other = 0; other <= 4; other++) {
+  it("uses the higher side for building display and retains all ten purchases", () => {
+    for (let make = 0; make <= 5; make++)
+      for (let other = 0; other <= 5; other++) {
         const value = BigInt(make) | (BigInt(other) << 3n);
-        expect(buildingTypeTier(store(value), 7, 9, research.FARM)).toBe(Math.max(make, other) + 1);
+        expect(buildingTypeTier(store(value), 7, 9, research.FARM)).toBe(Math.max(1, make, other));
         expect(researchPurchases(value, research.ROW_FARM)).toBe(make + other);
         expect(researchPicks(value, research.ROW_FARM, 0)).toBe(make);
         expect(researchPicks(value, research.ROW_FARM, 1)).toBe(other);

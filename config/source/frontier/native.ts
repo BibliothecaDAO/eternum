@@ -10,9 +10,9 @@ import { FRONTIER_PRESET_ID } from "../common/native-preset-modes";
 /** Every building a Frontier board can raise, by its category id. */
 export const buildingIds = Array.from({ length: research.HEARTH }, (_, index) => index + 1);
 
-// A building row's tier, uncommon to legendary, costs its base times this ladder, in Essence and in labor.
-const essenceLadder = [1, 4, 12, 30];
-const laborLadder = [1, 3, 8, 20];
+// Common I is half the old first price; II–V retain the four established prices.
+const essenceLadder = [0.5, 1, 4, 12, 30];
+const laborLadder = [0.5, 1, 3, 8, 20];
 const buildingRows = [
   { row: research.ROW_FARM, essence: 1000, labor: 1000 },
   { row: research.ROW_WORKSHOP, essence: 2000, labor: 2000 },
@@ -61,7 +61,7 @@ export const frontierPreset: NativePreset = {
       "LevelUp",
       "Research",
       "EnterDepth",
-      "BuyTier",
+      "SpendSkillPoint",
       "InteractSite",
       "OpenRelicChest",
       "RefillStamina",
@@ -76,10 +76,10 @@ export const frontierPreset: NativePreset = {
   board: {
     demolitionRefundBps: 5000,
     workshopRate: 0.056,
-    outputStepBps: 2500,
-    storageStepBps: 5000,
-    populationStepBps: 2500,
-    rationStep: 0.25,
+    outputStepBps: 2000,
+    storageStepBps: 4000,
+    populationStepBps: 2000,
+    rationStep: 0.2,
     trainingGateTier: 2,
     troopStoreDeploys: 2,
     resourceStoreCaps: [6000, 18000, 40000, 80000],
@@ -89,7 +89,8 @@ export const frontierPreset: NativePreset = {
       essenceLadder.map((factor, index) => ({
         row,
         tier: index + 1,
-        essenceCost: essence * factor,
+        essenceCost:
+          row >= research.ROW_WAR_HALL && row <= research.ROW_HEARTH && index === 1 ? 16000 : essence * factor,
         laborCost: labor * laborLadder[index]!,
       })),
     ),
@@ -111,7 +112,15 @@ export const frontierPreset: NativePreset = {
     wellBps: 300,
     emptyRevealLimit: 7,
   },
-  progression: { revealXp: 2, fixedXp: 200, uncommonXp: 100, rareXp: 200, epicXp: 400, legendaryXp: 800 },
+  progression: {
+    revealXp: 2,
+    fixedXp: 200,
+    commonXp: 100,
+    uncommonXp: 250,
+    rareXp: 500,
+    epicXp: 900,
+    legendaryXp: 1500,
+  },
   labor: { amount: 1000, accountDailyLimit: 0 },
   // Daily chest prices cannot exceed 50 LORDS per share.
   chests: {
