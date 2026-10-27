@@ -2636,8 +2636,18 @@ export default class WorldmapScene extends WarpTravel {
     this.factsShown = true;
   }
 
-  // hexcoords is normalized
+  /**
+   * A tap or click on the map: answered, then, on a phone, the tapped tile kept in sight above the card it opened. The
+   * camera follows the player's tap only, never a selection made elsewhere (owner, 27 October 2026: Deploy must not
+   * move the camera).
+   */
   protected onHexagonClick(hexCoords: HexPosition | null) {
+    this.answerMapTap(hexCoords);
+    if (hexCoords) this.keepTappedTileInSight(contractHexOf(hexCoords));
+  }
+
+  /** What a tap or click on the map does (hexCoords is normalized). */
+  private answerMapTap(hexCoords: HexPosition | null) {
     if (this.factsShown) {
       this.factsShown = false;
       this.onHexagonMouseMove(null);
@@ -4149,19 +4159,26 @@ export default class WorldmapScene extends WarpTravel {
     this.state.selectOnMap(null);
   }
 
+  /** The selected tile as the map shows it: its ring and its plate. */
+  private showSelectedTile(selectedHex: HexPosition | null): void {
+    this.state.selectedHex = selectedHex;
+    this.showSelectedHexRing(selectedHex);
+    this.refreshSelectedPlate();
+  }
+
   /**
    * On a phone a tapped tile's card stands over the map's foot (owner, 26 October 2026: layout A, "the camera puts the
-   * tapped tile in the map left open"): once the card stands, a tile it covers is framed in the map left open above it.
-   * A tile still in sight keeps the camera where the player put it.
+   * tapped tile in the map left open"): once the card stands, the tapped tile, when it is the one selected and the card
+   * covers it, is framed in the map left open above it. A tile still in sight keeps the camera where the player put it.
    */
-  private keepSelectedTileInSight(selectedHex: HexPosition | null): void {
-    if (!selectedHex || !this.hudCarriesOrderVerb()) return;
+  private keepTappedTileInSight(tapped: HexPosition): void {
+    if (!this.hudCarriesOrderVerb()) return;
     // The card opens on the render after the tap; the open area is read once it stands.
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         const now = this.state.selectedHex;
-        if (!now || now.col !== selectedHex.col || now.row !== selectedHex.row) return;
-        const tile = Position.fromContract({ x: selectedHex.col, y: selectedHex.row });
+        if (!now || now.col !== tapped.col || now.row !== tapped.row) return;
+        const tile = Position.fromContract({ x: tapped.col, y: tapped.row });
         const normalized = tile.getNormalized();
         const viewport = { width: window.innerWidth, height: window.innerHeight };
         if (inOpenMapArea(projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera), viewport)) return;
@@ -8990,12 +9007,7 @@ export default class WorldmapScene extends WarpTravel {
         this.handleEntityActionsStoreUpdate(nextEntityActions, previousEntityActions);
         this.refreshSelectedPlate();
       },
-      onSelectedHexChanged: (selectedHex) => {
-        this.state.selectedHex = selectedHex;
-        this.showSelectedHexRing(selectedHex);
-        this.refreshSelectedPlate();
-        this.keepSelectedTileInSight(selectedHex);
-      },
+      onSelectedHexChanged: (selectedHex) => this.showSelectedTile(selectedHex),
     });
     this.storeSubscriptions.push(
       bindOwnershipRings({
@@ -9131,11 +9143,7 @@ export default class WorldmapScene extends WarpTravel {
       onEntityActionStateSynced: () => this.syncEntityActionPathsTransitionToken(),
       hasMissingActionPathOwnership: () => this.isMissingActionPathOwnershipState(),
       clearEntitySelection: () => this.clearEntitySelection(),
-      onSelectedHexChanged: (selectedHex) => {
-        this.state.selectedHex = selectedHex;
-        this.showSelectedHexRing(selectedHex);
-        this.refreshSelectedPlate();
-      },
+      onSelectedHexChanged: (selectedHex) => this.showSelectedTile(selectedHex),
       onSynced: (uiState) => {
         this.logInteractionDebug("sync_state_from_store", {
           ...this.getInteractionDebugSnapshot(),
