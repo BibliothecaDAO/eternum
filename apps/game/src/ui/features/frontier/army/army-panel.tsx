@@ -83,23 +83,94 @@ export const ArmyDetail = ({
   };
   return (
     <div data-army-step="stats" className="flex flex-col gap-3 pt-1">
-      <div className="flex items-center gap-3">
-        <span className="flex shrink-0 flex-col items-center gap-1">
-          <HudPortrait icon={army.art} label={TROOPS} />
-          <StaminaCount stamina={army.stamina} />
-        </span>
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
-          <StatusLine army={army} />
-          <HudStamina stamina={army.stamina} />
-        </div>
-        {refill}
-      </div>
+      <StatusHeader army={army} refill={refill} />
       <div className="grid grid-cols-4 gap-1.5">
         {army.attributes.map((attribute) => (
           <AttributeTile key={attribute.key} attribute={attribute} onOpen={() => choose(attribute.key)} />
         ))}
       </div>
       <XpBlock army={army} onLevelUp={() => setOpen(true)} />
+    </div>
+  );
+};
+
+/** Lab-only: the three header layouts drawn for the owner's pick (10-27), chosen by `?armyLayout=a|b|c`. */
+const StatusHeader = ({ army, refill }: { army: ArmyView; refill?: ReactNode }) => {
+  const layout = new URLSearchParams(window.location.search).get("armyLayout");
+  const troops = (
+    <HudChip icons={["troops"]} label={TROOPS}>
+      {formatShort(army.troops)}
+    </HudChip>
+  );
+  const fullIn = army.secondsToFull !== undefined && army.secondsToFull > 0 && <FullIn seconds={army.secondsToFull} />;
+  const pays = army.revealYield !== null && (
+    <HudChip icons={["essence", "labor"]} label={ARMY_DETAIL.revealPaysLabel}>
+      {army.revealYield === undefined ? "—" : ARMY_DETAIL.revealPays(formatShort(army.revealYield))}
+    </HudChip>
+  );
+  const bar = (
+    <span className="min-w-0 flex-1">
+      <HudStamina stamina={army.stamina} />
+    </span>
+  );
+  if (layout === "a")
+    return (
+      <div className="flex items-center gap-3">
+        <HudPortrait icon={army.art} label={TROOPS} />
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <span className="flex flex-wrap items-center gap-1.5">
+            {troops}
+            {pays}
+          </span>
+          <span className="flex items-center gap-2">
+            <StaminaCount stamina={army.stamina} />
+            {bar}
+            {fullIn}
+          </span>
+        </div>
+        {refill}
+      </div>
+    );
+  if (layout === "b")
+    return (
+      <div className="flex items-center gap-3">
+        <HudPortrait icon={army.art} label={TROOPS} />
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <span className="flex flex-wrap items-center gap-1.5">
+            {troops}
+            {fullIn}
+            {pays}
+          </span>
+          <span className="flex items-center gap-2">
+            {bar}
+            <StaminaCount stamina={army.stamina} />
+          </span>
+        </div>
+        {refill}
+      </div>
+    );
+  if (layout === "c")
+    return (
+      <div className="flex items-center gap-2">
+        <HudPortrait icon={army.art} label={TROOPS} />
+        <StaminaCount stamina={army.stamina} />
+        {bar}
+        {troops}
+        {pays}
+        {refill}
+      </div>
+    );
+  return (
+    <div className="flex items-center gap-3">
+      <span className="flex shrink-0 flex-col items-center gap-1">
+        <HudPortrait icon={army.art} label={TROOPS} />
+        <StaminaCount stamina={army.stamina} />
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
+        <StatusLine army={army} />
+        <HudStamina stamina={army.stamina} />
+      </div>
+      {refill}
     </div>
   );
 };
