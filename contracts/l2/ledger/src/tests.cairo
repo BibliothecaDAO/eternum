@@ -2715,4 +2715,3 @@ fn frontier_extension_refuses_missing_closed_or_changed_preset() {
         );
     }
 }
-
