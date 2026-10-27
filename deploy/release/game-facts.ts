@@ -6,23 +6,33 @@
  *   bun deploy/release/game-facts.ts diff <before.json> <after.json> [--expect Model,Model.member,...]
  *
  * A snapshot is Herald's own checkpoint (its whole fold, saved every 100 blocks), read from the shard's database over
- * SSH, read-only, and narrowed to the game's rows. A diff lists every row added, removed or changed, with the members
- * that changed, and fails when any of them is outside --expect: the models (or single members) the release is meant to
- * change. Players' own moves change rows too, so take both snapshots of a game nobody is playing, the second once its
- * block is past the release's transaction.
+ * SSH, read-only, and narrowed to the game's rows. It is refused for a game the checkpoint does not hold, or one Herald
+ * has finalized (it evicts their gameplay rows, so what is left is not their progress). A diff compares two snapshots
+ * of one game on one chain, world and schema, and refuses anything else (exit 2). It lists every row added, removed or
+ * changed, with the members that changed, and fails (exit 1) when any of them is outside --expect: the models (or single
+ * members) the release is meant to change. A release moves the game's pin, so name it too, as release 4 would:
+ * --expect GameRegistry.end_at,GameRelease.release_id. Players' own moves change rows as well, so take both snapshots of
+ * a game nobody is playing, the second once its block is past the release's transaction.
  */
 import { writeFileSync, readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import type { FoldCheckpoint } from "../../apps/herald/src/types";
+import { finalizedGames } from "../../apps/herald/src/world-fold";
 import { boxRead } from "../first/box";
 import { shell } from "../first/process";
 import { environments } from "../first/settings";
 
+const USAGE =
+  "Usage: game-facts.ts snapshot <dev|production> <game_id> <out.json> | diff <before> <after> [--expect A,B.c]";
+
 type Row = { key: Record<string, unknown>; value: Record<string, unknown> };
 
+/** One game's rows in one checkpoint, with what identifies them: the chain, the Games world and the fact schema. */
 export interface GameFacts {
+  chain: string;
+  world: string;
+  schema: string;
   confirmedBlock: number;
-  schema: string | null;
   gameId: number;
   models: Record<string, Record<string, Row>>;
 }
@@ -37,19 +47,34 @@ export interface FactChange {
 }
 
 /** The game's rows in a Herald checkpoint: every game-scoped row whose game_id is this game. */
-export function gameFacts(checkpoint: FoldCheckpoint, confirmedBlock: number, gameId: number): GameFacts {
+export function gameFacts(
+  checkpoint: FoldCheckpoint,
+  at: { chain: string; confirmedBlock: number },
+  gameId: number,
+): GameFacts {
+  if (!checkpoint.native_schema_identity) throw new Error("The checkpoint names no fact schema");
   const models: GameFacts["models"] = {};
   for (const { model, rows } of checkpoint.models) {
     const own = rows.filter((row) => isGameRow(row.key, gameId));
     if (own.length)
       models[model] = Object.fromEntries(own.map((row) => [row.entity_id, { key: row.key, value: row.value }]));
   }
-  return { confirmedBlock, schema: checkpoint.native_schema_identity ?? null, gameId, models };
+  const facts = {
+    chain: felt(at.chain),
+    world: felt(checkpoint.world_address),
+    schema: checkpoint.native_schema_identity,
+    confirmedBlock: at.confirmedBlock,
+    gameId,
+    models,
+  };
+  requireProgress(facts);
+  return facts;
 }
 
 /** Every row that differs between two snapshots of one game, each marked expected or not. */
 export function diffFacts(before: GameFacts, after: GameFacts, expect: readonly string[]): FactChange[] {
-  if (before.gameId !== after.gameId) throw new Error(`Snapshots of games ${before.gameId} and ${after.gameId}`);
+  requireSameGame(before, after);
+  [before, after].forEach(requireProgress);
   const expected = new Set(expect);
   return sortedUnion(Object.keys(before.models), Object.keys(after.models)).flatMap((model) => {
     const was = before.models[model] ?? {};
@@ -58,6 +83,28 @@ export function diffFacts(before: GameFacts, after: GameFacts, expect: readonly 
       (entity) => rowChange(model, entity, was[entity], now[entity], expected) ?? [],
     );
   });
+}
+
+/** A snapshot holds a game's progress only while the checkpoint holds the game and Herald has not finalized it. */
+function requireProgress(facts: GameFacts) {
+  if (!Object.keys(facts.models.GameRegistry ?? {}).length)
+    throw new Error(`Game ${facts.gameId} is not in this checkpoint`);
+  const rows = (model: string) =>
+    Object.values(facts.models[model] ?? {}).map(({ key, value }) => ({ ...key, ...value }));
+  if (finalizedGames(rows).includes(String(facts.gameId)))
+    throw new Error(
+      `Game ${facts.gameId} is finalized: Herald evicts its gameplay rows, so no snapshot holds its progress`,
+    );
+}
+
+/** Two snapshots compare only as one game on one chain, world and fact schema. */
+function requireSameGame(before: GameFacts, after: GameFacts) {
+  for (const field of ["chain", "world", "schema"] as const) {
+    if (!before[field] || !after[field]) throw new Error(`A snapshot names no ${field}`);
+    if (before[field] !== after[field])
+      throw new Error(`The snapshots are of different ${field}s: ${before[field]} and ${after[field]}`);
+  }
+  if (before.gameId !== after.gameId) throw new Error(`Snapshots of games ${before.gameId} and ${after.gameId}`);
 }
 
 /** One row's change, if any: a changed row is expected when its model is, or when every changed member is. */
@@ -82,33 +129,35 @@ const isGameRow = (key: Record<string, unknown>, gameId: number) =>
 
 const sortedUnion = (left: string[], right: string[]) => [...new Set([...left, ...right])].sort();
 
+const felt = (value: string) => `0x${BigInt(value).toString(16)}`;
+
 /** The shard's one Herald checkpoint, read from its database on the box: nothing on the box is written. */
-async function readCheckpoint(environment: string): Promise<{ checkpoint: FoldCheckpoint; confirmedBlock: number }> {
+async function readCheckpoint(environment: string) {
   if (environment !== "dev" && environment !== "production") throw new Error("Choose dev or production");
   const target = environments[environment];
   const query =
-    "select confirmed_block || ' ' || translate(encode(payload, 'base64'), E'\\n', '') from herald_fold_checkpoints";
+    "select chain || ' ' || world_address || ' ' || confirmed_block || ' ' || " +
+    "translate(encode(payload, 'base64'), E'\\n', '') from herald_fold_checkpoints";
   const output = await boxRead(
     target,
     `sudo -n docker compose --project-directory ${shell(target.runDirectory)} exec -T postgres psql -U herald -d herald -At -c ${shell(query)}`,
   );
   const rows = output.trim().split("\n").filter(Boolean);
   if (rows.length !== 1) throw new Error(`Expected one Herald checkpoint, found ${rows.length}`);
-  const [block, payload] = rows[0]!.split(" ");
+  const [chain, world, block, payload] = rows[0]!.split(" ");
   const checkpoint = JSON.parse(gunzipSync(Buffer.from(payload!, "base64")).toString("utf8")) as FoldCheckpoint;
-  return { checkpoint, confirmedBlock: Number(block) };
+  if (felt(checkpoint.world_address) !== felt(world!)) throw new Error("The checkpoint's world differs from its row");
+  return { checkpoint, at: { chain: chain!, confirmedBlock: Number(block) } };
 }
 
 async function snapshot(environment: string, game: string, out: string) {
   const gameId = Number(game);
   if (!Number.isSafeInteger(gameId) || gameId <= 0) throw new Error("A game id is required");
-  const { checkpoint, confirmedBlock } = await readCheckpoint(environment);
-  const facts = gameFacts(checkpoint, confirmedBlock, gameId);
+  const { checkpoint, at } = await readCheckpoint(environment);
+  const facts = gameFacts(checkpoint, at, gameId);
   writeFileSync(out, `${JSON.stringify(facts, null, 1)}\n`, { mode: 0o600 });
   const rows = Object.values(facts.models).reduce((sum, model) => sum + Object.keys(model).length, 0);
-  console.log(
-    JSON.stringify({ gameId, confirmedBlock, schema: facts.schema, models: Object.keys(facts.models).length, rows }),
-  );
+  console.log(JSON.stringify({ ...facts, models: Object.keys(facts.models).length, rows }));
 }
 
 function diff(beforePath: string, afterPath: string, expect: readonly string[]) {
@@ -119,8 +168,10 @@ function diff(beforePath: string, afterPath: string, expect: readonly string[]) 
     JSON.stringify(
       {
         gameId: before!.gameId,
+        chain: before!.chain,
+        world: before!.world,
+        schema: before!.schema,
         blocks: [before!.confirmedBlock, after!.confirmedBlock],
-        schemas: [before!.schema, after!.schema],
         changes,
         unexpected: unexpected.length,
       },
@@ -135,12 +186,13 @@ if (import.meta.main) {
   const [verb, ...args] = process.argv.slice(2);
   const expectAt = args.indexOf("--expect");
   const expect = expectAt < 0 ? [] : (args.splice(expectAt, 2)[1] ?? "").split(",").filter(Boolean);
-  if (verb === "snapshot" && args.length === 3) await snapshot(args[0]!, args[1]!, args[2]!);
-  else if (verb === "diff" && args.length === 2) diff(args[0]!, args[1]!, expect);
-  else {
-    console.error(
-      "Usage: game-facts.ts snapshot <dev|production> <game_id> <out.json> | diff <before> <after> [--expect A,B.c]",
-    );
+  try {
+    if (verb === "snapshot" && args.length === 3) await snapshot(args[0]!, args[1]!, args[2]!);
+    else if (verb === "diff" && args.length === 2) diff(args[0]!, args[1]!, expect);
+    else throw new Error(USAGE);
+  } catch (error) {
+    // A refusal: nothing was compared, so it is never read as a pass or as a progress loss.
+    console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 2;
   }
 }
