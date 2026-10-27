@@ -28,6 +28,7 @@ const target = { type: ActorType.Explorer, id: ENEMY, hex: { x: 42, y: 12 }, alt
 afterEach(() => {
   useUIStore.getState().selectOnMap(null);
   usePopoverStore.getState().close();
+  vi.unstubAllGlobals();
 });
 
 /**
@@ -85,14 +86,27 @@ describe("Blitz's attack preview for the selected army", () => {
     expect(attack).not.toHaveBeenCalled();
   });
 
-  it("keeps the army selected after its attack is sent, so its next order is one click away", async () => {
-    const { attack, attackButton } = preview(100n);
+  // Owner, 27 October 2026: "yes" to the army staying selected after an attack on a phone, as on a desktop.
+  it.each([
+    ["a phone", false],
+    ["a desktop", true],
+  ])(
+    "on %s, keeps the army selected after its attack is sent, so its next order is one click away",
+    async (_, desktop) => {
+      vi.stubGlobal("matchMedia", (query: string) => ({
+        matches: desktop && query.includes("min-width"),
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }));
+      const { attack, attackButton } = preview(100n);
 
-    expect(attackButton().disabled).toBe(false);
-    await act(async () => attackButton().click());
+      expect(attackButton().disabled).toBe(false);
+      await act(async () => attackButton().click());
 
-    expect(attack).toHaveBeenCalledWith(expect.objectContaining({ aggressor_id: ARMY, defender_id: ENEMY }));
-    expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
-    expect(usePopoverStore.getState().surface).toBeNull();
-  });
+      expect(attack).toHaveBeenCalledWith(expect.objectContaining({ aggressor_id: ARMY, defender_id: ENEMY }));
+      expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
+      expect(usePopoverStore.getState().surface).toBeNull();
+    },
+  );
 });

@@ -935,7 +935,7 @@ export default class WorldmapScene extends WarpTravel {
     if (this.isFrontierHud()) this.showAwaitedDeployOrder();
   }
 
-  /** The deploy sheet opened before the map was shown: its order, framed once the map's first frames have settled. */
+  /** The deploy sheet opened before the map was shown: its order, shown once the map's first frames have settled. */
   private showAwaitedDeployOrder(): void {
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
@@ -3612,9 +3612,9 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * Frontier's deploy sheet shows its order on the map: the realm selected with its open tiles lit, the order's tile
-   * marked among them, and, as the sheet opens, the realm framed in the map left open above it. Closed, a selection
-   * the map made for the sheet goes with it.
+   * Frontier's deploy sheet shows its order on the map: the realm selected with its open tiles lit, and the order's tile
+   * marked among them. The camera stays where the player has it (owner, 27 October 2026: "when I right click to deploy
+   * an army stop centering the camera on the realm"). Closed, a selection the map made for the sheet goes with it.
    */
   private showDeployOrder(order: DeployOnMap): void {
     const shown = this.deployShown;
@@ -3632,7 +3632,6 @@ export default class WorldmapScene extends WarpTravel {
       : (shown?.selectedForIt ?? false);
     this.deployShown = { order, selectedForIt };
     this.onStructureSelection(order.structureId, realm);
-    if (opening) this.frameOnOpenMap([Position.fromNormalized({ x: realm.col, y: realm.row })]);
   }
 
   /** The tile the shown deploy order steps out on, as the lit tiles name it; none for another structure or no order. */
