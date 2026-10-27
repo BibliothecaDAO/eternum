@@ -22,6 +22,8 @@ import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
+import { RoundTwo } from "./round-two";
+
 /**
  * Lab only, for the owner's pick (27 October): separate side levels and ranked skill points, drawn three ways beside
  * today, one still per address. `?option=today|gems|tiles|highest&surface=card|levelup|research`.
@@ -97,7 +99,17 @@ export const ArmyProgressionLab = () => {
     <div className="relative min-h-screen bg-[radial-gradient(ellipse_at_center,theme(colors.kit.line),theme(colors.kit.ground))]">
       <div className="mx-auto flex w-full max-w-[460px] flex-col p-2">
         <div data-lab="still">
-          {surface === "research" ? <Research option={option} /> : <Army option={option} surface={surface} />}
+          {params.get("round") === "2" ? (
+            <RoundTwo
+              surface={params.get("surface") ?? "levelup"}
+              pick={(params.get("pick") ?? "battle") as Parameters<typeof RoundTwo>[0]["pick"]}
+              stamina={Number(params.get("stamina") ?? 40)}
+            />
+          ) : surface === "research" ? (
+            <Research option={option} />
+          ) : (
+            <Army option={option} surface={surface} />
+          )}
         </div>
       </div>
     </div>
