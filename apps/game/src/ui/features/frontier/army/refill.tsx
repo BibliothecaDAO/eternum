@@ -70,6 +70,43 @@ export const RefillChip = ({
 };
 
 /**
+ * A phone's picked army's stamina as its refill, one button over Level up (the owner, 27 October): "14/140", a press
+ * opening the refill's confirm. Short of LORDS it reads in red, what the realm holds against the price on its hover, and
+ * takes no press; a full bar takes none either.
+ */
+export const StaminaRefill = ({
+  stamina,
+  held,
+  refilling = false,
+  onRefill,
+}: {
+  stamina: { current: number; max: number };
+  held: number | undefined;
+  /** A refill of this army is in flight: sent, its outcome not known yet. */
+  refilling?: boolean;
+  onRefill: () => void;
+}) => {
+  const price = Math.ceil(stamina.max - stamina.current);
+  const short = held !== undefined && held < price;
+  const reading = `${formatExact(stamina.current)}/${formatExact(stamina.max)}`;
+  return (
+    <HudButton
+      kind="secondary"
+      size="sm"
+      icon="stamina"
+      tone={short ? "bad" : undefined}
+      aria-label={`${REFILL} ${reading}`}
+      data-tip={short ? refillShort(formatExact(held), formatCharge(price)) : undefined}
+      disabled={price <= 0 || short}
+      busy={refilling ? REFILLING : undefined}
+      onClick={onRefill}
+    >
+      {reading}
+    </HudButton>
+  );
+};
+
+/**
  * Refill's confirm (wireframe 08): the bar now → full, the realm's LORDS before → after, then Cancel and Refill with its
  * price. A full refill only.
  */

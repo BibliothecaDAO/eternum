@@ -106,7 +106,7 @@ const ArmyPanel = ({
     <HudSheet label={army.label} onClose={onClose}>
       <ArmyDetail
         army={readArmyDetail(facts)}
-        refill={<ArmyRefill army={army} realm={realm} chip />}
+        refill={<ArmyRefill army={army} realm={realm} look="chip" />}
         sending={sending}
         choosing={choosing}
         onLevelUp={levelUp}

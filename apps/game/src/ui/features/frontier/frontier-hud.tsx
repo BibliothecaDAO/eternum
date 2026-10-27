@@ -374,8 +374,8 @@ const FrontierPhoneHud = ({
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
  * 2026: mobile direction A): with an order pending, its costs and verb; with the next order queued, its bar; with an
- * army picked, the army (a tap opens its card), its stamina, refill and Level up; otherwise nothing. A desktop has
- * none: its orders go from the map, and the army's state is its panel's.
+ * army picked, the army (a tap opens its card), its four sides, its stamina as its refill, and Level up; otherwise
+ * nothing. A desktop has none: its orders go from the map, and the army's state is its panel's.
  */
 const ArmyAction = ({
   rules,
@@ -403,9 +403,9 @@ const ArmyAction = ({
     return (
       <PickedArmy
         army={acting}
-        refill={<ArmyRefill army={acting} realm={realm} chip />}
+        refill={<ArmyRefill army={acting} realm={realm} look="stamina" />}
         onDetails={() => onOpenArmy(acting.explorerId)}
-        onLevelUp={() => onOpenArmy(acting.explorerId, true)}
+        onLevelUp={() => onOpenArmy(acting.explorerId, acting.canBuyTier)}
       />
     );
   return null;

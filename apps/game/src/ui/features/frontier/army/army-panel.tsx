@@ -118,9 +118,9 @@ const StatusChips = ({ army }: { army: ArmyView }) => (
 
 /**
  * The stamina on one line (the owner's layout A, 27 October): "96/170", the bar in a segment per explore, and when it is
- * full again. The army card's and a phone's picked army's.
+ * full again.
  */
-export const StaminaLine = ({ stamina, secondsToFull }: Pick<ArmyView, "stamina" | "secondsToFull">) => (
+const StaminaLine = ({ stamina, secondsToFull }: Pick<ArmyView, "stamina" | "secondsToFull">) => (
   <span data-stamina-line className="flex items-center gap-2">
     <span className="flex items-center gap-0.5 whitespace-nowrap text-hud-label tabular-nums text-hud-ink">
       <Icon name="stamina" size={14} />

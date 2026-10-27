@@ -2,12 +2,14 @@ import { useGame } from "@/hooks/context/game-context";
 import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { CANCEL, PICKED_ARMY, TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
+import { Icon } from "@/ui/design-system/icon";
+import { HudButton, HudPanel, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { ATTRIBUTES, CANCEL, PICKED_ARMY, type Tier, tierNumeral, TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 import { ActionPaths, ActionType, configManager, Position } from "@bibliothecadao/eternum";
 import type { ReactNode } from "react";
 
-import { LevelUpButton, StaminaLine } from "../army/army-panel";
+import { attributeMark } from "../army/army-detail";
+import { LevelUpButton } from "../army/army-panel";
 import { attributeBadgeTarget } from "../attributes/attributes";
 import { ArmyToken } from "./army-token";
 import type { DockArmy } from "./dock-armies";
@@ -15,13 +17,24 @@ import type { DockArmy } from "./dock-armies";
 /** What the picked army's row reads of an army: the dock's own, so the lab draws it on its fiction. */
 export type PickedArmyView = Pick<
   DockArmy,
-  "explorerId" | "label" | "number" | "art" | "xp" | "xpGoal" | "stamina" | "secondsToFull" | "troops" | "canBuyTier"
+  | "explorerId"
+  | "label"
+  | "number"
+  | "art"
+  | "xp"
+  | "xpGoal"
+  | "stamina"
+  | "secondsToFull"
+  | "troops"
+  | "canBuyTier"
+  | "tiers"
 >;
 
 /**
- * A phone's picked army, in the dock's place (owner, 22 October 2026: mobile direction A; 27 October: its stamina, refill
- * and Level up, with no details button): the army, a tap opening its card; its stamina line; its refill, and Level up,
- * which opens the card on its choices. A tap on an empty tile lets the army go, and the dock comes back.
+ * A phone's picked army, in the dock's place (owner, 22 October 2026: mobile direction A; 27 October: D, its stamina
+ * over Level up): its token, a tap opening its card; its four sides with their tiers, which the token does not show;
+ * then its stamina, which is its refill, over Level up. Level up opens the card on its choices while the XP buys a
+ * level, else the card. A tap on an empty tile lets the army go, and the dock comes back.
  */
 export const PickedArmy = ({
   army,
@@ -30,12 +43,12 @@ export const PickedArmy = ({
   onLevelUp,
 }: {
   army: PickedArmyView;
-  /** The refill's control: nothing for a full bar. */
+  /** The army's stamina as its refill's button. */
   refill: ReactNode;
   onDetails: () => void;
   onLevelUp: () => void;
 }) => (
-  <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="flex items-center gap-3">
+  <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="flex items-center gap-3 pt-3">
     <ArmyToken
       label={PICKED_ARMY.details(army.label)}
       number={army.number}
@@ -49,17 +62,34 @@ export const PickedArmy = ({
       flyTarget={attributeBadgeTarget(army.explorerId)}
       onPick={onDetails}
     />
-    {army.stamina && (
-      <span data-picked-army className="flex min-w-0 flex-1 flex-col gap-2">
-        <StaminaLine stamina={army.stamina} secondsToFull={army.secondsToFull} />
-        <span className="flex items-center justify-between gap-2">
-          <span className="flex">{refill}</span>
-          <LevelUpButton affordable={army.canBuyTier} onPress={onLevelUp} />
-        </span>
-      </span>
-    )}
+    <span data-picked-army className="min-w-0 flex-1">
+      {army.tiers && <Sides tiers={army.tiers} />}
+    </span>
+    <span className="grid w-24 shrink-0 gap-1.5">
+      {refill}
+      <LevelUpButton affordable={army.canBuyTier} onPress={onLevelUp} />
+    </span>
   </HudPanel>
 );
+
+/** The army's four sides, each its mark over its tier's gem. */
+const Sides = ({ tiers }: { tiers: readonly [number, number, number, number] }) => (
+  <span className="grid grid-cols-4 gap-1">
+    {SIDES.map((key, index) => (
+      <span
+        key={key}
+        role="img"
+        aria-label={`${ATTRIBUTES[index]} ${tierNumeral(tiers[index] as Tier)}`}
+        className="flex flex-col items-center gap-1"
+      >
+        <Icon name={attributeMark(key)} size={28} />
+        <HudTier tier={tiers[index] as Tier} />
+      </span>
+    ))}
+  </span>
+);
+
+const SIDES = ["battle", "logistics", "scouting", "homecoming"] as const;
 
 /**
  * Where a phone's tap pinned the picked army's transfer (the Help order beside it): the tile, and the realm's army

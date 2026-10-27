@@ -67,7 +67,7 @@ import { NextUpView } from "@/ui/features/world/hud/next-up";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
-import { RefillButton, RefillChip, RefillConfirm } from "@/ui/features/frontier/army/refill";
+import { RefillButton, RefillChip, RefillConfirm, StaminaRefill } from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
@@ -486,6 +486,7 @@ const STATES = {
   // A phone's picked army, its card not opened: the row in the dock's place.
   picked: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "owner" },
   "picked-rested": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "rested" },
+  "picked-pay": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "pay" },
   full: { clock: CLOCK, stores: FULL_STORES, armies: ARMIES, realmDot: "ember" as const },
   offline: { clock: UNKNOWN_CLOCK, stores: UNKNOWN_STORES, armies: UNKNOWN_ARMIES, offline: true },
   menu: { clock: CLOCK, stores: STORES, armies: ARMIES, menu: true },
@@ -948,8 +949,11 @@ type LabState = {
   /** The card a store's ring or plate opened. */
   storeCard?: StoreLine;
   army?: LabArmySheet;
-  /** A phone's picked army: the owner's Army 2 (27 October: 14/140, 100 of 126 LORDS, a level to buy), or it rested. */
-  picked?: "owner" | "rested";
+  /**
+   * A phone's picked army: the owner's Army 2 (27 October: 14/140, 100 of 126 LORDS, a level to buy), it rested, or its
+   * realm holding 500 LORDS.
+   */
+  picked?: "owner" | "rested" | "pay";
   realmView?: "build" | "build-early" | "castle" | "castle-short" | "full";
   /** A building tapped on the realm's board: its own card. */
   building?: keyof typeof LAB_BUILDINGS;
@@ -1199,22 +1203,17 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
 /** A phone's picked army on the fiction, as the action row draws it in the dock's place. */
 const LabPicked = ({ lab }: { lab: LabState }) => {
   const { army, lords } = labPickedArmy(lab);
-  const stamina = army.stamina!;
   return (
     <PickedArmy
       army={army}
-      refill={
-        stamina.current < stamina.max && (
-          <RefillChip price={Math.ceil(stamina.max - stamina.current)} held={lords} onRefill={noop} />
-        )
-      }
+      refill={<StaminaRefill stamina={army.stamina!} held={lords} onRefill={noop} />}
       onDetails={noop}
       onLevelUp={noop}
     />
   );
 };
 
-/** The owner's Army 2 or it rested (`picked`), else the state's selected army, with the realm's LORDS. */
+/** The owner's Army 2, it rested or its realm able to pay its refill (`picked`), else the state's selected army, with the realm's LORDS. */
 const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } => {
   const index = lab.selected ?? 0;
   const base = { explorerId: index + 1, number: index + 1, label: `${ARMY} ${index + 1}`, art: "knight-t1" as const };
@@ -1228,8 +1227,9 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
       stamina: { current: rested ? 140 : 14, max: 140, perExplore: 20 },
       secondsToFull: rested ? 0 : 4 * HOUR + 11 * 60,
       canBuyTier: !rested,
+      tiers: [3, 2, 2, 1] as const,
     };
-    return { army, lords: 100 };
+    return { army, lords: lab.picked === "pay" ? 500 : 100 };
   }
   const army = lab.armies[index];
   const current = army.stamina ?? 0;
@@ -1242,6 +1242,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
       stamina: { current, max: 150, perExplore: LAB_EXPLORE },
       secondsToFull: (150 - current) * 60,
       canBuyTier: army.tier === true,
+      tiers: [2, 3, 2, 1] as const,
     },
     lords: lab.purse?.lords ?? LAB_LORDS,
   };
