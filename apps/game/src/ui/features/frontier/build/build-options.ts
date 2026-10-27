@@ -78,8 +78,8 @@ export interface BuildOption {
   effect: BuildEffect;
   populationCost: number;
   /**
-   * Whether it can rise now: a training building is unique on the board, and opens once the Barracks row reaches the
-   * board's gate tier (the contract's assert_board_category).
+   * Whether it can rise now: a training building is unique on the board and opens when purchases across both
+   * Barracks sides reach the board's gate (the contract's assert_board_category).
    */
   standing: "open" | "built" | { gate: number };
   /** What it adds to the realm's wheat an hour, and the realm's wheat an hour once it stands (unknown while that is). */

@@ -113,7 +113,7 @@ export interface TreeNode {
   figures: Figure[];
   /** The nodes this one leads to (the tree's lines). */
   leadsTo: string[];
-  /** The Barracks' gate to the training buildings: the tier that opens them ("Barracks III"), and whether it is reached. */
+  /** The Barracks purchase gate to the training buildings, and whether it is reached. */
   gate?: { name: string; met: boolean };
 }
 
