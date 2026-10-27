@@ -76,3 +76,53 @@ export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
   );
   return store;
 };
+
+/** The reported 500 into 1,500 transfer: 222 total XP against 20 unspent XP, with logistics on both armies. */
+export const transferXpArmies = () => {
+  const store = transferArmies(22, 20);
+  store.applyFacts([{ model: "ArmySlot", key: "0xf2023", value: null }]);
+  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+  const facts = [
+    { model: "Structure", key: "0x7", value: { ...realm, base: { ...realm.base, level: 1 } } },
+    ...[201, 202].flatMap((id, index) => {
+      const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: id });
+      const progress = store.require("ArmyProgress", { game_id: 1, explorer_id: id });
+      const slot = index === 0 ? 0 : 2;
+      return [
+        {
+          model: "ExplorerTroops",
+          key: index === 0 ? "0x74" : "0x92",
+          value: {
+            ...army,
+            troops: {
+              ...army.troops,
+              count: BigInt(index === 0 ? 500 : 1500) * 1_000_000_000n,
+              stamina: { Slot: slot },
+            },
+          },
+        },
+        {
+          model: "ArmyProgress",
+          key: `0xf${id}2`,
+          value: { ...progress, logistics: 2, homecoming: index === 0 ? 2 : 1 },
+        },
+        {
+          model: "ArmySlot",
+          key: index === 0 ? "0x9" : "0xf2024",
+          value: {
+            game_id: 1,
+            structure_id: 7,
+            epoch: "0",
+            slot,
+            explorer_id: id,
+            stamina: { amount: index === 0 ? "5" : "15", settled_at: "350", remainder: 0 },
+          },
+        },
+      ];
+    }),
+  ];
+  store.applyFacts(
+    JSON.parse(JSON.stringify(facts, (_, value) => (typeof value === "bigint" ? value.toString() : value))),
+  );
+  return store;
+};

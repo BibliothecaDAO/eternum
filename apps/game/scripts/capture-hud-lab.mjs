@@ -114,6 +114,7 @@ export const SURFACES = [
     read: READ_ARMY_BARS,
     rule: armyBarsProblems,
   },
+  // Transfer troops: 500 into 1,500, both total XP values, loss confirmation and a partial transfer.
   { name: "frontier-merge", path: "/lab/kit/hud/merge", mark: "frontier-merge", sizes: [VIEWPORT, [390, 844]] },
   { name: "frontier-selected", path: "/lab/kit/hud/selected", mark: "frontier" },
   { name: "frontier-menu", path: "/lab/kit/hud/menu", mark: "frontier" },
@@ -240,14 +241,12 @@ const main = async () => {
         if (!drawn) missing.push(shot);
         run("screenshot", join(values.out, `${shot}.png`));
         if (name === "frontier-merge") {
-          // Army 1 leaves with its 100 XP and its upgrade's 100: the second press names the 200 lost.
-          const confirmLabel = "Lose 200 XP, merge into Army 2";
-          run("find", "role", "button", "click", "--name", "Merge into Army 2", "--exact");
+          // Army 1 has 22 unspent XP and two upgrades; Army 3 has 20 unspent XP and one upgrade.
+          const confirmLabel = "Lose 222 XP, merge into Army 3";
+          run("find", "role", "button", "click", "--name", "Merge into Army 3", "--exact");
           run("wait", "--text", confirmLabel);
 
-          // What the sheet shows: its text, the XP struck out on the card of the army a merge empties, whether the
-          // confirmation stands in view, whether any notice stands over the cards (none should), and the amount sent as
-          // its box and its slider hold it.
+          // Read the visible totals, loss message, confirmation reachability and the amount in both controls.
           const readSheet = () =>
             JSON.parse(
               run(
@@ -259,30 +258,40 @@ const main = async () => {
               const box = element?.getBoundingClientRect();
               return !!box && box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight;
             };
-            return { text: sheet.textContent, struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), notice: sheet.querySelector('.ui-notice')?.textContent ?? null, typed: sheet.querySelector('input[aria-label^="Troops "]').value, slid: sheet.querySelector('input[type="range"]').value };
+            return { text: sheet.textContent, totals: [...sheet.querySelectorAll('[role="group"][aria-label$="total XP"]')].map(group => group.textContent), struck: sheet.querySelector('s')?.textContent ?? null, reachable: visible(button), notice: sheet.querySelector('.ui-notice')?.textContent ?? null, typed: sheet.querySelector('input[aria-label^="Troops "]').value, slid: sheet.querySelector('input[type="range"]').value };
           })()`,
               ),
             );
           const confirmed = readSheet();
           writeFileSync(join(values.out, `${shot}-confirmation.json`), JSON.stringify(confirmed, null, 2));
-          if (!confirmed.reachable || confirmed.notice !== null || confirmed.struck !== "200 XP") {
-            throw new Error(`${shot}: the XP lost struck on the leaving card, a reachable confirmation and no notice`);
+          if (
+            !confirmed.reachable ||
+            confirmed.notice !== "Army 1 loses its XP and upgrades." ||
+            confirmed.struck !== null ||
+            JSON.stringify(confirmed.totals) !== JSON.stringify(["Total XP222→0", "Total XP120→120"])
+          ) {
+            throw new Error(`${shot}: both total XP values and their outcomes must agree with the loss confirmation`);
           }
-          // It opens at all Army 1 holds: the box and the slider both say 600, what the merge sends.
-          if (confirmed.typed !== "600" || confirmed.slid !== "600") {
-            throw new Error(`${shot}: the amount opens at the 600 Army 1 sends, in the box and on the slider`);
+          // It opens at all Army 1 holds: the box and the slider both say 500, what the merge sends.
+          if (confirmed.typed !== "500" || confirmed.slid !== "500") {
+            throw new Error(`${shot}: the amount opens at the 500 Army 1 sends, in the box and on the slider`);
           }
           run("screenshot", join(values.out, `${shot}-confirm.png`));
           // The slider moved one step, by key: Army 1 sends one fewer and keeps one troop, so the merge becomes a move.
           run("focus", 'input[type="range"]');
           run("press", "ArrowLeft");
-          run("wait", "--text", "Move 599 to Army 2");
+          run("wait", "--text", "Move 499 to Army 3");
           const partial = readSheet();
-          if (partial.text.includes(confirmLabel) || partial.struck !== null) {
+          if (
+            partial.text.includes(confirmLabel) ||
+            partial.struck !== null ||
+            partial.notice !== null ||
+            JSON.stringify(partial.totals) !== JSON.stringify(["Total XP222→222", "Total XP120→120"])
+          ) {
             throw new Error(`${shot}: changing the amount must clear confirmation and the merge's losses`);
           }
-          if (partial.typed !== "599" || partial.slid !== "599") {
-            throw new Error(`${shot}: the box and the slider hold the 599 the button sends`);
+          if (partial.typed !== "499" || partial.slid !== "499") {
+            throw new Error(`${shot}: the box and the slider hold the 499 the button sends`);
           }
           run("screenshot", join(values.out, `${shot}-partial.png`));
           interactions.push({ shot, confirmed, partial });

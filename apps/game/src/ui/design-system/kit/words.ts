@@ -460,7 +460,10 @@ export const TRANSFER_TROOPS = {
   waiting: "Waiting for both armies’ progress.",
   stale: "The armies changed: review the merge",
   merge: (army: string) => `Merge into ${army}`,
-  /** The second press of a merge that loses a lot: the XP lost, as the leaving army's card strikes it, and the merge. */
+  totalXp: "Total XP",
+  totalXpFor: (army: string) => `${army} total XP`,
+  losesProgress: (army: string) => `${army} loses its XP and upgrades.`,
+  /** The second press of a merge that loses a lot: the leaving army's total XP and the chosen target. */
   confirmMerge: (lost: number, army: string) => `Lose ${formatAmount(lost)} XP, merge into ${army}`,
   amount: (from: string, to: string) => `Troops ${from} sends to ${to}`,
   pick: "Pick how many to send",
