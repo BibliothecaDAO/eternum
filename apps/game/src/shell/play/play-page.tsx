@@ -12,6 +12,7 @@ import { ageOf } from "./ages";
 import { type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
 import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
 import { ItemRows, LeadCard } from "./play-item";
+import { BuildOrdersRow } from "../build-orders/build-orders-row";
 
 /**
  * Play (the owner's pick, B · Ages): the step the player most likely came for, widest, with the page's one gold verb;
@@ -105,7 +106,10 @@ const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
     </div>
   );
 
-/** One age's column: its painting and its name, then its games in its well (Blitz's, with none: its next game). */
+/**
+ * One age's column: its painting and its name, then its games in its well (Blitz's, with none: its next game); Blitz's
+ * ends on the way to the player's build orders.
+ */
 const AgeColumn = ({
   mode,
   facts,
@@ -123,6 +127,7 @@ const AgeColumn = ({
       ) : (
         <NextBlitz next={facts.nextBlitz} now={facts.now} />
       )}
+      {mode === "blitz" && <BuildOrdersRow />}
     </AppAgeColumn>
   );
 };

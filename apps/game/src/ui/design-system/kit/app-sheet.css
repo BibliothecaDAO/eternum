@@ -29,6 +29,10 @@
   padding: 0 theme(spacing.8);
   font-size: var(--app-text-heading);
 }
+.app-button[data-size="icon"] {
+  width: var(--app-control);
+  padding: 0;
+}
 .app-button[data-kind="primary"] {
   background: rgb(var(--app-gold));
   color: var(--app-dark);
@@ -320,9 +324,11 @@
 
 /* ── Tabs: views of one thing; the chosen one raised. ── */
 /* Tabs never run past their column: each word stays on one line, and the side padding narrows on a phone. */
+/* A row of tabs wider than its column scrolls sideways rather than clipping its last tab. */
 .app-tabs {
   display: inline-flex;
   max-width: 100%;
+  overflow-x: auto;
   gap: theme(spacing.1);
   border: 1px solid var(--app-line);
   border-radius: var(--app-radius-control);
