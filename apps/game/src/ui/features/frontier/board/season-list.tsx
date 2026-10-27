@@ -1,4 +1,4 @@
-import { formatAmount, formatExact, LORDS, formatShort } from "@bibliothecadao/types";
+import { formatAmount, formatExact, formatMoment, LORDS, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import {
   HudButton,
@@ -26,6 +26,8 @@ import {
   SITES_CLEARED,
   TRY_AGAIN,
   commonChestPays,
+  dayOfSeason,
+  seasonEnds,
   seasonPool,
 } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
@@ -63,6 +65,7 @@ export const SeasonList = ({
   onRetry,
   onOpen,
   onClose,
+  ends,
 }: {
   /** The player's rank; null for a player without a realm on the list, undefined while it loads. */
   rank: number | null | undefined;
@@ -76,6 +79,8 @@ export const SeasonList = ({
   onRetry: () => void;
   onOpen: (key: string) => void;
   onClose: () => void;
+  /** When the season ends, and today against its last day while it runs; undefined until the game is known. */
+  ends?: { at: number; day?: number; lastDay?: number };
 }) => {
   useSheetCloses(onClose);
   return (
@@ -90,6 +95,7 @@ export const SeasonList = ({
         <SeasonChip chest={chest} rank={rank} pool={pool} />
         <HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />
       </header>
+      {ends && <SeasonEnds {...ends} />}
       {state === "failed" ? (
         <Failed onRetry={onRetry} />
       ) : (
@@ -108,6 +114,18 @@ export const SeasonList = ({
     </HudPanel>
   );
 };
+
+/** When the season ends, and today against its last day: "Season ends 31 Oct 21:40 · Day 10 of 14". */
+const SeasonEnds = ({ at, day, lastDay }: { at: number; day?: number; lastDay?: number }) => (
+  <p className="shrink-0 text-hud-label tabular-nums text-hud-muted">
+    {[
+      seasonEnds(formatMoment(at)),
+      day !== undefined && lastDay !== undefined && dayOfSeason(formatAmount(day), formatAmount(lastDay)),
+    ]
+      .filter(Boolean)
+      .join(" · ")}
+  </p>
+);
 
 /** The season's pool in whole LORDS and what today releases of it (absent before the season starts and after it ends). */
 export type SeasonPoolFigures = { lords: number; today: number | undefined };

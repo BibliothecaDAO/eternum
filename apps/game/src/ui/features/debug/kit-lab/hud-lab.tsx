@@ -88,6 +88,10 @@ const CLOCK: DayClock = {
   tone: "calm",
 };
 
+/** The season the fiction's Day 12 stands in: its last day the 14th, ending two days after today at 21:40. */
+const SEASON_LAST_DAY = 14;
+const SEASON_ENDS_AT = CLOCK.endsAt! + 2 * 24 * HOUR;
+
 const UNKNOWN_CLOCK: DayClock = {
   day: undefined,
   endsAt: undefined,
@@ -1071,6 +1075,7 @@ export const HudLab = () => {
                 onRetry={noop}
                 onOpen={noop}
                 onClose={noop}
+                ends={{ at: SEASON_ENDS_AT, day: CLOCK.day, lastDay: SEASON_LAST_DAY }}
               />
             )
           ) : undefined
@@ -1504,6 +1509,7 @@ const LabResults = ({
   ) : (
     <TodaySheet
       day={results === "today-earlier" ? 11 : 12}
+      lastDay={SEASON_LAST_DAY}
       today={results !== "today-earlier"}
       clock={CLOCK}
       totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}
