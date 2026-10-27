@@ -1,5 +1,6 @@
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import { saveBuildOrders, useBuildOrderAccount, useBuildOrders } from "@/hooks/use-build-orders";
+import { saveBuildOrders, useBuildOrderFailure, useBuildOrders } from "@/hooks/use-build-orders";
+import { BuildOrderFailure } from "@/ui/features/build-orders/build-order-failure";
 import { BUILD_ORDERS_PATH } from "@/shell/build-orders/build-orders-route";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
@@ -35,21 +36,25 @@ export const BuildOrderPanel = () => {
 };
 
 const PlayersBuildOrder = () => {
-  useBuildOrderAccount();
   const steps = useEmpireSuggestions();
   const { book, status } = useBuildOrders();
+  const failed = useBuildOrderFailure() !== null;
   const { handleSuggestionClick, pendingSuggestionIds } = useSuggestionActions();
   const refusal = useActNowRefusal();
   return (
     <BuildOrderView
       choice={
-        <OrderChoice
-          book={book}
-          busy={status === "loading" || status === "saving"}
-          onFollow={(active) => book && void saveBuildOrders({ ...book, active })}
-        />
+        // Signed in with the account's orders unread, no order is followed: the choice waits for them.
+        book || status === "signed-out" ? (
+          <OrderChoice
+            book={book}
+            busy={status === "loading" || status === "saving"}
+            onFollow={(active) => book && void saveBuildOrders({ ...book, active })}
+          />
+        ) : null
       }
       onOrders={openBuildOrdersPage}
+      notice={failed ? <BuildOrderFailure /> : null}
     >
       {steps.map((step) =>
         isOrderSuggestion(step) ? (
@@ -126,16 +131,19 @@ const LevelUpRow = ({ step }: { step: EmpireSuggestion }) => {
 };
 
 /**
- * The panel as drawn: the choice of order at its head with the way to the page where orders are made, its rows, or the
- * line that says there is nothing now.
+ * The panel as drawn: the choice of order at its head with the way to the page where orders are made, why the account's
+ * orders failed when they did, its rows, or the line that says there is nothing now.
  */
 export const BuildOrderView = ({
   choice,
   onOrders,
+  notice = null,
   children,
 }: {
   choice: ReactNode;
   onOrders: () => void;
+  /** Why the account's orders could not be read or saved, with Try again: said above the rows, never hidden. */
+  notice?: ReactNode;
   children: ReactNode[];
 }) => (
   <HudPanel
@@ -150,11 +158,10 @@ export const BuildOrderView = ({
     }
     bodyClassName="flex flex-col"
   >
-    {children.some(Boolean) ? (
-      children
-    ) : (
-      <p className="text-hud-label text-hud-muted">{BUILD_ORDER_WORDS.nothingNow}</p>
-    )}
+    {notice}
+    {children.some(Boolean)
+      ? children
+      : !notice && <p className="text-hud-label text-hud-muted">{BUILD_ORDER_WORDS.nothingNow}</p>}
   </HudPanel>
 );
 

@@ -96,7 +96,7 @@ const savedElsewhere = (book: { orders: { id: string; order: unknown }[]; active
 /** The panel's order, read where the panel reads it. */
 let followed = "";
 const Followed = () => {
-  followed = useActiveBuildOrder().name;
+  followed = useActiveBuildOrder()?.name ?? "";
   return null;
 };
 
@@ -296,6 +296,21 @@ describe("the Build orders page", () => {
     expect(button("Copy JSON")?.disabled).toBe(false);
     expect(service.saveBuildOrders).not.toHaveBeenCalled();
   });
+  it("tells a signed-out visitor once to sign in, marks no order as theirs, and boxes no line on an empty new order", async () => {
+    account(null);
+    await open(1440);
+    await press("New order");
+    expect(notices()).toEqual(["Sign in to save your orders."]);
+    expect(host.textContent).not.toContain("Active");
+    // An empty draft is a start: Save waits for a step, and nothing is boxed.
+    expect(button("Save")?.disabled).toBe(true);
+    expect(host.textContent).not.toContain("An order has 1 to 60 steps.");
+    // A draft with a step that still does not read says why.
+    await press("Farm");
+    type("Name", " ");
+    expect(notices()).toEqual(["Sign in to save your orders.", "A name is 1 to 40 characters."]);
+  });
+
   it("says where Save was pressed why the account refused it, keeps the draft, and saves it with Try again", async () => {
     account({ orders: [{ id: "o1", order: COAL_RUSH }], active: "o1" });
     await open();

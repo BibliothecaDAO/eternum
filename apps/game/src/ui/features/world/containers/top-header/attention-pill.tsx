@@ -6,6 +6,7 @@ import { memo, useRef } from "react";
 import { useGame } from "@/hooks/context/game-context";
 import { Position } from "@bibliothecadao/eternum";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useBuildOrderFailure } from "@/hooks/use-build-orders";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -26,6 +27,7 @@ function AttentionCycle() {
   const goToStructure = useGoToStructure(setup);
   const structures = useFactView(playerStructuresView);
   const suggestions = useEmpireSuggestions();
+  const buildOrderFailure = useBuildOrderFailure();
   const previousKey = useRef<string | null>(null);
   const { targets } = useStructureAttention();
   const items = [
@@ -36,26 +38,31 @@ function AttentionCycle() {
     })),
     ...suggestions.map((suggestion) => ({
       key: `suggestion:${suggestion.id}`,
-      realmId: suggestion.realmId,
+      realmId: suggestion.realmId as number | null,
       suggestionId: suggestion.id,
     })),
+    // The account's orders failing to be read is said where the steps are, so it counts as one more to see.
+    ...(buildOrderFailure ? [{ key: "build-orders", realmId: null, suggestionId: "build-orders" }] : []),
   ];
+  const openSuggestions = (selectedId: string) =>
+    usePopoverStore.getState().openSurface({
+      id: "suggestions",
+      content: <SuggestionsPanel selectedId={selectedId} />,
+      anchor: "top-center",
+      mapClick: "dismiss",
+    });
   const goToNext = () => {
     if (!canIssueOrders()) return;
     const next = nextAttentionItem(items, previousKey.current);
     if (!next) return;
     previousKey.current = next.key;
+    if (next.realmId === null) return openSuggestions(next.key);
     const target = structures.find((structure) => structure.entityId === next.realmId);
     if (!target) return;
     const position = structureMapPosition(setup.store, target.structure);
     if (!position) return;
     if (next.suggestionId) {
-      usePopoverStore.getState().openSurface({
-        id: "suggestions",
-        content: <SuggestionsPanel selectedId={next.suggestionId} />,
-        anchor: "top-center",
-        mapClick: "dismiss",
-      });
+      openSuggestions(next.suggestionId);
     } else {
       void goToStructure(target.entityId, Position.fromContract(position), true);
       usePopoverStore.getState().close("suggestions");

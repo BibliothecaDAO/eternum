@@ -95,13 +95,19 @@ const ViewLab = ({ view }: { view: View }) => {
       >
         {(store) => {
           const rules = frontier ? readExpeditionRules(store, 1) : null;
-          return frontier ? (
-            rules && <FrontierHud rules={rules} />
-          ) : (
+          return (
             <>
-              <ArenaHud />
-              {attack && <AttackForecast store={store} />}
-              {start && <GameStartNews />}
+              {frontier ? (
+                rules && <FrontierHud rules={rules} />
+              ) : (
+                <>
+                  <ArenaHud />
+                  {attack && <AttackForecast store={store} />}
+                  {start && <GameStartNews />}
+                </>
+              )}
+              {/* The surfaces a HUD control opens, drawn where the game's world layout draws them. */}
+              <SurfaceHost />
             </>
           );
         }}
@@ -268,7 +274,7 @@ const AttackForecast = ({ store }: { store: NativeFactStore }) => {
     const opened = usePopoverStore.getState().surface;
     return () => usePopoverStore.setState((now) => (now.surface === opened ? { openId: null, surface: null } : now));
   }, [store]);
-  return <SurfaceHost />;
+  return null;
 };
 
 const LAB_PROGRESS = { game_id: 1, xp: 260, battle: 1, logistics: 1, scouting: 1, scouting_kinds: 0, homecoming: 1 };
