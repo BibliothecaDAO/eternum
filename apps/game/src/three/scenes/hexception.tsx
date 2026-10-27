@@ -965,7 +965,7 @@ export default class HexceptionScene extends HexagonScene {
       ),
       this.camera,
     );
-    const hex = this.interactiveHexManager.onClick(raycaster)?.hexCoords;
+    const hex = this.interactiveHexManager.pick(raycaster)?.hexCoords;
     return hex ? this.openPlotConstruction(hex) : false;
   }
 

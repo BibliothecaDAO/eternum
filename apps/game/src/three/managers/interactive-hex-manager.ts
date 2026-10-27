@@ -72,8 +72,6 @@ export class InteractiveHexManager {
     this.hoverHexManager = new HoverHexManager(scene, terrain);
     this.instanceMaterial = interactiveHexMaterial.clone();
     this.hexGeometryPool = HexGeometryPool.getInstance();
-    this.onMouseMove = this.onMouseMove.bind(this);
-    this.onClick = this.onClick.bind(this);
     this.applyInstanceMeshSurfaceVisibility();
   }
 
@@ -158,41 +156,31 @@ export class InteractiveHexManager {
     this.hoverHexManager.setCameraView(cameraView);
   }
 
-  public onMouseMove(raycaster: THREE.Raycaster) {
-    if (!this.instanceMesh) return;
-    const hoveredHex = this.pickHexFromRaycaster(raycaster);
-    if (hoveredHex) {
-      if (this.showAura) {
-        if (this.useRimLighting) {
-          // Use new rim lighting hover effect
-          this.hoverHexManager.showHover(hoveredHex.position.x, hoveredHex.position.z);
-          // Hide old aura if it's visible
-          if (this.hoverAura.isInScene(this.scene)) {
-            this.hoverAura.removeFromScene(this.scene);
-          }
-        } else {
-          // Use original aura system
-          this.hoverAura.setPosition(hoveredHex.position.x, 0.3, hoveredHex.position.z);
-          if (!this.hoverAura.isInScene(this.scene)) {
-            this.hoverAura.addToScene(this.scene);
-          }
-          // Hide rim lighting if it's visible
-          this.hoverHexManager.hideHover();
-        }
-      }
-      return hoveredHex;
+  /** Lights the hovered tile's band, or none. */
+  public showHover(hexCoords: { col: number; row: number } | null): void {
+    if (!hexCoords || !this.showAura) {
+      this.clearHover();
+      return;
     }
-
-    this.clearHover();
-    return null;
+    const { x, z } = this.surfacePosition(hexCoords);
+    if (this.useRimLighting) {
+      this.hoverHexManager.showHover(x, z);
+      if (this.hoverAura.isInScene(this.scene)) {
+        this.hoverAura.removeFromScene(this.scene);
+      }
+      return;
+    }
+    this.hoverAura.setPosition(x, 0.3, z);
+    if (!this.hoverAura.isInScene(this.scene)) {
+      this.hoverAura.addToScene(this.scene);
+    }
+    this.hoverHexManager.hideHover();
   }
 
-  public onClick(raycaster: THREE.Raycaster) {
-    if (!this.instanceMesh) return;
-    const hoveredHex = this.pickHexFromRaycaster(raycaster);
-    if (hoveredHex) {
-      return { hexCoords: hoveredHex.hexCoords, position: hoveredHex.position.clone() };
-    }
+  /** The interactive tile whose ground the pointer's ray meets, or null where it meets none. */
+  public pick(raycaster: THREE.Raycaster): { hexCoords: { col: number; row: number }; position: THREE.Vector3 } | null {
+    const picked = this.pickHexFromRaycaster(raycaster);
+    return picked && { hexCoords: picked.hexCoords, position: picked.position.clone() };
   }
 
   private getBucketKey(col: number, row: number): string {
@@ -484,10 +472,6 @@ export class InteractiveHexManager {
   private pickHexFromRaycaster(
     raycaster: THREE.Raycaster,
   ): { hexCoords: { col: number; row: number }; position: THREE.Vector3 } | null {
-    if (!this.instanceMesh) {
-      return null;
-    }
-
     const ray = raycaster.ray;
     if (Math.abs(ray.direction.y) < RAY_PARALLEL_EPSILON) {
       return this.pickHexFromRaycast(raycaster);

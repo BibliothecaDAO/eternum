@@ -155,7 +155,7 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
-import { Box3, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
+import { Box3, Group, type Ray, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { zoomTowardCursor } from "./worldmap-zoom/worldmap-zoom-anchor";
 import { inOpenMapArea } from "../utils/labels/hud-clearance";
 import { MapControls } from "three/addons/controls/MapControls.js";
@@ -2612,18 +2612,10 @@ export default class WorldmapScene extends WarpTravel {
     this.hoverLabelRecovery.clear(reason);
   }
 
-  protected tryArmyRaycastFallback(raycaster: Raycaster): HexPosition | null {
-    if (!this.armyManager) return null;
-    const entityId = this.armyManager.onMouseMove(raycaster);
-    if (entityId === undefined) return null;
-    const position = this.getArmyDisplayPosition(entityId);
-    if (!position) return null;
-    if (import.meta.env.DEV) {
-      console.warn(
-        `[Selection Fallback] Hex picking failed but army raycast hit entity ${entityId} at (${position.col}, ${position.row})`,
-      );
-    }
-    return position;
+  /** The tile of the labelled thing the pointer is on: its model covers the tile behind it, at every zoom. */
+  protected override pickStandingThing(ray: Ray): HexPosition | null {
+    const point = this.mapPlates.thingHitBy(ray);
+    return point && this.hexSpace.hexForPosition(point);
   }
 
   /**
@@ -3512,7 +3504,7 @@ export default class WorldmapScene extends WarpTravel {
       ),
       this.camera,
     );
-    const hex = this.interactiveHexManager.onClick(raycaster)?.hexCoords;
+    const hex = this.pickPointerHex(raycaster)?.hexCoords;
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     if (!hex || selectedEntityId === null || selectedEntityId === undefined) return null;
     const path = actionPaths.get(ActionPaths.posKey(hex, true));

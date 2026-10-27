@@ -106,7 +106,7 @@ const theMap = (stamina: bigint, phone = false) => {
     projection,
     surface,
     camera: new THREE.PerspectiveCamera(),
-    mapPlates: { placeOrderLine: () => null },
+    mapPlates: { placeOrderLine: () => null, thingHitBy: () => null },
     army: ARMY,
     player: 0x111n,
     tileUnder: () => pointed.hex,

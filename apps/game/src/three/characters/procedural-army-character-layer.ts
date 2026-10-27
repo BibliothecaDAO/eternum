@@ -24,16 +24,7 @@ import {
   type ProceduralSeparationInput,
 } from "@/three/characters/collision/procedural-separation-simulation";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import {
-  BoxGeometry,
-  Euler,
-  type Intersection,
-  Mesh,
-  MeshBasicMaterial,
-  type Raycaster,
-  type Scene,
-  Vector3,
-} from "three";
+import { BoxGeometry, Euler, Mesh, MeshBasicMaterial, type Scene, Vector3 } from "three";
 
 type CharacterModule = typeof import("@/three/characters");
 
@@ -96,11 +87,6 @@ export interface ProceduralArmyCharacterLayerStats {
   sinkingCount: number;
 }
 
-export interface ProceduralArmyRaycastHit {
-  distance: number;
-  entityId: number;
-}
-
 const WORLD_CHARACTER_SCALE = 0.72;
 const MAX_ACTOR_CREATIONS_PER_SYNC = 4;
 const DEFEAT_LIFETIME_SECONDS = 2.6;
@@ -134,7 +120,6 @@ export class ProceduralArmyCharacterLayer {
   private readonly desiredEntityIds = new Set<number>();
   private readonly hitTargetGeometry = new BoxGeometry(1, 1, 1);
   private readonly hitTargetMaterial = new MeshBasicMaterial({ colorWrite: false, depthWrite: false });
-  private readonly raycastHits: Intersection[] = [];
   private readonly collisionBudget: ProceduralCollisionBudget = createProceduralCollisionBudget("quality");
   private readonly separationSimulation = new ProceduralSeparationSimulation({
     maxNeighborsPerBody: this.collisionBudget.maxNeighborsPerBody,
@@ -375,20 +360,6 @@ export class ProceduralArmyCharacterLayer {
 
   public getCollisionSnapshots(): ProceduralSeparationBodySnapshot[] {
     return this.separationSimulation.getSnapshots();
-  }
-
-  public raycastNearest(raycaster: Raycaster): ProceduralArmyRaycastHit | undefined {
-    this.raycastHits.length = 0;
-    this.actors.forEach(({ hitTarget }) => {
-      hitTarget.updateWorldMatrix(true, false);
-      hitTarget.raycast(raycaster, this.raycastHits);
-    });
-    let nearest: Intersection | undefined;
-    this.raycastHits.forEach((hit) => {
-      if (!nearest || hit.distance < nearest.distance) nearest = hit;
-    });
-    const entityId = nearest?.object.userData.entityId;
-    return typeof entityId === "number" && nearest ? { distance: nearest.distance, entityId } : undefined;
   }
 
   public setShadowsEnabled(enabled: boolean): void {

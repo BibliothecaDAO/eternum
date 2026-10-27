@@ -13,11 +13,9 @@ import {
   Euler,
   Group,
   InstancedBufferAttribute,
-  InstancedMesh,
   Matrix4,
   Mesh,
   Object3D,
-  Raycaster,
   Scene,
   Vector3,
 } from "three";
@@ -55,7 +53,6 @@ import { createPooledInstancedMaterial, releasePooledInstancedMaterial } from ".
 import type { ResolvedCosmeticSkin } from "../cosmetics/types";
 import { resolvePrimarySkinGltf } from "../cosmetics/skin-asset-source";
 import {
-  resolveNearestIntersection,
   resolveMovementProgressUpdate,
   resolveRotationUpdate,
   shouldSwitchModelForPosition,
@@ -2291,65 +2288,6 @@ export class ArmyModel {
       });
       modelData.contactShadowMesh?.computeBoundingSphere();
     });
-  }
-
-  public raycastAll(raycaster: Raycaster): Array<{ instanceId: number | undefined; mesh: InstancedMesh }> {
-    const results: Array<{ instanceId: number | undefined; mesh: InstancedMesh; distance: number }> = [];
-
-    this.models.forEach((modelData) => {
-      modelData.instancedMeshes.forEach((mesh) => {
-        const intersects = raycaster.intersectObject(mesh);
-        if (intersects.length > 0) {
-          results.push({
-            instanceId: intersects[0].instanceId,
-            mesh: mesh,
-            distance: intersects[0].distance,
-          });
-        }
-      });
-    });
-
-    // Sort by cached distance (avoids repeated raycast calls in comparator)
-    const sortedResults = results.toSorted((a, b) => a.distance - b.distance);
-
-    return sortedResults;
-  }
-
-  public raycastNearest(
-    raycaster: Raycaster,
-  ): { distance: number; instanceId: number | undefined; mesh: InstancedMesh } | undefined {
-    let nearest:
-      | {
-          instanceId: number | undefined;
-          mesh: InstancedMesh;
-          distance: number;
-        }
-      | undefined;
-
-    this.models.forEach((modelData) => {
-      modelData.instancedMeshes.forEach((mesh) => {
-        const intersects = raycaster.intersectObject(mesh);
-        if (intersects.length === 0) {
-          return;
-        }
-
-        nearest = resolveNearestIntersection(nearest, {
-          instanceId: intersects[0].instanceId,
-          mesh,
-          distance: intersects[0].distance,
-        });
-      });
-    });
-
-    if (!nearest) {
-      return undefined;
-    }
-
-    return {
-      distance: nearest.distance,
-      instanceId: nearest.instanceId,
-      mesh: nearest.mesh,
-    };
   }
 
   /**

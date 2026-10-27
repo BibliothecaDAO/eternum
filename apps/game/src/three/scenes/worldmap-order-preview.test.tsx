@@ -246,7 +246,8 @@ describe("a tap on a lit tile beside the realm selected", () => {
     const { scene, sent } = realmMap(false);
     // The tile under the next finger, as the map's hexes name it.
     Object.assign(scene, {
-      interactiveHexManager: { onClick: () => ({ hexCoords: SOUTH_EAST }) },
+      interactiveHexManager: { pick: () => ({ hexCoords: SOUTH_EAST }) },
+      mapPlates: { thingHitBy: () => null },
       chunkTransitionToken: 1,
       actionPathsTransitionToken: 1,
     });
