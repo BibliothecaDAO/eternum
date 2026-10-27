@@ -129,7 +129,7 @@ const recordedHistoryOn = (calendar: Calendar, player: string): HeraldHistoryEve
 };
 
 /** The game with no army out on day 2: every row but the armies' and the tiles they stood on. */
-const withoutArmies = (store: NativeFactStore): NativeFactStore => {
+export const withoutArmies = (store: NativeFactStore): NativeFactStore => {
   const armies = new Set([...store.entries("ExplorerTroops")].map(([, army]) => army.explorer_id));
   const standing = (fact: LabFact) =>
     fact.model === "ExplorerTroops" ||
@@ -140,7 +140,7 @@ const withoutArmies = (store: NativeFactStore): NativeFactStore => {
 };
 
 /** A site and the land four tiles round it, revealed grass, each tile a row of its own. */
-const landAround = (site: { col: number; row: number }, keys: string): LabFact[] =>
+export const landAround = (site: { col: number; row: number }, keys: string): LabFact[] =>
   [site, ...getHexesWithinRadius(site.col, site.row, 4)].map((hex, index) => ({
     model: "TileOpt",
     key: `${keys}${index.toString(16)}`,

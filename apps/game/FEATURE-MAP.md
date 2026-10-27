@@ -813,11 +813,13 @@ and `scenario=day-later` opens it 8h40m into day 3; both over prod's recorded hi
 until 25 s after the day's end; `day-later-short` gives the player a page of stories late in day 2, so its start is out
 of the read's reach; `day-later-quiet`'s player did not play day 2; `day-later-played-on`'s player played on in day 3,
 as on prod, before this device opened; `day-turn-asleep` opens a minute before the end for a phone's tab to sleep
-through it. `pnpm --dir apps/game playtest --port <port> --steps lab-day-turn` (or `lab-day-later`, `lab-day-turn-slow`,
-`lab-day-later-short`) checks the summary's totals and its line, and that Continue brings the camera onto the realm's
-day-3 site; `lab-day-later-quiet` and `lab-day-later-played-on` that the camera gets there with no summary;
-`lab-day-turn-asleep` (`--viewport 390x844`, each renderer mode) puts the tab away through the end and brings it back. A
-reload of a lab game's route (`/g/0x1ab9/...`) plays the same lab game again, its clock going on.
+through it; `season-opens` opens 30 s before the season's first day, the player's realm founded and on no site until day
+1's turn brings it in. `pnpm --dir apps/game playtest --port <port> --steps lab-day-turn` (or `lab-day-later`,
+`lab-day-turn-slow`, `lab-day-later-short`) checks the summary's totals and its line, and that Continue brings the
+camera onto the realm's day-3 site; `lab-day-later-quiet` and `lab-day-later-played-on` that the camera gets there with
+no summary; `lab-season-opens` that the map draws before day 1 and its turn brings the camera onto the realm's first
+site; `lab-day-turn-asleep` (`--viewport 390x844`, each renderer mode) puts the tab away through the end and brings it
+back. A reload of a lab game's route (`/g/0x1ab9/...`) plays the same lab game again, its clock going on.
 
 `/lab/day-end` turns the day with the same rollover (`watchDayTurn`) on a lab clock over the game's Frontier day facts,
 and plays the same moment, screen and card on lab land (`case=ordinary|together|late-block|later`; a narrow window plays

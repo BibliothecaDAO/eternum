@@ -1582,17 +1582,22 @@ async function continueIntoTheNewDay({ browser }) {
   return { before, after: browser.read(DAY_END_STATE) };
 }
 
-function cameraOnTheNewSite({ played }) {
-  const { before, after } = played;
-  if (after.phase !== "day") return failed(`the screen is still on the day's end (${after.phase})`, played);
-  const on = after.camera;
-  if (!on || Math.abs(on.col - LAB_DAY_3_SITE.col) > 1 || Math.abs(on.row - LAB_DAY_3_SITE.row) > 1)
-    return failed(
-      `the camera looks at ${JSON.stringify(on)}, not the realm's day-3 site ${JSON.stringify(LAB_DAY_3_SITE)}`,
-      played,
-    );
-  return completed({ before: before.camera, after: on, site: LAB_DAY_3_SITE });
-}
+/** The screen back up on the new day with the camera on the realm's site that day. */
+const cameraOnSite =
+  (site, day) =>
+  ({ played }) => {
+    const { before, after } = played;
+    if (after.phase !== "day") return failed(`the screen is still on the day's end (${after.phase})`, played);
+    const on = after.camera;
+    if (!on || Math.abs(on.col - site.col) > 1 || Math.abs(on.row - site.row) > 1)
+      return failed(
+        `the camera looks at ${JSON.stringify(on)}, not the realm's ${day} site ${JSON.stringify(site)}`,
+        played,
+      );
+    return completed({ before: before.camera, after: on, site });
+  };
+
+const cameraOnTheNewSite = cameraOnSite(LAB_DAY_3_SITE, "day-3");
 
 /**
  * The owner's phone (owner, 2026-10-25: "eventually I go back to mobile and it doesnt reload the map I get a black
@@ -1789,25 +1794,54 @@ function mapDrawsAsBeforeSleep(played, night) {
   return completed({ awake, drawn: played });
 }
 
+/** Reads the day's end through its phases until its summary shows or the day is back up, for at most `timeoutMs`. */
+function waitForADayTurn(timeoutMs) {
+  return async ({ browser }) => {
+    const before = browser.read(DAY_END_STATE);
+    const phases = [before.phase];
+    let shown = before;
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < timeoutMs) {
+      await sleep(POLL_MS);
+      shown = browser.read(DAY_END_STATE);
+      if (phases.at(-1) !== shown.phase) phases.push(shown.phase);
+      if (shown.card !== null || (phases.length > 1 && shown.phase === "day")) break;
+    }
+    await sleep(CAMERA_REPORT_MS);
+    return { before, after: browser.read(DAY_END_STATE), phases };
+  };
+}
+
 /** Waits for the day's end a device arriving in a new day goes through, and reads where the camera then looks. */
-async function waitForTheNewDay({ browser }) {
-  const before = browser.read(DAY_END_STATE);
-  const phases = [before.phase];
-  let shown = before;
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < DAY_END_PASS_MS) {
-    await sleep(POLL_MS);
-    shown = browser.read(DAY_END_STATE);
-    if (phases.at(-1) !== shown.phase) phases.push(shown.phase);
-    if (shown.card !== null || (phases.length > 1 && shown.phase === "day")) break;
-  }
-  await sleep(CAMERA_REPORT_MS);
-  return { before, after: browser.read(DAY_END_STATE), phases };
+function waitForTheNewDay(context) {
+  return waitForADayTurn(DAY_END_PASS_MS)(context);
 }
 
 function cameraOnTheNewSiteWithNoSummary({ played }) {
   if (played.after.card !== null) return failed(`a summary shows (${played.after.card}) for a day not played`, played);
   const camera = cameraOnTheNewSite({ played });
+  return camera.status === "completed" ? completed({ ...camera, phases: played.phases }) : camera;
+}
+
+/** The lab opens the game 30 s before day 1, and the turn's mist and black follow: past both, whatever the boot took. */
+const SEASON_OPENS_WAIT_MS = 60_000;
+/**
+ * A player in the season before its first day (src/lab/game/season-opens-scenario.ts), as dev's game 6 was entered on
+ * 10-26: the map draws while their realm has no site yet, then day 1's turn plays, with no summary for a day before the
+ * season, and leaves the camera on the realm's first site.
+ */
+const LAB_SEASON_OPENS_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "into-day-1", play: waitForADayTurn(SEASON_OPENS_WAIT_MS), settleMs: 0, verify: dayOneTurnedOntoTheRealm },
+];
+/** Realm 7's site on day 1 of the lab's calendar: its region's column, the first row of regions (contract hexes). */
+const LAB_DAY_1_SITE = { col: 650, row: 50 };
+const cameraOnTheFirstSite = cameraOnSite(LAB_DAY_1_SITE, "day-1");
+
+function dayOneTurnedOntoTheRealm({ played }) {
+  if (played.phases.length < 2) return failed("day 1 began with no turn played", played);
+  if (played.after.card !== null) return failed(`a summary shows (${played.after.card}) before any day`, played);
+  const camera = cameraOnTheFirstSite({ played });
   return camera.status === "completed" ? completed({ ...camera, phases: played.phases }) : camera;
 }
 
@@ -1917,6 +1951,7 @@ export const STEP_SETS = {
   "lab-day-turn-asleep": { game: labDayTurn("day-turn-asleep"), steps: labDayTurnAsleepSteps() },
   "lab-day-later-quiet": { game: labDayTurn("day-later-quiet"), steps: labDayLaterNoSummarySteps },
   "lab-day-later-played-on": { game: labDayTurn("day-later-played-on"), steps: labDayLaterNoSummarySteps },
+  "lab-season-opens": { game: labDayTurn("season-opens"), steps: LAB_SEASON_OPENS_STEPS },
   "realm-load": { game: FRONTIER, steps: realmLoadSteps() },
   "lab-realm-load": { game: { ...LAB_SPIRE, lab: "painted-buildings" }, steps: realmLoadSteps("painted-buildings") },
   "blitz-realm-load": { game: BLITZ, steps: realmLoadSteps() },
