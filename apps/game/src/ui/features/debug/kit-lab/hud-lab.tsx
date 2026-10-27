@@ -687,6 +687,13 @@ const STATES = {
     selected: 0,
     army: { stamina: 20, lords: 1_240, confirm: true },
   },
+  "army-refill-ready": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    army: { stamina: 20, lords: 1_240 },
+  },
   "army-refill-short": {
     clock: CLOCK,
     stores: STORES,
@@ -699,7 +706,15 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    refill: true,
+    refill: 1_240,
+    order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
+  },
+  "move-refill-short": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    refill: 40,
     order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
   },
   // A store's card, opened from its ring (desktop) or its plate (phone): filling, full, and made by no building.
@@ -886,8 +901,8 @@ const STATES = {
 
 type LabState = {
   merge?: boolean;
-  /** The order bar offers Refill for its short stamina. */
-  refill?: boolean;
+  /** The order bar's Refill for its short stamina, the realm's LORDS held against its 140 price (plenty, or short of it). */
+  refill?: number;
   /** What Next up reads beyond the state's armies, selection, hour and stores. */
   nextUp?: Partial<NextUpFacts>;
   results?: "today" | "today-earlier" | "today-failed" | "over" | "over-strong";
@@ -1039,7 +1054,9 @@ export const HudLab = () => {
                 {...lab.order}
                 revealYield={500}
                 xp={2}
-                refill={lab.refill ? <RefillButton price={140} held={1_240} onRefill={noop} /> : undefined}
+                refill={
+                  lab.refill === undefined ? undefined : <RefillButton price={140} held={lab.refill} onRefill={noop} />
+                }
                 onCancel={noop}
                 onGo={noop}
               />

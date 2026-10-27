@@ -27,6 +27,9 @@ describe("the refill", () => {
     const chip = short.host.querySelector('[role="img"]')!;
     expect(chip.getAttribute("aria-label")).toBe("Refill needs 130 LORDS, has 40");
     expect(chip.textContent).toBe("Refill40 / 130");
+    // Two lines, its name over the numbers, with no frame of its own: it stands inside the card that holds it.
+    expect([...chip.lastElementChild!.children].map((line) => line.textContent)).toEqual(["Refill", "40 / 130"]);
+    expect(chip.querySelector(".ui-panel")).toBeNull();
     short.unmount();
   });
 
