@@ -231,6 +231,7 @@ it("lets two players chat in their Blitz room, keeps its history, survives evict
               registered: registered.has(player),
               settled: false,
               roster_wallet: registered.has(player) ? "0x123" : null,
+              held_realm_id: null,
             },
           },
         ],

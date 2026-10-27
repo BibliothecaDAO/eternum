@@ -1,4 +1,4 @@
-import { PHASE_END_ERROR, type SeasonPhase } from "../../apps/launch-service/src/calendar";
+import { PHASE_END_ERROR, type FrontierSeasonPhase, type SeasonPhase } from "../../apps/launch-service/src/calendar";
 import { resolveBlitzSeason } from "./blitz-season";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -61,7 +61,7 @@ async function games(context: Season) {
   );
 }
 async function frontierGame(context: Season) {
-  const calendar = await service<{ phases: { phase: string; startsAt: string }[] }>(context, "/api/factory/calendar");
+  const calendar = await service<{ phases: SeasonPhase[] }>(context, "/api/factory/calendar");
   const phase = calendar.phases.find((phase) => phase.phase === "frontier");
   if (!phase) return undefined;
   const expected = Date.parse(phase.startsAt) / 1000;
@@ -69,7 +69,7 @@ async function frontierGame(context: Season) {
     (game) => game.mode === "frontier" && game.clock.start_main_at === expected,
   );
   if (candidates.length > 1) throw new PublicError("Multiple Frontier games match the calendar");
-  return candidates[0]?.game_id;
+  return candidates[0] ? { gameId: candidates[0].game_id, phase } : undefined;
 }
 async function shardConnection(context: Season) {
   const release = releaseInputs(context)!;
@@ -81,9 +81,14 @@ async function shardConnection(context: Season) {
     throw new PublicError("Herald and box name different chains");
   return { rpcUrl: release.public_rpc_url, chainId: manifest.shard.chainId, gamesAddress: manifest.world.address };
 }
+function assertCalendarGame(phase: FrontierSeasonPhase, native: { presetId: number; start: number; end: number }) {
+  if (native.presetId !== phase.presetId || native.start !== Date.parse(phase.startsAt) / 1000 || native.end !== Date.parse(phase.endsAt) / 1000)
+    throw new PublicError("Confirmed Frontier game differs from calendar preset or dates");
+}
 async function funding(context: Season) {
-  const gameId = await frontierGame(context);
-  if (!gameId) return undefined;
+  const selected = await frontierGame(context);
+  if (!selected) return undefined;
+  const { gameId, phase } = selected;
   const shard = await shardConnection(context);
   const native = await readFrontierGame(
     new RpcProvider({ nodeUrl: shard.rpcUrl }),
@@ -91,13 +96,14 @@ async function funding(context: Season) {
     releaseInputs(context)!.public_herald_url,
     gameId,
   );
+  assertCalendarGame(phase, native);
   const block = await context.provider!.getBlockNumber();
   const preset = decodeLedgerPreset(
     await context.provider!.callContract(
       {
         contractAddress: context.assets!.ledger,
         entrypoint: "get_preset",
-        calldata: [String(context.target.frontierPreset)],
+        calldata: [String(native.presetId)],
       },
       block,
     ),
@@ -221,7 +227,7 @@ export function seasonSteps(context: Season): Step[] {
         const calls = buildFrontierFundingCalls(context.assets!.ledger, lords, {
           shard: state.shard.chainId,
           frontierSeasonId: state.gameId,
-          presetId: context.target.frontierPreset,
+          presetId: state.native.presetId,
           start: state.native.start,
           end: state.native.end,
           seed: state.native.seed,

@@ -102,7 +102,7 @@ const fixture = () => {
       eventsPage: () => Effect.succeed(block),
       withdrawal: () => Effect.succeed(withdrawal),
       result: () => Effect.succeed(result),
-      grantLabor: vi.fn(() => Effect.succeed([{ gameId: 1, account: "0x3", home: "9", amount: "1000000000000" }])),
+      grantLabor: vi.fn(() => Effect.succeed({ gameId: 1, account: "0x3", home: "9", amount: "1000000000000" })),
     },
     identity: {
       matchesPayDecision: (decision) => Effect.succeed(BigInt(decision.wallet) === 0x123n),
@@ -153,7 +153,6 @@ const fixture = () => {
           fromBlock: 1,
         }),
     },
-    realms: { ownerOf: () => Effect.succeed("0x123") },
   };
   return { ports, store, single, run: () => Effect.runPromise(runRelay("0x1", ports, store)) };
 };
@@ -215,22 +214,18 @@ describe("confirmed value relay", () => {
       expect((await f.store.progress()).halted).toBeTruthy();
     },
   );
-  it("checks Realm ownership on every labor claim", async () => {
+  it("grants only the authenticated account's home without consulting the linked wallet", async () => {
     const f = fixture();
-    const claim = {
-      realms: [{ gameId: 1, home: "9", realmId: "7" }],
-      chainId: "0x1",
-      day: 20000,
-      realmsId: "0x2",
-      account: "0x3",
-    };
-    await Effect.runPromise(grantDailyLabor(f.ports, claim));
-    f.ports.realms.ownerOf = () => Effect.succeed("0x456");
+    f.ports.identity.linkedWallet = vi.fn(() => Effect.succeed(null));
+    const claim = { gameId: 1, home: "9", chainId: "0x1", day: 20000, realmsId: "0x2", account: "0x3" };
     expect(await Effect.runPromise(grantDailyLabor(f.ports, claim))).toEqual({
-      grants: [],
-      refused: [{ realmId: "7", reason: "realm_not_owned" }],
+      gameId: 1,
+      account: "0x3",
+      home: "9",
+      amount: "1000000000000",
     });
-    expect(f.ports.shard.grantLabor).toHaveBeenCalledTimes(1);
+    expect(f.ports.shard.grantLabor).toHaveBeenCalledExactlyOnceWith(claim);
+    expect(f.ports.identity.linkedWallet).not.toHaveBeenCalled();
   });
   it("encodes the published payment interface with exact u256 limbs", async () => {
     const submit = vi.fn(async () => {});
@@ -419,7 +414,8 @@ it("refuses a labor claim whose recipient account is not derived from its authen
   const f = fixture();
   Object.assign(f.ports.identity, { accountForRealmsId: () => Effect.succeed("0x3") });
   const claim = {
-    realms: [{ gameId: 1, home: "9", realmId: "7" }],
+    gameId: 1,
+    home: "9",
     chainId: "0x1",
     day: 0,
     realmsId: "0x2",
@@ -585,52 +581,4 @@ it("voids closed unpaid reports even when the account has no payout wallet and n
   expect(f.ports.identity.linkedWallet).not.toHaveBeenCalled();
   await Effect.runPromise(runRelay("0x1", f.ports, f.store));
   expect(f.single.pay).not.toHaveBeenCalled();
-});
-
-it.each(["7", "8", "9"])("grants held Realms in one call when Realm %s was sold", async (sold) => {
-  const f = fixture();
-  const claim = {
-    realms: ["7", "8", "9"].map((realmId) => ({ gameId: 1, realmId, home: "9" })),
-    chainId: "0x1",
-    day: 0,
-    realmsId: "0x2",
-    account: "0x3",
-  };
-  f.ports.realms.ownerOf = vi.fn((id) => Effect.succeed(id === sold ? "0x456" : "0x123"));
-  f.ports.shard.grantLabor = vi.fn((claim) =>
-    Effect.succeed(
-      claim.realms.map(() => ({
-        gameId: 1,
-        account: "0x3",
-        home: "9",
-        amount: "1000000000000",
-      })),
-    ),
-  );
-  const result = await Effect.runPromise(grantDailyLabor(f.ports, claim));
-  const held = claim.realms.filter((realm) => realm.realmId !== sold);
-  expect(result).toEqual({
-    grants: held.map(({ realmId }) => ({ realmId, gameId: 1, account: "0x3", home: "9", amount: "1000000000000" })),
-    refused: [{ realmId: sold, reason: "realm_not_owned" }],
-  });
-  expect(f.ports.realms.ownerOf).toHaveBeenCalledTimes(3);
-  expect(f.ports.shard.grantLabor).toHaveBeenCalledExactlyOnceWith({ ...claim, realms: held });
-});
-
-it("does not write or classify a Realm as sold when its ownership read fails", async () => {
-  const f = fixture();
-  const failure = new RelayFailure({ operation: "ownership_unavailable" });
-  f.ports.realms.ownerOf = (id) => (id === "7" ? Effect.succeed("0x123") : Effect.fail(failure));
-  await expect(
-    Effect.runPromise(
-      grantDailyLabor(f.ports, {
-        realms: ["7", "8"].map((realmId) => ({ gameId: 1, realmId, home: "9" })),
-        chainId: "0x1",
-        day: 0,
-        realmsId: "0x2",
-        account: "0x3",
-      }),
-    ),
-  ).rejects.toBe(failure);
-  expect(f.ports.shard.grantLabor).not.toHaveBeenCalled();
 });

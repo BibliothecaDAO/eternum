@@ -569,26 +569,27 @@ export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now";
 /** A withdrawal with no answer from the game: it may still apply, so it is never sent again on its own. */
 export const withdrawalUnknown = (amount: string) => `No answer yet for these ${amount}`;
 
-/** The labor a player's Realms give once a game day. */
-export const REALMS = "Realms";
-export const CLAIM = "Claim";
-export const CLAIM_ALL = "Claim all";
-export const CLAIMED_TODAY = "Claimed today";
+export const REALM_LABOR = "Realm Labor";
+export const NO_REALM_LABOR = "This home was founded without a held Realm and has no daily Labor claim.";
+export const settledRealmLabor = (amount: number) =>
+  `Your settled Realm gives ${formatExact(amount)} Labor each game day.`;
+export const claimRealmLaborLabel = (amount: number) => `Claim ${formatExact(amount)} Labor`;
+export const CLAIMING_LABOR = "Claiming";
+export const partialRealmLabor = (fits: number, total: number) =>
+  `${formatExact(fits)} of ${formatExact(total)} fit. Claiming uses today's claim.`;
+export const claimedRealmLabor = (secondsLeft: number | undefined) => `Claimed today · ${dayLeft(secondsLeft).reading}`;
+export const REALM_NUMBER = "Realm number";
+export const OPTIONAL_REALM_NUMBER = "Realm number (optional)";
+export const FREE_REALM_ENTRY = "Leave blank to found a realm with a generated name and no daily Labor claim.";
+export const HELD_REALM_ENTRY =
+  "Your linked Starknet wallet must hold this Realm. It can settle once per game and gives 1,000 Labor each game day.";
+export const DEV_REALM_ENTRY = "Dev mode: settle additional realms. Each realm number can be used once per game.";
+
 /** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */
 export const commonChestPays = (lords: string) => `A Common chest pays ${lords} LORDS today`;
 export const seasonPool = (lords: string, today: string | undefined) =>
   `Season pool ${lords} LORDS${today === undefined ? "" : `, ${today} released today`}`;
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
-export const fitOf = (fits: string, of: string) => `${fits} of ${of} fit`;
-export const REALMS_ELSEWHERE = "No Realms in this wallet";
-/** A Realm joins the list by its number, the first time it gives its labor. */
-export const ADD_REALM = "Add a Realm";
-export const REALM_NUMBER = "Realm number";
-/** A Realm the account claimed labor with before, which the linked wallet no longer holds. */
-export const REALM_NOT_IN_WALLET = "Not in this wallet";
-export const REALM_NOT_CLAIMED = "Not in your wallet, or claimed today";
-export const realmsADay = (cap: number) => `${cap} a day`;
-
 // The app's words outside a match (the shell's pages).
 
 /**

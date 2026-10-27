@@ -19,13 +19,19 @@ describe("native row decoder", () => {
     const fold = new WorldFold(decoder.registry);
     ingestion.applyReceipt(
       fold,
-      receipt([rowEvent("GameRelease", ["1"], { release_id: 1n, preset_commitment: 42n }), setFixture.raw]),
+      receipt([
+        rowEvent("GameRelease", ["1"], { release_id: 1n, created_release_id: 1n, preset_commitment: 42n }),
+        setFixture.raw,
+      ]),
       10,
       0,
     );
     ingestion.applyReceipt(
       fold,
-      receipt([rowEvent("GameRelease", ["1"], { release_id: 2n, preset_commitment: 42n }), memberFixture.raw]),
+      receipt([
+        rowEvent("GameRelease", ["1"], { release_id: 2n, created_release_id: 1n, preset_commitment: 42n }),
+        memberFixture.raw,
+      ]),
       11,
       0,
     );
@@ -34,7 +40,10 @@ describe("native row decoder", () => {
     expect(() =>
       ingestion.applyReceipt(
         fold,
-        receipt([rowEvent("GameRelease", ["1"], { release_id: 3n, preset_commitment: 42n }), deleteFixture.raw]),
+        receipt([
+          rowEvent("GameRelease", ["1"], { release_id: 3n, created_release_id: 1n, preset_commitment: 42n }),
+          deleteFixture.raw,
+        ]),
         12,
         0,
       ),
@@ -44,7 +53,10 @@ describe("native row decoder", () => {
     expect(() =>
       ingestion.applyReceipt(
         fold,
-        receipt([rowEvent("GameRelease", ["1"], { release_id: 3n, preset_commitment: 42n }), deleteFixture.raw]),
+        receipt([
+          rowEvent("GameRelease", ["1"], { release_id: 3n, created_release_id: 1n, preset_commitment: 42n }),
+          deleteFixture.raw,
+        ]),
         12,
         0,
       ),

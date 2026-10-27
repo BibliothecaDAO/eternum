@@ -299,6 +299,7 @@ export function preparationSteps(context: Deployment): Step[] {
           seconds(context.inputs.blitzStart),
           seconds(context.inputs.blitzEnd),
           season.id,
+          Number(context.inputs.frontierPresetId),
         );
         context.output("Reading collectible metadata on mainnet.");
         readSetup ??= setupPresenceReader(context.provider);

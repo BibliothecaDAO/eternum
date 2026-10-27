@@ -340,12 +340,12 @@ test("fixed salt deploy resumes after a lost acknowledgement without declaring o
   );
 });
 
-test("setup keeps only missing role calls and uses the environment's two preset ids", async () => {
-  const dev = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1);
+test("setup keeps only missing role calls and preserves the selected Frontier preset in both environments", async () => {
+  const dev = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1, 5);
   expect(
     dev.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
-  ).toEqual(["1", "2"]);
-  const production = setupCalls(environments.production, assets, "0x33", 4000, 9000, 1);
+  ).toEqual(["1", "5"]);
+  const production = setupCalls(environments.production, assets, "0x33", 4000, 9000, 1, 5);
   expect(
     production.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
   ).toEqual(["2", "5"]);
@@ -356,7 +356,7 @@ test("setup keeps only missing role calls and uses the environment's two preset 
 });
 
 const setupOf = (target: typeof environments.dev, entrypoint: string) =>
-  setupCalls(target, assets, "0x33", 4000, 9000, 1).filter((call) => call.entrypoint === entrypoint);
+  setupCalls(target, assets, "0x33", 4000, 9000, 1, 5).filter((call) => call.entrypoint === entrypoint);
 const registered = (call: { calldata: unknown }) => call.calldata as string[];
 
 test.each(["dev", "production"] as const)("%s setup registers 100 LORDS for entry, Sword and Shield", (environment) => {
@@ -393,7 +393,7 @@ test("dev registers its mystery chests and their cosmetics metadata exactly as b
   const mystery = buildMysteryChestPreset();
   expect(setupOf(environments.dev, "register_preset").map(registered)).toEqual([
     buildRegisterLedgerPresetCalldata(1, buildLedgerEconomicPreset("blitz", { environment: "dev" }), mystery),
-    buildRegisterLedgerPresetCalldata(2, buildLedgerEconomicPreset("frontier"), mystery),
+    buildRegisterLedgerPresetCalldata(5, buildLedgerEconomicPreset("frontier"), mystery),
   ]);
   const cosmetics = setupOf(environments.dev, "set_attrs_raw_to_ipfs_cid").filter(
     (call) => call.contractAddress === assets.cosmetics,
@@ -441,7 +441,7 @@ test("setup reads registered chest rewards back against its own call; mystery ch
 });
 
 test("metadata presence follows all confirmed event pages; differing metadata refuses", async () => {
-  const operation = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1).find(
+  const operation = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1, 5).find(
     (call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid",
   )!;
   const args = operation.calldata as string[];
@@ -807,7 +807,7 @@ mock.module(${JSON.stringify(join(root, "deploy/first/process.ts"))}, () => ({..
 });
 
 test("setup refuses a different confirmed Blitz window without replacing it", async () => {
-  const operation = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1).find(
+  const operation = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1, 5).find(
     (call) => call.entrypoint === "open_season",
   )!;
   const season = ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "1", "4000", "9000", "0", "0"];
@@ -863,3 +863,11 @@ test("date validation requires a native Frontier preset and uses its season cloc
   expect(() => validateDates({ ...dates, frontierPresetId: "" })).toThrow("registered Frontier preset");
   expect(() => validateDates({ ...dates, frontierPresetId: "1" })).toThrow("registered Frontier preset");
 });
+
+ test.each(["dev", "production"] as const)("%s registers Devcon's exact native ID, clock and 70/30 pool", (environment) => {
+   const calls = setupCalls(environments[environment], assets, "0x33", 4000, 9000, 1, 6);
+   const frontier = calls.filter((call) => call.entrypoint === "register_preset")[1]!;
+   const calldata = registered(frontier);
+   expect(calldata[0]).toBe("6");
+   expect(decodeLedgerPreset(calldata.slice(1, 21))).toMatchObject({ dayUnit: 4800, claimWindow: 604800, frontierChestBps: 7000, frontierTopN: 10 });
+ });

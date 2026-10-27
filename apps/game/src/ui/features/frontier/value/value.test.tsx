@@ -3,7 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { type HeldRealm, planRealmLabor } from "./realm-labor";
+import { planRealmLabor } from "./realm-labor";
 import { RealmsSheet } from "./realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";
 import { SeasonWithdrawRow } from "./season-withdraw";
@@ -168,174 +168,48 @@ describe("the realm's LORDS on the season-over card", () => {
   });
 });
 
-describe("the Realm holder's labor", () => {
-  const realm = (realmId: number, claimedToday = false): HeldRealm => ({
-    realmId,
-    name: `Realm ${realmId}`,
-    order: 1,
-    claimedToday,
-    inWallet: true,
-  });
-
-  it("gives each Realm's labor once a day, at most the day's cap of Realms, and pays what fits", () => {
-    const realms = [realm(1, true), realm(2), realm(3), realm(4)];
-    const plan = planRealmLabor({ realms, perRealm: 1_000, cap: 3, labor: { held: 17_600, limit: 18_000 } });
-    expect(plan.rows.map((row) => row.state)).toEqual(["claimed", "ready", "ready", "locked"]);
-    expect(plan.total).toBe(2_000);
-    expect(plan.fits).toBe(400);
-    expect(planRealmLabor({ realms, perRealm: 1_000, cap: 0, labor: { held: 0, limit: 18_000 } }).total).toBe(3_000);
-  });
-
-  it("leaves room to add a Realm until the day's cap of Realms has given its labor", () => {
-    const plan = (claimed: number, cap: number) =>
-      planRealmLabor({
-        realms: Array.from({ length: claimed }, (_, index) => realm(index + 1, true)),
-        perRealm: 1_000,
-        cap,
-        labor: { held: 0, limit: 18_000 },
-      });
-    expect(plan(0, 5).canAdd).toBe(true);
-    expect(plan(4, 5).canAdd).toBe(true);
-    expect(plan(5, 5).canAdd).toBe(false);
-    // No cap: a Realm can always be added.
-    expect(plan(9, 0).canAdd).toBe(true);
-  });
-
-  it("leaves a Realm the wallet no longer holds out of the claim, the total and the day's cap", () => {
-    const sold = { ...realm(2), inWallet: false };
-    const plan = planRealmLabor({
-      realms: [realm(1), sold, realm(3), realm(4)],
-      perRealm: 1_000,
-      cap: 2,
-      labor: { held: 0, limit: 18_000 },
+describe("the settled Realm's labor", () => {
+  it("gives only an unclaimed held home one daily claim, limited by its store", () => {
+    expect(planRealmLabor({ eligible: true, claimed: false, amount: 1000, held: 17600, limit: 18000 })).toEqual({
+      eligible: true,
+      claimed: false,
+      total: 1000,
+      fits: 400,
     });
-    // The cap of two goes to the two Realms still held ahead of it; the sold one takes none of it.
-    expect(plan.rows.map((row) => row.state)).toEqual(["ready", "absent", "ready", "locked"]);
-    expect(plan.total).toBe(2_000);
-    // Sold after giving today's labor, it still reads as claimed: the grant was made.
-    expect(
-      planRealmLabor({
-        realms: [{ ...realm(1, true), inWallet: false }],
-        perRealm: 1_000,
-        cap: 2,
-        labor: { held: 0, limit: 18_000 },
-      }).rows[0].state,
-    ).toBe("claimed");
+    expect(planRealmLabor({ eligible: false, claimed: false, amount: 1000, held: 0, limit: 18000 }).total).toBe(0);
+    expect(planRealmLabor({ eligible: true, claimed: true, amount: 1000, held: 0, limit: 18000 }).total).toBe(0);
   });
-
-  it("offers the wallet link to a holder with no wallet linked, with no line on what Realms are for", () => {
-    const onLinkWallet = vi.fn();
-    const show = (wallet: string | null, cap: number) =>
+  it("shows one claim, explains partial storage, and offers no claim for a free home", () => {
+    const onClaim = vi.fn(),
+      onRealm = vi.fn();
+    const show = (eligible: boolean, claimed: boolean, held: number) =>
       act(() =>
         root.render(
           <RealmsSheet
-            wallet={wallet}
-            plan={planRealmLabor({ realms: [], perRealm: 1_000, cap, labor: { held: 0, limit: 18_000 } })}
-            perRealm={1_000}
-            cap={cap}
-            labor={0}
-            secondsLeft={3_600}
+            plan={planRealmLabor({ eligible, claimed, amount: 1000, held, limit: 18000 })}
+            dailyAmount={1000}
+            secondsLeft={3600}
             sending={false}
-            adding={false}
-            onClaim={() => undefined}
-            onAdd={() => undefined}
-            onRealm={() => undefined}
-            onLinkWallet={onLinkWallet}
-            onClose={() => undefined}
-          />,
-        ),
-      );
-    show(null, 3);
-    expect(host.textContent).toContain("No wallet linked");
-    act(() => button("Link wallet")!.click());
-    expect(onLinkWallet).toHaveBeenCalledTimes(1);
-    // A linked wallet: no prompt to link one, and no line on what Realms give.
-    show(ADDRESS, 0);
-    expect(host.textContent).not.toContain("No wallet linked");
-    expect(host.textContent).not.toContain("Each Realm");
-  });
-
-  it("adds a Realm by its number, its first claim, and offers nothing to add once the day's cap is spent", () => {
-    const onAdd = vi.fn();
-    const show = (realms: HeldRealm[], cap: number) =>
-      act(() =>
-        root.render(
-          <RealmsSheet
-            wallet={ADDRESS}
-            plan={planRealmLabor({ realms, perRealm: 1_000, cap, labor: { held: 0, limit: 18_000 } })}
-            perRealm={1_000}
-            cap={cap}
-            labor={0}
-            secondsLeft={3_600}
-            sending={false}
-            adding={false}
-            onClaim={() => undefined}
-            onAdd={onAdd}
-            onRealm={() => undefined}
-            onLinkWallet={() => undefined}
-            onClose={() => undefined}
-          />,
-        ),
-      );
-    // An account that never claimed: no Realm listed, said so, and the number field.
-    show([], 5);
-    expect(host.textContent).toContain("No Realms in this wallet");
-    const field = host.querySelector<HTMLInputElement>('input[aria-label="Realm number"]')!;
-    const type = (value: string) =>
-      act(() => {
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, value);
-        field.dispatchEvent(new Event("input", { bubbles: true }));
-      });
-    type("9001");
-    act(() => field.form!.requestSubmit());
-    expect(onAdd).not.toHaveBeenCalled();
-    type("4512");
-    act(() => field.form!.requestSubmit());
-    expect(onAdd).toHaveBeenCalledWith(4_512);
-    show([realm(1, true), realm(2, true)], 2);
-    expect(host.querySelector('input[aria-label="Realm number"]')).toBeNull();
-    // A lone Realm the wallet no longer holds: said on its row, with nothing claimed today to wait for.
-    show([{ ...realm(1), inWallet: false }], 5);
-    expect(host.textContent).toContain("Not in this wallet");
-    expect(host.textContent).not.toContain("Claimed today");
-    expect(button("Claim all")).toBeUndefined();
-  });
-
-  it("claims all in one tap, and with labor full leads to the realm and claims only what fits", () => {
-    const onClaim = vi.fn();
-    const onRealm = vi.fn();
-    const show = (held: number) =>
-      act(() =>
-        root.render(
-          <RealmsSheet
-            wallet={ADDRESS}
-            plan={planRealmLabor({
-              realms: [realm(1, true), realm(2), realm(3)],
-              perRealm: 1_000,
-              cap: 5,
-              labor: { held, limit: 18_000 },
-            })}
-            perRealm={1_000}
-            cap={5}
-            labor={held}
-            secondsLeft={3_600}
-            sending={false}
-            adding={false}
             onClaim={onClaim}
-            onAdd={() => undefined}
             onRealm={onRealm}
-            onLinkWallet={() => undefined}
             onClose={() => undefined}
           />,
         ),
       );
-    show(9_640);
-    act(() => button("Claim all")!.click());
+    show(true, false, 0);
+    act(() => button("Claim 1,000 Labor")!.click());
     expect(onClaim).toHaveBeenCalledTimes(1);
-    show(17_600);
-    expect(host.textContent).toContain("400 of 2,000 fit");
-    act(() => button("Claim 400")!.click());
+    expect(host.querySelector("input")).toBeNull();
+    show(true, false, 17600);
+    expect(host.textContent).toContain("400 of 1,000 fit");
+    expect(host.textContent).toContain("Claiming uses today's claim");
     act(() => button("Realm")!.click());
-    expect([onClaim.mock.calls.length, onRealm.mock.calls.length]).toEqual([2, 1]);
+    expect(onRealm).toHaveBeenCalledTimes(1);
+    show(true, true, 0);
+    expect(host.textContent).toContain("Claimed today");
+    expect(button("Claim 1,000 Labor")).toBeUndefined();
+    show(false, false, 0);
+    expect(host.textContent).toContain("no daily Labor claim");
+    expect(button("Claim 1,000 Labor")).toBeUndefined();
   });
 });

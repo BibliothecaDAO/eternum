@@ -1052,7 +1052,7 @@ describe("identity Worker", () => {
     expect(await list()).toEqual(listed);
 
     // A player's standing comes from each shard as it answers that player; shard B cannot answer, and says so.
-    const standing = { registered: true, settled: false, roster_wallet: null, structures: [] };
+    const standing = { registered: true, settled: false, roster_wallet: null, held_realm_id: null, structures: [] };
     heralds.set("https://shard-a.test/games?player=0xabc", {
       chain: "0xa",
       games: [

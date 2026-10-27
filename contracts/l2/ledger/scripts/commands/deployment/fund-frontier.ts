@@ -14,7 +14,7 @@ import {
   assertFrontierPreset,
   readFrontierFunding,
 } from "../../../../../../packages/value-ledger/src/frontier-funding";
-import { buildFrontierFundingCalls, frontierLedgerPresetId } from "./frontier.js";
+import { buildFrontierFundingCalls } from "./frontier.js";
 import { readConfirmedSnapshot, singleRow } from "../../../../../../apps/value-relay/src/shard-snapshot";
 import type { ShardConnection } from "../../../../../../apps/value-relay/src/shard-rpc";
 
@@ -78,7 +78,7 @@ export async function fundFrontier(
   await assertProviderChain(account, target.network, "STARKNET_RPC");
   const { ledger, token } = target;
   const native = await readFrontierGame(provider, shard, heraldUrl, gameId);
-  const presetId = frontierLedgerPresetId(environment, native.presetId);
+  const presetId = native.presetId;
   const head = await readConfirmedLedgerHead(account);
   const preset = decodeLedgerPreset(
     await account.callContract(

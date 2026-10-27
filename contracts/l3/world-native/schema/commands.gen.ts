@@ -85,7 +85,7 @@ export interface NativeCommandPayloads {
   SettleBlitzRoster: undefined;
   ProvisionRealm: BigNumberish;
   CreateReservedHyperstructure: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish };
-  SettleSeason: { readonly name: BigNumberish; readonly selected_realm: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined } };
+  SettleSeason: { readonly selected_realm: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined } };
   SettleVillage: { readonly pass_id: BigNumberish; readonly connected_realm_entity_id: BigNumberish };
   ReceiveVillageArmy: BigNumberish;
   BurnStructureResources: { readonly entity_id: BigNumberish; readonly resources: readonly ({ readonly resource_type: BigNumberish; readonly amount: BigNumberish })[] };

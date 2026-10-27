@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { BuildingType, ResourcesIds, StructureType, type RealmInfo } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, type RealmInfo } from "@bibliothecadao/types";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
@@ -51,19 +51,17 @@ import { ProductionSidebar } from "./production-sidebar";
 
 it("reads each ring's full production: the time left, never running out, and none known", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const { store, row } = frontierDay();
   const realm = {
     entityId: 7,
-    structure: { entity_id: 7, base: { category: StructureType.Realm }, metadata: { realm_id: 1 } },
+    structure: row,
   } as unknown as RealmInfo;
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   act(() =>
     root.render(
-      <GameProvider
-        value={{ store: frontierDay().store } as unknown as GameClientSetup}
-        account={{ address: "0x111" } as never}
-      >
+      <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
         <ProductionSidebar
           realms={[realm]}
           selectedRealmEntityId={7}

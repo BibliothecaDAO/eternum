@@ -10,9 +10,11 @@
     "admin": "https://admin.dev-realms.party",
     "zone": "dev-realms.party",
     "pages": "realms-dev",
-    "docs": { "pages": "realms-docs-dev", "origin": "https://docs.dev-realms.party" },
+    "docs": {
+      "pages": "realms-docs-dev",
+      "origin": "https://docs.dev-realms.party"
+    },
     "box": "realms-dev",
-    "frontierPreset": 2,
     "blitzPreset": 1,
     "chests": "mystery",
     "chestName": "devChest",
@@ -34,9 +36,11 @@
     "admin": "https://admin.realms.party",
     "zone": "realms.party",
     "pages": "eternum-game",
-    "docs": { "pages": "realms-docs", "origin": "https://docs.realms.party" },
+    "docs": {
+      "pages": "realms-docs",
+      "origin": "https://docs.realms.party"
+    },
     "box": "realms-production",
-    "frontierPreset": 5,
     "blitzPreset": 2,
     "chests": "lords",
     "chestName": "Realms Loot Chest",

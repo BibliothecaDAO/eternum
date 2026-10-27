@@ -22,6 +22,8 @@ afterEach(() => {
 });
 
 test.each([
+  "wrong preset",
+  "wrong end",
   "game",
   "chain",
   "lost mint reply",
@@ -67,6 +69,7 @@ test.each([
       if (operation === "deposit" && funded) throw new Error("season already funded");
       nonce++;
       submitted.push(calls);
+      if (operation === "deposit") expect(calls[1]!.calldata?.[2]).toBe("6");
       if (operation === "deposit") funded = true;
       held = calls[0]!.entrypoint === "mint" ? 1000n * WEI : 0n;
       if (!interrupted && (changes === `lost ${operation} reply` || changes === `lagged ${operation} reply`)) {
@@ -82,11 +85,11 @@ test.each([
   spyOn(native, "readFrontierGame").mockResolvedValue({
     chestPoolBps: 7000,
     topN: 10,
-    presetId: 2,
+    presetId: changes === "wrong preset" ? 5 : 6,
     start: startSeconds,
-    end: startSeconds + 20 * 86400,
+    end: startSeconds + 60 * 4800 + (changes === "wrong end" ? 40 : 0),
     seed: "1",
-    dayUnit: 86400,
+    dayUnit: 4800,
     claimWindow: 86400,
   });
   spyOn(funding, "readFrontierFunding").mockImplementation(async (_provider, _ledger, _key, _native, block) => {
@@ -97,17 +100,17 @@ test.each([
       prizePaid: "0",
       paid: "0",
       closed: false,
-      presetId: 2,
+      presetId: 6,
       seed: "1",
       start: startSeconds,
-      end: startSeconds + 20 * 86400,
+      end: startSeconds + 60 * 4800,
       claimDeadline: startSeconds + 21 * 86400,
       confirmedBlock: 1,
     };
   });
   globalThis.fetch = (async (url, _init) => {
     const path = new URL(String(url)).pathname;
-    if (path === "/api/factory/calendar") return Response.json({ phases: [{ phase: "frontier", startsAt: start }] });
+    if (path === "/api/factory/calendar") return Response.json({ phases: [{ phase: "frontier", presetId: 6, startsAt: start, endsAt: new Date((startSeconds + 60 * 4800) * 1000).toISOString() }] });
     if (path === "/games")
       return Response.json({
         games: [{ game_id: gameId, mode: "frontier", clock: { start_main_at: startSeconds } }],
@@ -125,13 +128,18 @@ test.each([
     provider: {
       getBlockNumber: async () => observedBlock ?? nonce,
       callContract: async ({ entrypoint }: { entrypoint: string }) => {
-        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "86400", "86400", "10", "7000"];
+        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "4800", "86400", "10", "7000"];
         if (entrypoint === "lords") return ["0x2"];
         throw new Error("Unexpected ledger read");
       },
     },
   } as unknown as main.Deployment;
   const step = seasonSteps(context).find((step) => step.name === "Frontier deposit")!;
+  if (changes.startsWith("wrong ")) {
+    await expect(step.apply()).rejects.toThrow("differs from calendar");
+    expect(submitted).toEqual([]);
+    return;
+  }
   if (changes !== "game" && changes !== "chain") {
     await expect(runSteps([step], true, () => {})).rejects.toThrow(
       changes.endsWith("reply") ? "reply lost" : "before submission",
@@ -199,17 +207,17 @@ test.each([
   spyOn(native, "readFrontierGame").mockResolvedValue({
     chestPoolBps: 7000,
     topN: 10,
-    presetId: 5,
+    presetId: 6,
     start: startSeconds,
-    end: startSeconds + 20 * 86400,
+    end: startSeconds + 60 * 4800,
     seed: "1",
-    dayUnit: 86400,
+    dayUnit: 4800,
     claimWindow: 86400,
   });
   spyOn(funding, "readFrontierFunding").mockRejectedValue(new Error("frontier_funding_missing"));
   globalThis.fetch = (async (url) => {
     const path = new URL(String(url)).pathname;
-    if (path === "/api/factory/calendar") return Response.json({ phases: [{ phase: "frontier", startsAt: start }] });
+    if (path === "/api/factory/calendar") return Response.json({ phases: [{ phase: "frontier", presetId: 6, startsAt: start, endsAt: new Date((startSeconds + 60 * 4800) * 1000).toISOString() }] });
     if (path === "/games")
       return Response.json({ games: [{ game_id: 1, mode: "frontier", clock: { start_main_at: startSeconds } }] });
     if (path === "/manifest") return Response.json({ chainId: "0x10" });
@@ -225,7 +233,7 @@ test.each([
     provider: {
       getBlockNumber: async () => 7,
       callContract: async ({ entrypoint }: { entrypoint: string }) => {
-        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "86400", "86400", "10", "7000"];
+        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "4800", "86400", "10", "7000"];
         if (entrypoint === "lords") return ["0x2"];
         throw new Error("Unexpected ledger read");
       },
@@ -237,6 +245,7 @@ test.each([
   const written = store.read<{ account: string; calls: Call[] }>("cold-funding.json")!;
   expect(balanceOwners).toEqual([coldAdmin]);
   expect(written.account).toBe(coldAdmin);
+  expect((written.calls.at(-1)!.calldata as string[])[2]).toBe("6");
   expect(written.calls.map((call) => call.entrypoint)).toEqual([...calls]);
   if (held === 0n)
     expect(written.calls[0]).toEqual({

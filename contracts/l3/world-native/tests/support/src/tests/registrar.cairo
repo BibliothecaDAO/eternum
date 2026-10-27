@@ -265,10 +265,7 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
     );
     assert!(
         execute_in_game(
-            d,
-            game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { name: 'home', selected_realm: Some(1) }),
-            350,
+            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
         ),
     );
     let guards = IGuardsDispatcher { contract_address: d.games };
@@ -506,10 +503,7 @@ fn assert_capture_at(
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d,
-            game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { name: 'home', selected_realm: Some(1) }),
-            opening,
+            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), opening,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -924,10 +918,7 @@ pub fn setup_frontier_chests_with_preset(
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d,
-            game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { name: 'home', selected_realm: Some(1) }),
-            350,
+            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -1069,3 +1060,34 @@ pub fn assert_site_removed(d: super::Deployment, key: ResourceKey) {
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     assert!(!resources.has_resource(key));
 }
+
+pub fn setup_open_frontier() -> (super::Deployment, u32) {
+    setup_open_frontier_preset("frontier", 1)
+}
+
+pub fn setup_open_frontier_preset(name: ByteArray, bags: u64) -> (super::Deployment, u32) {
+    let d = setup();
+    let (_, preset) = super::preset_projection::current_definition(name);
+    registry(d).register_preset(1, preset);
+    let game_id = registry(d)
+        .create_game(
+            CreateGameParams {
+                start_main_at: 360,
+                end_grace_seconds: 0,
+                duration_seconds: Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20 * bags,
+                ..params(false),
+            },
+        );
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            state.realms.catalogue_count.write(crate::realms::CANONICAL_REALM_COUNT);
+            for index in 1_u32..crate::realms::CANONICAL_REALM_COUNT + 1 {
+                state.realms.traits.write(index, 0x4000001);
+            }
+        },
+    );
+    (d, game_id)
+}
+

@@ -50,6 +50,7 @@ AREAS = {
         "deploy/athanor/scripts/directory.py",
         "deploy/athanor/scripts/service_requests.py",
         "apps/herald/**",
+        "apps/launch-service/src/release.ts",
         "packages/**",
         "config/**",
         "deploy/first/environments.json",
@@ -181,6 +182,7 @@ AREAS = {
     "docs": [
         ".github/workflows/test-docs.yml",
         "apps/game-docs/**",
+        "apps/launch-service/src/release.ts",
         "packages/**",
         "config/**",
         "deploy/first/environments.json",

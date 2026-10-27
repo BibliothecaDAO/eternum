@@ -1,14 +1,6 @@
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import { Effect, Result } from "effect";
-import type {
-  ConfirmedBlock,
-  LaborClaim,
-  LaborClaimResult,
-  RelayPorts,
-  Withdrawal,
-  PayableClaim,
-  ClaimOutcome,
-} from "./ports";
+import type { ConfirmedBlock, LaborClaim, RelayPorts, Withdrawal, PayableClaim, ClaimOutcome } from "./ports";
 import { RelayFailure, relayOperation } from "./ports";
 import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import type { RelayProgress, RelayStore } from "./state";
@@ -231,21 +223,11 @@ const postResults = (ports: RelayPorts, store: RelayStore) =>
     return deferred;
   });
 
-/** Realm ownership is read for every claim; the shard enforces the Realm/day first-write rule. */
+/** Settlement proves eligibility on the shard; a later NFT transfer cannot move the home's labor. */
 export const grantDailyLabor = (ports: RelayPorts, claim: LaborClaim) =>
   Effect.gen(function* () {
     const account = yield* ports.identity.accountForRealmsId(claim.realmsId);
     if (!account || BigInt(account) !== BigInt(claim.account))
       return yield* Effect.fail(new RelayFailure({ operation: "labor_account_mismatch" }));
-    const wallet = yield* ports.identity.linkedWallet(claim.realmsId);
-    if (!wallet) return yield* Effect.fail(new RelayFailure({ operation: "labor_wallet_missing" }));
-    const held: LaborClaim["realms"][number][] = [];
-    const refused: LaborClaimResult["refused"] = [];
-    for (const realm of claim.realms) {
-      const owner = yield* ports.realms.ownerOf(realm.realmId);
-      if (BigInt(owner) === BigInt(wallet)) held.push(realm);
-      else refused.push({ realmId: realm.realmId, reason: "realm_not_owned" });
-    }
-    const grants = held.length ? yield* ports.shard.grantLabor({ ...claim, realms: held }) : [];
-    return { grants: grants.map((grant, index) => ({ ...grant, realmId: held[index]!.realmId })), refused };
+    return yield* ports.shard.grantLabor(claim);
   });

@@ -149,7 +149,7 @@ describe("native presets", () => {
   test("held-Realm labor is fixed per shard calendar day and leaves the account ceiling unruled", () => {
     for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
-      expect(preset.economy.labor.unwrap()).toEqual({ amount: 1000n, account_daily_limit: 0 });
+      expect(preset.economy.labor.unwrap()).toEqual({ amount: 1000n });
     }
     for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
   });
@@ -824,7 +824,7 @@ describe("Devcon's fast Frontier preset", () => {
       })),
     );
     expect(nativePresets[FRONTIER_PRESET_ID]!.labor!.amount).toBe(1_000);
-    expect(fast.economy.labor.unwrap()).toMatchObject({ amount: 3_000n });
+    expect(fast.economy.labor.unwrap()).toEqual({ amount: 1_000n });
     expect(fast.structures.research.filter(({ row }) => row === research.ROW_DEPTH).map(({ price }) => price)).toEqual([
       { essence: 20_000_000_000_000n, labor: 0n },
       { essence: 50_000_000_000_000n, labor: 0n },

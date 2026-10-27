@@ -663,7 +663,7 @@ function describeStructureName(structureId: unknown, components?: NativeFactStor
 }
 
 function structureDisplayName(components: NativeFactStore, structure: StructureRow): string {
-  return getStructureName(structure).name;
+  return getStructureName(structure, components).name;
 }
 
 /**

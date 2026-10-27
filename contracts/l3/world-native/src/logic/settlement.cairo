@@ -248,7 +248,7 @@ pub mod SettlementPoolState {
 #[starknet::component]
 pub mod SettlementState {
     use core::num::traits::Zero;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use crate::events::RowSet;
     use crate::settlement::{EntryEntitlement, EntryKey, PlayerEntry, SettlementProgress};
 
@@ -273,6 +273,10 @@ pub mod SettlementState {
                 assert!(previous == entitlement, "conflicting entry entitlement");
                 return;
             }
+            assert!(self.data.settlements.entries.read((key.game_id, key.owner)).is_none(), "owner already settled");
+            if entitlement.pass_kind == 2 {
+                self.reserve_held_realm(key, entitlement);
+            }
             self.data.settlements.entitlements.write((key.game_id, key.owner), Some(entitlement));
             let mut values = array![];
             entitlement.serialize(ref values);
@@ -283,6 +287,43 @@ pub mod SettlementState {
                         model: 'EntryEntitlement',
                         keys: array![key.game_id.into(), key.owner.into()].span(),
                         values: values.span(),
+                    },
+                );
+        }
+        fn reserve_held_realm(ref self: ComponentState<TContractState>, key: EntryKey, entitlement: EntryEntitlement) {
+            assert!(entitlement.realm_id > 0 && entitlement.realm_id <= 8000, "invalid canonical realm");
+            assert!(
+                entitlement.metadata_1 == 0 && entitlement.metadata_2 == 0 && entitlement.metadata_3 == 0,
+                "held Realm uses catalogue",
+            );
+            let rules = crate::logic::preset_record::for_game(key.game_id).rules;
+            assert!(
+                rules.entry_rule.read() == crate::rules::ENTRY_OPEN && rules.day_unit_seconds.read() != 0,
+                "held Realm requires Frontier",
+            );
+            let realm_id: u32 = entitlement.realm_id.try_into().unwrap();
+            assert!(
+                self.data.settlements.held_realm_owners.read((key.game_id, realm_id)).is_zero(),
+                "Realm already registered",
+            );
+            assert!(self.data.settlements.held_realm_homes.read((key.game_id, realm_id)) == 0, "Realm already settled");
+            self.data.settlements.held_realm_owners.write((key.game_id, realm_id), key.owner);
+        }
+        fn claim_held_realm(ref self: ComponentState<TContractState>, key: EntryKey, realm_id: u32, home: u64) {
+            let game_id = key.game_id;
+            assert!(
+                self.data.settlements.held_realm_owners.read((game_id, realm_id)) == key.owner,
+                "Realm reserved for another owner",
+            );
+            assert!(self.data.settlements.held_realm_homes.read((game_id, realm_id)) == 0, "Realm already settled");
+            self.data.settlements.held_realm_homes.write((game_id, realm_id), home);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'SettledRealm',
+                        keys: array![game_id.into(), realm_id.into()].span(),
+                        values: array![home.into()].span(),
                     },
                 );
         }

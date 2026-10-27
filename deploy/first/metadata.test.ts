@@ -5,7 +5,7 @@ import { environments, type Inputs } from "./settings";
 import type { PrivateStore } from "./private-store";
 
 const assets = { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" };
-const calls = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1);
+const calls = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1, 5);
 const metadata = calls.filter((call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid");
 const head = 16_200_000;
 

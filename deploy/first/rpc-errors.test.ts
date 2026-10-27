@@ -10,7 +10,7 @@ test.each([
   ["register_preset", "Ledger: unknown preset"],
   ["open_season", "Ledger: unknown Blitz season"],
 ])("a fresh ledger's %s read reports missing on an RPC contract error", async (entrypoint, reason) => {
-  const operation = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1).find(
+  const operation = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1, 5).find(
     (call) => call.entrypoint === entrypoint,
   )!;
   const provider = {

@@ -29,7 +29,7 @@ fn typed_commands() -> Array<Command> {
         ),
         Command::LevelUp(999999), Command::SettleBlitzRoster, Command::ProvisionRealm(999999),
         Command::CreateReservedHyperstructure(crate::troops::Coord { alt: false, x: 2000000, y: 2000000 }),
-        Command::SettleSeason(crate::realms::SettleSeason { name: 'route', selected_realm: None }),
+        Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None }),
         Command::SettleVillage(crate::village::SettleVillage { pass_id: 1, connected_realm_entity_id: 999999 }),
         Command::ReceiveVillageArmy(999999),
         Command::BurnStructureResources(
@@ -361,9 +361,7 @@ pub fn season_case() -> (Deployment, TestAction, u64) {
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
     );
-    let command = Command::SettleSeason(
-        crate::realms::SettleSeason { name: 'root-independent', selected_realm: Some(1) },
-    );
+    let command = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) });
     (d, TestAction { game_id, actor: d.actor, command }, 350)
 }
 pub fn live_loot_case(raid: bool, insufficient: bool, full: bool) -> (Deployment, TestAction) {

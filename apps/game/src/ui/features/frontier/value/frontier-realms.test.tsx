@@ -1,131 +1,98 @@
-import { type ExpeditionRules } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+// @vitest-environment jsdom
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
-
-/**
- * The game's facts: the account claimed labor yesterday with three Realms, none of them today. The relay finds one of
- * them, 4512, no longer in the linked wallet.
- */
-const GRANTS = [1_088, 4_512, 6_077].map((realm_id) => ({ realm_id, day: 19_999n, account: "0xacc" }));
-const session = vi.hoisted(() => ({ wallet: "0x4a1" }));
+import { dayOf } from "@bibliothecadao/eternum";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+const facts = vi.hoisted(() => ({
+  held: true,
+  claimedDay: -1n,
+  now: 360,
+  balance: 0 as number | undefined,
+  read: vi.fn(),
+}));
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
-    setup: { store: { rows: () => GRANTS, get: () => ({ amount: 1_000n, account_daily_limit: 5 }) } },
+    setup: {
+      store: {
+        get: (model: string, key: { day?: bigint }) => {
+          facts.read(model, key);
+          return model === "LaborRules"
+            ? { amount: 1000n }
+            : model === "SettledRealm"
+              ? facts.held
+                ? { home: 412n }
+                : undefined
+              : key.day === facts.claimedDay
+                ? { amount: 1000n }
+                : undefined;
+        },
+      },
+    },
   }),
 }));
-vi.mock("@/hooks/context/identity-session", () => ({
-  useIdentitySession: () => ({ session: { user: { id: "u", address: session.wallet } } }),
-}));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
-// Day 20,000 of the labor calendar, an hour in.
-vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => 20_000 * 86_400 + 3_600 }));
+vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => facts.now }));
 vi.mock("@/runtime/world/store", () => ({ requireActiveGame: () => ({ chainId: "0x52", gameId: 3 }) }));
-vi.mock("../realm-stores", () => ({ useRealmStores: () => ({ labor: { amount: 0, limit: 18_000 } }) }));
-vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
-  configManager: { getActiveGameId: () => 3 },
-  getCanonicalRealmMetadata: async (realmId: number) => ({ name: `Realm ${realmId}`, order: 1 }),
-}));
-
+vi.mock("../realm-stores", () => ({ useRealmStores: () => ({ labor: { amount: facts.balance, limit: 18000 } }) }));
 import { FrontierRealms } from "./frontier-realms";
 import { useRealmLabor } from "./use-realm-labor";
-
-const HOME = { entity_id: 412, owner: "0xacc" } as unknown as NativeRows["Structure"];
-const Sheet = () => (
-  <FrontierRealms
-    labor={useRealmLabor({} as ExpeditionRules, HOME)}
-    onRealm={() => undefined}
-    onClose={() => undefined}
-  />
-);
-
-/** Each claim the sheet sent, by the Realms it named. */
-const claims: number[][] = [];
-let unmount: (() => Promise<void>) | null = null;
-afterEach(async () => {
-  await unmount?.();
-  claims.length = 0;
-  session.wallet = "0x4a1";
+const home = { game_id: 3, entity_id: 412n, owner: 0xaccn, metadata: { realm_id: 711 } } as NativeRows["Structure"];
+const rules = { seed: 711n, dayUnitSeconds: 4800, startMainAt: 360, spacing: 50 };
+const Sheet = () => <FrontierRealms labor={useRealmLabor(rules, home)} onRealm={() => {}} onClose={() => {}} />;
+afterEach(() => {
+  facts.held = true;
+  facts.claimedDay = -1n;
+  facts.balance = 0;
+  facts.now = 360;
+  facts.read.mockClear();
   vi.unstubAllGlobals();
 });
-
-const openSheet = async () => {
+it("claims its settled home once and takes the result from the next native facts", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  vi.stubGlobal("fetch", async (_input: string | URL, init?: RequestInit) => {
-    const asked = (JSON.parse(String(init?.body)).realms as { realmId: number }[]).map((each) => each.realmId);
-    claims.push(asked);
-    const held = asked.filter((realmId) => realmId !== 4_512);
-    return Response.json(
-      {
-        day: 20_000,
-        grants: held.map((realmId) => ({ realmId: String(realmId) })),
-        refused: asked.filter((realmId) => realmId === 4_512).map((realmId) => ({ realmId: String(realmId) })),
-      },
-      { status: held.length ? 200 : 409 },
-    );
+  const requests: unknown[] = [];
+  vi.stubGlobal("fetch", async (_url: unknown, init: RequestInit) => {
+    requests.push(JSON.parse(String(init.body)));
+    return Response.json({ grant: { amount: "1000000000000" } });
   });
-  const container = document.createElement("div");
-  document.body.append(container);
-  const root = createRoot(container);
-  const show = () =>
-    act(async () =>
-      root.render(
-        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-          <MemoryRouter>
-            <Sheet />
-          </MemoryRouter>
-        </QueryClientProvider>,
-      ),
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const show = () => act(async () => root.render(<Sheet />));
+  try {
+    facts.balance = undefined;
+    await show();
+    expect(host.textContent).toBe("");
+    facts.balance = 0;
+    await show();
+    const claim = [...host.querySelectorAll("button")].find((button) => button.textContent === "Claim 1,000 Labor")!;
+    await act(async () => claim.click());
+    expect(requests).toEqual([{ gameId: 3, home: "412" }]);
+    expect(host.textContent).not.toContain("Claimed today");
+    facts.claimedDay = 0n;
+    await show();
+    expect(host.textContent).toContain("Claimed today");
+    const firstDay = dayOf(rules, facts.now)!;
+    facts.now = firstDay.end - 1;
+    await show();
+    expect(host.textContent).toContain("Claimed today");
+    facts.now = firstDay.end;
+    await show();
+    expect(host.textContent).not.toContain("Claimed today");
+    expect(host.textContent).toContain("Claim 1,000 Labor");
+    expect(facts.read).toHaveBeenLastCalledWith("LaborGrant", { game_id: 3, home: 412n, day: 1n });
+    await act(async () =>
+      [...host.querySelectorAll("button")].find((b) => b.textContent === "Claim 1,000 Labor")!.click(),
     );
-  await show();
-  // The Realms' names answer in their own turn.
-  for (let turn = 0; turn < 5; turn++) await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
-  unmount = async () => {
+    expect(requests).toEqual([
+      { gameId: 3, home: "412" },
+      { gameId: 3, home: "412" },
+    ]);
+    facts.held = false;
+    await show();
+    expect(host.textContent).toContain("no daily Labor claim");
+    expect(host.querySelector("input")).toBeNull();
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent?.startsWith("Claim "))).toBe(false);
+  } finally {
     await act(async () => root.unmount());
-    container.remove();
-  };
-  const press = async (word: string) => {
-    const button = [...document.body.querySelectorAll("button")].find((each) => each.textContent === word)!;
-    await act(async () => button.click());
-    for (let turn = 0; turn < 3; turn++) await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
-  };
-  const row = (realmId: number) =>
-    [...document.body.querySelectorAll(".ui-row")].find((row) => row.textContent?.includes(`Realm ${realmId}`))
-      ?.textContent ?? "";
-  return { press, row, show };
-};
-
-it("claims every ready Realm in one request", async () => {
-  const sheet = await openSheet();
-  await sheet.press("Claim all");
-  expect(claims).toEqual([[1_088, 4_512, 6_077]]);
-});
-
-it("marks a Realm the relay refused as not in the wallet, and leaves it out of the next claim", async () => {
-  const sheet = await openSheet();
-  expect(sheet.row(4_512)).not.toContain("Not in this wallet");
-  await sheet.press("Claim all");
-  // The two Realms still held were granted in that one request; the third is named, and marked.
-  expect(sheet.row(4_512)).toContain("Not in this wallet");
-  expect(sheet.row(1_088)).not.toContain("Not in this wallet");
-
-  // The game's grant facts have not arrived yet, so the held Realms are still ready: claiming again names them alone.
-  await sheet.press("Claim all");
-  expect(claims).toEqual([
-    [1_088, 4_512, 6_077],
-    [1_088, 6_077],
-  ]);
-});
-
-it("forgets the mark when another wallet is linked: the Realm may be in that one", async () => {
-  const sheet = await openSheet();
-  await sheet.press("Claim all");
-  expect(sheet.row(4_512)).toContain("Not in this wallet");
-  session.wallet = "0xb0b";
-  await sheet.show();
-  expect(sheet.row(4_512)).not.toContain("Not in this wallet");
+  }
 });

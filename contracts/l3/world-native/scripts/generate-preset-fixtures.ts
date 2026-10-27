@@ -17,6 +17,7 @@ for (const [name, id] of [
   ["blitz", 2],
   ["eternum", 3],
   ["frontier", 5],
+  ["devcon", 6],
   ["frontier-check", FRONTIER_FIXTURE_PRESET_ID],
 ] as const) {
   const fixture = await currentPresetFixture(id, schema);

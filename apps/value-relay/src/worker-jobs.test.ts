@@ -66,7 +66,7 @@ vi.mock("./shard-rpc", async (original) => ({
     page = shard.page;
   },
 }));
-vi.mock("./shard-labor", () => ({ currentLaborDay: () => Effect.succeed(4), writeLaborGrants: shard.grant }));
+vi.mock("./shard-labor", () => ({ currentLaborDay: () => Effect.succeed(4), writeLaborGrant: shard.grant }));
 vi.mock("./shard-account", () => ({ joinShardOperator: vi.fn(async () => "0x5") }));
 beforeEach(() => {
   vi.clearAllMocks();
@@ -112,9 +112,10 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
   expect(await relay.tick("0x1")).toMatchObject({ value: { status: "ready" } });
   expect(data.get("progress")).toMatchObject({ nextBlock: 1 });
   expect((await relay.shardHealth()).success).toBe(false);
-  shard.grant.mockReturnValue(Effect.succeed([{ gameId: 7, account: "0x3", home: "0x8", amount: "1" }]));
+  shard.grant.mockReturnValue(Effect.succeed({ gameId: 7, account: "0x3", home: "0x8", amount: "1" }));
   const claim = {
-    realms: [{ gameId: 7, home: "0x8", realmId: "8" }],
+    gameId: 7,
+    home: "0x8",
     chainId: "0x1",
     realmsId: "0x2",
     account: "0x3",
@@ -220,11 +221,12 @@ it("serializes pool publication with labor on the same shard signer", async () =
     rows: [],
     next: null,
   });
-  shard.grant.mockReturnValue(Effect.succeed([{ gameId: 7, account: "0x3", home: "0x8", amount: "1" }]));
+  shard.grant.mockReturnValue(Effect.succeed({ gameId: 7, account: "0x3", home: "0x8", amount: "1" }));
   const ticking = relay.tick("0x1");
   await started;
   const claiming = relay.labor({
-    realms: [{ gameId: 7, home: "0x8", realmId: "8" }],
+    gameId: 7,
+    home: "0x8",
     chainId: "0x1",
     realmsId: "0x2",
     account: "0x3",
@@ -238,4 +240,30 @@ it("serializes pool publication with labor on the same shard signer", async () =
   }
   await Promise.all([ticking, claiming]);
   expect(shard.grant).toHaveBeenCalledOnce();
+});
+
+it("preserves player-facing registration errors across the shard object's RPC boundary", async () => {
+  const response = await worker.fetch(
+    new Request("https://app.test/api/value/realm-entry?chainId=0x1", {
+      method: "POST",
+      headers: { origin: "https://app.test", "content-type": "application/json" },
+      body: JSON.stringify({ gameId: 7, realmId: 711 }),
+    }),
+    {
+      ENVIRONMENT: "staging",
+      BASE_URL: "https://app.test",
+      L2_RPC_URL: "https://ledger.test",
+      OPERATOR_TOKEN: "test",
+      SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+      LEDGER_OPERATOR_ADDRESS: "0x2",
+      LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
+      RELAY: {
+        idFromName: (id: string) => id,
+        get: () => ({ realmEntry: async () => structuredClone({ error: { status: 409, code: "realm_not_owned" } }) }),
+      },
+      IDENTITY: { authenticate: async () => ({ realmsId: "0x2" }), accountForRealmsId: async () => "0x3" },
+    } as never,
+  );
+  expect(response.status).toBe(409);
+  expect(await response.json()).toEqual({ error: "realm_not_owned" });
 });

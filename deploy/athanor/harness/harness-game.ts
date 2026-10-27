@@ -19,7 +19,7 @@ import {
   type GameClient,
   waitForWorldState,
 } from "@bibliothecadao/eternum";
-import { shortString, type Account } from "starknet";
+import { type Account } from "starknet";
 import { ResourcesIds, StructureType, TroopType, type ID } from "@bibliothecadao/types";
 
 export interface Coord {
@@ -94,7 +94,7 @@ export interface HarnessGame {
   factHeadBlock(): number | null;
   /** A surface hex as the bot's facts show it. */
   tileView(coord: Coord): TileView;
-  settle(signer: Account, owner: string, name: string, gameType: "eternum" | "frontier"): Promise<unknown>;
+  settle(signer: Account): Promise<unknown>;
   produceWood(signer: Account, structureId: ID): Promise<unknown>;
   /** Runs a client action and resolves with its hash as soon as the chain accepted it; one at a time per signer. */
   submit(signer: Account, act: () => Promise<unknown>): Promise<HarnessSubmission>;
@@ -137,7 +137,7 @@ export function createHarnessGame(
     forActor,
     actionsFor: (signer) => forActor(signer.address).actionsFor(signer),
     clientFor: (signer) => forActor(signer.address).clientFor(signer),
-    settle: (signer, owner, name, gameType) => forActor(signer.address).settle(signer, owner, name, gameType),
+    settle: (signer) => forActor(signer.address).settle(signer),
     produceWood: (signer, structureId) => forActor(signer.address).produceWood(signer, structureId),
     submit: (signer, act) => forActor(signer.address).submit(signer, act),
   };
@@ -221,7 +221,7 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       const tile = getTileAt(store, false, x, y, game_id);
       return { explored: Boolean(tile?.biome), occupierId: Number(tile?.occupier_id ?? 0) };
     },
-    settle: (signer, _owner, name) => systemCalls.settle_season({ signer, name: shortString.encodeShortString(name) }),
+    settle: (signer) => systemCalls.settle_season({ signer }),
     produceWood: (signer, structureId) => {
       const produce = !configManager.isCommandEnabled("BurnLaborForResourceProduction")
         ? systemCalls.burn_resource_for_resource_production

@@ -1,5 +1,5 @@
 pub use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_events, start_cheat_caller_address};
-pub use starknet::storage::StorageMapReadAccess;
+pub use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 pub use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 pub use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 pub use crate::logic::release::{

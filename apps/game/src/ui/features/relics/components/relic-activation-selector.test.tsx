@@ -149,7 +149,7 @@ it("opens the held relic and activates it with native inline troops, without tak
   const state = game();
   const confirm = await openInventory(state);
   expect(document.body.textContent).toContain("Activate Stamina I");
-  expect(document.body.textContent).toContain("Army of Stolsli");
+  expect(document.body.textContent).toContain("Army of Temtinos");
   expect(document.body.textContent).not.toContain(String(ARMY_ID));
   expect(document.body.textContent).not.toContain("Stamina is full");
   await act(async () => confirm.click());

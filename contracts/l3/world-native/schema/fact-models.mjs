@@ -890,12 +890,13 @@ export function defineFactModels({ struct, model: declare }) {
     model("LaborRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::LaborRules")),
     model(
       "LaborGrant",
-      "deployment",
+      "game",
       [
-        { name: "realm_id", type: "core::integer::u32" },
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "home", type: "core::integer::u64" },
         { name: "day", type: "core::integer::u64" },
       ],
-      struct("entry::LaborGrant"),
+      struct("entry::LaborGrant").filter(({ name }) => name !== "game_id" && name !== "home"),
     ),
     model("ChestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::ChestRules")),
     model("FrontierPrize", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::FrontierPrize")),
@@ -993,6 +994,15 @@ export function defineFactModels({ struct, model: declare }) {
       "game",
       [{ name: "game_id", type: "core::integer::u32" }],
       struct("settlement::SettlementPool"),
+    ),
+    model(
+      "SettledRealm",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "realm_id", type: "core::integer::u32" },
+      ],
+      [{ name: "home", type: "core::integer::u64" }],
     ),
     model("EntryEntitlement", "game", struct("settlement::EntryKey"), struct("settlement::EntryEntitlement")),
     model("PlayerEntry", "game", struct("settlement::EntryKey"), struct("settlement::PlayerEntry")),
@@ -1093,6 +1103,7 @@ export function defineFactModels({ struct, model: declare }) {
       [
         { name: "release_id", type: "core::integer::u32" },
         { name: "preset_commitment", type: "core::felt252" },
+        { name: "created_release_id", type: "core::integer::u32" },
       ],
     ),
     model("GameRegistry", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("game::GameRegistry")),
@@ -1382,6 +1393,7 @@ export const syncScopes = {
   ),
   PlayerPoints: { owners: ["address"] },
   RealmTraits: { realmTraits: ["realm_id"] },
+  SettledRealm: { entities: ["home"] },
   EntryEntitlement: byOwner,
   PlayerEntry: byOwner,
   VillagePass: byOwner,

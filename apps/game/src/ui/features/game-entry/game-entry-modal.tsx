@@ -1,3 +1,5 @@
+import { registerHeldRealm } from "@/services/realm-entry";
+import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 /**
  * The entry into a game, drawn as the doorway (design o5): the account, then the realm founded or prepared, then the
  * hand-off to the game's route, where the doorway carries on while the map boots.
@@ -11,11 +13,10 @@ import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
 import { RealmNumberPicker } from "./realm-number-picker";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { identityUsername, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
-import { resolvePlayerNameFelt } from "@/services/identity/player-name";
 import { useGameEntry } from "@/hooks/use-game-entry";
 
 import { submitSettlement } from "@/services/settlement";
@@ -26,10 +27,7 @@ import { gamePainting, modeLabel } from "@/shell/game-links";
 import { resultsHref } from "@/shell/season-tab/results-link";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
-import { getRealmNameById } from "@bibliothecadao/eternum";
-import { seasonRealm } from "@/shell/season";
-import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
-import { type DoorwayRealm, DoorwayScreen } from "./doorway/doorway-screen";
+import { DoorwayScreen } from "./doorway/doorway-screen";
 import { doorwayView } from "./doorway/doorway-view";
 
 import type { GameRef } from "@bibliothecadao/eternum/game-client";
@@ -103,13 +101,13 @@ export const GameEntryModal = ({
   const requestSignIn = useRequestSignIn();
   const sessionStatus = useIdentitySessionStore((state) => state.status);
   const account = useAccountStore((state) => state.account);
+  const [heldRealmNumber, setHeldRealmNumber] = useState("");
+  const [registeredRealmId, setRegisteredRealmId] = useState<number | null>(null);
+  const [settlementError, setSettlementError] = useState<string | null>(null);
+  const validHeldRealm =
+    heldRealmNumber === "" ||
+    (/^\d+$/.test(heldRealmNumber) && Number(heldRealmNumber) >= 1 && Number(heldRealmNumber) <= 8000);
   const accountError = useAccountStore((state) => state.provisioningError);
-  // The chain name written at registration is the identity username, when one was chosen.
-  const accountName = useIdentitySessionStore((state) => identityUsername(state.session));
-  const usernameFelt = useMemo(
-    () => (account?.address ? resolvePlayerNameFelt(account.address, accountName) : null),
-    [account?.address, accountName],
-  );
   const markOpening = useAutoSettleStore((state) => state.markOpening);
   const markSettling = useAutoSettleStore((state) => state.markSettling);
   const markCompleted = useAutoSettleStore((state) => state.markCompleted);
@@ -190,6 +188,9 @@ export const GameEntryModal = ({
     setSettledRealmCount(0);
     setDevSettlementTarget(null);
     setDevRealmNumber("1");
+    setHeldRealmNumber("");
+    setRegisteredRealmId(null);
+    setSettlementError(null);
   }, []);
 
   const beginEntityWait = useCallback((): AbortSignal => {
@@ -318,6 +319,8 @@ export const GameEntryModal = ({
         snapshot,
         expectedSettlementCount: expectedSettlementCount,
       });
+      setRegisteredRealmId(snapshot.heldRealmId);
+      if (snapshot.heldRealmId != null) setHeldRealmNumber(String(snapshot.heldRealmId));
       setSettledRealmCount(status.settledCount);
       setNeedsSettlement(status.needsSettlement);
       setCanPlay(status.canPlay);
@@ -459,6 +462,7 @@ export const GameEntryModal = ({
     (error: Error) => {
       console.error("[GameEntryModal] Settlement failed", { worldName, error });
       setSettleStage("error");
+      setSettlementError(error.message);
       if (autoSettleEnabled && autoSettleEntryKey) {
         markFailed(autoSettleEntryKey, error.message);
       }
@@ -473,6 +477,7 @@ export const GameEntryModal = ({
     }
     if (!account) return;
 
+    setSettlementError(null);
     setIsSettling(true);
     if (autoSettleEnabled && autoSettleEntryKey) {
       markSettling(autoSettleEntryKey, Date.now());
@@ -483,9 +488,6 @@ export const GameEntryModal = ({
         throw new Error("World configuration is still loading. Please wait a moment and try again.");
       }
       const signer = account as unknown as Account;
-      if (!usernameFelt) {
-        throw new Error("Unable to resolve player name for settlement.");
-      }
 
       const initialSnapshot = await readSettlementSnapshot();
       if (isEternumDevMode && !initialSnapshot) throw new Error("Settlement state is still loading.");
@@ -499,11 +501,12 @@ export const GameEntryModal = ({
 
       const settlementTarget = isEternumDevMode ? (initialSnapshot?.settledCount ?? 0) + 1 : expectedSettlementCount;
       if (isEternumDevMode) setDevSettlementTarget(settlementTarget);
+      if (isFrontierMode && initialSnapshot?.heldRealmId == null && heldRealmNumber !== "")
+        await registerHeldRealm(game, Number(heldRealmNumber));
       setSettleStage("settling");
       await submitSettlement(navigationEntryContext, (client) =>
         client.setup.systemCalls.settle_season({
           signer,
-          name: usernameFelt,
           selectedRealm: isEternumDevMode ? Number(devRealmNumber) : undefined,
         }),
       );
@@ -529,6 +532,9 @@ export const GameEntryModal = ({
     autoSettleEntryKey,
     account,
     expectedSettlementCount,
+    game,
+    heldRealmNumber,
+    isFrontierMode,
     finalizeFailedSettlement,
     finalizeSuccessfulSettlement,
     isSeasonMode,
@@ -536,7 +542,6 @@ export const GameEntryModal = ({
     devRealmNumber,
     markSettling,
     syncSettlementStateFromSnapshot,
-    usernameFelt,
     waitForSettlementTarget,
     worldMeta,
     readSettlementSnapshot,
@@ -550,8 +555,7 @@ export const GameEntryModal = ({
     markOpening(autoSettleEntryKey, Date.now());
   }, [autoSettleEnabled, autoSettleEntryKey, isOpen, markOpening]);
 
-  // The doorway founds a Frontier realm on its own (design o5); an Eternum realm when the entry asked for it.
-  const foundsOnItsOwn = isFrontierMode || (isEternumMode && autoSettleEnabled);
+  const foundsOnItsOwn = isEternumMode && autoSettleEnabled;
   useEffect(() => {
     if (!foundsOnItsOwn || phase !== "settlement" || isSettling || autoSettleAttemptedRef.current) {
       return;
@@ -570,21 +574,20 @@ export const GameEntryModal = ({
 
   if (!isOpen) return null;
 
-  const realm = entryRealm(worldMeta);
   const view = doorwayView({
     source: "entry",
     phase,
     audience: isSpectateMode ? "spectator" : "player",
     signedIn: sessionStatus === "signed-in",
     accountError,
-    foundingFailed: settleStage === "error",
+    foundingFailed: settleStage === "error" && !isFrontierMode,
     blitzEntry,
   });
 
   return (
     <DoorwayScreen
       view={view}
-      realm={realm}
+      realm={null}
       title={worldMeta ? modeLabel(worldMeta) : undefined}
       painting={worldMeta ? gamePainting(worldMeta) : undefined}
       onRetry={
@@ -604,21 +607,38 @@ export const GameEntryModal = ({
           {`${BLITZ_WORDS.preparing} ${Math.min(worldMeta.player_count, worldMeta.roster_count)}/${worldMeta.roster_count}`}
         </Pill>
       )}
-      {phase === "settlement" && isSeasonMode && !foundsOnItsOwn && settleStage === "idle" && (
-        <>
-          {isEternumDevMode && (
-            <RealmNumberPicker value={devRealmNumber} onChange={setDevRealmNumber} disabled={isSettling} />
-          )}
-          <button
-            type="button"
-            disabled={isSettling || (isEternumDevMode && !validDevRealmNumber)}
-            onClick={() => void handleSettle()}
-            className="frontier-primary w-full"
-          >
-            Found your realm
-          </button>
-        </>
-      )}
+      {phase === "settlement" &&
+        isSeasonMode &&
+        !foundsOnItsOwn &&
+        (settleStage === "idle" || (isFrontierMode && settleStage === "error")) && (
+          <>
+            {isFrontierMode && (
+              <RealmNumberPicker
+                purpose="held"
+                value={heldRealmNumber}
+                onChange={setHeldRealmNumber}
+                disabled={isSettling || registeredRealmId != null}
+              />
+            )}
+            {settlementError && <HudNotice tone="bad" line={settlementError} />}
+            {isEternumDevMode && (
+              <RealmNumberPicker
+                purpose="development"
+                value={devRealmNumber}
+                onChange={setDevRealmNumber}
+                disabled={isSettling}
+              />
+            )}
+            <button
+              type="button"
+              disabled={isSettling || (isEternumDevMode && !validDevRealmNumber) || (isFrontierMode && !validHeldRealm)}
+              onClick={() => void handleSettle()}
+              className="frontier-primary w-full"
+            >
+              Found your realm
+            </button>
+          </>
+        )}
       {phase === "ready" && !isSpectateMode && isEternumDevMode && (
         <button
           type="button"
@@ -633,10 +653,4 @@ export const GameEntryModal = ({
       )}
     </DoorwayScreen>
   );
-};
-
-/** The player's realm on the entry side, from the game's directory row: its name, before the game's store has it. */
-const entryRealm = (game: HeraldGameDirectoryEntry | null): DoorwayRealm | null => {
-  const realm = game ? seasonRealm(game) : undefined;
-  return realm ? { name: getRealmNameById(realm.realm_id), emblem: null } : null;
 };

@@ -174,6 +174,7 @@ export function setupCalls(
   start: number,
   end: number,
   seasonId: number,
+  frontierPresetId: number,
 ) {
   const chests = chestPresetFor(target.environment as Environment);
   const metadata = (collection: string, attributes: number) =>
@@ -192,8 +193,8 @@ export function setupCalls(
       chests.items,
     ]),
     call(assets.ledger, "register_preset", [
-      target.frontierPreset,
-      buildLedgerEconomicPreset("frontier", { chests }),
+      frontierPresetId,
+      buildLedgerEconomicPreset("frontier", { chests, presetId: frontierPresetId }),
       chests.bands,
       chests.items,
     ]),
@@ -339,7 +340,7 @@ export async function configureLedger(
   const start = seconds(input.blitzStart);
   const end = seconds(input.blitzEnd);
   const season = await resolveBlitzSeason(account, assets.ledger, start, end);
-  const desired = setupCalls(target, assets, pauser, start, end, season.id);
+  const desired = setupCalls(target, assets, pauser, start, end, season.id, Number(input.frontierPresetId));
   output("Reading collectible metadata on mainnet.");
   const present = await Promise.all(desired.map((operation) => readPresence(operation, season.head)));
   const missing = desired.filter((_, index) => !present[index]);

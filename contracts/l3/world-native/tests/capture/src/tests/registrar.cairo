@@ -176,10 +176,7 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d,
-            game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { name: 'home', selected_realm: Some(1) }),
-            350,
+            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -376,10 +373,7 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
     super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
-            d,
-            game_id,
-            Command::SettleSeason(crate::realms::SettleSeason { name: 'home', selected_realm: Some(1) }),
-            350,
+            d, game_id, Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }), 350,
         ),
     );
     let home = ResourceKey { game_id, entity_id: 1 };
@@ -1092,7 +1086,9 @@ fn creation_emits_release_and_overrides_without_per_game_configuration_rows() {
     let mut overrides_count = 0;
     for (_, event) in events.events {
         if event.keys.span() == array![selector!("GameEvent"), selector!("RowSet"), 1, 'GameRelease'].span() {
-            assert_eq!(event.data.span(), array![1, game_id.into(), 2, 1, crate::presets::commitment(preset)].span());
+            assert_eq!(
+                event.data.span(), array![1, game_id.into(), 3, 1, crate::presets::commitment(preset), 1].span(),
+            );
             count += 1;
         }
         if event.keys.span() == array![selector!("GameEvent"), selector!("RowSet"), 1, 'GameOverrides'].span() {
@@ -1734,33 +1730,12 @@ fn frontier_site_discovery_reads_home_knowledge_and_places_only_tile_occupancy()
 
 #[test]
 fn open_frontier_settlement_uses_only_each_players_home_and_entry() {
-    let d = setup();
-    let (_, preset) = super::preset_projection::current_definition("frontier");
-    registry(d).register_preset(1, preset);
-    let game_id = registry(d)
-        .create_game(
-            CreateGameParams {
-                start_main_at: 360,
-                end_grace_seconds: 0,
-                duration_seconds: Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20,
-                ..params(false),
-            },
-        );
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            let state = crate::state::write();
-            state.realms.catalogue_count.write(crate::realms::CANONICAL_REALM_COUNT);
-            for index in 1_u32..crate::realms::CANONICAL_REALM_COUNT + 1 {
-                state.realms.traits.write(index, 0x4000001);
-            }
-        },
-    );
+    let (d, game_id) = setup_open_frontier();
     let before = next_setup_entity(d, game_id);
     let views = ISettlementViewsDispatcher { contract_address: d.games };
     let progress = views.settlement_progress(game_id);
     let other = super::bind_authority(d);
-    let command = Command::SettleSeason(crate::realms::SettleSeason { name: 'home', selected_realm: None });
+    let command = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None });
     assert!(execute_in_game(d, game_id, command, 360));
     assert!(execute_in_game(other, game_id, command, 360));
     let first = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
