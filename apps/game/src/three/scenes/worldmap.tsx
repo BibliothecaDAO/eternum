@@ -2846,9 +2846,8 @@ export default class WorldmapScene extends WarpTravel {
       const target = { alt: activeMapLayer(), col: contract.x, row: contract.y };
       if (this.worldSpatialProjection.getStructuresAtHex(target).some((site) => site.clearedSite))
         this.openTargetCardForSelectedArmy(target);
+      // The HUD's bar is the order's preview, in one row; the same tile tapped again sends it.
       this.state.updateEntityActionHoveredHex(hexCoords);
-      // The order's line stands at its tile, marking the tile the bar's verb (or a second tap) sends to.
-      this.showTileFacts(hexCoords);
       return true;
     } else if (order === "attack") {
       const attack = path ?? this.attackPathTo(hexCoords, selectedEntityId);
@@ -8839,6 +8838,16 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
+   * On a phone, the pinned order's tile wears the map's hover ring, the ring players read as "this hex": the tile the
+   * same tap again sends the order to. It goes with the pin, however the pin goes.
+   */
+  private markPinnedOrder(pinned: HexPosition | null): void {
+    if (!this.hudCarriesOrderVerb()) return;
+    this.interactiveHexManager.applyHoverPalette(this.resolveContextualHoverPalette(pinned));
+    this.interactiveHexManager.showHover(pinned);
+  }
+
+  /**
    * A selected army that is gone (lost in a fight) lets go of the map at once: its highlights are orders nobody can
    * give. Read from the facts themselves, since the armies' list is only as fresh as its last change.
    */
@@ -8885,6 +8894,9 @@ export default class WorldmapScene extends WarpTravel {
       });
       return;
     }
+
+    if (nextEntityActions.hoveredHex !== previousEntityActions?.hoveredHex)
+      this.markPinnedOrder(nextEntityActions.hoveredHex);
 
     if (this.isMissingActionPathOwnershipState()) {
       this.logInteractionDebug("clearing_entity_selection_for_missing_ownership", {

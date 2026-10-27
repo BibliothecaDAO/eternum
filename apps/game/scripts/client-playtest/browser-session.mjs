@@ -69,7 +69,7 @@ export function createBrowserSession(session, { headed, profile }) {
     rightClick: (offset) => run(["batch", ...rightClickCommands(offset)]),
     screenshot: (path) => run(["screenshot", path]),
     observe: () => read(OBSERVE_EXPRESSION),
-    buttonTexts: () => read(BUTTON_TEXTS_EXPRESSION),
+    orderBar: () => read(ORDER_BAR_EXPRESSION),
     armies: () => read(ARMIES_EXPRESSION),
     hudLayout: () => read(HUD_LAYOUT_EXPRESSION),
     close: () => run(["close"], { allowFailure: true }),
@@ -142,7 +142,13 @@ const ARMIES_EXPRESSION = `JSON.stringify([...document.querySelectorAll('nav[ari
 })))`;
 
 // A button's text ends with its key hint; the leading words are its name.
-const BUTTON_TEXTS_EXPRESSION = `JSON.stringify([...document.querySelectorAll("button")].map((button) => button.textContent.trim()).filter(Boolean))`;
+/** The order bar a phone's tap pinned: the order its row names, and whether a cost of it is short; null with none. */
+const ORDER_BAR_EXPRESSION = `JSON.stringify((() => {
+  const bar = [...document.querySelectorAll("section[aria-label]")].find((section) =>
+    /^(Explore|Move)$/.test(section.getAttribute("aria-label")),
+  );
+  return bar ? { verb: bar.getAttribute("aria-label"), short: Boolean(bar.querySelector('[data-tone="bad"]')) } : null;
+})())`;
 
 /** A busy machine times out CDP calls now and then; a read can be asked again, an action cannot. */
 function isTransientFailure(commandArgs, result) {

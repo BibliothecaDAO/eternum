@@ -5,6 +5,8 @@ import { campBeside } from "./sites/site-fixture";
 
 /** The fixture realm's army, and the second of day 0 the fixture is read at. */
 export const SPIRE_ARMY = 201;
+/** The key of the army's tile row, as the spire's day places it: a game that moves the army rewrites this row. */
+export const SPIRE_ARMY_TILE_KEY = "0x904";
 export const SPIRE_DAY_NOW = 350;
 
 const depthRules = (depth: number, entry: number) => ({
@@ -66,7 +68,7 @@ export const spireDay = ({
     { model: "TileOccupancy", key: "0x75", value: null },
     {
       model: "TileOccupancy",
-      key: "0x904",
+      key: SPIRE_ARMY_TILE_KEY,
       value: { game_id: 1, alt: false, ...armyTile, entity_id: SPIRE_ARMY, category: 15, is_structure: false },
     },
   ] as never);
