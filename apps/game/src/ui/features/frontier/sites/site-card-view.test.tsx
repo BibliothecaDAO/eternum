@@ -38,7 +38,6 @@ describe("a guarded site's card", () => {
             exchanges: 1,
             troopsLost: 180,
             guardLeft: 0,
-            whole: { troopsLost: 180, guardKilled: 1_100, stamina: 30 },
           }}
           pay={{ icon: "labor", amount: 550 }}
           xp={82}
@@ -63,7 +62,7 @@ describe("a guarded site's card", () => {
     expect(onAttack).toHaveBeenCalled();
   });
 
-  it("stands Details at the foot's left and Attack alone at its right, and opens the whole fight's figures", () => {
+  it("holds only Realm and Attack in its foot, Attack alone at the right, and no whole fight's figures (owner, 10-27)", () => {
     act(() =>
       root.render(
         <SiteCardView
@@ -76,7 +75,6 @@ describe("a guarded site's card", () => {
             exchanges: 3,
             troopsLost: 180,
             guardLeft: 740,
-            whole: { troopsLost: 610, guardKilled: 1_300, stamina: 90 },
           }}
           pay={{ icon: "wood", amount: 650, fits: 120 }}
           xp={90}
@@ -88,32 +86,11 @@ describe("a guarded site's card", () => {
     );
     const foot = document.querySelector("section[role=dialog] footer.ui-actions")!;
     const words = [...foot.querySelectorAll("button")].map((button) => button.textContent);
-    // The way out and Details on the left, Attack last: the shared actions rule puts the last alone on the right.
-    expect(words).toEqual(["Details", "Realm", "Attack"]);
+    // The way out on the left, Attack last: the shared actions rule puts the last alone on the right.
+    expect(words).toEqual(["Realm", "Attack"]);
     expect(foot.lastElementChild?.textContent).toBe("Attack");
-    const details = [...foot.querySelectorAll("button")][0]!;
-    expect(details.getAttribute("aria-expanded")).toBe("false");
+    expect(document.body.textContent).not.toContain("Details");
     expect(document.body.textContent).not.toContain("The whole fight");
-
-    act(() => details.click());
-    expect(details.getAttribute("aria-expanded")).toBe("true");
-    const whole = [...document.querySelectorAll("section[role=dialog] dl dt, section[role=dialog] dl dd")].map(
-      (cell) => cell.textContent,
-    );
-    expect(whole).toEqual([
-      "Attacks",
-      "3 · The guard falls",
-      "You lose",
-      "−610",
-      "You kill",
-      "1,300 / 1,300",
-      "Stamina",
-      "90",
-    ]);
-    expect(document.body.textContent).not.toContain("When cleared");
-    expect(document.body.textContent).not.toContain("Cleared in");
-
-    act(() => details.click());
     expect(document.querySelector("section[role=dialog] dl")).toBeNull();
   });
 
@@ -130,7 +107,6 @@ describe("a guarded site's card", () => {
             exchanges: 3,
             troopsLost: 1_200,
             guardLeft: 2_300,
-            whole: { troopsLost: 1_200, guardKilled: 1_100, stamina: 90 },
           }}
           pay={null}
           chest={{ tier: 3, lords: 128 }}
@@ -173,7 +149,6 @@ describe("a guarded site's card", () => {
             exchanges: 3,
             troopsLost: 400,
             guardLeft: 3_000,
-            whole: { troopsLost: 1_200, guardKilled: 1_200, stamina: 90 },
           }}
           pay={{ icon: "labor", amount: 550 }}
           xp={82}
@@ -201,7 +176,6 @@ describe("a guarded site's card", () => {
             exchanges: 1,
             troopsLost: 180,
             guardLeft: 0,
-            whole: { troopsLost: 180, guardKilled: 1_100, stamina: 30 },
           }}
           pay={null}
           xp={undefined}
@@ -227,7 +201,6 @@ describe("a guarded site's card", () => {
             exchanges: 1,
             troopsLost: 180,
             guardLeft: 0,
-            whole: { troopsLost: 180, guardKilled: 1_100, stamina: 30 },
           }}
           pay={{ icon: "labor", amount: 550, fits: 120 }}
           xp={82}
@@ -262,7 +235,6 @@ describe("a guarded site's card", () => {
             exchanges: 1,
             troopsLost: 180,
             guardLeft: 0,
-            whole: { troopsLost: 180, guardKilled: 1_100, stamina: 30 },
           }}
           pay={{ icon: "labor", amount: 550 }}
           xp={82}
@@ -323,7 +295,6 @@ describe("a guarded site's card with no army chosen", () => {
                 exchanges: 2,
                 troopsLost: 456,
                 guardLeft: 492,
-                whole: { troopsLost: 912, guardKilled: 1_100, stamina: 60 },
               },
               onPick,
             },
@@ -336,7 +307,6 @@ describe("a guarded site's card with no army chosen", () => {
                 exchanges: 1,
                 troopsLost: 154,
                 guardLeft: 1_028,
-                whole: { troopsLost: 154, guardKilled: 72, stamina: 30 },
               },
               onPick: () => {},
             },
@@ -380,7 +350,6 @@ describe("Enter on a guarded site's card", () => {
         exchanges: 1,
         troopsLost: 180,
         guardLeft: fight === "wins" ? 0 : 900,
-        whole: { troopsLost: 180, guardKilled: fight === "wins" ? 1_100 : 200, stamina: 30 },
       }}
       pay={{ icon: "labor", amount: 550 }}
       xp={82}

@@ -186,6 +186,9 @@ export const SURFACES = [
   { name: "frontier-site-runereach", path: "/lab/kit/hud/site-runereach", mark: "frontier", ...FIGHT_FITS },
   { name: "frontier-site-large", path: "/lab/kit/hud/site-large", mark: "frontier", ...FIGHT_FITS },
   { name: "frontier-fight-large", path: "/lab/kit/hud/fight-large", mark: "frontier", ...FIGHT_FITS },
+  // Twelve-digit sides whose short figures would read alike: exact, set smaller to fit, on both cards.
+  { name: "frontier-site-alike", path: "/lab/kit/hud/site-alike", mark: "frontier", ...FIGHT_FITS },
+  { name: "frontier-fight-alike", path: "/lab/kit/hud/fight-alike", mark: "frontier", ...FIGHT_FITS },
   { name: "frontier-day-done", path: "/lab/kit/hud/day-done-full", mark: "frontier", sizes: CARDS },
   { name: "frontier-clear-ruin", path: "/lab/kit/hud/clear-ruin", mark: "frontier", sizes: CARDS },
 ];

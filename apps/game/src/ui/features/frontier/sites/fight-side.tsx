@@ -10,7 +10,8 @@ import type { ReactNode } from "react";
  *
  * The two sides share their row's width evenly, whatever their numbers (owner, 10-27: "the army & enemy numbers must
  * both fit"): each side may shrink below its figures' width, and its figures stand on two lines, so a seven-digit army
- * still fits a 360 px phone. Past that the figures read short (fightFigures).
+ * still fits a 360 px phone at full size. Past that the figures read short (fightFigures), and a line still too long for
+ * its side is set smaller until it fits (fittedSize): no figure ever runs out of its side, and none is cut.
  */
 export const FightSide = ({
   label,
@@ -38,18 +39,24 @@ export const FightSide = ({
       <HudPanel
         collapsible={false}
         className="min-w-0 flex-1"
-        bodyClassName="flex min-w-0 flex-col items-center gap-1 py-2"
+        bodyClassName="flex min-w-0 flex-col items-center gap-1 py-2 [container-type:inline-size]"
       >
         <span aria-hidden className="flex max-w-full items-center gap-1.5 tabular-nums">
           {mark}
-          <span className="text-hud-body text-hud-muted">{figures.before} →</span>
+          <span
+            className="whitespace-nowrap text-hud-body text-hud-muted"
+            style={{ fontSize: fittedSize("body", `${figures.before} →`, MARK_ROOM) }}
+          >
+            {figures.before} →
+          </span>
         </span>
         <span
           aria-hidden
           className={cn(
-            "max-w-full text-hud-display leading-none tabular-nums",
+            "max-w-full whitespace-nowrap text-hud-display leading-none tabular-nums",
             after === 0 ? "text-hud-bad" : "text-hud-ink",
           )}
+          style={{ fontSize: fittedSize("display", figures.after) }}
         >
           {figures.after}
         </span>
@@ -59,12 +66,25 @@ export const FightSide = ({
   );
 };
 
+/** The width a line's characters take at most, in ems: a bold tabular digit's, with room to spare. */
+const CHARACTER_EM = 0.62;
+/** What stands beside the troops before on their line: the side's mark and the gap after it. */
+const MARK_ROOM = "36px";
+
+/**
+ * A figure line's size: its type role's, or smaller where its characters would outrun its side's width (`cqi`, the
+ * side's own width, which its body measures as a container).
+ */
+const fittedSize = (role: "body" | "display", line: string, beside = "0px"): string =>
+  `min(var(--hud-text-${role}), calc((100cqi - ${beside}) / ${(line.length * CHARACTER_EM).toFixed(2)}))`;
+
 /** From eight digits a figure no longer fits half a 360 px phone's card. */
 const SHORT_FROM = 10_000_000;
 
 /**
  * A side's figures as it shows them: exact below ten million, short from there as the HUD writes amounts ("12.3M"),
- * unless the two would read alike while they differ, which reads as a fight that cost nothing.
+ * unless the two would read alike while they differ, which reads as a fight that cost nothing: then exact, set smaller
+ * to fit.
  */
 export const fightFigures = (before: number, after: number): { before: string; after: string } => {
   const readsAlike = before !== after && formatShort(before) === formatShort(after);

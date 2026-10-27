@@ -348,13 +348,7 @@ export const FIGHT_WORDS = {
   earns: "This attack earns",
   clears: "This attack clears it",
   holds: "The guard holds",
-  details: "Details",
-  wholeFight: "The whole fight",
   attacks: "Attacks",
-  lose: "You lose",
-  kill: "You kill",
-  stamina: "Stamina",
-  ends: { wins: "The guard falls", loses: "The army falls", stalls: "Neither side falls" },
 } as const;
 export const USE = "Use";
 export const USING = "Using…";

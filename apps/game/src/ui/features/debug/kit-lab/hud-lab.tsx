@@ -179,30 +179,27 @@ type LabChest = Parameters<typeof RuinChestMoment>[0];
 const ARMY_CHIP = { art: "knight-t1" as const, troops: 5_000 };
 const ATTACK_30 = { kind: "attack" as const, stamina: 30, onAttack: () => undefined };
 /**
- * A fight the army wins in so many attacks: this attack's losses and the guard it leaves, as its result shows, and
- * the whole fight's (each attack costing as this one, the guard's every troop killed, 30 stamina an attack).
+ * A fight the army wins in so many attacks: this attack's losses and the guard it leaves, as its result shows.
  */
-const WIN = (exchanges: number, troopsLost: number, guard: number, guardLeft = 0) => ({
+const WIN = (exchanges: number, troopsLost: number, guardLeft = 0) => ({
   outcome: "wins" as const,
   exchanges,
   troopsLost,
   guardLeft,
-  whole: { troopsLost: troopsLost * exchanges, guardKilled: guard, stamina: 30 * exchanges },
 });
-/** A fight that ends with the army gone: every troop lost over the whole fight, and what it killed by then. */
-const LOSE = (exchanges: number, troopsLost: number, guardLeft: number, army: number, guardKilled: number) => ({
+/** A fight that ends with the army gone in so many attacks: this attack's losses and the guard it leaves. */
+const LOSE = (exchanges: number, troopsLost: number, guardLeft: number) => ({
   outcome: "loses" as const,
   exchanges,
   troopsLost,
   guardLeft,
-  whole: { troopsLost: army, guardKilled, stamina: 30 * exchanges },
 });
 const CAMP_CARD: LabSite = {
   site: "Camp",
   beast: undefined,
   army: ARMY_CHIP,
   guard: 1_100,
-  fight: WIN(1, 180, 1_100),
+  fight: WIN(1, 180),
   pay: { icon: "labor", amount: 550 },
   xp: 82,
   verb: ATTACK_30,
@@ -212,7 +209,7 @@ const RUIN_CARD: LabSite = {
   beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
   army: ARMY_CHIP,
   guard: 3_400,
-  fight: WIN(2, 1_250, 3_400, 1_520),
+  fight: WIN(2, 1_250, 1_520),
   pay: null,
   chest: { tier: 3, lords: 128 },
   xp: 145,
@@ -445,7 +442,7 @@ const OWNERS_CAMP: LabSite = {
   beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
   army: { art: "knight-t1", troops: 1_500 },
   guard: 1_300,
-  fight: WIN(3, 180, 1_300, 740),
+  fight: WIN(3, 180, 740),
   pay: { icon: "wood", amount: 650 },
   xp: 90,
   verb: { kind: "short", stamina: { cost: 30, held: 14, wait: 31 * 60 } },
@@ -458,7 +455,7 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
       beast: undefined,
       army: { art: "knight-t1", troops: 5_000 },
       guard: 1_100,
-      fight: WIN(1, 180, 1_100),
+      fight: WIN(1, 180),
       pay: { icon: "labor", amount: 550 },
       xp: 82,
       verb: ATTACK_30,
@@ -466,7 +463,7 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
     loses: {
       ...OWNERS_CAMP,
       army: { art: "knight-t1", troops: 400 },
-      fight: LOSE(1, 400, 1_150, 400, 150),
+      fight: LOSE(1, 400, 1_150),
       verb: ATTACK_30,
     },
   } satisfies Record<string, LabSite>).map(([name, site]) => [
@@ -546,7 +543,7 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15, 400), pay: null, xp: 50 },
+    site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
   },
   "site-ruin": { clock: CLOCK, stores: STORES, armies: ARMIES, site: RUIN_CARD },
   "site-ruin-lose": {
@@ -556,7 +553,7 @@ const STATES = {
     site: {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 1_200 },
-      fight: LOSE(3, 1_200, 2_300, 1_200, 1_100),
+      fight: LOSE(3, 1_200, 2_300),
     },
   },
   "site-far": {
@@ -584,12 +581,12 @@ const STATES = {
       army: null,
       verb: null,
       choices: [
-        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180, 1_100, 492), onPick: () => undefined },
+        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180, 492), onPick: () => undefined },
         {
           label: "Army 2",
           art: ARMY_CHIP.art,
           troops: 100,
-          fight: LOSE(1, 100, 1_034, 100, 66),
+          fight: LOSE(1, 100, 1_034),
           onPick: () => undefined,
         },
         { label: "Army 3", art: ARMY_CHIP.art, troops: 600, fight: undefined, onPick: () => undefined },
@@ -628,7 +625,7 @@ const STATES = {
       site: "Beasts",
       army: { art: ARMY_CHIP.art, troops: 432 },
       guard: 150,
-      fight: WIN(1, 40, 150),
+      fight: WIN(1, 40),
       pay: null,
       xp: 50,
     },
@@ -793,7 +790,7 @@ const STATES = {
     site: {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 1_200 },
-      fight: LOSE(3, 1_200, 2_300, 1_200, 1_100),
+      fight: LOSE(3, 1_200, 2_300),
     },
   },
   // The owner's phone card on prod (10-27): Runereach's guard of 3,500 against 4,291 knights, an Uncommon chest of 100
@@ -806,7 +803,7 @@ const STATES = {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 4_291 },
       guard: 3_500,
-      fight: WIN(3, 816, 3_500, 1_650),
+      fight: WIN(3, 816, 1_650),
       chest: { tier: 2, lords: 100 },
       xp: 147,
       verb: { kind: "short", stamina: { cost: 30, held: 26, wait: 7 * 60 + 38 } },
@@ -821,7 +818,35 @@ const STATES = {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 1_284_500 },
       guard: 987_650,
-      fight: WIN(3, 216_400, 987_650, 612_300),
+      fight: WIN(3, 216_400, 612_300),
+    },
+  },
+  // Twelve-digit sides that lose one troop each: short, both would read alike ("123B → 123B"), so they stay exact and
+  // are set smaller to fit.
+  "site-alike": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...RUIN_CARD,
+      army: { ...ARMY_CHIP, troops: 123_456_789_123 },
+      guard: 98_765_432_100,
+      fight: WIN(3, 1, 98_765_432_099),
+    },
+  },
+  "fight-alike": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    fight: {
+      targetId: 29,
+      tile: { col: 0, row: 0 },
+      site: "Ruin",
+      verdict: "victory",
+      armyArt: ARMY_CHIP.art,
+      army: { before: 123_456_789_123, after: 123_456_789_122 },
+      guard: { before: 98_765_432_100, after: 98_765_432_099 },
+      gained: { pay: { icon: "labor", amount: 550, storeFull: false }, xp: 22 },
     },
   },
   "fight-large": {
