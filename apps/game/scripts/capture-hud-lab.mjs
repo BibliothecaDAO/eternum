@@ -5,6 +5,8 @@
  *
  *   pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <dir> [--only <surface>,...]
  *
+ * A size under a desktop's (1024) is shot with a phone's touch, so its finger-size rules draw (touchAtPhoneWidth).
+ *
  * Run it on the commit before a change and again after; the two directories hold the same file names. A surface the
  * page does not draw (its `[data-lab]` mark missing) fails the run, so a broken surface never passes as a picture. The
  * desktop HUD's stage is also held to its bottom-left rule at each size (scripts/hud-sheet/clearance.mjs): the minimap in
@@ -21,6 +23,7 @@ import { parseArgs } from "node:util";
 
 import { hudClearanceProblems, READ_HUD_BOXES } from "../../../scripts/hud-sheet/clearance.mjs";
 
+import { openPageDevTools, touchAtPhoneWidth } from "./client-playtest/browser-session.mjs";
 import { HUD_LAYOUT_EXPRESSION, judgeHudLayout } from "./client-playtest/hud-layout.mjs";
 import { runAgentBrowser } from "./run-renderer-scene-smoke.mjs";
 
@@ -189,7 +192,7 @@ const holdHudLayout = ({ baseUrl, out, run }) => {
 /** How long the HUD's parts take to settle once its column is drawn (panels that size to what they read). */
 const HUD_SETTLE_MS = "1500";
 
-const main = () => {
+const main = async () => {
   const { values } = parseArgs({
     options: {
       "base-url": { type: "string" },
@@ -220,11 +223,16 @@ const main = () => {
   const missing = [];
   const broken = [];
   const interactions = [];
+  let devTools = null;
   try {
+    // A phone's size is shot with a phone's touch (its finger-size rules), over a DevTools connection held open.
+    run("open", "about:blank");
+    devTools = await openPageDevTools({ run: (args) => run(...args) });
     for (const { name, path, mark, sizes = [VIEWPORT], read, rule } of surfaces) {
       for (const [width, height] of sizes) {
         const shot = sizes.length > 1 ? `${name}-${width}x${height}` : name;
         run("set", "viewport", String(width), String(height));
+        await touchAtPhoneWidth(devTools, width);
         run("open", `${values["base-url"]}${path}`, "--ignore-https-errors");
         run("wait", SETTLE_MS);
         if (name === "frontier-merge") run("wait", '[role="dialog"][aria-label="Transfer troops"]');
@@ -286,6 +294,7 @@ const main = () => {
       }
     }
   } finally {
+    devTools?.close();
     run("close");
   }
   if (missing.length > 0) console.error(`Not drawn: ${missing.join(", ")}`);
@@ -293,4 +302,4 @@ const main = () => {
   if (missing.length > 0 || broken.length > 0) process.exit(1);
 };
 
-main();
+await main();

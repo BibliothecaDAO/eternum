@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 
-import { HUD_LAYOUT_EXPRESSION } from "./hud-layout.mjs";
+import { DESKTOP_MIN_WIDTH, HUD_LAYOUT_EXPRESSION } from "./hud-layout.mjs";
 
 const AGENT_BROWSER_RETRIES = 2;
 const AGENT_BROWSER_RETRY_DELAY_MS = 2_000;
@@ -201,6 +201,17 @@ export async function openPageDevTools(browser) {
     close: () => socket.close(),
   };
 }
+
+/**
+ * A phone's touch below a desktop's width, none at a desktop's (DevTools' Emulation.setTouchEmulationEnabled): with it
+ * `(pointer: coarse)` matches and the page counts touch points, as on a phone. Headless Chrome has no pointer at all, so
+ * without it a phone-width page draws no phone rule (a finger's size). A page's mouse commands still play as before.
+ */
+const touchEmulation = (width) => ({ enabled: width < DESKTOP_MIN_WIDTH, maxTouchPoints: 5 });
+
+/** That touch on the driven page, held while `devTools` stays open. */
+export const touchAtPhoneWidth = (devTools, width) =>
+  devTools.send("Emulation.setTouchEmulationEnabled", touchEmulation(width));
 
 /**
  * Every JSON-RPC POST the page makes to a node (the shard's, the L2's), by host (the play POST is

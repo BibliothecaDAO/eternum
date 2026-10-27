@@ -15,7 +15,7 @@ import {
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
 import { judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
-import { judgeHudLayout } from "./hud-layout.mjs";
+import { DESKTOP_MIN_WIDTH, judgeHudLayout } from "./hud-layout.mjs";
 
 /**
  * The playtest's steps. Each plays through the controls a player uses, then checks what a player would see, and is
@@ -2062,9 +2062,6 @@ const DESKTOP_ORDERS = "a desktop orders from the map at once: the queued next o
 
 /** The run plays at a desktop's width (the HUD's left column and contextual orders). */
 const onADesktop = () => VIEWPORT.width >= DESKTOP_MIN_WIDTH;
-
-/** The desktop width the HUD composes for (DESKTOP_MIN_PX). */
-const DESKTOP_MIN_WIDTH = 1024;
 
 /**
  * Centres the army, finds tiles beside it that offer an order, taps and confirms the first (the first order) and, once

@@ -2,7 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { HudIconButton, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
 import { type EventsFilter, involvesPlayer } from "@/ui/features/event-feed/event-stories";
-import { LensSwitch } from "@/ui/features/event-feed/events-filter-switch";
+import { FEED_LENSES, LensSwitch } from "@/ui/features/event-feed/events-filter-switch";
 import { FeedLine } from "@/ui/features/event-feed/feed-line";
 import { useEventsFeed } from "@/ui/features/event-feed/quick-feed";
 import { useState } from "react";
@@ -10,8 +10,8 @@ import { useState } from "react";
 /**
  * Frontier's one feed, in the desktop's rail and as the phone's Feed page (the owner, 22 October: "the world history is
  * more interesting than just the events"; 26 October: "Rename mobile log to feed as well btw it should be the same"):
- * the world's history live (All), who did what on every line, the player's own in gold, and Important, what they must
- * not miss, the two lenses Blitz's Events have too. It fills its place as any other panel does and scrolls
+ * the world's history live (All, first and the default), who did what on every line, the player's own in gold, and
+ * Mine, the player's own (Blitz's Important: owner, 27 October, "important (which is mine, not important tbh)"). It fills its place as any other panel does and scrolls
  * inside; its × closes it (owner, 26 October: "I should also be able to close the feed so I see nothing on the right
  * panel sometimes ? and feed height can be the same as the other panels").
  */
@@ -25,7 +25,7 @@ export const FrontierFeed = ({ onClose }: { onClose: () => void }) => {
       collapsible={false}
       cue={
         <span className="inline-flex items-center gap-1">
-          <LensSwitch lens={lens} onLens={setLens} />
+          <LensSwitch lens={lens} onLens={setLens} words={FEED_LENSES} />
           <HudIconButton icon="close" label={EVENTS_WORDS.closeFeed} kind="quiet" size="sm" onClick={onClose} />
         </span>
       }

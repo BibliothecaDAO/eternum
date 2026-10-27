@@ -11,6 +11,7 @@ import { join } from "node:path";
 
 export { sleep, waitFor } from "./proof-wait.mjs";
 
+import { holdPageTouch } from "./lib/page-touch.mjs";
 import { runAgentBrowser } from "./run-renderer-scene-smoke.mjs";
 
 /**
@@ -24,7 +25,16 @@ export const commandsOf = (run) => ({
   url: () => run("get", "url").split("\n").pop().trim(),
 });
 
-const browser = (session) => commandsOf((...args) => runAgentBrowser(session, args));
+/** A proof's session: a size under a desktop's is set with a phone's touch, as a phone draws it. */
+const browser = (session) => {
+  const touch = holdPageTouch(session);
+  const run = (...args) => {
+    const said = runAgentBrowser(session, args);
+    if (args[0] === "set" && args[1] === "viewport") touch.at(Number(args[2]));
+    return said;
+  };
+  return { ...commandsOf(run), releaseTouch: touch.close };
+};
 
 /** An address as a player reads it: its path and query, decoded. */
 export const pathOf = (url) => {
@@ -89,6 +99,7 @@ export const runProof = async ({ parent, name, baseUrl, where }, prove) => {
   } catch (error) {
     records.push({ name, ready: false, presses: [], error: String(error.message ?? error) });
   } finally {
+    b.releaseTouch();
     try {
       b.run("open", "about:blank");
       b.run("close");

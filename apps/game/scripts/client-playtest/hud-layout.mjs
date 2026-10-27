@@ -81,8 +81,8 @@ export const HUD_LAYOUT_EXPRESSION = `JSON.stringify((() => {
   return { viewport: { width: innerWidth, height: innerHeight }, parts, minimap: minimap ? box(minimap) : null, covered, spilled, regions };
 })())`;
 
-/** The desktop width the HUD lays out its left column from (DESKTOP_MIN_PX). */
-const DESKTOP_MIN_WIDTH = 1024;
+/** The desktop width the HUD lays out its left column from (DESKTOP_MIN_PX); narrower is a phone. */
+export const DESKTOP_MIN_WIDTH = 1024;
 
 /** The most parts one region holds: the working limit of things a player keeps in mind at once. */
 const MOST_PARTS_IN_A_REGION = 7;

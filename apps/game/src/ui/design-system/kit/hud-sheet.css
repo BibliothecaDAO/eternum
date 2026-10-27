@@ -1560,10 +1560,13 @@ button.ui-relic:focus-visible {
     min-width: var(--hud-control);
   }
   .ui-event__open,
-  .ui-row__choose,
   .ui-feed-line {
     min-height: var(--hud-control);
     align-items: center;
+  }
+  /* A column: its own rule centres its lines up and down, and they stay at the row's start, as on a desktop. */
+  .ui-row__choose {
+    min-height: var(--hud-control);
   }
   .ui-slider input[type="range"] {
     height: var(--hud-control);
