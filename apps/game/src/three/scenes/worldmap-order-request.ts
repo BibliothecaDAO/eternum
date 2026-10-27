@@ -29,9 +29,11 @@ export const pinsOrder = (path: ActionPath[] | undefined): boolean => {
 
 /**
  * A tap opens the selected army's spire card or previews its order. On a phone, tapping the pinned tile again sends
- * it, a friendly neighbour offers transfer, and a refused tile explains why. Sites keep the army as actor.
+ * it, a friendly neighbour offers transfer, and a refused tile explains why. Sites keep the army as actor. With the
+ * realm selected, a lit tile beside it opens Deploy aimed there (owner, 27 October 2026: "when I click on the castle
+ * then on a tile next to it it should bring up the deploy on that tile").
  */
-type TapOrder = "pin" | "go" | "attack" | "transfer" | "site-card" | "why";
+type TapOrder = "pin" | "go" | "attack" | "deploy" | "transfer" | "site-card" | "why";
 
 export const orderOnTap = ({
   path,
@@ -52,6 +54,7 @@ export const orderOnTap = ({
   if (pinsOrder(path)) return hud?.pinned ? "go" : "pin";
   const actionType = path && ActionPaths.getActionType(path);
   if (actionType === ActionType.Attack) return "attack";
+  if (actionType === ActionType.CreateArmy) return "deploy";
   if (hud && actionType === ActionType.Help) return "transfer";
   if (armySelected && site) return "site-card";
   return hud?.refused ? "why" : null;

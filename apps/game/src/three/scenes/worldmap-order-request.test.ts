@@ -52,6 +52,14 @@ describe("a tap on a tile with an army selected", () => {
   });
 });
 
+it.each([
+  ["a desktop", undefined],
+  ["a phone", { pinned: false, refused: false }],
+])("deploys on a lit tile beside the realm selected, on %s (owner, 27 October 2026)", (_, hud) => {
+  const beside = [step(ActionType.Move), step(ActionType.CreateArmy)];
+  expect(orderOnTap({ path: beside, armySelected: false, site: false, ownSpire: false, hud })).toBe("deploy");
+});
+
 describe("a tap on a phone, where the HUD carries the verb (owner, 22 October 2026: mobile direction A)", () => {
   const onPhone = (path: ReturnType<typeof step>[] | undefined, hud: { pinned?: boolean; refused?: boolean } = {}) =>
     orderOnTap({
