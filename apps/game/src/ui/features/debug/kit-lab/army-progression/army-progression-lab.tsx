@@ -22,6 +22,7 @@ import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
+import { RankGem, RankStep } from "./rank-gem";
 import { SkillPoints } from "./skill-points";
 
 /**
@@ -31,7 +32,7 @@ import { SkillPoints } from "./skill-points";
  * - tiles: every side is its own tile; the XP bar carries the round's four points.
  * - highest: one gem per building, its highest side; points are a count.
  */
-type Option = "today" | "gems" | "tiles" | "highest";
+type Option = "today" | "gems" | "tiles" | "highest" | "zero";
 type Surface = "card" | "levelup" | "research";
 type Point = 2 | 3 | 4 | 5;
 
@@ -338,6 +339,20 @@ const SIDE_PRICE: Record<number, Record<number, [number, number]>> = {
   [research.ROW_WORKSHOP]: { 2: [2, 2], 3: [8, 6], 4: [24, 16], 5: [60, 40] },
   [research.ROW_BARRACKS]: { 2: [4, 3], 3: [16, 9], 4: [48, 24], 5: [120, 60] },
 };
+/** Round 4, research from 0: a new first level (half the old first), then the old prices one rank up. */
+const ZERO_PRICE: Record<number, Record<number, [number, number]>> = {
+  [research.ROW_FARM]: { 1: [0.5, 0.5], 2: [1, 1], 3: [4, 3], 4: [12, 8], 5: [30, 20] },
+  [research.ROW_WORKSHOP]: { 1: [1, 1], 2: [2, 2], 3: [8, 6], 4: [24, 16], 5: [60, 40] },
+  [research.ROW_BARRACKS]: { 1: [2, 1.5], 2: [4, 3], 3: [16, 9], 4: [48, 24], 5: [120, 60] },
+};
+/** Round 4's side effects from 0, the same ceilings in five steps: output +20% a rank, storage +40%, Rations -0.2 wheat. */
+const zeroEffect = (icon: string, rank: number) => {
+  if (icon === "granary" || icon === "storehouse") return `+${rank * 40}%`;
+  if (icon === "rations") return String(Math.round((2 - rank * 0.2) * 10) / 10);
+  return `+${rank * 20}%`;
+};
+const isBuilt = (row: number) => (MID_REALM.standing[row] ?? 0) > 0;
+
 /** Next season's Ethereal layers. */
 const DEPTH_PRICE = [100_000, 250_000, 500_000];
 /** The mid-game realm at castle level 2, on next season's Ethereal prices. */
@@ -391,7 +406,13 @@ const Research = ({ option }: { option: Option }) => {
         <div className="flex flex-col gap-2">{branch("economy").map(tiles)}</div>
         <div className="flex flex-col gap-2">
           {barracks && tiles(barracks)}
-          {barracks?.gate && <Gate met={barracks.gate.met} word={RESEARCH_TREE.gate(barracks.gate.name)} />}
+          {barracks?.gate && (
+            <Gate
+              met={barracks.gate.met}
+              // From 0, the two Barracks purchases that open training reach II.
+              word={RESEARCH_TREE.gate(option === "zero" ? `${barracks.name} II` : barracks.gate.name)}
+            />
+          )}
           {training.map(tiles)}
         </div>
         <div className="flex flex-col">
@@ -411,6 +432,7 @@ const Research = ({ option }: { option: Option }) => {
 /** A tree tile by option: today and highest one gem; gems both sides' gems; tiles a tile per side. */
 const TreeTile = ({ node, option, picked }: { node: TreeNode; option: Option; picked: string }) => {
   const sides = sidesOf(node);
+  if (option === "zero" && node.maxTier === 4) return <ZeroTreeTile node={node} picked={node.key === picked} />;
   if (!sides || option === "today") return <NodeTile node={node} picked={node.key === picked} onPick={noop} />;
   if (option === "highest") {
     const highest = Math.max(...sides.map(({ rank }) => rank)) - 1;
@@ -463,6 +485,45 @@ const TreeTile = ({ node, option, picked }: { node: TreeNode; option: Option; pi
   );
 };
 
+/** Round 4: a ranked row's tile with its ranks from 0; a training building's is I once built. */
+const ZeroTreeTile = ({ node, picked }: { node: TreeNode; picked: boolean }) => {
+  const sides = sidesOf(node);
+  const look = STATE_LOOK[node.state];
+  const training = node.branch === "army" && !sides;
+  const rank = training ? (isBuilt(node.row) ? 1 + node.tier : 0) : node.tier;
+  return (
+    <button
+      type="button"
+      aria-pressed={picked}
+      className={cn(
+        "relative flex flex-col items-center gap-0.5 rounded-md border px-1 py-1.5 text-center",
+        node.state === "locked" && rank > 0 ? "border-hud-divider" : look.frame,
+        picked && "outline outline-2 outline-offset-1 outline-hud-accent",
+      )}
+    >
+      <Icon name={node.icon} size={36} />
+      <span className={cn("text-hud-label leading-tight", look.text)}>{node.name}</span>
+      <span className="flex items-center gap-1.5">
+        {sides ? (
+          sides.map((side) => (
+            <span key={side.key} className="flex items-center gap-0.5">
+              <Icon name={side.icon} size={18} />
+              <RankGem rank={side.rank - 1} />
+            </span>
+          ))
+        ) : (
+          <RankGem rank={rank} />
+        )}
+      </span>
+      {look.icon && (
+        <span className="absolute right-1 top-1">
+          <Icon name={look.icon} size={16} />
+        </span>
+      )}
+    </button>
+  );
+};
+
 /** The picked row's choice at the panel's foot: Barracks, Drill picked. */
 const Choice = ({ node, option }: { node: TreeNode; option: Option }) => {
   const sides = sidesOf(node)!;
@@ -484,6 +545,49 @@ const Choice = ({ node, option }: { node: TreeNode; option: Option }) => {
   );
   const close = <Icon name="close" size={18} />;
   if (option === "today") return null;
+  if (option === "zero") {
+    const zeroPrice = (side: SideRank) => {
+      const at = ZERO_PRICE[node.row]?.[side.rank];
+      return at && { essence: at[0] * 1_000, labor: at[1] * 1_000 };
+    };
+    const drillPrice = zeroPrice(drill)!;
+    return frame(
+      <>
+        <div className="flex items-center gap-2">
+          <Icon name={node.icon} size={36} />
+          <span className="min-w-0 flex-1 text-hud-title text-hud-ink">{node.name}</span>
+          {close}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {sides.map((side, index) => (
+            <span
+              key={side.key}
+              className={cn(
+                "flex flex-col gap-1 rounded-md border px-2 py-1.5",
+                index === 0 ? "border-hud-line-strong bg-hud-chosen" : "border-hud-line",
+              )}
+            >
+              <span className="flex items-center gap-1.5">
+                <Icon name={side.icon} size={28} />
+                <span className="truncate text-hud-strong text-hud-ink">{side.name}</span>
+              </span>
+              <RankStep from={side.rank - 1} to={side.rank} />
+              <span className="truncate text-hud-label tabular-nums text-hud-good">
+                {RESEARCH_TREE.step(zeroEffect(side.icon, side.rank - 1), zeroEffect(side.icon, side.rank))}
+              </span>
+              {zeroPrice(side) && <Price price={zeroPrice(side)!} />}
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="flex-1" />
+          <HudButton kind="primary" disabled={drillPrice.essence > HOLDINGS.essence}>
+            {RESEARCH_TREE.research(drill.name)}
+          </HudButton>
+        </div>
+      </>,
+    );
+  }
   if (option === "tiles")
     return frame(
       <>
