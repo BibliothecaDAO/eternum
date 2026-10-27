@@ -194,6 +194,13 @@ export const SURFACES = [
   { name: "frontier-site-short", path: "/lab/kit/hud/site-short", mark: "frontier", ...FIGHT_FITS },
   { name: "frontier-site-refused", path: "/lab/kit/hud/site-refused", mark: "frontier", ...FIGHT_FITS },
   {
+    name: "blitz-attack-preview-short",
+    path: "/lab/kit/unified/blitz-attack-short",
+    mark: "unified",
+    waitFor: '[role="img"][aria-label*="→"]',
+    ...FIGHT_FITS,
+  },
+  {
     name: "blitz-attack-preview",
     path: "/lab/kit/unified/blitz-attack",
     mark: "unified",

@@ -428,28 +428,27 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       ) : (
         <div className="space-y-1.5">
           {targetArmyData ? (
-            attackerSide &&
-            defenderSide && (
-              <>
-                <div className="flex gap-2">
-                  <FightSide
-                    label="Your forces"
-                    mark={attackerArmyData && <Icon name={troopMeaning(attackerArmyData.troops)} size={24} />}
-                    before={Math.round(attackerTroopsTotal)}
-                    kept={keptAcross(attackerSide)}
-                    side="ours"
-                  />
-                  <FightSide
-                    label={isStructureTarget ? "Active guard" : "Enemy army"}
-                    mark={<Icon name={troopMeaning(targetArmyData.troops)} size={24} />}
-                    before={Math.round(defenderTroopsTotal)}
-                    kept={keptAcross(defenderSide)}
-                    side="theirs"
-                  />
-                </div>
-                {fightCost && <p className="text-hud-label text-hud-cue">{fightCost}</p>}
-              </>
-            )
+            <>
+              {/* Both sides in every state: without a forecast (short of stamina, on cooldown, out of range) each keeps
+                  a dash, and the state is the line under them with Attack held. */}
+              <div className="flex gap-2">
+                <FightSide
+                  label="Your forces"
+                  mark={attackerArmyData && <Icon name={troopMeaning(attackerArmyData.troops)} size={24} />}
+                  before={attackerArmyData ? Math.round(attackerTroopsTotal) : undefined}
+                  kept={attackerSide ? keptAcross(attackerSide) : undefined}
+                  side="ours"
+                />
+                <FightSide
+                  label={isStructureTarget ? "Active guard" : "Enemy army"}
+                  mark={<Icon name={troopMeaning(targetArmyData.troops)} size={24} />}
+                  before={Math.round(defenderTroopsTotal)}
+                  kept={defenderSide ? keptAcross(defenderSide) : undefined}
+                  side="theirs"
+                />
+              </div>
+              {fightCost && <p className="text-hud-label text-hud-cue">{fightCost}</p>}
+            </>
           ) : (
             <HudNotice
               tone="good"
