@@ -268,7 +268,7 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
   name: buildingName(option.category),
   tip: buildingLine(option),
   gives: givesOf(option),
-  tier: option.tier,
+  gems: gemsOf(option),
   takes: option.populationCost,
   standing: standingOf(option, holdings),
 });
@@ -312,6 +312,13 @@ const buildingLine = (option: BuildOption): string => {
 /** Why a price is above its first: the copies standing raise it. None when no copy stands yet. */
 const riseLine = (option: BuildOption): string | undefined =>
   option.rise.times > 1 ? priceRaised(formatAmount(option.rise.standing)) : undefined;
+
+/**
+ * Its research as gems: each side of a row that has two, counted from Common I as the row is (a side never picked is
+ * I), or the type's one gem.
+ */
+const gemsOf = ({ sides, tier }: BuildOption): BuildTile["gems"] =>
+  sides ? sides.map(({ icon, picks }) => ({ side: icon, tier: Math.min(5, picks + 1) as Tier })) : [{ tier }];
 
 /** What one more gives: what it makes a minute, the population room it adds, or the attribute new armies start in. */
 const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>

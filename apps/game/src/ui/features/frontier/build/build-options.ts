@@ -20,6 +20,7 @@ import { LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 import { type BuildingOutput, buildingOutput } from "@/ui/shared/lib/building-output";
 
 import { madePicks } from "../production/store-makers";
+import { sidePicks } from "../research/sides-taken";
 
 /**
  * What Frontier's build sheet needs for one plot, read from facts with no UI of its own: each building the realm may
@@ -71,6 +72,8 @@ export interface BuildOption {
   category: BuildingType;
   /** Its type's tier, 1 (common) to 5 (legendary): tiers apply to every building of the type. */
   tier: 1 | 2 | 3 | 4 | 5;
+  /** Each side of a choosing row (Farm, Workshop, Barracks) with the tiers bought on it, make side first. */
+  sides?: { icon: IconMeaning; picks: number }[];
   cost: { resource: number; amount: number }[];
   /** How the price has risen: the copies already standing and what they multiply the base price by (1 with none). */
   rise: { standing: number; times: number };
@@ -107,6 +110,7 @@ export const readBuildOptions = (
     options.push({
       category,
       tier: (row === undefined ? 1 : researchTier(learned, row) + 1) as BuildOption["tier"],
+      sides: row === undefined ? undefined : sidePicks(learned, row),
       cost,
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
       effect,

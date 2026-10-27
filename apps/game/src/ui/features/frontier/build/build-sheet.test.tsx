@@ -392,7 +392,10 @@ describe("the build sheet", () => {
     const farm = configManager.getBuildingCategoryConfig(BuildingType.ResourceWheat).population_cost;
     // What one more Farm makes, the population it takes, then its price in red with the wait at a glance ("7m").
     expect(sheet.card("Farm").textContent).toMatch(/\+[\d,.]+\/(?:s|min)/);
-    expect(sheet.card("Farm").querySelector(`[aria-label="population ${farm}"]`)).not.toBeNull();
+    // The population it takes stands in the card's corner, beside its painting.
+    expect(
+      sheet.card("Farm").closest(".ui-card")!.querySelector(`.ui-card__corner [aria-label="population ${farm}"]`),
+    ).not.toBeNull();
     expect(band(sheet, "Farm").getAttribute("data-tone")).toBe("bad");
     expect(band(sheet, "Farm").textContent).toMatch(/\d+[mhd]$/);
     // A training building waits behind the Barracks' tier, said in words with its numeral by the lock and whole on the
@@ -427,23 +430,35 @@ describe("the build sheet", () => {
     built.close();
   });
 
-  it("shows on each card its type's research as one gem, the research tile's, and never words for it", () => {
+  it("shows each side's own gem where a row has two, else the type's one gem, and never words for them", () => {
     const { store, realm } = realmBoard();
-    // research.cairo: Farm rare (Fields, then Granary) at bits 0 and 3-4; Hut epic at bit 21; nothing else learned.
-    store.applyFacts([
-      fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(2n | (1n << 4n) | (3n << 21n)) }),
-    ] as never);
-    const sheet = open(store, realm);
-    const gems = (name: string) => [...sheet.card(name).querySelectorAll(".ui-tier")].map((gem) => gem.textContent);
-    expect(gems("Farm")).toEqual(["III"]);
-    expect(gems("Hut")).toEqual(["IV"]);
-    expect(gems("Workshop")).toEqual(["I"]);
-    // Every card the realm may raise carries exactly one gem (owner, 27 October: "why no gems instead of the text ?").
-    const cards = [...sheet.host.querySelectorAll(".ui-card")];
-    expect(cards.length).toBeGreaterThan(4);
-    cards.forEach((card) => expect(card.querySelectorAll(".ui-tier")).toHaveLength(1));
-    expect(sheet.host.textContent).not.toMatch(/ from (Fields|Tools|Drill)/);
-    sheet.close();
+    const learn = (learned: bigint) =>
+      store.applyFacts([
+        fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(learned) }),
+      ] as never);
+    // A side's gem with its mark, as the card draws them: "fields III".
+    const gems = (sheet: ReturnType<typeof open>, name: string) =>
+      [...sheet.card(name).querySelectorAll(".ui-tier")].map((gem) =>
+        [gem.closest("[data-side]")?.getAttribute("data-side"), gem.textContent].filter(Boolean).join(" "),
+      );
+    // research.cairo: the Farm row's tier at bits 0-2 and each tier's side from bit 3 (Fields 0, Granary 1); the Hut
+    // row's tier at bit 21. Farm at rare, one tier on each side: each side reads its own II, never the row's III.
+    learn(2n | (1n << 4n) | (3n << 21n));
+    const mixed = open(store, realm);
+    expect(gems(mixed, "Farm")).toEqual(["fields II", "granary II"]);
+    expect(gems(mixed, "Workshop")).toEqual(["tools I", "storehouse I"]);
+    expect(gems(mixed, "Barracks")).toEqual(["drill I", "rations I"]);
+    // A row without sides keeps its type's one gem: the Hut at epic, a training building at common.
+    expect(gems(mixed, "Hut")).toEqual(["IV"]);
+    expect(gems(mixed, "War hall")).toEqual(["I"]);
+    // Gems, never words for them (owner, 27 October: "why no gems instead of the text ?").
+    expect(mixed.host.textContent).not.toMatch(/ from (Fields|Tools|Drill)/);
+    mixed.close();
+    // Both Farm tiers on Fields: Fields III, Granary still I.
+    learn(2n);
+    const fields = open(store, realm);
+    expect(gems(fields, "Farm")).toEqual(["fields III", "granary I"]);
+    fields.close();
   });
 
   it("says on the Hut's card what the chain grants for one more: its grant and the change in the rounded bonus", () => {

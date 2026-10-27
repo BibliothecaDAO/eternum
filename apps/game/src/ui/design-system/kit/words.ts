@@ -404,7 +404,8 @@ export const UPGRADING = "Upgrading…";
 export const BUILDING_FIGURES = {
   eachMakes: (noun: string) => `${noun} each makes`,
   castleMakes: (noun: string) => `${noun} the castle makes`,
-  standing: "standing",
+  /** How many of a type stand on the realm: "1 building", "6 buildings" (owner, 27 October: not "6 standing"). */
+  standing: (count: number) => formatCount(count, "building"),
   eachAdds: `${POPULATION} each adds`,
   eachTakes: `${POPULATION} each takes`,
   startsAt: (attribute: string) => `${attribute} new armies start at`,

@@ -28,10 +28,10 @@ import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import type { RealmPopulation } from "../realm/realm-population";
 
 /**
- * One building on the build sheet (the owner's pick, option B · Cards): its painting and name, what one more gives,
- * its type's research gem with the population it takes, and a band for where it stands: its labor price, with the wait
- * while the realm holds too little or the population it lacks, a lock with the gate it waits for (Barracks at a tier),
- * or a tick when the realm already holds its one copy.
+ * One building on the build sheet (the owner's pick, option B · Cards): its painting and name with the population it
+ * takes in the card's corner, what one more gives, its research as gems (one per side of a row that has sides), and a
+ * band for where it stands: its labor price, with the wait while the realm holds too little or the population it
+ * lacks, a lock with the gate it waits for (Barracks at a tier), or a tick when the realm already holds its one copy.
  */
 export type BuildTile = {
   key: string;
@@ -41,8 +41,11 @@ export type BuildTile = {
   tip: string;
   /** What one more gives: a production rate or population; a training building's attribute alone (its gem is the tier). */
   gives: { icon: IconMeaning; value?: ReactNode };
-  /** Its type's research tier, the gem its research tile and building card show (owner, 27 October: gems, not text). */
-  tier: Tier;
+  /**
+   * Its research as gems, never words (owner, 27 October: "why no gems instead of the text ?"): each side of a row that
+   * has two (Fields and Granary) with its mark and its gem, else its type's one gem, the research tile's.
+   */
+  gems: { side?: IconMeaning; tier: Tier }[];
   /** The population it takes; 0 takes none. */
   takes: number;
   standing:
@@ -135,6 +138,7 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
       size="sm"
       title={tile.name}
       picture={<SemanticIcon name={tile.icon} size={26} />}
+      corner={tile.takes > 0 ? <Takes takes={tile.takes} /> : undefined}
       detail={
         <span className="flex w-full flex-col items-center gap-1">
           <Gives tile={tile} />
@@ -148,8 +152,8 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
 );
 
 /**
- * What one more gives, then its type's gem with the population it takes when it takes any: two short lines, so a
- * card three to a 360-wide phone's row holds them whole.
+ * What one more gives, then its research's gems: two short lines, so a card three to a 360-wide phone's row holds them
+ * whole.
  */
 const Gives = ({ tile }: { tile: BuildTile }) => (
   <span className="flex flex-col items-center gap-0.5">
@@ -157,15 +161,26 @@ const Gives = ({ tile }: { tile: BuildTile }) => (
       <SemanticIcon name={tile.gives.icon} size={14} />
       {tile.gives.value}
     </span>
-    <span className="flex items-center justify-center gap-x-1.5 whitespace-nowrap tabular-nums">
-      <HudTier tier={tile.tier} />
-      {tile.takes > 0 && (
-        <span className="flex items-center gap-0.5" role="img" aria-label={`${POPULATION} ${formatCharge(tile.takes)}`}>
-          <SemanticIcon name="person" size={12} />
-          {formatCharge(tile.takes)}
+    <span className="flex items-center justify-center gap-x-1.5 whitespace-nowrap">
+      {tile.gems.map((gem, index) => (
+        <span key={gem.side ?? index} data-side={gem.side} className="flex items-center gap-0.5">
+          {gem.side && <SemanticIcon name={gem.side} size={12} />}
+          <HudTier tier={gem.tier} />
         </span>
-      )}
+      ))}
     </span>
+  </span>
+);
+
+/** The population one more takes, in the card's corner beside its painting. */
+const Takes = ({ takes }: { takes: number }) => (
+  <span
+    className="flex items-center gap-0.5 text-hud-label tabular-nums text-hud-muted"
+    role="img"
+    aria-label={`${POPULATION} ${formatCharge(takes)}`}
+  >
+    <SemanticIcon name="person" size={12} />
+    {formatCharge(takes)}
   </span>
 );
 

@@ -104,18 +104,27 @@ const READ_BUILD_CARDS = `(() => [...document.querySelectorAll(".ui-card")].map(
   return {
     name: card.querySelector(".ui-card__title")?.textContent ?? "",
     gems: card.querySelectorAll(".ui-tier").length,
+    sides: [...card.querySelectorAll("[data-side]")].map((side) => side.getAttribute("data-side") + " " + (side.querySelector(".ui-tier")?.textContent ?? "no gem")),
     clipped: [...new Set(clipped.map((part) => part.textContent))],
   };
 }))()`;
 
 /**
  * A build card reads whole at every size (owner, 27 October: its words clipped at the card's edge on a phone), and
- * says its type's research with one gem, never words for it ("why no gems instead of the text ?").
+ * says its research with gems, never words for it ("why no gems instead of the text ?"): a gem on each side of a row
+ * that has two (Farm, Workshop, Barracks), else its type's one gem.
  */
+const SIDED = new Set(["Farm", "Workshop", "Barracks"]);
 const buildCardProblems = (cards) => {
   if (cards.length === 0) return ["no build card drawn"];
-  return cards.flatMap(({ name, gems, clipped }) => [
-    ...(gems === 1 ? [] : [`${name} shows ${gems} gems`]),
+  return cards.flatMap(({ name, gems, sides, clipped }) => [
+    ...(SIDED.has(name)
+      ? sides.length === 2 && gems === 2 && sides.every((side) => !side.endsWith("no gem"))
+        ? []
+        : [`${name} shows ${sides.join(", ") || "no side"} (${gems} gems), not a gem per side`]
+      : gems === 1 && sides.length === 0
+        ? []
+        : [`${name} shows ${gems} gems`]),
     ...clipped.map((part) => `${name}: "${part}" is clipped`),
   ]);
 };

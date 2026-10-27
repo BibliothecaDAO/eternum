@@ -11,7 +11,7 @@ import { DestroyBuildingButton } from "@/ui/features/world/components/bottom-rig
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { researchRowOf } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatAmount, formatRate } from "@bibliothecadao/types";
+import { formatRate } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 import { buildingIcon, buildingName } from "../build/building-names";
@@ -128,13 +128,17 @@ export const BuildingCardView = ({
     <HudSheet label={name} onClose={onClose}>
       <div data-building-card className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
-          <Icon name={icon} size={56} />
-          <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-            <span className="text-hud-strong text-hud-ink">
-              {formatAmount(standing)} {BUILDING_FIGURES.standing}
-            </span>
-            {node && <HudTier tier={tierOf(node.tier)} />}
-          </div>
+          {/* The type's tier as a badge on its painting's corner (owner, 27 October: "the III as a badge to the barracks
+              icon would work better"). */}
+          <span data-badged className="relative shrink-0">
+            <Icon name={icon} size={56} />
+            {node && (
+              <span className="absolute -bottom-1 -right-1">
+                <HudTier tier={tierOf(node.tier)} />
+              </span>
+            )}
+          </span>
+          <span className="min-w-0 flex-1 text-hud-strong text-hud-ink">{BUILDING_FIGURES.standing(standing)}</span>
           {makes && (
             <span className="flex items-center gap-1.5 text-hud-title tabular-nums text-hud-ink">
               <Icon name={makes.icon} size={28} />
