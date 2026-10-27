@@ -1,5 +1,3 @@
-import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { StructureType } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import {
   depthName,
@@ -21,6 +19,8 @@ import {
 } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from "@bibliothecadao/types";
+
+import { POINT_CHOICES, scoutingChoices, type AttributeKey } from "../progression-choices";
 
 import { buildingIcon, buildingName } from "../build/building-names";
 
@@ -128,25 +128,33 @@ const ROWS = {
   depth: research.ROW_DEPTH,
 } as const;
 
-type Attribute = "battle" | "logistics" | "scouting" | "homecoming";
+type Attribute = AttributeKey;
+type ResearchRow = Exclude<Extract<keyof typeof research, `ROW_${string}`>, "ROW_COUNT">;
 /** Each attribute's mark, as a training building's gain shows it. */
-export const ATTRIBUTE_MARKS: Record<"Battle" | "Logistics" | "Scouting" | "Homecoming", IconMeaning> = {
-  Battle: "order-rage",
-  Logistics: "order-skill",
-  Scouting: "order-detection",
-  Homecoming: "order-enlightenment",
+export const ATTRIBUTE_MARKS: Record<Exclude<keyof typeof POINT_CHOICES, "Stamina">, IconMeaning> = {
+  Battle: POINT_CHOICES.Battle.mark,
+  Logistics: POINT_CHOICES.Logistics.mark,
+  Scouting: POINT_CHOICES.Scouting.mark,
+  Homecoming: POINT_CHOICES.Homecoming.mark,
 };
-const TRAINING: { row: number; category: BuildingType; attribute: Attribute; word: keyof typeof ATTRIBUTE_MARKS }[] = [
-  { row: research.ROW_WAR_HALL, category: BuildingType.WarHall, attribute: "battle", word: "Battle" },
-  { row: research.ROW_SUPPLY_YARD, category: BuildingType.SupplyYard, attribute: "logistics", word: "Logistics" },
-  { row: research.ROW_SCOUTS_LODGE, category: BuildingType.ScoutsLodge, attribute: "scouting", word: "Scouting" },
-  { row: research.ROW_HEARTH, category: BuildingType.Hearth, attribute: "homecoming", word: "Homecoming" },
-];
-const KINDS: { icon: IconMeaning; name: string }[] = [
-  { icon: structureMeaning(StructureType.Camp, "frontier"), name: RESEARCH_TREE.kinds.camp },
-  { icon: structureMeaning(StructureType.Rift, "frontier"), name: RESEARCH_TREE.kinds.rift },
-  { icon: structureMeaning(StructureType.Beasts, "frontier"), name: RESEARCH_TREE.kinds.beasts },
-];
+const TRAINING = {
+  Battle: { row: research.ROW_WAR_HALL, category: BuildingType.WarHall, attribute: "battle", word: "Battle" },
+  Logistics: {
+    row: research.ROW_SUPPLY_YARD,
+    category: BuildingType.SupplyYard,
+    attribute: "logistics",
+    word: "Logistics",
+  },
+  Scouting: {
+    row: research.ROW_SCOUTS_LODGE,
+    category: BuildingType.ScoutsLodge,
+    attribute: "scouting",
+    word: "Scouting",
+  },
+  Homecoming: { row: research.ROW_HEARTH, category: BuildingType.Hearth, attribute: "homecoming", word: "Homecoming" },
+} satisfies {
+  [K in keyof typeof ATTRIBUTE_MARKS]: { row: number; category: BuildingType; attribute: Lowercase<K>; word: K };
+};
 const DEPTH_MARKS: IconMeaning[] = ["depth-1", "depth-2", "depth-3"];
 
 const percent = (bps: number) => formatPercent(bps / 10_000, { signed: true });
@@ -195,7 +203,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     const tier = researchHasIndependentSides(row) ? Math.max(picks(row, 0), picks(row, 1)) : learned(row).tier;
     const name = buildingName(category);
     const icon = buildingIcon(category);
-    const constructionGrant = tier === 0 && TRAINING.some((training) => training.row === row);
+    const constructionGrant = tier === 0 && Object.values(TRAINING).some((training) => training.row === row);
     const next = tier < 5 ? tier + 1 : undefined;
     const nextNeeds = (at: number) => {
       const needs = buildingNeeds(row, name, icon, at, options.extra ?? []);
@@ -298,83 +306,99 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     icon: buildingIcon(BuildingType.ResourceKnightT1),
   };
 
-  return [
-    buildingNode(
-      ROWS.farm,
-      BuildingType.ResourceWheat,
-      "economy",
-      picksGive(ROWS.farm, ...farmSides),
-      twoSides(ROWS.farm, ...farmSides),
-    ),
-    buildingNode(
-      ROWS.workshop,
-      BuildingType.ResourceLabor,
-      "economy",
-      picksGive(ROWS.workshop, ...workshopSides),
-      twoSides(ROWS.workshop, ...workshopSides),
-    ),
-    buildingNode(
-      ROWS.hut,
-      BuildingType.WorkersHut,
-      "economy",
-      (tier) => ({ line: RESEARCH_TREE.hutLine, ...hutPopulation(tier) }),
-      { figures: (tier) => [{ icon: "person", name: RESEARCH_TREE.population, ...hutPopulation(tier) }] },
-    ),
-    buildingNode(
-      ROWS.barracks,
-      BuildingType.ResourceKnightT1,
-      "army",
-      (tier) => ({
-        line: !gateNeed.met ? RESEARCH_TREE.gateLine(gateBarracks) : RESEARCH_TREE.gateOpen,
-        now: tierShown(tier),
-        next: tier < 5 ? tierShown(tier + 1) : undefined,
+  const trainingNode = ({ row, category, attribute, word }: (typeof TRAINING)[keyof typeof TRAINING]): TreeNode =>
+    buildingNode(row, category, "army", (tier) => trainingGives(attribute, word, tier), {
+      extra: [gateNeed],
+      figures: (tier) => [{ icon: ATTRIBUTE_MARKS[word], name: word, ...attributeStep(attribute, tier) }],
+      ...(row === research.ROW_SCOUTS_LODGE
+        ? {
+            sides: (tier: number, done: boolean) =>
+              scoutingChoices.map((kind) => {
+                // A lodge tier starts new armies' Scouting one level higher, on the kind it picked.
+                const now = learned(row)
+                  .sides.map((side, at) => (side === kind.side ? scoutingStep(at + 1) : 0))
+                  .reduce((sum, step) => sum + step, 0);
+                return {
+                  icon: kind.icon,
+                  name: kind.name,
+                  line: RESEARCH_TREE.foundByNewArmies(kind.name),
+                  now: percent(now),
+                  next: done ? percent(now) : percent(now + scoutingStep(tier + 1)),
+                };
+              }),
+            taken: () => learned(row).sides.map((side) => scoutingChoices.find((kind) => kind.side === side)!.icon),
+          }
+        : {}),
+    });
+
+  const rows = {
+    ROW_FARM: [
+      buildingNode(
+        ROWS.farm,
+        BuildingType.ResourceWheat,
+        "economy",
+        picksGive(ROWS.farm, ...farmSides),
+        twoSides(ROWS.farm, ...farmSides),
+      ),
+    ],
+    ROW_WORKSHOP: [
+      buildingNode(
+        ROWS.workshop,
+        BuildingType.ResourceLabor,
+        "economy",
+        picksGive(ROWS.workshop, ...workshopSides),
+        twoSides(ROWS.workshop, ...workshopSides),
+      ),
+    ],
+    ROW_HUT: [
+      buildingNode(
+        ROWS.hut,
+        BuildingType.WorkersHut,
+        "economy",
+        (tier) => ({ line: RESEARCH_TREE.hutLine, ...hutPopulation(tier) }),
+        { figures: (tier) => [{ icon: "person", name: RESEARCH_TREE.population, ...hutPopulation(tier) }] },
+      ),
+    ],
+    ROW_BARRACKS: [
+      buildingNode(
+        ROWS.barracks,
+        BuildingType.ResourceKnightT1,
+        "army",
+        (tier) => ({
+          line: !gateNeed.met ? RESEARCH_TREE.gateLine(gateBarracks) : RESEARCH_TREE.gateOpen,
+          now: tierShown(tier),
+          next: tier < 5 ? tierShown(tier + 1) : undefined,
+        }),
+        {
+          ...twoSides(
+            ROWS.barracks,
+            { icon: "drill", words: sides.drill, at: output },
+            { icon: "rations", words: sides.rations, at: rations },
+          ),
+          leadsTo: Object.values(TRAINING).map(({ row }) => `row-${row}`),
+          gate: { name: gateBarracks, met: gateNeed.met },
+        },
+      ),
+    ],
+    ROW_WAR_HALL: [trainingNode(TRAINING.Battle)],
+    ROW_SUPPLY_YARD: [trainingNode(TRAINING.Logistics)],
+    ROW_SCOUTS_LODGE: [trainingNode(TRAINING.Scouting)],
+    ROW_HEARTH: [trainingNode(TRAINING.Homecoming)],
+    ROW_SHRINE: [
+      castleNode("shrine", ROWS.shrine, SHRINE, "shrine", {
+        line: RESEARCH_TREE.armiesFind(SHRINE),
+        now: "—",
+        next: RESEARCH_TREE.each(`+${formatExact(realm.shrineXp)} ${XP}`),
       }),
-      {
-        ...twoSides(
-          ROWS.barracks,
-          { icon: "drill", words: sides.drill, at: output },
-          { icon: "rations", words: sides.rations, at: rations },
-        ),
-        leadsTo: TRAINING.map(({ row }) => `row-${row}`),
-        gate: { name: gateBarracks, met: gateNeed.met },
-      },
-    ),
-    ...TRAINING.map(({ row, category, attribute, word }) =>
-      buildingNode(row, category, "army", (tier) => trainingGives(attribute, word, tier), {
-        extra: [gateNeed],
-        figures: (tier) => [{ icon: ATTRIBUTE_MARKS[word], name: word, ...attributeStep(attribute, tier) }],
-        ...(row === research.ROW_SCOUTS_LODGE
-          ? {
-              sides: (tier: number, done: boolean) =>
-                KINDS.map((kind, index) => {
-                  // A lodge tier starts new armies' Scouting one level higher, on the kind it picked.
-                  const now = learned(row)
-                    .sides.map((side, at) => (side === index ? scoutingStep(at + 1) : 0))
-                    .reduce((sum, step) => sum + step, 0);
-                  return {
-                    icon: kind.icon,
-                    name: kind.name,
-                    line: RESEARCH_TREE.foundByNewArmies(kind.name),
-                    now: percent(now),
-                    next: done ? percent(now) : percent(now + scoutingStep(tier + 1)),
-                  };
-                }),
-              taken: () => learned(row).sides.map((side) => KINDS[side]!.icon),
-            }
-          : {}),
+    ],
+    ROW_WELL: [
+      castleNode("well", ROWS.well, WELL, "well", {
+        line: RESEARCH_TREE.armiesFind(WELL),
+        now: "—",
+        next: RESEARCH_TREE.each(`+${formatExact(realm.wellStamina)} ${STAMINA}`),
       }),
-    ),
-    castleNode("shrine", ROWS.shrine, SHRINE, "shrine", {
-      line: RESEARCH_TREE.armiesFind(SHRINE),
-      now: "—",
-      next: RESEARCH_TREE.each(`+${formatExact(realm.shrineXp)} ${XP}`),
-    }),
-    castleNode("well", ROWS.well, WELL, "well", {
-      line: RESEARCH_TREE.armiesFind(WELL),
-      now: "—",
-      next: RESEARCH_TREE.each(`+${formatExact(realm.wellStamina)} ${STAMINA}`),
-    }),
-    ...([1, 2, 3] as const).map((depth) => {
+    ],
+    ROW_DEPTH: ([1, 2, 3] as const).map((depth) => {
       const name = depthName(depth);
       const before: Need[] =
         depth === 1
@@ -398,7 +422,8 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         depth < 3 ? [`reach-${depth + 1}`] : [],
       );
     }),
-  ];
+  } satisfies Record<ResearchRow, TreeNode[]>;
+  return Object.values(rows).flat();
 
   function castleNode(
     key: string,

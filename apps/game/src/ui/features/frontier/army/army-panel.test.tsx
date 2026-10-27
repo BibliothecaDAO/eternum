@@ -3,6 +3,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+import bindings from "../../../../../../../contracts/l3/world-native/schema/bindings.json";
+
 import { EARLY_ARMY } from "../research/progression-fixture";
 import { type ArmyDetailFacts, readArmyDetail } from "./army-detail";
 import { ArmyDetail } from "./army-panel";
@@ -142,4 +144,41 @@ it("reads its stamina on one line: 18/140, a bar of one segment per explore's 20
   const over = line.previousElementSibling!;
   expect(over.textContent).toMatch(/\+75 a tile.*Refill$/);
   expect(over.textContent).not.toMatch(/18\/140|Full in/);
+});
+
+const variants = (name: string) =>
+  bindings.commandAbi.find((item) => item.name === `world_native::progression::${name}`)!.variants!;
+
+it("offers and submits every skill-point use and Scouting kind in the generated command catalog", () => {
+  const spent = vi.fn();
+  const army = readArmyDetail({ ...EARLY_ARMY, points: [1, 1, 1, 1, 1] });
+  act(() => root.render(<ArmyDetail army={army} sending={false} choosing onLevelUp={spent} />));
+  const uses = variants("SkillPointUse");
+  expect([...host.querySelectorAll("[data-attribute]")].map((button) => button.getAttribute("data-attribute"))).toEqual(
+    uses.map(({ name }) => name.toLowerCase()),
+  );
+  const submit = () =>
+    act(() =>
+      [...host.querySelectorAll("button")]
+        .find((button) => /^(Level up|Refill)$/.test(button.textContent ?? ""))!
+        .click(),
+    );
+  for (const { name } of uses) {
+    act(() => host.querySelector<HTMLButtonElement>(`[data-attribute="${name.toLowerCase()}"]`)!.click());
+    if (name === "Scouting") {
+      const kinds = variants("ScoutingKind");
+      expect(
+        [...host.querySelectorAll("[data-scout-kind]")].map((button) => button.getAttribute("data-scout-kind")),
+      ).toEqual(kinds.map(({ name }) => name.toLowerCase()));
+      for (const kind of kinds) {
+        act(() => host.querySelector<HTMLButtonElement>(`[data-scout-kind="${kind.name.toLowerCase()}"]`)!.click());
+        submit();
+        expect(spent).toHaveBeenLastCalledWith({ kind: name, value: { kind: kind.name, value: undefined } });
+      }
+    } else {
+      submit();
+      expect(spent).toHaveBeenLastCalledWith({ kind: name, value: name === "Stamina" ? 1 : undefined });
+    }
+  }
+  expect(spent).toHaveBeenCalledTimes(uses.length - 1 + variants("ScoutingKind").length);
 });

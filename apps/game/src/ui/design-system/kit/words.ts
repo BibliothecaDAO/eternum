@@ -309,8 +309,6 @@ export const startsNewArmies = (attribute: string, numeral: string) => `new armi
  */
 export const xpTowardTip = (held: string, milestone: string, tier: string) =>
   `${XP} ${held} of ${milestone} · next ${tier} point`;
-/** The four attributes, each wearing its Aspect's mark. */
-export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
 export const RIFT = "Rift";

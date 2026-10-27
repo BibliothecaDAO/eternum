@@ -1,9 +1,10 @@
+import type { NativeCommandPayloads } from "@bibliothecadao/provider";
 import { nativeRuleConstants, type NativeRows } from "../client";
 
 export type SkillPointRank = 1 | 2 | 3 | 4 | 5;
+type NativeSkillPointChoice = NativeCommandPayloads["SpendSkillPoint"]["choice"];
 export type SkillPointChoice =
-  | { kind: "Battle" | "Logistics" | "Homecoming"; value: undefined }
-  | { kind: "Scouting"; value: { kind: "Camp" | "Rift" | "Beasts"; value: undefined } }
+  | Exclude<NativeSkillPointChoice, { kind: "Stamina" }>
   | { kind: "Stamina"; value: SkillPointRank };
 
 type Progress = NativeRows["ArmyProgress"];

@@ -1,8 +1,7 @@
 import { SKILL_POINT_RANKS, type SkillPointChoice, type SkillPointRank } from "@bibliothecadao/eternum";
-import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { formatExact, formatShort, StructureType } from "@bibliothecadao/types";
+import { formatExact, formatShort } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon } from "@/ui/design-system/icon";
 import {
   HudButton,
   HudChip,
@@ -12,17 +11,13 @@ import {
   HudTier,
   HudTierStep,
 } from "@/ui/design-system/kit/hud-elements";
-import { ARMY_DETAIL, BACK, RESEARCH_TREE, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-system/kit/words";
+import { ARMY_DETAIL, BACK, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
 
 import { FullIn } from "../full-in";
 import type { ArmyView, AttributeKey, AttributeView, ScoutKind } from "./army-detail";
 
-const KINDS: { key: ScoutKind; icon: IconMeaning }[] = [
-  { key: "camp", icon: structureMeaning(StructureType.Camp, "frontier") },
-  { key: "rift", icon: structureMeaning(StructureType.Rift, "frontier") },
-  { key: "beasts", icon: structureMeaning(StructureType.Beasts, "frontier") },
-];
+import { pointChoices, scoutingChoices } from "../progression-choices";
 
 /**
  * An army's detail (the owner's picks, 20 and 22 October), in two steps in one place. First its status, beside its
@@ -58,15 +53,8 @@ export const ArmyDetail = ({
   const canSpend = point !== undefined && (chosen !== "stamina" || gained > 0);
   const submit = () => {
     if (!canSpend || point === undefined) return;
-    const kinds = { camp: "Camp", rift: "Rift", beasts: "Beasts" } as const;
-    const sides = { battle: "Battle", logistics: "Logistics", homecoming: "Homecoming" } as const;
-    return onLevelUp(
-      chosen === "stamina"
-        ? { kind: "Stamina", value: point }
-        : chosen === "scouting"
-          ? { kind: "Scouting", value: { kind: kinds[kind], value: undefined } }
-          : { kind: sides[chosen], value: undefined },
-    );
+    const option = pointChoices.find(({ key }) => key === chosen)!;
+    return onLevelUp(option.choice(scoutingChoices.find((option) => option.key === kind)!.choice, point));
   };
   if (open)
     return (
@@ -77,28 +65,32 @@ export const ArmyDetail = ({
           </HudButton>
           <XpLine army={army} />
         </div>
-        {army.attributes.map((attribute) => (
-          <Choice
-            key={attribute.key}
-            attribute={attribute}
-            chosen={chosen === attribute.key}
-            onChoose={() => setChosen(attribute.key)}
-          />
-        ))}
-        <button
-          type="button"
-          data-attribute="stamina"
-          aria-pressed={chosen === "stamina"}
-          onClick={() => setChosen("stamina")}
-          className={cn(
-            "flex items-center gap-2 rounded-md border px-2 py-2 text-left",
-            chosen === "stamina" ? "border-hud-line-strong bg-hud-chosen" : "border-hud-line hover:bg-hud-hover",
-          )}
-        >
-          <Icon name="stamina" size={32} />
-          <span className="flex-1 text-hud-strong text-hud-ink">Stamina</span>
-          <span className="text-hud-label text-hud-good">+{stamina?.refill ?? 0}</span>
-        </button>
+        {pointChoices.map((option) =>
+          option.key === "stamina" ? (
+            <button
+              key={option.key}
+              type="button"
+              data-attribute="stamina"
+              aria-pressed={chosen === "stamina"}
+              onClick={() => setChosen("stamina")}
+              className={cn(
+                "flex items-center gap-2 rounded-md border px-2 py-2 text-left",
+                chosen === "stamina" ? "border-hud-line-strong bg-hud-chosen" : "border-hud-line hover:bg-hud-hover",
+              )}
+            >
+              <Icon name={option.mark} size={32} />
+              <span className="flex-1 text-hud-strong text-hud-ink">{option.name}</span>
+              <span className="text-hud-label text-hud-good">+{stamina?.refill ?? 0}</span>
+            </button>
+          ) : (
+            <Choice
+              key={option.key}
+              attribute={army.attributes.find(({ key }) => key === option.key)!}
+              chosen={chosen === option.key}
+              onChoose={() => setChosen(option.key)}
+            />
+          ),
+        )}
         {chosen === "scouting" && pick?.next && <KindChoice kind={kind} onKind={setKind} />}
         {chosen === "stamina" && (
           <div className="flex gap-2" role="group" aria-label="Point to spend">
@@ -292,10 +284,11 @@ const Choice = ({
 /** Scouting's kind: the sites its new level finds more of. */
 const KindChoice = ({ kind, onKind }: { kind: ScoutKind; onKind: (kind: ScoutKind) => void }) => (
   <div className="grid grid-cols-3 gap-2">
-    {KINDS.map((option) => (
+    {scoutingChoices.map((option) => (
       <button
         key={option.key}
         type="button"
+        data-scout-kind={option.key}
         aria-pressed={kind === option.key}
         onClick={() => onKind(option.key)}
         className={cn(
@@ -304,7 +297,7 @@ const KindChoice = ({ kind, onKind }: { kind: ScoutKind; onKind: (kind: ScoutKin
         )}
       >
         <Icon name={option.icon} size={22} />
-        {RESEARCH_TREE.kinds[option.key]}
+        {option.name}
       </button>
     ))}
   </div>

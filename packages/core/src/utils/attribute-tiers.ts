@@ -64,7 +64,7 @@ export const homecomingReturn = (wholeTroops: number, homecomingTier: number): n
 
 /** The kinds a Scouting tier can raise, by the code progression.cairo packs for each (1, 2, 3). */
 const SCOUTING_KINDS = ["Camp", "Rift", "Beasts"] as const;
-export type ScoutingKind = (typeof SCOUTING_KINDS)[number];
+type ScoutingKind = (typeof SCOUTING_KINDS)[number];
 
 /**
  * The kind each Scouting tier went to, Common first, as progression.cairo packs `scouting_kinds`: two

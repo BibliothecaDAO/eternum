@@ -3,7 +3,7 @@ import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { StructureType } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { ARMY_DETAIL, ATTRIBUTES, RESEARCH_TREE, type Tier, type Rank } from "@/ui/design-system/kit/words";
+import { ARMY_DETAIL, RESEARCH_TREE, type Tier, type Rank } from "@/ui/design-system/kit/words";
 import {
   battleBonusBps,
   homecomingBps,
@@ -15,8 +15,8 @@ import {
 } from "@bibliothecadao/eternum";
 import { formatExact, formatPercent } from "@bibliothecadao/types";
 
-export type AttributeKey = "battle" | "logistics" | "scouting" | "homecoming";
-export type ScoutKind = "camp" | "rift" | "beasts";
+import { pointChoices, type AttributeKey, type ScoutKind } from "../progression-choices";
+export type { AttributeKey, ScoutKind } from "../progression-choices";
 
 /** What the detail reads of an army and its game. */
 export interface ArmyDetailFacts {
@@ -64,18 +64,13 @@ export interface ArmyView {
   earn: { icon: IconMeaning; line: string; xp?: number }[];
 }
 
-const ATTRIBUTE_ROWS: { key: AttributeKey; mark: IconMeaning }[] = [
-  { key: "battle", mark: "order-rage" },
-  { key: "logistics", mark: "order-skill" },
-  { key: "scouting", mark: "order-detection" },
-  { key: "homecoming", mark: "order-enlightenment" },
-];
+const ATTRIBUTE_ROWS = pointChoices.filter((option) => option.key !== "stamina");
 
 /** An attribute's mark, as its tile on the army's panel and its line in the Feed draw it. */
 export const attributeMark = (key: AttributeKey): IconMeaning => ATTRIBUTE_ROWS.find((row) => row.key === key)!.mark;
 
 export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
-  const attributes = ATTRIBUTE_ROWS.map(({ key, mark }, index): AttributeView => {
+  const attributes = ATTRIBUTE_ROWS.map(({ key, mark, name }): AttributeView => {
     const level = army.progress[key];
     const point = SKILL_POINT_RANKS.find((rank) => rank >= level + 1 && army.points[rank - 1]! > 0);
     const figure = (at: number) =>
@@ -84,7 +79,7 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
     const now = key === "scouting" ? scoutingNow(army.progress.scoutingKinds) : effect(figure(level));
     return {
       key,
-      name: ATTRIBUTES[index],
+      name,
       mark,
       level: level as Rank,
       now,

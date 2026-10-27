@@ -4,18 +4,17 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
-import { scoutingKindsOf, heldSkillPoints, type ScoutingKind, type SkillPointChoice } from "@bibliothecadao/eternum";
+import { scoutingKindsOf, heldSkillPoints, type SkillPointChoice } from "@bibliothecadao/eternum";
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { useArmyRevealYield } from "../frontier-reveal-yield";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
-import { type ArmyDetailFacts, readArmyDetail, type ScoutKind } from "./army-detail";
+import { type ArmyDetailFacts, readArmyDetail } from "./army-detail";
+import { SCOUTING_CHOICES } from "../progression-choices";
 import { ArmyDetail } from "./army-panel";
 import { ArmyRefill } from "./army-refill";
 
 const PROGRESS_MODELS = ["ArmyProgress", "ArmyProgressionRules"] as const;
-
-const KIND_KEYS: Record<ScoutingKind, ScoutKind> = { Camp: "camp", Rift: "rift", Beasts: "beasts" };
 
 /**
  * The selected army's detail over the game's facts, the one army panel: opened by selecting the army, on the map or
@@ -57,7 +56,9 @@ const ArmyPanel = ({
       logistics: progress.logistics,
       scouting: progress.scouting,
       homecoming: progress.homecoming,
-      scoutingKinds: scoutingKindsOf(progress.scouting, progress.scouting_kinds).map((kind) => KIND_KEYS[kind]),
+      scoutingKinds: scoutingKindsOf(progress.scouting, progress.scouting_kinds).map(
+        (kind) => SCOUTING_CHOICES[kind].key,
+      ),
     },
     points: heldSkillPoints(progress),
     rules,
