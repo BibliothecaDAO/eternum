@@ -31,14 +31,14 @@ const depthRules = (depth: number, entry: number) => ({
 
 /**
  * Realm 7's day 0 (its spire on the home ring around its site), with Ethereal I and II researched and entry costs of
- * 30, 40 and 50 stamina, as Frontier prices them, and its army standing beside the spire or three tiles off it,
+ * 30, 40 and 50 stamina, as Frontier prices them, and its army standing beside the spire, on its tile or three tiles off it,
  * holding the stamina given. The spire card's tests and the game lab's spire both play it.
  */
 export const spireDay = ({
   stamina = 100n,
   standing = "beside",
   spacing,
-}: { stamina?: bigint; standing?: "beside" | "away"; spacing?: number } = {}) => {
+}: { stamina?: bigint; standing?: "beside" | "on" | "away"; spacing?: number } = {}) => {
   const { store } = campBeside("Camp", true, stamina);
   // The regions' width: the deploy fixture's small one unless the game needs Frontier's own.
   if (spacing !== undefined)
@@ -52,8 +52,11 @@ export const spireDay = ({
   const rules = readExpeditionRules(store, 1)!;
   const spire = expeditionSpireTile(rules, store.require("Structure", { game_id: 1, entity_id: 7 }), SPIRE_DAY_NOW)!;
   const [beside] = getNeighborHexes(spire.col, spire.row);
-  const armyTile =
-    standing === "beside" ? { col: beside.col, row: beside.row } : { col: spire.col + 3, row: spire.row };
+  const armyTile = {
+    beside: { col: beside.col, row: beside.row },
+    on: { col: spire.col, row: spire.row },
+    away: { col: spire.col + 3, row: spire.row },
+  }[standing];
   store.applyFacts([
     // research.cairo: the depth row's tier sits at bit 46; Ethereal I and II are researched.
     { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: String(2n << 46n) } },

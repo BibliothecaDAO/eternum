@@ -486,7 +486,7 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 | Beasts                  | Frontier Map → select a beast encounter. Weak and stronger bands both scale with depth; both are below the other site guards.                                                           |
 | Shrine                  | Frontier Map → select an army beside a discovered sun arch → right-click it (press and hold on a phone): Use, +XP, the army stays. Tap it for its card and Use, army kept.              |
 | Well                    | Frontier Map → select an army beside a discovered stone well → right-click it (hold on a phone): Use, +stamina; the hover warns at a full bar. Tap it for its card, army kept.          |
-| Spire                   | Frontier Map → tap your lit spire (army selected or beside it): each researched depth, its stamina, Enter, and that the army stays there for the day.                                   |
+| Spire                   | Frontier Map → tap your lit spire, or select its army on or beside it: researched depths, stamina and Enter. Research stays open; Close clears the selection.                           |
 | Ownership and placement | `/lab/terrain` → Building model → choose an outpost → Ownership where available → Place on selected tile → Focus selected tile. Biome and Fog controls exercise terrain and visibility. |
 
 `pnpm --dir apps/game playtest --base-url https://127.0.0.1:<port> --steps lab-spire --iterations 1` plays the spire in
