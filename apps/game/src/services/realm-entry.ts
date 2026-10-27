@@ -11,13 +11,12 @@ export async function registerHeldRealm(game: GameRef, realmId: number): Promise
   if (response.ok) return;
   const reply = (await response.json().catch(() => null)) as { error?: string } | null;
   const messages: Record<string, string> = {
-    realm_not_owned: "Your linked Starknet wallet does not hold this Realm.",
-    realm_wallet_missing: "Link the Starknet wallet holding your Realm in Settings before founding.",
-    realm_already_settled: "This Realm has already been settled in this game.",
-    realm_registration_refused:
-      "Realm registration was refused. Choose another Realm or leave the number blank to found a free home.",
-    conflicting_entry_entitlement: "You already registered a different Realm for this game. Use that Realm number.",
+    realm_not_owned: "Linked wallet does not hold this Realm.",
+    realm_wallet_missing: "Link your Realm's wallet in Settings.",
+    realm_already_settled: "Realm already settled in this game.",
+    realm_registration_refused: "Choose another Realm or leave blank.",
+    conflicting_entry_entitlement: "Use the Realm number already registered.",
     settlement_closed: "This game's settlement is closed.",
   };
-  throw new Error(messages[reply?.error ?? ""] ?? "Your Realm could not be registered. Please try again.");
+  throw new Error(messages[reply?.error ?? ""] ?? "Realm registration failed. Try again.");
 }

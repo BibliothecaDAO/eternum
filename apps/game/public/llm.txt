@@ -1605,12 +1605,12 @@ tile costs 20, a step over known ground 10, and an attack needs
 big army needs farms behind it.
 
 **Refill** tops an army's stamina up at once for 1 LORDS a missing point, paid from your
-realm's LORDS. A well gives 60 stamina, buying an attribute tier gives
-30, and Logistics raises an army's maximum by up to 150.
+realm's LORDS. A well gives 60 stamina. Skill points also restore stamina, and Logistics raises an
+army's maximum by up to 150.
 
 ### Stamina stays with the slot
 
-Stamina belongs to the army slot, not to the army in it. A new army takes your realm's lowest free slot.
+Stamina belongs to the army slot, not to the army in it. Choose an open slot when deploying.
 
 * A slot's first army of the day starts with a full bar: 120 stamina, plus what your Supply yard's
   Logistics adds.
@@ -1629,19 +1629,23 @@ its troops; Frontier asks first.
 
 ## XP and attributes
 
-An army earns 2 XP for each tile it reveals, XP for each guard it clears (more for a stronger guard),
-and 200 XP from a shrine. It spends XP on the attribute tiers you choose, up to legendary:
-100, 200, 400, then
-800  XP for each next tier.
+An army earns 2 XP per revealed tile, XP for cleared guards, and 200 XP from a
+shrine. XP only increases. At 100 / 250 / 500 / 900 / 1,500 XP it earns Common, Uncommon, Rare, Epic and
+Legendary skill points. The same milestones repeat every 1,500 XP.
+
+Each attribute starts at 0, an empty socket. A point raises one attribute one rank, up to the point's own rank. Level up
+uses the lowest fitting point you hold. Raising restores 20 / 30 / 40 / 50 / 60 stamina according
+to the point spent. Choose Stamina instead to restore double that amount, up to your current maximum.
 
 * **Battle** hits up to 100% harder.
 * **Logistics** carries up to 150 more stamina.
-* **Scouting** adds 10%, 20%,
-  30%, then 40% to the find rate of the camps, rifts or
-  beasts you pick for each tier, so all four on one kind add 100%.
-* **Homecoming** sends survivors home when the day ends ([The expedition](/frontier/expedition#the-days-end)).
+* **Scouting** adds 10% / 15% / 20% / 25% / 30% to the chosen kind's find rate at each rank. Putting all
+  five ranks into one kind adds 100%.
+* **Homecoming** sends a share of survivors home when the day ends
+  ([The expedition](/frontier/expedition#the-days-end)).
 
-An army's XP and tiers end with it. Your realm's training buildings start every new army a tier higher
+XP, ranks and unspent points end with the army. A full merge keeps the receiving army's progress and discards the
+source's. Training buildings grant new armies rank I, and research raises their starting rank through V
 ([Your realm](/frontier/realm#research)).
 
 <Shot frame="panel" name="frontier/level-up" caption="An army's panel: its troops, stamina and XP, then the next tier of each attribute." />
@@ -1798,8 +1802,8 @@ of the day.
 ## The day's end
 
 When the day ends, the map and its fog, every site and every army you sent out are gone. An army with Homecoming first
-sends a share of its survivors home: 3% at uncommon, 9% at rare,
-18% at epic and 30% at legendary. Your realm is raised on the next map with
+sends a share of its survivors home: 8% at uncommon, 14% at rare,
+21% at epic and 30% at legendary. Your realm is raised on the next map with
 its buildings, research, troops and stores, and the game takes you to it.
 
 
@@ -1853,7 +1857,7 @@ holds.
 * Research each building type up to legendary, then shrines, wells and the three Ethereal depths.
 * Field 3 armies of Knights, and up to 6 as the castle rises.
 * Explore, move, and fight the guards of Trolls, rifts, ruins and beasts.
-* Spend each army's XP on Battle, Logistics, Scouting and Homecoming.
+* Earn skill points with XP, then spend them on Battle, Logistics, Scouting, Homecoming or Stamina.
 * Use a shrine or a well beside one of your armies.
 * Open chests, Refill stamina with LORDS, and withdraw LORDS to your payout wallet.
 * Merge two of your armies standing side by side, or disband one.
@@ -1909,13 +1913,13 @@ Your realm makes the troops, wheat and labor your armies need, and grows stronge
 
 Tap an open plot to build there. Buildings are paid in labor:
 
-| Building                                     | Makes                     | Labor  | Population |
-| -------------------------------------------- | ------------------------- | ------ | ---------- |
-| Farm                                         | Wheat                     | 400    | 1          |
-| Barracks                                     | Troops                    | 400    | 3          |
-| Workshop                                     | Labor                     | 2,000  | 2          |
-| Workers' hut                                 | Population                | 300    | None       |
-| War hall, Supply yard, Scouts' lodge, Hearth | A tier for every new army | 12,000 | 2          |
+| Building                                     | Makes                     | Labor | Population |
+| -------------------------------------------- | ------------------------- | ----- | ---------- |
+| Farm                                         | Wheat                     | 400   | 1          |
+| Barracks                                     | Troops                    | 400   | 3          |
+| Workshop                                     | Labor                     | 2,000 | 2          |
+| Workers' hut                                 | Population                | 300   | None       |
+| War hall, Supply yard, Scouts' lodge, Hearth | A tier for every new army | 6,000 | 2          |
 
 Each workers' hut houses 6, and every other building takes the population shown. Each further
 copy of a building costs more than the last, and pulling one down returns 50% of its
@@ -1938,23 +1942,23 @@ troops at once:
 
 ## Research
 
-At the castle, each building type climbs from common to legendary, paid in Essence and labor. A tier lifts every
-building of its type at once, and the choice a tier asks for is final for the season: farms and workshops make
-25% more or store more, barracks train 25% more or take
-0.25 wheat off the  2 wheat each troop costs to deploy, and
-each hut tier houses  25% more.
+At the castle, each research side climbs from 0 to Common I through Legendary V, paid in Essence and labor. A tier lifts
+every building of its type at once, and each side advances independently: farms and workshops make
+20% more or store more, barracks train 20% more or take
+0.2 wheat off the  2 wheat each troop costs to deploy, and
+each hut tier houses  20% more.
 
-| Type                   | Uncommon                    | Rare                        | Epic                          | Legendary                     |
-| ---------------------- | --------------------------- | --------------------------- | ----------------------------- | ----------------------------- |
-| Farm                   | 1,000 Essence, 1,000 labor  | 4,000 Essence, 3,000 labor  | 12,000 Essence, 8,000 labor   | 30,000 Essence, 20,000 labor  |
-| Workshop               | 2,000 Essence, 2,000 labor  | 8,000 Essence, 6,000 labor  | 24,000 Essence, 16,000 labor  | 60,000 Essence, 40,000 labor  |
-| Barracks               | 4,000 Essence, 3,000 labor  | 16,000 Essence, 9,000 labor | 48,000 Essence, 24,000 labor  | 120,000 Essence, 60,000 labor |
-| Workers' hut           | 500 Essence, 500 labor      | 2,000 Essence, 1,500 labor  | 6,000 Essence, 4,000 labor    | 15,000 Essence, 10,000 labor  |
-| Each training building | 12,000 Essence, 3,000 labor | 48,000 Essence, 9,000 labor | 144,000 Essence, 24,000 labor | 360,000 Essence, 60,000 labor |
+| Type                   | Common I                   | Uncommon II                 | Rare III                    | Epic IV                       | Legendary V                   |
+| ---------------------- | -------------------------- | --------------------------- | --------------------------- | ----------------------------- | ----------------------------- |
+| Farm                   | 500 Essence, 500 labor     | 1,000 Essence, 1,000 labor  | 4,000 Essence, 3,000 labor  | 12,000 Essence, 8,000 labor   | 30,000 Essence, 20,000 labor  |
+| Workshop               | 1,000 Essence, 1,000 labor | 2,000 Essence, 2,000 labor  | 8,000 Essence, 6,000 labor  | 24,000 Essence, 16,000 labor  | 60,000 Essence, 40,000 labor  |
+| Barracks               | 2,000 Essence, 1,500 labor | 4,000 Essence, 3,000 labor  | 16,000 Essence, 9,000 labor | 48,000 Essence, 24,000 labor  | 120,000 Essence, 60,000 labor |
+| Workers' hut           | 250 Essence, 250 labor     | 500 Essence, 500 labor      | 2,000 Essence, 1,500 labor  | 6,000 Essence, 4,000 labor    | 15,000 Essence, 10,000 labor  |
+| Each training building | 6,000 Essence, 1,500 labor | 16,000 Essence, 3,000 labor | 48,000 Essence, 9,000 labor | 144,000 Essence, 24,000 labor | 360,000 Essence, 60,000 labor |
 
-**Training buildings.** Once your barracks reach rare, raise a War hall, a Supply yard, a
-Scouts' lodge and a Hearth. Each of their tiers starts every new army a tier higher in Battle, Logistics, Scouting or
-Homecoming.
+**Training buildings.** After 2 Barracks research purchases, raise a War hall, a Supply
+yard, a Scouts' lodge and a Hearth. Construction includes rank I in Battle, Logistics, Scouting or Homecoming. Research
+raises that starting rank to II–V. Choose the first Scouting kind during construction. Rebuilding grants no extra rank.
 
 **Shrines and wells.** Research them (2,000 and 6,000 Essence)
 before reveals can find them.

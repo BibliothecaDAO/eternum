@@ -89,7 +89,7 @@ it("claims its settled home once and takes the result from the next native facts
     ]);
     facts.held = false;
     await show();
-    expect(host.textContent).toContain("no daily Labor claim");
+    expect(host.textContent).toContain("No daily Labor claim");
     expect(host.querySelector("input")).toBeNull();
     expect([...host.querySelectorAll("button")].some((button) => button.textContent?.startsWith("Claim "))).toBe(false);
   } finally {

@@ -116,7 +116,7 @@ it("opens Realm Labor from the desktop panel and explains why a free home has no
   );
   expect(realms).toBeDefined();
   await act(async () => realms!.click());
-  expect(host.textContent).toContain("no daily Labor claim");
+  expect(host.textContent).toContain("No daily Labor claim");
 });
 
 it("keeps one chat connection and its unread count from desktop to phone and back, through the Frontier HUD", async () => {

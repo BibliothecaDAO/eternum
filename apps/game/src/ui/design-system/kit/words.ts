@@ -571,20 +571,17 @@ export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now";
 export const withdrawalUnknown = (amount: string) => `No answer yet for these ${amount}`;
 
 export const REALM_LABOR = "Realm Labor";
-export const NO_REALM_LABOR = "This home was founded without a held Realm and has no daily Labor claim.";
-export const settledRealmLabor = (amount: number) =>
-  `Your settled Realm gives ${formatExact(amount)} Labor each game day.`;
+export const NO_REALM_LABOR = "No daily Labor claim";
+export const settledRealmLabor = (amount: number) => `${formatExact(amount)} Labor per game day`;
 export const claimRealmLaborLabel = (amount: number) => `Claim ${formatExact(amount)} Labor`;
 export const CLAIMING_LABOR = "Claiming";
 export const partialRealmLabor = (fits: number, total: number) =>
-  `${formatExact(fits)} of ${formatExact(total)} fit. Claiming uses today's claim.`;
+  `${formatExact(fits)} of ${formatExact(total)} fit · remainder lost`;
 export const claimedRealmLabor = (secondsLeft: number | undefined) => `Claimed today · ${dayLeft(secondsLeft).reading}`;
 export const REALM_NUMBER = "Realm number";
 export const OPTIONAL_REALM_NUMBER = "Realm number (optional)";
-export const FREE_REALM_ENTRY = "Leave blank to found a realm with a generated name and no daily Labor claim.";
-export const HELD_REALM_ENTRY =
-  "Your linked Starknet wallet must hold this Realm. It can settle once per game and gives 1,000 Labor each game day.";
-export const DEV_REALM_ENTRY = "Dev mode: settle additional realms. Each realm number can be used once per game.";
+export const FREE_REALM_ENTRY = "Free home · no daily Labor";
+export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
 
 /** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */
 export const commonChestPays = (lords: string) => `A Common chest pays ${lords} LORDS today`;

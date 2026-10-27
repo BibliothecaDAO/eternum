@@ -202,14 +202,14 @@ describe("the settled Realm's labor", () => {
     expect(host.querySelector("input")).toBeNull();
     show(true, false, 17600);
     expect(host.textContent).toContain("400 of 1,000 fit");
-    expect(host.textContent).toContain("Claiming uses today's claim");
+    expect(host.textContent).toContain("remainder lost");
     act(() => button("Realm")!.click());
     expect(onRealm).toHaveBeenCalledTimes(1);
     show(true, true, 0);
     expect(host.textContent).toContain("Claimed today");
     expect(button("Claim 1,000 Labor")).toBeUndefined();
     show(false, false, 0);
-    expect(host.textContent).toContain("no daily Labor claim");
+    expect(host.textContent).toContain("No daily Labor claim");
     expect(button("Claim 1,000 Labor")).toBeUndefined();
   });
 });

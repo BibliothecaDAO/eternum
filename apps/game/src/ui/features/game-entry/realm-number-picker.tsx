@@ -2,8 +2,7 @@ import {
   REALM_NUMBER,
   OPTIONAL_REALM_NUMBER,
   FREE_REALM_ENTRY,
-  HELD_REALM_ENTRY,
-  DEV_REALM_ENTRY,
+  INVALID_REALM_NUMBER,
 } from "@/ui/design-system/kit/words";
 import { orders } from "@bibliothecadao/types";
 import { getCanonicalRealmMetadata } from "@bibliothecadao/eternum";
@@ -48,7 +47,7 @@ export function RealmNumberPicker({
         {purpose === "held" && value === "" ? (
           <p>{FREE_REALM_ENTRY}</p>
         ) : !valid ? (
-          <p>Choose a realm number from 1 to 8000.</p>
+          <p>{INVALID_REALM_NUMBER}</p>
         ) : error ? (
           <HudNotice tone="bad" line={error.message} />
         ) : isPending ? (
@@ -62,7 +61,6 @@ export function RealmNumberPicker({
           </>
         ) : null}
       </div>
-      <p className="text-hud-label text-hud-cue">{purpose === "held" ? HELD_REALM_ENTRY : DEV_REALM_ENTRY}</p>
     </div>
   );
 }

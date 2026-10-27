@@ -69,8 +69,12 @@ test.each([
       if (operation === "deposit" && funded) throw new Error("season already funded");
       nonce++;
       submitted.push(calls);
-      if (operation === "deposit") expect(calls[1]!.calldata?.[2]).toBe("6");
-      if (operation === "deposit") funded = true;
+      if (operation === "deposit") {
+        const calldata = calls[1]!.calldata;
+        if (!Array.isArray(calldata)) throw new Error("Funding must use compiled calldata");
+        expect(calldata[2]).toBe("6");
+        funded = true;
+      }
       held = calls[0]!.entrypoint === "mint" ? 1000n * WEI : 0n;
       if (!interrupted && (changes === `lost ${operation} reply` || changes === `lagged ${operation} reply`)) {
         interrupted = true;
