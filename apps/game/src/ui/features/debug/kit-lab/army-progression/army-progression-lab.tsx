@@ -22,7 +22,7 @@ import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { RoundTwo } from "./round-two";
+import { SkillPoints } from "./skill-points";
 
 /**
  * Lab only, for the owner's pick (27 October): separate side levels and ranked skill points, drawn three ways beside
@@ -99,10 +99,11 @@ export const ArmyProgressionLab = () => {
     <div className="relative min-h-screen bg-[radial-gradient(ellipse_at_center,theme(colors.kit.line),theme(colors.kit.ground))]">
       <div className="mx-auto flex w-full max-w-[460px] flex-col p-2">
         <div data-lab="still">
-          {params.get("round") === "2" ? (
-            <RoundTwo
+          {params.get("round") ? (
+            <SkillPoints
+              set={[params.get("round"), params.get("set")].filter(Boolean).join("-")}
               surface={params.get("surface") ?? "levelup"}
-              pick={(params.get("pick") ?? "battle") as Parameters<typeof RoundTwo>[0]["pick"]}
+              pick={(params.get("pick") ?? "battle") as Parameters<typeof SkillPoints>[0]["pick"]}
               stamina={Number(params.get("stamina") ?? 40)}
             />
           ) : surface === "research" ? (

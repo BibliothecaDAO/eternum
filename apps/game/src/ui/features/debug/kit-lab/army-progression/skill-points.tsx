@@ -9,63 +9,133 @@ import { formatExact } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 /**
- * Lab only, round 2 of the owner's pick (27 October): ladder A and points cashed for stamina.
- * `?round=2&surface=card|levelup|points&pick=battle|stamina&stamina=40|110`.
- * A point is named for the rank it raises from, its gem that rank: a Common point (I) raises a Common side, an Uncommon
- * point (II) a Common or Uncommon side, and so on. Raising refills 20 / 40 / 60 / 80; cashing a point takes twice that.
+ * Lab only, rounds 2 and 3 of the owner's pick (27 October): skill points on ladder A, and points spent on Stamina alone.
+ * `?round=2|3&set=common|legendary&surface=card|levelup|points&pick=battle|stamina&stamina=40|110`.
+ * - Round 2: a point is named for the rank it raises from (Common I raises a Common side); raising refills 20/40/60/80,
+ *   Stamina alone twice that.
+ * - Round 3: a point is named for the rank it gives (Uncommon II to Legendary V); raising refills 30/40/50/60, Stamina
+ *   alone twice that. `set=common` adds a Common point that only gives stamina (40); `set=legendary` holds a Legendary
+ *   point.
  */
-type Point = 1 | 2 | 3 | 4;
 type Pick = "battle" | "logistics" | "scouting" | "homecoming" | "stamina";
+type Progress = { battle: number; logistics: number; scouting: number; homecoming: number };
+
+interface PointRules {
+  earned: number;
+  held: Tier[];
+  /** Points that only give stamina. */
+  aloneOnly: Tier[];
+  progress: Progress;
+  raise: Partial<Record<Tier, number>>;
+  alone: Partial<Record<Tier, number>>;
+  /** Whether a point can raise a side at `level`. */
+  fits: (point: Tier, level: Tier) => boolean;
+  /** The XP bar: from the last point to the next, and the next point's gem. */
+  bar: { from: number; to: number; next: Tier };
+}
 
 const noop = () => undefined;
-const ROUND_XP = 1_500;
-const MILESTONES: { at: number; rank: Point }[] = [
-  { at: 100, rank: 1 },
-  { at: 300, rank: 2 },
-  { at: 700, rank: 3 },
-  { at: 1_500, rank: 4 },
-];
-const RAISE: Record<Point, number> = { 1: 20, 2: 40, 3: 60, 4: 80 };
-const CASH: Record<Point, number> = { 1: 40, 2: 80, 3: 120, 4: 160 };
+const ROUND_TWO = { 1: 20, 2: 40, 3: 60, 4: 80 } as const;
+const ROUND_THREE = { 2: 30, 3: 40, 4: 50, 5: 60 } as const;
+const doubled = (table: Partial<Record<Tier, number>>) =>
+  Object.fromEntries(Object.entries(table).map(([rank, stamina]) => [rank, stamina * 2])) as Partial<
+    Record<Tier, number>
+  >;
+/** Battle trained to Uncommon and raised to Rare with one point; 760 XP earned. */
+const MID: Progress = { battle: 3, logistics: 1, scouting: 1, homecoming: 1 };
+const givesRank = (point: Tier, level: Tier) => level < 5 && point >= level + 1;
 
-/** Army 2: Battle trained to Uncommon and raised to Rare with its Uncommon point; 760 XP earned. */
-const EARNED_XP = 760;
-const HELD: Point[] = [1, 3];
-const factsAt = (stamina: number): ArmyDetailFacts => ({
+const RULES: Record<string, PointRules> = {
+  "2": {
+    earned: 760,
+    held: [1, 3],
+    aloneOnly: [],
+    progress: MID,
+    raise: ROUND_TWO,
+    alone: doubled(ROUND_TWO),
+    fits: (point, level) => level < 5 && point >= level,
+    bar: { from: 700, to: 1_500, next: 4 },
+  },
+  "3": {
+    earned: 760,
+    held: [2, 4],
+    aloneOnly: [],
+    progress: MID,
+    raise: ROUND_THREE,
+    alone: doubled(ROUND_THREE),
+    fits: givesRank,
+    bar: { from: 700, to: 1_500, next: 5 },
+  },
+  "3-common": {
+    earned: 760,
+    held: [1, 2, 4],
+    aloneOnly: [1],
+    progress: MID,
+    raise: ROUND_THREE,
+    alone: { 1: 40, ...doubled(ROUND_THREE) },
+    fits: givesRank,
+    bar: { from: 700, to: 1_500, next: 5 },
+  },
+  "3-legendary": {
+    earned: 1_520,
+    held: [5],
+    aloneOnly: [],
+    progress: { battle: 4, logistics: 2, scouting: 1, homecoming: 1 },
+    raise: ROUND_THREE,
+    alone: doubled(ROUND_THREE),
+    fits: givesRank,
+    bar: { from: 1_500, to: 1_600, next: 2 },
+  },
+};
+
+const factsAt = (rules: PointRules, stamina: number): ArmyDetailFacts => ({
   name: "Army 2",
   art: "knight-t1",
   troops: 1_240,
-  xp: EARNED_XP,
+  xp: rules.earned,
   stamina: { current: stamina, max: 120, perExplore: 20 },
   secondsToFull: ((120 - stamina) / 30) * 3_600,
   revealYield: 120,
-  progress: { battle: 3, logistics: 1, scouting: 1, homecoming: 1, scoutingKinds: [] },
+  progress: { ...rules.progress, scoutingKinds: [] },
   levelXp: [100, 200, 400, 800],
   revealXp: 2,
   shrineXp: 200,
   refillOnLevel: 30,
 });
 
-/** The lowest held point that fits a side at `level`: a point raises sides at its own rank or lower. */
-const pointFor = (level: Tier, held: readonly Point[]) =>
-  held.filter((rank) => rank >= level).sort((left, right) => left - right)[0];
+/** The lowest held point that can raise a side at `level`. */
+const pointFor = (rules: PointRules, level: Tier) =>
+  rules.held
+    .filter((rank) => !rules.aloneOnly.includes(rank) && rules.fits(rank, level))
+    .sort((left, right) => left - right)[0];
 
-export const RoundTwo = ({ surface, pick, stamina }: { surface: string; pick: Pick; stamina: number }) => {
-  const facts = factsAt(stamina);
+export const SkillPoints = ({
+  set,
+  surface,
+  pick,
+  stamina,
+}: {
+  set: string;
+  surface: string;
+  pick: Pick;
+  stamina: number;
+}) => {
+  const rules = RULES[set] ?? RULES["3"]!;
+  const facts = factsAt(rules, stamina);
   const army = readArmyDetail(facts);
   const room = facts.stamina.max - facts.stamina.current;
   return (
     <HudPanel title={army.name} icon="troops" collapsible={false} bodyClassName="px-3 pb-3">
-      {surface === "card" && <Card facts={facts} />}
-      {surface === "levelup" && <LevelUp attributes={army.attributes} initial={pick} room={room} />}
-      {surface === "points" && <PointFirst attributes={army.attributes} room={room} />}
+      {surface === "card" && <Card rules={rules} facts={facts} />}
+      {surface === "levelup" && <LevelUp rules={rules} attributes={army.attributes} initial={pick} room={room} />}
+      {surface === "points" && <PointFirst rules={rules} attributes={army.attributes} room={room} />}
     </HudPanel>
   );
 };
 
-const Card = ({ facts }: { facts: ArmyDetailFacts }) => {
+const Card = ({ rules, facts }: { rules: PointRules; facts: ArmyDetailFacts }) => {
   const army = readArmyDetail(facts);
-  const from = 700;
+  const { from, to, next } = rules.bar;
   return (
     <div className="flex flex-col gap-3 pt-1">
       <div className="flex items-center gap-3">
@@ -88,12 +158,12 @@ const Card = ({ facts }: { facts: ArmyDetailFacts }) => {
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">
           <span className="flex items-baseline gap-1">
-            <span className="text-hud-display tabular-nums text-hud-gold">{formatExact(EARNED_XP)}</span>
+            <span className="text-hud-display tabular-nums text-hud-gold">{formatExact(rules.earned)}</span>
             <span className="text-hud-strong text-hud-ink">{XP}</span>
           </span>
           <span className="flex items-center gap-2">
             <span className="flex items-center gap-1">
-              {HELD.map((rank) => (
+              {rules.held.map((rank) => (
                 <HudTier key={rank} tier={rank} />
               ))}
             </span>
@@ -104,12 +174,12 @@ const Card = ({ facts }: { facts: ArmyDetailFacts }) => {
         </div>
         <span className="flex items-center gap-2">
           <span className="min-w-0 flex-1">
-            <HudMeter share={(EARNED_XP - from) / (ROUND_XP - from)} label={XP} />
+            <HudMeter share={(rules.earned - from) / (to - from)} label={XP} />
           </span>
           <span className="flex items-center gap-1 text-hud-label tabular-nums text-hud-muted">
-            {formatExact(ROUND_XP)}
+            {formatExact(to)}
             <span className="opacity-60">
-              <HudTier tier={4} />
+              <HudTier tier={next} />
             </span>
           </span>
         </span>
@@ -118,10 +188,10 @@ const Card = ({ facts }: { facts: ArmyDetailFacts }) => {
   );
 };
 
-/** The stamina a point gives when cashed, capped by the room left in the bar. */
-const cashOf = (point: Point, room: number) => Math.min(CASH[point], room);
+/** The stamina a point gives alone, capped by the room left in the bar. */
+const aloneOf = (rules: PointRules, point: Tier, room: number) => Math.min(rules.alone[point] ?? 0, room);
 
-const Gain = ({ point, stamina }: { point?: Point; stamina: number }) => (
+const Gain = ({ point, stamina }: { point?: Tier; stamina: number }) => (
   <span className="flex shrink-0 items-center gap-1.5">
     {point && <HudTier tier={point} />}
     <span className="flex items-center gap-0.5 text-hud-strong tabular-nums text-hud-good">
@@ -190,11 +260,21 @@ const Foot = ({ label, gain, verb }: { label: ReactNode; gain: ReactNode; verb: 
 );
 
 /** Variant a: the four sides, then Stamina, which cashes the lowest point held. */
-const LevelUp = ({ attributes, initial, room }: { attributes: AttributeView[]; initial: Pick; room: number }) => {
+const LevelUp = ({
+  rules,
+  attributes,
+  initial,
+  room,
+}: {
+  rules: PointRules;
+  attributes: AttributeView[];
+  initial: Pick;
+  room: number;
+}) => {
   const [chosen, setChosen] = useState<Pick>(initial);
-  const lowest = Math.min(...HELD) as Point;
+  const lowest = Math.min(...rules.held) as Tier;
   const pick = attributes.find(({ key }) => key === chosen);
-  const pickPoint = pick && pointFor(pick.level, HELD);
+  const pickPoint = pick && pointFor(rules, pick.level);
   return (
     <div className="flex flex-col gap-3 pt-1">
       <div className="flex items-center justify-between gap-2">
@@ -202,28 +282,28 @@ const LevelUp = ({ attributes, initial, room }: { attributes: AttributeView[]; i
           {BACK}
         </HudButton>
         <span className="flex items-center gap-1">
-          {HELD.map((rank) => (
+          {rules.held.map((rank) => (
             <HudTier key={rank} tier={rank} />
           ))}
         </span>
       </div>
       {attributes.map((attribute) => {
-        const point = pointFor(attribute.level, HELD);
+        const point = pointFor(rules, attribute.level);
         return (
           <Row key={attribute.key} chosen={chosen === attribute.key} onChoose={() => setChosen(attribute.key)}>
             <SideLine attribute={attribute} />
-            {point && <Gain point={point} stamina={RAISE[point]} />}
+            {point && <Gain point={point} stamina={rules.raise[point] ?? 0} />}
           </Row>
         );
       })}
       <Row chosen={chosen === "stamina"} onChoose={() => setChosen("stamina")}>
         <StaminaRowLine room={room} />
-        <Gain point={lowest} stamina={cashOf(lowest, room)} />
+        <Gain point={lowest} stamina={aloneOf(rules, lowest, room)} />
       </Row>
       {chosen === "stamina" ? (
         <Foot
           label={<span className="flex items-center gap-1.5">Stamina</span>}
-          gain={<Gain point={lowest} stamina={cashOf(lowest, room)} />}
+          gain={<Gain point={lowest} stamina={aloneOf(rules, lowest, room)} />}
           verb="Refill"
         />
       ) : (
@@ -236,7 +316,7 @@ const LevelUp = ({ attributes, initial, room }: { attributes: AttributeView[]; i
                 <HudTierStep from={pick.level} to={pick.next.tier} />
               </>
             }
-            gain={<Gain point={pickPoint} stamina={RAISE[pickPoint]} />}
+            gain={<Gain point={pickPoint} stamina={rules.raise[pickPoint] ?? 0} />}
             verb="Level up"
           />
         )
@@ -246,8 +326,8 @@ const LevelUp = ({ attributes, initial, room }: { attributes: AttributeView[]; i
 };
 
 /** Variant b: pick a held point first; the sides it fits light up, and Stamina takes its cash. */
-const PointFirst = ({ attributes, room }: { attributes: AttributeView[]; room: number }) => {
-  const [point, setPoint] = useState<Point>(1);
+const PointFirst = ({ rules, attributes, room }: { rules: PointRules; attributes: AttributeView[]; room: number }) => {
+  const [point, setPoint] = useState<Tier>(rules.held[0]!);
   const [chosen, setChosen] = useState<Pick>("stamina");
   const pick = attributes.find(({ key }) => key === chosen);
   return (
@@ -257,7 +337,7 @@ const PointFirst = ({ attributes, room }: { attributes: AttributeView[]; room: n
           {BACK}
         </HudButton>
         <span className="flex-1" />
-        {HELD.map((rank) => (
+        {rules.held.map((rank) => (
           <button
             key={rank}
             type="button"
@@ -273,7 +353,7 @@ const PointFirst = ({ attributes, room }: { attributes: AttributeView[]; room: n
         ))}
       </div>
       {attributes.map((attribute) => {
-        const fits = attribute.level <= point && attribute.level < 5;
+        const fits = !rules.aloneOnly.includes(point) && rules.fits(point, attribute.level);
         return (
           <Row
             key={attribute.key}
@@ -282,16 +362,16 @@ const PointFirst = ({ attributes, room }: { attributes: AttributeView[]; room: n
             onChoose={() => fits && setChosen(attribute.key)}
           >
             <SideLine attribute={attribute} />
-            {fits && <Gain stamina={RAISE[point]} />}
+            {fits && <Gain stamina={rules.raise[point] ?? 0} />}
           </Row>
         );
       })}
       <Row chosen={chosen === "stamina"} onChoose={() => setChosen("stamina")}>
         <StaminaRowLine room={room} />
-        <Gain stamina={cashOf(point, room)} />
+        <Gain stamina={aloneOf(rules, point, room)} />
       </Row>
       {chosen === "stamina" ? (
-        <Foot label="Stamina" gain={<Gain point={point} stamina={cashOf(point, room)} />} verb="Refill" />
+        <Foot label="Stamina" gain={<Gain point={point} stamina={aloneOf(rules, point, room)} />} verb="Refill" />
       ) : (
         pick?.next && (
           <Foot
@@ -301,7 +381,7 @@ const PointFirst = ({ attributes, room }: { attributes: AttributeView[]; room: n
                 <HudTierStep from={pick.level} to={pick.next.tier} />
               </>
             }
-            gain={<Gain point={point} stamina={RAISE[point]} />}
+            gain={<Gain point={point} stamina={rules.raise[point] ?? 0} />}
             verb="Level up"
           />
         )
