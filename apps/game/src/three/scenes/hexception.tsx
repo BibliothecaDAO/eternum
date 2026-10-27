@@ -821,7 +821,12 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   protected async onHexagonClick(hexCoords: HexPosition | null): Promise<void> {
-    if (hexCoords === null) return;
+    if (hexCoords === null) {
+      // Empty ground lets go of the building or plot tapped before (owner, 27 October 2026: "empty ground lets go"),
+      // unless a building's ghost follows the pointer, waiting for its plot.
+      if (!this.buildingPreview?.getPreviewBuilding()) this.state.setSelectedBuildingHex(null);
+      return;
+    }
 
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     // A pinned ghost is the build sheet's to place; a tap picks another plot.

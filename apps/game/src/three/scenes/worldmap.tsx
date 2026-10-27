@@ -2877,6 +2877,7 @@ export default class WorldmapScene extends WarpTravel {
       const target = { alt: activeMapLayer(), col: contract.x, row: contract.y };
       if (this.worldSpatialProjection.getStructuresAtHex(target).some((site) => site.clearedSite))
         this.openTargetCardForSelectedArmy(target);
+      else this.putAwayTheActedOnTile(selectedEntityId);
       this.state.updateEntityActionHoveredHex(hexCoords);
       // The order's line stands at its tile, marking the tile the bar's verb (or a second tap) sends to.
       this.showTileFacts(hexCoords);
@@ -3398,6 +3399,16 @@ export default class WorldmapScene extends WarpTravel {
       attackerIsArmy,
       targetIsArmy: target.type === ActorType.Explorer,
     });
+  }
+
+  /**
+   * The army's selection back on its own tile: the card of the tile it acted on before (a target's, a transfer's) goes,
+   * so a new order pinned elsewhere is the one answer on screen (audit 10-27, phone: "shows two answers at once").
+   */
+  private putAwayTheActedOnTile(armyId: ID): void {
+    const tile = useUIStore.getState().mapSelection;
+    if (tile?.kind === "army" && tile.tile !== "own" && tile.tile !== null)
+      this.state.selectOnMap({ kind: "army", entityId: armyId, tile: "own" });
   }
 
   /** The target's tile card with the selected army kept as its actor: the forecast and Attack, or what the army lacks. */

@@ -142,3 +142,29 @@ describe("the deploy order is its realm's (owner, 27 October 2026: 'click anothe
     expect(open()).toEqual(["deploy"]);
   });
 });
+
+// Audit 10-27 (phone): Research, Feed, Menu and Season stayed open when the player tapped the map above them.
+describe("on a phone, a tap on the map puts the open page away", () => {
+  const PhoneHud = () => {
+    const { surface, openSurface } = useOnePanel(null, true);
+    return (
+      <>
+        <button type="button" onClick={() => openSurface("research")}>
+          Research
+        </button>
+        {surface && <section aria-label={surface} />}
+      </>
+    );
+  };
+  afterEach(() => useUIStore.getState().selectOnMap(null));
+
+  it("even on empty ground, which picks that tile", () => {
+    act(() => root.render(<PhoneHud />));
+    act(() => openResearch());
+    expect(open()).toEqual(["research"]);
+
+    act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 12, row: 9 } }));
+
+    expect(open()).toEqual([]);
+  });
+});

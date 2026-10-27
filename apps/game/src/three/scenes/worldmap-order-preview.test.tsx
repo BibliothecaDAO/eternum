@@ -158,6 +158,26 @@ it("on a Frontier phone, a tap pins the order for the HUD's own verb, naming it 
   expect(sent).toEqual([BESIDE]);
 });
 
+// Audit 10-27 (phone): "shows two answers at once", the transfer sheet kept open under a new order pinned on the map.
+it("on a Frontier phone, a pin puts away the card of the tile the army acted on before: one answer on screen", () => {
+  screen(false);
+  const { scene, pinned } = worldMap(true);
+  const actedOn = { col: 9, row: 9 };
+  Object.assign(scene, {
+    state: {
+      ...(scene as unknown as { state: object }).state,
+      selectOnMap: useUIStore.getState().selectOnMap,
+    },
+  });
+  useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: actedOn });
+
+  scene.answerTapWithSelectedOrder(BESIDE);
+
+  expect(useUIStore.getState().mapSelection).toEqual({ kind: "army", entityId: ARMY, tile: "own" });
+  expect(pinned).toEqual([BESIDE]);
+  useUIStore.getState().selectOnMap(null);
+});
+
 it("on a Frontier phone, a tap on a tile the rules refused says why there, and keeps the army", () => {
   screen(false);
   const { scene, sent, pinned, facts } = worldMap(true);
@@ -692,6 +712,15 @@ describe("the click matrix: what is selected × what is clicked", () => {
       [FAR_ARMY, tiles["your army far"]],
     ]);
     const selectedId = selected === "army" ? ARMY : selected === "realm" ? REALM : null;
+    // The map's own selection for the row: the army on its own tile, the realm, or nothing.
+    useUIStore.setState({
+      mapSelection:
+        selected === "army"
+          ? { kind: "army", entityId: ARMY, tile: "own" }
+          : selected === "realm"
+            ? { kind: "structure", entityId: REALM }
+            : null,
+    });
     useUIStore.setState((state) => ({
       entityActions: {
         ...state.entityActions,
