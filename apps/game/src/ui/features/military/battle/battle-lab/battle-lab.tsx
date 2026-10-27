@@ -19,11 +19,8 @@ import { ActorType, BiomeType, ContractAddress, getLayeredAttackDistance, ID } f
 import { useEffect, useMemo, useState } from "react";
 import { useLatest } from "@/hooks/use-latest";
 
-import {
-  buildAttackStaminaRequirementLabel,
-  buildAttackStaminaWarning,
-  resolveAttackStaminaState,
-} from "../attack-stamina-state";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
+import { resolveAttackStaminaState } from "../attack-stamina-state";
 import { attackerSideRange, defenderSideRange } from "../battle-range";
 import { RaidContainer } from "../raid-container";
 import { TargetType } from "../types";
@@ -246,12 +243,14 @@ export const BattleLab = ({
     if (rangedClaimBlocked) return "Move Adjacent to Claim";
     if (isAttackerOnCooldown) return "On Battle Cooldown";
     if (isEdited || nonDefaultParams) return "Reset to act";
-    if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
     if (!hasAttacker) return "No Troops Present";
     return attackStaminaState.actionLabel;
   })();
 
-  const warning = attackStaminaState.isBlocked && !isEdited ? buildAttackStaminaWarning(attackStaminaState) : undefined;
+  const warning =
+    attackStaminaState.isBlocked && !isEdited
+      ? staminaShortfall(attackStaminaState.currentStamina, attackStaminaState.requiredStamina)
+      : undefined;
 
   // Raid is available for an explorer attacker vs a structure target.
   const isExplorerAttacker = mode === "live" && snapshot?.attackerType === "army";

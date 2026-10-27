@@ -37,6 +37,7 @@ import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { AttackTarget, TargetType } from "./types";
 import { formatTypeAndBonuses } from "./combat-utils";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { RaidResult } from "./raid-result";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -269,8 +270,6 @@ export const RaidContainer = ({
 
   const buttonMessage = useMemo(() => {
     if (!attackerArmyData) return "No Troops Present";
-    if (attackerArmyData.troops.stamina.amount < combatConfig.stamina_attack_req)
-      return `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`;
     if (target?.targetType !== TargetType.Structure) return "Only structures can be raided";
     if (stealableResources.length === 0) return "No resources raidable";
     return "Raid!";
@@ -724,7 +723,11 @@ export const RaidContainer = ({
                   <div className="mt-2 text-hud-body text-hud-muted flex items-center gap-2">
                     {attackerArmyData && attackerArmyData.troops.stamina.amount < combatConfig.stamina_attack_req && (
                       <span className="flex items-center gap-1">
-                        <span>⚡</span> Wait for stamina to recharge ({combatConfig.stamina_attack_req} required)
+                        <span>⚡</span>{" "}
+                        {staminaShortfall(
+                          Number(attackerArmyData.troops.stamina.amount),
+                          Number(combatConfig.stamina_attack_req),
+                        )}
                       </span>
                     )}
                     {!attackerArmyData && (

@@ -272,7 +272,7 @@ describe("a guarded site's card", () => {
       ),
     );
     expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(true);
-    expect(document.querySelector('[role="status"]')?.textContent).toBe("Needs 30 stamina, has 10 · 40m");
+    expect(document.querySelector('[role="status"]')?.textContent).toBe("Needs 30 stamina, have 10 · in 40m");
   });
 });
 

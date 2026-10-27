@@ -30,6 +30,7 @@ const pointer = new PointerOrderTip(
       explored: true,
       refusal: tile.refusal,
       staminaWait: undefined,
+      staminaHeld: 9,
       site: undefined,
     });
     return tip && tile.at && { ...tip, at: tile.at };
@@ -70,7 +71,7 @@ describe("the line under a still pointer", () => {
   it("names the new reason when the reason changes under it", () => {
     tile.refusal = { reason: "stamina", need: 21 };
     pointer.point({ col: 1, row: 0 });
-    expect(shownLine()).toBe("Needs 21 stamina");
+    expect(shownLine()).toBe("Needs 21 stamina, have 9");
 
     tile.refusal = { reason: "food" };
     pointer.refresh();

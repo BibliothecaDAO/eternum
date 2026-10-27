@@ -1,5 +1,5 @@
 import type { FrontierBeast } from "@/three/structures/frontier-beast";
-import { formatDuration, formatExact, formatHeldAgainst, LORDS, formatShort } from "@bibliothecadao/types";
+import { formatExact, LORDS, formatShort } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -14,6 +14,7 @@ import {
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import {
   type Tier,
   ARMY_WILL_BE_LOST,
@@ -21,7 +22,6 @@ import {
   ATTACKING,
   FULL,
   MOVE,
-  needsStamina,
   NO_ARMY_OUT,
   PICK_AN_ARMY,
   ON_ITS_WAY,
@@ -520,9 +520,7 @@ const verbReason = (verb: SiteVerb, site: string): string | undefined => {
   if (verb.kind === "attack") return undefined;
   if (verb.kind !== "short") return tooFarFrom(site);
   const { cost, held, wait } = verb.stamina;
-  const pair = formatHeldAgainst(held, cost);
-  const line = needsStamina(pair.need, pair.held);
-  return wait === undefined ? line : `${line} · ${formatDuration(wait, { days: false })}`;
+  return staminaShortfall(held, cost, wait);
 };
 
 const VerbLine = ({ line, warns }: { line: string | undefined; warns: boolean }) =>

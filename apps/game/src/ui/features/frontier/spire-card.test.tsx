@@ -161,7 +161,7 @@ describe("a realm's spire, from the player's path", () => {
       const [first, second] = hud.depths();
       expect(first).toEqual({ depth: "Ethereal I", line: "Its landing is taken", button: "Enter", enabled: false });
       expect(second.depth).toBe("Ethereal II");
-      expect(second.line).toMatch(/^Needs 40 stamina, has 3\d$/);
+      expect(second.line).toMatch(/^Needs 40 stamina, have 3\d$/);
       expect(second.enabled).toBe(false);
     } finally {
       hud.unmount();

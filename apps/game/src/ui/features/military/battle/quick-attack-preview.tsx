@@ -14,7 +14,8 @@ import { configManager, getGuardsByStructure, getTroopResourceId, StaminaManager
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
-import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
+import { resolveAttackStaminaState } from "./attack-stamina-state";
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
 import { combatTitle, describeFightCost, forecastAttack } from "./fight-forecast";
@@ -292,14 +293,17 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const attackDisabled =
     rangedClaimBlocked || cooldownBlocksAttack || attackStaminaState.isBlocked || !attackerArmyData;
 
-  const isLowStamina = attackStaminaState.isBlocked;
-
   const attackButtonLabel = (() => {
     if (rangedClaimBlocked) return "Move adjacent to claim";
     if (attackerType === AttackerType.Structure && !activeGuard) return "No guard in range";
     if (!attackerArmyData) return "No troops selected";
     if (cooldownBlocksAttack) return "On cooldown";
-    if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
+    if (attackStaminaState.isBlocked)
+      return staminaShortfall(
+        attackStaminaState.currentStamina,
+        attackStaminaState.requiredStamina,
+        staminaWaitSeconds ?? undefined,
+      );
     if (!hasDefenders) return "Claim";
     return attackStaminaState.actionLabel;
   })();
@@ -498,7 +502,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               line={[
                 attackButtonLabel,
                 cooldownBlocksAttack && attackerCooldownRemaining > 0 ? formatWait(attackerCooldownRemaining) : null,
-                isLowStamina && staminaWaitSeconds !== null ? `Ready in ${formatWait(staminaWaitSeconds)}` : null,
               ]
                 .filter(Boolean)
                 .join(" · ")}

@@ -289,6 +289,7 @@ import {
 import { hudFor } from "@/ui/layouts/hud-for";
 import { layoutNow } from "@/shell/frame/layout";
 import { type OrderTip, orderFood, orderTip, refusedOrderVerb } from "@/ui/features/frontier/hud/order-tip";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
@@ -2458,13 +2459,15 @@ export default class WorldmapScene extends WarpTravel {
     const path = getLiveWorldmapEntityActions().actionPaths.get(key);
     const armyTroops = this.selectedArmyRow()?.troops;
     const site = path && ActionPaths.getActionType(path) === ActionType.UseSite ? this.usableSiteAt(hexCoords) : null;
+    const short = refusal?.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
     return orderTip({
       path,
       exploreStamina: configManager.getExploreStaminaCost(),
       food: armyTroops ? orderFood(path, armyTroops) : { wheat: 0, fish: 0 },
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
       refusal,
-      staminaWait: refusal?.reason === "stamina" ? this.secondsUntilSelectedArmyHolds(refusal.need) : undefined,
+      staminaWait: short?.wait,
+      staminaHeld: short?.held,
       site: site
         ? siteUseFacts(this.game.store, site, this.selectedArmyRow(), getBlockTimestamp().currentDefaultTick)
         : undefined,
@@ -2481,14 +2484,20 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  /** Seconds until the selected army holds this much stamina, by the stamina rules the chain settles it with. */
-  private secondsUntilSelectedArmyHolds(need: number): number | undefined {
+  /**
+   * The stamina the selected army holds now, and the seconds until it holds this much, by the stamina rules the chain
+   * settles it with; undefined when the selection is no army.
+   */
+  private selectedArmyShortOf(need: number): { held: number; wait: number | undefined } | undefined {
     const row = this.selectedArmyRow();
     const troops = row && resolveExplorerTroops(this.game.store, row);
     if (!troops) return undefined;
     const { currentDefaultTick } = getBlockTimestamp();
     const ready = StaminaManager.getAffordableAt(troops, need, currentDefaultTick);
-    return ready === null ? undefined : Math.max(0, ready - currentDefaultTick);
+    return {
+      held: Number(StaminaManager.getStamina(troops, currentDefaultTick).amount),
+      wait: ready === null ? undefined : Math.max(0, ready - currentDefaultTick),
+    };
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
@@ -3088,7 +3097,7 @@ export default class WorldmapScene extends WarpTravel {
         actionPath,
         movementStamina,
       });
-      toast.error("Not enough stamina for this move");
+      toast.error(staminaShortfall(movementStamina.currentStamina, movementStamina.staminaCost));
       this.state.updateEntityActionHoveredHex(null);
       return;
     }

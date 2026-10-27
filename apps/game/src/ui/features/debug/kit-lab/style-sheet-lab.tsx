@@ -81,6 +81,7 @@ import { lazy, Suspense, type ReactNode, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { eventStories, installFixtureGame, PLAYER } from "./fixture-game";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
 const MapContextWorld = lazy(() =>
   import("@/lab/sheet-map/view").then((module) => ({ default: module.MapContextWorld })),
@@ -827,7 +828,7 @@ const ORDER_LINES = [
     path: [orderStep(ActionType.Move), orderStep(ActionType.UseSite)],
     site: { kind: "Well", gain: 60, stamina: { current: 120, max: 120, perExplore: 20 } } as const,
   },
-  { path: undefined, refusal: { reason: "stamina", need: 30 } as const, staminaWait: 24 },
+  { path: undefined, refusal: { reason: "stamina", need: 30 } as const, staminaWait: 24, staminaHeld: 12 },
 ].flatMap((order) => {
   const tip = orderTip({
     exploreStamina: 30,
@@ -835,6 +836,7 @@ const ORDER_LINES = [
     explored: true,
     refusal: undefined,
     staminaWait: undefined,
+    staminaHeld: undefined,
     site: undefined,
     ...order,
   });
@@ -859,10 +861,7 @@ const TooltipSection = () => (
         <span data-lab-chrome className="w-full text-xs text-white/50">
           Hover each: the game's tooltip, filled as its callers fill it.
         </span>
-        <TodayTipAnchor
-          label="named tip (TipLine)"
-          content={<TipLine line="Needs 30 stamina, ready in under a minute" />}
-        />
+        <TodayTipAnchor label="named tip (TipLine)" content={<TipLine line={staminaShortfall(10, 30, 24)} />} />
         <TodayTipAnchor label="plain string" content="Deploy an army here. Right-click." />
         <TodayTipAnchor label="caller's gold div" content={<div className="text-gold">Invite to tribe</div>} />
         <TodayTipAnchor
@@ -1362,7 +1361,7 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
         <div className="mt-4 flex flex-col gap-2">
           <HudNotice tone="good" line="Transfer sent · arrives in 4m" />
           <HudNotice tone="warn" line="Wheat storage full" />
-          <HudNotice tone="bad" line="Needs 30 stamina · ready in 24s" />
+          <HudNotice tone="bad" line={staminaShortfall(10, 30, 24)} />
           <HudNotice tone="bad" line="Notifications did not answer." retry={() => undefined} />
         </div>
         <div className="mt-4 flex flex-col gap-2">

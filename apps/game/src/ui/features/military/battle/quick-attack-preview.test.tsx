@@ -79,7 +79,7 @@ describe("Blitz's attack preview for the selected army", () => {
   it("opens with the stamina the attack needs and Attack disabled when the army lacks it", () => {
     const { host, attack, attackButton } = preview(5n);
 
-    expect(host.querySelector("[role=alert]")?.textContent).toMatch(/^Need \d+ stamina to attack/);
+    expect(host.querySelector("[role=alert]")?.textContent).toMatch(/^Needs \d+ stamina, have 5( · in .+)?$/);
     expect(attackButton().disabled).toBe(true);
     act(() => attackButton().click());
     expect(attack).not.toHaveBeenCalled();

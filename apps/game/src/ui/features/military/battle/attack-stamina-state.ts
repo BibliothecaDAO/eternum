@@ -31,13 +31,3 @@ export function resolveAttackStaminaState(input: ResolveAttackStaminaStateInput)
     requiredStamina: input.requiredStamina,
   };
 }
-
-export function buildAttackStaminaRequirementLabel(state: AttackStaminaState): string {
-  return `Need ${state.requiredStamina} stamina to ${state.actionLabel.toLowerCase()}`;
-}
-
-export function buildAttackStaminaWarning(state: AttackStaminaState): string {
-  if (state.currentStamina === undefined)
-    return `Stamina — / ${state.requiredStamina} required to ${state.actionLabel.toLowerCase()}`;
-  return `Insufficient stamina: ${state.currentStamina} / ${state.requiredStamina} required to ${state.actionLabel.toLowerCase()}`;
-}

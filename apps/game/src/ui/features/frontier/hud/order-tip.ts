@@ -1,5 +1,6 @@
-import { formatCharge, formatWait } from "@bibliothecadao/types";
+import { formatCharge } from "@bibliothecadao/types";
 import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { ATTACK, EXPLORE, MOVE, STAMINA, TRANSFER, UNEXPLORED, USE } from "@/ui/design-system/kit/words";
 import { type MapSiteKind, siteGainLine } from "../sites/map-site-plan";
 import {
@@ -24,6 +25,8 @@ type TileOrder = {
   refusal: OrderRefusal | undefined;
   /** Seconds until the army holds a refused stamina need; undefined when that is unknown. */
   staminaWait: number | undefined;
+  /** The stamina the army holds now, for a refused stamina need; undefined when that is unknown. */
+  staminaHeld: number | undefined;
   /** The site a Use order uses: its kind, what one use gives, and the army's bar a Well fills; undefined elsewhere. */
   site:
     | { kind: MapSiteKind; gain: number | undefined; stamina: { current: number; max: number } | undefined }
@@ -103,11 +106,8 @@ export const refusedOrderVerb = ({
  * Why no order leads here, as the planner recorded it; a fogged tile it said nothing of is only unexplored, and a
  * revealed one it said nothing of has nothing to say.
  */
-const refusalLine = ({ refusal, staminaWait, explored }: TileOrder): string | null => {
-  if (refusal?.reason === "stamina") {
-    const need = `Needs ${formatCharge(refusal.need)} ${STAMINA}`;
-    return staminaWait === undefined ? need : `${need}, ${readyIn(staminaWait)}`;
-  }
+const refusalLine = ({ refusal, staminaWait, staminaHeld, explored }: TileOrder): string | null => {
+  if (refusal?.reason === "stamina") return staminaShortfall(staminaHeld, refusal.need, staminaWait);
   if (refusal) return REFUSALS[refusal.reason];
   return explored ? null : UNEXPLORED;
 };
@@ -120,9 +120,6 @@ const REFUSALS: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
   occupied: "No army can enter this tile",
   "too-far": "Too far: move next to it",
 };
-
-/** When the wait ends, to the second while it is short. */
-const readyIn = (seconds: number): string => `ready in ${formatWait(seconds)}`;
 
 /** The wheat and fish an order burns from its army's realm. */
 type OrderFood = { wheat: number; fish: number };

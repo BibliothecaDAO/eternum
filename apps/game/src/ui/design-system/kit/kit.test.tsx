@@ -9,7 +9,7 @@ import { DayDial } from "./day-dial";
 import { ListRow } from "./list-row";
 import { Pill } from "./pill";
 import { Portrait } from "./portrait";
-import { shortfallLine } from "./reasons";
+import { shortfallLine, staminaShortfall } from "./reasons";
 import { SeasonRow } from "./season-row";
 import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
@@ -70,6 +70,12 @@ describe("a shortfall's line", () => {
     expect(shortfallLine({ kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * 3600 + 44 * 60 })).toBe(
       "Needs 15K labor, have 9,640 · in 10h 44m",
     );
+  });
+
+  it("says an army's stamina shortfall in the same line, its short wait to the second", () => {
+    expect(staminaShortfall(13, 50, 111)).toBe("Needs 50 stamina, have 13 · in 1m 51s");
+    expect(staminaShortfall(13, 50, 47)).toBe("Needs 50 stamina, have 13 · in 47s");
+    expect(staminaShortfall(5, 20)).toBe("Needs 20 stamina, have 5");
   });
 
   it("counts what is free, or a store's own limit, in the same line", () => {

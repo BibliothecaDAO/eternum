@@ -485,7 +485,8 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
 
     const drawn = drawnSurface()!;
     expect(drawn.id).toBe("order-preview");
-    expect(drawn.host.querySelector("[role=alert]")?.textContent).toBe("Needs 20 stamina");
+    // The stub's store holds no army row, so what the army holds reads as unknown.
+    expect(drawn.host.querySelector("[role=alert]")?.textContent).toBe("Needs 20 stamina, have —");
     expect(verbOf(drawn.host, "Explore").disabled).toBe(true);
     expect(drawn.host.textContent).not.toContain("A right-click sends it at once.");
     expect([sent, cleared]).toEqual([[], []]);
@@ -509,7 +510,7 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
     const dropped: number[] = [];
     Object.assign(scene, {
       hasOrderInFlight: () => false,
-      resolveMovementStaminaForAction: () => ({ canAfford: false }),
+      resolveMovementStaminaForAction: () => ({ canAfford: false, currentStamina: 5, staminaCost: 20 }),
       logBlockedMovementStamina: () => {},
       clearSelection: () => dropped.push(1),
     });
