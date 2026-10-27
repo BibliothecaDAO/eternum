@@ -31,6 +31,7 @@ import { IdentityRequestError } from "@realms-world/identity";
 import {
   BUILD_ORDER_GOALS,
   buildOrderJson,
+  DEFAULT_BUILD_ORDER,
   readBuildOrderText,
   type BuildOrderBook,
 } from "@bibliothecadao/eternum/automation";
@@ -361,5 +362,35 @@ describe("the Build orders page", () => {
     expect(address).toBe(BUILD_ORDERS_PATH);
     expect(followed).toBe("Default");
     expect(rows()).toEqual(["The game's order26 stepsActive"]);
+  });
+
+  it("starts the copied order when Copy to edit is pressed over an unfinished new draft, and saves that one", async () => {
+    account({ orders: [], active: null });
+    await open(1440);
+    await press("New order");
+    type("Name", "My unfinished draft");
+    await press("Farm");
+    await press("Copy to edit");
+    expect(field("Name")?.value).toBe("Default");
+    await press("Save");
+    // The game's order as it stands, nothing of the unfinished draft.
+    const [[saved]] = service.saveBuildOrders.mock.calls;
+    expect(saved.book).toMatchObject({ orders: [{ order: JSON.parse(buildOrderJson(DEFAULT_BUILD_ORDER)) }] });
+  });
+
+  it("starts a fresh order when New order is pressed over a copied draft", async () => {
+    account({ orders: [], active: null });
+    await open(1440);
+    await press("Copy to edit");
+    type("Name", "Copied");
+    await press("New order");
+    expect(field("Name")?.value).toBe("My order");
+    // The list's one row; a fresh draft has no step.
+    expect(rows()).toEqual(["The game's order26 stepsActive"]);
+    await press("Farm");
+    await press("Save");
+    expect(service.saveBuildOrders.mock.calls[0][0].book).toMatchObject({
+      orders: [{ order: { name: "My order", steps: [{ rank: "Settlement", goal: "farm", count: 1 }] } }],
+    });
   });
 });

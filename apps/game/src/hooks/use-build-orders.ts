@@ -108,13 +108,34 @@ const noticeOf = (error: unknown): string =>
     ? error.message
     : BUILD_ORDER_WORDS.unreachable;
 
-/** Keeps the store on whoever is signed in: mounted once, by the Build order panel. */
+/**
+ * Reads the account's book again when the player comes back to this tab: orders are made on the app's Build orders
+ * page, which a game opens in a tab of its own, and on other devices. A read or save already under way is not doubled.
+ */
+const refreshBuildOrders = (): void => {
+  const { owner, status } = useBuildOrderStore.getState();
+  if (document.visibilityState !== "visible" || !owner || (status !== "ready" && status !== "error")) return;
+  void readBuildOrders(owner, null);
+};
+
+/**
+ * Keeps the store on whoever is signed in, and current when the player returns to the tab: mounted by every surface
+ * that reads the orders (the Build order panel, Play's row, the Build orders page).
+ */
 export const useBuildOrderAccount = (): void => {
   const { session } = useIdentitySession();
   const owner = notificationOwnerOf(session);
   useEffect(() => {
     void loadBuildOrders(owner);
   }, [owner]);
+  useEffect(() => {
+    document.addEventListener("visibilitychange", refreshBuildOrders);
+    window.addEventListener("focus", refreshBuildOrders);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshBuildOrders);
+      window.removeEventListener("focus", refreshBuildOrders);
+    };
+  }, []);
 };
 
 /** The account's build orders, as last read or saved. */

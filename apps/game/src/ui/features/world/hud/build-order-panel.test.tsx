@@ -51,7 +51,7 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
       : { status: "signed-out", session: null },
 }));
 
-import { useBuildOrderStore } from "@/hooks/use-build-orders";
+import { useActiveBuildOrder, useBuildOrderStore } from "@/hooks/use-build-orders";
 import { BuildOrderPanel } from "./build-order-panel";
 
 const WOOD = {
@@ -80,6 +80,7 @@ beforeEach(() => {
   Object.assign(game, { mode: "blitz", ordersAllowed: true, steps: [WOOD, LEVEL_UP] });
   game.build.mockClear();
   service.saveBuildOrders.mockClear();
+  service.getBuildOrders.mockReset();
   service.signedIn = true;
   useBuildOrderStore.setState({
     owner: "0xa1",
@@ -168,4 +169,58 @@ it("holds the choice on the game's order while signed out", async () => {
   expect(service.getBuildOrders).not.toHaveBeenCalled();
   const choice = host.querySelector<HTMLButtonElement>('button[aria-label="Order to follow"]')!;
   expect([choice.textContent, choice.disabled]).toEqual(["The game's order", true]);
+});
+
+it("reads the account's orders again when the player returns from the Build orders page's tab, and follows what was saved there", async () => {
+  // The game's tab holds the book it read, before the player made an order in the page's tab.
+  useBuildOrderStore.setState({ book: { orders: [], active: null }, revision: 3 });
+  let followed = "";
+  const Followed = () => {
+    followed = useActiveBuildOrder().name;
+    return null;
+  };
+  await act(async () =>
+    root.render(
+      <>
+        <BuildOrderPanel />
+        <Followed />
+      </>,
+    ),
+  );
+  const choice = () => host.querySelector<HTMLButtonElement>('button[aria-label="Order to follow"]')!;
+  expect([choice().textContent, followed]).toEqual(["The game's order", "Default"]);
+
+  // Saved in the other tab: Coal rush made and followed, at revision 5.
+  const saved = {
+    orders: [{ id: "o1", order: { name: "Coal rush", steps: [{ rank: "Settlement", goal: "farm", count: 2 }] } }],
+    active: "o1",
+  };
+  service.getBuildOrders.mockResolvedValue({ owner: "0xa1", revision: 5, book: saved });
+  // Back on the game: its tab shown again, then focused; one read, not two.
+  await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+  await act(async () => window.dispatchEvent(new Event("focus")));
+  expect([choice().textContent, followed]).toEqual(["Coal rush", "Coal rush"]);
+
+  // The next choice goes over the book read, at its revision.
+  await act(async () => choice().click());
+  const items = [...document.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')];
+  await act(async () => items[1].click());
+  expect(service.saveBuildOrders.mock.calls[0][0]).toMatchObject({
+    owner: "0xa1",
+    revision: 5,
+    book: { active: null },
+  });
+});
+
+it("never takes another account's orders on a return to the tab", async () => {
+  useBuildOrderStore.setState({ book: { orders: [], active: null }, revision: 3 });
+  service.getBuildOrders.mockResolvedValue({
+    owner: "0xb2",
+    revision: 9,
+    book: { orders: [{ id: "x", order: { name: "Not mine", steps: [] } }], active: "x" },
+  });
+  await draw();
+  await act(async () => document.dispatchEvent(new Event("visibilitychange")));
+  expect(host.querySelector('button[aria-label="Order to follow"]')?.textContent).toBe("The game's order");
+  expect(useBuildOrderStore.getState()).toMatchObject({ owner: "0xa1", revision: 3, status: "error" });
 });

@@ -30,7 +30,6 @@ import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { Loading } from "../loading";
 import { addStep, canAdd, moveStep, removeStep, setCount, stepsOfRank } from "./order-edits";
-import { BUILD_ORDERS_PATH } from "./build-orders-route";
 
 /** Each goal's painting, as its card and the palette show it. */
 const GOAL_ICONS: Record<BuildOrderGoal, IconMeaning> = {
@@ -59,14 +58,20 @@ const useView = (): View => {
   return params.has("paste") ? { kind: "paste" } : { kind: "list" };
 };
 
-/** Opens a view: a draft travels in the navigation's state, the list is the page's own address. */
+/** The list: the page's own address, its query cleared. */
+const LIST = { search: "" };
+
+/**
+ * Opens a view by the address's query alone, so the page keeps whatever path it is served at (the app's, the lab's): a
+ * draft travels in the navigation's state.
+ */
 const useOpen = () => {
   const navigate = useNavigate();
   return {
-    list: () => navigate(BUILD_ORDERS_PATH),
-    edit: (id: string) => navigate(`${BUILD_ORDERS_PATH}?edit=${encodeURIComponent(id)}`),
-    draft: (draft: BuildOrder) => navigate(`${BUILD_ORDERS_PATH}?edit=new`, { state: { draft } }),
-    paste: () => navigate(`${BUILD_ORDERS_PATH}?paste`),
+    list: () => navigate(LIST),
+    edit: (id: string) => navigate({ search: `?edit=${encodeURIComponent(id)}` }),
+    draft: (draft: BuildOrder) => navigate({ search: "?edit=new" }, { state: { draft } }),
+    paste: () => navigate({ search: "?paste" }),
   };
 };
 
@@ -136,7 +141,7 @@ const ViewFrame = ({
     </AppPanel>
   );
   return phone ? (
-    <PageFrame back={BUILD_ORDERS_PATH} title={BUILD_ORDER_WORDS.page} foot={step}>
+    <PageFrame back={LIST} title={BUILD_ORDER_WORDS.page} foot={step}>
       {panel}
     </PageFrame>
   ) : (
@@ -144,9 +149,14 @@ const ViewFrame = ({
   );
 };
 
+/**
+ * The open view. A new draft is keyed by the navigation that opened it, so each New order, Copy to edit or pasted order
+ * starts the draft it names, while the account's orders being read again keeps the draft as typed.
+ */
 const OpenView = ({ view }: { view: Exclude<View, { kind: "list" }> }) => {
+  const opened = useLocation().key;
   if (view.kind === "paste") return <PasteOrder />;
-  if (view.id === null) return <OrderEditor key="new" id={null} order={view.draft ?? newOrder()} />;
+  if (view.id === null) return <OrderEditor key={opened} id={null} order={view.draft ?? newOrder()} />;
   return <SavedOrder key={view.id} id={view.id} />;
 };
 
