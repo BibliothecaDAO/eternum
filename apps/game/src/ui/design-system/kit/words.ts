@@ -489,8 +489,6 @@ export const ARMIES = "Armies";
 export const ARMIES_ENDED = "Armies ended with the day";
 /** How many troops an army holds: "1 troop", "5,000 troops". */
 export const troopCount = (count: number) => formatCount(count, "troop", TROOPS);
-/** Why research raises a building's output, without the calculation behind it. */
-export const fromResearch = (share: string, side: string) => `${share} from ${side}`;
 /** The sources of a store's production, each with its combined rate. */
 export const MADE_BY = "Made by";
 export const STORE_MAKERS = {

@@ -2052,6 +2052,7 @@ button.ui-card__choose:disabled {
    centred under it. */
 .ui-card[data-size="sm"] {
   height: theme(spacing.hud-frontier-build-card);
+  container-type: inline-size;
 }
 .ui-card[data-size="sm"] .ui-card__picture {
   inset: theme(spacing.2) 0 auto;
@@ -2065,9 +2066,10 @@ button.ui-card__choose:disabled {
   padding: 0 theme(spacing[1.5]) theme(spacing[1.5]);
   background: none;
 }
+/* The name keeps its size until the card is too narrow for "Scouts' lodge" (a 360-wide phone), then shrinks with it. */
 .ui-card[data-size="sm"] .ui-card__title {
   max-width: 100%;
-  font-size: var(--hud-text-strong);
+  font-size: min(var(--hud-text-strong), 13cqi);
   line-height: var(--hud-leading-strong);
   font-weight: var(--hud-weight-strong);
 }
@@ -2075,6 +2077,12 @@ button.ui-card__choose:disabled {
   flex-direction: row;
   align-items: center;
   gap: theme(spacing.1);
+}
+/* A small card's band keeps a chip's frame with less room inside it, and its words shrink once the card is too narrow
+   for them (a 360-wide phone), so a raised price with its wait, or "Barracks III" by its lock, reads whole. */
+.ui-card[data-size="sm"] .ui-chip {
+  padding-inline: theme(spacing.1);
+  font-size: min(var(--hud-text-label), 12cqi);
 }
 .ui-card__refusal {
   color: var(--hud-muted);

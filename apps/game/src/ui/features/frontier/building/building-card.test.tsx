@@ -68,11 +68,15 @@ const rows = () =>
 const gems = () => [...card().querySelectorAll(".ui-tier")].map((gem) => gem.textContent);
 const button = (text: RegExp) => [...host.querySelectorAll("button")].find((each) => text.test(each.textContent ?? ""));
 
-it("says what all the Farms make as one number, with research's share only as its why", () => {
-  draw(research.ROW_FARM, { makes: { icon: "wheat", rate: "+25/min", why: "+25% from Fields" } });
-  const made = [...card().querySelectorAll("[data-tip]")].find((each) => each.textContent === "+25/min")!;
-  expect(made.getAttribute("data-tip")).toBe("+25% from Fields");
+it("says what all the Farms make as one number, and their research only as gems", () => {
+  draw(research.ROW_FARM, { makes: { icon: "wheat", rate: "+25/min" } });
+  expect(card().textContent).toContain("+25/min");
   expect(card().textContent).toContain("4 standing");
+  // The research behind the rate is the head's gem, never words for it (owner, 27 October: "why no gems instead of
+  // the text ?"), not even on a hover.
+  expect(gems()[0]).toMatch(/^(I|II|III|IV|V)$/);
+  expect(card().textContent).not.toMatch(/ from (Fields|Tools|Drill)/);
+  expect(card().querySelector('[data-tip*=" from "]')).toBeNull();
   // Never a formula on the card (owner, 26 October: "its a game not a math demo").
   expect(card().textContent).not.toMatch(/×|\(\d|\d \+ \d/);
 });

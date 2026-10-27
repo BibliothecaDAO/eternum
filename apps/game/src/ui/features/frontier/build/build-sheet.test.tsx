@@ -427,6 +427,25 @@ describe("the build sheet", () => {
     built.close();
   });
 
+  it("shows on each card its type's research as one gem, the research tile's, and never words for it", () => {
+    const { store, realm } = realmBoard();
+    // research.cairo: Farm rare (Fields, then Granary) at bits 0 and 3-4; Hut epic at bit 21; nothing else learned.
+    store.applyFacts([
+      fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(2n | (1n << 4n) | (3n << 21n)) }),
+    ] as never);
+    const sheet = open(store, realm);
+    const gems = (name: string) => [...sheet.card(name).querySelectorAll(".ui-tier")].map((gem) => gem.textContent);
+    expect(gems("Farm")).toEqual(["III"]);
+    expect(gems("Hut")).toEqual(["IV"]);
+    expect(gems("Workshop")).toEqual(["I"]);
+    // Every card the realm may raise carries exactly one gem (owner, 27 October: "why no gems instead of the text ?").
+    const cards = [...sheet.host.querySelectorAll(".ui-card")];
+    expect(cards.length).toBeGreaterThan(4);
+    cards.forEach((card) => expect(card.querySelectorAll(".ui-tier")).toHaveLength(1));
+    expect(sheet.host.textContent).not.toMatch(/ from (Fields|Tools|Drill)/);
+    sheet.close();
+  });
+
   it("says on the Hut's card what the chain grants for one more: its grant and the change in the rounded bonus", () => {
     const { store, realm } = realmBoard();
     const grant = configManager.getBuildingCategoryConfig(BuildingType.WorkersHut).capacity_grant;

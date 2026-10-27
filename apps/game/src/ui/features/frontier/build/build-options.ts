@@ -19,7 +19,7 @@ import { BuildingType, getProducedResource, ResourcesIds } from "@bibliothecadao
 import { LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 import { type BuildingOutput, buildingOutput } from "@/ui/shared/lib/building-output";
 
-import { type ResearchShare, researchShare } from "../production/store-makers";
+import { madePicks } from "../production/store-makers";
 
 /**
  * What Frontier's build sheet needs for one plot, read from facts with no UI of its own: each building the realm may
@@ -63,7 +63,7 @@ const isProduct = (resource: ResourcesIds | undefined): resource is Product =>
   resource !== undefined && resource in PRODUCTS;
 
 export type BuildEffect =
-  | { kind: "produces"; resource: Product; perHour: number; output: BuildingOutput; research?: ResearchShare }
+  | { kind: "produces"; resource: Product; perHour: number; output: BuildingOutput }
   | { kind: "population"; amount: number }
   | { kind: "trains"; attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming" };
 
@@ -140,9 +140,8 @@ const readBuildingEffect = (
   if (category === BuildingType.WorkersHut) return { kind: "population", amount: nextHutGrant(store, realm, learned) };
   const resource = getProducedResource(category);
   if (!isProduct(resource)) throw new Error(`Building ${category} makes nothing a Frontier realm stores`);
-  const research = researchShare(store, realm, resource, learned);
-  const output = buildingOutput(store, realm, category, research?.picks ?? 0);
-  return { kind: "produces", resource, perHour: output.total * 3600, output, research };
+  const output = buildingOutput(store, realm, category, madePicks(resource, learned));
+  return { kind: "produces", resource, perHour: output.total * 3600, output };
 };
 
 /**
