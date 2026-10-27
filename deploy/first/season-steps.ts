@@ -1,4 +1,4 @@
-import { PHASE_END_ERROR } from "../../apps/launch-service/src/calendar";
+import { PHASE_END_ERROR, type SeasonPhase } from "../../apps/launch-service/src/calendar";
 import { resolveBlitzSeason } from "./blitz-season";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -136,10 +136,7 @@ async function requireBlitzSeason(context: Season) {
   if (!season.present) throw new PublicError("Blitz ledger season is not open; complete Ledger setup first");
 }
 async function currentCalendar(context: Season) {
-  const calendar = await service<{ phases: { phase: string; startsAt: string; endsAt: string }[] }>(
-    context,
-    "/api/factory/calendar",
-  );
+  const calendar = await service<{ phases: SeasonPhase[] }>(context, "/api/factory/calendar");
   const now = Date.now();
   const phases = calendar.phases.filter((phase) => Date.parse(phase.endsAt) > now);
   return phases;
@@ -158,7 +155,12 @@ export function seasonSteps(context: Season): Step[] {
         return {
           done: ["frontier", "blitz"].every((name) => phases.some((phase) => phase.phase === name)),
           detail: phases.length
-            ? phases.map((phase) => `${phase.phase} ${phase.startsAt} to ${phase.endsAt}`).join("; ")
+            ? phases
+                .map(
+                  (phase) =>
+                    `${phase.phase}${phase.phase === "frontier" ? ` preset ${phase.presetId}` : ""} ${phase.startsAt} to ${phase.endsAt}`,
+                )
+                .join("; ")
             : "set missing phases from saved dates",
         };
       },
@@ -171,9 +173,10 @@ export function seasonSteps(context: Season): Step[] {
           const ends = seconds(phase === "frontier" ? context.inputs!.frontierEnd : context.inputs!.blitzEnd);
           if (!(ends > Date.now() / 1000)) throw new PublicError(PHASE_END_ERROR);
           context.output(
-            `Setting ${phase} calendar: ${new Date(begins * 1000).toISOString()} to ${new Date(ends * 1000).toISOString()}.`,
+            `Setting ${phase}${phase === "frontier" ? ` preset ${context.inputs!.frontierPresetId}` : ""} calendar: ${new Date(begins * 1000).toISOString()} to ${new Date(ends * 1000).toISOString()}.`,
           );
           await service(context, `/api/factory/calendar/${phase}`, "PUT", {
+            ...(phase === "frontier" ? { presetId: Number(context.inputs!.frontierPresetId) } : {}),
             startsAt: new Date(begins * 1000).toISOString(),
             endsAt: new Date(ends * 1000).toISOString(),
           });

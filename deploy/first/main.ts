@@ -117,7 +117,7 @@ async function collectInputs(context: Deployment) {
   context.store.write("inputs.json", inputs);
   reload(context);
   context.output(
-    `Frontier ${inputs.frontierStart} to ${inputs.frontierEnd}, pool ${inputs.amount}; Blitz ${inputs.blitzStart} to ${inputs.blitzEnd}.`,
+    `Frontier preset ${inputs.frontierPresetId} ${inputs.frontierStart} to ${inputs.frontierEnd}, pool ${inputs.amount}; Blitz ${inputs.blitzStart} to ${inputs.blitzEnd}.`,
   );
 }
 const waiting = (detail: string) => ({ done: false, waiting: detail, detail });
@@ -464,7 +464,7 @@ export async function main(args = process.argv.slice(2)) {
     if (apply && !saved) store.write("deployment.json", { environment });
     if (context.inputs)
       context.output(
-        `Frontier ${context.inputs.frontierStart} to ${context.inputs.frontierEnd}, pool ${context.inputs.amount}; Blitz ${context.inputs.blitzStart} to ${context.inputs.blitzEnd}.`,
+        `Frontier preset ${context.inputs.frontierPresetId} ${context.inputs.frontierStart} to ${context.inputs.frontierEnd}, pool ${context.inputs.amount}; Blitz ${context.inputs.blitzStart} to ${context.inputs.blitzEnd}.`,
       );
     context.output(
       apply

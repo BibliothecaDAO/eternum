@@ -1,7 +1,7 @@
 import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
 import type { GameEnvironmentId } from "../../../config/shared/game-environments";
 import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
-import type { LaunchJobRequest, LaunchKind } from "./schemas";
+import { isCalendarFrontier, type LaunchJobRequest, type LaunchKind } from "./schemas";
 
 export interface FinalizedGameSummary {
   environment: "madara.blitz";
@@ -93,6 +93,12 @@ export const toFactoryRunRecord = (run: LaunchRun) => {
     })),
     recovery: {
       state: run.status === "complete" ? "complete" : run.status === "failed" ? "failed" : "active",
+      canDelete:
+        run.kind === "game" &&
+        run.slotId === null &&
+        run.status !== "running" &&
+        run.status !== "complete" &&
+        !isCalendarFrontier(run.environment, run.name),
       canContinue: run.status === "failed",
       continueStepId: run.status === "failed" ? stepDefinitions[0][0] : null,
     },

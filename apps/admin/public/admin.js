@@ -3,7 +3,7 @@
 // signed-in name. The other environment has its own admin, which the environment switch opens.
 
 const SCREENS = { games: "Games", deploys: "Deploys", audit: "Audit" };
-const state = { screen: "games", environment: "", origin: "", other: null };
+const state = { screen: "games", environment: "", origin: "", other: null, phases: [] };
 
 const $ = (selector) => document.querySelector(selector);
 const esc = (value) =>
@@ -48,12 +48,13 @@ function renderGames(view) {
     : `<span class="error">Status: ${esc(status.error)}</span>`;
 
   const phases = view.calendar.ok ? view.calendar.value : [];
+  state.phases = phases;
   $("#calendar").innerHTML =
     failed(view.calendar, 3) ??
     ["frontier", "blitz"]
       .map((name) => {
         const phase = phases.find((entry) => entry.phase === name);
-        return `<tr><td>${name === "frontier" ? "Frontier" : "Blitz"}</td><td class="quiet-cell">${
+        return `<tr><td>${name === "frontier" ? `Frontier${phase ? ` · Preset ${esc(phase.presetId)}` : ""}` : "Blitz"}</td><td class="quiet-cell">${
           phase ? `${when(phase.startsAt)} → ${when(phase.endsAt)}` : "Not set"
         }</td><td class="end"><button class="quiet" data-phase="${name}">${phase ? "Edit" : "Set"}</button></td></tr>`;
       })
@@ -84,7 +85,7 @@ function renderGames(view) {
               run.recovery?.canContinue
                 ? `<button class="quiet" data-run="${kind}/${esc(run.environment)}/${esc(run.gameName)}/continue">Continue</button>`
                 : "",
-              run.kind === "game" && run.status !== "complete" && run.status !== "running"
+              run.recovery?.canDelete
                 ? `<button class="quiet" data-run="runs/${esc(run.environment)}/${esc(run.gameName)}/delete">Delete</button>`
                 : "",
             ].join("");
@@ -224,18 +225,25 @@ const NEW_GAME = {
   frontier: () => setPhase("frontier"),
 };
 
-const setPhase = (phase) =>
+const setPhase = (phase) => {
+  const current = state.phases.find((entry) => entry.phase === phase);
   openAction({
     title: `Set the ${phase} phase`,
     fields: [
-      ["Starts (UTC, whole second)", "startsAt", ""],
-      ["Ends (UTC, whole second)", "endsAt", ""],
+      ...(phase === "frontier" ? [["Preset ID", "presetId", current?.presetId ?? ""]] : []),
+      ["Starts (UTC, whole second)", "startsAt", current?.startsAt ?? ""],
+      ["Ends (UTC, whole second)", "endsAt", current?.endsAt ?? ""],
     ],
     method: "PUT",
     route: `calendar/${phase}`,
     launchPath: `/api/factory/calendar/${phase}`,
-    body: (v) => ({ startsAt: v.startsAt, endsAt: v.endsAt }),
+    body: (v) => ({
+      startsAt: v.startsAt,
+      endsAt: v.endsAt,
+      ...(phase === "frontier" ? { presetId: Number(v.presetId) } : {}),
+    }),
   });
+};
 
 document.addEventListener("click", (event) => {
   const button = event.target.closest("button");

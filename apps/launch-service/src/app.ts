@@ -1,3 +1,4 @@
+import { CalendarConflict } from "./calendar";
 import type { JoinFailure } from "./registrar";
 import { isGameEnvironmentId, type GameEnvironmentId } from "../../../config/shared/game-environments";
 import { Hono, type Context } from "hono";
@@ -48,7 +49,10 @@ const respondWithRun = async (
     await registrar.armFor(Date.now());
     return context.json(toFactoryRunRecord(run), 202);
   } catch (error) {
-    return context.json({ error: error instanceof Error ? error.message : String(error) }, 500);
+    return context.json(
+      { error: error instanceof Error ? error.message : String(error) },
+      error instanceof CalendarConflict ? 409 : 500,
+    );
   }
 };
 
@@ -92,7 +96,7 @@ const deleteRun = async (context: Context, store: LaunchServiceStore, kind: Laun
   const deleted = await store.delete(kind, environment, name);
   return deleted
     ? context.json({ deleted: true })
-    : context.json({ error: "Run is missing, active, or belongs to a paid slot." }, 409);
+    : context.json({ error: "Run is missing, active, or retains a calendar or paid-slot identity." }, 409);
 };
 
 const failedRunReport = (run: LaunchRun) => ({

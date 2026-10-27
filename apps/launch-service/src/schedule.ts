@@ -5,7 +5,13 @@ import {
   blitzSlotFitsSeason,
 } from "@realms-world/value-ledger";
 import { Effect, Result } from "effect";
-import { isRunning, type CalendarStore, type NextBlitzGame, type SeasonPhase } from "./calendar";
+import {
+  isRunning,
+  type CalendarStore,
+  type FrontierSeasonPhase,
+  type NextBlitzGame,
+  type SeasonPhase,
+} from "./calendar";
 import { frontierSeasonRequest } from "./schemas";
 import { blitzSlotWindow, type SlotStore } from "./slots";
 import { databaseOperation, type LaunchServiceStore } from "./store";
@@ -20,7 +26,7 @@ export const runLaunchSchedule = (store: LaunchServiceStore, slots: SlotStore, c
     const now = new Date(Date.now());
     const calendarResult = yield* Effect.result(databaseOperation("read the season calendar", () => calendar.list()));
     if (Result.isSuccess(calendarResult)) {
-      const frontier = calendarResult.success.find(({ phase }) => phase === "frontier");
+      const frontier = calendarResult.success.find((entry) => entry.phase === "frontier");
       if (frontier && isRunning(frontier, now.getTime()))
         yield* runScheduleStep("schedule frontier season", () => scheduleFrontierSeason(store, frontier));
       // The next game opens at its tick: the timetable's next start, when it fits the window (`nextBlitzGame`).
@@ -54,7 +60,7 @@ const fitsInside = (season: SeasonPhase, closesAt: string) => {
  * The season is created once, whatever becomes of its run, so a tick never resets a launch in progress; a season whose
  * launch failed is continued only by the operator.
  */
-export const scheduleFrontierSeason = (store: LaunchServiceStore, season: SeasonPhase) =>
+export const scheduleFrontierSeason = (store: LaunchServiceStore, season: FrontierSeasonPhase) =>
   store.schedule("game", frontierSeasonRequest(season));
 
 const BLITZ_SLOT_INTERVAL_MS = BLITZ_SLOT_INTERVAL_SECONDS * 1000;

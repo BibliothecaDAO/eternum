@@ -58,6 +58,7 @@ const input: Inputs = {
   discordClientId: "fake-discord-id",
   discordClientSecret: "fake-discord-secret",
   amount: "1000000",
+  frontierPresetId: "5",
   frontierStart: "2027-01-01T00:00:00Z",
   frontierEnd: "2027-01-21T00:00:00Z",
   blitzStart: "2027-01-01T00:00:00Z",
@@ -503,6 +504,7 @@ test("setup asks for an alert email on production only, and dev's inputs can nev
     "discordClientId",
     "discordClientSecret",
     "amount",
+    "frontierPresetId",
     "frontierStart",
     "frontierEnd",
     "blitzStart",
@@ -847,4 +849,17 @@ test("publishes the ledger's deployment block beside its address, the same on a 
   } finally {
     rmSync(path, { force: true });
   }
+});
+
+test("date validation requires a native Frontier preset and uses its season clock", () => {
+  const dates = {
+    ...input,
+    frontierPresetId: "6",
+    frontierStart: "2026-11-03T06:30:00Z",
+    frontierEnd: "2026-11-06T14:30:00Z",
+  };
+  expect(() => validateDates(dates)).not.toThrow();
+  expect(() => validateDates({ ...dates, frontierEnd: "2026-11-06T18:30:00Z" })).toThrow("whole bags");
+  expect(() => validateDates({ ...dates, frontierPresetId: "" })).toThrow("registered Frontier preset");
+  expect(() => validateDates({ ...dates, frontierPresetId: "1" })).toThrow("registered Frontier preset");
 });
