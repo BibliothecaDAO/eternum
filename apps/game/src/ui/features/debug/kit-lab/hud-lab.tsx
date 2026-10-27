@@ -796,6 +796,49 @@ const STATES = {
       fight: LOSE(3, 1_200, 2_300, 1_200, 1_100),
     },
   },
+  // The owner's phone card on prod (10-27): Runereach's guard of 3,500 against 4,291 knights, an Uncommon chest of 100
+  // LORDS, and the stamina short of an attack.
+  "site-runereach": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...RUIN_CARD,
+      army: { ...ARMY_CHIP, troops: 4_291 },
+      guard: 3_500,
+      fight: WIN(3, 816, 3_500, 1_650),
+      chest: { tier: 2, lords: 100 },
+      xp: 147,
+      verb: { kind: "short", stamina: { cost: 30, held: 26, wait: 7 * 60 + 38 } },
+    },
+  },
+  // Seven-digit armies on both sides: the fight's figures still fit a 360 px phone.
+  "site-large": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...RUIN_CARD,
+      army: { ...ARMY_CHIP, troops: 1_284_500 },
+      guard: 987_650,
+      fight: WIN(3, 216_400, 987_650, 612_300),
+    },
+  },
+  "fight-large": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    fight: {
+      targetId: 29,
+      tile: { col: 0, row: 0 },
+      site: "Ruin",
+      verdict: "victory",
+      armyArt: ARMY_CHIP.art,
+      army: { before: 1_284_500, after: 1_068_100 },
+      guard: { before: 987_650, after: 0 },
+      gained: { pay: { icon: "labor", amount: 550, storeFull: false }, xp: 22 },
+    },
+  },
   "value-hud": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240, realms: 2_000 } },
   // The purse and Next up at once, as a signed-in player meets them: the layout check holds them apart.
   "purse-next-up": { clock: CLOCK, stores: STORES, armies: [], purse: { lords: 1_240, realms: 2_000 } },

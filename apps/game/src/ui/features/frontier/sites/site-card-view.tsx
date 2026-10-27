@@ -17,6 +17,7 @@ import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import {
   type Tier,
+  ARMY,
   ARMY_WILL_BE_LOST,
   ATTACK,
   ATTACKING,
@@ -41,7 +42,7 @@ import { type ReactNode, useState } from "react";
 
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
-import { FightBar } from "./fight-bar";
+import { FightSide } from "./fight-side";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
 
@@ -157,9 +158,16 @@ export const SiteCardView = ({
         <ArmyChoices does="attack" choices={choices} guardIcon={guardIcon} />
       ) : facing ? (
         <div className="flex gap-2">
-          <Side art={facing.army.art} before={facing.army.troops} after={armyLeft(facing)} side="ours" />
-          <Side
-            art={guardIcon}
+          <FightSide
+            label={ARMY}
+            mark={<SemanticIcon name={facing.army.art} size={26} />}
+            before={facing.army.troops}
+            after={armyLeft(facing)}
+            side="ours"
+          />
+          <FightSide
+            label={beast?.name ?? TROOPS}
+            mark={<SemanticIcon name={guardIcon} size={26} />}
             before={facing.guard}
             after={facing.fight.guardLeft}
             side="theirs"
@@ -213,35 +221,6 @@ const outcomeWord = (facing: Facing, earns: boolean): string => {
 /** What the clear pays, in the headline; dimmed when this attack does not clear the site. */
 const Reward = ({ dimmed, children }: { dimmed: boolean; children: ReactNode }) => (
   <span className={cn("flex flex-wrap items-center gap-2", dimmed && "opacity-50")}>{children}</span>
-);
-
-/**
- * One side of this attack: its troops before → after, the after in red when none are left, and its bar in its colour
- * with the part the attack takes in grey; a beast's combat class on its hover.
- */
-const Side = ({
-  art,
-  before,
-  after,
-  side,
-  tip,
-}: {
-  art: IconMeaning;
-  before: number;
-  after: number;
-  side: "ours" | "theirs";
-  tip?: string;
-}) => (
-  <HudPanel collapsible={false} className="flex-1" bodyClassName="flex flex-col items-center gap-1 py-2">
-    <span className="flex items-center gap-2 tabular-nums" data-tip={tip}>
-      <SemanticIcon name={art} size={26} />
-      <span className="whitespace-nowrap text-hud-body text-hud-muted">{formatExact(before)} →</span>
-      <span className={cn("text-hud-display leading-none", after === 0 ? "text-hud-bad" : "text-hud-ink")}>
-        {formatExact(after)}
-      </span>
-    </span>
-    <FightBar before={before} after={after} side={side} />
-  </HudPanel>
 );
 
 /** Details: the whole fight's figures, attack after attack until it ends: how it ends, and what it costs each side. */
