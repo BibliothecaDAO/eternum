@@ -16,14 +16,7 @@ import {
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import {
-  BARRACKS,
-  BUILD,
-  BUILDING,
-  needsResearchPurchases,
-  POPULATION,
-  PRICE_UP,
-} from "@/ui/design-system/kit/words";
+import { BARRACKS, BUILD, BUILDING, needsResearchPurchases, POPULATION, PRICE_UP } from "@/ui/design-system/kit/words";
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { ReactNode } from "react";
