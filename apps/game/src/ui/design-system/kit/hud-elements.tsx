@@ -908,6 +908,7 @@ export const HudRow = ({
   selected = false,
   state,
   disabled,
+  busy,
   tip,
   onClick,
 }: {
@@ -925,6 +926,8 @@ export const HudRow = ({
   selected?: boolean;
   state?: string;
   disabled?: boolean;
+  /** What the row's press started is under way (an army being deployed into a slot). */
+  busy?: boolean;
   /** What the row stands for in full, on the app's hover (a research row's next tier). */
   tip?: string;
   onClick?: () => void;
@@ -939,6 +942,7 @@ export const HudRow = ({
             className="ui-row__choose"
             aria-label={label}
             aria-pressed={selected}
+            aria-busy={busy}
             disabled={disabled}
             onClick={onClick}
           >

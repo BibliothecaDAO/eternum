@@ -6,8 +6,17 @@ import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { HudIconButton, HudNotice, HudSheet, HudTier } from "@/ui/design-system/kit/hud-elements";
-import { OFFLINE, PAYOUTS_PAUSED, TRAINING_BUILDINGS, WITHDRAWALS_CLOSED, YOU } from "@/ui/design-system/kit/words";
-import { ArmyList, ArmyRow } from "@/ui/features/frontier/hud/army-row";
+import {
+  ARMY,
+  DEPLOY_FILLS_FIRST,
+  OFFLINE,
+  PAYOUTS_PAUSED,
+  startsOn,
+  TRAINING_BUILDINGS,
+  WITHDRAWALS_CLOSED,
+  YOU,
+} from "@/ui/design-system/kit/words";
+import { ArmyList, ArmyRow, OpenSlotRow } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
@@ -469,6 +478,7 @@ const STATES = {
   ...FIGHT_STATES,
   merge: { clock: CLOCK, stores: STORES, armies: ARMIES, merge: true },
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
+  "armies-open": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 2) },
   // An army picked opens its panel, as the game opens it on a selection.
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: {} },
   full: { clock: CLOCK, stores: FULL_STORES, armies: ARMIES, realmDot: "ember" as const },
@@ -1381,7 +1391,9 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             onPick={lab.visiting ? undefined : noop}
           />
         ))}
-        {open > 0 && <OpenSlot label="Deploy" pulse={lab.armies.length === 0} wide onDeploy={noop} />}
+        {labSlots(lab, open).map((slot) => (
+          <OpenSlotRow key={slot.number} label="Deploy" onDeploy={noop} {...slot} />
+        ))}
       </ArmyList>
     );
   return (
@@ -1400,12 +1412,30 @@ const LabDock = ({ lab }: { lab: LabState }) => {
           onPick={noop}
         />
       ))}
-      {Array.from({ length: open }, (_, index) => (
-        <OpenSlot key={index} label="Deploy" pulse={index === 0 && lab.armies.length === 0} onDeploy={noop} />
+      {labSlots(lab, open).map((slot) => (
+        <OpenSlot key={slot.number} label="Deploy" onDeploy={noop} {...slot} />
       ))}
     </nav>
   );
 };
+
+/**
+ * The lab realm's open slots as the dock reads them: each starts its army on 60 of 150 stamina, the first is Deploy's,
+ * and every later one waits for it.
+ */
+const labSlots = (lab: LabState, open: number) =>
+  Array.from({ length: open }, (_, index) => {
+    const number = lab.armies.length + index + 1;
+    return {
+      number,
+      pulse: index === 0 && lab.armies.length === 0,
+      start: {
+        bar: { current: 60, max: 150, perExplore: LAB_EXPLORE },
+        words: `${startsOn(`${ARMY} ${number}`, "60/150", true)}.`,
+      },
+      waits: index === 0 ? undefined : { number, words: DEPLOY_FILLS_FIRST(lab.armies.length + 1) },
+    };
+  });
 
 const LabResults = ({
   results,

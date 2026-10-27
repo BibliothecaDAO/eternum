@@ -36,18 +36,25 @@ const PHONES = [
 /** A Frontier card or page as a laptop and the phones show it. */
 const CARDS = [[1440, 900], ...PHONES];
 
-/** Every army's stamina bar on the Armies list or dock: where it starts, its top and its width. */
-const READ_ARMY_BARS = `(() => [...document.querySelectorAll('nav[aria-label="Armies"] [role="meter"][aria-label="stamina"]')].map((bar) => {
-  const box = bar.getBoundingClientRect();
-  return { left: box.left, top: box.top, width: box.width };
-}))()`;
+/** The Armies list or dock: how many entries it holds (armies and open slots), and each stamina bar's start, top and width. */
+const READ_ARMY_BARS = `(() => {
+  const nav = document.querySelector('nav[aria-label="Armies"]');
+  const bars = nav ? [...nav.querySelectorAll('[role="meter"][aria-label="stamina"]')] : [];
+  return {
+    entries: nav ? nav.children.length : 0,
+    bars: bars.map((bar) => {
+      const box = bar.getBoundingClientRect();
+      return { left: box.left, top: box.top, width: box.width };
+    }),
+  };
+})()`;
 
 /**
- * The armies' stamina bars line up whatever each army's troop count says (owner, 27 October): one width, and one left
- * edge down a list (or one top along a phone's row of tokens).
+ * Every army and open slot carries a stamina bar, and the bars line up whatever each entry's words say (owner, 27
+ * October): one width, and one left edge down a list (or one top along a phone's row of tokens).
  */
-const armyBarsProblems = (bars) => {
-  if (bars.length < 2) return [`${bars.length} stamina bars, not every army's`];
+const armyBarsProblems = ({ entries, bars }) => {
+  if (bars.length < 2 || bars.length !== entries) return [`${bars.length} stamina bars on ${entries} armies and slots`];
   const same = (key) => bars.every((bar) => Math.abs(bar[key] - bars[0][key]) <= 0.5);
   const problems = [];
   if (!same("width")) problems.push(`stamina bars' widths differ: ${bars.map(({ width }) => width.toFixed(1))}`);
@@ -98,7 +105,7 @@ export const SURFACES = [
   { name: "frontier-hud", path: "/lab/kit/hud/idle", mark: "frontier" },
   {
     name: "frontier-armies",
-    path: "/lab/kit/hud/idle",
+    path: "/lab/kit/hud/armies-open",
     mark: "frontier",
     sizes: CARDS,
     read: READ_ARMY_BARS,

@@ -11,6 +11,7 @@ import { EARLY_REALM, MID_REALM } from "../research/progression-fixture";
 import { canResearchNow, readResearchTree } from "../research/research-tree";
 import { secondsUntilHeld } from "./army-order";
 import { ArmyRow } from "./army-row";
+import { OpenSlotRow } from "./army-row";
 import { ArmyToken, OpenSlot, xpLine } from "./army-token";
 import { useChatKey } from "./chat-key";
 import { dayClock } from "./day-clock";
@@ -265,11 +266,11 @@ describe("the army token", () => {
 describe("an open slot whose army is being deployed", () => {
   it("says Deploying…, pulses and cannot be pressed until the deploy's outcome", () => {
     const onDeploy = vi.fn();
-    act(() => root.render(<OpenSlot label="Deploy" pulse={false} filling="Deploying…" wide onDeploy={onDeploy} />));
+    act(() => root.render(<OpenSlotRow label="Deploy" pulse={false} filling="Deploying…" onDeploy={onDeploy} />));
     const slot = host.querySelector("button")!;
     expect(slot.getAttribute("aria-label")).toBe("Deploying…");
     expect(slot.getAttribute("aria-busy")).toBe("true");
-    expect(slot.textContent).toBe("…Deploying…");
+    expect(slot.closest(".ui-row")!.textContent).toBe("…Deploying…");
     act(() => slot.click());
     expect(onDeploy).not.toHaveBeenCalled();
   });
