@@ -4,6 +4,7 @@ import { IdentityRequestError } from "@realms-world/identity";
 import {
   activeBuildOrder,
   buildOrderBookValue,
+  DEFAULT_BUILD_ORDER,
   readBuildOrderBook,
   type BuildOrder,
   type BuildOrderBook,
@@ -14,7 +15,7 @@ import { create } from "zustand";
 /**
  * The signed-in account's build orders, as its identity service keeps them: one copy, read when the account signs in,
  * read again when the player asks or another device saved first, and replaced by what each save answers. Signed out,
- * there are none, and the Build order panel follows the default.
+ * there are none, and the Build order panel follows the default; signed in, it follows nothing until they are read.
  */
 interface BuildOrderState {
   owner: string | null;
@@ -141,5 +142,18 @@ export const useBuildOrderAccount = (): void => {
 /** The account's build orders, as last read or saved. */
 export const useBuildOrders = (): BuildOrderState => useBuildOrderStore();
 
-/** The order the Build order panel follows: the account's active one, or the default. */
-export const useActiveBuildOrder = (): BuildOrder => activeBuildOrder(useBuildOrderStore((state) => state.book));
+/**
+ * The order the Build order panel follows: signed out, the game's; signed in, the account's active one (or the game's)
+ * once its orders are read, and none until then. An account's orders being read, or failing to be, never stand as the
+ * game's order.
+ */
+export const useActiveBuildOrder = (): BuildOrder | null => useBuildOrderStore(followedOrder);
+
+const followedOrder = ({ status, book }: BuildOrderState): BuildOrder | null => {
+  if (status === "signed-out") return DEFAULT_BUILD_ORDER;
+  return book ? activeBuildOrder(book) : null;
+};
+
+/** Why the account's orders could not be read or saved, while that stands; none otherwise. */
+export const useBuildOrderFailure = (): string | null =>
+  useBuildOrderStore((state) => (state.status === "error" ? state.notice : null));

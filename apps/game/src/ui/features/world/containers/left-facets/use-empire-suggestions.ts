@@ -5,7 +5,7 @@ import { playerStructuresView, seasonClockView } from "@/sync/fact-views";
 
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useActiveBuildOrder } from "@/hooks/use-build-orders";
+import { useActiveBuildOrder, useBuildOrderAccount } from "@/hooks/use-build-orders";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
 import { configManager, TileManager } from "@bibliothecadao/eternum";
@@ -63,7 +63,7 @@ export const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestio
 
 /**
  * Every realm's next step in a running Blitz (core's buildBlitzRealmSuggestions on the player's active build order, or
- * the default): only a step that can be taken now, a build by the same path the construction window uses.
+ * the default; none while a signed-in account's orders are unread): only a step that can be taken now, a build by the same path the construction window uses.
  */
 export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const {
@@ -72,6 +72,8 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const mode = useGameModeConfig();
   const facts = useNativeFacts(["Guard", "ResourceBalance", "ResourceProduction", "ResourceWeight"]);
   const resolvedWorldGameMode = useResolvedWorldGameMode();
+  // Every surface that shows the steps reads the account's orders: the desktop panel and the phone's Attention alike.
+  useBuildOrderAccount();
   const order = useActiveBuildOrder();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const tick = useCurrentDefaultTick();
@@ -92,6 +94,8 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   });
 
   return useMemo(() => {
+    // An account whose orders are not read yet, or failed to be, follows no order: the panel says why.
+    if (!order) return [];
     return metadata
       .flatMap((structure): BlitzSuggestionDraft[] => {
         if (structure.category !== StructureType.Realm) return [];

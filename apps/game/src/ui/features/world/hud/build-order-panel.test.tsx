@@ -14,9 +14,16 @@ vi.mock("@/utils/can-issue-orders", () => ({
   canIssueOrders: () => game.ordersAllowed,
   useActNowRefusal: () => null,
 }));
-vi.mock("@/ui/features/world/containers/left-facets/use-empire-suggestions", () => ({
-  useEmpireSuggestions: () => game.steps,
-}));
+// The steps as the game reads them: the account's orders loaded by the same read, the steps the case gives.
+vi.mock("@/ui/features/world/containers/left-facets/use-empire-suggestions", async () => {
+  const { useBuildOrderAccount } = await import("@/hooks/use-build-orders");
+  return {
+    useEmpireSuggestions: () => {
+      useBuildOrderAccount();
+      return game.steps;
+    },
+  };
+});
 vi.mock("@/ui/features/world/containers/left-facets/use-suggestion-actions", () => ({
   isOrderSuggestion: (step: { action: string }) => step.action !== "upgrade",
   useSuggestionActions: () => ({ handleSuggestionClick: game.build, pendingSuggestionIds: [] }),
@@ -176,7 +183,7 @@ it("reads the account's orders again when the player returns from the Build orde
   useBuildOrderStore.setState({ book: { orders: [], active: null }, revision: 3 });
   let followed = "";
   const Followed = () => {
-    followed = useActiveBuildOrder().name;
+    followed = useActiveBuildOrder()?.name ?? "";
     return null;
   };
   await act(async () =>
@@ -223,4 +230,39 @@ it("never takes another account's orders on a return to the tab", async () => {
   await act(async () => document.dispatchEvent(new Event("visibilitychange")));
   expect(host.querySelector('button[aria-label="Order to follow"]')?.textContent).toBe("The game's order");
   expect(useBuildOrderStore.getState()).toMatchObject({ owner: "0xa1", revision: 3, status: "error" });
+  expect(host.querySelector(".ui-notice")?.textContent).toBe("Account changed. Reload your build orders.Try again");
+});
+
+it("says when the account's orders cannot be read, with Try again, and follows no order until they are", async () => {
+  // The account's first read failed: no book, and the panel's steps (none: no order is followed) wait on it.
+  useBuildOrderStore.setState({
+    status: "error",
+    book: null,
+    revision: 0,
+    notice: "Your build orders could not be reached.",
+  });
+  game.steps = [];
+  let followed: string | null = "";
+  const Followed = () => {
+    followed = useActiveBuildOrder()?.name ?? null;
+    return null;
+  };
+  await act(async () =>
+    root.render(
+      <>
+        <BuildOrderPanel />
+        <Followed />
+      </>,
+    ),
+  );
+  expect(followed).toBeNull();
+  const notice = host.querySelector(".ui-notice");
+  expect(notice?.textContent).toBe("Your build orders could not be reached.Try again");
+  expect(host.textContent).not.toContain("Nothing to build now");
+
+  service.getBuildOrders.mockResolvedValue({ owner: "0xa1", revision: 4, book: { orders: [], active: null } });
+  await act(async () => notice!.querySelector("button")!.click());
+  expect(service.getBuildOrders).toHaveBeenCalledTimes(1);
+  expect(host.querySelector(".ui-notice")).toBeNull();
+  expect(followed).toBe("Default");
 });

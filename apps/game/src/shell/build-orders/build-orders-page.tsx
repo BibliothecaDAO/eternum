@@ -76,10 +76,11 @@ export const BuildOrdersPage = () => {
   useBuildOrderAccount();
   const view = useView();
   const desktop = useLayout() === "desktop";
+  const signIn = useSignInNotice();
   const open = view.kind === "list" ? <FollowedOrder /> : <OpenView view={view} />;
   if (desktop)
     return (
-      <PageFrame back="/" title={BUILD_ORDER_WORDS.page}>
+      <PageFrame back="/" title={BUILD_ORDER_WORDS.page} notice={signIn}>
         <div className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
           <div className="flex flex-col gap-4">
             <OrderList />
@@ -90,13 +91,17 @@ export const BuildOrdersPage = () => {
       </PageFrame>
     );
   return view.kind === "list" ? (
-    <PageFrame back="/" title={BUILD_ORDER_WORDS.page} foot={<ListActions />}>
+    <PageFrame back="/" title={BUILD_ORDER_WORDS.page} notice={signIn} foot={<ListActions />}>
       <OrderList />
     </PageFrame>
   ) : (
     open
   );
 };
+
+/** The page's one word to a signed-out player, in the frame's notice place: orders are saved once they sign in. */
+const useSignInNotice = (): ReactNode =>
+  useBuildOrders().status === "signed-out" ? <AppNotice line={BUILD_ORDER_WORDS.signInToSave} /> : undefined;
 
 /**
  * An open order or paste: on a desktop, a panel beside the list ending on Back and its step; on a phone, the page
@@ -116,6 +121,7 @@ const ViewFrame = ({
 }) => {
   const open = useOpen();
   const phone = useLayout() === "phone";
+  const signIn = useSignInNotice();
   const panel = (
     <AppPanel title={title} icon={icon}>
       <div className="flex flex-col gap-4">
@@ -132,7 +138,7 @@ const ViewFrame = ({
     </AppPanel>
   );
   return phone ? (
-    <PageFrame back={LIST} title={BUILD_ORDER_WORDS.page} foot={step}>
+    <PageFrame back={LIST} title={BUILD_ORDER_WORDS.page} notice={signIn} foot={step}>
       {panel}
     </PageFrame>
   ) : (
@@ -195,7 +201,6 @@ const OrderList = () => {
   const full = orders.length >= BUILD_ORDER_LIMITS.orders;
   return (
     <div className="flex flex-col gap-3">
-      {!signedIn && <AppNotice line={BUILD_ORDER_WORDS.signInToSave} />}
       {notice && <RequestNotice status={status} line={notice} retry={reloadBuildOrders} />}
       {full && <AppNotice line={BUILD_ORDER_WORDS.full(BUILD_ORDER_LIMITS.orders)} />}
       <AppPanel title={BUILD_ORDER_WORDS.yourOrders} icon="build" flush>
@@ -210,7 +215,7 @@ const OrderList = () => {
         ))}
         <OrderRow
           order={{ ...DEFAULT_BUILD_ORDER, name: BUILD_ORDER_WORDS.theGamesOrder }}
-          active={!book?.active}
+          active={signedIn && !book?.active}
           onUse={signedIn ? () => use(null) : undefined}
           action={
             <AppIconButton
@@ -389,7 +394,7 @@ const OrderEditor = ({ id: savedId, order: start }: { id: string | null; order: 
           />
         ))}
       </section>
-      {problem && <AppNotice tone="warn" line={problem} />}
+      {problem && order.steps.length > 0 && <AppNotice tone="warn" line={problem} />}
       <div className="flex flex-wrap gap-2">
         <AppButton
           kind="quiet"
@@ -413,7 +418,6 @@ const OrderEditor = ({ id: savedId, order: start }: { id: string | null; order: 
         )}
       </div>
       {note && <AppNotice line={note} />}
-      {status === "signed-out" && <AppNotice line={BUILD_ORDER_WORDS.signInToSave} />}
       {notice && <RequestNotice status={status} line={notice} retry={book ? save : reloadBuildOrders} />}
     </ViewFrame>
   );

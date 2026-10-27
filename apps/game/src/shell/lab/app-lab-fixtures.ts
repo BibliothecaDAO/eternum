@@ -164,6 +164,9 @@ export const LAB_SCREENS = {
   // No Blitz anywhere, no slot open and no result left to open: Blitz's column says none is scheduled (live-qa-night-1
   // P3-12: it vanished from Play).
   "no-blitz": { signedIn: true, games: [frontier(true), eternum] },
+  // The player's finished Blitz, its results not yet opened, leads Play: no Blitz open and the Frontier season over
+  // (audit-1027 play 10: Blitz's column, and the way to the build orders, went with it).
+  "blitz-results-lead": { signedIn: true, games: [endedFrontier, eternum] },
   // No Blitz open, the calendar's next ranked game due: its column shows the start and when entry opens (the owner's
   // 10:08, before the 12:00 game's entry opens at 10:25).
   "blitz-next": { signedIn: true, games: [frontier(true), eternum] },
@@ -338,7 +341,7 @@ export const labCalendar = (screen: LabScreen) => {
 
 /** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */
 export const labSlots = (screen: LabScreen) => {
-  if (screen === "no-blitz" || screen === "blitz-next") return { slots: [] };
+  if (screen === "no-blitz" || screen === "blitz-next" || screen === "blitz-results-lead") return { slots: [] };
   const closed = CLOSED_SLOT_SCREENS.includes(screen);
   const closesAt = closed ? CLOSED_ENTRY.close : screen === "blitz-seat-late-slot" ? LATE_SLOT_CLOSE : ENTRY.close;
   return {
