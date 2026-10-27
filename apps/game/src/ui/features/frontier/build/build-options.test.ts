@@ -1,4 +1,5 @@
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
@@ -73,6 +74,18 @@ describe("Frontier's build options", () => {
     expect((option(BuildingType.WorkersHut).effect as { amount: number }).amount).toBe(
       grant + Math.floor((grant * 3 * 2_500) / 10_000),
     );
+  });
+
+  it("offers every building the contract's tree names for a board, from its generated constants", () => {
+    const { store, realm } = realmBoard();
+    // research.cairo names each board building by its category (FARM, WORKSHOP, …): a building it adds is offered,
+    // or this fails (the catalog rule, audit 10-27 F7), never a hand-written list missing it.
+    const named = Object.entries(nativeResearchConstants)
+      .filter(([name]) => !/^(ROW_|CHOICE_|KIND_)/.test(name))
+      .map(([, category]) => category)
+      .sort((a, b) => a - b);
+    const offered = readBuildOptions(store, realm, true, 350)!.map(({ category }) => category);
+    expect([...offered].sort((a, b) => a - b)).toEqual(named);
   });
 
   it("knows no option while the realm's research is unknown", () => {

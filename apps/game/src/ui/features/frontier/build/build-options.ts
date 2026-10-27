@@ -4,6 +4,7 @@ import {
   getBuildingCosts,
   getBuildingQuantity,
   realmLearned,
+  researchRowCategory,
   researchRowOf,
   researchTier,
   ResourceManager,
@@ -27,16 +28,8 @@ import { type ResearchShare, researchShare } from "../production/store-makers";
  * hut_bonus apply them), its population cost and the realm's wheat an hour after it stands. Unknown while the realm's
  * research is.
  */
-const FRONTIER_BUILDINGS = [
-  BuildingType.ResourceWheat,
-  BuildingType.ResourceKnightT1,
-  BuildingType.ResourceLabor,
-  BuildingType.WorkersHut,
-  BuildingType.WarHall,
-  BuildingType.SupplyYard,
-  BuildingType.ScoutsLodge,
-  BuildingType.Hearth,
-] as const;
+/** A Frontier board's buildings: one per building row of the castle's tree, as research.cairo's row_category names them. */
+const FRONTIER_BUILDINGS = Object.values(researchRowCategory) as BuildingType[];
 
 /** Each training building and the attribute it trains every new army in. */
 const TRAINS: Partial<Record<BuildingType, "Battle" | "Logistics" | "Scouting" | "Homecoming">> = {

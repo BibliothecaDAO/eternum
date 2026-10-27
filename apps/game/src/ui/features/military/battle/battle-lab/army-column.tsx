@@ -1,7 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudNumberField, HudPanel, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { StaminaManager } from "@bibliothecadao/eternum";
-import { RELICS, TroopTier, TroopType, formatExact } from "@bibliothecadao/types";
+import { RELICS, TROOP_TIERS, TROOP_TYPES, formatExact } from "@bibliothecadao/types";
 
 import type { GuardOption, WorkingArmy } from "./battle-lab.types";
 import { RelicChip } from "../../utils/relic-chip";
@@ -14,13 +14,9 @@ const COMBAT_RELICS = RELICS.filter((relic) => ["Damage", "Damage Reduction", "S
   .toSorted((a, b) => (a.type === b.type ? a.level - b.level : a.type.localeCompare(b.type)))
   .map((relic) => relic.id);
 
-const TROOP_TYPES = [
-  { value: TroopType.Knight, label: TroopType.Knight },
-  { value: TroopType.Crossbowman, label: TroopType.Crossbowman },
-  { value: TroopType.Paladin, label: TroopType.Paladin },
-] as const;
+const TYPES = TROOP_TYPES.map((type) => ({ value: type, label: type }));
 
-const TIERS = [TroopTier.T1, TroopTier.T2, TroopTier.T3].map((tier) => ({ value: tier, label: tier }));
+const TIERS = TROOP_TIERS.map((tier) => ({ value: tier, label: tier }));
 
 interface ArmyColumnProps {
   label: string;
@@ -116,7 +112,7 @@ export const ArmyColumn = ({
             <HudSelect
               label="Troop type"
               value={army.troopType}
-              options={TROOP_TYPES}
+              options={TYPES}
               onChange={(troopType) => onChange({ troopType })}
             />
           </Field>

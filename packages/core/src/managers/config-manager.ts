@@ -10,6 +10,7 @@ import {
   ResourcesIds,
   StructureType,
   TickIds,
+  TROOP_TIERS,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
@@ -47,8 +48,6 @@ const missingRule = (description: string): undefined => {
   if (process.env.NODE_ENV !== "production") throw new Error(`This game defines no ${description}`);
   return undefined;
 };
-
-const TROOP_TIERS = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
 
 const troopTierIndex = (tier: TroopTier): number => {
   const index = TROOP_TIERS.indexOf(tier);
