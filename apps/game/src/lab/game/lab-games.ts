@@ -5,6 +5,7 @@ import { dayTurnScenario } from "./day-turn-scenario";
 import type { LabScenario } from "./lab-chain";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 import { realmScenario } from "./realm-scenario";
+import { seasonOpensScenario } from "./season-opens-scenario";
 import { spireScenario } from "./spire-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
@@ -23,6 +24,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "day-turn-asleep": dayTurnScenario("asleep"),
   "day-later-quiet": dayTurnScenario("later", "unplayed"),
   "day-later-played-on": dayTurnScenario("later", "played-on"),
+  "season-opens": seasonOpensScenario,
 };
 
 /** The lab game this tab plays: its scenario and the wall time its chain's clock started at. */

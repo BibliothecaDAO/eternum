@@ -39,6 +39,10 @@ export const readBuildingTiles = (
   structureEntityId: ID,
 ): BuildingTiles => TileManager.forStructure(store, systemCalls, structureEntityId);
 
+/**
+ * The owner's structures that stand on the map. One can be owned yet have no site: a Frontier realm founded before its
+ * season's first day stands nowhere until that day begins (structureMapPosition), and the day's turn brings it in.
+ */
 export const readStructures = (
   store: NativeFactStore,
   owner: ContractAddress,
@@ -46,9 +50,10 @@ export const readStructures = (
   playerName: PlayerNameResolver,
 ): Structure[] =>
   [...store.structuresOwnedBy(configManager.getActiveGameId(), owner)]
-    .map((row) => getStructure(safeInteger(row.entity_id), viewer, store, playerName)!)
+    .flatMap((row) => getStructure(safeInteger(row.entity_id), viewer, store, playerName) ?? [])
     .toSorted((a, b) => a.category - b.category || a.entityId - b.entityId);
 
+/** The owner's realms or villages that stand on the map, as readStructures reads them. */
 export const readRealmInfos = (
   store: NativeFactStore,
   owner: ContractAddress,
@@ -57,7 +62,7 @@ export const readRealmInfos = (
 ): RealmInfo[] =>
   [...store.structuresOwnedBy(configManager.getActiveGameId(), owner)]
     .filter((row) => row.base.category === category)
-    .map((row) => getRealmInfo(safeInteger(row.entity_id), store, playerName)!);
+    .flatMap((row) => getRealmInfo(safeInteger(row.entity_id), store, playerName) ?? []);
 
 export const readStructureRows = (store: NativeFactStore, category: StructureType): StructureRow[] =>
   [...store.inGame("Structure", configManager.getActiveGameId())].filter((row) => row.base.category === category);
