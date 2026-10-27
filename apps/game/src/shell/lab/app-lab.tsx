@@ -6,6 +6,7 @@ import { identityClient, useIdentitySessionStore } from "@/hooks/context/identit
 import { IdentityRequestError } from "@realms-world/identity";
 
 import { BlitzLobbyPage } from "../blitz/blitz-pages";
+import { BuildOrdersPage } from "../build-orders/build-orders-page";
 import { entryTermsKey, refundOwedKey, registeredSlotsKey, slotRegisteredKey } from "../blitz/entry";
 import { seasonPrizeKey } from "../season-tab/blitz-season";
 import { rewardKey } from "../season-tab/reward";
@@ -90,6 +91,7 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
     <PageAddress.Provider value={`/${page}`}>
       <Routes>
         <Route index element={<PlayPage />} />
+        <Route path="blitz/build-orders" element={<BuildOrdersPage />} />
         <Route path="blitz/:id" element={<BlitzLobbyPage />} />
         <Route path="season" element={<SeasonPage />} />
         <Route path="results/:id" element={<ResultsPage />} />
@@ -155,6 +157,8 @@ function installLabFixtures(screen: LabScreen): () => void {
     "sendSignInCode",
     "unlinkWallet",
     "linkWallet",
+    "getBuildOrders",
+    "saveBuildOrders",
   ];
   const descriptors = identityMethods.map(
     (name) => [name, Object.getOwnPropertyDescriptor(identityClient, name)] as const,
@@ -219,7 +223,15 @@ const answerIdentity = () => {
   const spend = async (code: unknown) => {
     if (code !== LAB_EMAIL_CODE) throw new IdentityRequestError(400, "INVALID_OTP");
   };
+  // The account's build orders, kept in the tab: each save is held, and read back, at the next revision.
+  let orders = { revision: 3, book: LAB_BUILD_ORDERS as unknown };
+  const buildOrders = () => ({ owner: useIdentitySessionStore.getState().session?.user.realmsId ?? "", ...orders });
   Object.assign(identityClient, {
+    getBuildOrders: async () => buildOrders(),
+    saveBuildOrders: async ({ book }: { book: unknown }) => {
+      orders = { revision: orders.revision + 1, book };
+      return buildOrders();
+    },
     unlinkWallet: spend,
     linkWallet: async ({ code }: { code?: string }) => spend(code).then(() => LAB_PLAYER),
   });
@@ -234,6 +246,50 @@ const answerLobbyChat = (screen: LabScreen) => {
     registration.paid > 0n &&
     !registration.refundable;
   answerLabChat(canWrite);
+};
+
+/** Three orders a player saved, Coal rush the one followed. */
+const LAB_BUILD_ORDERS = {
+  active: "coal-rush",
+  orders: [
+    {
+      id: "coal-rush",
+      order: {
+        name: "Coal rush",
+        steps: [
+          { rank: "Settlement", goal: "farm", count: 2 },
+          { rank: "Settlement", goal: "levelUp" },
+          { rank: "City", goal: "coal", count: 2 },
+          { rank: "City", goal: "copper", count: 2 },
+          { rank: "City", goal: "barracks", count: 1 },
+          { rank: "City", goal: "levelUp" },
+          { rank: "Kingdom", goal: "army", count: 1 },
+          { rank: "Kingdom", goal: "farm", count: 4 },
+          { rank: "Empire", goal: "army", count: 3 },
+        ],
+      },
+    },
+    {
+      id: "wood-first",
+      order: {
+        name: "Wood first",
+        steps: [
+          { rank: "Settlement", goal: "wood", count: 2 },
+          { rank: "City", goal: "farm", count: 4 },
+        ],
+      },
+    },
+    {
+      id: "early-army",
+      order: {
+        name: "Early army",
+        steps: [
+          { rank: "Settlement", goal: "barracks", count: 1 },
+          { rank: "Settlement", goal: "army", count: 1 },
+        ],
+      },
+    },
+  ],
 };
 
 const profilesOf = (accounts: readonly string[]) =>

@@ -6,6 +6,7 @@
 /eternum / 301
 /dominion / 301
 /sign-in / 301
+/blitz/build-orders / 200
 /blitz/:id / 200
 /season / 200
 /results/:id / 200

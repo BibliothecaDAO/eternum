@@ -101,6 +101,37 @@ const AppButtonFace = ({
   </button>
 );
 
+/** A button that is only its icon, square: its label is its name to assistive technology and its tip on hover. */
+export const AppIconButton = ({
+  icon,
+  label,
+  kind = "quiet",
+  tone,
+  disabled,
+  onClick,
+}: {
+  icon: IconMeaning;
+  label: string;
+  kind?: "secondary" | "quiet";
+  tone?: "bad";
+  disabled?: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    className="app-button"
+    data-kind={kind}
+    data-size="icon"
+    data-tone={tone}
+    aria-label={label}
+    title={label}
+    disabled={disabled}
+    onClick={onClick}
+  >
+    <Icon name={icon} size={20} />
+  </button>
+);
+
 /** A field: its label above, its value, a line under it that helps or, in the bad tone, says what is wrong. */
 export const AppField = ({
   label,

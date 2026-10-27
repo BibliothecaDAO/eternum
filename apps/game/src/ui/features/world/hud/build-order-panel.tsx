@@ -1,8 +1,9 @@
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import { useActiveBuildOrder, useBuildOrderAccount } from "@/hooks/use-build-orders";
+import { saveBuildOrders, useBuildOrderAccount, useBuildOrders } from "@/hooks/use-build-orders";
+import { BUILD_ORDERS_PATH } from "@/shell/build-orders/build-orders-route";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudIconButton, HudPanel, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudIconButton, HudPanel, HudRow, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { BUILD_ORDER_WORDS } from "@/ui/design-system/kit/words";
 import {
   type EmpireSuggestion,
@@ -14,13 +15,13 @@ import {
 } from "@/ui/features/world/containers/left-facets/use-suggestion-actions";
 import { useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
+import type { BuildOrderBook } from "@bibliothecadao/eternum/automation";
 import type { ReactNode } from "react";
 
-import { openBuildOrderMaker } from "./build-order-maker/build-order-maker";
-
 /**
- * The Build order panel (the owner's pick, build-order-2): the order the player follows at its head (their active one,
- * or the game's), with the way to their orders, then each realm's next step under it,
+ * The Build order panel (the owner's pick, build-order-2): at its head the choice of the order to follow (one saved on
+ * the player's account, or the game's) and the way to the app's Build orders page, where orders are made; then each
+ * realm's next step under it,
  * only once the step can be taken; a step done never shows. A level-up comes first, as it always does; a worker hut
  * comes when the next step needs the room. Self-contained: it reads the game it is drawn in, and draws nothing where
  * there is no build order to follow (outside a Blitz, or for a viewer who gives no orders). The rail places it under
@@ -36,11 +37,20 @@ export const BuildOrderPanel = () => {
 const PlayersBuildOrder = () => {
   useBuildOrderAccount();
   const steps = useEmpireSuggestions();
-  const order = useActiveBuildOrder();
+  const { book, status } = useBuildOrders();
   const { handleSuggestionClick, pendingSuggestionIds } = useSuggestionActions();
   const refusal = useActNowRefusal();
   return (
-    <BuildOrderView orderName={order.name} onOrders={openBuildOrderMaker}>
+    <BuildOrderView
+      choice={
+        <OrderChoice
+          book={book}
+          busy={status === "loading" || status === "saving"}
+          onFollow={(active) => book && void saveBuildOrders({ ...book, active })}
+        />
+      }
+      onOrders={openBuildOrdersPage}
+    >
       {steps.map((step) =>
         isOrderSuggestion(step) ? (
           <BuildOrderRow
@@ -58,6 +68,37 @@ const PlayersBuildOrder = () => {
     </BuildOrderView>
   );
 };
+
+/** The app's Build orders page, opened beside the game so the game keeps running. */
+const openBuildOrdersPage = () => window.open(BUILD_ORDERS_PATH, "_blank", "noopener");
+
+/** The game's own order in the choice: it needs no saving, and it is what an account with none follows. */
+const GAMES_ORDER = "";
+
+/**
+ * Which order the panel follows: the account's saved orders and the game's. Following one saves only that choice; while
+ * the account's orders are being read or saved, or signed out with none, the choice holds.
+ */
+export const OrderChoice = ({
+  book,
+  busy,
+  onFollow,
+}: {
+  book: BuildOrderBook | null;
+  busy: boolean;
+  onFollow: (active: string | null) => void;
+}) => (
+  <HudSelect
+    label={BUILD_ORDER_WORDS.follow}
+    value={book?.active ?? GAMES_ORDER}
+    options={[
+      ...(book?.orders ?? []).map(({ id, order }) => ({ value: id, label: order.name })),
+      { value: GAMES_ORDER, label: BUILD_ORDER_WORDS.theGamesOrder },
+    ]}
+    disabled={busy || !book}
+    onChange={(active) => onFollow(active === GAMES_ORDER ? null : active)}
+  />
+);
 
 /** Each order step's verb: a build builds, an army opens its deployment. */
 export const STEP_VERBS: Record<Exclude<EmpireSuggestion["action"], "upgrade">, string> = {
@@ -90,15 +131,15 @@ const LevelUpRow = ({ step }: { step: EmpireSuggestion }) => {
 };
 
 /**
- * The panel as drawn: the order's name at its head with the way to the player's orders, its rows, or the line that says
- * there is nothing now.
+ * The panel as drawn: the choice of order at its head with the way to the page where orders are made, its rows, or the
+ * line that says there is nothing now.
  */
 export const BuildOrderView = ({
-  orderName,
+  choice,
   onOrders,
   children,
 }: {
-  orderName: string;
+  choice: ReactNode;
   onOrders: () => void;
   children: ReactNode[];
 }) => (
@@ -108,8 +149,8 @@ export const BuildOrderView = ({
     icon="build"
     cue={
       <span className="flex items-center gap-1">
-        <span className="text-hud-label text-hud-muted">{orderName}</span>
-        <HudIconButton icon="edit" label={BUILD_ORDER_WORDS.yourOrders} kind="quiet" size="sm" onClick={onOrders} />
+        {choice}
+        <HudIconButton icon="edit" label={BUILD_ORDER_WORDS.makeOrders} kind="quiet" size="sm" onClick={onOrders} />
       </span>
     }
     bodyClassName="flex flex-col"

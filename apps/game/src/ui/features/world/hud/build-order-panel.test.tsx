@@ -33,6 +33,25 @@ vi.mock("@/ui/modules/entity-details/hooks/use-realm-level-up", () => ({
   }),
 }));
 
+// The account 0xa1 is signed in; its build orders' service answers each save at the next revision.
+const service = vi.hoisted(() => ({
+  saveBuildOrders: vi.fn(async (saved: { owner: string; revision: number; book: unknown }) => ({
+    ...saved,
+    revision: saved.revision + 1,
+  })),
+  getBuildOrders: vi.fn(),
+  signedIn: true,
+}));
+vi.mock("@/hooks/context/identity-session", async (original) => ({
+  ...(await original<typeof import("@/hooks/context/identity-session")>()),
+  identityClient: service,
+  useIdentitySession: () =>
+    service.signedIn
+      ? { status: "signed-in", session: { user: { realmsId: "0xa1" } } }
+      : { status: "signed-out", session: null },
+}));
+
+import { useBuildOrderStore } from "@/hooks/use-build-orders";
 import { BuildOrderPanel } from "./build-order-panel";
 
 const WOOD = {
@@ -60,6 +79,15 @@ beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   Object.assign(game, { mode: "blitz", ordersAllowed: true, steps: [WOOD, LEVEL_UP] });
   game.build.mockClear();
+  service.saveBuildOrders.mockClear();
+  service.signedIn = true;
+  useBuildOrderStore.setState({
+    owner: "0xa1",
+    status: "ready",
+    book: { orders: [], active: null },
+    revision: 3,
+    notice: null,
+  });
   game.levelUp.mockClear();
   host = document.createElement("div");
   document.body.append(host);
@@ -81,7 +109,7 @@ const rows = () =>
 it("shows each realm's next step under the default order, the level a level-up reaches in its line, and each verb takes it", async () => {
   await draw();
   expect(host.querySelector("section")?.getAttribute("aria-label")).toBe("Build order");
-  expect(host.textContent).toContain("Default");
+  expect(host.querySelector(".ui-select")?.textContent).toBe("The game's order");
   expect(rows()).toEqual([
     ["Egonal", "Wood camps: 1 of 2 built.", "Build"],
     ["Stolsli", "It can level up to Kingdom now.", "Level up"],
@@ -107,4 +135,37 @@ it("draws nothing where there is no build order to follow: outside a Blitz, or f
   Object.assign(game, { mode: "blitz", ordersAllowed: false });
   await draw();
   expect(host.innerHTML).toBe("");
+});
+
+it("chooses which saved order to follow, saving only that choice, and opens the app's Build orders page to make one", async () => {
+  const COAL_RUSH = { name: "Coal rush", steps: [{ rank: 0, goal: "farm" as const, count: 2 }] };
+  useBuildOrderStore.setState({ book: { orders: [{ id: "o1", order: COAL_RUSH }], active: null } });
+  const opened = vi.spyOn(window, "open").mockReturnValue(null);
+  await draw();
+  const choice = host.querySelector<HTMLButtonElement>('button[aria-label="Order to follow"]')!;
+  await act(async () => choice.click());
+  const items = [...document.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')];
+  expect(items.map((item) => [item.textContent, item.getAttribute("aria-checked")])).toEqual([
+    ["Coal rush", "false"],
+    ["The game's order", "true"],
+  ]);
+  await act(async () => items[0].click());
+  expect(service.saveBuildOrders.mock.calls[0][0]).toMatchObject({
+    revision: 3,
+    book: { orders: [{ id: "o1", order: { name: "Coal rush" } }], active: "o1" },
+  });
+  expect(choice.textContent).toBe("Coal rush");
+  // No editor in the game: the pencil opens the page where orders are made, beside the game.
+  await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Make build orders"]')!.click());
+  expect(opened).toHaveBeenCalledWith("/blitz/build-orders", "_blank", "noopener");
+  opened.mockRestore();
+});
+
+it("holds the choice on the game's order while signed out", async () => {
+  service.signedIn = false;
+  useBuildOrderStore.setState({ owner: null, status: "signed-out", book: null, revision: 0 });
+  await draw();
+  expect(service.getBuildOrders).not.toHaveBeenCalled();
+  const choice = host.querySelector<HTMLButtonElement>('button[aria-label="Order to follow"]')!;
+  expect([choice.textContent, choice.disabled]).toEqual(["The game's order", true]);
 });

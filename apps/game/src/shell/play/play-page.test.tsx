@@ -33,10 +33,13 @@ const reads = vi.hoisted(() => ({
     refetch: () => {},
   } as Read<NextBlitzGame | null>,
   history: null as unknown as Read<{ games: DirectoryGame[]; next: null; failures: { url: string }[] }>,
+  // The signed-in account's build orders, as its identity service answers them: none saved unless a case says.
+  buildOrders: { orders: [], active: null } as unknown,
 }));
 
 vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/hooks/context/identity-session")>()),
+  identityClient: { getBuildOrders: async () => ({ owner: "0x7", revision: 1, book: reads.buildOrders }) },
   useIdentitySession: () =>
     reads.signedIn
       ? { status: "signed-in", session: { user: { id: "u", realmsId: "0x7" } } }
@@ -61,6 +64,8 @@ vi.mock("../blitz/entry", async (importOriginal) => ({
 }));
 
 import { PlayPage } from "./play-page";
+
+import { useBuildOrderStore } from "@/hooks/use-build-orders";
 
 const REALM = { category: 1, realm_id: 3098, level: 1 };
 const game = (over: Partial<DirectoryGame>): DirectoryGame =>
@@ -116,6 +121,8 @@ afterEach(async () => {
   cleanup = null;
   reads.signedIn = true;
   reads.nextBlitz = answered(null);
+  reads.buildOrders = { orders: [], active: null };
+  useBuildOrderStore.setState({ owner: null, status: "signed-out", book: null, revision: 0, notice: null });
 });
 
 const mount = async () => {
@@ -131,6 +138,7 @@ const mount = async () => {
           <Where />
           <Routes>
             <Route path="/" element={<PlayPage />} />
+            <Route path="/blitz/build-orders" element={<p>build orders</p>} />
             <Route path="/blitz/:id" element={<p>lobby</p>} />
           </Routes>
         </MemoryRouter>,
@@ -220,7 +228,7 @@ it("keeps Blitz on Play once an ended Blitz's results were seen, saying none is 
 
   localStorage.setItem("realms.seen-results", JSON.stringify(["0xa:2"]));
   await page.render();
-  expect(blitz()).toBe("BlitzNo Blitz scheduled this season.");
+  expect(blitz()).toBe("BlitzNo Blitz scheduled this season.Build ordersThe game's order");
   expect(page.text()).toContain("Resume");
 
   // A slot the operator opens takes the line's place; a slot outage is said as the outage, never as "none".
@@ -259,12 +267,15 @@ it("shows the calendar's next Blitz, its start and when its entry opens, until t
   const page = await mount();
   const blitz = () => page.container.querySelector('section[aria-label="Blitz"]')?.textContent ?? null;
   const at = (iso: string) => formatClockTime(Date.parse(iso) / 1000);
-  expect(blitz()).toBe(`BlitzNext ranked BlitzStarts ${at(next.startsAt)} · Entry opens ${at(next.opensAt)} · in 17m`);
+  const orders = "Build ordersThe game's order";
+  expect(blitz()).toBe(
+    `BlitzNext ranked BlitzStarts ${at(next.startsAt)} · Entry opens ${at(next.opensAt)} · in 17m${orders}`,
+  );
 
   // Its entry due: the schedule's next tick opens it.
   reads.nextBlitz = answered({ ...next, opensAt: new Date((now - 1) * 1000).toISOString() });
   await page.render();
-  expect(blitz()).toBe(`BlitzNext ranked BlitzStarts ${at(next.startsAt)} · Entry opens in a moment`);
+  expect(blitz()).toBe(`BlitzNext ranked BlitzStarts ${at(next.startsAt)} · Entry opens in a moment${orders}`);
 
   // Published: the game stands as today, and the calendar's line goes.
   reads.slots = answered({ slots: [slot] });
@@ -282,4 +293,19 @@ it("says the season calendar did not answer, never 'No Blitz', when it fails", a
   expect(page.text()).toContain("Season did not answer.");
   expect(page.text()).not.toContain("No Blitz scheduled");
   expect(page.container.querySelector('section[aria-label="Blitz"]')).toBeNull();
+});
+
+it("ends Blitz's column on the way to the player's build orders, naming the order their games follow", async () => {
+  reads.directory = answered({ games: [ownSeason] });
+  reads.slots = answered({ slots: [slot] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  reads.buildOrders = {
+    orders: [{ id: "o1", order: { name: "Coal rush", steps: [{ rank: "Settlement", goal: "farm", count: 2 }] } }],
+    active: "o1",
+  };
+  const page = await mount();
+  const rows = [...page.container.querySelectorAll('section[aria-label="Blitz"] .app-row')];
+  expect(rows.at(-1)?.textContent).toBe("Build ordersCoal rush");
+  await act(async () => (rows.at(-1) as HTMLButtonElement).click());
+  expect(page.text()).toBe("build orders");
 });

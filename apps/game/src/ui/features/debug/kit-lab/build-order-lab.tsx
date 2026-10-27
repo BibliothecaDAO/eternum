@@ -1,13 +1,12 @@
 import { useDocumentClass } from "@/hooks/use-document-class";
-import { useBuildOrderStore } from "@/hooks/use-build-orders";
 import { decorateSuggestion } from "@/ui/features/world/containers/left-facets/use-empire-suggestions";
-import { BuildOrderMaker } from "@/ui/features/world/hud/build-order-maker/build-order-maker";
-import { BuildOrderRow, BuildOrderView, STEP_VERBS } from "@/ui/features/world/hud/build-order-panel";
+import { BuildOrderRow, BuildOrderView, OrderChoice, STEP_VERBS } from "@/ui/features/world/hud/build-order-panel";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { NextUpView } from "@/ui/features/world/hud/next-up";
 import {
   type BlitzArmyState,
   type BlitzRealmSuggestionInput,
+  type BuildOrderBook,
   buildBlitzRealmSuggestions,
   readBuildOrderText,
 } from "@bibliothecadao/eternum/automation";
@@ -108,25 +107,34 @@ const SITUATIONS: { situation: string; input: BlitzRealmSuggestionInput }[] = [
   },
 ];
 
-/** The panel as built, on the default order: each situation's row as the game's own rule writes it, under its case. */
-const PhaseOnePanel = () => (
-  <BuildOrderView orderName="Default" onOrders={run}>
-    {SITUATIONS.map(({ situation, input }) => {
-      const [draft] = buildBlitzRealmSuggestions(input);
-      const step = draft && decorateSuggestion(draft);
-      return (
-        <div key={input.realmName} data-situation={input.realmName}>
-          <p className="text-hud-label text-hud-muted">{situation}</p>
-          {step && step.action !== "upgrade" ? (
-            <BuildOrderRow step={step} verb={STEP_VERBS[step.action]} busy={false} refusal={null} onPress={run} />
-          ) : (
-            <p className="text-hud-label text-hud-ink">{input.realmName}: nothing to take now.</p>
-          )}
-        </div>
-      );
-    })}
-  </BuildOrderView>
-);
+/**
+ * The panel as built, on a fixture account's orders, Coal rush followed (its choice picks another here, saving nothing):
+ * each situation's row as the game's own rule writes it, under its case.
+ */
+const PhaseOnePanel = () => {
+  const [book, setBook] = useState(labBook);
+  return (
+    <BuildOrderView
+      choice={<OrderChoice book={book} busy={false} onFollow={(active) => setBook({ ...book, active })} />}
+      onOrders={run}
+    >
+      {SITUATIONS.map(({ situation, input }) => {
+        const [draft] = buildBlitzRealmSuggestions(input);
+        const step = draft && decorateSuggestion(draft);
+        return (
+          <div key={input.realmName} data-situation={input.realmName}>
+            <p className="text-hud-label text-hud-muted">{situation}</p>
+            {step && step.action !== "upgrade" ? (
+              <BuildOrderRow step={step} verb={STEP_VERBS[step.action]} busy={false} refusal={null} onPress={run} />
+            ) : (
+              <p className="text-hud-label text-hud-ink">{input.realmName}: nothing to take now.</p>
+            )}
+          </div>
+        );
+      })}
+    </BuildOrderView>
+  );
+};
 
 const Shown = ({ name, line, children }: { name: string; line: string; children: ReactNode }) => (
   <section data-sheet-element={name} className="flex w-hud-column flex-col gap-2">
@@ -137,9 +145,8 @@ const Shown = ({ name, line, children }: { name: string; line: string; children:
 );
 
 /**
- * Dev only, for the owner: the Build order panel and its maker, at /lab/kit/build-order. Next up for a newcomer, the
- * panel on the default order, and the maker on a fixture account holding two orders (its Edit and Paste an order open
- * the editor and the paste, as in the game).
+ * Dev only, for the owner: the Build order panel, at /lab/kit/build-order. Next up for a newcomer, and the panel on a
+ * fixture account holding two orders. Orders are made on the app's Build orders page (/lab/app/home/blitz/build-orders).
  */
 export const BuildOrderLab = () => {
   useDocumentClass("classic-hud");
@@ -152,16 +159,10 @@ export const BuildOrderLab = () => {
         <NextUpView steps={NEWCOMER_STEPS} />
       </Shown>
       <Shown
-        name="Phase 1 · the panel"
-        line="Built: the game's own panel, under Next up in a Blitz's rail, on the default order, each row from the game's own rule. A worker hut only when the next step needs the room; after the barracks, its troops trained, then the first army deployed."
+        name="The panel"
+        line="The game's own panel, under Next up in a Blitz's rail. Its head chooses the order to follow; its pencil opens the app's Build orders page, where orders are made (lab: /lab/app/home/blitz/build-orders). Each row from the game's own rule."
       >
         <PhaseOnePanel />
-      </Shown>
-      <Shown
-        name="The maker · your orders"
-        line="Opened from the panel's head. The orders on your account, the one the panel follows starred; Use picks another, the game's order included. Edit, Delete, Paste an order, New order."
-      >
-        <LabMaker />
       </Shown>
     </div>
   );
@@ -179,7 +180,7 @@ const LAB_ORDERS = [
   },
 ];
 
-const labBook = () => ({
+const labBook = (): BuildOrderBook => ({
   orders: LAB_ORDERS.map(({ id, json }) => {
     const read = readBuildOrderText(json);
     if ("error" in read) throw new Error(read.error);
@@ -187,11 +188,3 @@ const labBook = () => ({
   }),
   active: "coal-rush",
 });
-
-/** The maker as the game opens it, on a signed-in fixture account: its saves reach no service here. */
-const LabMaker = () => {
-  useState(() => {
-    useBuildOrderStore.setState({ owner: "0x1ab", status: "ready", book: labBook(), revision: 1, notice: null });
-  });
-  return <BuildOrderMaker />;
-};
