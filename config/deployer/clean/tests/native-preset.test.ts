@@ -339,7 +339,13 @@ describe("native presets", () => {
     expect(preset.structures.buildings).toHaveLength(research.HEARTH);
     for (const category of [research.WAR_HALL, research.SUPPLY_YARD, research.SCOUTS_LODGE, research.HEARTH]) {
       const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
-      expect([rule.population_cost, rule.simple_cost]).toEqual([2, [{ resource_type: 23, amount: 3000n * precision }]]);
+      expect([rule.population_cost, rule.simple_cost]).toEqual([
+        2,
+        [
+          { resource_type: 38, amount: 12000n * precision },
+          { resource_type: 23, amount: 3000n * precision },
+        ],
+      ]);
     }
     for (const category of [31, 34]) {
       const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
@@ -806,13 +812,13 @@ describe("the Frontier playground preset", () => {
       (sum, { price }) => sum + whole(price.essence),
       0,
     );
-    expect(essenceForEveryTier).toBe(4_076_500);
+    expect(essenceForEveryTier).toBe(3_466_500);
     expect(start.get(ResourcesIds.Essence)).toBeGreaterThan(essenceForEveryTier);
     // A castle stores two full deploys of its level; a Settlement's stores hold what the realm starts with, no more.
     const config = load(FRONTIER_PLAYGROUND_PRESET_ID);
     const settlementStore =
       config.troop.limit.settlementDeploymentCap *
-      nativePresets[FRONTIER_PLAYGROUND_PRESET_ID]!.board!.castleStoreDeploys;
+      nativePresets[FRONTIER_PLAYGROUND_PRESET_ID]!.board!.troopStoreDeploys;
     for (const resource of [ResourcesIds.Labor, ResourcesIds.Wheat, ResourcesIds.Knight])
       expect(start.get(resource)).toBe(settlementStore);
   });

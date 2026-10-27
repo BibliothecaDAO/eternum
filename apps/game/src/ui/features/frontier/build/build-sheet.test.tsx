@@ -545,7 +545,22 @@ it("chooses the free Scouts kind on the build sheet and submits it with construc
       value: {
         ...lodge,
         population_cost: 2,
-        simple_cost: [{ resource_type: ResourcesIds.Labor, amount: 3000n * BigInt(RESOURCE_PRECISION) }],
+        simple_cost: [
+          { resource_type: ResourcesIds.Essence, amount: 12000n * BigInt(RESOURCE_PRECISION) },
+          { resource_type: ResourcesIds.Labor, amount: 3000n * BigInt(RESOURCE_PRECISION) },
+        ],
+      },
+    },
+  ]);
+  store.applyFacts([
+    {
+      model: "ResourceBalance",
+      key: "0x7638",
+      value: {
+        game_id: 1,
+        entity_id: 7,
+        resource_type: ResourcesIds.Essence,
+        balance: 12000n * BigInt(RESOURCE_PRECISION),
       },
     },
   ]);
@@ -572,7 +587,9 @@ it("chooses the free Scouts kind on the build sheet and submits it with construc
       button.textContent?.includes("Scouts"),
     )!;
     act(() => card.click());
-    expect(card.textContent).toContain("Uncommon");
+    expect(card.querySelector(".ui-tier")?.textContent).toBe("II");
+    expect(card.querySelector('[aria-label="12,000 Essence"]')).not.toBeNull();
+    expect(card.querySelector('[aria-label="3,000 labor"]')).not.toBeNull();
     const beasts = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
       (button) => button.textContent === "Beasts",
     )!;

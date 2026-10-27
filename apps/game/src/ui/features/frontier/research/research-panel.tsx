@@ -6,7 +6,15 @@ import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Tier, tierNumeral } f
 import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { useState } from "react";
 
-import { type Branch, firstMissing, type Need, needLine, type NodeState, type TreeNode } from "./research-tree";
+import {
+  type Branch,
+  researchSideNode,
+  firstMissing,
+  type Need,
+  needLine,
+  type NodeState,
+  type TreeNode,
+} from "./research-tree";
 
 /**
  * Research as a tree (the owner's pick, 20 October: "Branches"): three branches side by side, Economy, Army and Castle;
@@ -185,10 +193,7 @@ const NodeChoice = ({
   const [side, setSide] = useState(() =>
     Math.max(0, rowNode.sides?.findIndex((option) => option.state !== "done") ?? 0),
   );
-  const selected = rowNode.sides?.[side];
-  const node = selected
-    ? { ...rowNode, state: selected.state, needs: selected.needs, price: selected.price, nextTier: selected.nextTier }
-    : rowNode;
+  const node = researchSideNode(rowNode, side);
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
   const verb = node.sides?.[side]?.name ?? (node.nextTier ? `${node.name} ${tierNumeral(node.nextTier)}` : node.name);

@@ -46,7 +46,9 @@ export function openArmyDeployment(target: ArmyDeploymentTarget, place?: ArmyDep
     return;
   }
   const ui = useUIStore.getState();
-  ui.setPendingMilitaryAction(target);
+  const current = ui.pendingMilitaryAction;
+  const sameExplorerDeploy = target.isExplorer && current?.isExplorer && current.structureId === target.structureId;
+  ui.setPendingMilitaryAction({ ...target, slot: target.slot ?? (sameExplorerDeploy ? current.slot : undefined) });
   ui.setLeftNavigationView(LeftView.MilitaryView);
 }
 

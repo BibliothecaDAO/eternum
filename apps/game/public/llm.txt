@@ -1675,12 +1675,12 @@ launch, these are test LORDS ([LORDS](/account/lords)).
 Clearing a ruin pays its chest, and gives the army XP by the ruin guard's starting strength. The chest's rarity is
 rolled when the ruin is found, from the odds of the depth it stands on:
 
-| Ground       | Common | Uncommon | Rare | Epic | Legendary |
-| ------------ | ------ | -------- | ---- | ---- | --------- |
-| Surface      | 50%    | 27%      | 14%  | 6%   | 3%        |
-| Ethereal I   | 40%    | 30%      | 17%  | 9%   | 4%        |
-| Ethereal II  | 30%    | 30%      | 22%  | 12%  | 6%        |
-| Ethereal III | 20%    | 30%      | 25%  | 16%  | 9%        |
+| Ground       | Common | Uncommon | Rare   | Epic | Legendary |
+| ------------ | ------ | -------- | ------ | ---- | --------- |
+| Surface      | 50%    | 27%      | 14%    | 6%   | 3%        |
+| Ethereal I   | 0%     | 50%      | 28.33% | 15%  | 6.67%     |
+| Ethereal II  | 0%     | 0%       | 55%    | 30%  | 15%       |
+| Ethereal III | 0%     | 0%       | 0%     | 64%  | 36%       |
 
 A chest is worth its tier's shares at the day's price:
 
@@ -1688,12 +1688,11 @@ A chest is worth its tier's shares at the day's price:
 | ------ | ------ | -------- | ---- | ---- | --------- |
 | Shares | 1      | 2        | 4    | 10   | 20        |
 
-The price of a share is set each day from the season's pool, and never exceeds 50 LORDS. A
-chest's LORDS are set aside from the day's budget as the ruin is found, so a ruin found today pays at today's price.
-
-* **One ruin a day.** Each realm finds at most one ruin a day, counting the surface and every depth together.
-* **A ruin the budget cannot fund does not appear.** The reveal comes up empty, and it does not use your day's ruin, so
-  a later reveal that day can still find one.
+The price of a share is set each day from the season's pool, and never exceeds  50
+LORDS. The Season page shows the pool, today's price and its ceiling. A ruin shows its tier and LORDS before you fight.
+Its LORDS are reserved and paid only when you clear it. If today's available budget cannot cover it, the clear refuses
+without spending the attack. You can reveal any number of ruins, then choose one to clear: your other ruins disappear,
+across every depth, and your realm finds no more ruins until the next day.
 
 <Shot frame="panel" name="frontier/season-pool" caption="The Season board: the pool, what today releases, a share's price and its ceiling." />
 
@@ -1746,19 +1745,19 @@ troops, larger the deeper it is. Each reveal also gives the army 2 XP.
 
 ## What a reveal can find
 
-| Find   | Chance      | What it is                                                                                                                                                                                                           |
-| ------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Beasts | 6%          | A roaming band, the weakest guard. Clearing it pays XP only.                                                                                                                                                         |
-| Camp   | 4%          | A camp guarded by a Troll. Clearing it pays labor: half its guard's starting troops.                                                                                                                                 |
-| Rift   | 4%          | A fissure guarded by a Dark fey. Clearing it pays Essence: three times its guard's starting troops.                                                                                                                  |
-| Ruin   | 1%          | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. At most one a day per realm, surface and depths together, and only while the day's budget can fund its chest ([Chests](/frontier/chests)). |
-| Shrine | 3%          | Once researched: an army beside it uses it for 200 XP, then it is gone.                                                                                                                                              |
-| Well   | 3%          | Once researched: an army beside it uses it for 60 stamina, then it is gone.                                                                                                                                          |
-| Chest  | 1 in 10,000 | On the surface only, while the day's budget can fund it ([Chests](/frontier/chests)).                                                                                                                                |
+| Find   | Chance      | What it is                                                                                                                                                                                        |
+| ------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Beasts | 6%          | A roaming band, the weakest guard. Clearing it pays XP and labor: one quarter of its starting troops.                                                                                             |
+| Camp   | 4%          | A camp guarded by a Troll. Clearing it pays labor: half its guard's starting troops.                                                                                                              |
+| Rift   | 4%          | A fissure guarded by a Dark fey. Clearing it pays Essence: three times its guard's starting troops.                                                                                               |
+| Ruin   | 1%          | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. Find any number; clear one per realm per day. The other ruins disappear across all depths ([Chests](/frontier/chests)). |
+| Shrine | 3%          | Once researched: an army beside it uses it for 200 XP, then it is gone.                                                                                                                           |
+| Well   | 3%          | Once researched: an army beside it uses it for 60 stamina, then it is gone.                                                                                                                       |
+| Chest  | 1 in 10,000 | On the surface only, while the day's budget can fund it ([Chests](/frontier/chests)).                                                                                                             |
 
 After 7 empty reveals in a row, the next reveal draws only among the sites, shrines
-and wells above, so it finds one unless it draws a ruin the budget cannot fund. Scouting makes the kinds you pick for it
-more likely ([Armies](/frontier/armies#xp-and-attributes)).
+and wells above, so it finds one. After a ruin clear, no further ruins appear that day. Scouting makes the kinds you
+pick for it more likely ([Armies](/frontier/armies#xp-and-attributes)).
 
 To use a shrine or a well, select an army beside it and right-click it (on a phone, press and hold), or tap it and press
 **Use**.
@@ -1910,13 +1909,13 @@ Your realm makes the troops, wheat and labor your armies need, and grows stronge
 
 Tap an open plot to build there. Buildings are paid in labor:
 
-| Building                                     | Makes                     | Labor | Population |
-| -------------------------------------------- | ------------------------- | ----- | ---------- |
-| Farm                                         | Wheat                     | 400   | 1          |
-| Barracks                                     | Troops                    | 400   | 3          |
-| Workshop                                     | Labor                     | 2,000 | 2          |
-| Workers' hut                                 | Population                | 300   | None       |
-| War hall, Supply yard, Scouts' lodge, Hearth | A tier for every new army | 3,000 | 2          |
+| Building                                     | Makes                     | Labor  | Population |
+| -------------------------------------------- | ------------------------- | ------ | ---------- |
+| Farm                                         | Wheat                     | 400    | 1          |
+| Barracks                                     | Troops                    | 400    | 3          |
+| Workshop                                     | Labor                     | 2,000  | 2          |
+| Workers' hut                                 | Population                | 300    | None       |
+| War hall, Supply yard, Scouts' lodge, Hearth | A tier for every new army | 12,000 | 2          |
 
 Each workers' hut houses 6, and every other building takes the population shown. Each further
 copy of a building costs more than the last, and pulling one down returns 50% of its
@@ -1960,8 +1959,8 @@ Homecoming.
 **Shrines and wells.** Research them (2,000 and 6,000 Essence)
 before reveals can find them.
 
-**The Ethereal depths.** Research opens them one at a time, for 160,000,
-400,000, then 900,000 Essence
+**The Ethereal depths.** Research opens them one at a time, for 100,000,
+250,000, then 500,000 Essence
 ([The expedition](/frontier/expedition#the-spire-and-its-depths)).
 
 <Shot frame="panel" name="frontier/research" caption="The castle's research tree, with one node open." />

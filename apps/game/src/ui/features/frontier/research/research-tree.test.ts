@@ -72,14 +72,15 @@ describe("the castle's tree as the contract rules it", () => {
   });
 
   it("says what a finished Farm's picks give, read from its two sides", () => {
-    // Legendary Farm: three Fields picks (+75% wheat) and one Granary pick (+50% store).
-    const legendary = { ...MID_REALM, learned: { ...MID_REALM.learned, 0: { tier: 4, sides: [0, 1, 0, 0] } } };
+    // Both Farm sides are complete: four Fields picks and four Granary picks.
+    const legendary = {
+      ...MID_REALM,
+      learned: { ...MID_REALM.learned, 0: { tier: 4, sides: [0, 0, 0, 0, 1, 1, 1, 1] } },
+    };
     const farm = node(legendary, "row-0");
-    expect([farm.state, farm.sides, farm.gives]).toEqual([
-      "done",
-      undefined,
-      { line: "Fields +75%", now: "Granary +50%" },
-    ]);
+    expect(farm.state).toBe("done");
+    expect(farm.sides?.map((side) => side.state)).toEqual(["done", "done"]);
+    expect(farm.gives).toEqual({ line: "Fields +100%", now: "Granary +200%" });
   });
 });
 
@@ -137,11 +138,12 @@ it("keeps the cheaper side open after the other reaches Legendary and displays t
   ).toBe("done");
 });
 
-it("shows construction as the free first training level, with no research bill", () => {
+it("requires construction for the first training level, with no separate research purchase", () => {
   for (const row of [4, 5, 6, 7]) {
     const training = node(EARLY_REALM, `row-${row}`);
     expect(training.price).toBeUndefined();
-    expect(training.gives.line).toContain("Building grants Uncommon");
+    expect(training.nextTier).toBe(2);
+    expect(training.needs.some((need) => need.kind === "stands" && !need.met)).toBe(true);
     expect(training.needs.some((need) => need.kind === "labor" || need.kind === "essence")).toBe(false);
     expect(training.state).toBe("locked");
   }

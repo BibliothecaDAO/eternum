@@ -24,13 +24,23 @@ export const RefillButton = ({
 );
 
 /** The army card's compact refill opens the same partial purchase as the order bar. */
-export const RefillChip = ({ price, held, refilling = false, onRefill }: {
+export const RefillChip = ({
+  price,
+  held,
+  refilling = false,
+  onRefill,
+}: {
   price: number;
   held: number | undefined;
   refilling?: boolean;
   onRefill: () => void;
 }) => (
-  <HudChip icons={["stamina", "lords"]} label={REFILL} disabled={held === undefined || held < 1 || refilling} onPress={onRefill}>
+  <HudChip
+    icons={["stamina", "lords"]}
+    label={REFILL}
+    disabled={held === undefined || held < 1 || refilling}
+    onPress={onRefill}
+  >
     {refilling ? REFILLING : held === undefined ? "—" : formatExact(Math.min(price, Math.floor(held)))}
   </HudChip>
 );

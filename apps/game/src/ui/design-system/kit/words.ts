@@ -285,9 +285,6 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
   const pair = formatHeldAgainst(held, need);
   return `${pair.held} / ${pair.need}`;
 };
-/** A training building waits for the Barracks' tier: "Needs Barracks at Rare". */
-/** A building that waits on another's tier, by its numeral: "Needs Barracks III". */
-export const needsTier = (building: string, numeral: string) => `Needs ${building} ${numeral}`;
 /** Training counts purchases across both sides, including one on each. */
 export const needsResearchPurchases = (building: string, count: number) =>
   `Needs ${count} ${building} research purchases`;

@@ -52,7 +52,7 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
   const noDice =
     preset.rules.mode_rules & ~(nativeRuleConstants.COMBAT_DICE | nativeRuleConstants.COMBAT_DICE_ETHEREAL);
   store.applyFacts([
-    set("0x102", "DepthRules", {
+    set("0x901", "DepthRules", {
       game_id: 1,
       depth: 1,
       reveal_percent: 15,

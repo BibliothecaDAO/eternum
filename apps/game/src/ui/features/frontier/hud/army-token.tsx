@@ -141,24 +141,16 @@ export const OpenSlot = ({
   </button>
 );
 
-/** An open slot's dashed ring: a plus, "…" while an army is on its way into it, or the number of a slot that waits. */
-export const SlotRing = ({
-  pulse,
-  filling,
-  waits,
-}: {
-  pulse: boolean;
-  filling?: string;
-  waits?: { number: number };
-}) => (
+/** An open slot's dashed ring: a plus, "…" while an army is on its way into it. */
+export const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string }) => (
   <span
     className={cn(
       "flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-hud-line text-hud-title",
-      waits ? "text-hud-muted" : "text-hud-ink",
+      "text-hud-ink",
       (pulse || filling !== undefined) && "animate-pulse border-hud-line-strong",
     )}
   >
-    {waits ? waits.number : filling === undefined ? "+" : "…"}
+    {filling === undefined ? "+" : "…"}
   </span>
 );
 

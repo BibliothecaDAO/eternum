@@ -46,6 +46,29 @@ async (page) => {
         await page.screenshot({ path: screenshot, fullPage: true });
         captures.push(screenshot);
       }
+      for (const state of ["site-ruin", "build-training"]) {
+        await page.goto(new URL(`/lab/kit/hud/${state}`, entry).href);
+        const sheet = page.locator("[data-kit-sheet]");
+        await sheet.waitFor();
+        if (state === "site-ruin") {
+          await assertText(sheet, "First ruin clear or day end");
+          await assertText(sheet, "+128");
+        } else {
+          await assertText(sheet, "12K");
+          await assertText(sheet, "3,000");
+          if ((await sheet.locator('.ui-tier[aria-label="Uncommon"]').count()) < 4)
+            throw new Error("Training ranks missing");
+        }
+        const outside = await sheet.evaluate((node) => {
+          const rect = node.getBoundingClientRect();
+          return rect.left < 0 || rect.right > innerWidth || rect.top < 0 || rect.bottom > innerHeight;
+        });
+        if (outside) throw new Error(`${state} exceeds ${viewport.width} viewport`);
+        const screenshot = `${output}/${state}-${viewport.width}.png`;
+        await page.screenshot({ path: screenshot });
+        captures.push(screenshot);
+        await page.goto("about:blank");
+      }
     }
     if (errors.length) throw new Error(errors.join("\n"));
     return { captures, errors };

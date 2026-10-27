@@ -89,7 +89,7 @@ it("reads each side now against the next tier, picks a side by its row, and rese
   act(() => button(/^Research Granary$/)!.click());
   expect(onResearch).toHaveBeenCalledWith(1);
   // The tier is its gem, never its word: a Rare Farm holds II, its next tier III.
-  expect(gems()).toEqual(["III", "III", "IV"]);
+  expect(gems()).toEqual(["II", "II", "III"]);
   expect(card().textContent).not.toMatch(/Common|Uncommon|Rare|Epic|Legendary/);
 });
 
@@ -131,21 +131,21 @@ it("says the Essence the Workshops need against what is held, beside Research di
 
 it("shows a training building's one figure, what every new army starts with, now and next", () => {
   draw(research.ROW_WAR_HALL, { standing: 1 });
-  expect(rows()).toEqual([["Battle", "0% damage", "→", "+10% damage"]]);
+  expect(rows()).toEqual([["Battle", "+10% damage", "→", "+30% damage"]]);
   expect(button(/^Research$/)).toBeDefined();
   // Common is I on the card and current column; the next tier is II.
-  expect(gems()).toEqual(["I", "I", "II"]);
+  expect(gems()).toEqual(["II", "II", "III"]);
 });
 
 it("at Legendary shows what research gave, with no next column and no Research", () => {
   const legendary: RealmResearchFacts = {
     ...MID_REALM,
-    learned: { ...MID_REALM.learned, [research.ROW_FARM]: { tier: 4, sides: [0, 1, 0, 0] } },
+    learned: { ...MID_REALM.learned, [research.ROW_FARM]: { tier: 4, sides: [0, 0, 0, 0, 1, 1, 1, 1] } },
   };
   draw(research.ROW_FARM, { realm: legendary });
   expect(rows()).toEqual([
-    ["Fields", "+75%"],
-    ["Granary", "+50%"],
+    ["Fields", "+100%"],
+    ["Granary", "+200%"],
   ]);
   expect(button(/^Research/)).toBeUndefined();
   expect(gems()).toEqual(["V", "V"]);

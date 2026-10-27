@@ -156,6 +156,14 @@ export const SiteCardView = ({
         </span>
         {picking && <BeastGuard beast={beast} guard={guard} />}
       </header>
+      {ruinChoice && (
+        <dl className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-hud-label">
+          <dt className="text-hud-muted">{ruinChoice.depth} · Disappears</dt>
+          <dd className="text-hud-ink" data-tip="Your first ruin clear removes every other ruin, across all depths.">
+            First ruin clear or day end
+          </dd>
+        </dl>
+      )}
       {picking && choices ? (
         <ArmyChoices does="attack" choices={choices} guardIcon={guardIcon} />
       ) : facing ? (

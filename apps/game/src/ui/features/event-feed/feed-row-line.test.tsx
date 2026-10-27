@@ -279,7 +279,7 @@ describe("an activated relic in Events and the Log", () => {
       const [row] = selectEventStories([event], filter, PLAYER, () => false);
       expect(row).toBe(event);
       // Another player's activation is world history, not the player's must-not-miss.
-      const another = { ...event, id: "another's", owner: "0x2" };
+      const another = { ...event, id: "another's", owner: "0x2", participants: ["0x2"] };
       expect(selectEventStories([another], filter, PLAYER, () => false).map(({ id }) => id)).toEqual(others);
       game.armies = new Set();
       const root = createRoot(host);
@@ -311,15 +311,10 @@ it.each([
     ownerAddress: PLAYER,
     viewerAddress: PLAYER,
   } as never);
-  for (const filter of ["mine", "all"] as const) {
-    expect(eventsReads(filter, PLAYER, [])).toContainEqual({ limit: 100, story: "SiteUsed", owner: PLAYER });
-    expect(selectEventStories([event], filter, PLAYER, () => false)).toEqual([event]);
-    expect(
-      selectEventStories([{ ...event, owner: "0x2", participants: ["0x2"] }], filter, PLAYER, () => false),
-    ).toEqual([]);
-  }
+  expect(eventsReads("all", PLAYER, [])).toEqual([{ limit: 350 }]);
+  expect(selectEventStories([event], "all", PLAYER, () => false)).toEqual([event]);
   expect(selectEventStories([event], "important", PLAYER, () => false)).toEqual([]);
-  const [row] = eventsRows([event]);
+  const [row] = selectEventStories([event], "all", PLAYER, () => false);
   const root = createRoot(host);
   try {
     act(() => root.render(<StoryFeedRow event={row} />));

@@ -270,7 +270,7 @@ const armyAtSpire = () => {
     { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 46n } },
     {
       model: "DepthRules",
-      key: "0x903",
+      key: "0x901",
       value: {
         game_id: 1,
         depth: 1,

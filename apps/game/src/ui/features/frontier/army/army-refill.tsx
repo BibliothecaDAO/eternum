@@ -49,11 +49,7 @@ export const ArmyRefill = ({
       {chip ? (
         <RefillChip price={Math.ceil(stamina.max - stamina.current)} held={held} refilling={refilling} onRefill={ask} />
       ) : (
-        <RefillButton
-                    held={held}
-          refilling={refilling}
-          onRefill={ask}
-        />
+        <RefillButton held={held} refilling={refilling} onRefill={ask} />
       )}
       {confirming && (
         <RefillConfirm

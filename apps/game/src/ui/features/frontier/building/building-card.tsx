@@ -26,7 +26,7 @@ import { buildingsMake, standingBuildings } from "../production/store-makers";
 import { RefusedVerb } from "../refused-verb";
 import { useResearchActions } from "../research/research-actions";
 import { useResearchTree } from "../research/research-facts";
-import { firstMissing, type Need, needLine, type TreeNode } from "../research/research-tree";
+import { researchSideNode, firstMissing, type Need, needLine, type TreeNode } from "../research/research-tree";
 import type { TappedBuilding } from "../research/selected-building";
 import { CompareRows } from "./compare-rows";
 
@@ -134,7 +134,8 @@ export const BuildingCardView = ({
   onClose: () => void;
 }) => {
   const [side, setSide] = useState(0);
-  const top = node?.state === "done";
+  const chosen = node && researchSideNode(node, side);
+  const top = chosen?.state === "done";
   return (
     <HudSheet label={name} onClose={onClose}>
       <div data-building-card className="flex flex-col gap-3">
@@ -156,8 +157,8 @@ export const BuildingCardView = ({
         </div>
         {node && (
           <CompareRows
-            now={<HudTier tier={tierOf(node.tier)} />}
-            next={top ? undefined : <HudTier tier={tierOf(node.tier + 1)} />}
+            now={<HudTier tier={tierOf(chosen!.tier)} />}
+            next={chosen?.nextTier ? <HudTier tier={chosen.nextTier} /> : undefined}
             rows={node.figures.map((figure, index) => ({
               icon: figure.icon,
               word: figure.name,
@@ -170,7 +171,7 @@ export const BuildingCardView = ({
         )}
         {node && !top && (
           <ResearchFoot
-            node={node}
+            node={chosen!}
             verb={node.sides?.[side] ? RESEARCH_TREE.research(node.sides[side].name) : RESEARCH}
             sending={sending}
             fix={fix}

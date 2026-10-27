@@ -767,11 +767,13 @@ fn construction_grants_uncommon_once_and_the_next_purchase_costs_rare(category: 
     };
     let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..essence };
     let essence_before = resources.resource_balance(essence);
+    let construction_labor_before = resources.resource_balance(labor);
     let knowledge_before = learned(d, home);
     assert_terminal_rejection(d, Command::CreateBuilding(CreateBuilding { scouting_kind: 3, ..command }), 40);
     assert_eq!(learned(d, home), knowledge_before);
     assert!(execute(d, Command::CreateBuilding(command), 40));
-    assert_eq!(resources.resource_balance(essence), essence_before);
+    assert_eq!(essence_before - resources.resource_balance(essence), 12000 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(construction_labor_before - resources.resource_balance(labor), 3000 * crate::rules::RESOURCE_PRECISION);
     assert_eq!(crate::research::tier(learned(d, home), row), 1);
     if category == crate::research::SCOUTS_LODGE {
         assert_eq!(crate::research::choice(learned(d, home), row, 1), kind);
@@ -783,6 +785,7 @@ fn construction_grants_uncommon_once_and_the_next_purchase_costs_rare(category: 
         (price.essence, price.labor),
         (48000 * crate::rules::RESOURCE_PRECISION, 9000 * crate::rules::RESOURCE_PRECISION),
     );
+    let essence_before = resources.resource_balance(essence);
     let labor_before = resources.resource_balance(labor);
     assert!(execute(d, research(home, row, kind), 40));
     assert_eq!(essence_before - resources.resource_balance(essence), price.essence);

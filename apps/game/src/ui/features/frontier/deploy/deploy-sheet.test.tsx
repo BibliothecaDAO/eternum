@@ -136,6 +136,7 @@ describe("the Deploy sheet", () => {
       expect(deployButton(host)).toBeUndefined();
       act(() => slots[2].click());
       expect(slots[2].getAttribute("aria-pressed")).toBe("true");
+      press(host, "Max");
       await act(async () => deployButton(host)!.click());
       expect(createExplorerArmy).toHaveBeenCalledWith(expect.objectContaining({ slot: 2 }));
     } finally {
@@ -423,3 +424,5 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 });
+
+const click = (button: Element) => act(() => (button as HTMLButtonElement).click());

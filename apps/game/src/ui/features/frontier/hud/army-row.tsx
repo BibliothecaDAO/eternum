@@ -75,35 +75,31 @@ export const ArmyRow = ({
 );
 
 /**
- * An open slot on a desktop's list, as a row like an army's: its dashed ring, Deploy (or the army a later slot waits
- * for, or the word for an army on its way), and the stamina the slot starts its army on. A press opens Deploy; a slot
- * Deploy does not fill next opens nothing. A phone's dock draws the same slot as a token (OpenSlot).
+ * An open slot on a desktop's list, as a row like an army's: its dashed ring, Deploy (or the word for an army on its way), and the stamina the slot starts its army on. A press chooses that slot for Deploy. A phone's dock draws the same slot as a token (OpenSlot).
  */
 export const OpenSlotRow = ({
   label,
   pulse,
   filling,
   start,
-  waits,
   onDeploy,
 }: {
   label: string;
   pulse: boolean;
   filling?: string;
   start?: { bar: StaminaBar; words: string };
-  waits?: { number: number; words: string };
   onDeploy: () => void;
 }) => (
   <HudRow
-    lead={<SlotRing pulse={pulse} filling={filling} waits={waits} />}
+    lead={<SlotRing pulse={pulse} filling={filling} />}
     label={filling ?? label}
-    title={filling ?? (waits ? `${ARMY} ${waits.number}` : label)}
+    title={filling ?? label}
     detail={start && filling === undefined ? <RowDetail stamina={start.bar} /> : undefined}
     trail={<RowTrail />}
-    disabled={filling !== undefined || waits !== undefined}
+    disabled={filling !== undefined}
     busy={filling !== undefined}
-    tip={filling === undefined ? [start?.words, waits?.words].filter(Boolean).join(" ") || undefined : undefined}
-    onClick={waits ? undefined : onDeploy}
+    tip={filling === undefined ? start?.words : undefined}
+    onClick={onDeploy}
   />
 );
 

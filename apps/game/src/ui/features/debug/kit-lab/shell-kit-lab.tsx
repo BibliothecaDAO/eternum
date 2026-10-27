@@ -11,8 +11,6 @@ import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { YOU } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
 
-import { ResearchBalanceLab } from "./research-balance/research-balance-lab";
-
 const HOUR = 3600;
 /** The handoff's one fiction: Day 12, today ends at 21:40 with 7h 14m left, tomorrow lasts 12h. */
 const ENDS_AT = new Date(2026, 9, 7, 21, 40).getTime() / 1000;

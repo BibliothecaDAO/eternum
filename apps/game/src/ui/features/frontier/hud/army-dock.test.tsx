@@ -55,49 +55,22 @@ it.each(["phone", "desktop"])("shows every open slot and its bar on %s, and open
     ),
   );
   try {
-    const slots = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label^="Deploy Army"]')];
+    const slots = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
     expect(
       slots.map((slot) => {
-        const meter = slot.querySelector('[role="meter"]');
-        return [slot.dataset.tip, meter?.getAttribute("aria-valuenow"), meter?.getAttribute("aria-valuemax")];
+        const meter = (slot.closest(".ui-row") ?? slot).querySelector('[role="meter"]');
+        return [
+          (slot.closest<HTMLElement>(".ui-row") ?? slot).dataset.tip,
+          meter?.getAttribute("aria-valuenow"),
+          meter?.getAttribute("aria-valuemax"),
+        ];
       }),
     ).toEqual([
-      ["Deploy", false, "Army 2 starts full: 150/150 stamina.", "150", "150"],
-      ["Deploy fills slot 2 first.", true, "Army 3 starts on 7/150 stamina. Deploy fills slot 2 first.", "7", "150"],
+      ["Army 2 starts full: 150/150 stamina.", "150", "150"],
+      ["Army 3 starts on 7/150 stamina.", "7", "150"],
     ]);
-  } finally {
-    act(() => root.unmount());
-    host.remove();
-  }
-});
-
-it("lists every slot on a desktop, Deploy on the lowest open one the contract fills and the later ones waiting", () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  layout.is = "desktop";
-  const { store, row } = dayWithTwoOpenSlots();
-  const host = document.createElement("div");
-  document.body.append(host);
-  const root = createRoot(host);
-  act(() =>
-    root.render(
-      <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-        <ArmyDock realm={row} armies={[]} />
-      </GameProvider>,
-    ),
-  );
-  try {
-    // Each slot is a row of the list, like an army's, its start on its tip and its stamina in the rows' column.
-    const deploys = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
-    expect(deploys.map((slot) => slot.closest<HTMLElement>(".ui-row")!.dataset.tip)).toEqual([
-      "Army 2 starts full: 150/150 stamina.",
-    ]);
-    const waiting = [...host.querySelectorAll<HTMLElement>(".ui-row")].find((slot) =>
-      slot.textContent?.startsWith("3Army 3"),
-    )!;
-    expect(waiting.dataset.tip).toBe("Army 3 starts on 7/150 stamina. Deploy fills slot 2 first.");
-    expect(waiting.getAttribute("aria-disabled")).toBe("true");
-    expect(waiting.querySelector("button")).toBeNull();
-    expect(waiting.querySelector('[role="meter"]')!.getAttribute("aria-valuenow")).toBe("7");
+    act(() => slots[1].click());
+    expect(useUIStore.getState().pendingMilitaryAction).toMatchObject({ structureId: 7, slot: 2 });
   } finally {
     act(() => root.unmount());
     host.remove();
@@ -125,7 +98,7 @@ it.each(["phone", "desktop"] as const)(
   "shows by each army on a %s what its Homecoming sends home, in the day's last hour only",
   (size) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    layout.is = size;
+    layout.current = size;
     // The realm's player, whose armies are buttons on their dock.
     useAccountStore.setState({ account: { address: "0x111" } as never });
     const { store, row } = frontierDay();

@@ -177,10 +177,13 @@ const SeasonChip = ({
 const poolLine = (pool: SeasonPoolFigures | null | undefined) =>
   pool === null
     ? POOL_NOT_PUBLISHED
-    : pool && [
+    : pool &&
+      [
         seasonPool(formatExact(pool.lords), pool.today === undefined ? undefined : formatExact(pool.today)),
         pool.prize && `Top ${pool.prize.topN}: ${formatExact(pool.prize.lords)} LORDS at season end`,
-      ].filter(Boolean).join(". ");
+      ]
+        .filter(Boolean)
+        .join(". ");
 
 /** What failed, by name, with Try again on the card itself. */
 const Failed = ({ onRetry }: { onRetry: () => void }) => (

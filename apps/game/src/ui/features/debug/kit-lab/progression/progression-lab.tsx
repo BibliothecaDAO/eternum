@@ -6,7 +6,7 @@ import { EARLY_ARMY, EARLY_REALM, MID_REALM, VETERAN_ARMY } from "@/ui/features/
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { readResearchTree, type RealmResearchFacts } from "@/ui/features/frontier/research/research-tree";
 import { type ReactNode, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 const noop = () => undefined;
 
@@ -44,9 +44,6 @@ export const ProgressionLab = () => {
       <div className="flex flex-col gap-6 p-6">
         <header className="flex flex-wrap items-center gap-4">
           <h1 className="text-hud-display text-hud-ink">Progression</h1>
-          <Link to="/lab/kit/research-balance/army-levels" className="text-hud-label text-hud-gold underline">
-            Compare army levels
-          </Link>
           <HudTabs
             tabs={[
               { key: "early", label: "Your realm (20 Oct)" },

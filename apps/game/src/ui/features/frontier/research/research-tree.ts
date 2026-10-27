@@ -11,7 +11,13 @@ import {
   WELL,
   XP,
 } from "@/ui/design-system/kit/words";
-import { battleBonusBps, homecomingBps, logisticsStamina, researchHasIndependentSides, scoutingIncrementBps } from "@bibliothecadao/eternum";
+import {
+  battleBonusBps,
+  homecomingBps,
+  logisticsStamina,
+  researchHasIndependentSides,
+  scoutingIncrementBps,
+} from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from "@bibliothecadao/types";
 
@@ -234,7 +240,12 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       // A row with sides shows each side, with what its picks hold: one figure for the row would hide which side
       // holds what, and leave the others no way to be picked (the Scouts' lodge's three kinds).
       figures: sides
-        ? sides.map((side) => ({ icon: side.icon, name: side.name, now: side.now, next: done ? undefined : side.next }))
+        ? sides.map((side) => ({
+            icon: side.icon,
+            name: side.name,
+            now: side.now,
+            next: side.state === "done" ? undefined : side.next,
+          }))
         : (options.figures?.(tier) ?? []),
       leadsTo: options.leadsTo ?? [],
       gate: options.gate,
@@ -482,3 +493,18 @@ export const needLine = (need: Need): string => {
 /** Whether the realm can research anything now: the nav's Research dot. */
 export const canResearchNow = (nodes: readonly TreeNode[] | undefined): boolean =>
   nodes?.some(({ state }) => state === "ready") ?? false;
+
+/** A chosen side supplies its own level, price and availability to every research control. */
+export const researchSideNode = (node: TreeNode, side: number): TreeNode => {
+  const choice = node.sides?.[side];
+  return choice
+    ? {
+        ...node,
+        tier: choice.tier,
+        nextTier: choice.nextTier,
+        price: choice.price,
+        needs: choice.needs,
+        state: choice.state,
+      }
+    : node;
+};

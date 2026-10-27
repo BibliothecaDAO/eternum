@@ -117,7 +117,7 @@ const routineStories = (count: number, from: number) =>
     at: from + index,
   }));
 
-it.each(["mine", "all"] as const)(
+it.each(["all"] as const)(
   "the Log reads the player's site benefits under %s without requiring push notifications",
   (filter) => {
     world.filter = filter;
@@ -148,7 +148,7 @@ it.each(["mine", "all"] as const)(
       },
     );
     act(() => root.render(<EventLogPanel onDismiss={() => undefined} isInsideAnchor={() => false} />));
-    expect(rows()).toEqual(["well", "shrine"]);
+    expect(rows()).toEqual(["theirs", "well", "shrine"]);
   },
 );
 

@@ -199,7 +199,9 @@ const DeploySlot = ({
       filling={slot && deploying === slot.slot ? DEPLOYING : undefined}
       pulse={pulse}
       start={slot?.start && line ? { bar: slot.start, words: `${line}.` } : undefined}
-      onDeploy={() => openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true, slot: slot?.slot })}
+      onDeploy={() =>
+        openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true, slot: slot?.slot })
+      }
     />
   );
 };

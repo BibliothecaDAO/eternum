@@ -800,11 +800,19 @@
       "40": [],
       "41": [
         {
+          "resource": 38,
+          "amount": 12000
+        },
+        {
           "resource": 23,
           "amount": 3000
         }
       ],
       "42": [
+        {
+          "resource": 38,
+          "amount": 12000
+        },
         {
           "resource": 23,
           "amount": 3000
@@ -812,11 +820,19 @@
       ],
       "43": [
         {
+          "resource": 38,
+          "amount": 12000
+        },
+        {
           "resource": 23,
           "amount": 3000
         }
       ],
       "44": [
+        {
+          "resource": 38,
+          "amount": 12000
+        },
         {
           "resource": 23,
           "amount": 3000

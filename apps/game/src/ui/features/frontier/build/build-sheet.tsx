@@ -12,7 +12,6 @@ import { HudTier } from "@/ui/design-system/kit/hud-elements";
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import {
-  type Tier,
   BARRACKS,
   BUILD,
   HUT,
@@ -23,6 +22,7 @@ import {
   priceRaised,
   RESEARCH,
   startsNewArmies,
+  tierNumeral,
   takesPopulation,
 } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -235,8 +235,8 @@ export const BuildSheet = ({
       population={population}
       tiles={options.map((candidate) =>
         buildTile(candidate, {
-          labor: held(ResourcesIds.Labor),
-          laborPerHour: realmPerHour(setup.store, realmId, ResourcesIds.Labor, tick),
+          held,
+          perHour: (resource) => realmPerHour(setup.store, realmId, resource, tick),
           free: population && population.total - population.used,
         }),
       )}
@@ -274,7 +274,11 @@ const priceKind = (resource: number): PriceKind => {
 };
 
 /** What the realm holds that a card weighs its building against: labor and how fast it comes, and free population. */
-type Holdings = { labor: number | undefined; laborPerHour: number | undefined; free: number | undefined };
+type Holdings = {
+  held: (resource: number) => number | undefined;
+  perHour: (resource: number) => number | undefined;
+  free: number | undefined;
+};
 
 const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
   key: String(option.category),
@@ -286,25 +290,29 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
   standing: standingOf(option, holdings),
 });
 
-/** The Barracks tier a training building waits for: a research tier above common, which the kit counts from common. */
-const gateTier = (gate: number) => (gate + 1) as Exclude<Tier, 1>;
-
 /**
  * Where a building stands for the realm, the first that holds: built (a realm holds one), locked behind the Barracks'
  * tier, or its price, with the labor the realm lacks and the wait until it holds it, or else the population it lacks.
  */
-const standingOf = (option: BuildOption, { labor, laborPerHour, free }: Holdings): BuildTile["standing"] => {
+const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
   // Training counts purchases across both Barracks sides.
   if (option.standing !== "open") return { kind: "locked", purchases: option.standing.gate };
-  const price = option.cost.find(({ resource }) => resource === ResourcesIds.Labor)?.amount ?? 0;
-  const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] =
-    labor === undefined || labor < price
-      ? { of: "labor", wait: secondsUntilHeld(labor, price, laborPerHour) }
-      : free !== undefined && free < option.populationCost
-        ? { of: "population" }
-        : undefined;
-  return { kind: "price", labor: price, raised: riseLine(option), short };
+  const missing = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
+  const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] = missing
+    ? {
+        of: priceKind(missing.resource),
+        wait: secondsUntilHeld(held(missing.resource), missing.amount, perHour(missing.resource)),
+      }
+    : free !== undefined && free < option.populationCost
+      ? { of: "population" }
+      : undefined;
+  return {
+    kind: "price",
+    prices: option.cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount })),
+    raised: riseLine(option),
+    short,
+  };
 };
 
 /**

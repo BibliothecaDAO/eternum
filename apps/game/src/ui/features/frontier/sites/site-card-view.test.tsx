@@ -528,7 +528,10 @@ it("explains the daily ruin choice and disables an unfunded attack", () => {
     ),
   );
   expect(host.textContent).toContain("Ethereal II");
-  expect(host.textContent).toContain("Your other ruins disappear");
+  expect(host.textContent).toContain("First ruin clear or day end");
+  expect(host.querySelector("dd")?.getAttribute("data-tip")).toBe(
+    "Your first ruin clear removes every other ruin, across all depths.",
+  );
   expect(host.textContent).toContain("Today's LORDS budget cannot fund this ruin.");
   const attack = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
     (button) => button.textContent === "Attack",

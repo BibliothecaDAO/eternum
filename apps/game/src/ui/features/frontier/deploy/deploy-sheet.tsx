@@ -6,6 +6,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { showDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
 import { toast } from "@/ui/features/event-feed/notify";
+import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { useDeployRing } from "@/ui/features/military/components/unified-army-creation-modal/use-deploy-ring";
 import { ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";

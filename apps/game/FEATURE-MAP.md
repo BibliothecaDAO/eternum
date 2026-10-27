@@ -7,19 +7,13 @@ next to the crate to open it."). `/lab/relic-chest` exercises that single presen
 model, opening pool, panel and native opening story. Run
 `pnpm --dir apps/game prove:relic-chest --port 4199 --out <fresh-dir>` for both renderer captures and behavior proof.
 
-Next-season research proposals: `/lab/data?mode=frontier&view=balance` (Data → Balance & data → Research balance). What
-players never use, ranked from prod's counts with a HUD screenshot beside each: `/lab/data/usage` (Data → UI usage, the
-Game switch picks Blitz or Frontier); every number is the newest live-data pull's:
-`apps/game/scripts/live-data/live-data.py all`, run from the folder that keeps the pulls, writes the pull's `usage.json`
-(read at `/live-data/usage.json`; stills at `/live-data/usage-shots`). **Storage** compares deleting storage research
-with smaller late-game base stores; pick a realm and plan a Farm or Workshop upgrade. **Research paths** compares
-separate side levels, a shared four-purchase budget and the current rule; start with Drill level 2 and try Drill level 3
-or Rations level 2. **Beast labor** compares three guard-based clear payouts at every depth and replays 28 recorded
-clears. Plans are local fixtures and send no game commands. Serve the client on an assigned port, open the route with
-`&evidence=/absolute/new/capture/directory` (use `?` without another query), then run
-`scripts/frontier/prove-research-balance.playwright.js` through the Playwright connection with the page as its argument.
-It clicks the proposals, verifies results and captures desktop and phone; keep its returned transcript with the images.
-No gameplay or preset rule changes are part of this study.
+Next-season research: `/lab/data?mode=frontier&view=balance` (Data → Balance & data → Research balance). Storage shows
+S2 6k / 18k / 40k / 80k bases with +50% per purchase; each production side has its own four upgrades and prices; beasts
+pay one labor per four initial guards. Training construction costs 12,000 Essence + 3,000 Labor and grants Uncommon II.
+`scripts/frontier/prove-research-balance.playwright.js` drives the local plans and captures both sizes. The ruin card
+(`/lab/kit/hud/site-ruin`) states its exact LORDS and disappearance at the first ruin clear or day end.
+`scripts/frontier/prove-research-balance.playwright.js` also captures it and `/lab/kit/hud/build-training`; all views
+use local fixtures and send no game commands.
 
 Frontier exploration has a 1/10,000 chance per newly revealed surface tile to find a funded reward chest. Select its
 labelled map tile; an adjacent own living army can Open it. The panel shows its reserved common-share LORDS amount and
@@ -889,17 +883,8 @@ checks decoded triangles for zero masonry contacts at each production scale. All
 `asset-sources/frontier-beasts/refined/`; `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those
 exact eight packed sources. There is one production path per species and no separate study GLB.
 
-Army level proposals (dev only): **Compare army levels** in `/lab/kit/progression` opens
-`/lab/kit/research-balance/army-levels`. Today's tier purchases, the previous flat-gain proposal and the revised
-proposal appear together. Set **Starts trained → Battle +2**: the revised next Battle rank gives +6% damage, while
-starting untrained gives +10%. One point buys either. Change XP, training or attribute, then use **Upgrade today**,
-**Spend flat point** or **Spend point**; the XP ring stays independent of spending. Scouting uses its total rank across
-all kinds. No game command is sent. Exercise and capture it with
-`pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <fresh-dir> --only army-levels`.
-
-- Frontier training: build War hall, Supply yard, Scouts’ lodge or Hearth after two Barracks purchases; construction
-  grants Uncommon. Choose the lodge’s free kind on its build sheet. Research pips run from zero at Common to four at
-  Legendary; the realm model uses the highest tier.
+Training buildings grant their first rank when built: 12,000 Essence + 3,000 Labor, with the lodge's kind chosen on the
+build sheet. Research and building gems run from Common I to Legendary V; the model shows the highest side level.
 
 ## Partial stamina and season LORDS
 
