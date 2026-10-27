@@ -83,12 +83,14 @@ export interface HeraldGameSyncTransportOptions {
   modelDefinition: (name: string) => GameSyncModelDefinition;
   /** Herald greeted the stream (true), or the socket was lost and is being retried (false). */
   onConnection?: (reachable: boolean) => void;
-  reconnectMs?: number;
   socketFactory?: (url: string) => HeraldSocket;
   url: string;
 }
 
-const DEFAULT_RECONNECT_MS = 200;
+// A lost stream is retried at once, then less and less often while Herald stays away (each box deploy recreates it):
+// every client of a game loses it in the same second, so the retries also spread out.
+const RECONNECT_FIRST_MS = 200;
+const RECONNECT_MAX_MS = 5_000;
 // A stalled browser WebSocket handshake took 31 seconds before retrying during entry profiling.
 const HELLO_TIMEOUT_MS = 10_000;
 // Herald heads a live stream at least twice a second (prod, 2026-10-25: 90 heads in 60 s, none over 0.6 s apart). A live
@@ -172,12 +174,13 @@ export class GameFinalizedError extends Error {
  */
 export class HeraldGameSyncTransport implements GameSyncTransport {
   public readonly transactionStatusChannel = true;
-  private readonly reconnectMs: number;
   private readonly socketFactory: (url: string) => HeraldSocket;
   private handlers?: GameSyncSubscriptionHandlers;
   private ready = deferred<void>();
   private socket?: HeraldSocket;
   private reconnectTimer?: ReturnType<typeof setTimeout>;
+  /** Attempts since Herald last greeted the stream: each one waits twice as long, up to the cap. */
+  private failedReconnects = 0;
   private helloTimer?: ReturnType<typeof setTimeout>;
   private silenceTimer?: ReturnType<typeof setInterval>;
   /** Wall time of the socket's last message: it runs on while a phone sleeps, where the page's own clock may not. */
@@ -205,7 +208,6 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private actorSnapshotGeneration = 0;
 
   constructor(private readonly options: HeraldGameSyncTransportOptions) {
-    this.reconnectMs = options.reconnectMs ?? DEFAULT_RECONNECT_MS;
     this.socketFactory = options.socketFactory ?? ((url) => new WebSocket(url) as unknown as HeraldSocket);
   }
 
@@ -318,6 +320,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.stopped = false;
     this.finalized = false;
     this.finalStart = null;
+    this.failedReconnects = 0;
   }
 
   private connect(): void {
@@ -514,6 +517,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       });
     }
     this.clearHelloTimer();
+    this.failedReconnects = 0;
     this.options.onConnection?.(true);
     this.socket?.send(
       JSON.stringify({
@@ -679,10 +683,15 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private scheduleReconnect(): void {
     if (this.stopped || this.reconnectTimer) return;
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = undefined;
-      this.connect();
-    }, this.reconnectMs);
+    const delay = Math.min(RECONNECT_FIRST_MS * 2 ** this.failedReconnects, RECONNECT_MAX_MS);
+    this.failedReconnects += 1;
+    this.reconnectTimer = setTimeout(
+      () => {
+        this.reconnectTimer = undefined;
+        this.connect();
+      },
+      delay * (0.5 + Math.random() / 2),
+    );
   }
 
   /** Stops reconnecting and fails a subscribe or first snapshot still waiting on the socket. */
