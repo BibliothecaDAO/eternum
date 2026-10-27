@@ -162,14 +162,6 @@ const fittingPayout = (
   return { resourceId: reward.resourceType, amount: raw, fits };
 };
 
-/** Whether a realm's store of a resource stands at its own limit now; never for a store that has none. */
-export const storeAtLimit = (store: NativeFactStore, realmId: number, resourceId: ResourcesIds): boolean => {
-  const manager = new ResourceManager(store, realmId, configManager.getActiveGameId());
-  if (manager.storeLimit(resourceId) === undefined) return false;
-  const held = manager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, resourceId);
-  return held?.hasReachedMaxCapacity === true;
-};
-
 const troopsOf = (troops: Pick<Troops, "category" | "tier" | "count">) => ({
   type: troops.category as TroopType,
   tier: troops.tier as TroopTier,
