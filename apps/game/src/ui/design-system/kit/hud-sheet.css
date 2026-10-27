@@ -1563,6 +1563,14 @@ button.ui-relic:focus-visible {
     min-height: var(--hud-control);
     align-items: center;
   }
+  /* A Feed line is the finger's target whole: no padding over its height, its open button as tall as it, so a line
+     that opens its story is the height of one that does not. */
+  .ui-feed-line {
+    padding-block: 0;
+  }
+  .ui-feed-line .ui-event__open {
+    align-self: stretch;
+  }
   /* A column: its own rule centres its lines up and down, and they stay at the row's start, as on a desktop. */
   .ui-row__choose {
     min-height: var(--hud-control);
