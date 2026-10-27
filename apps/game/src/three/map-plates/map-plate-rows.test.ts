@@ -28,7 +28,7 @@ const army: ArmyPlate = {
   owner: "djizus",
   homeName: "Sangsang",
   troops: { type: "paladin", tier: 3, count: 300 },
-  stamina: { current: 84, max: 150 },
+  stamina: { current: 84, max: 150, perExplore: 20 },
 };
 
 const slots: PlateTroops[] = [
@@ -98,15 +98,15 @@ describe("what a map plate says opened (three rows at most, never an id; at rest
   });
 
   it("carries each guard slot's stamina to its stack (owner, 2026-10-19 13:00Z: 'army stamina on structure hover')", () => {
-    const rested = { ...slots[0], stamina: { current: 84, max: 120 } };
-    const tired = { ...slots[2], stamina: { current: 12, max: 120 } };
+    const rested = { ...slots[0], stamina: { current: 84, max: 120, perExplore: 20 } };
+    const tired = { ...slots[2], stamina: { current: 12, max: 120, perExplore: 20 } };
     const troops = plateRows({ ...realm, guards: [rested, tired] })
       .flat()
       .flatMap((segment) => (segment.kind === "troops" ? [segment.troops.stamina ?? null] : []));
     // In attack order: the paladins (slot 2) first.
     expect(troops).toEqual([
-      { current: 12, max: 120 },
-      { current: 84, max: 120 },
+      { current: 12, max: 120, perExplore: 20 },
+      { current: 84, max: 120, perExplore: 20 },
     ]);
   });
 

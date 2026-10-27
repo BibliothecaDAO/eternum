@@ -1,4 +1,5 @@
-import { exploreStaminaOf, type StaminaBar } from "@/lib/army-stamina/segments";
+import { exploreStaminaOf } from "@/lib/army-stamina/explore-stamina";
+import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import {
   configManager,
   type ExpeditionRules,

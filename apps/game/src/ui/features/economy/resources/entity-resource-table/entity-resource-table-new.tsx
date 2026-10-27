@@ -32,7 +32,7 @@ import {
   formatRate,
 } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { HudChip, HudIconButton, HudPanel, HudSwitch } from "@/ui/design-system/kit/hud-elements";
+import { HudChip, HudIconButton, HudSwitch } from "@/ui/design-system/kit/hud-elements";
 
 import React, { useCallback, useMemo, useState } from "react";
 import { ALWAYS_SHOW_RESOURCES, productionTimeLeft, HIDE_TIME_REMAINING_FOR, TIER_DISPLAY_NAMES } from "./utils";
@@ -93,7 +93,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     }
   });
   const [dragState, setDragState] = useState<DragState>({ isDragging: false });
-  const [showHelpBanner, setShowHelpBanner] = useState(() => localStorage.getItem("hideResourceTableHelp") !== "true");
   const [pinSelectedColumn, setPinSelectedColumn] = useState(
     () => localStorage.getItem("pinSelectedColumn") === "true",
   );
@@ -281,7 +280,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   // Every hook stands above this: a player whose last holding goes (or whose first arrives) keeps the same hooks.
   if (structureColumns.length === 0) {
-    return <p className="p-3 text-hud-muted">Own a structure to begin tracking your resources.</p>;
+    return <p className="p-3 text-hud-muted">You own no structure yet.</p>;
   }
 
   const highlightedStructure = structureColumns.find((structure) => structure.isSelected)?.label;
@@ -325,11 +324,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   const handleDoubleClick = (structureId: number, resourceId: ResourcesIds) =>
     openTransfer({ sourceId: structureId, destinationIds: [], resource: resourceId });
 
-  const handleDismissHelp = () => {
-    setShowHelpBanner(false);
-    localStorage.setItem("hideResourceTableHelp", "true");
-  };
-
   const filter = (label: string, on: boolean, toggle: () => void) => (
     <span className="inline-flex items-center gap-2 text-hud-label">
       <span className={on ? "text-hud-accent" : undefined}>{label}</span>
@@ -339,33 +333,14 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   return (
     <div className="flex h-full flex-col gap-4">
-      {showHelpBanner && (
-        <HudPanel
-          kind="section"
-          title="Quick Tips"
-          collapsible={false}
-          cue={<HudIconButton icon="close" label="Dismiss" kind="quiet" size="sm" onClick={handleDismissHelp} />}
-        >
-          <ul className="flex flex-col gap-1">
-            <li>
-              <strong>Drag & Drop:</strong> Drag resources between columns to transfer them across realms
-            </li>
-            <li>
-              <strong>Cycle Realms:</strong> Click column headers to navigate between realms in{" "}
-              {isMapView ? "world" : "local"} view
-            </li>
-          </ul>
-        </HudPanel>
-      )}
-
       <div className="flex flex-col">
         <div className="sticky top-0 z-20 border-b border-hud-divider bg-hud-surface pb-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex flex-col gap-1">
               <h4 className="text-hud-title text-hud-accent">Resource overview</h4>
               <p className="text-hud-label text-hud-muted">
-                {structureColumns.length} structures synced
-                {highlightedStructure ? ` • ${highlightedStructure} highlighted` : " • select a structure to manage"}
+                {structureColumns.length} structures
+                {highlightedStructure ? ` • ${highlightedStructure}` : ""}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">

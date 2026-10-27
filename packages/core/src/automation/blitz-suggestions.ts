@@ -145,14 +145,14 @@ const BUILD_TARGETS: Record<
 };
 
 /** An order's building, as the realm's own count and build target name it. */
-type OrderBuilding = Exclude<BuildOrderGoal, "army">;
+type OrderBuilding = Exclude<BuildOrderGoal, "army" | "levelUp">;
 const ORDER_KEYS: Record<OrderBuilding, BlitzBuildKey> = {
   farm: "wheat",
   wood: "wood",
   coal: "coal",
   copper: "copper",
   hut: "workerHut",
-  military: "military",
+  barracks: "military",
 };
 
 const createBaseSuggestion = (
@@ -208,7 +208,7 @@ const resolveUpgradeSuggestion = (input: BlitzRealmSuggestionInput): BlitzSugges
   input.canAffordUpgrade ? createBaseSuggestion(input, "upgrade", "Level up realm", 0, "It can level up now.") : null;
 
 /** What a step counts, in words: "Wood camps", "Knight T1 buildings". */
-const STEP_NAMES: Record<Exclude<OrderBuilding, "military">, string> = {
+const STEP_NAMES: Record<Exclude<OrderBuilding, "barracks">, string> = {
   farm: "Wheat farms",
   wood: "Wood camps",
   coal: "Coal mines",
@@ -216,7 +216,7 @@ const STEP_NAMES: Record<Exclude<OrderBuilding, "military">, string> = {
   hut: "Worker huts",
 };
 const stepName = (input: BlitzRealmSuggestionInput, building: OrderBuilding): string =>
-  building === "military" ? `${input.militaryTarget?.label ?? "T1 military"} buildings` : STEP_NAMES[building];
+  building === "barracks" ? `${input.militaryTarget?.label ?? "T1 military"} buildings` : STEP_NAMES[building];
 
 /** How many of a building the realm has; a realm with no military worth its biome has none to build. */
 const builtFor = (input: BlitzRealmSuggestionInput, building: OrderBuilding): number | null => {
@@ -259,7 +259,7 @@ const resolveArmyStep = (input: BlitzRealmSuggestionInput, count: number): StepV
   const { army, militaryTarget } = input;
   if (!army || !militaryTarget || army.armies >= count || army.armies >= army.maxArmies) return "passes";
   if (army.fullArmy > 0 && army.troops >= army.fullArmy) return createDeploySuggestion(input, militaryTarget, army);
-  return militaryTarget.count === 0 ? resolveBuildingStep(input, "military", 1) : "passes";
+  return militaryTarget.count === 0 ? resolveBuildingStep(input, "barracks", 1) : "passes";
 };
 
 /** The army deployed: a full army of the realm's own troop, which its barracks trains, for the deployment to open on. */
@@ -280,8 +280,23 @@ const createDeploySuggestion = (
   troops: { type: target.troopType, tier: TroopTier.T1, count: army.fullArmy },
 });
 
+/**
+ * A level up the order places: done once the realm is past its rank; at its rank, the level up when the realm can pay
+ * for it, else the order waits for it.
+ */
+const resolveLevelUpStep = (input: BlitzRealmSuggestionInput, step: BuildOrderStep): StepVerdict =>
+  step.rank < input.realmLevel ? "passes" : (resolveUpgradeSuggestion(input) ?? "holds");
+
 const resolveStep = (input: BlitzRealmSuggestionInput, step: BuildOrderStep): StepVerdict =>
-  step.goal === "army" ? resolveArmyStep(input, step.count) : resolveBuildingStep(input, step.goal, step.count);
+  step.goal === "army"
+    ? resolveArmyStep(input, step.count)
+    : step.goal === "levelUp"
+      ? resolveLevelUpStep(input, step)
+      : resolveBuildingStep(input, step.goal, step.count);
+
+/** Whether the order places the realm's level up at its rank itself, so it waits its turn instead of coming first. */
+const ordersLevelUp = (input: BlitzRealmSuggestionInput, order: BuildOrder): boolean =>
+  order.steps.some((step) => step.goal === "levelUp" && step.rank === input.realmLevel);
 
 /**
  * The order's next step for the realm: the first step of its rank or lower that does not pass, offered only once it
@@ -298,14 +313,15 @@ const resolveOrderSuggestion = (input: BlitzRealmSuggestionInput, order: BuildOr
 };
 
 /**
- * A realm's one next step in a running Blitz: level up whenever it can, then the order's next step. The default order
- * is the owner's.
+ * A realm's one next step in a running Blitz: level up whenever it can (unless the order places that level up itself),
+ * then the order's next step. The default order is the owner's.
  */
 export const buildBlitzRealmSuggestions = (
   input: BlitzRealmSuggestionInput,
   order: BuildOrder = DEFAULT_BUILD_ORDER,
 ): BlitzSuggestionDraft[] => {
   if (!input.isBlitzActive) return [];
-  const suggestion = resolveUpgradeSuggestion(input) ?? resolveOrderSuggestion(input, order);
+  const levelUpFirst = ordersLevelUp(input, order) ? null : resolveUpgradeSuggestion(input);
+  const suggestion = levelUpFirst ?? resolveOrderSuggestion(input, order);
   return suggestion ? [suggestion] : [];
 };

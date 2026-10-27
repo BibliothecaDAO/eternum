@@ -117,11 +117,11 @@ it("raises where Military can: troops trained since the last write count, the cl
     world.tick = 110;
     expect(getBalance(7, ResourcesIds.Knight, 110, store).balance).toBe(10 * RESOURCE_PRECISION);
     draw();
-    expect(host.textContent).toContain("Raise an army at Noyk (12 troops on hand)");
+    expect(host.textContent).toContain("Noyk: 12 troops ready");
     // Five more seconds of training, and no fact written: Egonal now holds the most.
     world.tick = 115;
     draw();
-    expect(host.textContent).toContain("Raise an army at Egonal (15 troops on hand)");
+    expect(host.textContent).toContain("Egonal: 15 troops ready");
   } finally {
     act(() => root.unmount());
   }

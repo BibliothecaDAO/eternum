@@ -70,10 +70,10 @@ afterEach(() => {
 describe("a new order's charge, on the form and its confirmation", () => {
   // The form starts at 100 Wheat: the price each sets what the order costs.
   it.each([
-    { each: 0.0025, shownEach: "0.0025", cost: "<1" },
-    { each: 0.0125, shownEach: "0.013", cost: "1" },
-    { each: 124, shownEach: "124", cost: "12.4K" },
-  ])("buying 100 Wheat at $each LORDS each costs $cost LORDS, rounded", ({ each, shownEach, cost }) => {
+    { each: 0.0025, cost: "<1" },
+    { each: 0.0125, cost: "1" },
+    { each: 124, cost: "12.4K" },
+  ])("buying 100 Wheat at $each LORDS each costs $cost LORDS, rounded", ({ each, cost }) => {
     const host = render(
       <OrderCreation entityId={1} resourceId={ResourcesIds.Wheat} isBuy layout="compact" suggestedPrice={each} />,
     );
@@ -81,9 +81,7 @@ describe("a new order's charge, on the form and its confirmation", () => {
 
     press(host, "Buy 100 Wheat");
 
-    expect(host.querySelector("[data-confirm]")?.textContent).toContain(
-      `100 Wheat for ${cost} LORDS, at ${shownEach} LORDS each.`,
-    );
+    expect(host.querySelector("[data-confirm]")?.textContent).toContain(`100 Wheat for ${cost} LORDS`);
   });
 });
 

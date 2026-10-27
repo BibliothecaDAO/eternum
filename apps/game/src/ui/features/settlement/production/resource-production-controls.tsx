@@ -212,7 +212,6 @@ export const ResourceProductionControls = ({
               <ResourceIcon resource={selectedResource} size="md" />
               {amountField}
             </div>
-            <p className="text-hud-muted">Type the output, or what to spend of an input; the run is whole cycles.</p>
           </div>
           {tabs.length > 1 ? (
             <div className="flex flex-col gap-2">
@@ -226,7 +225,7 @@ export const ResourceProductionControls = ({
           ) : (
             <div className="flex flex-col gap-2">
               {rawPanel}
-              <p className="text-hud-muted">Only standard production is available for this resource.</p>
+              <p className="text-hud-muted">Standard production only</p>
             </div>
           )}
         </div>

@@ -64,7 +64,7 @@ describe("a fight's site, by one name on Events, Log and Today (live-qa-night P3
     const site = siteName(SITE);
     expect(names(store)).toEqual({
       events: `clientlane vs ${site} · Victory`,
-      today: `${site}: Guard holds, lost 68, guard 334 to 150`,
+      today: `${site}: Guard holds, lost 68, guard 150 left`,
       cleared: `${site} cleared`,
     });
     // The species is the guard's kind: the fight's record still says what fought.
@@ -87,7 +87,7 @@ describe("a fight's site, by one name on Events, Log and Today (live-qa-night P3
     const { store } = campBeside("Rift");
     expect(names(store)).toEqual({
       events: "clientlane vs North Watch · Victory",
-      today: "North Watch: Guard holds, lost 68, guard 334 to 150",
+      today: "North Watch: Guard holds, lost 68, guard 150 left",
       cleared: "North Watch cleared",
     });
   });

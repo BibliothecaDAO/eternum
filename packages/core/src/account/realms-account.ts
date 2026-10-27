@@ -233,7 +233,7 @@ export class DeviceLimitError extends Error {
 
 export class DeviceRemovedError extends Error {
   constructor(readonly account: string) {
-    super("This device was removed from your account. Sign in again to add it as a new device.");
+    super("This device was removed. Sign in again.");
   }
 }
 

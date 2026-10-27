@@ -2,17 +2,17 @@ import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { formatExact, formatFigure, formatShort, StructureType } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudMeter, HudPortrait, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import {
-  ARMY_DETAIL,
-  BACK,
-  RESEARCH_TREE,
-  STAMINA,
-  tierNumeral,
-  TROOPS,
-  UPGRADING,
-  XP,
-} from "@/ui/design-system/kit/words";
+  HudButton,
+  HudChip,
+  HudMeter,
+  HudPortrait,
+  HudStamina,
+  HudTier,
+  HudTierStep,
+  type StaminaBar,
+} from "@/ui/design-system/kit/hud-elements";
+import { ARMY_DETAIL, BACK, RESEARCH_TREE, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
 
 import { FullIn } from "../full-in";
@@ -25,12 +25,12 @@ const KINDS: { key: ScoutKind; icon: IconMeaning }[] = [
 ];
 
 /**
- * An army's detail (the owner's picks, 20 and 22 October), in two steps in one place. First its status: its troops,
- * when its stamina is full again and what each tile explored sends home on one line over the stamina bar, with the
- * refill; its four attributes as tiles (each its tier and what it gives, a press opening its level-up); its XP with
- * how XP is earned on its hover, and Level up: the primary once the XP buys a level, else a way to see what it will
- * buy. Level up turns the same place to the four choices, each with what it gives next and its XP, Scouting's kind,
- * and the verb, with a way back.
+ * An army's detail (the owner's picks, 20 and 22 October), in two steps in one place. First its status: its stamina
+ * under its portrait; its troops, when its stamina is full again and what each tile explored sends home on one line
+ * over the stamina bar, with the refill; its four attributes as tiles (each its tier and what it gives, a press
+ * opening its level-up); its XP with how XP is earned on its hover, and Level up: the primary once the XP buys a level,
+ * else a way to see what it will buy. Level up turns the same place to the four choices, each with what it gives next
+ * and its XP, Scouting's kind, and the verb, with a way back.
  */
 export const ArmyDetail = ({
   army,
@@ -84,16 +84,13 @@ export const ArmyDetail = ({
   return (
     <div data-army-step="stats" className="flex flex-col gap-3 pt-1">
       <div className="flex items-center gap-3">
-        <HudPortrait icon={army.art} label={TROOPS} />
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+        <span className="flex shrink-0 flex-col items-center gap-1">
+          <HudPortrait icon={army.art} label={TROOPS} />
+          <StaminaCount stamina={army.stamina} />
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
           <StatusLine army={army} />
-          <span className="flex w-full items-center gap-2 text-hud-label tabular-nums text-hud-muted">
-            <Icon name="stamina" size={16} />
-            <span className="min-w-16 flex-1">
-              <HudMeter amount={army.stamina} tone="good" label={STAMINA} />
-            </span>
-            {`${formatExact(army.stamina.current)}/${formatExact(army.stamina.max)}`}
-          </span>
+          <HudStamina stamina={army.stamina} />
         </div>
         {refill}
       </div>
@@ -106,6 +103,14 @@ export const ArmyDetail = ({
     </div>
   );
 };
+
+/** Under the portrait (the owner, 26 October): the stamina held of its maximum, "18/140". */
+const StaminaCount = ({ stamina }: { stamina: StaminaBar }) => (
+  <span className="flex items-center gap-0.5 whitespace-nowrap text-hud-label tabular-nums text-hud-ink">
+    <Icon name="stamina" size={14} />
+    {`${formatExact(stamina.current)}/${formatExact(stamina.max)}`}
+  </span>
+);
 
 /**
  * Over the stamina bar, on one line (the owner, 22 October): the army's troops, when its stamina is full again, and what

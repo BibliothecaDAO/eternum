@@ -23,6 +23,23 @@ describe("identity client", () => {
       "another device",
     );
   });
+  it("saves build orders over the revision read, and says why a save was refused in the server's words", async () => {
+    const saved = { owner: "0x1", revision: 1, book: { orders: [], active: null } };
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () => Response.json(saved));
+    const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
+
+    expect(await client.getBuildOrders()).toEqual(saved);
+    await client.saveBuildOrders(saved);
+    expect(fetch.mock.calls[1]).toMatchObject([
+      "https://realms.test/api/build-orders",
+      { credentials: "include", method: "POST", body: JSON.stringify(saved) },
+    ]);
+    fetch.mockResolvedValueOnce(Response.json({ error: "build_order_conflict" }, { status: 409 }));
+    await expect(client.saveBuildOrders(saved)).rejects.toThrow("another device");
+    const refusal = { error: "invalid_build_orders", message: "Step 1: “mill” is not a goal." };
+    fetch.mockResolvedValueOnce(Response.json(refusal, { status: 400 }));
+    await expect(client.saveBuildOrders(saved)).rejects.toThrow("Step 1: “mill” is not a goal.");
+  });
   it("signs the server nonce and returns the resulting session", async () => {
     const session = {
       session: { id: "session-1", expiresAt: "2026-08-26T00:00:00.000Z", userId: "0x123" },
@@ -253,6 +270,7 @@ describe("decoded identity boundary", () => {
   it.each([
     "getPushConfiguration",
     "getNotificationPreferences",
+    "getBuildOrders",
     "availableSignInProviders",
     "listSignInProviders",
   ] as const)("rejects invalid %s data", async (method) => {

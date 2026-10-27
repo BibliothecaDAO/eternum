@@ -364,6 +364,8 @@ const STRUCTURE_TYPES = {
 } as const;
 
 const CATEGORY = { crossbowman: "Crossbowman", knight: "Knight", paladin: "Paladin" } as const;
+/** The stamina one explore costs in the lab's world, as Frontier's rules set it: a segment of every stamina bar. */
+const EXPLORE_STAMINA = 20;
 
 /**
  * A fixture thing as the world map's managers would hand it to the layer: their own builders, their own fields. In a
@@ -392,6 +394,7 @@ const plateOf = (entity: MapLabelEntity, frontier: boolean, spectate: boolean): 
         maxStamina: staminaMax,
       },
       entity.homeName,
+      EXPLORE_STAMINA,
     );
   }
   return buildStructurePlate(
@@ -411,7 +414,7 @@ const plateOf = (entity: MapLabelEntity, frontier: boolean, spectate: boolean): 
           tier: slot.tier,
           count: slot.count,
           // A guard slot's stamina, as the map would read it (getGuardStaminaSnapshot): some rested, some spent.
-          stamina: { current: 20 + ((slot.count * 13 + index * 41) % 100), max: 120 },
+          stamina: { current: 20 + ((slot.count * 13 + index * 41) % 100), max: 120, perExplore: EXPLORE_STAMINA },
         })),
         !frontier,
       ),

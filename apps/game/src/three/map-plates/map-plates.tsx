@@ -1,7 +1,7 @@
 import { formatExact } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudTierChip } from "@/ui/design-system/kit/hud-elements";
+import { HudStamina, HudTierChip, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
 
 import { type MapPlate, type PlateTroops } from "./map-plate-model";
 import { plateRows, type PlateSegment } from "./map-plate-rows";
@@ -32,7 +32,7 @@ const Segment = ({ segment }: { segment: PlateSegment }) => {
     case "divider":
       return <span className="mp-divider" />;
     case "stamina":
-      return <Stamina current={segment.current} max={segment.max} />;
+      return <Stamina stamina={segment} />;
     default:
       return <span className={`mp-${segment.kind}`}>{segment.text}</span>;
   }
@@ -56,20 +56,20 @@ const Troops = ({ troops }: { troops: PlateTroops }) => (
         role="img"
         aria-label={`Guard stamina ${formatExact(troops.stamina.current)}/${formatExact(troops.stamina.max)}`}
       >
-        <i style={{ width: `${(100 * troops.stamina.current) / troops.stamina.max}%` }} />
+        <HudStamina stamina={troops.stamina} />
       </span>
     )}
   </span>
 );
 
 /** An army's stamina: its bar, then exactly how much of how much ("84/150"). */
-const Stamina = ({ current, max }: { current: number; max: number }) => (
-  <span className="mp-stamina" aria-label={`Stamina ${formatExact(current)} of ${formatExact(max)}`}>
+const Stamina = ({ stamina }: { stamina: StaminaBar }) => (
+  <span className="mp-stamina" aria-label={`Stamina ${formatExact(stamina.current)} of ${formatExact(stamina.max)}`}>
     <span className="mp-plate__meter">
-      <i style={{ width: `${(100 * current) / max}%` }} />
+      <HudStamina stamina={stamina} />
     </span>
     <span className="mp-label">
-      {formatExact(current)}/{formatExact(max)}
+      {formatExact(stamina.current)}/{formatExact(stamina.max)}
     </span>
   </span>
 );

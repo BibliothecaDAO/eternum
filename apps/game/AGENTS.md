@@ -166,13 +166,15 @@ that day, the map opened where the realm stood on day 2: the summary's totals mu
 leaves its start unread, and the card shows dashes and says why), and Continue must bring the camera onto the realm's
 day-3 site), `--steps lab-day-later-quiet` and `--steps lab-day-later-played-on` (day 2 not played, or the player
 already played on in day 3 on another device: no summary, and the day's end still brings the camera onto the day-3
-site), `--steps lab-day-turn-asleep` (the owner's phone, at `--viewport 390x844`: a minute before day 2 ends the tab's
-window is minimized and the page frozen, its WebGL context lost and Herald's stream silent with its socket open, then
-brought back past the end; on WebGL the page must boot again and the map draw, its middle band no more than half black
-past what it was, the loss's two error lines its outcome; on WebGPU, whose device this machine keeps, the silent stream
-must be dropped and resumed; then the summary and Continue as above), `--steps realm-load` (a spectator's realm view as
-first met: the map held still, the first press of Realm, the realm held still, back to the map, Realm again, and the
-realm's address loaded again; each step reports its downloads by kind with their bytes on the wire, the GPU work its
+site), `--steps lab-season-opens` (a player in the season 30 s before its first day, their realm founded but on no site
+yet: the map must draw with no error, then day 1's turn must play, with no summary, and leave the camera on the realm's
+first site), `--steps lab-day-turn-asleep` (the owner's phone, at `--viewport 390x844`: a minute before day 2 ends the
+tab's window is minimized and the page frozen, its WebGL context lost and Herald's stream silent with its socket open,
+then brought back past the end; on WebGL the page must boot again and the map draw, its middle band no more than half
+black past what it was, the loss's two error lines its outcome; on WebGPU, whose device this machine keeps, the silent
+stream must be dropped and resumed; then the summary and Continue as above), `--steps realm-load` (a spectator's realm
+view as first met: the map held still, the first press of Realm, the realm held still, back to the map, Realm again, and
+the realm's address loaded again; each step reports its downloads by kind with their bytes on the wire, the GPU work its
 frames asked for (pipelines and shaders compiled, bytes uploaded), long frames, the frames where the drawn scene changed
 and the scene marks `scene:<name>:requested` and `scene:<name>:presentable`; the boot reports the same as `bootWindow`),
 `--steps lab-realm-load` (the same on the lab's built Kingdom, `/lab/game?scenario=painted-buildings`, reopened on its

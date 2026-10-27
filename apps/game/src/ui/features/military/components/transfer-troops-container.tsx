@@ -353,7 +353,7 @@ export const TransferTroopsContainer = ({
     }
 
     if (balanceOptionMismatch && targetExplorerTroops?.troops) {
-      return `Explorer expects Tier ${targetExplorerTroops.troops.tier} ${targetExplorerTroops.troops.category}. Structure balance holds Tier ${structureBalanceTroopInfo.tier} ${structureBalanceTroopInfo.category}.`;
+      return `Needs ${targetExplorerTroops.troops.tier} ${targetExplorerTroops.troops.category}, has ${structureBalanceTroopInfo.tier} ${structureBalanceTroopInfo.category}`;
     }
 
     if (!isStructureOwnerOfExplorer) {
@@ -481,10 +481,10 @@ export const TransferTroopsContainer = ({
     const limitText = formatExact(troopCapacityLimit);
 
     if (capacityBlocked.type === "guard" && typeof capacityBlocked.slotIndex === "number") {
-      return `Deployment cap reached for guard slot ${DISPLAYED_SLOT_NUMBER_MAP[capacityBlocked.slotIndex as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} (${limitText} troops for this tier).`;
+      return `Slot ${DISPLAYED_SLOT_NUMBER_MAP[capacityBlocked.slotIndex as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} is full: ${limitText} troops`;
     }
 
-    return `Deployment cap reached for destination explorer (${limitText} troops for this tier).`;
+    return `The army is full: ${limitText} troops`;
   }, [capacityBlocked, troopCapacityLimit]);
 
   // How many troops the receiving side holds at most, and whether this amount fills it: information, never an error.
@@ -503,7 +503,7 @@ export const TransferTroopsContainer = ({
 
     if (transferDirection === TransferDirection.StructureToExplorer) {
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
-        return `Destination explorer will reach its ${MAX_ARMY_SIZE.toLowerCase()} (${limitText} troops for this tier).`;
+        return `Reaches its ${MAX_ARMY_SIZE.toLowerCase()}: ${limitText} troops`;
       }
 
       return `${MAX_ARMY_SIZE}: ${limitText}`;
@@ -520,7 +520,7 @@ export const TransferTroopsContainer = ({
 
     if (transferDirection === TransferDirection.ExplorerToExplorer) {
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
-        return `Destination explorer will reach its ${MAX_ARMY_SIZE.toLowerCase()} (${limitText} troops for this tier).`;
+        return `Reaches its ${MAX_ARMY_SIZE.toLowerCase()}: ${limitText} troops`;
       }
 
       return `${MAX_ARMY_SIZE}: ${limitText}`;
@@ -803,7 +803,7 @@ export const TransferTroopsContainer = ({
     troopMismatch;
 
   const troopMismatchMessage = troopMismatch
-    ? `Troop mismatch: You can only transfer troops of the same tier and type (Tier ${incoming?.tier} ${incoming?.category} ≠ Tier ${holder?.tier} ${holder?.category})`
+    ? `Troops differ: ${incoming?.tier} ${incoming?.category} ≠ ${holder?.tier} ${holder?.category}`
     : null;
 
   // What the player has still to choose is the button's own words, never an error: an error answers an action.

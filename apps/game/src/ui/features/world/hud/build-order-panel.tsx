@@ -1,7 +1,8 @@
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
+import { useActiveBuildOrder, useBuildOrderAccount } from "@/hooks/use-build-orders";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudPanel, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudIconButton, HudPanel, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { BUILD_ORDER_WORDS } from "@/ui/design-system/kit/words";
 import {
   type EmpireSuggestion,
@@ -13,11 +14,13 @@ import {
 } from "@/ui/features/world/containers/left-facets/use-suggestion-actions";
 import { useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
-import { DEFAULT_BUILD_ORDER } from "@bibliothecadao/eternum/automation";
 import type { ReactNode } from "react";
 
+import { openBuildOrderMaker } from "./build-order-maker/build-order-maker";
+
 /**
- * The Build order panel (the owner's pick, build-order-2): the order at its head, then each realm's next step under it,
+ * The Build order panel (the owner's pick, build-order-2): the order the player follows at its head (their active one,
+ * or the game's), with the way to their orders, then each realm's next step under it,
  * only once the step can be taken; a step done never shows. A level-up comes first, as it always does; a worker hut
  * comes when the next step needs the room. Self-contained: it reads the game it is drawn in, and draws nothing where
  * there is no build order to follow (outside a Blitz, or for a viewer who gives no orders). The rail places it under
@@ -31,11 +34,13 @@ export const BuildOrderPanel = () => {
 };
 
 const PlayersBuildOrder = () => {
+  useBuildOrderAccount();
   const steps = useEmpireSuggestions();
+  const order = useActiveBuildOrder();
   const { handleSuggestionClick, pendingSuggestionIds } = useSuggestionActions();
   const refusal = useActNowRefusal();
   return (
-    <BuildOrderView orderName={DEFAULT_BUILD_ORDER.name}>
+    <BuildOrderView orderName={order.name} onOrders={openBuildOrderMaker}>
       {steps.map((step) =>
         isOrderSuggestion(step) ? (
           <BuildOrderRow
@@ -84,13 +89,29 @@ const LevelUpRow = ({ step }: { step: EmpireSuggestion }) => {
   );
 };
 
-/** The panel as drawn: the order's name at its head, its rows, or the line that says there is nothing now. */
-export const BuildOrderView = ({ orderName, children }: { orderName: string; children: ReactNode[] }) => (
+/**
+ * The panel as drawn: the order's name at its head with the way to the player's orders, its rows, or the line that says
+ * there is nothing now.
+ */
+export const BuildOrderView = ({
+  orderName,
+  onOrders,
+  children,
+}: {
+  orderName: string;
+  onOrders: () => void;
+  children: ReactNode[];
+}) => (
   <HudPanel
     label={BUILD_ORDER_WORDS.title}
     title={BUILD_ORDER_WORDS.title}
     icon="build"
-    cue={<span className="text-hud-label text-hud-muted">{orderName}</span>}
+    cue={
+      <span className="flex items-center gap-1">
+        <span className="text-hud-label text-hud-muted">{orderName}</span>
+        <HudIconButton icon="edit" label={BUILD_ORDER_WORDS.yourOrders} kind="quiet" size="sm" onClick={onOrders} />
+      </span>
+    }
     bodyClassName="flex flex-col"
   >
     {children.some(Boolean) ? (

@@ -8,7 +8,6 @@ import {
   getBalance,
   getBuildingQuantity,
   getGuardsByStructure,
-  homecomingBps,
   realmLearned,
   researchTier,
   isCurrentExpeditionArmy,
@@ -19,18 +18,10 @@ import {
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { FARM, LABOR, TROOPS, WHEAT, WORKSHOP } from "@/ui/design-system/kit/words";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
-import {
-  BuildingType,
-  getNeighborHexes,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  StructureType,
-  TickIds,
-} from "@bibliothecadao/types";
+import { BuildingType, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { knownAmount } from "@/ui/utils/utils";
 import { useMemo } from "react";
 import { affordableUpgrades } from "../attributes/attributes";
-import { nextHutGrant } from "../build/build-options";
 import { troopsAtHome, type useExpeditionRules } from "../frontier-home";
 import { dayClock } from "../hud/day-clock";
 import { readRealmStore } from "../realm-stores";
@@ -67,20 +58,6 @@ export interface NextUpFacts {
   storeFull: string | null;
   /** No population is free: the next building that takes any is refused until a Hut stands. */
   populationFull: boolean;
-  /** The rules a line states in numbers, read from the game's own; null without a realm. */
-  rules: NextUpRules | null;
-}
-
-/** The numbers Next up's lines state, each read from the preset the game runs on, never typed into a line. */
-export interface NextUpRules {
-  /** The population one Hut adds at its type's tier. */
-  hutAdds: number;
-  /** What an explore costs in stamina, and what comes back an hour. */
-  stamina: { explore: number; anHour: number };
-  /** The XP a reveal gives; unknown until the rules are served. */
-  xp: { reveal: number } | undefined;
-  /** The share of an army's troops Homecoming sends home when the day ends, in percent, at today's lowest tier. */
-  homecomingPercent: number;
 }
 
 const NEXT_UP_MODELS = [
@@ -125,10 +102,6 @@ const readNextUpFacts = (
     return troops ? [Number(StaminaManager.getStamina(troops, clock.tick).amount)] : [];
   });
   const exploreCost = configManager.getExploreStaminaCost();
-  const progress = armies.flatMap((army) => {
-    const row = store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
-    return row ? [row] : [];
-  });
   const population = store.get("StructureBuildings", {
     game_id: realm.game_id,
     entity_id: realm.entity_id,
@@ -149,7 +122,6 @@ const readNextUpFacts = (
     storeFull: fullStore(store, realm, rules, clock),
     populationFull:
       population !== undefined && population.current >= population.max + configManager.getBasePopulationCapacity(),
-    rules: readNextUpRules(store, realm, progress),
   };
 };
 
@@ -168,36 +140,6 @@ const NO_REALM: NextUpFacts = {
   lastHour: false,
   storeFull: null,
   populationFull: false,
-  rules: null,
-};
-
-/**
- * The numbers Next up's lines state, from the preset: a Hut's population at its type's tier (the contract's
- * hut_bonus), the stamina an explore costs with what a tick's gain makes an hour, the XP a reveal gives, and
- * Homecoming's share at today's lowest tier.
- */
-const readNextUpRules = (
-  store: NativeFactStore,
-  realm: NativeRows["Structure"],
-  progress: readonly NativeRows["ArmyProgress"][],
-): NextUpRules => {
-  const hut = store.require("BuildingRule", { game_id: realm.game_id, category: BuildingType.WorkersHut });
-  const board = store.get("BoardRules", { game_id: realm.game_id });
-  const learned = realmLearned(store, realm.game_id, realm.entity_id);
-  const stamina = configManager.getTroopStaminaRules();
-  const xp = store.get("ArmyProgressionRules", { game_id: realm.game_id });
-  // With no army out, the share a new army starts with: common.
-  const homecoming = progress.length > 0 ? Math.min(...progress.map((army) => army.homecoming)) : 1;
-  return {
-    // Before the board's rules arrive the Hut row has no step: one more Hut adds its grant alone.
-    hutAdds: board ? nextHutGrant(store, realm, learned ?? 0n) : hut.capacity_grant,
-    stamina: {
-      explore: stamina.stamina_explore_stamina_cost,
-      anHour: Math.round((stamina.stamina_gain_per_tick * 3_600) / configManager.getTick(TickIds.Armies)),
-    },
-    xp: xp && { reveal: xp.reveal_xp },
-    homecomingPercent: homecomingBps(homecoming) / 100,
-  };
 };
 
 /** Whether an army of today stands on a tile beside a site whose guard still holds. */

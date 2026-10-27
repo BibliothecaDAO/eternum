@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
+import { configManager } from "@bibliothecadao/eternum";
 import { Vector3 } from "three";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ArmyPlate } from "../map-plates/map-plate-model";
 import { ArmyManager } from "./army-manager";
 
@@ -65,8 +66,14 @@ const managerWithVisibleArmy = (stamina: number) => {
   return { manager, drawn };
 };
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("a walking army's plate", () => {
   it("shows the stamina its army has now, not what it had when the map last rendered", async () => {
+    // An explore costs 20 stamina: a segment of the plate's bar.
+    vi.spyOn(configManager, "getExploreStaminaCost").mockReturnValue(20);
     const { manager, drawn } = managerWithVisibleArmy(120);
 
     // The explore confirms: the army walks onto the tile it revealed.
@@ -84,7 +91,7 @@ describe("a walking army's plate", () => {
     // The next chain second reads the bar the explore left: 60.
     manager.resolveArmyStaminaSnapshot = () => ({ current: 60, max: 150 });
     manager.refreshArmyStamina(ARMY, 1_792_397_846);
-    expect(drawn.at(-1)?.stamina).toEqual({ current: 60, max: 150 });
+    expect(drawn.at(-1)?.stamina).toEqual({ current: 60, max: 150, perExplore: 20 });
 
     // A frame mid-walk moves the plate where the army stands and draws no older bar over it.
     drawn.length = 0;

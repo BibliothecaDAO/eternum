@@ -11,7 +11,6 @@ import {
   formatCount,
   formatClockTime,
   formatDuration,
-  formatExact,
   getRelicInfo,
   relicEffect,
   type ResourcesIds,
@@ -128,7 +127,7 @@ export const FULL = "Full";
  */
 export const STORAGE = "Storage";
 /** On a payout's Full mark: the storage took what it had room for. */
-export const REST_DID_NOT_FIT = "Storage is full: the rest did not fit";
+export const REST_DID_NOT_FIT = "Storage full: the rest did not fit";
 /** The most troops one army takes, as a castle level sets it (owner, 26 October: "max army size you mean"). */
 export const MAX_ARMY_SIZE = "Max army size";
 /** What a castle level gives, on its card: the one wording for each (owner, 26 October). */
@@ -154,6 +153,48 @@ export const BUILD_ORDER_WORDS = {
   deploy: "Deploy",
   levelUp: "Level up",
   nothingNow: "Nothing to build now",
+  /** The maker: the player's orders, saved on their account, one of them followed. */
+  yourOrders: "Your build orders",
+  theGamesOrder: "The game's order",
+  steps: (count: number) => (count === 1 ? "1 step" : `${count} steps`),
+  active: "Active",
+  use: "Use",
+  edit: "Edit",
+  copyToEdit: "Copy to edit",
+  remove: "Delete",
+  newOrder: "New order",
+  newOrderName: "My order",
+  pasteOrder: "Paste an order",
+  pasteHere: "Paste an order's JSON",
+  readIt: "Read it",
+  name: "Name",
+  addTo: (rank: string) => `Add to ${rank}`,
+  earlier: "Earlier",
+  later: "Later",
+  count: (goal: string) => `How many: ${goal}`,
+  save: "Save",
+  copyJson: "Copy JSON",
+  askAi: "Get help from an AI",
+  copied: "JSON copied",
+  promptCopied: "Prompt copied",
+  noClipboard: "The clipboard is not available here.",
+  signInToSave: "Sign in to save your orders.",
+  unreachable: "Your build orders could not be reached.",
+  accountChanged: "Account changed. Reload your build orders.",
+  /** Another device saved first: the account's orders were read again, and this draft is kept. */
+  savedElsewhere: "Reloaded changed orders. Save this draft again.",
+  full: (limit: number) => `Limit: ${limit} orders. Delete one first.`,
+  /** Each goal as its card and palette name it. */
+  goals: {
+    farm: "Farm",
+    wood: "Wood camp",
+    coal: "Coal mine",
+    copper: "Copper mine",
+    hut: "Worker hut",
+    barracks: "Barracks",
+    army: "Deploy army",
+    levelUp: "Level up",
+  },
 } as const;
 export const EVENTS_WORDS = {
   /** What Events and its Log say while the player's filter holds no story. */
@@ -249,7 +290,7 @@ export const exploreFor = (noun: string) => `${EXPLORE} for ${noun}`;
  * An army's XP on its tooltip, against the attribute tier it buys next: "XP 8 of 100 · buys an Uncommon attribute
  * tier". XP is a balance an army spends on its attributes; it has no level.
  */
-export const xpToward = (held: string, price: string, tier: string) =>
+export const xpTowardTip = (held: string, price: string, tier: string) =>
   `${XP} ${held} ${OF} ${price} · buys ${/^[AEIOU]/.test(tier) ? "an" : "a"} ${tier} attribute tier`;
 /** The four attributes, each wearing its Aspect's mark. */
 export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
@@ -276,7 +317,7 @@ export const AFTER_THIS_ONE = "After this one";
 /** How an attack ended, the one word on its result: the guard gone, the army gone, or both still standing. */
 /** The day log's line for a fight: "Rift: Army lost, lost 154, guard 1,100 to 1,028". */
 export const fightLine = (site: string, verdict: string, lost: string, guardBefore: string, guardAfter: string) =>
-  `${site}: ${verdict}, lost ${lost}, guard ${guardBefore} to ${guardAfter}`;
+  `${site}: ${verdict}, lost ${lost}, guard ${guardAfter} left`;
 /** Why an attack cannot run, or what it costs, in one line under its button. */
 export const needsStamina = (need: string, held: string) => `Needs ${need} stamina, has ${held}`;
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;
@@ -288,17 +329,11 @@ export const WOULD_BE_LOST = "Would be lost";
  * attack does to each side, what it comes to, and under Details the whole fight's figures.
  */
 export const FIGHT_WORDS = {
-  /** What this attack takes from each side, and its share of that side's troops: "you lose 407 (37%)". */
-  youLose: (troops: string, share: string) => `you lose ${troops} (${share})`,
-  youKill: (troops: string, share: string) => `you kill ${troops} (${share})`,
-  /** The same, on the attack's result. */
-  youLost: (troops: string, share: string) => `you lost ${troops} (${share})`,
-  youKilled: (troops: string, share: string) => `you killed ${troops} (${share})`,
   armyLost: "Your army is lost",
+  /** An attack that clears the site, over the reward it earns; a site that pays nothing is only cleared. */
+  earns: "This attack earns",
   clears: "This attack clears it",
   holds: "The guard holds",
-  /** The reward row's word: what the site pays once it is cleared, however many attacks that takes (Details says). */
-  whenCleared: "When cleared",
   details: "Details",
   wholeFight: "The whole fight",
   attacks: "Attacks",
@@ -338,16 +373,15 @@ export const depthName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${DEPTH_NUME
 export const SPIRE_WORDS = {
   title: "Spire",
   enter: "Enter",
-  foreign: "Another realm's spire: only that realm's armies enter it",
-  pickArmy: "Select one of your armies beside the spire to enter a depth",
-  away: (army: string) => `${army} must stand beside the spire to enter`,
-  inDepth: (army: string, depth: string) => `${army} is in ${depth} until the day ends`,
+  foreign: "Another realm's spire",
+  pickArmy: "Select an army beside the spire",
+  away: (army: string) => `${army} must be beside the spire`,
+  inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
   cost: (stamina: string) => `${stamina} ${STAMINA}`,
   needs: (need: string, have: string) => `Needs ${need} ${STAMINA}, has ${have}`,
   landingTaken: "Its landing is taken",
   locked: "Research it to open it",
-  commits: (army: string, left: string) =>
-    `Entering keeps ${army} in that depth for the rest of the day (${left} left): there is no way back up`,
+  commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
 } as const;
 export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
@@ -388,10 +422,9 @@ export const HEADLINE_EYEBROWS = {
   "t3-building": "Military Milestone",
 } as const;
 /** Where a crate cannot be opened from yet: what opening it needs, said in place of its Open. */
-export const CRATE_NEEDS_AN_ARMY = "Move one of your armies next to the crate to open it.";
+export const CRATE_NEEDS_AN_ARMY = "Needs an army beside it";
 /** A field army about to be raised, before it has a number (the Military window's Deploy). */
 export const NEW_ARMY = "The new army";
-export const slotBarWhy = (fresh: boolean) => (fresh ? "Its slot is fresh today" : "The bar its slot's last army left");
 
 /** Raise an army from troops at home; with none, the realm's Barracks trains them. */
 export const DEPLOY = "Deploy";
@@ -400,7 +433,7 @@ export const NO_TROOPS_AT_HOME = "No troops at home";
 export const NO_OPEN_TILE = "No open tile beside the realm";
 /** A site's card with no army selected: what an army does there, or, with none out, where one comes from. */
 export const PICK_AN_ARMY = { attack: "Pick an army to attack it", use: "Pick an army to use it" } as const;
-export const NO_ARMY_OUT = "No army out: deploy one from the realm";
+export const NO_ARMY_OUT = "No army out: deploy one";
 export const DEPLOYING = "Deploying…";
 /** A free slot after the lowest: the game fills the lowest free slot first. */
 export const DEPLOY_FILLS_FIRST = (number: number) => `Deploy fills slot ${number} first.`;
@@ -409,12 +442,8 @@ export const BUILD = "Build";
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";
 
-/**
- * A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): how a tap gives it an order,
- * and its details' button.
- */
+/** A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): its details' button. */
 export const PICKED_ARMY = {
-  hint: "Tap a lit tile to see its order, then tap it again to go. Hold a tile for its facts.",
   details: (army: string) => `${army}: details`,
   letGo: (army: string) => `Let go of ${army}`,
 } as const;
@@ -423,7 +452,7 @@ export const PICKED_ARMY = {
 export const TRANSFER_TROOPS = {
   title: "Transfer troops",
   waiting: "Waiting for both armies’ progress.",
-  stale: "The armies changed. Review the merge before confirming again.",
+  stale: "The armies changed: review the merge",
   merge: (army: string) => `Merge into ${army}`,
   /** The second press of a merge that loses a lot: the XP lost, as the leaving army's card strikes it, and the merge. */
   confirmMerge: (lost: number, army: string) => `Lose ${formatAmount(lost)} XP, merge into ${army}`,
@@ -432,10 +461,9 @@ export const TRANSFER_TROOPS = {
   move: (count: number, to: string) => `Move ${formatAmount(count)} to ${to}`,
   sending: "Moving…",
   cap: (cap: number) => `An army holds at most ${formatAmount(cap)}.`,
-  unalike: (picked: string, tapped: string) =>
-    `${picked} and ${tapped} hold different troops: only armies of the same troops and tier join.`,
+  unalike: (picked: string, tapped: string) => `${picked} and ${tapped} hold different troops`,
   failed: "The troops could not be moved.",
-  changed: "The armies' troops changed: the amount starts again from what they hold now.",
+  changed: "The armies' troops changed",
   /** A phone's action row, a tap on another of the realm's armies beside the picked one. */
   beside: (tapped: string, picked: string) => `${tapped} stands beside ${picked}.`,
   pickArmy: (army: string) => `Pick ${army}`,
@@ -504,8 +532,7 @@ export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist gre
 export const SEASON_ERROR = "Season did not answer.";
 export const TODAY_ERROR = "Today did not answer.";
 /** A day's totals the player's history cannot give: the read keeps only the newest stories, or did not answer. */
-export const DAY_HISTORY_SHORT = "Your history no longer reaches back to this day's start, so its totals are unknown.";
-export const DAY_HISTORY_FAILED = "Your history did not answer, so this day's totals are unknown.";
+export const DAY_TOTALS_UNKNOWN = "This day's totals are unknown";
 export const BACK = "Back";
 
 /** Looking at another realm, and stopping. */
@@ -518,8 +545,7 @@ export const REFILL = "Refill";
  * A refill the realm cannot pay yet, as its chip's name says it: what the LORDS held count against, and why that is the
  * price ("Refill to full: 20 LORDS, one a missing stamina point. The realm holds 0.").
  */
-export const refillShort = (held: string, price: string) =>
-  `Refill to full: ${price} LORDS, one a missing stamina point. The realm holds ${held}.`;
+export const refillShort = (held: string, price: string) => `Refill needs ${price} LORDS, has ${held}`;
 export const REFILLING = "Refilling…";
 
 /** LORDS leaving the game for the wallet linked to the account. */
@@ -527,28 +553,19 @@ export const WITHDRAW = "Withdraw";
 export const SENDING = "Sending…";
 export const LINK_WALLET = "Link wallet";
 export const NO_WALLET = "No wallet linked";
-/** What a linked wallet is for on the LORDS purse, as the Realms sheet says what it is for there. */
-export const LORDS_GO_TO_WALLET = "The LORDS you withdraw go to your linked Starknet wallet.";
 export const TRANSACTION = "Transaction";
-export const PAYOUTS_PAUSED = "Payouts paused. Your LORDS stay here.";
-export const paidWhenResumed = (amount: string) => `Payouts paused. These ${amount} pay when they resume.`;
+export const PAYOUTS_PAUSED = "Payouts paused";
+export const paidWhenResumed = (amount: string) => `Payouts paused: ${amount} waiting`;
 /** The season's last hour of withdrawals is kept for paying the ones already made. */
-export const WITHDRAWALS_CLOSED = "Withdrawals have closed for this season.";
+export const WITHDRAWALS_CLOSED = "Withdrawals have closed";
 /** After the season, on its last card: the moment its withdrawals close. */
 export const withdrawUntil = (moment: string) => `Withdraw until ${moment}`;
-export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now. Your LORDS stay here.";
+export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now";
 /** A withdrawal with no answer from the game: it may still apply, so it is never sent again on its own. */
-export const withdrawalUnknown = (amount: string) =>
-  `No answer yet for these ${amount}: the withdrawal may still apply. Your LORDS show it once it does.`;
+export const withdrawalUnknown = (amount: string) => `No answer yet for these ${amount}`;
 
 /** The labor a player's Realms give once a game day. */
 export const REALMS = "Realms";
-/**
- * What the Realms sheet is for, at its head whatever it holds (live-qa-night-1 P3-3: with no wallet linked it said only
- * "No wallet linked"): each Realm the linked wallet holds gives labor once a game day, up to the day's cap (0: none).
- */
-export const realmsGiveLabor = (perRealm: number, cap: number) =>
-  `Each Realm in your Starknet wallet gives ${formatExact(perRealm)} ${LABOR} a day${cap > 0 ? `, up to ${formatCount(cap, "Realm")}` : ""}.`;
 export const CLAIM = "Claim";
 export const CLAIM_ALL = "Claim all";
 export const CLAIMED_TODAY = "Claimed today";
@@ -558,13 +575,13 @@ export const seasonPool = (lords: string, today: string | undefined) =>
   `Season pool ${lords} LORDS${today === undefined ? "" : `, ${today} released today`}`;
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
 export const fitOf = (fits: string, of: string) => `${fits} of ${of} fit`;
-export const REALMS_ELSEWHERE = "Only Realms in this Starknet wallet count. Not on Ethereum, not in another wallet.";
+export const REALMS_ELSEWHERE = "No Realms in this wallet";
 /** A Realm joins the list by its number, the first time it gives its labor. */
 export const ADD_REALM = "Add a Realm";
 export const REALM_NUMBER = "Realm number";
 /** A Realm the account claimed labor with before, which the linked wallet no longer holds. */
 export const REALM_NOT_IN_WALLET = "Not in this wallet";
-export const REALM_NOT_CLAIMED = "That Realm is not in your wallet, or it gave its labor today.";
+export const REALM_NOT_CLAIMED = "Not in your wallet, or claimed today";
 export const realmsADay = (cap: number) => `${cap} a day`;
 
 // The app's words outside a match (the shell's pages).
@@ -623,7 +640,7 @@ export const PLAY_WORDS = {
 /** The lore's line, on the first visit's painting and on sign-in (approved 25 September). */
 export const LORE_LINE = "The mist forgets. Your realm remembers.";
 /** Frontier's pitch on the first visit's card. */
-export const PITCH = "A new land every day. Your realm keeps what it earns.";
+export const PITCH = "A new land every day";
 
 /** The sign-in flow's words: its titles, its two ways in and the steps on its buttons. */
 export const SIGN_IN_WORDS = {
@@ -641,7 +658,7 @@ export const SIGN_IN_WORDS = {
   saving: "Saving…",
   portrait: "Portrait",
   /** After Discord, when it finished in another browser (a phone's Safari view, the Discord app's browser). */
-  handoff: "Discord finished in another window? Enter the code it shows.",
+  handoff: "Discord finished elsewhere? Enter its code.",
   handoffCode: "Discord code",
   discordAgain: "Try Discord again",
 } as const;
@@ -663,7 +680,7 @@ export const BLITZ_WORDS = {
   registered: "Registered",
   registeredUnit: "registered",
   /** Under a slot's registered count: why it has no seats yet. */
-  drawnAtClose: (seats: number) => `No cap. Games of up to ${seats} are drawn when entry closes.`,
+  drawnAtClose: (seats: number) => `Games of ${seats}, drawn at close`,
   /** A slot taking players: its lobby holds the paid entry. */
   join: "Join",
   /** A seated game still being prepared: its lobby shows the roster and Preparing until it opens. */
@@ -685,7 +702,7 @@ export const CHAT_WORDS = {
   empty: "Nobody has written yet.",
   /** Under the chat of a reader the room does not let write. */
   registeredWrite: "Players registered in this Blitz write here.",
-  rateLimited: "A few messages a second at most. Wait a moment.",
+  rateLimited: "Too fast. Wait a moment.",
   refused: "That message was not sent.",
 } as const;
 
@@ -700,8 +717,8 @@ export const DOORWAY_WORDS = {
   signInToPlay: "Sign in to play.",
   notOnThisGame: "Not on this game.",
   ended: "This game has ended.",
-  deviceLimit: "This account is signed in on 8 devices.",
-  deviceLimitRecovery: "On an already signed-in device, open Settings → Devices and remove one. Then try again here.",
+  deviceLimit: "Signed in on 8 devices already.",
+  removeDevice: "Remove a device",
   /** A scene that could not be set up, named for what the player does not see; the cause is in the console. */
   mapNotDrawn: "The map could not be drawn.",
   realmNotDrawn: "The realm could not be drawn.",
@@ -723,7 +740,7 @@ export const SEASON_WORDS = {
   /** Under the LORDS the player's realm has earned this season. */
   lordsEarned: "LORDS earned",
   /** Frontier's board before any realm is on it, and how to get on it. */
-  boardEmpty: "No realm on the board yet. Found one from Play.",
+  boardEmpty: "No realm yet. Found one from Play.",
   /** A player with no realm on Frontier's board this season. */
   notOnBoard: "Not on Frontier's board yet",
 } as const;
@@ -733,9 +750,9 @@ export const RATING_WORDS = {
   rating: "Rating",
   blitzRating: "Blitz rating",
   /** A Realms account with no linked wallet carries no rating (not 0, not 1000). */
-  unlinked: "Link a wallet in Settings to carry a rating.",
+  unlinked: "Link a wallet to carry a rating",
   /** Blitz's board before anyone has a rating. */
-  noneRated: "No one has a rating yet. A paid Blitz gives one.",
+  noneRated: "No ratings yet",
 } as const;
 
 /** You and Settings: their rows and groups, Settings' sheets and confirms. */
@@ -760,17 +777,17 @@ export const PROFILE_WORDS = {
   linkWallet: "Link wallet",
   signOut: "Sign out",
   signOutAsk: "Sign out?",
-  signOutCost: "This device forgets your account until you sign in again.",
+  signOutCost: "This device forgets your account",
   remove: "Remove",
   removing: "Removing…",
   removeAsk: (device: string) => `Remove ${device}?`,
-  removeCost: "It signs out there and cannot enter a game until it signs in again.",
+  removeCost: "It signs out there",
   thisDevice: "This device",
   /** A device the account knows but that has no name yet. */
   device: (lastFour: string) => `Device ${lastFour}`,
   deviceRemoved: "This device was removed",
   blocked: "Blocked",
-  blockedLine: "The browser blocks alerts for Realms. Allow them in its site settings.",
+  blockedLine: "Alerts are blocked in this browser",
   install: "Install",
 } as const;
 
@@ -799,11 +816,11 @@ export const WALLET_WORDS = {
   addExtension: "Add Ready's extension",
   byEmailTitle: "By email",
   noInstallShort: "No install",
-  keysStay: "Ready's own page; your keys stay with Ready",
+  keysStay: "Ready's page; your keys stay there",
   emailStep: "Email and password, on Ready's page",
   approveStep: "Approve Realms",
   codeStep: "Signature, then our code",
-  backFromReady: "Added Ready? Reload this page, then link it.",
+  backFromReady: "Added Ready? Reload, then link it.",
   anotherWallet: "Another wallet",
   codeSentTo: "Code sent to",
   sending: "Sending…",
@@ -813,12 +830,12 @@ export const WALLET_WORDS = {
   replace: "Replace",
   unlink: "Unlink",
   unlinkTitle: "Unlink wallet",
-  nothingPaysOut: "Nothing pays out until a wallet is linked",
+  nothingPaysOut: "Nothing pays out without a wallet",
   opening: "Opening…",
-  nothingOpened: "Nothing opened? Choose it again, or another wallet.",
-  noneHere: "No wallet this browser can open. Ready by email needs none.",
-  wrongWallet: (owner: string) => `Open ${owner}: only that wallet can sign this.`,
-  paymentFailed: "The wallet did not confirm it. Check it, then try again.",
+  nothingOpened: "Nothing opened? Choose again.",
+  noneHere: "No wallet found in this browser",
+  wrongWallet: (owner: string) => `Only ${owner} can sign this`,
+  paymentFailed: "The wallet did not confirm it",
   tryAgain: "Try again",
   whichHolds: (owner: string) => `Which wallet holds ${owner}?`,
 } as const;
@@ -826,7 +843,7 @@ export const WALLET_WORDS = {
 /** What every value screen shares: a fee the payout wallet cannot pay yet. */
 export const VALUE_WORDS = {
   confirming: "Confirming…",
-  unconfirmed: "The network did not confirm it. Check again in a moment.",
+  unconfirmed: "The network has not confirmed it yet",
   refused: "The ledger refused it.",
   noStrk: "No STRK for the fee",
   swapOnAvnu: "Swap on AVNU",
@@ -847,10 +864,10 @@ export const ENTRY_WORDS = {
   paidFromWallet: "Entry is paid from your payout wallet",
   registered: "Registered",
   /** The slot is listed and the ledger does not hold it yet: a moment, not a failure. */
-  openingLine: "Entry is opening. It will be ready in a moment.",
+  openingLine: "Entry opens in a moment",
   registeredLine: "Your seat is drawn when entry closes.",
   /** Past the close, until a game's roster names the wallet. */
-  drawingLine: "Entry has closed. Your seat is being drawn.",
+  drawingLine: "Entry closed. Drawing seats.",
   seated: "Seated",
   yourGame: "Your game",
   notSeated: "Not seated",
@@ -865,10 +882,10 @@ export const ENTRY_WORDS = {
   back: "Back",
   refunded: "Refunded",
   closed: "Entry closed",
-  closedLine: "Entry has closed; this slot takes no more players.",
-  refundedLine: "Your LORDS and credits are back in your wallet.",
-  unreadable: "This game's paid entry could not be read, so it cannot be joined yet.",
-  whereItGoes: "Where this entry goes: the season pool, the season's chests, the treasury",
+  closedLine: "This slot takes no more players",
+  refundedLine: "Back in your wallet",
+  unreadable: "This game's entry could not be read",
+  whereItGoes: "Season pool, chests and treasury",
 } as const;
 
 /** The test token every environment's ledger is paid in, minted to the wallet that pays. */
@@ -898,7 +915,6 @@ export const REWARD_WORDS = {
   /** A requested chest's draw, waiting for new Starknet blocks before it can be finished. */
   draw: "Draw",
   blocksLeft: (blocks: number) => (blocks === 1 ? "1 block to go" : `${blocks} blocks to go`),
-  drawFair: "The draw waits for new blocks, so nobody can know or pick what's inside in advance.",
   /** A sealed chest's token reward, as a multiple of its slot's entry: what it can pay, and until when. */
   entryUntil: (shares: number, date: string) => `${shares}× entry until ${date}`,
   /** Under an opened chest's multiple: "4×" of the entry. */
@@ -914,23 +930,19 @@ export const SEASON_PRIZE_WORDS = {
   final: "Final",
   paysToday: "If the season ended now",
   placesPaid: (count: number) => `${formatCount(count, "place")} paid`,
-  noPlaces: "No place is paid until players are ranked.",
+  noPlaces: "No place is paid before ranking.",
   yourShare: "Your share",
   review: "Claims open in",
   held: "The list is being checked",
   claimed: "Claimed to your seat's wallet",
   /** The ledger takes no claim while its payouts are paused. */
-  paused: "Payouts are paused. Your share can be claimed when they resume.",
+  paused: "Payouts are paused",
   notPaid: "Outside the paid places this season",
   claim: "Claim",
 } as const;
 
 /** The three alert levels (ruled) and what each carries, in one line. */
-export const LEVEL_WORDS = {
-  off: { word: "Off", line: "Nothing" },
-  important: { word: "Important", line: "Your day ends in an hour, your Blitz starts, a message to you" },
-  all: { word: "All", line: "Plus every clear, fight and build" },
-} as const;
+export const LEVEL_WORDS = { off: "Off", important: "Important", all: "All" } as const;
 
 /** What's new: its patch notes, and the legal pages' date. */
 export const NEWS_WORDS = {
@@ -1126,7 +1138,7 @@ export const formatFoodBlock = (block: {
     .join(" and ");
   const verb = block.action === "travel" ? "Can't march" : "Can't explore";
   const step = block.action === "travel" ? "each step" : "each explore";
-  return `${verb}: ${step} costs ${cost}; the realm has ${held}.`;
+  return `${verb}: ${step} costs ${cost}, has ${held}`;
 };
 
 // Relics.
@@ -1146,10 +1158,7 @@ export const relicHolderLine = (isArmy: boolean, home: string | null): string =>
   isArmy ? (home ? `${ARMY} of ${home}` : ARMY) : "Structure";
 
 /** A stamina relic on an army already at full stamina: it speeds a refill the army has not started. */
-export const STAMINA_FULL = {
-  line: "Stamina is full",
-  why: "This relic speeds the refill: it helps only if the army spends stamina while it works",
-} as const;
+export const STAMINA_FULL = "Stamina is full";
 
 /** A relic's activation as the game's relic rules set it: what it costs, and how long it works. */
 interface RelicActivation {
@@ -1186,12 +1195,11 @@ export const presetLine = ({ label, description }: { label: string; description:
  * Automation with nothing to run: a realm whose only producers are farms and workers' huts holds no row, since Wheat and
  * Labor produce on their own, so the line says that rather than that the realm produces nothing.
  */
-export const NOTHING_TO_AUTOMATE =
-  "Nothing to automate here yet: Wheat and Labor produce on their own. Build a resource building to automate what it makes.";
+export const NOTHING_TO_AUTOMATE = "Nothing to automate yet";
 
 /** Why the realm's automation cannot be changed now; null when it can. */
 export const automationRefusal = (ordersAllowed: boolean, hydrated: boolean): string | null => {
-  if (!ordersAllowed) return "Only the realm's player can change its automation";
+  if (!ordersAllowed) return "Only the realm's player can change this";
   if (!hydrated) return "Loading the realm's automation";
   return null;
 };
@@ -1242,7 +1250,7 @@ export const RESEARCH_TREE = {
   build: (building: string) => `Build a ${building}`,
   stands: (building: string) => `${building} stands`,
   first: (what: string) => `${what} first`,
-  store: (limit: string, need: string, level: string) => `Labor storage ${limit} / ${need} · a ${level} holds it`,
+  store: (limit: string, need: string, level: string) => `Labor storage ${limit} / ${need} · ${level}`,
   held: (noun: string, have: string, need: string) => `${noun} ${have} / ${need}`,
   research: (what: string) => `Research ${what}`,
   levelUpCastle: "Level up the castle",
@@ -1262,11 +1270,11 @@ export const ARMY_DETAIL = {
   earn: {
     explore: "Explore a tile",
     shrine: "Visit a Shrine",
-    clear: `Clear a ${structureName(StructureType.Camp, undefined, "frontier")}: more for a stronger guard`,
+    clear: `Clear a ${structureName(StructureType.Camp, undefined, "frontier")}`,
   },
   /** What each tile the army explores sends home, on its stamina row. */
   revealPays: (amount: string) => `+${amount} a tile`,
-  revealPaysLabel: `${ESSENCE} and ${LABOR} each tile explored sends home`,
+  revealPaysLabel: `${ESSENCE} and ${LABOR} a tile`,
   toNext: (xp: string) => `${xp} ${XP} to the next level-up`,
   allLegendary: "Every attribute is legendary",
   levelUp: "Level up",

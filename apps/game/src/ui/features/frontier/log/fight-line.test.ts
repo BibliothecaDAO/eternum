@@ -20,16 +20,16 @@ describe("the day log's line for a fight", () => {
     const { store } = campBeside("Rift");
     const name = siteName(SITE);
     expect(fightLogLine(battle([154, 0], [1_100, 1_028]), store)).toBe(
-      `${name}: Army lost, lost 154, guard 1,100 to 1,028`,
+      `${name}: Army lost, lost 154, guard 1,028 left`,
     );
-    expect(fightLogLine(battle([500, 432], [334, 150]), store)).toBe(`${name}: Guard holds, lost 68, guard 334 to 150`);
-    expect(fightLogLine(battle([432, 364], [150, 0]), store)).toBe(`${name}: Victory, lost 68, guard 150 to 0`);
+    expect(fightLogLine(battle([500, 432], [334, 150]), store)).toBe(`${name}: Guard holds, lost 68, guard 150 left`);
+    expect(fightLogLine(battle([432, 364], [150, 0]), store)).toBe(`${name}: Victory, lost 68, guard 0 left`);
   });
 
   it("names a camp by its site's name, including after a clear removed its structure and guard", () => {
     const { store, site } = campBeside("Camp");
     const name = siteName(SITE);
-    expect(fightLogLine(battle([500, 432], [334, 150]), store)).toBe(`${name}: Guard holds, lost 68, guard 334 to 150`);
+    expect(fightLogLine(battle([500, 432], [334, 150]), store)).toBe(`${name}: Guard holds, lost 68, guard 150 left`);
     store.applyFacts([
       {
         model: "ExpeditionSite",
@@ -39,7 +39,7 @@ describe("the day log's line for a fight", () => {
       { model: "Structure", key: "0x71", value: null },
       { model: "Guard", key: "0x73", value: null },
     ] as never);
-    expect(fightLogLine(battle([432, 364], [150, 0]), store)).toBe(`${name}: Victory, lost 68, guard 150 to 0`);
+    expect(fightLogLine(battle([432, 364], [150, 0]), store)).toBe(`${name}: Victory, lost 68, guard 0 left`);
   });
 
   it("leaves every other story, and a battle against no site, to their own titles", () => {

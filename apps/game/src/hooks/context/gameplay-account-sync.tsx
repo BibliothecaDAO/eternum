@@ -99,15 +99,15 @@ export const isAccountStatePrompt = (provisioningError: string | null): boolean 
 
 // Every surface shows the provisioning error to the player as is, so a failure is stored as one sentence and its
 // detail (an RPC dump, a transaction's params) goes to the console only.
-const ACCOUNT_SETUP_FAILED = "Your account could not be set up for this game. Try again in a moment.";
+const ACCOUNT_SETUP_FAILED = "Your account could not be set up.";
 
 /** Both entry routes use the same device-limit recovery. */
 export const DEVICE_LIMIT_REACHED = DOORWAY_WORDS.deviceLimit;
 
 const ACCOUNT_REFUSALS: Record<string, string> = {
   device_revoked: DEVICE_REMOVED,
-  account_not_secured: "Secure your account by signing in with Discord or an email code.",
-  not_your_account: "This game account does not belong to your sign-in. Sign in to the account that owns it.",
+  account_not_secured: "Sign in with Discord or a code.",
+  not_your_account: "This game account is not yours.",
   device_limit: DEVICE_LIMIT_REACHED,
 };
 

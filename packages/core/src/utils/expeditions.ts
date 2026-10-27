@@ -240,6 +240,21 @@ export const armyRealmSpire = (
   return spire && realm ? { ...spire, realm } : null;
 };
 
+/**
+ * The lit spire of a living army's realm while the army stands where enter_depth takes it (on the spire or beside it);
+ * null anywhere else.
+ */
+export const armyAtItsSpire = (
+  store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
+  gameId: number,
+  explorerId: number | bigint,
+  nowSeconds: number,
+): { col: number; row: number; deepest: number; realm: NativeRows["Structure"] } | null => {
+  const spire = armyRealmSpire(store, gameId, explorerId, nowSeconds);
+  const tile = spire && store.entityOccupancy(gameId, explorerId);
+  return spire && tile && isAtExpeditionSpire(spire, { x: tile.col, y: tile.row }) ? spire : null;
+};
+
 /** Every spire lit today that the store knows of, with its realm: one per expedition realm with depth research. */
 export const expeditionSpires = (
   store: Pick<NativeFactStore, "get" | "require" | "inGame">,

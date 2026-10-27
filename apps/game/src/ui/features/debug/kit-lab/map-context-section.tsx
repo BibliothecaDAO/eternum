@@ -37,7 +37,7 @@ const ENEMY_ARMY: ArmyPlate = {
   owner: "Moonhand",
   homeName: "Xeswet",
   troops: { type: "paladin", tier: 3, count: 300 },
-  stamina: { current: 84, max: 150 },
+  stamina: { current: 84, max: 150, perExplore: 20 },
 };
 const CAMP: StructurePlate = {
   kind: "structure",

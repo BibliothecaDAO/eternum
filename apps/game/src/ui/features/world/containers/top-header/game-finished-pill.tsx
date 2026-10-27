@@ -5,7 +5,6 @@ import { requireActiveGame } from "@/runtime/world/store";
 import { resultsHref } from "@/shell/season-tab/results-link";
 import { HudButton, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { Popover } from "@/ui/design-system/molecules/popover";
-import { useIsWatching } from "@/utils/can-issue-orders";
 
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -19,7 +18,6 @@ const GAME_FINISHED_POPOVER_ID = "game-finished";
 export const GameFinishedPill = () => {
   const isOpen = usePopoverStore((state) => state.openId === GAME_FINISHED_POPOVER_ID);
   const togglePopover = usePopoverStore((state) => state.toggle);
-  const watching = useIsWatching();
   const navigate = useNavigate();
   const goToResults = useCallback(() => {
     skipGameEnd();
@@ -47,11 +45,6 @@ export const GameFinishedPill = () => {
     >
       <div className="flex flex-col gap-3">
         <span className="text-hud-title text-hud-ink">This game has ended</span>
-        <span className="text-hud-body text-hud-ink">
-          {watching
-            ? "The final standings are on its Results page. The map stays open here to scout. Escape skips the mist."
-            : "Your place, the standings and rewards are on its Results page. The map stays open here. Escape skips the mist."}
-        </span>
         <HudButton kind="primary" onClick={goToResults}>
           See the results
         </HudButton>

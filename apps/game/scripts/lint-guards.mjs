@@ -82,6 +82,16 @@ const SHORT_IN_CHIPS = [
   },
 ];
 
+// Every stamina bar is HudStamina, cut into a segment per explore (owner, 26 October: "split the bar in 20 stamina ?
+// like on mobile ?"). The desktop army card, the map plates and the guard bars each drew a plain meter of their own.
+const STAMINA_IS_SEGMENTED = [
+  {
+    selector:
+      "JSXOpeningElement[name.name='HudMeter'] > JSXAttribute[name.name='label'] :matches(Literal[value=/stamina/i], Identifier[name='STAMINA'], TemplateElement[value.raw=/stamina/i])",
+    message: "A stamina bar is HudStamina (a segment per explore), never a plain HudMeter.",
+  },
+];
+
 // A function or an object written into text prints its source or "[object Object]": each resource chip's buttons read
 // "Transfer (id) => {…}" where a words function was written in place of the word it returns. Typed, so client only.
 const TEXT_VALUES = {
@@ -132,6 +142,7 @@ const eslint = new ESLint({
           ...NO_HEAD_RENDER,
           ...HAND_WRITTEN_GAIN,
           ...SHORT_IN_CHIPS,
+          ...STAMINA_IS_SEGMENTED,
         ],
       },
     },

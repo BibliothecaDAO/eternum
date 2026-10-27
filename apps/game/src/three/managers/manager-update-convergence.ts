@@ -153,21 +153,3 @@ export function createCoalescedAsyncUpdateRunner(task: () => Promise<boolean>): 
     return completed;
   };
 }
-
-export function waitForVisualSettle(
-  requestAnimationFrameScheduler?: ((callback: FrameRequestCallback) => number) | null,
-  timeoutScheduler?: (callback: () => void) => number,
-): Promise<void> {
-  const rafScheduler =
-    requestAnimationFrameScheduler === undefined ? globalThis.requestAnimationFrame : requestAnimationFrameScheduler;
-  if (typeof rafScheduler === "function") {
-    return new Promise((resolve) => {
-      rafScheduler(() => resolve());
-    });
-  }
-
-  const fallbackScheduler = timeoutScheduler ?? ((callback: () => void) => globalThis.setTimeout(callback, 0));
-  return new Promise((resolve) => {
-    fallbackScheduler(() => resolve());
-  });
-}

@@ -2,7 +2,7 @@ import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudPanel, HudPortrait, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { ARMIES, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
-import type { StaminaBar } from "@/lib/army-stamina/segments";
+import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
 
 import { HomecomingReturn, StaminaReading, xpLine, type XpGoal } from "./army-token";

@@ -96,10 +96,7 @@ export const BitcoinMiningActionPanel = ({ structureEntityId }: { structureEntit
       <h4>Bitcoin mining · phase {phase.toString()}</h4>
       {owned && (
         <>
-          <p>
-            Contribute Labor from this structure to every owned mine’s draw. Your phase contribution:{" "}
-            {(contribution?.labor ?? 0n) / precision + " Labor"}.
-          </p>
+          <p>Contributed this phase: {(contribution?.labor ?? 0n) / precision + " Labor"}</p>
           <label className="flex items-center gap-2">
             Labor ({labor === undefined ? "—" : (labor / precision).toString()} available)
             <span className="w-24">

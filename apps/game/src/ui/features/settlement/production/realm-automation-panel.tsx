@@ -511,7 +511,6 @@ export const RealmAutomationPanel = ({
       }
     >
       <div className="flex flex-col gap-4">
-        <p className="text-hud-muted">Move a slider or apply a preset, then save.</p>
         {isOverallocated && (
           <HudNotice tone="bad" line={`Resolve over-allocation for ${overallocatedLabels.join(", ")} before saving.`} />
         )}
@@ -532,7 +531,7 @@ export const RealmAutomationPanel = ({
             </HudButton>
           ))}
         </div>
-        {hasLocalChanges && <HudNotice tone="warn" line="Unsaved changes pending. Save to apply automation updates." />}
+        {hasLocalChanges && <HudNotice tone="warn" line="Unsaved changes" />}
 
         {/* The usage and each resource's allocation are HUD panels: cards, as the Transfer window draws its columns. */}
         <HudPanel label="Resource usage" title="Resource usage" collapsible={false}>

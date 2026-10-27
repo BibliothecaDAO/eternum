@@ -148,7 +148,7 @@ describe("the army token", () => {
     );
   /** The bar's segments as drawn: each one's length (its flex-grow) and fill. */
   const segments = (markup: string) =>
-    [...markup.matchAll(/flex-grow:([\d.]+);flex-basis:0[^>]*><b[^>]*width:([\d.]+)%/g)].map(([, size, fill]) => [
+    [...markup.matchAll(/flex-grow:([\d.]+);flex-basis:0[^>]*><i[^>]*width:([\d.]+)%/g)].map(([, size, fill]) => [
       Number(size),
       Number(fill),
     ]);

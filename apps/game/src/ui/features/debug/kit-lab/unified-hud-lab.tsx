@@ -5,7 +5,7 @@ import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { FrontierHud } from "@/ui/features/frontier/frontier-hud";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { ArenaHud } from "@/ui/features/world/hud/arena-hud";
-import { usePointsGoal } from "@/ui/features/world/hud/points-goal";
+import { useGoalLine } from "@/ui/features/world/hud/points-goal";
 import { gameStartHeadline } from "@/ui/features/news-headlines/news-headline-bridge";
 import { NewsHeadlineBanner } from "@/ui/features/news-headlines/news-headline-banner";
 import { readExpeditionRules, structureMapPosition } from "@bibliothecadao/eternum";
@@ -112,7 +112,7 @@ const ViewLab = ({ view }: { view: View }) => {
 
 /** The news that the game has begun, as the game shows it over the HUD. */
 const GameStartNews = () => {
-  const goal = usePointsGoal();
+  const goal = useGoalLine();
   return <NewsHeadlineBanner headline={gameStartHeadline(0, goal)} />;
 };
 

@@ -29,7 +29,7 @@ import {
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
-import { BiomeType, StructureType, TroopTier, TroopType, formatCount } from "@bibliothecadao/types";
+import { BiomeType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import {
   type CoachAct,
@@ -88,11 +88,8 @@ export const useLostArmyAlert = (): NextStep[] => {
     [battles, nowMs, address],
   );
   if (!lost?.line || inTheField || !holds) return [];
-  const raise = raiseStep({ troopsOnHand, grants: configManager.getVictoryPointGrants() });
-  const next = troopsOnHand
-    ? `Raise another at ${troopsOnHand.realmName} (${formatCount(troopsOnHand.stack.count, "troop")} on hand).`
-    : raise.line;
-  return [toNextStep({ ...raise, key: `lost:${lost.battle.id}`, line: `${lost.line}. ${next}` }, act)];
+  const raise = raiseStep({ troopsOnHand });
+  return [toNextStep({ ...raise, key: `lost:${lost.battle.id}`, line: lost.line }, act)];
 };
 
 const toNextStep = (step: CoachStep, act: (action: ButtonAct) => void): NextStep => {

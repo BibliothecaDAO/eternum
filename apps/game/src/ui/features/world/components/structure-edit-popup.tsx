@@ -43,9 +43,7 @@ export const StructureEditPopup = ({ currentName, originalName, onConfirm, onCan
             )}
           </div>
           {renamed && <span className="text-hud-label text-hud-muted">Original name: {originalName}</span>}
-          <span className="text-hud-label text-hud-cue">
-            This change is only visible locally and does not sync with other players.
-          </span>
+          <span className="text-hud-label text-hud-cue">Only you see this change.</span>
         </div>
       </div>
     </HudWindow>

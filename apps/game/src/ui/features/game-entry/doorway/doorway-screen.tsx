@@ -153,13 +153,10 @@ const Hold = ({
         <AppNotice
           tone="bad"
           line={DOORWAY_WORDS.deviceLimit}
-          why={
-            <>
-              {DOORWAY_WORDS.deviceLimitRecovery}{" "}
-              <a href={DEVICES_PATH} target="_blank" rel="noopener noreferrer" className="text-app-accent underline">
-                Settings → Devices
-              </a>
-            </>
+          actions={
+            <a href={DEVICES_PATH} target="_blank" rel="noopener noreferrer" className="text-app-accent underline">
+              {DOORWAY_WORDS.removeDevice}
+            </a>
           }
         />,
         retry("primary"),

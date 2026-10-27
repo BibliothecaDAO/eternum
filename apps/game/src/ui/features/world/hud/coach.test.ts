@@ -31,7 +31,7 @@ it("raises the first army at the realm with troops on hand, or asks for a barrac
   expect(steps([], [target("crate", "the relic crate", 3)])).toEqual([
     {
       key: "coach:raise",
-      line: "Raise an army at 'oak Leukue (1,000 troops on hand): it explores for +5 points a tile.",
+      line: "'oak Leukue: 1,000 troops ready",
       verb: "Raise an army",
       // Military opens on the stack the line names: its troop and its count.
       act: { kind: "raise", realmId: 9, troops: { type: TroopType.Knight, tier: TroopTier.T1, count: 1_000 } },
@@ -40,7 +40,7 @@ it("raises the first army at the realm with troops on hand, or asks for a barrac
   expect(steps([], [], { troopsOnHand: null })).toEqual([
     {
       key: "coach:barracks",
-      line: "No troops on hand: build a barracks to train them.",
+      line: "No troops on hand",
       verb: "Build a barracks",
       act: { kind: "build" },
     },
@@ -57,10 +57,10 @@ it("puts first what scores most now: a crate beside the army is opened from here
     ],
   );
   expect(route.map(({ line }) => line)).toEqual([
-    "Your army is beside the relic crate: open it for +250 points.",
-    "Your army can explore: +5 points a tile.",
-    "Take Camp from The Vanguard: +250 points.",
-    "Take Obsidian Hyperstructure: +1,000 points, then points every second.",
+    "Beside the relic crate: +250 points",
+    "Your army can explore: +5 points a tile",
+    "Take Camp from The Vanguard: +250 points",
+    "Take Obsidian Hyperstructure: +1,000 points",
   ]);
   expect(route[0].act).toEqual({ kind: "open-crate", armyId: 1, hex: { col: 1, row: 0 } });
   expect(route[1].act).toEqual({ kind: "go", armyId: 1, target: null });
@@ -74,7 +74,7 @@ it("sends the nearest army to a crate farther off, and asks to explore only whil
   expect(route).toEqual([
     {
       key: "coach:crate:8:0",
-      line: "Open the relic crate: +250 points.",
+      line: "Open the relic crate: +250 points",
       verb: "Show the crate",
       act: { kind: "go", armyId: 2, target: { col: 8, row: 0 } },
     },
@@ -86,13 +86,13 @@ it("moves on once the army is selected: the step says how to take it on the map,
   expect(route).toEqual([
     {
       key: "coach:explore:1:selected",
-      line: "Click a tile beside your army to explore it: +5 points a tile.",
+      line: "Click a tile beside your army",
       verb: null,
       act: null,
     },
     {
       key: "coach:crate:4:0:selected",
-      line: "Move your army next to the relic crate, then right-click it: +250 points.",
+      line: "Move beside the relic crate, then right-click it",
       // The crate is often in the fog, tiles away: Show the crate frames it with the army.
       verb: "Show the crate",
       act: { kind: "go", armyId: 1, target: { col: 4, row: 0 } },
@@ -109,13 +109,13 @@ it("asks for the home realm's level-up before a target the army would surely los
   expect(route).toEqual([
     {
       key: "coach:site:6:0",
-      line: "Take Camp from The Vanguard: +250 points.",
+      line: "Take Camp from The Vanguard: +250 points",
       verb: "Show Camp",
       act: { kind: "go", armyId: 1, target: { col: 6, row: 0 } },
     },
     {
       key: "coach:hyperstructure:9:0:level-up",
-      line: "Obsidian Hyperstructure would wipe out your army. Level up Egonal first: a bigger realm raises a bigger army.",
+      line: "Obsidian Hyperstructure is too strong: level up Egonal",
       verb: null,
       act: { kind: "level-up", realmId: 7, name: "Egonal" },
     },
@@ -129,7 +129,7 @@ it("passes over a target the army would surely lose to once its home is at the t
   expect(steps([maxed], [hyperstructure, camp], { certainLoss: (_army, at) => at === hyperstructure })).toEqual([
     {
       key: "coach:site:6:0",
-      line: "Take Camp from The Vanguard: +250 points.",
+      line: "Take Camp from The Vanguard: +250 points",
       verb: "Show Camp",
       act: { kind: "go", armyId: 1, target: { col: 6, row: 0 } },
     },

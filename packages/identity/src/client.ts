@@ -102,6 +102,9 @@ const pushConfigurationSchema = Schema.Union([
   }),
 ]);
 const acknowledgementSchema = Schema.Record(Schema.String, Schema.Unknown);
+/** An account's Blitz build orders as saved: their book is the game's to read, with its own build order reader. */
+const savedBuildOrdersSchema = Schema.Struct({ owner: Schema.String, revision: Schema.Number, book: Schema.Unknown });
+export type SavedBuildOrders = typeof savedBuildOrdersSchema.Type;
 
 const readJson = async <T>(response: Response, decode: (value: unknown) => T): Promise<T> => {
   if (!response.ok) throw await requestFailure(response);
@@ -322,6 +325,22 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     return readJson(response, parseNotificationPreferences);
   };
 
+  const getBuildOrders = async (): Promise<SavedBuildOrders> =>
+    readJson(await request("/build-orders", { method: "GET", cache: "no-store" }), decode(savedBuildOrdersSchema));
+  /** Saves over the revision it read; a refused order comes back with the game's reason, in the player's words. */
+  const saveBuildOrders = async (saved: SavedBuildOrders): Promise<SavedBuildOrders> => {
+    const response = await request("/build-orders", { method: "POST", body: JSON.stringify(saved) });
+    if (response.status === 409)
+      throw new IdentityRequestError(
+        409,
+        "build_order_conflict",
+        "Your build orders changed on another device. Reload them before saving again.",
+      );
+    if (response.status === 403 || response.status === 401)
+      throw new IdentityRequestError(response.status, "unauthorized", "Your account changed or signed out.");
+    return readJson(response, decode(savedBuildOrdersSchema));
+  };
+
   const pushRequest = async <T>(
     action: string,
     decode: (value: unknown) => T,
@@ -360,6 +379,8 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     updateUser,
     getNotificationPreferences,
     saveNotificationPreferences,
+    getBuildOrders,
+    saveBuildOrders,
     getPushConfiguration: () => pushRequest("config", decode(pushConfigurationSchema)),
     registerPushSubscription: (input: PushRegistration) =>
       pushRequest("subscribe", decode(Schema.Struct({ id: Schema.String })), input),

@@ -420,7 +420,6 @@ const LAB_NEXT_UP_FACTS: NextUpFacts = {
   lastHour: false,
   storeFull: null,
   populationFull: false,
-  rules: { hutAdds: 6, stamina: { explore: 30, anHour: 30 }, xp: { reveal: 2 }, homecomingPercent: 3 },
 };
 
 /**
@@ -1151,7 +1150,7 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
 
 /** The veteran army's panel on the fiction, with its refill where the realm's LORDS are given, or the refill's confirm. */
 const LabArmy = ({ army }: { army: LabArmySheet }) => {
-  const stamina = { current: army.stamina ?? 96, max: 170 };
+  const stamina = { ...VETERAN_ARMY.stamina, current: army.stamina ?? VETERAN_ARMY.stamina.current };
   if (army.confirm)
     return <RefillConfirm stamina={stamina} held={army.lords} sending={false} onRefill={noop} onCancel={noop} />;
   return (

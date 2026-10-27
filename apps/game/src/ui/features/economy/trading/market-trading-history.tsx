@@ -105,7 +105,7 @@ export const MarketTradingHistory = memo(() => {
           />
         </span>
       </div>
-      <p className="text-hud-muted">AMM swaps only. Order book fills return later.</p>
+      <p className="text-hud-muted">AMM swaps only</p>
       <TradeHistoryRowHeader />
       <div role="table" aria-label="Swaps" className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {isLoading ? (

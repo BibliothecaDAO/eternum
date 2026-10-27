@@ -2,7 +2,7 @@ import { formatAmount, formatClockTime } from "@bibliothecadao/types";
 import { HudEventRow, HudIconButton, HudNotice, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   DAY,
-  DAY_HISTORY_SHORT,
+  DAY_TOTALS_UNKNOWN,
   dayEnds,
   dayLeft,
   phraseText,
@@ -70,7 +70,7 @@ export const TodaySheet = ({
       {armiesToUpgrade !== undefined && armiesToUpgrade > 0 && (
         <HudRow lead={<Icon name="picks" size={22} />} title={formatAmount(armiesToUpgrade)} onClick={onArmies} />
       )}
-      {history === "short" && <HudNotice line={DAY_HISTORY_SHORT} />}
+      {history === "short" && <HudNotice line={DAY_TOTALS_UNKNOWN} />}
       {history === "failed" ? (
         <HudNotice tone="bad" line={TODAY_ERROR} retry={onRetry} />
       ) : (

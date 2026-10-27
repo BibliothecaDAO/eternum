@@ -285,7 +285,7 @@ it("offers no Claim while the ledger's payouts are paused, and says they are", a
   await settle();
   await settle();
   expect(panel.textContent).toContain("2,000");
-  expect(panel.textContent).toContain("Payouts are paused.");
+  expect(panel.textContent).toContain("Payouts are paused");
   expect(buttons(panel)).not.toContain("Claim");
 });
 

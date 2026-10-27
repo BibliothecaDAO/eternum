@@ -21,7 +21,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { disposeGameSyncSession } from "@/sync/active-game-client";
 import { useArmyCreation } from "@/ui/features/military/components/unified-army-creation-modal/use-army-creation";
 import { getRealmInfo, setBuildingCount } from "@bibliothecadao/eternum";
-import { readBlitzRealmSuggestions } from "@bibliothecadao/eternum/automation";
+import { DEFAULT_BUILD_ORDER, readBlitzRealmSuggestions } from "@bibliothecadao/eternum/automation";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
   BiomeType,
@@ -54,7 +54,7 @@ const blitzRealm = () => {
   return store;
 };
 
-/** The realm's steps, by the game's own reader over the facts it holds. */
+/** The realm's steps, by the game's own reader over the facts it holds, on the default order. */
 const readSteps = (store: NativeFactStore) =>
   readBlitzRealmSuggestions({
     store,
@@ -63,6 +63,7 @@ const readSteps = (store: NativeFactStore) =>
     isBlitzActive: true,
     tiles: { isHexOccupied: () => false },
     tick: 1,
+    order: DEFAULT_BUILD_ORDER,
   });
 
 /** The realm's next step in words: its action and its reason. */

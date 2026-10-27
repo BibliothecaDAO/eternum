@@ -1,9 +1,12 @@
+/** How long a frame-driven step waits for a frame before it runs anyway: a hidden tab draws none. */
+const FRAME_FALLBACK_MS = 100;
+
 /**
- * Runs `callback` once: on the next animation frame, or after `fallbackMs` when frames stop arriving (a hidden tab,
+ * Runs `callback` once: on the next animation frame, or after FRAME_FALLBACK_MS when frames stop arriving (a hidden tab,
  * a throttled window). Frame-driven drains that only wait on `requestAnimationFrame` stall in a background tab and
  * never finish booting; the timer keeps them authoritative. Returns a cancel function.
  */
-export function requestFrameOrTimeout(callback: () => void, fallbackMs: number): () => void {
+export function requestFrameOrTimeout(callback: () => void): () => void {
   let done = false;
   let frame: number | undefined;
   let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -23,7 +26,7 @@ export function requestFrameOrTimeout(callback: () => void, fallbackMs: number):
 
   if (typeof requestAnimationFrame === "function") {
     frame = requestAnimationFrame(run);
-    timeout = setTimeout(run, fallbackMs);
+    timeout = setTimeout(run, FRAME_FALLBACK_MS);
   } else {
     timeout = setTimeout(run, 0);
   }
@@ -33,3 +36,9 @@ export function requestFrameOrTimeout(callback: () => void, fallbackMs: number):
     cancel();
   };
 }
+
+/** The next animation frame, or the fallback when frames stop arriving, as a promise to await. */
+export const nextFrameOrTimeout = (): Promise<void> =>
+  new Promise((resolve) => {
+    requestFrameOrTimeout(resolve);
+  });

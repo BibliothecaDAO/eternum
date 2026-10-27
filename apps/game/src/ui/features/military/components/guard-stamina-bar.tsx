@@ -1,4 +1,5 @@
-import { HudMeter } from "@/ui/design-system/kit/hud-elements";
+import { HudStamina } from "@/ui/design-system/kit/hud-elements";
+import { configManager } from "@bibliothecadao/eternum";
 import { isStaminaRecharging } from "@/ui/shared/lib/stamina-visuals";
 
 interface GuardStaminaBarProps {
@@ -6,7 +7,7 @@ interface GuardStaminaBarProps {
   max?: number | null;
 }
 
-/** A guard's stamina on the sheet's meter: good past two thirds, warn past one, bad below or under 40; refilling while it recharges. */
+/** A guard's stamina on the kit's stamina bar: good past two thirds, warn past one, bad below or under 40; refilling while it recharges. */
 const staminaTone = (current: number, share: number) =>
   current < 40 || share <= 1 / 3 ? "bad" : share > 2 / 3 ? "good" : "warn";
 
@@ -22,10 +23,9 @@ export const GuardStaminaBar = ({ current, max }: GuardStaminaBarProps) => {
 
   return (
     <span title={label} className="block w-full">
-      <HudMeter
-        share={share}
+      <HudStamina
+        stamina={{ current: clampedCurrent, max: maxValue, perExplore: configManager.getExploreStaminaCost() }}
         tone={staminaTone(clampedCurrent, share)}
-        label={label}
         filling={isStaminaRecharging(clampedCurrent, maxValue)}
       />
     </span>

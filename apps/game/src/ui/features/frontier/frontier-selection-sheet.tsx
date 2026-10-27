@@ -25,7 +25,8 @@ import { useTappedBuilding } from "./research/selected-building";
  * What the player tapped, as its Frontier card, with its key: which card it is and for which tile, so the HUD's one
  * panel (useOnePanel) knows when a card opens; null when the selection opens none. An open plot of the realm opens the
  * build sheet, the keep its card, a standing building its own card, an adjacent friendly army its troop transfer, a standing site or enemy army
- * its tile card, a Shrine or Well its use card, and a spire or reward chest its own card. Cleared sites and opened
+ * its tile card, a Shrine or Well its use card, and a spire or reward chest its own card; so does an army selected on or
+ * beside its realm's spire, the spire's (useSelectedSpire). Cleared sites and opened
  * chests keep their receipts on the tile.
  * A cleared site shows its receipt even with an army on the tile. Other empty tiles and armies the dock already
  * shows open no card. The player's own attack result stands in its tile's card while that tile is selected: any other
@@ -56,8 +57,14 @@ export const useSelectionCard = ({
   const transfer = useSelectedTransfer(realm);
   const closeSelectedTile = useUIStore((state) => state.closeSelectedTile);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
+  const selectOnMap = useUIStore((state) => state.selectOnMap);
+  const selectedArmy = useUIStore((state) => state.entityActions.selectedEntityId);
   const close = () => {
     closeSelectedTile();
+    setSelectedBuildingHex(null);
+  };
+  const letGoOfAll = () => {
+    selectOnMap(null);
     setSelectedBuildingHex(null);
   };
   // The result stands in the target's card, under the card's name: closing it (its close, Escape) closes the card, not
@@ -101,7 +108,13 @@ export const useSelectionCard = ({
       </HudSheet>,
     );
   if (tileObject?.kind === "spire") return card("spire", <SpireCard onClose={close} />);
-  if (spire) return card("realm-spire", <RealmSpireSheet spire={spire} onResearch={onResearch} onClose={close} />);
+  // A spire's card is the spire's for the army selected, whichever tile was tapped: a surface letting go of the tile
+  // leaves it the same card, which stays put away. Closed, it lets go of the army too, which would open it again.
+  if (spire)
+    return {
+      key: `realm-spire@${spire.col},${spire.row}:${selectedArmy ?? "none"}`,
+      sheet: <RealmSpireSheet spire={spire} onResearch={onResearch} onClose={letGoOfAll} />,
+    };
   if (realm && keep) return card("keep", <CastleUpgrade realm={realm} onResearchPage={onResearch} onClose={close} />);
   if (realm && building)
     return card(

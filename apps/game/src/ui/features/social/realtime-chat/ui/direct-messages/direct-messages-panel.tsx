@@ -246,9 +246,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                     </Fragment>
                   );
                 })}
-                {thread.messages.length === 0 && (
-                  <li className="text-hud-body text-hud-cue">No messages yet. Say hi to start the conversation!</li>
-                )}
+                {thread.messages.length === 0 && <li className="text-hud-body text-hud-cue">No messages yet.</li>}
               </ul>
             </div>
             {typing.length > 0 && (

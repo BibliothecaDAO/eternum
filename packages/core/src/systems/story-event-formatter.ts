@@ -61,7 +61,7 @@ export interface StoryEventPresentation {
 }
 
 /** What a capture takes with the structure: what the structure owns (its armies, the deliveries bound for it) is the captor's. */
-export const CAPTURE_AFTERMATH = "Its armies and incoming deliveries went with it";
+export const CAPTURE_AFTERMATH = "Its armies and deliveries went with it";
 
 type StoryFormatter = (
   event: StoryEventSystemUpdate,

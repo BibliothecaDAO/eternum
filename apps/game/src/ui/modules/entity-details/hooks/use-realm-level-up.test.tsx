@@ -86,7 +86,7 @@ describe("a realm's level-up step", () => {
     facts.upgrade = realm({ hasRecipe: false, canUpgrade: false, requirements: [] });
     const { seen, unmount } = await renderSurfaces();
     expect(seen.card).toMatchObject({ mode: "level-up", ready: false, loading: false });
-    expect(seen.card?.refusal).toBe("This game has no recipe for the next level");
+    expect(seen.card?.refusal).toBe("No recipe for the next level");
     await act(async () => seen.card?.run());
     expect(calls.upgrade_realm).not.toHaveBeenCalled();
     await unmount();

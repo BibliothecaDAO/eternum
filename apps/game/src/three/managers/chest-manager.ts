@@ -1,4 +1,5 @@
 import { iconUrl } from "@/ui/design-system/icon-meaning";
+import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import { resolveChestTransition } from "../rewards/chest-transition-policy";
@@ -43,7 +44,6 @@ import {
   MANAGER_UNCOMMITTED_CHUNK,
   shouldAcceptManagerChunkRequest,
   shouldRunManagerChunkUpdate,
-  waitForVisualSettle,
 } from "./manager-update-convergence";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import type { HoverLabelShowResult } from "./hover-label-show-result";
@@ -347,7 +347,7 @@ export class ChestManager {
       options,
       shouldAcceptRequest: shouldAcceptManagerChunkRequest,
       state: this.resolveChunkUpdateRuntimeState(),
-      waitForSettle: waitForVisualSettle,
+      waitForSettle: nextFrameOrTimeout,
     });
   }
 

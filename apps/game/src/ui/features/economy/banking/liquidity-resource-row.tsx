@@ -168,9 +168,7 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
             </HudButton>
           </HudWindowFoot>
           <div className="flex flex-col gap-3">
-            {isVillageAndMilitaryResource && (
-              <HudNotice tone="bad" line="Military resources cannot be traded from village structures." />
-            )}
+            {isVillageAndMilitaryResource && <HudNotice tone="bad" line="Villages cannot trade military resources." />}
             <HudRow title="Withdrawal Amount" trail={`${withdrawalPercentage}%`} />
             <HudSlider
               label="Withdrawal amount, in percent"

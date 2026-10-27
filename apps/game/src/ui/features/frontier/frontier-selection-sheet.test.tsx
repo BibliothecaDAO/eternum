@@ -436,14 +436,14 @@ it("selects a Frontier chest, follows missing metadata and expiry across clock t
       ] as never),
     );
     expect(host.textContent).toContain("17 LORDS");
-    expect(host.textContent).toContain("Expires at day rollover");
+    expect(host.textContent).toContain("Expires at day's end");
     await act(async () => {
       elapsedMs = 1_000;
       useChainTimeStore.getState().tick();
     });
     expect(useChainTimeStore.getState().nowMs).toBe(351_000);
     expect(host.textContent).toContain("17 LORDS");
-    expect(host.textContent).toContain("Expires at day rollover");
+    expect(host.textContent).toContain("Expires at day's end");
     expect(host.textContent).not.toContain("Chain time is not known yet");
     await act(async () => {
       elapsedMs = 49_999;
@@ -456,7 +456,7 @@ it("selects a Frontier chest, follows missing metadata and expiry across clock t
     });
     expect(useChainTimeStore.getState().nowMs).toBe(400_000);
     expect(host.textContent).toContain("0 LORDS");
-    expect(host.textContent).toContain("Reservation expired");
+    expect(host.textContent).toContain("Expired");
     await act(async () => useChainTimeStore.getState().anchor({ timestamp: 350_000, source: "herald-head" }));
     const open = [...host.querySelectorAll("button")].find((button) => button.textContent === "Open")!;
     expect(open.disabled).toBe(false);

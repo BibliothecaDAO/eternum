@@ -5,6 +5,7 @@ import { playerStructuresView, seasonClockView } from "@/sync/fact-views";
 
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useActiveBuildOrder } from "@/hooks/use-build-orders";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
 import { configManager, TileManager } from "@bibliothecadao/eternum";
@@ -68,8 +69,8 @@ export const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestio
 };
 
 /**
- * Every realm's next step in a running Blitz (core's buildBlitzRealmSuggestions on the default build order): only a
- * step that can be taken now, a build by the same path the construction window uses.
+ * Every realm's next step in a running Blitz (core's buildBlitzRealmSuggestions on the player's active build order, or
+ * the default): only a step that can be taken now, a build by the same path the construction window uses.
  */
 export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const {
@@ -78,6 +79,7 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const mode = useGameModeConfig();
   const facts = useNativeFacts(["Guard", "ResourceBalance", "ResourceProduction", "ResourceWeight"]);
   const resolvedWorldGameMode = useResolvedWorldGameMode();
+  const order = useActiveBuildOrder();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const tick = useCurrentDefaultTick();
   const playerStructures = useFactView(playerStructuresView);
@@ -109,9 +111,10 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
           tiles: TileManager.forStructure(facts.store, systemCalls, structure.entityId),
           mode,
           tick,
+          order,
         });
       })
       .toSorted(compareSuggestionDrafts)
       .map(decorateSuggestion);
-  }, [metadata, systemCalls, mode, isBlitzActive, facts, tick]);
+  }, [metadata, systemCalls, mode, isBlitzActive, facts, tick, order]);
 };
