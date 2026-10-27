@@ -273,7 +273,7 @@ export const RaidContainer = ({
     if (target?.targetType !== TargetType.Structure) return "Only structures can be raided";
     if (stealableResources.length === 0) return "No resources raidable";
     return "Raid!";
-  }, [attackerArmyData, combatConfig, target, stealableResources]);
+  }, [attackerArmyData, target, stealableResources]);
 
   const canRaid = useMemo(() => {
     return (
