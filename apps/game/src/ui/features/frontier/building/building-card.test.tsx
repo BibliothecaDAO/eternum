@@ -104,6 +104,31 @@ it("keeps Research, dimmed, when the labor storage cannot hold the tier's price,
   expect(onFix).toHaveBeenCalled();
 });
 
+it("says the Essence the Workshops need against what is held, beside Research dimmed, and nothing else", () => {
+  // The game offers no fix for a price held short of: the line is the whole answer (owner, 27 October).
+  act(() =>
+    root.render(
+      <BuildingCardView
+        name="Workshop"
+        icon="workshop"
+        standing={3}
+        makes={undefined}
+        node={nodeOf({ ...MID_REALM, essence: 1_000 }, research.ROW_WORKSHOP)}
+        sending={false}
+        fix={() => undefined}
+        onResearch={vi.fn()}
+        demolish={<button type="button">Delete</button>}
+        onClose={() => undefined}
+      />,
+    ),
+  );
+  const verb = button(/^Research Tools$/)!;
+  expect(verb.disabled).toBe(true);
+  const foot = verb.closest(".ui-window__foot")!;
+  expect(foot.textContent).toMatch(/^Needs [\d,.K]+ Essence, have 1,000Research Tools$/);
+  expect(foot.querySelectorAll("button")).toHaveLength(1);
+});
+
 it("shows a training building's one figure, what every new army starts with, now and next", () => {
   draw(research.ROW_WAR_HALL, { standing: 1 });
   expect(rows()).toEqual([["Battle", "0% damage", "→", "+10% damage"]]);

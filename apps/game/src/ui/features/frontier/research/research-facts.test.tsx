@@ -96,3 +96,22 @@ it("says the tree is on its way while a fact it reads is missing, and draws the 
   expect(host.textContent).not.toContain("on its way");
   expect(host.textContent).toContain("Shrine");
 });
+
+it("opens on the tree alone, to browse, and brings a node's choice only when its tile is tapped", () => {
+  const { store, realm } = realmBoard();
+  store.applyFacts([XP_RULES, ...ALL_PRICES] as never);
+  act(() =>
+    root.render(
+      <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+        <FrontierResearch realm={realm} />
+      </GameProvider>,
+    ),
+  );
+  // The owner, 27 October: "it shouldnt open up the one I can research I just wanna browse".
+  expect(host.querySelector("[data-lab='node-choice']")).toBeNull();
+  // Nor does the panel's head repeat the Essence and labor the top bar shows.
+  expect(host.querySelector(".ui-chip")).toBeNull();
+
+  act(() => host.querySelector<HTMLButtonElement>("[data-node='shrine']")!.click());
+  expect(host.querySelector("[data-lab='node-choice']")!.textContent).toContain("Shrine");
+});

@@ -72,8 +72,6 @@ const LabResearch = ({ realm }: { realm: RealmResearchFacts }) => {
   return (
     <ResearchPanel
       nodes={nodes}
-      essence={realm.essence}
-      labor={realm.labor}
       picked={picked}
       onPick={setPicked}
       sending={new Set()}

@@ -28,15 +28,72 @@ const VIEWPORT = [1920, 1080];
 /** The desktop sizes the HUD's layout is held at: the narrowest desktop, a small laptop, a laptop, a full HD screen. */
 const DESKTOPS = [[1024, 768], [1280, 720], [1440, 900], VIEWPORT];
 const SETTLE_MS = "1200";
-/** A Frontier card or page as a laptop and a phone show it. */
-const CARDS = [
-  [1600, 900],
+/** Two phones: a common one and the owner's Galaxy S22+, the narrowest the HUD is held at. */
+const PHONES = [
   [390, 844],
+  [384, 832],
 ];
+/** A Frontier card or page as a laptop and the phones show it. */
+const CARDS = [[1440, 900], ...PHONES];
 
-/** Each surface: the lab page that draws it, the mark the page puts on it, and its sizes when not just 1920×1080. */
+/** The Armies list or dock: how many entries it holds (armies and open slots), and each stamina bar's start, top and width. */
+const READ_ARMY_BARS = `(() => {
+  const nav = document.querySelector('nav[aria-label="Armies"]');
+  const bars = nav ? [...nav.querySelectorAll('[role="meter"][aria-label="stamina"]')] : [];
+  return {
+    entries: nav ? nav.children.length : 0,
+    bars: bars.map((bar) => {
+      const box = bar.getBoundingClientRect();
+      return { left: box.left, top: box.top, width: box.width };
+    }),
+  };
+})()`;
+
+/**
+ * Every army and open slot carries a stamina bar, and the bars line up whatever each entry's words say (owner, 27
+ * October): one width, and one left edge down a list (or one top along a phone's row of tokens).
+ */
+const armyBarsProblems = ({ entries, bars }) => {
+  if (bars.length < 2 || bars.length !== entries) return [`${bars.length} stamina bars on ${entries} armies and slots`];
+  const same = (key) => bars.every((bar) => Math.abs(bar[key] - bars[0][key]) <= 0.5);
+  const problems = [];
+  if (!same("width")) problems.push(`stamina bars' widths differ: ${bars.map(({ width }) => width.toFixed(1))}`);
+  if (!same("left") && !same("top")) problems.push(`stamina bars start at ${bars.map(({ left }) => left.toFixed(1))}`);
+  return problems;
+};
+
+/** The open sheet: how far its body scrolls, and where its verb stands against the page's height. */
+const READ_SHEET_FIT = `(() => {
+  const sheet = document.querySelector("[data-kit-sheet]");
+  if (!sheet) return { sheet: false };
+  const body = sheet.querySelector(".ui-sheet__body");
+  const verb = sheet.querySelector(".ui-window__foot > button:last-of-type")?.getBoundingClientRect();
+  return { sheet: true, scrolls: body.scrollHeight - body.clientHeight, verb: verb && { top: verb.top, bottom: verb.bottom }, height: innerHeight };
+})()`;
+
+/** A card fits the screen whole (owner, 27 October: "it doesnt fit on my s22+ screen"): no scroll, its verb in view. */
+const sheetFitProblems = ({ sheet, scrolls, verb, height }) => {
+  if (!sheet) return ["no sheet open"];
+  const problems = [];
+  if (scrolls > 1) problems.push(`the sheet's body scrolls ${scrolls}px`);
+  if (verb && (verb.top < 0 || verb.bottom > height)) problems.push(`its verb stands at ${verb.top}-${verb.bottom}`);
+  return problems;
+};
+const FITS = { read: READ_SHEET_FIT, rule: sheetFitProblems };
+
+/**
+ * Each surface: the lab page that draws it, the mark the page puts on it, its sizes when not just 1920×1080, and what
+ * the run holds it to: a `read` of the page judged by its `rule`, each fault failing the run.
+ */
 export const SURFACES = [
-  { name: "blitz-hud", path: "/lab/kit/panels?part=hud", mark: "hud", sizes: DESKTOPS, rule: hudClearanceProblems },
+  {
+    name: "blitz-hud",
+    path: "/lab/kit/panels?part=hud",
+    mark: "hud",
+    sizes: DESKTOPS,
+    read: READ_HUD_BOXES,
+    rule: hudClearanceProblems,
+  },
   { name: "blitz-left-column", path: "/lab/kit/panels", mark: "left-column" },
   { name: "blitz-top-header", path: "/lab/kit/panels?part=top-header", mark: "top-header" },
   { name: "blitz-tile-army", path: "/lab/kit/panels?tile=army", mark: "tile" },
@@ -46,6 +103,14 @@ export const SURFACES = [
   { name: "blitz-realm-production", path: "/lab/kit/panels?tile=production", mark: "tile" },
   { name: "blitz-next-up-and-events", path: "/lab/kit/guidance", mark: "next-up" },
   { name: "frontier-hud", path: "/lab/kit/hud/idle", mark: "frontier" },
+  {
+    name: "frontier-armies",
+    path: "/lab/kit/hud/armies-open",
+    mark: "frontier",
+    sizes: CARDS,
+    read: READ_ARMY_BARS,
+    rule: armyBarsProblems,
+  },
   { name: "frontier-merge", path: "/lab/kit/hud/merge", mark: "frontier-merge", sizes: [VIEWPORT, [390, 844]] },
   { name: "frontier-selected", path: "/lab/kit/hud/selected", mark: "frontier" },
   { name: "frontier-menu", path: "/lab/kit/hud/menu", mark: "frontier" },
@@ -54,14 +119,21 @@ export const SURFACES = [
   { name: "frontier-site-camp", path: "/lab/kit/hud/site-camp", mark: "frontier" },
   { name: "frontier-fight-won", path: "/lab/kit/hud/fight-won", mark: "frontier" },
   { name: "frontier-army-refill", path: "/lab/kit/hud/army-refill", mark: "frontier" },
-  ...["castle", "castle-short", "building-farm", "building-barracks", "building-war-hall", "building-scouts-lodge"].map(
-    (state) => ({
-      name: `frontier-${state}`,
-      path: `/lab/kit/hud/${state}`,
-      mark: "frontier",
-      sizes: CARDS,
-    }),
-  ),
+  ...[
+    "castle",
+    "castle-short",
+    "building-farm",
+    "building-workshop-short",
+    "building-barracks",
+    "building-war-hall",
+    "building-scouts-lodge",
+  ].map((state) => ({
+    name: `frontier-${state}`,
+    path: `/lab/kit/hud/${state}`,
+    mark: "frontier",
+    sizes: CARDS,
+    ...FITS,
+  })),
   { name: "frontier-research", path: "/lab/kit/hud/research", mark: "frontier", sizes: CARDS },
   { name: "frontier-build-locked", path: "/lab/kit/hud/build-early", mark: "frontier", sizes: CARDS },
   { name: "frontier-army", path: "/lab/kit/hud/selected", mark: "frontier", sizes: CARDS },
@@ -149,7 +221,7 @@ const main = () => {
   const broken = [];
   const interactions = [];
   try {
-    for (const { name, path, mark, sizes = [VIEWPORT], rule } of surfaces) {
+    for (const { name, path, mark, sizes = [VIEWPORT], read, rule } of surfaces) {
       for (const [width, height] of sizes) {
         const shot = sizes.length > 1 ? `${name}-${width}x${height}` : name;
         run("set", "viewport", String(width), String(height));
@@ -208,7 +280,7 @@ const main = () => {
           interactions.push({ shot, confirmed, partial });
           writeFileSync(join(values.out, "merge-interactions.json"), JSON.stringify(interactions, null, 2));
         }
-        const problems = rule ? rule(JSON.parse(run("eval", READ_HUD_BOXES))) : [];
+        const problems = rule ? rule(JSON.parse(run("eval", read))) : [];
         problems.forEach((problem) => broken.push(`${shot}: ${problem}`));
         console.log(`${!drawn ? "MISSING" : problems.length > 0 ? "BROKEN" : "shot"} ${shot}`);
       }

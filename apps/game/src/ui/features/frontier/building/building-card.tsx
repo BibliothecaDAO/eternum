@@ -199,9 +199,9 @@ const ResearchFoot = ({
   fix: (need: Need) => Fix | undefined;
   onResearch: () => void;
 }) => {
-  const prices: Price[] = node.needs.filter(isPrice).map((need) => ({ of: need.kind, amount: need.need }));
   const missing = firstMissing(node);
-  if (missing) return <RefusedVerb word={verb} prices={prices} refusal={refusalOf(missing, fix(missing))} />;
+  if (missing) return <RefusedVerb word={verb} refusal={refusalOf(missing, fix(missing))} />;
+  const prices: Price[] = node.needs.filter(isPrice).map((need) => ({ of: need.kind, amount: need.need }));
   return (
     <HudWindowFoot note={<HudCost line={costLine(prices)} />}>
       <HudButton kind="primary" busy={sending ? RESEARCHING : undefined} onClick={onResearch}>

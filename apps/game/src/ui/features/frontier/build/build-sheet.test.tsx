@@ -504,20 +504,16 @@ describe("the build sheet", () => {
     host.remove();
   });
 
-  it("says how much labor a building needs against what is held, and offers the map only where a reveal pays labor", () => {
+  it("says how much labor a building needs against what is held, and sends nobody to the map for it", () => {
     const { store, realm } = realmBoard();
     labor(store, 0n);
-    const quiet = open(store, realm);
-    expect(quiet.host.querySelector('[role="status"]')!.textContent).toMatch(/^Needs [\d,]+ labor, have 0$/);
-    expect(quiet.button("Build")).toBeUndefined();
-    // This preset's reveals pay no supplies: the map is no fix, so no button names it.
-    expect(quiet.button("Explore")).toBeUndefined();
-    quiet.close();
-
+    // Even in a game whose reveals pay labor, the line is the whole answer: no Explore button (owner, 27 October).
     vi.spyOn(configManager, "paysRevealSupplies").mockReturnValue(true);
-    const paying = open(store, realm);
-    expect(paying.button("Explore for labor")).toBeDefined();
-    paying.close();
+    const short = open(store, realm);
+    expect(short.host.querySelector('[role="status"]')!.textContent).toMatch(/^Needs [\d,]+ labor, have 0$/);
+    expect(short.button("Build")).toBeUndefined();
+    expect(short.host.textContent).not.toContain("Explore");
+    short.close();
     vi.restoreAllMocks();
   });
 });

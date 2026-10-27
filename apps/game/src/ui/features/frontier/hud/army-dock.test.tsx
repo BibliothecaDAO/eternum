@@ -95,12 +95,18 @@ it("lists every slot on a desktop, Deploy on the lowest open one the contract fi
     ),
   );
   try {
+    // Each slot is a row of the list, like an army's, its start on its tip and its stamina in the rows' column.
     const deploys = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
-    expect(deploys.map((slot) => slot.dataset.tip)).toEqual(["Army 2 starts full: 150/150 stamina."]);
-    const waiting = host.querySelector<HTMLElement>('[role="group"][aria-label="Army 3"]')!;
-    expect(waiting.dataset.tip).toBe("Army 3 starts on 7/150 stamina.");
+    expect(deploys.map((slot) => slot.closest<HTMLElement>(".ui-row")!.dataset.tip)).toEqual([
+      "Army 2 starts full: 150/150 stamina.",
+    ]);
+    const waiting = [...host.querySelectorAll<HTMLElement>(".ui-row")].find((slot) =>
+      slot.textContent?.startsWith("3Army 3"),
+    )!;
+    expect(waiting.dataset.tip).toBe("Army 3 starts on 7/150 stamina. Deploy fills slot 2 first.");
+    expect(waiting.getAttribute("aria-disabled")).toBe("true");
     expect(waiting.querySelector("button")).toBeNull();
-    expect(waiting.textContent).toMatch(/^3Army 3/);
+    expect(waiting.querySelector('[role="meter"]')!.getAttribute("aria-valuenow")).toBe("7");
   } finally {
     act(() => root.unmount());
     host.remove();

@@ -2,13 +2,15 @@ import { formatAmount, REALM_LEVELS } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { Icon } from "@/ui/design-system/icon";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
-import { HudButton, HudCost, HudMeter, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudCost, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import { BUILDING_FIGURES, CASTLE, CASTLE_GIVES, LABOR, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 import { CompareRows } from "../building/compare-rows";
 import { RefusedVerb } from "../refused-verb";
+import { NodeTile } from "../research/research-panel";
+import type { TreeNode } from "../research/research-tree";
 
 /** The castle at a level: its art and level, the plots it opens, its army slots, its storage, its max army size. */
 export type CastleSide = {
@@ -21,20 +23,17 @@ export type CastleSide = {
   maxArmySize: number;
 };
 
-/** What the castle itself makes now: its labor a minute, and the labor it holds against its storage. */
-export type CastleMakes = { rate: string; held: number | undefined; storage: number | undefined };
-
 /**
- * The castle's card (the owner's pick A, 26 October): the labor it makes and holds, then one table of what it gives now
- * against its next level (plots, army slots, storage, max army size), its own research, and Upgrade with its price in
- * the card's foot. When the realm cannot pay, the foot says what it needs against what is held and the exact wait
- * (RefusedVerb), with the map as its button where a reveal pays labor. At the last level there is no next column and no
- * verb.
+ * The castle's card (the owner's pick A, 26 October): one table of what it gives now against its next level (plots, army
+ * slots, storage, max army size) with the labor it makes a minute in its corner, its own research, and Upgrade with its
+ * price in the card's foot. When the realm cannot pay, the foot says what it needs against what is held and the exact wait
+ * (RefusedVerb). The labor held is the top bar's, never repeated here (owner, 27 October), so the card fits a phone whole.
+ * At the last level there is no next column and no verb.
  */
 export const CastleView = ({
   now,
   next,
-  makes,
+  laborRate,
   research,
   prices,
   refusal,
@@ -44,7 +43,8 @@ export const CastleView = ({
 }: {
   now: CastleSide;
   next: CastleSide | null;
-  makes: CastleMakes;
+  /** The labor the castle itself makes a minute ("+1.7/min"). */
+  laborRate: string;
   /** The castle's own research, as tiles that open it on the Research page. */
   research?: ReactNode;
   prices: Price[];
@@ -55,8 +55,16 @@ export const CastleView = ({
 }) => (
   <HudSheet label={CASTLE} onClose={onClose}>
     <div data-castle-card className="flex flex-col gap-2">
-      <LaborMade makes={makes} />
       <CompareRows
+        corner={
+          <span
+            data-tip={BUILDING_FIGURES.castleMakes(LABOR)}
+            className="flex items-center gap-1.5 self-center text-hud-title tabular-nums text-hud-ink"
+          >
+            <Icon name="labor" size={24} />
+            {laborRate}
+          </span>
+        }
         now={<LevelHead side={now} />}
         next={next ? <LevelHead side={next} /> : undefined}
         rows={castleRows(now, next)}
@@ -65,7 +73,7 @@ export const CastleView = ({
     </div>
     {next &&
       (refusal ? (
-        <RefusedVerb word={UPGRADE} prices={prices} refusal={refusal} />
+        <RefusedVerb word={UPGRADE} refusal={refusal} />
       ) : (
         <HudWindowFoot note={<HudCost line={costLine(prices)} />}>
           <HudButton kind="primary" busy={sending ? UPGRADING : undefined} onClick={onUpgrade}>
@@ -74,29 +82,6 @@ export const CastleView = ({
         </HudWindowFoot>
       ))}
   </HudSheet>
-);
-
-/** The castle's labor a minute over its storage's meter: held against what it holds. */
-const LaborMade = ({ makes }: { makes: CastleMakes }) => (
-  <div className="flex items-center gap-2">
-    <Icon name="labor" size={28} />
-    <div className="flex flex-1 flex-col gap-1">
-      <span className="flex items-baseline justify-between gap-2">
-        <span className="text-hud-title tabular-nums text-hud-ink">{makes.rate}</span>
-        <span className="text-hud-label tabular-nums text-hud-muted">
-          {formatAmount(makes.held)} / {formatAmount(makes.storage)}
-        </span>
-      </span>
-      <HudMeter
-        label={BUILDING_FIGURES.held(LABOR)}
-        amount={
-          makes.held === undefined || makes.storage === undefined
-            ? undefined
-            : { current: makes.held, max: makes.storage }
-        }
-      />
-    </div>
-  </div>
 );
 
 /** A level's head in the table: its painting and its name. */
@@ -123,3 +108,15 @@ const castleRows = (now: CastleSide, next: CastleSide | null) => {
     row("troops", CASTLE_GIVES.maxArmySize, (side) => side.maxArmySize),
   ];
 };
+
+/**
+ * The castle's own research (the Shrine, the Well, the reaches) in one row of compact tiles, each opening its node on the
+ * Research page, where its choice and price are read.
+ */
+export const CastleResearch = ({ nodes, onOpen }: { nodes: readonly TreeNode[]; onOpen: (node: string) => void }) => (
+  <div className="grid grid-flow-col auto-cols-fr gap-1.5">
+    {nodes.map((node) => (
+      <NodeTile key={node.key} node={node} picked={false} compact onPick={() => onOpen(node.key)} />
+    ))}
+  </div>
+);

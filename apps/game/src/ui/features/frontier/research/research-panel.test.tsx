@@ -28,8 +28,6 @@ const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onF
     root.render(
       <ResearchPanel
         nodes={nodes}
-        essence={MID_REALM.essence}
-        labor={MID_REALM.labor}
         picked={picked}
         onPick={onPick}
         sending={new Set()}
@@ -93,8 +91,6 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
       root.render(
         <ResearchPanel
           nodes={legendaryHut}
-          essence={MID_REALM.essence}
-          labor={MID_REALM.labor}
           picked="row-3"
           onPick={vi.fn()}
           sending={new Set()}
@@ -142,8 +138,6 @@ it("shows the chosen research shares without a production formula", () => {
     root.render(
       <ResearchPanel
         nodes={nodes}
-        essence={MID_REALM.essence}
-        labor={MID_REALM.labor}
         picked="row-0"
         onPick={vi.fn()}
         sending={new Set()}
@@ -165,8 +159,6 @@ it("keeps the chosen Research action outside the tree scroll on every pick, incl
     return (
       <ResearchPanel
         nodes={nodes}
-        essence={MID_REALM.essence}
-        labor={MID_REALM.labor}
         picked={picked}
         onPick={setPicked}
         sending={new Set()}
