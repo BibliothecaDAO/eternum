@@ -13,8 +13,7 @@ export interface ChestTiers {
 export interface NativePreset {
   id: number;
   /**
-   * A fixture preset's season clocks run this many times faster than its mode's: the day, army ticks and production.
-   * The harness registers a fixture preset on first use; the launcher never offers one.
+   * Season clocks run this many times faster than the mode's: days, army ticks and production.
    */
   clockScale?: number;
   /**

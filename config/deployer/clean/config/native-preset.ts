@@ -3,6 +3,7 @@ import {
   nativeRuleConstants as presetRule,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativePresetForId } from "../../../source/native";
+import { clockScaled } from "../../../source/common/season-clock";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import {
@@ -413,11 +414,11 @@ export function buildNativePreset(config: Config, presetId: number) {
     exploration: preset.supplies.map((reward) => ({ ...reward })),
     season_win_points: config.victoryPoints.pointsForWin,
   };
-  if (preset.clockScale) scaleSeasonClocks(definition, preset.clockScale);
+  if (preset.clockScale !== undefined) scaleSeasonClocks(definition, preset.clockScale);
   return definition;
 }
 
-/** A fixture preset plays its mode's season this many times faster: a shorter day, faster army ticks, more output. */
+/** A scaled preset has shorter days, faster army ticks and proportionally more production. */
 function scaleSeasonClocks(definition: ReturnType<typeof buildNativePreset>, scale: number): void {
   definition.rules.day_unit_seconds = clockScaled(definition.rules.day_unit_seconds, scale, "day_unit_seconds");
   definition.rules.tick_config.armies_tick_in_seconds = clockScaled(
@@ -435,12 +436,6 @@ function scaleSeasonClocks(definition: ReturnType<typeof buildNativePreset>, sca
     throw new Error("A scaled season requires a workshop rate");
   board.workshop_rate *= BigInt(scale);
   for (const mine of definition.resources.mine_kinds) mine.config.production_rate *= BigInt(scale);
-}
-
-/** A span of a scaled preset's season, in seconds: its mode's span divided by the clock scale, never rounded. */
-export function clockScaled(seconds: number, scale: number, name: string): number {
-  if (!Number.isInteger(seconds / scale)) throw new Error(`${name} ${seconds} does not divide by clock scale ${scale}`);
-  return seconds / scale;
 }
 
 function validateMineConfig(config: Config): void {

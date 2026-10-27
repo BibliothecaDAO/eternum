@@ -1,5 +1,6 @@
 import { buildMysteryChestPreset, chestPresets } from "../../../../contracts/l2/ledger/scripts/chest-preset.js";
 import { nativePresetForId, nativePresetIdFor } from "../../../source/native";
+import { clockScaled } from "../../../source/common/season-clock";
 import { CallData, uint256 } from "starknet";
 import environments from "../../../../deploy/first/environments.json";
 import type { DeploymentGameType } from "../types";
@@ -68,7 +69,7 @@ export function buildLedgerEconomicPreset(
       k: 50,
       regression_bps: 150,
     },
-    day_unit_seconds: native.dayUnitSeconds,
+    day_unit_seconds: clockScaled(native.dayUnitSeconds, native.clockScale ?? 1, "day_unit_seconds"),
     claim_window_seconds: native.chests?.claimWindowSeconds ?? 0,
   };
 }

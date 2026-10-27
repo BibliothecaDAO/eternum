@@ -5,12 +5,15 @@ import { buildMysteryChestPreset } from "../../../../contracts/l2/ledger/scripts
 import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 
 describe("ledger economics", () => {
-  it("reads the same day unit as the shard's exact immutable preset", async () => {
-    const { nativePresetForId } = await import("../../../source/native");
-    for (const presetId of [5, 101]) {
+  it("registers effective day units for normal, Devcon and accelerated Frontier clocks", () => {
+    for (const [presetId, dayUnit] of [
+      [5, 14_400],
+      [6, 4_800],
+      [101, 120],
+    ]) {
       const preset = buildLedgerEconomicPreset("frontier", { presetId });
-      expect(preset.day_unit_seconds).toBe(nativePresetForId(presetId).dayUnitSeconds);
-      expect(buildRegisterLedgerPresetCalldata(presetId, preset)[17]).toBe(String(preset.day_unit_seconds));
+      expect(preset.day_unit_seconds).toBe(dayUnit);
+      expect(buildRegisterLedgerPresetCalldata(presetId, preset)[17]).toBe(String(dayUnit));
     }
     expect(buildLedgerEconomicPreset("blitz").day_unit_seconds).toBe(0);
     expect(() => buildLedgerEconomicPreset("blitz", { presetId: 5 })).toThrow("game type differs");
@@ -46,6 +49,7 @@ describe("ledger economics", () => {
       ["blitz", 2],
       ["eternum", 3],
       ["frontier", 5],
+      ["frontier", 6],
     ] as const) {
       const preset = buildLedgerEconomicPreset(gameType, { presetId });
       expect(buildRegisterLedgerPresetCalldata(presetId, preset, chest)).toEqual(

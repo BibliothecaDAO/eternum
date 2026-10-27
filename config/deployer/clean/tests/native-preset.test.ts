@@ -18,11 +18,13 @@ import { buildNativePreset } from "../config/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
   FRONTIER_PRESET_ID,
+  FRONTIER_DEVCON_PRESET_ID,
   FRONTIER_FIXTURE_PRESET_ID,
   FRONTIER_PLAYGROUND_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
 import { nativePresetIdFor } from "../../../source/native";
+import { clockScaled } from "../../../source/common/season-clock";
 import { RESOURCE_PRECISION, ResourcesIds } from "../../../../packages/types/src/constants";
 import {
   buildNativePresetRegistration,
@@ -63,6 +65,7 @@ describe("native presets", () => {
         [2, "madara.blitz"],
         [3, "madara.eternum"],
         [5, "madara.frontier"],
+        [FRONTIER_DEVCON_PRESET_ID, "madara.frontier"],
       ] as const) {
         log.mockClear();
         await registerEnvironmentPreset({ presetId, environmentId, dryRun: true, nativeManifest: manifestPath });
@@ -725,7 +728,7 @@ describe("fixed Regular Blitz rosters", () => {
 
 describe("scaled Frontier presets", () => {
   test("all Frontier modes require the operator's duration and retain their own day unit", () => {
-    for (const presetId of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
+    for (const presetId of [FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       const config = loadNativePresetConfiguration("madara.frontier", presetId);
       expect(config.season.durationSeconds).toBe(0);
       const durationSeconds = 40 * buildNativePreset(config, presetId).rules.day_unit_seconds;
@@ -734,6 +737,101 @@ describe("scaled Frontier presets", () => {
           .durationSeconds,
       ).toBe(durationSeconds);
     }
+  });
+
+  test("world and ledger registration agree on every Frontier preset's effective day and real claim window", () => {
+    for (const [presetId, dayUnit] of [
+      [FRONTIER_PRESET_ID, 14_400],
+      [FRONTIER_DEVCON_PRESET_ID, 4_800],
+      [FRONTIER_ACCELERATED_PRESET_ID, 120],
+      [FRONTIER_FIXTURE_PRESET_ID, 14_400],
+      [FRONTIER_PLAYGROUND_PRESET_ID, 14_400],
+    ]) {
+      const world = buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId);
+      const ledger = buildLedgerEconomicPreset("frontier", { presetId });
+      expect(world.rules.day_unit_seconds).toBe(dayUnit);
+      expect(ledger.day_unit_seconds).toBe(dayUnit);
+      expect(world.economy.chests.unwrap()).toMatchObject({ claim_window_seconds: 604_800 });
+      expect(ledger.claim_window_seconds).toBe(604_800);
+    }
+  });
+
+  test("rejects fractional, zero and inexact clock scales instead of rounding a contract boundary", () => {
+    for (const scale of [0, -1, 1.5]) expect(() => clockScaled(120, scale, "tick")).toThrow("positive integer");
+    expect(() => clockScaled(120, 7, "tick")).toThrow("tick 120 does not divide by clock scale 7");
+    expect(clockScaled(0, 3, "unset duration")).toBe(0);
+  });
+});
+
+describe("Devcon's fast Frontier preset", () => {
+  const load = (id: number) => loadNativePresetConfiguration("madara.frontier", id);
+  const definition = (id: number) => buildNativePreset(load(id), id);
+
+  test("triples all production and stamina recovery without changing starters, ordinary costs or action rewards", () => {
+    const normal = definition(FRONTIER_PRESET_ID);
+    const fast = definition(FRONTIER_DEVCON_PRESET_ID);
+    expect(nativeGameModeOf(FRONTIER_DEVCON_PRESET_ID)).toBe("frontier");
+    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_PRESET_ID);
+    expect(fast.rules.tick_config.armies_tick_in_seconds).toBe(40);
+    expect(fast.rules.troop_stamina_config).toEqual(normal.rules.troop_stamina_config);
+    expect(fast.settlement.realms.resources).toEqual(normal.settlement.realms.resources);
+    expect(fast.structures.buildings).toEqual(normal.structures.buildings);
+    expect(fast.structures.upgrades).toEqual(normal.structures.upgrades);
+    expect(fast.economy.progression).toEqual(normal.economy.progression);
+    expect(fast.resources.resources).toEqual(
+      normal.resources.resources.map((resource) => ({
+        ...resource,
+        realm_rate: resource.realm_rate * 3n,
+        village_rate: resource.village_rate * 3n,
+      })),
+    );
+    expect(fast.structures.camps.labor_rate).toBe(normal.structures.camps.labor_rate * 3n);
+    expect(fast.structures.board.unwrap()).toMatchObject({ workshop_rate: 168_000_000n });
+    expect(fast.resources.mine_kinds).toEqual(
+      normal.resources.mine_kinds.map((mine) => ({
+        ...mine,
+        config: { ...mine.config, production_rate: mine.config.production_rate * 3n },
+      })),
+    );
+    expect(nativePresets[FRONTIER_PRESET_ID]!.labor!.amount).toBe(1_000);
+    expect(fast.economy.labor.unwrap()).toMatchObject({ amount: 3_000n });
+    expect(fast.structures.research.filter(({ row }) => row === research.ROW_DEPTH).map(({ price }) => price)).toEqual([
+      { essence: 20_000_000_000_000n, labor: 0n },
+      { essence: 50_000_000_000_000n, labor: 0n },
+      { essence: 100_000_000_000_000n, labor: 0n },
+    ]);
+    expect(fast.structures.research.filter(({ row }) => row !== research.ROW_DEPTH)).toEqual(
+      normal.structures.research.filter(({ row }) => row !== research.ROW_DEPTH),
+    );
+  });
+
+  test("encodes a separate immutable preset and the approved noon-to-evening 80-hour game", () => {
+    const presetId = FRONTIER_DEVCON_PRESET_ID;
+    const fast = definition(presetId);
+    const registration = buildNativePresetRegistration(fast, presetId, manifestPath);
+    expect(registration.commitment).not.toBe(
+      buildNativePresetRegistration(definition(FRONTIER_PRESET_ID), FRONTIER_PRESET_ID, manifestPath).commitment,
+    );
+    expect(registration.calldata[0]).toBe(String(presetId));
+    const startMainAt = Date.parse("2026-11-03T06:30:00Z") / 1_000;
+    const durationSeconds = 80 * 3_600;
+    const params = buildNativeGameParams(load(presetId), {
+      gameName: "frontier-devcon-2026",
+      presetId,
+      startMainAt,
+      chainTimestamp: startMainAt - 86_400,
+      durationSeconds,
+      devModeOn: false,
+      singleRealmMode: false,
+      twoPlayerMode: false,
+      useMapOverride: false,
+    });
+    expect(params.preset_id).toBe(6);
+    expect(params.start_main_at).toBe(1_793_687_400);
+    expect(params.duration_seconds).toBe(288_000);
+    expect(startMainAt + durationSeconds).toBe(Date.parse("2026-11-06T14:30:00Z") / 1_000);
+    expect(durationSeconds / (20 * fast.rules.day_unit_seconds)).toBe(3);
+    expect(startMainAt % fast.rules.tick_config.armies_tick_in_seconds).toBe(0);
   });
 });
 
