@@ -4,7 +4,16 @@ import { readFrontierFunding } from "./frontier-funding";
 import { ledgerAbi } from "../test-support/ledger-abi";
 import { response } from "../test-support/abi";
 
-const terms = { chestPoolBps: 7000, topN: 10, start: 10, end: 110, seed: "0x99", dayUnit: 5, claimWindow: 604800 };
+const terms = {
+  presetId: 6,
+  chestPoolBps: 7000,
+  topN: 10,
+  start: 10,
+  end: 110,
+  seed: "0x99",
+  dayUnit: 5,
+  claimWindow: 604800,
+};
 const call = vi.fn();
 let closed = false;
 let end = 110;
@@ -28,7 +37,7 @@ beforeEach(() => {
           pool: { low: 100n * 10n ** 18n, high: 0 },
           paid: { low: 0, high: 0 },
           closed,
-          preset_id: 2,
+          preset_id: 6,
           seed: 153,
         })
       : response(ledgerAbi, "get_preset", {
@@ -54,7 +63,7 @@ it("binds the funded pool and every native clock rule at one confirmed ledger he
     ["get_preset", 12],
   ]);
 });
-it.each([{ start: 11 }, { end: 210 }, { seed: "0x98" }, { dayUnit: 10 }, { claimWindow: 604801 }])(
+it.each([{ presetId: 5 }, { start: 11 }, { end: 210 }, { seed: "0x98" }, { dayUnit: 10 }, { claimWindow: 604801 }])(
   "refuses different native terms %j",
   async (change) => {
     await expect(read({ ...terms, ...change })).rejects.toThrow("frontier_funding_differs_from_game");

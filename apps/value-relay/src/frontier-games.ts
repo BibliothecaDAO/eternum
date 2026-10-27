@@ -46,6 +46,7 @@ export function frontierTerms(snapshot: ConfirmedSnapshot): FrontierFundingTerms
   const chests = singleRow(snapshot, "ChestRules");
   const rules = singleRow(snapshot, "SliceRules");
   return {
+    presetId: ledgerInteger(String(game.preset_id)),
     start: ledgerInteger(String(game.start_main_at)),
     end: ledgerInteger(String(game.end_at)),
     seed: String(game.seed),

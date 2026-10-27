@@ -28,7 +28,7 @@ import {
   buildLedgerEconomicPreset,
   buildRegisterLedgerPresetCalldata,
 } from "../../config/deployer/clean/ledger/economics";
-import { decodeLedgerPreset } from "../../packages/value-ledger/src/codecs";
+import { LEDGER_PRESET_FIELD_COUNT, decodeLedgerPreset } from "../../packages/value-ledger/src/codecs";
 
 const temporary: string[] = [];
 const fetchBefore = globalThis.fetch;
@@ -363,7 +363,7 @@ test.each(["dev", "production"] as const)("%s setup registers 100 LORDS for entr
   const [operation] = setupOf(environments[environment], "register_preset");
   const fields = registered(operation!);
   expect(fields[0]).toBe(environment === "production" ? "2" : "1");
-  const preset = decodeLedgerPreset(fields.slice(1, 19));
+  const preset = decodeLedgerPreset(fields.slice(1, 1 + LEDGER_PRESET_FIELD_COUNT));
   expect(preset).toMatchObject({
     entryFee: "100000000000000000000",
     swordPrice: "100000000000000000000",
@@ -377,7 +377,7 @@ test.each([
   ["Shield", 8],
 ] as const)("setup refuses a registered 500-LORDS %s price instead of pretending to update it", async (_, field) => {
   const [operation] = setupOf(environments.production, "register_preset");
-  const recorded = registered(operation!).slice(1, 19);
+  const recorded = registered(operation!).slice(1, 1 + LEDGER_PRESET_FIELD_COUNT);
   recorded[field] = "500000000000000000000";
   const callContract = mock(async () => recorded);
   const provider = { callContract } as unknown as RpcProvider;
@@ -429,7 +429,7 @@ test("setup reads registered chest rewards back against its own call; mystery ch
   const readsBack = (chests: ReturnType<typeof buildMysteryChestPreset>) =>
     ({
       callContract: async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
-        if (entrypoint === "get_preset") return registered(call!).slice(1, 19);
+        if (entrypoint === "get_preset") return registered(call!).slice(1, 1 + LEDGER_PRESET_FIELD_COUNT);
         if (entrypoint === "get_chest_band") return CallData.compile(chests.bands[Number(calldata[1])]!);
         return CallData.compile([chests.items[Number(calldata[1])]!]);
       },
@@ -864,10 +864,18 @@ test("date validation requires a native Frontier preset and uses its season cloc
   expect(() => validateDates({ ...dates, frontierPresetId: "1" })).toThrow("registered Frontier preset");
 });
 
- test.each(["dev", "production"] as const)("%s registers Devcon's exact native ID, clock and 70/30 pool", (environment) => {
-   const calls = setupCalls(environments[environment], assets, "0x33", 4000, 9000, 1, 6);
-   const frontier = calls.filter((call) => call.entrypoint === "register_preset")[1]!;
-   const calldata = registered(frontier);
-   expect(calldata[0]).toBe("6");
-   expect(decodeLedgerPreset(calldata.slice(1, 21))).toMatchObject({ dayUnit: 4800, claimWindow: 604800, frontierChestBps: 7000, frontierTopN: 10 });
- });
+test.each(["dev", "production"] as const)(
+  "%s registers Devcon's exact native ID, clock and 70/30 pool",
+  (environment) => {
+    const calls = setupCalls(environments[environment], assets, "0x33", 4000, 9000, 1, 6);
+    const frontier = calls.filter((call) => call.entrypoint === "register_preset")[1]!;
+    const calldata = registered(frontier);
+    expect(calldata[0]).toBe("6");
+    expect(decodeLedgerPreset(calldata.slice(1, 1 + LEDGER_PRESET_FIELD_COUNT))).toMatchObject({
+      dayUnit: 4800,
+      claimWindow: 604800,
+      frontierChestBps: 7000,
+      frontierTopN: 10,
+    });
+  },
+);

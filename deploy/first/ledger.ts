@@ -1,3 +1,4 @@
+import { LEDGER_PRESET_FIELD_COUNT } from "../../packages/value-ledger/src/codecs";
 import { readFileSync, writeFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { Account, byteArray, CallData, hash, json, num, type Call, type RpcProvider } from "starknet";
@@ -262,11 +263,11 @@ async function metadataPresent(provider: RpcProvider, operation: Call, head: num
 }
 /**
  * The ledger stores a preset's five chest bands, then its five cosmetic rarities, in the order register_preset's
- * calldata carries them after the 18 economic fields; each read must match the next fields of that same call.
+ * calldata carries them after its economic fields; each read must match the next fields of that same call.
  */
 async function assertRegisteredChestRewards(provider: RpcProvider, operation: Call, head: number) {
   const args = operation.calldata as string[];
-  let next = 20;
+  let next = 2 + LEDGER_PRESET_FIELD_COUNT;
   for (const entrypoint of ["get_chest_band", "get_cosmetic_items"]) {
     for (let index = 0; index < 5; index++) {
       const fields = await provider.callContract(
@@ -303,7 +304,7 @@ async function setupPresent(provider: RpcProvider, operation: Call, head: number
       return BigInt(result[0]!) === 1n;
     }
     if (entrypoint === "get_preset") {
-      const economics = args.slice(1, 19);
+      const economics = args.slice(1, 1 + LEDGER_PRESET_FIELD_COUNT);
       if (
         result.length !== economics.length ||
         result.slice(0, economics.length).some((felt, index) => BigInt(felt) !== BigInt(economics[index]!))

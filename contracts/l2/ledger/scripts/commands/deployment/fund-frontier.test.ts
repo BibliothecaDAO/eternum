@@ -13,7 +13,7 @@ const shard = { chainId: "0x7", gamesAddress: "0x77", rpcUrl: "https://shard.tes
 const head = { status: "ACCEPTED_ON_L2", block_number: 10, block_hash: "0xaa", parent_hash: "0x9", timestamp: 150 };
 const game = {
   name: 1,
-  preset_id: 5,
+  preset_id: 6,
   settled: false,
   ready: true,
   dev_mode_on: false,
@@ -99,7 +99,7 @@ beforeEach(() => {
     pool: { low: 7n * 10n ** 23n, high: 0 },
     paid: { low: 0, high: 0 },
     closed: false,
-    preset_id: 2,
+    preset_id: 6,
     seed: 99,
   });
   header = spyOn(ShardReader.prototype, "header").mockResolvedValue(head as never);
@@ -138,7 +138,7 @@ test("funds a confirmed running game, with exactly the requested deposit and com
       calldata: ledgerCall("fund_frontier", {
         shard: 7,
         season_id: 42,
-        preset_id: 2,
+        preset_id: 6,
         start: 100,
         end: 300,
         seed: 99,
@@ -236,11 +236,11 @@ test.each([0, -1, 0x100000000, 1.5])("refuses invalid game id %s before reads", 
 
 test("production funding uses only its own book and the native preset ID", async () => {
   ledgerRead.mockResolvedValueOnce(preset).mockResolvedValueOnce(["0x222"]);
-  season[8] = "5";
+  season[8] = "6";
   await fundFrontier(account, provider, shard, "https://herald.test", 42, "production", "1000000");
-  expect(ledgerRead).toHaveBeenCalledWith({ contractAddress: "0x456", entrypoint: "get_preset", calldata: ["5"] }, 11);
+  expect(ledgerRead).toHaveBeenCalledWith({ contractAddress: "0x456", entrypoint: "get_preset", calldata: ["6"] }, 11);
   const calls = execute.mock.calls[0]![0] as { calldata: string[] }[];
-  expect(calls[1]!.calldata[2]).toBe("5");
+  expect(calls[1]!.calldata[2]).toBe("6");
   expect(execute.mock.calls[0]![0]).toMatchObject([
     { contractAddress: "0x222", calldata: ["1110", String(10n ** 24n), "0"] },
     { contractAddress: "0x456" },
@@ -326,3 +326,53 @@ test("carries an expired chest remainder once, preserving both prize pots", asyn
   await runCarry();
   expect(execute).toHaveBeenCalledTimes(1);
 });
+
+test.each(["dev", "production"] as const)(
+  "%s funds the 80-hour Devcon game with 100k split into 70k chests and 30k prizes",
+  async (environment) => {
+    const startsAt = 1793687400;
+    const endsAt = 1793975400;
+    const devcon = { ...game, start_main_at: startsAt, end_at: endsAt };
+    models[0]!.rows[0]!.value = { game_id: 42, ...devcon };
+    models[2]!.rows[0]!.value.day_unit_seconds = 4800;
+    shardCall.mockImplementation(async () => response(gamesAbi, "game", devcon));
+    preset[16] = "4800";
+    season[1] = String(startsAt);
+    season[2] = String(endsAt);
+    season[3] = String(70000n * 10n ** 18n);
+    season[10] = String(30000n * 10n ** 18n);
+    const token = environment === "dev" ? "0x111" : "0x222";
+    const ledger = environment === "dev" ? "0x123" : "0x456";
+    ledgerRead.mockImplementation(async ({ entrypoint }) =>
+      entrypoint === "get_preset" ? preset : entrypoint === "get_frontier" ? season : [token],
+    );
+    const result = await fundFrontier(account, provider, shard, "https://herald.test", 42, environment, "100000");
+    expect(result.frontier).toMatchObject({
+      presetId: 6,
+      start: startsAt,
+      end: endsAt,
+      pool: String(70000n * 10n ** 18n),
+      prizePool: String(30000n * 10n ** 18n),
+    });
+    expect(execute.mock.calls[0]![0]).toEqual([
+      {
+        contractAddress: token,
+        entrypoint: "approve",
+        calldata: [BigInt(ledger).toString(), String(100000n * 10n ** 18n), "0"],
+      },
+      {
+        contractAddress: ledger,
+        entrypoint: "fund_frontier",
+        calldata: ledgerCall("fund_frontier", {
+          shard: 7,
+          season_id: 42,
+          preset_id: 6,
+          start: startsAt,
+          end: endsAt,
+          seed: 99,
+          amount: { low: 100000n * 10n ** 18n, high: 0 },
+        }),
+      },
+    ]);
+  },
+);

@@ -82,7 +82,11 @@ async function shardConnection(context: Season) {
   return { rpcUrl: release.public_rpc_url, chainId: manifest.shard.chainId, gamesAddress: manifest.world.address };
 }
 function assertCalendarGame(phase: FrontierSeasonPhase, native: { presetId: number; start: number; end: number }) {
-  if (native.presetId !== phase.presetId || native.start !== Date.parse(phase.startsAt) / 1000 || native.end !== Date.parse(phase.endsAt) / 1000)
+  if (
+    native.presetId !== phase.presetId ||
+    native.start !== Date.parse(phase.startsAt) / 1000 ||
+    native.end !== Date.parse(phase.endsAt) / 1000
+  )
     throw new PublicError("Confirmed Frontier game differs from calendar preset or dates");
 }
 async function funding(context: Season) {

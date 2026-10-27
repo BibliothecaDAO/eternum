@@ -18,11 +18,14 @@ export const currentLaborDay = (connection: ShardConnection, heraldUrl: string, 
     const game = singleRow(snapshot, "GameRegistry");
     const rules = singleRow(snapshot, "SliceRules");
     const { timestamp } = await new ShardReader(connection).header("latest");
-    const day = dayOf({
-      seed: BigInt(String(game.seed)),
-      startMainAt: Number(game.start_main_at),
-      dayUnitSeconds: Number(rules.day_unit_seconds),
-    }, timestamp);
+    const day = dayOf(
+      {
+        seed: BigInt(String(game.seed)),
+        startMainAt: Number(game.start_main_at),
+        dayUnitSeconds: Number(rules.day_unit_seconds),
+      },
+      timestamp,
+    );
     if (!day || timestamp >= Number(game.end_at)) throw new Error("labor_outside_season");
     return day.index;
   });

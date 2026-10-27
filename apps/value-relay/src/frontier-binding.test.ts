@@ -54,7 +54,9 @@ beforeEach(() => {
         models: [
           {
             model: "GameRegistry",
-            rows: [{ key: "7", value: { game_id: 7, start_main_at: game[6], end_at: game[7], seed: game[9] } }],
+            rows: [
+              { key: "7", value: { game_id: 7, preset_id: 6, start_main_at: game[6], end_at: game[7], seed: game[9] } },
+            ],
           },
           {
             model: "ChestRules",
@@ -100,7 +102,7 @@ beforeEach(() => {
   rpc.ledgerCall.mockImplementation(async (query) =>
     query.entrypoint === "get_preset"
       ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "5", "604800", "10", "7000"]
-      : ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "2", "0x99", "0", "0", "0", "0"],
+      : ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "6", "0x99", "0", "0", "0", "0"],
   );
 });
 it("reads funding by shard game id without history scans or Herald calendar reads", async () => {
@@ -129,7 +131,7 @@ it("rereads restored game funding instead of reusing a previous match", async ()
   const previous = rpc.ledgerCall.getMockImplementation()!;
   rpc.ledgerCall.mockImplementation(async (query) =>
     query.entrypoint === "get_frontier"
-      ? ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "2", "0x98", "0", "0", "0", "0"]
+      ? ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "6", "0x98", "0", "0", "0", "0"]
       : previous(query),
   );
   expect(await Effect.runPromise(bind().frontierSeason(7, 50, 0))).toBe(7);
@@ -157,7 +159,7 @@ it("keeps a funding mismatch unavailable when the snapshot pool differs", async 
         models: [
           {
             model: "GameRegistry",
-            rows: [{ key: "7", value: { game_id: 7, start_main_at: 10, end_at: 110, seed: "0x99" } }],
+            rows: [{ key: "7", value: { game_id: 7, preset_id: 6, start_main_at: 10, end_at: 110, seed: "0x99" } }],
           },
           {
             model: "ChestRules",

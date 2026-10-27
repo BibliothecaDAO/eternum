@@ -110,7 +110,17 @@ test.each([
   });
   globalThis.fetch = (async (url, _init) => {
     const path = new URL(String(url)).pathname;
-    if (path === "/api/factory/calendar") return Response.json({ phases: [{ phase: "frontier", presetId: 6, startsAt: start, endsAt: new Date((startSeconds + 60 * 4800) * 1000).toISOString() }] });
+    if (path === "/api/factory/calendar")
+      return Response.json({
+        phases: [
+          {
+            phase: "frontier",
+            presetId: 6,
+            startsAt: start,
+            endsAt: new Date((startSeconds + 60 * 4800) * 1000).toISOString(),
+          },
+        ],
+      });
     if (path === "/games")
       return Response.json({
         games: [{ game_id: gameId, mode: "frontier", clock: { start_main_at: startSeconds } }],
@@ -217,7 +227,17 @@ test.each([
   spyOn(funding, "readFrontierFunding").mockRejectedValue(new Error("frontier_funding_missing"));
   globalThis.fetch = (async (url) => {
     const path = new URL(String(url)).pathname;
-    if (path === "/api/factory/calendar") return Response.json({ phases: [{ phase: "frontier", presetId: 6, startsAt: start, endsAt: new Date((startSeconds + 60 * 4800) * 1000).toISOString() }] });
+    if (path === "/api/factory/calendar")
+      return Response.json({
+        phases: [
+          {
+            phase: "frontier",
+            presetId: 6,
+            startsAt: start,
+            endsAt: new Date((startSeconds + 60 * 4800) * 1000).toISOString(),
+          },
+        ],
+      });
     if (path === "/games")
       return Response.json({ games: [{ game_id: 1, mode: "frontier", clock: { start_main_at: startSeconds } }] });
     if (path === "/manifest") return Response.json({ chainId: "0x10" });

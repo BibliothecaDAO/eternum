@@ -9,6 +9,7 @@ import {
   XP,
   buildingName,
   formatAmount,
+  formatExact,
   formatCount,
   formatClockTime,
   formatDuration,

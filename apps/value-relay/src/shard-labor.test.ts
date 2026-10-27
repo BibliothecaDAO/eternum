@@ -36,10 +36,12 @@ beforeEach(() => {
   vi.resetAllMocks();
   saved = undefined;
   rpc.header.mockResolvedValue({ timestamp: 86401 });
-  rpc.snapshot.mockResolvedValue({ models: [
-    { model: "GameRegistry", rows: [{ value: { seed: "711", start_main_at: 360, end_at: 288360 } }] },
-    { model: "SliceRules", rows: [{ value: { day_unit_seconds: 4800 } }] },
-  ] });
+  rpc.snapshot.mockResolvedValue({
+    models: [
+      { model: "GameRegistry", rows: [{ value: { seed: "711", start_main_at: 360, end_at: 288360 } }] },
+      { model: "SliceRules", rows: [{ value: { day_unit_seconds: 4800 } }] },
+    ],
+  });
   rpc.view.mockImplementation(async (method: string) =>
     method === "ledger_operator"
       ? 0x20n
@@ -86,9 +88,14 @@ it("uses all fifteen seeded game days and refuses outside the season", async () 
   expect(timestamp).toBe(288360);
   for (const time of [359, 288360]) {
     rpc.header.mockResolvedValue({ timestamp: time });
-    await expect(Effect.runPromise(currentLaborDay(target.connection, "https://herald.test", 7))).rejects.toThrow("labor_outside_season");
+    await expect(Effect.runPromise(currentLaborDay(target.connection, "https://herald.test", 7))).rejects.toMatchObject(
+      { operation: "read Frontier labor day" },
+    );
   }
-  expect(rpc.snapshot).toHaveBeenLastCalledWith(target.connection, "https://herald.test", 7, ["GameRegistry", "SliceRules"]);
+  expect(rpc.snapshot).toHaveBeenLastCalledWith(target.connection, "https://herald.test", 7, [
+    "GameRegistry",
+    "SliceRules",
+  ]);
 });
 const request = (body: unknown, origin = "https://game.test") =>
   new Request("https://game.test/api/value/labor", {

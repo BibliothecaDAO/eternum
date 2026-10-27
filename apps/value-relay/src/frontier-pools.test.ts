@@ -52,7 +52,7 @@ const snapshot = (id: number) => ({
   models: [
     {
       model: "GameRegistry",
-      rows: [{ key: String(id), value: { game_id: id, start_main_at: 10, end_at: end, seed: 153 } }],
+      rows: [{ key: String(id), value: { game_id: id, preset_id: 6, start_main_at: 10, end_at: end, seed: 153 } }],
     },
     {
       model: "ChestRules",
@@ -124,7 +124,7 @@ beforeEach(() => {
               confirmed_block: 10,
               games: ids.map((id) => ({
                 game_id: id,
-                preset_id: 5,
+                preset_id: 6,
                 mode: "frontier",
                 status: "Live",
                 clock: { end_at: end },
@@ -152,7 +152,7 @@ beforeEach(() => {
             pool: { low: deposit, high: 0 },
             paid: { low: 0, high: 0 },
             closed: false,
-            preset_id: 2,
+            preset_id: 6,
             seed,
           }
         : {
