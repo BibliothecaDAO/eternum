@@ -5,6 +5,7 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useEffect, useRef } from "react";
 
 import { useDockArmies } from "../hud/dock-armies";
+import { useSelectedArmySpire } from "../spire-card";
 
 /**
  * How the army's panel opens (owner, 20 October: the bottom bar goes and the army's details open on selecting it, as
@@ -13,7 +14,8 @@ import { useDockArmies } from "../hud/dock-armies";
  * spectate never gets the panel), and none on a visit (no realm). The map's selection changing to such an army opens
  * it, never the same selection seen again (an order's update, a visit left), so a panel the player closed stays
  * closed. Returns the pick of an army (its row, its token, Today, Next up): another army is selected and that change
- * opens the panel, once; the army already selected reopens it.
+ * opens the panel, once; the army already selected reopens it. An army selected on or beside its realm's spire opens the
+ * spire's card instead (useSelectedArmySpire), where it enters a depth; picking it again opens its panel.
  */
 export const useArmyPanelOpens = (
   realm: NativeRows["Structure"] | null,
@@ -27,6 +29,7 @@ export const useArmyPanelOpens = (
   const armies = useDockArmies(realm);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
   const selectArmy = useSelectArmyOnMap();
+  const atItsSpire = useSelectedArmySpire() !== null;
   const seen = useRef(selectedId);
   const open = (explorerId: number | null) => {
     if (canIssueOrders() && armies.some((army) => army.explorerId === explorerId)) openPanel();
@@ -34,7 +37,7 @@ export const useArmyPanelOpens = (
   useEffect(() => {
     if (selectedId === seen.current) return;
     seen.current = selectedId;
-    if (opensOnSelect) open(selectedId);
+    if (opensOnSelect && !atItsSpire) open(selectedId);
   });
   return (explorerId) => {
     const reopen = useUIStore.getState().entityActions.selectedEntityId === explorerId;
