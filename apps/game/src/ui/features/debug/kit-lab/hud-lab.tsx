@@ -282,8 +282,8 @@ const tile = (
   takes: number,
   standing: LabTile["standing"],
 ): LabTile => ({ key, icon, name, tip: "", gives, takes, standing });
-const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"]) =>
-  ({ kind: "price", labor, short }) as const;
+const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"], raised?: string) =>
+  ({ kind: "price", labor, short, raised }) as const;
 /** An open training building at Uncommon: new armies start one tier up in its attribute. */
 const TRAINS = { icon: "order-rage", value: <HudTier tier={2} /> } as const;
 /** A training building at Common: new armies start at I in its attribute. */
@@ -292,20 +292,28 @@ const COMMON_TRAINS = { icon: "order-rage", value: <HudTier tier={1} /> } as con
 const LOCKED = { kind: "locked", gate: 3 } as const;
 
 /**
- * A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor, the
- * Workshop 3h 10m from its 10,000.
+ * A city's build sheet, as the owner's realm stood on 27 October: Farm and Workshop researched twice on their make
+ * side, Barracks once on Drill, the War hall and Hearth already standing, a fifth farm at 6,800 labor, and a second
+ * Workshop at 34,000, raised by the one standing and 16 hours from held.
  */
 const BUILD_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, 1, price(6_800)),
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min", basis: "+50% from Fields" }, 1, price(6_800)),
   tile(
     "workshop",
     "workshop",
     "Workshop",
-    { icon: "labor", value: "+0.83/min" },
+    { icon: "labor", value: "+0.83/min", basis: "+50% from Tools" },
     1,
-    price(10_000, { of: "labor", wait: 3 * HOUR + 10 * 60 }),
+    price(34_000, { of: "labor", wait: 16 * HOUR }, "Costs more with each one standing: 1"),
   ),
-  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(6_800)),
+  tile(
+    "barracks",
+    "barracks",
+    "Barracks",
+    { icon: "troops", value: "+13/min", basis: "+25% from Drill" },
+    3,
+    price(6_800),
+  ),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(5_100)),
   tile("war", "war-hall", TRAINING_BUILDINGS[0], TRAINS, 2, { kind: "built" }),
   tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, price(3_000)),
