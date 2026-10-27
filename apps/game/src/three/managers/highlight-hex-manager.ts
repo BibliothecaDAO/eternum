@@ -1,4 +1,6 @@
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
+import { HEX_SIZE } from "@/three/constants";
+import { hexRimOffsets, highestGroundAt, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import { ActionHighlightDescriptor, ActionType } from "@bibliothecadao/eternum";
@@ -27,6 +29,17 @@ const tempMatrix = new Matrix4();
 const tempScale = new Vector3();
 const tempColor = new Color();
 const HIGHLIGHT_ROTATION = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -Math.PI / 2);
+/**
+ * Where a lit hex reads the ground it lies on: its whole face, and just past its rim, so a plate on a slope or a mound
+ * lies above all of it, and a plate on a sunken unexplored tile lies level with the ground around it rather than
+ * behind that ground's near edge.
+ */
+const PLATE_GROUND_SAMPLES = [
+  [0, 0] as const,
+  ...hexRimOffsets(HEX_SIZE * 0.5),
+  ...hexRimOffsets(HEX_SIZE * 0.95),
+  ...hexRimOffsets(HEX_SIZE * 1.06),
+];
 
 interface HighlightRenderLayer {
   mesh: InstancedMesh;
@@ -34,7 +47,8 @@ interface HighlightRenderLayer {
   baseOpacity: number;
   opacityPulseScale: number;
   targetScale: number;
-  baseY: number;
+  /** How far above its hex's ground the layer lies. */
+  lift: number;
 }
 
 /** Which hexes roll in on a draw, and whether the first one flashes as a new selection does. */
@@ -60,6 +74,14 @@ const isAlreadyDrawn = (
   descriptors.length === drawn.size &&
   descriptors.every((descriptor) => looksTheSame(drawn.get(hexKey(descriptor)), descriptor));
 
+/** The centre of every plate a layer draws now. */
+const drawnPlateCentres = (mesh: InstancedMesh): { x: number; y: number; z: number }[] =>
+  Array.from({ length: mesh.count }, (_, index) => {
+    mesh.getMatrixAt(index, tempMatrix);
+    const { x, y, z } = new Vector3().setFromMatrixPosition(tempMatrix);
+    return { x, y, z };
+  });
+
 const createMesh = (
   geometry: InstancedMesh["geometry"],
   material: MeshBasicMaterial,
@@ -80,7 +102,6 @@ export class HighlightHexManager {
   private routeLayer: HighlightRenderLayer;
   private endpointLayer: HighlightRenderLayer;
   private frontierLayer: HighlightRenderLayer;
-  private yOffset = 0;
   private cameraView = 2;
   private hexGeometryPool: HexGeometryPool;
   private highlightTimeline: gsap.core.Timeline | null = null;
@@ -95,6 +116,8 @@ export class HighlightHexManager {
 
   constructor(
     private scene: Scene,
+    /** The ground every lit hex lies on. */
+    private readonly terrain: TerrainSurface,
     /** The owning scene's hex space: the world map's floating origin, or the local realm scene's own lattice. */
     private readonly space: HexSpace = WORLD_HEX_SPACE,
   ) {
@@ -110,7 +133,7 @@ export class HighlightHexManager {
       baseOpacity: 0.16,
       opacityPulseScale: 1.25,
       targetScale: 0.92,
-      baseY: 0.175,
+      lift: 0.03,
     });
     this.endpointLayer = this.createLayer(hexagonGeometry, {
       color: 0xffffff,
@@ -119,7 +142,7 @@ export class HighlightHexManager {
       baseOpacity: 0.22,
       opacityPulseScale: 1.5,
       targetScale: 0.56,
-      baseY: 0.19,
+      lift: 0.04,
     });
     this.frontierLayer = this.createLayer(hexagonGeometry, {
       color: 0xffffff,
@@ -128,7 +151,7 @@ export class HighlightHexManager {
       baseOpacity: 0.3,
       opacityPulseScale: 1.8,
       targetScale: 0.74,
-      baseY: 0.205,
+      lift: 0.05,
       toneMapped: false,
     });
 
@@ -147,7 +170,7 @@ export class HighlightHexManager {
       baseOpacity: number;
       opacityPulseScale: number;
       targetScale: number;
-      baseY: number;
+      lift: number;
       toneMapped?: boolean;
     },
   ): HighlightRenderLayer {
@@ -170,7 +193,7 @@ export class HighlightHexManager {
       baseOpacity: config.baseOpacity,
       opacityPulseScale: config.opacityPulseScale,
       targetScale: config.targetScale,
-      baseY: config.baseY,
+      lift: config.lift,
     };
   }
 
@@ -206,6 +229,7 @@ export class HighlightHexManager {
     }
 
     const timeline = gsap.timeline();
+    const grounds = this.resolveGroundPositions(descriptors);
     const endpointDescriptors = descriptors.filter(
       (descriptor) => descriptor.isEndpoint && descriptor.kind !== "frontier",
     );
@@ -213,7 +237,7 @@ export class HighlightHexManager {
 
     const quietEntry = { ...entry, launchGlow: false };
 
-    this.populateLayer(this.routeLayer, descriptors, timeline, entry, {
+    this.populateLayer(this.routeLayer, descriptors, grounds, timeline, entry, {
       getColor: (descriptor) => this.resolveRouteColor(descriptor),
       getScale: (descriptor) =>
         descriptor.isEndpoint
@@ -222,11 +246,11 @@ export class HighlightHexManager {
             ? this.routeLayer.targetScale - 0.04
             : this.routeLayer.targetScale,
     });
-    this.populateLayer(this.endpointLayer, endpointDescriptors, timeline, quietEntry, {
+    this.populateLayer(this.endpointLayer, endpointDescriptors, grounds, timeline, quietEntry, {
       getColor: (descriptor) => this.resolveEndpointColor(descriptor),
       getScale: () => this.endpointLayer.targetScale,
     });
-    this.populateLayer(this.frontierLayer, frontierDescriptors, timeline, quietEntry, {
+    this.populateLayer(this.frontierLayer, frontierDescriptors, grounds, timeline, quietEntry, {
       getColor: () => FRONTIER_ACCENT_COLOR,
       getScale: () => this.frontierLayer.targetScale,
     });
@@ -234,10 +258,22 @@ export class HighlightHexManager {
     this.highlightTimeline = timeline;
   }
 
+  /** Each hex's centre at the height its plate must clear: the highest ground under it and around its rim. */
+  private resolveGroundPositions(descriptors: ActionHighlightDescriptor[]): ReadonlyMap<string, Vector3> {
+    return new Map(
+      descriptors.map((descriptor) => {
+        const position = this.space.positionForHex(descriptor.hex);
+        position.y = highestGroundAt(this.terrain, position.x, position.z, PLATE_GROUND_SAMPLES);
+        return [hexKey(descriptor), position];
+      }),
+    );
+  }
+
   /** Writes a layer's instances: a hex already drawn sits at its full scale, a new one rolls in after the new ones before it. */
   private populateLayer(
     layer: HighlightRenderLayer,
     descriptors: ActionHighlightDescriptor[],
+    grounds: ReadonlyMap<string, Vector3>,
     timeline: gsap.core.Timeline,
     entry: HighlightEntry,
     style: {
@@ -251,8 +287,9 @@ export class HighlightHexManager {
 
     for (let i = 0; i < count; i++) {
       const descriptor = descriptors[i];
-      const position = this.space.positionForHex(descriptor.hex);
-      const instancePosition = new Vector3(position.x, layer.baseY + this.yOffset, position.z);
+      const ground = grounds.get(hexKey(descriptor));
+      if (!ground) throw new Error(`Highlight hex ${hexKey(descriptor)} has no ground position`);
+      const instancePosition = new Vector3(ground.x, ground.y + layer.lift, ground.z);
       const targetScale = style.getScale(descriptor);
 
       tempColor.copy(style.getColor(descriptor));
@@ -281,7 +318,7 @@ export class HighlightHexManager {
       );
 
       if (entry.launchGlow && i === 0) {
-        this.triggerLaunchGlow(position, tempColor, timeline, startTime);
+        this.triggerLaunchGlow(instancePosition, tempColor, timeline, startTime);
       }
     }
 
@@ -330,8 +367,9 @@ export class HighlightHexManager {
     });
   }
 
-  setYOffset(yOffset: number) {
-    this.yOffset = yOffset;
+  /** Terrain pages stream in after a selection is lit; each one that lands lays the lit hexes on its ground again. */
+  refreshTerrainPlacement(): void {
+    this.redrawInPlace();
   }
 
   setCameraView(cameraView: number) {
@@ -341,17 +379,26 @@ export class HighlightHexManager {
 
     this.cameraView = cameraView;
     this.applyViewTuning();
+    this.redrawInPlace();
+  }
+
+  /** Draws the lit hexes again at their full size, none rolling in. */
+  private redrawInPlace(): void {
     if (this.drawnDescriptors.length > 0) {
       this.drawLayers(this.drawnDescriptors, { isEntering: () => false, launchGlow: false });
     }
   }
 
+  /** What is drawn, for the page's dev report: each layer's count and the centre of every plate on every layer. */
   getDebugState() {
     return {
       cameraView: this.cameraView,
       routeCount: this.routeLayer.mesh.count,
       endpointCount: this.endpointLayer.mesh.count,
       frontierCount: this.frontierLayer.mesh.count,
+      plates: [this.routeLayer, this.endpointLayer, this.frontierLayer].flatMap((layer) =>
+        drawnPlateCentres(layer.mesh),
+      ),
     };
   }
 
@@ -377,7 +424,7 @@ export class HighlightHexManager {
     });
 
     const glowMesh = new Mesh(this.hexGeometryPool.getGeometry("highlight"), glowMaterial);
-    glowMesh.position.set(position.x, this.routeLayer.baseY + this.yOffset, position.z);
+    glowMesh.position.copy(position);
     glowMesh.rotation.x = -Math.PI / 2;
     glowMesh.scale.setScalar(0.42);
     glowMesh.renderOrder = 8;

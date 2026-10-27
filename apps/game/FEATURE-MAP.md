@@ -511,6 +511,10 @@ army after its fight on prod (25 October 2026): 4,015 knights on the camp they c
 (guard 999), both on battle cooldown. `--steps lab-merge-keeps-picked`, `lab-merge-keeps-tapped` and `lab-after-battle`
 check that hovering the army's tile opens its plate, and that a tile a merge emptied opens none.
 
+`/lab/game?scenario=high-ground` is the spire's game with every revealed tile snow, bare rock or tundra: pick the army
+and its lit tiles lie on ground that rises above a flat plate. `--steps lab-high-ground` checks every lit plate lies
+above the highest ground under it.
+
 `/lab/game?scenario=realm` is the same game with the realm a full Settlement (six plots built) and the labor for a City:
 **Realm**, tap the castle, **Upgrade**. The LevelUp command is recorded and applied, the second ring's twelve plots
 light, and the realm view stands at City (18 plots), as it does after going to the World and back.

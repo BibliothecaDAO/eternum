@@ -95,27 +95,28 @@ describe("the page a run opens", () => {
       buildRunUrl({ baseUrl: "https://127.0.0.1:4173", game, player, rendererMode: "webgpu-auto", stepSet }),
     ).searchParams.get("dev");
 
-  const plateLists = [
+  const worldLists = [
     "blitz-plates",
     "blitz-plates-player",
     "frontier-plates",
     "frontier-plates-player",
     "lab-hover-zoom",
+    "lab-high-ground",
   ];
 
   it("keeps the dev overlays off for every spectator list that needs no dev tools", () => {
     const ordinary = Object.keys(STEP_SETS).filter(
-      (stepSet) => !stepSet.endsWith("frozen-sun") && !plateLists.includes(stepSet),
+      (stepSet) => !stepSet.endsWith("frozen-sun") && !worldLists.includes(stepSet),
     );
     expect(ordinary).toContain("blitz-still-map");
     for (const stepSet of ordinary) expect([stepSet, devOf(stepSet)]).toEqual([stepSet, "0"]);
   });
 
-  it("turns them on for the lists that hold the sun through the dev tools, and for the plate lists", () => {
+  it("turns them on for the lists that hold the sun through the dev tools, and for the lists that read the world", () => {
     expect(devOf("still-map-frozen-sun")).toBe("1");
     expect(devOf("blitz-still-map-frozen-sun")).toBe("1");
-    // The page then reports its world (window.__gameRenderer): every label is measured against its thing.
-    for (const stepSet of plateLists) expect([stepSet, devOf(stepSet)]).toEqual([stepSet, "1"]);
+    // The page then reports its world (window.__gameRenderer): labels and lit tiles are measured against what is drawn.
+    for (const stepSet of worldLists) expect([stepSet, devOf(stepSet)]).toEqual([stepSet, "1"]);
     // A seated player's plates as well: the home page sets them, and the page keeps them into the game.
     expect(devOf("frontier-plates-player", "a@b.c")).toBe("1");
     expect(devOf("blitz-orders", "a@b.c")).toBe("0");
