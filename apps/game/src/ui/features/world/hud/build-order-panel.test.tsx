@@ -256,6 +256,8 @@ it("says when the account's orders cannot be read, with Try again, and follows n
     ),
   );
   expect(followed).toBeNull();
+  // No order is followed, so no order stands in the choice.
+  expect(host.querySelector('button[aria-label="Order to follow"]')).toBeNull();
   const notice = host.querySelector(".ui-notice");
   expect(notice?.textContent).toBe("Your build orders could not be reached.Try again");
   expect(host.textContent).not.toContain("Nothing to build now");
@@ -265,4 +267,5 @@ it("says when the account's orders cannot be read, with Try again, and follows n
   expect(service.getBuildOrders).toHaveBeenCalledTimes(1);
   expect(host.querySelector(".ui-notice")).toBeNull();
   expect(followed).toBe("Default");
+  expect(host.querySelector('button[aria-label="Order to follow"]')?.textContent).toBe("The game's order");
 });

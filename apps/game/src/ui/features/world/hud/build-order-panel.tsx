@@ -44,11 +44,14 @@ const PlayersBuildOrder = () => {
   return (
     <BuildOrderView
       choice={
-        <OrderChoice
-          book={book}
-          busy={status === "loading" || status === "saving"}
-          onFollow={(active) => book && void saveBuildOrders({ ...book, active })}
-        />
+        // Signed in with the account's orders unread, no order is followed: the choice waits for them.
+        book || status === "signed-out" ? (
+          <OrderChoice
+            book={book}
+            busy={status === "loading" || status === "saving"}
+            onFollow={(active) => book && void saveBuildOrders({ ...book, active })}
+          />
+        ) : null
       }
       onOrders={openBuildOrdersPage}
       notice={failed ? <BuildOrderFailure /> : null}
