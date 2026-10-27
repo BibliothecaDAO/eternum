@@ -4538,7 +4538,6 @@ export default class WorldmapScene extends WarpTravel {
     this.controls.enableZoom = false;
     this.controls.zoomToCursor = false;
     this.lastControlsCameraDistance = this.getCurrentCameraDistance();
-    this.highlightHexManager.setYOffset(0.025);
 
     // Configure thunder bolts for worldmap - dramatic storm effect
     this.getThunderBoltManager().setConfig({
@@ -6300,6 +6299,7 @@ export default class WorldmapScene extends WarpTravel {
     this.chestManager.refreshTerrainPlacement();
     this.armyManager.refreshTerrainPlacement();
     this.ownershipRings.refreshTerrainPlacement();
+    this.highlightHexManager.refreshTerrainPlacement();
   }
 
   private recordTerrainPresentationEvent(event: TerrainPresentationEvent): void {

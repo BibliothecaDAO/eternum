@@ -161,7 +161,9 @@ two of the realm's armies merged through **Transfer troops**, under either survi
 its fight standing on the camp it cleared: each army's tile, found under its token, hovered with nothing selected must
 open that army's plate, and an emptied tile none), `--steps lab-hover-zoom` (the army after its fight, with nothing
 selected and the dev overlays on, at each wheel step from the closest zoom to the farthest: its token must stand over
-its own model, and the pointer on its model at its feet, middle and top must open its plate), `--steps lab-day-turn`,
+its own model, and the pointer on its model at its feet, middle and top must open its plate), `--steps lab-high-ground`
+(`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, with the dev overlays on: the army
+picked, every tile it is lit on must lie above the highest ground under it), `--steps lab-day-turn`,
 `--steps lab-day-later`, `--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same game on Frontier's day
 2 ending, `/lab/game?scenario=day-turn` in the session or `scenario=day-later` before it opened, over prod's recorded
 history of that day, the map opened where the realm stood on day 2: the summary's totals must be the recorded player's
