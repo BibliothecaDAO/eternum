@@ -110,7 +110,16 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     if (surface !== "research") setResearchPick(undefined);
   }, [surface]);
   // Selecting one of the realm's armies opens its panel; a pick in the dock, Today or Next up goes the same way.
-  const openArmy = useArmyPanelOpens(visit ? null : realm, () => setSurface("army"), desktop);
+  // The card opens on its level-up choices from a phone's Level up beside the picked army.
+  const [armyChoosing, setArmyChoosing] = useState(false);
+  const openArmy = useArmyPanelOpens(
+    visit ? null : realm,
+    (choosing) => {
+      setArmyChoosing(choosing);
+      setSurface("army");
+    },
+    desktop,
+  );
   const pickArmy = usePickArmy();
   const seasonRank = useSeasonRank();
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
@@ -191,7 +200,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           onClose={close}
         />
       )}
-      {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
+      {surface === "army" && realm && !visit && <FrontierArmy realm={realm} choosing={armyChoosing} onClose={close} />}
       {surface === "settings" && (
         <HudSheet label={SETTINGS} onClose={close}>
           <SettingsPanel />
@@ -365,8 +374,8 @@ const FrontierPhoneHud = ({
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
  * 2026: mobile direction A): with an order pending, its costs and verb; with the next order queued, its bar; with an
- * army picked, the army, how to give it an order and its details; otherwise nothing. A desktop has none: its orders go
- * from the map, and the army's state is its panel's.
+ * army picked, the army (a tap opens its card), its stamina, refill and Level up; otherwise nothing. A desktop has
+ * none: its orders go from the map, and the army's state is its panel's.
  */
 const ArmyAction = ({
   rules,
@@ -375,8 +384,8 @@ const ArmyAction = ({
 }: {
   rules: ExpeditionRules;
   realm: NativeRows["Structure"];
-  /** Opens an army's panel (useArmyPanelOpens); none on a visit. */
-  onOpenArmy?: (explorerId: number) => void;
+  /** Opens an army's panel (useArmyPanelOpens), on its level-up choices when `choosing`; none on a visit. */
+  onOpenArmy?: (explorerId: number, choosing?: boolean) => void;
 }) => {
   const armies = useDockArmies(realm);
   const order = useArmyOrder();
@@ -390,7 +399,15 @@ const ArmyAction = ({
   if (transfer && acting) return <TransferChoice picked={acting} choice={transfer} />;
   if (selected && nextOrder?.entityId === selected.explorerId)
     return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
-  if (acting && onOpenArmy) return <PickedArmy army={acting} onDetails={() => onOpenArmy(acting.explorerId)} />;
+  if (acting && onOpenArmy)
+    return (
+      <PickedArmy
+        army={acting}
+        refill={<ArmyRefill army={acting} realm={realm} chip />}
+        onDetails={() => onOpenArmy(acting.explorerId)}
+        onLevelUp={() => onOpenArmy(acting.explorerId, true)}
+      />
+    );
   return null;
 };
 

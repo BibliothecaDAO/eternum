@@ -28,20 +28,33 @@ const KIND_OF: Record<ScoutKind, ScoutingKind> = { camp: "Camp", rift: "Rift", b
  * The selected army's detail over the game's facts, the one army panel: opened by selecting the army, on the map or
  * from the dock (its row on a desktop, its token on a phone). None while no army of the realm is selected.
  */
-export const FrontierArmy = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
+export const FrontierArmy = ({
+  realm,
+  choosing,
+  onClose,
+}: {
+  realm: NativeRows["Structure"];
+  /** Opens on the level-up choices: a phone's Level up beside the picked army. */
+  choosing: boolean;
+  onClose: () => void;
+}) => {
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
   const army = useDockArmies(realm).find(({ explorerId }) => explorerId === selectedId);
-  return army ? <ArmyPanel key={army.explorerId} realm={realm} army={army} onClose={onClose} /> : null;
+  return army ? (
+    <ArmyPanel key={`${army.explorerId}-${choosing}`} realm={realm} army={army} choosing={choosing} onClose={onClose} />
+  ) : null;
 };
 
 /** One army's panel: Level up buys a level (buy_tier), held until its outcome. None while its progress is unknown. */
 const ArmyPanel = ({
   realm,
   army,
+  choosing,
   onClose,
 }: {
   realm: NativeRows["Structure"];
   army: DockArmy;
+  choosing: boolean;
   onClose: () => void;
 }) => {
   const { setup, account } = useGame();
@@ -95,6 +108,7 @@ const ArmyPanel = ({
         army={readArmyDetail(facts)}
         refill={<ArmyRefill army={army} realm={realm} chip />}
         sending={sending}
+        choosing={choosing}
         onLevelUp={levelUp}
       />
     </HudSheet>

@@ -454,10 +454,9 @@ export const BUILD = "Build";
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";
 
-/** A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): its details' button. */
+/** A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): its token opens its card. */
 export const PICKED_ARMY = {
   details: (army: string) => `${army}: details`,
-  letGo: (army: string) => `Let go of ${army}`,
 } as const;
 
 /** Troops between two of the realm's armies side by side (Frontier's Transfer troops, desktop and phone). */

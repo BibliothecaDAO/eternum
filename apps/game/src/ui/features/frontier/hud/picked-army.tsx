@@ -2,22 +2,42 @@ import { useGame } from "@/hooks/context/game-context";
 import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { HudButton, HudIconButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { CANCEL, PICKED_ARMY, TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 import { ActionPaths, ActionType, configManager, Position } from "@bibliothecadao/eternum";
+import type { ReactNode } from "react";
 
+import { LevelUpButton, StaminaLine } from "../army/army-panel";
 import { attributeBadgeTarget } from "../attributes/attributes";
 import { ArmyToken } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
+/** What the picked army's row reads of an army: the dock's own, so the lab draws it on its fiction. */
+export type PickedArmyView = Pick<
+  DockArmy,
+  "explorerId" | "label" | "number" | "art" | "xp" | "xpGoal" | "stamina" | "secondsToFull" | "troops" | "canBuyTier"
+>;
+
 /**
- * A phone's picked army, in the dock's place (owner, 22 October 2026: mobile direction A): the army (a tap lets it
- * go, and the dock comes back), and its details, which open only when asked for.
+ * A phone's picked army, in the dock's place (owner, 22 October 2026: mobile direction A; 27 October: its stamina, refill
+ * and Level up, with no details button): the army, a tap opening its card; its stamina line; its refill, and Level up,
+ * which opens the card on its choices. A tap on an empty tile lets the army go, and the dock comes back.
  */
-export const PickedArmy = ({ army, onDetails }: { army: DockArmy; onDetails: () => void }) => (
-  <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="flex items-center justify-between gap-2">
+export const PickedArmy = ({
+  army,
+  refill,
+  onDetails,
+  onLevelUp,
+}: {
+  army: PickedArmyView;
+  /** The refill's control: nothing for a full bar. */
+  refill: ReactNode;
+  onDetails: () => void;
+  onLevelUp: () => void;
+}) => (
+  <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="flex items-center gap-3">
     <ArmyToken
-      label={PICKED_ARMY.letGo(army.label)}
+      label={PICKED_ARMY.details(army.label)}
       number={army.number}
       art={army.art}
       xp={army.xp}
@@ -27,9 +47,17 @@ export const PickedArmy = ({ army, onDetails }: { army: DockArmy; onDetails: () 
       canBuyTier={army.canBuyTier}
       selected
       flyTarget={attributeBadgeTarget(army.explorerId)}
-      onPick={() => useUIStore.getState().deselectEntity()}
+      onPick={onDetails}
     />
-    <HudIconButton icon="info" label={PICKED_ARMY.details(army.label)} onClick={onDetails} />
+    {army.stamina && (
+      <span data-picked-army className="flex min-w-0 flex-1 flex-col gap-2">
+        <StaminaLine stamina={army.stamina} secondsToFull={army.secondsToFull} />
+        <span className="flex items-center justify-between gap-2">
+          <span className="flex">{refill}</span>
+          <LevelUpButton affordable={army.canBuyTier} onPress={onLevelUp} />
+        </span>
+      </span>
+    )}
   </HudPanel>
 );
 

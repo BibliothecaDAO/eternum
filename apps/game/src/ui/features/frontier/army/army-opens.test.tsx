@@ -15,12 +15,17 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
 const { NativeFactStore } = await import("@bibliothecadao/eternum/game-client");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { ActionPaths, ActionType } = await import("@bibliothecadao/eternum");
+const { RESOURCE_PRECISION, ResourcesIds } = await import("@bibliothecadao/types");
 const active = await import("@/sync/active-game-client");
 const { overrideSpectateIntent } = await import("@/utils/spectator-session");
 const { UnifiedHudLab } = await import("@/ui/features/debug/kit-lab/unified-hud-lab");
 
 /** The lab realm's army out. */
 const ARMY = 90;
+/** Its stamina line: 90 of its 150, and when it is full. */
+const STAMINA_LINE = /^90\/150Full in \d/;
+/** Its token: its XP (260), its number (1) and its troops (5,000). */
+const TOKEN = "26015,000";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -98,8 +103,14 @@ const pickInDock = () =>
       .click(),
   );
 
-/** A phone's picked army in the action row, and its details button. */
+/** A phone's picked army in the action row: its token, which opens its card. */
 const details = () => host.querySelector<HTMLButtonElement>('button[aria-label="Army 1: details"]');
+/** The picked army's stamina, refill and Level up, beside its token. */
+const pickedRow = () => host.querySelector<HTMLElement>("[data-picked-army]");
+const pickedButton = (name: RegExp) =>
+  [...pickedRow()!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
+    name.test(button.getAttribute("aria-label") ?? button.textContent ?? ""),
+  )!;
 
 describe("the army's panel on a phone (owner, 22 October 2026: mobile direction A, the map first)", () => {
   beforeEach(() => layout(false));
@@ -116,6 +127,62 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(panel()!.textContent).toContain("Full in");
     await closePanel();
     expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
+  });
+
+  it("shows the picked army's stamina, refill and Level up beside its token, and no details button", async () => {
+    await renderHud();
+    await select(ARMY);
+    expect(pickedRow()!.querySelector("[data-stamina-line]")!.textContent).toMatch(STAMINA_LINE);
+    expect(pickedButton(/^Refill/).className).toBe("ui-chip");
+    expect(pickedButton(/^Level/).textContent).toMatch(/^Level/);
+    // One way to the card: the token, which wears the army's number and troops.
+    expect(host.querySelectorAll('button[aria-label="Army 1: details"]')).toHaveLength(1);
+    expect(details()!.textContent).toBe(TOKEN);
+  });
+
+  it("opens the army's card from its token", async () => {
+    await renderHud();
+    await select(ARMY);
+    await act(async () => details()!.click());
+    expect(panel()).not.toBeNull();
+    expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
+  });
+
+  it("opens the refill's confirm from the row's refill", async () => {
+    const store = await renderHud();
+    // The realm holds the LORDS a refill costs.
+    await act(async () =>
+      store.applyFacts([
+        {
+          model: "ResourceBalance",
+          key: `0xb5${ResourcesIds.Lords}`,
+          value: {
+            game_id: 1,
+            entity_id: 7,
+            resource_type: ResourcesIds.Lords,
+            balance: String(500n * BigInt(RESOURCE_PRECISION)),
+          },
+        },
+      ] as never),
+    );
+    await select(ARMY);
+    await act(async () => pickedButton(/^Refill/).click());
+    const confirm = host.querySelector("[data-kit-sheet]")!;
+    expect([...confirm.querySelectorAll("button")].map((button) => button.textContent)).toEqual(
+      expect.arrayContaining(["Cancel", "Refill"]),
+    );
+  });
+
+  it("opens the army's card on its level-up choices from the row's Level up", async () => {
+    await renderHud();
+    await select(ARMY);
+    await act(async () => pickedButton(/^Level/).click());
+    expect(host.querySelector("[data-kit-sheet] [data-army-step='choose']")).not.toBeNull();
+
+    // Closed and opened again from the token, it shows the army's status.
+    await closePanel();
+    await act(async () => details()!.click());
+    expect(panel()).not.toBeNull();
   });
 
   it("picks the army from the dock without opening its panel", async () => {
