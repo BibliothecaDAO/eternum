@@ -103,7 +103,7 @@ export const ArmyDetail = ({
 };
 
 /** Over the stamina line: the army's troops, and what each tile explored sends home (none where reveals pay none). */
-const StatusChips = ({ army }: { army: ArmyView }) => (
+export const StatusChips = ({ army }: { army: ArmyView }) => (
   <span className="flex flex-wrap items-center gap-1.5">
     <HudChip icons={["troops"]} label={TROOPS}>
       {formatShort(army.troops)}
@@ -120,7 +120,7 @@ const StatusChips = ({ army }: { army: ArmyView }) => (
  * The stamina on one line (the owner's layout A, 27 October): "96/170", the bar in a segment per explore, and when it is
  * full again.
  */
-const StaminaLine = ({ army }: { army: ArmyView }) => (
+export const StaminaLine = ({ army }: { army: ArmyView }) => (
   <span data-stamina-line className="flex items-center gap-2">
     <span className="flex items-center gap-0.5 whitespace-nowrap text-hud-label tabular-nums text-hud-ink">
       <Icon name="stamina" size={14} />
@@ -137,7 +137,7 @@ const StaminaLine = ({ army }: { army: ArmyView }) => (
  * An attribute as a tile: its mark filling the frame, its name, its tier and what it gives; its hover says what
  * its next tier gives and costs, and a press opens its level-up.
  */
-const AttributeTile = ({ attribute, onOpen }: { attribute: AttributeView; onOpen: () => void }) => (
+export const AttributeTile = ({ attribute, onOpen }: { attribute: AttributeView; onOpen: () => void }) => (
   <button
     type="button"
     aria-label={`${attribute.name} ${attribute.now}`}

@@ -86,6 +86,12 @@ const HUD_INSIDE = {
     "kit/progression",
     load(() => import("../ui/features/debug/kit-lab/progression/progression-lab"), "ProgressionLab"),
   ),
+  armyProgression: view(
+    "Army progression",
+    "/lab/kit/army-progression",
+    "kit/army-progression",
+    load(() => import("../ui/features/debug/kit-lab/army-progression/army-progression-lab"), "ArmyProgressionLab"),
+  ),
   windows: view(
     "Windows",
     "/lab/kit/windows/build",

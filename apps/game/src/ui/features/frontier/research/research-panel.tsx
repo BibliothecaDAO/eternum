@@ -83,7 +83,7 @@ export const ResearchPanel = ({
 };
 
 /** One look per state, the same on a tile and in the detail: each tile's frame and mark say its state. */
-const STATE_LOOK: Record<NodeState, { icon?: IconMeaning; frame: string; text: string }> = {
+export const STATE_LOOK: Record<NodeState, { icon?: IconMeaning; frame: string; text: string }> = {
   done: { icon: "check", frame: "border-hud-line bg-hud-well", text: "text-hud-ink" },
   ready: { icon: "research", frame: "border-hud-good bg-hud-chosen", text: "text-hud-ink" },
   short: { frame: "border-hud-line", text: "text-hud-ink" },
@@ -92,7 +92,7 @@ const STATE_LOOK: Record<NodeState, { icon?: IconMeaning; frame: string; text: s
 
 const BRANCH_ICONS: Record<Branch, IconMeaning> = { economy: "farm", army: "barracks", castle: "spire" };
 
-const BranchHead = ({ branch }: { branch: Branch }) => (
+export const BranchHead = ({ branch }: { branch: Branch }) => (
   <span className="flex items-center gap-1 text-hud-label uppercase tracking-wide text-hud-muted">
     <Icon name={BRANCH_ICONS[branch]} size={16} />
     {RESEARCH_TREE.branches[branch]}
@@ -100,7 +100,7 @@ const BranchHead = ({ branch }: { branch: Branch }) => (
 );
 
 /** The Barracks' gate to the training buildings, lit once reached. */
-const Gate = ({ met, word }: { met: boolean; word: string }) => (
+export const Gate = ({ met, word }: { met: boolean; word: string }) => (
   <span
     className={cn(
       "flex items-center justify-center gap-1 border-y border-dashed py-0.5 text-hud-label",
