@@ -105,6 +105,7 @@ afterEach(() => {
   view?.route.dispose();
   gsap.globalTimeline.clear();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 it("leaves the realm view's camera where it stands when the player presses Tab", async () => {
@@ -173,4 +174,20 @@ it("lets no move the map left running carry the camera past the realm view's pos
     transitions.destroy();
     useWorldAppearanceStore.setState({ reducedMotion: motion });
   }
+});
+
+it("leaves the camera on the castle when the player taps a plot at the board's edge on a phone", async () => {
+  vi.stubGlobal("innerWidth", 390);
+  vi.stubGlobal("innerHeight", 844);
+  view = realmView();
+  await enterFromMap(view);
+  Object.assign(view.scene.state, { setSelectedBuildingHex: () => {}, setLeftNavigationView: () => {} });
+  const entered = poseOf(view.scene);
+
+  // The board's foot, four rows below the castle, which an open sheet would cover.
+  await view.scene.onHexagonClick({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] + 4 });
+  await new Promise((frame) => requestAnimationFrame(() => requestAnimationFrame(frame)));
+  finishCameraMoves();
+
+  expect(poseOf(view.scene)).toEqual(entered);
 });

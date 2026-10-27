@@ -2625,8 +2625,7 @@ export default class WorldmapScene extends WarpTravel {
       resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths)
     )
       return;
-    if (this.pickDeployTile(hexCoords)) return;
-    if (hexCoords && this.answerTapWithSelectedArmyOrder(hexCoords)) return;
+    if (hexCoords && this.answerTapWithSelectedOrder(hexCoords)) return;
     const viewer = accountAddress();
     const {
       army: standingArmy,
@@ -2764,9 +2763,10 @@ export default class WorldmapScene extends WarpTravel {
 
   /**
    * With an army selected, a tap previews its order or opens its site card. A second tap on a phone's pinned movement
-   * order sends it; attacks and site cards keep their own confirmation. False leaves the tile its own tap.
+   * order sends it; attacks and site cards keep their own confirmation. On a phone, with the realm selected, a lit tile
+   * beside it opens Deploy aimed there, and another lit tile aims it again. False leaves the tile its own tap.
    */
-  private answerTapWithSelectedArmyOrder(hexCoords: HexPosition): boolean {
+  private answerTapWithSelectedOrder(hexCoords: HexPosition): boolean {
     if (!canIssueOrders()) return false;
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     if (selectedEntityId === null || selectedEntityId === undefined) return false;
@@ -2782,6 +2782,7 @@ export default class WorldmapScene extends WarpTravel {
         (structure !== undefined && this.isStandingExpeditionSite(structure.id)) ||
         this.usableSiteAt(hexCoords) !== null,
       ownSpire: this.isArmysSpire(selectedEntityId, hexCoords),
+      onPhone: layoutNow() === "phone",
       hud: this.hudCarriesOrderVerb()
         ? {
             pinned: pinned?.col === hexCoords.col && pinned.row === hexCoords.row,
@@ -2811,6 +2812,8 @@ export default class WorldmapScene extends WarpTravel {
       return true;
     } else if (order === "attack" && path) {
       this.onArmyAttack(path, selectedEntityId);
+    } else if (order === "deploy" && path) {
+      this.onArmyCreate(path, selectedEntityId);
     } else if (order === "site-card") {
       const contractHex = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
       this.openTargetCardForSelectedArmy({ col: contractHex.x, row: contractHex.y });
@@ -3551,15 +3554,6 @@ export default class WorldmapScene extends WarpTravel {
         (neighbor) => neighbor.direction === order.direction,
       );
     return tile ? { col: tile.col - FELT_CENTER(), row: tile.row - FELT_CENTER() } : null;
-  }
-
-  /** While Frontier's deploy is shown, a tap on a lit tile beside the realm aims the deploy there. */
-  private pickDeployTile(hexCoords: HexPosition | null): boolean {
-    if (!this.deployShown || !this.isFrontierHud()) return false;
-    const path = resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths);
-    if (!path) return false;
-    this.onArmyCreate(path, this.deployShown.order.structureId);
-    return true;
   }
 
   private showSelectedStructure(structureId: ID, hex: HexPosition): void {

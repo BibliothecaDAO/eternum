@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import type { ActionPath } from "@bibliothecadao/eternum";
 import { PerspectiveCamera } from "three";
@@ -16,6 +16,14 @@ const { useAccountStore } = await import("@/hooks/store/use-account-store");
 const { usePopoverStore } = await import("@/hooks/store/use-popover-store");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { default: WorldmapScene } = await import("./worldmap");
+const { realmBoard } = await import("@/ui/features/frontier/build/build-fixture");
+const { LeftView } = await import("@/types");
+const { Direction } = await import("@bibliothecadao/types");
+
+const { ARMY_DEPLOYMENT_SURFACE_ID } = await import("@/ui/features/military/utils/open-army-deployment");
+
+const FRONTIER_PRESET_ID = 5;
+const BLITZ_PRESET_ID = 2;
 
 const ARMY = 7;
 /** The army's tile and the unexplored tile beside it, as the scene's hexes. */
@@ -76,7 +84,7 @@ const worldMap = (frontier: boolean) => {
     actAtHex: (hex: unknown) => sent.push(hex),
     showTileFacts: (hex: unknown) => facts.push(hex),
   }) as {
-    answerTapWithSelectedArmyOrder: (hex: { col: number; row: number }) => boolean;
+    answerTapWithSelectedOrder: (hex: { col: number; row: number }) => boolean;
     updateEntityActionPaths: (actionPaths: Map<string, ActionPath[]>) => void;
   };
   return { scene, sent, pinned, facts };
@@ -127,7 +135,7 @@ it.each([
     screen(true);
     const { scene, sent } = worldMap(frontier);
 
-    expect(scene.answerTapWithSelectedArmyOrder(BESIDE)).toBe(true);
+    expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(true);
 
     const drawn = drawnSurface();
     expect(drawn?.id).toBe("order-preview");
@@ -144,7 +152,7 @@ it("on a Frontier phone, a tap pins the order for the HUD's own verb, naming it 
   screen(false);
   const { scene, sent, pinned, facts } = worldMap(true);
 
-  expect(scene.answerTapWithSelectedArmyOrder(BESIDE)).toBe(true);
+  expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(true);
 
   expect(pinned).toEqual([BESIDE]);
   expect(facts).toEqual([BESIDE]);
@@ -152,7 +160,7 @@ it("on a Frontier phone, a tap pins the order for the HUD's own verb, naming it 
   expect(sent).toEqual([]);
 
   // Owner, 22 October 2026 (mobile direction A): the same tile again sends the pinned order.
-  expect(scene.answerTapWithSelectedArmyOrder(BESIDE)).toBe(true);
+  expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(true);
   expect(sent).toEqual([BESIDE]);
 });
 
@@ -165,8 +173,112 @@ it("on a Frontier phone, a tap on a tile the rules refused says why there, and k
     need: 20,
   });
 
-  expect(scene.answerTapWithSelectedArmyOrder(BESIDE)).toBe(true);
+  expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(true);
   expect([facts, pinned, sent]).toEqual([[BESIDE], [], []]);
+});
+
+describe("a tap on a lit tile beside the realm selected", () => {
+  const REALM = 9;
+  const SOUTH_EAST = { col: 4, row: 4 };
+  /** The realm's open tiles, as structurePaths lights them: one step out of the realm, to deploy there. */
+  const deployTo = (tile: { col: number; row: number }): [string, ActionPath[]] => [
+    ActionPaths.posKey(tile, true),
+    [
+      { hex: ARMY_HEX, actionType: ActionType.Move },
+      { hex: tile, actionType: ActionType.CreateArmy },
+    ],
+  ];
+
+  /** The game's preset, which picks its deploy surface (openArmyDeployment), with the realm selected and its tiles lit. */
+  const playRealm = (presetId: number) => {
+    const { store } = realmBoard();
+    const game = store.require("GameRegistry", { game_id: 1 });
+    store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: presetId } }] as never);
+    useUIStore.setState((state) => ({
+      entityActions: {
+        ...state.entityActions,
+        selectedEntityId: REALM,
+        actionPaths: new Map([deployTo(BESIDE), deployTo(SOUTH_EAST)]),
+      },
+    }));
+  };
+  /** The map with the realm, not an army, selected. */
+  const realmMap = (frontier: boolean) => {
+    const map = worldMap(frontier);
+    Object.assign(map.scene, { worldSpatialProjection: { getArmy: () => undefined, getStructuresAtHex: () => [] } });
+    return map;
+  };
+  /** The deploy picker open over the map: the order it was opened with. */
+  const pickerOrder = () => {
+    const surface = usePopoverStore.getState().surface;
+    return surface?.id === ARMY_DEPLOYMENT_SURFACE_ID ? (surface.content as ReactElement).props : null;
+  };
+
+  afterEach(() => {
+    usePopoverStore.getState().close();
+    useUIStore.getState().setPendingMilitaryAction(null);
+    useUIStore.getState().setLeftNavigationView(LeftView.None);
+  });
+
+  it("on a Frontier phone, orders Frontier's Deploy sheet at that tile, and another lit tile aims it again", () => {
+    playRealm(FRONTIER_PRESET_ID);
+    screen(false);
+    const { scene, sent } = realmMap(true);
+
+    expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(true);
+    expect(useUIStore.getState().leftNavigationView).toBe(LeftView.MilitaryView);
+    expect(useUIStore.getState().pendingMilitaryAction).toEqual({
+      structureId: REALM,
+      isExplorer: true,
+      direction: Direction.EAST,
+    });
+    expect(pickerOrder()).toBeNull();
+
+    expect(scene.answerTapWithSelectedOrder(SOUTH_EAST)).toBe(true);
+    expect(useUIStore.getState().pendingMilitaryAction?.direction).toBe(Direction.SOUTH_EAST);
+    expect(sent).toEqual([]);
+  });
+
+  it("on a Blitz phone, opens Blitz's deploy picker at that tile, and a tap on another lit tile aims it there", () => {
+    playRealm(BLITZ_PRESET_ID);
+    screen(false);
+    const { scene, sent } = realmMap(false);
+    // The tile under the next finger, as the map's hexes name it.
+    Object.assign(scene, {
+      interactiveHexManager: { onClick: () => ({ hexCoords: SOUTH_EAST }) },
+      chunkTransitionToken: 1,
+      actionPathsTransitionToken: 1,
+    });
+
+    expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(true);
+    expect(pickerOrder()).toEqual({ structureId: REALM, isExplorer: true, direction: Direction.EAST });
+    expect(useUIStore.getState().pendingMilitaryAction).toBeNull();
+    expect(useUIStore.getState().leftNavigationView).toBe(LeftView.None);
+
+    // The next tap lands on the map's canvas while the picker is open: the picker takes it (popover.tsx) and aims
+    // there, and the map's own tap stands aside.
+    const canvas = document.getElementById("main-canvas")!;
+    const tap = new PointerEvent("pointerdown", { clientX: 700, clientY: 500 });
+    Object.defineProperty(tap, "target", { value: canvas });
+    const { mapClick } = usePopoverStore.getState().surface!;
+    expect(mapClick !== undefined && mapClick !== "dismiss" && mapClick.reanchor(tap)).toBe(true);
+    (scene as unknown as { onHexagonClick: (hex: unknown) => void }).onHexagonClick(SOUTH_EAST);
+
+    expect(pickerOrder()).toEqual({ structureId: REALM, isExplorer: true, direction: Direction.SOUTH_EAST });
+    expect(useUIStore.getState().entityActions.selectedEntityId).toBe(REALM);
+    expect(sent).toEqual([]);
+  });
+
+  it("on a desktop, leaves the click its own tap and opens nothing (owner: right-click deploys there)", () => {
+    playRealm(FRONTIER_PRESET_ID);
+    screen(true);
+    const { scene, sent } = realmMap(true);
+
+    expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(false);
+    expect(useUIStore.getState().pendingMilitaryAction).toBeNull();
+    expect(useUIStore.getState().leftNavigationView).toBe(LeftView.None);
+    expect([usePopoverStore.getState().surface, sent]).toEqual([null, []]);
+  });
 });
 
 /** The preview's verb button, by its words. */
@@ -194,7 +306,7 @@ describe("an open preview whose order changes before its verb is pressed", () =>
     ],
   ])("closes when %s, and its old verb sends nothing", (_, change) => {
     const { scene, sent } = worldMap(true);
-    scene.answerTapWithSelectedArmyOrder(BESIDE);
+    scene.answerTapWithSelectedOrder(BESIDE);
     const drawn = drawnSurface()!;
 
     change(scene);
@@ -206,7 +318,7 @@ describe("an open preview whose order changes before its verb is pressed", () =>
 
   it("sends nothing when the order's cost changed before the map heard of it", () => {
     const { scene, sent } = worldMap(true);
-    scene.answerTapWithSelectedArmyOrder(BESIDE);
+    scene.answerTapWithSelectedOrder(BESIDE);
     const drawn = drawnSurface()!;
     expect(drawn.host.textContent).toContain("20 stamina");
 
@@ -221,7 +333,7 @@ describe("an open preview whose order changes before its verb is pressed", () =>
 
   it("stays open, and sends its order, when the orders are planned again the same", () => {
     const { scene, sent } = worldMap(true);
-    scene.answerTapWithSelectedArmyOrder(BESIDE);
+    scene.answerTapWithSelectedOrder(BESIDE);
     const drawn = drawnSurface()!;
 
     scene.updateEntityActionPaths(pathsBeside(ActionType.Explore));
