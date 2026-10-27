@@ -622,7 +622,10 @@ fn granary_settles_overflow_under_the_old_limit_before_enlarging_it() {
     };
     super::resource_commands::grant(d, home, crate::resources::WHEAT, 10000000 * crate::rules::RESOURCE_PRECISION);
     let base = resources.resource_balance(wheat);
-    assert!(base > 0);
+    let troops = ResourceSlot { resource_type: 26, ..wheat };
+    super::resource_commands::grant(d, home, 26, 10000000 * crate::rules::RESOURCE_PRECISION);
+    let troop_base = resources.resource_balance(troops);
+    assert!(base > 0 && troop_base > 0);
     assert!(execute(d, build_toward(home, crate::research::FARM, 0), 40));
     assert!(execute(d, research(home, crate::research::ROW_FARM, crate::research::CHOICE_STORE), 100));
     // Enlarging a full store cannot recover any earlier overflow.
@@ -640,7 +643,7 @@ fn granary_settles_overflow_under_the_old_limit_before_enlarging_it() {
     }
     stop_cheat_caller_address(d.games);
     assert_eq!(resources.resource_balance(wheat), base * 7 / 5);
-    assert_eq!(resources.resource_balance(ResourceSlot { resource_type: 26, ..wheat }), base);
+    assert_eq!(resources.resource_balance(troops), troop_base);
 }
 
 #[test]
