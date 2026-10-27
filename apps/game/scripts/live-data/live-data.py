@@ -367,9 +367,16 @@ def newest_pull():
 
 P = 10**9
 SESSION_GAP = 30 * 60
-# Release 2 (#5087 at da9e10a130d: a whole merge keeps the army with more XP plus level prices) reached game 1 in this
-# transaction on 10-23 (evidence/infra/prod-rollout-1/98-release-advance-production.json).
-RELEASE_2_TX = 0x4E661E33D9C99C2C28665A1497DD96F84D721C07415D9270058788A50F1D73A
+# The transactions that moved prod's game 1 to each release (evidence/infra/prod-rollout-1/98- and 133-, and
+# frontier-extend-rollout-1/9-prod-release-advance.json). Release 2 (#5087, da9e10a130d, 10-23): a whole merge keeps the
+# army with more XP plus level prices. Release 3 (#5094, 275fffd31db, 10-26): that swap is gone, the target survives as
+# in release 1 and the player picks the direction. Release 4 (#5097, cf740599f8c, 10-27): the season's end moves to
+# 10-31; the troop rules are release 3's.
+RELEASE_TXS = {
+    2: 0x4E661E33D9C99C2C28665A1497DD96F84D721C07415D9270058788A50F1D73A,
+    3: 0x155B649E81B1DC96AA79DBDCFCFA63BE06912EADD9E987D2D8A308730C8B97,
+    4: 0xA20060CCCFBD7B2C01A829E5B36C143C80F70D9B78EECCF1635089EC39930D,
+}
 # Codes and rules as release 1 (963db0884de) has them: contracts/l3/world-native/src taxonomy.cairo, resources.cairo,
 # buildings.cairo, research.cairo, troops.cairo; config/source/frontier/base.ts and native.ts.
 SITE = {0x7: "camp", 0x9: "rift", 0xA: "ruin", 0xB: "beasts"}
@@ -451,16 +458,17 @@ class World:
                     {"kind": "Battle", "body": value, "owner": value["attacker"]["player"], "at": when, "item": item}
                 )
         self.realm_of = {s["owner"]: num(s["item"]["value"]["entity_id"]) for s in self.of("RealmCreatedStory")}
-        # The block that moved the game to release 2 (stronger-army merge), when the chain scan holds it.
-        self.release_2 = None
+        # The block that moved the game to each later release, for those the chain scan holds.
+        self.release_blocks = {}
         if os.path.exists(os.path.join(folder, "chain.json")):
-            self.release_2 = next(
-                ((t["block"], t["at"]) for t in load(folder, "chain.json")["transactions"] if int(t["hash"], 16) == RELEASE_2_TX),
-                None,
-            )
+            hashes = {tx: release for release, tx in RELEASE_TXS.items()}
+            for t in load(folder, "chain.json")["transactions"]:
+                if int(t["hash"], 16) in hashes:
+                    self.release_blocks[hashes[int(t["hash"], 16)]] = t["block"]
 
     def release(self, story):
-        return 2 if self.release_2 and story["item"]["block_number"] > self.release_2[0] else 1
+        block = story["item"]["block_number"]
+        return max([1] + [release for release, at in self.release_blocks.items() if block > at])
 
     def of(self, *kinds):
         return [s for s in self.stories if s["kind"] in kinds]
@@ -628,8 +636,8 @@ def armies(w):
             source, target = out.get(num(b["source"]["Explorer"])), out.get(num(b["target"]["Explorer"]))
             amount = num(b["amount"]) // P
             if source and target and amount >= source["troops"]:
-                # A whole merge. The story keeps the clicked direction; from release 2 the contract keeps the army with
-                # more unspent XP plus level prices (troops.cairo source_wins_merge). The survivor is the one named
+                # A whole merge. The story keeps the clicked direction; in release 2 only, the contract keeps the army
+                # with more unspent XP plus level prices (troops.cairo source_wins_merge). The survivor is the one named
                 # again later or alive now; the rule decides only when neither or both are.
                 value = lambda a: a["xp"] + a["spent"]  # noqa: E731
                 release = w.release(s)
@@ -699,7 +707,7 @@ def section_progression(w):
     print(f"XP destroyed by whole merges: {sum(lost_xp)} ({spread(lost_xp)}).\n")
     print("Whole merges by release (value = unspent XP + the prices of levels bought; release 2 keeps the higher):\n")
     rows = []
-    for release in (1, 2):
+    for release in sorted({m["release"] for m in merges}):
         ms = [m for m in merges if m["release"] == release]
         if not ms:
             continue
