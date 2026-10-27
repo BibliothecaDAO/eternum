@@ -118,7 +118,7 @@ const REFUSALS: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
   "no-attack": "This game allows no attack here",
   "no-transfer": "This game allows no transfer here",
   occupied: "No army can enter this tile",
-  "too-far": "Too far: move next to it",
+  "too-far": "Too far: move closer",
 };
 
 /** The wheat and fish an order burns from its army's realm. */

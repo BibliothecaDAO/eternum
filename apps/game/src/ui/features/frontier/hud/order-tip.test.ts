@@ -88,7 +88,7 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(line(undefined, { refusal: { reason: "off-limits" } })).toBe("Only unclaimed structures can be attacked");
     expect(line(undefined, { refusal: { reason: "no-transfer" } })).toBe("This game allows no transfer here");
     expect(line(undefined, { refusal: { reason: "occupied" } })).toBe("No army can enter this tile");
-    expect(line(undefined, { refusal: { reason: "too-far" } })).toBe("Too far: move next to it");
+    expect(line(undefined, { refusal: { reason: "too-far" } })).toBe("Too far: move closer");
   });
 
   it("claims no distance the planner did not: fog it said nothing of is unexplored, a revealed tile is silent", () => {

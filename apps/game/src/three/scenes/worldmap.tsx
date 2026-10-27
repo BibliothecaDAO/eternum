@@ -609,6 +609,8 @@ const actorOnHex = (entity: { army?: { id: ID }; structure?: { id: ID } }) => {
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
+/** A tile the selected army's routes never reached: out of reach, as the planner says of a target beyond its step. */
+const BEYOND_REACH: OrderRefusal = { reason: "too-far" };
 /** What a refused order says when its error names no reason. */
 const ORDER_NOT_SENT = "The order was not sent.";
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
@@ -2453,9 +2455,11 @@ export default class WorldmapScene extends WarpTravel {
     return this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined ? selectedEntityId : null;
   }
 
-  private nameOrderAt(hexCoords: HexPosition): OrderTip | null {
+  private nameOrderAt(
+    hexCoords: HexPosition,
+    refusal = this.orderRefusals.get(ActionPaths.posKey(hexCoords, true)),
+  ): OrderTip | null {
     const key = ActionPaths.posKey(hexCoords, true);
-    const refusal = this.orderRefusals.get(key);
     const path = getLiveWorldmapEntityActions().actionPaths.get(key);
     const armyTroops = this.selectedArmyRow()?.troops;
     const site = path && ActionPaths.getActionType(path) === ActionType.UseSite ? this.usableSiteAt(hexCoords) : null;
@@ -2864,9 +2868,21 @@ export default class WorldmapScene extends WarpTravel {
    * None where they said nothing, or where the tile holds the player's own army or holding, whose click selects it.
    */
   private refusalAt(hexCoords: HexPosition): "attack" | "order" | undefined {
-    const refusal = this.orderRefusals.get(ActionPaths.posKey(hexCoords, true));
+    const refusal = this.refusalOf(hexCoords);
     if (!refusal || this.holdsOwnSelectable(hexCoords)) return undefined;
     return refusal.reason === "stamina" && actorOnHex(this.getHexagonEntity(hexCoords)) ? "attack" : "order";
+  }
+
+  /**
+   * Why the selected army has no order at this tile: the planner's reason, or, on a tile its routes never reached, that
+   * the tile is beyond its reach. None where it has an order, or where no army is selected.
+   */
+  private refusalOf(hexCoords: HexPosition): OrderRefusal | undefined {
+    const key = ActionPaths.posKey(hexCoords, true);
+    const planned = this.orderRefusals.get(key);
+    if (planned) return planned;
+    if (this.selectedArmyId() === null || getLiveWorldmapEntityActions().actionPaths.has(key)) return undefined;
+    return BEYOND_REACH;
   }
 
   /** The attack the rules refused for stamina, as they would have drawn it: from the army's tile to the target's. */
@@ -2900,8 +2916,8 @@ export default class WorldmapScene extends WarpTravel {
   /** A desktop click on a tile whose order the army can't take now: that order's preview, with why, its verb disabled. */
   private openRefusedOrderPreview(hexCoords: HexPosition): void {
     const army = this.selectedArmyId();
-    const refusal = this.orderRefusals.get(ActionPaths.posKey(hexCoords, true));
-    const reason = this.nameOrderAt(hexCoords)?.line;
+    const refusal = this.refusalOf(hexCoords);
+    const reason = this.nameOrderAt(hexCoords, refusal)?.line;
     if (army === null || !refusal || !reason) return;
     const { army: armyThere, structure, chest } = this.getHexagonEntity(hexCoords);
     const verb = refusedOrderVerb({
@@ -2927,7 +2943,7 @@ export default class WorldmapScene extends WarpTravel {
    */
   private holdsPreviewedOrder(shown: PreviewedOrder): boolean {
     if (this.selectedArmyId() !== shown.army) return false;
-    if (shown.refused) return this.orderRefusals.get(ActionPaths.posKey(shown.hex, true))?.reason === shown.refused;
+    if (shown.refused) return this.refusalOf(shown.hex)?.reason === shown.refused;
     const now = this.nameOrderAt(shown.hex);
     return now?.line === shown.tip.line && now.cost === shown.tip.cost;
   }

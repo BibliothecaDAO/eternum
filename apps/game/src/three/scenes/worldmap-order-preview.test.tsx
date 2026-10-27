@@ -523,13 +523,75 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
     expect([sent, cleared, dropped]).toEqual([[], [], []]);
   });
 
-  it("a click on a tile far from the army keeps it selected and opens that tile for it", () => {
+  /** The preview open over the map: its verb, whether it can be pressed, and the reason it shows. */
+  const shownPreview = () => {
+    const drawn = drawnSurface();
+    if (drawn?.id !== "order-preview") return null;
+    const verb = drawn.host.querySelector("button:not([aria-label])") as HTMLButtonElement;
+    return {
+      verb: verb.textContent,
+      disabled: verb.disabled,
+      reason: drawn.host.querySelector("[role=alert]")?.textContent,
+    };
+  };
+
+  describe.each([
+    ["Frontier", true],
+    ["Blitz", false],
+  ])("in %s, a tile far beyond the army's routes, which the rules said nothing of", (_, frontier) => {
+    it("a right-click on revealed land opens Move there, disabled, too far", () => {
+      screen(true);
+      const { scene, sent, selections, cleared } = lowStaminaMap(frontier);
+      (scene as unknown as { exploredTiles: Map<number, Set<number>> }).exploredTiles.set(FAR.col, new Set([FAR.row]));
+
+      scene.onHexagonRightClick(rightClick(), FAR);
+
+      expect(shownPreview()).toEqual({ verb: "Move", disabled: true, reason: "Too far: move closer" });
+      expect([sent, selections, cleared, useUIStore.getState().entityActions.selectedEntityId]).toEqual([
+        [],
+        [],
+        [],
+        ARMY,
+      ]);
+    });
+
+    it("a right-click in the fog opens Explore there, disabled, too far", () => {
+      screen(true);
+      const { scene, sent, cleared } = lowStaminaMap(frontier);
+
+      scene.onHexagonRightClick(rightClick(), FAR);
+
+      expect(shownPreview()).toEqual({ verb: "Explore", disabled: true, reason: "Too far: move closer" });
+      expect([sent, cleared]).toEqual([[], []]);
+    });
+
+    it("a left-click there opens the same, keeping the army", () => {
+      screen(true);
+      const { scene, sent, selections, cleared } = lowStaminaMap(frontier);
+
+      scene.onHexagonClick(FAR);
+
+      expect(shownPreview()).toEqual({ verb: "Explore", disabled: true, reason: "Too far: move closer" });
+      expect([sent, selections, cleared]).toEqual([[], [], []]);
+    });
+  });
+
+  it("a click on a tile whose order the click leaves to the map keeps the army and opens that tile for it", () => {
     screen(true);
     const { scene, selections, cleared } = lowStaminaMap(true);
+    // Travel through another spire: an order the right-click gives, which a click leaves to the map.
+    const spire = { col: 3, row: 5 };
+    const travel = [
+      { hex: ARMY_HEX, actionType: ActionType.Move },
+      { hex: spire, actionType: ActionType.SpireTravel },
+    ];
+    useUIStore.setState((state) => ({
+      entityActions: { ...state.entityActions, actionPaths: new Map([[ActionPaths.posKey(spire, true), travel]]) },
+    }));
 
-    scene.onHexagonClick(FAR);
+    scene.onHexagonClick(spire);
 
-    expect(selections).toEqual([{ kind: "army", entityId: ARMY, tile: contract(FAR) }]);
+    expect(selections).toEqual([{ kind: "army", entityId: ARMY, tile: contract(spire) }]);
     expect(cleared).toEqual([]);
   });
 
