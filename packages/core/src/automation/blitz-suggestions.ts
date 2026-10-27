@@ -35,10 +35,13 @@ export type BlitzTroop = {
   tiers: Record<TroopTier, BlitzTroopTier>;
 };
 
+/** A living field army: its troop and tier. */
+export type BlitzArmy = { type: TroopType; tier: TroopTier };
+
 /** The realm's field armies, as the order's army steps read them. */
 export type BlitzArmyState = {
-  /** Its living field armies. */
-  armies: number;
+  /** Its living field armies: all of them fill its slots, and an army step counts those of its own troop and tier. */
+  armies: readonly BlitzArmy[];
   /** Its field army slots. */
   maxArmies: number;
   /** Whole troops of a kind on hand. */
@@ -148,18 +151,24 @@ const resolveBarracksStep = (input: BlitzRealmSuggestionInput, tier: TroopTier, 
 
 /**
  * An army step: the biome troop's barracks at the tier, then the army deployed once a full one of that tier is on hand.
- * The barracks' troops are the production automation's to train, so until a full army stands the step passes and the
- * order goes on building; a step the realm cannot field (no free slot) passes too.
+ * It is met by armies of that troop and tier only; every army fills a slot. The barracks' troops are the production
+ * automation's to train, so until a full army stands the step passes and the order goes on building; a step the realm
+ * cannot field (no free slot) passes too.
  */
 const resolveArmyStep = (input: BlitzRealmSuggestionInput, tier: TroopTier, count: number): StepVerdict => {
   const { army, troop } = input;
-  if (!troop || army.armies >= count || army.armies >= army.maxArmies) return "passes";
+  if (!troop || army.armies.length >= army.maxArmies) return "passes";
+  if (fieldedArmies(army, troop.type, tier) >= count) return "passes";
   const { building, resource } = troop.tiers[tier];
   const full = army.fullArmy(tier);
   const onHand = army.troopsOnHand(resource);
   if (full > 0 && onHand >= full) return createDeploySuggestion(input, troop, tier, onHand, full);
   return input.built(building) === 0 ? resolveBuildingStep(input, building, 1) : "passes";
 };
+
+/** How many of the realm's living armies are of a troop at a tier. */
+const fieldedArmies = (army: BlitzArmyState, type: TroopType, tier: TroopTier): number =>
+  army.armies.filter((fielded) => fielded.type === type && fielded.tier === tier).length;
 
 /** The army deployed: a full army of the realm's own troop at the tier, for the deployment to open on. */
 const createDeploySuggestion = (

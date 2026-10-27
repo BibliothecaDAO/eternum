@@ -107,8 +107,8 @@ const resolveBiomeTroop = (
 };
 
 /**
- * The realm's field armies, as Military counts them: living armies against its slots, whole troops on hand at chain
- * time and a full army at its level.
+ * The realm's field armies, as Military counts them: each living army's troop and tier against its slots, whole troops
+ * on hand at chain time and a full army at its level.
  */
 const readBlitzArmyState = (
   store: NativeFactStore,
@@ -118,7 +118,10 @@ const readBlitzArmyState = (
   const realmId = Number(structure.entity_id);
   const level = Number(structure.base.level);
   return {
-    armies: liveHomeArmies(store, realmId, structure.game_id).length,
+    armies: liveHomeArmies(store, realmId, structure.game_id).map(({ troops }) => ({
+      type: troops.category,
+      tier: troops.tier,
+    })),
     maxArmies: Number(structure.base.troop_max_explorer_count),
     troopsOnHand: (resource) => {
       const held = getBalance(realmId, resource, tick, store).balance;

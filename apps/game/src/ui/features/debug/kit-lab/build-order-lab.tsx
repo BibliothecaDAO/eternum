@@ -55,7 +55,7 @@ const CITY_BUILT: Built = {
 };
 const counted = (built: Built) => (building: BuildingType) => built[building] ?? 0;
 const army = (knights: number): BlitzArmyState => ({
-  armies: 0,
+  armies: [],
   maxArmies: 3,
   troopsOnHand: (resource) => (resource === ResourcesIds.Knight ? knights : 0),
   fullArmy: () => 3_000,

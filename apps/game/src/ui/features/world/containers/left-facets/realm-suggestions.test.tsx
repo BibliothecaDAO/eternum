@@ -20,7 +20,7 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { disposeGameSyncSession } from "@/sync/active-game-client";
 import { useArmyCreation } from "@/ui/features/military/components/unified-army-creation-modal/use-army-creation";
-import { getRealmInfo, setBuildingCount } from "@bibliothecadao/eternum";
+import { configManager, getRealmInfo, setBuildingCount } from "@bibliothecadao/eternum";
 import { DEFAULT_BUILD_ORDER, readBlitzRealmSuggestions, readBuildOrder } from "@bibliothecadao/eternum/automation";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
@@ -92,24 +92,30 @@ const housePopulation = (store: NativeFactStore, current: number) => {
   ] as never);
 };
 
+/** The default order's City buildings, up to the Paladin barracks: grassland favours the Paladin. */
+const CITY_BUILT: [BuildingType, number][] = [
+  [BuildingType.ResourceWheat, 4],
+  [BuildingType.ResourceWood, 2],
+  [BuildingType.ResourceCoal, 2],
+  [BuildingType.ResourceCopper, 2],
+  [BuildingType.ResourcePaladinT1, 1],
+];
+
 /**
- * The realm a City on grassland with the default order's City buildings up to its Paladin barracks, and `paladins` on
- * hand; written again, each row keeps its key.
+ * The realm on grassland at `level` with `built` standing and three army slots; written again, each row keeps its
+ * key.
  */
-const cityWithBarracks = (store: NativeFactStore, paladins: number) => {
-  const built: [BuildingType, number][] = [
-    [BuildingType.ResourceWheat, 4],
-    [BuildingType.ResourceWood, 2],
-    [BuildingType.ResourceCoal, 2],
-    [BuildingType.ResourceCopper, 2],
-    [BuildingType.ResourcePaladinT1, 1],
-  ];
+const furnish = (store: NativeFactStore, level: number, built: [BuildingType, number][]) => {
   const counts = built.reduce((packed, [type, count]) => setBuildingCount(type, packed, count), [0n, 0n, 0n]);
   const realm = store.require("Structure", { game_id: 1, entity_id: BLITZ_REALM_ID });
   const buildings = store.require("StructureBuildings", { game_id: 1, entity_id: BLITZ_REALM_ID });
   const position = getRealmInfo(BLITZ_REALM_ID, store, () => null)!.position;
   store.applyFacts([
-    { model: "Structure", key: "0x7", value: { ...wire(realm), base: { ...wire(realm.base), level: 1 } } },
+    {
+      model: "Structure",
+      key: "0x7",
+      value: { ...wire(realm), base: { ...wire(realm.base), level, troop_max_explorer_count: 3 } },
+    },
     {
       model: "StructureBuildings",
       key: "0xb7",
@@ -126,7 +132,62 @@ const cityWithBarracks = (store: NativeFactStore, paladins: number) => {
       value: { game_id: 1, alt: false, col: position.x, row: position.y, data: GRASSLAND.toString() },
     },
   ] as never);
+};
+
+/** The realm a City with its City buildings, and `paladins` on hand. */
+const cityWithBarracks = (store: NativeFactStore, paladins: number) => {
+  furnish(store, 1, CITY_BUILT);
   holdTroops(store, ResourcesIds.Paladin, paladins);
+};
+
+/**
+ * A living field army of the realm's, of a troop and tier, a thousand strong, as the chain writes its row: on the tile
+ * beside the realm, so on the current expedition.
+ */
+const fieldArmy = (store: NativeFactStore, id: number, category: TroopType, tier: TroopTier) => {
+  const position = getRealmInfo(BLITZ_REALM_ID, store, () => null)!.position;
+  const noBoosts = {
+    incr_damage_dealt_percent_num: 0,
+    incr_damage_dealt_end_at: 0,
+    decr_damage_gotten_percent_num: 0,
+    decr_damage_gotten_end_at: 0,
+    incr_stamina_regen_percent_num: 0,
+    incr_stamina_regen_seconds_left: 0,
+    incr_explore_reward_percent_num: 0,
+    incr_explore_reward_end_at: 0,
+  };
+  store.applyFacts([
+    {
+      model: "ExplorerTroops",
+      key: `0xa${id}`,
+      value: {
+        game_id: 1,
+        explorer_id: String(id),
+        owner: String(BLITZ_REALM_ID),
+        troops: {
+          category,
+          tier,
+          count: String(1_000n * BigInt(RESOURCE_PRECISION)),
+          stamina: { Inline: { amount: "30", settled_at: 0, remainder: 0 } },
+          boosts: noBoosts,
+          battle_cooldown_end: 0,
+        },
+      },
+    },
+    {
+      model: "TileOccupancy",
+      key: `0xc${id}`,
+      value: {
+        game_id: 1,
+        alt: false,
+        col: Number(position.x) + (id % 10),
+        row: Number(position.y),
+        entity_id: String(id),
+        category: 15,
+        is_structure: false,
+      },
+    },
+  ] as never);
 };
 
 describe("a Blitz realm's next step, read from the game's facts", () => {
@@ -162,6 +223,43 @@ describe("a Blitz realm's next step, read from the game's facts", () => {
     expect(
       readSteps(store, read.ok).map(({ action, reason, buildingTypeHint }) => [action, reason, buildingTypeHint]),
     ).toEqual([["build", "Ironwood: 0 of 1 built.", BuildingType.ResourceIronwood]]);
+  });
+
+  it("deploys the first T2 army beside a standing T1 army, counting only that troop's T2 armies, until slots run out", () => {
+    const store = blitzRealm();
+    furnish(store, 2, [...CITY_BUILT, [BuildingType.ResourcePaladinT2, 1]]);
+    holdTroops(store, ResourcesIds.PaladinT2, 100_000);
+    const read = readBuildOrder({ name: "T2 army", steps: [{ rank: "Kingdom", goal: "armyT2", count: 1 }] });
+    if ("error" in read) throw new Error(read.error);
+    const steps = () => readSteps(store, read.ok).map(({ action, troops }) => ({ action, troops }));
+    const deployT2 = {
+      action: "deploy-army",
+      troops: {
+        type: TroopType.Paladin,
+        tier: TroopTier.T2,
+        count: configManager.getMaxArmySize(2, TroopTier.T2),
+      },
+    };
+    fieldArmy(store, 801, TroopType.Paladin, TroopTier.T1);
+    expect(steps()).toEqual([deployT2]);
+    // Another troop's T2 army is not the Paladin's.
+    fieldArmy(store, 802, TroopType.Knight, TroopTier.T2);
+    expect(steps()).toEqual([deployT2]);
+    // The Paladin's own T2 army meets the step.
+    fieldArmy(store, 803, TroopType.Paladin, TroopTier.T2);
+    expect(steps()).toEqual([]);
+  });
+
+  it("passes an army step when every slot holds an army, whatever their troops", () => {
+    const store = blitzRealm();
+    furnish(store, 2, [...CITY_BUILT, [BuildingType.ResourcePaladinT2, 1]]);
+    holdTroops(store, ResourcesIds.PaladinT2, 100_000);
+    const read = readBuildOrder({ name: "T2 army", steps: [{ rank: "Kingdom", goal: "armyT2", count: 1 }] });
+    if ("error" in read) throw new Error(read.error);
+    fieldArmy(store, 801, TroopType.Paladin, TroopTier.T1);
+    fieldArmy(store, 802, TroopType.Knight, TroopTier.T2);
+    fieldArmy(store, 803, TroopType.Crossbowman, TroopTier.T3);
+    expect(readSteps(store, read.ok)).toEqual([]);
   });
 
   it("opens the deployment on the troop it names, a full army of it, though the realm holds another troop too", async () => {

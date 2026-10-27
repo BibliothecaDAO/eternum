@@ -7,6 +7,7 @@ import {
   buildBlitzRealmSuggestions,
   buildOrderTarget,
   readBuildOrder,
+  type BlitzArmy,
   type BlitzArmyState,
   type BlitzBuildability,
   type BlitzRealmSuggestionInput,
@@ -36,10 +37,16 @@ const KNIGHTS: BlitzTroop = {
   },
 };
 
+const KNIGHT_T1: BlitzArmy = { type: TroopType.Knight, tier: TroopTier.T1 };
+const KNIGHT_T2: BlitzArmy = { type: TroopType.Knight, tier: TroopTier.T2 };
+const PALADIN_T2: BlitzArmy = { type: TroopType.Paladin, tier: TroopTier.T2 };
+
 /** A realm's armies: none yet, three slots, the troops on hand given, a full army of 3,000 at T1 and 1,000 above. */
-const army = (state: { armies?: number; maxArmies?: number; onHand?: Partial<Record<ResourcesIds, number>> } = {}) =>
+const army = (
+  state: { armies?: BlitzArmy[]; maxArmies?: number; onHand?: Partial<Record<ResourcesIds, number>> } = {},
+) =>
   ({
-    armies: state.armies ?? 0,
+    armies: state.armies ?? [],
     maxArmies: state.maxArmies ?? 3,
     troopsOnHand: (resource) => state.onHand?.[resource] ?? 0,
     fullArmy: (tier) => (tier === TroopTier.T1 ? 3_000 : 1_000),
@@ -228,6 +235,34 @@ describe("a player's order of T2 and T3 steps", () => {
   });
 });
 
+describe("an army step of a tier, beside the realm's other armies", () => {
+  const armyT2 = order(["Kingdom", "armyT2", 1]);
+  const kingdom = (armies: BlitzArmy[], maxArmies = 3) =>
+    baseInput({
+      realmLevel: 2,
+      built: counts({ [BuildingType.ResourceKnightT1]: 1, [BuildingType.ResourceKnightT2]: 1 }),
+      troop: KNIGHTS,
+      army: army({ armies, maxArmies, onHand: { [ResourcesIds.KnightT2]: 1_000 } }),
+    });
+  const deploysT2 = expect.objectContaining({
+    action: "deploy-army",
+    troops: { type: TroopType.Knight, tier: TroopTier.T2, count: 1_000 },
+  });
+
+  it("deploys its first T2 army though a T1 army already stands, and is met only once a T2 army of the troop stands", () => {
+    expect(buildBlitzRealmSuggestions(kingdom([KNIGHT_T1]), armyT2)).toEqual([deploysT2]);
+    expect(buildBlitzRealmSuggestions(kingdom([KNIGHT_T1, KNIGHT_T2]), armyT2)).toEqual([]);
+  });
+
+  it("is not met by another troop's army of the tier", () => {
+    expect(buildBlitzRealmSuggestions(kingdom([PALADIN_T2]), armyT2)).toEqual([deploysT2]);
+  });
+
+  it("passes when every slot holds an army, whatever their troops", () => {
+    expect(buildBlitzRealmSuggestions(kingdom([KNIGHT_T1, PALADIN_T2], 2), armyT2)).toEqual([]);
+  });
+});
+
 describe("a realm's first army on the default build order", () => {
   const city = (onHand: number, overrides: Partial<BlitzRealmSuggestionInput> = {}) =>
     baseInput({
@@ -248,7 +283,7 @@ describe("a realm's first army on the default build order", () => {
   });
 
   it("has no army step once the army stands, or where no slot is free", () => {
-    const standing = army({ armies: 1, onHand: { [ResourcesIds.Knight]: 3_000 } });
+    const standing = army({ armies: [KNIGHT_T1], onHand: { [ResourcesIds.Knight]: 3_000 } });
     expect(nextStep(city(3_000, { army: standing }))).toEqual([]);
     const noSlot = army({ maxArmies: 0, onHand: { [ResourcesIds.Knight]: 3_000 } });
     expect(nextStep(city(3_000, { army: noSlot }))).toEqual([]);
