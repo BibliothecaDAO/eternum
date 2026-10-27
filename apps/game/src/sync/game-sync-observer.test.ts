@@ -2,7 +2,7 @@
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { clearClientActionLatency, snapshotClientActionLatency } from "@/observability/client-action-latency";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createGameSyncObserver as createObserver } from "./game-sync-observer";
 
@@ -59,6 +59,35 @@ describe("createGameSyncObserver", () => {
       expect(useConnectionStore.getState().lastConfirmedBlock).toBe(13);
       expect(useChainTimeStore.getState().lastHeartbeat?.timestamp).toBe(103_000);
     });
+  });
+
+  it("counts each loss of the stream until Herald greets it again, and times heads apart from data", () => {
+    const connection = useConnectionStore.getState();
+    vi.useFakeTimers({ now: 1_000_000 });
+    withStoreSnapshot(() => {
+      const observer = createGameSyncObserver();
+      observer.onConnection?.(true);
+      observer.onHead?.({ block: 20, preconfirmed: false, timestamp: 5 });
+      expect(useConnectionStore.getState()).toMatchObject({ lastHeadAt: 1_000_000, reconnects: 0, failedAttempts: 0 });
+
+      // A deploy recreates Herald: the stream is lost, then two attempts are refused.
+      observer.onConnection?.(false);
+      observer.onConnection?.(false);
+      observer.onConnection?.(false);
+      expect(useConnectionStore.getState()).toMatchObject({ status: "degraded", failedAttempts: 3, reconnects: 0 });
+
+      vi.advanceTimersByTime(4_000);
+      observer.onConnection?.(true);
+      observer.onHead?.({ block: 21, preconfirmed: false, timestamp: 9 });
+      expect(useConnectionStore.getState()).toMatchObject({
+        status: "connected",
+        failedAttempts: 0,
+        reconnects: 1,
+        lastHeadAt: 1_004_000,
+      });
+    });
+    vi.useRealTimers();
+    useConnectionStore.setState(connection);
   });
 
   it("writes snapshot phases to the game entry timeline as milestones and durations", () => {

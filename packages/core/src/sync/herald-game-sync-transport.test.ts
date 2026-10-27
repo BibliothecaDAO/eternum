@@ -84,7 +84,6 @@ const streamHarness = (options: Partial<HeraldGameSyncTransportOptions> = {}) =>
     gameId: 1,
     modelDefinition: nativeModelDefinition(bindings as unknown as NativeWorldBindings),
     onConnection: (reachable) => reachability.push(reachable),
-    reconnectMs: 200,
     socketFactory: (url) => {
       urls.push(url);
       const socket = new FakeSocket();
@@ -729,10 +728,43 @@ describe("HeraldGameSyncTransport", () => {
     socket.close();
     await vi.advanceTimersByTimeAsync(200);
     harness.sockets[1]!.close();
-    await vi.advanceTimersByTimeAsync(200);
+    await vi.advanceTimersByTimeAsync(400);
     expect(harness.reachability).toEqual([true, false, false]);
     harness.sockets[2]!.receive(hello("current", 0));
     expect(harness.reachability).toEqual([true, false, false, true]);
+    writer.cancel();
+  });
+
+  it("backs off while Herald stays away, as through a deploy's restart, and retries at once after its hello", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, "random").mockReturnValue(1);
+    const harness = streamHarness();
+    const { socket, writer } = await attached(harness, "epoch-a");
+    snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
+    socket.close();
+
+    // Herald is away for a minute: every attempt is refused as soon as it opens.
+    const attemptsAt: number[] = [];
+    for (let elapsed = 100; elapsed <= 60_000; elapsed += 100) {
+      await vi.advanceTimersByTimeAsync(100);
+      const latest = harness.sockets.at(-1)!;
+      if (latest.closed) continue;
+      attemptsAt.push(elapsed);
+      latest.onerror!();
+    }
+    const waits = attemptsAt.map((at, index) => at - (attemptsAt[index - 1] ?? 0));
+    expect(waits).toEqual([
+      200, 400, 800, 1_600, 3_200, 5_000, 5_000, 5_000, 5_000, 5_000, 5_000, 5_000, 5_000, 5_000, 5_000,
+    ]);
+
+    // Herald is back: the next attempt is greeted, and a later loss is retried at once again.
+    await vi.advanceTimersByTimeAsync(5_000);
+    const back = harness.sockets.at(-1)!;
+    back.receive(hello("epoch-b", 0));
+    expect(harness.reachability.at(-1)).toBe(true);
+    back.close();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(harness.sockets.at(-1)).not.toBe(back);
     writer.cancel();
   });
 

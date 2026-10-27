@@ -64,7 +64,7 @@ const createHeraldHeadRecorder = () => {
 const recordGamewideSubscriptionActive = (): void => {
   const connection = useConnectionStore.getState();
   connection.recordGlobalHandshake();
-  connection.recordSpatialHandshake();
+  connection.recordSpatialUpdate();
 };
 
 // The connection store is a React store: every write re-renders its readers, so liveness is
