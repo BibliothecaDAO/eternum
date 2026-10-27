@@ -1,10 +1,12 @@
 import {
   BuildingType,
-  BuildingTypeToString,
+  buildingName,
   getBuildingFromResource,
   getResourceTiers,
   REALM_LEVELS,
   type ResourcesIds,
+  StructureType,
+  structureName,
   TroopTier,
 } from "@bibliothecadao/types";
 
@@ -106,7 +108,7 @@ export interface BuildOrderGoalGroup {
 
 /** A troop's name, as its T1 building is named without its tier: "Knight". */
 const troopName = (resource: ResourcesIds): string =>
-  BuildingTypeToString[getBuildingFromResource(resource)].replace(/ T\d$/, "");
+  buildingName(getBuildingFromResource(resource), false).replace(/ T\d$/, "");
 
 /**
  * The goals as the maker offers them, each once: the realm's own, Blitz's materials in their tiers (three to a tier),
@@ -114,7 +116,7 @@ const troopName = (resource: ResourcesIds): string =>
  */
 export const BUILD_ORDER_GOAL_GROUPS: readonly BuildOrderGoalGroup[] = [
   {
-    label: "Realm",
+    label: structureName(StructureType.Realm),
     goals: ["levelUp", ...[...BLITZ_RESOURCES.food, ...BLITZ_RESOURCES.transport].map(producerGoal), "hut"],
   },
   { label: "Resources", goals: BLITZ_RESOURCES.materials.map(producerGoal) },
@@ -140,7 +142,7 @@ export const buildOrderTarget = (goal: BuildOrderGoal): BuildOrderTarget => {
 /** A goal as players read it: the building's own name, "Barracks T2", "Army", "Level up". */
 export const buildOrderGoalName = (goal: BuildOrderGoal): string => {
   const target = buildOrderTarget(goal);
-  if (target.kind === "building") return BuildingTypeToString[target.building];
+  if (target.kind === "building") return buildingName(target.building, false);
   if (target.kind === "levelUp") return "Level up";
   const name = target.kind === "army" ? "Army" : "Barracks";
   return target.tier === TroopTier.T1 ? name : `${name} ${target.tier}`;

@@ -1,6 +1,6 @@
 import {
   BuildingType,
-  BuildingTypeToString,
+  buildingName,
   formatExact,
   formatPopulationInWords,
   type ID,
@@ -110,7 +110,7 @@ const resolveBuildSuggestion = (
   if (!input.hasAvailableBuildingTile || !input.buildability(building).canBuild) return null;
   const priority = building === BuildingType.WorkersHut ? PRIORITY.hut : PRIORITY.build;
   return {
-    ...createBaseSuggestion(input, "build", `Build ${BuildingTypeToString[building]}`, priority, reason),
+    ...createBaseSuggestion(input, "build", `Build ${buildingName(building, false)}`, priority, reason),
     buildingTypeHint: building,
     resourceHint: blitzBuildingResource(building),
   };
@@ -134,7 +134,7 @@ type StepVerdict = "passes" | "holds" | BlitzSuggestionDraft;
 const resolveBuildingStep = (input: BlitzRealmSuggestionInput, building: BuildingType, count: number): StepVerdict => {
   const built = input.built(building);
   if (built >= count) return "passes";
-  const progress = `${BuildingTypeToString[building]}: ${built} of ${count} built.`;
+  const progress = `${buildingName(building, false)}: ${built} of ${count} built.`;
   const take = input.buildability(building).needsRoom
     ? resolveBuildSuggestion(
         input,
@@ -185,7 +185,7 @@ const createDeploySuggestion = (
       "deploy-army",
       "Deploy an army",
       PRIORITY.deploy,
-      `${BuildingTypeToString[building]}: ${formatExact(onHand)} on hand, a full army of ${formatExact(full)}.`,
+      `${buildingName(building, false)}: ${formatExact(onHand)} on hand, a full army of ${formatExact(full)}.`,
     ),
     buildingTypeHint: building,
     resourceHint: resource,
