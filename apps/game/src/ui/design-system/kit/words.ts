@@ -192,17 +192,6 @@ export const BUILD_ORDER_WORDS = {
   /** Another device saved first: the account's orders were read again, and this draft is kept. */
   savedElsewhere: "Reloaded changed orders. Save this draft again.",
   full: (limit: number) => `Limit: ${limit} orders. Delete one first.`,
-  /** Each goal as its card and palette name it. */
-  goals: {
-    farm: "Farm",
-    wood: "Wood camp",
-    coal: "Coal mine",
-    copper: "Copper mine",
-    hut: "Worker hut",
-    barracks: "Barracks",
-    army: "Deploy army",
-    levelUp: "Level up",
-  },
 } as const;
 export const EVENTS_WORDS = {
   /** What Events and its Log say while the player's filter holds no story. */

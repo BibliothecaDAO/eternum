@@ -102,12 +102,7 @@ export const OrderChoice = ({
 
 /** Each order step's verb: a build builds, an army opens its deployment. */
 export const STEP_VERBS: Record<Exclude<EmpireSuggestion["action"], "upgrade">, string> = {
-  "build-copper": BUILD_ORDER_WORDS.build,
-  "build-coal": BUILD_ORDER_WORDS.build,
-  "build-military": BUILD_ORDER_WORDS.build,
-  "build-wheat": BUILD_ORDER_WORDS.build,
-  "build-wood": BUILD_ORDER_WORDS.build,
-  "build-worker-hut": BUILD_ORDER_WORDS.build,
+  build: BUILD_ORDER_WORDS.build,
   "deploy-army": BUILD_ORDER_WORDS.deploy,
 };
 

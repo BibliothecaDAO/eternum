@@ -58,9 +58,9 @@ const WOOD = {
   id: "1-build-wood",
   realmId: 1,
   realmName: "Egonal",
-  action: "build-wood",
+  action: "build",
   label: "Build wood camp",
-  reason: "Wood camps: 1 of 2 built.",
+  reason: "Wood: 1 of 2 built.",
   icon: "wood",
 };
 const LEVEL_UP = {
@@ -112,7 +112,7 @@ it("shows each realm's next step under the default order, the level a level-up r
   expect(host.querySelector("section")?.getAttribute("aria-label")).toBe("Build order");
   expect(host.querySelector(".ui-select")?.textContent).toBe("The game's order");
   expect(rows()).toEqual([
-    ["Egonal", "Wood camps: 1 of 2 built.", "Build"],
+    ["Egonal", "Wood: 1 of 2 built.", "Build"],
     ["Stolsli", "It can level up to Kingdom now.", "Level up"],
   ]);
   const [build, levelUp] = [...host.querySelectorAll<HTMLButtonElement>(".ui-row button")];

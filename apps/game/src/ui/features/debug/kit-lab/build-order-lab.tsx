@@ -6,11 +6,12 @@ import { NextUpView } from "@/ui/features/world/hud/next-up";
 import {
   type BlitzArmyState,
   type BlitzRealmSuggestionInput,
+  type BlitzTroop,
   type BuildOrderBook,
   buildBlitzRealmSuggestions,
   readBuildOrderText,
 } from "@bibliothecadao/eternum/automation";
-import { BuildingType, ResourcesIds, TroopType } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 /**
@@ -34,22 +35,31 @@ const NEWCOMER_STEPS: NextStep[] = [
 ];
 
 /** A realm whose every build can be paid and has room, as the construction rule would judge it. */
-const BUILDABLE: BlitzRealmSuggestionInput["buildability"] = {
-  copper: { canBuild: true, needsRoom: false },
-  coal: { canBuild: true, needsRoom: false },
-  military: { canBuild: true, needsRoom: false },
-  wheat: { canBuild: true, needsRoom: false },
-  wood: { canBuild: true, needsRoom: false },
-  workerHut: { canBuild: true, needsRoom: false },
+const BUILDABLE: BlitzRealmSuggestionInput["buildability"] = () => ({ canBuild: true, needsRoom: false });
+const KNIGHTS: BlitzTroop = {
+  type: TroopType.Knight,
+  tiers: {
+    [TroopTier.T1]: { building: BuildingType.ResourceKnightT1, resource: ResourcesIds.Knight },
+    [TroopTier.T2]: { building: BuildingType.ResourceKnightT2, resource: ResourcesIds.KnightT2 },
+    [TroopTier.T3]: { building: BuildingType.ResourceKnightT3, resource: ResourcesIds.KnightT3 },
+  },
 };
-const KNIGHTS = {
-  buildingType: BuildingType.ResourceKnightT1,
-  label: "Knight T1",
-  resource: ResourcesIds.Knight,
-  troopType: TroopType.Knight,
+type Built = Partial<Record<BuildingType, number>>;
+const CITY_BUILT: Built = {
+  [BuildingType.ResourceWheat]: 4,
+  [BuildingType.ResourceWood]: 2,
+  [BuildingType.ResourceCoal]: 2,
+  [BuildingType.ResourceCopper]: 2,
+  [BuildingType.WorkersHut]: 1,
+  [BuildingType.ResourceKnightT1]: 1,
 };
-const CITY_BUILT = { wheat: 4, wood: 2, coal: 2, copper: 2, workerHut: 1, crossbowmanT1: 0, knightT1: 1, paladinT1: 0 };
-const ARMY: BlitzArmyState = { armies: 0, maxArmies: 3, troops: 0, fullArmy: 3_000 };
+const counted = (built: Built) => (building: BuildingType) => built[building] ?? 0;
+const army = (knights: number): BlitzArmyState => ({
+  armies: [],
+  maxArmies: 3,
+  troopsOnHand: (resource) => (resource === ResourcesIds.Knight ? knights : 0),
+  fullArmy: () => 3_000,
+});
 
 const realm = (
   realmId: number,
@@ -62,11 +72,11 @@ const realm = (
   isBlitzActive: true,
   canAffordUpgrade: false,
   hasAvailableBuildingTile: true,
-  buildingCounts: { ...CITY_BUILT, wheat: 0, wood: 0, coal: 0, copper: 0, knightT1: 0 },
+  built: counted({ [BuildingType.WorkersHut]: 1 }),
   population: 4,
   populationCapacity: 12,
-  militaryTarget: { ...KNIGHTS, count: 0 },
-  army: ARMY,
+  troop: KNIGHTS,
+  army: army(0),
   buildability: BUILDABLE,
   ...input,
 });
@@ -77,33 +87,27 @@ const SITUATIONS: { situation: string; input: BlitzRealmSuggestionInput }[] = [
     situation: "Population 9 of 12, a farm next: a farm needs 1",
     input: realm(1, "Egonal", {
       population: 9,
-      buildingCounts: { ...CITY_BUILT, wheat: 2, wood: 0, coal: 0, copper: 0 },
+      built: counted({ [BuildingType.WorkersHut]: 1, [BuildingType.ResourceWheat]: 2 }),
     }),
   },
   {
     situation: "Population 11 of 12, a wood camp next: it needs 2",
     input: realm(2, "Grimwatch", {
       population: 11,
-      buildingCounts: { ...CITY_BUILT, wood: 0, coal: 0, copper: 0, knightT1: 0 },
-      buildability: { ...BUILDABLE, wood: { canBuild: false, reason: "Need more population.", needsRoom: true } },
+      built: counted({ [BuildingType.WorkersHut]: 1, [BuildingType.ResourceWheat]: 4 }),
+      buildability: (building) =>
+        building === BuildingType.ResourceWood
+          ? { canBuild: false, reason: "Need more population.", needsRoom: true }
+          : { canBuild: true, needsRoom: false },
     }),
   },
   {
     situation: "Kingdom, Knights short of a full army: automation trains them, the order goes on",
-    input: realm(4, "Corwin", {
-      realmLevel: 2,
-      buildingCounts: CITY_BUILT,
-      militaryTarget: { ...KNIGHTS, count: 1 },
-      army: { ...ARMY, troops: 1_200 },
-    }),
+    input: realm(4, "Corwin", { realmLevel: 2, built: counted(CITY_BUILT), army: army(1_200) }),
   },
   {
     situation: "A full army of Knights on hand",
-    input: realm(5, "Ysabeau", {
-      buildingCounts: CITY_BUILT,
-      militaryTarget: { ...KNIGHTS, count: 1 },
-      army: { ...ARMY, troops: 3_000 },
-    }),
+    input: realm(5, "Ysabeau", { built: counted(CITY_BUILT), army: army(3_000) }),
   },
 ];
 
