@@ -120,7 +120,8 @@ const Gate = ({ met, word }: { met: boolean; word: string }) => (
 
 /**
  * A node as a tile: its painting with its state's mark, its name under it, then its tier's gem or its price. A compact
- * tile (a row of them on the castle's card) is its painting and mark alone, its name and price on its hover.
+ * tile (a row of them on the castle's card) keeps its painting, mark and name, which a phone cannot hover for (audit
+ * 10-27: the castle's five tiles had no names); its price is on its hover and on the Research page it opens.
  */
 export const NodeTile = ({
   node,
@@ -147,7 +148,6 @@ export const NodeTile = ({
       type="button"
       onClick={onPick}
       aria-pressed={picked}
-      aria-label={compact ? node.name : undefined}
       data-tip={compact ? tileTip(node) : undefined}
       data-node={node.key}
       data-state={node.state}
@@ -159,7 +159,7 @@ export const NodeTile = ({
       )}
     >
       <Icon name={node.icon} size={compact ? 32 : 36} />
-      {!compact && <span className={cn("text-hud-label leading-tight", look.text)}>{node.name}</span>}
+      <span className={cn("text-hud-label leading-tight", compact && "break-words", look.text)}>{node.name}</span>
       {!compact && reading}
       {look.icon && (
         <span className={cn("absolute", compact ? "right-0.5 top-0.5" : "right-1 top-1")}>

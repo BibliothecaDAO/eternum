@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MID_REALM } from "./progression-fixture";
 import { ResearchPanel } from "./research-panel";
+import { CastleResearch } from "../upgrade/castle-view";
 import { needLine, readResearchTree, type TreeNode } from "./research-tree";
 
 let host: HTMLDivElement;
@@ -57,6 +58,14 @@ it("closes as every panel does: its X and Escape", () => {
   expect(onClose).toHaveBeenCalledTimes(1);
   act(() => void window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
   expect(onClose).toHaveBeenCalledTimes(2);
+});
+
+it("names each of the castle card's compact tiles on the tile itself, which a phone cannot hover (audit 10-27)", () => {
+  const castle = nodes.filter((node) => node.branch === "castle");
+  act(() => root.render(<CastleResearch nodes={castle} onOpen={vi.fn()} />));
+  const tiles = [...host.querySelectorAll<HTMLButtonElement>("[data-node]")];
+  expect(tiles.map((tile) => tile.textContent)).toEqual(castle.map((node) => node.name));
+  expect(castle.length).toBeGreaterThanOrEqual(5);
 });
 
 it("researches the Farm's next tier with the side picked", () => {
