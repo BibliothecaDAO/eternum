@@ -9,6 +9,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudCost, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { ARMY, dayLeft, MOVE, RESEARCH, depthName, SPIRE_WORDS, STAMINA } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
@@ -129,7 +130,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
     const landing = { game_id: gameId, alt: false, col: position.x, row: position.y + depth * rules.spacing };
     const stamina = actor.stamina?.current;
     if (stamina === undefined) return { cost, why: null, open: false };
-    if (stamina < cost) return { cost, why: SPIRE_WORDS.needs(formatCharge(cost), formatCharge(stamina)), open: false };
+    if (stamina < cost) return { cost, why: staminaShortfall(stamina, cost), open: false };
     if (store.get("TileOccupancy", landing)) return { cost, why: SPIRE_WORDS.landingTaken, open: false };
     return { cost, why: null, open: true };
   };

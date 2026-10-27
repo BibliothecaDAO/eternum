@@ -1,4 +1,4 @@
-import { formatDuration, formatHeldAgainst } from "@bibliothecadao/types";
+import { formatHeldAgainst, formatWait } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 
 import { PRICE_FACES, type PriceKind } from "./price-faces";
@@ -30,7 +30,7 @@ const COUNTED: Record<Counted, { word: string; icon?: IconMeaning }> = {
 
 /**
  * A shortfall in one line that names what is counted: "Needs 2,000 labor, have 1,614 · in 3h 50m", "Needs 3
- * population, 2 free". Never a bare "2 / 3".
+ * population, 2 free". Never a bare "2 / 3". A short wait counts to the second ("in 47s").
  */
 export const shortfallLine = ({ of, held, need, counted, wait }: Extract<Reason, { kind: "short" }>): string => {
   const noun = COUNTED[of].word;
@@ -41,5 +41,9 @@ export const shortfallLine = ({ of, held, need, counted, wait }: Extract<Reason,
       : counted === "limit"
         ? needsOverLimit(pair.need, noun, pair.held)
         : needsHave(pair.need, noun, pair.held);
-  return wait === undefined ? line : `${line} · ${inTime(formatDuration(wait, { days: false }))}`;
+  return wait === undefined ? line : `${line} · ${inTime(formatWait(wait))}`;
 };
+
+/** An army short of stamina, as every surface says it: "Needs 50 stamina, have 13 · in 2m". */
+export const staminaShortfall = (held: number | undefined, need: number, wait?: number): string =>
+  shortfallLine({ kind: "short", of: "stamina", held, need, wait });

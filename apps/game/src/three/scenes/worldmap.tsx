@@ -288,7 +288,8 @@ import {
 } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
 import { layoutNow } from "@/shell/frame/layout";
-import { type OrderTip, orderFood, orderTip } from "@/ui/features/frontier/hud/order-tip";
+import { type OrderTip, orderFood, orderTip, refusedOrderVerb } from "@/ui/features/frontier/hud/order-tip";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
@@ -468,8 +469,11 @@ import {
   type WorldmapVisualTerrainWindow,
 } from "./worldmap-terrain-presentation-runtime";
 
-/** A desktop order preview's order, as the player read it: the army, the tile, and the order's verb and cost there. */
-type PreviewedOrder = { army: ID; hex: HexPosition; tip: OrderTip };
+/**
+ * A desktop order preview's order, as the player read it: the army, the tile, and the order's verb and cost there, or
+ * the reason the rules refused it there.
+ */
+type PreviewedOrder = { army: ID; hex: HexPosition; tip: OrderTip; refused?: OrderRefusal["reason"] };
 
 interface PreparedTerrainChunk {
   chunkKey: string;
@@ -605,6 +609,8 @@ const actorOnHex = (entity: { army?: { id: ID }; structure?: { id: ID } }) => {
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
+/** A tile the selected army's routes never reached: out of reach, as the planner says of a target beyond its step. */
+const BEYOND_REACH: OrderRefusal = { reason: "too-far" };
 /** What a refused order says when its error names no reason. */
 const ORDER_NOT_SENT = "The order was not sent.";
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
@@ -663,6 +669,12 @@ function resolveExploreClientLatencyPhase(stage: string | undefined): ClientActi
 const sceneHexOf = (contractHex: HexPosition): HexPosition => {
   const normalized = Position.fromContract({ x: contractHex.col, y: contractHex.row }).getNormalized();
   return { col: normalized.x, row: normalized.y };
+};
+
+/** A scene hex as the contract hex action paths and selections name. */
+const contractHexOf = (sceneHex: HexPosition): HexPosition => {
+  const contract = Position.fromNormalized({ x: sceneHex.col, y: sceneHex.row }).getContract();
+  return { col: contract.x, row: contract.y };
 };
 
 export default class WorldmapScene extends WarpTravel {
@@ -923,7 +935,7 @@ export default class WorldmapScene extends WarpTravel {
     if (this.isFrontierHud()) this.showAwaitedDeployOrder();
   }
 
-  /** The deploy sheet opened before the map was shown: its order, framed once the map's first frames have settled. */
+  /** The deploy sheet opened before the map was shown: its order, shown once the map's first frames have settled. */
   private showAwaitedDeployOrder(): void {
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
@@ -2443,19 +2455,23 @@ export default class WorldmapScene extends WarpTravel {
     return this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined ? selectedEntityId : null;
   }
 
-  private nameOrderAt(hexCoords: HexPosition): OrderTip | null {
+  private nameOrderAt(
+    hexCoords: HexPosition,
+    refusal = this.orderRefusals.get(ActionPaths.posKey(hexCoords, true)),
+  ): OrderTip | null {
     const key = ActionPaths.posKey(hexCoords, true);
-    const refusal = this.orderRefusals.get(key);
     const path = getLiveWorldmapEntityActions().actionPaths.get(key);
     const armyTroops = this.selectedArmyRow()?.troops;
     const site = path && ActionPaths.getActionType(path) === ActionType.UseSite ? this.usableSiteAt(hexCoords) : null;
+    const short = refusal?.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
     return orderTip({
       path,
       exploreStamina: configManager.getExploreStaminaCost(),
       food: armyTroops ? orderFood(path, armyTroops) : { wheat: 0, fish: 0 },
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
       refusal,
-      staminaWait: refusal?.reason === "stamina" ? this.secondsUntilSelectedArmyHolds(refusal.need) : undefined,
+      staminaWait: short?.wait,
+      staminaHeld: short?.held,
       site: site
         ? siteUseFacts(this.game.store, site, this.selectedArmyRow(), getBlockTimestamp().currentDefaultTick)
         : undefined,
@@ -2472,14 +2488,20 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  /** Seconds until the selected army holds this much stamina, by the stamina rules the chain settles it with. */
-  private secondsUntilSelectedArmyHolds(need: number): number | undefined {
+  /**
+   * The stamina the selected army holds now, and the seconds until it holds this much, by the stamina rules the chain
+   * settles it with; undefined when the selection is no army.
+   */
+  private selectedArmyShortOf(need: number): { held: number; wait: number | undefined } | undefined {
     const row = this.selectedArmyRow();
     const troops = row && resolveExplorerTroops(this.game.store, row);
     if (!troops) return undefined;
     const { currentDefaultTick } = getBlockTimestamp();
     const ready = StaminaManager.getAffordableAt(troops, need, currentDefaultTick);
-    return ready === null ? undefined : Math.max(0, ready - currentDefaultTick);
+    return {
+      held: Number(StaminaManager.getStamina(troops, currentDefaultTick).amount),
+      wait: ready === null ? undefined : Math.max(0, ready - currentDefaultTick),
+    };
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
@@ -2614,8 +2636,18 @@ export default class WorldmapScene extends WarpTravel {
     this.factsShown = true;
   }
 
-  // hexcoords is normalized
+  /**
+   * A tap or click on the map: answered, then, on a phone, the tapped tile kept in sight above the card it opened. The
+   * camera follows the player's tap only, never a selection made elsewhere (owner, 27 October 2026: Deploy must not
+   * move the camera).
+   */
   protected onHexagonClick(hexCoords: HexPosition | null) {
+    this.answerMapTap(hexCoords);
+    if (hexCoords) this.keepTappedTileInSight(contractHexOf(hexCoords));
+  }
+
+  /** What a tap or click on the map does (hexCoords is normalized). */
+  private answerMapTap(hexCoords: HexPosition | null) {
     if (this.factsShown) {
       this.factsShown = false;
       this.onHexagonMouseMove(null);
@@ -2646,6 +2678,10 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
     if (clickPlan.kind === "ignore") {
+      return;
+    }
+    if (clickPlan.selection.type === "clear" && this.keepsArmyOnClick()) {
+      this.openTargetCardForSelectedArmy(contractHexOf(hexCoords));
       return;
     }
 
@@ -2682,6 +2718,15 @@ export default class WorldmapScene extends WarpTravel {
       ...this.getInteractionDebugSnapshot(),
     });
     this.clearEntitySelection();
+  }
+
+  /**
+   * On a desktop, a click on a tile that holds none of the player's own keeps the selected army, and the tile's card
+   * opens for it: only Escape, its ×, or another selection lets it go (owner, 27 October 2026: "I wanna be able to
+   * select an army and do all kind of actions without deselecting and reselecting the army").
+   */
+  private keepsArmyOnClick(): boolean {
+    return layoutNow() !== "phone" && this.selectedArmyId() !== null;
   }
 
   protected handleHexSelection(hexCoords: HexPosition, isMine: boolean) {
@@ -2745,7 +2790,9 @@ export default class WorldmapScene extends WarpTravel {
         // The fast order: an explore or a move leaves at once, and an attack opens its forecast, never sent unseen.
         order: () => {
           this.pointerOrderTip.take();
-          this.actAtHex(hexCoords);
+          if (actionPaths.has(clickedHexKey) || isTouchHold(event)) this.actAtHex(hexCoords);
+          // No order here: what a click opens, an order the army can't take now with its reason among them.
+          else this.answerTapWithSelectedOrder(hexCoords);
         },
         transfer: openTransfer,
         menu: () => {
@@ -2783,6 +2830,7 @@ export default class WorldmapScene extends WarpTravel {
         this.usableSiteAt(hexCoords) !== null,
       ownSpire: this.isArmysSpire(selectedEntityId, hexCoords),
       onPhone: layoutNow() === "phone",
+      refused: this.refusalAt(hexCoords),
       hud: this.hudCarriesOrderVerb()
         ? {
             pinned: pinned?.col === hexCoords.col && pinned.row === hexCoords.row,
@@ -2810,17 +2858,52 @@ export default class WorldmapScene extends WarpTravel {
       // The order's line stands at its tile, marking the tile the bar's verb (or a second tap) sends to.
       this.showTileFacts(hexCoords);
       return true;
-    } else if (order === "attack" && path) {
-      this.onArmyAttack(path, selectedEntityId);
+    } else if (order === "attack") {
+      const attack = path ?? this.attackPathTo(hexCoords, selectedEntityId);
+      if (attack) this.onArmyAttack(attack, selectedEntityId);
+    } else if (order === "refused") {
+      this.openRefusedOrderPreview(hexCoords);
     } else if (order === "deploy" && path) {
       this.onArmyCreate(path, selectedEntityId);
     } else if (order === "site-card") {
-      const contractHex = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
-      this.openTargetCardForSelectedArmy({ col: contractHex.x, row: contractHex.y });
+      this.openTargetCardForSelectedArmy(contractHexOf(hexCoords));
     }
     // The preview has the tile now; its name on the tooltip would only sit over it.
     if (order !== null) this.pointerOrderTip.take();
     return order !== null;
+  }
+
+  /**
+   * Why the rules gave the selected army no order at this tile: an attack it lacks the stamina for, or another order.
+   * None where they said nothing, or where the tile holds the player's own army or holding, whose click selects it.
+   */
+  private refusalAt(hexCoords: HexPosition): "attack" | "order" | undefined {
+    const refusal = this.refusalOf(hexCoords);
+    if (!refusal || this.holdsOwnSelectable(hexCoords)) return undefined;
+    return refusal.reason === "stamina" && actorOnHex(this.getHexagonEntity(hexCoords)) ? "attack" : "order";
+  }
+
+  /**
+   * Why the selected army has no order at this tile: the planner's reason, or, on a tile its routes never reached, that
+   * the tile is beyond its reach. None where it has an order, or where no army is selected.
+   */
+  private refusalOf(hexCoords: HexPosition): OrderRefusal | undefined {
+    const key = ActionPaths.posKey(hexCoords, true);
+    const planned = this.orderRefusals.get(key);
+    if (planned) return planned;
+    if (this.selectedArmyId() === null || getLiveWorldmapEntityActions().actionPaths.has(key)) return undefined;
+    return BEYOND_REACH;
+  }
+
+  /** The attack the rules refused for stamina, as they would have drawn it: from the army's tile to the target's. */
+  private attackPathTo(hexCoords: HexPosition, armyId: ID): ActionPath[] | undefined {
+    const from = this.worldSpatialProjection.getArmy(armyId)?.hexCoords;
+    if (!from) return undefined;
+    const to = contractHexOf(hexCoords);
+    return [
+      { hex: { col: from.col, row: from.row }, actionType: ActionType.Move },
+      { hex: to, actionType: ActionType.Attack },
+    ];
   }
 
   /**
@@ -2834,11 +2917,29 @@ export default class WorldmapScene extends WarpTravel {
     if (army === null || !tip) return;
     const shown: PreviewedOrder = { army, hex: hexCoords, tip };
     this.previewedOrder = shown;
-    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    this.openTargetActionSurface(
-      { col: contract.x, row: contract.y },
-      { id: ORDER_PREVIEW_SURFACE, content: <OrderPreview tip={tip} onSend={() => this.sendPreviewedOrder(shown)} /> },
-    );
+    this.openTargetActionSurface(contractHexOf(hexCoords), {
+      id: ORDER_PREVIEW_SURFACE,
+      content: <OrderPreview tip={tip} onSend={() => this.sendPreviewedOrder(shown)} />,
+    });
+  }
+
+  /** A desktop click on a tile whose order the army can't take now: that order's preview, with why, its verb disabled. */
+  private openRefusedOrderPreview(hexCoords: HexPosition): void {
+    const army = this.selectedArmyId();
+    const refusal = this.refusalOf(hexCoords);
+    const reason = this.nameOrderAt(hexCoords, refusal)?.line;
+    if (army === null || !refusal || !reason) return;
+    const { army: armyThere, structure, chest } = this.getHexagonEntity(hexCoords);
+    const verb = refusedOrderVerb({
+      holds: armyThere || structure ? "target" : chest ? "crate" : null,
+      explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
+    });
+    const tip = { line: verb, cost: null };
+    this.previewedOrder = { army, hex: hexCoords, tip, refused: refusal.reason };
+    this.openTargetActionSurface(contractHexOf(hexCoords), {
+      id: ORDER_PREVIEW_SURFACE,
+      content: <OrderPreview tip={tip} refusal={reason} />,
+    });
   }
 
   /** The preview's verb sends the order the player read, and only while it still is the army's order at that tile. */
@@ -2846,10 +2947,15 @@ export default class WorldmapScene extends WarpTravel {
     if (this.holdsPreviewedOrder(shown)) this.actAtHex(shown.hex);
   }
 
-  /** The same army is selected, and its order at the tile reads as shown: the same verb at the same cost. */
+  /**
+   * The same army is selected, and its order at the tile reads as shown: the same verb at the same cost, or refused
+   * there for the same reason.
+   */
   private holdsPreviewedOrder(shown: PreviewedOrder): boolean {
+    if (this.selectedArmyId() !== shown.army) return false;
+    if (shown.refused) return this.refusalOf(shown.hex)?.reason === shown.refused;
     const now = this.nameOrderAt(shown.hex);
-    return this.selectedArmyId() === shown.army && now?.line === shown.tip.line && now.cost === shown.tip.cost;
+    return now?.line === shown.tip.line && now.cost === shown.tip.cost;
   }
 
   /**
@@ -2890,12 +2996,14 @@ export default class WorldmapScene extends WarpTravel {
       });
 
       if (actionPathLookup.shouldClearStaleSelection) {
-        this.logInteractionDebug("clearing_stale_selection_after_right_click", {
+        this.logInteractionDebug("replanning_stale_orders_after_right_click", {
           hexCoords,
           clickedHexKey,
           ...this.getInteractionDebugSnapshot(),
         });
-        this.clearEntitySelection();
+        // The orders were planned before the map last moved: an army's are planned again and the click acts on them.
+        if (this.planArmyOrdersAgain(selectedEntityId)) this.actAtHex(hexCoords);
+        else if (this.selectedArmyId() === null) this.clearEntitySelection();
         return;
       }
 
@@ -2914,11 +3022,8 @@ export default class WorldmapScene extends WarpTravel {
         ];
         const isArmySelection = this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined;
         if (actionType && armyActions.includes(actionType) && isArmySelection) {
-          if (this.armyManager && !this.armyManager.isArmySelectable(selectedEntityId)) {
-            console.warn(`Army ${selectedEntityId} no longer available for movement`);
-            this.clearEntitySelection();
-            return;
-          }
+          // The army isn't drawn in the map's view now (a chunk on its way): no order, and the army stays selected.
+          if (this.armyManager && !this.armyManager.isArmySelectable(selectedEntityId)) return;
         }
 
         if (actionType === ActionType.Explore || actionType === ActionType.Move) {
@@ -3018,9 +3123,8 @@ export default class WorldmapScene extends WarpTravel {
         actionPath,
         movementStamina,
       });
-      toast.error("Not enough stamina for this move");
+      toast.error(staminaShortfall(movementStamina.currentStamina, movementStamina.staminaCost));
       this.state.updateEntityActionHoveredHex(null);
-      this.clearSelection();
       return;
     }
 
@@ -3193,8 +3297,6 @@ export default class WorldmapScene extends WarpTravel {
       });
       return;
     }
-
-    this.clearSelection();
   }
 
   /** The latency record of a move's send and of Herald's status for it; the order's outcome is not decided here. */
@@ -3520,9 +3622,9 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * Frontier's deploy sheet shows its order on the map: the realm selected with its open tiles lit, the order's tile
-   * marked among them, and, as the sheet opens, the realm framed in the map left open above it. Closed, a selection
-   * the map made for the sheet goes with it.
+   * Frontier's deploy sheet shows its order on the map: the realm selected with its open tiles lit, and the order's tile
+   * marked among them. The camera stays where the player has it (owner, 27 October 2026: "when I right click to deploy
+   * an army stop centering the camera on the realm"). Closed, a selection the map made for the sheet goes with it.
    */
   private showDeployOrder(order: DeployOnMap): void {
     const shown = this.deployShown;
@@ -3540,7 +3642,6 @@ export default class WorldmapScene extends WarpTravel {
       : (shown?.selectedForIt ?? false);
     this.deployShown = { order, selectedForIt };
     this.onStructureSelection(order.structureId, realm);
-    if (opening) this.frameOnOpenMap([Position.fromNormalized({ x: realm.col, y: realm.row })]);
   }
 
   /** The tile the shown deploy order steps out on, as the lit tiles name it; none for another structure or no order. */
@@ -3769,6 +3870,18 @@ export default class WorldmapScene extends WarpTravel {
   private hasEligibleArmyForTabCycle(): boolean {
     return this.selectableArmies.some(
       (army) => !this.hasOrderInFlight(army.entityId) && this.canArmyAct(army.entityId),
+    );
+  }
+
+  /**
+   * Plans the selected army's orders again where it stands now; false while the map can't (no army selected, a chunk on
+   * its way).
+   */
+  private planArmyOrdersAgain(selectedEntityId: ID): boolean {
+    const viewer = accountAddress();
+    if (this.selectedArmyId() !== selectedEntityId || !viewer) return false;
+    return (
+      this.onArmySelection(selectedEntityId, viewer) && this.actionPathsTransitionToken === this.chunkTransitionToken
     );
   }
 
@@ -4046,19 +4159,26 @@ export default class WorldmapScene extends WarpTravel {
     this.state.selectOnMap(null);
   }
 
+  /** The selected tile as the map shows it: its ring and its plate. */
+  private showSelectedTile(selectedHex: HexPosition | null): void {
+    this.state.selectedHex = selectedHex;
+    this.showSelectedHexRing(selectedHex);
+    this.refreshSelectedPlate();
+  }
+
   /**
    * On a phone a tapped tile's card stands over the map's foot (owner, 26 October 2026: layout A, "the camera puts the
-   * tapped tile in the map left open"): once the card stands, a tile it covers is framed in the map left open above it.
-   * A tile still in sight keeps the camera where the player put it.
+   * tapped tile in the map left open"): once the card stands, the tapped tile, when it is the one selected and the card
+   * covers it, is framed in the map left open above it. A tile still in sight keeps the camera where the player put it.
    */
-  private keepSelectedTileInSight(selectedHex: HexPosition | null): void {
-    if (!selectedHex || !this.hudCarriesOrderVerb()) return;
+  private keepTappedTileInSight(tapped: HexPosition): void {
+    if (!this.hudCarriesOrderVerb()) return;
     // The card opens on the render after the tap; the open area is read once it stands.
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         const now = this.state.selectedHex;
-        if (!now || now.col !== selectedHex.col || now.row !== selectedHex.row) return;
-        const tile = Position.fromContract({ x: selectedHex.col, y: selectedHex.row });
+        if (!now || now.col !== tapped.col || now.row !== tapped.row) return;
+        const tile = Position.fromContract({ x: tapped.col, y: tapped.row });
         const normalized = tile.getNormalized();
         const viewport = { width: window.innerWidth, height: window.innerHeight };
         if (inOpenMapArea(projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera), viewport)) return;
@@ -8887,12 +9007,7 @@ export default class WorldmapScene extends WarpTravel {
         this.handleEntityActionsStoreUpdate(nextEntityActions, previousEntityActions);
         this.refreshSelectedPlate();
       },
-      onSelectedHexChanged: (selectedHex) => {
-        this.state.selectedHex = selectedHex;
-        this.showSelectedHexRing(selectedHex);
-        this.refreshSelectedPlate();
-        this.keepSelectedTileInSight(selectedHex);
-      },
+      onSelectedHexChanged: (selectedHex) => this.showSelectedTile(selectedHex),
     });
     this.storeSubscriptions.push(
       bindOwnershipRings({
@@ -9028,11 +9143,7 @@ export default class WorldmapScene extends WarpTravel {
       onEntityActionStateSynced: () => this.syncEntityActionPathsTransitionToken(),
       hasMissingActionPathOwnership: () => this.isMissingActionPathOwnershipState(),
       clearEntitySelection: () => this.clearEntitySelection(),
-      onSelectedHexChanged: (selectedHex) => {
-        this.state.selectedHex = selectedHex;
-        this.showSelectedHexRing(selectedHex);
-        this.refreshSelectedPlate();
-      },
+      onSelectedHexChanged: (selectedHex) => this.showSelectedTile(selectedHex),
       onSynced: (uiState) => {
         this.logInteractionDebug("sync_state_from_store", {
           ...this.getInteractionDebugSnapshot(),

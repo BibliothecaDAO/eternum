@@ -1,5 +1,5 @@
 import { dayEndScenario } from "./day-end-scenario";
-import { afterBattleScenario } from "./after-battle-scenario";
+import { afterBattleScenario, lowStaminaScenario } from "./after-battle-scenario";
 import { mergeScenario } from "./merge-scenario";
 import { dayTurnScenario } from "./day-turn-scenario";
 import type { LabScenario } from "./lab-chain";
@@ -16,6 +16,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "merge-keeps-picked": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),
   "after-battle": afterBattleScenario,
+  "low-stamina": lowStaminaScenario,
   "painted-buildings": paintedBuildingsScenario,
   "day-turn": dayTurnScenario("live"),
   "day-later": dayTurnScenario("later"),

@@ -73,6 +73,7 @@ import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
 import { type HeldRealm, planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
 import { RealmsSheet } from "@/ui/features/frontier/value/realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
 const HOUR = 3_600;
 const NOW = new Date(2026, 9, 7, 14, 26).getTime() / 1000;
@@ -762,7 +763,7 @@ const STATES = {
   },
   research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: true },
   // A refused order's notice, through the game's own notice store: on a desktop it stands in the rail under Next up.
-  notice: { clock: CLOCK, stores: STORES, armies: ARMIES, notice: "Not enough stamina" },
+  notice: { clock: CLOCK, stores: STORES, armies: ARMIES, notice: staminaShortfall(10, 30) },
   today: { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today" },
   "today-earlier": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-earlier" },
   "today-failed": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-failed" },

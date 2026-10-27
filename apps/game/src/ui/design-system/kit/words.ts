@@ -334,7 +334,6 @@ export const AFTER_THIS_ONE = "After this one";
 export const fightLine = (site: string, verdict: string, lost: string, guardBefore: string, guardAfter: string) =>
   `${site}: ${verdict}, lost ${lost}, guard ${guardAfter} left`;
 /** Why an attack cannot run, or what it costs, in one line under its button. */
-export const needsStamina = (need: string, held: string) => `Needs ${need} stamina, has ${held}`;
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;
 export const ARMY_WILL_BE_LOST = "Army will be lost";
 /** The skull beside an army on a site's card, on its tooltip. */
@@ -393,7 +392,6 @@ export const SPIRE_WORDS = {
   away: (army: string) => `${army} must be beside the spire`,
   inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
   cost: (stamina: string) => `${stamina} ${STAMINA}`,
-  needs: (need: string, have: string) => `Needs ${need} ${STAMINA}, has ${have}`,
   landingTaken: "Its landing is taken",
   locked: "Research it to open it",
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,

@@ -11,14 +11,15 @@ vi.mock("@/utils/can-issue-orders", async (original) => ({
   refusedBeforePlay: () => false,
 }));
 
-const { ActionPaths, ActionType, configManager, setBlockTimestampSource } = await import("@bibliothecadao/eternum");
+const { ActionPaths, ActionType, configManager, Position, setBlockTimestampSource } =
+  await import("@bibliothecadao/eternum");
 const { useAccountStore } = await import("@/hooks/store/use-account-store");
 const { usePopoverStore } = await import("@/hooks/store/use-popover-store");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { default: WorldmapScene } = await import("./worldmap");
 const { realmBoard } = await import("@/ui/features/frontier/build/build-fixture");
 const { LeftView } = await import("@/types");
-const { Direction } = await import("@bibliothecadao/types");
+const { ActorType, Direction } = await import("@bibliothecadao/types");
 
 const { ARMY_DEPLOYMENT_SURFACE_ID } = await import("@/ui/features/military/utils/open-army-deployment");
 
@@ -383,4 +384,223 @@ it("on a Frontier phone, holding the spire opens its depth choice with the army 
   expect(useUIStore.getState().selectedHex).toEqual(BESIDE);
   expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   expect([facts, sent]).toEqual([[], []]);
+});
+
+describe("an army selected on a desktop keeps its actions one click away (owner, 27 October 2026)", () => {
+  const MONSTER = 99;
+  const FAR = { col: 12, row: 9 };
+  const contract = (hex: { col: number; row: number }) => {
+    const at = Position.fromNormalized({ x: hex.col, y: hex.row }).getContract();
+    return { col: at.x, row: at.y };
+  };
+
+  /**
+   * The map with the army selected and a monster beside it that the army's stamina can't attack yet, as the planner
+   * refuses it: no order there, its reason recorded. Every way the map selects goes through `selectOnMap` and
+   * `clearEntitySelection`, recorded here.
+   */
+  const lowStaminaMap = (frontier: boolean) => {
+    const map = worldMap(frontier);
+    const selections: unknown[] = [];
+    const cleared: number[] = [];
+    useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, actionPaths: new Map() } }));
+    const entities = new Map([
+      [ActionPaths.posKey(BESIDE), { army: { id: MONSTER, owner: 0x999n } }],
+      [ActionPaths.posKey(ARMY_HEX), { army: { id: ARMY, owner: 0x111n } }],
+    ]);
+    Object.assign(map.scene, {
+      worldSpatialProjection: { getArmy: () => ({ hexCoords: contract(ARMY_HEX) }), getStructuresAtHex: () => [] },
+      getHexagonEntity: (hex: { col: number; row: number }) => entities.get(ActionPaths.posKey(hex)) ?? {},
+      getOwnArmyOrderedTo: () => undefined,
+      logInteractionDebug: () => {},
+      getInteractionDebugSnapshot: () => ({}),
+      interactionAdapter: { selectHex: () => {} },
+      state: {
+        ...(map.scene as unknown as { state: object }).state,
+        selectOnMap: (intent: unknown) => selections.push(intent),
+      },
+      clearEntitySelection: () => cleared.push(1),
+    });
+    (map.scene as unknown as { orderRefusals: Map<string, unknown> }).orderRefusals.set(
+      ActionPaths.posKey(BESIDE, true),
+      { reason: "stamina", need: 20 },
+    );
+    const scene = map.scene as unknown as {
+      onHexagonRightClick: (event: MouseEvent, hex: { col: number; row: number }) => void;
+      onHexagonClick: (hex: { col: number; row: number }) => void;
+    };
+    return { ...map, scene, selections, cleared };
+  };
+  const rightClick = () => new MouseEvent("contextmenu", { button: 2 });
+
+  beforeEach(() => {
+    vi.spyOn(configManager, "isCommandEnabled").mockReturnValue(true);
+  });
+  afterEach(() => usePopoverStore.getState().close());
+
+  it("in Blitz, a right-click on a monster the army lacks the stamina to attack opens the attack's preview there", () => {
+    screen(true);
+    const { scene, sent, cleared } = lowStaminaMap(false);
+
+    scene.onHexagonRightClick(rightClick(), BESIDE);
+
+    const surface = usePopoverStore.getState().surface!;
+    expect(surface.id).toBe("quick-attack");
+    const { attacker, target } = (surface.content as ReactElement<{ attacker: unknown; target: unknown }>).props;
+    expect(attacker).toEqual({
+      type: ActorType.Explorer,
+      id: ARMY,
+      hex: { x: contract(ARMY_HEX).col, y: contract(ARMY_HEX).row },
+      alt: false,
+    });
+    expect(target).toEqual({
+      type: ActorType.Explorer,
+      id: MONSTER,
+      hex: { x: contract(BESIDE).col, y: contract(BESIDE).row },
+      alt: false,
+    });
+    expect([sent, cleared, useUIStore.getState().entityActions.selectedEntityId]).toEqual([[], [], ARMY]);
+  });
+
+  it("in Frontier, the same right-click opens the monster's tile card with the army as its actor", () => {
+    screen(true);
+    const { scene, selections, cleared } = lowStaminaMap(true);
+
+    scene.onHexagonRightClick(rightClick(), BESIDE);
+
+    expect(selections).toEqual([{ kind: "army", entityId: ARMY, tile: contract(BESIDE) }]);
+    expect(cleared).toEqual([]);
+  });
+
+  it("a right-click on a tile the army lacks the stamina to explore opens Explore there, disabled, with why", () => {
+    screen(true);
+    const { scene, sent, cleared } = lowStaminaMap(false);
+    const fog = { col: 4, row: 6 };
+    (scene as unknown as { orderRefusals: Map<string, unknown> }).orderRefusals.set(ActionPaths.posKey(fog, true), {
+      reason: "stamina",
+      need: 20,
+    });
+
+    scene.onHexagonRightClick(rightClick(), fog);
+
+    const drawn = drawnSurface()!;
+    expect(drawn.id).toBe("order-preview");
+    // The stub's store holds no army row, so what the army holds reads as unknown.
+    expect(drawn.host.querySelector("[role=alert]")?.textContent).toBe("Needs 20 stamina, have —");
+    expect(verbOf(drawn.host, "Explore").disabled).toBe(true);
+    expect(drawn.host.textContent).not.toContain("A right-click sends it at once.");
+    expect([sent, cleared]).toEqual([[], []]);
+  });
+
+  it("a right-click on a tile the army can explore still sends it at once", () => {
+    screen(true);
+    const { scene, sent } = lowStaminaMap(false);
+    useUIStore.setState((state) => ({
+      entityActions: { ...state.entityActions, actionPaths: pathsBeside(ActionType.Explore) },
+    }));
+
+    scene.onHexagonRightClick(rightClick(), BESIDE);
+
+    expect(sent).toEqual([BESIDE]);
+  });
+
+  it("a move its stamina no longer pays for when sent says so and keeps the army", () => {
+    screen(true);
+    const { scene, sent, cleared } = lowStaminaMap(false);
+    const dropped: number[] = [];
+    Object.assign(scene, {
+      hasOrderInFlight: () => false,
+      resolveMovementStaminaForAction: () => ({ canAfford: false, currentStamina: 5, staminaCost: 20 }),
+      logBlockedMovementStamina: () => {},
+      clearSelection: () => dropped.push(1),
+    });
+
+    (scene as unknown as { onArmyMovement: (path: ActionPath[], army: number) => void }).onArmyMovement(
+      pathsBeside(ActionType.Move).get(ActionPaths.posKey(BESIDE, true))!,
+      ARMY,
+    );
+
+    expect([sent, cleared, dropped]).toEqual([[], [], []]);
+  });
+
+  /** The preview open over the map: its verb, whether it can be pressed, and the reason it shows. */
+  const shownPreview = () => {
+    const drawn = drawnSurface();
+    if (drawn?.id !== "order-preview") return null;
+    const verb = drawn.host.querySelector("button:not([aria-label])") as HTMLButtonElement;
+    return {
+      verb: verb.textContent,
+      disabled: verb.disabled,
+      reason: drawn.host.querySelector("[role=alert]")?.textContent,
+    };
+  };
+
+  describe.each([
+    ["Frontier", true],
+    ["Blitz", false],
+  ])("in %s, a tile far beyond the army's routes, which the rules said nothing of", (_, frontier) => {
+    it("a right-click on revealed land opens Move there, disabled, too far", () => {
+      screen(true);
+      const { scene, sent, selections, cleared } = lowStaminaMap(frontier);
+      (scene as unknown as { exploredTiles: Map<number, Set<number>> }).exploredTiles.set(FAR.col, new Set([FAR.row]));
+
+      scene.onHexagonRightClick(rightClick(), FAR);
+
+      expect(shownPreview()).toEqual({ verb: "Move", disabled: true, reason: "Too far: move closer" });
+      expect([sent, selections, cleared, useUIStore.getState().entityActions.selectedEntityId]).toEqual([
+        [],
+        [],
+        [],
+        ARMY,
+      ]);
+    });
+
+    it("a right-click in the fog opens Explore there, disabled, too far", () => {
+      screen(true);
+      const { scene, sent, cleared } = lowStaminaMap(frontier);
+
+      scene.onHexagonRightClick(rightClick(), FAR);
+
+      expect(shownPreview()).toEqual({ verb: "Explore", disabled: true, reason: "Too far: move closer" });
+      expect([sent, cleared]).toEqual([[], []]);
+    });
+
+    it("a left-click there opens the same, keeping the army", () => {
+      screen(true);
+      const { scene, sent, selections, cleared } = lowStaminaMap(frontier);
+
+      scene.onHexagonClick(FAR);
+
+      expect(shownPreview()).toEqual({ verb: "Explore", disabled: true, reason: "Too far: move closer" });
+      expect([sent, selections, cleared]).toEqual([[], [], []]);
+    });
+  });
+
+  it("a click on a tile whose order the click leaves to the map keeps the army and opens that tile for it", () => {
+    screen(true);
+    const { scene, selections, cleared } = lowStaminaMap(true);
+    // Travel through another spire: an order the right-click gives, which a click leaves to the map.
+    const spire = { col: 3, row: 5 };
+    const travel = [
+      { hex: ARMY_HEX, actionType: ActionType.Move },
+      { hex: spire, actionType: ActionType.SpireTravel },
+    ];
+    useUIStore.setState((state) => ({
+      entityActions: { ...state.entityActions, actionPaths: new Map([[ActionPaths.posKey(spire, true), travel]]) },
+    }));
+
+    scene.onHexagonClick(spire);
+
+    expect(selections).toEqual([{ kind: "army", entityId: ARMY, tile: contract(spire) }]);
+    expect(cleared).toEqual([]);
+  });
+
+  it("on a phone, the same tap still lets the army go, as before", () => {
+    screen(false);
+    const { scene, selections, cleared } = lowStaminaMap(false);
+
+    scene.onHexagonClick(FAR);
+
+    expect([selections, cleared]).toEqual([[], [1]]);
+  });
 });
