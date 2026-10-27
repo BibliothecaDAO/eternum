@@ -34,7 +34,7 @@ const WOOD = {
   id: "1-build-wood",
   realmId: 1,
   realmName: "Egonal",
-  action: "build-wood",
+  action: "build",
   label: "Build wood camp",
   icon: "wood",
   buildingTypeHint: 5,

@@ -21,7 +21,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { disposeGameSyncSession } from "@/sync/active-game-client";
 import { useArmyCreation } from "@/ui/features/military/components/unified-army-creation-modal/use-army-creation";
 import { getRealmInfo, setBuildingCount } from "@bibliothecadao/eternum";
-import { DEFAULT_BUILD_ORDER, readBlitzRealmSuggestions } from "@bibliothecadao/eternum/automation";
+import { DEFAULT_BUILD_ORDER, readBlitzRealmSuggestions, readBuildOrder } from "@bibliothecadao/eternum/automation";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
   BiomeType,
@@ -54,8 +54,8 @@ const blitzRealm = () => {
   return store;
 };
 
-/** The realm's steps, by the game's own reader over the facts it holds, on the default order. */
-const readSteps = (store: NativeFactStore) =>
+/** The realm's steps, by the game's own reader over the facts it holds, on the default order or another. */
+const readSteps = (store: NativeFactStore, order = DEFAULT_BUILD_ORDER) =>
   readBlitzRealmSuggestions({
     store,
     realmId: BLITZ_REALM_ID,
@@ -63,7 +63,7 @@ const readSteps = (store: NativeFactStore) =>
     isBlitzActive: true,
     tiles: { isHexOccupied: () => false },
     tick: 1,
-    order: DEFAULT_BUILD_ORDER,
+    order,
   });
 
 /** The realm's next step in words: its action and its reason. */
@@ -133,11 +133,9 @@ describe("a Blitz realm's next step, read from the game's facts", () => {
   it("builds the next farm at population 9 of 12, and a worker hut only once the farm has no room", () => {
     const store = blitzRealm();
     housePopulation(store, 9);
-    expect(nextStep(store)).toEqual(["build-wheat · Wheat farms: 0 of 2 built."]);
+    expect(nextStep(store)).toEqual(["build · Farm: 0 of 2 built."]);
     housePopulation(store, 12);
-    expect(nextStep(store)).toEqual([
-      "build-worker-hut · Wheat farms: 0 of 2 built. Population 12 of 12: a worker hut makes room.",
-    ]);
+    expect(nextStep(store)).toEqual(["build · Farm: 0 of 2 built. Population 12 of 12: a worker hut makes room."]);
   });
 
   it("leaves the realm's troop to production automation after its barracks, and deploys a full army", () => {
@@ -148,6 +146,22 @@ describe("a Blitz realm's next step, read from the game's facts", () => {
     // A full army at a City of this game is 7,500 Paladins.
     cityWithBarracks(store, 7_500);
     expect(nextStep(store)).toEqual(["deploy-army · Paladin T1: 7,500 on hand, a full army of 7,500."]);
+  });
+
+  it("follows a player's T2 and T3 steps: each building judged by the construction rule on the realm's own stock", () => {
+    const store = blitzRealm();
+    cityWithBarracks(store, 0);
+    const read = readBuildOrder({
+      name: "Iron rush",
+      steps: [
+        { rank: "City", goal: "ironwood", count: 1 },
+        { rank: "City", goal: "paladinT2", count: 1 },
+      ],
+    });
+    if ("error" in read) throw new Error(read.error);
+    expect(
+      readSteps(store, read.ok).map(({ action, reason, buildingTypeHint }) => [action, reason, buildingTypeHint]),
+    ).toEqual([["build", "Ironwood: 0 of 1 built.", BuildingType.ResourceIronwood]]);
   });
 
   it("opens the deployment on the troop it names, a full army of it, though the realm holds another troop too", async () => {
