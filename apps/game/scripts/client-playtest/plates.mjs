@@ -196,7 +196,7 @@ const awayFromTokens = (seen, before) => {
  * camera's perspective, its label point further still.
  * `off` those that stand on their thing or away from it; `unmeasured` those whose thing was not read in full.
  */
-const againstTheirThings = (seen) => {
+export const againstTheirThings = (seen) => {
   const point = (one) => Boolean(one) && Number.isFinite(one.x) && Number.isFinite(one.y);
   // Every label names a thing (the order line names none): each needs its thing's tile, top and label point read.
   const labels = seen.things.filter((thing) => thing.kind !== "order line");

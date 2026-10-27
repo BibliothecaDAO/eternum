@@ -14,7 +14,7 @@ import {
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
-import { judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
+import { againstTheirThings, judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
 import { DESKTOP_MIN_WIDTH, judgeHudLayout } from "./hud-layout.mjs";
 
 /**
@@ -1367,6 +1367,75 @@ const LAB_AFTER_BATTLE_STEPS = [
   { name: "hover-army", play: hoverTheArmyAtRest, settleMs: 0, verify: survivorPlateOpens },
 ];
 
+/**
+ * The owner's army after its fight, nothing selected, at each zoom step from the closest to the farthest (owner,
+ * 2026-10-27: "at a certain zoom level I cant get the hover modal"): its token stands over its own model, and the pointer
+ * anywhere on its model, feet to head, opens its plate, at every step. The page reports its world (dev overlays), so the
+ * model is hovered where the renderer draws it.
+ */
+const LAB_HOVER_ZOOM_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+  { name: "hover-every-zoom", play: hoverTheArmyAtEveryZoom, settleMs: 0, verify: armyAnswersAtEveryZoom },
+];
+/** Points on an army's model as drawn, its tile (0) to its top (1): the head is where the tile behind lay. */
+const MODEL_SHARES = [0.2, 0.6, 1];
+/** Wheel notches from the closest zoom past which the farthest must have been reached. */
+const ZOOM_STEPS_MAX = 14;
+
+/** The picked army's label in a plate reading. */
+const pickedArmyLabel = (seen) => seen?.things?.find((thing) => thing.key === `army:${PICKED_ARMY}`) ?? null;
+
+/** Lets the army go, zooms all the way in, then at each notch out reads its token and hovers its model, feet to head. */
+async function hoverTheArmyAtEveryZoom({ browser, extraScreenshot }) {
+  for (let press = 0; press < ESCAPES_TO_DESELECT; press += 1) browser.press("Escape");
+  browser.run(["eval", `void window.__playtest.wheel(-100, ${ZOOM_IN_NOTCHES})`]);
+  await sleep(ZOOM_SETTLE_MS);
+  const page = browser.read("JSON.stringify({ width: innerWidth, height: innerHeight })");
+  const offsetOf = ({ x, y }) => [Math.round(x - page.width / 2), Math.round(y - page.height / 2)];
+  const zooms = [];
+  for (let notch = 0; notch <= ZOOM_STEPS_MAX; notch += 1) {
+    browser.hover(POINTER_PARKED);
+    await sleep(HOVER_SETTLE_MS);
+    const distance = browser.observe().worldmapDistance;
+    const rest = pickedArmyLabel(browser.read(PLATES_EXPRESSION));
+    const hovers = [];
+    for (const share of rest?.over ? MODEL_SHARES : []) {
+      const { tile, top } = rest.over;
+      browser.hover(offsetOf({ x: tile.x + (top.x - tile.x) * share, y: tile.y + (top.y - tile.y) * share }));
+      await sleep(HOVER_SETTLE_MS * 2);
+      hovers.push({ share, opened: pickedArmyLabel(browser.read(PLATES_EXPRESSION))?.open === true });
+    }
+    extraScreenshot(`zoom-${notch}`);
+    const against = againstTheirThings({ things: rest ? [rest] : [] });
+    zooms.push({ distance, rest: against.standing[0] ?? null, offModel: against.off.length > 0, hovers });
+    if (Math.abs(distance - FARTHEST_CAMERA_DISTANCE) <= CLOSEST_DISTANCE_TOLERANCE) break;
+    browser.run(["eval", "void window.__playtest.wheel(100, 1)"]);
+    await sleep(ZOOM_SETTLE_MS);
+  }
+  return { zooms };
+}
+
+/** From the closest zoom to the farthest, the army's token over its model and its plate open wherever its model is hovered. */
+function armyAnswersAtEveryZoom({ played }) {
+  const { zooms } = played;
+  const near = (distance, target) => Math.abs(distance - target) <= CLOSEST_DISTANCE_TOLERANCE;
+  if (!near(zooms[0]?.distance, CLOSEST_CAMERA_DISTANCE) || !near(zooms.at(-1)?.distance, FARTHEST_CAMERA_DISTANCE))
+    return failed("the camera did not step from the closest zoom to the farthest", played);
+  const undrawn = zooms.filter((zoom) => zoom.hovers.length === 0);
+  if (undrawn.length > 0)
+    return failed(`army ${PICKED_ARMY}'s token or model is not read at ${undrawn.length} zooms`, {
+      ...played,
+      undrawn,
+    });
+  const off = zooms.filter((zoom) => !zoom.rest || zoom.offModel);
+  if (off.length > 0) return failed(`army ${PICKED_ARMY}'s token stands off its model at ${off.length} zooms`, played);
+  const closed = zooms.filter((zoom) => zoom.hovers.some((hover) => !hover.opened));
+  return closed.length === 0
+    ? completed(played)
+    : failed(`hovering army ${PICKED_ARMY}'s model opens no plate at ${closed.length} zooms`, { ...played, closed });
+}
+
 // The open card and its buttons, the commands the lab's chain has been sent, and the army a merge's answer destroyed.
 const MERGE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
@@ -1936,6 +2005,7 @@ export const STEP_SETS = {
   "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps() },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
+  "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-later": { game: labDayTurn("day-later"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-turn-slow": { game: labDayTurn("day-turn-slow"), steps: labDayTurnSteps(RECORDED_DAY_2) },

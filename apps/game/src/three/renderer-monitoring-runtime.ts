@@ -58,6 +58,7 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
     // real style-recalc time in profiles, so an idle dev session pays nothing.
     this.registerStatsPanelToggle();
     this.initializeStatsRecorder();
+    this.registerDebugGlobals();
     this.initializeMemoryMonitoring();
     this.isInitialized = true;
   }
@@ -154,6 +155,12 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
     this.statsRecorder.setupKeyboardShortcuts();
   }
 
+  /** Dev mode reports the renderer on the window, its world included: the playtest's plate probe reads it there. */
+  private registerDebugGlobals(): void {
+    if (!this.input.isGraphicsDevEnabled && !this.input.isMemoryMonitoringEnabled) return;
+    registerGameRendererDebugGlobals(this.input.debugWindow, this.input.rendererOwner, this.input.renderer);
+  }
+
   private initializeMemoryMonitoring(): void {
     if (!this.input.isMemoryMonitoringEnabled) {
       return;
@@ -169,7 +176,6 @@ class GameRendererMonitoringRuntime implements RendererMonitoringRuntime {
       spikeThresholdMB: 30,
     });
     this.memoryMonitor.setRenderer(this.input.renderer);
-    registerGameRendererDebugGlobals(this.input.debugWindow, this.input.rendererOwner, this.input.renderer);
     this.mountMemoryStatsDisplay();
     this.scheduleMemoryMonitoringLoop();
   }

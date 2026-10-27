@@ -95,7 +95,13 @@ describe("the page a run opens", () => {
       buildRunUrl({ baseUrl: "https://127.0.0.1:4173", game, player, rendererMode: "webgpu-auto", stepSet }),
     ).searchParams.get("dev");
 
-  const plateLists = ["blitz-plates", "blitz-plates-player", "frontier-plates", "frontier-plates-player"];
+  const plateLists = [
+    "blitz-plates",
+    "blitz-plates-player",
+    "frontier-plates",
+    "frontier-plates-player",
+    "lab-hover-zoom",
+  ];
 
   it("keeps the dev overlays off for every spectator list that needs no dev tools", () => {
     const ordinary = Object.keys(STEP_SETS).filter(

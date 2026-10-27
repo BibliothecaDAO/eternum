@@ -67,7 +67,7 @@ import type {
 } from "@bibliothecadao/eternum/game-sync";
 import { BiomeType, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getEntityName } from "@bibliothecadao/eternum";
-import { Color, Euler, Raycaster, Scene, Vector3 } from "three";
+import { Color, Euler, Scene, Vector3 } from "three";
 import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import { CosmeticAttachmentManager, resolveArmyCosmetic, resolveArmyMountTransforms } from "../cosmetics";
@@ -291,8 +291,6 @@ export class ArmyManager {
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
     this.chunkStride = Math.max(1, chunkStride ?? Math.floor(this.renderChunkSize.width / 2));
     this.visibilityManager = visibilityManager;
-    this.onMouseMove = this.onMouseMove.bind(this);
-    this.onRightClick = this.onRightClick.bind(this);
     this.hexagonScene = hexagonScene;
     this.fxManager = new FXManager(scene, 1);
     this.attachmentManager = new CosmeticAttachmentManager(scene);
@@ -805,25 +803,6 @@ export class ArmyManager {
     console.log(
       `[Debug Spawner] Cleared ${count} debug armies. Total armies remaining: ${this.armyPresentations.size}`,
     );
-  }
-
-  public onMouseMove(raycaster: Raycaster) {
-    return this.raycastNearestArmyEntityId(raycaster);
-  }
-
-  public onRightClick(raycaster: Raycaster) {
-    const entityId = this.raycastNearestArmyEntityId(raycaster) as ID | undefined;
-    return entityId !== undefined && this.armyPresentations.get(entityId)?.isMine ? entityId : undefined;
-  }
-
-  private raycastNearestArmyEntityId(raycaster: Raycaster): number | undefined {
-    const proceduralHit = this.proceduralArmyCharacterLayer.raycastNearest(raycaster);
-    const legacyHit = this.armyModel.raycastNearest(raycaster);
-    if (proceduralHit && (!legacyHit || proceduralHit.distance <= legacyHit.distance)) {
-      return proceduralHit.entityId;
-    }
-    if (legacyHit?.instanceId === undefined || !legacyHit.mesh.userData.entityIdMap) return undefined;
-    return legacyHit.mesh.userData.entityIdMap.get(legacyHit.instanceId);
   }
 
   private resolveOwnerName(address: bigint, preferredName?: string, fallbackName?: string): string {

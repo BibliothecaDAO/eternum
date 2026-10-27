@@ -1,7 +1,7 @@
 import type { ID } from "@bibliothecadao/types";
 import { memo } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { type Camera, Matrix4, Vector3 } from "three";
+import { type Camera, Matrix4, type Ray, Vector3 } from "three";
 
 import "./map-plates.css";
 import { hudColumnRects } from "../utils/labels/hud-clearance";
@@ -69,6 +69,8 @@ const KIND_PRIORITY = { army: 8, structure: 5 } as const;
 const RELAYOUT_MS = 500;
 /** The HUD's bar across the top of the screen: the order line stays under it. */
 const SCREEN_TOP = 56;
+/** A thing's breadth around its label point's vertical, as the pointer meets it: half a tile, a model's width. */
+const COLUMN_RADIUS = 0.5;
 
 /**
  * The map's labels over the world renderer (map labels, the owner's plan D of 2026-10-19: "icons everywhere, full plate
@@ -192,6 +194,21 @@ export class MapPlateLayer {
     this.lastLayoutAt = now;
     this.lastFrame = { camera, width, height };
     this.layout(camera, width, height);
+  }
+
+  /**
+   * The label point of the thing the ray meets first (map labels, owner 2026-10-27: "at a certain zoom level I cant get
+   * the hover modal"): a thing is drawn as the column from the ground under its label point up to that point, its model
+   * standing in it, so the pointer on its model is on it at every zoom, not on the tile behind the model. Null where the
+   * ray meets none.
+   */
+  public thingHitBy(ray: Ray): Vector3 | null {
+    let nearest: { distance: number; position: Vector3 } | null = null;
+    for (const { position } of this.entries.values()) {
+      const distance = columnHit(ray, position);
+      if (distance !== null && (nearest === null || distance < nearest.distance)) nearest = { distance, position };
+    }
+    return nearest?.position ?? null;
   }
 
   /** How many things carry a label (a token, or its plate opened). */
@@ -402,6 +419,35 @@ const LabelSlot = memo(function LabelSlot({
     </div>
   );
 });
+
+/**
+ * How far along the ray it first meets a thing's column (`COLUMN_RADIUS` round its label point's vertical, from the
+ * ground at height 0 up to the point), or null where it passes by: the ray is within the column's breadth over one span
+ * and between its foot and its top over another, and meets the column where both begin.
+ */
+const columnHit = (ray: Ray, top: Vector3): number | null => {
+  const { origin, direction } = ray;
+  const dx = origin.x - top.x;
+  const dz = origin.z - top.z;
+  const a = direction.x * direction.x + direction.z * direction.z;
+  const b = 2 * (dx * direction.x + dz * direction.z);
+  const c = dx * dx + dz * dz - COLUMN_RADIUS * COLUMN_RADIUS;
+  const across = a === 0 ? (c <= 0 ? [-Infinity, Infinity] : null) : rootsOf(a, b, c);
+  if (!across || direction.y === 0) return null;
+  const atFoot = -origin.y / direction.y;
+  const atTop = (top.y - origin.y) / direction.y;
+  const enter = Math.max(across[0], Math.min(atFoot, atTop), 0);
+  const leave = Math.min(across[1], Math.max(atFoot, atTop));
+  return enter <= leave ? enter : null;
+};
+
+/** Where a·t² + b·t + c ≤ 0, for a > 0: the span between its roots, or null where it has none. */
+const rootsOf = (a: number, b: number, c: number): [number, number] | null => {
+  const discriminant = b * b - 4 * a * c;
+  if (discriminant < 0) return null;
+  const root = Math.sqrt(discriminant);
+  return [(-b - root) / (2 * a), (-b + root) / (2 * a)];
+};
 
 const sameKeys = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
   a.size === b.size && [...a].every((key) => b.has(key));
