@@ -258,6 +258,8 @@ pub fn board_output(deployment: super::Deployment, home: ResourceKey, category: 
 pub /// A board realm with its castle, every command open, room for many buildings and plenty of Essence and labor.
  fn research_world() -> (super::Deployment, ResourceKey, crate::presets::PresetDefinition) {
     let mut preset = building_preset(Some(board_rules()));
+    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    preset.structures.buildings = frontier.structures.buildings;
     preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
     preset.rules.building_config.base_population = 40;
     // Farms and barracks make 40 a second, so each quarter of the base is whole.
