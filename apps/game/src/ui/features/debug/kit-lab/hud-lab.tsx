@@ -687,6 +687,13 @@ const STATES = {
     selected: 0,
     army: { stamina: 20, lords: 1_240, confirm: true },
   },
+  "army-refill-ready": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    army: { stamina: 20, lords: 1_240 },
+  },
   "army-refill-short": {
     clock: CLOCK,
     stores: STORES,
