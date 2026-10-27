@@ -591,6 +591,8 @@ export const seasonPool = (lords: string, today: string | undefined) =>
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
 export const fitOf = (fits: string, of: string) => `${fits} of ${of} fit`;
 export const REALMS_ELSEWHERE = "No Realms in this wallet";
+/** What one Realm gives a day, for assistive technology on the Realms sheet's chip ("Labor a day per Realm +1K"). */
+export const REALM_LABOR = "Labor a day per Realm";
 /** A Realm joins the list by its number, the first time it gives its labor. */
 export const ADD_REALM = "Add a Realm";
 export const REALM_NUMBER = "Realm number";
