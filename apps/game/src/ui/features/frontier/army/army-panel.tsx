@@ -178,7 +178,63 @@ const XpLine = ({ army }: { army: ArmyView }) =>
  * The XP held, with how XP is earned on its hover, Level up (lit while the XP buys a level-up, with no count: the
  * choices say which), and the bar to the next level-up.
  */
-const XpBlock = ({ army, onLevelUp }: { army: ArmyView; onLevelUp: () => void }) => (
+const XpBlock = ({ army, onLevelUp }: { army: ArmyView; onLevelUp: () => void }) => {
+  const variant = new URLSearchParams(window.location.search).get("xp");
+  return variant === "a" || variant === "b" ? (
+    <XpRow army={army} onLevelUp={onLevelUp} stacked={variant === "b"} />
+  ) : (
+    <XpBlockToday army={army} onLevelUp={onLevelUp} />
+  );
+};
+
+/**
+ * Lab-only (the owner, 27 October: XP and Level up on one row): (a) "260 XP", its bar and Level up on one line; (b) the
+ * XP over its bar, Level up beside them.
+ */
+const XpRow = ({ army, onLevelUp, stacked }: { army: ArmyView; onLevelUp: () => void; stacked: boolean }) => {
+  const held = (
+    <span
+      className="flex shrink-0 items-baseline gap-1"
+      data-tip={army.earn
+        .map(({ line, xp }) => (xp === undefined ? line : `${line} ${formatFigure(xp, { signed: true })}`))
+        .join(" · ")}
+    >
+      <span className="text-hud-display tabular-nums text-hud-gold">{formatExact(army.xp)}</span>
+      <span className="text-hud-strong text-hud-ink">{XP}</span>
+    </span>
+  );
+  const bar = army.goal && (
+    <span className="min-w-0 flex-1">
+      <HudMeter share={army.goal.share} tone={army.affordable > 0 ? "good" : undefined} label={XP} />
+    </span>
+  );
+  const button = (
+    <HudButton kind={army.affordable > 0 ? "primary" : "secondary"} size="sm" icon="upgrade" onClick={onLevelUp}>
+      {army.affordable > 0 ? ARMY_DETAIL.levelUp : ARMY_DETAIL.levelUps}
+    </HudButton>
+  );
+  return stacked ? (
+    <div className="flex items-center gap-3">
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="flex items-baseline justify-between gap-2">
+          {held}
+          <XpLine army={army} />
+        </span>
+        {bar}
+      </span>
+      {button}
+    </div>
+  ) : (
+    <div className="flex items-center gap-2">
+      {held}
+      {bar}
+      <XpLine army={army} />
+      {button}
+    </div>
+  );
+};
+
+const XpBlockToday = ({ army, onLevelUp }: { army: ArmyView; onLevelUp: () => void }) => (
   <div className="flex flex-col gap-1.5">
     <div className="flex items-end justify-between gap-2">
       <span

@@ -21,7 +21,9 @@ export const RefillButton = ({
   refilling?: boolean;
   onRefill: () => void;
 }) =>
-  held !== undefined && held < price ? (
+  new URLSearchParams(window.location.search).get("refill") === "row" ? (
+    <RefillRow price={price} held={held} refilling={refilling} onRefill={onRefill} />
+  ) : held !== undefined && held < price ? (
     <span
       role="img"
       aria-label={refillShort(formatExact(held), formatCharge(price))}
@@ -38,6 +40,39 @@ export const RefillButton = ({
       {REFILL}
     </HudButton>
   );
+
+/** Lab-only (the owner's mock, 27 October): one control on the chips' row, its price, or held against it when short. */
+const RefillRow = ({
+  price,
+  held,
+  refilling,
+  onRefill,
+}: {
+  price: number;
+  held: number | undefined;
+  refilling: boolean;
+  onRefill: () => void;
+}) => {
+  const short = held !== undefined && held < price;
+  const tip = short ? refillShort(formatExact(held), formatCharge(price)) : `${REFILL} ${formatCharge(price)} ${LORDS}`;
+  return (
+    <HudButton
+      kind="secondary"
+      size="sm"
+      icon="stamina"
+      disabled={short}
+      aria-label={tip}
+      data-tip={tip}
+      busy={refilling ? REFILLING : undefined}
+      onClick={onRefill}
+    >
+      <SemanticIcon name="lords" size={14} />
+      <span className={short ? "tabular-nums text-hud-bad" : "tabular-nums"}>
+        {short ? `${formatExact(held)}/${formatExact(price)}` : formatExact(price)}
+      </span>
+    </HudButton>
+  );
+};
 
 /**
  * Refill's confirm (wireframe 08): the bar now → full, the realm's LORDS before → after, then Cancel and Refill with its

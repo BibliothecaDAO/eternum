@@ -713,6 +713,13 @@ const STATES = {
     selected: 0,
     army: { stamina: 20, lords: 1_240 },
   },
+  "army-full": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    army: { stamina: 170, lords: 1_240 },
+  },
   "army-refill-short": {
     clock: CLOCK,
     stores: STORES,
@@ -1184,14 +1191,15 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
 /** The veteran army's panel on the fiction, with its refill where the realm's LORDS are given, or the refill's confirm. */
 const LabArmy = ({ army }: { army: LabArmySheet }) => {
   const stamina = { ...VETERAN_ARMY.stamina, current: army.stamina ?? VETERAN_ARMY.stamina.current };
+  const full = stamina.current >= stamina.max;
   if (army.confirm)
     return <RefillConfirm stamina={stamina} held={army.lords} sending={false} onRefill={noop} onCancel={noop} />;
   return (
     <HudSheet label={VETERAN_ARMY.name} onClose={noop}>
       <ArmyDetail
-        army={readArmyDetail({ ...VETERAN_ARMY, stamina })}
+        army={readArmyDetail({ ...VETERAN_ARMY, stamina, ...(full ? { secondsToFull: 0 } : {}) })}
         refill={
-          army.lords === undefined ? undefined : (
+          army.lords === undefined || full ? undefined : (
             <RefillButton price={stamina.max - stamina.current} held={army.lords} onRefill={noop} />
           )
         }
