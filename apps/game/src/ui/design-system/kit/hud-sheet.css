@@ -1182,12 +1182,13 @@ button.ui-relic:focus-visible {
   order: 2;
   margin-left: auto;
 }
-/* A note that says why the verb cannot run takes its own line over the buttons: beside a fix and the verb, a phone's
-   foot would squeeze it into a column a word wide. */
-.ui-actions:has(> .ui-actions__note .ui-notice) {
+/* A note that says why the verb cannot run stands beside the verb alone, so a card's foot stays one row on a phone
+   (owner, 27 October: "it doesnt fit on my s22+ screen"). Beside a fix and the verb it takes its own line over them:
+   there a phone's foot would squeeze it into a column a word wide. */
+.ui-actions:has(> .ui-actions__note .ui-notice):has(> :nth-child(3)) {
   flex-wrap: wrap;
 }
-.ui-actions__note:has(.ui-notice) {
+.ui-actions:has(> :nth-child(3)) > .ui-actions__note:has(.ui-notice) {
   order: -1;
   flex-basis: 100%;
 }

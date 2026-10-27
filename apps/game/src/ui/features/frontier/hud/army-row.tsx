@@ -67,13 +67,21 @@ export const ArmyRow = ({
       </span>
     }
     detail={
+      // The troops take what the stamina leaves: the stamina has one width on every row, so the bars line up.
       <span className="flex items-center gap-2 whitespace-nowrap tabular-nums">
-        <span>{troops === undefined ? "—" : troopCount(troops)}</span>
-        <StaminaReading stamina={stamina} />
+        <span className="min-w-0 flex-1 truncate">{troops === undefined ? "—" : troopCount(troops)}</span>
+        <span className="flex w-28 shrink-0">
+          <StaminaReading stamina={stamina} />
+        </span>
       </span>
     }
-    // The trail is the card fan while a level is affordable now: the row itself opens the panel that buys it.
-    trail={canBuyTier ? <SemanticIcon name="picks" size={20} data-tip={UPGRADE} /> : null}
+    // The trail is the card fan while a level is affordable now: the row itself opens the panel that buys it. Its place
+    // stands empty on the other rows, so every row's words are as wide.
+    trail={
+      <span className="flex size-5 items-center justify-center">
+        {canBuyTier && <SemanticIcon name="picks" size={20} data-tip={UPGRADE} />}
+      </span>
+    }
     selected={selected}
     onClick={onPick}
   />

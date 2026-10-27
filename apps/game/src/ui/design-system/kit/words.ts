@@ -283,8 +283,6 @@ export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
 /** What a training building gives, by its tier's numeral: "new armies start with Battle II". */
 export const startsNewArmies = (attribute: string, numeral: string) => `new armies start with ${attribute} ${numeral}`;
-/** The fix for a short store that the map can fill: "Explore for labor". */
-export const exploreFor = (noun: string) => `${EXPLORE} for ${noun}`;
 
 /**
  * An army's XP on its tooltip, against the attribute tier it buys next: "XP 8 of 100 · buys an Uncommon attribute
@@ -392,7 +390,6 @@ export const BUILDING_FIGURES = {
   eachMakes: (noun: string) => `${noun} each makes`,
   castleMakes: (noun: string) => `${noun} the castle makes`,
   standing: "standing",
-  held: (noun: string) => `${noun} held of its ${STORAGE.toLowerCase()}`,
   eachAdds: `${POPULATION} each adds`,
   eachTakes: `${POPULATION} each takes`,
   startsAt: (attribute: string) => `${attribute} new armies start at`,

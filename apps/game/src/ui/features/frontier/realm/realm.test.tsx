@@ -22,13 +22,11 @@ afterEach(() => {
 const buttons = () => [...host.querySelectorAll<HTMLButtonElement>("button")];
 
 describe("the castle", () => {
-  const CASTLE_MAKES = { rate: "+1.7/min", held: 2_011, storage: 6_000 };
-
-  it("shows the labor the castle makes a minute, and what it holds on its storage's meter", () => {
+  it("shows the labor the castle makes a minute in its table's corner, never the labor held the top bar shows", () => {
     act(() =>
       root.render(
         <CastleView
-          makes={CASTLE_MAKES}
+          laborRate="+1.7/min"
           now={side(0)}
           next={side(1)}
           prices={[{ of: "labor", amount: 4_000 }]}
@@ -39,12 +37,9 @@ describe("the castle", () => {
         />,
       ),
     );
-    const card = host.querySelector("[data-castle-card]")!;
-    expect(card.textContent).toContain("+1.7/min");
-    expect(card.textContent).toContain("2,011 / 6,000");
-    const meter = host.querySelector('[role="meter"]')!;
-    expect(meter.getAttribute("aria-label")).toBe("labor held of its storage");
-    expect([meter.getAttribute("aria-valuenow"), meter.getAttribute("aria-valuemax")]).toEqual(["2011", "6000"]);
+    const head = host.querySelector("[data-castle-card] [data-compare] > :first-child")!;
+    expect(head.textContent).toBe("+1.7/minSettlementCity");
+    expect(host.querySelector('[role="meter"]')).toBeNull();
   });
 
   const side = (level: number) => ({
@@ -61,7 +56,7 @@ describe("the castle", () => {
     act(() =>
       root.render(
         <CastleView
-          makes={CASTLE_MAKES}
+          laborRate="+1.7/min"
           now={side(1)}
           next={side(2)}
           prices={[{ of: "labor", amount: 15_000 }]}
@@ -99,48 +94,37 @@ describe("the castle", () => {
     expect(onUpgrade).toHaveBeenCalled();
   });
 
-  it("keeps Upgrade, dimmed, with its price when the realm cannot pay, over the line that says why and the fix", () => {
+  it("keeps Upgrade, dimmed, beside what it needs against what is held when the realm cannot pay, and nothing else", () => {
     const onUpgrade = vi.fn();
-    const onFix = vi.fn();
     act(() =>
       root.render(
         <CastleView
-          makes={CASTLE_MAKES}
+          laborRate="+1.7/min"
           now={side(0)}
           next={side(1)}
           prices={[{ of: "labor", amount: 4_000 }]}
-          refusal={{
-            reason: { kind: "short", of: "labor", held: 2_011, need: 4_000, wait: 19 * 3_600 + 44 * 60 },
-            fix: { icon: "map", word: "Explore for labor", onFix },
-          }}
+          refusal={{ reason: { kind: "short", of: "labor", held: 2_011, need: 4_000, wait: 19 * 3_600 + 44 * 60 } }}
           sending={false}
           onUpgrade={onUpgrade}
           onClose={() => {}}
         />,
       ),
     );
-    expect(host.querySelector(".ui-cost")?.textContent).toBe("4,000 labor");
     const upgrade = buttons().find((button) => button.textContent === "Upgrade")!;
     expect(upgrade.disabled).toBe(true);
-    // The verb, why it cannot run and the fix stand in the sheet's foot, never squeezed or scrolled away on a phone.
-    expect(upgrade.closest(".ui-window__foot")).not.toBeNull();
-    expect(host.querySelector('.ui-window__foot [role="status"]')).not.toBeNull();
+    // The foot is the line and the verb: no price line repeating the need, no Explore (owner, 27 October).
+    const foot = upgrade.closest(".ui-window__foot")!;
+    expect(foot.textContent).toBe("Needs 4,000 labor, have 2,011 · in 19h 44mUpgrade");
+    expect(foot.querySelectorAll("button")).toHaveLength(1);
     act(() => upgrade.click());
     expect(onUpgrade).not.toHaveBeenCalled();
-    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 4,000 labor, have 2,011 · in 19h 44m");
-    act(() =>
-      buttons()
-        .find((button) => button.textContent === "Explore for labor")!
-        .click(),
-    );
-    expect(onFix).toHaveBeenCalled();
   });
 
   it("has no next side and no verb at the last level", () => {
     act(() =>
       root.render(
         <CastleView
-          makes={CASTLE_MAKES}
+          laborRate="+1.7/min"
           now={side(3)}
           next={null}
           prices={[]}

@@ -197,13 +197,16 @@ export const HomecomingReturn = ({ troops }: { troops: number }) => (
   </span>
 );
 
-/** A desktop row's stamina: the bar in segments, and its exact count beside it ("58/120"), as a row and a slot read it. */
+/**
+ * A desktop row's stamina: the bar in segments, and its exact count beside it ("58/120") in a column wide enough for
+ * "150/150", so a full bar and an emptier one end their bars at the same place.
+ */
 export const StaminaReading = ({ stamina }: { stamina: StaminaBar | undefined }) => (
   <span className="flex flex-1 items-center gap-2">
     <span className="min-w-8 flex-1">
       <HudStamina stamina={stamina} />
     </span>
-    <span>{`${formatAmount(stamina?.current)}/${formatAmount(stamina?.max)}`}</span>
+    <span className="min-w-12 text-right">{`${formatAmount(stamina?.current)}/${formatAmount(stamina?.max)}`}</span>
   </span>
 );
 

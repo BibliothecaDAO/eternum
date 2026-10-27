@@ -53,9 +53,7 @@ import {
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 
-import { useGoToFrontierPlace } from "../frontier-home";
 import { readRealmPopulation } from "../realm/realm-population";
-import { exploreFix } from "../frontier-reveal-yield";
 import { outputWhy } from "../production/store-makers";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { ATTRIBUTE_MARKS } from "../research/research-tree";
@@ -128,7 +126,6 @@ export const BuildSheet = ({
   const [chosen, setChosen] = useState(0);
   const option = options?.[chosen];
   const sending = useInFlight("plot", plotKey(realmId, plot)) !== undefined;
-  const goToPlace = useGoToFrontierPlace(realm);
   const mode = useGameModeConfig();
   const names = usePlayerNames();
   const realmInfo = useMemo(
@@ -184,10 +181,6 @@ export const BuildSheet = ({
           need: shortCost.amount,
           wait: secondsUntilHeld(have, shortCost.amount, perHour),
         },
-        fix: exploreFix(shortCost.resource, () => {
-          onClose();
-          goToPlace(true);
-        }),
       };
     }
     const verdict = resolveConstructionBuildability({

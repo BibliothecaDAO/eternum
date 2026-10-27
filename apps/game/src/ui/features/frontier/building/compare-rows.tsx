@@ -24,13 +24,24 @@ const ARROW = "w-4 shrink-0 text-center";
 /**
  * What a card gives now beside what its next step gives, read across one table (the owner's pick A, 26 October: "the
  * same view as the castle"): the castle's level against the next, a building's tier against its next. Without `next`
- * (the top reached), only the now column stands.
+ * (the top reached), only the now column stands. `corner` fills the head's free corner over the rows' words (the
+ * castle's labor a minute), so a card spends no line of its own on it.
  */
-export const CompareRows = ({ now, next, rows }: { now: ReactNode; next?: ReactNode; rows: readonly CompareRow[] }) => {
+export const CompareRows = ({
+  now,
+  next,
+  corner,
+  rows,
+}: {
+  now: ReactNode;
+  next?: ReactNode;
+  corner?: ReactNode;
+  rows: readonly CompareRow[];
+}) => {
   return (
     <div data-compare className="flex flex-col gap-1 text-hud-body tabular-nums">
       <div className={cn(ROW, "px-2 text-hud-label text-hud-muted")}>
-        <span className="flex-1" />
+        <span className="flex min-w-0 flex-1">{corner}</span>
         <span className={cn(FIGURE, "flex justify-center")}>{now}</span>
         {next !== undefined && (
           <>
