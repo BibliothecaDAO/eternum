@@ -283,6 +283,7 @@ import {
   isTouchHold,
   orderOnTap,
   orderVerbOnHud,
+  pinsOrder,
   readOrderRequest,
   stepBackOnEscape,
 } from "./worldmap-order-request";
@@ -2649,7 +2650,7 @@ export default class WorldmapScene extends WarpTravel {
       resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths)
     )
       return;
-    if (hexCoords && this.answerTapWithSelectedOrder(hexCoords)) return;
+    if (hexCoords && this.tapActsForSelection(hexCoords) && this.answerTapWithSelectedOrder(hexCoords)) return;
     const viewer = accountAddress();
     const {
       army: standingArmy,
@@ -2672,7 +2673,7 @@ export default class WorldmapScene extends WarpTravel {
     if (clickPlan.kind === "ignore") {
       return;
     }
-    if (clickPlan.selection.type === "clear" && this.keepsArmyOnClick()) {
+    if (clickPlan.selection.type === "clear" && this.keepsArmyOnClick(hexCoords)) {
       this.openTargetCardForSelectedArmy(contractHexOf(hexCoords));
       return;
     }
@@ -2713,12 +2714,35 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * On a desktop, a click on a tile that holds none of the player's own keeps the selected army, and the tile's card
-   * opens for it: only Escape, its ×, or another selection lets it go (owner, 27 October 2026: "I wanna be able to
-   * select an army and do all kind of actions without deselecting and reselecting the army").
+   * On a desktop, a click on another's thing (a beast's site, an army, a structure, a crate) keeps the selected army,
+   * and that tile's card opens for it: only Escape, its ×, or another selection lets it go (owner, 27 October 2026: "I
+   * wanna be able to select an army and do all kind of actions without deselecting and reselecting the army").
    */
-  private keepsArmyOnClick(): boolean {
-    return layoutNow() !== "phone" && this.selectedArmyId() !== null;
+  private keepsArmyOnClick(hexCoords: HexPosition): boolean {
+    return layoutNow() !== "phone" && this.selectedArmyId() !== null && !this.isBareGround(hexCoords);
+  }
+
+  /**
+   * Whether a tap or click acts for what is selected. A desktop's click orders nothing: a right-click does. There a
+   * click on bare ground lets go of the selected army or structure, as a click with nothing selected (owner, 27 October
+   * 2026: "Left clicking should remove the selected army/structure"); one on a thing opens it for the army. A phone's
+   * tap keeps its rules: it previews or pins the order at the tile.
+   */
+  private tapActsForSelection(hexCoords: HexPosition): boolean {
+    return layoutNow() === "phone" || !this.isBareGround(hexCoords);
+  }
+
+  /**
+   * Nothing stands on the tile (an army, a structure or a site, a crate, the army's own spire), and the selected army's
+   * only order there, if any, takes it onto the tile: a move or an explore.
+   */
+  private isBareGround(hexCoords: HexPosition): boolean {
+    const { army, structure, chest } = this.getHexagonEntity(hexCoords);
+    if (army || structure || chest || this.usableSiteAt(hexCoords) !== null) return false;
+    const armyId = this.selectedArmyId();
+    if (armyId !== null && this.isArmysSpire(armyId, hexCoords)) return false;
+    const path = getLiveWorldmapEntityActions().actionPaths.get(ActionPaths.posKey(hexCoords, true));
+    return !path || pinsOrder(path);
   }
 
   protected handleHexSelection(hexCoords: HexPosition, isMine: boolean) {
@@ -2783,8 +2807,9 @@ export default class WorldmapScene extends WarpTravel {
         order: () => {
           this.pointerOrderTip.take();
           if (actionPaths.has(clickedHexKey) || isTouchHold(event)) this.actAtHex(hexCoords);
-          // No order here: what a click opens, an order the army can't take now with its reason among them.
-          else this.answerTapWithSelectedOrder(hexCoords);
+          // No order here: what a click opens, an order the army can't take now with its reason among them; on another
+          // of the player's armies, which a click selects instead, the troop transfer it has no order for, and why.
+          else if (!this.answerTapWithSelectedOrder(hexCoords)) this.openRefusedOrderPreview(hexCoords);
         },
         transfer: openTransfer,
         menu: () => {
@@ -2923,7 +2948,7 @@ export default class WorldmapScene extends WarpTravel {
     if (army === null || !refusal || !reason) return;
     const { army: armyThere, structure, chest } = this.getHexagonEntity(hexCoords);
     const verb = refusedOrderVerb({
-      holds: armyThere || structure ? "target" : chest ? "crate" : null,
+      holds: this.holdsOwnSelectable(hexCoords) ? "friend" : armyThere || structure ? "target" : chest ? "crate" : null,
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
     });
     const tip = { line: verb, cost: null };

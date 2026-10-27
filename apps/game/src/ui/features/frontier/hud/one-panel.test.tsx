@@ -95,3 +95,50 @@ describe("Frontier's one panel: the one opened last stands alone", () => {
     expect(open()).toEqual(["card camp@4,5"]);
   });
 });
+
+describe("the deploy order is its realm's (owner, 27 October 2026: 'click another army without deploying we should close the deploy')", () => {
+  const REALM = 7;
+  const ARMY = 201;
+  /** The map's selection, as a tap or the dock sets it. */
+  const select = (entityId: number | null) =>
+    useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: entityId } }));
+  /** Deploy opened for the realm, the realm selected on the map, as the dock's Deploy or a lit tile opens it. */
+  const deployFromRealm = () => {
+    useUIStore.setState({
+      pendingMilitaryAction: { structureId: REALM, isExplorer: true },
+      leftNavigationView: LeftView.MilitaryView,
+    });
+    select(REALM);
+  };
+  afterEach(() => {
+    select(null);
+    useUIStore.setState({ pendingMilitaryAction: null });
+  });
+
+  it.each([
+    ["another army is tapped", ARMY],
+    ["the map lets the realm go", null],
+  ])("closes when %s, and the new selection stands", (_, next) => {
+    act(() => deployFromRealm());
+    expect(open()).toEqual(["deploy"]);
+
+    act(() => select(next));
+
+    expect(open()).toEqual([]);
+    expect(useUIStore.getState().pendingMilitaryAction).toBeNull();
+    expect(useUIStore.getState().entityActions.selectedEntityId).toBe(next);
+  });
+
+  it("stays while its realm stays selected (another lit tile aims it again)", () => {
+    act(() => deployFromRealm());
+    act(() => select(REALM));
+    act(() => tap(null));
+    expect(open()).toEqual(["deploy"]);
+  });
+
+  it("opens over an army selected before it: the realm it selects keeps it open", () => {
+    act(() => select(ARMY));
+    act(() => deployFromRealm());
+    expect(open()).toEqual(["deploy"]);
+  });
+});

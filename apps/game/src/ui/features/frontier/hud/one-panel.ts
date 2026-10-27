@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { closeFightResult } from "../sites/fight-result";
 import type { HudSurface } from "./frontier-nav";
@@ -15,7 +15,10 @@ import type { HudSurface } from "./frontier-nav";
  * - a new card (a new tap) closes the surface and the deploy order;
  * - on a phone, a new pick on the map (an army, or the tile its order or transfer is pinned on) closes the surface, so
  *   the action row that answers the pick stands where the surface stood;
- * - the deploy order closes the surface and stands over the card.
+ * - the deploy order closes the surface and stands over the card;
+ * - the deploy order is its realm's: a pick of anything else, or letting the realm go, closes it (owner, 27 October
+ *   2026: "when i click this but then click another army without deploying we should close the deploy and bring up the
+ *   selected army").
  *
  * A card a later panel stands over stays hidden until the selection opens another (`card` is the card's key, null while
  * the selection opens none). A surface stands over any card showing when it opens, whether the press let go of its
@@ -38,6 +41,8 @@ export const useOnePanel = (
   const [feedOpen, setFeedOpen] = useState(true);
   const deploying = useUIStore((state) => state.leftNavigationView === LeftView.MilitaryView);
   const pick = useUIStore((state) => mapPick(state.entityActions));
+  const selected = useUIStore((state) => state.entityActions.selectedEntityId ?? null);
+  const deployingFrom = useUIStore((state) => state.pendingMilitaryAction?.structureId ?? null);
   // What the last render saw, and whether a surface opened since: what opened is what changed.
   const [seen, setSeen] = useState<{ card: string | null; deploying: boolean; pick: string | null }>({
     card: null,
@@ -69,6 +74,14 @@ export const useOnePanel = (
       setHidden(card);
     }
   }
+
+  // A new selection that is not the deploy order's realm puts the order away.
+  const selectedBefore = useRef(selected);
+  useEffect(() => {
+    const reselected = selected !== selectedBefore.current;
+    selectedBefore.current = selected;
+    if (reselected && deploying && (selected === null || Number(selected) !== deployingFrom)) closeDeployOrder();
+  }, [selected, deploying, deployingFrom]);
 
   const showsCard = card !== null && card !== hidden;
   // A card opened over a deploy order closes the order.

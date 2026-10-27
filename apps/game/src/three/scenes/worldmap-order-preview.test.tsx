@@ -127,27 +127,20 @@ const drawnSurface = () => {
   return { id: surface.id, host };
 };
 
-it.each([
-  ["Frontier", true],
-  ["Blitz", false],
-])(
-  "on a %s desktop, a click on a tile the army can explore opens the order there, and its verb sends it",
-  (_, frontier) => {
-    screen(true);
-    const { scene, sent } = worldMap(frontier);
+it("on a Blitz phone, a tap on a tile the army can explore opens the order there, and its verb sends it", () => {
+  screen(false);
+  const { scene, sent } = worldMap(false);
 
-    expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(true);
+  expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(true);
 
-    const drawn = drawnSurface();
-    expect(drawn?.id).toBe("order-preview");
-    const verb = [...drawn!.host.querySelectorAll("button")].find((button) => button.textContent === "Explore")!;
-    expect(drawn!.host.textContent).toContain("20 stamina");
-    expect(drawn!.host.textContent).toContain("A right-click sends it at once.");
-    act(() => verb.click());
-    expect(sent).toEqual([BESIDE]);
-    expect(usePopoverStore.getState().surface).toBeNull();
-  },
-);
+  const drawn = drawnSurface();
+  expect(drawn?.id).toBe("order-preview");
+  const verb = [...drawn!.host.querySelectorAll("button")].find((button) => button.textContent === "Explore")!;
+  expect(drawn!.host.textContent).toBe("20 stamina" + "Explore");
+  act(() => verb.click());
+  expect(sent).toEqual([BESIDE]);
+  expect(usePopoverStore.getState().surface).toBeNull();
+});
 
 it("on a Frontier phone, a tap pins the order for the HUD's own verb, naming it at its tile, and opens no preview", () => {
   screen(false);
@@ -288,7 +281,7 @@ const verbOf = (host: HTMLElement, words: string) =>
   [...host.querySelectorAll("button")].find((button) => button.textContent === words)!;
 
 describe("an open preview whose order changes before its verb is pressed", () => {
-  beforeEach(() => screen(true));
+  beforeEach(() => screen(false));
 
   it.each([
     [
@@ -307,7 +300,7 @@ describe("an open preview whose order changes before its verb is pressed", () =>
       (scene: ReturnType<typeof worldMap>["scene"]) => scene.updateEntityActionPaths(new Map()),
     ],
   ])("closes when %s, and its old verb sends nothing", (_, change) => {
-    const { scene, sent } = worldMap(true);
+    const { scene, sent } = worldMap(false);
     scene.answerTapWithSelectedOrder(BESIDE);
     const drawn = drawnSurface()!;
 
@@ -319,7 +312,7 @@ describe("an open preview whose order changes before its verb is pressed", () =>
   });
 
   it("sends nothing when the order's cost changed before the map heard of it", () => {
-    const { scene, sent } = worldMap(true);
+    const { scene, sent } = worldMap(false);
     scene.answerTapWithSelectedOrder(BESIDE);
     const drawn = drawnSurface()!;
     expect(drawn.host.textContent).toContain("20 stamina");
@@ -334,7 +327,7 @@ describe("an open preview whose order changes before its verb is pressed", () =>
   });
 
   it("stays open, and sends its order, when the orders are planned again the same", () => {
-    const { scene, sent } = worldMap(true);
+    const { scene, sent } = worldMap(false);
     scene.answerTapWithSelectedOrder(BESIDE);
     const drawn = drawnSurface()!;
 
@@ -566,14 +559,13 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
       expect([sent, cleared]).toEqual([[], []]);
     });
 
-    it("a left-click there opens the same, keeping the army", () => {
+    it("a left-click there lets the army go and opens nothing", () => {
       screen(true);
-      const { scene, sent, selections, cleared } = lowStaminaMap(frontier);
+      const { scene, sent, cleared } = lowStaminaMap(frontier);
 
       scene.onHexagonClick(FAR);
 
-      expect(shownPreview()).toEqual({ verb: "Explore", disabled: true, reason: "Too far: move closer" });
-      expect([sent, selections, cleared]).toEqual([[], [], []]);
+      expect([shownPreview(), sent, cleared]).toEqual([null, [], [1]]);
     });
   });
 
@@ -596,6 +588,44 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
     expect(cleared).toEqual([]);
   });
 
+  // Owner, 27 October 2026: "Left clicking should remove the selected army/structure".
+  it.each([
+    ["Frontier", true],
+    ["Blitz", false],
+  ])("in %s, a click on bare ground the army could explore lets it go and orders nothing", (_, frontier) => {
+    screen(true);
+    const { scene, sent, selections, cleared } = lowStaminaMap(frontier);
+    const fog = { col: 4, row: 4 };
+    useUIStore.setState((state) => ({
+      entityActions: {
+        ...state.entityActions,
+        actionPaths: new Map([
+          [
+            ActionPaths.posKey(fog, true),
+            [
+              { hex: ARMY_HEX, actionType: ActionType.Move },
+              { hex: fog, actionType: ActionType.Explore, staminaCost: 20 },
+            ],
+          ],
+        ]),
+      },
+    }));
+
+    scene.onHexagonClick(fog);
+
+    expect([usePopoverStore.getState().surface, sent, selections, cleared]).toEqual([null, [], [], [1]]);
+  });
+
+  it("a click on the monster beside it keeps the army and opens the monster's card for it", () => {
+    screen(true);
+    const { scene, selections, cleared } = lowStaminaMap(true);
+
+    scene.onHexagonClick(BESIDE);
+
+    expect(selections).toEqual([{ kind: "army", entityId: ARMY, tile: contract(BESIDE) }]);
+    expect(cleared).toEqual([]);
+  });
+
   it("on a phone, the same tap still lets the army go, as before", () => {
     screen(false);
     const { scene, selections, cleared } = lowStaminaMap(false);
@@ -603,5 +633,181 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
     scene.onHexagonClick(FAR);
 
     expect([selections, cleared]).toEqual([[], [1]]);
+  });
+});
+
+/**
+ * What a click or a tap does, by what is selected and what it lands on (owner, 27 October 2026: "Left clicking should
+ * remove the selected army/structure"; "when i click this but then click another army without deploying we should
+ * close the deploy and bring up the selected army"). Every cell runs the map's own click, tap and right-click.
+ */
+describe("the click matrix: what is selected × what is clicked", () => {
+  const OTHER_ARMY = 8;
+  const REALM = 9;
+  const ENEMY = 99;
+  const OWN = 0x111n;
+  const tiles = {
+    "own army": { col: 3, row: 5 },
+    "own realm": { col: 4, row: 4 },
+    "enemy army": BESIDE,
+    "bare ground in reach": { col: 4, row: 6 },
+    "bare ground far": { col: 12, row: 9 },
+  } as const;
+  type Clicked = keyof typeof tiles;
+  type Selected = "nothing" | "army" | "realm";
+  const key = (hex: { col: number; row: number }) => ActionPaths.posKey(hex);
+  const contract = (hex: { col: number; row: number }) => {
+    const at = Position.fromNormalized({ x: hex.col, y: hex.row }).getContract();
+    return { col: at.x, row: at.y };
+  };
+
+  /** The map with the player's two armies and realm, an enemy army beside the first, and the selection given. */
+  const mapWith = (selected: Selected, frontier: boolean) => {
+    const map = worldMap(frontier);
+    const did: string[] = [];
+    const entities = new Map<string, object>([
+      [key(ARMY_HEX), { army: { id: ARMY, owner: OWN } }],
+      [key(tiles["own army"]), { army: { id: OTHER_ARMY, owner: OWN } }],
+      [key(tiles["own realm"]), { structure: { id: REALM, owner: OWN } }],
+      [key(tiles["enemy army"]), { army: { id: ENEMY, owner: 0x999n } }],
+    ]);
+    const armies = new Map([
+      [ARMY, ARMY_HEX],
+      [OTHER_ARMY, tiles["own army"]],
+    ]);
+    const selectedId = selected === "army" ? ARMY : selected === "realm" ? REALM : null;
+    const near = tiles["bare ground in reach"];
+    useUIStore.setState((state) => ({
+      entityActions: {
+        ...state.entityActions,
+        selectedEntityId: selectedId,
+        actionPaths:
+          selected === "army"
+            ? new Map([
+                [
+                  ActionPaths.posKey(near, true),
+                  [
+                    { hex: contract(ARMY_HEX), actionType: ActionType.Move },
+                    { hex: contract(near), actionType: ActionType.Explore, staminaCost: 20 },
+                  ],
+                ],
+                [
+                  ActionPaths.posKey(tiles["enemy army"], true),
+                  [
+                    { hex: contract(ARMY_HEX), actionType: ActionType.Move },
+                    { hex: contract(tiles["enemy army"]), actionType: ActionType.Attack },
+                  ],
+                ],
+              ])
+            : new Map(),
+      },
+    }));
+    Object.assign(map.scene, {
+      worldSpatialProjection: {
+        getArmy: (id: number) => (armies.has(id) ? { hexCoords: contract(armies.get(id)!) } : undefined),
+        getStructuresAtHex: () => [],
+      },
+      getHexagonEntity: (hex: { col: number; row: number }) => entities.get(key(hex)) ?? {},
+      getOwnArmyOrderedTo: () => undefined,
+      usableSiteAt: () => null,
+      isArmysSpire: () => false,
+      isStandingExpeditionSite: () => false,
+      logInteractionDebug: () => {},
+      getInteractionDebugSnapshot: () => ({}),
+      onArmySelection: (id: number) => did.push(`select army ${id}`),
+      onStructureSelection: (id: number) => did.push(`select realm ${id}`),
+      clearEntitySelection: () => did.push("let go"),
+      onArmyAttack: () => did.push("attack card"),
+      interactionAdapter: {
+        selectHex: () => did.push("tile selected"),
+        openOwnedStructureContextMenu: () => did.push("realm menu"),
+      },
+      state: {
+        ...(map.scene as unknown as { state: object }).state,
+        selectOnMap: (intent: { kind: string; tile?: unknown }) =>
+          did.push(intent.kind === "army" ? "army kept, tile card" : `select ${intent.kind}`),
+      },
+    });
+    const scene = map.scene as unknown as {
+      onHexagonClick: (hex: { col: number; row: number }) => void;
+      onHexagonRightClick: (event: MouseEvent, hex: { col: number; row: number }) => void;
+    };
+    /** What the gesture did, in the player's words: what it selected or opened, or the order it sent or pinned. */
+    const outcome = () => {
+      const drawn = drawnSurface();
+      return [
+        ...did,
+        ...(drawn ? [`${drawn.id}: ${drawn.host.textContent}`] : []),
+        ...map.sent.map(() => "its order runs"),
+        ...map.pinned.filter(Boolean).map(() => "order pinned"),
+        ...map.facts.map(() => "its facts"),
+      ].join(", ");
+    };
+    return { scene, outcome };
+  };
+
+  beforeEach(() => {
+    useAccountStore.setState({ account: { address: "0x111" } as never });
+    vi.spyOn(configManager, "isCommandEnabled").mockReturnValue(true);
+  });
+  afterEach(() => usePopoverStore.getState().close());
+
+  const play = (layout: "desktop" | "phone", gesture: "click" | "right-click", frontier: boolean) => {
+    const rows = {} as Record<Selected, Record<Clicked, string>>;
+    for (const selected of ["nothing", "army", "realm"] as const) {
+      rows[selected] = {} as Record<Clicked, string>;
+      for (const clicked of Object.keys(tiles) as Clicked[]) {
+        screen(layout === "desktop");
+        usePopoverStore.getState().close();
+        const { scene, outcome } = mapWith(selected, frontier);
+        if (gesture === "click") scene.onHexagonClick(tiles[clicked]);
+        else scene.onHexagonRightClick(new MouseEvent("contextmenu", { button: 2 }), tiles[clicked]);
+        rows[selected][clicked] = outcome();
+      }
+    }
+    return rows;
+  };
+
+  /** A click on what is not the player's own lets go of the army or realm, as a click with nothing selected. */
+  const letsGo = "tile selected, let go";
+  const selects = { "own army": "tile selected, select army 8", "own realm": "tile selected, select realm 9" };
+
+  it.each([
+    ["Frontier", true],
+    ["Blitz", false],
+  ])("%s desktop, a click: selects the player's own, keeps the army on a target, lets go elsewhere", (_, frontier) => {
+    expect(play("desktop", "click", frontier)).toEqual({
+      nothing: { ...selects, "enemy army": letsGo, "bare ground in reach": letsGo, "bare ground far": letsGo },
+      army: { ...selects, "enemy army": "attack card", "bare ground in reach": letsGo, "bare ground far": letsGo },
+      realm: { ...selects, "enemy army": letsGo, "bare ground in reach": letsGo, "bare ground far": letsGo },
+    });
+  });
+
+  it("Frontier desktop, a right-click: the army's order or why it has none, everywhere", () => {
+    const none = { "own army": "", "enemy army": "", "bare ground in reach": "", "bare ground far": "" };
+    expect(play("desktop", "right-click", true)).toEqual({
+      nothing: { ...none, "own realm": "realm menu" },
+      army: {
+        "own army": "order-preview: Too far: move closerTransfer troops",
+        "own realm": "realm menu",
+        "enemy army": "its order runs",
+        "bare ground in reach": "its order runs",
+        "bare ground far": "order-preview: Too far: move closerExplore",
+      },
+      realm: { ...none, "own realm": "realm menu" },
+    });
+  });
+
+  it("Frontier phone, a tap: the phone's own rules, unchanged", () => {
+    expect(play("phone", "click", true)).toEqual({
+      nothing: { ...selects, "enemy army": letsGo, "bare ground in reach": letsGo, "bare ground far": letsGo },
+      army: {
+        ...selects,
+        "enemy army": "attack card",
+        "bare ground in reach": "order pinned, its facts",
+        "bare ground far": letsGo,
+      },
+      realm: { ...selects, "enemy army": letsGo, "bare ground in reach": letsGo, "bare ground far": letsGo },
+    });
   });
 });
