@@ -700,6 +700,8 @@ const STATES = {
   "building-war-hall": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "war-hall" },
   "building-scouts-lodge": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "scouts-lodge" },
   "realm-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "full" },
+  // In the realm with its labor store full (audit 10-27): Next up says so, with no "Open the realm" that goes nowhere.
+  "realm-labor-full": { clock: CLOCK, stores: FULL_STORES, armies: ARMIES, realmView: "build" },
   "army-refill": {
     clock: CLOCK,
     stores: STORES,
@@ -1096,7 +1098,7 @@ export const HudLab = () => {
           !lab.visiting && (
             <PlaceNav
               place={lab.chat && !desktop ? "chat" : lab.menu || lab.season ? "menu" : lab.research ? "research" : null}
-              onRealm={lab.realmView !== undefined || lab.building !== undefined}
+              onRealm={inTheRealm(lab)}
               onGo={noop}
               realmDot={lab.realmDot}
               researchDot={!lab.offline}
@@ -1282,6 +1284,9 @@ const LabResearch = () => {
   );
 };
 
+/** Whether the lab state stands in the realm view (its board, castle or a building's card), as Next up reads it. */
+const inTheRealm = (lab: LabState): boolean => lab.realmView !== undefined || lab.building !== undefined;
+
 /** Next up on the lab's realm at a state: the coach's steps, their buttons doing nothing. */
 const labNextUpSteps = (lab: LabState, desktop: boolean): NextStep[] =>
   frontierCoachSteps(
@@ -1293,7 +1298,7 @@ const labNextUpSteps = (lab: LabState, desktop: boolean): NextStep[] =>
       storeFull: lab.stores.find((store) => store.tone === "ember")?.kind ?? null,
       ...lab.nextUp,
     },
-    { pointer: desktop ? "mouse" : "touch", where: "map", tips: true },
+    { pointer: desktop ? "mouse" : "touch", where: inTheRealm(lab) ? "realm" : "map", tips: true },
   ).map((step) => ({
     key: step.key,
     kind: "order",

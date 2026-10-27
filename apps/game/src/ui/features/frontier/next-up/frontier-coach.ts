@@ -33,8 +33,13 @@ export const frontierCoachSteps = (
   if (!facts.realm) return [];
   const at = { pointer, where };
   // With tips off (Settings), Next up holds the alerts alone, as Blitz's does.
-  return tips ? [...alerts(facts, at), ...dayLoop(facts, at)] : alerts(facts, at);
+  const steps = tips ? [...alerts(facts, at), ...dayLoop(facts, at)] : alerts(facts, at);
+  return where === "realm" ? steps.map(withoutWayIn) : steps;
 };
+
+/** In the realm, a step's way into the realm goes nowhere: its line stands alone, with no button. */
+const withoutWayIn = (step: FrontierCoachStep): FrontierCoachStep =>
+  step.act === "realm" ? { ...step, verb: null, act: null } : step;
 
 /** How the player gives a map order: a mouse right-clicks a tile, a touch screen holds it. */
 type Pointer = "mouse" | "touch";
