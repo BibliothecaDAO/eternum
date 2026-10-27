@@ -19,7 +19,13 @@ export const RefillButton = ({
   refilling?: boolean;
   onRefill: () => void;
 }) =>
-  held !== undefined && held < price ? (
+  held !== undefined && held < price && new URLSearchParams(window.location.search).get("refillForm") === "line" ? (
+    <span className="flex shrink-0">
+      <HudChip icons={["lords"]} label={REFILL} tip={refillShort(formatExact(held), formatCharge(price))}>
+        {heldAgainstNeed(held, price)}
+      </HudChip>
+    </span>
+  ) : held !== undefined && held < price ? (
     <span role="img" aria-label={refillShort(formatExact(held), formatCharge(price))} className="flex shrink-0">
       <HudPanel collapsible={false} bodyClassName="flex items-center gap-1.5">
         <SemanticIcon name="lords" size={18} />

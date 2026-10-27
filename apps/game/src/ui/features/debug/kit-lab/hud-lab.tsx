@@ -1046,7 +1046,15 @@ export const HudLab = () => {
                 {...lab.order}
                 revealYield={500}
                 xp={2}
-                refill={lab.refill ? <RefillButton price={140} held={1_240} onRefill={noop} /> : undefined}
+                refill={
+                  lab.refill ? (
+                    <RefillButton
+                      price={140}
+                      held={Number(new URLSearchParams(window.location.search).get("refillHeld") ?? 1_240)}
+                      onRefill={noop}
+                    />
+                  ) : undefined
+                }
                 onCancel={noop}
                 onGo={noop}
               />
