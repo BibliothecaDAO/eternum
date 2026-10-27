@@ -434,12 +434,12 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   }
 };
 
-/** A research tier (0 common to 4 legendary) as text beside the gems: its numeral, Common I to Legendary V. */
+/** A research rank as text beside the gems: untrained 0, Common I to Legendary V. */
 const tierShown = (tier: number): string => tierNumeral(tier as Rank);
 
 /** A training row: the level every new army of the realm starts the attribute at, and what that level gives. */
 const trainingGives = (attribute: Attribute, word: string, tier: number): TreeNode["gives"] => {
-  const at = (level: number) => RESEARCH_TREE.at(tierShown(level - 1), attributeEffect(attribute, level));
+  const at = (level: number) => RESEARCH_TREE.at(tierShown(level), attributeEffect(attribute, level));
   return { line: RESEARCH_TREE.newArmiesStart(word), now: at(tier), next: tier < 5 ? at(tier + 1) : undefined };
 };
 

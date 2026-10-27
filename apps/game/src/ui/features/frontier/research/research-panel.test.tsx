@@ -176,3 +176,34 @@ it("keeps the chosen Research action outside the tree scroll on every pick, incl
     expect([...choice.querySelectorAll("button")].at(-1)?.textContent).toMatch(/^Research/);
   }
 });
+
+it.each([
+  [0, "0 · 0% damage → I · +10% damage"],
+  [1, "I · +10% damage → II · +25% damage"],
+  [2, "II · +25% damage → III · +45% damage"],
+  [3, "III · +45% damage → IV · +70% damage"],
+  [4, "IV · +70% damage → V · +100% damage"],
+  [5, "V · +100% damage"],
+] as const)("labels the War hall's current and next training ranks at rank %s", (tier, label) => {
+  const ranked = readResearchTree({
+    ...MID_REALM,
+    learned: { ...MID_REALM.learned, 4: { tier, sides: [] } },
+  });
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={ranked}
+        picked="row-4"
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={vi.fn()}
+      />,
+    ),
+  );
+  const card = host.querySelector("[data-lab='node-choice']")!;
+  const effect = [...card.querySelectorAll(":scope > span")].find((line) =>
+    line.textContent?.startsWith("New armies start with Battle"),
+  );
+  expect(effect?.textContent).toBe(`New armies start with Battle · ${label}`);
+});
