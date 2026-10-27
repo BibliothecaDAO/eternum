@@ -154,26 +154,8 @@ export const SiteCardView = ({
       </header>
       {picking && choices ? (
         <ArmyChoices does="attack" choices={choices} guardIcon={guardIcon} />
-      ) : facing ? (
-        <div className="flex gap-2">
-          <FightSide
-            label={ARMY}
-            mark={<SemanticIcon name={facing.army.art} size={26} />}
-            before={facing.army.troops}
-            after={armyLeft(facing)}
-            side="ours"
-          />
-          <FightSide
-            label={beast?.name ?? TROOPS}
-            mark={<SemanticIcon name={guardIcon} size={26} />}
-            before={facing.guard}
-            after={facing.fight.guardLeft}
-            side="theirs"
-            tip={beast?.combatClass}
-          />
-        </div>
       ) : (
-        <Matchup army={army} beast={beast} guard={guard} />
+        <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />
       )}
       {receipt}
       <Verb
@@ -227,25 +209,47 @@ export const SiteMark = ({ icon, children }: { icon: IconMeaning; children?: Rea
   </span>
 );
 
-const Matchup = ({
+/**
+ * The fight's two sides, in every state of the card (owner, 10-27: "this panel doesnt match at all our new battle
+ * panels"): in reach, each side's troops now and what this attack leaves it; out of reach, short of stamina or refused,
+ * the same sides with a dash where no forecast is known. The state itself is the line under them and the held step.
+ */
+const FightPanel = ({
   army,
-  beast,
   guard,
+  facing,
+  beast,
+  guardIcon,
 }: {
   army: { art: IconMeaning; troops: number } | null;
-  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
   guard: number | null | undefined;
-}) => (
-  <div className="flex items-center justify-center gap-2">
-    {army && (
-      <HudChip icons={[army.art]} label={TROOPS}>
-        {formatShort(army.troops)}
-      </HudChip>
-    )}
-    <SemanticIcon name="attack" size={22} />
-    <BeastGuard beast={beast} guard={guard} />
-  </div>
-);
+  facing: Facing | undefined;
+  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
+  guardIcon: IconMeaning;
+}) =>
+  army || guard !== null ? (
+    <div className="flex gap-2">
+      {army && (
+        <FightSide
+          label={ARMY}
+          mark={<SemanticIcon name={army.art} size={26} />}
+          before={army.troops}
+          kept={facing && armyLeft(facing)}
+          side="ours"
+        />
+      )}
+      {guard !== null && (
+        <FightSide
+          label={beast?.name ?? TROOPS}
+          mark={<SemanticIcon name={guardIcon} size={26} />}
+          before={guard}
+          kept={facing?.fight.guardLeft}
+          side="theirs"
+          tip={beast?.combatClass}
+        />
+      )}
+    </div>
+  ) : null;
 
 /** Species and remaining strength, including while choosing an army. */
 const BeastGuard = ({

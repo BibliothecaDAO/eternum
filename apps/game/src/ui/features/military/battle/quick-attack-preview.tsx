@@ -16,8 +16,11 @@ import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { resolveAttackStaminaState } from "./attack-stamina-state";
-import { formatAcross, survivalOf, type SideRange } from "./battle-range";
+import { keptAcross } from "./battle-range";
 import { CombatModal } from "./combat-modal";
+import { troopMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { Icon } from "@/ui/design-system/icon";
+import { FightSide } from "@/ui/features/frontier/sites/fight-side";
 import { combatTitle, describeFightCost, forecastAttack } from "./fight-forecast";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
@@ -409,39 +412,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return formatExact(Math.round(value));
   };
 
-  const casualtyLine = (label: string, side: SideRange) => {
-    const survival = survivalOf(side);
-    return (
-      <div className="rounded-md border border-hud-line bg-hud-well px-3 py-2">
-        <div className="flex items-center justify-between">
-          <span className="text-hud-label text-hud-muted">{label}</span>
-          <span
-            className={cn(
-              "text-hud-label",
-              survival === "Eliminated" ? "text-hud-bad" : survival === "Survives" ? "text-hud-good" : "text-hud-warn",
-            )}
-          >
-            {survival}
-          </span>
-        </div>
-        <div className="mt-1 flex items-center justify-between gap-3">
-          <span className="flex items-center gap-1">
-            <span className="text-hud-label text-hud-cue">Losses</span>
-            <span className="text-hud-strong">
-              {formatAcross(side.worst.losses, side.best.losses, formatTroopValue)}
-            </span>
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="text-hud-label text-hud-cue">Remaining</span>
-            <span className="text-hud-strong">
-              {formatAcross(side.worst.remaining, side.best.remaining, formatTroopValue)}
-            </span>
-          </span>
-        </div>
-      </div>
-    );
-  };
-
   if (structureGuards === undefined) return <div>Loading guards…</div>;
 
   return (
@@ -461,8 +431,22 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
             attackerSide &&
             defenderSide && (
               <>
-                {casualtyLine("Your forces", attackerSide)}
-                {casualtyLine(isStructureTarget ? "Active guard" : "Enemy army", defenderSide)}
+                <div className="flex gap-2">
+                  <FightSide
+                    label="Your forces"
+                    mark={attackerArmyData && <Icon name={troopMeaning(attackerArmyData.troops)} size={24} />}
+                    before={Math.round(attackerTroopsTotal)}
+                    kept={keptAcross(attackerSide)}
+                    side="ours"
+                  />
+                  <FightSide
+                    label={isStructureTarget ? "Active guard" : "Enemy army"}
+                    mark={<Icon name={troopMeaning(targetArmyData.troops)} size={24} />}
+                    before={Math.round(defenderTroopsTotal)}
+                    kept={keptAcross(defenderSide)}
+                    side="theirs"
+                  />
+                </div>
                 {fightCost && <p className="text-hud-label text-hud-cue">{fightCost}</p>}
               </>
             )

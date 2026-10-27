@@ -3,7 +3,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RuinChestMoment } from "../chest/ruin-chest-moment";
-import { SiteCardView } from "./site-card-view";
+import { type SiteVerb, SiteCardView } from "./site-card-view";
+import type { SiteFight } from "./site-card-plan";
+import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -476,4 +478,87 @@ it("titles a single roaming Wraith by its species", () => {
     ),
   );
   expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Wraith");
+});
+
+describe("one fight panel for every state of every target (owner, 10-27: 'this panel doesnt match at all')", () => {
+  const holds: SiteFight = { outcome: "wins", exchanges: 3, troopsLost: 180, guardLeft: 740 };
+  const clears: SiteFight = { outcome: "wins", exchanges: 1, troopsLost: 180, guardLeft: 0 };
+  const attack: SiteVerb = { kind: "attack", stamina: 30, onAttack: () => {} };
+  /** Each state: the forecast the card holds, its step, the two sides' figures kept, the line and whether Attack runs. */
+  const STATES: {
+    state: string;
+    fight: SiteFight | undefined;
+    verb: SiteVerb;
+    kept: [string, string];
+    line: (word: string) => string | undefined;
+    attacks: boolean;
+  }[] = [
+    {
+      state: "in reach, clearing it",
+      fight: clears,
+      verb: attack,
+      kept: ["4,820", "0"],
+      line: () => undefined,
+      attacks: true,
+    },
+    {
+      state: "in reach, the guard holds",
+      fight: holds,
+      verb: attack,
+      kept: ["4,820", "740"],
+      line: () => undefined,
+      attacks: true,
+    },
+    {
+      state: "too far",
+      fight: undefined,
+      verb: { kind: "far" },
+      kept: ["—", "—"],
+      line: (word) => `Too far from the ${word}`,
+      attacks: false,
+    },
+    {
+      state: "short of stamina",
+      fight: holds,
+      verb: { kind: "short", stamina: { cost: 30, held: 10, wait: 40 * 60 } },
+      kept: ["4,820", "740"],
+      line: () => "Needs 30 stamina, have 10 · in 40m",
+      attacks: false,
+    },
+    {
+      state: "refused",
+      fight: { outcome: "refused" },
+      verb: { ...attack, refused: "The army is on battle cooldown" },
+      kept: ["—", "—"],
+      line: () => "The army is on battle cooldown",
+      attacks: true,
+    },
+  ];
+  const TARGETS = Object.keys(TARGET_MARKS) as AttackTargetKind[];
+
+  for (const target of TARGETS)
+    for (const { state, fight, verb, kept, line, attacks } of STATES)
+      it(`draws both sides for ${target}, ${state}, with its line and its step`, () => {
+        act(() =>
+          root.render(
+            <SiteCardView
+              site={target}
+              beast={undefined}
+              army={army}
+              guard={1_100}
+              fight={fight}
+              pay={null}
+              xp={undefined}
+              verb={verb}
+              onClose={() => {}}
+            />,
+          ),
+        );
+        const sides = [...document.querySelectorAll('section[role=dialog] [role="img"]')].map((side) =>
+          side.getAttribute("aria-label"),
+        );
+        expect(sides).toEqual([`Army 5,000 → ${kept[0]}`, `troops 1,100 → ${kept[1]}`]);
+        expect(document.querySelector('[role="status"]')?.textContent).toBe(line(TARGET_MARKS[target].word));
+        expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(!attacks);
+      });
 });

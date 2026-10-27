@@ -572,6 +572,35 @@ const STATES = {
       },
     },
   },
+  // The owner's desktop card on prod (10-27, "this panel doesnt match at all our new battle panels"): Shadeglow's troll
+  // camp, 7.1K knights out of reach of its guard of 1.3K, paying 650 labor and 90 XP.
+  "site-shadeglow": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...CAMP_CARD,
+      name: "Shadeglow",
+      beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
+      army: { ...ARMY_CHIP, troops: 7_100 },
+      guard: 1_300,
+      fight: undefined,
+      pay: { icon: "labor", amount: 650 },
+      xp: 90,
+      verb: { kind: "far" },
+    },
+  },
+  // The army's last attack here refused, with no forecast: the same sides, the refusal on the line.
+  "site-refused": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...CAMP_CARD,
+      fight: { outcome: "refused" },
+      verb: { ...ATTACK_30, refused: "The army is on battle cooldown" },
+    },
+  },
   "site-pick": {
     clock: CLOCK,
     stores: STORES,

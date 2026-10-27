@@ -47,7 +47,7 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
           label={ARMY}
           mark={<SemanticIcon name={result.armyArt} alt="" className="size-7 rounded-full object-cover" />}
           before={result.army.before}
-          after={result.army.after}
+          kept={result.army.after}
           side="ours"
         />
         {result.guard && (
@@ -55,7 +55,7 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
             label={result.guardIdentity?.name ?? TROOPS}
             mark={<SemanticIcon name={result.guardIdentity?.art ?? "troops"} size={24} />}
             before={result.guard.before}
-            after={result.guard.after}
+            kept={result.guard.after}
             side="theirs"
           />
         )}

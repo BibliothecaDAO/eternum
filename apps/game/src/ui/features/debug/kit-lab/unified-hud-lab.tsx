@@ -76,6 +76,7 @@ const ViewLab = ({ view }: { view: View }) => {
     <>
       <div
         aria-hidden
+        data-lab="unified"
         className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,theme(colors.kit.line),theme(colors.kit.ground))]"
       />
       <LabGame
