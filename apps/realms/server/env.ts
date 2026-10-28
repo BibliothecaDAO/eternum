@@ -16,7 +16,7 @@ const IdentityVars = Schema.Struct({
   BETTER_AUTH_SECRET: Schema.NonEmptyString,
   /** Only the configured chain's HTTPS Alchemy RPC is accepted. */
   L2_RPC_URL: Schema.NonEmptyString,
-  /** The marketplace API (its base, before `/v1`): the Realm holdings index. */
+  /** The marketplace API (its base, before `/v1`): the Realm holdings index, and at `/rpc` the relay for point reads. */
   MARKETPLACE_API_URL: Schema.String.pipe(Schema.check(Schema.isPattern(/^https:\/\/[^/]+/))),
   /** The environment's one operator token for all automation: listing shards and changing their status here. */
   OPERATOR_TOKEN: Schema.NonEmptyString,

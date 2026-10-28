@@ -19,12 +19,37 @@ export const identityL2Configuration = (env: L2Environment) => {
   return { chainId: chain, rpcUrl: env.L2_RPC_URL };
 };
 
-export const identityProvider = (env: L2Environment) =>
+/** Point reads share the marketplace's RPC relay (one provider with the marketplace); `L2_RPC_URL` answers when it cannot. */
+interface PointReadEnvironment extends L2Environment {
+  /** The marketplace API's base, up to (not including) `/v1`; its relay is `/rpc`. */
+  MARKETPLACE_API_URL: string;
+}
+
+const RELAY_TIMEOUT_MS = 3_000;
+
+export const identityProvider = (env: PointReadEnvironment) =>
   new RpcProvider({
     nodeUrl: identityL2Configuration(env).rpcUrl,
     blockIdentifier: "latest",
-    baseFetch: fetchIdentityRpc,
+    baseFetch: (input: RequestInfo | URL, init?: RequestInit) => fetchPointRead(env, input, init),
   });
+
+/** The relay's response when it carries the chain's answer (a result or a Starknet error such as a revert), else `L2_RPC_URL`'s. */
+const fetchPointRead = async (env: PointReadEnvironment, input: RequestInfo | URL, init?: RequestInit) => {
+  const relayed = await fetchIdentityRpc(`${env.MARKETPLACE_API_URL}/rpc`, {
+    ...init,
+    signal: AbortSignal.timeout(RELAY_TIMEOUT_MS),
+  })
+    .then(async (response) => (response.ok && answersForChain(await response.clone().json()) ? response : null))
+    .catch(() => null);
+  return relayed ?? fetchIdentityRpc(input, init);
+};
+
+/** Starknet errors have positive codes; JSON-RPC's own negative codes (unsupported method, relay failure) do not answer. */
+const answersForChain = (body: unknown) => {
+  const { result, error } = (body ?? {}) as { result?: unknown; error?: { code?: unknown } };
+  return result !== undefined || (typeof error?.code === "number" && error.code > 0);
+};
 
 export const verifyIdentityChain = async (provider: RpcProvider, env: L2Environment) => {
   const { chainId } = identityL2Configuration(env);

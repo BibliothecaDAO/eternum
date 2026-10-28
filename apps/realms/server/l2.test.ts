@@ -7,6 +7,7 @@ import { verifyWalletOnL2 } from "./wallet-signature";
 const env = {
   ENVIRONMENT: "staging" as const,
   L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+  MARKETPLACE_API_URL: "https://market.test/api/marketplace",
 };
 afterEach(() => vi.restoreAllMocks());
 it("requires a known environment and only its HTTPS Alchemy endpoint without exposing credentials", () => {
@@ -71,6 +72,39 @@ it("fails Worker environment decoding before serving any route when its environm
     expect(String(error)).toContain("L2_RPC_URL");
     expect(String(error)).not.toContain("private");
   }
+});
+
+it("reads through the marketplace relay, and through our own RPC only when the relay cannot answer for the chain", async () => {
+  const relay = `${env.MARKETPLACE_API_URL}/rpc`;
+  let relayAnswer: () => Response | Promise<Response>;
+  const transport = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+    const { id } = JSON.parse(String(init?.body)) as { id: number };
+    if (String(input) === relay) return relayAnswer();
+    return Response.json({ jsonrpc: "2.0", id, result: ["0x5"] });
+  });
+  const ownerOf = () =>
+    identityProvider(env).callContract({ contractAddress: "0x1", entrypoint: "owner_of", calldata: [] }, "latest");
+  const asked = () => transport.mock.calls.map(([input]) => String(input));
+
+  relayAnswer = () => Response.json({ jsonrpc: "2.0", id: 1, result: ["0x7"] });
+  expect(await ownerOf()).toEqual(["0x7"]);
+  expect(asked()).toEqual([relay]);
+
+  for (const failing of [
+    () => Response.json({ jsonrpc: "2.0", id: 1, error: { code: -32601, message: "Unsupported wallet RPC method." } }),
+    () => Response.json({ error: { code: "RATE_LIMITED" } }, { status: 429 }),
+    () => Promise.reject(new TypeError("fetch failed")),
+  ]) {
+    transport.mockClear();
+    relayAnswer = failing;
+    expect(await ownerOf()).toEqual(["0x5"]);
+    expect(asked()).toEqual([relay, env.L2_RPC_URL]);
+  }
+
+  transport.mockClear();
+  relayAnswer = () => Response.json({ jsonrpc: "2.0", id: 1, error: { code: 40, message: "Contract error" } });
+  await expect(ownerOf()).rejects.toThrow("Contract error");
+  expect(asked()).toEqual([relay]);
 });
 
 it("refuses RPC redirects using the real Worker-compatible manual mode", async () => {
