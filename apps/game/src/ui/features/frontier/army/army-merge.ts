@@ -6,7 +6,7 @@ type Rules = NativeRows["ArmyProgressionRules"];
 
 /** Includes trained tiers: the value of the progress kept, not a history of personally earned XP. */
 export const progressionValue = (progress: Progress, rules: Rules): number =>
-  attributeTiers(progress).reduce((value, tier) => {
+  Object.values(attributeTiers(progress)).reduce((value, tier) => {
     for (let at = 1; at < tier; at++) value += nextTierPrice(rules, at)!;
     return value;
   }, progress.xp);

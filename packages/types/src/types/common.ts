@@ -115,9 +115,18 @@ export type Troops = Omit<NativeRows["ExplorerTroops"]["troops"], "stamina"> & {
   readonly staminaMax?: number;
 };
 export type TroopTier = Troops["tier"];
-export const TroopTier = { T1: "T1", T2: "T2", T3: "T3" } as const;
+/** Every troop tier the game's schema allows: a tier the schema adds fails to compile until it is named here. */
+export const TroopTier = { T1: "T1", T2: "T2", T3: "T3" } as const satisfies { [Tier in Troops["tier"]]: Tier };
 export type TroopType = Troops["category"];
-export const TroopType = { Knight: "Knight", Paladin: "Paladin", Crossbowman: "Crossbowman" } as const;
+/** Every troop type the game's schema allows, in the order players meet them; a type it adds fails to compile here. */
+export const TroopType = {
+  Knight: "Knight",
+  Crossbowman: "Crossbowman",
+  Paladin: "Paladin",
+} as const satisfies { [Category in Troops["category"]]: Category };
+/** The troop catalog: every type and every tier, read from the two above. A list of troops is built from these. */
+export const TROOP_TYPES: readonly TroopType[] = Object.values(TroopType);
+export const TROOP_TIERS: readonly TroopTier[] = Object.values(TroopTier);
 
 /// TRADING
 export interface MarketInterface {

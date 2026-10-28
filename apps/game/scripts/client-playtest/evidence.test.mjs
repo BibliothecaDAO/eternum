@@ -647,7 +647,7 @@ describe("judgeExplore", () => {
 
   it("fails a pressed explore that was never sent, failed, or never applied", () => {
     expect(judgeExplore({ offered: ["Explore"], pressedAt: 998 }, []).reason).toBe(
-      "Enter on Explore started no explore",
+      "confirming Explore started no explore",
     );
     expect(judgeExplore({ offered: ["Explore"], pressedAt: 998 }, [explore({})]).reason).toBe(
       "the explore was never sent (no hash)",
@@ -658,6 +658,26 @@ describe("judgeExplore", () => {
     expect(
       judgeExplore({ offered: ["Explore"], pressedAt: 998 }, [explore({}, { failedReason: "stamina" })]).reason,
     ).toBe("the explore failed: stamina");
+  });
+
+  // Owner, 27 October 2026: "double tapping to explore on mobile". A phone pins on its first tap and sends on its second.
+  describe("on a phone, confirmed by tapping the pinned tile again", () => {
+    const tapped = { offered: ["Explore"], pinnedAt: 900, pressedAt: 998, tileChange: 41.5 };
+    const sent = (click) =>
+      explore({ click, store_applied: click + 190, rendered: click + 230 }, { transactionHash: "0xabc" });
+
+    it("counts the one explore its second tap sent", () => {
+      const action = sent(1000);
+      expect(judgeExplore(tapped, [action])).toEqual({ status: "completed", action, tileChange: 41.5 });
+    });
+
+    it("fails an explore the first tap sent before the second", () => {
+      expect(judgeExplore(tapped, [sent(950)]).reason).toBe("the first tap sent the explore before the second tap");
+    });
+
+    it("fails a second tap that sent more than one explore", () => {
+      expect(judgeExplore(tapped, [sent(1000), sent(1010)]).reason).toBe("the second tap sent 2 explores");
+    });
   });
 });
 

@@ -65,7 +65,7 @@ import type {
   ArmySpatialRenderable,
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
-import { BiomeType, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, ID, TROOP_TIERS, TROOP_TYPES, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getEntityName } from "@bibliothecadao/eternum";
 import { Color, Euler, Scene, Vector3 } from "three";
 import { env } from "../../../env";
@@ -728,8 +728,8 @@ export class ArmyManager {
     const centerCol = Math.floor((bounds.minCol + bounds.maxCol) / 2);
     const centerRow = Math.floor((bounds.minRow + bounds.maxRow) / 2);
 
-    const troopTypes: TroopType[] = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin];
-    const troopTiers: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
+    const troopTypes = TROOP_TYPES;
+    const troopTiers = TROOP_TIERS;
 
     const getTroopType = (index: number): TroopType => {
       if (params.mixTypes) {

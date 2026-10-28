@@ -41,7 +41,12 @@ it("offers Install to a player with an account, never to a first visit, and Late
   session.current = { user: {} };
   const ui = await render();
   try {
-    expect(ui.container.textContent).toBe("Realms on your home screenLaterInstall");
+    // Its icon and Install say it on screen: no line to wrap above a phone's tabs or crowd a desktop's bar (audit
+    // 10-27, 18), only its name for assistive technology.
+    expect(ui.container.textContent).toBe("LaterInstall");
+    expect(ui.container.querySelector('[role="status"]')!.getAttribute("aria-label")).toBe(
+      "Realms on your home screen",
+    );
     const later = [...ui.container.querySelectorAll("button")].find((button) => button.textContent === "Later")!;
     await act(async () => later.click());
     expect(ui.container.textContent).toBe("");

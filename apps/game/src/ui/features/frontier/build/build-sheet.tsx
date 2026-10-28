@@ -8,7 +8,6 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { useAllInFlight, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
-import { HudTier } from "@/ui/design-system/kit/hud-elements";
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import {
@@ -54,7 +53,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { readRealmPopulation } from "../realm/realm-population";
-import { outputWhy } from "../production/store-makers";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { ATTRIBUTE_MARKS } from "../research/research-tree";
 import { type BuildOption, PRODUCTS, readBuildOptions } from "./build-options";
@@ -270,6 +268,7 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
   name: buildingName(option.category),
   tip: buildingLine(option),
   gives: givesOf(option),
+  gems: gemsOf(option),
   takes: option.populationCost,
   standing: standingOf(option, holdings),
 });
@@ -314,16 +313,19 @@ const buildingLine = (option: BuildOption): string => {
 const riseLine = (option: BuildOption): string | undefined =>
   option.rise.times > 1 ? priceRaised(formatAmount(option.rise.standing)) : undefined;
 
-/** What one more gives: what it makes a minute, the population room it adds, or the tier new armies start at. */
-const givesOf = ({ effect, tier }: BuildOption): BuildTile["gives"] =>
+/**
+ * Its research as gems: each side of a row that has two, counted from Common I as the row is (a side never picked is
+ * I), or the type's one gem.
+ */
+const gemsOf = ({ sides, tier }: BuildOption): BuildTile["gems"] =>
+  sides ? sides.map(({ icon, picks }) => ({ side: icon, tier: Math.min(5, picks + 1) as Tier })) : [{ tier }];
+
+/** What one more gives: what it makes a minute, the population room it adds, or the attribute new armies start in. */
+const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>
   effect.kind === "produces"
-    ? {
-        icon: PRODUCTS[effect.resource].icon,
-        value: formatRate(effect.output.total),
-        basis: outputWhy(effect.research),
-      }
+    ? { icon: PRODUCTS[effect.resource].icon, value: formatRate(effect.output.total) }
     : effect.kind === "trains"
-      ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: <HudTier tier={tier} /> }
+      ? { icon: ATTRIBUTE_MARKS[effect.attribute] }
       : { icon: "person", value: formatGain(effect.amount) };
 
 /** A realm's plot, as the actions in flight name it. */

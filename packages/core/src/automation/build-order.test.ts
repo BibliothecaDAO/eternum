@@ -71,7 +71,7 @@ describe("a build order's JSON", () => {
     [steps(), "An order has 1 to 60 steps."],
     [
       steps({ rank: "City", goal: "mill", count: 2 }),
-      "Step 1: “mill” is not a goal: farm, wood, coal, copper, hut, barracks, army, levelUp.",
+      "Step 1: “mill” is not a goal: farm, wood, coal, copper, ironwood, coldIron, gold, adamantine, mithral, dragonhide, market, knightT1, knightT2, knightT3, crossbowmanT1, crossbowmanT2, crossbowmanT3, paladinT1, paladinT2, paladinT3, hut, barracks, barracksT2, barracksT3, army, armyT2, armyT3, levelUp.",
     ],
     [
       steps({ rank: "Castle", goal: "farm", count: 2 }),
@@ -104,6 +104,33 @@ describe("a player's saved orders", () => {
     expect(activeBuildOrder(book).name).toBe("Coal rush");
     expect(activeBuildOrder({ ...book, active: null })).toBe(DEFAULT_BUILD_ORDER);
     expect(activeBuildOrder(null)).toBe(DEFAULT_BUILD_ORDER);
+  });
+
+  it("keeps an order of T2 and T3 steps as it was made: read, copied as JSON and saved", () => {
+    const t3 = order(`{
+  "name": "Dragon rush",
+  "steps": [
+    { "rank": "City", "goal": "ironwood", "count": 1 },
+    { "rank": "City", "goal": "coldIron", "count": 1 },
+    { "rank": "Kingdom", "goal": "dragonhide", "count": 2 },
+    { "rank": "Kingdom", "goal": "paladinT3", "count": 1 },
+    { "rank": "Kingdom", "goal": "barracksT2", "count": 1 },
+    { "rank": "Kingdom", "goal": "armyT3", "count": 2 },
+    { "rank": "Empire", "goal": "market", "count": 1 }
+  ]
+}`);
+    expect(t3.steps.map(({ goal }) => goal)).toEqual([
+      "ironwood",
+      "coldIron",
+      "dragonhide",
+      "paladinT3",
+      "barracksT2",
+      "armyT3",
+      "market",
+    ]);
+    expect(order(buildOrderJson(t3))).toEqual(t3);
+    const book = { orders: [{ id: "t3", order: t3 }], active: "t3" };
+    expect(readBuildOrderBook(JSON.parse(JSON.stringify(buildOrderBookValue(book))))).toEqual({ ok: book });
   });
 
   it("refuses more than 20 orders, an active order it does not hold, and an order that does not read", () => {

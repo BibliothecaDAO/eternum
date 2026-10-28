@@ -36,6 +36,10 @@ export const BEAST = "Beast";
 
 export const LEFT = "left";
 export const DAY = "Day";
+/** A day of the season against its last: "Day 10 of 14". */
+export const dayOfSeason = (day: string, lastDay: string) => `${DAY} ${day} of ${lastDay}`;
+/** When the season ends, as a local day and clock time: "Season ends 31 Oct 21:40". */
+export const seasonEnds = (moment: string) => `Season ends ${moment}`;
 
 /**
  * The day's clock, written here once (live-qa-night-1 P3-8: the HUD said "Tomorrow lasts 1d" where Play said "24h"):
@@ -192,17 +196,6 @@ export const BUILD_ORDER_WORDS = {
   /** Another device saved first: the account's orders were read again, and this draft is kept. */
   savedElsewhere: "Reloaded changed orders. Save this draft again.",
   full: (limit: number) => `Limit: ${limit} orders. Delete one first.`,
-  /** Each goal as its card and palette name it. */
-  goals: {
-    farm: "Farm",
-    wood: "Wood camp",
-    coal: "Coal mine",
-    copper: "Copper mine",
-    hut: "Worker hut",
-    barracks: "Barracks",
-    army: "Deploy army",
-    levelUp: "Level up",
-  },
 } as const;
 export const EVENTS_WORDS = {
   /** What Events and its Log say while the player's filter holds no story. */
@@ -219,13 +212,14 @@ export const EVENTS_WORDS = {
     all: "Everything players do in the world",
   },
   /**
-   * Frontier's Feed: its default first, and Important called Mine, since a Frontier game has no Hyperstructure and the
-   * lens holds only the player's own (owner, 27 October: "important (which is mine, not important tbh)").
+   * Frontier's Feed: All, its default, then Important, anyone's notable stories, then Mine (owner, 27 October: "All /
+   * Important (battles but not just mine), then mine").
    */
-  feedLenses: { all: "All", important: "Mine" },
+  feedLenses: { all: "All", important: "Important", mine: "Mine" },
   feedLensTips: {
     all: "Everything players do in the world",
-    important: "Your fights, captures and chests",
+    important: "Fights, captures, cleared sites and chests, anyone's",
+    mine: "Everything you do",
   },
   failed: "Event history could not load.",
 } as const;
@@ -307,8 +301,13 @@ export const startsNewArmies = (attribute: string, numeral: string) => `new armi
  */
 export const xpTowardTip = (held: string, price: string, tier: string) =>
   `${XP} ${held} ${OF} ${price} · buys ${/^[AEIOU]/.test(tier) ? "an" : "a"} ${tier} attribute tier`;
-/** The four attributes, each wearing its Aspect's mark. */
-export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
+/** The attributes an army levels, by their names in the game's schema, each wearing its Aspect's mark. */
+export const ATTRIBUTE_NAMES = {
+  Battle: "Battle",
+  Logistics: "Logistics",
+  Scouting: "Scouting",
+  Homecoming: "Homecoming",
+} as const;
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
 export const RIFT = "Rift";
@@ -348,13 +347,7 @@ export const FIGHT_WORDS = {
   earns: "This attack earns",
   clears: "This attack clears it",
   holds: "The guard holds",
-  details: "Details",
-  wholeFight: "The whole fight",
   attacks: "Attacks",
-  lose: "You lose",
-  kill: "You kill",
-  stamina: "Stamina",
-  ends: { wins: "The guard falls", loses: "The army falls", stalls: "Neither side falls" },
 } as const;
 export const USE = "Use";
 export const USING = "Using…";
@@ -404,7 +397,8 @@ export const UPGRADING = "Upgrading…";
 export const BUILDING_FIGURES = {
   eachMakes: (noun: string) => `${noun} each makes`,
   castleMakes: (noun: string) => `${noun} the castle makes`,
-  standing: "standing",
+  /** How many of a type stand on the realm: "1 building", "6 buildings" (owner, 27 October: not "6 standing"). */
+  standing: (count: number) => formatCount(count, "building"),
   eachAdds: `${POPULATION} each adds`,
   eachTakes: `${POPULATION} each takes`,
   startsAt: (attribute: string) => `${attribute} new armies start at`,
@@ -441,6 +435,8 @@ export const NEW_ARMY = "The new army";
 /** Raise an army from troops at home; with none, the realm's Barracks trains them. */
 export const DEPLOY = "Deploy";
 export const NO_TROOPS_AT_HOME = "No troops at home";
+/** No troops at home while the realm's Barracks make the next: when it is home ("No troops at home · in 6m"). */
+export const noTroopsUntil = (wait: string) => `${NO_TROOPS_AT_HOME} · ${inTime(wait)}`;
 /** Every tile beside the realm holds something: a deploy has nowhere to step out. */
 export const NO_OPEN_TILE = "No open tile beside the realm";
 /** A site's card with no army selected: what an army does there, or, with none out, where one comes from. */
@@ -454,10 +450,9 @@ export const BUILD = "Build";
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";
 
-/** A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): its details' button. */
+/** A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): its token opens its card. */
 export const PICKED_ARMY = {
   details: (army: string) => `${army}: details`,
-  letGo: (army: string) => `Let go of ${army}`,
 } as const;
 
 /** Troops between two of the realm's armies side by side (Frontier's Transfer troops, desktop and phone). */
@@ -489,8 +484,6 @@ export const ARMIES = "Armies";
 export const ARMIES_ENDED = "Armies ended with the day";
 /** How many troops an army holds: "1 troop", "5,000 troops". */
 export const troopCount = (count: number) => formatCount(count, "troop", TROOPS);
-/** Why research raises a building's output, without the calculation behind it. */
-export const fromResearch = (share: string, side: string) => `${share} from ${side}`;
 /** The sources of a store's production, each with its combined rate. */
 export const MADE_BY = "Made by";
 export const STORE_MAKERS = {
@@ -591,6 +584,8 @@ export const seasonPool = (lords: string, today: string | undefined) =>
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
 export const fitOf = (fits: string, of: string) => `${fits} of ${of} fit`;
 export const REALMS_ELSEWHERE = "No Realms in this wallet";
+/** What one Realm gives a day, for assistive technology on the Realms sheet's chip ("Labor a day per Realm +1K"). */
+export const REALM_LABOR = "Labor a day per Realm";
 /** A Realm joins the list by its number, the first time it gives its labor. */
 export const ADD_REALM = "Add a Realm";
 export const REALM_NUMBER = "Realm number";
@@ -977,7 +972,7 @@ export const NEWS_WORDS = {
 /** The app's own states: install, update, offline, a page that does not exist. */
 export const APP_STATE_WORDS = {
   install: "Install",
-  /** The install notice's one line: where the app will live. */
+  /** The install notice's name for assistive technology: where the app will live (its icon and Install say it on screen). */
   onHomeScreen: "Realms on your home screen",
   updateReady: "Update ready",
   update: "Update",

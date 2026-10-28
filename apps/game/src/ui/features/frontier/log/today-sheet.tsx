@@ -3,6 +3,7 @@ import { HudEventRow, HudIconButton, HudNotice, HudRow, HudSheet } from "@/ui/de
 import {
   DAY,
   DAY_TOTALS_UNKNOWN,
+  dayOfSeason,
   dayEnds,
   dayLeft,
   phraseText,
@@ -30,6 +31,7 @@ export type LogLine = { id: string; at: number; text: string };
  */
 export const TodaySheet = ({
   day,
+  lastDay,
   today,
   clock,
   totals,
@@ -43,6 +45,8 @@ export const TodaySheet = ({
   onClose,
 }: {
   day: number | undefined;
+  /** The season's last day, so the title reads the day against it ("Day 10 of 14"); undefined while unknown. */
+  lastDay?: number;
   /** The day shown is today. */
   today: boolean;
   /** Today's clock, shown under the title while the day shown is today. */
@@ -61,7 +65,10 @@ export const TodaySheet = ({
   onArmies?: () => void;
   onClose: () => void;
 }) => {
-  const title = `${DAY} ${formatAmount(day)}`;
+  const title =
+    day !== undefined && lastDay !== undefined
+      ? dayOfSeason(formatAmount(day), formatAmount(lastDay))
+      : `${DAY} ${formatAmount(day)}`;
   return (
     <HudSheet label={TODAY} onClose={onClose}>
       <span className="text-hud-title">{title}</span>

@@ -26,6 +26,8 @@ import {
   ID,
   ResourcesIds,
   TickIds,
+  TROOP_TIERS,
+  TROOP_TYPES,
   TroopTier,
   TroopType,
   formatAmount,
@@ -70,9 +72,6 @@ interface ArmyCreationOptions {
   fixedContext?: boolean;
   onSubmit?: () => void;
 }
-
-const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
-const TROOP_TIERS: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
 
 export const useArmyCreation = ({
   structureId: activeStructureId,

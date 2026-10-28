@@ -223,13 +223,10 @@ export abstract class HexagonScene {
         changed: () => this.notifyControlsChanged(),
       }),
     );
-    this.interactiveHexManager = new InteractiveHexManager(
-      this.scene,
-      { sampleSurface: (x, z) => this.getTerrainSurface().sampleSurface(x, z) },
-      this.hexSpace,
-    );
+    const sceneTerrain: TerrainSurface = { sampleSurface: (x, z) => this.getTerrainSurface().sampleSurface(x, z) };
+    this.interactiveHexManager = new InteractiveHexManager(this.scene, sceneTerrain, this.hexSpace);
     this.worldUpdateListener = new WorldUpdateListener(this.game);
-    this.highlightHexManager = new HighlightHexManager(this.scene, this.hexSpace);
+    this.highlightHexManager = new HighlightHexManager(this.scene, sceneTerrain, this.hexSpace);
     this.thunderBoltManager = new ThunderBoltManager(
       this.scene,
       this.controls,

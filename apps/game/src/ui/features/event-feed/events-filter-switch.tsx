@@ -1,28 +1,28 @@
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
 import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
-import type { EventsFilter } from "./event-stories";
+import type { EventsFilter, FeedLens } from "./event-stories";
 
-type LensWords = { names: Record<EventsFilter, string>; tips: Record<EventsFilter, string> };
+type LensWords<Lens extends string> = { names: Record<Lens, string>; tips: Record<Lens, string> };
 
 /** Blitz's Events and Log: Important, then All. */
-const EVENTS_LENSES: LensWords = { names: EVENTS_WORDS.lenses, tips: EVENTS_WORDS.lensTips };
+const EVENTS_LENSES: LensWords<EventsFilter> = { names: EVENTS_WORDS.lenses, tips: EVENTS_WORDS.lensTips };
 
 /**
- * The two lenses, the one shown lit, each saying on its hover what it shows, in the order and words of `words` (Frontier's
- * Feed: All, then Mine).
+ * The lenses, the one shown lit, each saying on its hover what it shows, in the order and words of `words` (Blitz's
+ * Events: Important, then All; Frontier's Feed: All, Important, then Mine).
  */
-export const LensSwitch = ({
+export const LensSwitch = <Lens extends string>({
   lens,
   onLens,
-  words = EVENTS_LENSES,
+  words,
 }: {
-  lens: EventsFilter;
-  onLens: (lens: EventsFilter) => void;
-  words?: LensWords;
+  lens: Lens;
+  onLens: (lens: Lens) => void;
+  words: LensWords<Lens>;
 }) => (
   <span role="group" aria-label={EVENTS_WORDS.lens} className="inline-flex items-center gap-1">
-    {(Object.keys(words.names) as EventsFilter[]).map((id) => (
+    {(Object.keys(words.names) as Lens[]).map((id) => (
       <HudButton
         key={id}
         kind="quiet"
@@ -37,11 +37,11 @@ export const LensSwitch = ({
   </span>
 );
 
-/** Frontier's Feed: All, its default, first; then Mine. */
-export const FEED_LENSES: LensWords = { names: EVENTS_WORDS.feedLenses, tips: EVENTS_WORDS.feedLensTips };
+/** Frontier's Feed: All, its default, first; then Important; then Mine. */
+export const FEED_LENSES: LensWords<FeedLens> = { names: EVENTS_WORDS.feedLenses, tips: EVENTS_WORDS.feedLensTips };
 
 /** The player's one lens for Events and the Log: the same choice in both, remembered for them on this device. */
 export const EventsFilterSwitch = () => {
   const [filter, choose] = useEventsFilter();
-  return <LensSwitch lens={filter} onLens={choose} />;
+  return <LensSwitch lens={filter} onLens={choose} words={EVENTS_LENSES} />;
 };

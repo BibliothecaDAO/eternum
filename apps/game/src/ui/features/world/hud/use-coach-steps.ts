@@ -29,7 +29,7 @@ import {
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
-import { BiomeType, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, StructureType, TROOP_TIERS, TROOP_TYPES } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import {
   type CoachAct,
@@ -182,9 +182,7 @@ const useCoachArmies = (): CoachArmy[] => {
 };
 
 /** The troops a realm can raise an army from: every troop type and tier. */
-const TROOP_KINDS = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin].flatMap((type) =>
-  [TroopTier.T1, TroopTier.T2, TroopTier.T3].map((tier) => ({ type, tier })),
-);
+const TROOP_KINDS = TROOP_TYPES.flatMap((type) => TROOP_TIERS.map((tier) => ({ type, tier })));
 
 /**
  * The player's holding with the largest troop stack on hand, and that stack, where an army can be raised now; null when

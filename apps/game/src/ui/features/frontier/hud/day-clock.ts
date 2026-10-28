@@ -47,6 +47,21 @@ export const dayClock = (calendar: SeasonCalendar, now: number): DayClock => {
 };
 
 /**
+ * Where today stands in the season (audit 10-27: its end and the days left were shown nowhere): today's number and the
+ * season's last day, both one-based as the player counts them; undefined outside the season or before its end is known.
+ */
+export const seasonDay = (
+  calendar: SeasonCalendar,
+  endsAt: number | undefined,
+  now: number,
+): { day: number; lastDay: number } | undefined => {
+  if (endsAt === undefined || now >= endsAt) return undefined;
+  const today = dayOf(calendar, now);
+  const last = dayOf(calendar, endsAt - 1);
+  return today && last ? { day: today.index + 1, lastDay: last.index + 1 } : undefined;
+};
+
+/**
  * A season day's bounds in unix seconds, one-based as the player counts it, found by stepping back from today; null
  * before the season or for a day not yet begun.
  */

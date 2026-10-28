@@ -7,7 +7,7 @@ import { dayOf } from "@bibliothecadao/eternum";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
-import { dayBounds } from "../hud/day-clock";
+import { dayBounds, seasonDay } from "../hud/day-clock";
 import { TodaySheet } from "./today-sheet";
 
 const DAY = 16 * 3_600;
@@ -58,6 +58,24 @@ describe("Today", () => {
     expect(dayBounds(calendar, now, 3)).toEqual({ start: days[2].start, end: days[2].end });
     expect(dayBounds(calendar, now, 0)).toBeNull();
     expect(dayBounds(calendar, now, 13)).toBeNull();
+  });
+
+  it("counts today against the season's last day, and none outside the season (audit 10-27)", () => {
+    const calendar = { dayUnitSeconds: DAY / 4, seed: 1n, startMainAt: 0 };
+    const days = [dayOf(calendar, 0)!];
+    while (days.length < 14) days.push(dayOf(calendar, days.at(-1)!.end)!);
+    const endsAt = days[13].end;
+    expect(seasonDay(calendar, endsAt, days[9].start + 60)).toEqual({ day: 10, lastDay: 14 });
+    expect(seasonDay(calendar, endsAt, days[13].end - 1)).toEqual({ day: 14, lastDay: 14 });
+    expect(seasonDay(calendar, endsAt, endsAt)).toBeUndefined();
+    expect(seasonDay(calendar, undefined, days[9].start)).toBeUndefined();
+    expect(seasonDay(calendar, endsAt, -1)).toBeUndefined();
+  });
+
+  it("titles the day against the season's last day when it is known", () => {
+    const { host, unmount } = render({ lastDay: 14 });
+    expect(host.textContent).toContain("Day 12 of 14");
+    unmount();
   });
 
   it("shows the day's totals and log, an unknown total as a dash, and steps back but not past today", () => {

@@ -1,7 +1,6 @@
 import { formatDuration, formatShort } from "@bibliothecadao/types";
 import { type IconMeaning } from "@/ui/design-system/icon";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudButton, HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudIconButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 import {
   CANCEL,
@@ -22,12 +21,15 @@ import type { ReactNode } from "react";
 import { type Cost, isCovered } from "./army-order";
 import { useEnterConfirms } from "./enter-confirms";
 
-const VERBS = { explore: { word: EXPLORE, icon: "explore" }, move: { word: MOVE, icon: "move" } } as const;
+/** The order the row stands for, as assistive technology names it: its icons and numbers say it on screen. */
+const VERBS = { explore: EXPLORE, move: MOVE } as const;
 
 /**
- * The action bar with an order pending: its costs in one row (stamina before → after, the wheat, and for a new tile
- * what the reveal sends home and its XP), then Cancel and the verb; Enter confirms it on a keyboard. A short cost turns ember with its exact wait; the
- * gains and the verb are gone until it is covered.
+ * The action bar with an order pending, in one row: its costs (stamina before → after, the wheat, and for a new tile
+ * what the reveal sends home and its XP), and × to drop it. The same tile tapped again sends it (owner, 27 October
+ * 2026: "Yes double tapping to explore on mobile, the confirm bar can be compacted into one single row"); Enter does on
+ * a keyboard. A short cost turns ember with its exact wait, and the refill stands in the row; the gains are gone until
+ * it is covered.
  */
 export const OrderBar = ({
   kind,
@@ -50,18 +52,16 @@ export const OrderBar = ({
   /** What of a labor reveal fits the labor store; less than the yield splits the chip, labor's half in ember. */
   laborFits?: number;
   xp: number | undefined;
-  /** Refill, offered beside Cancel when the order's stamina is short. */
+  /** Refill, offered in the row when the order's stamina is short. */
   refill?: ReactNode;
   onCancel: () => void;
   onGo: () => void;
 }) => {
   const covered = isCovered(stamina) && isCovered(wheat);
-  const staminaShort = !isCovered(stamina) && refill !== undefined;
   useEnterConfirms(covered ? onGo : undefined);
-  const verb = VERBS[kind];
   return (
-    <>
-      <HudPanel collapsible={false} bodyClassName="flex min-h-11 flex-wrap items-center justify-center gap-1.5">
+    <HudPanel label={VERBS[kind]} collapsible={false} bodyClassName="flex min-h-11 items-center gap-1.5">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center justify-center gap-1.5">
         <CostChip icon="stamina" label={STAMINA} cost={stamina} after={(held) => `${held} → ${held - stamina.cost}`} />
         <CostChip icon="wheat" label={WHEAT} cost={wheat} after={() => `−${formatShort(wheat.cost)}`} />
         {covered && kind === "explore" && revealYield !== null && (
@@ -77,21 +77,10 @@ export const OrderBar = ({
             {formatShort(tiles)}
           </HudChip>
         )}
-      </HudPanel>
-      <div className={cn("pointer-events-auto grid gap-2", (covered || staminaShort) && "grid-cols-3")}>
-        <HudButton kind="quiet" onClick={onCancel}>
-          {CANCEL}
-        </HudButton>
-        {covered && (
-          <span className="col-span-2 grid">
-            <HudButton kind="primary" icon={verb.icon} onClick={onGo}>
-              {verb.word}
-            </HudButton>
-          </span>
-        )}
-        {staminaShort && <span className="col-span-2 grid">{refill}</span>}
+        {!isCovered(stamina) && refill}
       </div>
-    </>
+      <HudIconButton icon="close" label={CANCEL} kind="quiet" size="sm" onClick={onCancel} />
+    </HudPanel>
   );
 };
 

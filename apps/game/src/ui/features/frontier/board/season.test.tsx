@@ -41,6 +41,7 @@ describe("the season list", () => {
         state="ready"
         onRetry={vi.fn()}
         onOpen={onOpen}
+        onClose={vi.fn()}
       />,
     );
     expect([...host.querySelectorAll(".ui-table-head > span")].map((head) => head.textContent)).toEqual([
@@ -64,10 +65,56 @@ describe("the season list", () => {
     unmount();
   });
 
+  it("closes as every panel does: its X and Escape (audit 10-27: the desktop Season had neither)", () => {
+    const onClose = vi.fn();
+    const { host, unmount } = render(
+      <SeasonList
+        rank={1}
+        rows={[row(1, true)]}
+        pinned={undefined}
+        state="ready"
+        onRetry={vi.fn()}
+        onOpen={vi.fn()}
+        onClose={onClose}
+      />,
+    );
+    act(() => host.querySelector<HTMLButtonElement>("button[aria-label='Close']")!.click());
+    expect(onClose).toHaveBeenCalledTimes(1);
+    act(() => void window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    expect(onClose).toHaveBeenCalledTimes(2);
+    unmount();
+  });
+
+  it("says when the season ends and today against its last day (audit 10-27: shown nowhere)", () => {
+    const at = new Date(2026, 9, 31, 21, 40).getTime() / 1000;
+    const { host, unmount } = render(
+      <SeasonList
+        rank={1}
+        rows={[row(1, true)]}
+        pinned={undefined}
+        state="ready"
+        onRetry={vi.fn()}
+        onOpen={vi.fn()}
+        onClose={vi.fn()}
+        ends={{ at, day: 10, lastDay: 14 }}
+      />,
+    );
+    expect(host.textContent).toContain("Season ends 31 Oct 21:40 · Day 10 of 14");
+    unmount();
+  });
+
   it("says the season did not answer, with Try again on the card", () => {
     const onRetry = vi.fn();
     const { host, unmount } = render(
-      <SeasonList rank={undefined} rows={[]} pinned={undefined} state="failed" onRetry={onRetry} onOpen={vi.fn()} />,
+      <SeasonList
+        rank={undefined}
+        rows={[]}
+        pinned={undefined}
+        state="failed"
+        onRetry={onRetry}
+        onOpen={vi.fn()}
+        onClose={vi.fn()}
+      />,
     );
     expect(host.textContent).toContain("Season did not answer.");
     expect(host.querySelector("[aria-label='Season —']")).not.toBeNull();

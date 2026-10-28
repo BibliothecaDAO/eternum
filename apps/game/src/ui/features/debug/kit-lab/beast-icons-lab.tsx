@@ -60,7 +60,6 @@ export function BeastIconsLab() {
                   exchanges: 1,
                   troopsLost: 50,
                   guardLeft: 0,
-                  whole: { troopsLost: 50, guardKilled: guard, stamina: 30 },
                 }}
                 pay={category === StructureType.Camp ? { icon: "labor", amount: 550 } : null}
                 xp={30}

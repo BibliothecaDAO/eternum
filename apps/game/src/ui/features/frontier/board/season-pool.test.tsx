@@ -94,6 +94,7 @@ describe("the Season page's header", () => {
           state="ready"
           onRetry={() => undefined}
           onOpen={() => undefined}
+          onClose={() => undefined}
         />,
       ),
     );

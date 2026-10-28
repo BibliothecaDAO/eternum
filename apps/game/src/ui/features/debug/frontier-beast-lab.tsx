@@ -232,7 +232,6 @@ export function FrontierBeastLab() {
               exchanges: 2,
               troopsLost: Math.floor(strength / 5),
               guardLeft: Math.floor(strength / 3),
-              whole: { troopsLost: Math.floor((strength * 2) / 5), guardKilled: strength, stamina: 60 },
             }}
             pay={site === 0 ? { icon: "labor", amount: 1400 } : site === 1 ? { icon: "essence", amount: 8400 } : null}
             xp={132}

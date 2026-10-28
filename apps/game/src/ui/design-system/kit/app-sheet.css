@@ -285,14 +285,17 @@
   justify-content: flex-end;
   gap: theme(spacing.3);
 }
-/* The notice keeps one line in the bar: its words shorten, its buttons stay whole. */
+/* The notice keeps one line in the bar: its words shorten, its icon and buttons stay whole (never under the player's
+   name), and the name gives way to its ellipsis. */
 .app-bar__end > [data-band="notice"] {
-  min-width: 0;
+  min-width: min-content;
 }
-/* In the bar a notice keeps to the bar's height: its frame closer around its line and its verbs. */
+/* In the bar a notice keeps to the bar's height: its frame closer around its line and its verbs, so its icon and verbs
+   fit beside the places and the player at the desktop's narrowest width (1024). */
 .app-bar__end > [data-band="notice"] > .app-notice {
-  gap: theme(spacing.2);
-  padding: theme(spacing.1) theme(spacing.1) theme(spacing.1) theme(spacing.3);
+  position: relative;
+  gap: theme(spacing.1);
+  padding: theme(spacing.1) theme(spacing.1) theme(spacing.1) theme(spacing.2);
 }
 .app-bar__end > [data-band="notice"] .app-notice__words {
   overflow: hidden;
@@ -316,6 +319,20 @@
   }
   .app-bar__name {
     max-width: 8rem;
+  }
+  .app-bar__end {
+    gap: theme(spacing.2);
+  }
+  /* Under 1280 the bar has room for a notice's icon and verbs beside the places and the player, not its line: where
+     the notice has verbs (Install, Update, Try again), they carry it, and its line is still read out, never drawn under
+     the player. A notice that is its words alone ("Sign in to save your orders.") keeps them. */
+  .app-bar__end > [data-band="notice"] .app-notice:has(.app-button) .app-notice__words {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 .app-bar__player {
