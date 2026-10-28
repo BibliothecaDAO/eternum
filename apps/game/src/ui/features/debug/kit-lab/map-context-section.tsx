@@ -1,7 +1,7 @@
 import { siteName } from "@bibliothecadao/types";
 import { Token } from "@/three/map-plates/map-plate-token";
 import { Plate } from "@/three/map-plates/map-plates";
-import type { ArmyPlate, StructurePlate } from "@/three/map-plates/map-plate-model";
+import { plateSideStyle, type ArmyPlate, type StructurePlate } from "@/three/map-plates/map-plate-model";
 import { Icon, SvgIcon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { HudBubble, HudMenu, HudMinimapFrame, HudTierChip } from "@/ui/design-system/kit/hud-elements";
@@ -9,6 +9,7 @@ import { LabTip } from "./lab-tip";
 import { orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { ActionType } from "@bibliothecadao/eternum";
 import { type ReactNode } from "react";
+import { SIDE_COLOURS, type Side } from "@/tokens";
 
 import { Element } from "./sheet-element";
 
@@ -80,7 +81,12 @@ const PlateAt = ({
   selected?: boolean;
 }) => (
   <div className="mp !static !overflow-visible">
-    <div className="mp-at !static" data-relation={plate.relation} data-selected={selected}>
+    <div
+      className="mp-at !static"
+      data-relation={plate.relation}
+      data-selected={selected}
+      style={plateSideStyle(plate)}
+    >
       {open ? <Plate plate={plate} /> : <Token plate={plate} />}
     </div>
   </div>
@@ -127,8 +133,6 @@ const hexPoints = (x: number, y: number, radius: number) =>
     return `${x + Math.cos(angle) * radius},${y + Math.sin(angle) * radius}`;
   }).join(" ");
 
-type Side = "own" | "ally" | "enemy" | "neutral";
-const SIDE = (side: Side) => `var(--hud-${side})`;
 /** What the player has walked: around the realm and along the army's road; the rest is fog. */
 const explored = (col: number, row: number) =>
   Math.hypot(col - 8, (row - 6) * 1.2) < 6.5 || Math.hypot(col - 15, (row - 7) * 1.2) < 4.5;
@@ -155,7 +159,7 @@ const MinimapMarker = ({ col, row, name, side }: (typeof MARKERS)[number]) => {
       <polygon
         points={hexPoints(x, y, HEX * 1.25)}
         fill="var(--hud-surface-to)"
-        stroke={SIDE(side)}
+        stroke={SIDE_COLOURS[side]}
         strokeWidth={1.4}
       />
       <SvgIcon name={name} x={x - HEX} y={y - HEX} size={HEX * 2} />
@@ -168,7 +172,7 @@ const EdgeMarker = ({ x, y, angle, side }: { x: number; y: number; angle: number
   <path
     d="M 0 -6 L 6 4 L -6 4 Z"
     transform={`translate(${x} ${y}) rotate(${angle})`}
-    fill={side === "accent" ? "rgb(var(--hud-accent))" : SIDE(side)}
+    fill={side === "accent" ? "rgb(var(--hud-accent))" : SIDE_COLOURS[side]}
     stroke="var(--hud-surface-to)"
     strokeWidth={1}
   />
@@ -209,7 +213,7 @@ const Minimap = () => {
           })}
           {DOTS.map(({ col, row, side }) => {
             const { x, y } = at(col, row);
-            return <circle key={`${col}-${row}`} cx={x} cy={y} r={3} fill={SIDE(side)} />;
+            return <circle key={`${col}-${row}`} cx={x} cy={y} r={3} fill={SIDE_COLOURS[side]} />;
           })}
           {MARKERS.map((marker) => (
             <MinimapMarker key={marker.name} {...marker} />

@@ -9,7 +9,7 @@ import { HEX_SIZE } from "../constants/scene-constants";
 import { PLATE_CLEARANCE } from "../managers/structure-visible-presentation";
 import { hudColumnRects } from "../utils/labels/hud-clearance";
 import { placePlates, plateSize, type OrderLineAsk, type PlateThing } from "./map-plate-layout";
-import type { MapPlate } from "./map-plate-model";
+import { plateSideStyle, type MapPlate } from "./map-plate-model";
 import { Token, tokenSize } from "./map-plate-token";
 import { Plate } from "./map-plates";
 
@@ -430,8 +430,7 @@ const LabelSlot = memo(function LabelSlot({
       data-relation={entry.plate.relation}
       data-seat={watched ? (watched.seat ?? "none") : undefined}
       data-selected={selected}
-      // A watching viewer's side is its player's seat colour, in place of the relation's (map-plates.css).
-      style={{ display: "none", zIndex: view === "token" ? 1 : 5, ...(watched ? { "--mp-side": watched.colour } : {}) }}
+      style={{ display: "none", zIndex: view === "token" ? 1 : 5, ...plateSideStyle(entry.plate) }}
     >
       {view === "token" ? <Token plate={entry.plate} /> : <Plate plate={entry.plate} />}
     </div>

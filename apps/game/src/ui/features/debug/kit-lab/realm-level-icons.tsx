@@ -74,7 +74,7 @@ export function RealmLevelIcons() {
               <figure>
                 <figcaption>Hex minimap · {option ? "by level" : "shipped"}</figcaption>
                 <div className="my-4 flex flex-wrap gap-1">
-                  {(["you", "ally", "enemy", "neutral"] as const).map((owner) => (
+                  {(["own", "ally", "enemy", "neutral"] as const).map((owner) => (
                     <svg
                       key={owner}
                       viewBox="-15 -15 30 30"
@@ -117,7 +117,7 @@ export function RealmHexFillComparison() {
                 <figcaption>{version === "before" ? "Before · inset" : "After · filled"}</figcaption>
                 {[19.6, 30].map((pixels) => (
                   <div key={pixels} className="my-3 flex gap-1" data-hex-fill-size={pixels}>
-                    {(["you", "ally", "enemy", "neutral"] as const).map((owner) => (
+                    {(["own", "ally", "enemy", "neutral"] as const).map((owner) => (
                       <svg
                         key={owner}
                         viewBox="-15 -15 30 30"

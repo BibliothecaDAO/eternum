@@ -1,7 +1,7 @@
 import { configManager, getExplorerOwner } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import type { FactView } from "@/sync/fact-views";
-import { arePlayersAllied, watchedSide } from "@/utils/entity-ownership";
+import { arePlayersAllied, sideOf, watchedSide } from "@/utils/entity-ownership";
 import { mineMeaning, readStructureMeaning, realmMarkerMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import type { MarkerOwner } from "@/ui/design-system/hex-marker";
@@ -25,17 +25,15 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
   ],
   read: (store, viewer) => {
     const game = configManager.getActiveGameId();
+    // Whose a mark is by the map labels' own rules: a watching viewer's seat colours, else the viewer's side.
     const ownership = (owner: bigint): MarkerOwner => {
-      // A watching viewer sees each player's seat colour, as on the map's labels; nobody's stays neutral.
       const watched = watchedSide(store, owner);
-      if (watched) return watched.seat === null ? "neutral" : `seat-${watched.seat}`;
-      return owner === 0n || viewer === null
-        ? "neutral"
-        : owner === BigInt(viewer)
-          ? "you"
-          : arePlayersAllied(store, viewer, owner)
-            ? "ally"
-            : "enemy";
+      if (watched) return watched.seat === null ? "nobody" : `seat-${watched.seat}`;
+      return sideOf({
+        isMine: viewer !== null && owner === BigInt(viewer),
+        isAlly: arePlayersAllied(store, viewer, owner),
+        owner: { address: owner },
+      });
     };
     const markers = new Map<string, MinimapMarker>();
     for (const row of store.inGame("Structure", game)) {

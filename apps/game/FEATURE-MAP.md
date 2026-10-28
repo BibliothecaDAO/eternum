@@ -458,8 +458,7 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   just over the model's top, never on the thing, at every zoom (`src/three/map-plates/map-plate-token.tsx`): a disk,
   then its plate, the tier chip and count of its troops or guard (a camp's or rift's guard alone: what it holds is on
   its plate), and an army's stamina bar, all three in its side's colour: yours green, an ally's (a tribe member's, in
-  Eternum only: `arePlayersAllied`) blue, anyone else's red, nobody's too (owner, 2026-10-21; `HUD_SHEET` own, ally,
-  enemy). A watching viewer (`?spectate=true`, or a spectating HUD) has no side: each player's labels take their seat's
+  Eternum only: `arePlayersAllied`) blue, anyone else's red, nobody's too (owner, 2026-10-21; `sideOf` and `SIDE_COLOURS`, shared by map labels and minimap marks). A watching viewer (`?spectate=true`, or a spectating HUD) has no side: each player's labels take their seat's
   colour, with their initial on the disk, and nobody's are grey (owner, 2026-10-21: "a diff color for every player";
   `watchedSide`, `src/utils/entity-ownership.ts`: a Blitz roster's order, else the open game's players in the order each
   first had a realm created (its `RealmCreatedStory` history on Herald), for that shard's game alone; 24 colours,

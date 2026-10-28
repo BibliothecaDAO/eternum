@@ -230,7 +230,8 @@ const SITE_MEANINGS: Partial<Record<number, MinimapMarker["name"]>> = {
 
 /**
  * A tile's marker, read from what occupies it first: an empty tile has none, whatever entity id it still carries; a
- * known entity's own marker; else the occupier's meaning. A zero or missing id is no entity, so never looked up.
+ * known entity's own marker; else the occupier's meaning, nobody's colour, as no owner is read. A zero or missing id is
+ * no entity, so never looked up.
  */
 const resolveTileMarker = (
   tile: MinimapTile,
@@ -243,10 +244,10 @@ const resolveTileMarker = (
   const known = id && id !== "0" ? markers.get(id) : undefined;
   if (known) return known;
   const site = SITE_MEANINGS[type];
-  if (site) return { name: site, owner: "neutral" };
+  if (site) return { name: site, owner: "nobody" };
   const structure = getStructureInfoFromTileOccupier(type);
-  if (structure) return { name: structureMeaning(structure.type, mode), owner: "neutral" };
-  if (getExplorerInfoFromTileOccupier(type)) return { name: "map-army", owner: "neutral" };
+  if (structure) return { name: structureMeaning(structure.type, mode), owner: "nobody" };
+  if (getExplorerInfoFromTileOccupier(type)) return { name: "map-army", owner: "nobody" };
   return null;
 };
 
