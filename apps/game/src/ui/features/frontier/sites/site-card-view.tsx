@@ -126,7 +126,7 @@ export const SiteCardView = ({
   const what = [...new Set([name && kind, beast?.name])].filter((part) => part && part !== title).join(" · ");
   return (
     <HudSheet label={title} onClose={onClose}>
-      <header className="grid grid-cols-[auto_1fr] items-center gap-3">
+      <header className="flex items-center gap-3">
         {typeof guard === "number" ? (
           <GuardToken
             label={beast?.name ?? TROOPS}
@@ -137,7 +137,7 @@ export const SiteCardView = ({
         ) : (
           <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
         )}
-        <span className="flex min-w-0 flex-col gap-1.5">
+        <span className="flex min-w-0 flex-1 flex-col gap-1.5">
           {facing ? (
             <Outcome facing={facing} earns={reward !== null} />
           ) : (

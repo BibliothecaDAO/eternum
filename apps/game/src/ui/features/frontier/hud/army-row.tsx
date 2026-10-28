@@ -133,7 +133,7 @@ const RowLine = ({ words, figure }: { words: string; figure: ReactNode }) => (
  * on the list starts at one x and is as long (owner, 27 October).
  */
 const RowStamina = ({ stamina }: { stamina: StaminaBar | undefined }) => (
-  <span className="flex w-28 text-hud-label font-bold text-hud-muted">
+  <span className="flex w-28 text-hud-label text-hud-muted">
     <StaminaReading stamina={stamina} />
   </span>
 );
