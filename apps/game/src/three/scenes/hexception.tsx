@@ -820,17 +820,24 @@ export default class HexceptionScene extends HexagonScene {
     super.destroy();
   }
 
+  /**
+   * The building whose ghost follows the pointer, waiting for the plot a click picks. A ghost pinned to a plot is the
+   * build sheet's to place, so a click there picks or lets go like any other.
+   */
+  private ghostFollowingPointer() {
+    return this.pinnedPlot ? null : this.buildingPreview?.getPreviewBuilding();
+  }
+
   protected async onHexagonClick(hexCoords: HexPosition | null): Promise<void> {
     if (hexCoords === null) {
       // Empty ground lets go of the building or plot tapped before (owner, 27 October 2026: "empty ground lets go"),
       // unless a building's ghost follows the pointer, waiting for its plot.
-      if (!this.buildingPreview?.getPreviewBuilding()) this.state.setSelectedBuildingHex(null);
+      if (!this.ghostFollowingPointer()) this.state.setSelectedBuildingHex(null);
       return;
     }
 
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
-    // A pinned ghost is the build sheet's to place; a tap picks another plot.
-    const buildingType = this.pinnedPlot ? null : this.buildingPreview?.getPreviewBuilding();
+    const buildingType = this.ghostFollowingPointer();
 
     const account = useAccountStore.getState().account;
     const canConstruct = !!account && canIssueOrders() && actNowRefusal() === null;
