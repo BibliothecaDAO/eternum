@@ -5,7 +5,8 @@
   "scripts": {
     "lint": "eslint",
     "typecheck": "tsc --noEmit -p server",
-    "test": "vitest run"
+    "test": "vitest run",
+    "campaign-codes": "tsx scripts/campaign-codes.ts"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "2.0.0",
@@ -29,6 +30,8 @@
     "wrangler": "4.136.3",
     "@cloudflare/workers-types": "5.20260922.1",
     "@realms-world/guardian": "workspace:*",
-    "miniflare": "4.20260730.0"
+    "miniflare": "4.20260730.0",
+    "qrcode": "1.5.3",
+    "@types/qrcode": "1.5.5"
   }
 }

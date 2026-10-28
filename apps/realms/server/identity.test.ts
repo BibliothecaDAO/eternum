@@ -1,6 +1,7 @@
 import { environmentL2 } from "@realms-world/chain";
 import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -22,6 +23,8 @@ import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-sig
 import { ACCOUNT_CLASS_HASH, type IdentityEnv } from "./env";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
+import { campaignCodeHash } from "./campaigns";
+import { campaignTicketFor } from "./campaign-ticket-store";
 import { ORIGIN } from "./workerd-harness";
 
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
@@ -927,6 +930,103 @@ describe("identity Worker", () => {
     expect(((await (await browser.request("/api/build-orders")).json()) as { revision: number }).revision).toBe(1);
     expect((await createBrowser().request("/api/build-orders")).status).toBe(401);
   });
+
+  it("gives each account one Devcon ticket, golden for a golden code's first account only, told to that account alone", async () => {
+    const printed = async (code: string, tier: "regular" | "golden") =>
+      env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
+        .bind("devcon-2026", await campaignCodeHash("devcon-2026", code), tier)
+        .run();
+    await printed("T9HW3NPB", "golden");
+    await printed("K7M2QX4R", "regular");
+    const player = async (name: string) => {
+      const browser = createBrowser();
+      await signInWithCode(browser, `${name}@realms.test`);
+      const redeem = async (code?: string, campaign = "devcon-2026") => {
+        const response = await browser.request("/api/campaigns/redeem", { body: { campaign, code } });
+        return [response.status, await response.json()];
+      };
+      return { redeem, realmsId: (await browser.session())!.user.realmsId };
+    };
+    const ticket = (tier: string) => [200, { campaign: "devcon-2026", tier }];
+
+    const first = await player("golden-first");
+    expect(await first.redeem("t9hw3npb")).toEqual(ticket("golden"));
+    // A retry, or another flyer's code, answers the ticket the account already holds.
+    expect(await first.redeem("T9HW3NPB")).toEqual(ticket("golden"));
+    expect(await first.redeem("K7M2QX4R")).toEqual(ticket("golden"));
+    const second = await player("golden-second");
+    expect(await second.redeem("T9HW3NPB")).toEqual(ticket("regular"));
+    // The shared link, a regular flyer and a code no flyer carries all give a regular ticket, never a refusal.
+    expect(await (await player("shared-link")).redeem()).toEqual(ticket("regular"));
+    expect(await (await player("regular-flyer")).redeem("K7M2QX4R")).toEqual(ticket("regular"));
+    expect(await (await player("unknown-code")).redeem("ZZZZZZZZ")).toEqual(ticket("regular"));
+    expect(await (await player("other-campaign")).redeem("T9HW3NPB", "devcon-2025")).toEqual([
+      400,
+      { error: "invalid_redemption" },
+    ]);
+    const signedOut = await createBrowser().request("/api/campaigns/redeem", { body: { campaign: "devcon-2026" } });
+    expect(signedOut.status).toBe(401);
+
+    // Two accounts redeeming one golden code at once: one golden ticket.
+    await printed("GQ2MZ7XA", "golden");
+    const [racerA, racerB] = await Promise.all([player("golden-race-a"), player("golden-race-b")]);
+    const raced = await Promise.all([racerA.redeem("GQ2MZ7XA"), racerB.redeem("GQ2MZ7XA")]);
+    expect(raced.map(([, body]) => (body as { tier: string }).tier).sort()).toEqual(["golden", "regular"]);
+
+    // The relay reads the ticket for a game of the campaign's preset (Devcon is 6) as its entitlement carries it.
+    expect(await campaignTicketFor(env.DB, first.realmsId, 6)).toEqual({ campaignId: 1, tier: 2 });
+    expect(await campaignTicketFor(env.DB, second.realmsId, 6)).toEqual({ campaignId: 1, tier: 1 });
+    expect(await campaignTicketFor(env.DB, first.realmsId, 5)).toBeNull();
+
+    // After the season, a new ticket is refused; one already held still answers.
+    const late = await player("after-devcon");
+    const now = vi.spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 10, 6, 14, 30));
+    try {
+      expect(await late.redeem("K7M2QX4R")).toEqual([410, { error: "campaign_closed" }]);
+      expect(await first.redeem()).toEqual(ticket("golden"));
+    } finally {
+      now.mockRestore();
+    }
+  });
+
+  it("prints flyers whose codes, once loaded, give exactly the campaign's golden count of golden tickets", async () => {
+    const out = mkdtempSync(join(tmpdir(), "campaign-codes-"));
+    const generate = () =>
+      execFileSync("pnpm", ["campaign-codes", "devcon-2026", "24", "https://play.dev-realms.party", out], {
+        cwd: new URL("..", import.meta.url),
+        env: { ...process.env, CAMPAIGN_CODE_SEED: "campaign-test-seed-campaign-test-seed" },
+      });
+    generate();
+    const sql = readFileSync(join(out, "codes.sql"), "utf8");
+    const pages = readFileSync(join(out, "print.csv"), "utf8").trim().split("\n").slice(1);
+    generate();
+    // The same seed makes the same print file and the same codes again, and loading them twice changes nothing.
+    expect([readFileSync(join(out, "codes.sql"), "utf8"), readdirSync(join(out, "qr")).length]).toEqual([sql, 24]);
+    const statements = (sql + sql)
+      .split(";")
+      .map((statement) => statement.trim())
+      .filter(Boolean);
+    await env.DB.batch(statements.map((statement) => env.DB.prepare(statement)));
+
+    const tiers = [];
+    for (const [index, page] of pages.entries()) {
+      const [, qr, url] = page.split(",");
+      expect([qr, url]).toEqual([
+        `qr/${String(index + 1).padStart(4, "0")}.svg`,
+        expect.stringMatching(/^https:\/\/play\.dev-realms\.party\/join\/devcon\/[A-HJ-NP-Z2-9]{8}$/),
+      ]);
+      const browser = createBrowser();
+      await signInWithCode(browser, `flyer-${index}@realms.test`);
+      const code = url!.slice(url!.lastIndexOf("/") + 1);
+      // The database gets hashes only.
+      expect(sql).not.toContain(code);
+      const response = await browser.request("/api/campaigns/redeem", { body: { campaign: "devcon-2026", code } });
+      tiers.push(((await response.json()) as { tier: string }).tier);
+    }
+    expect(tiers.filter((tier) => tier === "golden")).toHaveLength(20);
+    expect(tiers.filter((tier) => tier === "regular")).toHaveLength(4);
+    rmSync(out, { recursive: true, force: true });
+  }, 60_000);
 
   it("saves preferences by revision, caps devices per account and revokes a device only with its token", async () => {
     const browser = createBrowser();
