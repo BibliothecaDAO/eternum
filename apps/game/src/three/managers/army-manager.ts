@@ -104,6 +104,7 @@ import {
   type DrawnSlotPositionEntry,
 } from "./army-slot-auditor";
 import { reportArmyIntegrityHealOnce } from "./army-integrity-diagnostics";
+import { presentResult } from "@/three/presented-results";
 import { orderedRouteFor, resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
@@ -1926,6 +1927,7 @@ export class ArmyManager {
     if (walkingFrom) worldPath[0] = walkingFrom;
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
     this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier);
+    if (armyData.isMine) presentResult(`walk:${numericEntityId}`);
     this.armyModel.setMovementCompleteCallback(numericEntityId, () => {
       if (!this.armyPresentations.has(entityId)) return;
       this.cleanupMovementSourceBucket(entityId);

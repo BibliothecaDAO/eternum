@@ -3,6 +3,7 @@ import {
   resolveBuildingModelSelection,
   type BuildingModelSelection,
 } from "./hexception-building-model";
+import { presentResult } from "@/three/presented-results";
 import { holdPartHeadings } from "../structures/held-heading";
 import { frontierPaintedBuildingPath } from "../structures/frontier-painted-buildings";
 import { buildingTypeTier } from "@bibliothecadao/eternum";
@@ -1498,8 +1499,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.scene.add(instance);
     this.buildingInstances.set(key, instance);
-    // A built building's first frame: the playtest times a build from its press to here.
-    if (!building.pending) performance.mark(`building:drawn:${key}`);
+    if (!building.pending) presentResult(`building:${key}:${building.category}`);
     if (entrance === "overshoot") this.overshootIn(instance);
     else this.animateBuildingScale(instance);
     this.startBuildingAnimations(key, instance, buildingData.animations);

@@ -433,7 +433,8 @@ import {
   bindWorldmapTerrainEcologyRefresh,
   collectWorldmapTerrainEcologyAnchors,
 } from "./worldmap-terrain-ecology-refresh-runtime";
-import { WorldmapTerrainContent } from "./worldmap-terrain-content";
+import { takeShownTiles, WorldmapTerrainContent } from "./worldmap-terrain-content";
+import { presentResult } from "@/three/presented-results";
 import {
   WORLDMAP_CAMERA_ZOOM,
   resolveWorldmapCameraFieldOfViewDegrees,
@@ -775,6 +776,8 @@ export default class WorldmapScene extends WarpTravel {
   private latestRenderVisualProfile?: RenderVisualProfile;
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
   private pendingExploreLatencyActions: Map<ID, { actionId: string; targetKey: string }> = new Map();
+  /** Explored tiles, by contract key, waiting for a presented terrain to draw them, with the explores that revealed them. */
+  private readonly exploredTilesAwaitingPresentation = new Map<string, string[]>();
   private get hydratedChunkRefreshes(): Set<string> {
     return this.hydratedRefreshQueueState.queuedChunkKeys;
   }
@@ -1584,8 +1587,8 @@ export default class WorldmapScene extends WarpTravel {
         origin ? { col: origin.x, row: origin.y } : undefined,
       );
     }
-    const terrainPageRebuild = this.applyProjectedExploredTileChange(normalized.x, normalized.y, current);
-    if (current) this.recordExploreRevealAfterRender(current.hexCoords, terrainPageRebuild);
+    void this.applyProjectedExploredTileChange(normalized.x, normalized.y, current);
+    if (current) this.awaitExploredTilePresentation(current.hexCoords);
   }
 
   private applyProjectedExploredTileChange(
@@ -4744,23 +4747,34 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private recordExploreRevealAfterRender(hexCoords: HexPosition, terrainPageRebuild: Promise<void>): void {
+  /**
+   * An explored tile its explore is waiting to see: the explore is rendered once a terrain presentation draws the tile
+   * (presentExploredTiles), not when its page was rebuilt, which the composite and the terrain's own pages follow.
+   */
+  private awaitExploredTilePresentation(hexCoords: HexPosition): void {
     const targetKey = `${hexCoords.col},${hexCoords.row}`;
-    const completedActions = Array.from(this.pendingExploreLatencyActions.entries()).flatMap(([entityId, action]) => {
+    const revealedBy = Array.from(this.pendingExploreLatencyActions.entries()).flatMap(([entityId, action]) => {
       if (action.targetKey !== targetKey) return [];
       this.pendingExploreLatencyActions.delete(entityId);
       return [action.actionId];
     });
-    if (completedActions.length === 0) return;
+    if (revealedBy.length === 0) return;
+    this.exploredTilesAwaitingPresentation.set(targetKey, [
+      ...(this.exploredTilesAwaitingPresentation.get(targetKey) ?? []),
+      ...revealedBy,
+    ]);
+  }
 
-    void terrainPageRebuild.then(() => {
-      const recordRendered = () => completedActions.forEach((actionId) => recordClientActionRendered(actionId));
-      if (typeof window.requestAnimationFrame !== "function") {
-        recordRendered();
-        return;
-      }
-      window.requestAnimationFrame(recordRendered);
-    });
+  /** A presented terrain that draws an awaited explored tile (its biome, not the unexplored outline) renders its explore. */
+  private presentExploredTiles(cells: readonly { biomeKey: string; col: number; row: number }[]): void {
+    for (const [targetKey, revealedBy] of takeShownTiles(
+      this.exploredTilesAwaitingPresentation,
+      cells,
+      FELT_CENTER(),
+    )) {
+      revealedBy.forEach((actionId) => recordClientActionRendered(actionId));
+      presentResult(`explore:${targetKey}`);
+    }
   }
 
   isColRowInCurrentRenderBounds(col: number, row: number) {
@@ -6315,7 +6329,7 @@ export default class WorldmapScene extends WarpTravel {
         throw error;
       });
     this.terrainPresentationPromise = Promise.race([criticalReady, presentation]);
-    void this.terrainPresentationPromise.catch(() => undefined);
+    void this.terrainPresentationPromise.then(() => this.presentExploredTiles(content.cells)).catch(() => undefined);
   }
 
   private captureTerrainPresentationContent(cells: readonly { biomeKey: string; col: number; row: number }[]) {
