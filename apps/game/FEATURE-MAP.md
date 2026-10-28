@@ -655,6 +655,12 @@ clarity.
 Ethereal depths: Art → **Terrain** (`/lab/terrain`) → Biome **Ethereal / Underground** → **Depth** (Ethereal I, II, III)
 shows each depth's palette, mist and light (`src/three/terrain/ethereal-depth-look.ts`). The world map shows depth I.
 
+Art → **Models** → **Sand and water**
+(`/lab/models?family=biome-rewrite&approach=<procedural|tiles|painted|lowpoly>&view=<play|close>`) is a clean-slate
+study: one sand-and-water region drawn from the contract's own elevation (seed and coordinates), by four approaches
+(procedural heightfield and shaders, modelled hex tiles as a stand-in kit, a baked painted region, flat low-poly), with
+a realm and an army on its coast. The header counts triangles, materials, draws and build time.
+
 ### T1 Knight
 
 Land T1 Knights use the new sword-and-shield model in every game mode. Near/mid skin detail follows camera distance; the
