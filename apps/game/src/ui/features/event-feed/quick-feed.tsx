@@ -16,7 +16,14 @@ import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headl
 import { HeadlineLine } from "../news-headlines/headline-line";
 import type { HeadlineType } from "../news-headlines/headline-types";
 import { useEventFeedStore } from "./event-feed-store";
-import { type EventsFilter, eventsReads, selectEventStories } from "./event-stories";
+import {
+  type EventsFilter,
+  eventsReads,
+  type FeedLens,
+  feedReads,
+  selectEventStories,
+  selectFeedStories,
+} from "./event-stories";
 import { FeedRowLine, headlineIcon, ToastRow } from "./feed-row-line";
 
 /** How many rows the Events strip shows: the owner's three. */
@@ -42,8 +49,20 @@ export const QuickFeedRows = () => {
 };
 
 /**
- * Events' stories through the player's filter (or a lens the caller holds, Frontier's feed), newest first, read by what
- * the filter shows: the strip shows the first three, the Log them all.
+ * Frontier's Feed's stories through one of its lenses (All, Important, Mine), newest first, read by what the lens shows.
+ */
+export function useFeedStories(lens: FeedLens) {
+  const address = useAccountStore((state) => state.account?.address ?? null);
+  const { data, queries } = useStoryReads(feedReads(lens, address));
+  const stories = useMemo(() => selectFeedStories(data, lens, address), [data, lens, address]);
+  const failed = queries.filter((query) => query.isError);
+  const retry = () => failed.forEach((query) => void query.refetch());
+  return { stories, isError: failed.length > 0, retry };
+}
+
+/**
+ * Events' stories through the player's filter (or a filter the caller holds: the unread count's Important), newest
+ * first, read by what the filter shows: the strip shows the first three, the Log them all.
  */
 export function useEventsFeed(lens?: EventsFilter) {
   const address = useAccountStore((state) => state.account?.address ?? null);

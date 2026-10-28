@@ -1,4 +1,5 @@
 import type { IconMeaning } from "@/ui/design-system/icon";
+import { formatWait } from "@bibliothecadao/types";
 import {
   HudButton,
   HudCost,
@@ -10,7 +11,15 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
-import { BUILD, DEPLOY, DEPLOYING, NO_OPEN_TILE, NO_TROOPS_AT_HOME, TROOPS } from "@/ui/design-system/kit/words";
+import {
+  BUILD,
+  DEPLOY,
+  DEPLOYING,
+  NO_OPEN_TILE,
+  NO_TROOPS_AT_HOME,
+  noTroopsUntil,
+  TROOPS,
+} from "@/ui/design-system/kit/words";
 
 import { StaminaReading } from "../hud/army-token";
 import type { SlotStart } from "./deploy-plan";
@@ -19,8 +28,8 @@ import type { SlotStart } from "./deploy-plan";
  * Deploy, from its props: the controls, the numbers and the action, with no line explaining them (owner, 26 October
  * 2026: "good UI/UX doesnt need subtext"). How many troops go (the count, +500, Max, out of how many can, a slider), the
  * stamina bar the army starts on, and Deploy with its wheat price. The tile is picked on the map itself, where the
- * order's tile is marked among the realm's open ones. A notice shows only where Deploy cannot: no troops at home (Build
- * is the step), no open tile, or not one troop's wheat.
+ * order's tile is marked among the realm's open ones. A notice shows only where Deploy cannot: no troops at home (when
+ * the next is home, or Build with the Barracks' mark while nothing makes them), no open tile, or not one troop's wheat.
  */
 export const DeployView = ({
   art,
@@ -30,6 +39,7 @@ export const DeployView = ({
   onCount,
   start,
   slots,
+  troopsWait,
   wheatCost,
   tile,
   canDeploy,
@@ -48,6 +58,8 @@ export const DeployView = ({
   /** The slot the army fills and the bar it starts on there; none while every slot holds an army or it is unknown. */
   start: SlotStart | undefined;
   slots: { allowed: number; open: SlotStart[] | undefined; onPick: (slot: number) => void };
+  /** Seconds until the realm's next troop is home; none while nothing makes troops. */
+  troopsWait: number | undefined;
   wheatCost: number | undefined;
   /** Whether the realm has an open tile to step out on; unknown while its plan or ring is. */
   tile: "open" | "none" | undefined;
@@ -100,12 +112,16 @@ export const DeployView = ({
     </div>
     {start?.start && troopsAtHome !== 0 && <StaminaReading stamina={start.start} />}
     {troopsAtHome === 0 ? (
-      <>
-        <HudNotice tone="warn" line={NO_TROOPS_AT_HOME} />
-        <HudButton kind="primary" onClick={onBuild}>
-          {BUILD}
-        </HudButton>
-      </>
+      troopsWait === undefined ? (
+        <>
+          <HudNotice tone="warn" line={NO_TROOPS_AT_HOME} />
+          <HudButton kind="primary" icon="barracks" onClick={onBuild}>
+            {BUILD}
+          </HudButton>
+        </>
+      ) : (
+        <HudNotice tone="warn" line={noTroopsUntil(formatWait(troopsWait))} />
+      )
     ) : (
       tile === "none" && <HudNotice tone="warn" line={NO_OPEN_TILE} />
     )}

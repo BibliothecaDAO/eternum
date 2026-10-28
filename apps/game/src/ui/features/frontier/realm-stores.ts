@@ -8,7 +8,7 @@ import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliotheca
 import { RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
 import { troopsAtHome } from "./frontier-home";
-import { realmPerHour } from "./hud/army-order";
+import { realmPerHour, secondsUntilHeld } from "./hud/army-order";
 
 /** A store turns amber when it fills within the hour. */
 const AMBER_SECONDS = 3_600;
@@ -22,6 +22,8 @@ type RealmStore = {
   /** The store's own limit (the contract's store_limit); none for Essence. */
   limit: number | undefined;
   perHour: number | undefined;
+  /** Seconds until its next whole unit is in, counted from what has accrued since the last; none when it does not fill. */
+  nextIn: number | undefined;
   /** Seconds until it is full at the current rate; 0 when full, none when it does not fill. */
   fullIn: number | undefined;
   tone: Tone;
@@ -48,12 +50,25 @@ export const readRealmStore = (
   const limit = rawLimit === undefined ? undefined : Number(rawLimit / BigInt(RESOURCE_PRECISION));
   const perHour = realmPerHour(store, safeInteger(realm.entity_id), stock, clock.now);
   const fullIn = secondsUntilFull(amount, limit, perHour);
-  return { amount, limit, perHour, fullIn, tone: storeTone(fullIn) };
+  const nextIn = secondsUntilNextUnit(store, safeInteger(realm.entity_id), stock, clock.now, perHour);
+  return { amount, limit, perHour, nextIn, fullIn, tone: storeTone(fullIn) };
 };
 
 const wholeBalance = (store: NativeFactStore, realmId: number, resourceId: ResourcesIds, tick: number) => {
   const balance = knownAmount(getBalance(realmId, resourceId, tick, store).balance);
   return balance === undefined ? undefined : Math.floor(balance);
+};
+
+/** What the stock holds with the part of a unit already made, until that part makes a whole one at the rate. */
+const secondsUntilNextUnit = (
+  store: NativeFactStore,
+  realmId: number,
+  resourceId: ResourcesIds,
+  tick: number,
+  perHour: number | undefined,
+): number | undefined => {
+  const held = knownAmount(getBalance(realmId, resourceId, tick, store).balance);
+  return held === undefined ? undefined : secondsUntilHeld(held, Math.floor(held) + 1, perHour);
 };
 
 const secondsUntilFull = (

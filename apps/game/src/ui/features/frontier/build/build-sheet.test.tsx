@@ -392,7 +392,10 @@ describe("the build sheet", () => {
     const farm = configManager.getBuildingCategoryConfig(BuildingType.ResourceWheat).population_cost;
     // What one more Farm makes, the population it takes, then its price in red with the wait at a glance ("7m").
     expect(sheet.card("Farm").textContent).toMatch(/\+[\d,.]+\/(?:s|min)/);
-    expect(sheet.card("Farm").querySelector(`[aria-label="population ${farm}"]`)).not.toBeNull();
+    // The population it takes stands in the card's corner, beside its painting.
+    expect(
+      sheet.card("Farm").closest(".ui-card")!.querySelector(`.ui-card__corner [aria-label="population ${farm}"]`),
+    ).not.toBeNull();
     expect(band(sheet, "Farm").getAttribute("data-tone")).toBe("bad");
     expect(band(sheet, "Farm").textContent).toMatch(/\d+[mhd]$/);
     // Training names its purchase count instead of a building rarity.
@@ -420,6 +423,42 @@ describe("the build sheet", () => {
     expect(band(built, "War hall").getAttribute("data-tone")).toBe("good");
     expect(band(built, "War hall").querySelector('[data-icon="check"]')).not.toBeNull();
     built.close();
+  });
+
+  it("shows each side's own gem where a row has two, else the type's one gem, and never words for them", () => {
+    const { store, realm } = realmBoard();
+    const learn = (learned: bigint) =>
+      store.applyFacts([
+        fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(learned) }),
+      ] as never);
+    // A side's gem with its mark, as the card draws them: "fields III".
+    const gems = (sheet: ReturnType<typeof open>, name: string) =>
+      [...sheet.card(name).querySelectorAll(".ui-tier")].map((gem) =>
+        [
+          gem.closest("[data-side]")?.getAttribute("data-side"),
+          gem.getAttribute("data-tier") === "0" ? "Untrained" : gem.textContent,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      );
+    // Independent Farm ranks occupy bits 0–2 and 3–5; the Hut rank starts at bit 21.
+    // Two Fields purchases and one Granary purchase show different ranks.
+    learn(2n | (1n << 3n) | (3n << 21n));
+    const mixed = open(store, realm);
+    expect(gems(mixed, "Farm")).toEqual(["fields II", "granary I"]);
+    expect(gems(mixed, "Workshop")).toEqual(["tools Untrained", "storehouse Untrained"]);
+    expect(gems(mixed, "Barracks")).toEqual(["drill Untrained", "rations Untrained"]);
+    // A row without sides keeps its type's one gem: the Hut at Rare III, a training building at Common I.
+    expect(gems(mixed, "Hut")).toEqual(["III"]);
+    expect(gems(mixed, "War hall")).toEqual(["I"]);
+    // Gems, never words for them (owner, 27 October: "why no gems instead of the text ?").
+    expect(mixed.host.textContent).not.toMatch(/ from (Fields|Tools|Drill)/);
+    mixed.close();
+    // Two Fields purchases with Granary untrained.
+    learn(2n);
+    const fields = open(store, realm);
+    expect(gems(fields, "Farm")).toEqual(["fields II", "granary Untrained"]);
+    fields.close();
   });
 
   it("says on the Hut's card what the chain grants for one more: its grant and the change in the rounded bonus", () => {

@@ -5,20 +5,13 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudCost, HudSheet, HudTier, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
-import {
-  BUILDING_FIGURES,
-  fromResearch,
-  RESEARCH,
-  RESEARCH_TREE,
-  RESEARCHING,
-  type Rank,
-} from "@/ui/design-system/kit/words";
+import { BUILDING_FIGURES, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { DestroyBuildingButton } from "@/ui/features/world/components/bottom-right-panel/destroy-building-button";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { researchRowOf } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatAmount, formatPercent, formatRate } from "@bibliothecadao/types";
+import { formatRate } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 import { buildingIcon, buildingName } from "../build/building-names";
@@ -30,8 +23,8 @@ import { researchSideNode, firstMissing, type Need, needLine, type TreeNode } fr
 import type { TappedBuilding } from "../research/selected-building";
 import { CompareRows } from "./compare-rows";
 
-/** What a building's card shows it makes: all of its type together, and why, said as a player thinks it. */
-export type CardMakes = { icon: IconMeaning; rate: string; why?: string };
+/** What a building's card shows it makes: all of its type together; its research shows as the card's gems. */
+export type CardMakes = { icon: IconMeaning; rate: string };
 
 /**
  * A building tapped on the realm's board, as its own card (owner, 26 October: "when i click a building I should have the
@@ -97,13 +90,9 @@ const useDemolish = (realm: NativeRows["Structure"], building: TappedBuilding) =
   return { busy, run };
 };
 
-/** What all of the type make, as the card says it: one rate, research's share only as the why. */
+/** What all of the type make, as the card says it: one rate. */
 const cardMakes = (makes: ReturnType<typeof buildingsMake>): CardMakes | undefined =>
-  makes && {
-    icon: resourceMeaning(makes.resource),
-    rate: formatRate(makes.perSecond),
-    why: makes.research && fromResearch(formatPercent(makes.research.share, { signed: true }), makes.research.side),
-  };
+  makes && { icon: resourceMeaning(makes.resource), rate: formatRate(makes.perSecond) };
 
 /**
  * The card as drawn: its painting, how many stand and its tier, Delete; what they make; the research's figures now and
@@ -140,15 +129,19 @@ export const BuildingCardView = ({
     <HudSheet label={name} onClose={onClose}>
       <div data-building-card className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
-          <Icon name={icon} size={56} />
-          <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-            <span className="text-hud-strong text-hud-ink">
-              {formatAmount(standing)} {BUILDING_FIGURES.standing}
-            </span>
-            {node && <HudTier tier={tierOf(node.tier)} />}
-          </div>
+          {/* The type's tier as a badge on its painting's corner (owner, 27 October: "the III as a badge to the barracks
+              icon would work better"). */}
+          <span data-badged className="relative shrink-0">
+            <Icon name={icon} size={56} />
+            {node && (
+              <span className="absolute -bottom-1 -right-1">
+                <HudTier tier={tierOf(node.tier)} />
+              </span>
+            )}
+          </span>
+          <span className="min-w-0 flex-1 text-hud-strong text-hud-ink">{BUILDING_FIGURES.standing(standing)}</span>
           {makes && (
-            <span data-tip={makes.why} className="flex items-center gap-1.5 text-hud-title tabular-nums text-hud-ink">
+            <span className="flex items-center gap-1.5 text-hud-title tabular-nums text-hud-ink">
               <Icon name={makes.icon} size={28} />
               {makes.rate}
             </span>

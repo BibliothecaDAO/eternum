@@ -1,10 +1,11 @@
+import { formatShort } from "@bibliothecadao/types";
 import { HudButton, HudChip, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   REALM,
   REALM_LABOR,
   NO_REALM_LABOR,
-  settledRealmLabor,
-  settledRealmEssence,
+  DAILY_REALM_LABOR,
+  DAILY_REALM_ESSENCE,
   claimRealmLaborLabel,
   CLAIMING_LABOR,
   partialRealmLabor,
@@ -46,8 +47,16 @@ export const RealmsSheet = ({
             <HudChip icons={["realm"]}>{mark.line}</HudChip>
           </span>
         )}
-        <p>{settledRealmLabor(dailyAmount)}</p>
-        {dailyEssence > 0 && <p>{settledRealmEssence(dailyEssence)}</p>}
+        <span className="flex justify-end gap-2">
+          <HudChip icons={["realm", "labor"]} label={DAILY_REALM_LABOR}>
+            {formatShort(dailyAmount, { signed: true })}
+          </HudChip>
+          {dailyEssence > 0 && (
+            <HudChip icons={["essence"]} label={DAILY_REALM_ESSENCE}>
+              {formatShort(dailyEssence, { signed: true })}
+            </HudChip>
+          )}
+        </span>
         {plan.claimed ? (
           <HudNotice line={claimedRealmLabor(secondsLeft)} />
         ) : (

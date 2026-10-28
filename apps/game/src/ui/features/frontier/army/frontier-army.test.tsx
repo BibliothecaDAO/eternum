@@ -108,7 +108,7 @@ it("shows the army's figures, then its level-ups one step on, and buys the chose
   game.progress.xp = 260;
   game.progress.common_points = 1;
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
-  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
   // Each attribute is a tile named by its attribute, with what it gives as its effect (the owner's pick, 22 October).
   expect(host.querySelector('button[aria-label="Battle 0% damage"]')).not.toBeNull();
   expect(host.textContent).toMatch(/\d+ max stamina/);
@@ -134,8 +134,8 @@ it("shows the army's figures, then its level-ups one step on, and buys the chose
 
 it("lets an army without points see its level-ups, and holds the verb with what is missing", () => {
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
-  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
-  act(() => button(/^Level up$/)!.click());
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
+  act(() => button(/^Level-ups$/)!.click());
   expect(host.textContent).toContain("No fitting point");
   expect(button(/^Level up$/)!.disabled).toBe(true);
 });
@@ -144,7 +144,7 @@ it("sends the chosen point rank for Stamina without changing lifetime XP", async
   game.progress.xp = 260;
   game.progress.common_points = 1;
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
-  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
   act(() => button(/^Level up$/)!.click());
   act(() => host.querySelector<HTMLButtonElement>('[data-attribute="stamina"]')!.click());
   await act(async () => button(/^Refill$/)!.click());

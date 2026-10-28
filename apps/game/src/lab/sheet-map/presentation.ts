@@ -191,8 +191,7 @@ export class MapSheetPresentation {
       return;
     }
     if (today && index <= 10) {
-      const highlight = new HighlightHexManager(this.scene);
-      highlight.setYOffset(p.y);
+      const highlight = new HighlightHexManager(this.scene, this.terrain);
       const h = specimenHex(0, index),
         actionType = index === 10 ? ActionType.Move : ACTIONS[index - 2];
       highlight.highlightHexes([

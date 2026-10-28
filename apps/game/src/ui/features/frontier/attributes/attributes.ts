@@ -8,32 +8,19 @@ import {
 } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
+import { type Attribute, ATTRIBUTE_LIST, type AttributeKey } from "../army/army-detail";
+
 /** An army's XP and attribute tiers, and the game's XP rules, exactly as the native store carries them. */
 export type ArmyProgressFacts = NativeRows["ArmyProgress"];
-type Attribute = "Battle" | "Logistics" | "Scouting" | "Homecoming";
-
-const ATTRIBUTES: readonly Attribute[] = ["Battle", "Logistics", "Scouting", "Homecoming"];
-
-/** The army's tier in one attribute, 0 (untrained) to 5 (legendary). */
-const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute): number =>
-  ({
-    Battle: progress.battle,
-    Logistics: progress.logistics,
-    Scouting: progress.scouting,
-    Homecoming: progress.homecoming,
-  })[attribute];
-
-/** The army's four tiers in the kit's order: Battle, Logistics, Scouting, Homecoming. */
-export const attributeTiers = (progress: ArmyProgressFacts): readonly [number, number, number, number] => [
-  progress.battle,
-  progress.logistics,
-  progress.scouting,
-  progress.homecoming,
-];
+/** The army's rank in every attribute, 0 (untrained) to 5 (legendary). */
+export const attributeTiers = (progress: ArmyProgressFacts): Record<AttributeKey, number> =>
+  Object.fromEntries(ATTRIBUTE_LIST.map(({ key }) => [key, progress[key]])) as Record<AttributeKey, number>;
 
 /** Attributes for which the army holds a fitting point. */
 export const availableRankUps = (progress: ArmyProgressFacts): Attribute[] =>
-  ATTRIBUTES.filter((attribute) => lowestFittingPoint(progress, attributeLevel(progress, attribute) + 1) !== undefined);
+  ATTRIBUTE_LIST.filter(({ key }) => lowestFittingPoint(progress, progress[key] + 1) !== undefined).map(
+    ({ attribute }) => attribute,
+  );
 
 /** Lifetime XP earned between two readings. */
 export const xpGained = (before: Pick<ArmyProgressFacts, "xp">, after: Pick<ArmyProgressFacts, "xp">): number =>

@@ -52,9 +52,10 @@ describe("the shared deployment picker", () => {
       ),
     );
     const columns = [...host.querySelectorAll(".ui-deploy__troop")];
+    // The troop catalog's order (TROOP_TYPES), the one every list of troops follows.
     expect(columns.map((column) => column.querySelector(".ui-deploy__name")?.textContent)).toEqual([
-      "Crossbow",
       "Knight",
+      "Crossbow",
       "Paladin",
     ]);
     // Each column holds its troop's tiers, T1 first, an empty one shut and saying so.
@@ -64,14 +65,14 @@ describe("the shared deployment picker", () => {
       ),
     ).toEqual([
       [
-        ["Crossbow T1, 0 held", true],
-        ["Crossbow T2, 0 held", true],
-        ["Crossbow T3, 0 held", true],
-      ],
-      [
         ["Knight T1, 420 held", false],
         ["Knight T2, 0 held", true],
         ["Knight T3, 0 held", true],
+      ],
+      [
+        ["Crossbow T1, 0 held", true],
+        ["Crossbow T2, 0 held", true],
+        ["Crossbow T3, 0 held", true],
       ],
       [
         ["Paladin T1, 0 held", true],

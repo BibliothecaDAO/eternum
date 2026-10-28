@@ -182,6 +182,16 @@ button.ui-panel__name[data-action]:hover {
   background: var(--hud-hover);
   color: rgb(var(--hud-accent));
 }
+/* A button whose action is out of reach now (a refill short of LORDS): the bad chip's look, at full strength even
+   unpressable, since its words are a reading the player needs. */
+.ui-button[data-tone="bad"] {
+  border-color: color-mix(in srgb, var(--hud-bad) 45%, transparent);
+  background: color-mix(in srgb, var(--hud-bad) 14%, transparent);
+  color: var(--hud-bad);
+}
+.ui-button[data-tone="bad"]:disabled {
+  opacity: 1;
+}
 .ui-button[data-icon-only] {
   width: var(--hud-control);
   padding: 0;
@@ -932,6 +942,11 @@ span.ui-row__choose {
   color: rgb(var(--hud-ink));
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
+}
+/* The player's own row, in every lens: its words, its names and what it paid in gold, as the Feed drew it before
+   option A (owner, 27 October: "when a row is mine should put the row in yellow like it did before"). */
+.ui-feed-line[data-own] :is(.ui-event__text, .ui-event__text strong, .ui-feed-line__reward) {
+  color: rgb(var(--hud-gold));
 }
 
 /* ── Window: a panel the size of a task (Military, Transfer), its title bar and a way out. ── */
@@ -2063,6 +2078,7 @@ button.ui-card__choose:disabled {
    centred under it. */
 .ui-card[data-size="sm"] {
   height: theme(spacing.hud-frontier-build-card);
+  container-type: inline-size;
 }
 .ui-card[data-size="sm"] .ui-card__picture {
   inset: theme(spacing.2) 0 auto;
@@ -2076,9 +2092,10 @@ button.ui-card__choose:disabled {
   padding: 0 theme(spacing[1.5]) theme(spacing[1.5]);
   background: none;
 }
+/* The name keeps its size until the card is too narrow for "Scouts' lodge" (a 360-wide phone), then shrinks with it. */
 .ui-card[data-size="sm"] .ui-card__title {
   max-width: 100%;
-  font-size: var(--hud-text-strong);
+  font-size: min(var(--hud-text-strong), 13cqi);
   line-height: var(--hud-leading-strong);
   font-weight: var(--hud-weight-strong);
 }
@@ -2086,6 +2103,12 @@ button.ui-card__choose:disabled {
   flex-direction: row;
   align-items: center;
   gap: theme(spacing.1);
+}
+/* A small card's band keeps a chip's frame with less room inside it, and its words shrink once the card is too narrow
+   for them (a 360-wide phone), so a raised price with its wait, or "Barracks III" by its lock, reads whole. */
+.ui-card[data-size="sm"] .ui-chip {
+  padding-inline: theme(spacing.1);
+  font-size: min(var(--hud-text-label), 12cqi);
 }
 .ui-card__refusal {
   color: var(--hud-muted);

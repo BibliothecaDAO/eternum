@@ -291,10 +291,18 @@ export function judgeExplore(played, clientActions) {
       : "no tile beside the army offered Explore";
     return blocked(`${reason} (offered: ${played.offered.map(String).join(", ")})`);
   }
-  const action = clientActions.find(
-    (measurement) => measurement.operation === "explore_reveal" && measurement.phases.click >= played.pressedAt - 5,
-  );
-  if (!action) return failed("Enter on Explore started no explore");
+  const explores = clientActions.filter((measurement) => measurement.operation === "explore_reveal");
+  // A phone's first tap only pins the tile; its second sends the one explore.
+  if (played.pinnedAt !== undefined) {
+    const early = explores.filter(
+      ({ phases }) => phases.click >= played.pinnedAt - 5 && phases.click < played.pressedAt - 5,
+    );
+    if (early.length > 0) return failed("the first tap sent the explore before the second tap", { action: early[0] });
+    const sent = explores.filter(({ phases }) => phases.click >= played.pressedAt - 5);
+    if (sent.length > 1) return failed(`the second tap sent ${sent.length} explores`, { action: sent[0] });
+  }
+  const action = explores.find((measurement) => measurement.phases.click >= played.pressedAt - 5);
+  if (!action) return failed("confirming Explore started no explore");
   if (action.failedReason) return failed(`the explore failed: ${action.failedReason}`, { action });
   if (!action.transactionHash) return failed("the explore was never sent (no hash)", { action });
   if (action.phases.store_applied === undefined) return failed("the explore's outcome was not applied", { action });

@@ -8,12 +8,13 @@ import { showDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
 import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { useDeployRing } from "@/ui/features/military/components/unified-army-creation-modal/use-deploy-ring";
-import { ResourceManager } from "@bibliothecadao/eternum";
+import { type ExpeditionRules, ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { Direction } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
+import { useRealmStores } from "../realm-stores";
 import { secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
 import { deployArmy, deployDirection, deployRange, previewDeploy } from "./deploy-plan";
@@ -26,7 +27,15 @@ import { useDeployPlan } from "./use-deploy-plan";
  * the first open one. While the sheet is open the map shows that order (showDeployOnMap), where a tap on another lit
  * tile orders again; opened anywhere else (the Realm board's dock), the sheet brings the map up.
  */
-export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
+export const DeploySheet = ({
+  realm,
+  rules,
+  onClose,
+}: {
+  realm: NativeRows["Structure"];
+  rules: ExpeditionRules;
+  onClose: () => void;
+}) => {
   const { setup } = useGame();
   const defaultTick = useCurrentDefaultTick();
   const plan = useDeployPlan(realm);
@@ -54,6 +63,7 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   useDeployOnMap(realmId, direction);
   const deploying = useInFlight("deploy", realmId) !== undefined;
   const wheatPerHour = new ResourceManager(setup.store, realmId).wheatPerHour(defaultTick);
+  const nextTroopIn = useRealmStores(realm, rules)?.troops.nextIn;
 
   /** The sheet closes as the army leaves; its slot on the dock carries the wait, and a refusal says why there. */
   const deploy = async () => {
@@ -86,6 +96,7 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       onCount={setCount}
       start={start}
       slots={{ allowed: realm.base.troop_max_explorer_count, open: plan?.open, onPick: pickSlot }}
+      troopsWait={nextTroopIn}
       wheatCost={preview?.wheatCost}
       tile={start && center ? (direction === null ? "none" : "open") : undefined}
       canDeploy={Boolean(plan?.troops && preview && direction !== null && start)}

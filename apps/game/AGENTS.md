@@ -77,10 +77,10 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   minute of watching.
 - **As a player** (`--player <email>`), entering through the Frontier card's Resume or Play on the home page with the
   browser's own click, and past a new day's summary (Continue): enter on the map, select the army with the most stamina,
-  open and close production, the next order's life (below), explore twice (tap a tile beside the army, Enter; on a
-  desktop, right-click the tile whose hover offers Explore), then the next order dropped by leaving the map. Orders use
-  the map's default zoom; the army must be deployed. The next order is a phone's: on a desktop an order goes from the
-  map at once, so its steps are blocked there; play them with `--viewport 390x844`.
+  open and close production, the next order's life (below), explore twice (tap a tile beside the army, then tap it
+  again; on a desktop, right-click the tile whose hover offers Explore), then the next order dropped by leaving the map.
+  Orders use the map's default zoom; the army must be deployed. The next order is a phone's: on a desktop an order goes
+  from the map at once, so its steps are blocked there; play them with `--viewport 390x844`.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
   every command (it relaunches on a temporary profile for a command that omits it). Each run opens the home page first:
   a signed-in player's bar shows them and the run goes on at once; a signed-out one presses Connect and signs in as a
@@ -161,7 +161,9 @@ two of the realm's armies merged through **Transfer troops**, under either survi
 its fight standing on the camp it cleared: each army's tile, found under its token, hovered with nothing selected must
 open that army's plate, and an emptied tile none), `--steps lab-hover-zoom` (the army after its fight, with nothing
 selected and the dev overlays on, at each wheel step from the closest zoom to the farthest: its token must stand over
-its own model, and the pointer on its model at its feet, middle and top must open its plate), `--steps lab-day-turn`,
+its own model, and the pointer on its model at its feet, middle and top must open its plate), `--steps lab-high-ground`
+(`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, with the dev overlays on: the army
+picked, every tile it is lit on must lie above the highest ground under it), `--steps lab-day-turn`,
 `--steps lab-day-later`, `--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same game on Frontier's day
 2 ending, `/lab/game?scenario=day-turn` in the session or `scenario=day-later` before it opened, over prod's recorded
 history of that day, the map opened where the realm stood on day 2: the summary's totals must be the recorded player's

@@ -1,23 +1,26 @@
 import { campaignScenario } from "./campaign-scenario";
 import { dayEndScenario } from "./day-end-scenario";
 import { afterBattleScenario, lowStaminaScenario } from "./after-battle-scenario";
+import { exploreScenario } from "./explore-scenario";
 import { mergeScenario } from "./merge-scenario";
 import { dayTurnScenario } from "./day-turn-scenario";
 import type { LabScenario } from "./lab-chain";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 import { realmScenario } from "./realm-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
-import { spireScenario } from "./spire-scenario";
+import { highGroundScenario, spireScenario } from "./spire-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   spire: spireScenario,
+  "high-ground": highGroundScenario,
   "day-end": dayEndScenario,
   realm: realmScenario,
   "merge-keeps-picked": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),
   "after-battle": afterBattleScenario,
   "low-stamina": lowStaminaScenario,
+  explore: exploreScenario,
   "painted-buildings": paintedBuildingsScenario,
   "day-turn": dayTurnScenario("live"),
   "day-later": dayTurnScenario("later"),

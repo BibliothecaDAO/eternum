@@ -1,4 +1,15 @@
-import { REALM_LEVELS } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  buildingName,
+  getBuildingFromResource,
+  getResourceTiers,
+  REALM_LEVELS,
+  type ResourcesIds,
+  StructureType,
+  structureName,
+  TroopTier,
+  TROOP_TIERS,
+} from "@bibliothecadao/types";
 
 /**
  * A build order, as a player makes, saves and shares it: a name and its steps in order, each from a rank (a realm
@@ -12,11 +23,130 @@ import { REALM_LEVELS } from "@bibliothecadao/types";
  */
 
 /**
- * What a step asks for: buildings, "barracks" being the realm's best T1 troop building for its biome; "army", the
- * realm's field armies of that troop, deployed once a full army is on hand; "levelUp", the realm's next level.
+ * Every building Blitz raises, as its construction panel lists them: a building for each of Blitz's food, materials
+ * (three lines over three tiers), transport and troops (three troops over three tiers) in the game's own resource
+ * catalog, and the worker hut.
  */
-export const BUILD_ORDER_GOALS = ["farm", "wood", "coal", "copper", "hut", "barracks", "army", "levelUp"] as const;
-export type BuildOrderGoal = (typeof BUILD_ORDER_GOALS)[number];
+const readBlitzResources = () => {
+  const tiers = getResourceTiers(true);
+  if (!("materials" in tiers)) throw new Error("Blitz's resource catalog has no materials");
+  return tiers;
+};
+const BLITZ_RESOURCES = readBlitzResources();
+const BLITZ_PRODUCERS = new Map<BuildingType, ResourcesIds>(
+  [
+    ...BLITZ_RESOURCES.food,
+    ...BLITZ_RESOURCES.materials,
+    ...BLITZ_RESOURCES.transport,
+    ...BLITZ_RESOURCES.military,
+  ].map((resource) => [getBuildingFromResource(resource), resource]),
+);
+export const BLITZ_BUILDINGS: readonly BuildingType[] = [...BLITZ_PRODUCERS.keys(), BuildingType.WorkersHut];
+
+/** What a Blitz building makes; the worker hut makes none. */
+export const blitzBuildingResource = (building: BuildingType): ResourcesIds | undefined =>
+  BLITZ_PRODUCERS.get(building);
+
+/**
+ * What a goal asks for: a building; the barracks or the field armies of the troop the realm's biome favours, at a tier
+ * (an army deployed once a full one is on hand); or the realm's next level.
+ */
+type BuildOrderTarget =
+  | { kind: "building"; building: BuildingType }
+  | { kind: "barracks"; tier: TroopTier }
+  | { kind: "army"; tier: TroopTier }
+  | { kind: "levelUp" };
+
+/** The words players already use for three buildings; every other building is named for what it makes. */
+const SPOKEN_BUILDINGS: Partial<Record<BuildingType, string>> = {
+  [BuildingType.ResourceWheat]: "farm",
+  [BuildingType.ResourceDonkey]: "market",
+  [BuildingType.WorkersHut]: "hut",
+};
+
+/** A building's goal word: "farm", "coldIron", "knightT2". */
+const buildingGoal = (building: BuildingType): string => {
+  const name = BuildingType[building].replace(/^Resource/, "");
+  return SPOKEN_BUILDINGS[building] ?? name[0].toLowerCase() + name.slice(1);
+};
+
+/** The goal of the building that makes a resource. */
+const producerGoal = (resource: ResourcesIds): string => buildingGoal(getBuildingFromResource(resource));
+
+/** Blitz's troops tier by tier, each tier in the catalog's troop order: its buildings are named "…T1" to "…T3". */
+const troopsByTier = (): ResourcesIds[] => {
+  const tierOf = (resource: ResourcesIds) => BuildingType[getBuildingFromResource(resource)].slice(-1);
+  return [...BLITZ_RESOURCES.military].sort((left, right) => tierOf(left).localeCompare(tierOf(right)));
+};
+
+/** A biome troop's goal at a tier: "army" for T1, as orders already say it, then "armyT2", "armyT3". */
+const tierGoal = (kind: "barracks" | "army", tier: TroopTier): string => (tier === TroopTier.T1 ? kind : kind + tier);
+
+const GOAL_TARGETS = new Map<string, BuildOrderTarget>([
+  ...BLITZ_BUILDINGS.map((building): [string, BuildOrderTarget] => [
+    buildingGoal(building),
+    { kind: "building", building },
+  ]),
+  ...TROOP_TIERS.map((tier): [string, BuildOrderTarget] => [tierGoal("barracks", tier), { kind: "barracks", tier }]),
+  ...TROOP_TIERS.map((tier): [string, BuildOrderTarget] => [tierGoal("army", tier), { kind: "army", tier }]),
+  ["levelUp", { kind: "levelUp" }],
+]);
+
+/** Every goal a step can name, one for each building Blitz raises, so the maker, the reader and the game share one list. */
+export const BUILD_ORDER_GOALS: readonly string[] = [...GOAL_TARGETS.keys()];
+export type BuildOrderGoal = string;
+
+/**
+ * A group of goals as the maker offers them. With `heads`, its goals stand in a table, as the construction panel draws
+ * Blitz's troops: a column each head, a tier a row, row by row.
+ */
+export interface BuildOrderGoalGroup {
+  label: string;
+  goals: readonly BuildOrderGoal[];
+  heads?: readonly string[];
+}
+
+/** A troop's name, as its T1 building is named without its tier: "Knight". */
+const troopName = (resource: ResourcesIds): string =>
+  buildingName(getBuildingFromResource(resource), false).replace(/ T\d$/, "");
+
+/**
+ * The goals as the maker offers them, each once: the realm's own, Blitz's materials in their tiers (three to a tier),
+ * its troops by tier under each troop, and the barracks and armies of the troop the realm's biome favours by tier.
+ */
+export const BUILD_ORDER_GOAL_GROUPS: readonly BuildOrderGoalGroup[] = [
+  {
+    label: structureName(StructureType.Realm),
+    goals: ["levelUp", ...[...BLITZ_RESOURCES.food, ...BLITZ_RESOURCES.transport].map(producerGoal), "hut"],
+  },
+  { label: "Resources", goals: BLITZ_RESOURCES.materials.map(producerGoal) },
+  {
+    label: "Troops",
+    heads: troopsByTier().slice(0, 3).map(troopName),
+    goals: troopsByTier().map(producerGoal),
+  },
+  {
+    label: "Your biome's troop",
+    heads: ["Barracks", "Army"],
+    goals: TROOP_TIERS.flatMap((tier) => [tierGoal("barracks", tier), tierGoal("army", tier)]),
+  },
+];
+
+/** What a goal asks for; a word that is not a goal is loud, since every step was read through `isGoal`. */
+export const buildOrderTarget = (goal: BuildOrderGoal): BuildOrderTarget => {
+  const target = GOAL_TARGETS.get(goal);
+  if (!target) throw new Error(`“${goal}” is not a build order goal`);
+  return target;
+};
+
+/** A goal as players read it: the building's own name, "Barracks T2", "Army", "Level up". */
+export const buildOrderGoalName = (goal: BuildOrderGoal): string => {
+  const target = buildOrderTarget(goal);
+  if (target.kind === "building") return buildingName(target.building, false);
+  if (target.kind === "levelUp") return "Level up";
+  const name = target.kind === "army" ? "Army" : "Barracks";
+  return target.tier === TroopTier.T1 ? name : `${name} ${target.tier}`;
+};
 
 /** One step: from `rank` (a realm level) up, have at least `count` of `goal` (a level up counts 1). */
 export interface BuildOrderStep {

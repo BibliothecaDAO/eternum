@@ -242,6 +242,18 @@ it("keeps Blitz on Play once an ended Blitz's results were seen, saying none is 
   expect(page.text()).not.toContain("No Blitz scheduled");
 });
 
+it("keeps the way to the build orders when the player's ended Blitz leads Play", async () => {
+  const ended = game({ game_id: 2, mode: "blitz", status: "Ended", name: "test-qa-fresh-1" } as Partial<DirectoryGame>);
+  reads.directory = answered({ games: [] });
+  reads.slots = answered({ slots: [] });
+  reads.history = answered({ games: [ended], next: null, failures: [] });
+  const page = await mount();
+  const blitz = () => page.container.querySelector('section[aria-label="Blitz"]')?.textContent ?? null;
+  // Its results lead; Blitz's column under it holds only the way to the build orders.
+  expect(page.text()).toContain("Results");
+  expect(blitz()).toBe("BlitzBuild ordersThe game's order");
+});
+
 it("says nothing of Blitz being unscheduled when a Blitz is the lead", async () => {
   reads.directory = answered({ games: [] });
   reads.slots = answered({ slots: [slot] });

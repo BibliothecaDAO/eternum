@@ -49,6 +49,14 @@ const NO_HEAD_RENDER = [
   },
 ];
 
+// A list of troops is the troop catalog (TROOP_TYPES, TROOP_TIERS from @bibliothecadao/types), never the members spelled
+// out: twelve hand-written copies of it stood in the client (audit 10-27, F7), and a type or tier the game adds would
+// be missing from each (as the build order maker missed every T2 and T3 building).
+const TROOP_CATALOG = ["TroopType", "TroopTier"].map((name) => ({
+  selector: `ArrayExpression:has(> MemberExpression[object.name='${name}'] ~ MemberExpression[object.name='${name}'])`,
+  message: `A list of ${name} members is the catalog: ${name === "TroopType" ? "TROOP_TYPES" : "TROOP_TIERS"} from @bibliothecadao/types.`,
+}));
+
 // A gain is written by formatGain: one written by hand as "+" before an amount read "+<1 Labor" for a find under a unit,
 // which players took for nothing found (feedback, 25 October). Flags a template, a sum or JSX text joining "+" to an
 // amount writer.
@@ -129,7 +137,11 @@ const eslint = new ESLint({
       languageOptions: { parser: tseslint.parser },
       linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
       plugins: { "react-hooks": reactHooks, "@typescript-eslint": tseslint.plugin },
-      rules: { "no-restricted-syntax": ["error", ...NO_BITWISE_ID, ...HAND_WRITTEN_GAIN], ...HOOK_ORDER, ...UNUSED },
+      rules: {
+        "no-restricted-syntax": ["error", ...NO_BITWISE_ID, ...HAND_WRITTEN_GAIN, ...TROOP_CATALOG],
+        ...HOOK_ORDER,
+        ...UNUSED,
+      },
     },
     {
       files: ["apps/game/src/**/*.{ts,tsx}"],
@@ -143,6 +155,7 @@ const eslint = new ESLint({
           ...HAND_WRITTEN_GAIN,
           ...SHORT_IN_CHIPS,
           ...STAMINA_IS_SEGMENTED,
+          ...TROOP_CATALOG,
         ],
       },
     },

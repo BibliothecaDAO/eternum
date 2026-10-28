@@ -49,9 +49,20 @@ describe("Frontier's Next up", () => {
       null,
       null,
     ]);
+    // A full labor store is spent in the realm: there its line stands alone (audit 10-27: "Open the realm" did nothing).
+    expect(lines({ barracks: true, armies: 1, storeFull: "labor" }, "mouse", "realm")[0]).toEqual([
+      "Your labor storage is full",
+      null,
+      null,
+    ]);
+    expect(lines({ barracks: true, armies: 1, storeFull: "labor" }, "mouse", "map")[0]).toEqual([
+      "Your labor storage is full",
+      "Open the realm",
+      "realm",
+    ]);
     // In the realm every remaining button goes somewhere: none of them is the realm itself.
     const inRealm = frontierCoachSteps(
-      { ...MORNING, populationFull: true, castleAffordable: true },
+      { ...MORNING, populationFull: true, castleAffordable: true, storeFull: "labor" },
       { pointer: "mouse", where: "realm", tips: true },
     );
     expect(inRealm.filter((step) => step.act === "realm")).toEqual([]);
@@ -61,7 +72,7 @@ describe("Frontier's Next up", () => {
     const out = { barracks: true, armies: 2 };
     expect(lines(out)).toEqual([["Your army can explore", "Select the army", "select-army"]]);
     expect(lines({ ...out, armySelected: true })).toEqual([["Click a tile beside your army", null, null]]);
-    expect(lines({ ...out, armySelected: true }, "touch")[0][0]).toBe("Hold a tile beside your army");
+    expect(lines({ ...out, armySelected: true }, "touch")[0][0]).toBe("Double-tap a tile beside your army");
   });
 
   it("puts the day's alerts first: the last hour, a full store, no population", () => {

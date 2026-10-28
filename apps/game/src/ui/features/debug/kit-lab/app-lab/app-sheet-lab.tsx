@@ -580,7 +580,7 @@ const NoticeSection = () => (
         <AppNotice tone="warn" line="Link a payout wallet to join a paid Blitz." />
         <AppNotice
           icon="download"
-          line="Realms on your home screen"
+          label="Realms on your home screen"
           actions={
             <>
               <AppButton kind="quiet">Later</AppButton>

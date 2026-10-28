@@ -5,7 +5,8 @@ import type { readExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useState } from "react";
 
-import { dayBounds, dayClock } from "../hud/day-clock";
+import { dayBounds, dayClock, seasonDay } from "../hud/day-clock";
+import { useSeasonEndsAt } from "../hud/season-end";
 import { useDockArmies } from "../hud/dock-armies";
 import { dayLogLine } from "./day-line";
 import { usePlayerDay } from "./player-day";
@@ -35,6 +36,7 @@ export const FrontierToday = ({
   const now = useNowSeconds();
   const player = realm ? `0x${BigInt(realm.owner).toString(16)}` : null;
   const clock = dayClock(rules, now);
+  const season = seasonDay(rules, useSeasonEndsAt(), now);
   const today = clock.day;
   const [chosen, setChosen] = useState<number | null>(null);
   const day = chosen ?? today;
@@ -45,6 +47,7 @@ export const FrontierToday = ({
   return (
     <TodaySheet
       day={day}
+      lastDay={season?.lastDay}
       today={day === today}
       clock={clock}
       totals={played.totals}

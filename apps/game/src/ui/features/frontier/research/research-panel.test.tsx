@@ -9,6 +9,7 @@ import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 
 import { MID_REALM } from "./progression-fixture";
 import { ResearchPanel } from "./research-panel";
+import { CastleResearch } from "../upgrade/castle-view";
 import { needLine, readResearchTree, type TreeNode } from "./research-tree";
 
 let host: HTMLDivElement;
@@ -27,7 +28,7 @@ afterEach(() => {
 });
 
 const nodes = readResearchTree({ ...MID_REALM, learned: { ...MID_REALM.learned, 2: { tier: 3, sides: [0, 0, 0] } } });
-const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onFix = vi.fn()) =>
+const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onFix = vi.fn(), onClose = vi.fn()) =>
   act(() =>
     root.render(
       <ResearchPanel
@@ -37,6 +38,7 @@ const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onF
         sending={new Set()}
         fixFor={(need) => (need.kind === "store" ? { icon: "realm", word: "Level up the castle", onFix } : undefined)}
         onResearch={onResearch}
+        onClose={onClose}
       />,
     ),
   );
@@ -51,6 +53,23 @@ it("draws every node of the three branches in one panel, each with its state, an
   expect(host.querySelectorAll("[role='dialog']")).toHaveLength(0);
   act(() => host.querySelector<HTMLButtonElement>("[data-node='row-4']")!.click());
   expect(onPick).toHaveBeenCalledWith("row-4");
+});
+
+it("closes as every panel does: its X and Escape", () => {
+  const onClose = vi.fn();
+  draw(null, vi.fn(), vi.fn(), vi.fn(), onClose);
+  act(() => host.querySelector<HTMLButtonElement>("button[aria-label='Close']")!.click());
+  expect(onClose).toHaveBeenCalledTimes(1);
+  act(() => void window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+  expect(onClose).toHaveBeenCalledTimes(2);
+});
+
+it("names each of the castle card's compact tiles on the tile itself, which a phone cannot hover (audit 10-27)", () => {
+  const castle = nodes.filter((node) => node.branch === "castle");
+  act(() => root.render(<CastleResearch nodes={castle} onOpen={vi.fn()} />));
+  const tiles = [...host.querySelectorAll<HTMLButtonElement>("[data-node]")];
+  expect(tiles.map((tile) => tile.textContent)).toEqual(castle.map((node) => node.name));
+  expect(castle.length).toBeGreaterThanOrEqual(5);
 });
 
 it("researches the Farm's next tier with the side picked", () => {
@@ -100,6 +119,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
           sending={new Set()}
           fixFor={() => undefined}
           onResearch={vi.fn()}
+          onClose={() => undefined}
         />,
       ),
     );
@@ -127,7 +147,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
   it("is put away with its X, leaving the tree, and opens again on the tile tapped", () => {
     const onPick = vi.fn();
     draw("row-0", vi.fn(), onPick);
-    act(() => host.querySelector<HTMLButtonElement>("[aria-label='Close']")!.click());
+    act(() => choice()!.querySelector<HTMLButtonElement>("[aria-label='Close']")!.click());
     expect(onPick).toHaveBeenCalledWith(null);
     draw(null, vi.fn(), onPick);
     expect(choice()).toBeNull();
@@ -147,6 +167,7 @@ it("shows the chosen research shares without a production formula", () => {
         sending={new Set()}
         fixFor={() => undefined}
         onResearch={vi.fn()}
+        onClose={() => undefined}
       />,
     ),
   );
@@ -168,6 +189,7 @@ it("keeps the chosen Research action outside the tree scroll on every pick, incl
         sending={new Set()}
         fixFor={() => undefined}
         onResearch={vi.fn()}
+        onClose={() => undefined}
       />
     );
   };
@@ -202,6 +224,7 @@ it.each([
         sending={new Set()}
         fixFor={() => undefined}
         onResearch={vi.fn()}
+        onClose={vi.fn()}
       />,
     ),
   );

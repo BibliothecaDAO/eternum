@@ -5,12 +5,13 @@ import { transferXpArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/t
 import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier/army/transfer-troops";
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { HudIconButton, HudNotice, HudSheet, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
   OFFLINE,
   PAYOUTS_PAUSED,
   startsOn,
+  type Rank,
   TRAINING_BUILDINGS,
   WITHDRAWALS_CLOSED,
   YOU,
@@ -27,11 +28,9 @@ import { useHudMode } from "@/hooks/use-hud-mode";
 import { MenuPage } from "@/ui/features/frontier/hud/menu-page";
 import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
+import { PickedArmy, type PickedArmyView } from "@/ui/features/frontier/hud/picked-army";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
 import { RuinChestMoment } from "@/ui/features/frontier/chest/ruin-chest-moment";
-import type { FightResult } from "@/ui/features/frontier/sites/fight-result";
-import { FightResultCard } from "@/ui/features/frontier/sites/fight-result-card";
-import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
 import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
 import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
@@ -65,7 +64,7 @@ import { NextUpView } from "@/ui/features/world/hud/next-up";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
-import { RefillButton, RefillChip, RefillConfirm } from "@/ui/features/frontier/army/refill";
+import { RefillButton, RefillChip, RefillConfirm, StaminaRefill } from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
@@ -86,6 +85,10 @@ const CLOCK: DayClock = {
   shareLeft: (7 * HOUR + 14 * 60) / (16 * HOUR),
   tone: "calm",
 };
+
+/** The season the fiction's Day 12 stands in: its last day the 14th, ending two days after today at 21:40. */
+const SEASON_LAST_DAY = 14;
+const SEASON_ENDS_AT = CLOCK.endsAt! + 2 * 24 * HOUR;
 
 const UNKNOWN_CLOCK: DayClock = {
   day: undefined,
@@ -168,6 +171,8 @@ type LabDeploy = {
   count: number;
   troopsAtHome: number;
   wheat: number;
+  /** Seconds until the next troop is home; none while nothing makes them. */
+  troopsWait?: number;
 };
 
 const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, wheat: 14_410 };
@@ -178,30 +183,27 @@ type LabChest = Parameters<typeof RuinChestMoment>[0];
 const ARMY_CHIP = { art: "knight-t1" as const, troops: 5_000 };
 const ATTACK_30 = { kind: "attack" as const, stamina: 30, onAttack: () => undefined };
 /**
- * A fight the army wins in so many attacks: this attack's losses and the guard it leaves, as its result shows, and
- * the whole fight's (each attack costing as this one, the guard's every troop killed, 30 stamina an attack).
+ * A fight the army wins in so many attacks: this attack's losses and the guard it leaves, as its result shows.
  */
-const WIN = (exchanges: number, troopsLost: number, guard: number, guardLeft = 0) => ({
+const WIN = (exchanges: number, troopsLost: number, guardLeft = 0) => ({
   outcome: "wins" as const,
   exchanges,
   troopsLost,
   guardLeft,
-  whole: { troopsLost: troopsLost * exchanges, guardKilled: guard, stamina: 30 * exchanges },
 });
-/** A fight that ends with the army gone: every troop lost over the whole fight, and what it killed by then. */
-const LOSE = (exchanges: number, troopsLost: number, guardLeft: number, army: number, guardKilled: number) => ({
+/** A fight that ends with the army gone in so many attacks: this attack's losses and the guard it leaves. */
+const LOSE = (exchanges: number, troopsLost: number, guardLeft: number) => ({
   outcome: "loses" as const,
   exchanges,
   troopsLost,
   guardLeft,
-  whole: { troopsLost: army, guardKilled, stamina: 30 * exchanges },
 });
 const CAMP_CARD: LabSite = {
   site: "Camp",
   beast: undefined,
   army: ARMY_CHIP,
   guard: 1_100,
-  fight: WIN(1, 180, 1_100),
+  fight: WIN(1, 180),
   pay: { icon: "labor", amount: 550 },
   xp: 82,
   verb: ATTACK_30,
@@ -211,7 +213,7 @@ const RUIN_CARD: LabSite = {
   beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
   army: ARMY_CHIP,
   guard: 3_400,
-  fight: WIN(2, 1_250, 3_400, 1_520),
+  fight: WIN(2, 1_250, 1_520),
   pay: null,
   chest: { tier: 3, lords: 128 },
   ruinChoice: { depth: "Surface" },
@@ -256,71 +258,98 @@ const DAY_DONE = {
 };
 
 type LabTile = Parameters<typeof BuildView>[0]["tiles"][number];
-/** A building card for the lab: its painting and name, what it gives and takes, and where it stands. */
+/** A building card for the lab: its painting and name, what it gives, its gems, what it takes, where it stands. */
 const tile = (
   key: string,
   icon: LabTile["icon"],
   name: string,
   gives: LabTile["gives"],
+  gems: LabTile["gems"],
   takes: number,
   standing: LabTile["standing"],
-): LabTile => ({ key, icon, name, tip: "", gives, takes, standing });
-const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"]) =>
-  ({ kind: "price", prices: [{ of: "labor", amount: labor }], short }) as const;
-/** A training building grants Common to new armies. */
-const TRAINS = { icon: "order-rage", value: <HudTier tier={1} /> } as const;
+): LabTile => ({ key, icon, name, tip: "", gives, gems, takes, standing });
+/** A row's one gem, or its two sides' (make side first). */
+const gem = (tier: Rank): LabTile["gems"] => [{ tier }];
+const sides = (make: [LabTile["icon"], Rank], other: [LabTile["icon"], Rank]): LabTile["gems"] =>
+  [make, other].map(([side, tier]) => ({ side, tier }));
+const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"], raised?: string) =>
+  ({ kind: "price", prices: [{ of: "labor", amount: labor }], short, raised }) as const;
+/** A training building waiting for the two Barracks research purchases. */
+const LOCKED = { kind: "locked", purchases: 2 } as const;
+
+const trainingPrice: LabTile["standing"] = {
+  kind: "price",
+  prices: [
+    { of: "essence", amount: 6_000 },
+    { of: "labor", amount: 1_500 },
+  ],
+};
 /**
- * A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor, the
- * Workshop 3h 10m from its 10,000.
+ * A city's build sheet, as the owner's realm stood on 27 October: Farm and Workshop researched twice on their make
+ * side, Barracks once on Drill, the War hall and Hearth already standing, a fifth farm at 6,800 labor, and a second
+ * Workshop at 34,000, raised by the one standing and 16 hours from held.
  */
 const BUILD_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, 1, price(6_800)),
+  tile(
+    "farm",
+    "farm",
+    "Farm",
+    { icon: "wheat", value: "+6.3/min" },
+    sides(["fields", 2], ["granary", 0]),
+    1,
+    price(6_800),
+  ),
   tile(
     "workshop",
     "workshop",
     "Workshop",
     { icon: "labor", value: "+0.83/min" },
+    sides(["tools", 2], ["storehouse", 0]),
     1,
-    price(10_000, { of: "labor", wait: 3 * HOUR + 10 * 60 }),
+    price(34_000, { of: "labor", wait: 16 * HOUR }, "Costs more with each one standing: 1"),
   ),
-  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(6_800)),
-  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(5_100)),
-  tile("war", "war-hall", TRAINING_BUILDINGS[0], TRAINS, 2, { kind: "built" }),
-  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, {
-    kind: "price",
-    prices: [
-      { of: "essence", amount: 6_000 },
-      { of: "labor", amount: 1_500 },
-    ],
-  }),
-  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, {
-    kind: "price",
-    prices: [
-      { of: "essence", amount: 6_000 },
-      { of: "labor", amount: 1_500 },
-    ],
-  }),
-  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...TRAINS, icon: "order-enlightenment" }, 2, { kind: "built" }),
+  tile(
+    "barracks",
+    "barracks",
+    "Barracks",
+    { icon: "troops", value: "+13/min" },
+    sides(["drill", 1], ["rations", 1]),
+    3,
+    price(6_800),
+  ),
+  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(5_100)),
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], { icon: "order-rage" }, gem(1), 2, { kind: "built" }),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { icon: "order-skill" }, gem(1), 2, trainingPrice),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { icon: "order-detection" }, gem(1), 2, trainingPrice),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { icon: "order-enlightenment" }, gem(1), 2, { kind: "built" }),
 ];
-/** A fresh realm: the training buildings locked behind the Barracks at Rare. */
+/** A fresh realm: the training buildings locked behind the two Barracks research purchases. */
 const EARLY_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, 1, price(800)),
-  tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, 1, price(2_000)),
-  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(800)),
-  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(300)),
-  tile("war", "war-hall", TRAINING_BUILDINGS[0], TRAINS, 2, { kind: "locked", purchases: 2 }),
-  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, {
-    kind: "locked",
-    purchases: 2,
-  }),
-  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, {
-    kind: "locked",
-    purchases: 2,
-  }),
-  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...TRAINS, icon: "order-enlightenment" }, 2, {
-    kind: "locked",
-    purchases: 2,
-  }),
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, sides(["fields", 0], ["granary", 0]), 1, price(800)),
+  tile(
+    "workshop",
+    "workshop",
+    "Workshop",
+    { icon: "labor", value: "+0.83/min" },
+    sides(["tools", 0], ["storehouse", 0]),
+    1,
+    price(2_000),
+  ),
+  tile(
+    "barracks",
+    "barracks",
+    "Barracks",
+    { icon: "troops", value: "+1.7/min" },
+    sides(["drill", 0], ["rations", 0]),
+    3,
+    price(800),
+  ),
+  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(300)),
+  // The training buildings are grant Common (I) when built, each locked behind the Barracks.
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], { icon: "order-rage" }, gem(1), 2, LOCKED),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { icon: "order-skill" }, gem(1), 2, LOCKED),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { icon: "order-detection" }, gem(1), 2, LOCKED),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { icon: "order-enlightenment" }, gem(1), 2, LOCKED),
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,
@@ -443,7 +472,7 @@ const OWNERS_CAMP: LabSite = {
   beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
   army: { art: "knight-t1", troops: 1_500 },
   guard: 1_300,
-  fight: WIN(3, 180, 1_300, 740),
+  fight: WIN(3, 180, 740),
   pay: { icon: "wood", amount: 650 },
   xp: 90,
   verb: { kind: "short", stamina: { cost: 30, held: 14, wait: 31 * 60 } },
@@ -456,7 +485,7 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
       beast: undefined,
       army: { art: "knight-t1", troops: 5_000 },
       guard: 1_100,
-      fight: WIN(1, 180, 1_100),
+      fight: WIN(1, 180),
       pay: { icon: "labor", amount: 550 },
       xp: 82,
       verb: ATTACK_30,
@@ -464,7 +493,7 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
     loses: {
       ...OWNERS_CAMP,
       army: { art: "knight-t1", troops: 400 },
-      fight: LOSE(1, 400, 1_150, 400, 150),
+      fight: LOSE(1, 400, 1_150),
       verb: ATTACK_30,
     },
   } satisfies Record<string, LabSite>).map(([name, site]) => [
@@ -481,6 +510,10 @@ const STATES = {
   "armies-open": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 2) },
   // An army picked opens its panel, as the game opens it on a selection.
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: {} },
+  // A phone's picked army, its card not opened: the row in the dock's place.
+  picked: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "owner" },
+  "picked-rested": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "rested" },
+  "picked-pay": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "pay" },
   full: { clock: CLOCK, stores: FULL_STORES, armies: ARMIES, realmDot: "ember" as const },
   offline: { clock: UNKNOWN_CLOCK, stores: UNKNOWN_STORES, armies: UNKNOWN_ARMIES, offline: true },
   menu: { clock: CLOCK, stores: STORES, armies: ARMIES, menu: true },
@@ -529,6 +562,12 @@ const STATES = {
     armies: [],
     deploy: { ...DEPLOY, count: 0, troopsAtHome: 0 },
   },
+  "deploy-empty-making": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: [],
+    deploy: { ...DEPLOY, count: 0, troopsAtHome: 0, troopsWait: 6 * 60 },
+  },
   "site-camp": { clock: CLOCK, stores: STORES, armies: ARMIES, site: CAMP_CARD },
   "site-full": {
     clock: CLOCK,
@@ -545,7 +584,7 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15, 400), pay: null, xp: 50 },
+    site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
   },
   "site-ruin": { clock: CLOCK, stores: STORES, armies: ARMIES, site: RUIN_CARD },
   "site-ruin-lose": {
@@ -555,7 +594,7 @@ const STATES = {
     site: {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 1_200 },
-      fight: LOSE(3, 1_200, 2_300, 1_200, 1_100),
+      fight: LOSE(3, 1_200, 2_300),
     },
   },
   "site-far": {
@@ -574,6 +613,35 @@ const STATES = {
       },
     },
   },
+  // The owner's desktop card on prod (10-27, "this panel doesnt match at all our new battle panels"): Shadeglow's troll
+  // camp, 7.1K knights out of reach of its guard of 1.3K, paying 650 labor and 90 XP.
+  "site-shadeglow": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...CAMP_CARD,
+      name: "Shadeglow",
+      beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
+      army: { ...ARMY_CHIP, troops: 7_100 },
+      guard: 1_300,
+      fight: undefined,
+      pay: { icon: "labor", amount: 650 },
+      xp: 90,
+      verb: { kind: "far" },
+    },
+  },
+  // The army's last attack here refused, with no forecast: the same sides, the refusal on the line.
+  "site-refused": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...CAMP_CARD,
+      fight: { outcome: "refused" },
+      verb: { ...ATTACK_30, refused: "The army is on battle cooldown" },
+    },
+  },
   "site-pick": {
     clock: CLOCK,
     stores: STORES,
@@ -583,12 +651,12 @@ const STATES = {
       army: null,
       verb: null,
       choices: [
-        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180, 1_100, 492), onPick: () => undefined },
+        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180, 492), onPick: () => undefined },
         {
           label: "Army 2",
           art: ARMY_CHIP.art,
           troops: 100,
-          fight: LOSE(1, 100, 1_034, 100, 66),
+          fight: LOSE(1, 100, 1_034),
           onPick: () => undefined,
         },
         { label: "Army 3", art: ARMY_CHIP.art, troops: 600, fight: undefined, onPick: () => undefined },
@@ -601,22 +669,7 @@ const STATES = {
     armies: ARMIES,
     site: { ...CAMP_CARD, verb: { kind: "short", stamina: { cost: 30, held: 10, wait: 40 * 60 } } },
   },
-  "fight-won": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    fight: {
-      targetId: 29,
-      tile: { col: 0, row: 0 },
-      site: "Camp",
-      verdict: "victory",
-      armyArt: ARMY_CHIP.art,
-      army: { before: 1_498, after: 1_318 },
-      guard: { before: 1_100, after: 0 },
-      gained: { pay: { icon: "labor", amount: 550, storeFull: false }, xp: 22 },
-    },
-  },
-  // After a fight both sides survive: no result, the site's own card with both sides as the attack left them (500 → 432
+  // After a fight both sides survive: the site's own card with both sides as the attack left them (500 → 432
   // troops, a guard of 334 → 150), and Attack again.
   "fight-goes-on": {
     clock: CLOCK,
@@ -627,24 +680,9 @@ const STATES = {
       site: "Beasts",
       army: { art: ARMY_CHIP.art, troops: 432 },
       guard: 150,
-      fight: WIN(1, 40, 150),
+      fight: WIN(1, 40),
       pay: null,
       xp: 50,
-    },
-  },
-  "fight-army-lost": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    fight: {
-      targetId: 29,
-      tile: { col: 0, row: 0 },
-      site: "Rift",
-      verdict: "army-lost",
-      armyArt: ARMY_CHIP.art,
-      army: { before: 154, after: 0 },
-      guard: { before: 1_100, after: 1_028 },
-      gained: null,
     },
   },
   "clear-ruin": {
@@ -700,6 +738,8 @@ const STATES = {
   "building-war-hall": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "war-hall" },
   "building-scouts-lodge": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "scouts-lodge" },
   "realm-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "full" },
+  // In the realm with its labor store full (audit 10-27): Next up says so, with no "Open the realm" that goes nowhere.
+  "realm-labor-full": { clock: CLOCK, stores: FULL_STORES, armies: ARMIES, realmView: "build" },
   "army-refill": {
     clock: CLOCK,
     stores: STORES,
@@ -793,7 +833,48 @@ const STATES = {
     site: {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 1_200 },
-      fight: LOSE(3, 1_200, 2_300, 1_200, 1_100),
+      fight: LOSE(3, 1_200, 2_300),
+    },
+  },
+  // The owner's phone card on prod (10-27): Runereach's guard of 3,500 against 4,291 knights, an Uncommon chest of 100
+  // LORDS, and the stamina short of an attack.
+  "site-runereach": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...RUIN_CARD,
+      army: { ...ARMY_CHIP, troops: 4_291 },
+      guard: 3_500,
+      fight: WIN(3, 816, 1_650),
+      chest: { tier: 2, lords: 100 },
+      xp: 147,
+      verb: { kind: "short", stamina: { cost: 30, held: 26, wait: 7 * 60 + 38 } },
+    },
+  },
+  // Seven-digit armies on both sides: the fight's figures still fit a 360 px phone.
+  "site-large": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...RUIN_CARD,
+      army: { ...ARMY_CHIP, troops: 1_284_500 },
+      guard: 987_650,
+      fight: WIN(3, 216_400, 612_300),
+    },
+  },
+  // Twelve-digit sides that lose one troop each: short, both would read alike ("123B → 123B"), so they stay exact and
+  // are set smaller to fit.
+  "site-alike": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...RUIN_CARD,
+      army: { ...ARMY_CHIP, troops: 123_456_789_123 },
+      guard: 98_765_432_100,
+      fight: WIN(3, 1, 98_765_432_099),
     },
   },
   "value-hud": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240, realms: 2_000 } },
@@ -911,6 +992,11 @@ type LabState = {
   /** The card a store's ring or plate opened. */
   storeCard?: StoreLine;
   army?: LabArmySheet;
+  /**
+   * A phone's picked army: the owner's Army 2 (27 October: 14/140, 100 of 126 LORDS, a level to buy), it rested, or its
+   * realm holding 500 LORDS.
+   */
+  picked?: "owner" | "rested" | "pay";
   realmView?: "build-training" | "build" | "build-early" | "castle" | "castle-short" | "full";
   /** A building tapped on the realm's board: its own card. */
   building?: keyof typeof LAB_BUILDINGS;
@@ -918,7 +1004,6 @@ type LabState = {
   lastHour?: boolean;
   order?: LabOrder;
   site?: LabSite;
-  fight?: FightResult;
   chest?: LabChest;
   deploy?: LabDeploy;
   clock: DayClock;
@@ -1035,6 +1120,8 @@ export const HudLab = () => {
                 state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}
                 onRetry={noop}
                 onOpen={noop}
+                onClose={noop}
+                ends={{ at: SEASON_ENDS_AT, day: CLOCK.day, lastDay: SEASON_LAST_DAY }}
               />
             )
           ) : undefined
@@ -1053,15 +1140,16 @@ export const HudLab = () => {
                 onGo={noop}
               />
             )}
+            {!desktop && !lab.order && lab.selected !== undefined && <LabPicked lab={lab} />}
             {lab.visiting && <VisitFoot label="Aldric" order={2} name="Aldric" arriving={false} onLeave={noop} />}
           </>
         }
-        dock={(desktop || !lab.order) && <LabDock lab={lab} />}
+        dock={(desktop || (!lab.order && lab.selected === undefined)) && <LabDock lab={lab} />}
         nav={
           !lab.visiting && (
             <PlaceNav
               place={lab.chat && !desktop ? "chat" : lab.menu || lab.season ? "menu" : lab.research ? "research" : null}
-              onRealm={lab.realmView !== undefined || lab.building !== undefined}
+              onRealm={inTheRealm(lab)}
               onGo={noop}
               realmDot={lab.realmDot}
               researchDot={!lab.offline}
@@ -1114,11 +1202,6 @@ export const HudLab = () => {
         )}
         {lab.building && <LabBuildingCard building={lab.building} />}
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
-        {lab.fight && (
-          <HudSheet label={TARGET_MARKS[lab.fight.site].word} onClose={noop}>
-            <FightResultCard result={lab.fight} onClose={noop} />
-          </HudSheet>
-        )}
         {lab.chest && <RuinChestMoment {...lab.chest} />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
         {lab.realms && <LabRealmsSheet realms={lab.realms} />}
@@ -1154,6 +1237,7 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       onCount={setCount}
       start={open.find((entry) => entry.slot === slot)}
       slots={{ allowed: 3, open, onPick: setSlot }}
+      troopsWait={deploy.troopsWait}
       wheatCost={count * 2}
       tile="open"
       canDeploy={count > 0 && slot !== null}
@@ -1164,6 +1248,54 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       onClose={noop}
     />
   );
+};
+
+/** A phone's picked army on the fiction, as the action row draws it in the dock's place. */
+const LabPicked = ({ lab }: { lab: LabState }) => {
+  const { army, lords } = labPickedArmy(lab);
+  return (
+    <PickedArmy
+      army={army}
+      refill={<StaminaRefill stamina={army.stamina!} held={lords} onRefill={noop} />}
+      onDetails={noop}
+      onLevelUp={noop}
+    />
+  );
+};
+
+/** The owner's Army 2, it rested or its realm able to pay its refill (`picked`), else the state's selected army, with the realm's LORDS. */
+const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } => {
+  const index = lab.selected ?? 0;
+  const base = { explorerId: index + 1, number: index + 1, label: `${ARMY} ${index + 1}`, art: "knight-t1" as const };
+  if (lab.picked) {
+    const rested = lab.picked === "rested";
+    const army = {
+      ...base,
+      xp: rested ? 40 : 276,
+      xpGoal: undefined,
+      troops: 1_342,
+      stamina: { current: rested ? 140 : 14, max: 140, perExplore: 20 },
+      secondsToFull: rested ? 0 : 4 * HOUR + 11 * 60,
+      canSpendSkillPoint: !rested,
+      tiers: { battle: 3, logistics: 2, scouting: 2, homecoming: 1 },
+    };
+    return { army, lords: lab.picked === "pay" ? 500 : 100 };
+  }
+  const army = lab.armies[index];
+  const current = army.stamina ?? 0;
+  return {
+    army: {
+      ...base,
+      xp: army.xp,
+      xpGoal: undefined,
+      troops: army.troops ?? 0,
+      stamina: { current, max: 150, perExplore: LAB_EXPLORE },
+      secondsToFull: (150 - current) * 60,
+      canSpendSkillPoint: army.tier === true,
+      tiers: { battle: 2, logistics: 3, scouting: 2, homecoming: 1 },
+    },
+    lords: lab.purse?.lords ?? LAB_LORDS,
+  };
 };
 
 /** The veteran army's panel on the fiction, with its refill where the realm's LORDS are given, or the refill's confirm. */
@@ -1197,19 +1329,19 @@ const LAB_BUILDINGS = {
     category: BuildingType.ResourceWheat,
     row: research.ROW_FARM,
     standing: 4,
-    makes: { icon: "wheat", rate: "+25/min", why: "+25% from Fields" },
+    makes: { icon: "wheat", rate: "+25/min" },
   },
   barracks: {
     category: BuildingType.ResourceKnightT1,
     row: research.ROW_BARRACKS,
     standing: 3,
-    makes: { icon: "troops", rate: "+10/min", why: "+50% from Drill" },
+    makes: { icon: "troops", rate: "+10/min" },
   },
   "workshop-short": {
     category: BuildingType.ResourceLabor,
     row: research.ROW_WORKSHOP,
     standing: 3,
-    makes: { icon: "labor", rate: "+15/min", why: "+50% from Tools" },
+    makes: { icon: "labor", rate: "+15/min" },
     essence: SHORT_ESSENCE,
   },
   "war-hall": { category: BuildingType.WarHall, row: research.ROW_WAR_HALL, standing: 1, makes: undefined },
@@ -1255,9 +1387,13 @@ const LabResearch = () => {
       sending={new Set()}
       fixFor={() => undefined}
       onResearch={noop}
+      onClose={noop}
     />
   );
 };
+
+/** Whether the lab state stands in the realm view (its board, castle or a building's card), as Next up reads it. */
+const inTheRealm = (lab: LabState): boolean => lab.realmView !== undefined || lab.building !== undefined;
 
 /** Next up on the lab's realm at a state: the coach's steps, their buttons doing nothing. */
 const labNextUpSteps = (lab: LabState, desktop: boolean): NextStep[] =>
@@ -1270,7 +1406,7 @@ const labNextUpSteps = (lab: LabState, desktop: boolean): NextStep[] =>
       storeFull: lab.stores.find((store) => store.tone === "ember")?.kind ?? null,
       ...lab.nextUp,
     },
-    { pointer: desktop ? "mouse" : "touch", where: "map", tips: true },
+    { pointer: desktop ? "mouse" : "touch", where: inTheRealm(lab) ? "realm" : "map", tips: true },
   ).map((step) => ({
     key: step.key,
     kind: "order",
@@ -1472,6 +1608,7 @@ const LabResults = ({
   ) : (
     <TodaySheet
       day={results === "today-earlier" ? 11 : 12}
+      lastDay={SEASON_LAST_DAY}
       today={results !== "today-earlier"}
       clock={CLOCK}
       totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}

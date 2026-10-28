@@ -97,24 +97,29 @@ describe("partial stamina refills", () => {
   });
 });
 
-it("sends a partial refill through the army's real caller", async () => {
-  const { host, unmount } = render(
-    <ArmyRefill
-      army={{ explorerId: 7, stamina: { current: 20, max: 150 } } as DockArmy}
-      realm={{ entity_id: 1n } as NativeRows["Structure"]}
-    />,
-  );
-  act(() => host.querySelector("button")!.click());
-  const slider = host.querySelector("input")!;
-  act(() => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, "15");
-    slider.dispatchEvent(new Event("change", { bubbles: true }));
-  });
-  await act(async () =>
-    [...host.querySelectorAll("button")].find((b) => b.textContent === "Refill · 15 LORDS")!.click(),
-  );
-  expect(calls.refill).toHaveBeenCalledOnce();
-  expect(calls.refill).toHaveBeenCalledWith({ signer: calls.signer, explorerId: 7, amount: 15 });
-  expect(host.querySelector("input")).toBeNull();
-  unmount();
-});
+it.each(["button", "chip", "stamina"] as const)(
+  "sends a partial refill through the army's real %s control",
+  async (look) => {
+    calls.refill.mockClear();
+    const { host, unmount } = render(
+      <ArmyRefill
+        look={look}
+        army={{ explorerId: 7, stamina: { current: 20, max: 150 } } as DockArmy}
+        realm={{ entity_id: 1n } as NativeRows["Structure"]}
+      />,
+    );
+    act(() => host.querySelector("button")!.click());
+    const slider = host.querySelector("input")!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, "15");
+      slider.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await act(async () =>
+      [...host.querySelectorAll("button")].find((b) => b.textContent === "Refill · 15 LORDS")!.click(),
+    );
+    expect(calls.refill).toHaveBeenCalledOnce();
+    expect(calls.refill).toHaveBeenCalledWith({ signer: calls.signer, explorerId: 7, amount: 15 });
+    expect(host.querySelector("input")).toBeNull();
+    unmount();
+  },
+);

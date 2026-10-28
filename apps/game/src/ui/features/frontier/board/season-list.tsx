@@ -1,14 +1,17 @@
-import { formatAmount, formatExact, LORDS, formatShort } from "@bibliothecadao/types";
+import { formatAmount, formatExact, formatMoment, LORDS, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import {
   HudButton,
   HudChip,
   HudEmpty,
+  HudIconButton,
   HudPanel,
   HudSkeleton,
   HudTableHead,
   HudTableRow,
 } from "@/ui/design-system/kit/hud-elements";
+
+import { useSheetCloses } from "@/ui/design-system/kit/sheet-closes";
 
 import { RealmBadge } from "./realm-marks";
 import {
@@ -16,12 +19,15 @@ import {
   POOL_NOT_PUBLISHED,
   RANK,
   REALM,
+  CLOSE,
   SEASON,
   SEASON_ERROR,
   SITES,
   SITES_CLEARED,
   TRY_AGAIN,
   commonChestPays,
+  dayOfSeason,
+  seasonEnds,
   seasonPool,
 } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
@@ -47,7 +53,7 @@ const SKELETON_ROWS = 8;
  * Season (wireframe 13), a place of its own, left by the place bar: the title with what a common chest pays today and
  * the player's rank, the season's pool on that chip's tip, then the realms by sites cleared with LORDS beside, the
  * player's own row lit in place or pinned at the foot when it ranks below the rows shown. A row opens its detail. When
- * the season did not answer, the card says so, with Try again.
+ * the season did not answer, the card says so, with Try again. It closes as every panel does: its X, Escape or back.
  */
 export const SeasonList = ({
   rank,
@@ -58,6 +64,8 @@ export const SeasonList = ({
   state,
   onRetry,
   onOpen,
+  onClose,
+  ends,
 }: {
   /** The player's rank; null for a player without a realm on the list, undefined while it loads. */
   rank: number | null | undefined;
@@ -70,33 +78,53 @@ export const SeasonList = ({
   state: "ready" | "loading" | "failed";
   onRetry: () => void;
   onOpen: (key: string) => void;
-}) => (
-  <HudPanel
-    label={SEASON}
-    collapsible={false}
-    className="pointer-events-auto flex min-h-0 flex-1 flex-col"
-    bodyClassName="flex min-h-0 flex-1 flex-col gap-1"
-  >
-    <header className="flex shrink-0 items-center gap-1.5">
-      <h2 className="flex-1 text-hud-title text-hud-accent">{SEASON}</h2>
-      <SeasonChip chest={chest} rank={rank} pool={pool} />
-    </header>
-    {state === "failed" ? (
-      <Failed onRetry={onRetry} />
-    ) : (
-      <>
-        <BoardHead />
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-          {state === "loading" ? (
-            <HudSkeleton rows={SKELETON_ROWS} />
-          ) : (
-            rows.map((row) => <ListRow key={row.key} row={row} onOpen={onOpen} />)
-          )}
-        </div>
-        {pinned && <ListRow row={pinned} onOpen={onOpen} />}
-      </>
-    )}
-  </HudPanel>
+  onClose: () => void;
+  /** When the season ends, and today against its last day while it runs; undefined until the game is known. */
+  ends?: { at: number; day?: number; lastDay?: number };
+}) => {
+  useSheetCloses(onClose);
+  return (
+    <HudPanel
+      label={SEASON}
+      collapsible={false}
+      className="pointer-events-auto flex min-h-0 flex-1 flex-col"
+      bodyClassName="flex min-h-0 flex-1 flex-col gap-1"
+    >
+      <header className="flex shrink-0 items-center gap-1.5">
+        <h2 className="flex-1 text-hud-title text-hud-accent">{SEASON}</h2>
+        <SeasonChip chest={chest} rank={rank} pool={pool} />
+        <HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />
+      </header>
+      {ends && <SeasonEnds {...ends} />}
+      {state === "failed" ? (
+        <Failed onRetry={onRetry} />
+      ) : (
+        <>
+          <BoardHead />
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            {state === "loading" ? (
+              <HudSkeleton rows={SKELETON_ROWS} />
+            ) : (
+              rows.map((row) => <ListRow key={row.key} row={row} onOpen={onOpen} />)
+            )}
+          </div>
+          {pinned && <ListRow row={pinned} onOpen={onOpen} />}
+        </>
+      )}
+    </HudPanel>
+  );
+};
+
+/** When the season ends, and today against its last day: "Season ends 31 Oct 21:40 · Day 10 of 14". */
+const SeasonEnds = ({ at, day, lastDay }: { at: number; day?: number; lastDay?: number }) => (
+  <p className="shrink-0 text-hud-label tabular-nums text-hud-muted">
+    {[
+      seasonEnds(formatMoment(at)),
+      day !== undefined && lastDay !== undefined && dayOfSeason(formatAmount(day), formatAmount(lastDay)),
+    ]
+      .filter(Boolean)
+      .join(" · ")}
+  </p>
 );
 
 /** The season's pool in whole LORDS and what today releases of it (absent before the season starts and after it ends). */

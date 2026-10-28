@@ -96,7 +96,7 @@ const savedElsewhere = (book: { orders: { id: string; order: unknown }[]; active
 /** The panel's order, read where the panel reads it. */
 let followed = "";
 const Followed = () => {
-  followed = useActiveBuildOrder().name;
+  followed = useActiveBuildOrder()?.name ?? "";
   return null;
 };
 
@@ -182,6 +182,71 @@ describe("the Build orders page", () => {
     expect(rows()[0]).toContain("Active");
   });
 
+  it("offers every tier's resources and troops, and saves the T2 and T3 steps a player picks", async () => {
+    account({ orders: [], active: null });
+    await open();
+    await press("New order");
+    const group = (label: string) =>
+      [...host.querySelectorAll(`[role="group"][aria-label="${label}"] button`)].map((goal) =>
+        goal.getAttribute("aria-label"),
+      );
+    const faces = (label: string) =>
+      [...host.querySelectorAll(`[role="group"][aria-label="${label}"] button`)].map((goal) => goal.textContent);
+    expect(group("Resources")).toEqual([
+      "Wood",
+      "Coal",
+      "Copper",
+      "Ironwood",
+      "Cold Iron",
+      "Gold",
+      "Adamantine",
+      "Mithral",
+      "Dragonhide",
+    ]);
+    expect(group("Troops")).toEqual([
+      "Knight T1",
+      "Crossbowman T1",
+      "Paladin T1",
+      "Knight T2",
+      "Crossbowman T2",
+      "Paladin T2",
+      "Knight T3",
+      "Crossbowman T3",
+      "Paladin T3",
+    ]);
+    // Troops stand in a table, as the construction panel draws them: a troop a column, a tier a row.
+    expect(faces("Troops")).toEqual(["T1", "T1", "T1", "T2", "T2", "T2", "T3", "T3", "T3"]);
+    expect(group("Your biome's troop")).toEqual([
+      "Barracks",
+      "Army",
+      "Barracks T2",
+      "Army T2",
+      "Barracks T3",
+      "Army T3",
+    ]);
+    type("Name", "Iron rush");
+    await press("Ironwood");
+    await press("Knight T2");
+    await press("Army T3");
+    await press("Save");
+
+    const [[saved]] = service.saveBuildOrders.mock.calls;
+    expect(saved.book).toMatchObject({
+      orders: [
+        {
+          order: {
+            name: "Iron rush",
+            steps: [
+              { rank: "Settlement", goal: "ironwood", count: 1 },
+              { rank: "Settlement", goal: "knightT2", count: 1 },
+              { rank: "Settlement", goal: "armyT3", count: 1 },
+            ],
+          },
+        },
+      ],
+    });
+  });
+
   it("follows another order with Use, the game's own included, and saves only which one", async () => {
     account({ orders: [{ id: "o1", order: COAL_RUSH }], active: "o1" });
     await open();
@@ -198,14 +263,14 @@ describe("the Build orders page", () => {
     type("Paste an order's JSON", '{"name":"Mine","steps":[{"rank":"City","goal":"mill","count":2}]}');
     await press("Read it");
     expect(host.querySelector(".app-field__line")?.textContent).toBe(
-      "Step 1: “mill” is not a goal: farm, wood, coal, copper, hut, barracks, army, levelUp.",
+      "Step 1: “mill” is not a goal: farm, wood, coal, copper, ironwood, coldIron, gold, adamantine, mithral, dragonhide, market, knightT1, knightT2, knightT3, crossbowmanT1, crossbowmanT2, crossbowmanT3, paladinT1, paladinT2, paladinT3, hut, barracks, barracksT2, barracksT3, army, armyT2, armyT3, levelUp.",
     );
     type("Paste an order's JSON", '{"name":"Mine","steps":[{"rank":"City","goal":"coal","count":2}]}');
     await press("Read it");
     // It opens as a new order on its first rank, to save.
     expect(address).toBe(`${BUILD_ORDERS_PATH}?edit=new`);
     expect(field("Name")?.value).toBe("Mine");
-    expect(rows()).toEqual(["Coal mine2"]);
+    expect(rows()).toEqual(["Coal2"]);
   });
 
   it("copies an order as JSON that reads back, and a prompt for an AI with the language and the order", async () => {
@@ -231,6 +296,21 @@ describe("the Build orders page", () => {
     expect(button("Copy JSON")?.disabled).toBe(false);
     expect(service.saveBuildOrders).not.toHaveBeenCalled();
   });
+  it("tells a signed-out visitor once to sign in, marks no order as theirs, and boxes no line on an empty new order", async () => {
+    account(null);
+    await open(1440);
+    await press("New order");
+    expect(notices()).toEqual(["Sign in to save your orders."]);
+    expect(host.textContent).not.toContain("Active");
+    // An empty draft is a start: Save waits for a step, and nothing is boxed.
+    expect(button("Save")?.disabled).toBe(true);
+    expect(host.textContent).not.toContain("An order has 1 to 60 steps.");
+    // A draft with a step that still does not read says why.
+    await press("Farm");
+    type("Name", " ");
+    expect(notices()).toEqual(["Sign in to save your orders.", "A name is 1 to 40 characters."]);
+  });
+
   it("says where Save was pressed why the account refused it, keeps the draft, and saves it with Try again", async () => {
     account({ orders: [{ id: "o1", order: COAL_RUSH }], active: "o1" });
     await open();
@@ -250,7 +330,8 @@ describe("the Build orders page", () => {
     account({ orders: [{ id: "o1", order: COAL_RUSH }], active: "o1" });
     await open();
     await press("Edit");
-    const reason = "Step 1: “mill” is not a goal: farm, wood, coal, copper, hut, barracks, army, levelUp.";
+    const reason =
+      "Step 1: “mill” is not a goal: farm, wood, coal, copper, ironwood, coldIron, gold, adamantine, mithral, dragonhide, market, knightT1, knightT2, knightT3, crossbowmanT1, crossbowmanT2, crossbowmanT3, paladinT1, paladinT2, paladinT3, hut, barracks, barracksT2, barracksT3, army, armyT2, armyT3, levelUp.";
     service.saveBuildOrders.mockRejectedValueOnce(new IdentityRequestError(400, "invalid_build_orders", reason));
     await press("Save");
     expect(notices()).toEqual([`${reason}Try again`]);
@@ -344,7 +425,7 @@ describe("the Build orders page", () => {
       ]);
     expect(ranks()).toEqual([
       ["Settlement", "SettlementFarm2"],
-      ["City", "CityCoal mine2"],
+      ["City", "CityCoal2"],
       ["Kingdom", "Kingdom"],
       ["Empire", "Empire"],
     ]);

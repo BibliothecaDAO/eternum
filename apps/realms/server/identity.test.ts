@@ -924,10 +924,21 @@ describe("identity Worker", () => {
       400,
       {
         error: "invalid_build_orders",
-        message: "Step 1: “mill” is not a goal: farm, wood, coal, copper, hut, barracks, army, levelUp.",
+        message:
+          "Step 1: “mill” is not a goal: farm, wood, coal, copper, ironwood, coldIron, gold, adamantine, mithral, dragonhide, market, knightT1, knightT2, knightT3, crossbowmanT1, crossbowmanT2, crossbowmanT3, paladinT1, paladinT2, paladinT3, hut, barracks, barracksT2, barracksT3, army, armyT2, armyT3, levelUp.",
       },
     ]);
     expect(((await (await browser.request("/api/build-orders")).json()) as { revision: number }).revision).toBe(1);
+    // An order of T2 and T3 steps is kept as made.
+    const ironRush = {
+      name: "Iron rush",
+      steps: [
+        { rank: "City", goal: "ironwood", count: 1 },
+        { rank: "Kingdom", goal: "knightT2", count: 1 },
+        { rank: "Kingdom", goal: "armyT3", count: 1 },
+      ],
+    };
+    expect(await (await save(1, ironRush)).json()).toEqual({ owner, revision: 2, book: book(ironRush) });
     expect((await createBrowser().request("/api/build-orders")).status).toBe(401);
   });
 

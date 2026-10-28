@@ -15,8 +15,10 @@ vi.mock("../frontier-home", async (original) => ({
   ...(await original<typeof import("../frontier-home")>()),
   useGoToFrontierPlace: () => (expedition: boolean) => place.goTo.push(expedition),
 }));
+// The production clock the sheet reads; a test moves it to watch a store fill.
+const clock = vi.hoisted(() => ({ tick: 3 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
-  useCurrentDefaultTick: () => 3,
+  useCurrentDefaultTick: () => clock.tick,
   useCurrentArmiesTick: () => 3,
   useNowSeconds: () => 350,
 }));
@@ -28,13 +30,14 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { DEPLOY_ON_MAP_EVENT, type DeployOnMap, readDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
-import { type GameClient, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
+import { type GameClient, readExpeditionRules, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { Direction, TroopTier, TroopType } from "@bibliothecadao/types";
+import { Direction, RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
 import { frontierDay } from "./deploy-fixture";
 import { DeploySheet } from "./deploy-sheet";
 
 afterEach(() => {
+  clock.tick = 3;
   place.map = true;
   place.goTo.length = 0;
   useUIStore.getState().setPendingMilitaryAction(null);
@@ -53,7 +56,7 @@ const render = (store: unknown, row: unknown, onClose = () => {}) => {
     act(() =>
       root.render(
         <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-          <DeploySheet realm={row as never} onClose={onClose} />
+          <DeploySheet realm={row as never} rules={readExpeditionRules(store as never, 1)!} onClose={onClose} />
         </GameProvider>,
       ),
     );
@@ -94,6 +97,13 @@ const shownOnMap = () => {
 /** The direction of the realm's ring tile at this place in spawnRing's order. */
 const ringDirection = (store: unknown, row: unknown, index: number) =>
   spawnRing(store as never, row as never, () => 0)[index].direction;
+
+/** The realm's knights spent: none at home. */
+const noTroops = {
+  model: "ResourceBalance",
+  key: "0x8",
+  value: { game_id: 1, entity_id: 7, resource_type: 26, balance: "0" },
+};
 
 const deployButton = (host: HTMLElement) =>
   [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Deploy"));
@@ -356,16 +366,59 @@ describe("the Deploy sheet", () => {
     act(() => onMap.root.unmount());
   });
 
-  it("with no troops at home, takes away Deploy and offers Build", () => {
+  it("with no troops at home and none being made, takes away Deploy and offers Build with the Barracks' mark", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
-    store.applyFacts([
-      { model: "ResourceBalance", key: "0x8", value: { game_id: 1, entity_id: 7, resource_type: 26, balance: "0" } },
-    ] as never);
+    store.applyFacts([noTroops] as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
     expect(deployButton(host)).toBeUndefined();
-    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Build")).toBe(true);
+    expect(host.querySelector(".ui-notice")!.textContent).toBe("No troops at home");
+    const build = [...host.querySelectorAll("button")].find((button) => button.textContent === "Build")!;
+    expect(build.querySelector("[data-icon]")!.getAttribute("data-icon")).toBe("barracks");
+    act(() => build.click());
+    expect(place.goTo).toEqual([false]);
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it("with no troops at home while the Barracks make them, counts down to the next and offers Deploy once it is in", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, row } = frontierDay();
+    // Barracks training 360 knights an hour without end (the unlimited-output sentinel), from none at tick 3.
+    store.applyFacts([
+      noTroops,
+      {
+        model: "ResourceProduction",
+        key: "0x826",
+        value: {
+          game_id: 1,
+          entity_id: 7,
+          resource_type: 26,
+          building_count: 1,
+          production_rate: String((360n * BigInt(RESOURCE_PRECISION)) / 3_600n),
+          output_amount_left: String((1n << 128n) - 1n),
+          last_settled_at: 3,
+        },
+      },
+    ] as never);
+    const { host, root, draw } = render(store, row);
+    click(host.querySelector('button[aria-label="Army 2"]')!);
+    const notice = () => host.querySelector(".ui-notice")?.textContent ?? null;
+    const build = () => [...host.querySelectorAll("button")].some((button) => button.textContent === "Build");
+    expect([notice(), build(), deployButton(host)]).toEqual(["No troops at home · in 10s", false, undefined]);
+
+    // Half a knight made: the wait is what is left of it.
+    clock.tick = 8;
+    draw();
+    expect([notice(), build(), deployButton(host)]).toEqual(["No troops at home · in 5s", false, undefined]);
+
+    // The knight is in, as promised: the notice goes and Deploy is offered.
+    clock.tick = 13;
+    draw();
+    expect(notice()).toBeNull();
+    expect(build()).toBe(false);
+    expect(deployButton(host)).toBeDefined();
     act(() => root.unmount());
     host.remove();
   });

@@ -77,6 +77,7 @@ const LabResearch = ({ realm }: { realm: RealmResearchFacts }) => {
       sending={new Set()}
       fixFor={() => undefined}
       onResearch={noop}
+      onClose={() => undefined}
     />
   );
 };

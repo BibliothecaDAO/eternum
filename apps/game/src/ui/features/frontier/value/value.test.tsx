@@ -207,6 +207,8 @@ describe("the settled Realm's labor", () => {
         ),
       );
     show(true, false, 0);
+    expect(host.querySelector('[aria-label="Labor per game day +1K"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="Essence per game day +1K"]')).toBeNull();
     act(() => button("Claim 1,000 Labor")!.click());
     expect(onClaim).toHaveBeenCalledTimes(1);
     expect(host.querySelector("input")).toBeNull();

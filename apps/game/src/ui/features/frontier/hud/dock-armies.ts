@@ -17,6 +17,7 @@ import { useMemo } from "react";
 import { ARMY } from "@/ui/design-system/kit/words";
 
 import { availableRankUps, attributeTiers } from "../attributes/attributes";
+import type { AttributeKey } from "../army/army-detail";
 
 const ARMY_MODELS = ["ArmySlot", "ArmyProgress", "ExplorerTroops", "TileOccupancy", "EntityName"] as const;
 
@@ -31,8 +32,8 @@ export type DockArmy = {
   xp: number | undefined;
   /** The attribute tier its XP buys next: its XP price and the tier it reaches; none at legendary or while unknown. */
   xpGoal: ReturnType<typeof nextSkillPoint> | undefined;
-  /** Its four attribute tiers (Battle, Logistics, Scouting, Homecoming), 1 to 5; unknown while its progress is. */
-  tiers: readonly [number, number, number, number] | undefined;
+  /** Its tier in each attribute, 0 to 5, by its field on the progress; unknown while its progress is. */
+  tiers: Record<AttributeKey, number> | undefined;
   stamina: StaminaBar | undefined;
   secondsToFull: number | undefined;
   troops: number;

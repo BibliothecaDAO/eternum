@@ -7,7 +7,6 @@ import {
   HudButton,
   HudChip,
   HudCost,
-  HudPanel,
   HudRarity,
   HudRow,
   HudSheet,
@@ -17,6 +16,7 @@ import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import {
   type Tier,
+  ARMY,
   ARMY_WILL_BE_LOST,
   ATTACK,
   ATTACKING,
@@ -37,11 +37,11 @@ import {
 } from "@/ui/design-system/kit/words";
 
 import type { OrderInFlight } from "@/hooks/store/use-actions-in-flight";
-import { type ReactNode, useState } from "react";
+import type { ReactNode } from "react";
 
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
-import { FightBar } from "./fight-bar";
+import { FightSide } from "./fight-side";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
 
@@ -80,8 +80,8 @@ export type SiteChoice = {
  * attack comes to, and beside it what the clear pays (what fits, with its XP, or a ruin's chest with its tier and exact
  * LORDS): "This attack earns" over the reward when it clears the site, the reward dimmed when it does not (owner, 26
  * October 2026: "moving the clear rewards in the 'this attack clears it' -> This attack earns xxx"). Under it, each
- * side's troops before and after, as numbers and bars with no line restating them. Its foot is the sheet's: Details,
- * which opens the whole fight's figures, and Realm on the left; the one step alone on the right.
+ * side's troops before and after, as numbers and bars with no line restating them. Its foot is the sheet's: Realm on
+ * the left, the one step alone on the right.
  */
 export const SiteCardView = ({
   site,
@@ -123,7 +123,6 @@ export const SiteCardView = ({
   const { word: kind, icon } = TARGET_MARKS[site];
   const word = attackTargetName(site, beast);
   const lost = fight && fight.outcome === "loses";
-  const [details, setDetails] = useState(false);
   // With no army selected the realm's armies are the choices, and the guard moves up beside the kind.
   const picking = choices !== undefined;
   const guardIcon = beast ? beastMeaning(beast.beast) : "troops";
@@ -166,28 +165,15 @@ export const SiteCardView = ({
       )}
       {picking && choices ? (
         <ArmyChoices does="attack" choices={choices} guardIcon={guardIcon} />
-      ) : facing ? (
-        <div className="flex gap-2">
-          <Side art={facing.army.art} before={facing.army.troops} after={armyLeft(facing)} side="ours" />
-          <Side
-            art={guardIcon}
-            before={facing.guard}
-            after={facing.fight.guardLeft}
-            side="theirs"
-            tip={beast?.combatClass}
-          />
-        </div>
       ) : (
-        <Matchup army={army} beast={beast} guard={guard} />
+        <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />
       )}
-      {details && facing && <WholeFight fight={facing.fight} guard={facing.guard} />}
       {receipt}
       <Verb
         verb={verb}
         site={word}
         armyLost={lost === true}
         lossInHeadline={facing !== undefined && isArmyLost(facing)}
-        details={facing ? { open: details, onToggle: () => setDetails((open) => !open) } : undefined}
         onRealm={pay?.fits !== undefined && pay.fits < pay.amount ? onRealm : undefined}
       />
     </HudSheet>
@@ -226,59 +212,6 @@ const Reward = ({ dimmed, children }: { dimmed: boolean; children: ReactNode }) 
   <span className={cn("flex flex-wrap items-center gap-2", dimmed && "opacity-50")}>{children}</span>
 );
 
-/**
- * One side of this attack: its troops before → after, the after in red when none are left, and its bar in its colour
- * with the part the attack takes in grey; a beast's combat class on its hover.
- */
-const Side = ({
-  art,
-  before,
-  after,
-  side,
-  tip,
-}: {
-  art: IconMeaning;
-  before: number;
-  after: number;
-  side: "ours" | "theirs";
-  tip?: string;
-}) => (
-  <HudPanel collapsible={false} className="flex-1" bodyClassName="flex flex-col items-center gap-1 py-2">
-    <span className="flex items-center gap-2 tabular-nums" data-tip={tip}>
-      <SemanticIcon name={art} size={26} />
-      <span className="whitespace-nowrap text-hud-body text-hud-muted">{formatExact(before)} →</span>
-      <span className={cn("text-hud-display leading-none", after === 0 ? "text-hud-bad" : "text-hud-ink")}>
-        {formatExact(after)}
-      </span>
-    </span>
-    <FightBar before={before} after={after} side={side} />
-  </HudPanel>
-);
-
-/** Details: the whole fight's figures, attack after attack until it ends: how it ends, and what it costs each side. */
-const WholeFight = ({ fight, guard }: { fight: KnownFight; guard: number }) => (
-  <HudPanel collapsible={false} bodyClassName="flex flex-col gap-1 py-2">
-    <span className="text-hud-label text-hud-muted">{FIGHT_WORDS.wholeFight}</span>
-    <dl className="flex flex-col gap-1 text-hud-body">
-      <Figure
-        name={FIGHT_WORDS.attacks}
-        value={`${formatExact(fight.exchanges)} · ${FIGHT_WORDS.ends[fight.outcome]}`}
-      />
-      <Figure name={FIGHT_WORDS.lose} value={`−${formatExact(fight.whole.troopsLost)}`} bad />
-      <Figure name={FIGHT_WORDS.kill} value={`${formatExact(fight.whole.guardKilled)} / ${formatExact(guard)}`} />
-      <Figure name={FIGHT_WORDS.stamina} value={formatExact(fight.whole.stamina)} />
-    </dl>
-  </HudPanel>
-);
-
-/** One of the whole fight's figures: its name, and its value at the right. */
-const Figure = ({ name, value, bad = false }: { name: string; value: string; bad?: boolean }) => (
-  <div className="flex items-center justify-between gap-4">
-    <dt className="text-hud-muted">{name}</dt>
-    <dd className={cn("tabular-nums", bad ? "text-hud-bad" : "text-hud-ink")}>{value}</dd>
-  </div>
-);
-
 /** A site's painting at the head of its card; `children` marks it (a won fight's flag). */
 export const SiteMark = ({ icon, children }: { icon: IconMeaning; children?: ReactNode }) => (
   <span className="relative flex size-16 shrink-0 items-center justify-center rounded-xl border border-hud-line bg-hud-surface">
@@ -287,25 +220,47 @@ export const SiteMark = ({ icon, children }: { icon: IconMeaning; children?: Rea
   </span>
 );
 
-const Matchup = ({
+/**
+ * The fight's two sides, in every state of the card (owner, 10-27: "this panel doesnt match at all our new battle
+ * panels"): in reach, each side's troops now and what this attack leaves it; out of reach, short of stamina or refused,
+ * the same sides with a dash where no forecast is known. The state itself is the line under them and the held step.
+ */
+const FightPanel = ({
   army,
-  beast,
   guard,
+  facing,
+  beast,
+  guardIcon,
 }: {
   army: { art: IconMeaning; troops: number } | null;
-  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
   guard: number | null | undefined;
-}) => (
-  <div className="flex items-center justify-center gap-2">
-    {army && (
-      <HudChip icons={[army.art]} label={TROOPS}>
-        {formatShort(army.troops)}
-      </HudChip>
-    )}
-    <SemanticIcon name="attack" size={22} />
-    <BeastGuard beast={beast} guard={guard} />
-  </div>
-);
+  facing: Facing | undefined;
+  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
+  guardIcon: IconMeaning;
+}) =>
+  army || guard !== null ? (
+    <div className="flex gap-2">
+      {army && (
+        <FightSide
+          label={ARMY}
+          mark={<SemanticIcon name={army.art} size={26} />}
+          before={army.troops}
+          kept={facing && armyLeft(facing)}
+          side="ours"
+        />
+      )}
+      {guard !== null && (
+        <FightSide
+          label={beast?.name ?? TROOPS}
+          mark={<SemanticIcon name={guardIcon} size={26} />}
+          before={guard}
+          kept={facing?.fight.guardLeft}
+          side="theirs"
+          tip={beast?.combatClass}
+        />
+      )}
+    </div>
+  ) : null;
 
 /** Species and remaining strength, including while choosing an army. */
 const BeastGuard = ({
@@ -452,7 +407,6 @@ const Verb = ({
   site,
   armyLost,
   lossInHeadline,
-  details,
   onRealm,
 }: {
   verb: SiteVerb | null;
@@ -461,8 +415,6 @@ const Verb = ({
   armyLost: boolean;
   /** The headline already says this attack loses the army: the line under the step does not say it again. */
   lossInHeadline: boolean;
-  /** Details, while the fight is known: whether the whole fight's figures are open, and the press that opens them. */
-  details: { open: boolean; onToggle: () => void } | undefined;
   onRealm: (() => void) | undefined;
 }) => {
   const warns = verb?.kind === "attack" && armyLost;
@@ -473,11 +425,6 @@ const Verb = ({
     <>
       <VerbLine {...verbLine(verb, site, warns && !lossInHeadline)} />
       <HudWindowFoot note={<HudCost line={costLine(verb.kind === "move" ? verb.prices : attackPrices(verb))} />}>
-        {details && (
-          <HudButton kind="secondary" aria-expanded={details.open} onClick={details.onToggle}>
-            {FIGHT_WORDS.details}
-          </HudButton>
-        )}
         {onRealm && (
           <HudButton kind="secondary" icon="realm" onClick={onRealm}>
             {REALM}

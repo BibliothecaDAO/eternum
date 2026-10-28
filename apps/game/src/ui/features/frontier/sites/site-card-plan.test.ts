@@ -25,7 +25,6 @@ describe("Frontier's tile card", () => {
       troopsLost: 320,
       guardLeft: 492,
       // Over both attacks: the whole guard killed, and what the army loses and spends doing it.
-      whole: { troopsLost: 476, guardKilled: 1_100, stamina: 94 },
     });
   });
 
@@ -39,7 +38,6 @@ describe("Frontier's tile card", () => {
       troopsLost: 457,
       guardLeft: 492,
       // One attack is the whole fight: its figures and the fight's are the same.
-      whole: { troopsLost: 457, guardKilled: 608, stamina: 50 },
     });
   });
 

@@ -85,7 +85,8 @@ const draw = async (row: ProcessedStoryEvent, own = false) => {
   return {
     words: line.querySelector(".ui-event__text")!.textContent,
     reward: line.querySelector(".ui-feed-line__reward")?.textContent ?? null,
-    gold: line.querySelector("strong")?.className.includes("text-hud-gold") ?? null,
+    // The player's own row is gold as a whole (owner, 27 October: "put the row in yellow like it did before").
+    gold: line.hasAttribute("data-own"),
   };
 };
 
@@ -139,6 +140,24 @@ it("reads a fight as its attacker's: who attacked what, and how it went", async 
   expect((await draw(row, true)).words).toBe(`djizus attacked ${siteDisplayName(CAMP)} · Victory`);
 });
 
+// The fight's result card is gone (owner, 27 October 2026): the Feed is where a player reads that an army was lost.
+it("says a fight's army was lost", async () => {
+  const row = story(DJIZUS, "BattleEvent", {
+    attacker_id: 70,
+    defender_id: CAMP,
+    attacker: { player: DJIZUS, category: "Knight", tier: "T1", before: "154000000000", after: "0", roll: 0 },
+    defender: {
+      player: "0x0",
+      category: "Knight",
+      tier: "T1",
+      before: "1100000000000",
+      after: "1028000000000",
+      roll: 0,
+    },
+  });
+  expect((await draw(row, true)).words).toBe(`djizus attacked ${siteDisplayName(CAMP)} · Army lost`);
+});
+
 it("says what an army trained in the story's own words", async () => {
   const row = story(KRUMP, "SkillPointSpent", {
     explorer_id: 71,
@@ -186,5 +205,5 @@ it("names the player once where a story's own words already name them, in gold w
 
 it("names no one on a story no player owns", async () => {
   const row = story("0x0", "BlitzFinalized", {});
-  expect(await draw(row)).toEqual({ words: "Blitz finalized", reward: null, gold: null });
+  expect(await draw(row)).toEqual({ words: "Blitz finalized", reward: null, gold: false });
 });

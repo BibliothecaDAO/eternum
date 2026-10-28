@@ -119,8 +119,8 @@ it("gives a campaign home its daily claim, with a golden ticket's Essence, and w
     facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
     await show();
     expect(host.textContent).toContain("Golden Devcon");
-    expect(host.textContent).toContain("1,000 Labor per game day");
-    expect(host.textContent).toContain("1,000 Essence per game day");
+    expect(host.querySelector('[aria-label="Labor per game day +1K"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="Essence per game day +1K"]')).not.toBeNull();
     expect(buttons()).toContain("Claim 1,000 Labor · 1,000 Essence");
     await act(async () =>
       [...host.querySelectorAll("button")].find((b) => b.textContent?.startsWith("Claim"))!.click(),

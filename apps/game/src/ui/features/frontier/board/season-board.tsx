@@ -14,6 +14,8 @@ import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { seasonDay } from "../hud/day-clock";
+import { useSeasonEndsAt } from "../hud/season-end";
 import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow } from "./season-list";
 import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
@@ -56,11 +58,21 @@ export const useSeasonRank = (): string => {
  * Season over the board: a common chest at today's price with the season's pool behind it, the first fifty realms and
  * the player's own, a row's detail with Visit. Visiting closes the page for the visited realm.
  */
-export const FrontierSeason = ({ rules, onVisited }: { rules: ExpeditionRules; onVisited: () => void }) => {
+export const FrontierSeason = ({
+  rules,
+  onVisited,
+  onClose,
+}: {
+  rules: ExpeditionRules;
+  onVisited: () => void;
+  onClose: () => void;
+}) => {
   const board = useSeasonBoard();
   const viewer = useViewer();
   const { pool, chest } = useSeasonLords(rules);
   const [opened, setOpened] = useState<string | null>(null);
+  const endsAt = useSeasonEndsAt();
+  const now = useNowSeconds();
   const entries = board.data ?? [];
   const own = findOwnEntry(entries, viewer);
   const { rows, pinned } = useSeasonListRows(board.data, LIST_LENGTH);
@@ -88,6 +100,8 @@ export const FrontierSeason = ({ rules, onVisited }: { rules: ExpeditionRules; o
       state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
       onRetry={() => void board.refetch()}
       onOpen={setOpened}
+      onClose={onClose}
+      ends={endsAt === undefined ? undefined : { at: endsAt, ...seasonDay(rules, endsAt, now) }}
     />
   );
 };

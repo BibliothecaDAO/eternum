@@ -5,6 +5,7 @@ import {
   getBuildingQuantity,
   realmLearned,
   researchPurchases,
+  researchRowCategory,
   researchRowOf,
   researchTier,
   ResourceManager,
@@ -20,7 +21,8 @@ import { BuildingType, getProducedResource, ResourcesIds } from "@bibliothecadao
 import { LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 import { type BuildingOutput, buildingOutput } from "@/ui/shared/lib/building-output";
 
-import { type ResearchShare, researchShare } from "../production/store-makers";
+import { madePicks } from "../production/store-makers";
+import { sidePicks } from "../research/sides-taken";
 
 /**
  * What Frontier's build sheet needs for one plot, read from facts with no UI of its own: each building the realm may
@@ -28,16 +30,8 @@ import { type ResearchShare, researchShare } from "../production/store-makers";
  * hut_bonus apply them), its population cost and the realm's wheat an hour after it stands. Unknown while the realm's
  * research is.
  */
-const FRONTIER_BUILDINGS = [
-  BuildingType.ResourceWheat,
-  BuildingType.ResourceKnightT1,
-  BuildingType.ResourceLabor,
-  BuildingType.WorkersHut,
-  BuildingType.WarHall,
-  BuildingType.SupplyYard,
-  BuildingType.ScoutsLodge,
-  BuildingType.Hearth,
-] as const;
+/** A Frontier board's buildings: one per building row of the castle's tree, as research.cairo's row_category names them. */
+const FRONTIER_BUILDINGS = Object.values(researchRowCategory) as BuildingType[];
 
 /** Each training building and the attribute it trains every new army in. */
 const TRAINS: Partial<Record<BuildingType, "Battle" | "Logistics" | "Scouting" | "Homecoming">> = {
@@ -64,7 +58,7 @@ const isProduct = (resource: ResourcesIds | undefined): resource is Product =>
   resource !== undefined && resource in PRODUCTS;
 
 export type BuildEffect =
-  | { kind: "produces"; resource: Product; perHour: number; output: BuildingOutput; research?: ResearchShare }
+  | { kind: "produces"; resource: Product; perHour: number; output: BuildingOutput }
   | { kind: "population"; amount: number }
   | { kind: "trains"; attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming" };
 
@@ -72,6 +66,8 @@ export interface BuildOption {
   category: BuildingType;
   /** Its type's tier, 1 (common) to 5 (legendary): tiers apply to every building of the type. */
   tier: 0 | 1 | 2 | 3 | 4 | 5;
+  /** Each side of a choosing row (Farm, Workshop, Barracks) with the tiers bought on it, make side first. */
+  sides?: { icon: IconMeaning; picks: number }[];
   cost: { resource: number; amount: number }[];
   /** How the price has risen: the copies already standing and what they multiply the base price by (1 with none). */
   rise: { standing: number; times: number };
@@ -110,6 +106,7 @@ export const readBuildOptions = (
       tier: (row === undefined
         ? 1
         : Math.max(TRAINS[category] ? 1 : 0, researchTier(learned, row))) as BuildOption["tier"],
+      sides: row === undefined ? undefined : sidePicks(learned, row),
       cost,
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
       effect,
@@ -143,9 +140,8 @@ const readBuildingEffect = (
   if (category === BuildingType.WorkersHut) return { kind: "population", amount: nextHutGrant(store, realm, learned) };
   const resource = getProducedResource(category);
   if (!isProduct(resource)) throw new Error(`Building ${category} makes nothing a Frontier realm stores`);
-  const research = researchShare(store, realm, resource, learned);
-  const output = buildingOutput(store, realm, category, research?.picks ?? 0);
-  return { kind: "produces", resource, perHour: output.total * 3600, output, research };
+  const output = buildingOutput(store, realm, category, madePicks(resource, learned));
+  return { kind: "produces", resource, perHour: output.total * 3600, output };
 };
 
 /**

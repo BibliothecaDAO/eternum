@@ -84,9 +84,92 @@ const sheetFitProblems = ({ sheet, scrolls, verb, height }) => {
 };
 const FITS = { read: READ_SHEET_FIT, rule: sheetFitProblems };
 
+/** Each side of the fight on the open card: its box, and the widest any of its words, its mark or its bar reaches. */
+const READ_FIGHT_SIDES = `(() => [...document.querySelectorAll('[role="img"][aria-label*="→"]')].map((side) => {
+  const box = side.getBoundingClientRect();
+  // The text itself, not its spans: a span held to its box lets wider words run past it unseen.
+  const walker = document.createTreeWalker(side, NodeFilter.SHOW_TEXT);
+  const parts = [...side.querySelectorAll("img, svg, .rounded-full")].map((part) => part.getBoundingClientRect());
+  for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+    const range = document.createRange();
+    range.selectNodeContents(text);
+    parts.push(range.getBoundingClientRect());
+  }
+  return {
+    label: side.getAttribute("aria-label"),
+    left: box.left,
+    right: box.right,
+    reach: { left: Math.min(...parts.map(({ left }) => left)), right: Math.max(...parts.map(({ right }) => right)) },
+    page: innerWidth,
+  };
+}))()`;
+
+/** Both sides of a fight fit, whatever their numbers (owner, 27 October: "the army & enemy numbers must both fit"). */
+const fightSidesProblems = (sides) => {
+  if (sides.length !== 2) return [`${sides.length} fight sides drawn, not 2`];
+  const problems = [];
+  for (const side of sides) {
+    if (side.left < 0 || side.right > side.page)
+      problems.push(`${side.label} runs off the page (${side.left}-${side.right})`);
+    if (side.reach.left < side.left - 0.5 || side.reach.right > side.right + 0.5)
+      problems.push(`${side.label}'s figures run out of its box (${side.reach.left}-${side.reach.right})`);
+  }
+  const [first, second] = sides.toSorted((a, b) => a.left - b.left);
+  if (first.right > second.left + 0.5) problems.push(`the two sides overlap (${first.right} past ${second.left})`);
+  return problems;
+};
+/** The narrowest phone held (360), a common one and the widest, and a laptop. */
+const FIGHT_SIZES = [[360, 800], ...PHONES, [430, 932], [1440, 900]];
+const FIGHT_FITS = { sizes: FIGHT_SIZES, read: READ_FIGHT_SIDES, rule: fightSidesProblems };
+/** The build sheet's narrowest phone, a common one, the widest, and a laptop: three cards to a row at every size. */
+const BUILD_SIZES = [
+  [360, 780],
+  [390, 844],
+  [430, 932],
+  [1440, 900],
+];
+
+/** Each build card: its name, its gems, and every part of its foot drawn past the card's edge or cut by its own box. */
+const READ_BUILD_CARDS = `(() => [...document.querySelectorAll(".ui-card")].map((card) => {
+  const box = card.getBoundingClientRect();
+  const clipped = [...card.querySelectorAll(".ui-card__foot *")].filter((part) => {
+    const at = part.getBoundingClientRect();
+    if (at.width === 0) return false;
+    const past = at.left < box.left + 1 || at.right > box.right - 1 || at.top < box.top || at.bottom > box.bottom;
+    return past || (part.clientWidth > 0 && part.scrollWidth > part.clientWidth + 1);
+  });
+  return {
+    name: card.querySelector(".ui-card__title")?.textContent ?? "",
+    gems: card.querySelectorAll(".ui-tier").length,
+    sides: [...card.querySelectorAll("[data-side]")].map((side) => side.getAttribute("data-side") + " " + (side.querySelector(".ui-tier")?.textContent ?? "no gem")),
+    clipped: [...new Set(clipped.map((part) => part.textContent))],
+  };
+}))()`;
+
 /**
- * Each surface: the lab page that draws it, the mark the page puts on it, its sizes when not just 1920×1080, and what
- * the run holds it to: a `read` of the page judged by its `rule`, each fault failing the run.
+ * A build card reads whole at every size (owner, 27 October: its words clipped at the card's edge on a phone), and
+ * says its research with gems, never words for it ("why no gems instead of the text ?"): a gem on each side of a row
+ * that has two (Farm, Workshop, Barracks), else its type's one gem.
+ */
+const SIDED = new Set(["Farm", "Workshop", "Barracks"]);
+const buildCardProblems = (cards) => {
+  if (cards.length === 0) return ["no build card drawn"];
+  return cards.flatMap(({ name, gems, sides, clipped }) => [
+    ...(SIDED.has(name)
+      ? sides.length === 2 && gems === 2 && sides.every((side) => !side.endsWith("no gem"))
+        ? []
+        : [`${name} shows ${sides.join(", ") || "no side"} (${gems} gems), not a gem per side`]
+      : gems === 1 && sides.length === 0
+        ? []
+        : [`${name} shows ${gems} gems`]),
+    ...clipped.map((part) => `${name}: "${part}" is clipped`),
+  ]);
+};
+
+/**
+ * Each surface: the lab page that draws it, the mark the page puts on it, its sizes when not just 1920×1080, what it
+ * waits for once open (`waitFor`, a selector) when it draws late, and what the run holds it to: a `read` of the page
+ * judged by its `rule`, each fault failing the run.
  */
 export const SURFACES = [
   {
@@ -121,7 +204,6 @@ export const SURFACES = [
   { name: "frontier-explore", path: "/lab/kit/hud/explore", mark: "frontier" },
   { name: "frontier-stores", path: "/lab/kit/hud/stores", mark: "frontier" },
   { name: "frontier-site-camp", path: "/lab/kit/hud/site-camp", mark: "frontier" },
-  { name: "frontier-fight-won", path: "/lab/kit/hud/fight-won", mark: "frontier" },
   { name: "frontier-army-refill", path: "/lab/kit/hud/army-refill", mark: "frontier" },
   ...[
     "castle",
@@ -139,11 +221,43 @@ export const SURFACES = [
     ...FITS,
   })),
   { name: "frontier-research", path: "/lab/kit/hud/research", mark: "frontier", sizes: CARDS },
-  { name: "frontier-build-locked", path: "/lab/kit/hud/build-early", mark: "frontier", sizes: CARDS },
+  ...["build", "build-early"].map((state) => ({
+    name: `frontier-${state}`,
+    path: `/lab/kit/hud/${state}`,
+    mark: "frontier",
+    sizes: BUILD_SIZES,
+    read: READ_BUILD_CARDS,
+    rule: buildCardProblems,
+  })),
   { name: "frontier-army", path: "/lab/kit/hud/selected", mark: "frontier", sizes: CARDS },
   { name: "frontier-season", path: "/lab/kit/hud/season", mark: "frontier", sizes: CARDS },
   { name: "frontier-site-pick", path: "/lab/kit/hud/site-pick", mark: "frontier", sizes: CARDS },
-  { name: "frontier-site-ruin", path: "/lab/kit/hud/site-ruin", mark: "frontier", sizes: CARDS },
+  { name: "frontier-site-ruin", path: "/lab/kit/hud/site-ruin", mark: "frontier", ...FIGHT_FITS },
+  // The owner's phone card (10-27) and seven-digit armies, on the attack's card.
+  { name: "frontier-site-runereach", path: "/lab/kit/hud/site-runereach", mark: "frontier", ...FIGHT_FITS },
+  { name: "frontier-site-large", path: "/lab/kit/hud/site-large", mark: "frontier", ...FIGHT_FITS },
+  // Every state of the attack's card draws the same two sides (owner, 10-27): out of reach (the owner's Shadeglow camp,
+  // and with a Move toward it), short of stamina, and refused; and Blitz's attack preview.
+  { name: "frontier-site-shadeglow", path: "/lab/kit/hud/site-shadeglow", mark: "frontier", ...FIGHT_FITS },
+  { name: "frontier-site-far", path: "/lab/kit/hud/site-far", mark: "frontier", ...FIGHT_FITS },
+  { name: "frontier-site-short", path: "/lab/kit/hud/site-short", mark: "frontier", ...FIGHT_FITS },
+  { name: "frontier-site-refused", path: "/lab/kit/hud/site-refused", mark: "frontier", ...FIGHT_FITS },
+  {
+    name: "blitz-attack-preview-short",
+    path: "/lab/kit/unified/blitz-attack-short",
+    mark: "unified",
+    waitFor: '[role="img"][aria-label*="→"]',
+    ...FIGHT_FITS,
+  },
+  {
+    name: "blitz-attack-preview",
+    path: "/lab/kit/unified/blitz-attack",
+    mark: "unified",
+    waitFor: '[role="img"][aria-label*="→"]',
+    ...FIGHT_FITS,
+  },
+  // Twelve-digit sides whose short figures would read alike: exact, set smaller to fit, on the attack card.
+  { name: "frontier-site-alike", path: "/lab/kit/hud/site-alike", mark: "frontier", ...FIGHT_FITS },
   { name: "frontier-day-done", path: "/lab/kit/hud/day-done-full", mark: "frontier", sizes: CARDS },
   { name: "frontier-clear-ruin", path: "/lab/kit/hud/clear-ruin", mark: "frontier", sizes: CARDS },
 ];
@@ -229,13 +343,14 @@ const main = async () => {
     // A phone's size is shot with a phone's touch (its finger-size rules), over a DevTools connection held open.
     run("open", "about:blank");
     devTools = await openPageDevTools({ run: (args) => run(...args) });
-    for (const { name, path, mark, sizes = [VIEWPORT], read, rule } of surfaces) {
+    for (const { name, path, mark, sizes = [VIEWPORT], read, rule, waitFor } of surfaces) {
       for (const [width, height] of sizes) {
         const shot = sizes.length > 1 ? `${name}-${width}x${height}` : name;
         run("set", "viewport", String(width), String(height));
         await touchAtPhoneWidth(devTools, width);
         run("open", `${values["base-url"]}${path}`, "--ignore-https-errors");
         run("wait", SETTLE_MS);
+        if (waitFor) run("wait", waitFor);
         if (name === "frontier-merge") run("wait", '[role="dialog"][aria-label="Transfer troops"]');
         if (name === "frontier-army-refill") {
           run("wait", '[aria-label="Stamina to refill"]');

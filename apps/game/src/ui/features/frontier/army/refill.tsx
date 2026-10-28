@@ -3,6 +3,9 @@ import { formatExact, formatShort, formatShortChange, LORDS } from "@bibliotheca
 import { HudButton, HudChip, HudSheet, HudSlider } from "@/ui/design-system/kit/hud-elements";
 import { CANCEL, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
 
+/** Every refill control requires enough LORDS to buy at least one whole stamina point. */
+const refillOutOfReach = (held: number | undefined): boolean => held === undefined || held < 1;
+
 export const RefillButton = ({
   held,
   refilling = false,
@@ -15,7 +18,7 @@ export const RefillButton = ({
   <HudButton
     kind="secondary"
     icon="stamina"
-    disabled={held === undefined || held < 1}
+    disabled={refillOutOfReach(held)}
     busy={refilling ? REFILLING : undefined}
     onClick={onRefill}
   >
@@ -38,12 +41,48 @@ export const RefillChip = ({
   <HudChip
     icons={["stamina", "lords"]}
     label={REFILL}
-    disabled={held === undefined || held < 1 || refilling}
+    disabled={refillOutOfReach(held) || refilling}
     onPress={onRefill}
   >
     {refilling ? REFILLING : held === undefined ? "—" : formatShort(Math.min(price, Math.floor(held)))}
   </HudChip>
 );
+
+/**
+ * A phone's picked army's stamina as its refill, one button over Level up (the owner, 27 October): "14/140", a press
+ * opening the refill's confirm. A whole LORDS buys a partial refill;
+ * with no affordable point, or with a full bar, it takes no press.
+ */
+export const StaminaRefill = ({
+  stamina,
+  held,
+  refilling = false,
+  onRefill,
+}: {
+  stamina: { current: number; max: number };
+  held: number | undefined;
+  /** A refill of this army is in flight: sent, its outcome not known yet. */
+  refilling?: boolean;
+  onRefill: () => void;
+}) => {
+  const price = Math.ceil(stamina.max - stamina.current);
+  const short = refillOutOfReach(held);
+  const reading = `${formatExact(stamina.current)}/${formatExact(stamina.max)}`;
+  return (
+    <HudButton
+      kind="secondary"
+      size="sm"
+      icon="stamina"
+      tone={short ? "bad" : undefined}
+      aria-label={`${REFILL} ${reading}`}
+      disabled={price <= 0 || short}
+      busy={refilling ? REFILLING : undefined}
+      onClick={onRefill}
+    >
+      {reading}
+    </HudButton>
+  );
+};
 
 /** Purchase whole stamina points, up to the missing bar or the realm's available LORDS. */
 export const RefillConfirm = ({

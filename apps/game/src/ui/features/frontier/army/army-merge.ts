@@ -1,6 +1,6 @@
 import { heldSkillPoints } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { attributeTiers } from "@/ui/features/frontier/attributes/attributes";
+import { ATTRIBUTE_LIST } from "./army-detail";
 
 type Progress = NativeRows["ArmyProgress"];
 type Rules = NativeRows["ArmyProgressionRules"];
@@ -29,7 +29,7 @@ export const explorerTransferPlan = ({
     targetProgress &&
     rules &&
     (sourceProgress.xp - targetProgress.xp >= rules.common_xp ||
-      attributeTiers(sourceProgress).some((rank, index) => rank > attributeTiers(targetProgress)[index]!) ||
+      ATTRIBUTE_LIST.some(({ key }) => sourceProgress[key] > targetProgress[key]) ||
       heldSkillPoints(sourceProgress).some((count, index) => count > heldSkillPoints(targetProgress)[index]!))
   );
   const total = sourceCount + targetCount;

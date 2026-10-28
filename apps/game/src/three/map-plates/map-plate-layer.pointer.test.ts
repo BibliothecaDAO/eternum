@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { PerspectiveCamera, Raycaster, Vector2, Vector3 } from "three";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { ARMY_PLATE_HEIGHT } from "../constants/army-constants";
 import {
@@ -49,9 +49,17 @@ const groundUnder = (camera: PerspectiveCamera, point: Vector3) => {
   return ray.origin.clone().addScaledVector(ray.direction, -ray.origin.y / ray.direction.y);
 };
 
+/** Every layer a test made: each owns a React root, unmounted (a microtask after dispose) before the test's page goes. */
+const layers: MapPlateLayer[] = [];
+afterEach(async () => {
+  layers.splice(0).forEach((layer) => layer.dispose());
+  await new Promise((resolve) => setTimeout(resolve, 0));
+});
+
 /** The layer with an army whose label point stands over each tile: as the army manager sets its label. */
 const layerWith = (...tiles: Vector3[]) => {
   const layer = new MapPlateLayer(() => null);
+  layers.push(layer);
   const armies = layer.createScope("army");
   tiles.forEach((tile, index) =>
     armies.setLabel({ entityId: index + 1, position: tile.clone().setY(ARMY_PLATE_HEIGHT), plate }),

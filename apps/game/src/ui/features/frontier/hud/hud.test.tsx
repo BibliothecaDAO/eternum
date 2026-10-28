@@ -26,6 +26,9 @@ const text = (markup: string) => new DOMParser().parseFromString(markup, "text/h
 
 let host: HTMLDivElement;
 let root: Root;
+/** The buttons drawn, by the name a player or a screen reader meets them by. */
+const barButtons = () =>
+  [...host.querySelectorAll("button")].map((button) => button.getAttribute("aria-label") ?? button.textContent);
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -403,8 +406,10 @@ describe("the order bar", () => {
     expect(host.querySelector('[aria-label="labor +0"]')?.getAttribute("data-tone")).toBe("bad");
   });
 
-  it("shows what an order leaves and earns, then Cancel and the verb", () => {
-    const onGo = vi.fn();
+  // Owner, 27 October 2026: "Yes double tapping to explore on mobile, the confirm bar can be compacted into one single
+  // row". The second tap on the tile sends the order (worldmap-order-preview.test.tsx); the bar is its preview.
+  it("shows in one row what an order leaves and earns, with × to drop it", () => {
+    const onCancel = vi.fn();
     act(() =>
       root.render(
         <OrderBar
@@ -414,21 +419,44 @@ describe("the order bar", () => {
           wheat={{ cost: 100, held: 4_410, wait: undefined }}
           revealYield={500}
           xp={2}
-          onCancel={() => {}}
-          onGo={onGo}
+          onCancel={onCancel}
+          onGo={() => {}}
         />,
       ),
     );
+    expect(host.children).toHaveLength(1);
+    // Named for assistive technology (and the playtest's phone step) by its order; its icons say it on screen.
+    expect(host.querySelector('section[aria-label="Explore"]')).not.toBeNull();
     expect([...host.querySelectorAll('[role="img"]')].map((chip) => chip.getAttribute("aria-label"))).toEqual([
       "stamina 90 → 60",
       "wheat −100",
       "Essence, labor +500",
     ]);
-    expect(host.textContent).toContain("+2 XP");
-    const buttons = [...host.querySelectorAll("button")].map((button) => button.textContent);
-    expect(buttons).toEqual(["Cancel", "Explore"]);
-    act(() => host.querySelectorAll("button")[1].click());
-    expect(onGo).toHaveBeenCalled();
+    expect(host.textContent).toBe("90 → 60−100+500+2 XP");
+    expect(barButtons()).toEqual(["Cancel"]);
+    act(() => host.querySelector("button")!.click());
+    expect(onCancel).toHaveBeenCalled();
+  });
+
+  it("stands the refill in the row when the order's stamina is short", () => {
+    act(() =>
+      root.render(
+        <OrderBar
+          kind="explore"
+          tiles={1}
+          stamina={{ cost: 30, held: 13, wait: 111 }}
+          wheat={{ cost: 100, held: 4_410, wait: undefined }}
+          revealYield={500}
+          xp={2}
+          refill={<button type="button">Refill</button>}
+          onCancel={() => {}}
+          onGo={() => {}}
+        />,
+      ),
+    );
+    expect(host.children).toHaveLength(1);
+    expect(host.querySelector('section[aria-label="Explore"] [data-tone="bad"]')).not.toBeNull();
+    expect(barButtons()).toEqual(["Refill", "Cancel"]);
   });
 
   it("names a fractional wheat charge as charged, covered or short", () => {
@@ -477,7 +505,7 @@ describe("the order bar", () => {
       return onGo;
     };
     const wheatChip = () => host.querySelector('[aria-label^="wheat "]')!.getAttribute("aria-label");
-    const buttons = () => [...host.querySelectorAll("button")].map((button) => button.textContent);
+    const buttons = barButtons;
 
     // QA's 28.15 wheat (563 troops at 0.05 a step) rounds to 28; held just under it must not read as 28 of 28.
     it.each([
@@ -495,7 +523,7 @@ describe("the order bar", () => {
     it.each([28.15, 28.2, 28.99])("takes a covered %s of 28.15 at its rounded charge, once", (held) => {
       const onGo = explore({ cost: 28.15, held });
       expect(wheatChip()).toBe("wheat −28");
-      act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Explore")!.click());
+      act(() => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
       expect(onGo).toHaveBeenCalledOnce();
     });
 
@@ -551,7 +579,7 @@ describe("the order bar", () => {
     const wheat = host.querySelector('[aria-label="wheat 40 / 300"]');
     expect(wheat?.getAttribute("data-tone")).toBe("bad");
     expect(host.querySelector('[aria-label="left 4m"]')).not.toBeNull();
-    expect([...host.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Cancel"]);
+    expect(barButtons()).toEqual(["Cancel"]);
   });
 
   it("waits for wheat at the farms' rate, and never for wheat already held or never coming", () => {

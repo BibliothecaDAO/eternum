@@ -95,7 +95,7 @@ it("says the tree is on its way while a fact it reads is missing, and draws the 
   act(() =>
     root.render(
       <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-        <FrontierResearch realm={realm} />
+        <FrontierResearch realm={realm} onClose={() => undefined} />
       </GameProvider>,
     ),
   );
@@ -112,7 +112,7 @@ it("opens on the tree alone, to browse, and brings a node's choice only when its
   act(() =>
     root.render(
       <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-        <FrontierResearch realm={realm} />
+        <FrontierResearch realm={realm} onClose={() => undefined} />
       </GameProvider>,
     ),
   );

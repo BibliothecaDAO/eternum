@@ -64,13 +64,17 @@ export interface ArmyView {
   earn: { icon: IconMeaning; line: string; xp?: number }[];
 }
 
-const ATTRIBUTE_ROWS = pointChoices.filter((option) => option.key !== "stamina");
+export type Attribute = Capitalize<AttributeKey>;
+/** The same attribute catalog drives the panel, picked row, progression and Feed. */
+export const ATTRIBUTE_LIST = pointChoices
+  .filter((option) => option.key !== "stamina")
+  .map((option) => ({ ...option, attribute: option.name as Attribute }));
 
 /** An attribute's mark, as its tile on the army's panel and its line in the Feed draw it. */
-export const attributeMark = (key: AttributeKey): IconMeaning => ATTRIBUTE_ROWS.find((row) => row.key === key)!.mark;
+export const attributeMark = (key: AttributeKey): IconMeaning => ATTRIBUTE_LIST.find((row) => row.key === key)!.mark;
 
 export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
-  const attributes = ATTRIBUTE_ROWS.map(({ key, mark, name }): AttributeView => {
+  const attributes = ATTRIBUTE_LIST.map(({ key, mark, name }): AttributeView => {
     const level = army.progress[key];
     const point = SKILL_POINT_RANKS.find((rank) => rank >= level + 1 && army.points[rank - 1]! > 0);
     const figure = (at: number) =>
