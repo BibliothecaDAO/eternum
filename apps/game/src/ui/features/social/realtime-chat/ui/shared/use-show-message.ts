@@ -10,7 +10,9 @@ const LIT_MS = 1_500;
 export const useShowMessage = (list: RefObject<HTMLElement>) => {
   const [lit, setLit] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>();
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => {
+    return () => clearTimeout(timer.current);
+  }, []);
   const show = useCallback(
     (id: string) => {
       const message = [...(list.current?.querySelectorAll("[data-message-id]") ?? [])].find(
