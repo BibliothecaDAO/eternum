@@ -39,7 +39,7 @@ beforeEach(() => {
   rpc.snapshot.mockResolvedValue({
     models: [
       { model: "GameRegistry", rows: [{ value: { seed: "711", start_main_at: 360, end_at: 288360 } }] },
-      { model: "SliceRules", rows: [{ value: { day_unit_seconds: 4800 } }] },
+      { model: "SliceRules", rows: [{ value: { day_unit_seconds: 7200 } }] },
     ],
   });
   rpc.view.mockImplementation(async (method: string) =>
@@ -69,9 +69,15 @@ it("writes one home claim using the published ABI and retries without a second w
   expect(await Effect.runPromise(writeLaborGrant(target, claim))).toEqual(result);
   expect(rpc.admin).toHaveBeenCalledTimes(1);
 });
-it("answers a golden ticket's home with the Essence its receipt recorded", async () => {
-  saved = { ...grant, essence: 1000n };
-  expect(await Effect.runPromise(writeLaborGrant(target, claim))).toMatchObject({ amount: "1000", essence: "1000" });
+it.each([
+  [1000n, 1000n],
+  [2000n, 2000n],
+])("returns the recorded campaign grant (%s Labor, %s Essence)", async (amount, essence) => {
+  saved = { ...grant, amount, essence };
+  expect(await Effect.runPromise(writeLaborGrant(target, claim))).toMatchObject({
+    amount: String(amount),
+    essence: String(essence),
+  });
   expect(rpc.admin).not.toHaveBeenCalled();
 });
 it("accepts a recorded zero payout without minting again", async () => {
@@ -85,10 +91,10 @@ it("refuses another account's receipt and a different chain", async () => {
   await expect(Effect.runPromise(writeLaborGrant(target, { ...claim, chainId: "0x2" }))).rejects.toThrow();
   expect(rpc.admin).not.toHaveBeenCalled();
 });
-it("uses all fifteen seeded game days and refuses outside the season", async () => {
-  const calendar = { seed: 711n, startMainAt: 360, dayUnitSeconds: 4800 };
+it("uses all ten seeded Devcon game days and refuses outside the season", async () => {
+  const calendar = { seed: 711n, startMainAt: 360, dayUnitSeconds: 7200 };
   let timestamp = calendar.startMainAt;
-  for (let index = 0; index < 15; index++) {
+  for (let index = 0; index < 10; index++) {
     const day = dayOf(calendar, timestamp)!;
     for (const time of [day.start, day.end - 1]) {
       rpc.header.mockResolvedValue({ timestamp: time });
