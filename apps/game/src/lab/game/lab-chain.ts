@@ -303,7 +303,7 @@ const labAccount = (
       const hash = ordinaryHash(
         scenario.player,
         calls,
-        { chainId: LAB_GAME.chainId, l2GasBound: LAB_L2_GAS_BOUND },
+        { chainId: LAB_GAME.chainId, l2GasBound: BigInt(LAB_L2_GAS_BOUND) },
         frame,
       );
       const answered = scenario.answer(command, chain, now()).map(keyedAsHeldOnChain);

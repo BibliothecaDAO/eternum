@@ -7,7 +7,7 @@ import { blocked, completed, failed } from "./evidence.mjs";
  */
 
 /** The cut, in order: each segment runs from the mark before it to its own mark. */
-export const CLICK_TO_RESULT_SEGMENTS = [
+const CLICK_TO_RESULT_SEGMENTS = [
   { mark: "command", segment: "handled", what: "the press handled and its command handed to the client" },
   { mark: "answered", segment: "sent", what: "signed, sent and answered by the shard's RPC" },
   { mark: "diff", segment: "confirmed", what: "the chain and Herald, to the pre-confirmed diff arriving" },
