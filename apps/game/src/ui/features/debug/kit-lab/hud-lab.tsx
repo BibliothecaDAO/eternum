@@ -596,6 +596,23 @@ const STATES = {
     site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
   },
   "site-ruin": { clock: CLOCK, stores: STORES, armies: ARMIES, site: RUIN_CARD },
+  // The owner's Titanwatch on 28 October, no army selected: a named ruin, its Ammit, its chest and XP on one row.
+  "site-ruin-armyless": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...RUIN_CARD,
+      name: "Titanwatch",
+      beast: { name: "Ammit", beast: "ammit", combatClass: "Knight" },
+      army: null,
+      guard: 2_300,
+      fight: undefined,
+      chest: { tier: 2, lords: 100 },
+      xp: 119,
+      verb: null,
+    },
+  },
   "site-ruin-lose": {
     clock: CLOCK,
     stores: STORES,
