@@ -337,6 +337,66 @@ const tokenShowsTheChainsCount = (army) => `(() => {
 })()`;
 
 /**
+ * A Shrine and a Well used (the lab's sites game): each beside the army, used as a player uses it (a desktop's
+ * right-click on the tile whose hover offers Use and what it gives; a phone's tap, which opens the site's sheet, then
+ * Use); the result is that site leaving the map from its tile.
+ */
+const SITE_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+  clickToResultStep("shrine", (context) => useTheSite(context, "Shrine", "XP"), siteUsedUp),
+  clickToResultStep("well", (context) => useTheSite(context, "Well", "stamina"), siteUsedUp),
+];
+
+async function useTheSite({ browser }, site, gives) {
+  await focusTheArmyFromItsDock(browser);
+  const armyAt = armyOnScreen(browser, browser.observe().selection?.army?.id);
+  if (!armyAt) return { site, offered: [] };
+  const offered = [];
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    const offset = [armyAt[0] + dx, armyAt[1] + dy];
+    if (onADesktop()) {
+      browser.hover(offset);
+      await sleep(HOVER_SETTLE_MS);
+      const tip = browser.read(TOOLTIP_TEXT);
+      offered.push(tip);
+      if (/^Use\b/.test(tip ?? "") && tip.includes(gives)) {
+        browser.rightClick(offset);
+        return { site, offered, target: offset, region: tileRegion(offset) };
+      }
+      continue;
+    }
+    browser.tap(offset);
+    const sheet = await readUntil(
+      () => browser.read(SHEET_NAME),
+      (name) => name !== null,
+      SHEET_WAIT_MS,
+    );
+    offered.push(sheet);
+    if (sheet === site) {
+      browser.click("Use");
+      return { site, offered, target: offset, region: tileRegion(offset) };
+    }
+    if (sheet !== null) browser.press("Escape");
+    if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
+  }
+  return { site, offered };
+}
+
+// The pointer's tooltip whole: its order, then what it costs or gives ("Use", "+200 XP").
+const TOOLTIP_TEXT = `JSON.stringify(document.querySelector('[role="tooltip"][aria-hidden="false"]')?.innerText.replace(/\\s+/g, " ").trim() ?? null)`;
+
+/** The site the lab's chain consumed for the step's InteractSite: its tile, vacated. */
+function siteUsedUp({ actionLatency }) {
+  const vacated = (actionLatency.chainAnswers ?? [])
+    .filter(({ kind }) => kind === "InteractSite")
+    .at(-1)
+    ?.answered.find(({ model, value }) => model === "TileOccupancy" && value === null);
+  const [, , col, row] = vacated?.key.split(":") ?? [];
+  return col && { presented: `site-gone:${col},${row}` };
+}
+
+/**
  * Two of the realm's armies merged (the lab's merge game): the spire's army picked, the other right-clicked for the
  * transfer card, then its Merge; the result is the army the chain removed leaving the map.
  */
@@ -2472,6 +2532,7 @@ export const STEP_SETS = {
   "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },
   "lab-actions-merge": { game: labSpireGame("merge-keeps-picked"), steps: mergeActionSteps() },
   "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
+  "lab-actions-sites": { game: labSpireGame("sites"), steps: SITE_ACTION_STEPS },
   "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps() },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },

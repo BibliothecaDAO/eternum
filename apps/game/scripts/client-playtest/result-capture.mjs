@@ -65,6 +65,7 @@ export async function proveResultOnScreen({ frames, region, before, visible, fra
       shown: false,
       reason: `three frames after its mark only ${percent(resultShare)}% of its region showed it`,
       ...verdict,
+      kept: keepAround(frames, settled, reference, last, dir),
     };
   }
   let first = settled;
@@ -85,13 +86,17 @@ export async function proveResultOnScreen({ frames, region, before, visible, fra
 
 const differs = (left, right) => Math.abs(left - right) > CHANGE_LEVELS;
 
+/** The region's pixels in grey, the region held to the frame (a tile at the edge of a phone's screen runs past it). */
 async function regionGrey(frame, region) {
-  const scale = frame.width ? (await sharp(frame.jpeg).metadata()).width / frame.width : 1;
+  const { width, height } = await sharp(frame.jpeg).metadata();
+  const scale = frame.width ? width / frame.width : 1;
+  const left = Math.min(width - 1, Math.max(0, Math.round(region.left * scale)));
+  const top = Math.min(height - 1, Math.max(0, Math.round(region.top * scale)));
   const box = {
-    left: Math.max(0, Math.round(region.left * scale)),
-    top: Math.max(0, Math.round(region.top * scale)),
-    width: Math.round(region.width * scale),
-    height: Math.round(region.height * scale),
+    left,
+    top,
+    width: Math.max(1, Math.min(width - left, Math.round((region.left + region.width) * scale) - left)),
+    height: Math.max(1, Math.min(height - top, Math.round((region.top + region.height) * scale) - top)),
   };
   return sharp(frame.jpeg).extract(box).greyscale().raw().toBuffer();
 }
