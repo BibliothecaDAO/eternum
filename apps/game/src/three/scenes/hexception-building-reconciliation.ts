@@ -73,3 +73,11 @@ export const isTierChange = (current: string | undefined, next: string): boolean
   const withoutTier = (signature: string) => signature.slice(0, signature.lastIndexOf(":"));
   return withoutTier(current) === withoutTier(next);
 };
+
+/**
+ * How a building enters its plot: one the player's own ghost stood for (`ghostPlot`, the plot a build sheet pinned its
+ * ghost on) takes the ghost's place at once, springing from near its size; any other grows in. Grown from nothing where
+ * the ghost had stood, the plot showed empty between the ghost leaving and the building growing visible.
+ */
+export const buildingEntrance = (plot: HexPosition, ghostPlot: HexPosition | null): "grow" | "overshoot" =>
+  ghostPlot?.col === plot.col && ghostPlot?.row === plot.row ? "overshoot" : "grow";

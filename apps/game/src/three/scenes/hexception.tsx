@@ -65,6 +65,7 @@ import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { PreparedTerrainPage, TerrainCellInput } from "@/three/terrain/terrain-types";
 import {
   type BuildingInstanceAction,
+  buildingEntrance,
   buildingKey,
   reconcileBuildingUpdate,
   isTierChange,
@@ -1426,7 +1427,7 @@ export default class HexceptionScene extends HexagonScene {
       this.removeBuilding(position.col, position.row);
     }
     if (building && selection && signature !== undefined && (action === "create" || action === "replace")) {
-      this.addBuildingInstance(building, selection, signature);
+      this.addBuildingInstance(building, selection, signature, buildingEntrance(building, this.pinnedPlot));
     }
 
     if (building) {
