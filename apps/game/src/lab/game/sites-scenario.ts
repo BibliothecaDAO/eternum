@@ -2,11 +2,8 @@ import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { TileOccupier } from "@bibliothecadao/types";
 
 import { frontierPreset } from "../../../../../config/source/frontier/native";
-import type { LabScenario } from "./lab-chain";
-import { besideOnOpenLand, spireScenario } from "./spire-scenario";
-
-const wire = (value: unknown): unknown =>
-  JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? String(field) : field)));
+import { type LabScenario, wire } from "./lab-chain";
+import { armyProgress, besideOnOpenLand, PROGRESS_KEYS, spireScenario } from "./spire-scenario";
 
 /**
  * The army's stamina and XP as it reaches the sites: a Well's 60 fits under its bar, and a Shrine's XP takes it past
@@ -28,7 +25,7 @@ export const sitesScenario = (): LabScenario => {
   store.applyFacts([
     {
       model: "ArmyProgressionRules",
-      key: "0x1af10",
+      key: PROGRESS_KEYS.rules,
       value: {
         game_id: 1,
         reveal_xp: xp.revealXp,
@@ -47,20 +44,7 @@ export const sitesScenario = (): LabScenario => {
         troops: { ...army.troops, stamina: { Inline: { amount: STAMINA, settled_at: spire.startsAt, remainder: 0 } } },
       }),
     },
-    {
-      model: "ArmyProgress",
-      key: "1:201",
-      value: {
-        game_id: 1,
-        explorer_id: String(SPIRE_ARMY),
-        xp: XP,
-        battle: 1,
-        logistics: 1,
-        scouting: 1,
-        scouting_kinds: 0,
-        homecoming: 1,
-      },
-    },
+    armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY, XP),
   ] as never);
   const stands = store.entityOccupancy(1, SPIRE_ARMY)!;
   for (const [index, category] of [TileOccupier.Well, TileOccupier.Shrine].entries()) {
