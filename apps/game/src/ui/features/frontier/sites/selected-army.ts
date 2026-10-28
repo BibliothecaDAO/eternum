@@ -2,16 +2,11 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { requestArmyForSite } from "@/three/scenes/worldmap-army-select-request";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { configManager, entityMapPosition, isViewerOwner, Position } from "@bibliothecadao/eternum";
+import { configManager, entityMapPosition, isViewerOwner } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 const ARMY_MODELS = ["ExplorerTroops", "Structure", "TileOccupancy"] as const;
-
-/** Selects the army for the site on this map tile: the site's card stays open and acts for it, the camera where it is. */
-export const pickArmyFor = (explorerId: number, siteTile: { col: number; row: number }): void =>
-  requestArmyForSite(explorerId, Position.fromContract({ x: siteTile.col, y: siteTile.row }));
 
 /** The army the player has selected, where it stands, when it is theirs and orders are allowed: a site's actor. */
 export const useSelectedOwnArmy = (): {

@@ -28,8 +28,10 @@ import {
   expeditionDepth,
   setBlockTimestampSource,
 } from "@bibliothecadao/eternum";
-import { TileOccupier } from "@bibliothecadao/types";
+import { StructureType, TileOccupier } from "@bibliothecadao/types";
+import { attachMapSelectionPositions } from "@/hooks/store/map-selection";
 import { useArmyPanelOpens } from "./army/army-opens";
+import { SpireButton, useArmyAtItsSpire } from "./spire-card";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useOnePanel } from "./hud/one-panel";
 import { SPIRE_ARMY, SPIRE_DAY_NOW, spireDay as spireFixture } from "./spire-fixture";
@@ -212,23 +214,40 @@ describe("a realm's spire, from the player's path", () => {
   });
 
   /**
-   * The desktop HUD's panels as it composes them: the selection's card, and the army's panel that selecting one of
-   * the realm's armies opens, through the one panel.
+   * The HUD's panels as each layout composes them, through the one panel: the selection's card, and the army's panel.
+   * A desktop opens the army's panel on selecting it (a surface); a phone keeps the map and shows the army in its action
+   * row, which no card covers. Either panel carries Spire while the army stands at its spire, as both draw it.
    */
-  const renderDesktopHud = (store: ReturnType<typeof spireDay>["store"]) => {
+  const renderLayoutHud = (store: ReturnType<typeof spireDay>["store"], layout: "desktop" | "phone") => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     useAccountStore.setState({ account: { address: "0x111" } as never });
     const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+    const giveBack = attachMapSelectionPositions({
+      army: (id) => {
+        const tile = store.entityOccupancy(1, Number(id));
+        return tile && { col: tile.col, row: tile.row, alt: false };
+      },
+      structure: () => undefined,
+    });
+    useUIStore.getState().setMapLayer(false);
+    const ArmySpire = () => {
+      const spire = useArmyAtItsSpire(ARMY);
+      return spire && <SpireButton explorerId={ARMY} spire={spire} />;
+    };
     const Hud = () => {
       const card = useSelectionCard({ realm, onResearch: () => undefined, onArmyBack: () => {} });
-      const { surface, openSurface, showsCard } = useOnePanel(card?.key ?? null);
-      useArmyPanelOpens(realm, () => openSurface("army"), true);
+      const { surface, openSurface, showsCard } = useOnePanel(card?.key ?? null, layout === "phone");
+      useArmyPanelOpens(realm, () => openSurface("army"), layout === "desktop");
+      const selected = useUIStore((state) => state.entityActions.selectedEntityId);
+      const armyPanel = layout === "desktop" ? surface === "army" : selected === ARMY && !showsCard && !surface;
       return (
         <>
-          <button type="button" onClick={() => openSurface("research")}>
-            Research
-          </button>
-          {surface && <section data-kit-sheet aria-label={surface} />}
+          {surface && surface !== "army" && <section data-kit-sheet aria-label={surface} />}
+          {armyPanel && (
+            <section data-kit-sheet aria-label="army">
+              <ArmySpire />
+            </section>
+          )}
           {showsCard && card?.sheet}
         </>
       );
@@ -254,47 +273,97 @@ describe("a realm's spire, from the player's path", () => {
           .find((button) => button.getAttribute("aria-label") === label || button.textContent === label)!
           .click(),
       );
-    return { sheets, enterButtons, press, unmount: () => act(() => root.unmount()) };
+    return {
+      sheets,
+      enterButtons,
+      press,
+      unmount: () => {
+        act(() => root.unmount());
+        giveBack();
+      },
+    };
   };
 
-  it.each(["on", "beside"] as const)(
-    "opens the spire's card, not the army's panel, for its army selected %s the spire, by its tile or from the dock",
-    (standing) => {
-      const { store, armyTile } = spireDay({ standing });
-      const hud = renderDesktopHud(store);
-      try {
-        // A tap on the army's tile selects the army: deployed onto the spire, that is the spire's own tile.
-        act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: armyTile }));
-        expect(hud.sheets()).toEqual(["Spire"]);
-        expect(hud.enterButtons()).toEqual([true, true]);
-        // Research stands alone over it, and the card waits put away.
-        hud.press("Research");
-        expect(hud.sheets()).toEqual(["research"]);
+  /** The camp the army cleared, on the tile it stands on: the site's row with its receipt, as clear_site leaves it. */
+  const clearedCampUnder = (store: ReturnType<typeof spireDay>["store"], tile: { col: number; row: number }) =>
+    store.applyFacts([
+      {
+        model: "ExpeditionSite",
+        key: "0x1ab96",
+        value: {
+          game_id: 1,
+          entity_id: 711,
+          category: StructureType.Camp,
+          initial_guard_count: 1_600n * 1_000_000_000n,
+          alt: false,
+          ...tile,
+          clear: { explorer_id: BigInt(ARMY), home_id: 7n, reward: null },
+        },
+      },
+    ] as never);
 
-        // Picked from the dock, with no tile, the army opens the same card.
-        act(() => useUIStore.getState().selectOnMap(null));
-        act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: null }));
-        expect(hud.sheets()).toEqual(["Spire"]);
-        // Closed, the card lets go of the army, so nothing opens it again.
-        hud.press("Close");
-        expect(hud.sheets()).toEqual([]);
-        expect(useUIStore.getState().entityActions.selectedEntityId).toBeNull();
-      } finally {
-        hud.unmount();
-      }
+  // Owner, 28 October 2026 (brief item 2): tapping a tile with his army on it selects the army, whatever site is under
+  // it. The army's panel shows; its spire's card opens from Spire on that panel, and the receipt from the clear's Feed row.
+  describe.each(["desktop", "phone"] as const)(
+    "the selection matrix on a %s: the army's panel, whatever site is under it",
+    (layout) => {
+      const cells = [
+        { under: "its spire", standing: "on" as const, cleared: false },
+        { under: "the ground beside its spire", standing: "beside" as const, cleared: false },
+        { under: "a cleared site", standing: "away" as const, cleared: true },
+      ];
+      for (const { under, standing, cleared } of cells)
+        it(`shows the army's panel, and no site card, for the army on ${under}, tapped or picked from the dock`, () => {
+          const { store, armyTile } = spireDay({ standing });
+          if (cleared) clearedCampUnder(store, armyTile);
+          const hud = renderLayoutHud(store, layout);
+          try {
+            // The map's tap on the army's tile: the army selected where it stands (a desktop's panel then lets go of the tile).
+            act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
+            expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
+            expect(hud.sheets()).toEqual(["army"]);
+            // Picked from the dock, with no tile: the same panel.
+            act(() => useUIStore.getState().selectOnMap(null));
+            act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: null }));
+            expect(hud.sheets()).toEqual(["army"]);
+          } finally {
+            hud.unmount();
+          }
+        });
+
+      it.each(["on", "beside"] as const)(
+        "opens the spire's card from Spire on the army's panel, standing %s it",
+        (standing) => {
+          const { store } = spireDay({ standing });
+          const hud = renderLayoutHud(store, layout);
+          try {
+            act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
+            hud.press("Spire");
+            expect(hud.sheets()).toEqual(["Spire"]);
+            expect(hud.enterButtons()).toEqual([true, true]);
+            // Closed, the card hands back the army, still selected.
+            hud.press("Close");
+            expect(hud.sheets()).not.toContain("Spire");
+            expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
+          } finally {
+            hud.unmount();
+          }
+        },
+      );
+
+      it("offers no Spire to an army away from its spire", () => {
+        const { store } = spireDay({ standing: "away" });
+        const hud = renderLayoutHud(store, layout);
+        try {
+          act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
+          expect(hud.sheets()).toEqual(["army"]);
+          expect([...document.querySelectorAll("button")].some((button) => button.textContent === "Spire")).toBe(false);
+        } finally {
+          hud.unmount();
+        }
+      });
     },
   );
-
-  it("opens the army's panel, and no spire card, for its army selected away from the spire", () => {
-    const { store, armyTile } = spireDay({ standing: "away" });
-    const hud = renderDesktopHud(store);
-    try {
-      act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: armyTile }));
-      expect(hud.sheets()).toEqual(["army"]);
-    } finally {
-      hud.unmount();
-    }
-  });
 
   it("tells another player whose spire it is, and offers them nothing", () => {
     const { store, spire } = spireDay();

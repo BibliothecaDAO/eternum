@@ -231,7 +231,7 @@ export const SURFACES = [
   })),
   { name: "frontier-army", path: "/lab/kit/hud/selected", mark: "frontier", sizes: CARDS },
   { name: "frontier-season", path: "/lab/kit/hud/season", mark: "frontier", sizes: CARDS },
-  { name: "frontier-site-pick", path: "/lab/kit/hud/site-pick", mark: "frontier", sizes: CARDS },
+  { name: "frontier-site-armyless", path: "/lab/kit/hud/site-armyless", mark: "frontier", sizes: CARDS },
   { name: "frontier-site-ruin", path: "/lab/kit/hud/site-ruin", mark: "frontier", ...FIGHT_FITS },
   // The owner's phone card (10-27) and seven-digit armies, on the attack's card.
   { name: "frontier-site-runereach", path: "/lab/kit/hud/site-runereach", mark: "frontier", ...FIGHT_FITS },

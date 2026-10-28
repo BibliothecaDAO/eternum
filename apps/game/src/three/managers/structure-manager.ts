@@ -1774,9 +1774,13 @@ export class StructureManager {
     });
   }
 
-  /** The one place a plate is set: the band's text tier gates it for every caller. */
+  /**
+   * The one place a plate is set: the band's text tier gates it for every caller. A cleared site has none: the standard
+   * on its tile says it (owner, 28 October 2026: "we dont need to put the flag labels on the map it overcrowds it a bit
+   * and there's already a flag on the tile").
+   */
   private updateStructureCompactLabel(structure: StructureInfo, position: Vector3): void {
-    if (!this.contentLadder.labels) {
+    if (!this.contentLadder.labels || structure.clearedSite) {
       this.removeStructureCompactLabel(structure.entityId);
       return;
     }

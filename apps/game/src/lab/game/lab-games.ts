@@ -1,5 +1,6 @@
 import { dayEndScenario } from "./day-end-scenario";
 import { afterBattleScenario, lowStaminaScenario } from "./after-battle-scenario";
+import { clearedCampScenario } from "./cleared-camp-scenario";
 import { exploreScenario } from "./explore-scenario";
 import { mergeScenario } from "./merge-scenario";
 import { dayTurnScenario } from "./day-turn-scenario";
@@ -15,10 +16,11 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,
   realm: realmScenario,
-  "merge-keeps-picked": mergeScenario("picked"),
+  "merge-loses-xp": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),
   "after-battle": afterBattleScenario,
   "low-stamina": lowStaminaScenario,
+  "cleared-camp": clearedCampScenario,
   explore: exploreScenario,
   "painted-buildings": paintedBuildingsScenario,
   "day-turn": dayTurnScenario("live"),
