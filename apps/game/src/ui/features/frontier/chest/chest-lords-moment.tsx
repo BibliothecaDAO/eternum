@@ -25,7 +25,9 @@ const VEIL_SECONDS = 0.35;
  */
 export const ChestLordsMoment = () => {
   const [moment, setMoment] = useState<{ request: RewardChestRequest; shownAt: number } | null>(null);
-  useEffect(() => onRewardChestShown((request) => setMoment({ request, shownAt: performance.now() })), []);
+  useEffect(() => {
+    return onRewardChestShown((request) => setMoment({ request, shownAt: performance.now() }));
+  }, []);
   // Over the whole page, so it veils every HUD column and sheet, whatever stack the HUD draws them in.
   return createPortal(
     <AnimatePresence>
@@ -81,7 +83,9 @@ const ChestWinnings = ({ request }: { request: RewardChestRequest }) => (
 /** The LORDS, counted up from nothing with their weight. */
 const LordsCount = ({ lords }: { lords: number }) => {
   const [shown, setShown] = useState(0);
-  useEffect(() => setShown(lords), [lords]);
+  useEffect(() => {
+    setShown(lords);
+  }, [lords]);
   return (
     <>
       <span className="ui-chest-moment__rays" />
