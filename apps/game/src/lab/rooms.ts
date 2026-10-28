@@ -288,6 +288,17 @@ export const ROOMS: LabRoom[] = [
         ],
       },
       {
+        title: "Visiting a realm",
+        views: [
+          view(
+            "Visiting a realm",
+            "/lab/game?scenario=visit",
+            "game",
+            load(() => import("./game/game-lab-view"), "GameLabView"),
+          ),
+        ],
+      },
+      {
         title: "Day end",
         modes: FRONTIER,
         views: [

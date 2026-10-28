@@ -286,6 +286,59 @@ describe("visiting other realms", () => {
   });
 });
 
+describe("a neighbour's realm visited and left (lab-visit)", () => {
+  const verify = (name) => STEP_SETS["lab-visit"].steps.find((step) => step.name === name).verify;
+  const building = (hover, card) => ({ offset: [0, 0], hover, card });
+  const plot = (card) => ({ offset: [0, 0], hover: null, card });
+  const found = ["Barracks", "Farm", "Hut", "Workshop"];
+
+  it("passes a visit where no tap opens a card and nothing is signed", () => {
+    const taps = [...found.map((name) => building(name, null)), plot(null)];
+    expect(verify("visit-plots")({ played: { taps, signed: 0 } }).status).toBe("completed");
+  });
+
+  it("fails a visit whose tap opens a card, building or plot, or that signs anything", () => {
+    const taps = found.map((name) => building(name, null));
+    expect(
+      verify("visit-plots")({ played: { taps: [...taps, building("Barracks", "Supply yard")], signed: 0 } }),
+    ).toMatchObject({ status: "failed", reason: "a tap at 0,0 opened Supply yard (its hover: Barracks)" });
+    expect(verify("visit-plots")({ played: { taps: [...taps, plot("Build")], signed: 0 } }).status).toBe("failed");
+    expect(verify("visit-plots")({ played: { taps, signed: 1 } }).reason).toBe("the visit signed 1 commands");
+  });
+
+  it("fails a sweep that found too few buildings to judge", () => {
+    expect(verify("visit-plots")({ played: { taps: [building("Hut", null)], signed: 0 } }).status).toBe("failed");
+  });
+
+  it("passes home when each building's card is its hover's and an open plot opens Build", () => {
+    const taps = [...found.map((name) => building(name, name)), plot("Build")];
+    expect(verify("home-plots")({ played: { taps, signed: 0 } }).status).toBe("completed");
+  });
+
+  it("fails home on a card that names another building than its hover, or no Build", () => {
+    const taps = [...found.map((name) => building(name, name)), plot("Build")];
+    expect(verify("home-plots")({ played: { taps: [...taps, building("Barracks", "Supply yard")] } }).reason).toBe(
+      "a tap at 0,0 on Barracks opened Supply yard",
+    );
+    expect(verify("home-plots")({ played: { taps: taps.slice(0, -1) } }).reason).toBe("no open plot opened Build");
+  });
+
+  it("takes a visit by its drawn board and its foot, with no place lit (a phone's place bar gives way to Leave)", () => {
+    const board = { ...onTheMap, scene: "hex", rendered: "hex", place: null };
+    const played = { row: "#2 Lord 0222", realm: true, foot: "Visit Lord 0222" };
+    expect(verify("visit")({ seen: board, played }).status).toBe("completed");
+    expect(verify("visit")({ seen: onTheMap, played }).reason).toBe("the visited realm never opened");
+    expect(verify("visit")({ seen: board, played: { ...played, foot: null } }).status).toBe("failed");
+    expect(verify("visit")({ seen: board, played: { row: null } }).status).toBe("blocked");
+  });
+
+  it("fails Leave when the visit's foot stays", () => {
+    const seen = { ...onTheMap, scene: "hex", rendered: "hex", place: "Realm" };
+    expect(verify("leave")({ seen, played: { home: true, foot: null } }).status).toBe("completed");
+    expect(verify("leave")({ seen, played: { home: true, foot: "Visit Lord 0222" } }).status).toBe("failed");
+  });
+});
+
 describe("a scene check", () => {
   const verify = verifyOf("return-to-map");
 

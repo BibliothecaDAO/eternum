@@ -11,6 +11,14 @@ const TRANSIENT_FAILURE_PATTERNS = [
   "Failed to read: Resource temporarily unavailable",
   "daemon may be busy or unresponsive",
 ];
+/**
+ * agent-browser never started: npx was rewriting its cache, which every run on the machine shares, under this command.
+ * Nothing ran, so any command, a tap too, is given again once the install has had time to finish.
+ */
+// Node names a missing module MODULE_NOT_FOUND (ERR_MODULE_NOT_FOUND from an ES import).
+const NOT_LAUNCHED_PATTERNS = ["MODULE_NOT_FOUND", "No binary found for", "Error executing binary"];
+const NOT_LAUNCHED_RETRIES = 12;
+const NOT_LAUNCHED_RETRY_DELAY_MS = 5_000;
 /** The page's size, 1920 by 1080 unless the run asks for another (`--viewport`); steps read it as they play. */
 export const VIEWPORT = { width: 1920, height: 1080 };
 
@@ -33,8 +41,12 @@ export function createBrowserSession(session, { headed, profile }) {
 
   const run = (commandArgs, { allowFailure = false } = {}) => {
     let result = invoke(commandArgs);
+    for (let retry = 1; retry <= NOT_LAUNCHED_RETRIES && neverLaunched(result); retry += 1) {
+      pause(NOT_LAUNCHED_RETRY_DELAY_MS);
+      result = invoke(commandArgs);
+    }
     for (let retry = 1; retry <= AGENT_BROWSER_RETRIES && isTransientFailure(commandArgs, result); retry += 1) {
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, AGENT_BROWSER_RETRY_DELAY_MS * retry);
+      pause(AGENT_BROWSER_RETRY_DELAY_MS * retry);
       result = invoke(commandArgs);
     }
     if (result.status !== 0 && !allowFailure) {
@@ -151,6 +163,14 @@ const ORDER_BAR_EXPRESSION = `JSON.stringify((() => {
 })())`;
 
 /** A busy machine times out CDP calls now and then; a read can be asked again, an action cannot. */
+function neverLaunched(result) {
+  const output = `${result.stderr}\n${result.stdout}`;
+  return result.status !== 0 && NOT_LAUNCHED_PATTERNS.some((pattern) => output.includes(pattern));
+}
+
+/** Blocks this synchronous runner between attempts. */
+const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+
 function isTransientFailure(commandArgs, result) {
   const output = `${result.stderr}\n${result.stdout}`;
   return (

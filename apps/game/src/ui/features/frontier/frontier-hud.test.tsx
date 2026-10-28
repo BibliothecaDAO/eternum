@@ -26,12 +26,18 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
   }),
 }));
 vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => vi.fn() }));
+// The realm the player visits, as the season board's Visit starts it; none until a test visits.
+const visiting = vi.hoisted(() => ({ visit: null as { player: string; structureId: number; opensOn: null } | null }));
+vi.mock("@/sync/active-game-client", async (original) => ({
+  ...(await original<typeof import("@/sync/active-game-client")>()),
+  useRealmVisit: () => visiting.visit,
+}));
 vi.mock("@/ui/features/social", async () => ({
   ...(await import("@/ui/features/social/realtime-chat/hooks/use-realtime-chat")),
   RealtimeChatShell: () => <input aria-label="Message" />,
 }));
 
-const { readExpeditionRules } = await import("@bibliothecadao/eternum");
+const { getStructureName, readExpeditionRules } = await import("@bibliothecadao/eternum");
 const { useRealtimeChatStore } = await import("@/ui/features/social/realtime-chat/model/store");
 const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
@@ -409,5 +415,56 @@ it("tells a spectator on a phone that they are spectating, where a player's purs
   } finally {
     overrideSpectateIntent(false);
     await act(async () => useUIStore.setState({ isSpectating: false }));
+  }
+});
+
+// Owner, 28 October 2026, visiting another realm: "the selected panel doesnt match the actual building". The board
+// shows the visited realm, so the realm panel does too, never the player's own.
+it("shows the visited realm on a desktop's realm panel, not the player's own", async () => {
+  viewport.set(1440);
+  const wire = (row: unknown) =>
+    JSON.parse(JSON.stringify(row, (_, field) => (typeof field === "bigint" ? String(field) : field)));
+  const neighbour = (store: Parameters<NonNullable<Parameters<typeof LabGame>[0]["facts"]>>[0]) => {
+    const own = store.require("Structure", { game_id: 1, entity_id: 7 });
+    return { ...own, entity_id: 8n, owner: 0x222n, metadata: { ...own.metadata, realm_id: own.metadata.realm_id + 1 } };
+  };
+  let names = { own: "", visited: "" };
+  visiting.visit = { player: "0x222", structureId: 8, opensOn: null };
+  try {
+    await act(async () =>
+      root.render(
+        <MemoryRouter>
+          <QueryClientProvider client={new QueryClient()}>
+            <LabGame
+              preset={5}
+              facts={(store) => {
+                const visited = neighbour(store);
+                names = {
+                  own: getStructureName(store.require("Structure", { game_id: 1, entity_id: 7 })).name,
+                  visited: getStructureName(visited).name,
+                };
+                return [
+                  LABOR_RULES,
+                  { model: "Structure", key: "0x1ad0", value: wire(visited) },
+                  {
+                    model: "RealmKnowledge",
+                    key: "0x1ad4",
+                    value: wire({ game_id: 1, structure_id: 8, learned: "0" }),
+                  },
+                ];
+              }}
+            >
+              {(store) => <FrontierHud rules={readExpeditionRules(store, 1)!} />}
+            </LabGame>
+          </QueryClientProvider>
+        </MemoryRouter>,
+      ),
+    );
+    const panel = host.querySelector('section[aria-label="Realm"]')?.textContent ?? "";
+    expect(names.visited).not.toBe(names.own);
+    expect(panel).toContain(names.visited);
+    expect(panel).not.toContain(names.own);
+  } finally {
+    visiting.visit = null;
   }
 });

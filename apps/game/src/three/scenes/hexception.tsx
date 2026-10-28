@@ -124,6 +124,7 @@ import {
   BiomeType,
   BuildingType,
   HexPosition,
+  ID,
   RealmLevels,
   ResourceMiningTypes,
   ResourcesIds,
@@ -259,6 +260,11 @@ export default class HexceptionScene extends HexagonScene {
   private newRingTimer: number | undefined;
   /** The entered structure's building slots; setup() binds it before the scene is entered. */
   private tileManager!: BuildingTiles;
+  /**
+   * The realm the board draws, whose slots tileManager reads: a hover, a tap and a placement each name it, so what a
+   * card reads of a plot is what its hover read, whichever realm the session holds since.
+   */
+  private shownRealmId!: ID;
   private labels: {
     col: number;
     row: number;
@@ -679,7 +685,8 @@ export default class HexceptionScene extends HexagonScene {
     if (realmChanged) {
       const realmGeneration = this.advanceRealmGeneration();
       this.centerColRow = [realmPosition.col, realmPosition.row];
-      this.tileManager = requireActiveGameClient().views.buildingTiles(useUIStore.getState().structureEntityId);
+      this.shownRealmId = useUIStore.getState().structureEntityId;
+      this.tileManager = requireActiveGameClient().views.buildingTiles(this.shownRealmId);
 
       // remove all previous building instances
       this.buildingInstances.forEach((instance, key) => {
@@ -848,7 +855,7 @@ export default class HexceptionScene extends HexagonScene {
       }
 
       const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, this.state.useSimpleCost);
-      const structureEntityId = useUIStore.getState().structureEntityId;
+      const structureEntityId = this.shownRealmId;
       const realm = getRealmInfo(structureEntityId, this.game.store, getPlayerDisplayName);
       const buildability = resolveConstructionBuildability({
         entityId: structureEntityId,
@@ -890,7 +897,7 @@ export default class HexceptionScene extends HexagonScene {
         playBuildingSound(building?.category as BuildingType);
 
         this.state.setSelectedBuildingHex({
-          structureId: this.state.structureEntityId,
+          structureId: this.shownRealmId,
           innerCol: hexCoords.col,
           innerRow: hexCoords.row,
         });
@@ -902,19 +909,22 @@ export default class HexceptionScene extends HexagonScene {
         playBuildingSound(building?.category as BuildingType);
 
         this.state.setSelectedBuildingHex({
-          structureId: this.state.structureEntityId,
+          structureId: this.shownRealmId,
           innerCol: normalizedCoords.col,
           innerRow: normalizedCoords.row,
         });
         this.state.setLeftNavigationView(LeftView.EntityView);
-      } else {
+      } else if (canIssueOrders()) {
         this.state.setSelectedBuildingHex({
-          structureId: this.state.structureEntityId,
+          structureId: this.shownRealmId,
           innerCol: normalizedCoords.col,
           innerRow: normalizedCoords.row,
         });
         this.state.setLeftNavigationView(LeftView.EntityView);
         if (canConstruct) this.openPlotConstruction(normalizedCoords);
+      } else {
+        // A viewer builds nothing: an open plot is empty ground to them, and lets go of what was tapped.
+        this.state.setSelectedBuildingHex(null);
       }
     }
   }
@@ -931,7 +941,7 @@ export default class HexceptionScene extends HexagonScene {
 
   private openPlotConstruction(spot: HexPosition): boolean {
     if (!this.isEntered || !canIssueOrders() || !this.mode.ui.showBuildMenus || refusedBeforePlay()) return false;
-    const entityId = useUIStore.getState().structureEntityId;
+    const entityId = this.shownRealmId;
     const account = useAccountStore.getState().account;
     const realm = getRealmInfo(entityId, this.game.store, getPlayerDisplayName);
     if (!account || !realm || realm.owner !== BigInt(account.address)) return false;
@@ -1013,13 +1023,11 @@ export default class HexceptionScene extends HexagonScene {
     const producedResource = getProducedResource(building.category as BuildingType);
 
     if (producedResource) {
-      const productionManager = this.state.structureEntityId
-        ? new ResourceManager(this.game.store, this.state.structureEntityId)
-        : undefined;
-      const productionEndsAt = productionManager?.getProductionEndsAt(producedResource as ResourcesIds);
+      const productionManager = new ResourceManager(this.game.store, this.shownRealmId);
+      const productionEndsAt = productionManager.getProductionEndsAt(producedResource as ResourcesIds);
       const currentTick = getBlockTimestamp().currentDefaultTick;
       const isActive =
-        (productionEndsAt ?? 0) > currentTick || productionManager?.isFood(producedResource as ResourcesIds);
+        (productionEndsAt ?? 0) > currentTick || productionManager.isFood(producedResource as ResourcesIds);
       const producedName = resourceName(producedResource as ResourcesIds);
 
       this.hoverLabelManager.update(position, {
@@ -1046,7 +1054,8 @@ export default class HexceptionScene extends HexagonScene {
     void hexCoords;
   }
   protected onHexagonDoubleClick(hexCoords: HexPosition): void {
-    if (!hexCoords) {
+    // Production is the owner's: a viewer's double-click opens nothing.
+    if (!hexCoords || !canIssueOrders()) {
       return;
     }
 
@@ -1061,18 +1070,13 @@ export default class HexceptionScene extends HexagonScene {
       return;
     }
 
-    const structureEntityId = this.state.structureEntityId;
-    if (!structureEntityId) {
-      return;
-    }
-
     const building = this.tileManager.getBuilding({ col: normalizedCoords.col, row: normalizedCoords.row });
     if (!building || building.category === BuildingType.None) {
       return;
     }
 
     this.state.setSelectedBuildingHex({
-      structureId: structureEntityId,
+      structureId: this.shownRealmId,
       innerCol: normalizedCoords.col,
       innerRow: normalizedCoords.row,
     });

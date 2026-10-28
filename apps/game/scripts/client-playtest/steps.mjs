@@ -483,19 +483,8 @@ async function visitOtherRealms({ browser }) {
 async function visitRow(browser, index) {
   const before = browser.observe();
   const from = browser.read(ROUTE_HEX_EXPRESSION);
-  if (onADesktop()) browser.click("Season");
-  else {
-    browser.click("Menu");
-    await sleep(1_500);
-    browser.click("Season");
-  }
-  await sleep(2_000);
-  const rows = `[...document.querySelectorAll('button[aria-label^="#"]')].map((row) => row.getAttribute("aria-label"))`;
-  const row = browser.read(`JSON.stringify(${rows})`)[index] ?? null;
+  const row = await visitFromTheBoard(browser, index);
   if (!row) return { row: null };
-  browser.click(row);
-  await sleep(1_500);
-  browser.click("Visit");
   const realm = await arrives(browser, "Realm", "hex");
   const realmHex = browser.read(ROUTE_HEX_EXPRESSION);
   pressPlace(browser, "Map");
@@ -512,6 +501,24 @@ async function visitRow(browser, index) {
     reloaded: seen.timeOrigin !== before.timeOrigin,
     seen,
   };
+}
+
+/** The Season's board row at `index` opened and Visit pressed, as a player does; null when the board has no such row. */
+async function visitFromTheBoard(browser, index) {
+  if (onADesktop()) browser.click("Season");
+  else {
+    browser.click("Menu");
+    await sleep(1_500);
+    browser.click("Season");
+  }
+  await sleep(2_000);
+  const rows = `[...document.querySelectorAll('button[aria-label^="#"]')].map((row) => row.getAttribute("aria-label"))`;
+  const row = browser.read(`JSON.stringify(${rows})`)[index] ?? null;
+  if (!row) return null;
+  browser.click(row);
+  await sleep(1_500);
+  browser.click("Visit");
+  return row;
 }
 
 /**
@@ -1319,6 +1326,120 @@ function armyEnteredEtherealII({ played }) {
 
 const SPIRE_WAIT_MS = 5_000;
 
+/** The board's buildings draw in this long, after the realm's scene holds. */
+const BOARD_SETTLE_MS = 5_000;
+/** A tap's card opens in this long. */
+const TAP_SETTLE_MS = 700;
+/** The fewest buildings a sweep must find for its taps to count: the lab's realms each have eight and a castle. */
+const BUILDINGS_FOUND = 4;
+
+/**
+ * A neighbour's realm visited from the Season's board (/lab/game?scenario=visit), then left (owner, 28 October 2026:
+ * "when i'm visiting the selected panel doesnt match the actual building (hover is right) - also I shouldnt be able to
+ * click on the open tiles"). Its board is swept, each point hovered then tapped: on the visit no tap opens a card and
+ * nothing is signed. Leave brings the player home, swept the same way: each building's card names what its hover
+ * named, and an open plot opens Build.
+ */
+const LAB_VISIT_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "visit", play: visitTheNeighbour, settleMs: BOARD_SETTLE_MS, verify: visitingTheirRealm },
+  { name: "visit-plots", play: sweepTheBoard, settleMs: 0, verify: aVisitOpensNothing },
+  { name: "leave", play: leaveTheVisit, settleMs: BOARD_SETTLE_MS, verify: homeAgain },
+  { name: "home-plots", play: sweepTheBoard, settleMs: 0, verify: eachCardIsItsHover },
+];
+
+const VISIT_FOOT = `JSON.stringify(document.querySelector('[role="status"][aria-label^="Visit "]')?.getAttribute("aria-label") ?? null)`;
+const BOARD_HOVER = `JSON.stringify((() => {
+  const label = document.querySelector('[data-label-type="hex-hover"]');
+  return label ? label.dataset.buildingName : null;
+})())`;
+const OPEN_CARD = `JSON.stringify(document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null)`;
+const LAB_SENT = `JSON.stringify(window.__labChain?.sent.length ?? 0)`;
+
+/**
+ * The board's second row, the neighbour's realm (the player leads it), by Visit: its realm drawn. No place is lit on a
+ * visit to read it by: a phone's place bar gives its room to Leave.
+ */
+async function visitTheNeighbour({ browser }) {
+  const row = await visitFromTheBoard(browser, 1);
+  if (!row) return { row };
+  const realm = await waitFor(browser, (seen) => seen.playable && onTheBoard(seen), SCENE_WAIT_MS);
+  return { row, realm, foot: browser.read(VISIT_FOOT) };
+}
+
+const onTheBoard = (seen) => seen.scene === "hex" && seen.rendered === "hex";
+
+function visitingTheirRealm({ played, seen }) {
+  if (!played.row) return blocked("the Season's board listed no other realm to visit", played);
+  if (!played.realm || !onTheBoard(seen)) return failed("the visited realm never opened", played);
+  if (!played.foot) return failed("the visit's foot with Leave is not shown", played);
+  return completed({ row: played.row, foot: played.foot });
+}
+
+/**
+ * Points about a plot apart over the realm's board at its default view, each hovered then tapped: what its hover named,
+ * the card the tap opened, and how many commands the game signed meanwhile. A phone's sweep keeps to the rows clear of
+ * its bands.
+ */
+async function sweepTheBoard({ browser }) {
+  const signedBefore = browser.read(LAB_SENT);
+  const taps = [];
+  for (const offset of boardPoints()) {
+    browser.hover(offset);
+    await sleep(HOVER_SETTLE_MS);
+    const hover = browser.read(BOARD_HOVER);
+    browser.tap(offset);
+    await sleep(TAP_SETTLE_MS);
+    taps.push({ offset, hover, card: browser.read(OPEN_CARD) });
+    browser.press("Escape");
+  }
+  return { taps, signed: browser.read(LAB_SENT) - signedBefore };
+}
+
+const boardPoints = () => {
+  const across = Math.round(VIEWPORT.height * 0.155);
+  const down = Math.round(VIEWPORT.height * 0.133);
+  const rows = onADesktop() ? [-2, -1, 0, 1, 2] : [-1, 0, 1];
+  return rows.flatMap((row) =>
+    [-3, -2, -1, 0, 1, 2, 3]
+      .map((column) => [column * across, row * down])
+      .filter(([dx]) => Math.abs(dx) < VIEWPORT.width / 2 - 40),
+  );
+};
+
+/** On a visit nothing is the player's: no tap opens a card, a building's or an open plot's, and nothing is signed. */
+function aVisitOpensNothing({ played }) {
+  const found = played.taps.filter(({ hover }) => hover).length;
+  if (found < BUILDINGS_FOUND) return failed(`the sweep found ${found} buildings on the visited board`, played);
+  const opened = played.taps.find(({ card }) => card);
+  if (opened) return failed(`a tap at ${opened.offset} opened ${opened.card} (its hover: ${opened.hover})`, played);
+  if (played.signed) return failed(`the visit signed ${played.signed} commands`, played);
+  return completed({ found, taps: played.taps.length });
+}
+
+async function leaveTheVisit({ browser }) {
+  browser.click("Leave");
+  return { home: await arrives(browser, "Realm", "hex"), foot: browser.read(VISIT_FOOT) };
+}
+
+function homeAgain({ played, seen }) {
+  if (!played.home) return failed("Leave did not bring the player's realm back", played);
+  if (played.foot) return failed(`the visit's foot stays after Leave: ${played.foot}`, played);
+  return inScene("hex")({ seen });
+}
+
+/** At home each building's card is the building its hover named, and an open plot opens Build. */
+function eachCardIsItsHover({ played }) {
+  const buildings = played.taps.filter(({ hover }) => hover);
+  if (buildings.length < BUILDINGS_FOUND)
+    return failed(`the sweep found ${buildings.length} buildings on the player's board`, played);
+  const wrong = buildings.find(({ hover, card }) => card !== hover);
+  if (wrong) return failed(`a tap at ${wrong.offset} on ${wrong.hover} opened ${wrong.card ?? "no card"}`, played);
+  if (!played.taps.some(({ hover, card }) => !hover && card === "Build"))
+    return failed("no open plot opened Build", played);
+  return completed({ buildings: buildings.map(({ hover }) => hover), taps: played.taps.length });
+}
+
 /** A lab game built on the spire's (src/lab/game): the merge games and the owner's army after its fight. */
 const labSpireGame = (scenario) => ({ ...LAB_SPIRE, lab: scenario });
 /** The spire's army, the one a player picks first: the fixture's SPIRE_ARMY. */
@@ -2051,6 +2172,7 @@ export const STEP_SETS = {
   "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps() },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
+  "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-high-ground": { game: labSpireGame("high-ground"), steps: LAB_HIGH_GROUND_STEPS, devOverlays: true },
   "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },

@@ -159,9 +159,13 @@ army, and the army two regions below, shown in Ethereal II; play it at `--viewpo
 `--steps lab-merge-keeps-picked`, `--steps lab-merge-keeps-tapped` and `--steps lab-after-battle` (the same game with
 two of the realm's armies merged through **Transfer troops**, under either survivor rule, or with the owner's army after
 its fight standing on the camp it cleared: each army's tile, found under its token, hovered with nothing selected must
-open that army's plate, and an emptied tile none), `--steps lab-hover-zoom` (the army after its fight, with nothing
-selected and the dev overlays on, at each wheel step from the closest zoom to the farthest: its token must stand over
-its own model, and the pointer on its model at its feet, middle and top must open its plate), `--steps lab-high-ground`
+open that army's plate, and an emptied tile none), `--steps lab-visit` (`/lab/game?scenario=visit`, the painted
+Kingdom's game with a neighbour's Kingdom on the Season board, built in another order: Visit from the board, then its
+board swept point by point, each hovered then tapped, failing on any card a tap opens or any command signed; then Leave,
+and the player's own board swept the same way, failing on a building's card that names another building than its hover,
+or on no open plot opening Build), `--steps lab-hover-zoom` (the army after its fight, with nothing selected and the dev
+overlays on, at each wheel step from the closest zoom to the farthest: its token must stand over its own model, and the
+pointer on its model at its feet, middle and top must open its plate), `--steps lab-high-ground`
 (`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, with the dev overlays on: the army
 picked, every tile it is lit on must lie above the highest ground under it), `--steps lab-day-turn`,
 `--steps lab-day-later`, `--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same game on Frontier's day
