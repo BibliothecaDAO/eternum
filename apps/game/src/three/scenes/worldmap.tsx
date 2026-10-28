@@ -4490,9 +4490,11 @@ export default class WorldmapScene extends WarpTravel {
   /**
    * The doorway stays up until the models the opening view asked for are loaded and their pipelines compiled: their
    * shader builds run behind it, not in the first frames a player sees (one to three seconds of stutter on a phone
-   * otherwise).
+   * otherwise). The armies' character runtime is prepared with them, though no army may be in view yet: its first
+   * setup otherwise lands in the first pan that brings one in.
    */
   private async waitForEntryModels(): Promise<void> {
+    this.armyManager.prepareCharacterRuntime();
     if ((await whenModelPreparationSettles(ENTRY_MODELS_WAIT_MS)) === "timed-out") {
       console.warn(`[Worldmap] entry models still preparing after ${ENTRY_MODELS_WAIT_MS}ms; entering anyway`);
     }
