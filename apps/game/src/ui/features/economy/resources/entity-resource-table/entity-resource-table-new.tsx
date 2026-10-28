@@ -1,3 +1,4 @@
+import { RESOURCE_TIER_NAMES } from "@bibliothecadao/types";
 import { categoryCan } from "@/ui/lib/structure-capabilities";
 import { knownAmount } from "@/ui/utils/utils";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
@@ -36,7 +37,7 @@ import clsx from "clsx";
 import { HudChip, HudIconButton, HudSwitch } from "@/ui/design-system/kit/hud-elements";
 
 import React, { useCallback, useMemo, useState } from "react";
-import { ALWAYS_SHOW_RESOURCES, productionTimeLeft, HIDE_TIME_REMAINING_FOR, TIER_DISPLAY_NAMES } from "./utils";
+import { ALWAYS_SHOW_RESOURCES, productionTimeLeft, HIDE_TIME_REMAINING_FOR } from "./utils";
 import { presentedMineKind } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -424,7 +425,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                           onClick={() => handleToggleTierVisibility(tier)}
                           className="flex w-full items-center justify-between text-left"
                         >
-                          <span>{TIER_DISPLAY_NAMES[tier] || tier}</span>
+                          <span>{RESOURCE_TIER_NAMES[tier as keyof typeof RESOURCE_TIER_NAMES] ?? tier}</span>
                           <span className="flex items-center gap-2 text-hud-cue">
                             {rows.length}
                             {isCollapsed ? (

@@ -579,6 +579,27 @@ export const RESOURCE_RARITY: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Research]: 1,
 };
 
+/** Each group of the resource tiers by the name players read over it, in either game. */
+export const RESOURCE_TIER_NAMES: Record<
+  keyof typeof BLITZ_RESOURCE_TIERS | keyof typeof ETERNUM_RESOURCE_TIERS,
+  string
+> = {
+  lords: "Lords & Fragments",
+  relics: "Relics",
+  essence: "Essence",
+  research: "Research",
+  labor: "Labor",
+  military: "Military",
+  transport: "Transport",
+  food: "Food",
+  common: "Common",
+  uncommon: "Uncommon",
+  rare: "Rare",
+  unique: "Unique",
+  mythic: "Mythic",
+  materials: "Materials",
+};
+
 export const getResourceTiers = (isBlitz: boolean) => {
   if (isBlitz) {
     return BLITZ_RESOURCE_TIERS;
