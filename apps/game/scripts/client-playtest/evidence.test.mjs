@@ -14,6 +14,7 @@ import {
   summarizePlaytestResults,
   summarizeRpcSends,
   summarizeStep,
+  compareCensus,
   describeOrders,
   eligibilityOf,
   assertInTargetGame,
@@ -140,6 +141,8 @@ describe("summarizeStep", () => {
         // One frame before the step gives the first in-step frame its interval.
         frames: [990, 1000, 1016, 1100, 1116],
         draws: [9, 10, 12, 30, 12],
+        vertices: [90, 300, 600, 3000, 600],
+        gpuMemory: { textures: 3, textureBytes: 6 * MB, buffers: 2, bufferBytes: MB },
         loafs: [
           {
             start: 1016,
@@ -183,6 +186,8 @@ describe("summarizeStep", () => {
         jankCount: 1,
       },
       drawCalls: { n: 4, p50: 12, p95: 30, p99: 30, max: 30 },
+      vertices: { n: 4, p50: 600, p95: 3000, p99: 3000, max: 3000 },
+      gpuMemoryAtEnd: { textures: 3, textureMb: 6, buffers: 2, bufferMb: 1 },
       longFrames: {
         count: 1,
         totalMs: 84,
@@ -287,6 +292,63 @@ describe("summarizeStep", () => {
     expect(summary.reload).toEqual({ navigationAfterStepStartMs: 500, toPlayableMs: 5000 });
     expect(summary.durationMs).toBe(6000);
     expect(summary.heap).toEqual({ startMb: null, endMb: 90, retainedDeltaMb: null, peakMb: null });
+  });
+});
+
+describe("compareCensus", () => {
+  const reading = (t, frameCallbacks, timeouts, extra = {}) => ({
+    t,
+    frameCallbacks,
+    timeouts,
+    intervals: [],
+    animations: [],
+    dom: { nodes: 10, canvases: [], bootShell: null, fullScreenLayers: [] },
+    gpuMemory: { textures: 0, textureBytes: 0, buffers: 0, bufferBytes: 0 },
+    ...extra,
+  });
+
+  it("names each element still restyled by its changes per second", () => {
+    const before = reading(0, {}, {}, { restyles: { "svg.ring": 10 } });
+    const after = reading(2_000, {}, {}, { restyles: { "svg.ring": 130, "div.toast": 2 } });
+
+    expect(compareCensus(before, after).restyles).toEqual([
+      { caller: "svg.ring", perSecond: 60 },
+      { caller: "div.toast", perSecond: 1 },
+    ]);
+  });
+
+  it("names each site still scheduling work by its calls per second over the window, most first", () => {
+    const before = reading(1_000, { "render < loop": 60, "doorway < fade": 600 }, { "poll < shell": 4 });
+    const after = reading(
+      11_000,
+      { "render < loop": 660, "doorway < fade": 600, "spinner < boot": 100 },
+      { "poll < shell": 14 },
+      {
+        intervals: [{ caller: "clock < doorway", delayMs: 1000 }],
+        animations: [
+          { name: "spin", element: "div.loader", seen: false },
+          { name: "pulse", element: "button.cta", seen: true },
+        ],
+        gpuMemory: { textures: 4, textureBytes: 8 * MB, buffers: 1, bufferBytes: 2 * MB },
+        largestTextures: [{ bytes: 5 * MB, shape: "1280x1280 rgba8unorm" }],
+      },
+    );
+
+    expect(compareCensus(before, after)).toEqual({
+      windowMs: 10_000,
+      frameCallbacks: [
+        { caller: "render < loop", perSecond: 60 },
+        { caller: "spinner < boot", perSecond: 10 },
+      ],
+      timeouts: [{ caller: "poll < shell", perSecond: 1 }],
+      restyles: [],
+      intervals: [{ caller: "clock < doorway", delayMs: 1000 }],
+      animations: after.animations,
+      unseenAnimations: 1,
+      dom: after.dom,
+      gpuMemory: { textures: 4, textureMb: 8, buffers: 1, bufferMb: 2 },
+      largestTextures: [{ mb: 5, shape: "1280x1280 rgba8unorm" }],
+    });
   });
 });
 

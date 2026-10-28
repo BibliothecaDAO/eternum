@@ -5,38 +5,68 @@ import { expect, it } from "vitest";
 
 const PROBE = readFileSync(new URL("./probe.js", import.meta.url), "utf8");
 
-/** The probe installed on a page whose GPU queue and WebGL2 context do nothing; `frame()` ends a frame and reads its uploads. */
+/**
+ * The probe installed on a page whose GPU device, queue, render pass and WebGL2 context do nothing; `frame()` ends a
+ * frame and reads what the probe recorded for it.
+ */
 function probedPage() {
   class GPUQueue {
     writeBuffer() {}
   }
+  class GPUTexture {
+    destroy() {}
+  }
+  class GPUBuffer {
+    destroy() {}
+  }
+  class GPUDevice {
+    createTexture() {
+      return new GPUTexture();
+    }
+    createBuffer() {
+      return new GPUBuffer();
+    }
+  }
+  class GPURenderPassEncoder {
+    draw() {}
+    drawIndexed() {}
+  }
   class WebGL2RenderingContext {
     bufferData() {}
     bufferSubData() {}
+    drawArrays() {}
+    drawElementsInstanced() {}
   }
   let onFrame;
   let frames = 0;
-  const window = { GPUQueue, WebGL2RenderingContext };
+  const window = { GPUBuffer, GPUDevice, GPUQueue, GPURenderPassEncoder, GPUTexture, WebGL2RenderingContext };
   vm.runInNewContext(PROBE, {
     window,
     WebSocket: class {},
     performance: { now: () => 0, timeOrigin: 0 },
     location: { origin: "https://probe.test" },
     setInterval: () => 0,
+    clearInterval: () => {},
+    setTimeout: () => 0,
     requestAnimationFrame: (callback) => {
       onFrame = callback;
     },
     addEventListener: () => {},
     URL,
   });
+  const lastFrame = () => {
+    frames += 1;
+    onFrame(frames * 16);
+    return JSON.parse(window.__playtest.read());
+  };
   return {
+    device: new GPUDevice(),
+    pass: new GPURenderPassEncoder(),
     queue: new GPUQueue(),
     gl: new WebGL2RenderingContext(),
-    frame() {
-      frames += 1;
-      onFrame(frames * 16);
-      return JSON.parse(window.__playtest.read()).gpu.at(-1).uploadBytes;
-    },
+    frame: () => lastFrame().gpu.at(-1).uploadBytes,
+    vertices: () => lastFrame().vertices.at(-1),
+    gpuMemory: () => lastFrame().gpuMemory,
   };
 }
 
@@ -70,4 +100,33 @@ it("counts a WebGL2 upload's bytes the same way, a zero length running to the en
   expect(page.frame()).toBe(8);
   page.gl.bufferSubData(0, 0, shorts.buffer);
   expect(page.frame()).toBe(20);
+});
+
+it("counts the vertices a frame drew, instances included, WebGPU's and WebGL2's", () => {
+  const page = probedPage();
+
+  page.pass.drawIndexed(300, 4);
+  page.pass.draw(6);
+  page.gl.drawElementsInstanced(4, 36, 0, 0, 10);
+  page.gl.drawArrays(4, 0, 3);
+  expect(page.vertices()).toBe(1200 + 6 + 360 + 3);
+  expect(page.vertices()).toBe(0);
+});
+
+it("holds each WebGPU texture's and buffer's size from its creation until it is destroyed", () => {
+  const page = probedPage();
+
+  const colour = page.device.createTexture({ size: [1024, 1024], format: "rgba8unorm", mipLevelCount: 11 });
+  page.device.createTexture({ size: { width: 512, height: 512, depthOrArrayLayers: 4 }, format: "astc-4x4-unorm" });
+  const vertices = page.device.createBuffer({ size: 4096 });
+  expect(page.gpuMemory()).toEqual({
+    textures: 2,
+    textureBytes: Math.round((1024 * 1024 * 4 * 4) / 3) + 512 * 512 * 4,
+    buffers: 1,
+    bufferBytes: 4096,
+  });
+
+  colour.destroy();
+  vertices.destroy();
+  expect(page.gpuMemory()).toEqual({ textures: 1, textureBytes: 512 * 512 * 4, buffers: 0, bufferBytes: 0 });
 });

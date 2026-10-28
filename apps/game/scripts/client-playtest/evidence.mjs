@@ -145,6 +145,8 @@ export function summarizeStep(probe, { name, startedOn }) {
       jankCount: frameMs.filter((ms) => ms > JANK_FRAME_MS).length,
     },
     drawCalls: distribution(frameIndexes.map((index) => probe.draws[index])),
+    vertices: distribution(frameIndexes.map((index) => probe.vertices?.[index]).filter(Number.isFinite)),
+    gpuMemoryAtEnd: summarizeGpuMemory(probe.gpuMemory),
     longFrames: {
       count: loafs.length,
       totalMs: round(sum(loafs.map((loaf) => loaf.durationMs))),
@@ -191,6 +193,45 @@ export function summarizeStep(probe, { name, startedOn }) {
       ),
       frameMsAfterMessage: distribution(frameMsAfterMessage),
     },
+  };
+}
+
+/**
+ * What the page kept running between two census readings: each frame-callback and timer site, and each element whose
+ * style or SVG attributes kept changing, with its rate per second over the window (most first), and, as of the later
+ * reading, its repeating timers, running CSS animations,
+ * canvases, full-screen layers (with whether a player sees them), the boot shell, the GPU memory held and its largest
+ * textures.
+ */
+export function compareCensus(before, after) {
+  const seconds = Math.max(after.t - before.t, 1) / 1000;
+  const ratesPerSecond = (counts, earlier) =>
+    Object.entries(counts)
+      .map(([caller, count]) => ({ caller, perSecond: round((count - (earlier[caller] ?? 0)) / seconds) }))
+      .filter((site) => site.perSecond > 0)
+      .toSorted((left, right) => right.perSecond - left.perSecond);
+  return {
+    windowMs: Math.round(after.t - before.t),
+    frameCallbacks: ratesPerSecond(after.frameCallbacks, before.frameCallbacks),
+    timeouts: ratesPerSecond(after.timeouts, before.timeouts),
+    restyles: ratesPerSecond(after.restyles ?? {}, before.restyles ?? {}),
+    intervals: after.intervals,
+    animations: after.animations,
+    unseenAnimations: after.animations.filter((animation) => animation.seen === false).length,
+    dom: after.dom,
+    gpuMemory: summarizeGpuMemory(after.gpuMemory),
+    largestTextures: (after.largestTextures ?? []).map(({ bytes, shape }) => ({ mb: toMb(bytes), shape })),
+  };
+}
+
+/** The WebGPU memory held when the step's probe was read, in MB; null on WebGL, whose memory is not kept. */
+function summarizeGpuMemory(memory) {
+  if (!memory || memory.textures + memory.buffers === 0) return null;
+  return {
+    textures: memory.textures,
+    textureMb: toMb(memory.textureBytes),
+    buffers: memory.buffers,
+    bufferMb: toMb(memory.bufferBytes),
   };
 }
 

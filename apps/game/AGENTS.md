@@ -184,9 +184,20 @@ wire, the GPU work its frames asked for (pipelines and shaders compiled, bytes u
 the drawn scene changed and the scene marks `scene:<name>:requested` and `scene:<name>:presentable`; the boot reports
 the same as `bootWindow`), `--steps lab-realm-load` (the same on the lab's built Kingdom,
 `/lab/game?scenario=painted-buildings`, reopened on its realm with `&scene=hex`), `--steps blitz-realm-load` (the same
-on the newest live Blitz game), `--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each run's
-boot, from before the game page opens to the world being interactive), `--compare <summary.json>` (fails when boot
-regresses), `--headed`. Paths are taken from where the command is run.
+on the newest live Blitz game), `--steps entry` (the game entered from a fresh profile, then the same address loaded
+again from the HTTP cache, each followed by 10 s still on the map read for what keeps running: frame callbacks,
+repeating timers and timers of 100 ms or more by the code that scheduled them, elements restyled by script, running CSS
+animations, canvases, full-screen layers a player cannot see, the boot shell and the GPU memory held; the reload's entry
+milestones are kept), `--steps map-frames` (the spectator's map only: entered, idle, pan, zoom), `--uncapped` (Chrome's
+frames not held to the screen's refresh, so a frame's interval is its cost), `--model-override <dir>` (the models under
+`<dir>`, at their path below `public/models`, served in place of the deployed ones whatever their content hash, a
+spectator's or a lab game's only;
+`node scripts/client-playtest/heavier-models.mjs --triangles 4|16 --textures 2 --out <dir> <model>…` writes such copies
+with each triangle split into four and each KTX2 texture at twice its size), `--profile-steps <step,…>` (a `.cpuprofile`
+of each named step, and of the boot for `boot`; profiled steps' timings are not comparable with unprofiled ones),
+`--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each run's boot, from before the game page
+opens to the world being interactive), `--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are
+taken from where the command is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 
@@ -197,9 +208,11 @@ Each invocation writes to a new directory, `<root>/<time>-<role>`, and never int
 - `<role>-<mode>-<run>-transcript.json`: the game entered, the boot's milestones and every request with its span, the
   cache state, each step's numbers (frame intervals, long animation frames with their scripts, input-to-paint latency,
   every press with its time, draw calls, retained heap, each Herald message to the frame after it), what it saw and its
-  verdict, the client's own action timelines, every JSON-RPC POST to a node (by host: the shard's, the L2's) and each
-  CORS preflight sent before one, with whether its connection was reused and how it was answered (HTTP status, the
-  node's JSON-RPC error), the machine's load average sampled every 5 s, and the raw probe data.
+  verdict, the vertices each frame drew and the WebGPU memory held at each step's end (textures and buffers, from their
+  creation to their destroy), the client's own action timelines, every JSON-RPC POST to a node (by host: the shard's,
+  the L2's) and each CORS preflight sent before one, with whether its connection was reused and how it was answered
+  (HTTP status, the node's JSON-RPC error), the machine's load average sampled every 5 s, and the raw probe data (the
+  boot's included).
 - `<role>-<mode>-<run>-NN-<step>.png` after every step (plus `-before.png` where a step compares views),
   `<role>-<mode>-<run>-failed.png` where a run stopped, `<role>-<mode>-<run>-console.log`, and `client.log` (the build
   and the preview).
