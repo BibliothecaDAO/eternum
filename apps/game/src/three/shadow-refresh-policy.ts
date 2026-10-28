@@ -1,5 +1,16 @@
+let casterRevision = 0;
+
+/**
+ * Something that casts the sun's shadow appeared, left or changed shape: a site used up, a building placed, an army
+ * leaving the map. The shadow map is drawn only on demand, so each scene's is drawn again once at its next refresh.
+ */
+export const markShadowCastersChanged = (): void => {
+  casterRevision += 1;
+};
+
 export class ShadowRefreshPolicy {
   private cameraCellKey: string | null = null;
+  private seenCasterRevision = casterRevision;
   private dirty = true;
   private lightMoved = false;
   private elapsedSinceRefreshMs = Number.POSITIVE_INFINITY;
@@ -15,10 +26,6 @@ export class ShadowRefreshPolicy {
     this.dirty = true;
   }
 
-  markContentChanged(): void {
-    this.dirty = true;
-  }
-
   observeSun(signature: readonly number[]): void {
     if (this.sunSignature && signaturesMatch(this.sunSignature, signature)) {
       return;
@@ -31,6 +38,10 @@ export class ShadowRefreshPolicy {
 
   consumeRefresh(deltaMs: number, minimumIntervalMs = 100): boolean {
     this.elapsedSinceRefreshMs += deltaMs;
+    if (this.seenCasterRevision !== casterRevision) {
+      this.seenCasterRevision = casterRevision;
+      this.dirty = true;
+    }
     if (!this.dirty || (!this.lightMoved && this.elapsedSinceRefreshMs < minimumIntervalMs)) {
       return false;
     }

@@ -2,6 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
+import { markShadowCastersChanged } from "@/three/shadow-refresh-policy";
 import { activeMapLayer } from "@/three/map-layer";
 import { arePlayersAllied, onSidesChanged, watchedSide } from "@/utils/entity-ownership";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
@@ -1169,6 +1170,7 @@ export class ArmyManager {
       army.entityId,
     );
     this.refreshArmyInstance(army, slot, modelType);
+    markShadowCastersChanged();
   }
 
   private refreshArmyInstance(army: ArmyData, slot: number, modelType: ModelType, reResolveCosmetics?: boolean): void {
@@ -1233,6 +1235,7 @@ export class ArmyManager {
     }
 
     this.visibleArmyIndices.delete(entityId);
+    markShadowCastersChanged();
     removeVisibleArmyOrderEntry(
       {
         order: this.visibleArmyOrder,
@@ -2609,7 +2612,7 @@ export class ArmyManager {
       return;
     }
 
-    this.hexagonScene?.requestShadowContentRefresh();
+    markShadowCastersChanged();
   }
 
   private syncArmyBoundsForMovementState() {

@@ -2,6 +2,7 @@ import { veilIsNear, type endgameFrame } from "../effects/endgame/sequence";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
+import { markShadowCastersChanged } from "../shadow-refresh-policy";
 import { forgetCameraView, publishCameraView } from "./worldmap-camera-view";
 import { followArmyLayerChange } from "./worldmap-layer-follow";
 import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
@@ -6322,7 +6323,7 @@ export default class WorldmapScene extends WarpTravel {
           presentationChunkKeys: composite.presentationChunkKeys,
         });
         incrementWorldmapRenderCounter("terrainCompositeRebuilt");
-        this.requestShadowContentRefresh();
+        markShadowCastersChanged();
       })
       .catch((error) => {
         if (!this.isSwitchedOff) console.error("[WorldMap] Procedural terrain presentation failed", error);
