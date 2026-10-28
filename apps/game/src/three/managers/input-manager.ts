@@ -288,7 +288,8 @@ export class InputManager {
       if (this.surface) this.touchNavigation?.move(gesture, this.surface);
       return;
     }
-    const listenerType = gesture.kind === "tap" ? "click" : "contextmenu";
+    // A double tap is a touch's double-click: the map answers both in one place (onHexagonDoubleClick).
+    const listenerType = gesture.kind === "tap" ? "click" : gesture.kind === "double-tap" ? "dblclick" : "contextmenu";
     const touchEvent = this.latestTouchEvent;
     if (!touchEvent || !this.isActive || this.isDestroyed) {
       return;

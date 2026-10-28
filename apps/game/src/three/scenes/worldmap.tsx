@@ -158,7 +158,6 @@ import {
 import throttle from "lodash/throttle";
 import { Box3, Color, Group, type Ray, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { zoomTowardCursor } from "./worldmap-zoom/worldmap-zoom-anchor";
-import { inOpenMapArea } from "../utils/labels/hud-clearance";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
 import type { TerrainPresentationEvent } from "@/three/terrain/worldmap-procedural-terrain";
@@ -266,9 +265,13 @@ import {
   recordWorldmapTerrainReadyDuration,
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
-import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "./worldmap-army-select-request";
+import {
+  ARMY_SELECT_REQUEST_EVENT,
+  takeArmySelectRequest,
+  type ArmySelectRequest,
+} from "./worldmap-army-select-request";
 import { DEPLOY_ON_MAP_EVENT, type DeployOnMap, deployShownOnMap, readDeployOnMap } from "./worldmap-deploy-request";
-import { cameraHexOf } from "./worldmap-camera-target";
+import { cameraHexOf, type CameraNavigation } from "./worldmap-camera-target";
 import { offerSelectedArmyOrdersAtOutcome, sendSelectedArmyTravel } from "./worldmap-army-order-selection";
 import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-order";
 import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
@@ -947,7 +950,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private selectAwaitedArmy(): void {
     const request = takeArmySelectRequest();
-    if (request) void this.selectRequestedArmy(request.entityId, request.forSite);
+    if (request) void this.selectRequestedArmy(request);
   }
   private orderRequestHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
@@ -1895,7 +1898,7 @@ export default class WorldmapScene extends WarpTravel {
       if (!target) {
         return;
       }
-      this.moveCameraToMapPosition(target, 0.25);
+      this.moveCameraToMapPosition(target, "minimap", 0.25);
     }, 16);
 
     window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
@@ -2154,8 +2157,12 @@ export default class WorldmapScene extends WarpTravel {
     useCameraZoomStore.getState().setWorldmapDistance(settled);
   }
 
-  /** Moves the camera onto a map position, by the one conversion every camera target goes through. */
-  public moveCameraToMapPosition(position: Position, duration: number = 2): void {
+  /**
+   * Moves the camera onto a map position, by the one conversion every camera target goes through, for one of the
+   * player's requests to look somewhere (CameraNavigation). A tap, a selection or an order never comes here.
+   */
+  public moveCameraToMapPosition(position: Position, reason: CameraNavigation, duration = 0): void {
+    verboseLog("[Worldmap] camera moves for", reason);
     const hex = cameraHexOf(position);
     if (this.reachWorldOrigin(hex)) return;
     super.moveCameraToColRow(hex.col, hex.row, duration);
@@ -2190,7 +2197,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private moveCameraToRouteWorldPosition(routeWorldPosition: HexPosition): void {
     const { col, row } = routeWorldPosition;
-    this.moveCameraToMapPosition(Position.fromNormalized({ x: col, y: row }), 0);
+    this.moveCameraToMapPosition(Position.fromNormalized({ x: col, y: row }), "address");
   }
 
   private requestURLLocationRefreshIfNeeded(shouldRequestRefresh: boolean): void {
@@ -2642,17 +2649,10 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * A tap or click on the map: answered, then, on a phone, the tapped tile kept in sight above the card it opened. The
-   * camera follows the player's tap only, never a selection made elsewhere (owner, 27 October 2026: Deploy must not
-   * move the camera).
+   * What a tap or click on the map does (hexCoords is normalized). It selects, opens a card or gives an order, and
+   * leaves the camera where the player put it (CameraNavigation).
    */
   protected onHexagonClick(hexCoords: HexPosition | null) {
-    this.answerMapTap(hexCoords);
-    if (hexCoords) this.keepTappedTileInSight(contractHexOf(hexCoords));
-  }
-
-  /** What a tap or click on the map does (hexCoords is normalized). */
-  private answerMapTap(hexCoords: HexPosition | null) {
     if (this.factsShown) {
       this.factsShown = false;
       this.onHexagonMouseMove(null);
@@ -2866,7 +2866,8 @@ export default class WorldmapScene extends WarpTravel {
       site:
         (structure !== undefined && this.isStandingExpeditionSite(structure.id)) ||
         this.usableSiteAt(hexCoords) !== null,
-      ownSpire: this.isArmysSpire(selectedEntityId, hexCoords),
+      // An army of the player's standing on the spire is selected by the tap, as on any site.
+      ownSpire: this.isArmysSpire(selectedEntityId, hexCoords) && !this.holdsOwnSelectable(hexCoords),
       onPhone: layoutNow() === "phone",
       refused: this.refusalAt(hexCoords),
       hud: this.hudCarriesOrderVerb()
@@ -4214,27 +4215,6 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * On a phone a tapped tile's card stands over the map's foot (owner, 26 October 2026: layout A, "the camera puts the
-   * tapped tile in the map left open"): once the card stands, the tapped tile, when it is the one selected and the card
-   * covers it, is framed in the map left open above it. A tile still in sight keeps the camera where the player put it.
-   */
-  private keepTappedTileInSight(tapped: HexPosition): void {
-    if (!this.hudCarriesOrderVerb()) return;
-    // The card opens on the render after the tap; the open area is read once it stands.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        const now = this.state.selectedHex;
-        if (!now || now.col !== tapped.col || now.row !== tapped.row) return;
-        const tile = Position.fromContract({ x: tapped.col, y: tapped.row });
-        const normalized = tile.getNormalized();
-        const viewport = { width: window.innerWidth, height: window.innerHeight };
-        if (inOpenMapArea(projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera), viewport)) return;
-        this.frameOnOpenMap([tile]);
-      }),
-    );
-  }
-
-  /**
    * The selection's orders, and why each tile the rules looked at offers none (ActionPaths.getRefusals): the two always
    * change together, so the map never names a reason from another moment's orders.
    */
@@ -4469,7 +4449,7 @@ export default class WorldmapScene extends WarpTravel {
   private async openOnEntryDestination(): Promise<void> {
     if (resolvePlayRouteWorldPosition(window.location)) return;
     const destination = await whenEntryDestinationSettled();
-    if (destination) this.moveCameraToMapPosition(destination, 0);
+    if (destination) this.moveCameraToMapPosition(destination, "entry");
   }
 
   /** The flight owns the camera: no chunk work (terrain pages, composites, refreshes) draws on its way out. */
@@ -8697,7 +8677,7 @@ export default class WorldmapScene extends WarpTravel {
           attempts++;
           continue;
         }
-        await this.focusAndSelectArmy(army.entityId, resolvedPosition, account);
+        await this.focusAndSelectArmy(army.entityId, resolvedPosition, account, "shortcut");
         // Always stop on this army — don't skip to the next one,
         // which would cause the camera to flicker between positions.
         break;
@@ -8707,29 +8687,20 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * Selects the army the HUD asked for, framed in the map's open area, the way the Tab shortcut does. Asked from a
-   * site's card or Next up, the card stays open on that site with the army as its actor: the attack's preview, or what
-   * the army lacks. The framing moves the camera, into another chunk when the site is far, so it runs as the shortcut
-   * does: the chunk under the framed view switches at once, without the delay a pan's switch waits out.
+   * Shows the army the HUD asked for: the player's request to look at it, so the camera frames it in the map's open area,
+   * in sight or not, and selects it. Asked with a site (a coach step's target), both are framed and the site's card opens
+   * with the army as its actor. The framing can cross into another chunk, so it runs as the Tab shortcut does: the chunk
+   * under the framed view switches at once, without the delay a pan's switch waits out.
    */
-  private async selectRequestedArmy(entityId: number, forSite: Position | null): Promise<void> {
+  private async selectRequestedArmy({ entityId, forSite }: ArmySelectRequest): Promise<void> {
     const account = accountAddress();
     const position = this.getArmyDisplayPosition(entityId);
     if (account === null || !position) return;
-    // On a Frontier phone an army already in sight keeps the camera where the player put it, so the next tap lands
-    // where they aim it (owner, 22 October 2026: mobile direction A). Elsewhere a pick frames the army, as it did.
-    const inSight =
-      !forSite &&
-      this.hudCarriesOrderVerb() &&
-      inOpenMapArea(projectHexToScreen(position, this.camera), {
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
+    const army = Position.fromNormalized({ x: position.col, y: position.row });
     await this.runShortcutArmySelection(async () => {
-      await this.focusAndSelectArmy(entityId, position, account, { moveCamera: !inSight });
-      if (getLiveWorldmapEntityActions().selectedEntityId !== entityId || inSight) return;
-      const army = Position.fromNormalized({ x: position.col, y: position.row });
-      this.frameOnOpenMap(forSite ? [army, forSite] : [army]);
+      await this.focusAndSelectArmy(entityId, position, account, "show");
+      if (getLiveWorldmapEntityActions().selectedEntityId !== entityId) return;
+      this.frameOnOpenMap(forSite ? [army, forSite] : [army], "show");
       if (!forSite) return;
       const site = forSite.getContract();
       this.openTargetCardForSelectedArmy({ col: site.x, row: site.y });
@@ -8740,7 +8711,8 @@ export default class WorldmapScene extends WarpTravel {
    * Frames hexes in the map's open area, between the HUD's columns and above its order bubbles, instead of the screen's
    * centre, which those cover: their midpoint lands at the open area's centre, at the same zoom and angle.
    */
-  private frameOnOpenMap(positions: Position[]): void {
+  private frameOnOpenMap(positions: Position[], reason: CameraNavigation): void {
+    verboseLog("[Worldmap] camera frames for", reason);
     const hexes = positions.map(cameraHexOf);
     this.reachWorldOrigin(hexes[0]);
     const points = hexes.map((hex) => this.hexSpace.positionForHex(hex));
@@ -8754,11 +8726,12 @@ export default class WorldmapScene extends WarpTravel {
     entityId: number,
     resolvedPosition: { col: number; row: number },
     account: ContractAddress,
-    { moveCamera = true }: { moveCamera?: boolean } = {},
+    camera: CameraNavigation | null,
   ): Promise<void> {
-    if (moveCamera) {
+    if (camera) {
       this.moveCameraToMapPosition(
         Position.fromNormalized({ x: resolvedPosition.col, y: resolvedPosition.row }),
+        camera,
         SHORTCUT_NAVIGATION_DURATION_SECONDS,
       );
       try {
@@ -9369,7 +9342,7 @@ export default class WorldmapScene extends WarpTravel {
       spectator: this.state.isSpectating,
     });
 
-    this.moveCameraToMapPosition(worldMapPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+    this.moveCameraToMapPosition(worldMapPosition, "shortcut", SHORTCUT_NAVIGATION_DURATION_SECONDS);
     void this.refreshChunksAfterShortcutNavigation(
       { col: normalizedPosition.x, row: normalizedPosition.y },
       SHORTCUT_NAVIGATION_DURATION_SECONDS,
@@ -9399,7 +9372,7 @@ export default class WorldmapScene extends WarpTravel {
         worldMapPosition,
         spectator: this.state.isSpectating,
       });
-      this.moveCameraToMapPosition(worldMapPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+      this.moveCameraToMapPosition(worldMapPosition, "shortcut", SHORTCUT_NAVIGATION_DURATION_SECONDS);
       void this.refreshChunksAfterShortcutNavigation(
         { col: normalizedPosition.x, row: normalizedPosition.y },
         SHORTCUT_NAVIGATION_DURATION_SECONDS,

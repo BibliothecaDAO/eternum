@@ -26,17 +26,25 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
   }),
 }));
 vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => vi.fn() }));
+// The realm the player visits, as the season board's Visit starts it; none until a test visits.
+const visiting = vi.hoisted(() => ({ visit: null as { player: string; structureId: number; opensOn: null } | null }));
+vi.mock("@/sync/active-game-client", async (original) => ({
+  ...(await original<typeof import("@/sync/active-game-client")>()),
+  useRealmVisit: () => visiting.visit,
+}));
 vi.mock("@/ui/features/social", async () => ({
   ...(await import("@/ui/features/social/realtime-chat/hooks/use-realtime-chat")),
   RealtimeChatShell: () => <input aria-label="Message" />,
 }));
 
-const { readExpeditionRules } = await import("@bibliothecadao/eternum");
+const { getStructureName, readExpeditionRules } = await import("@bibliothecadao/eternum");
 const { useRealtimeChatStore } = await import("@/ui/features/social/realtime-chat/model/store");
 const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { overrideSpectateIntent } = await import("@/utils/spectator-session");
 const { FrontierHud } = await import("./frontier-hud");
+const { BuildingType } = await import("@bibliothecadao/types");
+const { buildingName } = await import("./build/building-names");
 
 /** The frame's width, as the layout reads it: a desktop from 1024 px, told to the layout when it changes. */
 const viewport = (() => {
@@ -107,16 +115,18 @@ const renderHud = () =>
 const LABOR_RULES = {
   model: "LaborRules",
   key: "0x1ab",
-  value: { game_id: 1, amount: "1000", account_daily_limit: 5 },
+  value: { game_id: 1, amount: "1000", campaign_essence: "0", golden_amount: "1000", golden_essence: "0" },
 };
 
-it("opens Realms from a desktop realm panel whose Realms have no labor waiting, so a new player can add one", async () => {
+it("opens Realm Labor from the desktop panel and explains why a free home has no claim", async () => {
   viewport.set(1440);
   await renderHud();
-  const realms = [...host.querySelectorAll("button")].find((button) => button.getAttribute("aria-label") === "Realms");
+  const realms = [...host.querySelectorAll("button")].find(
+    (button) => button.getAttribute("aria-label") === "Realm Labor",
+  );
   expect(realms).toBeDefined();
   await act(async () => realms!.click());
-  expect(host.querySelector('form[aria-label="Add a Realm"]')).not.toBeNull();
+  expect(host.textContent).toContain("No daily Labor claim");
 });
 
 it("keeps one chat connection and its unread count from desktop to phone and back, through the Frontier HUD", async () => {
@@ -410,4 +420,135 @@ it("tells a spectator on a phone that they are spectating, where a player's purs
     overrideSpectateIntent(false);
     await act(async () => useUIStore.setState({ isSpectating: false }));
   }
+});
+
+/** The lab's realm 7's neighbour, realm 8 of player 0x222, its own Realm so its name tells it from the player's. */
+const neighbour = (store: Parameters<NonNullable<Parameters<typeof LabGame>[0]["facts"]>>[0]) => {
+  const own = store.require("Structure", { game_id: 1, entity_id: 7 });
+  return { ...own, entity_id: 8n, owner: 0x222n, metadata: { ...own.metadata, realm_id: own.metadata.realm_id + 1 } };
+};
+const wireRow = (row: unknown) =>
+  JSON.parse(JSON.stringify(row, (_, field) => (typeof field === "bigint" ? String(field) : field)));
+
+/**
+ * The real Frontier HUD on a visit to realm 8, as the season board's Visit starts it, with `facts` on top of the
+ * neighbour's realm; returns the two realms' names.
+ */
+const renderVisit = async (facts: unknown[] = []) => {
+  let names = { own: "", visited: "" };
+  visiting.visit = { player: "0x222", structureId: 8, opensOn: null };
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <QueryClientProvider client={new QueryClient()}>
+          <LabGame
+            preset={5}
+            facts={(store) => {
+              const visited = neighbour(store);
+              names = {
+                own: getStructureName(store.require("Structure", { game_id: 1, entity_id: 7 }), store).name,
+                visited: getStructureName(visited, store).name,
+              };
+              return [
+                LABOR_RULES,
+                { model: "Structure", key: "0x1ad0", value: wireRow(visited) },
+                {
+                  model: "RealmKnowledge",
+                  key: "0x1ad4",
+                  value: wireRow({ game_id: 1, structure_id: 8, learned: "0" }),
+                },
+                ...facts,
+              ] as never;
+            }}
+          >
+            {(store) => <FrontierHud rules={readExpeditionRules(store, 1)!} />}
+          </LabGame>
+        </QueryClientProvider>
+      </MemoryRouter>,
+    ),
+  );
+  return names;
+};
+
+// Owner, 28 October 2026, visiting another realm: "the selected panel doesnt match the actual building". The board
+// shows the visited realm, so the realm panel does too, never the player's own.
+it("shows the visited realm on a desktop's realm panel, not the player's own", async () => {
+  viewport.set(1440);
+  try {
+    const names = await renderVisit();
+    const panel = host.querySelector('section[aria-label="Realm"]')?.textContent ?? "";
+    expect(names.visited).not.toBe(names.own);
+    expect(panel).toContain(names.visited);
+    expect(panel).not.toContain(names.own);
+  } finally {
+    visiting.visit = null;
+  }
+});
+
+/** A building on a realm's plot, as Herald streams it. */
+const standing = (key: string, realmId: number, category: number) => ({
+  model: "Building",
+  key,
+  value: {
+    game_id: 1,
+    structure_id: String(realmId),
+    inner_col: 11,
+    inner_row: 10,
+    category,
+    paused: false,
+    labor_paid: "0",
+  },
+});
+
+/**
+ * On a visit to realm 8, whose plot (11, 10) holds a Barracks where the player's holds a Supply yard, the plot `at` of
+ * the board tapped: the card it opens, by its title, and its controls.
+ */
+const tapOnVisit = async (width: number, at: { innerCol: number; innerRow: number }) => {
+  viewport.set(width);
+  const { isSpectating, structureEntityId, selectedBuildingHex } = useUIStore.getState();
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
+  try {
+    await renderVisit([
+      standing("0x1ae0", 7, BuildingType.SupplyYard),
+      standing("0x1ae1", 8, BuildingType.ResourceKnightT1),
+    ]);
+    await act(async () =>
+      useUIStore.setState({ isSpectating: true, structureEntityId: 8, selectedBuildingHex: { structureId: 8, ...at } }),
+    );
+    const card = host.querySelector("[data-kit-sheet]");
+    return {
+      title: card?.getAttribute("aria-label"),
+      controls: [...(card?.querySelectorAll("button") ?? [])].map(
+        (each) => each.getAttribute("aria-label") ?? each.textContent,
+      ),
+    };
+  } finally {
+    visiting.visit = null;
+    window.history.replaceState(null, "", route);
+    await act(async () => useUIStore.setState({ isSpectating, structureEntityId, selectedBuildingHex }));
+  }
+};
+
+// The building the board draws and its hover names, read as it stands: the Barracks, never the player's Supply yard on
+// the same plot, with nothing to order (owner, 28 October 2026: "the selected panel doesnt match the actual building").
+it.each([
+  ["desktop", 1440],
+  ["phone", 390],
+])("opens the visited realm's building on a %s's tap, read as it stands, never the player's own", async (_, width) => {
+  expect(buildingName(BuildingType.ResourceKnightT1)).not.toBe(buildingName(BuildingType.SupplyYard));
+  expect(await tapOnVisit(width, { innerCol: 11, innerRow: 10 })).toEqual({
+    title: buildingName(BuildingType.ResourceKnightT1),
+    controls: ["Close"],
+  });
+});
+
+it.each([
+  ["desktop", 1440],
+  ["phone", 390],
+])("opens the visited realm's castle on a %s's tap with no Upgrade and no research", async (_, width) => {
+  const { title, controls } = await tapOnVisit(width, { innerCol: 10, innerRow: 10 });
+  expect(title).toBe("Castle");
+  expect(controls).toEqual(["Close"]);
 });

@@ -7,9 +7,11 @@ import { normalizeStarknetAddress, type LedgerPayDecision } from "@realms-world/
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { ACCOUNT_CLASS_HASH, decodeIdentityEnv, type IdentityEnv } from "./env";
 import { encodeChainName } from "@realms-world/chain";
-import { identityL2Configuration, realmOwnerOf } from "./l2";
+import { identityL2Configuration } from "./l2";
+import { heldRealms, holdsRealm } from "./realm-holdings";
 import { realmsIdsOfAccounts } from "./realms-accounts";
 import { readLinkedWallet } from "./linked-wallet";
+import { campaignTicketFor } from "./campaign-ticket-store";
 
 /** Only a service binding exposes these reads; they have no public HTTP route. */
 export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
@@ -22,8 +24,11 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   override fetch() {
     return new Response(null, { status: 404 });
   }
-  realmOwnerOf(realmId: string) {
-    return realmOwnerOf(decodeIdentityEnv(this.env as unknown as Record<string, unknown>), realmId);
+  holdsRealm(wallet: string, realmId: number) {
+    return holdsRealm(decodeIdentityEnv(this.env as unknown as Record<string, unknown>), wallet, realmId);
+  }
+  heldRealms(wallet: string) {
+    return heldRealms(decodeIdentityEnv(this.env as unknown as Record<string, unknown>), wallet);
   }
   async recordPayDecisions(decisions: LedgerPayDecision[]) {
     for (const decision of decisions) await recordPayDecision(this.env.DB, decision);
@@ -50,6 +55,10 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
       .bind(realmsId)
       .first<{ realmsId: string }>();
     return user ? realmsAccountAddress(user.realmsId, ACCOUNT_CLASS_HASH, await this.env.GUARDIAN.publicKey()) : null;
+  }
+  /** The campaign ticket an account founds its home with in a game of this preset, or null when it holds none. */
+  campaignTicket(realmsId: string, presetId: number) {
+    return campaignTicketFor(this.env.DB, realmsId, presetId);
   }
   async authenticate(cookie: string): Promise<{ realmsId: string } | null> {
     const session = await createIdentityAuth(this.env).api.getSession({ headers: new Headers({ cookie }) });

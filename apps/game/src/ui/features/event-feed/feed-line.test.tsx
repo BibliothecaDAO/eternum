@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
-import { buildStoryEventPresentation, configManager, siteDisplayName } from "@bibliothecadao/eternum";
+import {
+  buildStoryEventPresentation,
+  configManager,
+  expeditionDepth,
+  readExpeditionRules,
+  siteDisplayName,
+} from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { FALLEN_REALM_DEPTHS, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -24,6 +31,12 @@ vi.mock("@/hooks/use-player-profile", () => ({
 }));
 // Where a row opens is the opener's, covered by its own tests (feed-row-line.test.tsx).
 vi.mock("./story-feed-row", () => ({ useStoryOpener: () => null }));
+// Herald, as the game's shard names it; its answers are the `fetch` each test serves.
+vi.mock("@/runtime/world", () => ({ getActiveGame: () => ({ chainId: "0x1" }) }));
+vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
+  requireShard: () => ({ url: "http://herald.test", chainId: "0x1", worldAddress: "0xabc" }),
+}));
 
 const { FeedLine } = await import("./feed-line");
 
@@ -54,11 +67,24 @@ beforeEach(() => {
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
+  queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  herald.clear();
+  vi.stubGlobal("fetch", async (address: string) => {
+    const site = herald.get(Number(/\/games\/1\/sites\/(\d+)$/.exec(address)?.[1]));
+    return site
+      ? new Response(JSON.stringify(site))
+      : new Response(JSON.stringify({ error: "unknown_site" }), { status: 404 });
+  });
 });
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
+  vi.unstubAllGlobals();
 });
+
+let queries: QueryClient;
+/** The sites Herald holds by entity, as it serves them: every scalar in hex, the way its fold writes rows. */
+const herald = new Map<number, Record<string, unknown>>();
 
 /** A story as the Feed receives it, worded by the game's one story formatter. */
 const story = (owner: string, kind: string, payload: Record<string, unknown>): ProcessedStoryEvent =>
@@ -80,7 +106,15 @@ const story = (owner: string, kind: string, payload: Record<string, unknown>): P
 const scaled = (units: number) => String(BigInt(Math.round(units * 1_000_000_000)));
 
 const draw = async (row: ProcessedStoryEvent, own = false) => {
-  await act(async () => root.render(<FeedLine story={row} own={own} />));
+  await act(async () =>
+    root.render(
+      <QueryClientProvider client={queries}>
+        <FeedLine story={row} own={own} />
+      </QueryClientProvider>,
+    ),
+  );
+  // Herald's answer for a site the map does not hold.
+  await act(async () => new Promise((settled) => setTimeout(settled, 0)));
   const line = host.querySelector("[data-feed-line]")!;
   return {
     words: line.querySelector(".ui-event__text")!.textContent,
@@ -158,9 +192,135 @@ it("says a fight's army was lost", async () => {
   expect((await draw(row, true)).words).toBe(`djizus attacked ${siteDisplayName(CAMP)} · Army lost`);
 });
 
+/** A fight on the camp's site, the attacker's army lost to its guard. */
+const fightAt = (site: number) =>
+  story(KRUMP, "BattleEvent", {
+    attacker_id: 71,
+    defender_id: site,
+    attacker: { player: KRUMP, category: "Knight", tier: "T1", before: "300000000000", after: "0", roll: 0 },
+    defender: {
+      player: "0x0",
+      category: "Knight",
+      tier: "T1",
+      before: "1100000000000",
+      after: "1000000000000",
+      roll: 0,
+    },
+  });
+/** The paintings a row draws: the act's at its head, then what it was done to. */
+const paintings = () =>
+  [...host.querySelectorAll("[data-feed-line] [data-icon]")].map((icon) => icon.getAttribute("data-icon"));
+
+/** The depth of the camp's row, with its beast bounds, which tell a roaming beast's two strengths apart. */
+const depthWithBounds = () => {
+  const site = game.store.require("ExpeditionSite", { game_id: 1, entity_id: CAMP });
+  const depth = expeditionDepth(readExpeditionRules(game.store, 1)!, { y: site.row });
+  game.store.applyFacts([
+    {
+      model: "DepthRules",
+      key: "0x777",
+      value: {
+        game_id: 1,
+        depth,
+        beast_weak_lower: 300,
+        beast_weak_upper: 350,
+        beast_strong_lower: 450,
+        beast_strong_upper: 550,
+        site_guard_lower: 1000,
+        site_guard_upper: 1600,
+        reveal_site_neighbors: false,
+        entry_stamina: 0,
+        reveal_percent: 10,
+        chest: { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
+        ruin_guard_lower: 2000,
+        ruin_guard_upper: 4000,
+        guard_step: 100,
+      },
+    },
+  ] as never);
+  return { site, depth };
+};
+/** Every kind of site the game guards, by its starting guard, and the beast the map paints for it at that depth. */
+const guardsAt = (depth: number) =>
+  [
+    [StructureType.Camp, 1_400, "beast-troll"],
+    [StructureType.Rift, 1_400, "beast-dark-fey"],
+    [StructureType.Beasts, 320, "beast-cyclops"],
+    [StructureType.Beasts, 500, "beast-wraith"],
+    [StructureType.Ruin, 3_000, `beast-${FALLEN_REALM_DEPTHS[depth]!.beast}`],
+  ] as const;
+const hex = (value: number | bigint | string) => `0x${BigInt(value).toString(16)}`;
+
+it("draws the guard a fight was against as the map draws it, for every kind of site the game guards", async () => {
+  const { site, depth } = depthWithBounds();
+  for (const [category, guard, painting] of guardsAt(depth)) {
+    game.store.applyFacts([
+      {
+        model: "ExpeditionSite",
+        key: "0x1:0x2329",
+        value: { ...site, category, initial_guard_count: scaled(guard) },
+      },
+    ] as never);
+    await draw(fightAt(CAMP));
+    expect(paintings()).toEqual(["attack", painting]);
+  }
+});
+
+// The owner, 28 October 2026: "the icons in the chat arent the new ones ?" ("Loaf attacked Runegrasp · Army lost").
+it("draws the guard of a fight far from the player's armies from Herald's row of that site, for every kind", async () => {
+  const { site, depth } = depthWithBounds();
+  for (const [index, [category, guard, painting]] of guardsAt(depth).entries()) {
+    const far = 4_242 + index;
+    herald.set(far, {
+      game_id: "0x1",
+      entity_id: hex(far),
+      category: hex(category),
+      initial_guard_count: hex(scaled(guard)),
+      alt: false,
+      col: hex(site.col + 40),
+      row: hex(site.row),
+      clear: null,
+    });
+    const read = await draw(fightAt(far));
+    expect(read.words).toBe(`Krump attacked ${siteDisplayName(far)} · Army lost`);
+    expect(paintings()).toEqual(["attack", painting]);
+  }
+});
+
+it("keeps a site's guard once the player's map lets the site go, as when their army leaves its region", async () => {
+  const { site } = depthWithBounds();
+  herald.set(CAMP, {
+    game_id: "0x1",
+    entity_id: hex(CAMP),
+    category: hex(site.category),
+    initial_guard_count: hex(site.initial_guard_count),
+    alt: false,
+    col: hex(site.col),
+    row: hex(site.row),
+    clear: null,
+  });
+  await draw(fightAt(CAMP));
+  expect(paintings()).toEqual(["attack", "beast-troll"]);
+  await act(async () => game.store.applyFacts([{ model: "ExpeditionSite", key: "0x1:0x2329", value: null }] as never));
+  await act(async () => new Promise((settled) => setTimeout(settled, 0)));
+  expect(game.store.get("ExpeditionSite", { game_id: 1, entity_id: CAMP })).toBeUndefined();
+  expect(paintings()).toEqual(["attack", "beast-troll"]);
+});
+
+it("draws no guard, never an old or guessed one, for a site neither the map nor Herald holds", async () => {
+  await draw(fightAt(4_300));
+  expect(paintings()).toEqual(["attack"]);
+});
+
 it("says what an army trained in the story's own words", async () => {
-  const row = story(KRUMP, "TierBought", { explorer_id: 71, attribute: "Logistics", tier: 2, price: 100, kind: null });
-  expect((await draw(row)).words).toBe("Krump trained Logistics uncommon");
+  const row = story(KRUMP, "SkillPointSpent", {
+    explorer_id: 71,
+    choice: "Logistics",
+    tier: 2,
+    point_rank: 2,
+    stamina: 30,
+  });
+  expect((await draw(row)).words).toBe("Krump spent a point Logistics uncommon");
   expect(host.querySelector(".ui-event__text .ui-feed-line__glyph")!.getAttribute("data-icon")).toBe("order-skill");
 });
 

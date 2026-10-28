@@ -1,5 +1,5 @@
 {
-  "include": ["./**/*.ts"],
+  "include": ["./**/*.ts", "../scripts/**/*.ts"],
   "compilerOptions": {
     "strict": true,
     "module": "ESNext",

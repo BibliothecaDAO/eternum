@@ -58,6 +58,7 @@ export type MoveArmyResult = Awaited<ReturnType<ArmyActionManager["moveArmy"]>>;
 export type CreateExplorerArmyResult = Awaited<ReturnType<ArmyManager["createExplorerArmy"]>>;
 
 export interface CreateExplorerArmyInput {
+  slot: number;
   structureId: ID;
   troopType: TroopType;
   troopTier: TroopTier;
@@ -152,6 +153,7 @@ export const createExplorerArmy = async (
     input.troopTier,
     input.troopCount,
     input.spawnDirection,
+    input.slot,
   );
 
 export const addTroopsToExplorer = async (client: ActionClient, input: AddTroopsToExplorerInput): Promise<void> =>

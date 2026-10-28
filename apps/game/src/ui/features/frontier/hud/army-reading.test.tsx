@@ -36,7 +36,7 @@ it.each([
           stamina={stamina}
           xp={0}
           troops={500}
-          canBuyTier={false}
+          canSpendSkillPoint={false}
           selected={false}
           onPick={() => {}}
         />

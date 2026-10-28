@@ -29,7 +29,14 @@ const buildStore = () => {
   const store = new NativeFactStore();
   const write = (model: string, id: number, value: Record<string, unknown>) =>
     store.applyFacts([{ model, key: hash.computePoseidonHashOnElements([1, id]), value }]);
-  const setStructure = (id: number, realmId: number, level: number) =>
+  store.applyFacts([
+    {
+      model: "GameRelease",
+      key: hash.computePoseidonHashOnElements([1]),
+      value: { game_id: 1, release_id: 3, created_release_id: 3, preset_commitment: 0x1abn },
+    },
+  ]);
+  const setHeldRealm = (id: number, realmId: number, level: number) => {
     write("Structure", id, {
       game_id: 1,
       entity_id: id,
@@ -52,6 +59,8 @@ const buildStore = () => {
       },
       resources_packed: 0n,
     });
+    write("SettledRealm", realmId, { game_id: 1, realm_id: realmId, home: BigInt(id) });
+  };
   const setExplorer = (id: number, owner: number, tier: string) =>
     write("ExplorerTroops", id, {
       ...explorerFixture.expected.value,
@@ -60,7 +69,7 @@ const buildStore = () => {
       owner,
       troops: { ...explorerFixture.expected.value.troops, tier },
     });
-  return { store, setStructure, setExplorer };
+  return { store, setHeldRealm, setExplorer };
 };
 
 const story = (storyType: string, storyPayload: Record<string, unknown>, entityId: number | null = null): Event =>
@@ -263,8 +272,10 @@ it.each([
 
 it("shows the tier an Upgrade reached and the XP it cost from history", () => {
   expect(
-    buildStoryEventPresentation(story("TierBought", { explorer_id: 7, attribute: "Logistics", tier: 3, price: 200 })),
-  ).toMatchObject({ title: "Logistics rare", description: "Lord 0123's army · 200 XP" });
+    buildStoryEventPresentation(
+      story("SkillPointSpent", { explorer_id: 7, choice: "Logistics", tier: 3, point_rank: 3, stamina: 30 }),
+    ),
+  ).toMatchObject({ title: "Logistics rare", description: "Lord 0123's army · rare point · +30 stamina" });
 });
 
 /** A story the viewer's own account told. */
@@ -438,7 +449,8 @@ describe("every story the chain can tell", () => {
     GuardDeleteStory: { structure_id: 5, slot: 0 },
     TroopsTransferred: { source: { Explorer: 7 }, target: { Explorer: 8 }, amount },
     LordsWithdrawn: { account: "0x111", amount },
-    TierBought: { explorer_id: 7, attribute: "Battle", tier: 2, price: 100 },
+    SiteUsed: { explorer_id: 7, coord, benefit: { Shrine: 200 } },
+    SkillPointSpent: { explorer_id: 7, choice: "Battle", tier: 2, point_rank: 2, stamina: 30 },
     RewardChestOpened: { explorer_id: 7, structure_id: 5, coord, amount: 17 },
     SitePayout: {
       structure_id: 5,
@@ -534,8 +546,8 @@ describe("every story the chain can tell", () => {
 it("says where an opened chest's relics went, and lists them as their panel does", () => {
   expect(new Set(RELICS.map((relic) => relic.name)).size).toBe(RELICS.length);
   vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
-  const { store, setStructure, setExplorer } = buildStore();
-  setStructure(5, 1, 1);
+  const { store, setHeldRealm, setExplorer } = buildStore();
+  setHeldRealm(5, 1, 1);
   setExplorer(7, 5, "T1");
   const opened = (chest: { pack: "War" | "Explore" | "Produce" | "Fortress"; lucky: boolean }) =>
     buildStoryEventPresentation(
@@ -584,8 +596,8 @@ describe("a relic activation", () => {
 
   it.each(RELICS)("names $name, its actor, recipient and effect in the Events line", (relic) => {
     vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
-    const { store, setStructure, setExplorer } = buildStore();
-    setStructure(5, 1, 1);
+    const { store, setHeldRealm, setExplorer } = buildStore();
+    setHeldRealm(5, 1, 1);
     setExplorer(7, 5, "T1");
     const reveal = relic.id === 45 || relic.id === 46;
     const recipient = relic.id < 49 ? "Explorer" : relic.id < 51 ? "StructureGuard" : "StructureProduction";
@@ -634,8 +646,8 @@ describe("a relic activation", () => {
 describe("a capture", () => {
   const names = (address: string) => ({ "0xc1": "clientlane", "0xa1": "uxplay" })[address] ?? null;
   const captured = (previousOwner: string, viewerAddress: string | null, points = 0n) => {
-    const { store, setStructure } = buildStore();
-    setStructure(5, 1, 1);
+    const { store, setHeldRealm } = buildStore();
+    setHeldRealm(5, 1, 1);
     const realm = buildStoryEventPresentation(story("RealmCreatedStory", { coord: { x: 1, y: 1 } }, 5), store).title;
     const presentation = buildStoryEventPresentation(
       {
@@ -679,8 +691,8 @@ it("counts one troop as one", () => {
 
 describe("a story's subject", () => {
   it("is named in its title, so a list of titles says which realm each line is about", () => {
-    const { store, setStructure } = buildStore();
-    setStructure(5, 1, 1);
+    const { store, setHeldRealm } = buildStore();
+    setHeldRealm(5, 1, 1);
     const title = (storyType: string, payload: Record<string, unknown>) =>
       buildStoryEventPresentation(story(storyType, payload, 5), store).title;
     const name = title("RealmCreatedStory", { coord: { x: 1, y: 1 } }).replace(/ founded$/, "");
@@ -732,8 +744,8 @@ describe("a story's subject", () => {
   });
 
   it("tells a building's placement and its payment, one action, by the same title", () => {
-    const { store, setStructure } = buildStore();
-    setStructure(5, 1, 1);
+    const { store, setHeldRealm } = buildStore();
+    setHeldRealm(5, 1, 1);
     const placed = buildStoryEventPresentation(
       story("BuildingPlacementStory", { coord: { x: 1, y: 1 }, category: 37, change: "Created" }, 5),
       store,
@@ -749,8 +761,8 @@ describe("a story's subject", () => {
 describe("a resource transfer", () => {
   it("names each end as the structure or the army it is, and leaves out an end the store no longer holds", () => {
     vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
-    const { store, setStructure, setExplorer } = buildStore();
-    setStructure(5, 1, 1);
+    const { store, setHeldRealm, setExplorer } = buildStore();
+    setHeldRealm(5, 1, 1);
     setExplorer(7, 5, "T1");
     const sent = (from: number, to: number) =>
       buildStoryEventPresentation(
@@ -868,8 +880,8 @@ it("adds the points an opened crate scored", () => {
 
 it("tells the recorded whole LORDS payment and names its home even after the opening army is gone", () => {
   vi.spyOn(configManager, "getPresetId").mockReturnValue(5);
-  const { store, setStructure } = buildStore();
-  setStructure(5, 1, 1);
+  const { store, setHeldRealm } = buildStore();
+  setHeldRealm(5, 1, 1);
   expect(
     buildStoryEventPresentation(story("RewardChestOpened", { explorer_id: 7, structure_id: 5, amount: 17 }), store)
       .title,
@@ -884,4 +896,15 @@ it("writes a hyperstructure share's points whole, from the contract's millionths
   expect(
     buildStoryEventPresentation(story("HyperstructurePoints", { player: "0x0", points: "5000000000" })).description,
   ).toMatch(/ \+5,000 points$/);
+});
+
+it.each([
+  [{ Shrine: 200 }, "Shrine used, +200 XP"],
+  [{ Well: 60 }, "Well used, +60 stamina"],
+  [{ Well: 5 }, "Well used, +5 stamina"],
+  [{ Well: 0 }, "Well used, +0 stamina"],
+])("shows the recorded site benefit without needing the consumed site or a surviving army (%j)", (benefit, title) => {
+  expect(
+    buildStoryEventPresentation(story("SiteUsed", { explorer_id: 7, coord: { x: 3, y: 4 }, benefit })),
+  ).toMatchObject({ title, description: "Lord 0123's army" });
 });

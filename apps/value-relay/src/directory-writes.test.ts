@@ -22,6 +22,8 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
 const submit = vi.hoisted(() => vi.fn());
 vi.mock("./ledger-batches", () => ({ ledgerBatches: () => ({ reportMany: submit }) }));
 const claim = (chainId: string) => ({
+  prizeRank: 0,
+  prizeCount: 0,
   chainId,
   seasonId: 1,
   transactionHash: "0xab",

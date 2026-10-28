@@ -1,3 +1,4 @@
+import { frontierArmyRules } from "../../ui/features/frontier/army/progression-rules-fixture";
 import { readExpeditionRules, setBuildingCount } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
@@ -10,8 +11,8 @@ import {
 
 import { dayClock } from "@/ui/features/frontier/hud/day-clock";
 
-import type { LabFact, LabScenario } from "./lab-chain";
-import { spireScenario } from "./spire-scenario";
+import { type LabFact, type LabScenario, wire } from "./lab-chain";
+import { PROGRESS_KEYS, spireScenario } from "./spire-scenario";
 
 /** The rows changed here, under the keys their fixtures write them by (deploy, kit lab and site fixtures). */
 const FIXTURE_KEYS = {
@@ -197,14 +198,19 @@ const armyProgressed = (store: NativeFactStore, startsAt: number): LabFact[] => 
     },
     {
       model: "ArmyProgress",
-      key: "1:201",
+      key: PROGRESS_KEYS.spireArmy,
       value: {
+        common_points: 0,
+        uncommon_points: 0,
+        rare_points: 0,
+        epic_points: 0,
+        legendary_points: 0,
         game_id: 1,
         explorer_id: "201",
         xp: 40,
         battle: 1,
         logistics: 2,
-        scouting: 1,
+        scouting: 0,
         scouting_kinds: 0,
         homecoming: 3,
       },
@@ -229,10 +235,7 @@ const researchPriced = (): LabFact[] => [
   ).flat(),
   {
     model: "ArmyProgressionRules",
-    key: "0x1ac40",
-    value: { game_id: 1, reveal_xp: 2, fixed_xp: 200, uncommon_xp: 100, rare_xp: 200, epic_xp: 400, legendary_xp: 800 },
+    key: PROGRESS_KEYS.rules,
+    value: frontierArmyRules(),
   },
 ];
-
-const wire = (value: unknown): Record<string, unknown> =>
-  JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));

@@ -1,3 +1,4 @@
+import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { openOnMap } from "@/play/navigation/open-place";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
@@ -32,7 +33,7 @@ export const FeedRowLine = ({ event, own = false }: { event: ProcessedStoryEvent
   return (
     <HudEventRow
       time={formatClockTime(event.timestampMs / 1000)}
-      icon={storyIcon(event.story)}
+      icon={storyMeaning(event.story)}
       onOpen={open ?? undefined}
     >
       {own ? <span className="text-hud-gold">{text}</span> : text}
@@ -65,11 +66,3 @@ export const ToastRow = ({
     </HudEventRow>
   );
 };
-
-/** A fight's swords; a delivery's donkey; any other news of the player's realms, their castle. */
-const storyIcon = (story: string): IconMeaning =>
-  story === "BattleEvent" || story === "RaidEvent"
-    ? "military"
-    : story === "ResourceReceiveArrivalStory"
-      ? "transfer"
-      : "realm";

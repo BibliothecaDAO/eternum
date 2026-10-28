@@ -30,6 +30,7 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "HyperstructureShares",
   "ChestRules",
   "LordsBudget",
+  "FrontierPrize",
   "LordsWithdrawal",
 ]);
 
@@ -42,6 +43,7 @@ interface DirectoryRows {
   settlementRules: FoldRow[];
   progress: FoldRow[];
   entries: FoldRow[];
+  entitlements: FoldRow[];
   rosters: FoldRow[];
 }
 
@@ -89,6 +91,7 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
     settlementRules: rows("SettlementRules"),
     progress: rows("SettlementProgress"),
     entries: rows("PlayerEntry"),
+    entitlements: rows("EntryEntitlement"),
     rosters: rows("BlitzRoster"),
   };
 }
@@ -103,11 +106,15 @@ function directoryPlayerState(
   const structures = gameRows(facts.structures, game.game_id).filter((row) => address(row.owner) === player);
   const roster = (gameRows(facts.rosters, game.game_id)[0]?.players as Row[] | undefined) ?? [];
   const seat = roster.find((row) => address(row.account) === player);
+  const held = gameRows(facts.entitlements, game.game_id).find(
+    (row) => address(row.owner) === player && number(row.pass_kind) === 2,
+  );
   const settlement = required(facts.settlementRules, game.game_id, "SettlementRules");
   return {
     registered: gameRows(facts.entries, game.game_id).some((row) => address(row.player) === player),
     settled: structures.some((row) => isRealmCategory(number(record(row.base).category))),
     roster_wallet: seat ? address(seat.wallet) : null,
+    held_realm_id: held ? number(held.realm_id) : null,
     structures: structures.map((row) => playerStructure(row, game, settlement, facts, input.timestamp)),
   };
 }
@@ -124,6 +131,8 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
       return row;
     case "SettlementProgress":
       return row.registered;
+    case "EntryEntitlement":
+      return row;
     case "PlayerEntry":
       return row.player;
     case "BlitzRoster":

@@ -1,3 +1,5 @@
+import { RESOURCE_TIER_NAMES } from "@bibliothecadao/types";
+import { categoryCan } from "@/ui/lib/structure-capabilities";
 import { knownAmount } from "@/ui/utils/utils";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { realmLevelNumber } from "@/ui/lib/realm-level";
@@ -13,7 +15,6 @@ import { openProduction } from "@/ui/features/settlement/production/open-product
 import {
   configManager,
   getBuildingQuantity,
-  getRealmNameById,
   isMilitaryResource,
   Position,
   ResourceManager,
@@ -22,21 +23,12 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
-import {
-  getBuildingFromResource,
-  ID,
-  ResourcesIds,
-  StructureType,
-  structureName,
-  formatAmount,
-  formatRate,
-} from "@bibliothecadao/types";
+import { getBuildingFromResource, ID, ResourcesIds, formatAmount, formatRate } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { HudChip, HudIconButton, HudSwitch } from "@/ui/design-system/kit/hud-elements";
 
 import React, { useCallback, useMemo, useState } from "react";
-import { ALWAYS_SHOW_RESOURCES, productionTimeLeft, HIDE_TIME_REMAINING_FOR, TIER_DISPLAY_NAMES } from "./utils";
-import { presentedMineKind } from "@bibliothecadao/eternum";
+import { ALWAYS_SHOW_RESOURCES, productionTimeLeft, HIDE_TIME_REMAINING_FOR } from "./utils";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface StructureColumn {
@@ -116,13 +108,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     const columns = playerStructures
       .filter((structure) => structure.isMine)
       .map((structure) => {
-        const realmId = Number(structure.structure.metadata.realm_id || 0);
-        const label = realmId
-          ? getRealmNameById(realmId) || structureName(StructureType.Realm)
-          : mode.structure.getTypeName(
-              structure.structure.base.category as StructureType,
-              presentedMineKind(structure.structure),
-            ) || "Structure";
+        const label = mode.structure.getName(structure.structure).name;
 
         return {
           entityId: safeInteger(structure.entityId),
@@ -155,9 +141,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         game_id: configManager.getActiveGameId(),
         entity_id: structureColumn.entityId,
       });
-      const structureCategory = structure?.base.category;
-
-      if (structureCategory === StructureType.Realm || structureCategory === StructureType.Village) {
+      if (categoryCan(structure?.base.category, "craftsRelics")) {
         craftableStructureIds.add(structureColumn.entityId);
       }
     });
@@ -425,7 +409,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                           onClick={() => handleToggleTierVisibility(tier)}
                           className="flex w-full items-center justify-between text-left"
                         >
-                          <span>{TIER_DISPLAY_NAMES[tier] || tier}</span>
+                          <span>{RESOURCE_TIER_NAMES[tier as keyof typeof RESOURCE_TIER_NAMES] ?? tier}</span>
                           <span className="flex items-center gap-2 text-hud-cue">
                             {rows.length}
                             {isCollapsed ? (

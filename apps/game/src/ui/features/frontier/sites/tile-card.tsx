@@ -1,4 +1,4 @@
-import { type IconMeaning } from "@/ui/design-system/icon";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -12,13 +12,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 
 import type { Tier } from "@/ui/design-system/kit/words";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import {
-  biomeTypeOf,
-  configManager,
-  entityMapPosition,
-  getStructureName,
-  isViewerOwner,
-} from "@bibliothecadao/eternum";
+import { biomeTypeOf, configManager, getStructureName, isViewerOwner, ruinDisappeared } from "@bibliothecadao/eternum";
 import {
   safeInteger,
   type GameClientSetup,
@@ -26,21 +20,23 @@ import {
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { fightVerdict, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { fightVerdict, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo, type ReactNode } from "react";
 
 import { useFrontierRealm, useGoToFrontierPlace } from "../frontier-home";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
-import { armyArt, type DockArmy, useDockArmies } from "../hud/dock-armies";
+import { armyArt } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
 import { readFightRecord } from "./fight-record";
 import { fightIsSent, fightWasNotSent, useFightRefusal } from "./fight-refusal";
-import { pickArmyFor, useSelectedOwnArmy } from "./selected-army";
+import { useSelectedOwnArmy } from "./selected-army";
 import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
-import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
+import { SiteCardView, type SiteVerb } from "./site-card-view";
 
 const SITE_MODELS = [
   "ExpeditionSite",
+  "ExpeditionDiscovery",
+  "LordsBudget",
   "SiteChest",
   "ExplorerTroops",
   "ArmyProgress",
@@ -54,10 +50,6 @@ const SITE_MODELS = [
 ] as const;
 
 /** The resources a clear pays home, by the icon the card draws them with. */
-const PAY_ICONS: Partial<Record<ResourcesIds, IconMeaning>> = {
-  [ResourcesIds.Labor]: "labor",
-  [ResourcesIds.Essence]: "essence",
-};
 
 /** What the tile card attacks: a standing site through its guard, or another player's army. */
 type AttackTarget =
@@ -90,7 +82,7 @@ export const useSelectedTarget = (): AttackTarget | null => {
 const standingSite = (store: NativeFactStore, tile: TileSpatialRenderable): AttackTarget | null => {
   const key = { game_id: configManager.getActiveGameId(), entity_id: tile.occupierId };
   const site = store.get("ExpeditionSite", key);
-  if (!site || site.clear) return null;
+  if (!site || site.clear || ruinDisappeared(store, site)) return null;
   return { kind: "site", site, structure: store.require("Structure", key), tile };
 };
 
@@ -114,8 +106,8 @@ const targetId = (target: AttackTarget): number =>
 
 /**
  * A target's card over the game's facts: the selected army's matchup and exact forecast, what a clear pays and its
- * XP, then Attack in reach, Move until the army arrives, or the stamina it lacks. With no army selected, the realm's
- * armies are the choices. The card stays between attacks and closes when the target falls. It is the one surface an
+ * XP, then Attack in reach, Move until the army arrives, or the stamina it lacks. With no army selected, what the site
+ * is and pays, and its guard. The card stays between attacks and closes when the target falls. It is the one surface an
  * army's attack is confirmed on, whatever it attacks.
  *
  * After a clear the panel is the still-selected army's again, not the cleared site's (owner, 27 October 2026: "when I
@@ -140,7 +132,6 @@ export const TileCard = ({
   const facts = useNativeFacts(SITE_MODELS);
   const siteTile = selected.tile.hexCoords;
   const plan = useMemo(() => readTarget(facts.store, selected, attack), [attack, facts, selected]);
-  const choices = useSiteChoices(selected, actor === null);
   const approach = useOrderAt(useApproachTile(siteTile, actor !== null && plan.fight === undefined));
   const stamina = useArmyStamina(actor ? safeInteger(actor.army.explorer_id) : null, plan.attackStamina);
   const realm = useFrontierRealm();
@@ -153,6 +144,10 @@ export const TileCard = ({
     if (!attack || !account.account || armyId === null) return;
     const signer = account.account;
     try {
+      if (selected.kind === "site" && ruinDisappeared(setup.store, selected.site))
+        throw new Error("This ruin has disappeared.");
+      if (readTarget(setup.store, selected, attack).chest?.funded === false)
+        throw new Error("Today's LORDS budget cannot fund this ruin.");
       const fought = await sendOnce("army", armyId, { order: "attack" }, () => {
         fightIsSent();
         playUnitCommandSound("attack");
@@ -169,28 +164,31 @@ export const TileCard = ({
     }
   };
 
-  const verb = siteVerb({
-    hasArmy: actor !== null,
-    inReach: plan.fight !== undefined,
-    approach,
-    stamina,
-    attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
-  });
+  const verb: SiteVerb | null =
+    plan.chest?.funded === false
+      ? { kind: "blocked", reason: "Today's LORDS budget cannot fund this ruin." }
+      : siteVerb({
+          hasArmy: actor !== null,
+          inReach: plan.fight !== undefined,
+          approach,
+          stamina,
+          attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },
+        });
 
   return (
     <SiteCardView
       receipt={receipt}
       site={plan.kind}
-      name={selected.kind === "site" ? getStructureName(selected.structure).name : undefined}
+      name={selected.kind === "site" ? getStructureName(selected.structure, setup.store).name : undefined}
       beast={plan.beast && plan.guard ? { ...plan.beast, combatClass: plan.guard.type } : undefined}
       army={actor && { art: armyArt(actor.army.troops), troops: wholeTroops(actor.army) }}
       guard={plan.guard === undefined ? undefined : (plan.guard?.count ?? null)}
       fight={plan.fight}
       pay={sitePay(plan)}
       chest={plan.chest ? { tier: (plan.chest.tier + 1) as Tier, lords: plan.chest.amount } : undefined}
+      ruinChoice={plan.chest ? { depth: plan.chest.depth } : undefined}
       xp={plan.xp}
       verb={verb}
-      choices={actor || !realm ? undefined : choices}
       onRealm={() => {
         onClose();
         goToPlace(false);
@@ -259,38 +257,11 @@ const useSiteAttack = (
   return actor && { ...actor, biome: biomeTypeOf(siteTile.biome), timestamp };
 };
 
-/** With no army selected, each of the realm's armies as a choice, with the fight it would have from where it stands. */
-const useSiteChoices = (selected: AttackTarget, wanted: boolean): SiteChoice[] => {
-  const { setup } = useGame();
-  const realm = useFrontierRealm();
-  const armies = useDockArmies(realm);
-  const timestamp = useCurrentDefaultTick();
-  if (!wanted || !realm) return [];
-  return armies.map((army: DockArmy) => {
-    const troops = setup.store.get("ExplorerTroops", { game_id: realm.game_id, explorer_id: army.explorerId });
-    const position = entityMapPosition(setup.store, realm.game_id, army.explorerId);
-    const fight =
-      troops &&
-      readTarget(setup.store, selected, {
-        army: troops,
-        armyTile: { col: position.x, row: position.y, alt: position.alt },
-        biome: biomeTypeOf(selected.tile.biome),
-        timestamp,
-      }).fight;
-    return {
-      label: army.label,
-      art: army.art,
-      troops: army.troops,
-      fight,
-      onPick: () => pickArmyFor(army.explorerId, selected.tile.hexCoords),
-    };
-  });
-};
-
-/** What a camp or rift pays home and what of it fits; a ruin pays its chest, beasts only XP. */
+/** What a cleared site pays home and what fits; a ruin pays its chest. */
 const sitePay = (plan: SiteCardPlan) => {
-  const icon = plan.payout && PAY_ICONS[plan.payout.resourceId];
-  return plan.payout && icon ? { icon, amount: plan.payout.amount, fits: plan.payout.fits } : null;
+  return plan.payout
+    ? { icon: resourceMeaning(plan.payout.resourceId), amount: plan.payout.amount, fits: plan.payout.fits }
+    : null;
 };
 
 /**

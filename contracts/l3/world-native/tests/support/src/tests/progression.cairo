@@ -1,18 +1,27 @@
 pub use starknet::storage::StorageMapWriteAccess;
-pub use crate::progression::{ArmyProgress, ArmyProgressionRules, Attribute, BuyTier, ProgressPacking, ScoutingKind};
+pub use crate::progression::{
+    ArmyProgress, ArmyProgressionRules, ProgressPacking, ScoutingKind, SkillPointUse, SpendSkillPoint,
+};
 pub use crate::resources::IResourceOperationsDispatcherTrait;
 pub use crate::stamina::{StaminaSourceTrait, StaminaTrait};
-pub use crate::tests::state::{ResourceObservationTrait, TroopObservationTrait};
+pub use crate::tests::state::{MapObservationTrait, ResourceObservationTrait, TroopObservationTrait};
 pub fn rules() -> ArmyProgressionRules {
     ArmyProgressionRules {
-        reveal_xp: 2, fixed_xp: 200, uncommon_xp: 100, rare_xp: 200, epic_xp: 400, legendary_xp: 800,
+        reveal_xp: 2,
+        reveal_xp_per_depth: 1,
+        fixed_xp: 200,
+        common_xp: 75,
+        uncommon_xp: 200,
+        rare_xp: 400,
+        epic_xp: 800,
+        legendary_xp: 1500,
     }
 }
-pub fn buy(attribute: Attribute) -> BuyTier {
-    BuyTier { explorer_id: 7, attribute, kind: None }
+pub fn spend(choice: SkillPointUse) -> SpendSkillPoint {
+    SpendSkillPoint { explorer_id: 7, choice }
 }
-pub fn scout(kind: ScoutingKind) -> BuyTier {
-    BuyTier { explorer_id: 7, attribute: Attribute::Scouting, kind: Some(kind) }
+pub fn scout(kind: ScoutingKind) -> SpendSkillPoint {
+    SpendSkillPoint { explorer_id: 7, choice: SkillPointUse::Scouting(kind) }
 }
 pub fn read_progress(d: super::Deployment, key: crate::troops::ExplorerKey) -> ArmyProgress {
     snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key))
@@ -20,11 +29,11 @@ pub fn read_progress(d: super::Deployment, key: crate::troops::ExplorerKey) -> A
 pub fn write_progress(d: super::Deployment, key: crate::troops::ExplorerKey, progress: ArmyProgress) {
     snforge_std::interact_with_state(d.games, || crate::logic::progression::write(key, progress));
 }
-pub fn execute_buy(d: super::Deployment, key: crate::troops::ExplorerKey, attribute: Attribute) -> bool {
+pub fn execute_spend(d: super::Deployment, key: crate::troops::ExplorerKey, choice: SkillPointUse) -> bool {
     super::resource_commands::execute_in_game(
         d,
         key.game_id,
-        crate::commands::Command::BuyTier(BuyTier { explorer_id: key.explorer_id, attribute, kind: None }),
+        crate::commands::Command::SpendSkillPoint(SpendSkillPoint { explorer_id: key.explorer_id, choice }),
         360,
     )
 }
@@ -92,7 +101,12 @@ pub fn deploy(d: super::Deployment, game_id: u32, category: u8, direction: u8) -
     let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
     let command = crate::commands::Command::CreateExplorer(
         crate::commands::CreateExplorer {
-            structure_id: 1, category, tier: 0, amount: 3 * crate::rules::RESOURCE_PRECISION, direction,
+            slot: direction,
+            structure_id: 1,
+            category,
+            tier: 0,
+            amount: 3 * crate::rules::RESOURCE_PRECISION,
+            direction,
         },
     );
     assert!(super::resource_commands::execute_in_game(d, game_id, command, 351));
@@ -100,4 +114,20 @@ pub fn deploy(d: super::Deployment, game_id: u32, category: u8, direction: u8) -
         crate::structures::IStructureOperationsDispatcher { contract_address: d.games }, home,
     );
     crate::troops::ExplorerKey { game_id, explorer_id: *armies.at(armies.len() - 1) }
+}
+
+
+pub fn place_army_at_depth(d: super::Deployment, key: crate::troops::ExplorerKey, depth: u8) {
+    if depth == 0 {
+        return;
+    }
+    let game_id = key.game_id;
+    let map = crate::map::IMapLogicDispatcher { contract_address: d.games };
+    let troops = super::state::GameState { contract_address: d.games };
+    let mut army = troops.resolved_explorer(key).unwrap();
+    let spacing = snforge_std::interact_with_state(d.games, || crate::logic::settlement::rules(game_id).spacing);
+    army.coord.y += Into::<u8, u32>::into(depth) * spacing;
+    let tile = crate::geometry::tile_key(game_id, army.coord);
+    map.reveal(tile, 2);
+    super::resource_commands::set_explorer_fixture(d.games, key, army);
 }

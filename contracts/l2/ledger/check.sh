@@ -7,6 +7,7 @@ ledger_scarb=$(command -v "${LEDGER_SCARB:-scarb}")
 # Foundry launches Scarb too; use the same compiler for the build and tests.
 export PATH="$(dirname -- "$ledger_scarb"):$PATH"
 "$ledger_scarb" build
+node ../../utils/check-class-sizes.mjs target/dev game_ledger GameLedger RealmsCollectible
 # Regenerate after an intentional ABI change with: node generate-abi.mjs
 node generate-abi.mjs --check
 "${LEDGER_SNFORGE:-snforge}" test

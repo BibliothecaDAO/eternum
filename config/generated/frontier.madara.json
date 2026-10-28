@@ -800,26 +800,42 @@
       "40": [],
       "41": [
         {
+          "resource": 38,
+          "amount": 6000
+        },
+        {
           "resource": 23,
-          "amount": 3000
+          "amount": 1500
         }
       ],
       "42": [
         {
+          "resource": 38,
+          "amount": 6000
+        },
+        {
           "resource": 23,
-          "amount": 3000
+          "amount": 1500
         }
       ],
       "43": [
         {
+          "resource": 38,
+          "amount": 6000
+        },
+        {
           "resource": 23,
-          "amount": 3000
+          "amount": 1500
         }
       ],
       "44": [
         {
+          "resource": 38,
+          "amount": 6000
+        },
+        {
           "resource": 23,
-          "amount": 3000
+          "amount": 1500
         }
       ]
     },

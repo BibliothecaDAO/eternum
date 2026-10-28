@@ -10,21 +10,23 @@ import {
   getGuardsByStructure,
   realmLearned,
   researchTier,
+  ruinDisappeared,
   isCurrentExpeditionArmy,
   liveHomeArmies,
   StaminaManager,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { FARM, LABOR, TROOPS, WHEAT, WORKSHOP } from "@/ui/design-system/kit/words";
+import { FARM, WORKSHOP } from "@/ui/design-system/kit/words";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { knownAmount } from "@/ui/utils/utils";
 import { useMemo } from "react";
-import { affordableUpgrades } from "../attributes/attributes";
+import { availableRankUps } from "../attributes/attributes";
 import { troopsAtHome, type useExpeditionRules } from "../frontier-home";
 import { dayClock } from "../hud/day-clock";
 import { readRealmStore } from "../realm-stores";
+import { FRONTIER_STORES, MADE_STORES } from "../stores";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
@@ -46,7 +48,7 @@ export interface NextUpFacts {
   guardInReach: boolean;
   /** A guarded camp of today's region on the board, where Next up's button takes the map; null when there is none. */
   camp: { x: number; y: number } | null;
-  /** An army's XP buys a tier of an attribute now. */
+  /** An army holds a point that can raise an attribute. */
   armyTierAffordable: boolean;
   /** The realm can pay for its next castle level. */
   castleAffordable: boolean;
@@ -71,6 +73,7 @@ const NEXT_UP_MODELS = [
   "ResourceProduction",
   "ArmyProgress",
   "ExpeditionSite",
+  "ExpeditionDiscovery",
   "RealmKnowledge",
   "ResearchPrice",
   "BoardRules",
@@ -115,7 +118,7 @@ const readNextUpFacts = (
     armiesTired: stamina.length === armies.length && stamina.length > 0 && stamina.every((left) => left < exploreCost),
     guardInReach: guardBesideAnArmy(store, realm.game_id, armies),
     camp: guardedCampToday(store, rules, realm, clock.now),
-    armyTierAffordable: armies.some((army) => canBuyAttributeTier(store, army)),
+    armyTierAffordable: armies.some((army) => canRaiseAttribute(store, army)),
     castleAffordable: canAffordNextCastleLevel(store, realm, clock.tick),
     typeTierAffordable: firstTypeTierAffordable(store, realm, clock.tick),
     lastHour: armies.length > 0 && dayClock(rules, clock.now).tone === "ember",
@@ -155,7 +158,7 @@ const guardBesideAnArmy = (
     }),
   );
   for (const site of store.inGame("ExpeditionSite", gameId)) {
-    if (site.clear) continue;
+    if (site.clear || ruinDisappeared(store, site)) continue;
     const structure = store.get("Structure", { game_id: gameId, entity_id: site.entity_id });
     const position = structure && isGuarded(structure, store) ? structureMapPosition(store, structure) : null;
     if (position && beside.has(`${position.x},${position.y}`)) return true;
@@ -163,11 +166,10 @@ const guardBesideAnArmy = (
   return false;
 };
 
-/** An army whose XP buys a tier of an attribute now. */
-const canBuyAttributeTier = (store: NativeFactStore, army: NativeRows["ExplorerTroops"]): boolean => {
+/** An army with a point that can raise an attribute. */
+const canRaiseAttribute = (store: NativeFactStore, army: NativeRows["ExplorerTroops"]): boolean => {
   const progress = store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
-  const xpRules = store.get("ArmyProgressionRules", { game_id: army.game_id });
-  return progress !== undefined && xpRules !== undefined && affordableUpgrades(progress, xpRules).length > 0;
+  return progress !== undefined && availableRankUps(progress).length > 0;
 };
 
 /** The Farm's or the Workshop's first tier, when its building stands and the realm holds its Essence and labor. */
@@ -215,15 +217,9 @@ const fullStore = (
   rules: ExpeditionRules,
   clock: { now: number; tick: number },
 ): string | null => {
-  const full = FULL_STORES.find(({ store: kind }) => readRealmStore(store, realm, rules, kind, clock).tone === "ember");
-  return full?.word ?? null;
+  const full = MADE_STORES.find((kind) => readRealmStore(store, realm, rules, kind, clock).tone === "ember");
+  return full === undefined ? null : FRONTIER_STORES[full].word.toLowerCase();
 };
-
-const FULL_STORES = [
-  { store: ResourcesIds.Wheat, word: WHEAT.toLowerCase() },
-  { store: ResourcesIds.Labor, word: LABOR.toLowerCase() },
-  { store: "troops" as const, word: TROOPS.toLowerCase() },
-];
 
 const guardedCampToday = (
   store: NativeFactStore,

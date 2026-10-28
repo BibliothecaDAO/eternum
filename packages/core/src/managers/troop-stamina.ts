@@ -1,4 +1,4 @@
-import { TROOP_TIERS, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
+import { troopTierIndex, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { battleBonusBps, logisticsStamina } from "../utils/attribute-tiers";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -8,13 +8,14 @@ export type TroopStaminaRules = NativeRows["SliceRules"]["troop_stamina_config"]
 
 /** A troop's starting and maximum stamina under one game's rules. */
 export const troopStaminaLimits = (rules: TroopStaminaRules, troopType: TroopType, troopTier: TroopTier) => {
-  const maximum = {
+  const maxima: Record<TroopType, TroopStaminaRules["stamina_knight_max"]> = {
     [TroopType.Knight]: rules.stamina_knight_max,
     [TroopType.Crossbowman]: rules.stamina_crossbowman_max,
     [TroopType.Paladin]: rules.stamina_paladin_max,
-  }[troopType];
-  const tier = TROOP_TIERS.indexOf(troopTier);
-  if (maximum === undefined || tier < 0) throw new Error("Unknown troop category or tier");
+  };
+  const maximum = maxima[troopType];
+  const tier = troopTierIndex(troopTier);
+  if (maximum === undefined) throw new Error("Unknown troop category");
   return { staminaInitial: Number(rules.stamina_initial), staminaMax: Number(maximum) + tier * 20 };
 };
 
@@ -157,7 +158,7 @@ export function openArmySlots(
 /**
  * The bar a new army of this troop starts on, at the second, under the game's rules: the one rule both modes read
  * before raising one. In a game with army slots (Frontier), in the slot, when its realm has trained Logistics to
- * `trainedLogistics` tiers above common (the Supply yard's row). In a game without (`slot` null: Blitz, Eternum), the
+ * `trainedLogistics` rank (the Supply yard's row). In a game without (`slot` null: Blitz, Eternum), the
  * game's initial stamina under its own troop and tier's maximum, as the contract grants a new army (live-qa-night-2
  * B-2: a Blitz army started at 30/120 and nothing said so).
  */
@@ -175,7 +176,7 @@ export function musterStamina(
   }
   // A new slot occupant starts at its realm's trained Logistics, regardless of its troop tier.
   const staminaMax =
-    troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax + logisticsStamina(trainedLogistics + 1);
+    troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax + logisticsStamina(trainedLogistics);
   // A slot's first army of the day starts full at its own maximum.
   if (!slot.inherited) return { amount: staminaMax, max: staminaMax };
   const newArmy: Troops = {

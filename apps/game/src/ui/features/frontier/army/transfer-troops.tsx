@@ -4,6 +4,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { Icon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {
@@ -35,13 +36,14 @@ type TransferPair = {
 
 /**
  * The transfer the map has selected: the picked army acting on the tile of another of the realm's armies beside it
- * (the picked army's Help order there). Null for anything else.
+ * (the picked army's Help order there). Null for anything else, and for a viewer, who orders no army.
  */
 export const useSelectedTransfer = (realm: NativeRows["Structure"] | null): TransferPair | null => {
   const { setup } = useGame();
   const armies = useDockArmies(realm);
   const selection = useUIStore((state) => state.mapSelection);
-  if (selection?.kind !== "army" || !selection.tile || selection.tile === "own") return null;
+  const ordersAllowed = useUIStore(canIssueOrders);
+  if (!ordersAllowed || selection?.kind !== "army" || !selection.tile || selection.tile === "own") return null;
   const tile = selection.tile;
   const gameId = configManager.getActiveGameId();
   const at = (army: DockArmy) => {
@@ -260,7 +262,7 @@ const TransferAmount = ({
             ? TRANSFER_TROOPS.pick
             : merge
               ? confirmed
-                ? TRANSFER_TROOPS.confirmMerge(merge.lostXp, merge.survivor.label)
+                ? TRANSFER_TROOPS.confirmMerge(merge.survivor.label)
                 : TRANSFER_TROOPS.merge(merge.survivor.label)
               : TRANSFER_TROOPS.move(sent, tapped.label)}
         </HudButton>
@@ -270,7 +272,7 @@ const TransferAmount = ({
 };
 
 /**
- * Both cards count XP the same way: unspent XP plus the value of their upgrades. A full transfer removes the source's
+ * Both cards count XP the same way: lifetime XP. A full transfer removes the source's
  * progress; the target keeps its own unchanged. A partial transfer keeps both progress bundles.
  */
 const ArmySide = ({

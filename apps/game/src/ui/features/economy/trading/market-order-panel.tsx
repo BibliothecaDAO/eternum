@@ -1,5 +1,6 @@
+import { refusesTroopTrade } from "@/ui/lib/structure-capabilities";
 import { configManager } from "@bibliothecadao/eternum";
-import { heldAgainstNeed } from "@/ui/design-system/kit/words";
+import { heldAgainstNeed, VILLAGE_TROOP_TRADE_REFUSED } from "@/ui/design-system/kit/words";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useUISound } from "@/audio";
@@ -26,7 +27,6 @@ import {
   calculateDonkeysNeeded,
   divideByPrecision,
   getTotalResourceWeightKg,
-  isMilitaryResource,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
@@ -34,7 +34,6 @@ import { useLatest } from "@/hooks/use-latest";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
   ResourcesIds,
-  StructureType,
   type ID,
   type MarketInterface,
   formatAmount,
@@ -415,11 +414,14 @@ export const OrderRow = memo(({ offer, entityId, isBuy }: { offer: MarketInterfa
             calculatedLords={calculatedLords}
             donkeysNeeded={donkeysNeeded}
             donkeyBalance={donkeyBalance}
-            isVillageAndMilitaryResource={
-              game.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base
-                .category === StructureType.Village &&
-              (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId))
-            }
+            isVillageAndMilitaryResource={[offer.makerGets[0].resourceId, offer.takerGets[0].resourceId].some(
+              (resource) =>
+                refusesTroopTrade(
+                  game.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })
+                    ?.base.category,
+                  resource,
+                ),
+            )}
           />
         ))}
     </HudTableRow>
@@ -505,16 +507,13 @@ const TakeOfferForm = memo(
                 </span>
               }
             />
-            {isVillageAndMilitaryResource && <HudNotice tone="bad" line={VILLAGE_MILITARY_REFUSAL} />}
+            {isVillageAndMilitaryResource && <HudNotice tone="bad" line={VILLAGE_TROOP_TRADE_REFUSED} />}
           </div>
         </HudWindow>
       </OrderDialog>
     );
   },
 );
-
-/** Why a village's order for troops is refused, wherever the market says so. */
-const VILLAGE_MILITARY_REFUSAL = "Villages cannot trade military resources.";
 
 /** How the form lays out: three inputs in a row on the desk, two inputs plus a computed total on a phone. */
 type OrderCreationLayout = "desktop" | "compact";
@@ -691,9 +690,10 @@ export const OrderCreation = memo(
       return donkeyBalance !== undefined && donkeyBalance >= donkeysNeeded;
     }, [donkeyBalance, donkeysNeeded, resourceId]);
 
-    const isVillageAndMilitaryResource =
-      store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
-        StructureType.Village && isMilitaryResource(resourceId);
+    const isVillageAndMilitaryResource = refusesTroopTrade(
+      store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category,
+      resourceId,
+    );
     const confirmsLoss = useConfirmsLoss();
     const name = resourceName(resourceId);
     // Placing an order acts at once; in Frontier it asks first, with the order spelled out.
@@ -804,7 +804,7 @@ export const OrderCreation = memo(
             </div>
           </>
         )}
-        {isVillageAndMilitaryResource && <HudNotice tone="bad" line={VILLAGE_MILITARY_REFUSAL} />}
+        {isVillageAndMilitaryResource && <HudNotice tone="bad" line={VILLAGE_TROOP_TRADE_REFUSED} />}
         {showConfirmation && confirmPlaceOrder}
       </div>
     );

@@ -39,7 +39,8 @@ export const realmScenario = (): LabScenario => {
   };
 };
 
-const castlePriced = (): LabFact[] => [
+/** The castle's levels priced in labor alone, as the castle card reads them, and labor for realm 7 up to an Empire. */
+export const castlePriced = (): LabFact[] => [
   ...[1, 2, 3].map((level) => ({
     model: "UpgradeRecipe",
     key: `0xc${level}`,

@@ -48,7 +48,7 @@ test("the ledger step announces metadata reads through its output before any eve
     target: environments.dev,
     keys: { monitor: "0x125" },
     assets: { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" },
-    inputs: { blitzStart: "2027-01-01T00:00:00Z", blitzEnd: "2027-02-01T00:00:00Z" } as Inputs,
+    inputs: { blitzStart: "2027-01-01T00:00:00Z", blitzEnd: "2027-02-01T00:00:00Z", frontierPresetId: "6" } as Inputs,
     output: (line: string) => lines.push(line),
     provider: {
       getBlockWithTxHashes: async () => ({ block_number: 50, timestamp: 100 }),

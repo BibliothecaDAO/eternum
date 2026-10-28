@@ -34,6 +34,8 @@ const credentials = {
   privateKey: `0x${Array.from(crypto.getRandomValues(new Uint8Array(31)), (v) => v.toString(16).padStart(2, "0")).join("")}`,
 };
 const claims = Array.from({ length: 100 }, (_, i) => ({
+  prizeRank: 0,
+  prizeCount: 0,
   chainId: "0x1",
   seasonId: 1,
   transactionHash: `0x${(i + 1).toString(16)}`,
@@ -46,17 +48,25 @@ beforeEach(() => {
   rpc.records.clear();
   rpc.call.mockImplementation(async (q) =>
     q.entrypoint === "get_frontier"
-      ? ["1", "0", "2000", "1000", "0", "0", "0", "0", "1", "0x1"]
+      ? ["1", "0", "2000", "1000", "0", "0", "0", "0", "1", "0x1", "0", "0", "0", "0"]
       : q.entrypoint === "frontier_unlocked"
         ? ["1000", "0"]
         : q.entrypoint === "is_paused"
           ? ["0"]
-          : (rpc.records.get(q.calldata[1]) ?? ["0", "0", "0", "0", "0"]),
+          : (rpc.records.get(q.calldata[1]) ?? ["0", "0", "0", "0", "0", "0", "0"]),
   );
   rpc.execute.mockImplementation(async (raw) => {
     for (const call of Array.isArray(raw) ? raw : [raw])
       if (call.entrypoint === "report_withdrawal")
-        rpc.records.set(call.calldata[2], ["0", call.calldata[1], "0", call.calldata[3], call.calldata[4]]);
+        rpc.records.set(call.calldata[2], [
+          "0",
+          call.calldata[1],
+          "0",
+          call.calldata[3],
+          call.calldata[4],
+          call.calldata[5],
+          call.calldata[6],
+        ]);
     return { transaction_hash: "0xabc" };
   });
   rpc.wait.mockResolvedValue({ isReverted: () => false });
@@ -72,6 +82,8 @@ it("reports a full page in one confirmed transaction and pays it in a separate m
   expect(rpc.execute.mock.calls[1]![0]).toHaveLength(100);
   for (const [index, claim] of claims.entries()) {
     const args = {
+      prize_rank: 0,
+      prize_count: 0,
       shard: claim.chainId,
       season_id: claim.seasonId,
       claim_id: claim.transactionHash,
@@ -146,3 +158,28 @@ it.each(["get_frontier", "frontier_unlocked"])(
     expect(rpc.execute).not.toHaveBeenCalled();
   },
 );
+
+it("pays prizes after chest closure from their own remaining budget", async () => {
+  const original = rpc.call.getMockImplementation()!;
+  rpc.call.mockImplementation(async (q) =>
+    q.entrypoint === "get_frontier"
+      ? ["1", "0", "900", "1000", "0", "1000", "0", "1", "1", "0x1", "10", "0", "5", "0"]
+      : original(q),
+  );
+  const prize = { ...claims[0]!, amount: "5", prizeRank: 1, prizeCount: 10 };
+  const batch = ledgerBatches(credentials, async () => {});
+  expect(await Effect.runPromise(batch.reportMany([prize]))).toEqual([{ claimId: "0x1", error: null }]);
+  const result = await Effect.runPromise(
+    batch.payMany([
+      { withdrawal: prize, wallet: "0x123" },
+      { withdrawal: { ...prize, transactionHash: "0x2", prizeRank: 2, amount: "1" }, wallet: "0x124" },
+      { withdrawal: claims[2]!, wallet: "0x125" },
+    ]),
+  );
+  expect(result).toContainEqual({ claimId: "0x1", error: null });
+  expect(result).toContainEqual({ claimId: "0x2", error: "ledger_unlock_exceeded" });
+  expect(result.find((row) => row.claimId === "0x3")?.error).not.toBeNull();
+  const payment = rpc.execute.mock.calls[1]![0];
+  expect(payment.entrypoint).toBe("pay");
+  expect(payment.calldata[2]).toBe("0x1");
+});

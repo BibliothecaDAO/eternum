@@ -6,20 +6,35 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
 const game = vi.hoisted(() => ({
-  buyTier: vi.fn(() => Promise.resolve({ transaction_hash: "0x7" })),
+  spendPoint: vi.fn(() => Promise.resolve({ transaction_hash: "0x7" })),
   select: vi.fn(),
   signer: { address: "0x111" },
   progress: {
+    common_points: 0,
+    uncommon_points: 0,
+    rare_points: 0,
+    epic_points: 0,
+    legendary_points: 0,
     game_id: 1,
     explorer_id: 12n,
     xp: 12,
-    battle: 1,
-    logistics: 1,
-    scouting: 1,
+    battle: 0,
+    logistics: 0,
+    scouting: 0,
     scouting_kinds: 0,
-    homecoming: 1,
+    homecoming: 0,
   },
-  rules: { game_id: 1, reveal_xp: 2, fixed_xp: 200, uncommon_xp: 100, rare_xp: 200, epic_xp: 400, legendary_xp: 800 },
+  rules: {
+    common_xp: 75,
+    game_id: 1,
+    reveal_xp: 2,
+    reveal_xp_per_depth: 1,
+    fixed_xp: 200,
+    uncommon_xp: 200,
+    rare_xp: 400,
+    epic_xp: 800,
+    legendary_xp: 1500,
+  },
 }));
 const army = {
   explorerId: 12,
@@ -30,14 +45,14 @@ const army = {
   troops: 1_500,
   stamina: { current: 4, max: 120 },
   secondsToFull: 232,
-  canBuyTier: false,
+  canSpendSkillPoint: false,
 };
 
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
     setup: {
       store: { get: (model: string) => (model === "ArmyProgress" ? game.progress : game.rules) },
-      systemCalls: { buy_tier: game.buyTier },
+      systemCalls: { spend_skill_point: game.spendPoint },
     },
     account: { account: game.signer },
   }),
@@ -55,6 +70,8 @@ vi.mock("../sites/well-refill", () => ({ useWellRefill: (_id: number, ratio: num
 vi.mock("../hud/dock-armies", () => ({ useDockArmies: () => [army] }));
 vi.mock("./army-refill", () => ({ ArmyRefill: () => null }));
 vi.mock("../frontier-reveal-yield", () => ({ useArmyRevealYield: () => 75 }));
+// The army stands away from its spire: its panel has no Spire (spire-card.test.tsx plays the spire).
+vi.mock("../spire-card", () => ({ useArmyAtItsSpire: () => null, SpireButton: () => null }));
 
 const { FrontierArmy } = await import("./frontier-army");
 const { ArmyDock } = await import("../hud/army-dock");
@@ -69,6 +86,7 @@ beforeEach(() => {
   root = createRoot(host);
   vi.clearAllMocks();
   game.progress.xp = 12;
+  game.progress.common_points = 0;
 });
 
 afterEach(() => {
@@ -78,7 +96,7 @@ afterEach(() => {
 
 const button = (text: RegExp) => [...host.querySelectorAll("button")].find((each) => text.test(each.textContent ?? ""));
 
-it("opens the army's panel from its row on a desktop, whatever its XP buys", () => {
+it("opens the army's panel from its row on a desktop, whether it holds a point", () => {
   const onOpenArmy = vi.fn();
   const realm = { owner: "0x111", base: { troop_max_explorer_count: 3 } };
   act(() => root.render(<ArmyDock realm={realm as never} armies={[army as never]} onOpenArmy={onOpenArmy} />));
@@ -89,18 +107,18 @@ it("opens the army's panel from its row on a desktop, whatever its XP buys", () 
   expect(game.select).not.toHaveBeenCalled();
 });
 
-it("shows the army's figures, then its level-ups one step on, and buys the chosen level with buy_tier", async () => {
+it("shows the army's figures, then its level-ups one step on, and buys the chosen level with spend_skill_point", async () => {
   game.progress.xp = 260;
+  game.progress.common_points = 1;
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
   // Each attribute is a tile named by its attribute, with what it gives as its effect (the owner's pick, 22 October).
   expect(host.querySelector('button[aria-label="Battle 0% damage"]')).not.toBeNull();
   expect(host.textContent).toMatch(/\d+ max stamina/);
   expect(host.textContent).toMatch(/% come home/);
-  // How XP is earned is on the XP's hover; Frontier's camp is its Troll there as everywhere (the structure naming rule).
-  expect(host.querySelector("[data-tip*='Clear a Troll']")).not.toBeNull();
+  // Scouting uses the same Troll name as the map.
   expect(host.textContent).not.toMatch(/Camp/);
-  // Level up counts nothing: the XP buys one level-up, whichever the choices take.
+  // Level up counts nothing: a point buys one level-up, whichever the choices take.
   expect(button(/Level up/)!.textContent).toBe("Level up");
   // A tile opens its own level-up.
   act(() => host.querySelector<HTMLButtonElement>('button[aria-label^="Scouting"]')!.click());
@@ -109,18 +127,57 @@ it("shows the army's figures, then its level-ups one step on, and buys the chose
   expect(host.textContent).not.toMatch(/Camp/);
   act(() => button(/^Rifts$/)!.click());
   await act(async () => button(/^Level up$/)!.click());
-  expect(game.buyTier).toHaveBeenCalledWith({
+  expect(game.spendPoint).toHaveBeenCalledWith({
     signer: game.signer,
     explorerId: 12,
-    attribute: "Scouting",
-    scoutingKind: "Rift",
+    choice: { kind: "Scouting", value: { kind: "Rift", value: undefined } },
   });
 });
 
-it("lets an army short of XP see its level-ups, and holds the verb with what is missing", () => {
+it("lets an army without points see its level-ups, and holds the verb with what is missing", () => {
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
   act(() => button(/^Level-ups$/)!.click());
-  expect(host.textContent).toContain("100 XP · 88 XP short");
+  expect(host.textContent).toContain("No fitting point");
   expect(button(/^Level up$/)!.disabled).toBe(true);
+});
+
+it("sends the chosen point rank for Stamina without changing lifetime XP", async () => {
+  game.progress.xp = 260;
+  game.progress.common_points = 1;
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
+  act(() => button(/^Level up$/)!.click());
+  act(() => host.querySelector<HTMLButtonElement>('[data-attribute="stamina"]')!.click());
+  await act(async () => button(/^Refill$/)!.click());
+  expect(game.spendPoint).toHaveBeenCalledWith({
+    signer: game.signer,
+    explorerId: 12,
+    choice: { kind: "Stamina", value: 1 },
+  });
+  expect(game.progress.xp).toBe(260);
+});
+
+it.each([
+  [74, "75"],
+  [75, "200"],
+  [199, "200"],
+  [200, "400"],
+  [399, "400"],
+  [400, "800"],
+  [799, "800"],
+  [800, "1,500"],
+  [1499, "1,500"],
+  [1500, "1,575"],
+  [1575, "1,700"],
+  [3000, "3,075"],
+])("shows the real next-point readout at %s XP, including in Level up", (xp, next) => {
+  game.progress.xp = xp;
+  game.progress.common_points = Number(xp >= game.rules.common_xp);
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
+  const readout = `${xp.toLocaleString("en-US")} / ${next} XP`;
+  expect(host.textContent).toContain(readout);
+  act(() => button(/Level[ -]up/)!.click());
+  expect(host.textContent).toContain(readout);
 });

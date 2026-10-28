@@ -90,6 +90,14 @@
       {
         "name": "seed",
         "type": "core::felt252"
+      },
+      {
+        "name": "prize_pool",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "prize_paid",
+        "type": "core::integer::u256"
       }
     ]
   },
@@ -112,6 +120,14 @@
       {
         "name": "amount",
         "type": "core::integer::u256"
+      },
+      {
+        "name": "prize_rank",
+        "type": "core::integer::u16"
+      },
+      {
+        "name": "prize_count",
+        "type": "core::integer::u16"
       }
     ]
   },
@@ -188,6 +204,14 @@
       {
         "name": "claim_window_seconds",
         "type": "core::integer::u32"
+      },
+      {
+        "name": "frontier_top_n",
+        "type": "core::integer::u16"
+      },
+      {
+        "name": "frontier_chest_bps",
+        "type": "core::integer::u16"
       }
     ]
   },
@@ -642,6 +666,14 @@
           {
             "name": "amount",
             "type": "core::integer::u256"
+          },
+          {
+            "name": "prize_rank",
+            "type": "core::integer::u16"
+          },
+          {
+            "name": "prize_count",
+            "type": "core::integer::u16"
           }
         ],
         "outputs": [],
@@ -678,6 +710,38 @@
         ],
         "outputs": [],
         "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "apply_frontier_carry",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "season_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "frontier_carry",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u256"
+          }
+        ],
+        "state_mutability": "view"
       },
       {
         "type": "function",
@@ -1771,6 +1835,16 @@
       {
         "name": "amount",
         "type": "core::integer::u256",
+        "kind": "data"
+      },
+      {
+        "name": "prize_rank",
+        "type": "core::integer::u16",
+        "kind": "data"
+      },
+      {
+        "name": "prize_count",
+        "type": "core::integer::u16",
         "kind": "data"
       }
     ]

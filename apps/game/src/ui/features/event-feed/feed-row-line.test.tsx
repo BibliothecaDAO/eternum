@@ -57,6 +57,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
 import { FeedRowLine } from "./feed-row-line";
 import { eventsReads, selectEventStories } from "./event-stories";
 import { StoryFeedRow } from "./story-feed-row";
+import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { relicChestRelics } from "@bibliothecadao/types";
 
 const PLAYER = "0x1";
@@ -278,7 +279,7 @@ describe("an activated relic in Events and the Log", () => {
       const [row] = selectEventStories([event], filter, PLAYER, () => false);
       expect(row).toBe(event);
       // Another player's activation is world history, not the player's must-not-miss.
-      const another = { ...event, id: "another's", owner: "0x2" };
+      const another = { ...event, id: "another's", owner: "0x2", participants: ["0x2"] };
       expect(selectEventStories([another], filter, PLAYER, () => false).map(({ id }) => id)).toEqual(others);
       game.armies = new Set();
       const root = createRoot(host);
@@ -295,4 +296,51 @@ describe("an activated relic in Events and the Log", () => {
       await act(async () => root.unmount());
     },
   );
+});
+
+it("draws each story in Events and the Log by its act, as Frontier's Feed does, not a castle for all", () => {
+  const fight = story(
+    "fight",
+    "BattleEvent",
+    PLAYER,
+    { attacker_id: 9, defender_id: 4_242 },
+    "clientlane vs Emberdeep · Army lost",
+  );
+  const found = story("found", "ExplorationReward", PLAYER, { explorer_id: 9, coord: { x: 3, y: 4 } }, "Explored");
+  const icons = (markup: string) => [...markup.matchAll(/data-icon="([^"]+)"/g)].map(([, icon]) => icon);
+  for (const Row of [FeedRowLine, StoryFeedRow]) {
+    expect(icons(renderToStaticMarkup(<Row event={fight} />))).toEqual(["attack"]);
+    expect(icons(renderToStaticMarkup(<Row event={found} />))).toEqual(["explore"]);
+    expect(icons(renderToStaticMarkup(<Row event={crate} />))).toEqual(["relics"]);
+  }
+});
+
+it.each([
+  [{ Shrine: 200 }, "Shrine used, +200 XP"],
+  [{ Well: 5 }, "Well used, +5 stamina"],
+])("the Log renders site use and opens its historical tile after the army is gone (%j)", async (benefit, expected) => {
+  game.armies.clear();
+  const event = story("site-use", "SiteUsed", PLAYER, { explorer_id: 9, coord: { x: 3, y: 4 }, benefit }, expected);
+  event.presentation = buildStoryEventPresentation({
+    storyType: event.story,
+    storyPayload: event.storyPayload,
+    entityId: 9,
+    ownerAddress: PLAYER,
+    viewerAddress: PLAYER,
+  } as never);
+  expect(eventsReads("all", PLAYER, [])).toEqual([{ limit: 350 }]);
+  expect(selectEventStories([event], "all", PLAYER, () => false)).toEqual([event]);
+  expect(selectEventStories([event], "important", PLAYER, () => false)).toEqual([]);
+  const [row] = selectEventStories([event], "all", PLAYER, () => false);
+  const root = createRoot(host);
+  try {
+    act(() => root.render(<StoryFeedRow event={row} />));
+    expect(host.textContent).toContain(expected);
+    expect(host.textContent).toContain("army");
+    await act(async () => host.querySelector<HTMLButtonElement>("button")!.click());
+    expect(game.navigate).toHaveBeenCalledOnce();
+    expect(game.navigate.mock.calls[0][0].getContract()).toEqual({ x: 3, y: 4 });
+  } finally {
+    act(() => root.unmount());
+  }
 });

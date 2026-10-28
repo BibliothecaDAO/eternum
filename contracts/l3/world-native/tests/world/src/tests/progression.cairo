@@ -1,75 +1,169 @@
 pub use world_test_support::tests::progression::*;
 
+#[test]
+fn exploring_at_each_depth_awards_exact_xp_once() {
+    for (depth, xp) in array![(0_u8, 2_u32), (1, 3), (2, 4), (3, 5)] {
+        let (d, game_id, key) = super::registrar::setup_frontier_chests();
+        let map = crate::map::IMapLogicDispatcher { contract_address: d.games };
+        place_army_at_depth(d, key, depth);
+
+        let before = read_progress(d, key);
+        let target = super::frontier_explore_chest::destination(d, key);
+        super::frontier_explore_chest::explore(d, key, super::frontier_explore_chest::HIT_ROOT, 360);
+        let after = read_progress(d, key);
+        assert_eq!(after, ArmyProgress { xp: before.xp + xp, ..before });
+        assert!(map.tile(crate::geometry::tile_key(game_id, target)).is_some());
+        assert!(
+            !super::play_fixture::play(
+                d.games,
+                super::play_fixture::TestAction {
+                    game_id,
+                    actor: d.actor,
+                    command: crate::commands::Command::Explore(
+                        crate::commands::Explore { explorer_id: key.explorer_id, direction: 0 },
+                    ),
+                },
+                1,
+                361,
+            ),
+        );
+        assert_eq!(read_progress(d, key), after);
+    }
+}
 
 #[test]
-fn each_tier_costs_its_price_and_a_legendary_attribute_cannot_be_bought_further() {
-    let mut progress = ArmyProgress { xp: 1600, ..crate::progression::initial() };
-    for (tier, price) in array![(2_u8, 100_u32), (3, 200), (4, 400), (5, 800)] {
-        let bought = crate::progression::buy_tier(ref progress, rules(), buy(Attribute::Battle));
-        assert_eq!(bought.tier, tier);
-        assert_eq!(bought.price, price);
+fn thresholds_repeat_and_every_crossed_point_is_awarded_once() {
+    let mut progress = crate::progression::initial();
+    let mut previous = 0;
+    for (xp, rank) in array![(75_u32, 1_u8), (200, 2), (400, 3), (800, 4), (1500, 5), (1575, 1)] {
+        crate::progression::earn_xp(ref progress, rules(), xp - previous - 1);
+        assert_eq!(crate::progression::points(progress, rank), if xp == 1575 {
+            1
+        } else {
+            0
+        });
+        crate::progression::earn_xp(ref progress, rules(), 1);
+        assert_eq!(crate::progression::points(progress, rank), if xp == 1575 {
+            2
+        } else {
+            1
+        });
+        previous = xp;
     }
-    assert_eq!(progress, ArmyProgress { xp: 100, battle: 5, ..crate::progression::initial() });
-    // Any attribute may be bought while the XP lasts; nothing is rolled.
-    crate::progression::buy_tier(ref progress, rules(), scout(ScoutingKind::Camp));
+    crate::progression::earn_xp(ref progress, rules(), 2925);
+    assert_eq!(progress.xp, 4500);
+    for rank in 1_u8..6 {
+        assert_eq!(crate::progression::points(progress, rank), 3);
+    }
+    crate::progression::earn_xp(ref progress, rules(), 0);
+    for rank in 1_u8..6 {
+        assert_eq!(crate::progression::points(progress, rank), 3);
+    }
+}
+
+#[test]
+fn each_point_raises_one_rank_and_spending_never_reduces_xp() {
+    let mut progress = crate::progression::initial();
+    crate::progression::earn_xp(ref progress, rules(), 1500);
+    for rank in 1_u8..6 {
+        let spent = crate::progression::spend_skill_point(ref progress, spend(SkillPointUse::Battle));
+        assert_eq!(spent.tier, Some(rank));
+        assert_eq!(spent.point_rank, rank);
+        assert_eq!(spent.stamina, Into::<u8, u64>::into(10 + rank * 10));
+        assert_eq!(progress.xp, 1500);
+        assert_eq!(crate::progression::points(progress, rank), 0);
+    }
+    assert_eq!(progress.battle, 5);
+}
+
+#[test]
+fn training_skips_ranks_but_the_lowest_fitting_point_is_always_used() {
+    let mut progress = ArmyProgress {
+        battle: 2,
+        common_points: 2,
+        uncommon_points: 1,
+        epic_points: 1,
+        legendary_points: 1,
+        ..crate::progression::initial(),
+    };
+    let spent = crate::progression::spend_skill_point(ref progress, spend(SkillPointUse::Battle));
+    assert_eq!((spent.tier, spent.point_rank, spent.stamina), (Some(3), 4, 50));
     assert_eq!(
-        progress, ArmyProgress { xp: 0, battle: 5, scouting: 2, scouting_kinds: 1, ..crate::progression::initial() },
+        (progress.common_points, progress.uncommon_points, progress.epic_points, progress.legendary_points),
+        (2, 1, 0, 1),
     );
 }
 
 #[test]
-fn each_scouting_tier_raises_the_kind_chosen_for_it_by_its_relative_increment() {
-    let mut progress = ArmyProgress { xp: 1500, ..crate::progression::initial() };
-    assert_eq!(crate::progression::scouting_bonus(progress), (0, 0, 0));
-    for kind in array![ScoutingKind::Rift, ScoutingKind::Camp, ScoutingKind::Rift, ScoutingKind::Rift] {
-        crate::progression::buy_tier(ref progress, rules(), scout(kind));
+fn stamina_alone_spends_the_selected_point_for_double_its_refill() {
+    let mut progress = crate::progression::initial();
+    crate::progression::earn_xp(ref progress, rules(), 1500);
+    for rank in 1_u8..6 {
+        let spent = crate::progression::spend_skill_point(ref progress, spend(SkillPointUse::Stamina(rank)));
+        assert_eq!(spent.tier, None);
+        assert_eq!(spent.stamina, Into::<u8, u64>::into(20 + rank * 20));
+        assert_eq!(crate::progression::points(progress, rank), 0);
     }
-    // Uncommon, epic and legendary on rifts (+10%, +30%, +40%); rare on camps (+20%).
-    assert_eq!(crate::progression::scouting_bonus(progress), (2000, 8000, 0));
-    let mut all_rifts = ArmyProgress { xp: 1500, ..crate::progression::initial() };
-    for _ in 0_u8..4 {
-        crate::progression::buy_tier(ref all_rifts, rules(), scout(ScoutingKind::Rift));
-    }
-    assert_eq!(crate::progression::scouting_bonus(all_rifts), (0, 10000, 0));
-}
-
-#[test]
-fn every_scouting_tier_may_raise_beasts_once_they_exist() {
-    let mut progress = ArmyProgress { xp: 1500, ..crate::progression::initial() };
-    for _ in 0_u8..4 {
-        crate::progression::buy_tier(ref progress, rules(), scout(ScoutingKind::Beasts));
-    }
-    assert_eq!(crate::progression::scouting_bonus(progress), (0, 0, 10000));
-}
-
-#[test]
-#[should_panic(expected: 'Scouting needs a kind')]
-fn a_scouting_tier_needs_a_kind() {
-    let mut progress = ArmyProgress { xp: 100, ..crate::progression::initial() };
-    crate::progression::buy_tier(ref progress, rules(), buy(Attribute::Scouting));
-}
-
-#[test]
-#[should_panic(expected: "only Scouting takes a kind")]
-fn only_a_scouting_tier_takes_a_kind() {
-    let mut progress = ArmyProgress { xp: 100, ..crate::progression::initial() };
-    crate::progression::buy_tier(
-        ref progress, rules(), BuyTier { explorer_id: 7, attribute: Attribute::Battle, kind: Some(ScoutingKind::Camp) },
+    assert_eq!(
+        (progress.xp, progress.battle, progress.logistics, progress.scouting, progress.homecoming), (1500, 0, 0, 0, 0),
     );
+}
+
+#[test]
+fn each_scouting_rank_preserves_its_choice_including_the_fifth() {
+    let mut progress = crate::progression::initial();
+    crate::progression::earn_xp(ref progress, rules(), 1500);
+    for kind in array![
+        ScoutingKind::Rift, ScoutingKind::Camp, ScoutingKind::Rift, ScoutingKind::Beasts, ScoutingKind::Rift,
+    ] {
+        crate::progression::spend_skill_point(ref progress, scout(kind));
+    }
+    assert_eq!(progress.scouting, 5);
+    assert_eq!(progress.scouting_kinds, 2 + 4 + 2 * 16 + 3 * 64 + 2 * 256);
+    assert_eq!(crate::progression::scouting_bonus(progress), (1500, 6000, 2500));
+    for kind in array![ScoutingKind::Camp, ScoutingKind::Rift, ScoutingKind::Beasts] {
+        let mut all = crate::progression::initial();
+        crate::progression::earn_xp(ref all, rules(), 1500);
+        for _ in 0_u8..5 {
+            crate::progression::spend_skill_point(ref all, scout(kind));
+        }
+        let expected = match kind {
+            ScoutingKind::Camp => (10000, 0, 0),
+            ScoutingKind::Rift => (0, 10000, 0),
+            ScoutingKind::Beasts => (0, 0, 10000),
+        };
+        assert_eq!(crate::progression::scouting_bonus(all), expected);
+    }
 }
 
 #[test]
 #[should_panic(expected: "attribute is legendary")]
-fn a_legendary_attribute_refuses_another_tier() {
-    let mut progress = ArmyProgress { xp: 10000, logistics: 5, ..crate::progression::initial() };
-    crate::progression::buy_tier(ref progress, rules(), buy(Attribute::Logistics));
+fn a_legendary_attribute_refuses_another_rank() {
+    let mut progress = ArmyProgress { logistics: 5, legendary_points: 1, ..crate::progression::initial() };
+    crate::progression::spend_skill_point(ref progress, spend(SkillPointUse::Logistics));
 }
 
 #[test]
-#[should_panic(expected: "not enough XP")]
-fn a_tier_is_refused_without_its_price() {
-    let mut progress = ArmyProgress { xp: 199, battle: 2, ..crate::progression::initial() };
-    crate::progression::buy_tier(ref progress, rules(), buy(Attribute::Battle));
+#[should_panic(expected: "no fitting skill point")]
+fn lower_rank_points_cannot_raise_a_trained_attribute() {
+    let mut progress = ArmyProgress {
+        battle: 2, common_points: 99, uncommon_points: 99, ..crate::progression::initial(),
+    };
+    crate::progression::spend_skill_point(ref progress, spend(SkillPointUse::Battle));
+}
+
+#[test]
+#[should_panic(expected: "invalid point rank")]
+fn stamina_cannot_spend_an_invalid_point_rank() {
+    let mut progress = crate::progression::initial();
+    crate::progression::spend_skill_point(ref progress, spend(SkillPointUse::Stamina(0)));
+}
+
+#[test]
+#[should_panic(expected: "no skill point of that rank")]
+fn stamina_requires_the_selected_rank_to_be_held() {
+    let mut progress = ArmyProgress { common_points: 1, ..crate::progression::initial() };
+    crate::progression::spend_skill_point(ref progress, spend(SkillPointUse::Stamina(2)));
 }
 
 #[test]
@@ -82,9 +176,19 @@ fn a_clear_pays_two_and_a_half_times_the_root_of_the_guard_strength() {
 
 #[test]
 #[fuzzer(runs: 64)]
-fn packed_progress_round_trips_every_tier_and_the_full_xp_range(xp: u32, a: u8, b: u8, c: u8, d: u8, kinds: u8) {
+fn packed_progress_round_trips_every_tier_and_the_full_xp_range(xp: u32, a: u8, b: u8, c: u8, d: u8, kinds: u16) {
     let progress = ArmyProgress {
-        xp, battle: a % 5 + 1, logistics: b % 5 + 1, scouting: c % 5 + 1, scouting_kinds: kinds, homecoming: d % 5 + 1,
+        xp,
+        common_points: xp,
+        uncommon_points: xp,
+        rare_points: xp,
+        epic_points: xp,
+        legendary_points: xp,
+        battle: a % 6,
+        logistics: b % 6,
+        scouting: c % 6,
+        scouting_kinds: kinds,
+        homecoming: d % 6,
     };
     assert_eq!(ProgressPacking::unpack(ProgressPacking::pack(progress)), progress);
 }
@@ -97,7 +201,9 @@ fn reveals_clears_shrines_and_relic_chests_pay_their_xp() {
     snforge_std::interact_with_state(
         d.games,
         || {
-            crate::logic::progression::award_xp(key, crate::progression::XpAward::Reveal);
+            crate::logic::progression::award_xp(
+                key, crate::progression::XpAward::Reveal(crate::troops::Coord { alt: false, x: 1, y: 1 }),
+            );
             crate::logic::progression::award_xp(
                 key, crate::progression::XpAward::Clear(1300 * crate::rules::RESOURCE_PRECISION),
             );
@@ -108,20 +214,47 @@ fn reveals_clears_shrines_and_relic_chests_pay_their_xp() {
 }
 
 #[test]
-fn buying_a_tier_charges_its_price_raises_one_tier_and_refills_thirty_stamina() {
+fn rank_spending_and_stamina_spending_use_the_real_command_and_clamp() {
     let d = super::registrar::setup();
     let (game_id, _, category) = super::registrar::expedition_home(d);
     let (key, _) = super::registrar::expedition_armies(d, game_id, category);
-    let timestamp = 360;
-    write_progress(d, key, ArmyProgress { xp: 250, ..crate::progression::initial() });
-    set_bar(d, key, 0, timestamp);
-    assert!(execute_buy(d, key, Attribute::Battle));
-    assert_eq!(read_progress(d, key), ArmyProgress { xp: 150, battle: 2, ..crate::progression::initial() });
-    assert_eq!(bar(d, key, game_id), 30);
-    // 150 XP buys no rare tier: the command is refused and nothing moves.
-    assert!(!execute_buy(d, key, Attribute::Battle));
-    assert_eq!(read_progress(d, key), ArmyProgress { xp: 150, battle: 2, ..crate::progression::initial() });
-    assert_eq!(bar(d, key, game_id), 30);
+    let progress = ArmyProgress { xp: 250, common_points: 1, uncommon_points: 1, ..crate::progression::initial() };
+    write_progress(d, key, progress);
+    set_bar(d, key, 0, 360);
+    assert!(execute_spend(d, key, SkillPointUse::Battle));
+    assert_eq!(read_progress(d, key), ArmyProgress { battle: 1, common_points: 0, ..progress });
+    assert_eq!(bar(d, key, game_id), 20);
+    assert!(execute_spend(d, key, SkillPointUse::Stamina(2)));
+    assert_eq!(bar(d, key, game_id), 80);
+    assert_eq!(read_progress(d, key).xp, 250);
+    assert!(!execute_spend(d, key, SkillPointUse::Battle));
+    write_progress(d, key, progress);
+    set_bar(d, key, 110, 360);
+    assert!(execute_spend(d, key, SkillPointUse::Stamina(1)));
+    assert_eq!(bar(d, key, game_id), 120);
+    let full = read_progress(d, key);
+    assert!(!execute_spend(d, key, SkillPointUse::Stamina(2)));
+    assert_eq!(read_progress(d, key), full);
+}
+
+#[test]
+fn zero_rank_progress_exists_and_destroying_it_removes_its_points() {
+    let d = super::registrar::setup();
+    let (game_id, _, category) = super::registrar::expedition_home(d);
+    let (key, _) = super::registrar::expedition_armies(d, game_id, category);
+    assert_eq!(read_progress(d, key), crate::progression::initial());
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::progression::grant_fixed_xp(key);
+            assert_eq!(crate::logic::progression::require(key).common_points, 1);
+            crate::logic::progression::destroy(key);
+            assert!(crate::logic::progression::read(key).is_none());
+            let recreated = crate::logic::progression::create(key, 0);
+            assert_eq!(recreated, crate::progression::initial());
+            assert_eq!(crate::logic::progression::read(key), Some(recreated));
+        },
+    );
 }
 
 #[test]
@@ -132,11 +265,11 @@ fn a_logistics_tier_raises_the_maximum_and_the_bar_takes_only_the_purchase_refil
     let rules = preset.rules.troop_stamina_config;
     let timestamp = 360;
     let base = crate::progression::stamina_max(crate::progression::initial(), crate::troops::TroopType::Knight, rules);
-    // A full bar rises only as far as the new maximum; a low one takes the 30 a purchase refills.
-    for (amount, after) in array![(base, base + 20), (40, 70)] {
-        write_progress(d, key, ArmyProgress { xp: 100, ..crate::progression::initial() });
+    // A full bar rises only as far as the new maximum; a low one takes the 20 a Common point refills.
+    for (amount, after) in array![(base, base + 20), (40, 60)] {
+        write_progress(d, key, ArmyProgress { xp: 100, common_points: 1, ..crate::progression::initial() });
         set_bar(d, key, amount, timestamp);
-        assert!(execute_buy(d, key, Attribute::Logistics));
+        assert!(execute_spend(d, key, SkillPointUse::Logistics));
         assert_eq!(bar(d, key, game_id), after);
         assert_eq!(
             crate::progression::stamina_max(read_progress(d, key), crate::troops::TroopType::Knight, rules), base + 20,
@@ -149,14 +282,14 @@ fn battle_tiers_multiply_damage_by_the_ruled_table() {
     let d = super::registrar::setup();
     let (game_id, preset, category) = super::registrar::expedition_home(d);
     let (key, _) = super::registrar::expedition_armies(d, game_id, category);
-    let common = damage_at_battle(d, key, 1, preset.rules);
+    let common = damage_at_battle(d, key, 0, preset.rules);
     assert!(common > 0);
-    // Uncommon to legendary: x1.1, x1.3, x1.6, x2.0, to Combat's rounding of losses to whole troops.
+    // Combat rounds losses to whole troops.
     let troop = crate::rules::RESOURCE_PRECISION;
-    for (tier, tenths) in array![(2_u8, 11_u128), (3, 13), (4, 16), (5, 20)] {
+    for (tier, percent) in array![(1_u8, 110_u128), (2, 125), (3, 145), (4, 170), (5, 200)] {
         let dealt = damage_at_battle(d, key, tier, preset.rules);
         assert!(
-            dealt * 10 >= common * tenths - 10 * troop && dealt * 10 <= common * tenths + 10 * troop,
+            dealt * 100 >= common * percent - 100 * troop && dealt * 100 <= common * percent + 100 * troop,
             "Battle tier {} deals {} against {}",
             tier,
             dealt,
@@ -169,7 +302,7 @@ fn battle_tiers_multiply_damage_by_the_ruled_table() {
 fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     let rules = frontier.rules.troop_stamina_config;
-    for (logistics, maximum) in array![(1_u8, 120_u64), (2, 140), (3, 170), (4, 210), (5, 270)] {
+    for (logistics, maximum) in array![(0_u8, 120_u64), (1, 140), (2, 165), (3, 195), (4, 230), (5, 270)] {
         let progress = ArmyProgress { logistics, ..crate::progression::initial() };
         assert_eq!(crate::progression::stamina_max(progress, crate::troops::TroopType::Knight, rules), maximum);
     }
@@ -182,14 +315,14 @@ fn added_stamina_stops_at_the_armys_own_maximum() {
     let maximum = crate::progression::stamina_max(
         ArmyProgress { logistics: 3, ..crate::progression::initial() }, crate::troops::TroopType::Knight, rules,
     );
-    assert_eq!(maximum, 170);
+    assert_eq!(maximum, 195);
     let mut boosts: crate::troops::TroopBoosts = Default::default();
-    // Past the troop's base of 120, up to the army's own 170, and never beyond it.
+    // Past the troop's base of 120, up to the army's own 195, and never beyond it.
     let mut bar = crate::troops::Stamina { amount: 110, settled_at: 5, remainder: 0 };
     bar.add(ref boosts, maximum, rules, 25, 120, 5);
     assert_eq!(bar.amount, 135);
-    bar.add(ref boosts, maximum, rules, 50, 120, 5);
-    assert_eq!(bar.amount, 170);
+    bar.add(ref boosts, maximum, rules, 100, 120, 5);
+    assert_eq!(bar.amount, 195);
 }
 
 #[test]
@@ -211,7 +344,7 @@ fn an_armys_own_maximum_reads_its_logistics_tier_and_a_troops_without_progress()
             )
         },
     );
-    assert_eq!(own, crate::stamina::StaminaImpl::max(troops.category, crate::troops::TroopTier::T1, rules) + 50);
+    assert_eq!(own, crate::stamina::StaminaImpl::max(troops.category, crate::troops::TroopTier::T1, rules) + 75);
     assert_eq!(other, crate::stamina::StaminaImpl::max(troops.category, troops.tier, rules));
 }
 
@@ -246,18 +379,18 @@ fn homecoming_returns_each_expired_armys_own_share_of_its_survivors() {
     let slot = crate::resources::ResourceSlot { game_id, entity_id: 1, resource_type: stock };
     let before = resources.resource_balance(slot);
     let tomorrow = super::registrar::day_start(d, game_id, 1);
-    // The next day's first deploy removes yesterday's armies: 18% of 10,000 and 9% of 1,000 come home.
+    // The next day's first deploy removes yesterday's armies: 21% of 10,000 and 14% of 1,000 come home.
     assert!(
         super::resource_commands::execute_in_game(d, game_id, super::registrar::muster_command(category, 0), tomorrow),
     );
     let troops = super::state::GameState { contract_address: d.games };
     assert!(troops.explorer(first).is_none() && troops.explorer(second).is_none());
-    assert_eq!(resources.resource_balance(slot), before + 1800 * troop + 90 * troop - troop);
+    assert_eq!(resources.resource_balance(slot), before + 2100 * troop + 140 * troop - troop);
 }
 
 #[test]
-fn homecoming_returns_whole_troops_and_nothing_at_common() {
-    for (count, homecoming, returned) in array![(10_000_u128, 1_u8, 0_u128), (99, 4, 17), (33, 2, 0), (34, 2, 1)] {
+fn homecoming_returns_whole_troops_and_nothing_at_zero() {
+    for (count, homecoming, returned) in array![(10_000_u128, 0_u8, 0_u128), (99, 4, 20), (33, 1, 0), (34, 1, 1)] {
         let share: u128 = crate::rules::homecoming_bps(homecoming).into();
         assert_eq!(count * share / 10000, returned);
     }
@@ -284,7 +417,7 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
     let untrained = deploy(d, game_id, category, 0);
     assert_eq!(read_progress(d, untrained), crate::progression::initial());
 
-    // War hall rare, Supply yard uncommon, Hearth epic; the Scouts' lodge untrained.
+    // War hall Uncommon, Supply yard Common, Hearth Rare; the Scouts' lodge untrained.
     let mut learned = 0;
     for (row, tiers) in array![
         (crate::research::ROW_WAR_HALL, 2_u8), (crate::research::ROW_SUPPLY_YARD, 1), (crate::research::ROW_HEARTH, 3),
@@ -300,7 +433,7 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
     let trained = deploy(d, game_id, category, 1);
     let progress = read_progress(d, trained);
     assert_eq!(
-        (progress.battle, progress.logistics, progress.scouting, progress.homecoming, progress.xp), (3, 2, 1, 4, 0),
+        (progress.battle, progress.logistics, progress.scouting, progress.homecoming, progress.xp), (2, 1, 0, 3, 0),
     );
     // Training changes no army already deployed.
     assert_eq!(read_progress(d, untrained), crate::progression::initial());
@@ -314,7 +447,7 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
         crate::stamina::StaminaImpl::max(
             troops.category, crate::troops::TroopTier::T1, preset.rules.troop_stamina_config,
         )
-            + crate::rules::logistics_stamina(2).into(),
+            + crate::rules::logistics_stamina(1).into(),
     );
 }
 
@@ -323,12 +456,12 @@ fn trained_scouting_carries_every_choice_from_the_lodge() {
     let mut learned = 0;
     for kind in array![
         crate::research::KIND_RIFTS, crate::research::KIND_CAMPS, crate::research::KIND_BEASTS,
-        crate::research::KIND_RIFTS,
+        crate::research::KIND_RIFTS, crate::research::KIND_BEASTS,
     ] {
         learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, kind);
     }
     let progress = crate::progression::trained(learned);
     assert_eq!(progress.scouting, 5);
-    assert_eq!(progress.scouting_kinds, 2 + 4 + 3 * 16 + 2 * 64);
+    assert_eq!(progress.scouting_kinds, 2 + 4 + 3 * 16 + 2 * 64 + 3 * 256);
     assert_eq!(progress.xp, 0);
 }

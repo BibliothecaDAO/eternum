@@ -95,14 +95,19 @@ describe("the page a run opens", () => {
       buildRunUrl({ baseUrl: "https://127.0.0.1:4173", game, player, rendererMode: "webgpu-auto", stepSet }),
     ).searchParams.get("dev");
 
-  const worldLists = [
-    "blitz-plates",
-    "blitz-plates-player",
-    "frontier-plates",
-    "frontier-plates-player",
-    "lab-hover-zoom",
-    "lab-high-ground",
-  ];
+  // Variants that play the same world-reading steps need the same instrumentation, whatever fixture they open.
+  const worldSteps = new Set(
+    [
+      "blitz-plates",
+      "blitz-plates-player",
+      "frontier-plates",
+      "frontier-plates-player",
+      "lab-hover-zoom",
+      "lab-high-ground",
+      "lab-visit",
+    ].map((name) => STEP_SETS[name].steps),
+  );
+  const worldLists = Object.keys(STEP_SETS).filter((name) => worldSteps.has(STEP_SETS[name].steps));
 
   it("keeps the dev overlays off for every spectator list that needs no dev tools", () => {
     const ordinary = Object.keys(STEP_SETS).filter(

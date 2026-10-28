@@ -124,6 +124,37 @@ describe("initial structure", () => {
     stop();
   });
 
+  it("keeps a player on the realm they visit as its facts land and their account changes", () => {
+    Object.assign(ui, { structureEntityId: 0, isSpectating: false });
+    setAccount({ address: PLAYER });
+    const store = factStore();
+    const stop = followInitialStructure({ store } as never);
+    store.land([structure(5, "0x99"), structure(2790, PLAYER)]);
+    // The season board's Visit opens the neighbour's realm as a spectator's (useGoToStructure).
+    ui.setStructureEntityId(5, { spectator: true });
+
+    store.applyScope({ actor: PLAYER, visit: "0x99", expedition: {} });
+    setAccount({ address: PLAYER });
+
+    expect(ui).toMatchObject({ structureEntityId: 5, isSpectating: true });
+    stop();
+  });
+
+  it("makes the player's own realm, opened before their account arrived, theirs once it does", () => {
+    // As a page loaded on the realm's board opens it, before the account is restored.
+    Object.assign(ui, { structureEntityId: 2790, isSpectating: true, worldMapReturnPosition: null });
+    setAccount(null);
+    const store = factStore();
+    const stop = followInitialStructure({ store } as never);
+    store.land([structure(5, "0x99"), structure(2790, PLAYER)]);
+    expect(ui).toMatchObject({ structureEntityId: 2790, isSpectating: true });
+
+    setAccount({ address: PLAYER });
+
+    expect(ui).toMatchObject({ structureEntityId: 2790, isSpectating: false });
+    stop();
+  });
+
   it("keeps a session entered to spectate a spectator, with an account held and no player signed in", () => {
     Object.assign(ui, { structureEntityId: 0, isSpectating: false });
     spectateSession.mockReturnValue(true);

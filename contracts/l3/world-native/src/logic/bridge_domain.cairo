@@ -3,6 +3,7 @@ pub mod BridgeLogic {
     #[cfg(feature: "test_support")]
     use starknet::ContractAddress;
     use crate::logic::bridge::BridgeState;
+    use crate::logic::entry::EntryAdministration;
     use crate::logic::release::ReleaseState;
     use crate::logic::withdrawals::WithdrawalState;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
@@ -22,9 +23,15 @@ pub mod BridgeLogic {
             crate::logic::preset_record::store_withdrawals(commitment, withdrawals);
         }
     }
+    component!(path: EntryAdministration, storage: administration, event: AdministrationEvent);
+    #[abi(embed_v0)]
+    impl LedgerOperator = EntryAdministration::LedgerOperatorImpl<ContractState>;
+    impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
+        #[substorage(v0)]
+        administration: EntryAdministration::Storage,
         #[substorage(v0)]
         release: ReleaseState::Storage,
         #[substorage(v0)]
@@ -35,6 +42,7 @@ pub mod BridgeLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        AdministrationEvent: EntryAdministration::Event,
         ReleaseEvent: ReleaseState::Event,
         WithdrawalEvent: WithdrawalState::Event,
         BridgeEvent: BridgeState::Event,

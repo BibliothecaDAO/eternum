@@ -29,7 +29,4 @@ export interface OpenSlotRequest {
 }
 
 /** `PUT /api/factory/calendar/:phase`. */
-export interface SetPhaseRequest {
-  startsAt: string;
-  endsAt: string;
-}
+export type SetPhaseRequest<Phase extends SeasonPhaseName> = Omit<Extract<SeasonPhase, { phase: Phase }>, "phase">;

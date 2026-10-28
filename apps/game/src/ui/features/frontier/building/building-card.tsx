@@ -5,10 +5,12 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudCost, HudSheet, HudTier, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
-import { BUILDING_FIGURES, RESEARCH, RESEARCH_TREE, RESEARCHING, type Tier } from "@/ui/design-system/kit/words";
+import { BUILDING_FIGURES, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { DestroyBuildingButton } from "@/ui/features/world/components/bottom-right-panel/destroy-building-button";
 import { requireActiveGameClient } from "@/sync/active-game-client";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { researchRowOf } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatRate } from "@bibliothecadao/types";
@@ -19,7 +21,7 @@ import { buildingsMake, standingBuildings } from "../production/store-makers";
 import { RefusedVerb } from "../refused-verb";
 import { useResearchActions } from "../research/research-actions";
 import { useResearchTree } from "../research/research-facts";
-import { firstMissing, type Need, needLine, type TreeNode } from "../research/research-tree";
+import { researchSideNode, firstMissing, type Need, needLine, type TreeNode } from "../research/research-tree";
 import type { TappedBuilding } from "../research/selected-building";
 import { CompareRows } from "./compare-rows";
 
@@ -28,8 +30,9 @@ export type CardMakes = { icon: IconMeaning; rate: string };
 
 /**
  * A building tapped on the realm's board, as its own card (owner, 26 October: "when i click a building I should have the
- * same view as the castle"): what all of its type make now, its research now against its next tier, Research with its
- * price, and Delete. Its research opens on the Research page from a need on another node (the Barracks' gate).
+ * same view as the castle"): what all of its type make now and its research's tier. A player's own building adds its
+ * next tier, Research with its price, and Delete; its research opens on the Research page from a need on another node
+ * (the Barracks' gate). A viewer reads what the building is and does, and nothing the viewer would pay or order.
  */
 export const BuildingCard = ({
   realm,
@@ -44,11 +47,24 @@ export const BuildingCard = ({
 }) => {
   const { setup } = useGame();
   useNativeRevision(["Building", "RealmKnowledge"]);
+  const ordersAllowed = useUIStore(canIssueOrders);
   const tree = useResearchTree(realm);
   const actions = useResearchActions(realm, onResearchPage);
   const demolish = useDemolish(realm, building);
   const row = researchRowOf(building.category);
-  const node = tree?.nodes.find((each) => each.row === row && each.maxTier === 4);
+  const node = tree?.nodes.find((each) => each.row === row && each.maxTier === 5);
+  const orders: BuildingOrders = {
+    sending: node !== undefined && actions.sending(node),
+    fix: (need) => (node && tree ? actions.fixFor(need, node, tree.nodes) : undefined),
+    onResearch: (side) => node && actions.research(node, side),
+    demolish: (
+      <DestroyBuildingButton
+        key={`${building.innerCol}:${building.innerRow}`}
+        busy={demolish.busy}
+        onDestroy={demolish.run}
+      />
+    ),
+  };
   return (
     <BuildingCardView
       name={buildingName(building.category)}
@@ -56,16 +72,7 @@ export const BuildingCard = ({
       standing={standingBuildings(setup.store, safeInteger(realm.entity_id), building.category)}
       makes={cardMakes(buildingsMake(setup.store, realm, building.category))}
       node={node}
-      sending={node !== undefined && actions.sending(node)}
-      fix={(need) => (node && tree ? actions.fixFor(need, node, tree.nodes) : undefined)}
-      onResearch={(side) => node && actions.research(node, side)}
-      demolish={
-        <DestroyBuildingButton
-          key={`${building.innerCol}:${building.innerRow}`}
-          busy={demolish.busy}
-          onDestroy={demolish.run}
-        />
-      }
+      orders={ordersAllowed ? orders : undefined}
       onClose={onClose}
     />
   );
@@ -94,9 +101,18 @@ const useDemolish = (realm: NativeRows["Structure"], building: TappedBuilding) =
 const cardMakes = (makes: ReturnType<typeof buildingsMake>): CardMakes | undefined =>
   makes && { icon: resourceMeaning(makes.resource), rate: formatRate(makes.perSecond) };
 
+/** What a player's own building's card orders: its next tier's Research (or what it needs, with the fix) and Delete. */
+type BuildingOrders = {
+  sending: boolean;
+  fix: (need: Need) => Fix | undefined;
+  onResearch: (side: number) => unknown;
+  demolish: ReactNode;
+};
+
 /**
- * The card as drawn: its painting, how many stand and its tier, Delete; what they make; the research's figures now and
- * at the next tier, a side picked by its row; Research in the foot, or why it cannot run yet with its fix.
+ * The card as drawn: its painting, how many stand and its tier; what they make; the research's figures now. With the
+ * player's orders, Delete, the figures at the next tier with a side picked by its row, and Research in the foot, or why
+ * it cannot run yet with its fix.
  */
 export const BuildingCardView = ({
   name,
@@ -104,10 +120,7 @@ export const BuildingCardView = ({
   standing,
   makes,
   node,
-  sending,
-  fix,
-  onResearch,
-  demolish,
+  orders,
   onClose,
 }: {
   name: string;
@@ -116,14 +129,13 @@ export const BuildingCardView = ({
   makes: CardMakes | undefined;
   /** The building's research row; undefined while the realm's research is unknown. */
   node: TreeNode | undefined;
-  sending: boolean;
-  fix: (need: Need) => Fix | undefined;
-  onResearch: (side: number) => unknown;
-  demolish: ReactNode;
+  /** Undefined for a viewer: the card then reads the building as it stands. */
+  orders?: BuildingOrders;
   onClose: () => void;
 }) => {
   const [side, setSide] = useState(0);
-  const top = node?.state === "done";
+  const chosen = node && researchSideNode(node, side);
+  const next = orders && chosen && chosen.state !== "done" ? chosen : undefined;
   return (
     <HudSheet label={name} onClose={onClose}>
       <div data-building-card className="flex flex-col gap-3">
@@ -145,29 +157,29 @@ export const BuildingCardView = ({
               {makes.rate}
             </span>
           )}
-          {demolish}
+          {orders?.demolish}
         </div>
         {node && (
           <CompareRows
-            now={<HudTier tier={tierOf(node.tier)} />}
-            next={top ? undefined : <HudTier tier={tierOf(node.tier + 1)} />}
+            now={<HudTier tier={tierOf(chosen!.tier)} />}
+            next={next?.nextTier ? <HudTier tier={next.nextTier} /> : undefined}
             rows={node.figures.map((figure, index) => ({
               icon: figure.icon,
               word: figure.name,
               now: figure.now,
-              next: figure.next,
-              grows: node.sides ? index === side : true,
-              onPick: node.sides ? () => setSide(index) : undefined,
+              next: orders && figure.next,
+              grows: orders !== undefined && (!node.sides || index === side),
+              onPick: orders && node.sides ? () => setSide(index) : undefined,
             }))}
           />
         )}
-        {node && !top && (
+        {next && orders && (
           <ResearchFoot
-            node={node}
-            verb={node.sides?.[side] ? RESEARCH_TREE.research(node.sides[side].name) : RESEARCH}
-            sending={sending}
-            fix={fix}
-            onResearch={() => onResearch(node.sides ? side : 0)}
+            node={next}
+            verb={next.sides?.[side] ? RESEARCH_TREE.research(next.sides[side].name) : RESEARCH}
+            sending={orders.sending}
+            fix={orders.fix}
+            onResearch={() => orders.onResearch(next.sides ? side : 0)}
           />
         )}
       </div>
@@ -175,8 +187,8 @@ export const BuildingCardView = ({
   );
 };
 
-/** A row's tiers learned (0 to 4) as the tier its gem shows (Common I to Legendary V). */
-const tierOf = (tier: number) => Math.min(5, tier + 1) as Tier;
+/** A row's research rank, from untrained 0 through Legendary V. */
+const tierOf = (tier: number) => Math.min(5, tier) as Rank;
 
 /** The next tier's Research in the card's foot, with its price; or, while it cannot run, why, with the fix. */
 const ResearchFoot = ({

@@ -69,6 +69,12 @@ export const ACTION_CATALOG: Record<ActionName, ActionCatalogEntry> = {
       troopTier: TroopTierSchema,
       troopCount: TroopCount,
       spawnDirection: HexDirection,
+      slot: Type.Integer({
+        minimum: 0,
+        maximum: 255,
+        description:
+          "Zero-based daily army slot; must be free and within the realm allowance. Zero in games without daily slots.",
+      }),
     }),
     preconditions:
       "The structure holds at least troopCount troops of that type and tier, has a free explorer slot, and the hex in spawnDirection is free.",

@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { LEDGER_PRESET_FIELD_COUNT } from "@realms-world/value-ledger/codecs";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
@@ -28,7 +29,19 @@ vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
       if (entrypoint === "balance_of") return [String(2_140n * WEI), "0"];
       // Preset: the seat at 500 LORDS (2), cut, chest share, paid fraction, decay, sword (2), shield (2), the rest.
       const price = String(500n * WEI);
-      return [price, "0", "1000", "1000", "2500", "8000", price, "0", price, "0", ...Array<string>(8).fill("0")];
+      return [
+        price,
+        "0",
+        "1000",
+        "1000",
+        "2500",
+        "8000",
+        price,
+        "0",
+        price,
+        "0",
+        ...Array<string>(LEDGER_PRESET_FIELD_COUNT - 10).fill("0"),
+      ];
     },
   }),
 }));

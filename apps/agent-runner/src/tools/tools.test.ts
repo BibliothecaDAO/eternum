@@ -93,7 +93,7 @@ describe("act", () => {
 
     const outcome = await runAction(game, {
       action: "createExplorerArmy",
-      params: { structureId: 12, troopType: "Knight", troopTier: "T1", troopCount: 10, spawnDirection: 0 },
+      params: { structureId: 12, troopType: "Knight", troopTier: "T1", troopCount: 10, spawnDirection: 0, slot: 2 },
     });
 
     expect(game.actions.createExplorerArmy).toHaveBeenCalledWith({
@@ -102,6 +102,7 @@ describe("act", () => {
       troopTier: "T1",
       troopCount: 10,
       spawnDirection: 0,
+      slot: 2,
     });
     expect(outcome).toEqual({ kind: "confirmed", transactionHash: "0xabc123", block: 7 });
   });

@@ -806,6 +806,9 @@ pub mod GamesFixture {
                 entitlement,
             )
         }
+        fn settled_realm(self: @TContractState, game_id: u32, realm_id: u32) -> u64 {
+            crate::state::read().settlements.held_realm_homes.read((game_id, realm_id))
+        }
         fn entry_entitlement(
             self: @TContractState, key: crate::settlement::EntryKey,
         ) -> Option<crate::settlement::EntryEntitlement> {
@@ -2141,45 +2144,71 @@ pub mod GamesFixture {
             let state = crate::state::read();
             let classes = state.releases.entry(state.current_release.read()).classes;
             crate::entry::ILedgerOperatorDispatcherTrait::ledger_operator(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() },
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.bridge.read() },
             )
         }
         fn set_ledger_operator(ref self: TContractState, operator: starknet::ContractAddress) {
             let state = crate::state::read();
             let classes = state.releases.entry(state.current_release.read()).classes;
             crate::entry::ILedgerOperatorDispatcherTrait::set_ledger_operator(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() }, operator,
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.bridge.read() }, operator,
             )
         }
-        fn publish_frontier_pool(ref self: TContractState, game_id: u32, amount: u128) {
+        fn publish_frontier_pool(ref self: TContractState, game_id: u32, amount: u128, prize_pool: u128) {
             let classes = fixture_classes(game_id);
             crate::entry::ILedgerOperatorDispatcherTrait::publish_frontier_pool(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() },
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.bridge.read() },
+                game_id,
+                amount,
+                prize_pool,
+            )
+        }
+        fn top_up_frontier_pool(ref self: TContractState, game_id: u32, amount: u128) {
+            crate::entry::ILedgerOperatorDispatcherTrait::top_up_frontier_pool(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: fixture_classes(game_id).bridge.read() },
                 game_id,
                 amount,
             )
         }
+        fn frontier_prize(self: @TContractState, game_id: u32) -> crate::entry::FrontierPrize {
+            crate::entry::ILedgerOperatorDispatcherTrait::frontier_prize(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: fixture_classes(game_id).bridge.read() },
+                game_id,
+            )
+        }
+        fn post_frontier_top(ref self: TContractState, game_id: u32, winners: Array<starknet::ContractAddress>) {
+            crate::entry::ILedgerOperatorDispatcherTrait::post_frontier_top(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: fixture_classes(game_id).bridge.read() },
+                game_id,
+                winners,
+            )
+        }
+        fn award_frontier_prize(ref self: TContractState, game_id: u32, rank: u16) {
+            crate::entry::ILedgerOperatorDispatcherTrait::award_frontier_prize(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: fixture_classes(game_id).bridge.read() },
+                game_id,
+                rank,
+            )
+        }
         fn grant_labor(
-            ref self: TContractState,
-            realms: Array<crate::entry::LaborRealm>,
-            day: u64,
-            account: starknet::ContractAddress,
-        ) -> Array<crate::entry::LaborGrant> {
+            ref self: TContractState, home: crate::entry::LaborHome, day: u64, account: starknet::ContractAddress,
+        ) -> crate::entry::LaborGrant {
             let state = crate::state::read();
             let classes = state.releases.entry(state.current_release.read()).classes;
             crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() },
-                realms,
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.bridge.read() },
+                home,
                 day,
                 account,
             )
         }
         fn labor_grant(
-            self: @TContractState, realm: crate::entry::LaborRealm, day: u64,
+            self: @TContractState, home: crate::entry::LaborHome, day: u64,
         ) -> Option<crate::entry::LaborGrant> {
-            let classes = fixture_classes(realm.game_id);
+            let state = crate::state::read();
+            let classes = state.releases.entry(state.current_release.read()).classes;
             crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() }, realm, day,
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.bridge.read() }, home, day,
             )
         }
     }

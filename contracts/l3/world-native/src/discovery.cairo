@@ -79,8 +79,7 @@ pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules) {
 }
 
 // One categorical draw per reveal. After `empty_reveal_limit` empty reveals in a row the draw covers only the kinds
-// still allowed. A ruin candidate exists while the Realm's day is free; its rolled tier is counted even if the
-// budget later refuses it. Refusal leaves an empty tile and never rerolls the site lottery.
+// still allowed. Ruins remain eligible until the realm clears one; discovery never reserves their payout.
 pub fn frontier(
     rules: crate::expeditions::FrontierDiscoveryRules,
     camp_bonus_bps: u32,

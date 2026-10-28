@@ -47,6 +47,7 @@ import {
   getBuildingFromResource,
   isEconomyBuilding,
   ResourcesIds,
+  TROOP_WORDS,
   TroopType,
   formatAmount,
   formatPercent,
@@ -360,20 +361,20 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
       {
         armyType: "Archery",
         troopType: TroopType.Crossbowman,
-        troopLabel: "Crossbowmen",
-        resourceName: "Crossbowman",
+        troopLabel: TROOP_WORDS[TroopType.Crossbowman].many,
+        resourceName: TROOP_WORDS[TroopType.Crossbowman].one,
       },
       {
         armyType: "Stable",
         troopType: TroopType.Paladin,
-        troopLabel: "Paladins",
-        resourceName: "Paladin",
+        troopLabel: TROOP_WORDS[TroopType.Paladin].many,
+        resourceName: TROOP_WORDS[TroopType.Paladin].one,
       },
       {
         armyType: "Barracks",
         troopType: TroopType.Knight,
-        troopLabel: "Knights",
-        resourceName: "Knight",
+        troopLabel: TROOP_WORDS[TroopType.Knight].many,
+        resourceName: TROOP_WORDS[TroopType.Knight].one,
       },
     ];
 

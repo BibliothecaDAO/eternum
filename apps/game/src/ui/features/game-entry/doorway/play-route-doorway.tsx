@@ -89,5 +89,5 @@ const useOwnRealm = (setup: GameClientSetup | null, audience: DoorwayAudience) =
     game_id: configManager.getActiveGameId(),
     entity_id: structureEntityId,
   });
-  return structure ? doorwayRealmOf(structure) : null;
+  return structure ? doorwayRealmOf(structure, setup.store) : null;
 };

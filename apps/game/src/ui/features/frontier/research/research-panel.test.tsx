@@ -3,6 +3,10 @@ import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
+import bindings from "../../../../../../../contracts/l3/world-native/schema/bindings.json";
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
+
 import { MID_REALM } from "./progression-fixture";
 import { ResearchPanel } from "./research-panel";
 import { CastleResearch } from "../upgrade/castle-view";
@@ -23,7 +27,7 @@ afterEach(() => {
   host.remove();
 });
 
-const nodes = readResearchTree(MID_REALM);
+const nodes = readResearchTree({ ...MID_REALM, learned: { ...MID_REALM.learned, 2: { tier: 3, sides: [0, 0, 0] } } });
 const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onFix = vi.fn(), onClose = vi.fn()) =>
   act(() =>
     root.render(
@@ -104,7 +108,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     expect(choice()!.textContent).toContain("Armies find Shrines · +200 XP each");
     const legendaryHut = readResearchTree({
       ...MID_REALM,
-      learned: { ...MID_REALM.learned, 3: { tier: 4, sides: [] } },
+      learned: { ...MID_REALM.learned, 3: { tier: 5, sides: [] } },
     });
     act(() =>
       root.render(
@@ -129,8 +133,8 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     expect(tree.contains(choice())).toBe(false);
     expect(tree.compareDocumentPosition(choice()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(choice()!.textContent).toContain("Farm");
-    expect(choice()!.querySelector(".ui-tier-step")?.getAttribute("aria-label")).toBe("Rare → Epic");
-    expect([...choice()!.querySelectorAll(".ui-tier")].map((gem) => gem.textContent)).toEqual(["III", "IV"]);
+    expect(choice()!.querySelector(".ui-tier-step")?.getAttribute("aria-label")).toBe("Common → Uncommon");
+    expect([...choice()!.querySelectorAll(".ui-tier")].map((gem) => gem.textContent)).toEqual(["I", "II"]);
     expect(button(/^Research Fields$/)).toBeDefined();
     const price = nodes
       .find(({ key }) => key === "row-0")!
@@ -167,7 +171,7 @@ it("shows the chosen research shares without a production formula", () => {
       />,
     ),
   );
-  expect(button(/^Fields/)!.textContent).toBe("Fields+25% → +50%");
+  expect(button(/^Fields/)!.textContent).toBe("Fields+20% → +40%");
   expect(button(/^Granary/)!.textContent).not.toContain("Each Farm");
   // The choice reads from its cards: no line explaining the sides or that they are kept.
   const lines = [...host.querySelectorAll("[data-lab='node-choice'] > span")].map((line) => line.textContent);
@@ -197,4 +201,70 @@ it("keeps the chosen Research action outside the tree scroll on every pick, incl
     expect(host.querySelector(".overflow-y-auto")!.contains(choice)).toBe(false);
     expect([...choice.querySelectorAll("button")].at(-1)?.textContent).toMatch(/^Research/);
   }
+});
+
+it.each([
+  [0, "0 · 0% damage → I · +10% damage"],
+  [1, "I · +10% damage → II · +25% damage"],
+  [2, "II · +25% damage → III · +45% damage"],
+  [3, "III · +45% damage → IV · +70% damage"],
+  [4, "IV · +70% damage → V · +100% damage"],
+  [5, "V · +100% damage"],
+] as const)("labels the War hall's current and next training ranks at rank %s", (tier, label) => {
+  const ranked = readResearchTree({
+    ...MID_REALM,
+    learned: { ...MID_REALM.learned, 4: { tier, sides: [] } },
+  });
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={ranked}
+        picked="row-4"
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    ),
+  );
+  const card = host.querySelector("[data-lab='node-choice']")!;
+  const effect = [...card.querySelectorAll(":scope > span")].find((line) =>
+    line.textContent?.startsWith("New armies start with Battle"),
+  );
+  expect(effect?.textContent).toBe(`New armies start with Battle · ${label}`);
+});
+
+it("renders every generated research row and submits every permitted lodge kind", () => {
+  const onPick = vi.fn();
+  draw(null, vi.fn(), onPick);
+  const renderedRows = [...host.querySelectorAll("[data-node]")].map((tile) => {
+    act(() => (tile as HTMLButtonElement).click());
+    return nodes.find((node) => node.key === onPick.mock.lastCall![0])!.row;
+  });
+  const catalogRows = Object.entries(research)
+    .filter(([key]) => key.startsWith("ROW_") && key !== "ROW_COUNT")
+    .map(([, row]) => row);
+  expect([...new Set(renderedRows)].sort((a, b) => a - b)).toEqual(catalogRows.sort((a, b) => a - b));
+  expect(new Set(renderedRows).size).toBe(research.ROW_COUNT);
+
+  const onResearch = vi.fn();
+  const lodge = nodes.find((node) => node.row === research.ROW_SCOUTS_LODGE)!;
+  draw(lodge.key, onResearch);
+  const kinds = bindings.commandAbi.find((item) => item.name === "world_native::progression::ScoutingKind")!.variants!;
+  const options = [...host.querySelectorAll<HTMLButtonElement>("[data-lab='node-choice'] button[aria-pressed]")];
+  expect(options.map((option) => option.querySelector(".truncate")!.textContent)).toEqual(
+    kinds.map(({ name }) => RESEARCH_TREE.kinds[name.toLowerCase() as keyof typeof RESEARCH_TREE.kinds]),
+  );
+  const sideCodes = Object.entries(research)
+    .filter(([key]) => key.startsWith("KIND_"))
+    .map(([, code]) => code)
+    .sort((a, b) => a - b);
+  expect(options).toHaveLength(sideCodes.length);
+  for (const [index, option] of options.entries()) {
+    act(() => option.click());
+    act(() => button(/^Research /)!.click());
+    expect(onResearch).toHaveBeenLastCalledWith(lodge, sideCodes[index]);
+  }
+  expect(onResearch).toHaveBeenCalledTimes(kinds.length);
 });

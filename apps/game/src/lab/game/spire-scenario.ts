@@ -1,5 +1,6 @@
+import { frontierArmyRules } from "../../ui/features/frontier/army/progression-rules-fixture";
 import { installLabGame } from "@/ui/features/debug/kit-lab/fixture-game";
-import { SPIRE_DAY_NOW, spireDay } from "@/ui/features/frontier/spire-fixture";
+import { SPIRE_ARMY, SPIRE_DAY_NOW, spireDay } from "@/ui/features/frontier/spire-fixture";
 import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum";
 import { BiomeType, BiomeTypeToId, getHexesWithinRadius, getNeighborHexes } from "@bibliothecadao/types";
 
@@ -7,21 +8,20 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
 
 import { nativeTilePackingConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { frontierPreset } from "../../../../../config/source/frontier/native";
-import { LAB_GAME, LAB_GAME_ENDS_AT, type LabFact, type LabScenario } from "./lab-chain";
+import { LAB_GAME, LAB_GAME_ENDS_AT, type LabFact, type LabScenario, wire } from "./lab-chain";
 
 /** A revealed tile's packed data: its biome alone. */
 const tileData = (biome: BiomeType) => BigInt(BiomeTypeToId[biome]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
 
 /** The biome each revealed tile of a lab game lies in, by its position. */
-type LabGround = (hex: { col: number; row: number }) => BiomeType;
+export type LabGround = (hex: { col: number; row: number }) => BiomeType;
 
 const GRASSLAND: LabGround = () => BiomeType.Grassland;
 /** Snow, bare rock and tundra in turn: the highest ground the map draws, as the playtest's snow fields rise. */
 const HIGH_GROUND: LabGround = ({ col, row }) =>
   [BiomeType.Snow, BiomeType.Bare, BiomeType.Tundra][(((col + 2 * row) % 3) + 3) % 3];
-
-const wire = (value: unknown): unknown =>
-  JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
+/** Beach sand, where palms grow: the owner's desert realm with its palms (28 October 2026, "shadows are weird ??"). */
+export const SANDS: LabGround = () => BiomeType.Beach;
 
 /**
  * The fixture's rules as Frontier plays them: hour-long day units, so a day outlasts a session; Frontier's own commands
@@ -71,7 +71,8 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
     { model: "Structure", key: "0x71", value: null },
     { model: "ExpeditionSite", key: "0x72", value: null },
     { model: "Guard", key: "0x73", value: null },
-    { model: "GameRelease", key: "0x1ab0", value: { game_id: 1, release_id: 1, preset_commitment: "0x1ab" } },
+    progressionRules(),
+    armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY, 0),
     ...[site, ...getHexesWithinRadius(site.col, site.row, 4)]
       .filter((hex) => !store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }))
       .map((hex, index) => tile(`0x1ab7${index.toString(16)}`, hex.col, hex.row)),
@@ -134,3 +135,34 @@ export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; 
   if (!open) throw new Error("The lab finds no open tile beside the spire's army");
   return { col: open.col, row: open.row };
 };
+
+/** Where the spire's game keeps its progression rows: a lab game that writes its own replaces them in place. */
+export const PROGRESS_KEYS = { rules: "0x1ab94", spireArmy: "0x1ab92" } as const;
+
+/** The game's progression rules, from the Frontier preset. */
+export const progressionRules = (): LabFact => ({
+  model: "ArmyProgressionRules",
+  key: PROGRESS_KEYS.rules,
+  value: frontierArmyRules(),
+});
+
+/** The lab army's XP and trained sides, with no unspent skill points. */
+export const armyProgress = (key: string, explorerId: number, xp: number): LabFact => ({
+  model: "ArmyProgress",
+  key,
+  value: {
+    game_id: 1,
+    explorer_id: String(explorerId),
+    xp,
+    common_points: 0,
+    uncommon_points: 0,
+    rare_points: 0,
+    epic_points: 0,
+    legendary_points: 0,
+    battle: 1,
+    logistics: 1,
+    scouting: 0,
+    scouting_kinds: 0,
+    homecoming: 1,
+  },
+});

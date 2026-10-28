@@ -6,7 +6,7 @@ import { useLayout } from "@/shell/frame/layout";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { DEPLOY, DEPLOY_FILLS_FIRST, DEPLOYING } from "@/ui/design-system/kit/words";
+import { DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
 
 import { attributeBadgeTarget } from "../attributes/attributes";
 import type { SlotStart } from "../deploy/deploy-plan";
@@ -18,8 +18,8 @@ import { ArmyToken, OpenSlot } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
 /**
- * Every army slot in order: a phone's dock or a desktop's list, each showing its army or starting stamina. Only the
- * lowest free slot offers Deploy. A visited realm shows its armies read-only, and an empty desktop list stays absent.
+ * Every army slot in order: a phone's dock or a desktop's list, each showing its army or starting stamina. The
+ * player can deploy into any free slot. A visited realm shows its armies read-only, and an empty desktop list stays absent.
  */
 export const ArmyDock = ({
   realm,
@@ -68,8 +68,6 @@ export const ArmyDock = ({
         key={`slot-${entry.slot.slot}`}
         realm={realm}
         slot={entry.slot}
-        first={entry.slot === next}
-        waits={entry.slot === next ? undefined : next}
         pulse={entry.slot === next && armies.length === 0}
         wide={desktop}
       />
@@ -78,14 +76,7 @@ export const ArmyDock = ({
   const pending =
     openSlots === undefined &&
     Array.from({ length: openCount }, (_, index) => (
-      <DeploySlot
-        realm={realm}
-        slot={undefined}
-        key={`open-${index}`}
-        first={index === 0}
-        pulse={false}
-        wide={desktop}
-      />
+      <DeploySlot realm={realm} slot={undefined} key={`open-${index}`} pulse={false} wide={desktop} />
     ));
   if (desktop)
     return (
@@ -138,7 +129,7 @@ const DockToken = ({
       xpGoal={army.xpGoal}
       stamina={stamina}
       troops={army.troops}
-      canBuyTier={army.canBuyTier}
+      canSpendSkillPoint={army.canSpendSkillPoint}
       selected={selected}
       flyTarget={attributeBadgeTarget(army.explorerId)}
       onPick={onPick}
@@ -168,7 +159,7 @@ const DockArmyRow = ({
       stamina={stamina}
       xp={army.xp}
       xpGoal={army.xpGoal}
-      canBuyTier={army.canBuyTier}
+      canSpendSkillPoint={army.canSpendSkillPoint}
       selected={selected}
       flyTarget={attributeBadgeTarget(army.explorerId)}
       onPick={onPick}
@@ -185,36 +176,32 @@ const useWellRefillShown = (army: DockArmy) => {
 
 /**
  * An open slot, with the bar it starts its army on; the first one carries the wait of the army being deployed once the
- * Deploy sheet has closed. A desktop's list shows one, the next to fill, as a row.
+ * Deploy sheet has closed. Each free slot remains available on desktop and phone.
  */
 const DeploySlot = ({
   realm,
   slot,
-  first = true,
-  waits,
   pulse,
   wide = false,
 }: {
   realm: NativeRows["Structure"];
   /** The slot and its start, as the deploy plan reads it; unknown while the plan is. */
   slot: SlotStart | undefined;
-  first?: boolean;
-  /** The lowest free slot, which Deploy fills before this one. */
-  waits?: SlotStart;
   pulse: boolean;
   wide?: boolean;
 }) => {
-  const deploying = useInFlight("deploy", safeInteger(realm.entity_id)) !== undefined;
+  const deploying = useInFlight("deploy", safeInteger(realm.entity_id));
   const line = slot && slotStartLine(slot);
   const Slot = wide ? OpenSlotRow : OpenSlot;
   return (
     <Slot
       label={DEPLOY}
-      filling={first && deploying ? DEPLOYING : undefined}
+      filling={slot && deploying === slot.slot ? DEPLOYING : undefined}
       pulse={pulse}
-      waits={slot && waits ? { number: slot.number, words: DEPLOY_FILLS_FIRST(waits.number) } : undefined}
       start={slot?.start && line ? { bar: slot.start, words: `${line}.` } : undefined}
-      onDeploy={() => openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true })}
+      onDeploy={() =>
+        openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true, slot: slot?.slot })
+      }
     />
   );
 };

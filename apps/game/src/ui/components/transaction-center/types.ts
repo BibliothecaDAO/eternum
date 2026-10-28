@@ -15,7 +15,7 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.TOGGLE_ALTERNATE]: "Army passed through a spire",
   [TransactionType.ENTER_DEPTH]: "Army went deeper",
   [TransactionType.RESEARCH]: "Research started",
-  [TransactionType.BUY_TIER]: "Upgrade bought",
+  [TransactionType.SPEND_SKILL_POINT]: "Upgrade bought",
   [TransactionType.REFILL_STAMINA]: "Stamina refilled",
   [TransactionType.WITHDRAW_LORDS]: "LORDS withdrawn",
   [TransactionType.EXPLORER_CREATE]: "Army raised",

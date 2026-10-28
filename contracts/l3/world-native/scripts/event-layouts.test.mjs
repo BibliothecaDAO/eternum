@@ -42,18 +42,21 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
     { name: "wallet", type: "core::starknet::contract_address::ContractAddress" },
   ]);
   assert.equal(
-    abi.find(({ name }) => name === "world_native::entry::LaborRealm").members.find(({ name }) => name === "home").type,
+    abi.find(({ name }) => name === "world_native::entry::LaborHome").members.find(({ name }) => name === "home").type,
     "core::integer::u64",
   );
   assert.deepEqual(method("publish_frontier_pool").inputs, [
     { name: "game_id", type: "core::integer::u32" },
     { name: "amount", type: "core::integer::u128" },
+    { name: "prize_pool", type: "core::integer::u128" },
   ]);
   assert.deepEqual(method("publish_frontier_pool").outputs, []);
   assert.deepEqual(abi.find(({ name }) => name === "world_native::relics::ChestRules").members, [
     { name: "price_ceiling", type: "core::integer::u128" },
     { name: "shares", type: "world_native::relics::ChestTiers" },
     { name: "claim_window_seconds", type: "core::integer::u32" },
+    { name: "pool_bps", type: "core::integer::u16" },
+    { name: "top_n", type: "core::integer::u16" },
   ]);
   const relics = JSON.parse(
     await readFile(new URL("../target/dev/world_native_RelicsLogic.contract_class.json", import.meta.url), "utf8"),
@@ -73,11 +76,11 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
     false,
   );
   assert.deepEqual(method("grant_labor").inputs, [
-    { name: "realms", type: "core::array::Array::<world_native::entry::LaborRealm>" },
+    { name: "home", type: "world_native::entry::LaborHome" },
     { name: "day", type: "core::integer::u64" },
     { name: "account", type: "core::starknet::contract_address::ContractAddress" },
   ]);
-  assert.deepEqual(method("grant_labor").outputs, [{ type: "core::array::Array::<world_native::entry::LaborGrant>" }]);
+  assert.deepEqual(method("grant_labor").outputs, [{ type: "world_native::entry::LaborGrant" }]);
   assert.equal(
     methods.some(({ name }) =>
       /recorded_execution|execution_head|actor_nonce|open_epoch|reveal_epoch/.test(name ?? ""),

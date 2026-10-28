@@ -36,6 +36,7 @@ describe("game actions", () => {
       directions: [expect.any(Number)],
       building_category: BuildingType.ResourceWheat,
       use_simple: true,
+      scouting_kind: 0,
     });
     expect(client.views.buildingTiles(STRUCTURE_ID).getHexCoords()).toEqual({ col: 40, row: 50 });
   });

@@ -9,6 +9,7 @@ import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/feat
 import {
   ClientConfigManager,
   configManager,
+  getStructureName,
   formatArmies,
   formatArrivals,
   formatGuilds,
@@ -187,13 +188,16 @@ export const settlementPlayersView: FactView<bigint[]> = {
 };
 
 export const faithFactsView: FactView<{
-  structures: NativeRows["Structure"][];
+  structures: (NativeRows["Structure"] & { display_name: string })[];
   wonderFaith: NativeRows["WonderFaith"][];
   faithfulStructures: NativeRows["FaithfulStructure"][];
 }> = {
-  models: ["Structure", "WonderFaith", "FaithfulStructure"],
+  models: ["Structure", "WonderFaith", "FaithfulStructure", "SettledRealm", "GameRelease"],
   read: (store) => ({
-    structures: inActiveGame("Structure")(store),
+    structures: inActiveGame("Structure")(store).map((structure) => ({
+      ...structure,
+      display_name: getStructureName(structure, store).name,
+    })),
     wonderFaith: inActiveGame("WonderFaith")(store),
     faithfulStructures: inActiveGame("FaithfulStructure")(store),
   }),

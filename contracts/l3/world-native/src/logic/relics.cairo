@@ -140,11 +140,11 @@ pub mod RelicState {
         ) {
             crate::logic::progression::award_xp(key, award);
         }
-        fn buy_tier(
+        fn spend_skill_point(
             ref self: ComponentState<TContractState>,
             game_id: u32,
             actor: ContractAddress,
-            command: crate::progression::BuyTier,
+            command: crate::progression::SpendSkillPoint,
             context: crate::commands::ActionContext,
         ) -> () {
             let context = crate::commands::execution_context(game_id, context);
@@ -152,11 +152,15 @@ pub mod RelicState {
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
             let mut progress = crate::logic::progression::require(key);
-            let bought = crate::progression::buy_tier(
-                ref progress, crate::logic::progression::rules(game_id).expect('missing progression rules'), command,
-            );
+            if let crate::progression::SkillPointUse::Stamina(_) = command.choice {
+                let maximum = crate::progression::stamina_max(
+                    progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
+                );
+                assert!(explorer.troops.stamina.inline().amount < maximum, "stamina is full");
+            }
+            let mut bought = crate::progression::spend_skill_point(ref progress, command);
             crate::logic::progression::write(key, progress);
-            self.grant_stamina(key, explorer, crate::rules::TIER_STAMINA_REFILL, context);
+            bought.stamina = self.grant_stamina(key, explorer, bought.stamina.try_into().unwrap(), context);
             self
                 .emit(
                     crate::ownership::StoryEvent {
@@ -166,7 +170,7 @@ pub mod RelicState {
                         owner: Some(actor),
                         timestamp: context.timestamp,
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                        story: crate::ownership::Story::TierBought(bought),
+                        story: crate::ownership::Story::SkillPointSpent(bought),
                     },
                 );
             ()
@@ -202,11 +206,25 @@ pub mod RelicState {
                 },
                 crate::geometry::tile_key(game_id, command.coord),
             );
-            if category == crate::taxonomy::SHRINE_OCCUPIER {
-                crate::logic::progression::grant_fixed_xp(key);
+            let benefit = if category == crate::taxonomy::SHRINE_OCCUPIER {
+                crate::relics::SiteBenefit::Shrine(crate::logic::progression::grant_fixed_xp(key))
             } else {
-                self.grant_stamina(key, explorer, crate::rules::WELL_STAMINA, context);
-            }
+                crate::relics::SiteBenefit::Well(self.grant_stamina(key, explorer, crate::rules::WELL_STAMINA, context))
+            };
+            self
+                .emit(
+                    crate::ownership::StoryEvent {
+                        version: 2,
+                        game_id,
+                        entity_id: Some(command.explorer_id),
+                        owner: Some(actor),
+                        timestamp: context.timestamp,
+                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
+                        story: crate::ownership::Story::SiteUsed(
+                            crate::relics::SiteUsed { explorer_id: command.explorer_id, coord: command.coord, benefit },
+                        ),
+                    },
+                );
             ()
         }
     }
@@ -218,7 +236,7 @@ pub mod RelicState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::relics::ILords<ComponentState<TContractState>> {
-        // A full refill at 1 LORDS per missing stamina point, paid from the realm's LORDS back into the season pool.
+        // Each purchased stamina point returns one LORDS from the realm to the season's chest pool.
         // It is always allowed, including while the day's ruin stands.
         fn refill_stamina(
             ref self: ComponentState<TContractState>,
@@ -239,18 +257,19 @@ pub mod RelicState {
             );
             let mut stamina = explorer.troops.stamina.inline();
             assert!(stamina.amount < maximum, "stamina is already full");
-            let missing: u128 = (maximum - stamina.amount).into();
+            assert!(command.amount > 0 && command.amount <= maximum - stamina.amount, "invalid refill amount");
+            let purchased: u128 = command.amount.into();
             self
                 .resources(game_id)
                 .spend_resource(
                     ResourceKey { game_id, entity_id: explorer.owner },
                     crate::resources::LORDS,
-                    missing * crate::rules::RESOURCE_PRECISION,
+                    purchased * crate::rules::RESOURCE_PRECISION,
                     context.timestamp,
                     crate::commands::resource_context(context),
                 );
-            crate::logic::lords_budget::return_to_pool(game_id, missing, context);
-            stamina.amount = maximum;
+            crate::logic::lords_budget::return_to_pool(game_id, purchased, context);
+            stamina.amount += command.amount;
             stamina.clamp(maximum);
             crate::troops::IArmySlotStaminaDispatcherTrait::army_slot_stamina(
                 crate::troops::IArmySlotStaminaLibraryDispatcher {
@@ -288,7 +307,9 @@ pub mod RelicState {
                     context.timestamp,
                     crate::commands::resource_context(context),
                 );
-            let withdrawal = crate::relics::LordsWithdrawal { account: actor, amount: command.amount };
+            let withdrawal = crate::relics::LordsWithdrawal {
+                account: actor, amount: command.amount, prize_rank: 0, prize_count: 0,
+            };
             self.record_lords_withdrawal(realm, withdrawal, context.timestamp);
             ()
         }
@@ -311,7 +332,7 @@ pub mod RelicState {
                 let initial = crate::troops::Stamina { amount: maximum, ..value.initial };
                 return ResolvedArmySlot {
                     stamina: army_slot_storage::allocate(
-                        key, value.home, value.epoch, value.allowance, initial, maximum,
+                        key, value.home, value.epoch, value.allowance, value.slot, initial, maximum,
                     ),
                     battle_bonus_percent: 0,
                 };
@@ -436,19 +457,20 @@ pub mod RelicState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        /// Adds stamina to a slot army's bar, up to its own maximum: a well's, and a bought tier's.
+        /// Adds stamina to a slot army's bar, up to its own maximum: a well's or a skill point's.
         fn grant_stamina(
             self: @ComponentState<TContractState>,
             key: ExplorerKey,
             explorer: crate::troops::ExplorerTroops,
             amount: u8,
             context: ExecutionContext,
-        ) {
+        ) -> u64 {
             let progress = crate::logic::progression::require(key);
             let maximum = crate::progression::stamina_max(
                 progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
             );
             let mut stamina = explorer.troops.stamina.inline();
+            let before = stamina.amount;
             stamina.amount += amount.into();
             stamina.clamp(maximum);
             crate::troops::IArmySlotStaminaDispatcherTrait::army_slot_stamina(
@@ -458,6 +480,7 @@ pub mod RelicState {
                 key,
                 crate::troops::ArmySlotAction::Persist(crate::troops::StaminaSource::Inline(stamina)),
             );
+            stamina.amount - before
         }
 
         fn refund_capture_stamina(

@@ -7,27 +7,23 @@ vi.mock("@/audio/core/AudioManager", () => ({
 vi.mock("@/ui/motion/motion-layer", () => ({ riseSprite: ({ label }: { label: string }) => rises.push(label) }));
 vi.mock("@/ui/motion/motion-settings", () => ({ playHaptic: () => {} }));
 
-import { affordableUpgrades, attributeGain, nextTierGoal, nextTierPrice, xpGained } from "./attributes";
+import { availableRankUps, attributeGain, xpGained } from "./attributes";
 import { playArmyProgress } from "./progress-moment";
 
-const RULES = {
-  game_id: 1,
-  reveal_xp: 2,
-  fixed_xp: 200,
-  uncommon_xp: 100,
-  rare_xp: 200,
-  epic_xp: 400,
-  legendary_xp: 800,
-};
 const ARMY = {
+  common_points: 0,
+  uncommon_points: 0,
+  rare_points: 0,
+  epic_points: 0,
+  legendary_points: 0,
   game_id: 1,
   explorer_id: 7n,
   xp: 0,
-  battle: 1,
-  logistics: 1,
-  scouting: 1,
+  battle: 0,
+  logistics: 0,
+  scouting: 0,
   scouting_kinds: 0,
-  homecoming: 1,
+  homecoming: 0,
 };
 
 beforeEach(() => {
@@ -36,44 +32,29 @@ beforeEach(() => {
 });
 
 describe("an army's progress", () => {
-  it("prices each next tier as the contract does, and nothing past legendary", () => {
-    expect([1, 2, 3, 4, 5].map((tier) => nextTierPrice(RULES, tier))).toEqual([100, 200, 400, 800, null]);
-  });
-
-  it("can Upgrade any attribute whose next tier its XP covers", () => {
-    expect(affordableUpgrades({ ...ARMY, xp: 99 }, RULES)).toEqual([]);
-    expect(affordableUpgrades({ ...ARMY, xp: 150, battle: 2 }, RULES)).toEqual(["Logistics", "Scouting", "Homecoming"]);
+  it("offers only attributes for which a fitting point is held", () => {
+    expect(availableRankUps({ ...ARMY, xp: 5000 })).toEqual([]);
+    expect(availableRankUps({ ...ARMY, common_points: 1, battle: 1 })).toEqual(["Logistics", "Scouting", "Homecoming"]);
     expect(
-      affordableUpgrades({ ...ARMY, xp: 5000, battle: 5, logistics: 5, scouting: 5, homecoming: 5 }, RULES),
+      availableRankUps({ ...ARMY, legendary_points: 1, battle: 5, logistics: 5, scouting: 5, homecoming: 5 }),
     ).toEqual([]);
   });
 
-  it("puts its XP toward the cheapest tier left to buy: the next tier of its lowest attribute", () => {
-    expect(nextTierGoal(ARMY, RULES)).toEqual({ price: 100, tier: 2 });
-    // One attribute raised: the other three still cost the uncommon price.
-    expect(nextTierGoal({ ...ARMY, battle: 3 }, RULES)).toEqual({ price: 100, tier: 2 });
-    expect(nextTierGoal({ ...ARMY, battle: 3, logistics: 2, scouting: 2, homecoming: 4 }, RULES)).toEqual({
-      price: 200,
-      tier: 3,
-    });
-    expect(nextTierGoal({ ...ARMY, battle: 5, logistics: 5, scouting: 5, homecoming: 5 }, RULES)).toBeUndefined();
-  });
-
-  it("earns XP from reveals and clears, and none from an Upgrade that spends it", () => {
+  it("earns XP from reveals and clears, and none from a rank raised with a point", () => {
     expect(xpGained({ xp: 40 }, { xp: 50 })).toBe(10);
-    expect(xpGained({ xp: 150 }, { xp: 50 })).toBe(0);
+    expect(xpGained({ xp: 150 }, { xp: 150 })).toBe(0);
   });
 });
 
 describe("an attribute's gain", () => {
   it("reads each attribute's rule, the tiered ones by the step between two tiers", () => {
-    expect(attributeGain("Battle", 1, 2)).toBe("+10%");
-    expect(attributeGain("Battle", 3, 5)).toBe("+70%");
-    expect(attributeGain("Logistics", 1, 3)).toBe("+50");
-    expect(attributeGain("Scouting", 1, 2)).toBe("+10%");
-    expect(attributeGain("Scouting", 1, 5)).toBe("+100%");
-    expect(attributeGain("Homecoming", 1, 3)).toBe("+9%");
-    expect(attributeGain("Homecoming", 1, 5)).toBe("+30%");
+    expect(attributeGain("Battle", 1, 2)).toBe("+15%");
+    expect(attributeGain("Battle", 3, 5)).toBe("+55%");
+    expect(attributeGain("Logistics", 1, 3)).toBe("+55");
+    expect(attributeGain("Scouting", 1, 2)).toBe("+15%");
+    expect(attributeGain("Scouting", 1, 5)).toBe("+90%");
+    expect(attributeGain("Homecoming", 1, 3)).toBe("+11%");
+    expect(attributeGain("Homecoming", 1, 5)).toBe("+27%");
   });
 });
 

@@ -2,21 +2,20 @@ import { useGame } from "@/hooks/context/game-context";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
-import { scoutingKindsOf, type ScoutingKind } from "@bibliothecadao/eternum";
-import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { scoutingKindsOf, heldSkillPoints, type SkillPointChoice } from "@bibliothecadao/eternum";
+import { type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { useArmyRevealYield } from "../frontier-reveal-yield";
+import { SpireButton, useArmyAtItsSpire } from "../spire-card";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
-import { type ArmyDetailFacts, attributeOf, readArmyDetail, type AttributeKey, type ScoutKind } from "./army-detail";
+import { type ArmyDetailFacts, readArmyDetail } from "./army-detail";
+import { SCOUTING_CHOICES } from "../progression-choices";
 import { ArmyDetail } from "./army-panel";
 import { ArmyRefill } from "./army-refill";
 
 const PROGRESS_MODELS = ["ArmyProgress", "ArmyProgressionRules"] as const;
-
-const KIND_KEYS: Record<ScoutingKind, ScoutKind> = { Camp: "camp", Rift: "rift", Beasts: "beasts" };
-const KIND_OF: Record<ScoutKind, ScoutingKind> = { camp: "Camp", rift: "Rift", beasts: "Beasts" };
 
 /**
  * The selected army's detail over the game's facts, the one army panel: opened by selecting the army, on the map or
@@ -39,7 +38,7 @@ export const FrontierArmy = ({
   ) : null;
 };
 
-/** One army's panel: Level up buys a level (buy_tier), held until its outcome. None while its progress is unknown. */
+/** One army's panel: Level up buys a level (spend_skill_point), held until its outcome. None while its progress is unknown. */
 const ArmyPanel = ({
   realm,
   army,
@@ -55,6 +54,7 @@ const ArmyPanel = ({
   useNativeRevision(PROGRESS_MODELS);
   const sending = useInFlight("tier", army.explorerId) !== undefined;
   const revealYield = useArmyRevealYield(army);
+  const spire = useArmyAtItsSpire(army.explorerId);
   const progress = setup.store.get("ArmyProgress", { game_id: realm.game_id, explorer_id: army.explorerId });
   const rules = setup.store.get("ArmyProgressionRules", { game_id: realm.game_id });
   if (!progress || !rules || !army.stamina) return null;
@@ -71,24 +71,23 @@ const ArmyPanel = ({
       logistics: progress.logistics,
       scouting: progress.scouting,
       homecoming: progress.homecoming,
-      scoutingKinds: scoutingKindsOf(progress.scouting, progress.scouting_kinds).map((kind) => KIND_KEYS[kind]),
+      scoutingKinds: scoutingKindsOf(progress.scouting, progress.scouting_kinds).map(
+        (kind) => SCOUTING_CHOICES[kind].key,
+      ),
     },
-    levelXp: [rules.uncommon_xp, rules.rare_xp, rules.epic_xp, rules.legendary_xp],
-    revealXp: rules.reveal_xp,
-    shrineXp: rules.fixed_xp,
-    refillOnLevel: nativeRuleConstants.TIER_STAMINA_REFILL,
+    points: heldSkillPoints(progress),
+    rules,
   };
 
-  const levelUp = async (attribute: AttributeKey, kind: ScoutKind | undefined) => {
+  const levelUp = async (choice: SkillPointChoice) => {
     const signer = account.account;
     if (!signer) return;
     try {
       await sendOnce("tier", army.explorerId, true, () =>
-        setup.systemCalls.buy_tier({
+        setup.systemCalls.spend_skill_point({
           signer,
           explorerId: army.explorerId,
-          attribute: attributeOf(attribute),
-          scoutingKind: kind && KIND_OF[kind],
+          choice,
         }),
       );
     } catch (error) {
@@ -105,6 +104,11 @@ const ArmyPanel = ({
         choosing={choosing}
         onLevelUp={levelUp}
       />
+      {spire && (
+        <HudWindowFoot>
+          <SpireButton explorerId={army.explorerId} spire={spire} />
+        </HudWindowFoot>
+      )}
     </HudSheet>
   );
 };

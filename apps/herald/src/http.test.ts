@@ -28,6 +28,10 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
   decodedModelCount: 50,
   fold: {
     structurePosition: () => undefined,
+    expeditionSite: (game, entity) =>
+      game === "7" && entity === "4242"
+        ? { game_id: "0x7", entity_id: "0x1092", category: "0x9", row: "0x32" }
+        : undefined,
     directoryRevision: () => 0,
     modelRows: (model) => {
       if (model === "GameRegistry") {
@@ -175,6 +179,15 @@ describe("herald HTTP", () => {
     });
   });
 
+  it("serves a site's row by its entity, and none for an entity that is no site", async () => {
+    const site = await handler(new Request("http://herald/games/7/sites/4242"));
+    expect(site.status).toBe(200);
+    await expect(site.json()).resolves.toEqual({ game_id: "0x7", entity_id: "0x1092", category: "0x9", row: "0x32" });
+    const none = await handler(new Request("http://herald/games/7/sites/7"));
+    expect(none.status).toBe(404);
+    await expect(none.json()).resolves.toEqual({ error: "unknown_site" });
+  });
+
   it("rejects unknown models and routes", async () => {
     const unknownModel = await handler(new Request("http://herald/games/7/snapshot?models=Missing"));
     expect(unknownModel.status).toBe(400);
@@ -186,6 +199,7 @@ describe("herald HTTP", () => {
 
 it("serves the prepared leaderboard aggregate without paging history", async () => {
   const response = await handler(new Request("http://herald/games/7/leaderboard"));
+  expect(response.headers.get("X-Confirmed-Block")).toBe("12");
   expect(response.status).toBe(200);
   expect(response.headers.get("access-control-allow-origin")).toBe("*");
   expect(await response.json()).toEqual({ mode: "points", game_id: "7", entries: [] });
@@ -444,7 +458,9 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
   depth = 2;
   head = 13;
   release([]);
-  expect(await (await pending).json()).toMatchObject({ mode: "frontier", entries: [{ deepest_depth: 1, level: 2 }] });
+  const completed = await pending;
+  expect(completed.headers.get("X-Confirmed-Block")).toBe("12");
+  expect(await completed.json()).toMatchObject({ mode: "frontier", entries: [{ deepest_depth: 1, level: 2 }] });
   const next = read(new Request(url));
   await vi.waitFor(() => expect(frontierHistory).toHaveBeenCalledWith("7", 13));
   release([]);

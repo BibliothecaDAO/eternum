@@ -65,12 +65,13 @@ describe("Frontier's tile card", () => {
   });
 
   it("names a ruin by the beast its depth calls for, and pays its chest", () => {
+    setBlockTimestampSource(() => 350);
     const { store, site, structure } = campBeside("Ruin");
     // Row 12 of ten-row bands is the second band: Ethereal I, held by a basilisk.
     const plan = readSiteCard(store, site, structure, SITE_TILE, null);
     expect(plan.name).toBe("Basilisk");
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Lords, amount: 500, fits: 500 });
-    expect(plan.chest).toEqual({ tier: 3, amount: 500 });
+    expect(plan.chest).toMatchObject({ tier: 3, amount: 500, depth: "Ethereal I", funded: true });
     expect(plan.xp).toBe(82);
     const rift = campBeside("Rift");
     expect(readSiteCard(rift.store, rift.site, rift.structure, SITE_TILE, null).payout).toEqual({
@@ -84,10 +85,7 @@ describe("Frontier's tile card", () => {
 it("shows only the camp reward that fits in the home labor store", () => {
   const { store, site, structure, attack } = campBeside();
   const home = attack({ col: 41, row: 12, alt: false }).army.owner;
-  const limit =
-    BigInt(store.require("SliceRules", { game_id: 1 }).troop_limit_config.settlement_deployment_cap) *
-    BigInt(store.require("BoardRules", { game_id: 1 }).castle_store_deploys) *
-    1_000_000_000n;
+  const limit = BigInt(store.require("BoardRules", { game_id: 1 }).settlement_resource_cap) * 1_000_000_000n;
   store.applyFacts([
     {
       model: "ResourceBalance",
@@ -116,4 +114,38 @@ it("reads another player's army as a target: its troops, the same exact fight in
   expect(
     readArmyCard(store, other, { col: 44, row: 12, alt: false }, attack({ col: 41, row: 12, alt: false })).fight,
   ).toBeUndefined();
+});
+
+it("shows a ruin's fixed quote but refuses funding when the shared budget is spent", () => {
+  setBlockTimestampSource(() => 350);
+  const { store, site, structure } = campBeside("Ruin");
+  const budget = store.require("LordsBudget", { game_id: 1 });
+  store.applyFacts([{ model: "LordsBudget", key: "0x101", value: { ...budget, pool_left: 0n } }]);
+  expect(readSiteCard(store, site, structure, SITE_TILE, null).chest).toEqual({
+    tier: 3,
+    amount: 500,
+    depth: "Ethereal I",
+    funded: false,
+  });
+});
+
+it("shows beast labor from initial guards and clips it at the home store, alongside clear XP", () => {
+  const { store, site, structure, attack } = campBeside("Beasts");
+  const own = attack({ col: 41, row: 12, alt: false });
+  const limit = BigInt(store.require("BoardRules", { game_id: 1 }).settlement_resource_cap) * 1_000_000_000n;
+  store.applyFacts([
+    {
+      model: "ResourceBalance",
+      key: "0x79",
+      value: {
+        game_id: 1,
+        entity_id: own.army.owner,
+        resource_type: ResourcesIds.Labor,
+        balance: limit - 10_000_000_000n,
+      },
+    },
+  ]);
+  const plan = readSiteCard(store, site, structure, SITE_TILE, own);
+  expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 250, fits: 10 });
+  expect(plan.xp).toBe(79);
 });

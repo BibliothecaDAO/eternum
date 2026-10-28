@@ -19,6 +19,7 @@ const createHarness = () => {
   const rules = new Map<string, object>();
   const source = {
     entries: facts.entries.bind(facts),
+    inGame: facts.inGame.bind(facts),
     entityOccupancy: facts.entityOccupancy.bind(facts),
     get: ((model: string, keys: object) => rules.get(model) ?? facts.get(model as "TileOpt", keys as never)) as never,
     require: ((model: string, keys: object) =>

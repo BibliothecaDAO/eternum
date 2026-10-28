@@ -4,6 +4,7 @@ import {
   getBuildingCosts,
   getBuildingQuantity,
   realmLearned,
+  researchPurchases,
   researchRowCategory,
   researchRowOf,
   researchTier,
@@ -17,10 +18,10 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getProducedResource, ResourcesIds } from "@bibliothecadao/types";
 
-import { LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 import { type BuildingOutput, buildingOutput } from "@/ui/shared/lib/building-output";
 
 import { madePicks } from "../production/store-makers";
+import { madeStoreOf, type MadeResource } from "../stores";
 import { sidePicks } from "../research/sides-taken";
 
 /**
@@ -40,21 +41,10 @@ const TRAINS: Partial<Record<BuildingType, "Battle" | "Logistics" | "Scouting" |
   [BuildingType.Hearth]: "Homecoming",
 };
 
-/** What a Frontier building makes: wheat, labor, or the realm's one troop type. */
-type Product = ResourcesIds.Wheat | ResourcesIds.Labor | ResourcesIds.Knight;
+/** What a Frontier building makes: what one of the realm's made stores holds. */
+type Product = MadeResource;
 
-/**
- * Each product as the sheets show it: its icon, its glossary word and the realm store that holds it. Keyed by the
- * products themselves, so one without its word or icon does not compile, and no sheet looks one up at its own risk.
- */
-export const PRODUCTS: Record<Product, { icon: IconMeaning; word: string; store: "wheat" | "labor" | "troops" }> = {
-  [ResourcesIds.Wheat]: { icon: "wheat", word: WHEAT, store: "wheat" },
-  [ResourcesIds.Labor]: { icon: "labor", word: LABOR, store: "labor" },
-  [ResourcesIds.Knight]: { icon: "troops", word: TROOPS, store: "troops" },
-};
-
-const isProduct = (resource: ResourcesIds | undefined): resource is Product =>
-  resource !== undefined && resource in PRODUCTS;
+const isProduct = (resource: ResourcesIds | undefined): resource is Product => madeStoreOf(resource) !== undefined;
 
 export type BuildEffect =
   | { kind: "produces"; resource: Product; perHour: number; output: BuildingOutput }
@@ -64,7 +54,7 @@ export type BuildEffect =
 export interface BuildOption {
   category: BuildingType;
   /** Its type's tier, 1 (common) to 5 (legendary): tiers apply to every building of the type. */
-  tier: 1 | 2 | 3 | 4 | 5;
+  tier: 0 | 1 | 2 | 3 | 4 | 5;
   /** Each side of a choosing row (Farm, Workshop, Barracks) with the tiers bought on it, make side first. */
   sides?: { icon: IconMeaning; picks: number }[];
   cost: { resource: number; amount: number }[];
@@ -73,8 +63,8 @@ export interface BuildOption {
   effect: BuildEffect;
   populationCost: number;
   /**
-   * Whether it can rise now: a training building is unique on the board, and opens once the Barracks row reaches the
-   * board's gate tier (the contract's assert_board_category).
+   * Whether it can rise now: a training building is unique on the board and opens when purchases across both
+   * Barracks sides reach the board's gate (the contract's assert_board_category).
    */
   standing: "open" | "built" | { gate: number };
   /** What it adds to the realm's wheat an hour, and the realm's wheat an hour once it stands (unknown while that is). */
@@ -91,7 +81,7 @@ export const readBuildOptions = (
   if (learned === undefined) return undefined;
   const wheat = new ResourceManager(store, safeInteger(realm.entity_id)).wheatPerHour(tick);
   const board = store.require("BoardRules", { game_id: realm.game_id });
-  const barracksTier = researchTier(learned, nativeResearchConstants.ROW_BARRACKS);
+  const barracksPurchases = researchPurchases(learned, nativeResearchConstants.ROW_BARRACKS);
   const options: BuildOption[] = [];
   for (const category of FRONTIER_BUILDINGS) {
     const cost = getBuildingCosts(safeInteger(realm.entity_id), store, category, useSimpleCost);
@@ -102,7 +92,9 @@ export const readBuildOptions = (
     const row = researchRowOf(category);
     options.push({
       category,
-      tier: (row === undefined ? 1 : researchTier(learned, row) + 1) as BuildOption["tier"],
+      tier: (row === undefined
+        ? 1
+        : Math.max(TRAINS[category] ? 1 : 0, researchTier(learned, row))) as BuildOption["tier"],
       sides: row === undefined ? undefined : sidePicks(learned, row),
       cost,
       rise: buildingCostRise(safeInteger(realm.entity_id), category, store),
@@ -112,7 +104,7 @@ export const readBuildOptions = (
         ? "open"
         : getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0
           ? "built"
-          : barracksTier < board.training_gate_tier
+          : barracksPurchases < board.training_gate_tier
             ? { gate: board.training_gate_tier }
             : "open",
       wheat: { change, after: wheat === undefined ? undefined : wheat + change },

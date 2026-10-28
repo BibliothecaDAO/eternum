@@ -48,6 +48,7 @@ import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { onChestOpenRequest } from "@/three/scenes/worldmap-chest-open-request";
 import { ChestOpenings } from "@/ui/features/military/chest/chest-openings";
 import { campBeside, otherArmyAt, reloadSiteFacts, SITE, SITE_TILE } from "./sites/site-fixture";
+import { attachMapSelectionPositions } from "@/hooks/store/map-selection";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
   configManager,
@@ -95,6 +96,51 @@ const sheetFor = (occupierType: number | null) => {
   return sheet;
 };
 
+/** The camp beside the realm cleared by army 201 and its structure gone, the army standing on it if `occupied`. */
+const clearedCamp = ({ occupied, reload }: { occupied: boolean; reload: boolean }) => {
+  const fixture = campBeside();
+  fixture.store.applyFacts([
+    {
+      model: "TileOccupancy",
+      key: "0x90",
+      value: { game_id: 1, ...SITE_TILE, entity_id: SITE, category: TileOccupier.Camp, is_structure: true },
+    },
+  ]);
+  fixture.store.applyFacts([
+    {
+      model: "ExpeditionSite",
+      key: "0x72",
+      value: {
+        ...fixture.site,
+        clear: {
+          explorer_id: 201n,
+          home_id: 7n,
+          reward: { resource_type: 23, amount: 550_000_000_000n },
+        },
+      },
+    },
+    { model: "Structure", key: "0x71", value: null },
+    { model: "Guard", key: "0x73", value: null },
+    { model: "TileOccupancy", key: "0x90", value: null },
+  ]);
+  if (occupied)
+    fixture.store.applyFacts([
+      { model: "TileOccupancy", key: "0x75", value: null },
+      {
+        model: "TileOccupancy",
+        key: "0x91",
+        value: {
+          game_id: 1,
+          ...SITE_TILE,
+          entity_id: 201,
+          category: TileOccupier.ExplorerKnightT1,
+          is_structure: false,
+        },
+      },
+    ]);
+  return reload ? reloadSiteFacts(fixture.store) : fixture.store;
+};
+
 describe("Frontier's selection sheet", () => {
   it.each([
     { reload: false, occupied: false, foreign: false, renamed: false },
@@ -111,47 +157,7 @@ describe("Frontier's selection sheet", () => {
       // The army on the tile is the viewer's own, or, seen from another account, someone else's.
       const viewer = foreign ? "0x222" : "0x111";
       Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-      const fixture = campBeside();
-      fixture.store.applyFacts([
-        {
-          model: "TileOccupancy",
-          key: "0x90",
-          value: { game_id: 1, ...SITE_TILE, entity_id: SITE, category: TileOccupier.Camp, is_structure: true },
-        },
-      ]);
-      fixture.store.applyFacts([
-        {
-          model: "ExpeditionSite",
-          key: "0x72",
-          value: {
-            ...fixture.site,
-            clear: {
-              explorer_id: 201n,
-              home_id: 7n,
-              reward: { resource_type: 23, amount: 550_000_000_000n },
-            },
-          },
-        },
-        { model: "Structure", key: "0x71", value: null },
-        { model: "Guard", key: "0x73", value: null },
-        { model: "TileOccupancy", key: "0x90", value: null },
-      ]);
-      if (occupied)
-        fixture.store.applyFacts([
-          { model: "TileOccupancy", key: "0x75", value: null },
-          {
-            model: "TileOccupancy",
-            key: "0x91",
-            value: {
-              game_id: 1,
-              ...SITE_TILE,
-              entity_id: 201,
-              category: TileOccupier.ExplorerKnightT1,
-              is_structure: false,
-            },
-          },
-        ]);
-      const store = reload ? reloadSiteFacts(fixture.store) : fixture.store;
+      const store = clearedCamp({ occupied, reload });
       const expectedName = renamed ? "North Watch" : siteName(SITE);
       if (renamed) setEntityNameLocalStorage(SITE, expectedName);
       expect(store.get("Structure", { game_id: 1, entity_id: SITE })).toBeUndefined();
@@ -208,6 +214,52 @@ describe("Frontier's selection sheet", () => {
       }
     },
   );
+
+  // Owner, 28 October 2026: "when I click on a tile that was cleared but an army is standing on it, army panel must be
+  // displayed not the cleared one".
+  it("opens no card over the player's own army on a cleared site; the clear's Feed link opens its receipt", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const store = clearedCamp({ occupied: true, reload: false });
+    tiles.current = [
+      {
+        occupierType: TileOccupier.ExplorerKnightT1,
+        occupierId: 201,
+        occupierIsStructure: false,
+        hexCoords: SITE_TILE,
+      },
+    ];
+    const giveBackPositions = attachMapSelectionPositions({
+      army: (id) => (Number(id) === 201 ? { col: SITE_TILE.col, row: SITE_TILE.row, alt: false } : undefined),
+      structure: () => undefined,
+    });
+    useAccountStore.setState({ account: { address: "0x111" } as never });
+    useUIStore.getState().setMapLayer(false);
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    try {
+      await act(async () =>
+        root.render(
+          <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+            <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
+          </GameProvider>,
+        ),
+      );
+      // The map's tap on the army: the army selected where it stands, its tile the cleared site's.
+      await act(async () => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: "own" }));
+      expect(useUIStore.getState().selectedHex).toEqual({ col: SITE_TILE.col, row: SITE_TILE.row });
+      expect(host.querySelector("[data-kit-sheet]")).toBeNull();
+      // The clear's row in the Feed selects the tile itself, as every match link does (openOnMap's "tile").
+      await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
+      expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(siteName(SITE));
+      expect(host.textContent).toContain("Cleared · Troll");
+    } finally {
+      act(() => root.unmount());
+      giveBackPositions();
+      useUIStore.getState().selectOnMap(null);
+      useAccountStore.setState({ account: null });
+      tiles.current = [];
+    }
+  });
 
   it("opens a Frontier card for a spire, and nothing for a tile without one", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -266,10 +318,10 @@ const armyAtSpire = () => {
   const beside = getNeighborHexes(spire.col, spire.row)[0];
   store.applyFacts([
     // research.cairo: the depth row's tier sits at bit 46; Ethereal I is researched.
-    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 46n } },
+    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 48n } },
     {
       model: "DepthRules",
-      key: "0x903",
+      key: "0x901",
       value: {
         game_id: 1,
         depth: 1,
@@ -508,9 +560,9 @@ it("the map's actual transfer selection shows the survivor before the player con
     expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Transfer troops");
     // Army 1 loses its 200 total XP (100 unspent, 100 in an upgrade); Army 2 keeps its progression and merged stamina.
     const expectMergePreview = () => {
-      expect(host.querySelector('[aria-label="Army 1 total XP"]')?.textContent).toBe("Total XP200→0");
+      expect(host.querySelector('[aria-label="Army 1 total XP"]')?.textContent).toBe("Total XP100→0");
       expect(host.querySelector('[aria-label="Army 2 total XP"]')?.textContent).toBe("Total XP0→0");
-      expect(host.querySelector(".ui-notice")?.textContent).toBe("Army 1 loses its XP and upgrades.");
+      expect(host.querySelector(".ui-notice")?.textContent).toBe("Army 1 loses its XP, points and upgrades.");
       expect(host.querySelector("s")).toBeNull();
       expect(host.textContent).toContain("100/120→7");
     };
@@ -522,7 +574,7 @@ it("the map's actual transfer selection shows the survivor before the player con
     // Confirming the loss preserves the preview; only the final press sends the transfer.
     expectMergePreview();
     const final = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Lose 200 XP, merge into Army 2",
+      (button) => button.textContent === "Confirm merge into Army 2",
     )!;
     await act(async () => final.click());
     expect(swap).toHaveBeenCalledWith(

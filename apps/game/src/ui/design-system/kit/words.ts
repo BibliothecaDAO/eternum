@@ -6,8 +6,10 @@
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import {
   BuildingType,
+  XP,
   buildingName,
   formatAmount,
+  formatExact,
   formatCount,
   formatClockTime,
   formatDuration,
@@ -17,8 +19,8 @@ import {
   formatCharge,
   resourceName,
   formatHeldAgainst,
-  structureName,
   structurePlural,
+  structureName,
   StructureType,
 } from "@bibliothecadao/types";
 
@@ -26,13 +28,13 @@ import {
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
 /** A step on that scale, common (1) to legendary (5). */
 export type Tier = 1 | 2 | 3 | 4 | 5;
+export type Rank = 0 | Tier;
 /** A tier by its numeral, Common I to Legendary V. */
 const TIER_NUMERALS = ["I", "II", "III", "IV", "V"] as const;
-export const tierNumeral = (tier: Tier): string => TIER_NUMERALS[tier - 1]!;
+export const tierNumeral = (tier: Rank): string => (tier === 0 ? "0" : TIER_NUMERALS[tier - 1]!);
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
 export { BEAST_NAMES } from "@bibliothecadao/types";
-export const BEAST = "Beast";
 
 export const LEFT = "left";
 export const DAY = "Day";
@@ -98,12 +100,14 @@ export const CLOSE = "Close";
 /** The safe choice on a confirm: the primary. */
 export const KEEP = "Keep";
 
-export const XP = "XP";
+export { XP, xpGainedLine } from "@bibliothecadao/types";
 export const ESSENCE = "Essence";
 export const LABOR = "labor";
 export const WHEAT = "wheat";
 export const TROOPS = "troops";
 export const STAMINA = "stamina";
+/** The explores a Well's stamina buys the army it refills: "+3 explores". */
+export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;
 
 /** The HUD's tab for everything the player holds. */
 export const EMPIRE = "Empire";
@@ -276,9 +280,9 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
   const pair = formatHeldAgainst(held, need);
   return `${pair.held} / ${pair.need}`;
 };
-/** A training building waits for the Barracks' tier: "Needs Barracks at Rare". */
-/** A building that waits on another's tier, by its numeral: "Needs Barracks III". */
-export const needsTier = (building: string, numeral: string) => `Needs ${building} ${numeral}`;
+/** Training counts purchases across both sides, including one on each. */
+export const needsResearchPurchases = (building: string, count: number) =>
+  `Needs ${count} ${building} research purchases`;
 /** A training building already standing: a realm holds one of each. */
 export const ONE_A_REALM = "Built. A realm holds one.";
 /** The arrow beside a price that has risen (a screen reader's words). */
@@ -297,26 +301,18 @@ export const startsNewArmies = (attribute: string, numeral: string) => `new armi
  * An army's XP on its tooltip, against the attribute tier it buys next: "XP 8 of 100 · buys an Uncommon attribute
  * tier". XP is a balance an army spends on its attributes; it has no level.
  */
-export const xpTowardTip = (held: string, price: string, tier: string) =>
-  `${XP} ${held} ${OF} ${price} · buys ${/^[AEIOU]/.test(tier) ? "an" : "a"} ${tier} attribute tier`;
-/** The attributes an army levels, by their names in the game's schema, each wearing its Aspect's mark. */
-export const ATTRIBUTE_NAMES = {
-  Battle: "Battle",
-  Logistics: "Logistics",
-  Scouting: "Scouting",
-  Homecoming: "Homecoming",
-} as const;
+export const xpTowardTip = (held: string, milestone: string, tier: string) =>
+  `${XP} ${held} of ${milestone} · next ${tier} point`;
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
-export const RIFT = "Rift";
-export const RUIN = "Ruin";
+export const RIFT = structureName(StructureType.Rift, undefined, "frontier");
+export const RUIN = structureName(StructureType.Ruin, undefined, "frontier");
 /** A map plate's words: a thing with no guard, the troops on their way to one. */
 export const UNDEFENDED = "Undefended";
 export const ARRIVING = "Arriving";
 /** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */
 export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
-export const BEASTS = "Beasts";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
 export const ATTACK = "Attack";
@@ -333,8 +329,6 @@ export const fightLine = (site: string, verdict: string, lost: string, guardBefo
 /** Why an attack cannot run, or what it costs, in one line under its button. */
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;
 export const ARMY_WILL_BE_LOST = "Army will be lost";
-/** The skull beside an army on a site's card, on its tooltip. */
-export const WOULD_BE_LOST = "Would be lost";
 /**
  * A site's fight card, read as its result will read (the owner's pick, 20 October 2026: "A for the fight"): what this
  * attack does to each side, what it comes to, and under Details the whole fight's figures.
@@ -345,8 +339,9 @@ export const FIGHT_WORDS = {
   earns: "This attack earns",
   clears: "This attack clears it",
   holds: "The guard holds",
-  attacks: "Attacks",
 } as const;
+/** Why a village's trade in troops is refused, wherever the market and the bank say so. */
+export const VILLAGE_TROOP_TRADE_REFUSED = "Villages cannot trade military resources.";
 export const USE = "Use";
 export const USING = "Using…";
 
@@ -437,12 +432,7 @@ export const NO_TROOPS_AT_HOME = "No troops at home";
 export const noTroopsUntil = (wait: string) => `${NO_TROOPS_AT_HOME} · ${inTime(wait)}`;
 /** Every tile beside the realm holds something: a deploy has nowhere to step out. */
 export const NO_OPEN_TILE = "No open tile beside the realm";
-/** A site's card with no army selected: what an army does there, or, with none out, where one comes from. */
-export const PICK_AN_ARMY = { attack: "Pick an army to attack it", use: "Pick an army to use it" } as const;
-export const NO_ARMY_OUT = "No army out: deploy one";
 export const DEPLOYING = "Deploying…";
-/** A free slot after the lowest: the game fills the lowest free slot first. */
-export const DEPLOY_FILLS_FIRST = (number: number) => `Deploy fills slot ${number} first.`;
 export const BUILD = "Build";
 
 /** Default army names: "Army" and its place. */
@@ -461,9 +451,9 @@ export const TRANSFER_TROOPS = {
   merge: (army: string) => `Merge into ${army}`,
   totalXp: "Total XP",
   totalXpFor: (army: string) => `${army} total XP`,
-  losesProgress: (army: string) => `${army} loses its XP and upgrades.`,
+  losesProgress: (army: string) => `${army} loses its XP, points and upgrades.`,
   /** The second press of a merge that loses a lot: the leaving army's total XP and the chosen target. */
-  confirmMerge: (lost: number, army: string) => `Lose ${formatAmount(lost)} XP, merge into ${army}`,
+  confirmMerge: (army: string) => `Confirm merge into ${army}`,
   amount: (from: string, to: string) => `Troops ${from} sends to ${to}`,
   pick: "Pick how many to send",
   move: (count: number, to: string) => `Move ${formatAmount(count)} to ${to}`,
@@ -493,9 +483,6 @@ export const revealLine = (gain: string, resource: string) => `${gain} ${resourc
 export const builtLine = (building: string) => `${building} built`;
 export const deployedLine = (army: string) => `${army} deployed`;
 export const disbandedLine = (army: string) => `${army} disbanded`;
-/** A day log line with the XP its story gave or spent: "+98 labor, +2 XP", "Battle Uncommon, −100 XP". */
-export const xpGainedLine = (line: string, amount: string) => `${line}, +${amount} ${XP}`;
-export const xpSpentLine = (line: string, amount: string) => `${line}, −${amount} ${XP}`;
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
 /** How deep a realm went beyond the spire, I to III. */
@@ -542,13 +529,8 @@ export const BACK = "Back";
 export const VISIT = "Visit";
 export const LEAVE = "Leave";
 
-/** Filling an army's stamina for LORDS, a full refill only. */
+/** Buying stamina points for LORDS. */
 export const REFILL = "Refill";
-/**
- * A refill the realm cannot pay yet, as its chip's name says it: what the LORDS held count against, and why that is the
- * price ("Refill to full: 20 LORDS, one a missing stamina point. The realm holds 0.").
- */
-export const refillShort = (held: string, price: string) => `Refill needs ${price} LORDS, has ${held}`;
 export const REFILLING = "Refilling…";
 
 /** LORDS leaving the game for the wallet linked to the account. */
@@ -567,28 +549,41 @@ export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now";
 /** A withdrawal with no answer from the game: it may still apply, so it is never sent again on its own. */
 export const withdrawalUnknown = (amount: string) => `No answer yet for these ${amount}`;
 
-/** The labor a player's Realms give once a game day. */
-export const REALMS = "Realms";
-export const CLAIM = "Claim";
-export const CLAIM_ALL = "Claim all";
-export const CLAIMED_TODAY = "Claimed today";
+export const REALM_LABOR = "Realm Labor";
+export const NO_REALM_LABOR = "No daily Labor claim";
+export const DAILY_REALM_LABOR = "Labor per game day";
+export const DAILY_REALM_ESSENCE = "Essence per game day";
+/** The claim's step: what it gives, its Labor that fits and a golden ticket's Essence, each only when there is some. */
+export const claimRealmLaborLabel = (amount: number, essence = 0) =>
+  `Claim ${[
+    ...(amount > 0 ? [`${formatExact(amount)} Labor`] : []),
+    ...(essence > 0 ? [`${formatExact(essence)} Essence`] : []),
+  ].join(" · ")}`;
+/** A campaign home's mark beside its realm's rank: the event that founded it, golden for a golden ticket's. */
+export const campaignRealmMark = (campaign: string, golden: boolean) => (golden ? `Golden ${campaign}` : campaign);
+export const DEVCON = "Devcon";
+export const CLAIMING_LABOR = "Claiming";
+export const partialRealmLabor = (fits: number, total: number) =>
+  `${formatExact(fits)} of ${formatExact(total)} fit · remainder lost`;
+export const claimedRealmLabor = (secondsLeft: number | undefined) => `Claimed today · ${dayLeft(secondsLeft).reading}`;
+/** The phone's own time zone: the server words a push's times, and keeps its quiet hours, by this clock. */
+export const deviceTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+/** The claimed sheet's ask: a push when the next game day opens, on this device. */
+export const remindWhenDayOpens = (day: number) => `Remind me when Day ${day} opens`;
+/** The same ask on an iPhone in its browser, which sends push only to the installed app. */
+export const INSTALL_FOR_REMINDERS = "Add to Home Screen for reminders";
+export const TURNING_ALERTS_ON = "Turning on";
+export const REALM_NUMBER = "Realm number";
+export const OPTIONAL_REALM_NUMBER = "Realm number (optional)";
+export const YOUR_REALMS = "Your Realms";
+export const FREE_REALM_ENTRY = "Free home · no daily Labor";
+export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
+
 /** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */
 export const commonChestPays = (lords: string) => `A Common chest pays ${lords} LORDS today`;
 export const seasonPool = (lords: string, today: string | undefined) =>
   `Season pool ${lords} LORDS${today === undefined ? "" : `, ${today} released today`}`;
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
-export const fitOf = (fits: string, of: string) => `${fits} of ${of} fit`;
-export const REALMS_ELSEWHERE = "No Realms in this wallet";
-/** What one Realm gives a day, for assistive technology on the Realms sheet's chip ("Labor a day per Realm +1K"). */
-export const REALM_LABOR = "Labor a day per Realm";
-/** A Realm joins the list by its number, the first time it gives its labor. */
-export const ADD_REALM = "Add a Realm";
-export const REALM_NUMBER = "Realm number";
-/** A Realm the account claimed labor with before, which the linked wallet no longer holds. */
-export const REALM_NOT_IN_WALLET = "Not in this wallet";
-export const REALM_NOT_CLAIMED = "Not in your wallet, or claimed today";
-export const realmsADay = (cap: number) => `${cap} a day`;
-
 // The app's words outside a match (the shell's pages).
 
 /**
@@ -666,6 +661,25 @@ export const SIGN_IN_WORDS = {
   handoff: "Discord finished elsewhere? Enter its code.",
   handoffCode: "Discord code",
   discordAgain: "Try Discord again",
+} as const;
+
+/** Devcon's landing and its ticket: the realm it promises, the ticket opened, and what each tier gives each day. */
+export const JOIN_WORDS = {
+  realm: "A Devcon realm is yours",
+  claim: "Claim your realm",
+  yourTicket: "Your ticket",
+  open: "Open your ticket",
+  opening: "Opening…",
+  sealed: "A realm waits for you",
+  stub: "Devcon · Mumbai",
+  golden: "Golden ticket",
+  goldenLine: "A golden realm waits",
+  goldenStub: (count: number) => `One of ${count} at Devcon`,
+  laborEachDay: (amount: number) => `${formatExact(amount)} Labor each day`,
+  essenceEachDay: (amount: number) => `${formatExact(amount)} Essence each day`,
+  continue: "Continue",
+  closed: "Devcon tickets have closed.",
+  failed: "Your ticket could not be opened.",
 } as const;
 
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
@@ -893,7 +907,7 @@ export const ENTRY_WORDS = {
   whereItGoes: "Season pool, chests and treasury",
 } as const;
 
-/** The test token every environment's ledger is paid in, minted to the wallet that pays. */
+/** A ledger's test token, minted to the wallet that pays. */
 export const mintTestTokenWord = (amount: string) => `Mint ${amount} test tokens`;
 
 /** After a paid Blitz: the rating's change and the chest the result minted. */
@@ -1227,8 +1241,13 @@ export const RESEARCH_TREE = {
     rations: ["Rations", "Wheat a deployed troop costs"],
   },
   /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
-  kinds: { camp: structurePlural(StructureType.Camp, undefined, "frontier"), rift: "Rifts", beasts: "Beasts" },
+  kinds: {
+    camp: structurePlural(StructureType.Camp, undefined, "frontier"),
+    rift: structurePlural(StructureType.Rift, undefined, "frontier"),
+    beasts: structurePlural(StructureType.Beasts, undefined, "frontier"),
+  },
   foundByNewArmies: (kind: string) => `${kind} found by new armies`,
+  sidesLine: (made: string) => `Improve ${made} output and storage separately`,
   hutLine: "Population from every Hut",
   population: "Population",
   gateLine: (barracks: string) => `${barracks} opens the four training buildings`,
@@ -1265,29 +1284,17 @@ export const RESEARCH_TREE = {
 } as const;
 
 /**
- * An army's detail (the owner's picks, 20 and 22 October): its status, its four attributes as tiles, its XP with how it
- * is earned on its hover, then its level-ups, one step on.
+ * An army's detail: status, attributes, the next skill point and level-up choices.
  */
 export const ARMY_DETAIL = {
   /** A Scouting effect on the kind its levels went to: "+10% discovery on Rifts". */
   onKind: (effect: string, kind: string) => `${effect} on ${kind}`,
   scoutingNext: (now: string, step: string) => `${now} · ${step} on the kind you pick`,
-  earn: {
-    explore: "Explore a tile",
-    shrine: "Visit a Shrine",
-    clear: `Clear a ${structureName(StructureType.Camp, undefined, "frontier")}`,
-  },
   /** What each tile the army explores sends home, on its stamina row. */
   revealPays: (amount: string) => `+${amount} a tile`,
   revealPaysLabel: `${ESSENCE} and ${LABOR} a tile`,
-  toNext: (xp: string) => `${xp} ${XP} to the next level-up`,
-  allLegendary: "Every attribute is legendary",
   levelUp: "Level up",
   levelUps: "Level-ups",
   /** An attribute tile's hover: what its next tier gives and costs, "Rare: +10% → +20% damage · 200 XP". */
-  nextTier: (tier: string, change: string, xp: string) => `${tier}: ${change} · ${xp} ${XP}`,
-  price: (xp: string) => `${xp} ${XP}`,
-  short: (xp: string, short: string) => `${xp} ${XP} · ${short} ${XP} short`,
-  refills: (xp: string, stamina: string) => `${xp} ${XP} · refills ${stamina} ${STAMINA}`,
   legendary: (attribute: string) => `${attribute} is legendary`,
 } as const;

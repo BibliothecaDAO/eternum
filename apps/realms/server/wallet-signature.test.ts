@@ -12,11 +12,11 @@ const message = buildSiwsMessage({
   uri: "https://play.realms.party",
 });
 const verify = () =>
-  verifyWalletOnL2({ ENVIRONMENT: "production", L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test" })(
-    message,
-    ["0x1", "0x2"],
-    "0x123",
-  );
+  verifyWalletOnL2({
+    ENVIRONMENT: "production",
+    L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+    MARKETPLACE_API_URL: "https://market.test/api/marketplace",
+  })(message, ["0x1", "0x2"], "0x123");
 const missingWallet = () => new RpcError({ code: 20, message: "Contract not found" }, "starknet_call", []);
 
 beforeEach(() => {

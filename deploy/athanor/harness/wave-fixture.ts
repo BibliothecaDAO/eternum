@@ -1,4 +1,3 @@
-import { shortString } from "starknet";
 import { StructureType } from "@bibliothecadao/types";
 import { openShard } from "@bibliothecadao/eternum/game-client";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
@@ -69,7 +68,6 @@ const fixture: WaveFixturePort = {
           command: () => ({
             kind: "SettleSeason",
             value: {
-              name: shortString.encodeShortString(`bot-${player.botId}`),
               selected_realm: { kind: "None", value: undefined },
             },
           }),

@@ -9,7 +9,6 @@ import { describeRelicChestOpening, describeRewardChestOpening } from "./story-e
 import type {
   BattleEventSystemUpdate,
   BuildingSystemUpdate,
-  TierBoughtSystemUpdate,
   ExplorerRewardSystemUpdate,
   ChestOpenedSystemUpdate,
   SitePayoutSystemUpdate,
@@ -91,23 +90,6 @@ export class WorldUpdateListener {
           stopLords();
         };
       },
-    };
-  }
-
-  get Attributes() {
-    return {
-      onTierBought: (callback: (value: TierBoughtSystemUpdate) => void) =>
-        this.onStory("TierBought", (payload) => {
-          const attribute =
-            typeof payload.attribute === "string" ? payload.attribute : Object.keys(fields(payload.attribute) ?? {})[0];
-          if (!isAttribute(attribute)) throw new Error("Malformed tier purchase");
-          callback({
-            explorerId: integer(payload.explorer_id),
-            attribute,
-            tier: integer(payload.tier),
-            price: integer(payload.price),
-          });
-        }),
     };
   }
 
@@ -257,7 +239,3 @@ const siteReward = (value: unknown): SitePayoutSystemUpdate["reward"] => {
     amount: divideByPrecision(Number(reward.amount)),
   };
 };
-
-const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
-const isAttribute = (value: unknown): value is TierBoughtSystemUpdate["attribute"] =>
-  ATTRIBUTES.includes(value as TierBoughtSystemUpdate["attribute"]);

@@ -26,8 +26,8 @@ vi.mock("@/hooks/helpers/use-navigate", () => ({
 vi.mock("@/play/navigation/open-place", () => ({ openOnMap: vi.fn() }));
 vi.mock("../hud/dock-armies", () => ({
   useDockArmies: () => [
-    { explorerId: 11, stamina: { current: 20, max: 150 }, canBuyTier: false },
-    { explorerId: 12, stamina: { current: 90, max: 150 }, canBuyTier: true },
+    { explorerId: 11, stamina: { current: 20, max: 150 }, canSpendSkillPoint: false },
+    { explorerId: 12, stamina: { current: 90, max: 150 }, canSpendSkillPoint: true },
   ],
 }));
 vi.mock("@/utils/can-issue-orders", () => ({ useActNowRefusal: () => null }));

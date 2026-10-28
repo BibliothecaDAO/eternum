@@ -36,6 +36,7 @@ test.each([1, 2, 21, 30])(
     const { launches, calendar, tick } = stores();
     const season = {
       phase: "frontier" as const,
+      presetId: 5,
       startsAt: day(0).toISOString(),
       endsAt: frontierSeasonEnd(day(0), bags),
     };
@@ -156,6 +157,7 @@ test("a phase moves until it starts; a started Frontier season keeps its start a
   const now = Date.parse("2026-12-01T00:00:00Z");
   const frontier = {
     phase: "frontier" as const,
+    presetId: 5,
     startsAt: "2027-01-01T00:00:00.000Z",
     endsAt: frontierSeasonEnd("2027-01-01T00:00:00.000Z"),
   };
@@ -181,6 +183,7 @@ test("a phase moves until it starts; a started Frontier season keeps its start a
   });
   const next = {
     phase: "frontier" as const,
+    presetId: 5,
     startsAt: "2027-04-01T00:00:00.000Z",
     endsAt: frontierSeasonEnd("2027-04-01T00:00:00.000Z"),
   };
@@ -193,7 +196,7 @@ test.each([0, 0.5, 1.5, 9.3])("refuses %s bags and names the two nearest valid e
   const lower = Math.max(1, Math.floor(bags));
   const bagMs = Date.parse(frontierSeasonEnd(startsAt, 1)) - Date.parse(startsAt);
   const endsAt = new Date(Date.parse(startsAt) + bags * bagMs).toISOString();
-  await expect(calendar.set({ phase: "frontier", startsAt, endsAt }, Date.now())).rejects.toThrow(
+  await expect(calendar.set({ phase: "frontier", presetId: 5, startsAt, endsAt }, Date.now())).rejects.toThrow(
     `nearest valid ends: ${frontierSeasonEnd(startsAt, lower)}, ${frontierSeasonEnd(startsAt, lower + 1)}`,
   );
   expect(await calendar.list()).toEqual([]);
@@ -204,7 +207,7 @@ test("refuses a Frontier start off the armies tick", async () => {
   const offTick = new Date(day(0).getTime() + 1_000);
   await expect(
     calendar.set(
-      { phase: "frontier", startsAt: offTick.toISOString(), endsAt: frontierSeasonEnd(offTick, 2) },
+      { phase: "frontier", presetId: 5, startsAt: offTick.toISOString(), endsAt: frontierSeasonEnd(offTick, 2) },
       Date.now(),
     ),
   ).rejects.toThrow("starts on a 120 s tick");
@@ -215,7 +218,9 @@ test("a malformed stored Frontier season cannot stop Blitz slot creation", async
   const { slots, calendar, tick } = stores();
   // Stored before the calendar checked seasons: set refuses one now.
   await database.db
-    .prepare("INSERT INTO season_phases (phase, starts_at, ends_at, updated_at) VALUES ('frontier', ?, ?, ?)")
+    .prepare(
+      "INSERT INTO season_phases (phase, preset_id, starts_at, ends_at, updated_at) VALUES ('frontier', 5, ?, ?, ?)",
+    )
     .bind(day(0).getTime() + 500, day(31).getTime(), Date.now())
     .run();
   await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(31).toISOString() }, Date.now());
@@ -233,7 +238,7 @@ test("opening both phases after their start schedules Frontier and the next Blit
   vi.spyOn(Date, "now").mockReturnValue(now);
   const { calendar, launches, slots, tick } = stores();
   for (const phase of ["frontier", "blitz"] as const) {
-    const entered = { phase, ...enteredWindow };
+    const entered = { ...(phase === "frontier" ? { phase, presetId: 5 } : { phase }), ...enteredWindow };
     expect(await calendar.set(entered, now)).toEqual(entered);
   }
   await tick(new Date(now));
@@ -252,16 +257,19 @@ test.each([
   ["blitz", 1000],
 ] as const)("an unset %s phase refuses at or beyond its end (%i ms)", async (phase, elapsed) => {
   const { calendar } = stores();
-  await expect(calendar.set({ phase, ...enteredWindow }, Date.parse(enteredWindow.endsAt) + elapsed)).rejects.toThrow(
-    "A phase must end in the future",
-  );
+  await expect(
+    calendar.set(
+      { ...(phase === "frontier" ? { phase, presetId: 5 } : { phase }), ...enteredWindow },
+      Date.parse(enteredWindow.endsAt) + elapsed,
+    ),
+  ).rejects.toThrow("A phase must end in the future");
   expect(await calendar.list()).toEqual([]);
 });
 
 test.each(["frontier", "blitz"] as const)("a late-opened %s phase still keeps its running start", async (phase) => {
   const { calendar } = stores();
   const now = Date.parse("2000-01-01T18:00:00Z");
-  const entered = { phase, ...enteredWindow };
+  const entered = { ...(phase === "frontier" ? { phase, presetId: 5 } : { phase }), ...enteredWindow };
   await calendar.set(entered, now);
   await expect(calendar.set({ ...entered, startsAt: "2000-01-01T08:00:00.000Z" }, now)).rejects.toThrow(
     "A running phase keeps its start",
@@ -272,7 +280,7 @@ test.each(["frontier", "blitz"] as const)("a late-opened %s phase still keeps it
 test("a late-opened Frontier phase still keeps its running end", async () => {
   const { calendar } = stores();
   const now = Date.parse("2000-01-01T18:00:00Z");
-  const entered = { phase: "frontier" as const, ...enteredWindow };
+  const entered = { phase: "frontier" as const, presetId: 5, ...enteredWindow };
   await calendar.set(entered, now);
   await expect(calendar.set({ ...entered, endsAt: frontierSeasonEnd(enteredWindow.startsAt, 3) }, now)).rejects.toThrow(
     "A started Frontier season's end is fixed",
@@ -314,6 +322,7 @@ test("reconciles the approved extension only after both chains agree, with retri
   const now = (approved.oldEnd - 3600) * 1000;
   const before = {
     phase: "frontier" as const,
+    presetId: 5,
     startsAt: new Date(approved.start * 1000).toISOString(),
     endsAt: new Date(approved.oldEnd * 1000).toISOString(),
   };
@@ -334,6 +343,8 @@ test("reconciles the approved extension only after both chains agree, with retri
   expect(await guarded.set(after, now)).toEqual(after);
   expect(verify).toHaveBeenCalledTimes(3);
   expect(await guarded.list()).toEqual([after, blitz]);
+  await expect(guarded.set({ ...after, presetId: 6 }, now)).rejects.toThrow("keeps its preset");
+  expect(verify).toHaveBeenCalledTimes(3);
   // A fresh store sees persisted dates, and arbitrary future edits still use the fixed-end rule.
   expect(await new D1CalendarStore(database.db).list()).toEqual([after, blitz]);
   await expect(
@@ -341,20 +352,24 @@ test("reconciles the approved extension only after both chains agree, with retri
   ).rejects.toThrow("A started Frontier season's end is fixed");
 });
 
-test("refuses a calendar changed while extension confirmation was in flight", async () => {
+test.each(["ends_at", "preset_id"])("refuses %s changed while extension confirmation was in flight", async (column) => {
   const approved = (await import("../../../config/source/frontier/extension.json")).default;
   const before = {
     phase: "frontier" as const,
+    presetId: 5,
     startsAt: new Date(approved.start * 1000).toISOString(),
     endsAt: new Date(approved.oldEnd * 1000).toISOString(),
   };
   const ordinary = new D1CalendarStore(database.db);
   await ordinary.set(before, approved.start * 1000 - 1);
   const guarded = new D1CalendarStore(database.db, async () => {
-    await database.db.prepare("UPDATE season_phases SET ends_at = ends_at + 1 WHERE phase = 'frontier'").run();
+    await database.db.prepare(`UPDATE season_phases SET ${column} = ${column} + 1 WHERE phase = 'frontier'`).run();
   });
   await expect(
     guarded.set({ ...before, endsAt: new Date(approved.end * 1000).toISOString() }, (approved.oldEnd - 1) * 1000),
   ).rejects.toThrow("The calendar changed; reload and edit again");
-  expect(Date.parse((await guarded.list())[0]!.endsAt)).toBe(approved.oldEnd * 1000 + 1);
+  const stored = (await guarded.list())[0]!;
+  expect(column === "ends_at" ? Date.parse(stored.endsAt) : stored.presetId).toBe(
+    column === "ends_at" ? approved.oldEnd * 1000 + 1 : 6,
+  );
 });

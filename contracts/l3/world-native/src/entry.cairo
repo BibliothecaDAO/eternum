@@ -4,24 +4,28 @@ use starknet::ContractAddress;
 pub trait ILedgerOperator<T> {
     fn ledger_operator(self: @T) -> ContractAddress;
     fn set_ledger_operator(ref self: T, operator: ContractAddress);
-    fn publish_frontier_pool(ref self: T, game_id: u32, amount: u128);
-    fn grant_labor(ref self: T, realms: Array<LaborRealm>, day: u64, account: ContractAddress) -> Array<LaborGrant>;
-    fn labor_grant(self: @T, realm: LaborRealm, day: u64) -> Option<LaborGrant>;
+    fn publish_frontier_pool(ref self: T, game_id: u32, amount: u128, prize_pool: u128);
+    fn top_up_frontier_pool(ref self: T, game_id: u32, amount: u128);
+    fn post_frontier_top(ref self: T, game_id: u32, winners: Array<ContractAddress>);
+    fn award_frontier_prize(ref self: T, game_id: u32, rank: u16);
+    fn frontier_prize(self: @T, game_id: u32) -> FrontierPrize;
+    fn grant_labor(ref self: T, home: LaborHome, day: u64, account: ContractAddress) -> LaborGrant;
+    fn labor_grant(self: @T, home: LaborHome, day: u64) -> Option<LaborGrant>;
 }
 
-// The held Realm earns the claim; the recipient chooses one owned Frontier home to store it.
+// One game-day grant belongs to the home's immutable entry source.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct LaborRealm {
+pub struct LaborHome {
     pub game_id: u32,
-    pub realm_id: u32,
     pub home: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct LaborRules {
     pub amount: u128,
-    // Zero leaves the account's number of held Realms unrestricted.
-    pub account_daily_limit: u32,
+    pub campaign_essence: u128,
+    pub golden_amount: u128,
+    pub golden_essence: u128,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -30,9 +34,12 @@ pub struct LaborGrant {
     pub account: ContractAddress,
     pub home: u64,
     pub amount: u128,
+    pub essence: u128,
 }
 
-// Holding a Realm earns one daily claim on the shard, independently of any game's seeded day schedule.
-pub fn labor_day(timestamp: u64) -> u64 {
-    timestamp / 86400
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct FrontierPrize {
+    pub pool: u128,
+    pub issued: u128,
+    pub count: Option<u16>,
 }

@@ -1,5 +1,5 @@
 import { readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { frontierDay } from "./deploy/deploy-fixture";
@@ -14,11 +14,11 @@ describe("the realm's stores", () => {
     const clock = { now: 350, tick: 3 };
     const troops = readRealmStore(store, row, rules, "troops", clock);
     expect(troops.amount).toBe(420);
-    // The castle stores castle_store_deploys of its level's full deploys.
+    // The castle stores troop_store_deploys of its level's full deploys.
     const limit = 2 * store.require("SliceRules", { game_id: 1 }).troop_limit_config.settlement_deployment_cap;
     expect(troops.limit).toBe(limit);
     expect(troops.tone).toBe("calm");
-    expect(readRealmStore(store, row, rules, ResourcesIds.Essence, clock).limit).toBeUndefined();
+    expect(readRealmStore(store, row, rules, "essence", clock).limit).toBeUndefined();
 
     store.applyFacts([
       {

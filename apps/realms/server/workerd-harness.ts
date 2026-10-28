@@ -100,6 +100,7 @@ export const startWorker = async (options: {
       BASE_URL: ORIGIN,
       VERSION: { id: "workerd-test", tag: "", timestamp: "" },
       BETTER_AUTH_SECRET: "workerd-test-secret-workerd-test-secret",
+      MARKETPLACE_API_URL: "https://market.test/api/marketplace",
       L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
       OPERATOR_TOKEN: "unused",
       RESEND_API_KEY: "unused",
@@ -178,14 +179,47 @@ export const vapidKeys = async () => {
   return { publicKey: base64url(raw), privateKey: jwk.d! };
 };
 
+/**
+ * A phone's push keys, and `open`, which reads a push sent to them as the phone does (RFC 8291's aes128gcm), so a test
+ * asserts the words a player sees.
+ */
 export const deviceKeys = async () => {
   const keys = (await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, [
     "deriveBits",
   ])) as CryptoKeyPair;
-  return {
-    p256dh: base64url((await crypto.subtle.exportKey("raw", keys.publicKey)) as ArrayBuffer),
-    auth: base64url(crypto.getRandomValues(new Uint8Array(16))),
+  const devicePublic = new Uint8Array((await crypto.subtle.exportKey("raw", keys.publicKey)) as ArrayBuffer);
+  const auth = crypto.getRandomValues(new Uint8Array(16));
+  const open = async (body: ArrayBuffer): Promise<unknown> => {
+    const bytes = new Uint8Array(body);
+    const salt = bytes.slice(0, 16);
+    const idLength = bytes[20]!;
+    const serverPublic = bytes.slice(21, 21 + idLength);
+    const server = await crypto.subtle.importKey("raw", serverPublic, { name: "ECDH", namedCurve: "P-256" }, false, []);
+    // The Workers types spell ECDH's peer key `$public`; the test runs on Node's Web Crypto, which reads `public`.
+    const ecdh = { name: "ECDH", public: server } as unknown as SubtleCryptoDeriveKeyAlgorithm;
+    const shared = await crypto.subtle.deriveBits(ecdh, keys.privateKey, 256);
+    const info = (label: string, ...parts: Uint8Array[]) =>
+      new Uint8Array(Buffer.concat([Buffer.from(label), ...parts.map((part) => Buffer.from(part))]));
+    const hkdf = async (ikm: ArrayBuffer | Uint8Array, hkdfSalt: Uint8Array, hkdfInfo: Uint8Array, length: number) =>
+      crypto.subtle.deriveBits(
+        { name: "HKDF", hash: "SHA-256", salt: hkdfSalt, info: hkdfInfo },
+        await crypto.subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]),
+        length * 8,
+      );
+    const ikm = await hkdf(shared, auth, info("WebPush: info\0", devicePublic, serverPublic), 32);
+    const key = await hkdf(ikm, salt, info("Content-Encoding: aes128gcm\0"), 16);
+    const nonce = await hkdf(ikm, salt, info("Content-Encoding: nonce\0"), 12);
+    const plain = new Uint8Array(
+      await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: nonce },
+        await crypto.subtle.importKey("raw", key, "AES-GCM", false, ["decrypt"]),
+        bytes.slice(21 + idLength),
+      ),
+    );
+    // The last record ends with its delimiter (2) and any zero padding.
+    return JSON.parse(Buffer.from(plain.slice(0, plain.lastIndexOf(2))).toString("utf8"));
   };
+  return { p256dh: base64url(devicePublic), auth: base64url(auth), open };
 };
 
 export const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

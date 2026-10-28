@@ -54,7 +54,9 @@ beforeEach(() => {
         models: [
           {
             model: "GameRegistry",
-            rows: [{ key: "7", value: { game_id: 7, start_main_at: game[6], end_at: game[7], seed: game[9] } }],
+            rows: [
+              { key: "7", value: { game_id: 7, preset_id: 6, start_main_at: game[6], end_at: game[7], seed: game[9] } },
+            ],
           },
           {
             model: "ChestRules",
@@ -62,6 +64,8 @@ beforeEach(() => {
               {
                 key: "7",
                 value: {
+                  pool_bps: 7000,
+                  top_n: 10,
                   game_id: 7,
                   price_ceiling: "10",
                   shares: { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 },
@@ -97,12 +101,12 @@ beforeEach(() => {
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "110", "0", "0x99"]);
   rpc.ledgerCall.mockImplementation(async (query) =>
     query.entrypoint === "get_preset"
-      ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "5", "604800"]
-      : ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "2", "0x99"],
+      ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "5", "604800", "10", "7000"]
+      : ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "6", "0x99", "0", "0", "0", "0"],
   );
 });
 it("reads funding by shard game id without history scans or Herald calendar reads", async () => {
-  expect(await Effect.runPromise(bind().frontierSeason(7, 50))).toBe(7);
+  expect(await Effect.runPromise(bind().frontierSeason(7, 50, 0))).toBe(7);
   expect(rpc.ledgerCall).toHaveBeenCalledWith(
     { contractAddress: "0x10", entrypoint: "get_frontier", calldata: ["0x1", "7"] },
     100,
@@ -111,26 +115,26 @@ it("reads funding by shard game id without history scans or Herald calendar read
 });
 it("refuses different funding and the exclusive receipt deadline", async () => {
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "11", "110", "0", "0x99"]);
-  await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
+  await expect(Effect.runPromise(bind().frontierSeason(7, 50, 0))).rejects.toMatchObject({
     operation: "frontier_funding_differs_from_game",
   });
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "110", "0", "0x98"]);
-  await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toThrow();
+  await expect(Effect.runPromise(bind().frontierSeason(7, 50, 0))).rejects.toThrow();
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "110", "0", "0x99"]);
-  await expect(Effect.runPromise(bind().frontierSeason(7, 604910))).rejects.toThrow();
+  await expect(Effect.runPromise(bind().frontierSeason(7, 604910, 0))).rejects.toThrow();
 });
 it("rereads restored game funding instead of reusing a previous match", async () => {
-  expect(await Effect.runPromise(bind().frontierSeason(7, 50))).toBe(7);
+  expect(await Effect.runPromise(bind().frontierSeason(7, 50, 0))).toBe(7);
   rpc.blockHash = "0xb";
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "110", "0", "0x98"]);
-  await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toThrow();
+  await expect(Effect.runPromise(bind().frontierSeason(7, 50, 0))).rejects.toThrow();
   const previous = rpc.ledgerCall.getMockImplementation()!;
   rpc.ledgerCall.mockImplementation(async (query) =>
     query.entrypoint === "get_frontier"
-      ? ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "2", "0x98"]
+      ? ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "6", "0x98", "0", "0", "0", "0"]
       : previous(query),
   );
-  expect(await Effect.runPromise(bind().frontierSeason(7, 50))).toBe(7);
+  expect(await Effect.runPromise(bind().frontierSeason(7, 50, 0))).toBe(7);
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -140,7 +144,7 @@ it.each(["get_frontier", "get_preset"])("fails when %s refuses unfunded Frontier
     if (query.entrypoint === entrypoint) throw new Error("Ledger: unknown Frontier season");
     return previous(query);
   });
-  await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
+  await expect(Effect.runPromise(bind().frontierSeason(7, 50, 0))).rejects.toMatchObject({
     operation: "resolve_frontier_funding",
   });
 });
@@ -155,7 +159,7 @@ it("keeps a funding mismatch unavailable when the snapshot pool differs", async 
         models: [
           {
             model: "GameRegistry",
-            rows: [{ key: "7", value: { game_id: 7, start_main_at: 10, end_at: 110, seed: "0x99" } }],
+            rows: [{ key: "7", value: { game_id: 7, preset_id: 6, start_main_at: 10, end_at: 110, seed: "0x99" } }],
           },
           {
             model: "ChestRules",
@@ -163,6 +167,8 @@ it("keeps a funding mismatch unavailable when the snapshot pool differs", async 
               {
                 key: "7",
                 value: {
+                  pool_bps: 7000,
+                  top_n: 10,
                   game_id: 7,
                   price_ceiling: "10",
                   shares: { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 },
@@ -195,14 +201,19 @@ it("keeps a funding mismatch unavailable when the snapshot pool differs", async 
       }),
     ),
   );
-  await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
+  await expect(Effect.runPromise(bind().frontierSeason(7, 50, 0))).rejects.toMatchObject({
     operation: "frontier_pool_differs_from_ledger",
   });
 });
 
 it("refuses a different whole-bag end in the shared relay and monitor receipt binding", async () => {
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "210", "0", "0x99"]);
-  await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
+  await expect(Effect.runPromise(bind().frontierSeason(7, 50, 0))).rejects.toMatchObject({
     operation: "frontier_funding_differs_from_game",
   });
+});
+
+it("allows a season prize after chest claims close but never before season end", async () => {
+  await expect(Effect.runPromise(bind().frontierSeason(7, 109, 1))).rejects.toThrow();
+  expect(await Effect.runPromise(bind().frontierSeason(7, 604910, 1))).toBe(7);
 });

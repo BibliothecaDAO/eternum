@@ -1,7 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
-import { beastMeaning, readStructureMeaning, structureMeaning } from "./domain-icon-meaning";
+import { nativeStoryVariants } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  beastMeaning,
+  buildingMeaning,
+  readStructureMeaning,
+  storyMeaning,
+  structureMeaning,
+} from "./domain-icon-meaning";
+import { iconDefinition, resourceMeaning } from "./icon-meaning";
+
+describe("story icon meanings", () => {
+  it("paints every story the game can emit, and refuses one it cannot", () => {
+    for (const story of [...nativeStoryVariants, "BattleEvent", "RaidEvent"])
+      expect(iconDefinition(storyMeaning(story)).label, story).toBeTruthy();
+    expect(() => storyMeaning("Unknown")).toThrow("Unknown story icon: Unknown");
+  });
+});
 
 describe("guard and site icon meanings", () => {
   it("keeps Blitz camps as sites and Frontier camps as Trolls in every category caller", () => {
@@ -70,4 +86,20 @@ describe("guard and site icon meanings", () => {
       readStructureMeaning(store, { ...structure, base: { ...structure.base, category: StructureType.Camp } }),
     ).toBe("camp");
   });
+});
+
+describe("a building's painting", () => {
+  it("paints each building one way everywhere: its own painting, else what it makes, Frontier's barracks as Barracks", () => {
+    expect(buildingMeaning(BuildingType.WorkersHut)).toBe("workers-hut");
+    expect(buildingMeaning(BuildingType.Storehouse)).toBe("storehouse");
+    expect(buildingMeaning(BuildingType.ResourceDonkey)).toBe(resourceMeaning(ResourcesIds.Donkey));
+    expect(buildingMeaning(BuildingType.ResourceKnightT1)).toBe(resourceMeaning(ResourcesIds.Knight));
+    expect(buildingMeaning(BuildingType.ResourceKnightT1, true)).toBe("barracks");
+    expect(() => buildingMeaning(BuildingType.None)).toThrow("has no painting");
+  });
+});
+
+it("keeps the research painting for historical tier purchases and current skill-point spending", () => {
+  expect(storyMeaning("TierBought")).toBe("research");
+  expect(storyMeaning("SkillPointSpent")).toBe("research");
 });

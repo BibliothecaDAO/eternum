@@ -75,6 +75,17 @@ it("keeps chat's message, unread count, open action, input focus and Escape on t
   expect(onOpenChange).toHaveBeenLastCalledWith(false);
 });
 
+it("leaves Escape to the message field while its list of players is open, so chat stays open", () => {
+  draw(true);
+  const field = host.querySelector<HTMLInputElement>('[aria-label="Message"]')!;
+  field.setAttribute("aria-expanded", "true");
+  act(() => field.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+  expect(onOpenChange).not.toHaveBeenCalled();
+  field.setAttribute("aria-expanded", "false");
+  act(() => field.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+  expect(onOpenChange).toHaveBeenLastCalledWith(false);
+});
+
 it("keeps a signed-out player's sign-in action, and the strip cannot be pressed while identity loads", () => {
   fixture.status = "signed-out";
   draw(false);

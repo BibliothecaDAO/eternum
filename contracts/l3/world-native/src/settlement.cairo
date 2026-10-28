@@ -1,6 +1,11 @@
 use starknet::ContractAddress;
 use crate::troops::{Coord, TroopType};
 
+pub const HELD_REALM_KIND: u8 = 2;
+pub const CAMPAIGN_KIND: u8 = 3;
+pub const CAMPAIGN_NORMAL: u8 = 1;
+pub const CAMPAIGN_GOLDEN: u8 = 2;
+
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 #[allow(starknet::store_no_default_variant)]
 pub enum SettlementMode {
@@ -65,6 +70,7 @@ pub trait ISettlementCommands<T> {
 pub trait ISettlementEntry<T> {
     fn register_entitlement(ref self: T, key: EntryKey, entitlement: EntryEntitlement);
     fn entry_entitlement(self: @T, key: EntryKey) -> Option<EntryEntitlement>;
+    fn settled_realm(self: @T, game_id: u32, realm_id: u32) -> u64;
 }
 
 #[starknet::interface]

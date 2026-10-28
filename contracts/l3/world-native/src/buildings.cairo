@@ -133,10 +133,14 @@ pub struct BoardRules {
     pub storage_step_bps: u16,
     pub population_step_bps: u16,
     pub ration_step: u128,
-    // The Barracks tier a realm needs before it can build a training building.
+    // The number of Barracks purchases needed before building training.
     pub training_gate_tier: u8,
-    // The castle stores this many of its level's full deploys of each of wheat, labor and troops.
-    pub castle_store_deploys: u8,
+    // Troop storage stays tied to deployment capacity; wheat and labor have their own per-level caps.
+    pub troop_store_deploys: u8,
+    pub settlement_resource_cap: u32,
+    pub city_resource_cap: u32,
+    pub kingdom_resource_cap: u32,
+    pub empire_resource_cap: u32,
 }
 
 #[derive(Copy, Drop, Default, Debug, PartialEq)]
@@ -158,6 +162,7 @@ pub struct CreateBuilding {
     pub directions: Span<u8>,
     pub category: u8,
     pub use_simple: bool,
+    pub scouting_kind: u8,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ChangeBuilding {

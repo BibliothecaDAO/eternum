@@ -1,13 +1,22 @@
 import { afterEach, expect, mock, spyOn, test } from "bun:test";
 import * as failureTools from "./errors";
 import * as processTools from "./process";
-import { deployShard, artifactsReady, artifactFiles, operatorTokenMatches } from "./box";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, statSync, readdirSync } from "node:fs";
+import { deployShard, artifactsReady, artifactFiles, operatorTokenMatches, valueSources } from "./box";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  readFileSync,
+  statSync,
+  readdirSync,
+  readlinkSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import type { PrivateStore } from "./private-store";
 import { PublicError } from "./errors";
-import { environments } from "./settings";
+import { environments, root } from "./settings";
 
 afterEach(() => mock.restore());
 
@@ -122,5 +131,26 @@ test("a plain refusal prints its full diagnostic without making a temporary log 
     expect(readdirSync(directory)).toEqual([]);
   } finally {
     rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("the value build copies every source its packages link to, and a change to one rebuilds the artifacts", () => {
+  const listed = Bun.spawnSync(
+    ["git", "ls-files", "-s", "contracts/l2/ledger", "contracts/l2/mmr", "contracts/l2/collectibles"],
+    { cwd: root },
+  );
+  const links = listed.stdout
+    .toString()
+    .split("\n")
+    .filter((line) => line.startsWith("120000 "))
+    .map((line) => line.split("\t")[1]!);
+  const targets = links.map((link) => relative(root, resolve(root, dirname(link), readlinkSync(join(root, link)))));
+  expect(targets.length).toBeGreaterThan(0);
+  const dockerfile = readFileSync(join(root, "deploy/shard/Dockerfile"), "utf8");
+  const stage = dockerfile.slice(dockerfile.indexOf("AS value-contracts"));
+  for (const target of targets) {
+    expect(target.startsWith("contracts/l2/")).toBe(false);
+    expect(valueSources).toContain(target);
+    expect(stage).toContain(`COPY ${target} ${target}`);
   }
 });

@@ -1,7 +1,11 @@
-import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
+import {
+  isVillageLikeStructureCategory,
+  normalizeStructureCategory,
+  type StructureCategoryLike,
+} from "@/lib/structure-type-utils";
 import type { GameModeId } from "@/config/game-modes";
-import { ID, StructureType } from "@bibliothecadao/types";
-import { configManager } from "@bibliothecadao/eternum";
+import { ID, type ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { configManager, isMilitaryResource } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 type SlotValue = bigint | number | null | undefined;
@@ -28,23 +32,66 @@ export type StructureCapabilityTarget =
   | null
   | undefined;
 
-const CONSTRUCTION_STRUCTURE_CATEGORIES = new Set<StructureType>([
-  StructureType.Realm,
-  StructureType.Village,
-  StructureType.Camp,
-]);
-const INVENTORY_STRUCTURE_CATEGORIES = new Set<StructureType>([
-  StructureType.Realm,
-  StructureType.Village,
-  StructureType.Camp,
-  StructureType.Mine,
-  StructureType.Hyperstructure,
-]);
-const POPULATION_STRUCTURE_CATEGORIES = new Set<StructureType>([
-  StructureType.Realm,
-  StructureType.Village,
-  StructureType.Camp,
-]);
+type CategoryCapabilities = {
+  /** Places buildings and runs production (construction.cairo's building command, production_domain.cairo). */
+  builds: boolean;
+  /** Holds goods a player can open and send from. */
+  holdsInventory: boolean;
+  /** Houses a population. */
+  housesPopulation: boolean;
+  /** Pledges faith to a Wonder (faith.cairo's build_pledge). */
+  pledgesFaith: boolean;
+  /** Crafts relics (relics.cairo's craft_relic). */
+  craftsRelics: boolean;
+};
+const NONE: CategoryCapabilities = {
+  builds: false,
+  holdsInventory: false,
+  housesPopulation: false,
+  pledgesFaith: false,
+  craftsRelics: false,
+};
+const SETTLEMENT: CategoryCapabilities = {
+  builds: true,
+  holdsInventory: true,
+  housesPopulation: true,
+  pledgesFaith: true,
+  craftsRelics: true,
+};
+
+/**
+ * What each structure category can do: the one table every panel, tab and button asks. Keyed by every category, so a
+ * new one does not compile until it has its row.
+ */
+const CATEGORY_CAPABILITIES: Record<StructureType, CategoryCapabilities> = {
+  [StructureType.Realm]: SETTLEMENT,
+  [StructureType.Village]: SETTLEMENT,
+  [StructureType.Camp]: { ...NONE, builds: true, holdsInventory: true, housesPopulation: true },
+  [StructureType.Mine]: { ...NONE, holdsInventory: true },
+  [StructureType.Hyperstructure]: { ...NONE, holdsInventory: true },
+  [StructureType.Bank]: NONE,
+  [StructureType.BitcoinMine]: NONE,
+  [StructureType.Rift]: NONE,
+  [StructureType.Ruin]: NONE,
+  [StructureType.Beasts]: NONE,
+};
+
+/** Whether a structure of this category can do it; an unknown category can do nothing. */
+export const categoryCan = (category: StructureCategoryLike, capability: keyof CategoryCapabilities): boolean => {
+  const known = normalizeStructureCategory(category);
+  const row = known === null ? undefined : (CATEGORY_CAPABILITIES[known] as CategoryCapabilities | undefined);
+  return row?.[capability] === true;
+};
+
+/** A village pools and trades no troops (economy.cairo's assert_liquidity_resource): every market panel asks this. */
+export const refusesTroopTrade = (category: StructureCategoryLike, resource: ResourcesIds): boolean =>
+  normalizeStructureCategory(category) === StructureType.Village && isMilitaryResource(resource);
+
+/** The categories that can do it, for a list filtered by kind. */
+export const categoriesThatCan = (capability: keyof CategoryCapabilities): StructureType[] =>
+  (Object.keys(CATEGORY_CAPABILITIES).map(Number) as StructureType[]).filter(
+    (category) => CATEGORY_CAPABILITIES[category][capability],
+  );
 
 const normalizeSlotCount = (value: SlotValue): number => {
   if (typeof value === "number") {
@@ -61,9 +108,6 @@ const getStructureCategory = (structure: StructureCapabilityTarget): StructureTy
   return normalizeStructureCategory(category);
 };
 
-const isInventoryStructureCategory = (category: StructureType | null) =>
-  category !== null && INVENTORY_STRUCTURE_CATEGORIES.has(category);
-
 export const resolveStructureUiCapabilities = (structure: StructureCapabilityTarget) => {
   const category = getStructureCategory(structure);
   const fieldArmySlots = normalizeSlotCount(structure?.base?.troop_max_explorer_count);
@@ -75,10 +119,10 @@ export const resolveStructureUiCapabilities = (structure: StructureCapabilityTar
     guardArmySlots,
     canCreateFieldArmy: fieldArmySlots > 0,
     canManageGuardArmy: guardArmySlots > 0,
-    canOpenConstruction: category !== null && CONSTRUCTION_STRUCTURE_CATEGORIES.has(category),
-    canOpenProduction: category !== null && CONSTRUCTION_STRUCTURE_CATEGORIES.has(category),
-    canOpenTransferInventory: isInventoryStructureCategory(category),
-    hasPopulationDetails: category !== null && POPULATION_STRUCTURE_CATEGORIES.has(category),
+    canOpenConstruction: categoryCan(category, "builds"),
+    canOpenProduction: categoryCan(category, "builds"),
+    canOpenTransferInventory: categoryCan(category, "holdsInventory"),
+    hasPopulationDetails: categoryCan(category, "housesPopulation"),
     isVillageLike: isVillageLikeStructureCategory(category),
   };
 };

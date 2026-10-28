@@ -4,12 +4,12 @@ import {
   BuildingType,
   buildingName,
   getBuildingFromResource,
-  getProducedResource,
   isEconomyBuilding,
   ResourcesIds,
 } from "@bibliothecadao/types";
 
-import { resourceMeaning, type IconMeaning } from "@/ui/design-system/icon-meaning";
+import { buildingMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { type IconMeaning } from "@/ui/design-system/icon-meaning";
 
 // Paladins (Stable) → Knights (Barracks) → Crossbowmen (Archery). Player
 // preference: heavier infantry / cavalry surface first in the military tab.
@@ -82,14 +82,6 @@ const resolveRealmBuildingSummaryOrder = (realmResourceIds: ResourcesIds[], allo
     ...resolveMilitaryBuildingTypes(allowedBuildingTypes),
   ]);
 
-/** A building's painting in the summary: the resource it makes, else its own (a hut is a home, a storehouse a granary). */
-const toSummaryIcon = (buildingType: BuildingType): IconMeaning => {
-  if (buildingType === BuildingType.Storehouse) return "granary";
-  if (buildingType === BuildingType.ResourceDonkey) return resourceMeaning(ResourcesIds.Donkey);
-  const producedResource = getProducedResource(buildingType);
-  return producedResource !== undefined ? resourceMeaning(producedResource) : "home";
-};
-
 export const buildRealmBuildingSummary = ({
   realmResourceIds,
   allowedBuildingTypes,
@@ -104,7 +96,7 @@ export const buildRealmBuildingSummary = ({
       items.push({
         buildingId: buildingType,
         label: buildingName(buildingType, frontier),
-        icon: toSummaryIcon(buildingType),
+        icon: buildingMeaning(buildingType, frontier),
         count,
       });
       return items;

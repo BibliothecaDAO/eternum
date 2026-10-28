@@ -1,6 +1,10 @@
+import { assertFrontierSeason, CalendarConflict, type FrontierSeasonPhase } from "./calendar";
 import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
 import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
-import { nativePresetIdFor, nativePresets } from "../../../config/source/native";
+import { nativePresets } from "../../../config/source/native";
+
+export const isCalendarFrontier = (environment: string, name: string) =>
+  environment === "madara.frontier" && /^frontier-\d+$/.test(name);
 
 export const isPublicGameName = (name: string) => !name.startsWith("check-");
 interface SharedLaunchOptions {
@@ -35,15 +39,16 @@ export type LaunchKind = "game" | "result";
  * A season is one open-entry game named by its start, so scheduling the same start twice names the same game. It runs
  * to the calendar's planned end; the preset's own duration is only a fallback for games created outside the calendar.
  */
-export const frontierSeasonRequest = (season: { startsAt: string; endsAt: string }): CreateGameRequest => {
+export const frontierSeasonRequest = (season: FrontierSeasonPhase): CreateGameRequest => {
   const start = Date.parse(season.startsAt);
   const end = Date.parse(season.endsAt);
   if (!Number.isSafeInteger(start) || start % 1000 !== 0 || !Number.isSafeInteger(end) || end % 1000 !== 0) {
     throw new Error("A Frontier season starts and ends on a whole second");
   }
+  assertFrontierSeason(start, end, season.presetId);
   return {
     environment: "madara.frontier",
-    version: String(nativePresetIdFor("frontier")) as "5",
+    version: String(season.presetId),
     gameName: `frontier-${start / 1000}`,
     gameStartTime: new Date(start).toISOString(),
     durationSeconds: (end - start) / 1000,
@@ -71,6 +76,7 @@ export function applyDurableLaunchDefaults(
   if (kind === "result") return request;
   if (!("gameName" in request) || "gameId" in request) throw new Error("Invalid game request");
   if (!isPublicGameName(request.gameName)) throw new Error("check- names are reserved for deployment");
+  if (isCalendarFrontier(request.environment, request.gameName)) assertCalendarFrontierRequest(request);
   const version =
     request.version ?? (defaultPresetForEnvironment(request.environment) as NonNullable<CreateGameRequest["version"]>);
   if (!isRegisteredPresetForEnvironment(request.environment, version)) {
@@ -82,3 +88,12 @@ export function applyDurableLaunchDefaults(
     gameStartTime: request.gameStartTime ?? new Date(now + 15 * 60_000).toISOString(),
   };
 }
+
+const assertCalendarFrontierRequest = (request: CreateGameRequest) => {
+  if (request.version === undefined || request.gameStartTime === undefined || request.durationSeconds === undefined)
+    throw new CalendarConflict("A calendar Frontier launch needs an explicit preset, start and duration");
+  const start = Date.parse(request.gameStartTime);
+  assertFrontierSeason(start, start + request.durationSeconds * 1000, Number(request.version));
+  if (request.gameName !== `frontier-${start / 1000}`)
+    throw new CalendarConflict("A calendar Frontier name must match its start");
+};

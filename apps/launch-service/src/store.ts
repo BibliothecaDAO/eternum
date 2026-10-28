@@ -1,10 +1,12 @@
+import { CalendarConflict } from "./calendar";
+import approved from "../../../config/source/frontier/extension.json";
 import type { GameEnvironmentId } from "../../../config/shared/game-environments";
 import { Context, Effect, Layer } from "effect";
 import type { LaunchRunStore } from "../../../config/deployer/clean/launch/run-store";
 import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
 import { DatabaseFailure } from "./errors";
 import { launchName, launchRunPath, type LaunchRun, type LaunchSummary } from "./model";
-import { applyDurableLaunchDefaults, type LaunchJobRequest, type LaunchKind } from "./schemas";
+import { applyDurableLaunchDefaults, isCalendarFrontier, type LaunchJobRequest, type LaunchKind } from "./schemas";
 
 interface LaunchRunRow {
   id: string;
@@ -27,9 +29,9 @@ interface LaunchRunRow {
 export interface LaunchServiceStore extends LaunchRunStore {
   /** The shard chain this store's runs launch on, as the directory selects it. */
   targetChain(): Promise<string>;
-  /** Queues a run; a running or complete run of the same name is handed back as it is. */
+  /** Queues a run, retaining running/complete runs. Frontier retries must keep their preset and window. */
   enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
-  /** Creates a run once; whatever run already has that name is handed back untouched. */
+  /** Creates a run once; an existing run is untouched, and a different Frontier preset or window is refused. */
   schedule(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
   list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]>;
   /** Declared entry terms for created games, including registration before start and draining shards. */
@@ -139,15 +141,19 @@ export class D1LaunchStore implements LaunchServiceStore {
   }
 
   async enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun> {
-    // One rule for every environment: a running or complete run is handed back as it is (create_game is idempotent by
-    // name, so nothing is lost); anything else is queued again with the new request.
+    // Retrying a calendar season preserves its declared identity even before the first launch succeeds.
     return this.insertRun(
       kind,
       request,
       `ON CONFLICT (chain_id, kind, environment, name) DO UPDATE SET
          id = excluded.id, request = excluded.request, status = 'queued', attempts = 0,
          available_at = excluded.available_at, error_message = NULL, completed_at = NULL, updated_at = excluded.updated_at
-       WHERE launch_runs.status NOT IN ('running', 'complete')`,
+       WHERE launch_runs.status NOT IN ('running', 'complete')
+         AND (excluded.environment != 'madara.frontier' OR (
+           json_extract(launch_runs.request, '$.version') = json_extract(excluded.request, '$.version')
+           AND json_extract(launch_runs.request, '$.gameStartTime') = json_extract(excluded.request, '$.gameStartTime')
+           AND json_extract(launch_runs.request, '$.durationSeconds') IS json_extract(excluded.request, '$.durationSeconds')
+         ))`,
     );
   }
 
@@ -358,6 +364,7 @@ export class D1LaunchStore implements LaunchServiceStore {
   }
 
   async delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
+    if (kind === "game" && isCalendarFrontier(environment, name)) return false;
     const result = await this.db
       .prepare(
         "DELETE FROM launch_runs WHERE chain_id = ? AND kind = ? AND environment = ? AND name = ? AND status <> 'running' AND slot_id IS NULL",
@@ -398,16 +405,33 @@ export class D1LaunchStore implements LaunchServiceStore {
       this.insertStatement(chain, kind, durableRequest, conflict),
       this.db.prepare(SELECT_RUN).bind(chain, kind, durableRequest.environment, launchName(kind, durableRequest)),
     ]);
-    return toRun(selected!.results[0]!);
+    const row = selected!.results[0];
+    if (!row) throw new CalendarConflict("Frontier launch differs from the published calendar");
+    const run = toRun(row);
+    if (kind === "game" && durableRequest.environment === "madara.frontier")
+      assertSameFrontierLaunch(run.request, durableRequest);
+    return run;
   }
 
   private insertStatement(chain: string, kind: LaunchKind, request: LaunchJobRequest, conflict: string) {
     const now = Date.now();
+    const calendarSeason = kind === "game" && isCalendarFrontier(request.environment, request.gameName);
+    // A cron read can become stale before insertion. Exact retries also work after the calendar advances.
     return this.db
       .prepare(
         `INSERT INTO launch_runs
            (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, slot_id)
-         VALUES (?, ?, ?, ?, ?, ?, 'queued', ?, ?, ?, ?) ${conflict}`,
+         SELECT ?1, ?2, ?3, ?4, ?5, ?6, 'queued', ?7, ?8, ?9, ?10
+         WHERE ?11 = 0 OR EXISTS (
+           SELECT 1 FROM season_phases WHERE phase = 'frontier'
+             AND 'frontier-' || CAST(starts_at / 1000 AS INTEGER) = ?5
+             AND preset_id = CAST(json_extract(?6, '$.version') AS INTEGER)
+             AND starts_at = unixepoch(json_extract(?6, '$.gameStartTime')) * 1000
+             AND ends_at = starts_at + json_extract(?6, '$.durationSeconds') * 1000
+         ) OR EXISTS (
+           SELECT 1 FROM launch_runs WHERE chain_id = ?2 AND kind = ?3 AND environment = ?4 AND name = ?5
+             AND request = ?6
+         ) ${conflict}`,
       )
       .bind(
         crypto.randomUUID(),
@@ -420,9 +444,25 @@ export class D1LaunchStore implements LaunchServiceStore {
         now,
         now,
         "slotId" in request ? (request.slotId ?? null) : null,
+        calendarSeason ? 1 : 0,
       );
   }
 }
+
+const assertSameFrontierLaunch = (stored: LaunchJobRequest, requested: LaunchJobRequest) => {
+  if (!("version" in stored) || !("version" in requested)) throw new CalendarConflict("Invalid Frontier request");
+  const approvedExtension =
+    stored.version === String(approved.presetId) &&
+    stored.gameStartTime === new Date(approved.start * 1000).toISOString() &&
+    stored.durationSeconds === approved.oldEnd - approved.start &&
+    requested.durationSeconds === approved.end - approved.start;
+  if (
+    stored.version !== requested.version ||
+    stored.gameStartTime !== requested.gameStartTime ||
+    (stored.durationSeconds !== requested.durationSeconds && !approvedExtension)
+  )
+    throw new CalendarConflict("That Frontier name holds another preset or season window");
+};
 
 export const databaseLayer = (store: LaunchServiceStore): Layer.Layer<LaunchDatabase> =>
   Layer.succeed(LaunchDatabase, store);

@@ -7,13 +7,17 @@ import { mergeConfigPatches } from "../common/merge-config";
 import { arenaBaseConfig } from "../common/arena/base";
 
 const resourceIds = Array.from({ length: 58 }, (_, index) => index + 1);
-const trainingBuildings = [research.WAR_HALL, research.SUPPLY_YARD, research.SCOUTS_LODGE, research.HEARTH];
+const trainingBuildings: readonly number[] = [
+  research.WAR_HALL,
+  research.SUPPLY_YARD,
+  research.SCOUTS_LODGE,
+  research.HEARTH,
+];
 const laborCosts: Record<number, number> = {
   [research.HUT]: 300,
   [research.WORKSHOP]: 2000,
   [research.BARRACKS]: 400,
   [research.FARM]: 400,
-  ...Object.fromEntries(trainingBuildings.map((category) => [category, 3000])),
 };
 const populationCosts: Record<number, number> = {
   [research.HUT]: 0,
@@ -27,7 +31,20 @@ const rates: Record<number, number> = {
   35: 0.084,
 };
 const buildingCosts = Object.fromEntries(
-  buildingIds.map((id) => [id, laborCosts[id] === undefined ? [] : [{ resource: 23, amount: laborCosts[id] }]]),
+  buildingIds.map((id) => {
+    if (trainingBuildings.includes(id)) {
+      const row = research.ROW_WAR_HALL + id - research.WAR_HALL;
+      const rank = frontierPreset.research!.find((price) => price.row === row && price.tier === 1)!;
+      return [
+        id,
+        [
+          { resource: 38, amount: rank.essenceCost },
+          { resource: 23, amount: rank.laborCost },
+        ],
+      ];
+    }
+    return [id, laborCosts[id] === undefined ? [] : [{ resource: 23, amount: laborCosts[id] }]];
+  }),
 );
 // Barracks train from nothing. A troop's recipe is what its realm pays, per troop, to raise it into an army.
 const troopRaiseCosts = Object.fromEntries(

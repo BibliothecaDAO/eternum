@@ -10,9 +10,9 @@ import { FRONTIER_PRESET_ID } from "../common/native-preset-modes";
 /** Every building a Frontier board can raise, by its category id. */
 export const buildingIds = Array.from({ length: research.HEARTH }, (_, index) => index + 1);
 
-// A building row's tier, uncommon to legendary, costs its base times this ladder, in Essence and in labor.
-const essenceLadder = [1, 4, 12, 30];
-const laborLadder = [1, 3, 8, 20];
+// Common I is half the old first price; II–V retain the four established prices.
+const essenceLadder = [0.5, 1, 4, 12, 30];
+const laborLadder = [0.5, 1, 3, 8, 20];
 const buildingRows = [
   { row: research.ROW_FARM, essence: 1000, labor: 1000 },
   { row: research.ROW_WORKSHOP, essence: 2000, labor: 2000 },
@@ -25,7 +25,7 @@ const buildingRows = [
   })),
 ];
 
-export const frontierPreset: NativePreset = {
+export const frontierPreset = {
   ledger: {
     protocolCutBps: 0,
     mmrEnabled: false,
@@ -61,7 +61,7 @@ export const frontierPreset: NativePreset = {
       "LevelUp",
       "Research",
       "EnterDepth",
-      "BuyTier",
+      "SpendSkillPoint",
       "InteractSite",
       "OpenRelicChest",
       "RefillStamina",
@@ -76,25 +76,27 @@ export const frontierPreset: NativePreset = {
   board: {
     demolitionRefundBps: 5000,
     workshopRate: 0.056,
-    outputStepBps: 2500,
-    storageStepBps: 5000,
-    populationStepBps: 2500,
-    rationStep: 0.25,
+    outputStepBps: 2000,
+    storageStepBps: 4000,
+    populationStepBps: 2000,
+    rationStep: 0.2,
     trainingGateTier: 2,
-    castleStoreDeploys: 2,
+    troopStoreDeploys: 2,
+    resourceStoreCaps: [6000, 18000, 40000, 80000],
   },
   research: [
     ...buildingRows.flatMap(({ row, essence, labor }) =>
       essenceLadder.map((factor, index) => ({
         row,
         tier: index + 1,
-        essenceCost: essence * factor,
+        essenceCost:
+          row >= research.ROW_WAR_HALL && row <= research.ROW_HEARTH && index === 1 ? 16000 : essence * factor,
         laborCost: labor * laborLadder[index]!,
       })),
     ),
     { row: research.ROW_SHRINE, tier: 1, essenceCost: 2000, laborCost: 0 },
     { row: research.ROW_WELL, tier: 1, essenceCost: 6000, laborCost: 0 },
-    ...[160000, 400000, 900000].map((essenceCost, index) => ({
+    ...[100000, 250000, 500000].map((essenceCost, index) => ({
       row: research.ROW_DEPTH,
       tier: index + 1,
       essenceCost,
@@ -110,10 +112,21 @@ export const frontierPreset: NativePreset = {
     wellBps: 300,
     emptyRevealLimit: 7,
   },
-  progression: { revealXp: 2, fixedXp: 200, uncommonXp: 100, rareXp: 200, epicXp: 400, legendaryXp: 800 },
-  labor: { amount: 1000, accountDailyLimit: 0 },
+  progression: {
+    revealXp: 2,
+    revealXpPerDepth: 1,
+    fixedXp: 200,
+    commonXp: 75,
+    uncommonXp: 200,
+    rareXp: 400,
+    epicXp: 800,
+    legendaryXp: 1500,
+  },
+  labor: { amount: 1000, campaignEssence: 0, goldenAmount: 1000, goldenEssence: 0 },
   // Daily chest prices cannot exceed 50 LORDS per share.
   chests: {
+    poolBps: 7_000,
+    topN: 10,
     priceCeiling: 50,
     shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
     claimWindowSeconds: 7 * 86400,
@@ -147,7 +160,7 @@ export const frontierPreset: NativePreset = {
       beastStrongUpper: 1650,
       revealSiteNeighbors: false,
       entryStamina: 30,
-      chest: { common: 4000, uncommon: 3000, rare: 1700, epic: 900, legendary: 400 },
+      chest: { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
     },
     {
       revealPercent: 20,
@@ -162,7 +175,7 @@ export const frontierPreset: NativePreset = {
       beastStrongUpper: 4400,
       revealSiteNeighbors: false,
       entryStamina: 40,
-      chest: { common: 3000, uncommon: 3000, rare: 2200, epic: 1200, legendary: 600 },
+      chest: { common: 0, uncommon: 0, rare: 5500, epic: 3000, legendary: 1500 },
     },
     {
       revealPercent: 25,
@@ -177,7 +190,7 @@ export const frontierPreset: NativePreset = {
       beastStrongUpper: 11000,
       revealSiteNeighbors: false,
       entryStamina: 50,
-      chest: { common: 2000, uncommon: 3000, rare: 2500, epic: 1600, legendary: 900 },
+      chest: { common: 0, uncommon: 0, rare: 0, epic: 6400, legendary: 3600 },
     },
   ],
-};
+} satisfies NativePreset;

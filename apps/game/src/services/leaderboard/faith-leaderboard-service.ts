@@ -1,5 +1,4 @@
 import { StructureType, structureName } from "@bibliothecadao/types";
-import { getRealmNameById } from "@bibliothecadao/eternum";
 import { feltEquals } from "@bibliothecadao/eternum/game-client";
 
 type ReadModelRow = Record<string, unknown>;
@@ -91,9 +90,10 @@ const address = (value: unknown): string => {
   return parsed === null ? "0x0" : `0x${parsed.toString(16).padStart(64, "0")}`;
 };
 
-const wonderName = (wonderId: bigint, realmId: number): string => {
-  const realmName = realmId > 0 ? getRealmNameById(realmId) : undefined;
-  return realmName ? `Wonder - ${realmName}` : "Wonder";
+const displayedStructureName = (structure: ReadModelRow): string => {
+  if (typeof structure.display_name !== "string" || !structure.display_name)
+    throw new Error("Structure name is not synchronized");
+  return structure.display_name;
 };
 
 const currentFaithPoints = (row: ReadModelRow, nowInSeconds: bigint): bigint => {
@@ -121,14 +121,6 @@ const ownerName = (owner: unknown, playerName: PlayerName): string | null =>
   // An unowned wonder has no player to name: the board says "Unclaimed" for it.
   (typeof owner === "string" || typeof owner === "bigint") && BigInt(owner) !== 0n ? playerName(owner) : null;
 
-const structureLabel = (structureId: bigint, structureType: number, realmId: number): string => {
-  if (structureType === REALM_STRUCTURE_TYPE && realmId > 0) {
-    const realmName = getRealmNameById(realmId);
-    if (realmName) return `${structureName(StructureType.Realm)} - ${realmName}`;
-  }
-  return structureName(structureType as StructureType);
-};
-
 const followerEntries = (rows: FaithReadModels, wonderId: bigint, playerName: PlayerName): WonderFaithFollowerEntry[] =>
   rows.faithfulStructures.flatMap((faithful) => {
     const structureId = toBigInt(faithful.structure_id);
@@ -144,7 +136,6 @@ const followerEntries = (rows: FaithReadModels, wonderId: bigint, playerName: Pl
     if (!structure) return [];
     const structureType = integer(record(structure.base).category);
     if (![REALM_STRUCTURE_TYPE, VILLAGE_STRUCTURE_TYPE].includes(structureType)) return [];
-    const realmId = integer(record(structure.metadata).realm_id);
     const fpToWonderOwnerPerSec = integer(faithful.fp_to_wonder_owner_per_sec);
     const fpToFollowerOwnerPerSec = integer(faithful.fp_to_struct_owner_per_sec);
     return [
@@ -152,7 +143,7 @@ const followerEntries = (rows: FaithReadModels, wonderId: bigint, playerName: Pl
         structureId,
         structureType,
         structureTypeLabel: structureName(structureType as StructureType),
-        structureLabel: structureLabel(structureId, structureType, realmId),
+        structureLabel: displayedStructureName(structure),
         ownerAddress: address(structure.owner),
         ownerName: ownerName(structure.owner, playerName),
         faithfulSince: integer(faithful.faithful_since),
@@ -177,7 +168,7 @@ export const buildFaithLeaderboard = (
         {
           rank: 0,
           wonderId,
-          wonderName: wonderName(wonderId, integer(record(structure.metadata).realm_id)),
+          wonderName: displayedStructureName(structure),
           ownerAddress: address(structure.owner),
           ownerName: ownerName(structure.owner, playerName),
           totalFaithPoints: currentFaithPoints(faith, nowInSeconds),
@@ -232,7 +223,7 @@ export const buildWonderFaithDetail = (
   const followersContributionPerSec = followers.reduce((sum, follower) => sum + follower.totalContributionPerSec, 0);
   return {
     wonderId,
-    wonderName: wonderName(wonderId, integer(record(structure.metadata).realm_id)),
+    wonderName: displayedStructureName(structure),
     ownerAddress: address(structure.owner),
     ownerName: ownerName(structure.owner, playerName),
     totalFaithPoints: currentFaithPoints(faith, nowInSeconds),

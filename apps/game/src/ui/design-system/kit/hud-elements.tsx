@@ -28,7 +28,7 @@ import { createPortal } from "react-dom";
 
 import { OpenedFromPanel } from "./opened-from-panel";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import { BACK, CLOSE, STAMINA, type Tier, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
+import { BACK, CLOSE, STAMINA, type Tier, type Rank, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -798,15 +798,19 @@ export const HudRarity = ({ tier }: { tier: Tier }) => (
  * The tier a player levels something to (a building type's row, an army's attribute): a gem in the tier's rarity
  * colour with its numeral, Common I to Legendary V.
  */
-export const HudTier = ({ tier }: { tier: Tier }) => (
-  <span className="ui-tier" data-tier={tier} role="img" aria-label={TIER_WORDS[tier - 1]}>
-    {tierNumeral(tier)}
+export const HudTier = ({ tier }: { tier: Rank }) => (
+  <span className="ui-tier" data-tier={tier} role="img" aria-label={tier === 0 ? "Untrained" : TIER_WORDS[tier - 1]}>
+    {tier === 0 ? null : tierNumeral(tier)}
   </span>
 );
 
 /** A tier's next step, from the gem it holds to the next one's. */
-export const HudTierStep = ({ from, to }: { from: Tier; to: Tier }) => (
-  <span className="ui-tier-step" role="img" aria-label={`${TIER_WORDS[from - 1]} → ${TIER_WORDS[to - 1]}`}>
+export const HudTierStep = ({ from, to }: { from: Rank; to: Tier }) => (
+  <span
+    className="ui-tier-step"
+    role="img"
+    aria-label={`${from === 0 ? "Untrained" : TIER_WORDS[from - 1]} → ${TIER_WORDS[to - 1]}`}
+  >
     <HudTier tier={from} />
     <span aria-hidden>→</span>
     <HudTier tier={to} />
@@ -936,7 +940,7 @@ export const HudRow = ({
   title,
   detail,
   trail,
-  selected = false,
+  selected,
   state,
   disabled,
   busy,
@@ -954,6 +958,7 @@ export const HudRow = ({
    * never one button inside another.
    */
   trail?: ReactNode;
+  /** Whether the row is the one chosen; absent on a row that does something rather than choosing (Deploy). */
   selected?: boolean;
   state?: string;
   disabled?: boolean;
@@ -965,7 +970,13 @@ export const HudRow = ({
 }) => {
   if (trail !== undefined) {
     return (
-      <div className="ui-row" aria-selected={selected} aria-disabled={disabled} data-state={state} data-tip={tip}>
+      <div
+        className="ui-row"
+        aria-selected={selected ?? false}
+        aria-disabled={disabled}
+        data-state={state}
+        data-tip={tip}
+      >
         {lead}
         {onClick ? (
           <button
@@ -1005,7 +1016,7 @@ export const HudRow = ({
       className="ui-row"
       aria-label={label}
       role="option"
-      aria-selected={selected}
+      aria-selected={selected ?? false}
       data-state={state}
       data-tip={tip}
       disabled={disabled}
@@ -1017,7 +1028,7 @@ export const HudRow = ({
     <div
       className="ui-row"
       role="option"
-      aria-selected={selected}
+      aria-selected={selected ?? false}
       aria-disabled={disabled}
       data-state={state}
       data-tip={tip}
@@ -1445,19 +1456,32 @@ type MenuItem =
       onSelect?: () => void;
     };
 
+/** The id of a suggesting list's option, which its field names as its active descendant. */
+export const menuOptionId = (listId: string, index: number) => `${listId}-option-${index}`;
+
 /**
  * A list of choices: the one a select opens (the chosen one checked), or the actions a right-click on your own
  * structure lists (its name and place at its head, a way back from a list it opened). A rule between groups. The map
- * has no menu of orders: a right-click on a tile acts.
+ * has no menu of orders: a right-click on a tile acts. With `suggests`, it is the list a field suggests from while the
+ * keyboard stays in the field (chat's mentions): a listbox of options, the active one selected, each with the id the
+ * field names as its active descendant (menuOptionId).
  */
 export const HudMenu = forwardRef<
   HTMLDivElement,
   {
     items: readonly MenuItem[];
     head?: { title: string; place?: string; onBack?: () => void };
-  } & Omit<HTMLAttributes<HTMLDivElement>, "className" | "role" | "style">
->(({ items, head, ...rest }, ref) => (
-  <div ref={ref} {...rest} className="ui ui-menu" role="menu" aria-label={rest["aria-label"] ?? head?.title}>
+    suggests?: { id: string; active: number };
+  } & Omit<HTMLAttributes<HTMLDivElement>, "className" | "role" | "style" | "id">
+>(({ items, head, suggests, ...rest }, ref) => (
+  <div
+    ref={ref}
+    {...rest}
+    id={suggests?.id}
+    className="ui ui-menu"
+    role={suggests ? "listbox" : "menu"}
+    aria-label={rest["aria-label"] ?? head?.title}
+  >
     {head && (
       <div className="ui-menu__head">
         {head.onBack && <HudIconButton icon="chevron-left" label="Back" kind="quiet" size="sm" onClick={head.onBack} />}
@@ -1472,7 +1496,9 @@ export const HudMenu = forwardRef<
         <button
           key={index}
           type="button"
-          role={item.checked === undefined ? "menuitem" : "menuitemradio"}
+          role={suggests ? "option" : item.checked === undefined ? "menuitem" : "menuitemradio"}
+          id={suggests && menuOptionId(suggests.id, index)}
+          aria-selected={suggests && index === suggests.active}
           className="ui-menu__item"
           aria-checked={item.checked}
           disabled={item.disabled}

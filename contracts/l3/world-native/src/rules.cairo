@@ -1,24 +1,17 @@
 pub const ATTRIBUTE_CAP: u8 = 5;
-// Attribute tiers run common (1) to legendary (5); common gives nothing and the steps grow.
-pub const BATTLE_UNCOMMON_BPS: u32 = 1000;
-pub const BATTLE_RARE_BPS: u32 = 3000;
-pub const BATTLE_EPIC_BPS: u32 = 6000;
+pub const SKILL_POINT_REFILL_BASE: u8 = 10;
+pub const SKILL_POINT_REFILL_STEP: u8 = 10;
+// Rank 0 is untrained; Common I through Legendary V retain the original ceilings.
+pub const BATTLE_COMMON_BPS: u32 = 1000;
+pub const BATTLE_UNCOMMON_BPS: u32 = 2500;
+pub const BATTLE_RARE_BPS: u32 = 4500;
+pub const BATTLE_EPIC_BPS: u32 = 7000;
 pub const BATTLE_LEGENDARY_BPS: u32 = 10000;
-pub const LOGISTICS_UNCOMMON_STAMINA: u32 = 20;
-pub const LOGISTICS_RARE_STAMINA: u32 = 50;
-pub const LOGISTICS_EPIC_STAMINA: u32 = 90;
-pub const LOGISTICS_LEGENDARY_STAMINA: u32 = 150;
-// What each Scouting tier adds to its chosen kind's find rate, in basis points of that kind's base rate.
-pub const SCOUTING_UNCOMMON_BPS: u32 = 1000;
-pub const SCOUTING_RARE_BPS: u32 = 2000;
-pub const SCOUTING_EPIC_BPS: u32 = 3000;
-pub const SCOUTING_LEGENDARY_BPS: u32 = 4000;
 
-/// Damage dealt above common at a Battle tier, in the basis points Combat reads.
 pub fn battle_bonus_bps(tier: u8) -> u32 {
     match tier {
-        0 => panic!("invalid attribute tier"),
-        1 => 0,
+        0 => 0,
+        1 => BATTLE_COMMON_BPS,
         2 => BATTLE_UNCOMMON_BPS,
         3 => BATTLE_RARE_BPS,
         4 => BATTLE_EPIC_BPS,
@@ -27,10 +20,34 @@ pub fn battle_bonus_bps(tier: u8) -> u32 {
     }
 }
 
-/// What reaching a Scouting tier adds to the kind chosen for it, relative to that kind's base rate.
+pub const LOGISTICS_COMMON_STAMINA: u32 = 20;
+pub const LOGISTICS_UNCOMMON_STAMINA: u32 = 45;
+pub const LOGISTICS_RARE_STAMINA: u32 = 75;
+pub const LOGISTICS_EPIC_STAMINA: u32 = 110;
+pub const LOGISTICS_LEGENDARY_STAMINA: u32 = 150;
+
+pub fn logistics_stamina(tier: u8) -> u32 {
+    match tier {
+        0 => 0,
+        1 => LOGISTICS_COMMON_STAMINA,
+        2 => LOGISTICS_UNCOMMON_STAMINA,
+        3 => LOGISTICS_RARE_STAMINA,
+        4 => LOGISTICS_EPIC_STAMINA,
+        5 => LOGISTICS_LEGENDARY_STAMINA,
+        _ => panic!("invalid attribute tier"),
+    }
+}
+
+pub const SCOUTING_COMMON_BPS: u32 = 1000;
+pub const SCOUTING_UNCOMMON_BPS: u32 = 1500;
+pub const SCOUTING_RARE_BPS: u32 = 2000;
+pub const SCOUTING_EPIC_BPS: u32 = 2500;
+pub const SCOUTING_LEGENDARY_BPS: u32 = 3000;
+
 pub fn scouting_increment_bps(tier: u8) -> u32 {
     match tier {
-        0 | 1 => panic!("invalid attribute tier"),
+        0 => 0,
+        1 => SCOUTING_COMMON_BPS,
         2 => SCOUTING_UNCOMMON_BPS,
         3 => SCOUTING_RARE_BPS,
         4 => SCOUTING_EPIC_BPS,
@@ -39,34 +56,20 @@ pub fn scouting_increment_bps(tier: u8) -> u32 {
     }
 }
 
-// The share of an army's surviving troops Homecoming returns to the realm when the day ends, in basis points.
-pub const HOMECOMING_UNCOMMON_BPS: u32 = 300;
-pub const HOMECOMING_RARE_BPS: u32 = 900;
-pub const HOMECOMING_EPIC_BPS: u32 = 1800;
+pub const HOMECOMING_COMMON_BPS: u32 = 300;
+pub const HOMECOMING_UNCOMMON_BPS: u32 = 800;
+pub const HOMECOMING_RARE_BPS: u32 = 1400;
+pub const HOMECOMING_EPIC_BPS: u32 = 2100;
 pub const HOMECOMING_LEGENDARY_BPS: u32 = 3000;
 
-/// The share of its surviving troops an army returns home at a Homecoming tier, in basis points.
 pub fn homecoming_bps(tier: u8) -> u32 {
     match tier {
-        0 => panic!("invalid attribute tier"),
-        1 => 0,
+        0 => 0,
+        1 => HOMECOMING_COMMON_BPS,
         2 => HOMECOMING_UNCOMMON_BPS,
         3 => HOMECOMING_RARE_BPS,
         4 => HOMECOMING_EPIC_BPS,
         5 => HOMECOMING_LEGENDARY_BPS,
-        _ => panic!("invalid attribute tier"),
-    }
-}
-
-/// Maximum stamina above the troop's base at a Logistics tier.
-pub fn logistics_stamina(tier: u8) -> u32 {
-    match tier {
-        0 => panic!("invalid attribute tier"),
-        1 => 0,
-        2 => LOGISTICS_UNCOMMON_STAMINA,
-        3 => LOGISTICS_RARE_STAMINA,
-        4 => LOGISTICS_EPIC_STAMINA,
-        5 => LOGISTICS_LEGENDARY_STAMINA,
         _ => panic!("invalid attribute tier"),
     }
 }
@@ -597,6 +600,5 @@ pub struct SpeedConfig {
 }
 
 pub const WELL_STAMINA: u8 = 60;
-pub const TIER_STAMINA_REFILL: u8 = 30;
 
 pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = crate::days::FRONTIER_REPORT_GRACE_SECONDS;

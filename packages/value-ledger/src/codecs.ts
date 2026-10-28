@@ -158,14 +158,18 @@ export const decodeRegistration = (fields: readonly string[]): Registration => {
 
 /** WithdrawalPayment: paid, season_id, wallet, amount (low, high); an all-zero row has no report. */
 export const decodeWithdrawalPayment = (fields: readonly string[]) => {
-  if (fields.length !== 5) throw new Error("invalid_payment_record");
+  if (fields.length !== 7) throw new Error("invalid_payment_record");
+  const prizeRank = ledgerInteger(fields[5]!);
+  const prizeCount = ledgerInteger(fields[6]!);
+  if ((prizeRank === 0) !== (prizeCount === 0) || prizeRank > prizeCount || prizeCount > 100)
+    throw new Error("invalid_payment_report");
   const paid = ledgerBool(fields[0]!);
   const seasonId = ledgerInteger(fields[1]!);
   const wallet = unsigned(fields[2]!);
   const amount = ledgerU256(fields[3]!, fields[4]!);
-  if (amount === "0" && !paid && seasonId === 0 && wallet === 0n) return null;
+  if (amount === "0" && !paid && seasonId === 0 && wallet === 0n && prizeRank === 0) return null;
   if (amount === "0" || (paid && wallet === 0n) || (!paid && wallet !== 0n)) throw new Error("invalid_payment_report");
-  return { paid, seasonId, wallet: fields[2]!, amount };
+  return { paid, seasonId, wallet: fields[2]!, amount, prizeRank, prizeCount };
 };
 
 /**
@@ -258,8 +262,12 @@ export const readConfirmedLedgerHead = async (
 
 /** Published FrontierSeason backing and clock, shared by discovery and batched payments. */
 export const decodeFrontierSeason = (fields: readonly string[]) => {
-  if (fields.length !== 10 || !ledgerBool(fields[0]!)) throw new Error("invalid_frontier_season");
+  if (fields.length !== 14 || !ledgerBool(fields[0]!)) throw new Error("invalid_frontier_season");
+  const prizePool = ledgerU256(fields[10]!, fields[11]!);
+  const prizePaid = ledgerU256(fields[12]!, fields[13]!);
   return {
+    prizePool,
+    prizePaid,
     start: ledgerInteger(fields[1]!),
     end: ledgerInteger(fields[2]!),
     pool: ledgerU256(fields[3]!, fields[4]!),
@@ -271,10 +279,12 @@ export const decodeFrontierSeason = (fields: readonly string[]) => {
 };
 /**
  * Preset: entry_fee (2), protocol_cut_bps, chest_lords_bps, paid_fraction_bps, decay_bps, sword_price (2),
- * shield_price (2), mmr (6), day_unit, claim_window.
+ * shield_price (2), mmr (6), day_unit, claim_window, frontier_top_n, frontier_chest_bps.
  */
+export const LEDGER_PRESET_FIELD_COUNT = 20;
+
 export const decodeLedgerPreset = (fields: readonly string[]) => {
-  if (fields.length !== 18) throw new Error("invalid_ledger_preset");
+  if (fields.length !== LEDGER_PRESET_FIELD_COUNT) throw new Error("invalid_ledger_preset");
   return {
     entryFee: ledgerU256(fields[0]!, fields[1]!),
     protocolCut: ledgerInteger(fields[2]!),
@@ -287,6 +297,8 @@ export const decodeLedgerPreset = (fields: readonly string[]) => {
     rated: ledgerBool(fields[10]!),
     dayUnit: ledgerInteger(fields[16]!),
     claimWindow: ledgerInteger(fields[17]!),
+    frontierTopN: ledgerInteger(fields[18]!),
+    frontierChestBps: ledgerInteger(fields[19]!),
   };
 };
 

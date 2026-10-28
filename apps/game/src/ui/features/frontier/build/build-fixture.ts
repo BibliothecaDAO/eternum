@@ -35,6 +35,7 @@ export const realmBoard = () => {
       end_grace_seconds: 0,
       seed: "1",
     }),
+    set("0x1ab0", "GameRelease", { game_id: 1, release_id: 3, created_release_id: 3, preset_commitment: "0x1ab" }),
     ...preset.resources.map((rule) => set(`0x5${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 1 })),
     ...preset.buildings.map(({ category, rule }) =>
       set(`0x6${category}`, "BuildingRule", { ...rule, category, game_id: 1 }),
@@ -48,7 +49,11 @@ export const realmBoard = () => {
       population_step_bps: 2500,
       ration_step: String(PRECISION / 4n),
       training_gate_tier: 2,
-      castle_store_deploys: 2,
+      troop_store_deploys: 2,
+      settlement_resource_cap: 6000,
+      city_resource_cap: 18000,
+      kingdom_resource_cap: 40000,
+      empire_resource_cap: 80000,
     }),
     set("0x71", "ProductionRecipe", {
       game_id: 1,

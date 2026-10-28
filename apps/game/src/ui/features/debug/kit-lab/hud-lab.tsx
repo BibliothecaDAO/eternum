@@ -8,11 +8,10 @@ import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
-  DEPLOY_FILLS_FIRST,
   OFFLINE,
   PAYOUTS_PAUSED,
   startsOn,
-  type Tier,
+  type Rank,
   TRAINING_BUILDINGS,
   WITHDRAWALS_CLOSED,
   YOU,
@@ -46,11 +45,12 @@ import { buildingIcon, buildingName } from "@/ui/features/frontier/build/buildin
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
+import { MADE_STORES } from "@/ui/features/frontier/stores";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
-import { ownerDayLog } from "./today-log-fixture";
+import { ownerDayLog, siteUseDayLog } from "./today-log-fixture";
 import { SeasonList, type SeasonListRow } from "@/ui/features/frontier/board/season-list";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
@@ -68,7 +68,7 @@ import { RefillButton, RefillChip, RefillConfirm, StaminaRefill } from "@/ui/fea
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
-import { type HeldRealm, planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
+import { planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
 import { RealmsSheet } from "@/ui/features/frontier/value/realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
@@ -215,31 +215,22 @@ const RUIN_CARD: LabSite = {
   fight: WIN(2, 1_250, 1_520),
   pay: null,
   chest: { tier: 3, lords: 128 },
+  ruinChoice: { depth: "Surface" },
   xp: 145,
   verb: ATTACK_30,
 };
 
-/**
- * The value screens' fiction: a realm holding 1,240 LORDS, a linked wallet, and three Realms in it. LAB_PRESET is the
- * numbers page's proposal for the presets the Realm holder's labor reads (1,000 labor a Realm a game day, five Realms an
- * account a day); the live screen reads them from the preset when Herald serves it.
- */
-const LAB_PRESET = { realmLabor: 1_000, realmsADay: 5 };
+const LAB_PRESET = { realmLabor: 1_000 };
 const WALLET_ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f99f3c";
-const REALMS_HELD: readonly HeldRealm[] = [
-  { realmId: 1_088, name: "Stolsli", order: 9, claimedToday: true, inWallet: true },
-  { realmId: 4_512, name: "Uw Rohi", order: 3, claimedToday: false, inWallet: true },
-  { realmId: 6_077, name: "Mamaalan", order: 8, claimedToday: false, inWallet: true },
-];
-const SEVEN_REALMS: readonly HeldRealm[] = [
-  ...REALMS_HELD,
-  { realmId: 212, name: "Ilbarn", order: 1, claimedToday: false, inWallet: true },
-  { realmId: 3_301, name: "Kelvos", order: 5, claimedToday: false, inWallet: true },
-  { realmId: 5_990, name: "Orrin", order: 12, claimedToday: false, inWallet: true },
-  { realmId: 7_421, name: "Tamsel", order: 14, claimedToday: false, inWallet: true },
-];
 type LabWithdraw = { held: number; wallet: string | null; refusal?: string; step: WithdrawStep; amount: number };
-type LabRealms = { wallet: string | null; realms: readonly HeldRealm[]; labor: number; limit: number };
+type LabRealms = {
+  eligible: boolean;
+  claimed: boolean;
+  labor: number;
+  limit: number;
+  /** Once claimed, the ask for the next day's push: on a phone that can take it, or an iPhone's browser. */
+  ask?: "remind" | "install";
+};
 const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: WALLET_ADDRESS, step: { kind: "pick" }, amount: 500 };
 /** Day 13 at 22:30: an 8-hour day from 21:40 that ends in the night, at 05:40; tomorrow lasts 20h. */
 const NIGHT: DayClock = {
@@ -284,14 +275,21 @@ const tile = (
   standing: LabTile["standing"],
 ): LabTile => ({ key, icon, name, tip: "", gives, gems, takes, standing });
 /** A row's one gem, or its two sides' (make side first). */
-const gem = (tier: Tier): LabTile["gems"] => [{ tier }];
-const sides = (make: [LabTile["icon"], Tier], other: [LabTile["icon"], Tier]): LabTile["gems"] =>
+const gem = (tier: Rank): LabTile["gems"] => [{ tier }];
+const sides = (make: [LabTile["icon"], Rank], other: [LabTile["icon"], Rank]): LabTile["gems"] =>
   [make, other].map(([side, tier]) => ({ side, tier }));
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"], raised?: string) =>
-  ({ kind: "price", labor, short, raised }) as const;
-/** A training building waiting for the Barracks at Rare (III). */
-const LOCKED = { kind: "locked", gate: 3 } as const;
+  ({ kind: "price", prices: [{ of: "labor", amount: labor }], short, raised }) as const;
+/** A training building waiting for the two Barracks research purchases. */
+const LOCKED = { kind: "locked", purchases: 2 } as const;
 
+const trainingPrice: LabTile["standing"] = {
+  kind: "price",
+  prices: [
+    { of: "essence", amount: 6_000 },
+    { of: "labor", amount: 1_500 },
+  ],
+};
 /**
  * A city's build sheet, as the owner's realm stood on 27 October: Farm and Workshop researched twice on their make
  * side, Barracks once on Drill, the War hall and Hearth already standing, a fifth farm at 6,800 labor, and a second
@@ -303,7 +301,7 @@ const BUILD_TILES: LabTile[] = [
     "farm",
     "Farm",
     { icon: "wheat", value: "+6.3/min" },
-    sides(["fields", 3], ["granary", 1]),
+    sides(["fields", 2], ["granary", 0]),
     1,
     price(6_800),
   ),
@@ -312,7 +310,7 @@ const BUILD_TILES: LabTile[] = [
     "workshop",
     "Workshop",
     { icon: "labor", value: "+0.83/min" },
-    sides(["tools", 3], ["storehouse", 1]),
+    sides(["tools", 2], ["storehouse", 0]),
     1,
     price(34_000, { of: "labor", wait: 16 * HOUR }, "Costs more with each one standing: 1"),
   ),
@@ -321,25 +319,25 @@ const BUILD_TILES: LabTile[] = [
     "barracks",
     "Barracks",
     { icon: "troops", value: "+13/min" },
-    sides(["drill", 2], ["rations", 2]),
+    sides(["drill", 1], ["rations", 1]),
     3,
     price(6_800),
   ),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(5_100)),
-  tile("war", "war-hall", TRAINING_BUILDINGS[0], { icon: "order-rage" }, gem(2), 2, { kind: "built" }),
-  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { icon: "order-skill" }, gem(2), 2, price(3_000)),
-  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { icon: "order-detection" }, gem(2), 2, price(3_000)),
-  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { icon: "order-enlightenment" }, gem(2), 2, { kind: "built" }),
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], { icon: "order-rage" }, gem(1), 2, { kind: "built" }),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { icon: "order-skill" }, gem(1), 2, trainingPrice),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { icon: "order-detection" }, gem(1), 2, trainingPrice),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { icon: "order-enlightenment" }, gem(1), 2, { kind: "built" }),
 ];
-/** A fresh realm: the training buildings locked behind the Barracks at Rare. */
+/** A fresh realm: the training buildings locked behind the two Barracks research purchases. */
 const EARLY_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, sides(["fields", 1], ["granary", 1]), 1, price(800)),
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, sides(["fields", 0], ["granary", 0]), 1, price(800)),
   tile(
     "workshop",
     "workshop",
     "Workshop",
     { icon: "labor", value: "+0.83/min" },
-    sides(["tools", 1], ["storehouse", 1]),
+    sides(["tools", 0], ["storehouse", 0]),
     1,
     price(2_000),
   ),
@@ -348,12 +346,12 @@ const EARLY_TILES: LabTile[] = [
     "barracks",
     "Barracks",
     { icon: "troops", value: "+1.7/min" },
-    sides(["drill", 1], ["rations", 1]),
+    sides(["drill", 0], ["rations", 0]),
     3,
     price(800),
   ),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(300)),
-  // The training buildings are still at Common (I), each locked behind the Barracks.
+  // The training buildings are grant Common (I) when built, each locked behind the Barracks.
   tile("war", "war-hall", TRAINING_BUILDINGS[0], { icon: "order-rage" }, gem(1), 2, LOCKED),
   tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { icon: "order-skill" }, gem(1), 2, LOCKED),
   tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { icon: "order-detection" }, gem(1), 2, LOCKED),
@@ -372,7 +370,7 @@ const CASTLE_SIDE = (level: number, limit: number) => ({
 type LabArmySheet = { lords?: number; confirm?: boolean; stamina?: number };
 
 /** A city's three stores: 18,000 a store, wheat lifted by Fields, troops by Drill. */
-const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "icon" | "spentAt">): StoreLine => ({
+const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "kind">): StoreLine => ({
   perHour: undefined,
   held: undefined,
   limit: 18_000,
@@ -382,9 +380,9 @@ const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "icon" | "spentAt"
   ...overrides,
 });
 const STORE_LINES: StoreLine[] = [
-  line({ icon: "wheat", spentAt: "deploy", perHour: 1_500, sides: ["fields"], held: 4_410, fullIn: 9 * HOUR + 4 * 60 }),
-  line({ icon: "labor", spentAt: "realm", perHour: 500, held: 9_640, fullIn: 16 * HOUR + 44 * 60 }),
-  line({ icon: "troops", spentAt: "deploy", perHour: 600, sides: ["drill"], held: 1_200, fullIn: 28 * HOUR }),
+  line({ kind: "wheat", perHour: 1_500, sides: ["fields"], held: 4_410, fullIn: 9 * HOUR + 4 * 60 }),
+  line({ kind: "labor", perHour: 500, held: 9_640, fullIn: 16 * HOUR + 44 * 60 }),
+  line({ kind: "troops", perHour: 600, sides: ["drill"], held: 1_200, fullIn: 28 * HOUR }),
 ];
 
 /** Today's lines, each written by the day log itself from the owner's 22 October stories (today-log-fixture.ts). */
@@ -435,7 +433,7 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
  * A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. Today's
  * share is 12 LORDS and a common chest holds two shares.
  */
-const SEASON_POOL_FIGURES = { lords: 1_000_000, today: 50_000 };
+const SEASON_POOL_FIGURES = { lords: 700_000, prize: { lords: 300_000, topN: 10 }, today: 35_000 };
 const SEASON_COMMON_CHEST = { lords: 24 };
 const OWN_ROW: SeasonListRow = {
   key: "you",
@@ -512,6 +510,7 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
 
 const STATES = {
   ...FIGHT_STATES,
+  "today-sites": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-sites" },
   merge: { clock: CLOCK, stores: STORES, armies: ARMIES, merge: true },
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   "armies-open": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 2) },
@@ -594,6 +593,23 @@ const STATES = {
     site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
   },
   "site-ruin": { clock: CLOCK, stores: STORES, armies: ARMIES, site: RUIN_CARD },
+  // The owner's Titanwatch on 28 October, no army selected: a named ruin, its Ammit, its chest and XP on one row.
+  "site-ruin-armyless": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...RUIN_CARD,
+      name: "Titanwatch",
+      beast: { name: "Ammit", beast: "ammit", combatClass: "Knight" },
+      army: null,
+      guard: 2_300,
+      fight: undefined,
+      chest: { tier: 2, lords: 100 },
+      xp: 119,
+      verb: null,
+    },
+  },
   "site-ruin-lose": {
     clock: CLOCK,
     stores: STORES,
@@ -649,26 +665,12 @@ const STATES = {
       verb: { ...ATTACK_30, refused: "The army is on battle cooldown" },
     },
   },
-  "site-pick": {
+  // No army selected: what the site is and pays, its guard beside them (owner, 28 October 2026: "agree with no picker").
+  "site-armyless": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    site: {
-      ...CAMP_CARD,
-      army: null,
-      verb: null,
-      choices: [
-        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180, 492), onPick: () => undefined },
-        {
-          label: "Army 2",
-          art: ARMY_CHIP.art,
-          troops: 100,
-          fight: LOSE(1, 100, 1_034),
-          onPick: () => undefined,
-        },
-        { label: "Army 3", art: ARMY_CHIP.art, troops: 600, fight: undefined, onPick: () => undefined },
-      ],
-    },
+    site: { ...CAMP_CARD, army: null, fight: undefined, verb: null },
   },
   "site-short": {
     clock: CLOCK,
@@ -718,6 +720,7 @@ const STATES = {
     armies: [],
   },
   build: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build" },
+  "build-training": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-training" },
   "build-early": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-early" },
   castle: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle" },
   "castle-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle-short" },
@@ -793,7 +796,7 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: [],
-    storeCard: line({ icon: "troops", spentAt: "deploy", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
+    storeCard: line({ kind: "troops", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
   },
   research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: true },
   // A refused order's notice, through the game's own notice store: on a desktop it stands in the rail under Next up.
@@ -942,62 +945,43 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240, realms: 2_000 },
-    realms: { wallet: WALLET_ADDRESS, realms: REALMS_HELD, labor: 9_640, limit: 18_000 },
+    purse: { lords: 1240 },
+    realms: { eligible: true, claimed: false, labor: 9640, limit: 18000 },
   },
   "realms-claimed": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240 },
-    realms: {
-      wallet: WALLET_ADDRESS,
-      realms: REALMS_HELD.map((realm) => ({ ...realm, claimedToday: true })),
-      labor: 9_640,
-      limit: 18_000,
-    },
+    purse: { lords: 1240 },
+    realms: { eligible: true, claimed: true, labor: 9640, limit: 18000 },
+  },
+  "realms-remind": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { eligible: true, claimed: true, labor: 9640, limit: 18000, ask: "remind" },
+  },
+  "realms-install": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { eligible: true, claimed: true, labor: 9640, limit: 18000, ask: "install" },
   },
   "realms-full": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240, realms: 2_000 },
-    realms: { wallet: WALLET_ADDRESS, realms: REALMS_HELD, labor: 17_600, limit: 18_000 },
-  },
-  "realms-cap": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1_240, realms: 4_000 },
-    realms: { wallet: WALLET_ADDRESS, realms: SEVEN_REALMS, labor: 9_640, limit: 18_000 },
-  },
-  // The second Realm was refused by a claim: the wallet no longer holds it.
-  "realms-sold": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1_240, realms: 1_000 },
-    realms: {
-      wallet: WALLET_ADDRESS,
-      realms: REALMS_HELD.map((realm) => (realm.realmId === 4_512 ? { ...realm, inWallet: false } : realm)),
-      labor: 9_640,
-      limit: 18_000,
-    },
+    purse: { lords: 1240 },
+    realms: { eligible: true, claimed: false, labor: 17600, limit: 18000 },
   },
   "realms-none": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240 },
-    realms: { wallet: WALLET_ADDRESS, realms: [], labor: 9_640, limit: 18_000 },
-  },
-  /** No wallet linked: the sheet says what Realms are for, then asks for the wallet (live-qa-night-1 P3-3). */
-  "realms-no-wallet": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1_240 },
-    realms: { wallet: null, realms: [], labor: 9_640, limit: 18_000 },
+    purse: { lords: 1240 },
+    realms: { eligible: false, claimed: false, labor: 9640, limit: 18000 },
   },
 } as const;
 
@@ -1007,7 +991,7 @@ type LabState = {
   refill?: number;
   /** What Next up reads beyond the state's armies, selection, hour and stores. */
   nextUp?: Partial<NextUpFacts>;
-  results?: "today" | "today-earlier" | "today-failed" | "over" | "over-strong";
+  results?: "today" | "today-sites" | "today-earlier" | "today-failed" | "over" | "over-strong";
   /** The realm's LORDS on the season-over card: still to withdraw, or past the season's close. */
   seasonLords?: "open" | "closed";
   season?: "list" | "detail" | "unpublished" | "loading" | "failed";
@@ -1024,7 +1008,7 @@ type LabState = {
    * realm holding 500 LORDS.
    */
   picked?: "owner" | "rested" | "pay";
-  realmView?: "build" | "build-early" | "castle" | "castle-short" | "full";
+  realmView?: "build-training" | "build" | "build-early" | "castle" | "castle-short" | "full";
   /** A building tapped on the realm's board: its own card. */
   building?: keyof typeof LAB_BUILDINGS;
   dayDone?: Parameters<typeof DayDoneCard>[0];
@@ -1069,7 +1053,12 @@ export const HudLab = () => {
   useHudMode("frontier");
   useLabNotice(lab.notice);
   const chatPane = useRef<HTMLElement>(null);
-  const chat = lab.chat && <ChatPage gameZoneId="lab-game" signedIn onSignIn={noop} pane={chatPane} />;
+  // Chat reads the game's players (its mentions), so the phone's page stands in the lab game, as the desktop's does.
+  const chat = lab.chat && (
+    <LabGame preset={FRONTIER_PRESET}>
+      {() => <ChatPage gameZoneId="lab-game" signedIn onSignIn={noop} pane={chatPane} />}
+    </LabGame>
+  );
   if (lab.merge)
     return (
       <div data-lab="frontier-merge" className="ui min-h-screen bg-hud-surface flex items-center justify-center p-3">
@@ -1161,9 +1150,7 @@ export const HudLab = () => {
                 {...lab.order}
                 revealYield={500}
                 xp={2}
-                refill={
-                  lab.refill === undefined ? undefined : <RefillButton price={140} held={lab.refill} onRefill={noop} />
-                }
+                refill={lab.refill === undefined ? undefined : <RefillButton held={lab.refill} onRefill={noop} />}
                 onCancel={noop}
                 onGo={noop}
               />
@@ -1191,13 +1178,20 @@ export const HudLab = () => {
         {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} />}
         {lab.dayDone && <LabDaySummary card={lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
-        {(lab.realmView === "build" || lab.realmView === "build-early") && (
+        {(lab.realmView === "build" || lab.realmView === "build-early" || lab.realmView === "build-training") && (
           <BuildView
-            population={lab.realmView === "build" ? LAB_POPULATION : { used: 0, total: 6 }}
-            tiles={lab.realmView === "build" ? BUILD_TILES : EARLY_TILES}
-            chosen={lab.realmView === "build" ? 0 : 2}
+            population={lab.realmView === "build-early" ? { used: 0, total: 6 } : LAB_POPULATION}
+            tiles={lab.realmView === "build-early" ? EARLY_TILES : BUILD_TILES}
+            chosen={lab.realmView === "build-training" ? 5 : lab.realmView === "build" ? 0 : 2}
             onChoose={noop}
-            prices={[{ of: "labor", amount: lab.realmView === "build" ? 6_800 : 800 }]}
+            prices={
+              lab.realmView === "build-training"
+                ? [
+                    { of: "essence", amount: 6_000 },
+                    { of: "labor", amount: 1_500 },
+                  ]
+                : [{ of: "labor", amount: lab.realmView === "build" ? 6_800 : 800 }]
+            }
             refusal={undefined}
             sending={false}
             onBuild={noop}
@@ -1207,17 +1201,18 @@ export const HudLab = () => {
         {(lab.realmView === "castle" || lab.realmView === "castle-short") && (
           <CastleView
             now={CASTLE_SIDE(1, 18_000)}
-            next={CASTLE_SIDE(2, 50_000)}
             laborRate="+1.7/min"
-            prices={[{ of: "labor", amount: 15_000 }]}
-            refusal={
-              lab.realmView === "castle-short"
-                ? { reason: { kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 } }
-                : undefined
-            }
             research={<LabCastleResearch />}
-            sending={false}
-            onUpgrade={noop}
+            upgrade={{
+              next: CASTLE_SIDE(2, 50_000),
+              prices: [{ of: "labor", amount: 15_000 }],
+              refusal:
+                lab.realmView === "castle-short"
+                  ? { reason: { kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 } }
+                  : undefined,
+              sending: false,
+              onUpgrade: noop,
+            }}
             onClose={noop}
           />
         )}
@@ -1241,6 +1236,11 @@ const useLabNotice = (notice: string | undefined) => {
 
 /** Deploy on the fiction, live: 2 wheat a troop. */
 const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
+  const [slot, setSlot] = useState<number | null>(null);
+  const open = [
+    { slot: 1, number: 2, inherited: true, start: { current: 40, max: 150, perExplore: LAB_EXPLORE } },
+    { slot: 2, number: 3, inherited: false, start: { current: 150, max: 150, perExplore: LAB_EXPLORE } },
+  ];
   const [count, setCount] = useState(deploy.count);
   const most = Math.min(deploy.troopsAtHome, Math.floor(deploy.wheat / 2));
   return (
@@ -1250,12 +1250,12 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       count={count}
       amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
       onCount={setCount}
-      // The next army fills a slot whose army was released today with 40 stamina left.
-      start={{ slot: 2, number: 3, inherited: true, start: { current: 40, max: 150, perExplore: LAB_EXPLORE } }}
+      start={open.find((entry) => entry.slot === slot)}
+      slots={{ allowed: 3, open, onPick: setSlot }}
       troopsWait={deploy.troopsWait}
       wheatCost={count * 2}
       tile="open"
-      canDeploy={count > 0}
+      canDeploy={count > 0 && slot !== null}
       sending={false}
       onDeploy={noop}
       wheatShort={undefined}
@@ -1291,7 +1291,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
       troops: 1_342,
       stamina: { current: rested ? 140 : 14, max: 140, perExplore: 20 },
       secondsToFull: rested ? 0 : 4 * HOUR + 11 * 60,
-      canBuyTier: !rested,
+      canSpendSkillPoint: !rested,
       tiers: { battle: 3, logistics: 2, scouting: 2, homecoming: 1 },
     };
     return { army, lords: lab.picked === "pay" ? 500 : 100 };
@@ -1306,7 +1306,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
       troops: army.troops ?? 0,
       stamina: { current, max: 150, perExplore: LAB_EXPLORE },
       secondsToFull: (150 - current) * 60,
-      canBuyTier: army.tier === true,
+      canSpendSkillPoint: army.tier === true,
       tiers: { battle: 2, logistics: 3, scouting: 2, homecoming: 1 },
     },
     lords: lab.purse?.lords ?? LAB_LORDS,
@@ -1368,7 +1368,7 @@ type LabBuilding = { category: BuildingType; row: number; standing: number; make
 /** A building's card on the realm some days in, its Delete drawn as it rests. */
 const LabBuildingCard = ({ building }: { building: keyof typeof LAB_BUILDINGS }) => {
   const { category, row, standing, makes, essence = MID_REALM.essence }: LabBuilding = LAB_BUILDINGS[building];
-  const node = readResearchTree({ ...MID_REALM, essence }).find((each) => each.row === row && each.maxTier === 4);
+  const node = readResearchTree({ ...MID_REALM, essence }).find((each) => each.row === row && each.maxTier === 5);
   return (
     <BuildingCardView
       name={buildingName(category)}
@@ -1376,10 +1376,12 @@ const LabBuildingCard = ({ building }: { building: keyof typeof LAB_BUILDINGS })
       standing={standing}
       makes={makes}
       node={node}
-      sending={false}
-      fix={() => undefined}
-      onResearch={noop}
-      demolish={<HudIconButton kind="danger" icon="trash" label="Delete" title="Delete" size="sm" onClick={noop} />}
+      orders={{
+        sending: false,
+        fix: () => undefined,
+        onResearch: noop,
+        demolish: <HudIconButton kind="danger" icon="trash" label="Delete" title="Delete" size="sm" onClick={noop} />,
+      }}
       onClose={noop}
     />
   );
@@ -1454,8 +1456,8 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
                 lords: lab.purse?.lords ?? LAB_LORDS,
                 labor: lab.purse?.realms,
                 storeCards: lab.storeCard && {
-                  kinds: ["wheat", "labor", "troops"],
-                  open: lab.storeCard.icon,
+                  kinds: MADE_STORES,
+                  open: lab.storeCard.kind,
                   onToggle: noop,
                   card: <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />,
                 },
@@ -1540,7 +1542,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             returnsHome={returnsHome(army)}
             stamina={stamina(army)}
             xp={army.xp}
-            canBuyTier={army.tier === true}
+            canSpendSkillPoint={army.tier === true}
             selected={lab.selected === index}
             onPick={lab.visiting ? undefined : noop}
           />
@@ -1561,7 +1563,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
           stamina={stamina(army)}
           troops={army.troops}
           returnsHome={returnsHome(army)}
-          canBuyTier={army.tier === true}
+          canSpendSkillPoint={army.tier === true}
           selected={lab.selected === index}
           onPick={noop}
         />
@@ -1574,8 +1576,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
 };
 
 /**
- * The lab realm's open slots as the dock reads them: each starts its army on 60 of 150 stamina, the first is Deploy's,
- * and every later one waits for it.
+ * The lab realm's open slots as the dock reads them: each starts its army on 60 of 150 stamina and can be chosen.
  */
 const labSlots = (lab: LabState, open: number) =>
   Array.from({ length: open }, (_, index) => {
@@ -1587,7 +1588,6 @@ const labSlots = (lab: LabState, open: number) =>
         bar: { current: 60, max: 150, perExplore: LAB_EXPLORE },
         words: `${startsOn(`${ARMY} ${number}`, "60/150", true)}.`,
       },
-      waits: index === 0 ? undefined : { number, words: DEPLOY_FILLS_FIRST(lab.armies.length + 1) },
     };
   });
 
@@ -1630,7 +1630,7 @@ const LabResults = ({
       clock={CLOCK}
       totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}
       armiesToUpgrade={2}
-      lines={readTodayLog()}
+      lines={results === "today-sites" ? siteUseDayLog(NOW) : readTodayLog()}
       history={results === "today-failed" ? "failed" : "whole"}
       onRetry={noop}
       onEarlier={noop}
@@ -1661,23 +1661,23 @@ const LabWithdrawSheet = ({ withdraw }: { withdraw: LabWithdraw }) => {
 /** Realms on the fiction, planned with the lab's presets against the labor store. */
 const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
   <RealmsSheet
-    wallet={realms.wallet}
     plan={planRealmLabor({
-      realms: realms.realms,
-      perRealm: LAB_PRESET.realmLabor,
-      cap: LAB_PRESET.realmsADay,
-      labor: { held: realms.labor, limit: realms.limit },
+      eligible: realms.eligible,
+      claimed: realms.claimed,
+      amount: LAB_PRESET.realmLabor,
+      essence: 0,
+      held: realms.labor,
+      limit: realms.limit,
     })}
-    perRealm={LAB_PRESET.realmLabor}
-    cap={LAB_PRESET.realmsADay}
-    labor={realms.labor}
+    dailyAmount={LAB_PRESET.realmLabor}
+    dailyEssence={0}
+    mark={null}
     secondsLeft={CLOCK.secondsLeft}
+    nextDay={(CLOCK.day ?? 0) + 1}
+    ask={realms.ask ? { kind: realms.ask, busy: false, act: noop } : null}
     sending={false}
-    adding={false}
     onClaim={noop}
-    onAdd={noop}
     onRealm={noop}
-    onLinkWallet={noop}
     onClose={noop}
   />
 );

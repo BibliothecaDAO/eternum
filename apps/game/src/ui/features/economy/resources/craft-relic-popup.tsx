@@ -1,3 +1,4 @@
+import { categoryCan } from "@/ui/lib/structure-capabilities";
 import { knownAmount } from "@/ui/utils/utils";
 import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -19,7 +20,7 @@ import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ID, ResourcesIds, StructureType, formatCharge, formatAmount } from "@bibliothecadao/types";
+import { ID, ResourcesIds, formatCharge, formatAmount } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { useEffect, useMemo, useState } from "react";
 import { HeldRelic } from "@/ui/features/relics/components/relic-activation-shared";
@@ -226,8 +227,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   const seasonStarted = Number(seasonConfig.startMainAt) === 0 || nowSeconds >= Number(seasonConfig.startMainAt);
   const seasonNotEnded = Number(seasonConfig.endAt) === 0 || nowSeconds <= Number(seasonConfig.endAt);
 
-  const canCraftStructureType =
-    structureCategory === StructureType.Realm || structureCategory === StructureType.Village;
+  const canCraftStructureType = categoryCan(structureCategory, "craftsRelics");
   const isOwnedByCaller = structureInfo.isMine;
   const hasEnoughResearch = researchBalance !== undefined && researchBalance >= configuredResearchCost;
   const missingResearch =

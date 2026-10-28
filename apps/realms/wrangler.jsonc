@@ -22,6 +22,7 @@
       "vars": {
         "ENVIRONMENT": "staging",
         "BASE_URL": "https://play.dev-realms.party",
+        "MARKETPLACE_API_URL": "https://web-production-2a4cb.up.railway.app/api/marketplace",
       },
       "d1_databases": [{ "binding": "DB", "database_name": "realms-identity-staging", "migrations_dir": "migrations" }],
       "ratelimits": [
@@ -52,6 +53,7 @@
       "vars": {
         "ENVIRONMENT": "production",
         "BASE_URL": "https://play.realms.party",
+        "MARKETPLACE_API_URL": "https://web-production-2a4cb.up.railway.app/api/marketplace",
       },
       "d1_databases": [
         { "binding": "DB", "database_name": "realms-identity-production", "migrations_dir": "migrations" },

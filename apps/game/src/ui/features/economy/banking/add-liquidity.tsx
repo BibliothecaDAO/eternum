@@ -1,3 +1,5 @@
+import { refusesTroopTrade } from "@/ui/lib/structure-capabilities";
+import { VILLAGE_TROOP_TRADE_REFUSED } from "@/ui/design-system/kit/words";
 import { configManager } from "@bibliothecadao/eternum";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
@@ -14,13 +16,12 @@ import {
   divideByPrecision,
   getBalance,
   getClosestBank,
-  isMilitaryResource,
   MarketManager,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress, ID, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ContractAddress, ID, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -107,9 +108,10 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
       });
   };
 
-  const isVillageAndMilitaryResource =
-    store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
-      StructureType.Village && isMilitaryResource(resourceId);
+  const isVillageAndMilitaryResource = refusesTroopTrade(
+    store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category,
+    resourceId,
+  );
   // A deposit acts at once; in Frontier it asks first, with what it deposits.
   const pressAdd = () => (confirmsLoss ? setOpenConfirmation(true) : onAddLiquidity());
 
@@ -141,7 +143,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
         <LiquidityTableHeader />
         <LiquidityResourceRow playerStructureIds={playerStructureIds} entityId={entityId} resourceId={resourceId} />
       </div>
-      {isVillageAndMilitaryResource && <HudNotice tone="bad" line="Villages cannot trade military resources." />}
+      {isVillageAndMilitaryResource && <HudNotice tone="bad" line={VILLAGE_TROOP_TRADE_REFUSED} />}
       {!isNotZero && <HudNotice tone="warn" line="Warning: Amount must be greater than zero" />}
       {!hasEnough && <HudNotice tone="bad" line="Warning: Not enough resources for this operation" />}
       <HudButton

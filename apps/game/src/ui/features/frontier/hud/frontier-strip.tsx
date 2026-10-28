@@ -2,10 +2,10 @@ import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { bankedCounterTarget } from "@/ui/motion/moments/banked-flight";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { ResourcesIds } from "@bibliothecadao/types";
 import type { ComponentProps } from "react";
 
 import { useRealmStores } from "../realm-stores";
+import { FRONTIER_STORES, STORE_KINDS, type StoreKind } from "../stores";
 import { dayClock } from "./day-clock";
 import { StatusStrip, type StoreReading } from "./status-strip";
 
@@ -36,7 +36,7 @@ export const FrontierStrip = ({
 /** Each store of the realm (the strip's plates, the realm panel's rings): its reading and where a payout of it lands. */
 export const useStoreReadings = (realm: NativeRows["Structure"] | null, rules: ExpeditionRules): StoreReading[] => {
   const stores = useRealmStores(realm, rules);
-  return PLATES.map(({ kind, flyTarget }) => {
+  return STORE_KINDS.map((kind) => {
     const store = stores?.[kind];
     return {
       kind,
@@ -45,15 +45,12 @@ export const useStoreReadings = (realm: NativeRows["Structure"] | null, rules: E
       perHour: store?.perHour,
       fullIn: store?.fullIn,
       tone: store?.tone ?? "calm",
-      flyTarget,
+      flyTarget: flyTarget(kind),
     };
   });
 };
 
-const PLATES: { kind: StoreReading["kind"]; flyTarget: string }[] = [
-  { kind: "essence", flyTarget: bankedCounterTarget(ResourcesIds.Essence) },
-  { kind: "labor", flyTarget: bankedCounterTarget(ResourcesIds.Labor) },
-  { kind: "wheat", flyTarget: bankedCounterTarget(ResourcesIds.Wheat) },
-  // Troops at home take no flight of their own; their plate still names a landing target so the strip stays uniform.
-  { kind: "troops", flyTarget: "troops-at-home" },
-];
+/** Where a payout of a store lands: its banked counter. Troops at home take no flight of their own; their plate still
+ * names a landing target so the strip stays uniform. */
+const flyTarget = (kind: StoreKind): string =>
+  kind === "troops" ? "troops-at-home" : bankedCounterTarget(FRONTIER_STORES[kind].resource);

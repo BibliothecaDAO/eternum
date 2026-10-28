@@ -61,7 +61,7 @@ function projectLaunch(schema: NativeSchema, registration: string[], params: Ret
       releaseSchemas: { "1": schema.identity },
     },
   });
-  const launch = decoder.decodeRowSet("GameRelease", ["1"], ["1", "1"]);
+  const launch = decoder.decodeRowSet("GameRelease", ["1"], ["1", "1", "1"]);
   const overrides = {
     registration_start: params.registration_start,
     biome_climate: params.biome_climate,

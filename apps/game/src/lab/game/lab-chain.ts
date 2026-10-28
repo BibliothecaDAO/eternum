@@ -5,8 +5,8 @@ import { answerLabChat } from "@/shell/lab/lab-chat";
 import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
-import { NativeFactStore, nativeModelDefinition } from "@bibliothecadao/eternum/game-client";
-import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import type { HeraldFrontierLeaderboardEntry, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import type { AccountInterface } from "starknet";
 
@@ -51,8 +51,12 @@ export interface LabScenario {
   answer: (command: LabCommand, chain: NativeFactStore, now: number) => LabFact[];
   /** The game's history, newest first, on the lab's clock: Herald serves each event once its time has come. */
   history?: HeraldHistoryEvent[];
+  /** Sites Herald holds outside the player's scope (wire rows), served only by its site read: fights far from them. */
+  farSites?: Record<string, unknown>[];
   /** The lab second before which Herald's history holds its answers back (a slow Herald); none: it answers at once. */
   historyAnswersAt?: number;
+  /** The season board's realms, as Herald ranks them; none: the board cannot be read, as an offline shard's. */
+  board?: HeraldFrontierLeaderboardEntry[];
   /** What the player's device holds as the game starts (its storage); set once at the start, never on a reload. */
   startDevice?: () => void;
 }
@@ -72,7 +76,8 @@ declare global {
   }
 }
 
-const wire = (value: unknown): unknown =>
+/** A row as Herald carries it on the wire: its bigints as decimal strings. */
+export const wire = (value: unknown): Record<string, unknown> =>
   JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
 
 /** Every row of a store as Herald carries it. */
@@ -106,7 +111,8 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   const chain = new NativeFactStore();
   chain.applyFacts(rowsOf(scenario.store) as never);
   const now = () => scenario.startsAt + Math.floor((Date.now() - startedAt) / 1000);
-  const herald = new LabHerald(chain, now, () => (record.streams += 1), nativeModelDefinition(nativeBindings));
+  const events = new Set(nativeBindings.events.map((event) => event.name));
+  const herald = new LabHerald(chain, events, now, () => (record.streams += 1));
   answerDirectory(now, (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()));
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
@@ -126,7 +132,7 @@ const answerDirectory = (now: () => number, read: (url: URL) => unknown) => {
   const manifest = {
     version: 1,
     chainId: LAB_GAME.chainId,
-    releaseSchemas: { "1": nativeFactSchemaIdentity },
+    releaseSchemas: { "3": nativeFactSchemaIdentity },
     rpcUrl: LAB_SHARD_RPC,
     accountClassHash: LAB_ACCOUNT_CLASS,
     contracts: { games: "0x1ab" },
@@ -143,7 +149,7 @@ const answerDirectory = (now: () => number, read: (url: URL) => unknown) => {
     expedition: { day_unit_seconds: 3600, seed: "1" },
     clock: { start_settling_at: 1, start_main_at: 100, end_at: LAB_GAME_ENDS_AT, end_grace_seconds: 0 },
     player_count: 1,
-    player_state: { registered: true, settled: true, roster_wallet: null, structures: [] },
+    player_state: { registered: true, settled: true, roster_wallet: null, held_realm_id: null, structures: [] },
     roster_count: 0,
     preset_id: LAB_GAME.presetId,
     registration: null,
@@ -171,7 +177,7 @@ const answerDirectory = (now: () => number, read: (url: URL) => unknown) => {
     if (url.pathname === "/games")
       return json({ chain: LAB_GAME.chainId, world_address: "0x1ab", confirmed_block: now(), games: [game] });
     const answer = read(url);
-    if (answer === NOT_CLOSED) return Promise.resolve(new Response(null, { status: 404 }));
+    if (answer === NOT_FOUND) return Promise.resolve(new Response(null, { status: 404 }));
     if (answer instanceof Promise) return answer.then(json);
     if (answer !== undefined) return json(answer);
     return Promise.reject(new TypeError(`The lab shard does not serve ${url.pathname}`));
@@ -198,15 +204,15 @@ const answerAccountJoin = (rpcUrl: string, accountClassHash: string) =>
     callContract: async () => ["0x1"],
   });
 
-/** Herald's answer for a day that has not closed (day_ranks_not_closed). */
-const NOT_CLOSED = Symbol("not closed");
+/** Herald's 404: a day that has not closed (day_ranks_not_closed), a site it does not hold. */
+const NOT_FOUND = Symbol("not found");
 /** Herald's largest history page. */
 const HISTORY_PAGE = 500;
 
 /**
  * The lab shard's Herald reads: the game's history as Herald's history filters it (a player's events: the ones naming
- * them; then one story or model, newest first, a page at a time), and each closed day's ranks, the lab's player first.
- * Undefined for any other read.
+ * them; then one story or model, newest first, a page at a time), each closed day's ranks, the lab's player first, and
+ * the season board where the scenario has one. Undefined for any other read.
  */
 const answerHeraldRead = (
   url: URL,
@@ -236,11 +242,19 @@ const answerHeraldRead = (
     );
     return { complete_through_block: confirmedBlock, items: items.slice(offset, offset + limit), limit, offset };
   }
+  const site = url.pathname.match(new RegExp(`^${game}/sites/(\\d+)$`));
+  if (site) {
+    const id = Number(site[1]);
+    const held = chain.get("ExpeditionSite", { game_id: LAB_GAME.gameId, entity_id: id });
+    return held ? wire(held) : (scenario.farSites?.find((row) => Number(row.entity_id) === id) ?? NOT_FOUND);
+  }
+  if (url.pathname === `${game}/leaderboard` && scenario.board)
+    return { game_id: String(LAB_GAME.gameId), mode: "frontier", entries: scenario.board };
   const ranks = url.pathname.match(new RegExp(`^${game}/days/(\\d+)/ranks$`));
   if (ranks) {
     const rules = readExpeditionRules(chain, LAB_GAME.gameId);
     const today = rules && dayOf(rules, now());
-    if (!today || Number(ranks[1]) >= today.index) return NOT_CLOSED;
+    if (!today || Number(ranks[1]) >= today.index) return NOT_FOUND;
     return {
       game_id: String(LAB_GAME.gameId),
       day_index: Number(ranks[1]),
@@ -346,10 +360,10 @@ class LabHerald {
 
   constructor(
     private readonly chain: NativeFactStore,
+    /** The schema's event models: they ride a diff to the game and are never the chain's rows. */
+    private readonly events: ReadonlySet<string>,
     private readonly now: () => number,
     private readonly opened: () => void,
-    /** Each model's definition, as the game's transport reads it: an event's rows are streamed, never kept. */
-    private readonly modelDefinition: (name: string) => { deletion: "component" | "event-ephemeral" },
   ) {}
 
   confirmedBlock(): number {
@@ -421,18 +435,30 @@ class LabHerald {
     }
   }
 
-  /** A command's facts land pre-confirmed in the next block, its events with them as Herald streams them, then its status. */
-  apply(hash: string, facts: LabFact[]) {
-    this.chain.applyFacts(
-      facts.filter((fact) => this.modelDefinition(fact.model).deletion !== "event-ephemeral") as never,
-    );
+  /**
+   * A command's facts land pre-confirmed in the next block, then its status. Its events ride the same diff, each with
+   * its place in the transaction, as Herald stamps them (a site's payout is paired with its battle by that place).
+   */
+  apply(hash: string, answered: LabFact[]) {
+    const facts = answered.filter((fact) => !this.events.has(fact.model));
+    this.chain.applyFacts(facts as never);
     const block = ++this.block;
+    const events = answered
+      .filter((fact) => this.events.has(fact.model))
+      .map((event, index) => ({
+        model: event.model,
+        key: `${hash}:${index}`,
+        value: {
+          ...(event.value as Record<string, unknown>),
+          event_position: { block_number: block, transaction_hash: hash, transaction_index: 0, event_index: index },
+        },
+      }));
     this.sequenced({
       type: "diff",
       block,
       preconfirmed: true,
       transaction_hash: hash,
-      set: facts.filter((fact) => fact.value !== null),
+      set: [...facts.filter((fact) => fact.value !== null), ...events],
       del: facts.filter((fact) => fact.value === null).map(({ model, key }) => ({ model, key })),
     });
     this.sequenced({ type: "tx", hash, status: "PRE_CONFIRMED", block });

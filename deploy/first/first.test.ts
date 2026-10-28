@@ -28,7 +28,7 @@ import {
   buildLedgerEconomicPreset,
   buildRegisterLedgerPresetCalldata,
 } from "../../config/deployer/clean/ledger/economics";
-import { decodeLedgerPreset } from "../../packages/value-ledger/src/codecs";
+import { LEDGER_PRESET_FIELD_COUNT, decodeLedgerPreset } from "../../packages/value-ledger/src/codecs";
 
 const temporary: string[] = [];
 const fetchBefore = globalThis.fetch;
@@ -58,12 +58,17 @@ const input: Inputs = {
   discordClientId: "fake-discord-id",
   discordClientSecret: "fake-discord-secret",
   amount: "1000000",
+  frontierPresetId: "5",
   frontierStart: "2027-01-01T00:00:00Z",
   frontierEnd: "2027-01-21T00:00:00Z",
   blitzStart: "2027-01-01T00:00:00Z",
   blitzEnd: "2027-02-01T00:00:00Z",
 };
+/** Production's inputs: it runs Frontier only, so they name no Blitz dates. */
+const { blitzStart: _blitzStart, blitzEnd: _blitzEnd, ...frontierInput } = input;
 const assets = { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" };
+/** A Blitz season window for the environments that run Blitz. */
+const BLITZ_WINDOW = { start: 4000, end: 9000, seasonId: 1 };
 
 test("retired resource settings in saved owner inputs do not require setup again", () => {
   const { store } = storage();
@@ -119,15 +124,26 @@ test("positive integral deposit and duration required; production asks for publi
   for (const amount of ["0", "-1", "1.1", "1e6", (2n ** 128n).toString()])
     expect(() => validateInputs({ ...input, amount }, environments.dev)).toThrow();
   expect(() => validateInputs({ ...input, blitzEnd: input.blitzStart }, environments.dev)).toThrow();
-  expect(() => validateInputs({ ...input, alertEmail: "oncall@example.test" }, environments.production)).toThrow(
-    "public cold",
-  );
   expect(() =>
-    validateInputs(
-      { ...input, admin: "0x9", treasury: "0xa", alertEmail: "oncall@example.test" },
-      environments.production,
-    ),
+    validateInputs({ ...frontierInput, alertEmail: "oncall@example.test" }, environments.production),
+  ).toThrow("public cold");
+  const production = { ...frontierInput, admin: "0x9", treasury: "0xa", alertEmail: "oncall@example.test" };
+  expect(() => validateInputs(production, environments.production)).not.toThrow();
+  expect(() => validateInputs({ ...production, blitzStart: input.blitzStart }, environments.production)).toThrow(
+    "This environment runs no Blitz; remove blitzStart and blitzEnd from inputs.json",
+  );
+  expect(() => validateInputs(frontierInput as Inputs, environments.dev)).toThrow("without a default");
+  // With the deployer as its admin, production still names its treasury: it is never the deployer by default.
+  const deployerAdmin = { ...environments.production, coldAdmin: false } as Target;
+  expect(() =>
+    validateInputs({ ...frontierInput, alertEmail: "oncall@example.test" } as Inputs, deployerAdmin),
+  ).toThrow("treasury");
+  expect(() =>
+    validateInputs({ ...frontierInput, alertEmail: "oncall@example.test", treasury: "0xa" } as Inputs, deployerAdmin),
   ).not.toThrow();
+  expect(setupQuestions(deployerAdmin).map(([name]) => name)).toContain("treasury");
+  expect(setupQuestions(deployerAdmin).map(([name]) => name)).not.toContain("admin");
+  expect(setupQuestions(environments.dev).map(([name]) => name)).not.toContain("treasury");
 });
 
 test("dry run inspects every step, including unavailable ones, and never calls a write", async () => {
@@ -339,30 +355,31 @@ test("fixed salt deploy resumes after a lost acknowledgement without declaring o
   );
 });
 
-test("setup keeps only missing role calls and uses the environment's two preset ids", async () => {
-  const dev = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1);
+test("setup keeps only missing role calls and preserves the selected Frontier preset in both environments", async () => {
+  const dev = setupCalls(environments.dev, assets, "0x33", 5, BLITZ_WINDOW);
   expect(
     dev.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
-  ).toEqual(["1", "2"]);
-  const production = setupCalls(environments.production, assets, "0x33", 4000, 9000, 1);
+  ).toEqual(["1", "5"]);
+  const production = setupCalls(environments.production, assets, "0x33", 5, BLITZ_WINDOW);
   expect(
     production.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
-  ).toEqual(["2", "5"]);
+  ).toEqual(["5"]);
+  expect(production.some((call) => call.entrypoint === "open_season")).toBe(false);
   const provider = { callContract: async () => ["0x1"] } as unknown as RpcProvider;
   expect(await setupPresenceReader(provider)(dev[0]!, 10)).toBe(true);
   provider.callContract = async () => ["0x0"];
   expect(await setupPresenceReader(provider)(dev[0]!, 10)).toBe(false);
 });
 
-const setupOf = (target: typeof environments.dev, entrypoint: string) =>
-  setupCalls(target, assets, "0x33", 4000, 9000, 1).filter((call) => call.entrypoint === entrypoint);
+const setupOf = (target: Target, entrypoint: string) =>
+  setupCalls(target, assets, "0x33", 5, BLITZ_WINDOW).filter((call) => call.entrypoint === entrypoint);
 const registered = (call: { calldata: unknown }) => call.calldata as string[];
 
-test.each(["dev", "production"] as const)("%s setup registers 100 LORDS for entry, Sword and Shield", (environment) => {
-  const [operation] = setupOf(environments[environment], "register_preset");
+test("dev setup registers 100 LORDS for entry, Sword and Shield", () => {
+  const [operation] = setupOf(environments.dev, "register_preset");
   const fields = registered(operation!);
-  expect(fields[0]).toBe(environment === "production" ? "2" : "1");
-  const preset = decodeLedgerPreset(fields.slice(1, 19));
+  expect(fields[0]).toBe("1");
+  const preset = decodeLedgerPreset(fields.slice(1, 1 + LEDGER_PRESET_FIELD_COUNT));
   expect(preset).toMatchObject({
     entryFee: "100000000000000000000",
     swordPrice: "100000000000000000000",
@@ -375,15 +392,15 @@ test.each([
   ["Sword", 6],
   ["Shield", 8],
 ] as const)("setup refuses a registered 500-LORDS %s price instead of pretending to update it", async (_, field) => {
-  const [operation] = setupOf(environments.production, "register_preset");
-  const recorded = registered(operation!).slice(1, 19);
+  const [operation] = setupOf(environments.dev, "register_preset");
+  const recorded = registered(operation!).slice(1, 1 + LEDGER_PRESET_FIELD_COUNT);
   recorded[field] = "500000000000000000000";
   const callContract = mock(async () => recorded);
   const provider = { callContract } as unknown as RpcProvider;
   await expect(setupPresenceReader(provider)(operation!, 10)).rejects.toThrow("Registered preset differs");
   expect(callContract).toHaveBeenCalledTimes(1);
   expect(callContract).toHaveBeenCalledWith(
-    { contractAddress: assets.ledger, entrypoint: "get_preset", calldata: ["2"] },
+    { contractAddress: assets.ledger, entrypoint: "get_preset", calldata: ["1"] },
     10,
   );
 });
@@ -392,7 +409,7 @@ test("dev registers its mystery chests and their cosmetics metadata exactly as b
   const mystery = buildMysteryChestPreset();
   expect(setupOf(environments.dev, "register_preset").map(registered)).toEqual([
     buildRegisterLedgerPresetCalldata(1, buildLedgerEconomicPreset("blitz", { environment: "dev" }), mystery),
-    buildRegisterLedgerPresetCalldata(2, buildLedgerEconomicPreset("frontier"), mystery),
+    buildRegisterLedgerPresetCalldata(5, buildLedgerEconomicPreset("frontier"), mystery),
   ]);
   const cosmetics = setupOf(environments.dev, "set_attrs_raw_to_ipfs_cid").filter(
     (call) => call.contractAddress === assets.cosmetics,
@@ -401,7 +418,8 @@ test("dev registers its mystery chests and their cosmetics metadata exactly as b
 });
 
 test("production's chests pay one entry of LORDS from a 90% reserve and award no cosmetic", () => {
-  const [blitz, frontier] = setupOf(environments.production, "register_preset").map(registered);
+  const [frontier, ...more] = setupOf(environments.production, "register_preset").map(registered);
+  expect(more).toEqual([]);
   const lords = buildLordsChestPreset();
   for (const band of lords.bands) {
     expect(band.lords_shares).toBe(1);
@@ -414,7 +432,6 @@ test("production's chests pay one entry of LORDS from a 90% reserve and award no
   expect(economics.chest_lords_bps).toBe(9000);
   // The ledger pays the reserve out of the pool left after its protocol cut; more would fail every result.
   expect(economics.chest_lords_bps + economics.protocol_cut_bps).toBeLessThanOrEqual(10000);
-  expect(blitz).toEqual(buildRegisterLedgerPresetCalldata(2, economics, lords));
   expect(frontier).toEqual(
     buildRegisterLedgerPresetCalldata(5, buildLedgerEconomicPreset("frontier", { chests: lords }), lords),
   );
@@ -428,7 +445,7 @@ test("setup reads registered chest rewards back against its own call; mystery ch
   const readsBack = (chests: ReturnType<typeof buildMysteryChestPreset>) =>
     ({
       callContract: async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
-        if (entrypoint === "get_preset") return registered(call!).slice(1, 19);
+        if (entrypoint === "get_preset") return registered(call!).slice(1, 1 + LEDGER_PRESET_FIELD_COUNT);
         if (entrypoint === "get_chest_band") return CallData.compile(chests.bands[Number(calldata[1])]!);
         return CallData.compile([chests.items[Number(calldata[1])]!]);
       },
@@ -440,7 +457,7 @@ test("setup reads registered chest rewards back against its own call; mystery ch
 });
 
 test("metadata presence follows all confirmed event pages; differing metadata refuses", async () => {
-  const operation = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1).find(
+  const operation = setupCalls(environments.dev, assets, "0x33", 5, BLITZ_WINDOW).find(
     (call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid",
   )!;
   const args = operation.calldata as string[];
@@ -503,12 +520,15 @@ test("setup asks for an alert email on production only, and dev's inputs can nev
     "discordClientId",
     "discordClientSecret",
     "amount",
+    "frontierPresetId",
     "frontierStart",
     "frontierEnd",
     "blitzStart",
     "blitzEnd",
   ]);
   expect(asked("production")).toContain("alertEmail");
+  expect(asked("production")).not.toContain("blitzStart");
+  expect(asked("production")).not.toContain("blitzEnd");
   for (const alertEmail of ["oncall@example.test", ""])
     expect(() => validateInputs({ ...input, alertEmail }, environments.dev)).toThrow("Dev sends no alert email");
   const production = { ...input, admin: "0x9", treasury: "0xa" };
@@ -704,11 +724,11 @@ test.each(["none", "relay", "monitor"])(
 );
 
 test("all four dates are required without defaults and invalid Frontier end gives two exact alternatives", () => {
-  expect(() => validateDates(input)).not.toThrow();
+  expect(() => validateDates(input, true)).not.toThrow();
   for (const field of ["frontierStart", "frontierEnd", "blitzStart", "blitzEnd"])
-    expect(() => validateDates({ ...input, [field]: "" })).toThrow("without a default");
-  expect(() => validateDates({ ...input, frontierEnd: "2027-01-02T00:00:00Z" })).toThrow("nearest valid ends:");
-  expect(() => validateDates({ ...input, frontierStart: "2027-01-01T00:00:01Z" })).toThrow("s tick");
+    expect(() => validateDates({ ...input, [field]: "" }, true)).toThrow("without a default");
+  expect(() => validateDates({ ...input, frontierEnd: "2027-01-02T00:00:00Z" }, true)).toThrow("nearest valid ends:");
+  expect(() => validateDates({ ...input, frontierStart: "2027-01-01T00:00:01Z" }, true)).toThrow("s tick");
 });
 
 test("the actual default command cannot write files, submit RPC or generate keys", async () => {
@@ -788,7 +808,7 @@ mock.module(${JSON.stringify(join(root, "deploy/first/process.ts"))}, () => ({..
   expect(output).toContain("DRY RUN");
   expect(output).toContain(`Deployment commit ${"a".repeat(40)}.`);
   expect(output).not.toContain("b".repeat(40));
-  expect(output).not.toContain("Published pool and automatic Blitz slot");
+  expect(output).not.toContain("Published pool");
   expect(output).toContain("Public address book commit");
   expect(output).not.toContain("unavailable; read failed");
   for (const secret of [
@@ -805,7 +825,7 @@ mock.module(${JSON.stringify(join(root, "deploy/first/process.ts"))}, () => ({..
 });
 
 test("setup refuses a different confirmed Blitz window without replacing it", async () => {
-  const operation = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1).find(
+  const operation = setupCalls(environments.dev, assets, "0x33", 5, BLITZ_WINDOW).find(
     (call) => call.entrypoint === "open_season",
   )!;
   const season = ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "1", "4000", "9000", "0", "0"];
@@ -848,3 +868,32 @@ test("publishes the ledger's deployment block beside its address, the same on a 
     rmSync(path, { force: true });
   }
 });
+
+test("date validation requires a native Frontier preset and uses its season clock", () => {
+  const dates = {
+    ...input,
+    frontierPresetId: "6",
+    frontierStart: "2026-11-03T06:30:00Z",
+    frontierEnd: "2026-11-06T14:30:00Z",
+  };
+  expect(() => validateDates(dates, true)).not.toThrow();
+  expect(() => validateDates({ ...dates, frontierEnd: "2026-11-06T18:30:00Z" }, true)).toThrow("whole bags");
+  expect(() => validateDates({ ...dates, frontierPresetId: "" }, true)).toThrow("registered Frontier preset");
+  expect(() => validateDates({ ...dates, frontierPresetId: "1" }, true)).toThrow("registered Frontier preset");
+});
+
+test.each(["dev", "production"] as const)(
+  "%s registers Devcon's exact native ID, clock and 70/30 pool",
+  (environment) => {
+    const calls = setupCalls(environments[environment], assets, "0x33", 6, BLITZ_WINDOW);
+    const frontier = calls.find((call) => call.entrypoint === "register_preset" && registered(call)[0] === "6")!;
+    const calldata = registered(frontier);
+    expect(calldata[0]).toBe("6");
+    expect(decodeLedgerPreset(calldata.slice(1, 1 + LEDGER_PRESET_FIELD_COUNT))).toMatchObject({
+      dayUnit: 7200,
+      claimWindow: 604800,
+      frontierChestBps: 7000,
+      frontierTopN: 10,
+    });
+  },
+);

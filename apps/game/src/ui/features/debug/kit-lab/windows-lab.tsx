@@ -388,7 +388,7 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
   },
   "realm-number": {
     name: "Realm number",
-    draw: () => <RealmNumberPicker value="1234" onChange={() => undefined} disabled={false} />,
+    draw: () => <RealmNumberPicker value="1234" onChange={() => undefined} disabled={false} purpose="held" />,
   },
 };
 

@@ -13,7 +13,9 @@ const drawn = (node: React.ReactElement) => {
 it("says a chest's rarity by its word, on a plate of its colour, with no pips", () => {
   for (const [tier, name] of [
     [1, "Common"],
+    [2, "Uncommon"],
     [3, "Rare"],
+    [4, "Epic"],
     [5, "Legendary"],
   ] as const) {
     const chip = drawn(<HudRarity tier={tier} />).querySelector<HTMLElement>(".ui-rarity")!;

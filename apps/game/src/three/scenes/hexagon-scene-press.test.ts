@@ -8,7 +8,7 @@ import { HexagonScene } from "./hexagon-scene";
 
 afterEach(() => vi.useRealTimers());
 
-it("selects with short presses, then sends a held destination to the scene's order handler exactly once", () => {
+it("selects with short presses, two quick ones a double tap too, then sends a held destination to the order handler once", () => {
   vi.useFakeTimers();
   const scene = Object.create(HexagonScene.prototype) as {
     handleClick: (event: MouseEvent, raycaster: Raycaster) => void;
@@ -57,7 +57,9 @@ it("selects with short presses, then sends a held destination to the scene's ord
     expect(scene.onHexagonClick).toHaveBeenCalledTimes(2);
     expect(scene.onHexagonClick).toHaveBeenLastCalledWith(unit);
     expect(scene.onHexagonRightClick).not.toHaveBeenCalled();
-    expect(scene.onHexagonDoubleClick).not.toHaveBeenCalled();
+    // Owner, 28 October 2026: "double tapping the realm on mobile should bring me to the realm view !"
+    expect(scene.onHexagonDoubleClick).toHaveBeenCalledTimes(1);
+    expect(scene.onHexagonDoubleClick).toHaveBeenCalledWith(unit);
 
     scene.interactiveHexManager.pick.mockReturnValue({ hexCoords: destination, position: new Vector3() });
     pointer("pointerdown");

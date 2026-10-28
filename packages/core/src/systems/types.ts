@@ -1,12 +1,6 @@
 import { BuildingType, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/types";
 import type { SiteKind } from "../utils/expeditions";
 
-export const TROOP_TIERS: Record<string, number> = {
-  T1: 1,
-  T2: 2,
-  T3: 3,
-};
-
 export interface GuardArmy {
   slot: number;
   category: string | null;
@@ -46,13 +40,6 @@ export type SitePayoutSystemUpdate = {
   coord: { x: number; y: number };
   /** Whole troops the army lost in the winning exchange. */
   troopsLost: number;
-};
-/** An army's Upgrade: the attribute raised, the tier it reached and the XP it paid. */
-export type TierBoughtSystemUpdate = {
-  explorerId: ID;
-  attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming";
-  tier: number;
-  price: number;
 };
 export type ChestReward = { kind: "relics"; relics: ResourcesIds[] } | { kind: "lords"; amount: number };
 

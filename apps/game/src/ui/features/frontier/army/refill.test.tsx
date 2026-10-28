@@ -1,8 +1,20 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
-
-import { RefillButton, RefillChip, RefillConfirm, StaminaRefill } from "./refill";
+import { RefillButton, RefillConfirm } from "./refill";
+import { ArmyRefill } from "./army-refill";
+import type { DockArmy } from "../hud/dock-armies";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+const calls = vi.hoisted(() => ({ refill: vi.fn(async () => "0x123"), signer: { address: "0x1" } }));
+vi.mock("@/hooks/context/game-context", () => ({
+  useGame: () => ({ setup: { systemCalls: { refill_stamina: calls.refill } }, account: { account: calls.signer } }),
+}));
+vi.mock("../value/use-realm-lords", () => ({ useRealmLords: () => 40 }));
+vi.mock("@/hooks/store/use-actions-in-flight", () => ({
+  useInFlight: () => undefined,
+  sendOnce: async (_kind: string, _id: number, _wait: boolean, send: () => Promise<unknown>) => send(),
+}));
+vi.mock("@/ui/features/event-feed/notify", () => ({ toast: { failed: vi.fn() } }));
 
 const render = (node: React.ReactNode) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -10,127 +22,104 @@ const render = (node: React.ReactNode) => {
   document.body.append(host);
   const root = createRoot(host);
   act(() => root.render(node));
-  return { host, unmount: () => act(() => root.unmount()) };
+  return {
+    host,
+    unmount: () => {
+      act(() => root.unmount());
+      host.remove();
+    },
+  };
 };
 
-describe("the refill", () => {
-  it("refills on its verb alone (its confirm says the price), and shows the LORDS held against the price when they fall short", () => {
+describe("partial stamina refills", () => {
+  it.each([1, 40, 1240])("opens a refill with %s LORDS even when a full refill costs more", (held) => {
     const onRefill = vi.fn();
-    const enough = render(<RefillButton price={140} held={1_240} onRefill={onRefill} />);
-    act(() => enough.host.querySelector("button")!.click());
-    expect(onRefill).toHaveBeenCalled();
-    expect(enough.host.textContent).toBe("Refill");
-    enough.unmount();
-    const short = render(<RefillButton price={130} held={40} onRefill={onRefill} />);
-    expect(short.host.querySelector("button")).toBeNull();
-    // Named Refill, and its hover says what the two numbers are: the LORDS held, against the refill's whole price.
-    const chip = short.host.querySelector('[role="img"]')!;
-    expect(chip.getAttribute("aria-label")).toBe("Refill needs 130 LORDS, has 40");
-    expect(chip.textContent).toBe("Refill40 / 130");
-    // Two lines, its name over the numbers, with no frame of its own: it stands inside the card that holds it.
-    expect([...chip.lastElementChild!.children].map((line) => line.textContent)).toEqual(["Refill", "40 / 130"]);
-    expect(chip.querySelector(".ui-panel")).toBeNull();
-    short.unmount();
-  });
-
-  it("on the army card is a chip that presses: its price, or short of LORDS what is held against it, unpressable", () => {
-    const onRefill = vi.fn();
-    const enough = render(<RefillChip price={150} held={1_240} onRefill={onRefill} />);
-    const chip = enough.host.querySelector("button")!;
-    // A chip's size, so it stands level with the troops and +120 a tile beside it.
-    expect(chip.className).toBe("ui-chip");
-    expect(chip.getAttribute("aria-label")).toBe("Refill 150");
-    act(() => chip.click());
-    expect(onRefill).toHaveBeenCalledTimes(1);
-    enough.unmount();
-
-    const short = render(<RefillChip price={150} held={40} onRefill={onRefill} />);
-    const shortChip = short.host.querySelector("button")!;
-    expect(shortChip.textContent).toBe("40 / 150");
-    expect(shortChip.getAttribute("data-tone")).toBe("bad");
-    expect(shortChip.getAttribute("data-tip")).toBe("Refill needs 150 LORDS, has 40");
-    expect(shortChip.disabled).toBe(true);
-    act(() => shortChip.click());
-    expect(onRefill).toHaveBeenCalledTimes(1);
-    short.unmount();
-
-    const sending = render(<RefillChip price={150} held={1_240} refilling onRefill={onRefill} />);
-    expect(sending.host.querySelector("button")!.textContent).toBe("Refilling…");
-    expect(sending.host.querySelector("button")!.disabled).toBe(true);
-    sending.unmount();
-  });
-
-  it("beside a phone's picked army is its stamina: pressed for the refill, red and unpressable when short, at rest when full", () => {
-    const onRefill = vi.fn();
-    const button = (node: React.ReactNode) => {
-      const view = render(node);
-      const pressed = view.host.querySelector("button")!;
-      const read = [
-        pressed.textContent,
-        pressed.getAttribute("aria-label"),
-        pressed.disabled,
-        pressed.dataset.tone ?? null,
-      ];
-      const tip = pressed.dataset.tip ?? null;
-      act(() => pressed.click());
-      view.unmount();
-      return [...read, tip];
-    };
-    expect(button(<StaminaRefill stamina={{ current: 14, max: 140 }} held={500} onRefill={onRefill} />)).toEqual([
-      "14/140",
-      "Refill 14/140",
-      false,
-      null,
-      null,
-    ]);
-    expect(onRefill).toHaveBeenCalledTimes(1);
-    expect(button(<StaminaRefill stamina={{ current: 14, max: 140 }} held={100} onRefill={onRefill} />)).toEqual([
-      "14/140",
-      "Refill 14/140",
-      true,
-      "bad",
-      "Refill needs 126 LORDS, has 100",
-    ]);
-    expect(button(<StaminaRefill stamina={{ current: 140, max: 140 }} held={100} onRefill={onRefill} />)).toEqual([
-      "140/140",
-      "Refill 140/140",
-      true,
-      null,
-      null,
-    ]);
-    expect(onRefill).toHaveBeenCalledTimes(1);
-  });
-
-  it("reads Refilling… and cannot be pressed while the army's refill is in flight", () => {
-    const onRefill = vi.fn();
-    const { host, unmount } = render(<RefillButton price={140} held={1_240} refilling onRefill={onRefill} />);
-    const button = host.querySelector("button")!;
-    expect(button.textContent).toContain("Refilling…");
-    expect(button.disabled).toBe(true);
-    act(() => button.click());
-    expect(onRefill).not.toHaveBeenCalled();
+    const { host, unmount } = render(<RefillButton held={held} onRefill={onRefill} />);
+    act(() => host.querySelector("button")!.click());
+    expect(onRefill).toHaveBeenCalledOnce();
     unmount();
   });
-
-  it("confirms the bar to full and the LORDS before and after, with Cancel and Refill", () => {
+  it.each([undefined, 0, 0.9])("refuses a purchase without a whole LORDS: %s", (held) => {
     const onRefill = vi.fn();
-    const onCancel = vi.fn();
+    const { host, unmount } = render(<RefillButton held={held} onRefill={onRefill} />);
+    expect(host.querySelector("button")!.disabled).toBe(true);
+    unmount();
+  });
+  it("keeps an in-flight refill disabled", () => {
+    const onRefill = vi.fn();
+    const { host, unmount } = render(<RefillButton held={1240} refilling onRefill={onRefill} />);
+    expect(host.querySelector("button")!.disabled).toBe(true);
+    expect(host.textContent).toContain("Refilling…");
+    unmount();
+  });
+  it.each([
+    [1240, 130, 150, "1.2K → 1.1K"],
+    [40, 40, 60, "40 → 0"],
+  ])("defaults to an affordable purchase from %s LORDS", (held, amount, after, balance) => {
+    const onRefill = vi.fn();
     const { host, unmount } = render(
       <RefillConfirm
         stamina={{ current: 20, max: 150 }}
-        held={1_240}
+        held={held}
         sending={false}
         onRefill={onRefill}
-        onCancel={onCancel}
+        onCancel={vi.fn()}
       />,
     );
-    expect(host.querySelector('[aria-label="stamina 20 → 150"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="LORDS 1.2K → 1.1K"]')).not.toBeNull();
-    const buttons = [...host.querySelectorAll("button")];
-    act(() => buttons.find((button) => button.textContent?.startsWith("Refill"))!.click());
-    act(() => buttons.find((button) => button.textContent === "Cancel")!.click());
-    expect(onRefill).toHaveBeenCalled();
-    expect(onCancel).toHaveBeenCalled();
+    expect(host.querySelector(`[aria-label="stamina 20 → ${after}"]`)).not.toBeNull();
+    expect(host.querySelector(`[aria-label="LORDS ${balance}"]`)).not.toBeNull();
+    const button = [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Refill"))!;
+    act(() => button.click());
+    expect(onRefill).toHaveBeenCalledWith(amount);
+    unmount();
+  });
+  it("sends the chosen amount and updates both resulting balances", () => {
+    const onRefill = vi.fn();
+    const { host, unmount } = render(
+      <RefillConfirm
+        stamina={{ current: 20, max: 150 }}
+        held={40}
+        sending={false}
+        onRefill={onRefill}
+        onCancel={vi.fn()}
+      />,
+    );
+    const slider = host.querySelector("input")!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, "15");
+      slider.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(host.querySelector('[aria-label="stamina 20 → 35"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="LORDS 40 → 25"]')).not.toBeNull();
+    act(() => [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Refill"))!.click());
+    expect(onRefill).toHaveBeenCalledWith(15);
     unmount();
   });
 });
+
+it.each(["button", "chip", "stamina"] as const)(
+  "sends a partial refill through the army's real %s control",
+  async (look) => {
+    calls.refill.mockClear();
+    const { host, unmount } = render(
+      <ArmyRefill
+        look={look}
+        army={{ explorerId: 7, stamina: { current: 20, max: 150 } } as DockArmy}
+        realm={{ entity_id: 1n } as NativeRows["Structure"]}
+      />,
+    );
+    act(() => host.querySelector("button")!.click());
+    const slider = host.querySelector("input")!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, "15");
+      slider.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await act(async () =>
+      [...host.querySelectorAll("button")].find((b) => b.textContent === "Refill · 15 LORDS")!.click(),
+    );
+    expect(calls.refill).toHaveBeenCalledOnce();
+    expect(calls.refill).toHaveBeenCalledWith({ signer: calls.signer, explorerId: 7, amount: 15 });
+    expect(host.querySelector("input")).toBeNull();
+    unmount();
+  },
+);

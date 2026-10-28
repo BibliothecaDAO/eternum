@@ -44,6 +44,9 @@ export const shortfallLine = ({ of, held, need, counted, wait }: Extract<Reason,
   return wait === undefined ? line : `${line} · ${inTime(formatWait(wait))}`;
 };
 
+/** Any reason in its one line: what is short against what there is, or the line that names what failed. */
+export const reasonLine = (reason: Reason): string => (reason.kind === "short" ? shortfallLine(reason) : reason.line);
+
 /** An army short of stamina, as every surface says it: "Needs 50 stamina, have 13 · in 2m". */
 export const staminaShortfall = (held: number | undefined, need: number, wait?: number): string =>
   shortfallLine({ kind: "short", of: "stamina", held, need, wait });

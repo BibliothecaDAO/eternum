@@ -1,6 +1,6 @@
 import type { ProcessedStoryEvent, StoryRead } from "@/hooks/store/use-story-events-store";
 import { feltEquals } from "@bibliothecadao/eternum/game-client";
-import { logicalStoryIdentity, storyRecipients } from "@bibliothecadao/notifications";
+import { logicalStoryIdentity } from "@bibliothecadao/notifications";
 
 /**
  * The two lenses on the game's stories, one meaning in every mode and on every surface (Blitz's Events and Log,
@@ -13,7 +13,7 @@ export type EventsFilter = "important" | "all";
 type IsHyperstructure = (structureId: number) => boolean;
 
 export const involvesPlayer = (event: ProcessedStoryEvent, address: string | null): boolean =>
-  storyRecipients(event.story, event.owner, event.storyPayload).some((owner) => feltEquals(owner, address));
+  event.participants.some((owner) => feltEquals(owner, address));
 
 /** One identity per action, however many stories tell it (a battle's two sides, a building placed and paid for). */
 export const storyActionIdentity = (event: ProcessedStoryEvent): string =>

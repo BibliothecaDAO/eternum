@@ -95,6 +95,7 @@ it("an army move does not notify directory clients; structure moves and empty-bl
     fold: {
       modelRows: (model) => fold.modelRows(model),
       structurePosition: (game, entity) => fold.structurePosition(game, entity),
+      expeditionSite: (game, entity) => fold.expeditionSite(game, entity),
       directoryRevision: () => fold.directoryRevision(),
       snapshot: (game, block, models) => fold.snapshot(game, block, models),
     },

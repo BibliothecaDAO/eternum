@@ -1,23 +1,30 @@
 import { describe, expect, it } from "vitest";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { explorerTransferPlan, progressionValue } from "./army-merge";
+import { explorerTransferPlan } from "./army-merge";
 
 const rules: NativeRows["ArmyProgressionRules"] = {
+  common_xp: 100,
   game_id: 1,
   reveal_xp: 2,
+  reveal_xp_per_depth: 1,
   fixed_xp: 200,
-  uncommon_xp: 100,
-  rare_xp: 200,
-  epic_xp: 400,
-  legendary_xp: 800,
+  uncommon_xp: 250,
+  rare_xp: 500,
+  epic_xp: 1000,
+  legendary_xp: 2000,
 };
 const common: NativeRows["ArmyProgress"] = {
+  common_points: 0,
+  uncommon_points: 0,
+  rare_points: 0,
+  epic_points: 0,
+  legendary_points: 0,
   game_id: 1,
   explorer_id: 1n,
   xp: 0,
   battle: 1,
   logistics: 1,
-  scouting: 1,
+  scouting: 0,
   homecoming: 1,
   scouting_kinds: 0,
 };
@@ -31,13 +38,9 @@ const base = {
 };
 
 describe("army merge choice", () => {
-  it("counts all four cumulative tier prices and unspent XP, including trained tiers", () => {
-    expect(progressionValue({ ...common, xp: 7, battle: 2, logistics: 3, scouting: 4, homecoming: 5 }, rules)).toBe(
-      2607,
-    );
-    expect(
-      progressionValue({ ...common, xp: 0xffffffff, battle: 5, logistics: 5, scouting: 5, homecoming: 5 }, rules),
-    ).toBe(4294973295);
+  it("warns when destroying a source would lose held points, even with equal XP and ranks", () => {
+    expect(explorerTransferPlan({ ...base, sourceProgress: { ...common, rare_points: 1 } }).confirmLoss).toBe(true);
+    expect(explorerTransferPlan({ ...base, targetProgress: { ...common, rare_points: 1 } }).confirmLoss).toBe(false);
   });
   it.each([
     [0, 0, false],
@@ -59,7 +62,7 @@ describe("army merge choice", () => {
   it("counts spent tiers in the confirmation gap and follows the game's first-tier price", () => {
     expect(explorerTransferPlan({ ...base, sourceProgress: { ...common, homecoming: 2 } }).confirmLoss).toBe(true);
     expect(
-      explorerTransferPlan({ ...base, sourceProgress: { ...common, xp: 100 }, rules: { ...rules, uncommon_xp: 200 } })
+      explorerTransferPlan({ ...base, sourceProgress: { ...common, xp: 100 }, rules: { ...rules, common_xp: 200 } })
         .confirmLoss,
     ).toBe(false);
   });

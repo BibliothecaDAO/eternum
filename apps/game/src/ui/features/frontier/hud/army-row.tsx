@@ -1,7 +1,7 @@
 import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudPanel, HudPortrait, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { ARMIES, ARMY, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
+import { ARMIES, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
 
@@ -22,7 +22,7 @@ export const ArmyRow = ({
   stamina,
   xp,
   xpGoal,
-  canBuyTier,
+  canSpendSkillPoint,
   selected,
   flyTarget,
   onPick,
@@ -36,7 +36,7 @@ export const ArmyRow = ({
   stamina: StaminaBar | undefined;
   xp: number | undefined;
   xpGoal?: XpGoal;
-  canBuyTier: boolean;
+  canSpendSkillPoint: boolean;
   selected: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;
@@ -56,67 +56,78 @@ export const ArmyRow = ({
     }
     label={label}
     title={
-      <span className="flex items-center justify-between gap-2">
-        <span className="truncate">{label}</span>
-        <span className="flex shrink-0 items-center gap-2">
-          {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
-          <span data-tip={xpLine(xp, xpGoal)} className="flex items-center gap-1 tabular-nums text-hud-gold">
-            {`${formatAmount(xp)} ${XP}`}
-          </span>
-        </span>
+      <RowLine
+        words={label}
+        figure={
+          <>
+            {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
+            <span data-tip={xpLine(xp, xpGoal)} className="text-hud-gold">{`${formatAmount(xp)} ${XP}`}</span>
+          </>
+        }
+      />
+    }
+    // The troops line is figures throughout, set as the HUD sets figures.
+    detail={
+      <span className="block tabular-nums">
+        <RowLine words={troops === undefined ? "—" : troopCount(troops)} figure={<RowStamina stamina={stamina} />} />
       </span>
     }
-    detail={<RowDetail words={troops === undefined ? "—" : troopCount(troops)} stamina={stamina} />}
     // The trail is the card fan while a level is affordable now: the row itself opens the panel that buys it.
-    trail={<RowTrail>{canBuyTier && <SemanticIcon name="picks" size={20} data-tip={UPGRADE} />}</RowTrail>}
+    trail={<RowTrail>{canSpendSkillPoint && <SemanticIcon name="picks" size={20} data-tip={UPGRADE} />}</RowTrail>}
     selected={selected}
     onClick={onPick}
   />
 );
 
 /**
- * An open slot on a desktop's list, as a row like an army's: its dashed ring, Deploy (or the army a later slot waits
- * for, or the word for an army on its way), and the stamina the slot starts its army on. A press opens Deploy; a slot
- * Deploy does not fill next opens nothing. A phone's dock draws the same slot as a token (OpenSlot).
+ * An open slot on a desktop's list, as a row like an army's: its dashed ring, Deploy (or the word for an army on its way), and the stamina the slot starts its army on. A press chooses that slot for Deploy. A phone's dock draws the same slot as a token (OpenSlot).
  */
 export const OpenSlotRow = ({
   label,
   pulse,
   filling,
   start,
-  waits,
   onDeploy,
 }: {
   label: string;
   pulse: boolean;
   filling?: string;
   start?: { bar: StaminaBar; words: string };
-  waits?: { number: number; words: string };
   onDeploy: () => void;
 }) => (
   <HudRow
-    lead={<SlotRing pulse={pulse} filling={filling} waits={waits} />}
+    lead={<SlotRing pulse={pulse} filling={filling} />}
     label={filling ?? label}
-    title={filling ?? (waits ? `${ARMY} ${waits.number}` : label)}
-    detail={start && filling === undefined ? <RowDetail stamina={start.bar} /> : undefined}
+    title={
+      <RowLine words={filling ?? label} figure={start && filling === undefined && <RowStamina stamina={start.bar} />} />
+    }
     trail={<RowTrail />}
-    disabled={filling !== undefined || waits !== undefined}
+    disabled={filling !== undefined}
     busy={filling !== undefined}
-    tip={filling === undefined ? [start?.words, waits?.words].filter(Boolean).join(" ") || undefined : undefined}
-    onClick={waits ? undefined : onDeploy}
+    tip={filling === undefined ? start?.words : undefined}
+    onClick={onDeploy}
   />
 );
 
 /**
- * A list row's line under its name: its words take what the stamina leaves, the stamina one column as wide on every
- * row, so every bar on the list starts at one x and is as long (owner, 27 October).
+ * A line of a list row: its words, and at its end the figure they own. A figure stands on its words' line, so a row of
+ * one line (an open slot) keeps its name beside its stamina, not above it (owner, 28 October: "text alignment with no
+ * troop line subtext").
  */
-const RowDetail = ({ words, stamina }: { words?: string; stamina: StaminaBar | undefined }) => (
-  <span className="flex items-center gap-2 whitespace-nowrap tabular-nums">
+const RowLine = ({ words, figure }: { words: string; figure: ReactNode }) => (
+  <span className="flex items-center gap-2 whitespace-nowrap">
     <span className="min-w-0 flex-1 truncate">{words}</span>
-    <span className="flex w-28 shrink-0">
-      <StaminaReading stamina={stamina} />
-    </span>
+    <span className="flex shrink-0 items-center gap-2 tabular-nums">{figure}</span>
+  </span>
+);
+
+/**
+ * A row's stamina, in the row's small words on whichever line it stands, one column as wide on every row, so every bar
+ * on the list starts at one x and is as long (owner, 27 October).
+ */
+const RowStamina = ({ stamina }: { stamina: StaminaBar | undefined }) => (
+  <span className="flex w-28 text-hud-label text-hud-muted">
+    <StaminaReading stamina={stamina} />
   </span>
 );
 

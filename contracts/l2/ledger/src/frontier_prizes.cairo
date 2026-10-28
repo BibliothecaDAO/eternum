@@ -1,0 +1,1 @@
+../../../l3/world-native/src/frontier_prizes.cairo

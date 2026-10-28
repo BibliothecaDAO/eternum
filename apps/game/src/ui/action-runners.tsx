@@ -216,7 +216,7 @@ const AutoProvisionRealms = () => {
           return [
             {
               entityId: safeInteger(structure.entityId),
-              name: getStructureName(structure.structure).name,
+              name: getStructureName(structure.structure, store).name,
               provisioned: getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0,
             },
           ];

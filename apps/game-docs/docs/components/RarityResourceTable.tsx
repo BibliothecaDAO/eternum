@@ -1,91 +1,17 @@
-import { ResourcesIds } from "@bibliothecadao/types";
+import { getResourceTiers, RESOURCE_TIER_NAMES, resourceName } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
 import { colors, section, table } from "./styles";
 
-const RESOURCE_RARITIES = [
-  {
-    rarity: "Food",
-    resources: [
-      { name: "Wheat", id: ResourcesIds.Wheat },
-      { name: "Fish", id: ResourcesIds.Fish },
-    ],
-  },
-  {
-    rarity: "Special",
-    resources: [
-      { name: "Ancient Fragment", id: ResourcesIds.AncientFragment },
-      { name: "Labor", id: ResourcesIds.Labor },
-      { name: "Lords", id: ResourcesIds.Lords },
-    ],
-  },
-  {
-    rarity: "Common",
-    resources: [
-      { name: "Wood", id: ResourcesIds.Wood },
-      { name: "Stone", id: ResourcesIds.Stone },
-      { name: "Coal", id: ResourcesIds.Coal },
-    ],
-  },
-  {
-    rarity: "Uncommon",
-    resources: [
-      { name: "Copper", id: ResourcesIds.Copper },
-      { name: "Obsidian", id: ResourcesIds.Obsidian },
-      { name: "Silver", id: ResourcesIds.Silver },
-      { name: "Ironwood", id: ResourcesIds.Ironwood },
-      { name: "Cold Iron", id: ResourcesIds.ColdIron },
-      { name: "Gold", id: ResourcesIds.Gold },
-    ],
-  },
-  {
-    rarity: "Rare",
-    resources: [
-      { name: "Hartwood", id: ResourcesIds.Hartwood },
-      { name: "Diamonds", id: ResourcesIds.Diamonds },
-      { name: "Sapphire", id: ResourcesIds.Sapphire },
-      { name: "Ruby", id: ResourcesIds.Ruby },
-    ],
-  },
-  {
-    rarity: "Epic",
-    resources: [
-      { name: "Deep Crystal", id: ResourcesIds.DeepCrystal },
-      { name: "Ignium", id: ResourcesIds.Ignium },
-      { name: "Ethereal Silica", id: ResourcesIds.EtherealSilica },
-    ],
-  },
-  {
-    rarity: "Legendary",
-    resources: [
-      { name: "True Ice", id: ResourcesIds.TrueIce },
-      { name: "Twilight Quartz", id: ResourcesIds.TwilightQuartz },
-      { name: "Alchemical Silver", id: ResourcesIds.AlchemicalSilver },
-    ],
-  },
-  {
-    rarity: "Mythic",
-    resources: [
-      { name: "Adamantine", id: ResourcesIds.Adamantine },
-      { name: "Mithral", id: ResourcesIds.Mithral },
-      { name: "Dragonhide", id: ResourcesIds.Dragonhide },
-    ],
-  },
-  {
-    rarity: "Units & Transport",
-    resources: [
-      { name: "Donkey", id: ResourcesIds.Donkey },
-      { name: "Knight", id: ResourcesIds.Knight },
-      { name: "Knight T2", id: ResourcesIds.KnightT2 },
-      { name: "Knight T3", id: ResourcesIds.KnightT3 },
-      { name: "Crossbowman", id: ResourcesIds.Crossbowman },
-      { name: "Crossbowman T2", id: ResourcesIds.CrossbowmanT2 },
-      { name: "Crossbowman T3", id: ResourcesIds.CrossbowmanT3 },
-      { name: "Paladin", id: ResourcesIds.Paladin },
-      { name: "Paladin T2", id: ResourcesIds.PaladinT2 },
-      { name: "Paladin T3", id: ResourcesIds.PaladinT3 },
-    ],
-  },
-];
+/**
+ * Every group of Eternum's resources, as the game itself groups and names them (its resource table reads the same
+ * catalog), each resource by its name in the game's table. Relics have their own section on the page.
+ */
+const RESOURCE_GROUPS = Object.entries(getResourceTiers(false))
+  .filter(([tier]) => tier !== "relics")
+  .map(([tier, ids]) => ({
+    name: RESOURCE_TIER_NAMES[tier as keyof typeof RESOURCE_TIER_NAMES],
+    resources: ids.map((id) => ({ id, name: resourceName(id) })),
+  }));
 
 // Component styles
 const componentStyles = {
@@ -112,32 +38,6 @@ const componentStyles = {
   },
 };
 
-// Function to get color based on rarity
-const getRarityColor = (rarity: string): string => {
-  switch (rarity) {
-    case "Food":
-      return colors.secondary;
-    case "Special":
-      return colors.arcane;
-    case "Common":
-      return colors.primary;
-    case "Uncommon":
-      return colors.secondary;
-    case "Rare":
-      return colors.primary;
-    case "Epic":
-      return colors.arcane;
-    case "Legendary":
-      return colors.primary;
-    case "Mythic":
-      return colors.secondary;
-    case "Units & Transport":
-      return colors.borderDark;
-    default:
-      return colors.primary;
-  }
-};
-
 const RarityResourceTable = () => {
   return (
     <div style={section.wrapper}>
@@ -153,12 +53,10 @@ const RarityResourceTable = () => {
             </tr>
           </thead>
           <tbody>
-            {RESOURCE_RARITIES.map((category) => {
-              const rarityColor = getRarityColor(category.rarity);
-
+            {RESOURCE_GROUPS.map((category) => {
               return (
-                <tr key={category.rarity}>
-                  <td style={componentStyles.rarityCellStyle}>{category.rarity}</td>
+                <tr key={category.name}>
+                  <td style={componentStyles.rarityCellStyle}>{category.name}</td>
                   <td style={table.cell}>
                     <div style={componentStyles.resourcesGroupStyle}>
                       {category.resources.map((resource) => (
