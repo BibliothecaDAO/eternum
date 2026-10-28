@@ -110,6 +110,7 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     cpuThrottle: integer("--cpu-throttle", DEFAULTS.cpuThrottle, 1),
     gameId: Number(option("--game-id", "0")),
     gpu,
+    captureResults: argv.includes("--capture-results"),
     headed: argv.includes("--headed"),
     iterations: integer("--iterations", DEFAULTS.iterations, 1),
     network: link && { downMbps: Number(link[1]), roundTripMs: Number(link[2]) },
@@ -327,7 +328,7 @@ async function playRun(context) {
     for (const [index, step] of steps.entries()) {
       owner.throwIfCancelled();
       const base = join(runDir, `${label}-${String(index + 1).padStart(2, "0")}-${step.name}`);
-      const played = await playStep({ browser, devTools, owner, step, base });
+      const played = await playStep({ browser, captureResults: context.captureResults, devTools, owner, step, base });
       record.steps.push(played);
       if (played.cancelled) throw played.cancelled;
     }
@@ -354,7 +355,7 @@ async function playRun(context) {
  * Marks the step, plays it, lets it settle, and judges it by what the page then shows and what the probe saw. Any
  * failure, capture included, is kept as the step's verdict with what it attempted and whatever could still be read.
  */
-async function playStep({ browser, devTools, owner, step, base }) {
+async function playStep({ browser, captureResults, devTools, owner, step, base }) {
   const screenshot = `${base}.png`;
   const attempt = { name: step.name, played: {} };
   let startedOn = null;
@@ -362,7 +363,7 @@ async function playStep({ browser, devTools, owner, step, base }) {
   try {
     startedOn = JSON.parse(browser.eval(`window.__playtest.step(${JSON.stringify(step.name)})`));
     const extraScreenshot = (suffix) => takeScreenshot(browser, `${base}-${suffix}.png`);
-    attempt.played = (await step.play?.({ base, browser, devTools, extraScreenshot, owner })) ?? {};
+    attempt.played = (await step.play?.({ base, browser, captureResults, devTools, extraScreenshot, owner })) ?? {};
     await owner.sleep(step.settleMs);
     browser.screenshot(screenshot);
     browser.run(["eval", `window.__playtest.step(${JSON.stringify(`${step.name}:end`)})`]);
@@ -516,11 +517,13 @@ function readLocalJson(url) {
 }
 
 // The client's own action timelines (click to rendered marker, admission to visible, army movement phases); empty as
-// a spectator, filled by a player's actions.
+// a spectator, filled by a player's actions. In the lab's game, also what its chain answered each signed command with:
+// what the action's result must show.
 const ACTION_LATENCY_EXPRESSION = `JSON.stringify({
   admissionToVisibleMs: globalThis.__admissionToVisibleMs ?? [],
   armyMovement: globalThis.__armyMovementLatencyTraceEntries ?? [],
   clientActions: globalThis.__clientActionLatencyMeasurements ?? [],
+  chainAnswers: (globalThis.__labChain?.sent ?? []).map(({ command, answered }) => ({ kind: command.kind, answered })),
 })`;
 
 const GPU_RENDERER_EXPRESSION = `(() => {

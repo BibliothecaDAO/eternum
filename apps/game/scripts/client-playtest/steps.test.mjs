@@ -3,7 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
 import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
 import { ARMY_LABEL_POINT } from "./plates.mjs";
-import { CLOSEST_CAMERA_DISTANCE, FARTHEST_CAMERA_DISTANCE, SPECTATOR_STEPS, STEP_SETS } from "./steps.mjs";
+import {
+  armyScreenOffset,
+  CLOSEST_CAMERA_DISTANCE,
+  FARTHEST_CAMERA_DISTANCE,
+  SPECTATOR_STEPS,
+  STEP_SETS,
+} from "./steps.mjs";
 
 const onTheMap = { scene: "map", rendered: "map", place: "Map", dialogs: [], pressed: [] };
 const verifyOf = (name) => SPECTATOR_STEPS.find((step) => step.name === name).verify;
@@ -741,5 +747,25 @@ describe("the player's Wheat store card", () => {
     expect(verify({ played: { opened: true, closed: false } }).status).toBe("completed");
     expect(verify({ played: { opened: false, closed: false } }).status).toBe("failed");
     expect(verify({ played: { opened: true, closed: true } }).status).toBe("failed");
+  });
+});
+
+describe("armyScreenOffset", () => {
+  const at = (army) => armyScreenOffset({ camera: { col: 654, row: 50 }, army: army && { hex: army } });
+
+  it("is the view's centre for an army on the hex the camera looks at", () => {
+    expect(at({ col: 654, row: 50 })).toEqual([0, 0]);
+  });
+
+  it("is the screen step to a neighbour, contract north running down the screen", () => {
+    // The lab's explore: the ring's north-east (65, -95) took the army from 654,50 to 655,49.
+    expect(at({ col: 655, row: 49 })).toEqual([65, -95]);
+    expect(at({ col: 653, row: 50 })).toEqual([-135, 0]);
+  });
+
+  it("adds the steps of an army a few tiles off, and has none for one too far or none selected", () => {
+    expect(at({ col: 656, row: 50 })).toEqual([274, 0]);
+    expect(at({ col: 664, row: 50 })).toBeNull();
+    expect(at(null)).toBeNull();
   });
 });

@@ -11,7 +11,6 @@
     draws: [],
     events: [],
     frames: [],
-    frameRuns: [],
     heap: [],
     inputs: [],
     labelNodes: [],
@@ -26,8 +25,7 @@
     watched: [],
   };
   // Conditions a step waits to see on screen, each checked in the probe's frame callback; `at` is when a check first
-  // found one true. A frame's timestamp is when it began, which a busy frame's callbacks (and its paint) run well after,
-  // so each frame's callback also records when it ran (frameRuns).
+  // found one true (a frame's timestamp is when it began, which a busy frame's callbacks run well after).
   let watches = [];
   let drawsThisFrame = 0;
   const NO_GPU_WORK = { pipelines: 0, shaders: 0, uploadBytes: 0, callMs: 0 };
@@ -151,7 +149,6 @@
   const onFrame = (timestamp) => {
     checkWatches(timestamp);
     push(state.frames, timestamp);
-    push(state.frameRuns, performance.now());
     push(state.draws, drawsThisFrame);
     push(state.gpu, gpuThisFrame);
     // The scene the renderer drew last; read here, it is the previous frame's, one frame late at a change.
@@ -327,7 +324,6 @@
         scenes: state.scenes.slice(fromFrame),
         events: after(state.events, (entry) => entry.start),
         frames: state.frames.slice(fromFrame),
-        frameRuns: state.frameRuns.slice(fromFrame),
         heap: after(state.heap, ([t]) => t),
         inputs: after(state.inputs, (entry) => entry.t),
         labelNodes: after(state.labelNodes, ([t]) => t),

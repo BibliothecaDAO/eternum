@@ -2,18 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import { clickToResultTable, framesBetween, measureClickToResult } from "./click-latency.mjs";
 
-/** A frame every 16 ms from 0 to `until`, each frame's callback running as it begins. */
-const framesTo = (until, every = 16) => {
-  const frames = Array.from({ length: Math.floor(until / every) + 1 }, (_, index) => index * every);
-  return { frames, frameRuns: frames };
-};
+/** A frame every 16 ms from 0 to `until`. */
+const framesTo = (until, every = 16) => ({
+  frames: Array.from({ length: Math.floor(until / every) + 1 }, (_, index) => index * every),
+});
 
 /** A send the client reported, stage by stage, with the facts Herald brought for it. */
-const send = ({ command, answered, diff, applied, rendered }) => ({
+const send = ({ command, answered, diff, applied }) => ({
   operation: "send",
   surface: "unattributed",
   transactionHash: "0xabc",
-  phases: { diff_received: diff, store_applied: applied, ...(rendered ? { rendered } : {}) },
+  phases: { diff_received: diff, store_applied: applied },
   send: {
     key: "1:1",
     stages: [
@@ -24,7 +23,7 @@ const send = ({ command, answered, diff, applied, rendered }) => ({
 });
 
 describe("measureClickToResult", () => {
-  it("cuts a press to its first painted result at each mark the client recorded", () => {
+  it("cuts a press to its exact presented result at each mark the client recorded", () => {
     const measured = measureClickToResult({
       since: 90,
       probe: {
@@ -33,10 +32,10 @@ describe("measureClickToResult", () => {
           { type: "pointerdown", t: 100 },
         ],
         ...framesTo(800),
-        watched: [{ name: "level", t: 688, at: 700 }],
+        marks: [{ name: "presented:explore:655,49", t: 704 }],
       },
       actionLatency: { clientActions: [send({ command: 112, answered: 140, diff: 600, applied: 630 })] },
-      result: { watch: "level" },
+      result: { presented: "explore:655,49" },
     });
 
     expect(measured.missing).toEqual([]);
@@ -54,51 +53,50 @@ describe("measureClickToResult", () => {
           { type: "pointerdown", t: 300 },
         ],
         ...framesTo(900),
+        marks: [{ name: "presented:walk:201", t: 800 }],
       },
-      actionLatency: { clientActions: [send({ command: 305, answered: 320, diff: 700, applied: 710, rendered: 800 })] },
-      result: { rendered: true },
+      actionLatency: { clientActions: [send({ command: 305, answered: 320, diff: 700, applied: 710 })] },
+      result: { presented: "walk:201" },
     });
 
     expect(measured.marks.click).toBe(300);
     expect(measured.totalMs).toBe(500);
   });
 
-  it("times a move to its army starting to walk", () => {
-    const measured = measureClickToResult({
-      since: 0,
-      probe: { inputs: [{ type: "pointerdown", t: 50 }], ...framesTo(600) },
-      actionLatency: {
-        clientActions: [send({ command: 60, answered: 70, diff: 400, applied: 420 })],
-        armyMovement: [
-          { phase: "movement_started", entityId: 9, wallTimeMs: 20 },
-          { phase: "movement_started", entityId: 201, wallTimeMs: 30 },
-          { phase: "movement_started", entityId: 201, wallTimeMs: 450 },
-        ],
-      },
-      result: { walking: 201 },
-    });
-
-    expect(measured.marks.visible).toBe(464);
-    expect(measured.segments.drawn).toBe(44);
-  });
-
-  it("counts a result from when the frame that paints it ran, not from when that frame began", () => {
-    // The frame that began at 600 ran its callback at 650, after the work that wrote the facts: it paints the result.
+  it("never takes another target's result, or one presented before the press, as this action's", () => {
     const measured = measureClickToResult({
       since: 0,
       probe: {
-        inputs: [{ type: "pointerdown", t: 100 }],
-        frames: [96, 112, 600, 660, 676],
-        frameRuns: [97, 113, 650, 661, 677],
-        watched: [{ name: "level", t: 600, at: 650 }],
+        inputs: [{ type: "pointerdown", t: 50 }],
+        ...framesTo(600),
+        marks: [
+          { name: "presented:building:10,8:37", t: 20 },
+          { name: "presented:building:11,8:37", t: 450 },
+          { name: "presented:building:10,8:38", t: 460 },
+        ],
       },
-      actionLatency: { clientActions: [send({ command: 110, answered: 120, diff: 590, applied: 640 })] },
-      result: { watch: "level" },
+      actionLatency: { clientActions: [send({ command: 60, answered: 70, diff: 400, applied: 420 })] },
+      result: { presented: "building:10,8:37" },
     });
 
-    expect(measured.marks.visible).toBe(650);
-    expect(measured.segments.drawn).toBe(10);
-    expect(measured.frames.worstMs).toBe(488);
+    expect(measured.missing).toEqual(["visible"]);
+    expect(measured.totalMs).toBeNull();
+  });
+
+  it("times a watched page condition from the frame callback that first saw it hold", () => {
+    const measured = measureClickToResult({
+      since: 0,
+      probe: {
+        inputs: [{ type: "pointerdown", t: 50 }],
+        ...framesTo(600),
+        watched: [{ name: "level-up", t: 432, at: 440 }],
+      },
+      actionLatency: { clientActions: [send({ command: 60, answered: 70, diff: 400, applied: 420 })] },
+      result: { watch: "level-up" },
+    });
+
+    expect(measured.marks.visible).toBe(440);
+    expect(measured.segments.drawn).toBe(20);
   });
 
   it("names a mark the client never reached and leaves its segments out", () => {
@@ -106,7 +104,7 @@ describe("measureClickToResult", () => {
       since: 0,
       probe: { inputs: [{ type: "pointerdown", t: 50 }], ...framesTo(600), watched: [] },
       actionLatency: { clientActions: [send({ command: 60, answered: 70, diff: undefined, applied: undefined })] },
-      result: { watch: "built" },
+      result: { watch: "level-up" },
     });
 
     expect(measured.missing).toEqual(["diff", "applied", "visible"]);
@@ -121,7 +119,7 @@ describe("measureClickToResult", () => {
         since: 100,
         probe: { inputs: [{ type: "pointerdown", t: 50 }], frames: [] },
         actionLatency: { clientActions: [] },
-        result: { rendered: true },
+        result: { presented: "walk:201" },
       }),
     ).toEqual({ missing: ["click"] });
   });

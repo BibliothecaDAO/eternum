@@ -13,7 +13,10 @@ import {
   contextLossErrors,
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
+import { Direction, getNeighborHexes } from "@bibliothecadao/types";
+
 import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
+import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
 import { againstTheirThings, judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
 import { DESKTOP_MIN_WIDTH, judgeHudLayout } from "./hud-layout.mjs";
@@ -146,44 +149,97 @@ const PLAYER_STEPS = [
 
 /**
  * An action timed from the player's press to its result on screen (owner, 2026-10-28: "I want to reduce as max we can
- * the time between an action submitted and it appearing on the suers screen"). `press` plays it as a player does;
- * `result` names what the player then sees (click-latency.mjs), from what was pressed. The step settles long enough
- * for the chain to answer, then cuts the press to the result at each mark the client recorded.
+ * the time between an action submitted and it appearing on the suers screen"). `press` plays it as a player does and
+ * reports the screen region its result shows in; `resultOf` names exactly that result (click-latency.mjs) from what was
+ * pressed and what the client and, in the lab, the chain recorded. The step waits long enough for the chain to answer,
+ * then cuts the press to the result at each mark the client recorded. With --capture-results it also records the
+ * page's frames and fails unless they show the result in its region at its mark (result-capture.mjs).
  */
-const clickToResultStep = (name, press, result) => ({
+const clickToResultStep = (name, press, resultOf) => ({
   name,
-  play: press,
-  settleMs: RESULT_SETTLE_MS,
-  verify: ({ played, probe, actionLatency, window }) =>
-    judgeClickToResult(
-      played,
-      measureClickToResult({
-        probe,
-        actionLatency,
-        since: window.from,
-        result: typeof result === "function" ? result(played) : result,
-      }),
-    ),
+  play: async (context) => {
+    const stopCapture = context.captureResults
+      ? await startResultCapture(context.devTools, context.browser.observe().timeOrigin)
+      : null;
+    const played = await press(context);
+    await context.owner.sleep(RESULT_SETTLE_MS);
+    if (!stopCapture) return played;
+    capturedFrames.set(context.base, await stopCapture());
+    return { ...played, capturedAs: context.base };
+  },
+  settleMs: 0,
+  verify: async ({ played, probe, actionLatency, window }) => {
+    const result = resultOf({ played, actionLatency, since: window.from });
+    if (!result) return judgeClickToResult(played, { missing: ["result"] });
+    const measured = measureClickToResult({ probe, actionLatency, since: window.from, result });
+    const verdict = judgeClickToResult(played, measured);
+    if (!played.capturedAs) return verdict;
+    const frames = capturedFrames.get(played.capturedAs) ?? [];
+    capturedFrames.delete(played.capturedAs);
+    if (verdict.status !== "completed") return verdict;
+    const onScreen = await proveResultOnScreen({
+      frames,
+      region: played.region,
+      before: measured.marks.diff,
+      visible: measured.marks.visible,
+      frameMs: medianFrameMs(probe.frames, window),
+      dir: `${played.capturedAs}-frames`,
+    });
+    return onScreen.shown
+      ? completed({ ...verdict, onScreen })
+      : failed(`the screen did not show ${JSON.stringify(result)} at its mark: ${onScreen.reason}`, {
+          clickToResult: measured,
+          onScreen,
+        });
+  },
 });
 /** Long enough for a live shard's answer and the frames after it; the lab's chain answers in 300 ms. */
 const RESULT_SETTLE_MS = 6_000;
+/** Frames a step recorded with --capture-results, held until its verdict reads them: never in its transcript. */
+const capturedFrames = new Map();
+
+const medianFrameMs = (frames, { from, to }) => {
+  const inside = frames.filter((frame) => frame >= from && frame <= to);
+  const gaps = inside
+    .slice(1)
+    .map((frame, index) => frame - inside[index])
+    .sort((a, b) => a - b);
+  return Math.max(1000 / 60, gaps[Math.floor(gaps.length / 2)] ?? 0);
+};
+
+/** The tile an explore targeted, as its own record names it: the one tile its result may show. */
+const exploredTile = ({ actionLatency, since }) => {
+  const record = (actionLatency.clientActions ?? []).find(
+    (action) => action.operation === "explore_reveal" && action.phases.click >= since && action.targetHex,
+  );
+  return record && { presented: `explore:${record.targetHex.col},${record.targetHex.row}` };
+};
+
+/** The building the lab's chain wrote for the step's CreateBuilding: its plot and its category. */
+const builtBuilding = ({ actionLatency }) => {
+  const building = (actionLatency.chainAnswers ?? [])
+    .filter(({ kind }) => kind === "CreateBuilding")
+    .at(-1)
+    ?.answered.find(({ model }) => model === "Building")?.value;
+  return building && { presented: `building:${building.inner_col},${building.inner_row}:${building.category}` };
+};
 
 /**
- * Every action a player's press sends, each timed from the press to the first frame showing its result: on the map,
- * an explore (the revealed tile drawn) and a move (the army walking); in the realm, the castle raised a level (the
- * realm's card naming its new level) and a building placed (its model drawn on its plot).
+ * Every action a player's press sends, each timed from the press to the frame that shows its result: on the map, an
+ * explore (its tile's terrain presented) and a move (the army's walk started); in the realm, the castle raised a level
+ * (its sheet naming exactly the next level) and a building placed (that building, on that plot, drawn).
  */
 const ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  clickToResultStep("explore", exploreBesideArmy, { rendered: true }),
+  clickToResultStep("explore", exploreBesideArmy, exploredTile),
   clickToResultStep(
     "move",
     (context) => orderBesideArmy(context, "Move"),
-    (played) => ({ walking: played.armyId }),
+    ({ played }) => played.armyId && { presented: `walk:${played.armyId}` },
   ),
   { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
-  clickToResultStep("level-up", raiseTheCastle, { watch: "level-up" }),
-  clickToResultStep("build", buildOnAnOpenPlot, { mark: "building:drawn:" }),
+  clickToResultStep("level-up", raiseTheCastle, ({ played }) => played.raisedTo && { watch: "level-up" }),
+  clickToResultStep("build", buildOnAnOpenPlot, builtBuilding),
 ];
 
 const REALM_LEVELS = ["Settlement", "City", "Kingdom", "Empire"];
@@ -193,7 +249,7 @@ const SHEET_WAIT_MS = 3_000;
 
 /**
  * Taps the keep at the realm's centre for its Castle sheet, which names the level now and the next, then presses
- * Upgrade, watching for the sheet to stop naming the level the realm had.
+ * Upgrade, watching for the sheet to name exactly the next level as its own and the one after as its next.
  */
 async function raiseTheCastle({ browser }) {
   browser.tap([0, 0]);
@@ -204,12 +260,25 @@ async function raiseTheCastle({ browser }) {
   );
   if (sheet !== "Castle") return { sheet };
   const shown = browser.read(`JSON.stringify(${CASTLE_SHEET_TEXT})`);
-  const level = REALM_LEVELS.find((word) => shown.includes(word));
-  if (!level) return { sheet, level };
-  watchFor(browser, "level-up", `!(${CASTLE_SHEET_TEXT}).includes(${JSON.stringify(level)})`);
+  const level = REALM_LEVELS.findIndex((word) => shown.includes(word));
+  const raisedTo = REALM_LEVELS[level + 1];
+  if (level === -1 || !raisedTo) return { sheet, level: REALM_LEVELS[level] ?? null };
+  const after = REALM_LEVELS[level + 2];
+  const nowRaised = [
+    `!text.includes(${JSON.stringify(REALM_LEVELS[level])})`,
+    `text.includes(${JSON.stringify(raisedTo)})`,
+    ...(after ? [`text.includes(${JSON.stringify(after)})`] : []),
+  ].join(" && ");
+  watchFor(browser, "level-up", `((text) => text !== "" && ${nowRaised})(${CASTLE_SHEET_TEXT})`);
+  const region = browser.read(SHEET_REGION);
   browser.click("Upgrade");
-  return { sheet, level };
+  return { sheet, level: REALM_LEVELS[level], raisedTo, region };
 }
+
+const SHEET_REGION = `JSON.stringify((() => {
+  const rect = document.querySelector('[data-kit-sheet][aria-label="Castle"]').getBoundingClientRect();
+  return { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) };
+})())`;
 
 /**
  * Taps down towards the castle from above, a plot at a time, until one opens the Build sheet (straight above the castle
@@ -229,7 +298,7 @@ async function buildOnAnOpenPlot({ browser }) {
     tapped.push({ offset, sheet });
     if (sheet === "Build") {
       browser.click("Build");
-      return { tapped, plot: offset };
+      return { tapped, plot: offset, region: tileRegion(offset) };
     }
     if (sheet !== null) browser.press("Escape");
   }
@@ -691,7 +760,7 @@ async function selectTheReadiestArmy({ browser }) {
   return { armies, army: await focusTheReadiestArmy(browser, armies) };
 }
 
-/** An order clears the selection, so every order starts by selecting (and centring) the army that can act. */
+/** Selects the army with the most stamina from the dock (a desktop's pick centres it; a phone's may not). */
 async function focusTheReadiestArmy(browser, armies = browser.armies()) {
   const readiest = armies.toSorted((left, right) => (right.stamina || 0) - (left.stamina || 0))[0];
   if (!readiest) return null;
@@ -721,8 +790,8 @@ function exploreBesideArmy(context) {
 }
 
 /**
- * Selects and centres the readiest army from the dock. A phone keeps an army selected after its order, its panel where
- * the dock was: the panel is put away first, as a player does to pick an army again.
+ * Selects the readiest army from the dock. A phone keeps an army selected after its order, its panel where the dock
+ * was: the panel is put away first, as a player does to pick an army again.
  */
 async function focusTheArmyFromItsDock(browser) {
   if (browser.armies().length === 0 && browser.observe().selection?.army) {
@@ -732,41 +801,129 @@ async function focusTheArmyFromItsDock(browser) {
   return focusTheReadiestArmy(browser);
 }
 
-/** Centres the army and gives it the order `verb` (Explore, Move) on a tile beside it, as `exploreBesideArmy` does. */
+/**
+ * Gives the readiest army the order `verb` (Explore, Move) on a tile beside it, aimed from where the army stands on
+ * screen (the camera is left where it is: picking an army does not always centre it), and names the region its result
+ * shows in: the explored tile, or the tile a move leaves.
+ */
 async function orderBesideArmy({ browser, extraScreenshot }, verb) {
-  const army = await focusTheArmyFromItsDock(browser);
-  if (!army) return { offered: [], army };
-  const armyId = browser.observe().selection?.army?.id ?? null;
+  const armyName = await focusTheArmyFromItsDock(browser);
+  if (!armyName) return { offered: [], army: armyName };
+  const selection = browser.observe().selection;
+  const armyId = selection?.army?.id ?? null;
+  const armyAt = armyScreenOffset(selection);
+  if (!armyAt)
+    return { army: armyName, armyId, offered: [], aimed: "the army is not within reach of the view's centre" };
+  const regionOf = (target) => tileRegion(verb === "Explore" ? target : armyAt);
   if (onADesktop()) {
-    const { target, scanned } = await findOrderTile(browser, verb);
+    const { target, scanned } = await findOrderTile(browser, [verb], armyAt);
     const offered = scanned.map((seen) => seen.verb);
-    if (!target) return { army, armyId, offered };
+    if (!target) return { army: armyName, armyId, armyAt, offered };
     const before = extraScreenshot("before");
     const pressedAt = browser.observe().now;
     browser.rightClick(target.offset);
-    return { army, armyId, offered, pressedAt, before, target: target.offset };
+    return {
+      army: armyName,
+      armyId,
+      armyAt,
+      offered,
+      pressedAt,
+      before,
+      target: target.offset,
+      region: regionOf(target.offset),
+    };
   }
   const offered = [];
+  const offMap = [];
+  const taps = [];
   // The army's paths are planned once it is selected; a pass where no tile pins anything is tried once more.
   for (let pass = 1; pass <= TAP_PASSES; pass += 1) {
-    for (const offset of NEIGHBOUR_RING) {
+    for (const step of NEIGHBOUR_RING) {
+      // A pinned order may frame its tile above its card: the army is found again before each tap.
+      const army = armyScreenOffset(browser.observe().selection) ?? armyAt;
+      const at = [army[0] + step[0], army[1] + step[1]];
+      if (!onTheOpenMap(at)) {
+        offMap.push(at);
+        continue;
+      }
       const pinnedAt = browser.observe().now;
-      browser.tap(offset);
+      browser.tap(at);
       const offer = orderVerb(browser.orderBar());
       offered.push(offer);
+      const selection = browser.observe().selection;
+      taps.push({ at, offer, camera: selection?.camera ?? null, armySelected: Boolean(selection?.army) });
+      // A tile holding something else (a structure, the spire) takes the selection: pick the army again.
+      if (offer !== verb && !selection?.army) await focusTheArmyFromItsDock(browser);
       if (offer === verb) {
         const before = extraScreenshot("before");
         const pressedAt = browser.observe().now;
         // The phone's own confirmation (owner, 27 October 2026: "double tapping to explore on mobile"): the same tile again.
-        browser.tap(offset);
-        return { army, armyId, offered, pinnedAt, pressedAt, before, target: offset };
+        browser.tap(at);
+        return {
+          army: armyName,
+          armyId,
+          armyAt: army,
+          offered,
+          pinnedAt,
+          pressedAt,
+          before,
+          target: at,
+          region: tileRegion(verb === "Explore" ? at : army),
+          taps,
+        };
       }
     }
     if (offered.some(Boolean)) break;
     await sleep(ARMY_FLIGHT_MS);
   }
   browser.press("Escape");
-  return { army, armyId, offered };
+  return { army: armyName, armyId, armyAt, offered, offMap, taps };
+}
+
+/** A phone's open map, between its top bars and its dock: a tap outside it lands on the HUD or off the page. */
+const OPEN_MAP_MARGINS = { side: 30, top: 140, bottom: 260 };
+const onTheOpenMap = ([dx, dy]) =>
+  Math.abs(dx) <= VIEWPORT.width / 2 - OPEN_MAP_MARGINS.side &&
+  dy >= OPEN_MAP_MARGINS.top - VIEWPORT.height / 2 &&
+  dy <= VIEWPORT.height / 2 - OPEN_MAP_MARGINS.bottom;
+
+/**
+ * The screen step to each neighbour at the map's default zoom, by the contract's direction to it. Contract north runs
+ * down the screen: on the lab's explore the ring's north-east is the army's south-east neighbour (654,50 → 655,49).
+ */
+const SCREEN_STEP = {
+  [Direction.SOUTH_EAST]: NEIGHBOUR_RING[0],
+  [Direction.EAST]: NEIGHBOUR_RING[1],
+  [Direction.NORTH_EAST]: NEIGHBOUR_RING[2],
+  [Direction.NORTH_WEST]: NEIGHBOUR_RING[3],
+  [Direction.WEST]: NEIGHBOUR_RING[4],
+  [Direction.SOUTH_WEST]: NEIGHBOUR_RING[5],
+};
+
+/**
+ * Where the selected army stands on screen, from the view's centre: the screen steps from the hex the camera looks at
+ * to the army's, as the page reports both (window.__eternumMapSelection); null when it is more than a few tiles off.
+ */
+export function armyScreenOffset(selection, maxSteps = 4) {
+  const from = selection?.camera;
+  const to = selection?.army?.hex;
+  if (!from || !to) return null;
+  const seen = new Set([`${from.col},${from.row}`]);
+  let reached = [{ col: from.col, row: from.row, at: [0, 0] }];
+  for (let steps = 0; steps <= maxSteps; steps += 1) {
+    const hit = reached.find((hex) => hex.col === to.col && hex.row === to.row);
+    if (hit) return hit.at;
+    reached = reached.flatMap((hex) =>
+      getNeighborHexes(hex.col, hex.row)
+        .filter((next) => !seen.has(`${next.col},${next.row}`) && seen.add(`${next.col},${next.row}`))
+        .map((next) => ({
+          col: next.col,
+          row: next.row,
+          at: [hex.at[0] + SCREEN_STEP[next.direction][0], hex.at[1] + SCREEN_STEP[next.direction][1]],
+        })),
+    );
+  }
+  return null;
 }
 
 /**
@@ -1122,18 +1279,18 @@ async function pollDevTools(read, timeoutMs) {
 }
 
 /**
- * Hovers tiles around the army until one's tooltip offers it one of `verbs` (a move or an explore), as a player reads
- * it.
+ * Hovers tiles around the army (standing `around` the view's centre) until one's tooltip offers it one of `verbs` (a
+ * move or an explore), as a player reads it.
  */
-async function findOrderTile(browser, ...verbs) {
-  const wanted = verbs.length > 0 ? verbs : ["Move", "Explore"];
+async function findOrderTile(browser, verbs = ["Move", "Explore"], around = [0, 0]) {
   const scanned = [];
-  for (const offset of ORDER_TILE_CANDIDATES) {
+  for (const [dx, dy] of ORDER_TILE_CANDIDATES) {
+    const offset = [around[0] + dx, around[1] + dy];
     browser.hover(offset);
     await sleep(HOVER_SETTLE_MS);
     const verb = browser.read(ORDER_TOOLTIP_TITLE);
     scanned.push({ offset, verb });
-    if (wanted.includes(verb)) return { target: { offset, verb }, scanned };
+    if (verbs.includes(verb)) return { target: { offset, verb }, scanned };
   }
   return { target: null, scanned };
 }

@@ -1,9 +1,9 @@
 import { blocked, completed, failed } from "./evidence.mjs";
 
 /**
- * Click to result: one action timed from the player's press to the first frame showing what it did, cut where the
- * client records its way (the brief's segments: handler, send, chain and Herald, facts applied, drawn). Every mark is
- * the page's own clock; the frames between the press and the result are kept, so a reader can replay the cut.
+ * Click to result: one action timed from the player's press to the frame that shows what it did, cut where the client
+ * records its way (the brief's segments: handler, send, chain and Herald, facts applied, drawn). Every mark is the
+ * page's own clock; the frames between the press and the result are kept, so a reader can replay the cut.
  */
 
 /** The cut, in order: each segment runs from the mark before it to its own mark. */
@@ -12,7 +12,7 @@ const CLICK_TO_RESULT_SEGMENTS = [
   { mark: "answered", segment: "sent", what: "signed, sent and answered by the shard's RPC" },
   { mark: "diff", segment: "confirmed", what: "the chain and Herald, to the pre-confirmed diff arriving" },
   { mark: "applied", segment: "applied", what: "the diff's facts in the fact store" },
-  { mark: "visible", segment: "drawn", what: "the first frame showing the result" },
+  { mark: "visible", segment: "drawn", what: "the frame that draws the result, rendered" },
 ];
 
 /**
@@ -20,10 +20,11 @@ const CLICK_TO_RESULT_SEGMENTS = [
  * two marks, the total, and the frames that cover the press to the result. A mark the client never reached is named in
  * `missing`, and its segments are left out rather than guessed.
  *
- * `result` names what a player sees: `{ watch: <name> }`, a condition the probe checked each frame;
- * `{ rendered: true }`, the client's own rendered mark for the action (an explored tile drawn); `{ walking: <army> }`,
- * that army starting to walk; `{ mark: <prefix> }`, a scene's performance mark of that name (a building drawn on its
- * plot). The result is visible from the first frame that begins after it was seen.
+ * `result` names exactly what a player sees: `{ presented: <result> }`, the renderer's mark that the frame drawing that
+ * result was rendered (`presented:<result>`, src/three/presented-results.ts: "explore:<col>,<row>", "walk:<army>",
+ * "building:<col>,<row>:<category>"); or `{ watch: <name> }`, a page condition the probe checked in each frame callback
+ * (the HUD naming an exact level), seen as that frame paints. Any other result, an earlier one or one of another
+ * target, is not this action's.
  */
 export function measureClickToResult({ probe, actionLatency, since, result }) {
   const click = lastPressBefore(probe.inputs ?? [], since, firstCommandAfter(actionLatency, since));
@@ -35,7 +36,7 @@ export function measureClickToResult({ probe, actionLatency, since, result }) {
     answered: stageAt(record, "answered"),
     diff: record?.phases?.diff_received ?? null,
     applied: record?.phases?.store_applied ?? null,
-    visible: visibleAt({ probe, actionLatency, record, click, result }),
+    visible: visibleAt({ probe, click, result }),
   };
   const missing = Object.entries(marks)
     .filter(([, at]) => at === null)
@@ -97,29 +98,14 @@ function stageAt(record, stage) {
   return record?.send?.stages?.find((reached) => reached.stage === stage)?.at ?? null;
 }
 
-/**
- * When the frame that shows the result ran: the first frame callback after the result was seen (by the probe's check,
- * the client's own mark, or a scene's mark), the frame the browser then paints. Its callback time, not its start: a
- * frame begins before the work that blocks it, and paints only after.
- */
-function visibleAt({ probe, actionLatency, record, click, result }) {
-  const seen = seenAt({ probe, actionLatency, record, click, result });
-  return seen === null ? null : ((probe.frameRuns ?? []).find((ran) => ran >= seen) ?? null);
-}
-
-function seenAt({ probe, actionLatency, record, click, result }) {
+/** When the result was on its frame: its presented mark, or the probe callback that first saw its watch hold. */
+function visibleAt({ probe, click, result }) {
+  if (result.presented) {
+    const name = `presented:${result.presented}`;
+    return (probe.marks ?? []).find((mark) => mark.name === name && mark.t >= click)?.t ?? null;
+  }
   if (result.watch)
     return (probe.watched ?? []).find((seen) => seen.name === result.watch && seen.at >= click)?.at ?? null;
-  if (result.rendered) return record?.phases?.rendered ?? null;
-  if (result.mark)
-    return (probe.marks ?? []).find((mark) => mark.name.startsWith(result.mark) && mark.t >= click)?.t ?? null;
-  if (result.walking !== undefined) {
-    const walking = (actionLatency.armyMovement ?? []).find(
-      (entry) =>
-        entry.phase === "movement_started" && Number(entry.entityId) === result.walking && entry.wallTimeMs >= click,
-    );
-    return walking?.wallTimeMs ?? null;
-  }
   throw new Error(`measureClickToResult has no way to see ${JSON.stringify(result)}`);
 }
 
