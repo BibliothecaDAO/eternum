@@ -720,10 +720,21 @@ function exploreBesideArmy(context) {
   return orderBesideArmy(context, "Explore");
 }
 
+/**
+ * Selects and centres the readiest army from the dock. A phone keeps an army selected after its order, its panel where
+ * the dock was: the panel is put away first, as a player does to pick an army again.
+ */
+async function focusTheArmyFromItsDock(browser) {
+  if (browser.armies().length === 0 && browser.observe().selection?.army) {
+    browser.press("Escape");
+    await waitFor(browser, () => browser.armies().length > 0, BURST_SELECT_WAIT_MS);
+  }
+  return focusTheReadiestArmy(browser);
+}
+
 /** Centres the army and gives it the order `verb` (Explore, Move) on a tile beside it, as `exploreBesideArmy` does. */
 async function orderBesideArmy({ browser, extraScreenshot }, verb) {
-  // A phone keeps the army selected after its order, its panel standing where the dock was.
-  const army = (await focusTheReadiestArmy(browser)) ?? (browser.observe().selection?.army ? "selected" : null);
+  const army = await focusTheArmyFromItsDock(browser);
   if (!army) return { offered: [], army };
   const armyId = browser.observe().selection?.army?.id ?? null;
   if (onADesktop()) {
