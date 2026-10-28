@@ -105,7 +105,7 @@ test("wrong client chain/RPC stops before a build or upload", async () => {
   value.inputs.rpc = "https://starknet-sepolia.g.alchemy.com/v2/throwaway";
   const calls = commands();
   try {
-    await expect(deployClient(value, revision)).rejects.toThrow("chain and Alchemy");
+    await expect(deployClient(value, revision)).rejects.toThrow("chain and L2 RPC");
     expect(calls).toEqual([]);
   } finally {
     value.inputs.rpc = "https://starknet-mainnet.g.alchemy.com/v2/throwaway";

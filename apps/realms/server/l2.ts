@@ -1,4 +1,4 @@
-import { encodeChainName, environmentL2 } from "@realms-world/chain";
+import { encodeChainName, environmentL2, isMainnetL2Rpc } from "@realms-world/chain";
 import { RpcProvider } from "starknet";
 
 interface L2Environment {
@@ -9,13 +9,7 @@ interface L2Environment {
 /** One explicit environment chain and its paid RPC replace inferred/mainnet-only reads. */
 export const identityL2Configuration = (env: L2Environment) => {
   const { chain } = environmentL2(env.ENVIRONMENT);
-  let url: URL;
-  try {
-    url = new URL(env.L2_RPC_URL);
-  } catch {
-    throw new Error("L2_RPC_URL requires the environment's HTTPS Alchemy endpoint");
-  }
-  if (!isMainnetAlchemy(url)) throw new Error("L2_RPC_URL requires the environment's HTTPS Alchemy endpoint");
+  if (!isMainnetL2Rpc(env.L2_RPC_URL)) throw new Error("L2_RPC_URL requires one of the environment's accepted L2 RPCs");
   return { chainId: chain, rpcUrl: env.L2_RPC_URL };
 };
 
@@ -55,18 +49,6 @@ export const verifyIdentityChain = async (provider: RpcProvider, env: L2Environm
   const { chainId } = identityL2Configuration(env);
   if (BigInt(await provider.getChainId()) !== BigInt(encodeChainName(chainId)))
     throw new Error("identity_l2_chain_mismatch");
-};
-
-const isMainnetAlchemy = (url: URL) => {
-  return (
-    url.protocol === "https:" &&
-    url.hostname === "starknet-mainnet.g.alchemy.com" &&
-    !url.port &&
-    !url.username &&
-    !url.password &&
-    !url.hash &&
-    url.pathname !== "/"
-  );
 };
 
 /** Workers implement manual redirects; refuse them before another host can receive an RPC request. */

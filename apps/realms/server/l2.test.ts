@@ -10,15 +10,20 @@ const env = {
   MARKETPLACE_API_URL: "https://market.test/api/marketplace",
 };
 afterEach(() => vi.restoreAllMocks());
-it("requires a known environment and only its HTTPS Alchemy endpoint without exposing credentials", () => {
+it("requires a known environment and one of its accepted HTTPS L2 RPCs without exposing credentials", () => {
   expect(() => identityL2Configuration({ ...env, ENVIRONMENT: undefined } as never)).toThrow("ENVIRONMENT");
   for (const url of [
     "https://other.test/v2/private",
     "http://starknet-mainnet.g.alchemy.com/v2/private",
     "https://starknet-sepolia.g.alchemy.com/v2/private",
+    "https://api.cartridge.gg/x/starknet/sepolia",
+    "https://api.cartridge.gg/x/world",
   ])
     expect(() => identityL2Configuration({ ...env, L2_RPC_URL: url })).toThrow("L2_RPC_URL");
   expect(identityL2Configuration(env).chainId).toBe("SN_MAIN");
+  expect(identityL2Configuration({ ...env, L2_RPC_URL: "https://api.cartridge.gg/x/starknet/mainnet" }).rpcUrl).toBe(
+    "https://api.cartridge.gg/x/starknet/mainnet",
+  );
   expect(
     identityL2Configuration({
       ...env,

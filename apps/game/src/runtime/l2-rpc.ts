@@ -1,4 +1,4 @@
-import { environmentL2, resolveEndpoint } from "@realms-world/chain";
+import { environmentL2, isMainnetL2Rpc, MAINNET_L2_RPC_NAMES } from "@realms-world/chain";
 import { constants, RpcProvider } from "starknet";
 
 import { valueEnvironmentOf } from "@/shell/frame/environment";
@@ -48,11 +48,13 @@ export const l2TransactionUrl = (hash: string): string => `${L2_CHAIN.explorer}/
 /** Whether a chain id, as a wallet or a payload gives it, is this build's L2. */
 export const isL2Chain = (chainId: bigint | string): boolean => BigInt(chainId) === BigInt(L2_CHAIN.id);
 
-/** This build's L2 through our Alchemy RPC, from the build's L2 RPC variable; there is no public fallback. */
-export const L2_RPC_URL = resolveEndpoint(env.VITE_PUBLIC_L2_RPC_URL, {
-  name: "VITE_PUBLIC_L2_RPC_URL",
-  browserFacing: true,
-});
+/** This build's L2 through one of the accepted mainnet RPCs, from the build's L2 RPC variable; there is no fallback. */
+export const L2_RPC_URL = acceptedL2Rpc(env.VITE_PUBLIC_L2_RPC_URL);
+
+function acceptedL2Rpc(value: string | undefined): string {
+  if (!isMainnetL2Rpc(value)) throw new Error(`VITE_PUBLIC_L2_RPC_URL must be ${MAINNET_L2_RPC_NAMES}`);
+  return value!;
+}
 
 let provider: RpcProvider | null = null;
 

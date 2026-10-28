@@ -3,6 +3,7 @@ export * from "./chains";
 export * from "./community";
 export * from "./contracts";
 export * from "./endpoints";
+export * from "./l2-rpc";
 export * from "./marketplace";
 export * from "./value-plane";
 export {

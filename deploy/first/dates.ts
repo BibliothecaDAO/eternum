@@ -1,5 +1,6 @@
 import { assertFrontierSeason, CalendarConflict } from "../../apps/launch-service/src/calendar";
 
+import { isMainnetL2Rpc, MAINNET_L2_RPC_NAMES } from "../../packages/chain/src/l2-rpc";
 import { PublicError } from "./errors";
 import { blitzPresetOf, WEI, type Inputs, type Target } from "./settings";
 export interface SeasonDates {
@@ -47,7 +48,7 @@ const namesTreasury = (target: Target) => target.coldAdmin || target.environment
 export function setupQuestions(target: Target): [keyof Inputs, string][] {
   return [
     ["cloudflareToken", "Cloudflare token"],
-    ["rpc", "Alchemy mainnet URL"],
+    ["rpc", "Starknet mainnet RPC URL (Alchemy or Cartridge)"],
     ["resend", "Resend key"],
     ["discordClientId", "Discord client ID"],
     ["discordClientSecret", "Discord client secret"],
@@ -72,15 +73,8 @@ export function setupQuestions(target: Target): [keyof Inputs, string][] {
 }
 
 export function validateInputs(input: Inputs, target: Target) {
-  const rpc = new URL(input.rpc);
-  if (
-    rpc.protocol !== "https:" ||
-    rpc.hostname !== "starknet-mainnet.g.alchemy.com" ||
-    rpc.username ||
-    rpc.password ||
-    rpc.hash
-  )
-    throw new PublicError("Use the Alchemy mainnet HTTPS endpoint");
+  if (!isMainnetL2Rpc(input.rpc))
+    throw new PublicError(`Use an accepted Starknet mainnet RPC: ${MAINNET_L2_RPC_NAMES}`);
   if (!input.cloudflareToken || !input.resend) throw new PublicError("Cloudflare and Resend credentials are required");
   if (!input.discordClientId || !input.discordClientSecret)
     throw new PublicError("Discord sign-in needs its client ID and secret in inputs.json");

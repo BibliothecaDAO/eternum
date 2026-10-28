@@ -39,11 +39,11 @@ to the game client's or identity Worker's automatic release. Local checks: `pnpm
 `pnpm --dir apps/status-monitor typecheck`. Repository service validation runs both. Tests use mocked public HTTP and
 local R2; they do not probe live hosts.
 
-`BASE_URL` and `ENVIRONMENT` are committed per environment; `L2_RPC_URL` is the one Alchemy URL supplied by the owner
-and distributed by the deployment script. The environment selects the shared address book. The three health addresses
-come from `BASE_URL`: `/api/guardian`, `/api/value/health` and `/api/operator/monitor/health`. No additional hostname or
-health secret is required. Relay and value-monitor health must report the correct service and a completed check within
-five minutes. Guardian signing stays private to service bindings.
+`BASE_URL` and `ENVIRONMENT` are committed per environment; `L2_RPC_URL` is the environment's L2 RPC supplied by the
+owner and distributed by the deployment script. The environment selects the shared address book. The three health
+addresses come from `BASE_URL`: `/api/guardian`, `/api/value/health` and `/api/operator/monitor/health`. No additional
+hostname or health secret is required. Relay and value-monitor health must report the correct service and a completed
+check within five minutes. Guardian signing stays private to service bindings.
 
 The ledger probe reads the confirmed node head and `is_paused` at that same block, independently of the relay parser.
 Its `paused` fact is true, false or null on failed decoding. A paused ledger is degraded; a failed or stale L2 head is

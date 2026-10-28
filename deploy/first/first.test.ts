@@ -116,8 +116,16 @@ test.each([
   "https://public-node.test",
   "https://user:secret@starknet-mainnet.g.alchemy.com/a",
   "https://starknet-sepolia.g.alchemy.com/a",
+  "https://api.cartridge.gg/x/starknet/sepolia",
+  "https://api.cartridge.gg/x/world",
 ])("refuses RPC %s", (rpc) => {
-  expect(() => validateInputs({ ...input, rpc }, environments.dev)).toThrow();
+  expect(() => validateInputs({ ...input, rpc }, environments.dev)).toThrow("accepted Starknet mainnet RPC");
+});
+
+test("takes Cartridge's public mainnet RPC as well as the team's Alchemy app", () => {
+  expect(() =>
+    validateInputs({ ...input, rpc: "https://api.cartridge.gg/x/starknet/mainnet" }, environments.dev),
+  ).not.toThrow();
 });
 
 test("positive integral deposit and duration required; production asks for public cold accounts only", () => {

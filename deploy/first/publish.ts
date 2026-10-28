@@ -100,7 +100,7 @@ export async function advanceFrontierRelease(platform: Platform, revision: strin
 
 export function clientEnvironment(platform: Platform, revision: string) {
   const problem = l2EnvironmentProblem(platform.target.worker, platform.inputs.rpc);
-  if (problem) throw new PublicError("Client chain and Alchemy RPC environment do not agree");
+  if (problem) throw new PublicError("Client chain and L2 RPC environment do not agree");
   return {
     VITE_PUBLIC_L2_RPC_URL: platform.inputs.rpc,
     VITE_PUBLIC_ENVIRONMENT: platform.target.worker,

@@ -14,7 +14,7 @@ const IdentityVars = Schema.Struct({
   /** The app's origin; identity is served under its /api. */
   BASE_URL: Schema.NonEmptyString,
   BETTER_AUTH_SECRET: Schema.NonEmptyString,
-  /** Only the configured chain's HTTPS Alchemy RPC is accepted. */
+  /** Only one of the configured chain's accepted HTTPS RPCs (packages/chain/src/l2-rpc.ts). */
   L2_RPC_URL: Schema.NonEmptyString,
   /** The marketplace API (its base, before `/v1`): the Realm holdings index, and at `/rpc` the relay for point reads. */
   MARKETPLACE_API_URL: Schema.String.pipe(Schema.check(Schema.isPattern(/^https:\/\/[^/]+/))),
