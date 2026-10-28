@@ -623,18 +623,21 @@ export function comparePlaytestSummary(baseline, current) {
 
 /** A completed action step's press-to-result total, as a summary spreads it across runs. */
 const CLICK_TO_RESULT_TOTAL = "verdict.clickToResult.totalMs";
+/** A result shows only at a frame: a run landing one 60 Hz frame later than the baseline's slowest is not a regression. */
+const ONE_FRAME_MS = 1000 / 60;
 
 /**
- * Each action whose press-to-result median is now slower than the slowest run of the baseline: past the baseline's own
- * spread, so its run-to-run noise alone does not fail it. An action the baseline did not time is not judged.
+ * Each action whose press-to-result median is now past the slowest run of the baseline by more than a frame: past the
+ * baseline's own spread, so its run-to-run noise alone does not fail it. An action the baseline did not time is not
+ * judged.
  */
 function clickToResultRegressions(mode, baselineSteps = {}, currentSteps = {}) {
   return Object.entries(currentSteps).flatMap(([step, metrics]) => {
     const before = baselineSteps[step]?.[CLICK_TO_RESULT_TOTAL];
     const now = metrics?.[CLICK_TO_RESULT_TOTAL];
-    if (!before || !now || now.median <= before.max) return [];
+    if (!before || !now || now.median <= before.max + ONE_FRAME_MS) return [];
     return [
-      `${mode} ${step}: click to result median ${Math.round(now.median)}ms (n=${now.n}) is past the baseline's slowest ${Math.round(before.max)}ms (median ${Math.round(before.median)}ms, n=${before.n})`,
+      `${mode} ${step}: click to result median ${Math.round(now.median)}ms (n=${now.n}) is past the baseline's slowest ${Math.round(before.max)}ms and a frame (median ${Math.round(before.median)}ms, n=${before.n})`,
     ];
   });
 }

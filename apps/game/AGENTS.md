@@ -185,8 +185,19 @@ the drawn scene changed and the scene marks `scene:<name>:requested` and `scene:
 the same as `bootWindow`), `--steps lab-realm-load` (the same on the lab's built Kingdom,
 `/lab/game?scenario=painted-buildings`, reopened on its realm with `&scene=hex`), `--steps blitz-realm-load` (the same
 on the newest live Blitz game), `--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each run's
-boot, from before the game page opens to the world being interactive), `--compare <summary.json>` (fails when boot
-regresses), `--headed`. Paths are taken from where the command is run.
+boot, from before the game page opens to the world being interactive), `--steps actions` and `--steps lab-actions`
+(click to result: a player's actions, each timed from its press to the first frame that shows its result, in a live
+Frontier game with `--player`, or in the lab's game, `/lab/game?scenario=actions`, whose chain answers each command 300
+ms after it is sent: on the map, explore (the revealed tile drawn) and move (the army walking), each on a tile beside
+the army whose hover offers it (a phone taps it twice); in the realm, level up (the keep's Castle sheet, Upgrade: the
+sheet naming the next level) and build (the outermost open plot above the castle, Build: its building drawn). Each is
+cut where the client records its way: handled (the press to the command), sent (signed and answered by the RPC),
+confirmed (the chain and Herald, to the pre-confirmed diff), applied (the diff's facts in the store) and drawn (the
+first frame callback after the result was seen, the frame that paints it); a step completes only with every mark reached
+and every frame from the press to the result observed. Each run writes `click-to-result.md`, each action's segments and
+total as median (min–max) over its quiet runs), `--compare <summary.json>` (fails when boot regresses, or when an
+action's press-to-result median is past the slowest run of that baseline; `scripts/client-playtest/baselines/` keeps the
+lab's, desktop and phone, measured on the lanes' machine), `--headed`. Paths are taken from where the command is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 

@@ -466,13 +466,14 @@ describe("comparePlaytestSummary for click to result", () => {
     },
   });
 
-  it("passes a median inside the baseline's spread", () => {
+  it("passes a median inside the baseline's spread, or up to a frame past it", () => {
     expect(comparePlaytestSummary(timed(400, 450), timed(440, 600)).ok).toBe(true);
+    expect(comparePlaytestSummary(timed(400, 450), timed(466, 470)).ok).toBe(true);
   });
 
-  it("fails a median past the baseline's slowest run", () => {
+  it("fails a median more than a frame past the baseline's slowest run", () => {
     expect(comparePlaytestSummary(timed(400, 450), timed(470, 500, 3)).failures).toEqual([
-      "webgpu-auto explore: click to result median 470ms (n=3) is past the baseline's slowest 450ms (median 400ms, n=5)",
+      "webgpu-auto explore: click to result median 470ms (n=3) is past the baseline's slowest 450ms and a frame (median 400ms, n=5)",
     ]);
   });
 
