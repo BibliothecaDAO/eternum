@@ -17,7 +17,16 @@ import {
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
 import { musterStamina, type OpenArmySlot, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
-import { type Direction, RESOURCE_PRECISION, ResourcesIds, TickIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  type Direction,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  TickIds,
+  TROOP_TIERS,
+  TROOP_TYPES,
+  type TroopTier,
+  type TroopType,
+} from "@bibliothecadao/types";
 
 import { stocksAtNextDeploy } from "../frontier-home";
 
@@ -53,8 +62,6 @@ interface DeployPlan {
   wheat: number;
 }
 
-const TYPES = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin] as const;
-const TIERS = [TroopTier.T1, TroopTier.T2, TroopTier.T3] as const;
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
 /**
@@ -127,8 +134,8 @@ const readTroopsAtHome = (
 ): DeployPlan["troops"] | undefined => {
   const stocks = stocksAtNextDeploy(store, realm, rules, clock.now, clock.defaultTick);
   if (!stocks) return undefined;
-  for (const tier of TIERS)
-    for (const type of TYPES) {
+  for (const tier of TROOP_TIERS)
+    for (const type of TROOP_TYPES) {
       const stock = stocks.get(getTroopResourceId(type, tier))!;
       const atHome = stock.held + stock.fits;
       if (atHome > 0) return { type, tier, atHome, cap: configManager.getMaxArmySize(realm.base.level, tier) };

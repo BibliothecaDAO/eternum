@@ -150,11 +150,12 @@ it("gives a phone the Feed on its place bar, the desktop's own Feed as a page un
   expect(page()).toBeNull();
   await act(async () => feed()!.click());
   expect(page()).not.toBeNull();
-  // Owner, 27 October 2026: "On the feed all should be swapped with important (which is mine, not important tbh) since
-  // its all opened by default": All first and lit, then Mine.
+  // Owner, 27 October 2026: "All / Important (battles but not just mine), then mine": All first and lit, then
+  // Important, then Mine.
   const lenses = [...page()!.querySelectorAll('[aria-label="Show"] button')];
   expect(lenses.map((button) => [button.textContent, button.getAttribute("aria-pressed")])).toEqual([
     ["All", "true"],
+    ["Important", "false"],
     ["Mine", "false"],
   ]);
   expect(feed()!.getAttribute("aria-current")).toBe("page");

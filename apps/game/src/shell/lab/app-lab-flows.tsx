@@ -1,4 +1,6 @@
 import { BLITZ_WORDS, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { failureSentence } from "@/ui/modules/identity/identity-failures";
+import { IdentityRequestError } from "@realms-world/identity";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 
@@ -26,11 +28,21 @@ const noop = () => undefined;
 const labConnectStep = (step: string | undefined): { title: string; body: ReactNode } | null => {
   switch (step) {
     case "start":
+    case "start-refused":
       return {
         title: WORDS.connect,
-        body: <StartStep sending={false} error={null} onDiscord={noop} onEmail={noop} />,
+        body: (
+          <StartStep
+            sending={false}
+            // Discord refused: its email already has an account, which signs in with an email code.
+            error={step === "start-refused" ? labRefusal("discord", "account_not_linked") : null}
+            onDiscord={noop}
+            onEmail={noop}
+          />
+        ),
       };
     case "code":
+    case "code-refused":
       return {
         title: SIGN_IN_WORDS.codeSent,
         body: (
@@ -39,7 +51,8 @@ const labConnectStep = (step: string | undefined): { title: string; body: ReactN
             expiresAt={labCodeExpiry()}
             checking={false}
             sending={false}
-            error={null}
+            // The service refused the code after too many tries with it.
+            error={step === "code-refused" ? labRefusal("code", "TOO_MANY_ATTEMPTS") : null}
             onCode={async () => false}
             onNewCode={noop}
             onChangeEmail={noop}
@@ -63,10 +76,15 @@ const labConnectStep = (step: string | undefined): { title: string; body: ReactN
   }
 };
 
+/** A sign-in refusal as the player reads it: the identity service's code through the app's own sentence for it. */
+const labRefusal = (action: "discord" | "code", code: string) =>
+  failureSentence(action, new IdentityRequestError(400, code));
+
 /**
  * Connect's steps one at a time (/lab/app/<screen>/connect/<step>), each in the window over the screen's Play: the
- * start, the emailed code, the code a Discord sign-in finished in another browser shows, and a new account's name and
- * portrait, with the suggested name passing the rule or refused.
+ * start, the emailed code (each also refused: Discord's email has an account, the code was tried too often), the code a
+ * Discord sign-in finished in another browser shows, and a new account's name and portrait, with the suggested name
+ * passing the rule or refused.
  */
 export const LabConnect = () => {
   const { step } = useParams();

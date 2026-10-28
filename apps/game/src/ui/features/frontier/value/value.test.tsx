@@ -223,7 +223,7 @@ describe("the Realm holder's labor", () => {
     ).toBe("claimed");
   });
 
-  it("offers the wallet link to a holder with no wallet linked, with no line on what Realms are for", () => {
+  it("says what a Realm gives in the sheet's head whether a wallet is linked or not, and offers the link to one with none", () => {
     const onLinkWallet = vi.fn();
     const show = (wallet: string | null, cap: number) =>
       act(() =>
@@ -245,12 +245,16 @@ describe("the Realm holder's labor", () => {
           />,
         ),
       );
+    // What one Realm gives a day, as a number on a chip, never a line: the sheet is about Realms with no wallet too.
+    const perRealm = () => host.querySelector('[aria-label="Labor a day per Realm +1K"]');
     show(null, 3);
+    expect(perRealm()).not.toBeNull();
     expect(host.textContent).toContain("No wallet linked");
     act(() => button("Link wallet")!.click());
     expect(onLinkWallet).toHaveBeenCalledTimes(1);
-    // A linked wallet: no prompt to link one, and no line on what Realms give.
+    // A linked wallet: the same chip beside the wallet's, no prompt to link one, and no line on what Realms give.
     show(ADDRESS, 0);
+    expect(perRealm()).not.toBeNull();
     expect(host.textContent).not.toContain("No wallet linked");
     expect(host.textContent).not.toContain("Each Realm");
   });

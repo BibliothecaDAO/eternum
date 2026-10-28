@@ -1,4 +1,4 @@
-import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { TROOP_TIERS, TroopType } from "@bibliothecadao/types";
 
 import type { LabClock, ProceduralTerrainDebugRendererHandle } from "@/three/debug/procedural-terrain-debug-renderer";
 import { WeatherType } from "@/three/managers/weather-manager";
@@ -100,6 +100,6 @@ const isStudioTrigger = (name: string): name is StudioTrigger => STUDIO_TRIGGERS
 function resolveTroop(choice: TroopChoice, current: StudioTroop): StudioTroop {
   return {
     category: choice.type ? STUDIO_TROOPS[choice.type] : current.category,
-    tier: choice.tier ? ([TroopTier.T1, TroopTier.T2, TroopTier.T3] as const)[choice.tier - 1] : current.tier,
+    tier: choice.tier ? TROOP_TIERS[choice.tier - 1]! : current.tier,
   };
 }

@@ -18,7 +18,14 @@ import {
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION, type ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  RESOURCE_PRECISION,
+  type ResourcesIds,
+  TROOP_TIERS,
+  TROOP_TYPES,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 const RULE_MODELS = ["SliceRules", "SettlementRules", "GameRegistry"] as const;
@@ -57,9 +64,7 @@ export const useGoToFrontierPlace = (realm: NativeRows["Structure"] | null) => {
   };
 };
 
-const TROOP_RESOURCE_IDS = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin].flatMap((type) =>
-  [TroopTier.T1, TroopTier.T2, TroopTier.T3].map((tier) => getTroopResourceId(type, tier)),
-);
+const TROOP_RESOURCE_IDS = TROOP_TYPES.flatMap((type) => TROOP_TIERS.map((tier) => getTroopResourceId(type, tier)));
 
 /** The realm's armies the day has ended: still at home in the facts, no longer in today's region. */
 export const endedHomeArmies = (

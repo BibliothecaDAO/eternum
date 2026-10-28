@@ -102,8 +102,7 @@ export const VOICE_RULES: readonly VoiceRule[] = [
   },
   {
     rule: "No subtext",
-    instead:
-      "the control, the number and the action; no line under them to explain, and seven words at most to a line (a tooltip may say more; the words check counts)",
+    instead: "the control, the number and the action; no line under them to explain them",
     bad: "Steps out on the bright tile. Tap another lit tile beside the realm to move it there.",
     good: "Deploy",
   },

@@ -212,13 +212,14 @@ export const EVENTS_WORDS = {
     all: "Everything players do in the world",
   },
   /**
-   * Frontier's Feed: its default first, and Important called Mine, since a Frontier game has no Hyperstructure and the
-   * lens holds only the player's own (owner, 27 October: "important (which is mine, not important tbh)").
+   * Frontier's Feed: All, its default, then Important, anyone's notable stories, then Mine (owner, 27 October: "All /
+   * Important (battles but not just mine), then mine").
    */
-  feedLenses: { all: "All", important: "Mine" },
+  feedLenses: { all: "All", important: "Important", mine: "Mine" },
   feedLensTips: {
     all: "Everything players do in the world",
-    important: "Your fights, captures and chests",
+    important: "Fights, captures, cleared sites and chests, anyone's",
+    mine: "Everything you do",
   },
   failed: "Event history could not load.",
 } as const;
@@ -577,6 +578,8 @@ export const seasonPool = (lords: string, today: string | undefined) =>
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
 export const fitOf = (fits: string, of: string) => `${fits} of ${of} fit`;
 export const REALMS_ELSEWHERE = "No Realms in this wallet";
+/** What one Realm gives a day, for assistive technology on the Realms sheet's chip ("Labor a day per Realm +1K"). */
+export const REALM_LABOR = "Labor a day per Realm";
 /** A Realm joins the list by its number, the first time it gives its labor. */
 export const ADD_REALM = "Add a Realm";
 export const REALM_NUMBER = "Realm number";
@@ -963,7 +966,7 @@ export const NEWS_WORDS = {
 /** The app's own states: install, update, offline, a page that does not exist. */
 export const APP_STATE_WORDS = {
   install: "Install",
-  /** The install notice's one line: where the app will live. */
+  /** The install notice's name for assistive technology: where the app will live (its icon and Install say it on screen). */
   onHomeScreen: "Realms on your home screen",
   updateReady: "Update ready",
   update: "Update",
