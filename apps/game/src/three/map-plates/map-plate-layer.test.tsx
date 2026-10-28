@@ -203,8 +203,10 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
       const kept = (ids: (1 | 2 | 3)[]): [string, ArmyPlate][] => ids.map((id) => [`army:${id}`, plates[id]]);
 
       await settle();
-      expectReadable(kept([1, 2, 3]), []);
-      expect(element("structure:4").style.display).toBe("none");
+      // The camp between them is placed with them, clear of them all (owner, 28 October 2026: "I think we need to see
+      // the enemy label most of the time").
+      expect(element("structure:4").style.display).toBe("");
+      expectReadable(kept([1, 2, 3]), [boxOf("structure:4", camp)]);
 
       // Own A selected: it rests as its token, ringed; no plate opens (owner, 2026-10-20: "on army select i want to
       // remove this panel"). All three stay readable.

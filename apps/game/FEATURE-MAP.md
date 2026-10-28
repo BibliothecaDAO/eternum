@@ -473,12 +473,15 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   only as far as keeps their thing's label point under them, else are not drawn; the selected thing, the player's own
   armies and anything in battle (on its battle cooldown) always stay in view: placed first, together (`placeKept`), each
   on its own point, slid while attached, or a row or two straight up, in the arrangement that rises least, the same
-  whatever order they arrive in, and the others yield to them. Elsewhere an unnamed army or structure is called by its
-  kind, never by its entity id (`getEntityName`, `packages/core/src/utils/entities.ts`). The dev build's lab draws the
-  same labels over a fixture world, `/lab/map-labels` (`zoom` play, close or far, `hover`, `select`, `battle`, `focus`,
-  `busy=1`, `mode=frontier`, `panel=0`, `spectate=1` in the address, or the panel's **Viewer · Playing | Spectating**: a
-  watching viewer over the fixture's 24 seats, the seats listed; with a thing selected, the hovered tile shows the order
-  line). In a live game, `playtest --steps blitz-plates` or `frontier-plates` (a spectator), or `blitz-plates-player` or
+  whatever order they arrive in, and the others yield to them. The tokens near a kept one are placed with it where an
+  arrangement lifts no kept token higher than alone, so a beast beside the player's army keeps its label (owner,
+  2026-10-28: "I think we need to see the enemy label most of the time"); `/lab/game?scenario=low-stamina` at a phone's
+  far zoom shows it. Elsewhere an unnamed army or structure is called by its kind, never by its entity id
+  (`getEntityName`, `packages/core/src/utils/entities.ts`). The dev build's lab draws the same labels over a fixture
+  world, `/lab/map-labels` (`zoom` play, close or far, `hover`, `select`, `battle`, `focus`, `busy=1`, `mode=frontier`,
+  `panel=0`, `spectate=1` in the address, or the panel's **Viewer · Playing | Spectating**: a watching viewer over the
+  fixture's 24 seats, the seats listed; with a thing selected, the hovered tile shows the order line). In a live game,
+  `playtest --steps blitz-plates` or `frontier-plates` (a spectator), or `blitz-plates-player` or
   `frontier-plates-player` (a seated player, the readiest army selected), reads every drawn token, plate and order line
   at the map's zoom, the farthest and the closest, the tiles round the centre hovered one by one, clicks at the labels
   in view, and fails on any label not drawn in its side's colour (to a spectator, its seat's: one colour per seat, no
@@ -511,10 +514,12 @@ player's connection.
 2,517 knights): pick the spire's army, right-click the other for **Transfer troops**, **Merge into …**; the merge keeps
 the army picked or the army tapped (the merged-into army, as from release 3). `scenario=after-battle` is the owner's
 army after its fight on prod (25 October 2026): 4,015 knights on the camp they cleared, beside the ruin they attacked
-(guard 999), both on battle cooldown. `scenario=explore` stands the spire's army at the edge of the land it has seen,
-fog beside it: a phone's double tap or a desktop's right-click explores. `--steps lab-merge-keeps-picked`,
-`lab-merge-keeps-tapped` and `lab-after-battle` check that hovering the army's tile opens its plate, and that a tile a
-merge emptied opens none.
+(guard 999), both on battle cooldown; `scenario=low-stamina` is that army beside the same ruin with 5 stamina and no
+cooldown, short of an attack. `scenario=cleared-camp` stands the realm's second army on a camp it cleared, away from the
+spire, and leaves another cleared camp empty: tap the army for its panel, and the empty camp shows its standard with no
+token. `scenario=explore` stands the spire's army at the edge of the land it has seen, fog beside it: a phone's double
+tap or a desktop's right-click explores. `--steps lab-merge-keeps-picked`, `lab-merge-keeps-tapped` and
+`lab-after-battle` check that hovering the army's tile opens its plate, and that a tile a merge emptied opens none.
 
 `/lab/game?scenario=high-ground` is the spire's game with every revealed tile snow, bare rock or tundra: pick the army
 and its lit tiles lie on ground that rises above a flat plate. `--steps lab-high-ground` checks every lit plate lies

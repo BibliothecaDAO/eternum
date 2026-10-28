@@ -358,7 +358,7 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
       expect(things.map((one) => (placed.spots.get(one.id) as { y: number }).y)).toEqual([450, 450]);
     });
 
-    it("keeps a site in battle in view, and makes the neutral and enemy tokens at rest yield first", () => {
+    it("keeps a site in battle in view, and stands the tokens beside it over their points without lifting it", () => {
       const things = [
         thing("neutral camp", 400, 500, 15, { token: DRAWN.campToken }),
         thing("enemy army", 430, 500, 48, { token: DRAWN.armyToken }),
@@ -367,9 +367,30 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
       ];
       const placed = placePlates(things, SCREEN);
       expectKeptReadable(things, placed);
-      // No room left over their own points: the resting neutral and enemy tokens are not drawn.
-      expect(placed.spots.get("neutral camp")).toEqual({ shape: "none" });
-      expect(placed.spots.get("enemy army")).toEqual({ shape: "none" });
+      // The neutral and enemy tokens are placed with the kept ones, each over its own point; the kept stand as alone.
+      for (const one of things.filter((candidate) => !candidate.keep))
+        expect(overItsPoint(one, placed.spots.get(one.id)), one.id).toBe(true);
+      const alone = placePlates(
+        things.filter((one) => one.keep),
+        SCREEN,
+      ).spots;
+      for (const one of things.filter((candidate) => candidate.keep))
+        expect((placed.spots.get(one.id) as { y: number }).y).toBe((alone.get(one.id) as { y: number }).y);
+    });
+
+    // Owner, 28 October 2026, on his phone: "Why dont I see the label ? I think we need to see the enemy label most of
+    // the time". The lab's low-stamina game at his zoom (390 × 844): the army's token (78 × 50) and the beast's guarding
+    // the ruin beside it (34 × 46), their label points 47px apart; the beast's token was not drawn.
+    it("draws a beast's token beside the player's army, both on their own row and clear of each other", () => {
+      const things = [
+        army("own", 290, 349, { token: { width: 78, height: 50 } }),
+        thing("beast", 337, 350, 15, { token: { width: 34, height: 46 } }),
+      ];
+      const placed = placePlates(things, { ...SCREEN, width: 390, height: 844 });
+      expectKeptReadable(things, placed);
+      expect(placed.spots.get("own")).toMatchObject({ shape: "token", y: 349 - 50 });
+      expect(placed.spots.get("beast")).toMatchObject({ shape: "token", y: 350 - 46 });
+      expect(overItsPoint(things[1], placed.spots.get("beast"))).toBe(true);
     });
 
     it("never lets the hovered plate or the order line cover a kept token: the plate stays closed without room", () => {
