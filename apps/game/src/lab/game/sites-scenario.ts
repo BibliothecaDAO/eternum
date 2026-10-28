@@ -24,6 +24,7 @@ export const sitesScenario = (): LabScenario => {
   const { store } = spire;
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
   const xp = frontierPreset.progression;
+  if (!xp) throw new Error("The Frontier preset has no XP rules");
   store.applyFacts([
     {
       model: "ArmyProgressionRules",

@@ -5,11 +5,20 @@ import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { HudButton, HudChip, HudCost, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import {
+  HudButton,
+  HudChip,
+  HudCost,
+  HudSheet,
+  HudStamina,
+  HudTier,
+  HudWindowFoot,
+  type StaminaBar,
+} from "@/ui/design-system/kit/hud-elements";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 
-import { MOVE, SHRINE, STAMINA, USE, USING, WELL, XP } from "@/ui/design-system/kit/words";
+import { exploresBought, MOVE, SHRINE, STAMINA, type Tier, USE, USING, WELL, XP } from "@/ui/design-system/kit/words";
 import { ActionPaths, ActionType, configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
@@ -18,7 +27,8 @@ import { type ReactNode, useMemo } from "react";
 
 import { useFrontierRealm } from "../frontier-home";
 import { useOrderAt } from "../hud/army-order";
-import { useDockArmies } from "../hud/dock-armies";
+import { type DockArmy, useDockArmies } from "../hud/dock-armies";
+import type { XpGoal } from "../hud/army-token";
 import { useApproachTile } from "./approach";
 import { type MapSiteKind, mapSiteKind, siteGain } from "./map-site-plan";
 import { pickArmyFor, useSelectedOwnArmy } from "./selected-army";
@@ -60,7 +70,7 @@ export const MapSiteCard = ({
   const usable = useArmyOffersUse(siteTile) && user !== null;
   const approach = useOrderAt(useApproachTile(siteTile, user !== null && !usable));
   const userId = user ? safeInteger(user.army.explorer_id) : null;
-  const stamina = useUserStamina(userId ?? undefined);
+  const army = useUserArmy(userId ?? undefined);
   const inFlight = useInFlight("army", userId)?.order;
   const choices = useUseChoices(siteTile, user === null);
 
@@ -78,7 +88,7 @@ export const MapSiteCard = ({
   const gain =
     plan.kind === "Well" ? (
       <HudChip icons={["stamina"]} label={STAMINA}>
-        {wellGain(plan.gain, stamina)}
+        {formatShort(plan.gain, { signed: true })}
       </HudChip>
     ) : (
       <HudChip>
@@ -88,35 +98,39 @@ export const MapSiteCard = ({
   return (
     <HudSheet label={word} onClose={onClose}>
       {choices && <ArmyChoices does="use" choices={choices} />}
-      {usable ? (
-        <HudWindowFoot note={<SiteGain icon={plan.kind === "Shrine" ? "shrine" : "well"}>{gain}</SiteGain>}>
-          <HudButton kind="primary" busy={inFlightWord(inFlight, "use", USING)} onClick={use}>
-            {USE}
-          </HudButton>
-        </HudWindowFoot>
-      ) : (
-        approach && (
-          <HudWindowFoot
-            note={
+      {army && <SiteUser army={army} kind={plan.kind} gain={plan.gain} />}
+      <HudWindowFoot
+        note={
+          <SiteGain icon={plan.kind === "Shrine" ? "shrine" : "well"}>
+            {gain}
+            {!usable && approach && (
               <HudCost
                 line={costLine([
                   { of: "stamina", amount: approach.stamina.cost },
                   { of: "wheat", amount: approach.wheat.cost },
                 ])}
               />
-            }
-          >
+            )}
+          </SiteGain>
+        }
+      >
+        {usable ? (
+          <HudButton kind="primary" busy={inFlightWord(inFlight, "use", USING)} onClick={use}>
+            {USE}
+          </HudButton>
+        ) : (
+          approach && (
             <HudButton kind="primary" icon="move" onClick={() => requestOrderAt(approach.target)}>
               {MOVE}
             </HudButton>
-          </HudWindowFoot>
-        )
-      )}
+          )
+        )}
+      </HudWindowFoot>
     </HudSheet>
   );
 };
 
-/** What one use gives, beside its verb: the site's painting and the gain. */
+/** What one use gives, beside its verb: the site's painting and the gain, and a Move's cost while the army is away. */
 const SiteGain = ({ icon, children }: { icon: "shrine" | "well"; children: ReactNode }) => (
   <span className="flex items-center gap-2">
     <SemanticIcon name={icon} size={32} />
@@ -144,8 +158,8 @@ const useArmyOffersUse = (siteTile: { col: number; row: number }): boolean => {
   return path !== undefined && ActionPaths.getActionType(path) === ActionType.UseSite;
 };
 
-/** The selected army's stamina and its own maximum, from the dock's reading of it. */
-const useUserStamina = (explorerId: number | undefined) => {
+/** The selected army as the dock reads it: its art, name, stamina bar and XP. */
+const useUserArmy = (explorerId: number | undefined): DockArmy | undefined => {
   const { setup } = useGame();
   const army =
     explorerId === undefined
@@ -156,7 +170,74 @@ const useUserStamina = (explorerId: number | undefined) => {
         });
   const home = army && setup.store.get("Structure", { game_id: army.game_id, entity_id: army.owner });
   const armies = useDockArmies(home ?? null);
-  return armies.find((candidate) => candidate.explorerId === explorerId)?.stamina;
+  return armies.find((candidate) => candidate.explorerId === explorerId);
+};
+
+/**
+ * The army a use acts on, as it will stand after it: a Well's refill on its stamina bar, or a Shrine's XP with the
+ * attribute tier it then buys.
+ */
+const SiteUser = ({ army, kind, gain }: { army: DockArmy; kind: MapSiteKind; gain: number | undefined }) => (
+  <div className="flex items-center gap-3">
+    <SemanticIcon name={army.art} size={40} />
+    <span className="text-hud-strong text-hud-ink">{army.label}</span>
+    {kind === "Well" ? (
+      <WellAfter stamina={army.stamina} gain={gain} />
+    ) : (
+      <ShrineAfter xp={army.xp} goal={army.xpGoal} gain={gain} />
+    )}
+  </div>
+);
+
+/** The army's stamina bar once the Well's refill lands, never past its maximum, and the explores the refill buys. */
+const WellAfter = ({ stamina, gain }: { stamina: StaminaBar | undefined; gain: number | undefined }) => {
+  const after =
+    stamina && gain !== undefined ? { ...stamina, current: Math.min(stamina.max, stamina.current + gain) } : stamina;
+  const bought = exploresOf(gain, stamina);
+  return (
+    <span className="flex min-w-0 flex-1 items-center gap-2 tabular-nums text-hud-ink">
+      <span className="min-w-8 flex-1">
+        <HudStamina stamina={after} />
+      </span>
+      {wellGain(gain, stamina)}
+      {bought && <HudChip icons={["explore"]}>{exploresBought(bought)}</HudChip>}
+    </span>
+  );
+};
+
+/** The army's XP before and after the Shrine, and the attribute tier it then buys, lit when it can. */
+const ShrineAfter = ({
+  xp,
+  goal,
+  gain,
+}: {
+  xp: number | undefined;
+  goal: XpGoal | undefined;
+  gain: number | undefined;
+}) => {
+  const after = xp !== undefined && gain !== undefined ? xp + gain : undefined;
+  return (
+    <span className="ml-auto flex items-center gap-2 tabular-nums text-hud-ink">
+      <HudChip>
+        {formatShortChange(xp, after)} {XP}
+      </HudChip>
+      {goal && (
+        <span
+          data-affordable={after !== undefined && after >= goal.price ? "" : undefined}
+          className="opacity-40 data-[affordable]:opacity-100"
+        >
+          <HudTier tier={goal.tier as Tier} />
+        </span>
+      )}
+    </span>
+  );
+};
+
+/** The whole explores a Well's refill buys the army: what lands under its maximum, a segment per explore. */
+const exploresOf = (gain: number | undefined, stamina: StaminaBar | undefined): number | undefined => {
+  if (gain === undefined || !stamina || stamina.perExplore <= 0) return undefined;
+  const lands = Math.max(0, Math.min(gain, stamina.max - stamina.current));
+  return Math.floor(lands / stamina.perExplore) || undefined;
 };
 
 /** A Well's stamina: the army's bar before and after the refill, or what it adds when no army stands at it. */
