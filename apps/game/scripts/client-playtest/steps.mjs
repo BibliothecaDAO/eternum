@@ -13,8 +13,6 @@ import {
   contextLossErrors,
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
-import { Direction, getNeighborHexes } from "@bibliothecadao/types";
-
 import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
 import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
@@ -264,10 +262,79 @@ const SPIRE_ACTION_STEPS = [
 
 async function enterEtherealIIFromItsCard({ browser }) {
   const selection = browser.observe().selection;
-  const armyAt = armyScreenOffset(selection);
+  const armyAt = armyOnScreen(browser, selection?.army?.id);
   browser.click("Enter Ethereal II");
   return { armyId: selection?.army?.id ?? null, region: armyAt && armyRegion(armyAt) };
 }
+
+/**
+ * A fight (the lab's fight game): the army selected, the ruin beside it opened for its card from the tile that offers
+ * Attack (a desktop's right-click, a phone's two taps), then the card's Attack; the result is the army's token showing
+ * exactly the troops the chain left it.
+ */
+const FIGHT_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+  clickToResultStep("attack", attackFromTheSiteCard, ({ played }) => played.watching && { watch: "fought" }),
+];
+
+async function attackFromTheSiteCard({ browser }) {
+  const army = browser.observe().selection?.army?.id;
+  const armyAt = armyOnScreen(browser, army);
+  if (!army || !armyAt) return { army, offered: [] };
+  const target = await findTheAttack(browser, armyAt);
+  if (!target.offset) return { army, offered: target.offered };
+  if (onADesktop()) browser.rightClick(target.offset);
+  else if (!target.opened) browser.tap(target.offset);
+  const sheet = await readUntil(
+    () => browser.read(MERGE_STATE),
+    (shown) => shown.buttons.includes("Attack"),
+    SHEET_WAIT_MS,
+  );
+  if (!sheet.buttons.includes("Attack")) return { army, offered: target.offered, target: target.offset, sheet };
+  const token = browser.read(armyToken(army));
+  watchFor(browser, "fought", tokenShowsTheChainsCount(army));
+  browser.click("Attack");
+  return { army, offered: target.offered, target: target.offset, watching: true, region: token?.region };
+}
+
+/**
+ * The tile beside the army that offers Attack: a desktop reads each one's hover; a phone taps each one, and a site's
+ * tap opens its card (or an order bar naming Attack, which a second tap opens).
+ */
+async function findTheAttack(browser, armyAt) {
+  if (onADesktop()) {
+    const { target, scanned } = await findOrderTile(browser, ["Attack"], armyAt);
+    return { offset: target?.offset, offered: scanned.map((seen) => seen.verb) };
+  }
+  const offered = [];
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    const offset = [armyAt[0] + dx, armyAt[1] + dy];
+    browser.tap(offset);
+    await sleep(HOVER_SETTLE_MS);
+    if (browser.read(MERGE_STATE).buttons.includes("Attack")) return { offset, offered, opened: true };
+    const offer = orderVerb(browser.orderBar());
+    offered.push(offer);
+    if (offer === "Attack") return { offset, offered };
+    if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
+  }
+  return { offset: null, offered };
+}
+
+/** An army's token on the map: its box on the page, read before its result changes it. */
+const armyToken = (army) => `JSON.stringify((() => {
+  const rect = document.querySelector('.mp-at[data-key="army:${army}"] .mp-token')?.getBoundingClientRect();
+  return rect ? { region: { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) } } : null;
+})())`;
+
+/** The army's token count is the troops the lab's chain answered the fight with, as the token writes a count. */
+const tokenShowsTheChainsCount = (army) => `(() => {
+  const fight = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "BattleGuard").at(-1);
+  const row = fight?.answered.find(({ model, value }) => model === "ExplorerTroops" && String(value.explorer_id) === "${army}");
+  if (!row) return false;
+  const want = (BigInt(row.value.troops.count) / 1000000000n).toLocaleString("en-US");
+  return document.querySelector('.mp-at[data-key="army:${army}"] .mp-count')?.textContent === want;
+})()`;
 
 /**
  * Two of the realm's armies merged (the lab's merge game): the spire's army picked, the other right-clicked for the
@@ -887,15 +954,15 @@ async function focusTheArmyFromItsDock(browser) {
 
 /**
  * Gives the readiest army the order `verb` (Explore, Move) on a tile beside it, aimed from where the army stands on
- * screen (the camera is left where it is: picking an army does not always centre it), and names the region its result
- * shows in: the explored tile, or the tile a move leaves.
+ * screen (its token; the camera is left where it is: picking an army does not always centre it), and names the region
+ * its result shows in: the explored tile, or the army's figure, which a move sets off.
  */
 async function orderBesideArmy({ browser, extraScreenshot }, verb) {
   const armyName = await focusTheArmyFromItsDock(browser);
   if (!armyName) return { offered: [], army: armyName };
   const selection = browser.observe().selection;
   const armyId = selection?.army?.id ?? null;
-  const armyAt = armyScreenOffset(selection);
+  const armyAt = armyOnScreen(browser, armyId);
   if (!armyAt)
     return { army: armyName, armyId, offered: [], aimed: "the army is not within reach of the view's centre" };
   const regionOf = (target) => (verb === "Explore" ? tileRegion(target) : armyRegion(armyAt));
@@ -924,7 +991,7 @@ async function orderBesideArmy({ browser, extraScreenshot }, verb) {
   for (let pass = 1; pass <= TAP_PASSES; pass += 1) {
     for (const step of NEIGHBOUR_RING) {
       // A pinned order may frame its tile above its card: the army is found again before each tap.
-      const army = armyScreenOffset(browser.observe().selection) ?? armyAt;
+      const army = armyOnScreen(browser, armyId) ?? armyAt;
       const at = [army[0] + step[0], army[1] + step[1]];
       if (!onTheOpenMap(at)) {
         offMap.push(at);
@@ -972,42 +1039,11 @@ const onTheOpenMap = ([dx, dy]) =>
   dy <= VIEWPORT.height / 2 - OPEN_MAP_MARGINS.bottom;
 
 /**
- * The screen step to each neighbour at the map's default zoom, by the contract's direction to it. Contract north runs
- * down the screen: on the lab's explore the ring's north-east is the army's south-east neighbour (654,50 → 655,49).
+ * Where an army stands on screen, from the view's centre: its token, as the map places it over the army, lowered to its
+ * tile (TOKEN_ABOVE_TILE_PX at the map's default zoom); null when its token is not drawn.
  */
-const SCREEN_STEP = {
-  [Direction.SOUTH_EAST]: NEIGHBOUR_RING[0],
-  [Direction.EAST]: NEIGHBOUR_RING[1],
-  [Direction.NORTH_EAST]: NEIGHBOUR_RING[2],
-  [Direction.NORTH_WEST]: NEIGHBOUR_RING[3],
-  [Direction.WEST]: NEIGHBOUR_RING[4],
-  [Direction.SOUTH_WEST]: NEIGHBOUR_RING[5],
-};
-
-/**
- * Where the selected army stands on screen, from the view's centre: the screen steps from the hex the camera looks at
- * to the army's, as the page reports both (window.__eternumMapSelection); null when it is more than a few tiles off.
- */
-export function armyScreenOffset(selection, maxSteps = 4) {
-  const from = selection?.camera;
-  const to = selection?.army?.hex;
-  if (!from || !to) return null;
-  const seen = new Set([`${from.col},${from.row}`]);
-  let reached = [{ col: from.col, row: from.row, at: [0, 0] }];
-  for (let steps = 0; steps <= maxSteps; steps += 1) {
-    const hit = reached.find((hex) => hex.col === to.col && hex.row === to.row);
-    if (hit) return hit.at;
-    reached = reached.flatMap((hex) =>
-      getNeighborHexes(hex.col, hex.row)
-        .filter((next) => !seen.has(`${next.col},${next.row}`) && seen.add(`${next.col},${next.row}`))
-        .map((next) => ({
-          col: next.col,
-          row: next.row,
-          at: [hex.at[0] + SCREEN_STEP[next.direction][0], hex.at[1] + SCREEN_STEP[next.direction][1]],
-        })),
-    );
-  }
-  return null;
+function armyOnScreen(browser, army) {
+  return army === undefined || army === null ? null : (browser.read(ARMY_TILES)[String(army)] ?? null);
 }
 
 /**
@@ -1603,7 +1639,7 @@ const SPIRE_STATE = `JSON.stringify({
 
 /** Hovers the selected army's neighbours, from where it stands on screen, until one's tooltip offers the spire's order. */
 async function findTheSpire({ browser }) {
-  const armyAt = armyScreenOffset(browser.observe().selection) ?? [0, 0];
+  const armyAt = armyOnScreen(browser, browser.observe().selection?.army?.id) ?? [0, 0];
   const scanned = [];
   for (const [dx, dy] of NEIGHBOUR_RING) {
     const offset = [armyAt[0] + dx, armyAt[1] + dy];
@@ -1640,7 +1676,7 @@ async function tapTheSpire({ browser }) {
 }
 
 async function tapAroundTheArmyForTheSpire(browser) {
-  const armyAt = armyScreenOffset(browser.observe().selection) ?? [0, 0];
+  const armyAt = armyOnScreen(browser, browser.observe().selection?.army?.id) ?? [0, 0];
   const scanned = [];
   for (const [dx, dy] of NEIGHBOUR_RING) {
     const offset = [armyAt[0] + dx, armyAt[1] + dy];
@@ -2435,6 +2471,7 @@ export const STEP_SETS = {
   "lab-actions": { game: labSpireGame("actions"), steps: ACTION_STEPS },
   "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },
   "lab-actions-merge": { game: labSpireGame("merge-keeps-picked"), steps: mergeActionSteps() },
+  "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
   "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps() },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
