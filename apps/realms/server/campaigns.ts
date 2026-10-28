@@ -16,7 +16,7 @@ export const CAMPAIGNS = {
     /** Nov 6 2026, 20:00 IST: the Devcon season's end. */
     redeemUntil: Date.UTC(2026, 10, 6, 14, 30) / 1000,
     /** How many of its printed codes are golden. */
-    golden: 20,
+    golden: 15,
   },
 } as const satisfies Record<string, Campaign>;
 

@@ -1,7 +1,7 @@
 /**
  * A campaign's printed codes: N codes, the campaign's golden count of them golden, each one flyer.
  *
- *   CAMPAIGN_CODE_SEED=<secret> pnpm --dir apps/realms campaign-codes devcon-2026 520 https://play.realms.party <out>
+ *   CAMPAIGN_CODE_SEED=<secret> pnpm --dir apps/realms campaign-codes devcon-2026 315 https://play.realms.party <out>
  *
  * writes into <out>:
  * - `qr/0001.svg` … one QR per printed flyer, in print order, each to `<base>/join/devcon/<code>`;

@@ -1,5 +1,5 @@
 import { shortString } from "starknet";
-import { DEVCON } from "@/shell/join/devcon";
+import { DEVCON, DEVCON_LABOR_RULES } from "@/shell/join/devcon";
 
 import type { LabFact, LabScenario } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
@@ -11,25 +11,28 @@ import { spireScenario } from "./spire-scenario";
  */
 export const campaignScenario = (tier: "regular" | "golden") => (): LabScenario => {
   const spire = spireScenario();
-  spire.store.applyFacts(campaignHome(tier === "golden" ? 2 : 1) as never);
+  spire.store.applyFacts(campaignHomeFacts(tier) as never);
   return spire;
 };
 
-const campaignHome = (tier: number): LabFact[] => [
+/** The facts the contract writes for realm 7 founded with a Devcon ticket: the game's LaborRules and its CampaignHome. */
+export const campaignHomeFacts = (ticket: "regular" | "golden"): LabFact[] => [
   {
     model: "LaborRules",
     key: "0x1abc0",
     value: {
       game_id: 1,
-      amount: String(DEVCON.laborPerDay),
-      campaign_essence: String(DEVCON.essencePerDay),
-      golden_amount: String(DEVCON.goldenLaborPerDay),
-      golden_essence: String(DEVCON.goldenEssencePerDay),
+      ...Object.fromEntries(Object.entries(DEVCON_LABOR_RULES).map(([key, value]) => [key, String(value)])),
     },
   },
   {
     model: "CampaignHome",
     key: "0x1abc1",
-    value: { game_id: 1, home: 7, campaign_id: shortString.encodeShortString(DEVCON.campaign), tier },
+    value: {
+      game_id: 1,
+      home: 7,
+      campaign_id: shortString.encodeShortString(DEVCON.campaign),
+      tier: ticket === "golden" ? 2 : 1,
+    },
   },
 ];

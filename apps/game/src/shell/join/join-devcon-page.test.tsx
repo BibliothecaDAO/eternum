@@ -23,6 +23,9 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { setViewportWidth } from "../frame/test-viewport";
 import { useConnectStore } from "../sign-in/connect";
 import { JoinDevconPage } from "./join-devcon-page";
+import { homeDailyClaim } from "@bibliothecadao/eternum";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { campaignHomeFacts } from "@/lab/game/campaign-scenario";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -89,7 +92,7 @@ it("keeps a flyer's code through sign-in, and only the opened ticket says it is 
   expect(service.redeemCampaignTicket.mock.calls).toEqual([["devcon-2026", "T9HW3NPB"]]);
   expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("golden");
   expect(text()).toContain("Golden ticket");
-  expect(text()).toContain("One of 20 at Devcon");
+  expect(text()).toContain("One of 15 at Devcon");
   expect(text()).toContain("2,000 Labor each day");
   expect(text()).toContain("2,000 Essence each day");
   expect(localStorage.getItem("realms:campaign-code:devcon-2026")).toBeNull();
@@ -138,4 +141,22 @@ it.each([
   expect(text()).not.toMatch(/Open your ticket|Try again/);
   await press("Continue");
   expect(path).toBe("/");
+});
+
+it.each([
+  ["regular", "opened", { labor: 1_000, essence: 1_000 }],
+  ["golden", "golden", { labor: 2_000, essence: 2_000 }],
+] as const)("promises a %s ticket what its realm then claims in the game", async (tier, face, claim) => {
+  // The realm as the contract founds it, read by the game's Realm sheet and the Day open push alike.
+  const store = new NativeFactStore();
+  store.applyFacts(campaignHomeFacts(tier) as never);
+  expect(homeDailyClaim(store, { gameId: 1, entityId: 7, realmId: 0 })).toEqual(claim);
+
+  signIn();
+  service.redeemCampaignTicket.mockResolvedValue({ campaign: "devcon-2026", tier });
+  await visit("/join/devcon/K7M2QX4R");
+  await press("Open your ticket");
+  expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe(face);
+  expect(text()).toContain(`${claim.labor.toLocaleString("en-US")} Labor each day`);
+  expect(text()).toContain(`${claim.essence.toLocaleString("en-US")} Essence each day`);
 });

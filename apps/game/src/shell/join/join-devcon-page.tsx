@@ -150,20 +150,23 @@ const ContinueToPlay = () => (
 const TicketArt = () => <img src={FRONTIER_LOCKUP} alt={AGES.frontier.game} className="h-28 w-auto" />;
 
 /** What this ticket's realm claims each Frontier day. */
-const DailyClaim = ({ golden }: { golden: boolean }) => (
-  <AppPanel className="w-full max-w-[20rem]">
-    <ul className="flex flex-col gap-3 text-left text-app-strong text-app-ink">
-      <li className="flex items-center gap-3">
-        <Icon name="labor" size={32} />
-        {JOIN_WORDS.laborEachDay(golden ? DEVCON.goldenLaborPerDay : DEVCON.laborPerDay)}
-      </li>
-      <li className="flex items-center gap-3">
-        <Icon name="essence" size={32} />
-        {JOIN_WORDS.essenceEachDay(golden ? DEVCON.goldenEssencePerDay : DEVCON.essencePerDay)}
-      </li>
-    </ul>
-  </AppPanel>
-);
+const DailyClaim = ({ golden }: { golden: boolean }) => {
+  const { labor, essence } = DEVCON.claim(golden);
+  return (
+    <AppPanel className="w-full max-w-[20rem]">
+      <ul className="flex flex-col gap-3 text-left text-app-strong text-app-ink">
+        <li className="flex items-center gap-3">
+          <Icon name="labor" size={32} />
+          {JOIN_WORDS.laborEachDay(labor)}
+        </li>
+        <li className="flex items-center gap-3">
+          <Icon name="essence" size={32} />
+          {JOIN_WORDS.essenceEachDay(essence)}
+        </li>
+      </ul>
+    </AppPanel>
+  );
+};
 
 /**
  * Every step of the landing stands on Frontier's mist, alone, with no places; Back leads to Play. Its one verb sits under the thumb on a

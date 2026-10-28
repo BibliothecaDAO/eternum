@@ -1048,8 +1048,8 @@ describe("identity Worker", () => {
       const response = await browser.request("/api/campaigns/redeem", { body: { campaign: "devcon-2026", code } });
       tiers.push(((await response.json()) as { tier: string }).tier);
     }
-    expect(tiers.filter((tier) => tier === "golden")).toHaveLength(20);
-    expect(tiers.filter((tier) => tier === "regular")).toHaveLength(4);
+    expect(tiers.filter((tier) => tier === "golden")).toHaveLength(15);
+    expect(tiers.filter((tier) => tier === "regular")).toHaveLength(9);
     // A flyer passed on after use opens nothing for the next account.
     const next = createBrowser();
     await signInWithCode(next, "flyer-passed-on@realms.test");
