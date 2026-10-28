@@ -1574,6 +1574,147 @@ const LAB_AFTER_BATTLE_STEPS = [
 ];
 
 /**
+ * The owner's fight, played (owner, 2026-10-28: "it moves the camera when I fight"): realm 7's army beside the ruin it
+ * attacked on prod (src/lab/game/ruin-fight-scenario.ts). Picking the army in the HUD is a request to look at it, so the
+ * camera goes to it; from there the fight leaves the camera where it was: the ruin's card opened from the map (a
+ * desktop's right-click, a phone's tap), then Attack, its BattleGuard answered by the lab's chain, the ruin cleared, the
+ * army's troops down by its losses and the ruin's chest shown.
+ */
+const LAB_RUIN_FIGHT_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
+  { name: "open-the-fight", play: openTheRuinsCard, settleMs: 0, verify: fightCardOpenedCameraStill },
+  { name: "attack", play: attackTheRuin, settleMs: 0, verify: ruinClearedCameraStill },
+];
+/** The ruin beside the army (site-fixture.ts) and how near a framed army stands to the camera's target, in hexes. */
+const LAB_RUIN = 710;
+const FRAMED_WITHIN_HEXES = 6;
+/** What a player sees of the fight: where the camera looks, the army, the card, the ruin's and army's tokens, the chest. */
+const FIGHT_STATE = `JSON.stringify({
+  camera: window.__eternumMapSelection?.camera ?? null,
+  army: window.__eternumMapSelection?.army ?? null,
+  sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
+  buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
+  sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
+  armyToken: document.querySelector('.mp-at[data-key="army:${PICKED_ARMY}"]')?.textContent ?? null,
+  ruinToken: (() => {
+    const slot = document.querySelector('.mp-at[data-key="structure:${LAB_RUIN}"]');
+    if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
+    const token = slot.firstElementChild.getBoundingClientRect();
+    return [
+      Math.round(token.left + token.width / 2 - innerWidth / 2),
+      Math.round(token.top + token.height / 2 + ${TOKEN_ABOVE_TILE_PX} - innerHeight / 2),
+    ];
+  })(),
+  // The chest with the LORDS it paid: the clear's moment, a status or (before it played by itself) a button.
+  chest: Boolean(document.querySelector('[role="status"] [aria-label$=" LORDS"], button[aria-label="Ruin"] [aria-label$=" LORDS"]')),
+})`;
+
+/** Picks the army from the HUD, as the Armies list or the dock does, reading where the camera looked before and after. */
+async function pickTheArmyAndReadTheCamera({ browser }) {
+  browser.hover(POINTER_PARKED);
+  const before = browser.read(FIGHT_STATE).camera;
+  const picked = await pickTheSpireArmy({ browser });
+  await sleep(CAMERA_REPORT_MS);
+  return { ...picked, before, after: browser.read(FIGHT_STATE) };
+}
+
+/** The pick is a request to look: the camera went to the army. */
+function cameraWentToTheArmy({ played }) {
+  const { before, after } = played;
+  if (!played.army) return failed(`no army on the HUD selects army ${PICKED_ARMY}`, played);
+  if (!after.camera || !after.army) return failed("the page reports no camera or no selected army", played);
+  if (hexesApart(after.camera, after.army.hex) > FRAMED_WITHIN_HEXES)
+    return failed(`the camera looks at ${JSON.stringify(after.camera)}, away from the army`, played);
+  return completed({ before, after: after.camera, army: after.army.hex });
+}
+
+/**
+ * On a phone the ruin is first panned low, just above the picked army's row, where its card, taller than the row, will
+ * cover it once open (the owner's taps met fights there): a camera that framed the tapped tile above its card would
+ * show here as a move. Its tile's offset below the screen's middle, in pixels: under the card, still clear of the row.
+ */
+const UNDER_THE_CARD_PX = [70, 160];
+const PAN_BURSTS = 16;
+const underTheCard = (token) => token && token[1] >= UNDER_THE_CARD_PX[0] && token[1] <= UNDER_THE_CARD_PX[1];
+async function panTheRuinUnderTheCard(browser) {
+  let key = "KeyW";
+  let last = browser.read(FIGHT_STATE).ruinToken;
+  for (let burst = 0; burst < PAN_BURSTS && last && !underTheCard(last); burst += 1) {
+    // Lower while above the band, higher once past it.
+    const lower = last[1] < UNDER_THE_CARD_PX[0];
+    browser.run(["eval", `void window.__playtest.pan(["${lower ? key : key === "KeyW" ? "KeyS" : "KeyW"}"], 30)`]);
+    await sleep(CAMERA_REPORT_MS);
+    const now = browser.read(FIGHT_STATE).ruinToken;
+    // The way that lowers the ruin on screen is learnt from the first moves: one that raised it is turned round.
+    if (lower && now && now[1] < last[1]) key = key === "KeyW" ? "KeyS" : "KeyW";
+    last = now;
+  }
+}
+
+/** Opens the ruin's card from the map with the army selected: a desktop's right-click, a phone's tap. */
+async function openTheRuinsCard({ browser, extraScreenshot }) {
+  if (!onADesktop()) await panTheRuinUnderTheCard(browser);
+  const before = browser.read(FIGHT_STATE);
+  if (!before.ruinToken) return { before, after: before };
+  extraScreenshot("before-fight");
+  if (onADesktop()) browser.rightClick(before.ruinToken);
+  else browser.tap(before.ruinToken);
+  const after = await readUntil(
+    () => browser.read(FIGHT_STATE),
+    (shown) => shown.buttons.some((text) => text.startsWith("Attack")),
+    MERGE_WAIT_MS,
+  );
+  extraScreenshot("fight-card");
+  return { before, after };
+}
+
+function fightCardOpenedCameraStill({ played }) {
+  const { before, after } = played;
+  if (!before.ruinToken) return failed("the map draws no token for the ruin", played);
+  if (!onADesktop() && !underTheCard(before.ruinToken))
+    return failed("the ruin could not be panned under where its card opens", played);
+  if (!after.buttons.some((text) => text.startsWith("Attack")))
+    return failed("the ruin's card offers no Attack", played);
+  if (!before.camera) return failed("the page reports no camera", played);
+  if (!sameHex(before.camera, after.camera))
+    return failed(`opening the fight moved the camera from ${JSON.stringify(before.camera)}`, played);
+  return completed({ camera: after.camera, sheet: after.sheet, buttons: after.buttons });
+}
+
+/** Presses Attack, then waits for the chain's answer: the ruin gone from the map and its chest shown. */
+async function attackTheRuin({ browser, extraScreenshot }) {
+  const before = browser.read(FIGHT_STATE);
+  const attack = before.buttons.find((text) => text.startsWith("Attack"));
+  if (attack) browser.click(attack);
+  const after = await readUntil(
+    () => browser.read(FIGHT_STATE),
+    (shown) => shown.sent.includes("BattleGuard") && shown.ruinToken === null && shown.chest,
+    MERGE_WAIT_MS,
+  );
+  extraScreenshot("chest");
+  await sleep(CAMERA_REPORT_MS);
+  return { attack, before, after, settled: browser.read(FIGHT_STATE) };
+}
+
+function ruinClearedCameraStill({ played }) {
+  const { before, after, settled } = played;
+  if (!played.attack) return failed("no Attack to press", played);
+  if (!after.sent.includes("BattleGuard")) return failed("Attack sent no BattleGuard", played);
+  if (after.ruinToken !== null) return failed("the ruin still stands on the map", played);
+  if (!after.chest) return failed("the ruin's chest never showed", played);
+  if (!settled.armyToken?.includes("4,011")) return failed(`the army's token reads ${settled.armyToken}`, played);
+  if (!before.camera) return failed("the page reports no camera", played);
+  if (!sameHex(before.camera, settled.camera))
+    return failed(`the fight moved the camera from ${JSON.stringify(before.camera)}`, played);
+  return completed({
+    camera: { before: before.camera, after: settled.camera },
+    army: settled.armyToken,
+    sent: after.sent,
+  });
+}
+
+/**
  * The owner's army after its fight, nothing selected, at each zoom step from the closest to the farthest (owner,
  * 2026-10-27: "at a certain zoom level I cant get the hover modal"): its token stands over its own model, and the pointer
  * anywhere on its model, feet to head, opens its plate, at every step; so does every other army drawn, such as the
@@ -2301,6 +2442,7 @@ export const STEP_SETS = {
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps(null) },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
+  "lab-ruin-fight": { game: labSpireGame("ruin-fight"), steps: LAB_RUIN_FIGHT_STEPS },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-hover-zoom-pair": { game: labSpireGame("merge-loses-xp"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-high-ground": { game: labSpireGame("high-ground"), steps: LAB_HIGH_GROUND_STEPS, devOverlays: true },

@@ -521,7 +521,10 @@ army tapped. In `merge-loses-xp` the picked army holds 100 XP, so the button the
 2** before it sends. `scenario=after-battle` is the owner's army after its fight on prod (25 October 2026): 4,015
 knights on the camp they cleared, beside the ruin they attacked (guard 999), both on battle cooldown; its Feed holds
 that fight and another player's lost fight at a site the map never loaded; `scenario=low-stamina` is that army beside
-the same ruin with 5 stamina and no cooldown, short of an attack. `scenario=cleared-camp` stands the realm's second army
+the same ruin with 5 stamina and no cooldown, short of an attack. `scenario=ruin-fight` is that army beside that ruin
+before the fight, stamina to attack and no cooldown: select the army, open the ruin's card (right-click, or tap),
+**Attack**; the lab's chain clears the ruin as the contract does (4 troops lost, an Uncommon chest of 100 LORDS) and the
+camera stays where the player had it (`--steps lab-ruin-fight`). `scenario=cleared-camp` stands the realm's second army
 on a camp it cleared, away from the spire, and leaves another cleared camp empty: tap the army for its panel, and the
 empty camp shows its standard with no token. `scenario=explore` stands the spire's army at the edge of the land it has
 seen, fog beside it: a phone's double tap or a desktop's right-click explores. `--steps lab-merge-loses-xp`,

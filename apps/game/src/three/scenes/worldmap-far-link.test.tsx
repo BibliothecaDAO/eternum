@@ -146,7 +146,7 @@ const theMapWithItsCamera = () => {
     redrawWorld: () => {},
   }) as {
     moveCameraToURLLocation: (options: { requestRefresh: boolean }) => void;
-    moveCameraToMapPosition: (position: Position, duration: number) => void;
+    moveCameraToMapPosition: (position: Position, reason: "dev-tools", duration: number) => void;
     getCameraTargetHex: () => { col: number; row: number };
     isCameraTransitionInProgress: () => boolean;
   };
@@ -169,7 +169,7 @@ const animate = (seconds: number) => gsap.updateRoot(gsap.ticker.time + seconds)
 describe("a far event pressed while the camera is still flying somewhere near", () => {
   it("ends that flight: the camera stays on the event's tile as the animations run on", async () => {
     const map = theMapWithItsCamera();
-    map.scene.moveCameraToMapPosition(Position.fromContract({ x: HOME.x + 300, y: HOME.y }), 2);
+    map.scene.moveCameraToMapPosition(Position.fromContract({ x: HOME.x + 300, y: HOME.y }), "dev-tools", 2);
     animate(1);
     expect(map.flying()).toBe(true);
     const row = await drawRow(fightAt(FAR));
