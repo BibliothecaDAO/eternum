@@ -1,4 +1,5 @@
 import { shortString } from "starknet";
+import { DEVCON } from "@/shell/join/devcon";
 
 import type { LabFact, LabScenario } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
@@ -18,11 +19,17 @@ const campaignHome = (tier: number): LabFact[] => [
   {
     model: "LaborRules",
     key: "0x1abc0",
-    value: { game_id: 1, amount: "1000", campaign_essence: "1000", golden_amount: "2000", golden_essence: "2000" },
+    value: {
+      game_id: 1,
+      amount: String(DEVCON.laborPerDay),
+      campaign_essence: String(DEVCON.essencePerDay),
+      golden_amount: String(DEVCON.goldenLaborPerDay),
+      golden_essence: String(DEVCON.goldenEssencePerDay),
+    },
   },
   {
     model: "CampaignHome",
     key: "0x1abc1",
-    value: { game_id: 1, home: 7, campaign_id: shortString.encodeShortString("devcon-2026"), tier },
+    value: { game_id: 1, home: 7, campaign_id: shortString.encodeShortString(DEVCON.campaign), tier },
   },
 ];

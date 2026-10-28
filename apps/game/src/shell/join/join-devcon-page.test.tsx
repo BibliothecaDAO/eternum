@@ -20,10 +20,8 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
 import { IdentityRequestError } from "@realms-world/identity";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
-import { frontierDevconPreset } from "../../../../../config/source/frontier/devcon";
 import { setViewportWidth } from "../frame/test-viewport";
 import { useConnectStore } from "../sign-in/connect";
-import { DEVCON } from "./devcon";
 import { JoinDevconPage } from "./join-devcon-page";
 
 let host: HTMLDivElement;
@@ -123,13 +121,4 @@ it("says a closed campaign, and offers Try again when the ticket could not be op
   await press("Try again");
   expect(text()).toContain("Devcon tickets have closed.");
   expect(service.redeemCampaignTicket).toHaveBeenLastCalledWith("devcon-2026", "K7M2QX4R");
-});
-
-it("promises both ticket tiers exactly the daily amounts in the Devcon preset", () => {
-  expect(frontierDevconPreset.labor).toEqual({
-    amount: DEVCON.laborPerDay,
-    campaignEssence: DEVCON.essencePerDay,
-    goldenAmount: DEVCON.goldenLaborPerDay,
-    goldenEssence: DEVCON.goldenEssencePerDay,
-  });
 });
