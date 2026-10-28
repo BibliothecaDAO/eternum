@@ -2098,6 +2098,28 @@ function devconArtShown(scene) {
   };
 }
 
+const devconSeasonStep = {
+  name: "devcon-season",
+  play: async ({ browser }) => {
+    if (!onADesktop()) {
+      browser.click("Menu");
+      await sleep(500);
+    }
+    browser.click("Season");
+    await sleep(2_000);
+    return browser.read(
+      `JSON.stringify([...document.querySelectorAll('section[aria-label="Season"] img')].map(img => img.complete && img.naturalWidth > 0 ? new URL(img.currentSrc).pathname.split('/').pop() : null))`,
+    );
+  },
+  verify: ({ seen, played }) => {
+    if (!seen.panels.includes("Season")) return failed("Season did not open", played);
+    const campaigns = Object.values(realmSkins).map(({ icon }) => `${icon}.webp`);
+    if (!campaigns.every((icon) => played.includes(icon)) || !played.some((icon) => /^realm-[0-3][.]webp$/.test(icon)))
+      return failed("Season must distinguish both unvisited campaign homes and the ordinary home", played);
+    return completed(played);
+  },
+};
+
 export const STEP_SETS = {
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
   "unit-assets-spectator": {
@@ -2124,6 +2146,7 @@ export const STEP_SETS = {
     devOverlays: true,
   },
   "lab-devcon-art": { game: { ...LAB_SPIRE, lab: "devcon-0" }, steps: devconArtSteps },
+  "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
   "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps() },

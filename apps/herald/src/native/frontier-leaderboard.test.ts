@@ -40,6 +40,22 @@ const clear = (kind: keyof typeof CATEGORY, index: number, owner = 10) =>
   story("SitePayout", { category: CATEGORY[kind], reward: REWARD[kind] }, index, owner);
 
 describe("Frontier season standings", () => {
+  it("includes each home's campaign identity from the complete game, including ordinary homes", () => {
+    const { read, rows } = facts([0, 0, 0]);
+    rows.CampaignHome = [
+      { key: "regular", value: { game_id: "1", home: "0x1", campaign_id: "0x123", tier: 1 } },
+      { key: "golden", value: { game_id: "1", home: "2", campaign_id: "0x123", tier: 2 } },
+      { key: "other-game", value: { game_id: "2", home: "3", campaign_id: "0x456", tier: 2 } },
+    ];
+    expect(
+      buildFrontierLeaderboard(read, "1", []).entries.map(({ structure_id, campaign }) => ({ structure_id, campaign })),
+    ).toEqual([
+      { structure_id: "1", campaign: { campaign_id: "291", tier: 1 } },
+      { structure_id: "2", campaign: { campaign_id: "291", tier: 2 } },
+      { structure_id: "3", campaign: null },
+    ]);
+  });
+
   it.each([50, 0])("counts a %s LORDS exploration chest once without a site clear", (amount) => {
     const { read } = facts();
     const opening = story(

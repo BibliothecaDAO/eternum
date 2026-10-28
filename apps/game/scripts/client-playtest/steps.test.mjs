@@ -747,6 +747,16 @@ describe("the player's Wheat store card", () => {
 });
 
 describe("Devcon delivery through the game", () => {
+  it("requires the Season to show both campaign paintings and the ordinary control", () => {
+    const verify = STEP_SETS["lab-devcon-season"].steps[0].verify;
+    const seen = { panels: ["Season"] };
+    const played = [...Object.values(realmSkins).map(({ icon }) => `${icon}.webp`), "realm-3.webp"];
+    expect(verify({ seen, played }).status).toBe("completed");
+    expect(verify({ seen, played: ["realm-3.webp"] }).status).toBe("failed");
+    expect(verify({ seen, played: played.slice(0, 2) }).status).toBe("failed");
+    expect(verify({ seen: { panels: [] }, played }).status).toBe("failed");
+  });
+
   const steps = STEP_SETS["lab-devcon-art"].steps;
   it("visits every registered tier of both families on the map and in the realm", () => {
     expect(steps.map((step) => step.name)).toEqual(

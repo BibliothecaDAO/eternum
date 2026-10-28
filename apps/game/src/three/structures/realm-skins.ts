@@ -21,11 +21,14 @@ export const REALM_SKIN_MODELS = Object.entries(REALM_SKINS).flatMap(([skin, { d
 );
 
 /** The contract marks golden campaign homes with tier 2. */
-export const isGoldenHome = (home: NativeRows["CampaignHome"] | undefined): boolean => home?.tier === 2;
+export const isGoldenHome = (home: Pick<NativeRows["CampaignHome"], "tier"> | null | undefined): boolean =>
+  home?.tier === 2;
 
 /** CampaignHome is the founding identity, independent of the current holder and game mode. */
-export function realmSkinOf(home: NativeRows["CampaignHome"] | undefined): RealmSkin | undefined {
-  if (!home || home.campaign_id !== DEVCON_CAMPAIGN) return undefined;
+export function realmSkinOf(
+  home: { campaign_id: bigint | string; tier: number } | null | undefined,
+): RealmSkin | undefined {
+  if (!home || BigInt(home.campaign_id) !== DEVCON_CAMPAIGN) return undefined;
   if (home.tier === 1) return "devcon";
   if (isGoldenHome(home)) return "devcon-golden";
   throw new Error(`Unknown Devcon home tier ${home.tier}`);

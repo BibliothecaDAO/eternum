@@ -1,5 +1,6 @@
 import { BUILDINGS_CENTER, BuildingType } from "@bibliothecadao/types";
 import { shortString } from "starknet";
+import { LAB_FRONTIER_BOARD } from "@/shell/lab/app-lab-fixtures";
 
 import type { LabFact, LabScenario } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
@@ -39,6 +40,19 @@ export const campaignScenario = (tier: "regular" | "golden", level?: number) => 
   }
   return spire;
 };
+
+/** The Season lists three unvisited homes: regular Devcon, golden Devcon, and an ordinary control. */
+export const devconSeasonScenario = (): LabScenario => ({
+  ...campaignScenario("regular", 0)(),
+  leaderboard: {
+    ...LAB_FRONTIER_BOARD,
+    entries: LAB_FRONTIER_BOARD.entries.slice(0, 3).map((entry, index) => ({
+      ...entry,
+      structure_id: String(901 + index),
+      campaign: index < 2 ? { campaign_id: shortString.encodeShortString("devcon-2026"), tier: index + 1 } : null,
+    })),
+  },
+});
 
 const campaignHome = (tier: number): LabFact[] => [
   { model: "LaborRules", key: "0x1abc0", value: { game_id: 1, amount: "1000", golden_essence: "1000" } },

@@ -185,10 +185,11 @@ the drawn scene changed and the scene marks `scene:<name>:requested` and `scene:
 the same as `bootWindow`), `--steps lab-realm-load` (the same on the lab's built Kingdom,
 `/lab/game?scenario=painted-buildings`, reopened on its realm with `&scene=hex`), `--steps lab-devcon-art` (all Devcon
 and golden tiers through the map, campaign HUD and local keep; `/lab/game?scenario=devcon-0` through `devcon-3`, and
-`devcon-golden-0` through `devcon-golden-3`), `--steps blitz-realm-load` (the same on the newest live Blitz game),
-`--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each run's boot, from before the game page
-opens to the world being interactive), `--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are
-taken from where the command is run.
+`devcon-golden-0` through `devcon-golden-3`), `--steps lab-devcon-season` (Season's regular, golden and ordinary homes
+outside the viewer's streamed scope; `/lab/game?scenario=devcon-season`), `--steps blitz-realm-load` (the same on the
+newest live Blitz game), `--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each run's boot,
+from before the game page opens to the world being interactive), `--compare <summary.json>` (fails when boot regresses),
+`--headed`. Paths are taken from where the command is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 
