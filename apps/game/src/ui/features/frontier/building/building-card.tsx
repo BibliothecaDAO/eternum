@@ -102,7 +102,7 @@ const cardMakes = (makes: ReturnType<typeof buildingsMake>): CardMakes | undefin
   makes && { icon: resourceMeaning(makes.resource), rate: formatRate(makes.perSecond) };
 
 /** What a player's own building's card orders: its next tier's Research (or what it needs, with the fix) and Delete. */
-export type BuildingOrders = {
+type BuildingOrders = {
   sending: boolean;
   fix: (need: Need) => Fix | undefined;
   onResearch: (side: number) => unknown;
