@@ -178,6 +178,7 @@ describe("the settled Realm's labor", () => {
       total: 1000,
       fits: 400,
       essence: 0,
+      claimable: true,
     });
     expect(
       planRealmLabor({ eligible: false, claimed: false, amount: 1000, essence: 0, held: 0, limit: 18000 }).total,

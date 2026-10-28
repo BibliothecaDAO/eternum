@@ -136,3 +136,42 @@ it("gives a campaign home its daily claim, with a golden ticket's Essence, and w
     await act(async () => root.unmount());
   }
 });
+
+it("lets a golden home at full Labor storage claim its Essence, and leaves a full regular home only its Realm", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const requests: unknown[] = [];
+  vi.stubGlobal("fetch", async (_url: unknown, init: RequestInit) => {
+    requests.push(JSON.parse(String(init.body)));
+    return Response.json({ grant: { amount: "0", essence: "1000000000000" } });
+  });
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const show = () => act(async () => root.render(<Sheet />));
+  const buttons = () => [...host.querySelectorAll("button")].map((button) => button.textContent);
+  try {
+    facts.held = false;
+    facts.balance = 18000;
+    facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
+    await show();
+    expect(host.textContent).toContain("0 of 1,000 fit · remainder lost");
+    expect(buttons()).toEqual(expect.arrayContaining(["Claim 1,000 Essence", "Realm"]));
+    await act(async () =>
+      [...host.querySelectorAll("button")].find((b) => b.textContent === "Claim 1,000 Essence")!.click(),
+    );
+    expect(requests).toEqual([{ gameId: 3, home: "412" }]);
+    // The receipt arrives in the native facts: today is claimed.
+    facts.claimedDay = 0n;
+    await show();
+    expect(host.textContent).toContain("Claimed today");
+    expect(buttons().some((label) => label?.startsWith("Claim"))).toBe(false);
+
+    facts.claimedDay = -1n;
+    facts.campaign = { campaign_id: DEVCON_ID, tier: 1 };
+    await show();
+    expect(host.textContent).toContain("0 of 1,000 fit · remainder lost");
+    expect(buttons().some((label) => label?.startsWith("Claim"))).toBe(false);
+    expect(buttons()).toContain("Realm");
+  } finally {
+    await act(async () => root.unmount());
+  }
+});

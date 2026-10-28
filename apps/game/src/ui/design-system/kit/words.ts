@@ -574,11 +574,12 @@ export const REALM_LABOR = "Realm Labor";
 export const NO_REALM_LABOR = "No daily Labor claim";
 export const settledRealmLabor = (amount: number) => `${formatExact(amount)} Labor per game day`;
 export const settledRealmEssence = (amount: number) => `${formatExact(amount)} Essence per game day`;
-/** The claim's step: its Labor, and a golden ticket's Essence with it. */
+/** The claim's step: what it gives, its Labor that fits and a golden ticket's Essence, each only when there is some. */
 export const claimRealmLaborLabel = (amount: number, essence = 0) =>
-  essence > 0
-    ? `Claim ${formatExact(amount)} Labor · ${formatExact(essence)} Essence`
-    : `Claim ${formatExact(amount)} Labor`;
+  `Claim ${[
+    ...(amount > 0 ? [`${formatExact(amount)} Labor`] : []),
+    ...(essence > 0 ? [`${formatExact(essence)} Essence`] : []),
+  ].join(" · ")}`;
 /** A campaign home's mark beside its realm's rank: the event that founded it, golden for a golden ticket's. */
 export const campaignRealmMark = (campaign: string, golden: boolean) => (golden ? `Golden ${campaign}` : campaign);
 export const DEVCON = "Devcon";

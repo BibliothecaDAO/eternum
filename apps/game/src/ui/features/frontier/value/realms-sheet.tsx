@@ -53,7 +53,7 @@ export const RealmsSheet = ({
         ) : (
           <>
             {plan.fits < plan.total && <HudNotice tone="warn" line={partialRealmLabor(plan.fits, plan.total)} />}
-            {plan.fits > 0 && (
+            {plan.claimable && (
               <HudButton
                 kind={plan.fits < plan.total ? "secondary" : "primary"}
                 icon="labor"
