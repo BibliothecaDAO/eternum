@@ -10,6 +10,7 @@ import { dayOf } from "./days";
 import { entityMapPosition } from "./tile";
 
 export * from "./days";
+export * from "./home-claim";
 
 export type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 

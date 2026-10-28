@@ -149,20 +149,18 @@ const ContinueToPlay = () => (
 
 const TicketArt = () => <img src={FRONTIER_LOCKUP} alt={AGES.frontier.game} className="h-28 w-auto" />;
 
-/** What the realm claims each Frontier day: Labor, and Essence too for a golden ticket. */
+/** What this ticket's realm claims each Frontier day. */
 const DailyClaim = ({ golden }: { golden: boolean }) => (
   <AppPanel className="w-full max-w-[20rem]">
     <ul className="flex flex-col gap-3 text-left text-app-strong text-app-ink">
       <li className="flex items-center gap-3">
         <Icon name="labor" size={32} />
-        {JOIN_WORDS.laborEachDay(DEVCON.laborPerDay)}
+        {JOIN_WORDS.laborEachDay(golden ? DEVCON.goldenLaborPerDay : DEVCON.laborPerDay)}
       </li>
-      {golden && (
-        <li className="flex items-center gap-3">
-          <Icon name="essence" size={32} />
-          {JOIN_WORDS.essenceEachDay(DEVCON.goldenEssencePerDay)}
-        </li>
-      )}
+      <li className="flex items-center gap-3">
+        <Icon name="essence" size={32} />
+        {JOIN_WORDS.essenceEachDay(golden ? DEVCON.goldenEssencePerDay : DEVCON.essencePerDay)}
+      </li>
     </ul>
   </AppPanel>
 );

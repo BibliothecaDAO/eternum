@@ -1,3 +1,4 @@
+import { frontierArmyRules } from "../army/progression-rules-fixture";
 import { BiomeType, BiomeTypeToId, getNeighborHexes, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { SiteKind } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -211,16 +212,7 @@ export const sitesBeside = (stamina: bigint, layout: SitesLayout = SITES_LAYOUT)
       },
       command_mask: String(BigInt(preset.rules.command_mask) | BigInt(nativeCommandBits.InteractSite)),
     }),
-    set("0x101", "ArmyProgressionRules", {
-      common_xp: 100,
-      game_id: 1,
-      reveal_xp: 2,
-      fixed_xp: 200,
-      uncommon_xp: 250,
-      rare_xp: 500,
-      epic_xp: 900,
-      legendary_xp: 1500,
-    }),
+    set("0x101", "ArmyProgressionRules", frontierArmyRules()),
     ...revealed.map((tile, index) =>
       set(`0x20${index}`, "TileOpt", { game_id: 1, alt: false, col: tile.col, row: tile.row, data: grass }),
     ),

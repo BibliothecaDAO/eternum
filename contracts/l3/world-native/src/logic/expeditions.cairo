@@ -45,8 +45,12 @@ fn write_site(key: crate::resources::ResourceKey, site: ExpeditionSite) {
 }
 
 pub fn depth_rules_at(game_id: u32, coord: Coord) -> DepthRules {
+    depth_rules(game_id, depth_at(game_id, coord))
+}
+
+pub fn depth_at(game_id: u32, coord: Coord) -> u8 {
     let spacing = crate::logic::settlement::rules(game_id).spacing;
-    depth_rules(game_id, (coord.y / spacing % 4).try_into().unwrap())
+    (coord.y / spacing % 4).try_into().unwrap()
 }
 
 pub fn depth_rules(game_id: u32, depth: u8) -> DepthRules {

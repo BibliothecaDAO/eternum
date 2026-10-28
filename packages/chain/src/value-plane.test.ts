@@ -4,6 +4,7 @@ import dev from "../../../contracts/common/addresses/dev.json";
 import production from "../../../contracts/common/addresses/production.json";
 import {
   environmentL2,
+  isTestLords,
   ledgerDeploymentBlock,
   valuePlaneAddress,
 } from "./value-plane";
@@ -56,4 +57,20 @@ describe("environment address books", () => {
 it("names, beside every published ledger, the block it was deployed in", () => {
   for (const environment of ["staging", "production"] as const)
     expect(ledgerDeploymentBlock(environment)).toBeGreaterThan(0);
+});
+
+describe("test LORDS", () => {
+  it("is any token but Starknet's LORDS, however its address is written", () => {
+    expect(isTestLords(dev.lords)).toBe(true);
+    expect(
+      isTestLords(
+        "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
+      ),
+    ).toBe(false);
+    expect(
+      isTestLords(
+        "0x0124AEB495B947201F5FAC96FD1138E326AD86195B98DF6DEC9009158A533B49",
+      ),
+    ).toBe(false);
+  });
 });

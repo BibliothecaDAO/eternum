@@ -128,14 +128,20 @@ it("uses credentialed identity routes for push setup and a device capability for
   await client.getPushSubscriptionStatus("0x1", id);
   expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/status");
   fetch.mockResolvedValueOnce(Response.json({ foreground: true }));
-  await client.setPushGameForeground("0x1", id, true);
+  await client.setPushGameForeground("0x1", id, true, "Asia/Kolkata");
   expect(fetch.mock.calls.at(-1)).toEqual([
     "https://realms.test/api/notifications/push/foreground",
     expect.objectContaining({
       method: "POST",
       keepalive: true,
-      body: JSON.stringify({ owner: "0x1", id, foreground: true }),
+      body: JSON.stringify({ owner: "0x1", id, foreground: true, timeZone: "Asia/Kolkata" }),
     }),
+  ]);
+  fetch.mockResolvedValueOnce(Response.json({ status: "accepted" }));
+  await client.sendAlertsOn("0x1", id);
+  expect(fetch.mock.calls.at(-1)).toEqual([
+    "https://realms.test/api/notifications/push/alerts-on",
+    expect.objectContaining({ method: "POST", body: JSON.stringify({ owner: "0x1", id }) }),
   ]);
   fetch.mockResolvedValueOnce(Response.json({ revoked: true }));
   await client.revokePushSubscription(id, id);

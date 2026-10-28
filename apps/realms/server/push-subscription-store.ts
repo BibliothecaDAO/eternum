@@ -14,6 +14,8 @@ export interface PushSubscriptionRow {
   gameAlertsEnabledAt: number | null;
   directMessagesEnabledAt: number | null;
   gameForegroundUntil: number | null;
+  /** The phone's IANA zone, as it last reported it; null until it does. */
+  timeZone: string | null;
   createdAt: number;
 }
 
@@ -73,13 +75,14 @@ function createPushSubscriptionStore(db: D1Database) {
           .bind(id, await tokenHash(token))
           .run();
       }),
-    setGameForeground: (owner: string, id: string, foreground: boolean, now = Date.now()) =>
+    /** The game's lease on this device while it is in view, and the device's time zone as the game reads it. */
+    setGameForeground: (owner: string, id: string, foreground: boolean, timeZone: string | null, now = Date.now()) =>
       storeEffect(async () => {
         const updated = await db
           .prepare(
-            'UPDATE "notification_push_subscriptions" SET "gameForegroundUntil" = ? WHERE "id" = ? AND "owner" = ? RETURNING "id"',
+            'UPDATE "notification_push_subscriptions" SET "gameForegroundUntil" = ?, "timeZone" = coalesce(?, "timeZone") WHERE "id" = ? AND "owner" = ? RETURNING "id"',
           )
-          .bind(foreground ? now + PUSH_FOREGROUND_LEASE_MS : null, id, owner)
+          .bind(foreground ? now + PUSH_FOREGROUND_LEASE_MS : null, timeZone, id, owner)
           .first();
         return updated !== null;
       }),
@@ -158,6 +161,7 @@ async function buildSubscriptionRow(input: PushRegistration): Promise<PushSubscr
     gameAlertsEnabledAt: input.gameAlerts ? now : null,
     directMessagesEnabledAt: input.directMessages ? now : null,
     gameForegroundUntil: null,
+    timeZone: null,
     createdAt: now,
   };
 }

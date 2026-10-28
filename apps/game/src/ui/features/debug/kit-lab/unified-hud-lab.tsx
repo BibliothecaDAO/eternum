@@ -1,3 +1,4 @@
+import { frontierArmyRules } from "../../frontier/army/progression-rules-fixture";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useDocumentClass } from "@/hooks/use-document-class";
 import { useHudMode } from "@/hooks/use-hud-mode";
@@ -301,16 +302,7 @@ const LAB_PROGRESS = {
   scouting_kinds: 0,
   homecoming: 1,
 };
-const LAB_PROGRESSION_RULES = {
-  common_xp: 100,
-  game_id: 1,
-  reveal_xp: 2,
-  fixed_xp: 200,
-  uncommon_xp: 250,
-  rare_xp: 500,
-  epic_xp: 900,
-  legendary_xp: 1500,
-};
+const LAB_PROGRESSION_RULES = frontierArmyRules();
 
 /** Records the army panel's command at the network boundary; native tests prove its state changes. */
 const recordSkillPointSpent = (call: { explorerId: number; choice: SkillPointChoice }) => {

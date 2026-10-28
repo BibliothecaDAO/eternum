@@ -18,7 +18,8 @@ start the day explored. Walking over known ground costs {FRONTIER.stamina.step} 
 ## What a reveal pays
 
 Every tile an army reveals sends Essence or labor home to the realm, as likely as each other: a share of the army's
-troops, larger the deeper it is. Each reveal also gives the army {FRONTIER.xp.reveal} XP.
+troops, larger the deeper it is. Each reveal also gives the army {FRONTIER.xp.reveal.join(" / ")} XP at
+{FRONTIER.depths.map((depth) => depth.name).join(" / ")}.
 
 | Ground                    | Reveal pays, of the army's troops  | Entering costs                            |
 | ------------------------- | ---------------------------------- | ----------------------------------------- |

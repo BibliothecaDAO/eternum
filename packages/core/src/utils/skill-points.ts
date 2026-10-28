@@ -1,5 +1,7 @@
 import type { NativeCommandPayloads } from "@bibliothecadao/provider";
 import { nativeRuleConstants, type NativeRows } from "../client";
+import type { NativeFactStore } from "../client/native-fact-store";
+import { expeditionDepth, readExpeditionRules } from "./expeditions";
 
 export type SkillPointRank = 1 | 2 | 3 | 4 | 5;
 type NativeSkillPointChoice = NativeCommandPayloads["SpendSkillPoint"]["choice"];
@@ -9,6 +11,19 @@ export type SkillPointChoice =
 
 type Progress = NativeRows["ArmyProgress"];
 type Rules = NativeRows["ArmyProgressionRules"];
+
+/** The actual revealed tile's depth determines its XP, including when the army has since moved or disappeared. */
+export const readRevealXp = (
+  store: Pick<NativeFactStore, "get">,
+  gameId: number,
+  coord: { y: number },
+): number | undefined => {
+  const rules = store.get("ArmyProgressionRules", { game_id: gameId });
+  if (!rules) return undefined;
+  const expedition = readExpeditionRules(store, gameId);
+  if (!expedition) return undefined;
+  return rules.reveal_xp + expeditionDepth(expedition, coord) * rules.reveal_xp_per_depth;
+};
 
 export const SKILL_POINT_RANKS: readonly SkillPointRank[] = [1, 2, 3, 4, 5];
 

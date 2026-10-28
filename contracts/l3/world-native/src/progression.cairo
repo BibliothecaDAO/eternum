@@ -4,6 +4,7 @@ use crate::troops::ExplorerKey;
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ArmyProgressionRules {
     pub reveal_xp: u32,
+    pub reveal_xp_per_depth: u32,
     pub fixed_xp: u32,
     pub common_xp: u32,
     pub uncommon_xp: u32,
@@ -100,7 +101,7 @@ pub struct SkillPointSpent {
 
 #[derive(Copy, Drop, Serde)]
 pub enum XpAward {
-    Reveal,
+    Reveal: crate::troops::Coord,
     Clear: u128,
 }
 

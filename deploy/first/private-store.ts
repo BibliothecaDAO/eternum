@@ -76,6 +76,15 @@ export class PrivateStore {
     }
     renameSync(temporary, path);
   }
+  /** Renames one record to another that does not exist yet, atomically. */
+  rename(from: string, to: string) {
+    if (!this.writable) throw new PublicError("Dry run cannot write private storage");
+    const source = this.path(from);
+    const target = this.path(to);
+    this.check(source, 0o600);
+    if (existsSync(target)) throw new PublicError("Private record already exists; nothing was renamed");
+    renameSync(source, target);
+  }
   lock(): () => void {
     if (!this.writable) throw new PublicError("Dry run cannot lock private storage");
     const path = this.path("running.json");

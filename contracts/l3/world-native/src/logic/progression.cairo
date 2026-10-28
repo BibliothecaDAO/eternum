@@ -64,7 +64,10 @@ pub fn award_xp(key: ExplorerKey, award: XpAward) {
     let rules = rules(key.game_id).expect('missing progression rules');
     let mut progress = require(key);
     let amount = match award {
-        XpAward::Reveal => rules.reveal_xp,
+        XpAward::Reveal(coord) => {
+            let depth: u32 = crate::logic::expeditions::depth_at(key.game_id, coord).into();
+            rules.reveal_xp + depth * rules.reveal_xp_per_depth
+        },
         XpAward::Clear(strength) => crate::progression::clear_xp(strength),
     };
     crate::progression::earn_xp(ref progress, rules, amount);

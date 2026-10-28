@@ -8,11 +8,12 @@ import { readConfirmedSnapshot, optionalRow } from "../../apps/value-relay/src/s
 import { buildFrontierFundingCalls } from "../../contracts/l2/ledger/scripts/commands/deployment/frontier.js";
 import { readFrontierGame } from "../../contracts/l2/ledger/scripts/commands/deployment/fund-frontier";
 import { readFrontierFunding, assertFrontierPreset } from "../../packages/value-ledger/src/frontier-funding";
+import { isTestLords } from "../../packages/chain/src/value-plane";
 import { send, balance } from "./chain";
 import { nativeDocument } from "./box";
 import { seconds } from "./dates";
 import { PublicError } from "./errors";
-import { root, WEI } from "./settings";
+import { blitzPresetOf, root, WEI } from "./settings";
 import { signer, type Deployment } from "./main";
 import type { Step } from "./run";
 
@@ -139,15 +140,19 @@ async function funding(context: Season) {
     throw error;
   }
 }
+/** A Blitz phase needs its ledger season open; a Frontier-only environment has neither. */
 async function requireBlitzSeason(context: Season) {
+  if (blitzPresetOf(context.target) === null) return;
   const season = await resolveBlitzSeason(
     context.provider!,
     context.assets!.ledger,
-    seconds(context.inputs!.blitzStart),
-    seconds(context.inputs!.blitzEnd),
+    seconds(context.inputs!.blitzStart!),
+    seconds(context.inputs!.blitzEnd!),
   );
   if (!season.present) throw new PublicError("Blitz ledger season is not open; complete Ledger setup first");
 }
+/** The calendar phases this environment runs: Frontier, and Blitz where it has a Blitz preset. */
+const seasonPhases = (context: Season) => ["frontier", ...(blitzPresetOf(context.target) === null ? [] : ["blitz"])];
 async function currentCalendar(context: Season) {
   const calendar = await service<{ phases: SeasonPhase[] }>(context, "/api/factory/calendar");
   const now = Date.now();
@@ -166,7 +171,7 @@ export function seasonSteps(context: Season): Step[] {
         const phases = await currentCalendar(context);
         await requireBlitzSeason(context);
         return {
-          done: ["frontier", "blitz"].every((name) => phases.some((phase) => phase.phase === name)),
+          done: seasonPhases(context).every((name) => phases.some((phase) => phase.phase === name)),
           detail: phases.length
             ? phases
                 .map(
@@ -180,10 +185,10 @@ export function seasonSteps(context: Season): Step[] {
       apply: async () => {
         const phases = await currentCalendar(context);
         await requireBlitzSeason(context);
-        for (const phase of ["frontier", "blitz"]) {
+        for (const phase of seasonPhases(context)) {
           if (phases.some((existing) => existing.phase === phase)) continue;
-          const begins = seconds(phase === "frontier" ? context.inputs!.frontierStart : context.inputs!.blitzStart);
-          const ends = seconds(phase === "frontier" ? context.inputs!.frontierEnd : context.inputs!.blitzEnd);
+          const begins = seconds(phase === "frontier" ? context.inputs!.frontierStart : context.inputs!.blitzStart!);
+          const ends = seconds(phase === "frontier" ? context.inputs!.frontierEnd : context.inputs!.blitzEnd!);
           if (!(ends > Date.now() / 1000)) throw new PublicError(PHASE_END_ERROR);
           context.output(
             `Setting ${phase}${phase === "frontier" ? ` preset ${context.inputs!.frontierPresetId}` : ""} calendar: ${new Date(begins * 1000).toISOString()} to ${new Date(ends * 1000).toISOString()}.`,
@@ -225,9 +230,7 @@ export function seasonSteps(context: Season): Step[] {
         const pool = BigInt(context.inputs!.amount) * WEI;
         const lords = context.assets!.lords;
         const payer = context.target.coldAdmin ? context.inputs!.admin! : account.address;
-        // Both environments deposit dev's test LORDS, which anyone may mint: the payer mints the deposit it lacks.
-        const mint =
-          (await balance(account, lords, payer, state.block)) < pool ? [testLordsMint(lords, payer, pool)] : [];
+        const mint = await shortfallMint(account, lords, payer, pool, state.block);
         const calls = buildFrontierFundingCalls(context.assets!.ledger, lords, {
           shard: state.shard.chainId,
           frontierSeasonId: state.gameId,
@@ -268,7 +271,7 @@ export function seasonSteps(context: Season): Step[] {
       },
     },
     {
-      name: "Published pool and automatic Blitz slot",
+      name: "Published pool",
       payer: "relay",
       cost: "relay mainnet fees use its 30 STRK initial reserve; no daily cap",
       inspect: async () => {
@@ -277,22 +280,30 @@ export function seasonSteps(context: Season): Step[] {
         if (!state?.funded) return wait("Fund the confirmed game first");
         return {
           done: await poolPublished(context),
-          detail: "wait for confirmed published pool, automatic slot and healthy relay/monitor",
+          detail: `wait for confirmed published pool${blitzPresetOf(context.target) === null ? "" : ", automatic Blitz slot"} and healthy relay/monitor`,
         };
       },
       apply: async () => {
-        await waitFor(context, () => poolPublished(context), "Waiting for published deposit and automatic Blitz slot.");
+        await waitFor(context, () => poolPublished(context), "Waiting for the published deposit.");
       },
     },
   ];
 }
 
-function testLordsMint(lords: string, recipient: string, amount: bigint) {
-  return {
-    contractAddress: lords,
-    entrypoint: "mint",
-    calldata: CallData.compile([recipient, uint256.bnToUint256(amount)]),
-  };
+/**
+ * What the payer must mint before its deposit: a test token's shortfall, through its public mint. LORDS has no mint, so
+ * a payer short of LORDS is refused before any call is prepared.
+ */
+async function shortfallMint(provider: RpcProvider, lords: string, payer: string, pool: bigint, block: number) {
+  if ((await balance(provider, lords, payer, block)) >= pool) return [];
+  if (!isTestLords(lords)) throw new PublicError("The payer holds less LORDS than the deposit; send it LORDS first");
+  return [
+    {
+      contractAddress: lords,
+      entrypoint: "mint",
+      calldata: CallData.compile([payer, uint256.bnToUint256(pool)]),
+    },
+  ];
 }
 
 async function poolPublished(context: Season) {
@@ -311,8 +322,10 @@ async function poolPublished(context: Season) {
     BigInt(String(prize.pool)) !== BigInt(state.pool!.prizePool) / WEI
   )
     throw new PublicError("Published pool differs from the deposit");
-  const slots = await service<{ slots: unknown[] }>(context, "/api/slots");
-  if (!slots.slots.length) return false;
+  if (blitzPresetOf(context.target) !== null) {
+    const slots = await service<{ slots: unknown[] }>(context, "/api/slots");
+    if (!slots.slots.length) return false;
+  }
   await service(context, "/api/value/health");
   await service(context, "/api/operator/monitor/health");
   return true;

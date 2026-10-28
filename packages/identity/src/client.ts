@@ -409,13 +409,17 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
           id,
         },
       ),
-    setPushGameForeground: (owner: string, id: string, foreground: boolean) =>
+    /** Whether a game is in view on this device, and the device's time zone, which a push's times and quiet hours use. */
+    setPushGameForeground: (owner: string, id: string, foreground: boolean, timeZone: string) =>
       pushRequest(
         "foreground",
         decode(Schema.Struct({ foreground: Schema.Boolean })),
-        { owner, id, foreground },
+        { owner, id, foreground, timeZone },
         { keepalive: true },
       ),
+    /** The device's first push, "Alerts are on", sent the moment its game alerts turn on. */
+    sendAlertsOn: (owner: string, id: string) =>
+      pushRequest("alerts-on", decode(Schema.Struct({ status: Schema.String })), { owner, id }),
     revokePushSubscription: (id: string, token: string) =>
       pushRequest("revoke", decode(Schema.Struct({ revoked: Schema.Boolean })), { id, token }),
   };

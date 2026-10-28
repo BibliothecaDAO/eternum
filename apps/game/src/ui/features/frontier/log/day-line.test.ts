@@ -3,6 +3,7 @@ import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
 
 import { campBeside, SITE } from "../sites/site-fixture";
+import { frontierArmyRules } from "../army/progression-rules-fixture";
 import { dayLogLine } from "./day-line";
 
 const story = (name: string, storyPayload: Record<string, unknown>, title = "The story's own title") => ({
@@ -65,15 +66,16 @@ describe("the day log's line for a story", () => {
           common_xp: 100,
           game_id: 1,
           reveal_xp: 2,
+          reveal_xp_per_depth: 1,
           fixed_xp: 200,
           uncommon_xp: 250,
           rare_xp: 500,
-          epic_xp: 900,
-          legendary_xp: 1500,
+          epic_xp: 1000,
+          legendary_xp: 2000,
         },
       },
     ] as never);
-    const reveal = { resource_type: ResourcesIds.Labor, amount: "98400000000" };
+    const reveal = { resource_type: ResourcesIds.Labor, amount: "98400000000", coord: { x: 1, y: 1 } };
     expect(dayLogLine(story("ExplorationReward", reveal), store)).toBe("+98 labor, +2 XP");
     expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store)).toBe(
       "Troll cleared, +82 XP",
@@ -112,4 +114,22 @@ it.each([
   );
   expect(presentation.title).toBe(expected);
   expect(dayLogLine({ story: "SiteUsed", storyPayload, presentation }, store)).toBe(expected);
+});
+
+it.each([
+  [0, 2],
+  [1, 3],
+  [2, 4],
+  [3, 5],
+])("keeps historical reveal XP at depth %s without a living army", (depth, xp) => {
+  const { store } = campBeside();
+  store.applyFacts([{ model: "ArmyProgressionRules", key: "0x101", value: frontierArmyRules() }] as never);
+  const spacing = store.require("SettlementRules", { game_id: 1 }).spacing;
+  const payload = {
+    explorer_id: 999,
+    coord: { x: 1, y: depth * spacing + 1, alt: false },
+    resource_type: ResourcesIds.Labor,
+    amount: "1000000000",
+  };
+  expect(dayLogLine(story("ExplorationReward", payload), store)).toBe(`+1 labor, +${xp} XP`);
 });

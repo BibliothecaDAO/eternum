@@ -1,3 +1,4 @@
+import { frontierArmyRules } from "../../frontier/army/progression-rules-fixture";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { dayLogLine } from "@/ui/features/frontier/log/day-line";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
@@ -21,16 +22,7 @@ export const ownerDayLog = (now: number) => {
     {
       model: "ArmyProgressionRules",
       key: "0x101",
-      value: {
-        common_xp: 100,
-        game_id: 1,
-        reveal_xp: 2,
-        fixed_xp: 200,
-        uncommon_xp: 250,
-        rare_xp: 500,
-        epic_xp: 900,
-        legendary_xp: 1500,
-      },
+      value: frontierArmyRules(),
     },
     ...BEASTS.map(({ id, guard }, index) => ({
       model: "ExpeditionSite",

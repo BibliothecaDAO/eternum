@@ -92,7 +92,7 @@ it("shows empty sockets and the inventory beside a cumulative XP milestone", () 
   act(() => root.render(<ArmyDetail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
   expect(host.querySelectorAll('.ui-tier[data-tier="0"]')).toHaveLength(4);
   expect(host.querySelector('[aria-label="Skill points"]')!.textContent).toBe("I0II0III0IV0V0");
-  expect(host.textContent).toContain("12 / 100 XP");
+  expect(host.textContent).toContain("12 / 75 XP");
 });
 
 it("reads on its first step when the stamina is full again and what each tile explored sends home", () => {

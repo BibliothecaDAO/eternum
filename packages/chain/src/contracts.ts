@@ -51,8 +51,8 @@ export const CollectionAddresses: Readonly<
 
 class Token {
   public readonly decimals: number;
-  public readonly symbol?: string;
-  public readonly name?: string;
+  public readonly symbol: string | undefined;
+  public readonly name: string | undefined;
   public readonly chainId: ChainId;
   public readonly address: string;
 

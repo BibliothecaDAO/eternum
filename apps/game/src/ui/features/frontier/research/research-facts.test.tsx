@@ -42,11 +42,12 @@ const XP_RULES = {
     common_xp: 100,
     game_id: 1,
     reveal_xp: 2,
+    reveal_xp_per_depth: 1,
     fixed_xp: 200,
     uncommon_xp: 250,
     rare_xp: 500,
-    epic_xp: 900,
-    legendary_xp: 1500,
+    epic_xp: 1000,
+    legendary_xp: 2000,
   },
 };
 /** Every row's price at every tier, the Shrine's at 2,000 Essence and 0 labor; each building tier 4,000 and 3,000. */

@@ -6,11 +6,12 @@ const rules: NativeRows["ArmyProgressionRules"] = {
   common_xp: 100,
   game_id: 1,
   reveal_xp: 2,
+  reveal_xp_per_depth: 1,
   fixed_xp: 200,
   uncommon_xp: 250,
   rare_xp: 500,
-  epic_xp: 900,
-  legendary_xp: 1500,
+  epic_xp: 1000,
+  legendary_xp: 2000,
 };
 const common: NativeRows["ArmyProgress"] = {
   common_points: 0,

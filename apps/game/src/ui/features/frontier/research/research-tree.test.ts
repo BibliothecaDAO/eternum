@@ -93,18 +93,17 @@ describe("Frontier's camp is its Troll on the progression views (the shared stru
     expect(JSON.stringify(readResearchTree(MID_REALM))).not.toMatch(/Camp/);
   });
 
-  it("names the army's camp clear and its Scouting kind by the Troll", () => {
+  it("names the army's Scouting kind by the Troll", () => {
     const army = readArmyDetail({ ...VETERAN_ARMY, progress: { ...VETERAN_ARMY.progress, scoutingKinds: ["camp"] } });
-    expect(army.earn.map(({ line }) => line)).toContain("Clear a Troll");
     expect(army.attributes.find(({ key }) => key === "scouting")?.now).toBe("+10% discovery on Trolls");
     expect(JSON.stringify(army)).not.toMatch(/Camp/);
   });
 });
 
 describe("an army's detail as progression rules it", () => {
-  it("reads the owner's army: 12 of the 100 XP its first level-up costs, nothing to buy yet", () => {
+  it("reads the owner's army: 12 of the 75 XP its first point needs, nothing to buy yet", () => {
     const army = readArmyDetail(EARLY_ARMY);
-    expect([army.goal, army.available]).toEqual([{ rank: 1, at: 100, from: 0, share: 0.12 }, 0]);
+    expect([army.goal, army.available]).toEqual([{ rank: 1, at: 75, from: 0, share: 0.16 }, 0]);
     expect(army.attributes.map(({ name, now, next }) => [name, now, next?.change])).toEqual([
       ["Battle", "0% damage", "0% → +10% damage"],
       ["Logistics", "120 max stamina", "120 → 140 max stamina"],

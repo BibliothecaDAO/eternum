@@ -1,6 +1,6 @@
 import { identity as playIdentity } from "../vrf/fixtures";
 import { expect, test } from "bun:test";
-import { startReadRpc } from "./read-rpc";
+import { startReadRpc, WRITES_CLOSED_MESSAGE } from "./read-rpc";
 import { assertPublicRpcBoundary } from "./public-rpc-check";
 import { hash } from "starknet";
 import { rpcClientAddress } from "./rpc-client-limit";
@@ -429,6 +429,50 @@ test("only a dev chain lets browsers read the RPC's request timings", async () =
       }
     }
   } finally {
+    node.stop(true);
+  }
+});
+
+test("with writes closed for a final backup, every read the value relay makes still reaches the node and every write is refused", async () => {
+  const received: { method: string }[] = [];
+  const node = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      const call = await request.json();
+      received.push(call);
+      return Response.json({ jsonrpc: "2.0", id: call.id, result: "0x1" });
+    },
+  });
+  let closed = true;
+  const proxy = startReadRpc(node.url.origin, 0, playIdentity, noStamp, undefined, "127.0.0.1", () => closed);
+  const url = new URL("/rpc/v0_10_2", proxy.url).href;
+  const send = async (method: string, params: unknown = []) =>
+    (await fetch(url, { method: "POST", body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) })).json();
+  try {
+    // The relay's confirmed reads: head, block headers, events and the withdrawal's receipt (shard-rpc.ts).
+    const reads = [
+      "starknet_chainId",
+      "starknet_blockNumber",
+      "starknet_getBlockWithTxHashes",
+      "starknet_getEvents",
+      "starknet_getTransactionReceipt",
+      "starknet_call",
+    ];
+    for (const method of reads) expect((await send(method)).result).toBe("0x1");
+    expect(received.map(({ method }) => method)).toEqual(reads);
+    for (const method of [
+      "starknet_addInvokeTransaction",
+      "starknet_addDeployAccountTransaction",
+      "starknet_addDeclareTransaction",
+    ])
+      expect((await send(method, [{}])).error).toEqual({ code: -32010, message: WRITES_CLOSED_MESSAGE });
+    expect(received).toHaveLength(reads.length);
+    // Reopened, a write is judged by the usual rules again, not refused for the backup.
+    closed = false;
+    expect((await send("starknet_addInvokeTransaction", [{}])).error?.message).not.toBe(WRITES_CLOSED_MESSAGE);
+  } finally {
+    proxy.stop(true);
     node.stop(true);
   }
 });

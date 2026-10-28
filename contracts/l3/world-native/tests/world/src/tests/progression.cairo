@@ -1,25 +1,56 @@
 pub use world_test_support::tests::progression::*;
 
 #[test]
+fn exploring_at_each_depth_awards_exact_xp_once() {
+    for (depth, xp) in array![(0_u8, 2_u32), (1, 3), (2, 4), (3, 5)] {
+        let (d, game_id, key) = super::registrar::setup_frontier_chests();
+        let map = crate::map::IMapLogicDispatcher { contract_address: d.games };
+        place_army_at_depth(d, key, depth);
+
+        let before = read_progress(d, key);
+        let target = super::frontier_explore_chest::destination(d, key);
+        super::frontier_explore_chest::explore(d, key, super::frontier_explore_chest::HIT_ROOT, 360);
+        let after = read_progress(d, key);
+        assert_eq!(after, ArmyProgress { xp: before.xp + xp, ..before });
+        assert!(map.tile(crate::geometry::tile_key(game_id, target)).is_some());
+        assert!(
+            !super::play_fixture::play(
+                d.games,
+                super::play_fixture::TestAction {
+                    game_id,
+                    actor: d.actor,
+                    command: crate::commands::Command::Explore(
+                        crate::commands::Explore { explorer_id: key.explorer_id, direction: 0 },
+                    ),
+                },
+                1,
+                361,
+            ),
+        );
+        assert_eq!(read_progress(d, key), after);
+    }
+}
+
+#[test]
 fn thresholds_repeat_and_every_crossed_point_is_awarded_once() {
     let mut progress = crate::progression::initial();
     let mut previous = 0;
-    for (xp, rank) in array![(100_u32, 1_u8), (250, 2), (500, 3), (900, 4), (1500, 5), (1600, 1)] {
+    for (xp, rank) in array![(75_u32, 1_u8), (200, 2), (400, 3), (800, 4), (1500, 5), (1575, 1)] {
         crate::progression::earn_xp(ref progress, rules(), xp - previous - 1);
-        assert_eq!(crate::progression::points(progress, rank), if xp == 1600 {
+        assert_eq!(crate::progression::points(progress, rank), if xp == 1575 {
             1
         } else {
             0
         });
         crate::progression::earn_xp(ref progress, rules(), 1);
-        assert_eq!(crate::progression::points(progress, rank), if xp == 1600 {
+        assert_eq!(crate::progression::points(progress, rank), if xp == 1575 {
             2
         } else {
             1
         });
         previous = xp;
     }
-    crate::progression::earn_xp(ref progress, rules(), 2900);
+    crate::progression::earn_xp(ref progress, rules(), 2925);
     assert_eq!(progress.xp, 4500);
     for rank in 1_u8..6 {
         assert_eq!(crate::progression::points(progress, rank), 3);
@@ -170,7 +201,9 @@ fn reveals_clears_shrines_and_relic_chests_pay_their_xp() {
     snforge_std::interact_with_state(
         d.games,
         || {
-            crate::logic::progression::award_xp(key, crate::progression::XpAward::Reveal);
+            crate::logic::progression::award_xp(
+                key, crate::progression::XpAward::Reveal(crate::troops::Coord { alt: false, x: 1, y: 1 }),
+            );
             crate::logic::progression::award_xp(
                 key, crate::progression::XpAward::Clear(1300 * crate::rules::RESOURCE_PRECISION),
             );

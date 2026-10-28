@@ -160,20 +160,29 @@ const frontierPhrases = (config, preset) => {
     limit.empireDeploymentCap,
   ];
   const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
+  const revealXp = preset.depths
+    .map((_, depth) => n(preset.progression.revealXp + depth * preset.progression.revealXpPerDepth))
+    .join(" / ");
   return [
     {
       page: "frontier/armies",
       phrases: [
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes, so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
         `Revealing a tile costs ${stamina.staminaExploreStaminaCost}, a step over known ground ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
+        `An army earns ${revealXp} XP per revealed tile at ${DEPTH_NAMES.join(" / ")}.`,
+        `At ${TIERS.map((tier) => n(preset.progression[`${tier}Xp`])).join(" / ")} XP it earns Common, Uncommon, Rare, Epic and Legendary skill points.`,
+        `The same milestones repeat every ${n(preset.progression.legendaryXp)} XP.`,
       ],
     },
     {
       page: "frontier/expedition",
-      phrases: preset.depths.flatMap((depth, index) => [
-        `${DEPTH_NAMES[index]} ${range(depth.siteGuardLower, depth.siteGuardUpper)} ${range(depth.ruinGuardLower, depth.ruinGuardUpper)} ${range(depth.beastWeakLower, depth.beastWeakUpper)} ${range(depth.beastStrongLower, depth.beastStrongUpper)}`,
-        `${DEPTH_NAMES[index]} ${depth.revealPercent}%`,
-      ]),
+      phrases: [
+        `Each reveal also gives the army ${revealXp} XP at ${DEPTH_NAMES.join(" / ")}.`,
+        ...preset.depths.flatMap((depth, index) => [
+          `${DEPTH_NAMES[index]} ${range(depth.siteGuardLower, depth.siteGuardUpper)} ${range(depth.ruinGuardLower, depth.ruinGuardUpper)} ${range(depth.beastWeakLower, depth.beastWeakUpper)} ${range(depth.beastStrongLower, depth.beastStrongUpper)}`,
+          `${DEPTH_NAMES[index]} ${depth.revealPercent}%`,
+        ]),
+      ],
     },
     {
       page: "frontier/chests",

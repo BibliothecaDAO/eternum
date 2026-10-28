@@ -1,3 +1,4 @@
+import { frontierArmyRules } from "../../ui/features/frontier/army/progression-rules-fixture";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
@@ -74,16 +75,7 @@ const raisedArmyLimit = (store: NativeFactStore): LabFact => {
 const progressionRules = (): LabFact => ({
   model: "ArmyProgressionRules",
   key: "0x1ab94",
-  value: {
-    common_xp: 100,
-    game_id: 1,
-    reveal_xp: 1,
-    fixed_xp: 1,
-    uncommon_xp: 250,
-    rare_xp: 500,
-    epic_xp: 900,
-    legendary_xp: 1500,
-  },
+  value: frontierArmyRules(),
 });
 
 const armyProgress = (key: string, explorerId: number, xp: number): LabFact => ({

@@ -23,8 +23,9 @@ import {
   FRONTIER_PLAYGROUND_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
+import { orderLengths, seasonSeconds } from "../../../../packages/core/src/utils/days";
 import { nativePresetIdFor } from "../../../source/native";
-import { clockScaled } from "../../../source/common/season-clock";
+import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
 import { RESOURCE_PRECISION, ResourcesIds } from "../../../../packages/types/src/constants";
 import {
   buildNativePresetRegistration,
@@ -149,23 +150,30 @@ describe("native presets", () => {
   test("held-Realm labor is fixed per game day without a golden campaign bonus", () => {
     for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
-      expect(preset.economy.labor.unwrap()).toEqual({ amount: 1000n, golden_essence: 0n });
+      expect(preset.economy.labor.unwrap()).toEqual({
+        amount: 1000n,
+        campaign_essence: 0n,
+        golden_amount: 1000n,
+        golden_essence: 0n,
+      });
     }
     for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
   });
-  test.each([-1, 0.5, Number.NaN])("refuses invalid golden Essence grants (%s)", (invalid) => {
+  test.each([-1, 0.5, Number.NaN])("refuses invalid daily home grants (%s)", (invalid) => {
     const labor = nativePresets[FRONTIER_DEVCON_PRESET_ID]!.labor!;
-    const previous = labor.goldenEssence;
-    try {
-      labor.goldenEssence = invalid;
-      expect(() =>
-        buildNativePreset(
-          loadNativePresetConfiguration("madara.frontier", FRONTIER_DEVCON_PRESET_ID),
-          FRONTIER_DEVCON_PRESET_ID,
-        ),
-      ).toThrow("Invalid Realm labor rules");
-    } finally {
-      labor.goldenEssence = previous;
+    for (const field of ["amount", "campaignEssence", "goldenAmount", "goldenEssence"] as const) {
+      const previous = labor[field];
+      try {
+        labor[field] = invalid;
+        expect(() =>
+          buildNativePreset(
+            loadNativePresetConfiguration("madara.frontier", FRONTIER_DEVCON_PRESET_ID),
+            FRONTIER_DEVCON_PRESET_ID,
+          ),
+        ).toThrow("Invalid Realm labor rules");
+      } finally {
+        labor[field] = previous;
+      }
     }
   });
   test.each([2, 4])(
@@ -536,12 +544,13 @@ describe("native presets", () => {
     });
     expect(design.economy.relics).toEqual([]);
     expect(design.economy.progression.unwrap()).toEqual({
-      common_xp: 100,
+      common_xp: 75,
       reveal_xp: 2,
+      reveal_xp_per_depth: 1,
       fixed_xp: 200,
-      uncommon_xp: 250,
-      rare_xp: 500,
-      epic_xp: 900,
+      uncommon_xp: 200,
+      rare_xp: 400,
+      epic_xp: 800,
       legendary_xp: 1500,
     });
     expect(design.settlement.realms.resources).toEqual([
@@ -787,7 +796,7 @@ describe("scaled Frontier presets", () => {
   test("world and ledger registration agree on every Frontier preset's effective day and real claim window", () => {
     for (const [presetId, dayUnit] of [
       [FRONTIER_PRESET_ID, 14_400],
-      [FRONTIER_DEVCON_PRESET_ID, 4_800],
+      [FRONTIER_DEVCON_PRESET_ID, 7_200],
       [FRONTIER_ACCELERATED_PRESET_ID, 120],
       [FRONTIER_FIXTURE_PRESET_ID, 14_400],
       [FRONTIER_PLAYGROUND_PRESET_ID, 14_400],
@@ -839,7 +848,12 @@ describe("Devcon's fast Frontier preset", () => {
       })),
     );
     expect(nativePresets[FRONTIER_PRESET_ID]!.labor!.amount).toBe(1_000);
-    expect(fast.economy.labor.unwrap()).toEqual({ amount: 1_000n, golden_essence: 1_000n });
+    expect(fast.economy.labor.unwrap()).toEqual({
+      amount: 1_000n,
+      campaign_essence: 1_000n,
+      golden_amount: 2_000n,
+      golden_essence: 2_000n,
+    });
     expect(fast.structures.research.filter(({ row }) => row === research.ROW_DEPTH).map(({ price }) => price)).toEqual([
       { essence: 20_000_000_000_000n, labor: 0n },
       { essence: 50_000_000_000_000n, labor: 0n },
@@ -848,6 +862,20 @@ describe("Devcon's fast Frontier preset", () => {
     expect(fast.structures.research.filter(({ row }) => row !== research.ROW_DEPTH)).toEqual(
       normal.structures.research.filter(({ row }) => row !== research.ROW_DEPTH),
     );
+  });
+
+  test("every seeded bag has five 4–12-hour days while activity stays at three times normal", () => {
+    const preset = nativePresets[FRONTIER_DEVCON_PRESET_ID]!;
+    const unit = seasonDayUnitSeconds(preset);
+    expect(unit).toBe(7_200);
+    for (let order = 0; order < 96; order++) {
+      const lengths = orderLengths(order).map((length) => length * unit);
+      expect([...lengths].sort((a, b) => a - b)).toEqual([4, 6, 8, 10, 12].map((hours) => hours * 3_600));
+      expect(lengths[0]).toBeGreaterThanOrEqual(6 * 3_600);
+      expect(lengths.reduce((total, seconds) => total + seconds, 0)).toBe(40 * 3_600);
+    }
+    expect(seasonSeconds(2, unit)).toBe(80 * 3_600);
+    expect(definition(FRONTIER_DEVCON_PRESET_ID).rules.tick_config.armies_tick_in_seconds).toBe(40);
   });
 
   test("encodes a separate immutable preset and the approved noon-to-evening 80-hour game", () => {
@@ -875,7 +903,7 @@ describe("Devcon's fast Frontier preset", () => {
     expect(params.start_main_at).toBe(1_793_687_400);
     expect(params.duration_seconds).toBe(288_000);
     expect(startMainAt + durationSeconds).toBe(Date.parse("2026-11-06T14:30:00Z") / 1_000);
-    expect(durationSeconds / (20 * fast.rules.day_unit_seconds)).toBe(3);
+    expect(durationSeconds / (20 * fast.rules.day_unit_seconds)).toBe(2);
     expect(startMainAt % fast.rules.tick_config.armies_tick_in_seconds).toBe(0);
   });
 });

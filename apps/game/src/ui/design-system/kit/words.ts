@@ -19,7 +19,6 @@ import {
   formatCharge,
   resourceName,
   formatHeldAgainst,
-  structureName,
   structurePlural,
   StructureType,
 } from "@bibliothecadao/types";
@@ -570,6 +569,13 @@ export const CLAIMING_LABOR = "Claiming";
 export const partialRealmLabor = (fits: number, total: number) =>
   `${formatExact(fits)} of ${formatExact(total)} fit · remainder lost`;
 export const claimedRealmLabor = (secondsLeft: number | undefined) => `Claimed today · ${dayLeft(secondsLeft).reading}`;
+/** The phone's own time zone: the server words a push's times, and keeps its quiet hours, by this clock. */
+export const deviceTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+/** The claimed sheet's ask: a push when the next game day opens, on this device. */
+export const remindWhenDayOpens = (day: number) => `Remind me when Day ${day} opens`;
+/** The same ask on an iPhone in its browser, which sends push only to the installed app. */
+export const INSTALL_FOR_REMINDERS = "Add to Home Screen for reminders";
+export const TURNING_ALERTS_ON = "Turning on";
 export const REALM_NUMBER = "Realm number";
 export const OPTIONAL_REALM_NUMBER = "Realm number (optional)";
 export const YOUR_REALMS = "Your Realms";
@@ -906,7 +912,7 @@ export const ENTRY_WORDS = {
   whereItGoes: "Season pool, chests and treasury",
 } as const;
 
-/** The test token every environment's ledger is paid in, minted to the wallet that pays. */
+/** A ledger's test token, minted to the wallet that pays. */
 export const mintTestTokenWord = (amount: string) => `Mint ${amount} test tokens`;
 
 /** After a paid Blitz: the rating's change and the chest the result minted. */
@@ -1279,18 +1285,12 @@ export const RESEARCH_TREE = {
 } as const;
 
 /**
- * An army's detail (the owner's picks, 20 and 22 October): its status, its four attributes as tiles, its XP with how it
- * is earned on its hover, then its level-ups, one step on.
+ * An army's detail: status, attributes, the next skill point and level-up choices.
  */
 export const ARMY_DETAIL = {
   /** A Scouting effect on the kind its levels went to: "+10% discovery on Rifts". */
   onKind: (effect: string, kind: string) => `${effect} on ${kind}`,
   scoutingNext: (now: string, step: string) => `${now} · ${step} on the kind you pick`,
-  earn: {
-    explore: "Explore a tile",
-    shrine: "Visit a Shrine",
-    clear: `Clear a ${structureName(StructureType.Camp, undefined, "frontier")}`,
-  },
   /** What each tile the army explores sends home, on its stamina row. */
   revealPays: (amount: string) => `+${amount} a tile`,
   revealPaysLabel: `${ESSENCE} and ${LABOR} a tile`,

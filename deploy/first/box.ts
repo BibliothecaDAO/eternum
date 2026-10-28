@@ -80,6 +80,18 @@ export async function deployShard(target: Target, revision: string, output: (lin
   output(`Shard log: ${result.log}`);
   if (result.restarted) output("Restarting the unfinished pending shard from fresh state.");
 }
+/**
+ * What the value artifacts are built from: the three packages and the world sources the ledger links to. The value
+ * contracts' Docker stage copies exactly these, and a change to any of them rebuilds the artifacts.
+ */
+export const valueSources = [
+  "contracts/l2/ledger",
+  "contracts/l2/mmr",
+  "contracts/l2/collectibles",
+  "contracts/l3/world-native/src/days.cairo",
+  "contracts/l3/world-native/src/approved_frontier_extension.cairo",
+  "contracts/l3/world-native/src/frontier_prizes.cairo",
+];
 export async function artifactsReady(store: PrivateStore, revision: string) {
   const built = store.read<{ revision: string }>("build.json");
   if (!built || !artifactFiles.every(({ file }) => existsSync(join(store.directory, "artifacts", file)))) return false;
@@ -94,10 +106,7 @@ export async function artifactsReady(store: PrivateStore, revision: string) {
           built.revision,
           revision,
           "--",
-          "contracts/l2/ledger",
-          "contracts/l2/mmr",
-          "contracts/l2/collectibles",
-          "contracts/l3/world-native/src/days.cairo",
+          ...valueSources,
           "deploy/first/box.ts",
           "deploy/shard/Dockerfile",
         ],

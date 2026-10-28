@@ -25,13 +25,14 @@ const game = vi.hoisted(() => ({
     homecoming: 0,
   },
   rules: {
-    common_xp: 100,
+    common_xp: 75,
     game_id: 1,
     reveal_xp: 2,
+    reveal_xp_per_depth: 1,
     fixed_xp: 200,
-    uncommon_xp: 250,
-    rare_xp: 500,
-    epic_xp: 900,
+    uncommon_xp: 200,
+    rare_xp: 400,
+    epic_xp: 800,
     legendary_xp: 1500,
   },
 }));
@@ -113,8 +114,7 @@ it("shows the army's figures, then its level-ups one step on, and buys the chose
   expect(host.querySelector('button[aria-label="Battle 0% damage"]')).not.toBeNull();
   expect(host.textContent).toMatch(/\d+ max stamina/);
   expect(host.textContent).toMatch(/% come home/);
-  // How XP is earned is on the XP's hover; Frontier's camp is its Troll there as everywhere (the structure naming rule).
-
+  // Scouting uses the same Troll name as the map.
   expect(host.textContent).not.toMatch(/Camp/);
   // Level up counts nothing: a point buys one level-up, whichever the choices take.
   expect(button(/Level up/)!.textContent).toBe("Level up");
@@ -154,4 +154,28 @@ it("sends the chosen point rank for Stamina without changing lifetime XP", async
     choice: { kind: "Stamina", value: 1 },
   });
   expect(game.progress.xp).toBe(260);
+});
+
+it.each([
+  [74, "75"],
+  [75, "200"],
+  [199, "200"],
+  [200, "400"],
+  [399, "400"],
+  [400, "800"],
+  [799, "800"],
+  [800, "1,500"],
+  [1499, "1,500"],
+  [1500, "1,575"],
+  [1575, "1,700"],
+  [3000, "3,075"],
+])("shows the real next-point readout at %s XP, including in Level up", (xp, next) => {
+  game.progress.xp = xp;
+  game.progress.common_points = Number(xp >= game.rules.common_xp);
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
+  const readout = `${xp.toLocaleString("en-US")} / ${next} XP`;
+  expect(host.textContent).toContain(readout);
+  act(() => button(/Level[ -]up/)!.click());
+  expect(host.textContent).toContain(readout);
 });

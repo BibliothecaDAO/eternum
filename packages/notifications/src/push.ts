@@ -20,7 +20,7 @@ export type PushConfiguration =
   | { enabled: true; publicKey: string; gameAlerts: boolean; directMessages: boolean };
 export interface PushEnvelope {
   version: 1;
-  kind?: "test" | "game" | "direct-message";
+  kind?: "alerts-on" | "game" | "direct-message";
   subscriptionId: string;
   notification: LocalNotificationPayload;
 }
@@ -56,7 +56,7 @@ const envelopeSchema = Schema.Struct({
   kind: Schema.optional(Schema.Unknown),
   notification: Schema.optional(Schema.Unknown),
 });
-const kindSchema = Schema.optional(Schema.Literals(["test", "game", "direct-message"]));
+const kindSchema = Schema.optional(Schema.Literals(["alerts-on", "game", "direct-message"]));
 
 export const isPushDeviceId = Schema.is(pushDeviceIdSchema);
 export const isPushOwner = Schema.is(pushOwnerSchema);

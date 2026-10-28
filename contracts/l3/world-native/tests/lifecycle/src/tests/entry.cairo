@@ -193,7 +193,7 @@ fn a_free_settlement_cannot_become_a_held_realm_after_entry() {
 
 #[feature("safe_dispatcher")]
 fn settle_labor_home(held: bool) -> (Deployment, crate::entry::LaborHome) {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 2);
     set_operator(d, authority());
     if held {
         start_cheat_caller_address(d.games, authority());
@@ -227,6 +227,7 @@ fn a_held_settlement_receives_one_thousand_labor_per_day_and_retries_are_exact()
     assert!(operator.grant_labor(home, 0, authority()).is_err());
     let grant = operator.grant_labor(home, 0, d.actor).unwrap();
     assert_eq!(grant.amount, 1000 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(grant.essence, 0);
     assert_eq!(grant.home, home.home);
     let mut spy = spy_events();
     assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), grant);
@@ -236,22 +237,25 @@ fn a_held_settlement_receives_one_thousand_labor_per_day_and_retries_are_exact()
     let game = crate::game::IGameDispatcherTrait::game(
         crate::game::IGameDispatcher { contract_address: d.games }, home.game_id,
     );
-    let mut today = crate::days::day_of(game, 4800, 362);
-    // All fifteen seeded days reset at their own boundary, including multiple claims within one UTC date.
-    for index in 1_u64..15 {
+    let (_, preset) = super::preset_projection::current_definition("devcon");
+    let unit = preset.rules.day_unit_seconds;
+    let mut today = crate::days::day_of(game, unit, 362);
+    // All ten seeded days reset at their own boundary, including multiple claims within one UTC date.
+    for index in 1_u64..10 {
         snforge_std::start_cheat_block_timestamp(d.games, today.end - 1);
         assert!(operator.grant_labor(home, index, d.actor).is_err());
         snforge_std::start_cheat_block_timestamp(d.games, today.end);
         let next = operator.grant_labor(home, index, d.actor).unwrap();
         assert!(next.amount <= 1000 * crate::rules::RESOURCE_PRECISION);
+        assert_eq!(next.essence, 0);
         assert_eq!(operator.labor_grant(home, index).unwrap(), Some(next));
         assert_eq!(operator.grant_labor(home, index, d.actor).unwrap(), next);
-        today = crate::days::day_of(game, 4800, today.end);
+        today = crate::days::day_of(game, unit, today.end);
         assert_eq!(today.index, index);
     }
     assert_eq!(today.end, game.end_at);
     snforge_std::start_cheat_block_timestamp(d.games, game.end_at);
-    assert!(operator.grant_labor(home, 15, d.actor).is_err());
+    assert!(operator.grant_labor(home, 10, d.actor).is_err());
     // A stored receipt is still an exact retry after the season; it cannot pay twice.
     assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), grant);
     set_operator(d, 0.try_into().unwrap());
@@ -294,7 +298,8 @@ fn midnight_is_not_a_frontier_labor_reset() {
     let game = crate::game::IGameDispatcherTrait::game(
         crate::game::IGameDispatcher { contract_address: d.games }, home.game_id,
     );
-    let day = crate::days::day_of(game, 4800, 86400);
+    let (_, preset) = super::preset_projection::current_definition("devcon");
+    let day = crate::days::day_of(game, preset.rules.day_unit_seconds, 86400);
     assert!(day.start < 86400 && day.end > 86400);
     let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
     snforge_std::start_cheat_block_timestamp(d.games, 86399);
