@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow } from "./season-list";
 import { SeasonOverCard } from "./season-over-card";
+import { TARGET_MARKS } from "../sites/site-marks";
 
 const render = (node: ReactNode) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -120,6 +121,26 @@ describe("the season list", () => {
     expect(host.querySelector("[aria-label='Season —']")).not.toBeNull();
     act(() => button(host, "Try again").click());
     expect(onRetry).toHaveBeenCalled();
+    unmount();
+  });
+
+  it("draws each kind of site cleared as the attack cards draw it: its guard's painting and its name (one source)", () => {
+    const sites = { total: 10, camps: 1, rifts: 2, ruins: 3, beasts: 4 };
+    const detail = { rank: 2, order: 2, sites, chests: 0, lords: 0, depth: 0, essence: 0, labor: 0 };
+    const { host, unmount } = render(<SeasonDetailSheet detail={detail} label="Aldric" onClose={vi.fn()} />);
+    const chip = (name: string) => host.querySelector(`[aria-label='${name}']`);
+    for (const [kind, count] of [
+      ["Camp", 1],
+      ["Rift", 2],
+      ["Ruin", 3],
+      ["Beasts", 4],
+    ] as const) {
+      const { word, icon } = TARGET_MARKS[kind];
+      expect(chip(`${word} ${count}`)?.querySelector("[data-icon]")?.getAttribute("data-icon")).toBe(icon);
+    }
+    // Frontier's rift and roaming beasts are their guards, never a landmark or a troop.
+    expect(TARGET_MARKS.Rift.icon).toBe("beast-dark-fey");
+    expect(host.querySelector("[data-icon='troops']")).toBeNull();
     unmount();
   });
 

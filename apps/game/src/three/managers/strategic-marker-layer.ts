@@ -1,4 +1,6 @@
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
+import { StructureType } from "@bibliothecadao/types";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import {
   CanvasTexture,
@@ -51,12 +53,13 @@ export interface StrategicMarkerLayerOptions {
   loadTexture?: (path: string) => Promise<Texture>;
 }
 
+/** Each far-view pool wears its structure's own painting, as every panel and plate draws that structure. */
 const STRUCTURE_MARKER_TEXTURE_PATHS: Readonly<Record<StrategicStructureMarkerKind, string>> = {
-  bank: iconUrl("chest"),
-  hyperstructure: iconUrl("hyperstructure"),
-  mine: iconUrl("mine"),
-  realm: iconUrl("realm"),
-  village: iconUrl("village"),
+  bank: iconUrl(structureMeaning(StructureType.Bank)),
+  hyperstructure: iconUrl(structureMeaning(StructureType.Hyperstructure)),
+  mine: iconUrl(structureMeaning(StructureType.Mine)),
+  realm: iconUrl(structureMeaning(StructureType.Realm)),
+  village: iconUrl(structureMeaning(StructureType.Village)),
 };
 const ARMY_MARKER_TEXTURE_PATH = iconUrl("army");
 export const STRATEGIC_MARKER_HEIGHT = 0.6;

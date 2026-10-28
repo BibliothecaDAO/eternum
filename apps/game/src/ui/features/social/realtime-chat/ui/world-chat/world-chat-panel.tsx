@@ -16,6 +16,8 @@ import {
 } from "../../hooks/use-realtime-chat";
 import type { WorldChatMessage } from "../../model/types";
 import { computeDateSeparators } from "../../model/message-grouping";
+import { useChatMentions } from "../../hooks/use-chat-mentions";
+import { mentions, messageParts } from "../../model/mentions";
 import { MessageComposer } from "../shared/message-composer";
 import { UserAvatar } from "../shared/user-avatar";
 
@@ -23,52 +25,6 @@ interface WorldChatPanelProps {
   zoneId?: string;
   className?: string;
 }
-
-type MessagePart = {
-  type: "text" | "coordinates";
-  content: string | { x: number; y: number };
-};
-
-// Helper function to detect coordinates in message and split message into parts
-const processMessage = (message: string): MessagePart[] => {
-  const parts: MessagePart[] = [];
-  let lastIndex = 0;
-
-  // Find all coordinate matches (with optional space after comma)
-  const regex = /(-?\d+),\s*(-?\d+)/g;
-  let match;
-
-  while ((match = regex.exec(message)) !== null) {
-    // Add text before coordinates
-    if (match.index > lastIndex) {
-      parts.push({
-        type: "text",
-        content: message.slice(lastIndex, match.index),
-      });
-    }
-
-    // Add coordinates
-    parts.push({
-      type: "coordinates",
-      content: {
-        x: parseInt(match[1]),
-        y: parseInt(match[2]),
-      },
-    });
-
-    lastIndex = match.index + match[0].length;
-  }
-
-  // Add remaining text
-  if (lastIndex < message.length) {
-    parts.push({
-      type: "text",
-      content: message.slice(lastIndex),
-    });
-  }
-
-  return parts;
-};
 
 // Coordinate navigation button component
 const CoordinateNavButton = ({
@@ -130,6 +86,7 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
 
   // A sender's name is read as the list draws, and the list draws again when one lands.
   const names = usePlayerNames();
+  const mentionable = useChatMentions();
   const handleNavigateToCoordinates = useCallback((coordinates: { x: number; y: number }) => {
     openOnMap(Position.fromNormalized({ x: coordinates.x, y: coordinates.y }), "tile");
   }, []);
@@ -291,7 +248,8 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
               <ul className="mt-auto flex flex-col gap-0.5">
                 {messages.map((message, index) => {
                   const senderName = formatSenderName(names, message);
-                  const messageParts = processMessage(message.content);
+                  const parts = messageParts(message.content, mentionable.names);
+                  const mentionsMe = mentions(parts, mentionable.me);
                   return (
                     <Fragment key={message.id}>
                       {dateSeparators.has(index) && (
@@ -301,8 +259,14 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
                           <div className="flex-1 border-t border-hud-line" />
                         </li>
                       )}
-                      {/* Every message carries its author: avatar, time and name, then the text. */}
-                      <li className="flex items-start gap-2 text-hud-body leading-snug text-hud-ink">
+                      {/* Every message carries its author: avatar, time and name, then the text. One that mentions the
+                          player is marked for them. */}
+                      <li
+                        data-mentions-me={mentionsMe || undefined}
+                        className={`flex items-start gap-2 rounded text-hud-body leading-snug text-hud-ink ${
+                          mentionsMe ? "bg-hud-chosen" : ""
+                        }`}
+                      >
                         <UserAvatar
                           name={senderName}
                           address={message.sender.playerId}
@@ -319,18 +283,25 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
                           >
                             &lt;{senderName}&gt;
                           </span>{" "}
-                          {messageParts.map((part, i) => (
-                            <span key={i}>
-                              {part.type === "text" ? (
-                                <>{part.content}</>
-                              ) : (
-                                <CoordinateNavButton
-                                  coordinates={part.content as { x: number; y: number }}
-                                  onNavigate={handleNavigateToCoordinates}
-                                />
-                              )}
-                            </span>
-                          ))}
+                          {parts.map((part, i) =>
+                            part.type === "text" ? (
+                              <span key={i}>{part.text}</span>
+                            ) : part.type === "mention" ? (
+                              <span
+                                key={i}
+                                data-mention={part.name}
+                                className={part.name === mentionable.me ? "text-hud-gold" : "text-hud-accent"}
+                              >
+                                {part.text}
+                              </span>
+                            ) : (
+                              <CoordinateNavButton
+                                key={i}
+                                coordinates={part}
+                                onNavigate={handleNavigateToCoordinates}
+                              />
+                            ),
+                          )}
                         </p>
                       </li>
                     </Fragment>
@@ -352,6 +323,7 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
           }}
           placeholder={resolvedZoneId ? "Message world chat…" : "Select a zone to chat"}
           disabled={!hasChannelAccess}
+          mentions={mentionable.choices}
         />
       </div>
     </section>

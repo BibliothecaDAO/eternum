@@ -51,6 +51,8 @@ const SITE_KINDS = new Map<number, SiteKind>([
   [StructureType.Ruin, "Ruin"],
   [StructureType.Beasts, "Beasts"],
 ]);
+/** Whether a structure category is a guarded Frontier site. */
+export const isGuardedSite = (category: number): boolean => SITE_KINDS.has(category);
 export const siteKindOf = (category: number): SiteKind => {
   const kind = SITE_KINDS.get(category);
   if (!kind) throw new Error(`Structure category ${category} is not a guarded site`);

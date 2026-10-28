@@ -989,6 +989,10 @@ span.ui-row__choose {
   overflow-y: auto;
   padding: theme(spacing.2) theme(spacing.3) max(theme(spacing.3), env(safe-area-inset-bottom));
 }
+/* A sheet whose body sends all it holds to its foot (HudWindowFoot) keeps no empty band above it. */
+.ui-sheet__body:empty {
+  display: none;
+}
 /* A phone held sideways: the sheet stands in the HUD's right column, under its strip (HudBands). */
 @media (orientation: landscape) and (max-height: 520px) and (max-width: 1023px) {
   .ui-sheet {
@@ -1511,7 +1515,7 @@ button.ui-relic:focus-visible {
   text-align: left;
   cursor: pointer;
 }
-.ui-menu__item:is(:hover, [data-state="hover"]) {
+.ui-menu__item:is(:hover, [data-state="hover"], [aria-selected="true"]) {
   background: var(--hud-hover);
 }
 .ui-menu__item[aria-checked="true"] {
@@ -1605,7 +1609,8 @@ button.ui-relic:focus-visible {
     min-width: var(--hud-control);
   }
   .ui-event__open,
-  .ui-feed-line {
+  .ui-feed-line,
+  .ui-menu__item {
     min-height: var(--hud-control);
     align-items: center;
   }

@@ -1,6 +1,7 @@
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useDocumentClass } from "@/hooks/use-document-class";
-import { LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
+import { useGame } from "@/hooks/context/game-context";
+import { LAB_SEAT_PROFILES, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { useRealtimeChatStore } from "@/ui/features/social/realtime-chat/model/store";
 import type { WorldChatMessage } from "@/ui/features/social/realtime-chat/model/types";
 import { HudButton, HudEventRow, HudPanel } from "@/ui/design-system/kit/hud-elements";
@@ -10,7 +11,7 @@ import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/s
 import { RailFrame, TileDetails } from "@/ui/features/world/hud/guided-rail";
 import { BuildTag } from "@/ui/layouts/build-tag";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { TileGame } from "./panels-lab";
 
@@ -20,7 +21,9 @@ import { TileGame } from "./panels-lab";
  * long last message and an unread count, `&fold=1` the strip folded to its icon on a phone held upright. `?state=rail`
  * puts it in the real rail over a stand-in map: the Events panel with its Log count, a picked army's details and its
  * biome, chat open (`&chat=closed` its strip), and the build tag in the base band. The chat proof
- * (scripts/prove-hud-chat.mjs) measures each at a desktop's and a phone's size.
+ * (scripts/prove-hud-chat.mjs) measures each at a desktop's and a phone's size. The room's speakers and four more are
+ * the lab game's players, named as identity names them, so "@" in the composer lists them; two messages mention a
+ * player, one of them the lab's own (Maelis). What the lab's player sends, the room echoes back.
  */
 export const ChatLab = () => {
   useDocumentClass("classic-hud");
@@ -36,10 +39,31 @@ export const ChatLab = () => {
   return (
     <div className="min-h-screen bg-[#0b1418]">
       <div data-lab="chat" className="fixed inset-y-3 right-3 flex w-hud-column flex-col">
-        {ready && <HudChatWindow open={open} onOpenChange={() => undefined} foldToIcon={params.get("fold") === "1"} />}
+        {ready && (
+          <TileGame tile="army">
+            <RoomPlayers>
+              <HudChatWindow open={open} onOpenChange={() => undefined} foldToIcon={params.get("fold") === "1"} />
+            </RoomPlayers>
+          </TileGame>
+        )}
       </div>
     </div>
   );
+};
+
+/** The room's players as the game's own: a PlayerEntry each, in the lab game's store, before chat reads them. */
+const RoomPlayers = ({ children }: { children: ReactNode }) => {
+  const { store } = useGame().setup;
+  useState(() =>
+    store.applyFacts(
+      ROOM_PLAYERS.map((address) => ({
+        model: "PlayerEntry",
+        key: `0xe${address.slice(2)}`,
+        value: { game_id: 1, owner: address, player: address },
+      })) as never,
+    ),
+  );
+  return children;
 };
 
 const noop = () => undefined;
@@ -51,7 +75,9 @@ const noop = () => undefined;
  */
 const RailLab = ({ chatOpen }: { chatOpen: boolean }) => (
   <TileGame tile="army">
-    <RailStage chatOpen={chatOpen} />
+    <RoomPlayers>
+      <RailStage chatOpen={chatOpen} />
+    </RoomPlayers>
   </TileGame>
 );
 
@@ -87,24 +113,48 @@ const LAB_EVENTS = [
 ];
 const LONG_LINE = "Meet at the southern gate with the reinforcements, then hold the ridge until the spire opens. ";
 
-/** Forty messages of a busy room; the last a long one, as the strip shows it. */
+/** The lab game's players: the lobby lab's nine seats, whose names identity answers (LAB_SEAT_PROFILES). */
+const ROOM_PLAYERS = Object.keys(LAB_SEAT_PROFILES);
+
+/** What two of the last messages say: one mentions another player, one the lab's own. */
+const MENTIONS: Record<number, string> = {
+  37: "@Aldric hold the ridge, the spire opens at dusk.",
+  38: `@${LAB_SESSION.user.name} your army is at the southern gate.`,
+};
+
+/** Forty messages of a busy room from five of its players; the last a long one, as the strip shows it. */
 const labMessages = (): WorldChatMessage[] =>
-  Array.from({ length: 40 }, (_, index) => ({
-    id: `lab-${index}`,
-    zoneId: GLOBAL_CHAT_CHANNEL_ID,
-    sender: {
-      playerId: `0x${(index % 5) + 1}`,
-      displayName: ["Ada", "Aldric", "Corwin", "Isolde", "Tybalt"][index % 5],
-    },
-    content: index === 39 ? LONG_LINE.repeat(4) : LONG_LINE,
-    createdAt: new Date(Date.UTC(2026, 9, 18, 12, index)).toISOString(),
-  })) as WorldChatMessage[];
+  Array.from({ length: 40 }, (_, index) => {
+    const playerId = ROOM_PLAYERS[index % 5]!;
+    return {
+      id: `lab-${index}`,
+      zoneId: GLOBAL_CHAT_CHANNEL_ID,
+      sender: { playerId, displayName: LAB_SEAT_PROFILES[playerId]!.name },
+      content: MENTIONS[index] ?? (index === 39 ? LONG_LINE.repeat(4) : LONG_LINE),
+      createdAt: new Date(Date.UTC(2026, 9, 18, 12, index)).toISOString(),
+    };
+  }) as WorldChatMessage[];
+
+/** Identity's answer for the room's players, as the identity Worker serves their names; anything else goes on. */
+const answerRoomProfiles = () => {
+  const network = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
+    if (url.pathname !== "/api/profiles") return network(input, init);
+    const accounts = url.searchParams.get("accounts")?.split(",") ?? [];
+    const profiles = Object.fromEntries(
+      accounts.flatMap((a) => (LAB_SEAT_PROFILES[a] ? [[a, LAB_SEAT_PROFILES[a]]] : [])),
+    );
+    return Promise.resolve(Response.json({ profiles }));
+  };
+};
 
 /**
  * The room the lab shows: connected, joined, its history loaded with unread messages, and the store's network steps
  * made to do nothing, so the page opens no socket and reads no history.
  */
 function installLabRoom(): true {
+  answerRoomProfiles();
   const { actions } = useRealtimeChatStore.getState();
   useRealtimeChatStore.setState({
     connectionStatus: "connected",
@@ -139,7 +189,19 @@ function installLabRoom(): true {
       initializeClient: () => undefined,
       resetClient: () => undefined,
       loadWorldHistory: () => Promise.resolve(),
+      // What the lab's player sends comes back from the room as the room broadcasts it.
+      sendWorldMessage: async (zoneId, { content }) => actions.receiveWorldMessage(zoneId, ownMessage(zoneId, content)),
     },
   });
   return true;
 }
+
+let sent = 0;
+const ownMessage = (zoneId: string, content: string) =>
+  ({
+    id: `lab-sent-${(sent += 1)}`,
+    zoneId,
+    sender: { playerId: LAB_SESSION.user.realmsId, displayName: LAB_SESSION.user.name },
+    content,
+    createdAt: new Date().toISOString(),
+  }) as WorldChatMessage;

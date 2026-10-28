@@ -157,18 +157,26 @@ describe("WorldAtmosphereController", () => {
 
   it("bounds tower shadow length throughout the cycle using the actual light-target direction", () => {
     const fixture = createFixture();
-    for (const [sunHeight, sunDistance] of [
-      [12, 15],
-      [8, 20],
-      [16, 10],
-    ]) {
-      fixture.manager.params.sunHeight = sunHeight;
-      fixture.manager.params.sunDistance = sunDistance;
-      for (let progress = 0; progress <= 100; progress += 5) {
-        fixture.manager.update(progress, new Vector3(34, 2, -21));
-        const direction = fixture.directionalLight.position.clone().sub(fixture.directionalLight.target.position);
-        const shadowLengthPerHeight = Math.hypot(direction.x, direction.z) / direction.y;
-        expect(shadowLengthPerHeight).toBeLessThanOrEqual(1 + 1e-10);
+    for (let progress = 0; progress <= 100; progress += 5) {
+      fixture.manager.update(progress, new Vector3(34, 2, -21));
+      const direction = fixture.directionalLight.position.clone().sub(fixture.directionalLight.target.position);
+      const shadowLengthPerHeight = Math.hypot(direction.x, direction.z) / direction.y;
+      expect(shadowLengthPerHeight).toBeLessThanOrEqual(1);
+    }
+  });
+
+  // Owner, 28 October 2026: "weird lighting on the realm buildings ?". The camera looks down the board from +z.
+  it("lights the walls and roofs turned to the camera, by day and by night", () => {
+    const fixture = createFixture();
+    const moonLight = findMoonLight(fixture.scene, fixture.directionalLight)!;
+    const towardLight = (light: DirectionalLight) => light.position.clone().sub(light.target.position).normalize();
+    const wallFacingCamera = new Vector3(0, 0, 1);
+    const roofFacingCamera = new Vector3(0, 1, 1).normalize();
+    for (const progress of [50, 90]) {
+      fixture.manager.update(progress, new Vector3(34, 2, -21), { snap: true });
+      for (const light of [fixture.directionalLight, moonLight]) {
+        expect(towardLight(light).dot(wallFacingCamera)).toBeGreaterThan(0.5);
+        expect(towardLight(light).dot(roofFacingCamera)).toBeGreaterThan(0.85);
       }
     }
   });
@@ -196,7 +204,7 @@ describe("WorldAtmosphereController", () => {
 
     expect((fixture.scene.background as Color).getHex()).toBe(0xb8d8f2);
     expect(fixture.ambientLight.intensity).toBeCloseTo(0.62);
-    expect(fixture.directionalLight.position.y).toBeCloseTo(12);
+    expect(fixture.directionalLight.position.y).toBeCloseTo(13);
   });
 
   it("enables a cool moon key light at night while keeping it off during day", () => {

@@ -21,6 +21,9 @@ export const MineKinds = {
   2: { name: "Fragment Mine", model: "/models/new-buildings-opt/mine.glb" },
 } as const;
 
+/** The mine kind that is a Rift: it holds Essence, and changes hands with it. */
+export const RIFT_MINE_KIND = 1 satisfies keyof typeof MineKinds;
+
 export function getMinePresentation(kind: number) {
   const presentation = MineKinds[kind as keyof typeof MineKinds];
   if (!presentation) throw new Error(`Unknown mine kind ${kind}`);

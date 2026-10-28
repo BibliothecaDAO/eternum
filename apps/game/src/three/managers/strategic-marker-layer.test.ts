@@ -1,6 +1,10 @@
 import { Color, Texture } from "three";
 import { describe, expect, it } from "vitest";
 
+import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { iconUrl } from "@/ui/design-system/icon-meaning";
+import { StructureType } from "@bibliothecadao/types";
+
 import { STRATEGIC_MARKER_HEIGHT, StrategicMarkerLayer } from "./strategic-marker-layer";
 
 const createLayer = () => {
@@ -21,6 +25,13 @@ const meshNamed = (layer: StrategicMarkerLayer, name: string) => {
 };
 
 describe("StrategicMarkerLayer", () => {
+  it("draws each far-view pool in its structure's own painting: a bank as the bank, never a chest", () => {
+    const { layer, loads } = createLayer();
+    expect(loads).toContain(iconUrl(structureMeaning(StructureType.Bank)));
+    expect(loads).not.toContain(iconUrl("chest"));
+    layer.dispose();
+  });
+
   it("drops all old-layer markers and reuses the pools on a return crossing", () => {
     const { layer } = createLayer();
     const realms = meshNamed(layer, "strategic-structure:realm");

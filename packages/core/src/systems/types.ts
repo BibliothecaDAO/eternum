@@ -1,12 +1,6 @@
 import { BuildingType, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/types";
 import type { SiteKind } from "../utils/expeditions";
 
-export const TROOP_TIERS: Record<string, number> = {
-  T1: 1,
-  T2: 2,
-  T3: 3,
-};
-
 export interface GuardArmy {
   slot: number;
   category: string | null;

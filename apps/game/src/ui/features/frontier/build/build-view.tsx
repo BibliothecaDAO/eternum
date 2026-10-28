@@ -29,7 +29,7 @@ import {
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { ReactNode } from "react";
-import { shortfallLine } from "@/ui/design-system/kit/reasons";
+import { reasonLine } from "@/ui/design-system/kit/reasons";
 import type { RealmPopulation } from "../realm/realm-population";
 
 /**
@@ -151,7 +151,7 @@ export const BuildView = ({
  */
 const RefusalNote = ({ refusal }: { refusal: Refusal }) => (
   <span className="flex flex-col items-start gap-1">
-    <HudNotice line={refusal.reason.kind === "short" ? shortfallLine(refusal.reason) : refusal.reason.line} />
+    <HudNotice line={reasonLine(refusal.reason)} />
     {refusal.fix?.prices && <HudCost line={costLine(refusal.fix.prices)} />}
   </span>
 );

@@ -37,40 +37,53 @@ const SPIRE_MODELS = ["ArmySlot", "ExplorerTroops", "Structure", "RealmKnowledge
 type Spire = { col: number; row: number; deepest: number; realm: NativeRows["Structure"] };
 
 /**
- * The lit spire the selection is about, with its realm: the one on the tile the player tapped, else the one the
- * selected army stands on or beside (useSelectedArmySpire); null otherwise. Research draws it by rule and no occupancy
- * marks it, so it is found from the same rules the map draws it by.
+ * The lit spire on the tile the selection names, with its realm; null otherwise. An army selected on or beside its
+ * spire is the army's panel, like an army on any site (owner, 28 October 2026: tapping a tile with his army on it selects
+ * the army, whatever site is under it): its spire's card opens from Spire on that panel (SpireButton), or a tap on the
+ * spire's tile. Research draws a spire by rule and no occupancy marks it, so it is found from the rules the map draws it
+ * by.
  */
 export const useSelectedSpire = (): Spire | null => {
   const { setup } = useGame();
   const { isMapView } = useQuery();
   const selected = useUIStore((state) => state.selectedHex);
   const now = useCurrentBlockTimestamp();
-  const armySpire = useSelectedArmySpire();
   useNativeRevision(SPIRE_MODELS);
-  if (!isMapView) return null;
-  const tapped =
-    selected &&
+  if (!isMapView || !selected) return null;
+  return (
     expeditionSpires(setup.store, configManager.getActiveGameId(), now).find(
       (spire) => spire.col === selected.col && spire.row === selected.row,
-    );
-  return tapped || armySpire;
+    ) ?? null
+  );
+};
+
+/** The spire of the army's realm while the army stands on it or beside it; null elsewhere or off the map. */
+export const useArmyAtItsSpire = (explorerId: number): Spire | null => {
+  const { setup } = useGame();
+  const { isMapView } = useQuery();
+  const now = useCurrentBlockTimestamp();
+  useNativeRevision(SPIRE_MODELS);
+  return isMapView ? armyAtItsSpire(setup.store, configManager.getActiveGameId(), explorerId, now) : null;
 };
 
 /**
- * The spire of the selected army's realm while the army stands on it or beside it: entering a depth is what an army
- * there is for, so selecting it opens the spire's card. An army deployed onto its spire's own tile is selected by any
- * tap on that tile, so without this its card, and Enter, never opened.
+ * The way from an army's panel to its spire's card, while the army stands on or beside the spire: the army stays
+ * selected and the card acts for it, as a tap on the spire's tile does.
  */
-export const useSelectedArmySpire = (): Spire | null => {
-  const { setup } = useGame();
-  const { isMapView } = useQuery();
-  const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
-  const now = useCurrentBlockTimestamp();
-  useNativeRevision(SPIRE_MODELS);
-  if (!isMapView || selectedId === null) return null;
-  return armyAtItsSpire(setup.store, configManager.getActiveGameId(), selectedId, now);
-};
+export const SpireButton = ({ explorerId, spire }: { explorerId: number; spire: Spire }) => (
+  <HudButton
+    kind="secondary"
+    size="sm"
+    icon={reachMark(1)}
+    onClick={() =>
+      useUIStore
+        .getState()
+        .selectOnMap({ kind: "army", entityId: explorerId, tile: { col: spire.col, row: spire.row } })
+    }
+  >
+    {SPIRE_WORDS.title}
+  </HudButton>
+);
 
 /**
  * A spire's card, whatever the player brought to it. Another realm's says so. The player's own names the army it acts

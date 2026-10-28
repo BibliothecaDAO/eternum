@@ -298,6 +298,23 @@ describe("an activated relic in Events and the Log", () => {
   );
 });
 
+it("draws each story in Events and the Log by its act, as Frontier's Feed does, not a castle for all", () => {
+  const fight = story(
+    "fight",
+    "BattleEvent",
+    PLAYER,
+    { attacker_id: 9, defender_id: 4_242 },
+    "clientlane vs Emberdeep · Army lost",
+  );
+  const found = story("found", "ExplorationReward", PLAYER, { explorer_id: 9, coord: { x: 3, y: 4 } }, "Explored");
+  const icons = (markup: string) => [...markup.matchAll(/data-icon="([^"]+)"/g)].map(([, icon]) => icon);
+  for (const Row of [FeedRowLine, StoryFeedRow]) {
+    expect(icons(renderToStaticMarkup(<Row event={fight} />))).toEqual(["attack"]);
+    expect(icons(renderToStaticMarkup(<Row event={found} />))).toEqual(["explore"]);
+    expect(icons(renderToStaticMarkup(<Row event={crate} />))).toEqual(["relics"]);
+  }
+});
+
 it.each([
   [{ Shrine: 200 }, "Shrine used, +200 XP"],
   [{ Well: 5 }, "Well used, +5 stamina"],

@@ -1,6 +1,6 @@
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudNotice, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { shortfallLine } from "@/ui/design-system/kit/reasons";
+import { reasonLine } from "@/ui/design-system/kit/reasons";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 
 /**
@@ -10,14 +10,7 @@ import type { Refusal } from "@/ui/design-system/kit/refusal";
  * (owner, 27 October: "just need x essence, have x is alright, then research x").
  */
 export const RefusedVerb = ({ word, icon, refusal }: { word: string; icon?: IconMeaning; refusal: Refusal }) => (
-  <HudWindowFoot
-    note={
-      <HudNotice
-        tone="warn"
-        line={refusal.reason.kind === "short" ? shortfallLine(refusal.reason) : refusal.reason.line}
-      />
-    }
-  >
+  <HudWindowFoot note={<HudNotice tone="warn" line={reasonLine(refusal.reason)} />}>
     {refusal.fix && (
       <HudButton kind="secondary" icon={refusal.fix.icon} onClick={refusal.fix.onFix}>
         {refusal.fix.word}

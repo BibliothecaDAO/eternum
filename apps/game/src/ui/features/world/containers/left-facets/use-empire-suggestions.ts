@@ -14,7 +14,7 @@ import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { readBlitzRealmSuggestions, type BlitzSuggestionDraft } from "@bibliothecadao/eternum/automation";
-import { blitzBuildingIcon } from "@/ui/features/build-orders/build-order-icons";
+import { buildingMeaning } from "@/ui/design-system/domain-icon-meaning";
 
 export interface EmpireSuggestion extends Omit<BlitzSuggestionDraft, "priority"> {
   icon: IconMeaning;
@@ -25,7 +25,7 @@ const suggestionIcon = (draft: BlitzSuggestionDraft): IconMeaning => {
   if (draft.action === "upgrade") return "upgrade";
   if (draft.action === "deploy-army") return "deploy";
   if (draft.buildingTypeHint === undefined) throw new Error(`A build step names no building: ${draft.id}`);
-  return blitzBuildingIcon(draft.buildingTypeHint);
+  return buildingMeaning(draft.buildingTypeHint);
 };
 
 /** The realms' next steps in the order their kind comes first: a level-up, a hut, the order's buildings, its army. */

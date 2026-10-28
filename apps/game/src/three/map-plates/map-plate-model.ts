@@ -57,7 +57,7 @@ export interface ArmyPlate {
 export interface StructurePlate {
   kind: "structure";
   relation: PlateRelation;
-  /** Whose it is; empty for a cleared Frontier site, which nobody holds once its guard falls. */
+  /** Whose it is; empty while its owner's name is unknown. */
   owner: string;
   /** The standing guard species, shown as the title above its strength. */
   beast?: string;
@@ -153,7 +153,6 @@ export const buildStructurePlate = (
     | "isMine"
     | "isAlly"
     | "owner"
-    | "clearedSite"
     | "guardArmies"
     | "incomingTroopArrivals"
     | "frontierBeast"
@@ -177,28 +176,24 @@ export const buildStructurePlate = (
   return {
     kind: "structure",
     relation: relationOf(structure),
-    owner: structure.clearedSite ? "" : ownerOf(structure.owner),
+    owner: ownerOf(structure.owner),
     beast: structure.frontierBeast?.name,
-    name: structure.clearedSite
-      ? `${frontierSiteName(structure.structureType)} · Cleared`
-      : named
-        ? structure.structureName.trim()
-        : structure.frontierBeast
-          ? frontierSiteName(structure.structureType)
-          : structureName(structure.structureType, structure.mineKind ?? undefined),
+    name: named
+      ? structure.structureName.trim()
+      : structure.frontierBeast
+        ? frontierSiteName(structure.structureType)
+        : structureName(structure.structureType, structure.mineKind ?? undefined),
     named,
     // A site's name as its holder and every list read it (siteDisplayName, through the manager): the plate never makes one.
     place: named ? undefined : structure.structureName.trim() || undefined,
     reward: reward && reward.amount > 0 ? `${formatExact(reward.amount)} ${reward.unit}` : undefined,
     holding: reward && reward.amount > 0 ? reward : undefined,
-    icon: structure.clearedSite
-      ? "flag"
-      : structure.frontierBeast
-        ? beastMeaning(structure.frontierBeast.beast)
-        : structure.structureType === StructureType.Mine && structure.mineKind !== undefined
-          ? mineMeaning(structure.mineKind)
-          : structureMeaning(structure.structureType),
-    guards: structure.clearedSite ? null : guards,
+    icon: structure.frontierBeast
+      ? beastMeaning(structure.frontierBeast.beast)
+      : structure.structureType === StructureType.Mine && structure.mineKind !== undefined
+        ? mineMeaning(structure.mineKind)
+        : structureMeaning(structure.structureType),
+    guards,
     ...(inBattle(structure.battleTimerLeft) ? { inBattle: true } : {}),
     ...watchedOf(structure.watched, ownerOf(structure.owner)),
     arrivals: (structure.incomingTroopArrivals ?? [])

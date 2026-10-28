@@ -8,7 +8,7 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { expeditionDepth, readExpeditionRules } from "./expeditions";
+import { expeditionDepth, isGuardedSite, readExpeditionRules } from "./expeditions";
 
 export type FrontierSpecies = keyof typeof BEAST_NAMES;
 export interface FrontierBeast {
@@ -56,10 +56,18 @@ export function readFrontierBeast(
   entityId: number,
 ): FrontierBeast | undefined {
   const site = store.get("ExpeditionSite", { game_id: gameId, entity_id: entityId });
-  if (!site) return undefined;
+  return site && siteFrontierBeast(store, gameId, entityId, site);
+}
+
+/** The site's guard from its own row (its kind, its depth, its initial strength) and the game's shared rules. */
+export function siteFrontierBeast(
+  store: Pick<NativeFactStore, "get">,
+  gameId: number,
+  entityId: number,
+  site: Pick<NativeRows["ExpeditionSite"], "category" | "row" | "initial_guard_count">,
+): FrontierBeast | undefined {
   const category = site.category;
-  if (![StructureType.Ruin, StructureType.Camp, StructureType.Rift, StructureType.Beasts].includes(category))
-    return undefined;
+  if (!isGuardedSite(category)) return undefined;
   const rules = readExpeditionRules(store, gameId);
   if (!rules) throw new Error(`Frontier site ${entityId} stands without expedition rules`);
   const depth = expeditionDepth(rules, { y: site.row });

@@ -1,14 +1,11 @@
 import { getNeighborHexes } from "@bibliothecadao/types";
 import { SPIRE_ARMY, SPIRE_ARMY_TILE_KEY } from "@/ui/features/frontier/spire-fixture";
 
-import type { LabScenario } from "./lab-chain";
+import { type LabScenario, wire } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
 
 /** The army's tile row at the edge, under a key no fixture row uses. */
 const EDGE_TILE_KEY = "0x1ac0";
-
-const wire = (value: unknown): unknown =>
-  JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
 
 /**
  * The spire's army at the edge of the land it has seen (/lab/game?scenario=explore): the free revealed tile nearest it

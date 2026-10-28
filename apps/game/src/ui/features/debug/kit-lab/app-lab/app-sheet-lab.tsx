@@ -1,3 +1,4 @@
+import { FRONTIER_LOCKUP } from "@/ui/design-system/domain-icon-meaning";
 import "@/ui/design-system/kit/app-sheet.css";
 
 import {
@@ -636,7 +637,7 @@ const ChoiceSection = () => (
 );
 
 const TicketSection = () => {
-  const art = <img src="/images/logos/frontier-lockup.webp" alt="Frontier" className="h-24 w-auto" />;
+  const art = <img src={FRONTIER_LOCKUP} alt="Frontier" className="h-24 w-auto" />;
   return (
     <Element
       name="Ticket"

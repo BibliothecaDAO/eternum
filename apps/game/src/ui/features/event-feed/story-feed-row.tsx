@@ -16,6 +16,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { formatClockTime } from "@bibliothecadao/types";
 import { HudEventRow } from "@/ui/design-system/kit/hud-elements";
+import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { storyPayloadId } from "@/utils/native-id";
 
 function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFactStore): Position | null {
@@ -94,6 +95,7 @@ export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
   return (
     <HudEventRow
       time={formatClockTime(event.timestampMs / 1000)}
+      icon={storyMeaning(event.story)}
       tip={open ? event.presentation.description : "This event’s location is no longer available"}
       onOpen={open ?? undefined}
     >
@@ -119,11 +121,8 @@ function BattleDetails({ description }: { description?: string }) {
   const rolls = battleRollsOf(description);
   return (
     <span className="flex flex-col">
-      <span className="flex gap-1">
-        <span aria-hidden>⚔</span>
-        <span className="truncate">
-          {attacker} <span className="text-hud-muted">vs</span> {defender}
-        </span>
+      <span className="truncate">
+        {attacker} <span className="text-hud-muted">vs</span> {defender}
       </span>
       <span className="text-hud-label text-hud-muted">
         {forces("Attacker")} vs {forces("Defender")}

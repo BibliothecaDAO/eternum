@@ -18,10 +18,10 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getProducedResource, ResourcesIds } from "@bibliothecadao/types";
 
-import { LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 import { type BuildingOutput, buildingOutput } from "@/ui/shared/lib/building-output";
 
 import { madePicks } from "../production/store-makers";
+import { madeStoreOf, type MadeResource } from "../stores";
 import { sidePicks } from "../research/sides-taken";
 
 /**
@@ -41,21 +41,10 @@ const TRAINS: Partial<Record<BuildingType, "Battle" | "Logistics" | "Scouting" |
   [BuildingType.Hearth]: "Homecoming",
 };
 
-/** What a Frontier building makes: wheat, labor, or the realm's one troop type. */
-type Product = ResourcesIds.Wheat | ResourcesIds.Labor | ResourcesIds.Knight;
+/** What a Frontier building makes: what one of the realm's made stores holds. */
+type Product = MadeResource;
 
-/**
- * Each product as the sheets show it: its icon, its glossary word and the realm store that holds it. Keyed by the
- * products themselves, so one without its word or icon does not compile, and no sheet looks one up at its own risk.
- */
-export const PRODUCTS: Record<Product, { icon: IconMeaning; word: string; store: "wheat" | "labor" | "troops" }> = {
-  [ResourcesIds.Wheat]: { icon: "wheat", word: WHEAT, store: "wheat" },
-  [ResourcesIds.Labor]: { icon: "labor", word: LABOR, store: "labor" },
-  [ResourcesIds.Knight]: { icon: "troops", word: TROOPS, store: "troops" },
-};
-
-const isProduct = (resource: ResourcesIds | undefined): resource is Product =>
-  resource !== undefined && resource in PRODUCTS;
+const isProduct = (resource: ResourcesIds | undefined): resource is Product => madeStoreOf(resource) !== undefined;
 
 export type BuildEffect =
   | { kind: "produces"; resource: Product; perHour: number; output: BuildingOutput }

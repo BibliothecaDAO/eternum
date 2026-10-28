@@ -1,3 +1,5 @@
+import { refusesTroopTrade } from "@/ui/lib/structure-capabilities";
+import { VILLAGE_TROOP_TRADE_REFUSED } from "@/ui/design-system/kit/words";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import {
@@ -15,20 +17,13 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { LIQUIDITY_COLS } from "./liquidity-table";
 import { TravelInfo } from "@/ui/features/economy/resources";
 import { knownAmount } from "@/ui/utils/utils";
-import {
-  MarketManager,
-  configManager,
-  divideByPrecision,
-  getClosestBank,
-  isMilitaryResource,
-} from "@bibliothecadao/eternum";
+import { MarketManager, configManager, divideByPrecision, getClosestBank } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
   ContractAddress,
   ID,
   ResourcesIds,
-  StructureType,
   resources,
   formatAmount,
   formatCharge,
@@ -133,9 +128,11 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
   const renderWithdrawForm = () => {
     const { lords, resource } = calculateWithdrawAmounts(withdrawalPercentage);
 
-    const isVillageAndMilitaryResource =
+    const isVillageAndMilitaryResource = refusesTroopTrade(
       gameContext.setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base
-        .category === StructureType.Village && isMilitaryResource(resourceId);
+        .category,
+      resourceId,
+    );
 
     const travelResources = [
       { amount: divideByPrecision(lords), resourceId: ResourcesIds.Lords },
@@ -168,7 +165,7 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
             </HudButton>
           </HudWindowFoot>
           <div className="flex flex-col gap-3">
-            {isVillageAndMilitaryResource && <HudNotice tone="bad" line="Villages cannot trade military resources." />}
+            {isVillageAndMilitaryResource && <HudNotice tone="bad" line={VILLAGE_TROOP_TRADE_REFUSED} />}
             <HudRow title="Withdrawal Amount" trail={`${withdrawalPercentage}%`} />
             <HudSlider
               label="Withdrawal amount, in percent"

@@ -7,8 +7,46 @@ import { comesHomeAtDayEnd, TIER_WORDS, TROOPS, XP, xpTowardTip } from "@/ui/des
 
 // A token grows past its height only for the last hour's Homecoming line. Its parts stack from the top, so every
 // token's portrait or ring, and the stamina bar under it, stand at one height along the dock.
-const TOKEN =
-  "relative flex min-h-hud-frontier-token w-14 shrink-0 flex-col items-center justify-start gap-1 rounded-xl py-1";
+const TOKEN_FRAME = "relative flex w-14 shrink-0 flex-col items-center justify-start gap-1 rounded-xl py-1";
+const TOKEN = `min-h-hud-frontier-token ${TOKEN_FRAME}`;
+
+/** A token's portrait: the painting in its ring, as every token draws it. */
+const Portrait = ({ art }: { art: IconMeaning | undefined }) => (
+  <span className="block size-full overflow-hidden rounded-full border border-hud-line bg-hud-surface">
+    {art && <SemanticIcon name={art} alt="" className="size-full object-cover" />}
+  </span>
+);
+
+/**
+ * A site's guard drawn as an army's token is (owner, 28 October 2026: "the 386 number for the troll should maybe be
+ * shown like for the army"): its portrait, and its strength under it, where the card does not say it already.
+ */
+export const GuardToken = ({
+  label,
+  art,
+  troops,
+  tip,
+}: {
+  label: string;
+  art: IconMeaning;
+  /** Its strength; none where the card says it elsewhere (beside the army's, in the fight). */
+  troops?: number;
+  tip?: string;
+}) => (
+  <div
+    role="img"
+    aria-label={troops === undefined ? label : `${label} ${formatAmount(troops)}`}
+    data-tip={tip}
+    className={cn(TOKEN_FRAME, "border border-hud-line bg-hud-surface")}
+  >
+    <span className="relative size-10 shrink-0">
+      <Portrait art={art} />
+    </span>
+    {troops !== undefined && (
+      <span className="text-hud-body leading-none text-hud-ink tabular-nums">{formatAmount(troops)}</span>
+    )}
+  </div>
+);
 
 /** The next cumulative XP milestone and the point it awards. */
 export type XpGoal = { at: number; rank: number };
@@ -57,9 +95,7 @@ export const ArmyToken = ({
   const body = (
     <>
       <span data-fly-target={flyTarget} className="relative size-10 shrink-0">
-        <span className="block size-full overflow-hidden rounded-full border border-hud-line bg-hud-surface">
-          {art && <SemanticIcon name={art} alt="" className="size-full object-cover" />}
-        </span>
+        <Portrait art={art} />
         <span
           role="img"
           aria-label={`${XP} ${formatAmount(xp)}`}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { siteName, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -9,7 +9,6 @@ import preset from "../../../../../contracts/l3/world-native/tests/fixtures/curr
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import type { StructurePlate } from "../map-plates/map-plate-model";
-import { plateRows } from "../map-plates/map-plate-rows";
 import { CameraView } from "../scenes/camera-view";
 import { StructureManager } from "./structure-manager";
 import { campBeside, SITE, SITE_TILE } from "@/ui/features/frontier/sites/site-fixture";
@@ -166,7 +165,9 @@ it("presents a cleared standard from its receipt after the structure and guard a
   projection.dispose();
 });
 
-it("names a cleared site on its plate by the name every reader gives it, held by nobody", () => {
+// Owner, 28 October 2026: "we dont need to put the flag labels on the map it overcrowds it a bit and there's already a
+// flag on the tile".
+it("sets no plate on a cleared site, and takes away the one it had: the standard on its tile says it", () => {
   const { store, site } = campBeside();
   store.applyFacts([
     {
@@ -179,7 +180,7 @@ it("names a cleared site on its plate by the name every reader gives it, held by
   ]);
   const projection = new WorldSpatialProjection({ store });
   projection.start();
-  const plates: StructurePlate[] = [];
+  const plates = { setLabel: vi.fn(), removeLabel: vi.fn() };
   const manager = Object.assign(Object.create(StructureManager.prototype), {
     store,
     worldSpatialProjection: projection,
@@ -191,13 +192,12 @@ it("names a cleared site on its plate by the name every reader gives it, held by
     currentCameraView: CameraView.Medium,
     resolveStructureCompactLabelPosition: () => new Vector3(),
     requestVisibleStructuresRefreshForEntities: vi.fn(),
-    plates: { setLabel: vi.fn(({ plate }: { plate: StructurePlate }) => plates.push(plate)), removeLabel: vi.fn() },
-  }) as { refreshStructurePresentation(entityId: number): void };
+    plates,
+  }) as { refreshStructurePresentation(entityId: number): void; compactLabelIds: Set<number> };
   chainAt(400);
   manager.refreshStructurePresentation(SITE);
-  const said = plateRows(plates.at(-1)!).map((row) =>
-    row.flatMap((segment) => ("text" in segment ? [segment.text] : [])),
-  );
-  expect(said).toEqual([[siteName(SITE), "Troll · Cleared"]]);
+  expect(plates.setLabel).not.toHaveBeenCalled();
+  expect(plates.removeLabel).toHaveBeenCalledWith(SITE);
+  expect(manager.compactLabelIds.has(SITE)).toBe(false);
   projection.dispose();
 });

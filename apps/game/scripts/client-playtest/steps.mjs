@@ -483,19 +483,8 @@ async function visitOtherRealms({ browser }) {
 async function visitRow(browser, index) {
   const before = browser.observe();
   const from = browser.read(ROUTE_HEX_EXPRESSION);
-  if (onADesktop()) browser.click("Season");
-  else {
-    browser.click("Menu");
-    await sleep(1_500);
-    browser.click("Season");
-  }
-  await sleep(2_000);
-  const rows = `[...document.querySelectorAll('button[aria-label^="#"]')].map((row) => row.getAttribute("aria-label"))`;
-  const row = browser.read(`JSON.stringify(${rows})`)[index] ?? null;
+  const row = await visitFromTheBoard(browser, index);
   if (!row) return { row: null };
-  browser.click(row);
-  await sleep(1_500);
-  browser.click("Visit");
   const realm = await arrives(browser, "Realm", "hex");
   const realmHex = browser.read(ROUTE_HEX_EXPRESSION);
   pressPlace(browser, "Map");
@@ -512,6 +501,24 @@ async function visitRow(browser, index) {
     reloaded: seen.timeOrigin !== before.timeOrigin,
     seen,
   };
+}
+
+/** The Season's board row at `index` opened and Visit pressed, as a player does; null when the board has no such row. */
+async function visitFromTheBoard(browser, index) {
+  if (onADesktop()) browser.click("Season");
+  else {
+    browser.click("Menu");
+    await sleep(1_500);
+    browser.click("Season");
+  }
+  await sleep(2_000);
+  const rows = `[...document.querySelectorAll('button[aria-label^="#"]')].map((row) => row.getAttribute("aria-label"))`;
+  const row = browser.read(`JSON.stringify(${rows})`)[index] ?? null;
+  if (!row) return null;
+  browser.click(row);
+  await sleep(1_500);
+  browser.click("Visit");
+  return row;
 }
 
 /**
@@ -1215,15 +1222,12 @@ const LAB_SPIRE = { mode: "frontier", lab: "spire", chainId: "0x1ab9", gameId: 1
  */
 const LAB_SPIRE_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
-  { name: "find-spire", play: findTheSpire, settleMs: 0, verify: spireFound },
-  { name: "spire-card", play: tapTheSpire, settleMs: 0, verify: spireCardOffersDepths },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
+  { name: "army-panel", play: readTheArmyPanel, settleMs: 0, verify: armyPanelOffersSpire },
+  { name: "spire-card", play: pressSpire, settleMs: 0, verify: spireCardOffersDepths },
   { name: "enter-depth", play: enterEtherealII, settleMs: 0, verify: armyEnteredEtherealII },
 ];
 
-const SPIRE_ORDER = "Enter a depth";
-// The pointer's tooltip, read whole: Frontier's names the order on its first line ("Enter a depth").
-const TILE_TOOLTIP = `JSON.stringify(document.querySelector('[role="tooltip"]')?.innerText.replace(/\\s+/g, " ").trim() ?? null)`;
 const SPIRE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   depths: [...document.querySelectorAll("[data-spire-depths] .ui-row")].map((row) => ({
@@ -1238,43 +1242,39 @@ const SPIRE_STATE = `JSON.stringify({
   sent: (window.__labChain?.sent ?? []).map(({ hash, command }) => ({ hash, ...command })),
 })`;
 
-/** Hovers the selected army's neighbours until one's tooltip offers the spire's order. */
-async function findTheSpire({ browser }) {
-  const scanned = [];
-  for (const offset of NEIGHBOUR_RING) {
-    browser.hover(offset);
-    await sleep(HOVER_SETTLE_MS);
-    const tip = browser.read(TILE_TOOLTIP);
-    scanned.push({ offset, tip });
-    if (tip === SPIRE_ORDER) return { spire: offset, scanned };
-  }
-  return { spire: null, scanned };
+// Whether a button named Spire is on the page: the army's panel's way to its spire's card.
+const SPIRE_BUTTON = `JSON.stringify([...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Spire"))`;
+
+/** What selecting the army shows: the open card, if any, and whether Spire is offered. */
+async function readTheArmyPanel({ browser }) {
+  await sleep(HOVER_SETTLE_MS);
+  return { state: browser.read(SPIRE_STATE), spireButton: browser.read(SPIRE_BUTTON) };
 }
 
-function spireFound({ played }) {
-  return played.spire
-    ? completed({ spire: played.spire, scanned: played.scanned })
-    : failed(`no tile beside the army offers "${SPIRE_ORDER}"`, { scanned: played.scanned });
+/**
+ * The army selected beside its spire shows its own panel, not the spire's card, and offers Spire (owner, 2026-10-28:
+ * tapping a tile with his army on it selects the army, whatever site is under it).
+ */
+function armyPanelOffersSpire({ played }) {
+  if (played.state.sheet === "Spire") return failed("selecting the army opened the spire's card", played);
+  return played.spireButton ? completed(played) : failed("the army's panel offers no Spire", played);
 }
 
-/** Taps the tile whose hover offers the spire's order, as a player taps what they see. */
-async function tapTheSpire({ browser }) {
-  const { spire, scanned } = await findTheSpire({ browser });
-  if (!spire) return { spire, scanned };
-  browser.tap(spire);
+/** Presses Spire on the army's panel, the deliberate way to its spire's card. */
+async function pressSpire({ browser }) {
+  browser.click("Spire");
   const state = await readUntil(
     () => browser.read(SPIRE_STATE),
-    (shown) => shown.sheet !== null,
+    (shown) => shown.sheet === "Spire",
     SPIRE_WAIT_MS,
   );
-  return { spire, scanned, state };
+  return { spire: "Spire", state };
 }
 
 function spireCardOffersDepths({ played, seen }) {
-  if (!played.spire) return failed(`no tile beside the army offers "${SPIRE_ORDER}"`, { scanned: played.scanned });
   const shown = { ...played.state, pressed: seen.pressed };
-  if (shown.sheet !== "Spire") return failed(`the tap opened ${shown.sheet ?? "no card"}, not the spire's`, shown);
-  if (!shown.army) return failed("the tap on the spire dropped the army", shown);
+  if (shown.sheet !== "Spire") return failed(`Spire opened ${shown.sheet ?? "no card"}, not the spire's`, shown);
+  if (!shown.army) return failed("Spire dropped the army", shown);
   const offered = shown.depths.map(({ depth, line, button, enabled }) => `${depth}|${line}|${button}|${enabled}`);
   const expected = [
     "Ethereal I|30 stamina|Enter|true",
@@ -1283,11 +1283,7 @@ function spireCardOffersDepths({ played, seen }) {
   ];
   if (JSON.stringify(offered) !== JSON.stringify(expected))
     return failed(`the card offers ${offered.join(", ")}`, shown);
-  if (
-    !/^Entering keeps .+ in that depth for the rest of the day \(.+ left\): there is no way back up$/.test(
-      shown.commitment ?? "",
-    )
-  )
+  if (!/^.+ stays until the day ends \(.+\)$/.test(shown.commitment ?? ""))
     return failed("the card does not say what entering commits the army to", shown);
   return completed(shown);
 }
@@ -1312,12 +1308,220 @@ function armyEnteredEtherealII({ played }) {
   // Two regions of Frontier's hundred rows straight below where it stood.
   if (after.army?.hex.col !== before.army.hex.col || after.army.hex.row - before.army.hex.row !== 200)
     return failed("the army did not land in Ethereal II", { before, after });
-  if (!/is in Ethereal II until the day ends/.test(after.text ?? ""))
+  if (!/is in Ethereal II today/.test(after.text ?? ""))
     return failed("the card does not show the army in Ethereal II", { before, after });
   return completed({ command, before: before.army, after: after.army, card: after.text });
 }
 
 const SPIRE_WAIT_MS = 5_000;
+
+/** The board's buildings draw within this long, after the realm's scene holds. */
+const BOARD_DRAW_MS = 10_000;
+/** A tap's card opens in this long. */
+const TAP_SETTLE_MS = 700;
+/** The fewest buildings a sweep must find for its taps to count: the lab's realms each have eight and a castle. */
+const BUILDINGS_FOUND = 4;
+/** The buildings each lab realm's board lays out: eight and the castle (visit-scenario.ts, painted-buildings-scenario.ts). */
+const LAB_BOARD_BUILDINGS = 9;
+/** The lab visit's two realms (visit-scenario.ts): the player's own, and the neighbour's the Season's board visits. */
+const LAB_HOME_REALM = 7;
+const LAB_NEIGHBOUR_REALM = 8;
+
+/**
+ * A neighbour's realm visited from the Season's board (/lab/game?scenario=visit), left, and visited and left again
+ * (owner, 28 October 2026: "when i'm visiting the selected panel doesnt match the actual building (hover is right) -
+ * also I shouldnt be able to click on the open tiles", then "and clicking leave does that": the player's own board
+ * drawn with no building models, its realm panel half off the screen). Each arrival reads which realm the board draws,
+ * every building it lays out with its model attached, shown and loaded, and every HUD panel inside the screen. Each
+ * board is swept, each point hovered then tapped: on a visit a building's card names what its hover named and orders
+ * nothing, an open plot opens nothing, and nothing is signed; at home each building's card names its hover's building
+ * and an open plot opens Build.
+ */
+const LAB_VISIT_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "visit", play: visitTheNeighbour, settleMs: 0, verify: visitingTheirRealm },
+  { name: "visit-plots", play: sweepTheBoard, settleMs: 0, verify: aVisitReadsEachBuilding },
+  { name: "leave", play: leaveTheVisit, settleMs: 0, verify: homeAgain },
+  { name: "home-plots", play: sweepTheBoard, settleMs: 0, verify: eachCardIsItsHover },
+  { name: "visit-again", play: visitTheNeighbour, settleMs: 0, verify: visitingTheirRealm },
+  { name: "visit-again-plots", play: sweepTheBoard, settleMs: 0, verify: aVisitReadsEachBuilding },
+  { name: "leave-again", play: leaveTheVisit, settleMs: 0, verify: homeAgain },
+];
+
+const VISIT_FOOT = `JSON.stringify(document.querySelector('[role="status"][aria-label^="Visit "]')?.getAttribute("aria-label") ?? null)`;
+const BOARD_HOVER = `JSON.stringify((() => {
+  const label = document.querySelector('[data-label-type="hex-hover"]');
+  return label ? label.dataset.buildingName : null;
+})())`;
+/** The card open, by its title, with its controls by their names; null with none. */
+const OPEN_CARD = `JSON.stringify((() => {
+  const card = document.querySelector("[data-kit-sheet]");
+  if (!card) return null;
+  const controls = [...card.querySelectorAll("button")].map((each) => each.getAttribute("aria-label") ?? each.textContent.trim());
+  return { title: card.getAttribute("aria-label"), controls };
+})())`;
+const LAB_SENT = `JSON.stringify(window.__labChain?.sent.length ?? 0)`;
+/**
+ * What the realm's board draws, as the scene holds it (window.__gameRenderer): the realm, how many buildings its
+ * layout places, and each placed building whose model is not in the scene, hidden, not grown in, or holds no geometry.
+ */
+const BOARD_MODELS = `JSON.stringify((() => {
+  const board = window.__gameRenderer?.hexceptionScene;
+  if (!board) return null;
+  const shown = (model) => {
+    for (let part = model; part; part = part.parent) {
+      if (!part.visible) return false;
+      if (part === board.scene) return true;
+    }
+    return false;
+  };
+  const loaded = (model) => {
+    let vertices = 0;
+    model.traverse((part) => { if (part.isMesh) vertices += part.geometry?.attributes?.position?.count ?? 0; });
+    return vertices > 0;
+  };
+  const keys = board.buildings.map((building) => building.col + "," + building.row);
+  const missing = keys.filter((key) => {
+    const model = board.buildingInstances.get(key);
+    return !model || !shown(model) || model.scale.y < 0.9 || !loaded(model);
+  });
+  return { realm: board.shownRealmId, laidOut: keys.length, missing };
+})())`;
+/** Each HUD panel and band shown that reaches past the screen's edge, by its name and its box. */
+const HUD_OFF_SCREEN = `JSON.stringify([...document.querySelectorAll("section.ui-panel[aria-label], nav[aria-label]")]
+  .filter((part) => part.checkVisibility({ visibilityProperty: true }))
+  .map((part) => ({ name: part.getAttribute("aria-label"), box: part.getBoundingClientRect() }))
+  .filter(({ box }) => box.width > 0 && (box.left < -1 || box.top < -1 || box.right > innerWidth + 1 || box.bottom > innerHeight + 1))
+  .map(({ name, box }) => name + " at " + [box.left, box.top, box.right, box.bottom].map(Math.round).join(",")))`;
+
+/**
+ * The board's second row, the neighbour's realm (the player leads it), by Visit: its realm drawn. No place is lit on a
+ * visit to read it by: a phone's place bar gives its room to Leave.
+ */
+async function visitTheNeighbour({ browser }) {
+  const row = await visitFromTheBoard(browser, 1);
+  if (!row) return { row };
+  const realm = await waitFor(browser, (seen) => seen.playable && onTheBoard(seen), SCENE_WAIT_MS);
+  return { row, realm, foot: browser.read(VISIT_FOOT), ...(await theBoardDrawn(browser)) };
+}
+
+const onTheBoard = (seen) => seen.scene === "hex" && seen.rendered === "hex";
+
+/** The board once every building it lays out stands drawn, or as it stands when that never comes; and the HUD. */
+async function theBoardDrawn(browser) {
+  const startedAt = Date.now();
+  let board = browser.read(BOARD_MODELS);
+  while (!(board?.laidOut && board.missing.length === 0) && Date.now() - startedAt < BOARD_DRAW_MS) {
+    await sleep(POLL_MS);
+    board = browser.read(BOARD_MODELS);
+  }
+  return { board, offScreen: browser.read(HUD_OFF_SCREEN) };
+}
+
+function visitingTheirRealm({ played, seen }) {
+  if (!played.row) return blocked("the Season's board listed no other realm to visit", played);
+  if (!played.realm || !onTheBoard(seen)) return failed("the visited realm never opened", played);
+  if (!played.foot) return failed("the visit's foot with Leave is not shown", played);
+  return (
+    boardAndHudOf(LAB_NEIGHBOUR_REALM, played) ?? completed({ row: played.row, foot: played.foot, ...played.board })
+  );
+}
+
+/**
+ * Why the board or the HUD is not as a player arriving on `realm` sees it: another realm drawn, fewer buildings laid out
+ * than the lab's realm holds, a building drawn without its model, a panel past the screen's edge; null when it is.
+ */
+function boardAndHudOf(realm, { board, offScreen }) {
+  if (!board) return failed("the realm's board is not drawn", { board });
+  if (board.realm !== realm) return failed(`the board draws realm ${board.realm}, not realm ${realm}`, { board });
+  if (board.laidOut < LAB_BOARD_BUILDINGS)
+    return failed(`the board lays out ${board.laidOut} of the realm's ${LAB_BOARD_BUILDINGS} buildings`, { board });
+  if (board.missing.length)
+    return failed(`${board.missing.length} buildings stand without their model: ${board.missing.join(" ")}`, { board });
+  if (offScreen.length) return failed(`the HUD reaches past the screen: ${offScreen.join("; ")}`, { offScreen });
+  return null;
+}
+
+/**
+ * Points about a plot apart over the realm's board at its default view, each hovered then tapped: what its hover named,
+ * the card the tap opened (the first one kept as a still), and how many commands the game signed meanwhile. A phone's
+ * sweep keeps to the rows clear of its bands.
+ */
+async function sweepTheBoard({ browser, extraScreenshot }) {
+  const signedBefore = browser.read(LAB_SENT);
+  const taps = [];
+  for (const offset of boardPoints()) {
+    browser.hover(offset);
+    await sleep(HOVER_SETTLE_MS);
+    const hover = browser.read(BOARD_HOVER);
+    browser.tap(offset);
+    await sleep(TAP_SETTLE_MS);
+    const card = browser.read(OPEN_CARD);
+    if (card && !taps.some((tap) => tap.card)) extraScreenshot("first-card");
+    taps.push({ offset, hover, card });
+    browser.press("Escape");
+  }
+  return { taps, signed: browser.read(LAB_SENT) - signedBefore };
+}
+
+const boardPoints = () => {
+  const across = Math.round(VIEWPORT.height * 0.155);
+  const down = Math.round(VIEWPORT.height * 0.133);
+  const rows = onADesktop() ? [-2, -1, 0, 1, 2] : [-1, 0, 1];
+  return rows.flatMap((row) =>
+    [-3, -2, -1, 0, 1, 2, 3]
+      .map((column) => [column * across, row * down])
+      .filter(([dx]) => Math.abs(dx) < VIEWPORT.width / 2 - 40),
+  );
+};
+
+/** A card's one control on a viewer's tap: its close. */
+const READ_ONLY = ["Close"];
+
+/**
+ * On a visit each building's card is the building its hover named, read as it stands: its close its one control (no
+ * Research, Delete or Upgrade). An open plot opens nothing, and nothing is signed.
+ */
+function aVisitReadsEachBuilding({ played }) {
+  const buildings = played.taps.filter(({ hover }) => hover);
+  if (buildings.length < BUILDINGS_FOUND)
+    return failed(`the sweep found ${buildings.length} buildings on the visited board`, played);
+  const wrong = buildings.find(({ hover, card }) => card?.title !== hover);
+  if (wrong)
+    return failed(`a tap at ${wrong.offset} on ${wrong.hover} opened ${wrong.card?.title ?? "no card"}`, played);
+  const ordering = buildings.find(({ card }) => card.controls.join() !== READ_ONLY.join());
+  if (ordering)
+    return failed(`the visit's ${ordering.card.title} card offers ${ordering.card.controls.join(", ")}`, played);
+  const plot = played.taps.find(({ hover, card }) => !hover && card);
+  if (plot) return failed(`an open plot at ${plot.offset} opened ${plot.card.title}`, played);
+  if (played.signed) return failed(`the visit signed ${played.signed} commands`, played);
+  return completed({ buildings: buildings.map(({ hover }) => hover), taps: played.taps.length });
+}
+
+async function leaveTheVisit({ browser }) {
+  browser.click("Leave");
+  const home = await arrives(browser, "Realm", "hex");
+  return { home, foot: browser.read(VISIT_FOOT), ...(await theBoardDrawn(browser)) };
+}
+
+function homeAgain({ played, seen }) {
+  if (!played.home) return failed("Leave did not bring the player's realm back", played);
+  if (played.foot) return failed(`the visit's foot stays after Leave: ${played.foot}`, played);
+  return boardAndHudOf(LAB_HOME_REALM, played) ?? { ...inScene("hex")({ seen }), ...played.board };
+}
+
+/** At home each building's card is the building its hover named, and an open plot opens Build. */
+function eachCardIsItsHover({ played }) {
+  const buildings = played.taps.filter(({ hover }) => hover);
+  if (buildings.length < BUILDINGS_FOUND)
+    return failed(`the sweep found ${buildings.length} buildings on the player's board`, played);
+  const wrong = buildings.find(({ hover, card }) => card?.title !== hover);
+  if (wrong)
+    return failed(`a tap at ${wrong.offset} on ${wrong.hover} opened ${wrong.card?.title ?? "no card"}`, played);
+  if (!played.taps.some(({ hover, card }) => !hover && card?.title === "Build"))
+    return failed("no open plot opened Build", played);
+  return completed({ buildings: buildings.map(({ hover }) => hover), taps: played.taps.length });
+}
 
 /** A lab game built on the spire's (src/lab/game): the merge games and the owner's army after its fight. */
 const labSpireGame = (scenario) => ({ ...LAB_SPIRE, lab: scenario });
@@ -1331,18 +1535,18 @@ const TOKEN_ABOVE_TILE_PX = 100;
 
 /**
  * Two of the realm's armies merged as a player merges them, then hovered (owner, 2026-10-25: "due to an army merge I dont
- * see the hover label"): the spire's army picked, the other right-clicked for the transfer card, its Merge pressed and
- * answered by the chain; then the surviving army's tile, hovered, opens its plate, and the emptied tile opens none.
- * merge-keeps-picked keeps the army picked (today's rule when it has more progression); merge-keeps-tapped keeps the
- * army tapped (the merged-into army, as from release 3).
+ * see the hover label"): the spire's army picked, the other right-clicked for the transfer card, its Merge pressed (and
+ * pressed again where the button then names the XP the merge loses) and answered by the chain, which keeps the army
+ * tapped; then the surviving army's tile, hovered, opens its plate, and the emptied tile opens none. In merge-loses-xp
+ * the picked army holds 100 XP, so the second press reads `confirm`; in merge-keeps-tapped one press merges.
  */
-function labMergeSteps() {
+function labMergeSteps(confirm) {
   const tiles = { byArmy: null };
   return [
     { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
     { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
     { name: "open-merge", play: (context) => openTheMerge(context, tiles), settleMs: 0, verify: mergeCardOpen },
-    { name: "merge", play: pressMerge, settleMs: 1_000, verify: oneArmyLeft },
+    { name: "merge", play: pressMerge, settleMs: 1_000, verify: (context) => mergedIntoTheTapped(context, confirm) },
     {
       name: "hover-survivor",
       play: (context) => hoverTheTileOf(context, tiles, "survivor"),
@@ -1370,15 +1574,157 @@ const LAB_AFTER_BATTLE_STEPS = [
 ];
 
 /**
+ * The owner's fight, played (owner, 2026-10-28: "it moves the camera when I fight"): realm 7's army beside the ruin it
+ * attacked on prod (src/lab/game/ruin-fight-scenario.ts). Picking the army in the HUD is a request to look at it, so the
+ * camera goes to it; from there the fight leaves the camera where it was: the ruin's card opened from the map (a
+ * desktop's right-click, a phone's tap), then Attack, its BattleGuard answered by the lab's chain, the ruin cleared, the
+ * army's troops down by its losses and the ruin's chest shown.
+ */
+const LAB_RUIN_FIGHT_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
+  { name: "open-the-fight", play: openTheRuinsCard, settleMs: 0, verify: fightCardOpenedCameraStill },
+  { name: "attack", play: attackTheRuin, settleMs: 0, verify: ruinClearedCameraStill },
+];
+/** The ruin beside the army (site-fixture.ts) and how near a framed army stands to the camera's target, in hexes. */
+const LAB_RUIN = 710;
+const FRAMED_WITHIN_HEXES = 6;
+/** What a player sees of the fight: where the camera looks, the army, the card, the ruin's and army's tokens, the chest. */
+const FIGHT_STATE = `JSON.stringify({
+  camera: window.__eternumMapSelection?.camera ?? null,
+  army: window.__eternumMapSelection?.army ?? null,
+  sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
+  buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
+  sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
+  armyToken: document.querySelector('.mp-at[data-key="army:${PICKED_ARMY}"]')?.textContent ?? null,
+  ruinToken: (() => {
+    const slot = document.querySelector('.mp-at[data-key="structure:${LAB_RUIN}"]');
+    if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
+    const token = slot.firstElementChild.getBoundingClientRect();
+    return [
+      Math.round(token.left + token.width / 2 - innerWidth / 2),
+      Math.round(token.top + token.height / 2 + ${TOKEN_ABOVE_TILE_PX} - innerHeight / 2),
+    ];
+  })(),
+  // The chest with the LORDS it paid: the clear's moment, a status or (before it played by itself) a button.
+  chest: Boolean(document.querySelector('[role="status"] [aria-label$=" LORDS"], button[aria-label="Ruin"] [aria-label$=" LORDS"]')),
+})`;
+
+/** Picks the army from the HUD, as the Armies list or the dock does, reading where the camera looked before and after. */
+async function pickTheArmyAndReadTheCamera({ browser }) {
+  browser.hover(POINTER_PARKED);
+  const before = browser.read(FIGHT_STATE).camera;
+  const picked = await pickTheSpireArmy({ browser });
+  await sleep(CAMERA_REPORT_MS);
+  return { ...picked, before, after: browser.read(FIGHT_STATE) };
+}
+
+/** The pick is a request to look: the camera went to the army. */
+function cameraWentToTheArmy({ played }) {
+  const { before, after } = played;
+  if (!played.army) return failed(`no army on the HUD selects army ${PICKED_ARMY}`, played);
+  if (!after.camera || !after.army) return failed("the page reports no camera or no selected army", played);
+  if (hexesApart(after.camera, after.army.hex) > FRAMED_WITHIN_HEXES)
+    return failed(`the camera looks at ${JSON.stringify(after.camera)}, away from the army`, played);
+  return completed({ before, after: after.camera, army: after.army.hex });
+}
+
+/**
+ * On a phone the ruin is first panned low, just above the picked army's row, where its card, taller than the row, will
+ * cover it once open (the owner's taps met fights there): a camera that framed the tapped tile above its card would
+ * show here as a move. Its tile's offset below the screen's middle, in pixels: under the card, still clear of the row.
+ */
+const UNDER_THE_CARD_PX = [70, 160];
+const PAN_BURSTS = 16;
+const underTheCard = (token) => token && token[1] >= UNDER_THE_CARD_PX[0] && token[1] <= UNDER_THE_CARD_PX[1];
+async function panTheRuinUnderTheCard(browser) {
+  let key = "KeyW";
+  let last = browser.read(FIGHT_STATE).ruinToken;
+  for (let burst = 0; burst < PAN_BURSTS && last && !underTheCard(last); burst += 1) {
+    // Lower while above the band, higher once past it.
+    const lower = last[1] < UNDER_THE_CARD_PX[0];
+    browser.run(["eval", `void window.__playtest.pan(["${lower ? key : key === "KeyW" ? "KeyS" : "KeyW"}"], 30)`]);
+    await sleep(CAMERA_REPORT_MS);
+    const now = browser.read(FIGHT_STATE).ruinToken;
+    // The way that lowers the ruin on screen is learnt from the first moves: one that raised it is turned round.
+    if (lower && now && now[1] < last[1]) key = key === "KeyW" ? "KeyS" : "KeyW";
+    last = now;
+  }
+}
+
+/** Opens the ruin's card from the map with the army selected: a desktop's right-click, a phone's tap. */
+async function openTheRuinsCard({ browser, extraScreenshot }) {
+  if (!onADesktop()) await panTheRuinUnderTheCard(browser);
+  const before = browser.read(FIGHT_STATE);
+  if (!before.ruinToken) return { before, after: before };
+  extraScreenshot("before-fight");
+  if (onADesktop()) browser.rightClick(before.ruinToken);
+  else browser.tap(before.ruinToken);
+  const after = await readUntil(
+    () => browser.read(FIGHT_STATE),
+    (shown) => shown.buttons.some((text) => text.startsWith("Attack")),
+    MERGE_WAIT_MS,
+  );
+  extraScreenshot("fight-card");
+  return { before, after };
+}
+
+function fightCardOpenedCameraStill({ played }) {
+  const { before, after } = played;
+  if (!before.ruinToken) return failed("the map draws no token for the ruin", played);
+  if (!onADesktop() && !underTheCard(before.ruinToken))
+    return failed("the ruin could not be panned under where its card opens", played);
+  if (!after.buttons.some((text) => text.startsWith("Attack")))
+    return failed("the ruin's card offers no Attack", played);
+  if (!before.camera) return failed("the page reports no camera", played);
+  if (!sameHex(before.camera, after.camera))
+    return failed(`opening the fight moved the camera from ${JSON.stringify(before.camera)}`, played);
+  return completed({ camera: after.camera, sheet: after.sheet, buttons: after.buttons });
+}
+
+/** Presses Attack, then waits for the chain's answer: the ruin gone from the map and its chest shown. */
+async function attackTheRuin({ browser, extraScreenshot }) {
+  const before = browser.read(FIGHT_STATE);
+  const attack = before.buttons.find((text) => text.startsWith("Attack"));
+  if (attack) browser.click(attack);
+  const after = await readUntil(
+    () => browser.read(FIGHT_STATE),
+    (shown) => shown.sent.includes("BattleGuard") && shown.ruinToken === null && shown.chest,
+    MERGE_WAIT_MS,
+  );
+  extraScreenshot("chest");
+  await sleep(CAMERA_REPORT_MS);
+  return { attack, before, after, settled: browser.read(FIGHT_STATE) };
+}
+
+function ruinClearedCameraStill({ played }) {
+  const { before, after, settled } = played;
+  if (!played.attack) return failed("no Attack to press", played);
+  if (!after.sent.includes("BattleGuard")) return failed("Attack sent no BattleGuard", played);
+  if (after.ruinToken !== null) return failed("the ruin still stands on the map", played);
+  if (!after.chest) return failed("the ruin's chest never showed", played);
+  if (!settled.armyToken?.includes("4,011")) return failed(`the army's token reads ${settled.armyToken}`, played);
+  if (!before.camera) return failed("the page reports no camera", played);
+  if (!sameHex(before.camera, settled.camera))
+    return failed(`the fight moved the camera from ${JSON.stringify(before.camera)}`, played);
+  return completed({
+    camera: { before: before.camera, after: settled.camera },
+    army: settled.armyToken,
+    sent: after.sent,
+  });
+}
+
+/**
  * The owner's army after its fight, nothing selected, at each zoom step from the closest to the farthest (owner,
  * 2026-10-27: "at a certain zoom level I cant get the hover modal"): its token stands over its own model, and the pointer
- * anywhere on its model, feet to head, opens its plate, at every step. The page reports its world (dev overlays), so the
- * model is hovered where the renderer draws it.
+ * anywhere on its model, feet to head, opens its plate, at every step; so does every other army drawn, such as the
+ * realm's second army beside it in the merge game (owner, 2026-10-28: "again on desktop the hover label disappears at a
+ * certain zoom level"). The page reports its world (dev overlays), so each model is hovered where the renderer draws it.
  */
 const LAB_HOVER_ZOOM_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
-  { name: "hover-every-zoom", play: hoverTheArmyAtEveryZoom, settleMs: 0, verify: armyAnswersAtEveryZoom },
+  { name: "hover-every-zoom", play: hoverEveryArmyAtEveryZoom, settleMs: 0, verify: armiesAnswerAtEveryZoom },
 ];
 /**
  * The spire's game on high ground (owner, 2026-10-27: "when exploring a tile thats not empty the tile selection to move
@@ -1426,14 +1772,25 @@ function litTilesClearTheirGround({ played }) {
 
 /** Points on an army's model as drawn, its tile (0) to its top (1): the head is where the tile behind lay. */
 const MODEL_SHARES = [0.2, 0.6, 1];
+/**
+ * A point on a model, `share` of the way from its tile to its top on screen, kept a pixel inside the top: the pointer
+ * stands on a whole pixel, and one rounded from the top itself may stand over it.
+ */
+const onTheModel = ({ tile, top }, share) => {
+  const inside = Math.min(share, 1 - 1 / Math.max(1, Math.hypot(top.x - tile.x, top.y - tile.y)));
+  return { x: tile.x + (top.x - tile.x) * inside, y: tile.y + (top.y - tile.y) * inside };
+};
 /** Wheel notches from the closest zoom past which the farthest must have been reached. */
 const ZOOM_STEPS_MAX = 14;
 
-/** The picked army's label in a plate reading. */
-const pickedArmyLabel = (seen) => seen?.things?.find((thing) => thing.key === `army:${PICKED_ARMY}`) ?? null;
+/** Every army's label in a plate reading. */
+const armyLabels = (seen) => seen?.things?.filter((thing) => thing.key?.startsWith("army:")) ?? [];
 
-/** Lets the army go, zooms all the way in, then at each notch out reads its token and hovers its model, feet to head. */
-async function hoverTheArmyAtEveryZoom({ browser, extraScreenshot }) {
+/**
+ * Lets the army go, zooms all the way in, then at each notch out reads every army's token and hovers each army's model,
+ * feet to head.
+ */
+async function hoverEveryArmyAtEveryZoom({ browser, extraScreenshot }) {
   for (let press = 0; press < ESCAPES_TO_DESELECT; press += 1) browser.press("Escape");
   browser.run(["eval", `void window.__playtest.wheel(-100, ${ZOOM_IN_NOTCHES})`]);
   await sleep(ZOOM_SETTLE_MS);
@@ -1444,17 +1801,22 @@ async function hoverTheArmyAtEveryZoom({ browser, extraScreenshot }) {
     browser.hover(POINTER_PARKED);
     await sleep(HOVER_SETTLE_MS);
     const distance = browser.observe().worldmapDistance;
-    const rest = pickedArmyLabel(browser.read(PLATES_EXPRESSION));
-    const hovers = [];
-    for (const share of rest?.over ? MODEL_SHARES : []) {
-      const { tile, top } = rest.over;
-      browser.hover(offsetOf({ x: tile.x + (top.x - tile.x) * share, y: tile.y + (top.y - tile.y) * share }));
-      await sleep(HOVER_SETTLE_MS * 2);
-      hovers.push({ share, opened: pickedArmyLabel(browser.read(PLATES_EXPRESSION))?.open === true });
+    const armies = [];
+    for (const rest of armyLabels(browser.read(PLATES_EXPRESSION))) {
+      const hovers = [];
+      for (const share of rest.over ? MODEL_SHARES : []) {
+        browser.hover(offsetOf(onTheModel(rest.over, share)));
+        await sleep(HOVER_SETTLE_MS * 2);
+        const seen = armyLabels(browser.read(PLATES_EXPRESSION)).find((thing) => thing.key === rest.key);
+        hovers.push({ share, opened: seen?.open === true });
+      }
+      browser.hover(POINTER_PARKED);
+      await sleep(HOVER_SETTLE_MS);
+      const against = againstTheirThings({ things: [rest] });
+      armies.push({ key: rest.key, rest: against.standing[0] ?? null, offModel: against.off.length > 0, hovers });
     }
     extraScreenshot(`zoom-${notch}`);
-    const against = againstTheirThings({ things: rest ? [rest] : [] });
-    zooms.push({ distance, rest: against.standing[0] ?? null, offModel: against.off.length > 0, hovers });
+    zooms.push({ distance, armies });
     if (Math.abs(distance - FARTHEST_CAMERA_DISTANCE) <= CLOSEST_DISTANCE_TOLERANCE) break;
     browser.run(["eval", "void window.__playtest.wheel(100, 1)"]);
     await sleep(ZOOM_SETTLE_MS);
@@ -1462,24 +1824,30 @@ async function hoverTheArmyAtEveryZoom({ browser, extraScreenshot }) {
   return { zooms };
 }
 
-/** From the closest zoom to the farthest, the army's token over its model and its plate open wherever its model is hovered. */
-function armyAnswersAtEveryZoom({ played }) {
+/**
+ * From the closest zoom to the farthest, the picked army read at every step, and every army read with its token over its
+ * model and its plate open wherever its model is hovered.
+ */
+function armiesAnswerAtEveryZoom({ played }) {
   const { zooms } = played;
   const near = (distance, target) => Math.abs(distance - target) <= CLOSEST_DISTANCE_TOLERANCE;
   if (!near(zooms[0]?.distance, CLOSEST_CAMERA_DISTANCE) || !near(zooms.at(-1)?.distance, FARTHEST_CAMERA_DISTANCE))
     return failed("the camera did not step from the closest zoom to the farthest", played);
-  const undrawn = zooms.filter((zoom) => zoom.hovers.length === 0);
+  const picked = `army:${PICKED_ARMY}`;
+  const undrawn = zooms.filter((zoom) => !zoom.armies.some((army) => army.key === picked && army.hovers.length > 0));
   if (undrawn.length > 0)
     return failed(`army ${PICKED_ARMY}'s token or model is not read at ${undrawn.length} zooms`, {
       ...played,
       undrawn,
     });
-  const off = zooms.filter((zoom) => !zoom.rest || zoom.offModel);
-  if (off.length > 0) return failed(`army ${PICKED_ARMY}'s token stands off its model at ${off.length} zooms`, played);
-  const closed = zooms.filter((zoom) => zoom.hovers.some((hover) => !hover.opened));
+  const readAt = (test) =>
+    zooms.flatMap((zoom) => zoom.armies.filter(test).map((army) => ({ distance: zoom.distance, ...army })));
+  const off = readAt((army) => !army.rest || army.offModel);
+  if (off.length > 0) return failed(`${off.length} army tokens stand off their models`, { ...played, off });
+  const closed = readAt((army) => army.hovers.some((hover) => !hover.opened));
   return closed.length === 0
     ? completed(played)
-    : failed(`hovering army ${PICKED_ARMY}'s model opens no plate at ${closed.length} zooms`, { ...played, closed });
+    : failed(`hovering an army's model opens no plate ${closed.length} times`, { ...played, closed });
 }
 
 // The open card and its buttons, the commands the lab's chain has been sent, and the army a merge's answer destroyed.
@@ -1539,27 +1907,46 @@ function mergeCardOpen({ played }) {
   return merge ? completed({ ...played, merge }) : failed("the card offers no Merge", played);
 }
 
-/** Presses the card's Merge, then waits for the chain's answer to leave the realm one army. */
+/**
+ * Presses the card's Merge and, when the button then asks again with the XP the merge loses, that button too; then waits
+ * for the chain's answer to leave the realm one army.
+ */
 async function pressMerge({ browser }) {
   const before = browser.read(MERGE_STATE);
   const merge = before.buttons.find((text) => text.startsWith("Merge into"));
   if (merge) browser.click(merge);
+  const asked = await readUntil(
+    () => browser.read(MERGE_STATE),
+    (shown) => shown.sent.length > 0 || shown.buttons.some((text) => text.startsWith("Lose ")),
+    MERGE_WAIT_MS,
+  );
+  const confirm = asked.sent.length > 0 ? null : (asked.buttons.find((text) => text.startsWith("Lose ")) ?? null);
+  if (confirm) browser.click(confirm);
   const after = await readUntil(
     () => ({ ...browser.read(MERGE_STATE), armies: browser.armies() }),
     (shown) => shown.destroyed.length === 1 && shown.armies.length === 1,
     MERGE_WAIT_MS,
   );
-  return { merge, before, after };
+  return { merge, confirm, before, after };
 }
 
-function oneArmyLeft({ played }) {
+/** The merge asked again only where it loses XP, in those words; it sent the transfer, and only the army tapped is left. */
+function mergedIntoTheTapped({ played }, confirm) {
   if (!played.merge) return failed("no Merge to press", played);
+  if (played.confirm !== confirm)
+    return failed(
+      confirm ? `the merge never asked "${confirm}"` : `a merge that loses no XP asked "${played.confirm}"`,
+      played,
+    );
   if (!played.after.sent.includes("ManageTroops")) return failed("Merge sent no troop transfer", played);
   if (played.after.destroyed.length !== 1) return failed("the chain's answer destroyed no army", played);
+  if (played.after.destroyed[0] !== PICKED_ARMY)
+    return failed(`the merge kept the army picked, not army ${played.after.destroyed[0]} it was merged into`, played);
   if (played.after.armies.length !== 1)
     return failed(`the HUD lists ${played.after.armies.length} armies after the merge`, played);
   return completed({
     merge: played.merge,
+    confirm: played.confirm,
     sent: played.after.sent,
     destroyed: played.after.destroyed[0],
     left: played.after.armies,
@@ -2048,10 +2435,16 @@ export const STEP_SETS = {
     devOverlays: true,
   },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
-  "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },
-  "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps() },
+  "lab-merge-loses-xp": {
+    game: labSpireGame("merge-loses-xp"),
+    steps: labMergeSteps("Lose 100 XP, merge into Army 2"),
+  },
+  "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps(null) },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
+  "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
+  "lab-ruin-fight": { game: labSpireGame("ruin-fight"), steps: LAB_RUIN_FIGHT_STEPS },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
+  "lab-hover-zoom-pair": { game: labSpireGame("merge-loses-xp"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-high-ground": { game: labSpireGame("high-ground"), steps: LAB_HIGH_GROUND_STEPS, devOverlays: true },
   "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-later": { game: labDayTurn("day-later"), steps: labDayTurnSteps(RECORDED_DAY_2) },

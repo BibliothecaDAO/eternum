@@ -35,6 +35,7 @@ const realmView = () => {
     controls: { object: camera, target, minDistance: 2, maxDistance: 40 },
     sceneManager: { getCurrentScene: () => SceneName.Hexception },
     state: { structureEntityId: REALM.entityId, setStructureEntityId: () => {} },
+    shownRealmId: REALM.entityId,
     playerStructures: [REALM],
     structureIndex: 0,
     labels: [],

@@ -183,6 +183,12 @@ export class WorldFold {
     return (this.parent?.directoryRevision() ?? 0) + this.directoryChanges;
   }
 
+  /** A site's row by its entity, whichever region it stands in: its kind, place and starting guard never change. */
+  public expeditionSite(gameId: string, entityId: string): Record<string, unknown> | undefined {
+    const entity = BigInt(entityId);
+    return this.gameRows("ExpeditionSite", gameId).find((row) => BigInt(String(row.value.entity_id)) === entity)?.value;
+  }
+
   public structurePosition(gameId: string, entityId: string): Record<string, unknown> | undefined {
     const key = `${BigInt(gameId)}:${BigInt(entityId)}`;
     const tile = this.structureTile(key);

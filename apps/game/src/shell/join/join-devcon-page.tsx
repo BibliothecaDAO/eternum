@@ -1,3 +1,4 @@
+import { FRONTIER_LOCKUP } from "@/ui/design-system/domain-icon-meaning";
 import { AGES } from "@bibliothecadao/types";
 import { IdentityRequestError, type CampaignTicket } from "@realms-world/identity";
 import { useEffect, useState, type ReactNode } from "react";
@@ -13,7 +14,6 @@ import { PageFrame } from "../frame/page-frame";
 import { useRequestSignIn } from "../sign-in/connect";
 import { DEVCON, forgetCampaignCode, keepCampaignCode, keptCampaignCode } from "./devcon";
 
-const FRONTIER_LOCKUP = "/images/logos/frontier-lockup.webp";
 /** A code as flyers print it; anything else in the address is not kept. */
 const PRINTED_CODE = /^[A-Za-z0-9]{8}$/;
 

@@ -2,21 +2,14 @@ import { formatAmount, formatRate } from "@bibliothecadao/types";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { HUD_TONE, type Tone } from "@/ui/design-system/kit/tone";
-import { BUILD, DEPLOY, FULL, LABOR, MADE_BY, REALM, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+import { BUILD, DEPLOY, FULL, MADE_BY, REALM } from "@/ui/design-system/kit/words";
 
 import { FullIn } from "../full-in";
-
-/** The three stores by their icons, each with the word written beside it: a store without a word does not compile. */
-const STORE_WORDS = { wheat: WHEAT, labor: LABOR, troops: TROOPS } as const satisfies Partial<
-  Record<IconMeaning, string>
->;
-
-/** Where a full store is spent: labor on the realm board, wheat and troops by Deploy. */
-export type SpentAt = "realm" | "deploy";
+import { FRONTIER_STORES, type MadeStore, type SpentAt } from "../stores";
 
 /** One store's line: what it makes an hour (with the side marks that shape it), what it holds against its limit. */
 export type StoreLine = {
-  icon: keyof typeof STORE_WORDS;
+  kind: MadeStore;
   perHour: number | undefined;
   sides?: readonly IconMeaning[];
   held: number | undefined;
@@ -28,7 +21,6 @@ export type StoreLine = {
   noBuilding: boolean;
   /** What makes the rate, one line each, adding up to it: the buildings standing and what each makes, the castle's. */
   makers?: readonly string[];
-  spentAt: SpentAt;
 };
 
 /**
@@ -47,11 +39,15 @@ export const StoreCard = ({
   onBuild: () => void;
 }) => {
   const full = line.limit !== undefined && line.held !== undefined && line.held >= line.limit;
-  const word = STORE_WORDS[line.icon];
+  const {
+    icon,
+    word,
+    made: { spentAt },
+  } = FRONTIER_STORES[line.kind];
   return (
     <HudPanel label={word} collapsible={false} className="pointer-events-auto" bodyClassName="flex flex-col gap-1.5">
       <span className="flex items-center gap-2">
-        <Icon name={line.icon} size={28} />
+        <Icon name={icon} size={28} />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="text-hud-label capitalize text-hud-muted">{word}</span>
           <span className={`flex items-center gap-1 tabular-nums ${full ? "text-hud-bad" : ""}`}>
@@ -67,10 +63,10 @@ export const StoreCard = ({
             <HudButton
               kind="secondary"
               size="sm"
-              icon={line.spentAt === "realm" ? "realm" : undefined}
-              onClick={() => onSpend(line.spentAt)}
+              icon={spentAt === "realm" ? "realm" : undefined}
+              onClick={() => onSpend(spentAt)}
             >
-              {line.spentAt === "realm" ? REALM : DEPLOY}
+              {spentAt === "realm" ? REALM : DEPLOY}
             </HudButton>
           </>
         ) : line.noBuilding ? (

@@ -1,7 +1,9 @@
 import { expect, it } from "vitest";
 import { buildingTypeTier, readFrontierBeast } from "@bibliothecadao/eternum";
-import { BuildingType, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, BuildingType, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { nativeTilePackingConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
+import { SANDS } from "./spire-scenario";
 
 it("opens a Kingdom with eight distinct buildings, tier III production and two usable map sites", () => {
   const { store } = paintedBuildingsScenario();
@@ -38,4 +40,13 @@ it("opens a Kingdom with eight distinct buildings, tier III production and two u
   for (const entityId of [711, 712, 713]) {
     expect([...store.rows("TileOccupancy")].filter((tile) => tile.entity_id === BigInt(entityId))).toHaveLength(1);
   }
+});
+
+it("lays the same Kingdom on beach sand, where palms grow, for the sands lab game", () => {
+  const { store } = paintedBuildingsScenario(SANDS);
+  const tiles = [...store.rows("TileOpt")];
+  expect(tiles.length).toBeGreaterThan(0);
+  const beach = BigInt(BiomeTypeToId[BiomeType.Beach]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
+  expect(tiles.every((tile) => BigInt(tile.data) === beach)).toBe(true);
+  expect([...store.rows("Building")]).toHaveLength(9);
 });

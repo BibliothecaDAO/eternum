@@ -51,6 +51,10 @@ describe("a guarded site's card", () => {
     const card = document.querySelector("section[aria-label='Troll']")!;
     // The owner, 26 October 2026: "moving the clear rewards in the 'this attack clears it' -> This attack earns xxx".
     expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("This attack earns+550+82 XP");
+    // Owner, 28 October 2026 ("v1 token header yes"): the guard heads the card as a token; with an army its strength is
+    // the fight's to say, once.
+    expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Troll");
+    expect(card.textContent?.match(/1,100/g)).toHaveLength(1);
     expect(card.querySelector(".ui-sheet__body header .opacity-50")).toBeNull();
     const sides = [...card.querySelectorAll(".ui-sheet__body > .flex.gap-2 > *")].map((side) => side.textContent);
     expect(sides).toEqual(["5,000 →4,820", "1,100 →0"]);
@@ -224,7 +228,9 @@ describe("a guarded site's card", () => {
     expect(buttons().some((button) => button.textContent?.startsWith("Attack"))).toBe(true);
   });
 
-  it("holds Attack back when the army is short, with the stamina it needs, what it has and the wait under it", () => {
+  // Owner, 28 October 2026: "the need 30 stamina line can actually replace the 30 stamina below it it just makes more
+  // sense, and we save space".
+  it("holds Attack back when the army is short, the stamina it needs, has and waits for in the foot, the cost's place", () => {
     act(() =>
       root.render(
         <SiteCardView
@@ -245,8 +251,12 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(true);
-    expect(document.querySelector('[role="status"]')?.textContent).toBe("Needs 30 stamina, have 10 · in 40m");
+    const foot = document.querySelector(".ui-window__foot")!;
+    expect(foot.querySelector('[role="status"]')?.textContent).toBe("Needs 30 stamina, have 10 · in 40m");
+    expect(foot.querySelector("button")?.textContent).toBe("Attack");
+    expect(foot.querySelector("button")?.disabled).toBe(true);
+    expect(document.querySelectorAll('[role="status"]')).toHaveLength(1);
+    expect(document.querySelector(".ui-cost")).toBeNull();
   });
 });
 
@@ -264,18 +274,20 @@ describe("a guarded site's card with no army chosen", () => {
           pay={null}
           xp={undefined}
           verb={null}
-          choices={[{ label: "Army 1", ...army, fight: undefined, onPick: () => {} }]}
           onClose={() => {}}
         />,
       ),
     );
     const card = document.querySelector("section[aria-label='North Watch']")!;
     expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("RuinBasilisk1.1K");
+    // The guard's token, its strength under it, then what the site is: its kind under its name, and its beast.
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("1,100Ruin · Basilisk");
+    expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Basilisk 1,100");
+    expect(card.textContent?.match(/1,100|1\.1K/g)).toHaveLength(1);
   });
 
-  it("gives each army a row with the fight it would have, names the skull, and opens the attack on a tap", () => {
-    const onPick = vi.fn();
+  // Owner, 28 October 2026: "agree with no picker".
+  it("lists no army and offers no step: what the site is and pays, and its guard", () => {
     act(() =>
       root.render(
         <SiteCardView
@@ -287,55 +299,15 @@ describe("a guarded site's card with no army chosen", () => {
           pay={{ icon: "essence", amount: 3_300 }}
           xp={82}
           verb={null}
-          choices={[
-            {
-              label: "Army 1",
-              art: army.art,
-              troops: 5_000,
-              fight: {
-                outcome: "wins",
-                exchanges: 2,
-                troopsLost: 456,
-                guardLeft: 492,
-              },
-              onPick,
-            },
-            {
-              label: "Army 2",
-              art: army.art,
-              troops: 154,
-              fight: {
-                outcome: "loses",
-                exchanges: 1,
-                troopsLost: 154,
-                guardLeft: 1_028,
-              },
-              onPick: () => {},
-            },
-            { label: "Army 3", art: army.art, troops: 600, fight: undefined, onPick: () => {} },
-          ]}
           onClose={() => {}}
         />,
       ),
     );
-    /** An army's row: its button names it and its troops, its forecast sits beside the button. */
-    const row = (label: string) =>
-      [...document.querySelectorAll(".ui-row")].find((candidate) =>
-        candidate.querySelector("button")?.textContent?.startsWith(`${label}`),
-      )!;
-    // Two attacks win it, counted beside the flag: the figures are the first one's, the troops it costs and the guard it
-    // leaves standing.
-    expect(row("Army 1").querySelector('[data-icon="beast-dark-fey"]')).not.toBeNull();
-    expect(row("Army 1").textContent).toBe("Army 15,000 troops×2−456492");
-    expect(row("Army 1").querySelector('[data-tip="Attacks"]')?.textContent).toBe("×2");
-    expect(row("Army 2").textContent).toBe("Army 2154 troops−1541,028");
-    expect(row("Army 2").querySelector('[data-tip="Would be lost"]')).not.toBeNull();
-    // Out of reach: the army is still a choice, with no forecast to show and no dash in its place.
-    expect(row("Army 3").textContent).toBe("Army 3600 troops");
-    expect(document.body.textContent).toContain("Pick an army to attack it");
-    expect(document.querySelector("section[aria-label='Rift']")!.textContent).not.toContain("—");
-    act(() => row("Army 1").querySelector("button")!.click());
-    expect(onPick).toHaveBeenCalled();
+    const card = document.querySelector("section[data-kit-sheet]")!;
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("1,100Dark fey+3,300+82 XP");
+    expect(card.querySelectorAll(".ui-row")).toHaveLength(0);
+    expect(card.querySelectorAll("button")).toHaveLength(1);
+    expect(card.textContent).not.toContain("Pick an army");
   });
 });
 
@@ -437,28 +409,6 @@ describe("a cleared ruin's chest", () => {
     act(() => (moment as HTMLButtonElement).click());
     expect(onClose).toHaveBeenCalled();
   });
-});
-
-it("says where an army comes from when the realm has none out, in the place of the rows", () => {
-  act(() =>
-    root.render(
-      <SiteCardView
-        site="Camp"
-        army={null}
-        beast={undefined}
-        guard={1_100}
-        fight={undefined}
-        pay={null}
-        xp={undefined}
-        verb={null}
-        choices={[]}
-        onClose={() => {}}
-      />,
-    ),
-  );
-  expect(document.querySelectorAll(".ui-row")).toHaveLength(0);
-  expect(document.body.textContent).toContain("No army out: deploy one");
-  expect(document.body.textContent).not.toContain("Pick an army");
 });
 
 it("titles a single roaming Wraith by its species", () => {
@@ -585,11 +535,13 @@ describe("one fight panel for every state of every target (owner, 10-27: 'this p
             />,
           ),
         );
-        const sides = [...document.querySelectorAll('section[role=dialog] [role="img"]')].map((side) =>
-          side.getAttribute("aria-label"),
-        );
+        const sides = [
+          ...document.querySelectorAll('section[role=dialog] .ui-sheet__body > .flex.gap-2 [role="img"]'),
+        ].map((side) => side.getAttribute("aria-label"));
         expect(sides).toEqual([`Army 5,000 → ${kept[0]}`, `troops 1,100 → ${kept[1]}`]);
         expect(document.querySelector('[role="status"]')?.textContent).toBe(line(TARGET_MARKS[target].word));
         expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(!attacks);
+        // Attack's stamina is said once: its cost beside it, or why it is held back in the cost's place.
+        expect(document.querySelector(".ui-cost")?.textContent).toBe(attacks ? "30 stamina" : undefined);
       });
 });
