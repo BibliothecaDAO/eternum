@@ -110,6 +110,12 @@ const HUD_INSIDE = {
     "kit/chat",
     load(() => import("../ui/features/debug/kit-lab/chat-lab"), "ChatLab"),
   ),
+  chatDesigns: view(
+    "Chat designs",
+    "/lab/kit/chat-designs",
+    "kit/chat-designs",
+    load(() => import("../ui/features/debug/kit-lab/chat-designs-lab"), "ChatDesignsLab"),
+  ),
   construction: view(
     "Construction",
     "/lab/kit/construction",
