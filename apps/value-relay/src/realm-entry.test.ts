@@ -1,6 +1,7 @@
-import { beforeEach, expect, it, vi } from "vitest";
-import { CairoOption, CairoOptionVariant, CallData, shortString } from "starknet";
+import { beforeEach, expect, it, onTestFinished, vi } from "vitest";
+import { CairoOption, CairoOptionVariant, CallData, RpcProvider, shortString } from "starknet";
 import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
+import { holdsRealm as identityHoldsRealm } from "../../realms/server/realm-holdings";
 import {
   handleHeldRealmsRequest,
   handleRealmEntryRequest,
@@ -182,6 +183,35 @@ it("lists the linked wallet's Realms for the settle picker, none without a walle
   const down = await handleHeldRealmsRequest(request({}), deps);
   expect(down.status).toBe(503);
   expect(await down.json()).toEqual({ error: "realm_holdings_unavailable" });
+});
+it("refuses registration to a seller the marketplace index still credits, and registers the buyer", async () => {
+  const seller = "0x456";
+  const buyer = "0x789";
+  vi.stubGlobal("fetch", async () => Response.json({ data: { tokenId: "711", owner: seller } }));
+  vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
+  vi.spyOn(RpcProvider.prototype, "callContract").mockResolvedValue([buyer]);
+  onTestFinished(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+  const identityEnv = {
+    ENVIRONMENT: "staging" as const,
+    L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+    MARKETPLACE_API_URL: "https://market.test/api/marketplace",
+  };
+  const live = {
+    ...target,
+    identity: {
+      ...target.identity,
+      holdsRealm: (wallet: string, realmId: number) => identityHoldsRealm(identityEnv, wallet, realmId),
+    },
+  };
+  io.wallet.mockResolvedValue(seller);
+  await expect(registerHomeSource(live, claim)).rejects.toMatchObject({ code: "realm_not_owned" });
+  expect(io.admin).not.toHaveBeenCalled();
+  io.wallet.mockResolvedValue(buyer);
+  expect(await registerHomeSource(live, claim)).toEqual({ realmId: 711 });
+  expect(io.admin).toHaveBeenCalledOnce();
 });
 it.each([0, 8001, 1.5, "711"])("refuses invalid Realm number %s", async (realmId) => {
   const deps = route();

@@ -9,8 +9,10 @@ import {
 import { orders } from "@bibliothecadao/types";
 import { getCanonicalRealmMetadata } from "@bibliothecadao/eternum";
 import { HudChip, HudField, HudLoading, HudNotice } from "@/ui/design-system/kit/hud-elements";
+import { useIdentitySession } from "@/hooks/context/identity-session";
 import { readHeldRealms } from "@/services/realm-entry";
 import { useQuery } from "@tanstack/react-query";
+import type { Session } from "@realms-world/identity";
 
 export function RealmNumberPicker({
   value,
@@ -71,7 +73,8 @@ export function RealmNumberPicker({
 
 /**
  * The Realms the player's wallet holds, one press to fill the number. Shown only when the holdings index answers with
- * some; typing the number always works, and the relay checks the holder either way.
+ * some; typing the number always works, and the relay checks the holder either way. The list belongs to the signed-in
+ * account and its linked wallet, so another account or a changed wallet in the same tab asks again.
  */
 function HeldRealms({
   value,
@@ -82,7 +85,14 @@ function HeldRealms({
   onChange: (value: string) => void;
   disabled: boolean;
 }) {
-  const { data } = useQuery({ queryKey: ["held-realms"], queryFn: readHeldRealms, retry: false, staleTime: 60_000 });
+  const { session } = useIdentitySession();
+  const { data } = useQuery({
+    queryKey: heldRealmsKey(session),
+    queryFn: readHeldRealms,
+    enabled: session !== null,
+    retry: false,
+    staleTime: 60_000,
+  });
   if (!data?.length) return null;
   return (
     <div className="flex flex-col gap-1.5">
@@ -103,3 +113,6 @@ function HeldRealms({
     </div>
   );
 }
+
+const heldRealmsKey = (session: Session | null) =>
+  ["held-realms", session?.user.realmsId ?? null, session?.user.address ?? null] as const;

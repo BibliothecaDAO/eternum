@@ -57,33 +57,24 @@ const answerIndex = (url: URL) => {
   });
 };
 
-it("lets a holder settle on the indexer's word alone while it is up", async () => {
+it("lets the holder settle on the chain's live owner, whether the index is up or down", async () => {
   indexer.owners[711] = HOLDER;
   expect(await holdsRealm(env, HOLDER, 711)).toBe(true);
-  expect(indexerReads).toEqual([`${INDEX}/tokens/${dev.realms}/711`]);
-  expect(chainReads).not.toHaveBeenCalled();
-});
-
-it("falls back to the live owner when the indexer is down, so the holder still settles", async () => {
   indexer.down = true;
   expect(await holdsRealm(env, HOLDER, 711)).toBe(true);
-  expect(chainReads).toHaveBeenCalledExactlyOnceWith(
+  expect(chainReads).toHaveBeenCalledTimes(2);
+  expect(chainReads).toHaveBeenCalledWith(
     { contractAddress: dev.realms, entrypoint: "owner_of", calldata: ["711", "0"] },
     "latest",
   );
+  expect(indexerReads).toEqual([]);
 });
 
-it("lets a buyer the indexer has not caught up with settle on the chain's word", async () => {
-  indexer.owners[711] = OTHER;
-  expect(await holdsRealm(env, HOLDER, 711)).toBe(true);
-  expect(chainReads).toHaveBeenCalledTimes(1);
-});
-
-it("refuses a wallet that does not hold the Realm only once the chain says so", async () => {
-  indexer.owners[711] = OTHER;
+it("refuses the seller the index still names once the chain names the buyer, and lets the buyer settle", async () => {
+  indexer.owners[711] = HOLDER;
   chainOwner = OTHER;
   expect(await holdsRealm(env, HOLDER, 711)).toBe(false);
-  expect(chainReads).toHaveBeenCalledTimes(1);
+  expect(await holdsRealm(env, OTHER, 711)).toBe(true);
 });
 
 it("refuses a Realm never minted on this chain", async () => {
@@ -95,8 +86,7 @@ it("refuses a Realm never minted on this chain", async () => {
   expect(await holdsRealm(env, HOLDER, 7999)).toBe(false);
 });
 
-it("asks for a retry instead of refusing when neither source answers", async () => {
-  indexer.down = true;
+it("asks for a retry instead of refusing when the chain does not answer", async () => {
   chainOwner = new Error("fetch failed");
   await expect(holdsRealm(env, HOLDER, 711)).rejects.toBeInstanceOf(RealmHoldingsUnavailableError);
 });

@@ -3,8 +3,9 @@ import { RpcError } from "starknet";
 import { identityProvider, verifyIdentityChain } from "./l2";
 
 /**
- * The one reader of Realm NFT holdings. The marketplace indexer answers what it knows (each Realm's owner, a wallet's
- * Realms); the chain answers the rest. A check is refused only by a live `owner_of` read, never by indexer lag.
+ * The one reader of Realm NFT holdings. Whether a wallet holds a Realm, which grants it, is the chain's live `owner_of`
+ * only: an index that has not seen a sale would credit the seller. The marketplace index lists a wallet's Realms for the
+ * picker, where a stale entry costs nothing because the grant is checked again.
  */
 interface HoldingsEnvironment {
   ENVIRONMENT: import("@realms-world/chain").ValueEnvironment;
@@ -24,9 +25,8 @@ const INDEXER_TIMEOUT_MS = 3_000;
 /** 8,000 Realms at the indexer's 100 a page. */
 const MAX_HOLDING_PAGES = 80;
 
-/** Whether `wallet` holds Realm `realmId`: the indexer's yes, else the chain's live answer. */
+/** Whether `wallet` holds Realm `realmId` now, by the chain's live owner; a retry error when the chain cannot answer. */
 export async function holdsRealm(env: HoldingsEnvironment, wallet: string, realmId: number): Promise<boolean> {
-  if (sameAddress(await indexedOwner(env, realmId), wallet)) return true;
   try {
     return sameAddress(await liveRealmOwner(env, realmId), wallet);
   } catch (error) {
@@ -58,12 +58,6 @@ interface IndexedToken {
 interface HoldingsPage {
   items: IndexedToken[];
   nextCursor: string | null;
-}
-
-/** The indexer's owner of a Realm; null when it is down, slow, or has no such token. */
-async function indexedOwner(env: HoldingsEnvironment, realmId: number): Promise<string | null> {
-  const token = await readIndexer<IndexedToken>(env, `tokens/${realmsCollection(env)}/${realmId}`);
-  return token?.owner ?? null;
 }
 
 const holdingsPath = (env: HoldingsEnvironment, wallet: string, cursor: string | null) => {
@@ -110,4 +104,4 @@ const realmsCollection = (env: HoldingsEnvironment) => valuePlaneAddress("realms
 /** A Realm never minted on this chain reverts `owner_of`: no one holds it. */
 const isMissingToken = (error: unknown) => error instanceof RpcError && error.isType("CONTRACT_ERROR");
 
-const sameAddress = (a: string | null, b: string) => a !== null && BigInt(a) === BigInt(b);
+const sameAddress = (a: string, b: string) => BigInt(a) === BigInt(b);
