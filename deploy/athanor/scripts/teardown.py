@@ -7,8 +7,8 @@ Dev's shard is disposable. Production's is removed only after `backup.py verify`
 /opt/athanor/backups: proven to restore, of the running chain, taken after its writes closed and with no transaction
 since (backup.py quiesce, then capture). Dev takes the same backup when given one, so production's path is rehearsed
 on dev. Once a backup verifies, /opt/athanor/logs/teardown-ENVIRONMENT.json records it with the shard's chain before
-anything is removed: a run stopped after the node is gone resumes from that record, never from another backup or
-another chain's. A rerun after the run directory is gone only retires the row; a finished teardown keeps its record as
+anything is removed. While the chain's volume exists every run verifies again; only a run stopped after the volumes
+are gone resumes from that record, and never from another backup or another chain's. A rerun after the run directory is gone only retires the row; a finished teardown keeps its record as
 teardown-CHAIN.json.
 """
 from contextlib import redirect_stdout, redirect_stderr
@@ -54,9 +54,16 @@ def verification_record(environment):
     return LOGS / f"teardown-{environment}.json"
 
 
+def chain_data_exists(project):
+    """Whether the shard's chain volume is still there: until compose down removes it, the node can be asked."""
+    return subprocess.run([*shard.DOCKER, "volume", "inspect", f"{project}_chain"], capture_output=True).returncode == 0
+
+
 def require_verified_backup(environment, directory, backup):
-    """The backup verified for this shard: by the record of a run that verified it and was stopped, or now by the
-    checkout's backup.py verify as root (the copy is root's), recorded before anything is removed."""
+    """The backup verified for this shard now, by the checkout's backup.py verify as root (the copy is root's), and
+    recorded before anything is removed. While the chain's data exists it is always verified again, so a shard that
+    reopened its writes after an earlier verification is never removed on that record. Only once its volumes are gone,
+    where nothing can be asked, does the record of this chain and backup let a stopped removal finish."""
     path = verification_record(environment)
     recorded = json.loads(path.read_text()) if path.exists() else None
     if not (directory / ".env").exists():
@@ -67,8 +74,10 @@ def require_verified_backup(environment, directory, backup):
                          "nothing more was removed")
     identity = shard_identity(directory)
     expected = {**identity, "backup": str(backup)}
-    if recorded == expected:
-        return
+    if not chain_data_exists(identity["project"]):
+        if recorded == expected:
+            return
+        raise ValueError("This shard's chain is gone and no teardown of it verified this backup; nothing more was removed")
     check = subprocess.run(["sudo", "-n", sys.executable, str(shard.ROOT / "deploy/shard/backup.py"), "verify",
                             identity["project"], str(backup)], capture_output=True, text=True)
     if check.returncode != 0:

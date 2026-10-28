@@ -1,6 +1,7 @@
 """Back up one shard and prove the copy restores.
 
     sudo python3 backup.py quiesce PROJECT
+    sudo python3 backup.py reopen PROJECT
     sudo python3 backup.py capture PROJECT DATA_DIR DEST
     sudo python3 backup.py restore-test PROJECT DEST
     sudo python3 backup.py verify PROJECT DEST
@@ -13,11 +14,13 @@ how long. Restore-test brings the copy up in scratch containers without a networ
 block at the captured head with the running node's, restores both Postgres copies, and writes
 `restore-test/result.json`; it exits non-zero unless everything matches.
 
-A final copy, the one a production teardown removes the shard after, is taken at a write boundary: quiesce stops the
-shard's RPC service, its one write path (the node publishes no port), while Herald and the value relay keep reading,
-so outstanding withdrawals drain. Verify then asks: the copy's checksums hold, its restore test passed, it is of the
-running chain (the node still has the captured head), writes are still closed, and no block after the captured head
-holds a transaction. Blocks keep coming (the node seals empty ones), but none of them changed the game.
+A final copy, the one a production teardown removes the shard after, is taken at a write boundary. The shard's RPC
+proxy is its one write path (the node publishes no port) and also the path the value relay reads receipts through:
+quiesce makes the proxy refuse every write while it keeps answering reads (read-rpc.ts WRITES_CLOSED_FILE, in its
+public configuration), so outstanding withdrawals are still found and paid; reopen lifts it. Verify then asks: the
+copy's checksums hold, its restore test passed, it is of the running chain (the node still has the captured head),
+the proxy refuses a write now, and no block after the captured head holds a transaction. Blocks keep coming (the node
+seals empty ones), but none of them changed the game.
 """
 import hashlib
 import json
@@ -71,14 +74,33 @@ def restore_test(project, dest):
 # Capture
 
 
+# read-rpc.ts: the file the proxy looks for in its /config volume, and the refusal it then answers every write with.
+WRITES_CLOSED_FILE = "writes-closed"
+WRITES_CLOSED_MESSAGE = "Shard writes are closed for its final backup"
+
+
 def quiesce(project):
-    """Closes the shard's write path, its RPC service; the node, Herald and the relay's reads keep running."""
-    docker(["stop", "-t", str(STOP_GRACE_SECONDS), f"{project}-rpc-1"])
-    return {"project": project, "writes": "closed" if not accepts_writes(project) else "open"}
+    """Makes the shard's RPC proxy refuse every write; reads, the node, Herald and the relay keep running."""
+    (volume_path(f"{project}_public-config") / WRITES_CLOSED_FILE).write_text("closed\n")
+    return {"project": project, "writes": "open" if accepts_writes(project) else "closed"}
+
+
+def reopen(project):
+    """Lifts quiesce: the proxy takes writes again, and any earlier final copy no longer verifies."""
+    (volume_path(f"{project}_public-config") / WRITES_CLOSED_FILE).unlink(missing_ok=True)
+    return {"project": project, "writes": "open" if accepts_writes(project) else "closed"}
 
 
 def accepts_writes(project):
-    return docker_output(["inspect", "-f", "{{.State.Running}}", f"{project}-rpc-1"]) == "true"
+    """Whether the running proxy would take a write: it is asked one, from inside the stack, and must refuse it as
+    closed. A proxy without the switch (an older image) answers otherwise and counts as open."""
+    request = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "starknet_addInvokeTransaction", "params": [{}]})
+    answer = docker(["exec", f"{project}-madara-1", "curl", "-s", "-m", "10", "-X", "POST", "-H",
+                     "content-type: application/json", "-d", request, "http://rpc:8080/"], check=False).stdout
+    try:
+        return json.loads(answer).get("error", {}).get("message") != WRITES_CLOSED_MESSAGE
+    except (json.JSONDecodeError, AttributeError):
+        return True
 
 
 def transactions_after(container, number):
@@ -364,7 +386,11 @@ def main(argv):
         print(json.dumps(result, indent=2))
         sys.exit(0 if result["passed"] else 1)
     elif argv[:1] == ["quiesce"] and len(argv) == 2:
-        print(json.dumps(quiesce(argv[1])))
+        result = quiesce(argv[1])
+        print(json.dumps(result))
+        sys.exit(0 if result["writes"] == "closed" else 1)
+    elif argv[:1] == ["reopen"] and len(argv) == 2:
+        print(json.dumps(reopen(argv[1])))
     elif argv[:1] == ["verify"] and len(argv) == 3:
         problems = verify(argv[1], Path(argv[2]).resolve())
         print(json.dumps({"verified": not problems, "problems": problems}))

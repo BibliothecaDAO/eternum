@@ -65,35 +65,47 @@ class TeardownBoundaryTest(unittest.TestCase):
                 stack.enter_context(boundary)
             teardown.teardown(["production", BACKUP], lambda stage: None)
 
+    def stack(self, verifies=True, down_fails=False):
+        """The shard's box as teardown's commands see it: its chain volume exists until compose down removes it."""
+        state = {"volume": True, "verifies": verifies, "down_fails": down_fails, "calls": []}
+        def run(command, **kwargs):
+            if "verify" in command:
+                state["calls"].append("verify")
+                code = 0 if state["verifies"] else 1
+                return subprocess.CompletedProcess(command, code, '{"problems": ["the shard still accepts writes"]}', "")
+            if "volume" in command:
+                return subprocess.CompletedProcess(command, 0 if state["volume"] else 1, "", "")
+            state["calls"].append("down")
+            if state["down_fails"]:
+                raise subprocess.CalledProcessError(1, command)
+            state["volume"] = False
+            return subprocess.CompletedProcess(command, 0, "", "")
+        return state, run
+
     def test_production_is_removed_only_after_its_backup_verifies(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             run = self.production(root)
-            calls, retired = [], []
-            def refused(command, **kwargs):
-                calls.append(command)
-                return subprocess.CompletedProcess(command, 1, '{"problems": ["writes are open"]}', "")
-            with self.assertRaisesRegex(ValueError, "does not verify; nothing was removed: .*writes are open"):
-                self.run_teardown(root, refused, retired)
+            retired = []
+            state, commands = self.stack(verifies=False)
+            with self.assertRaisesRegex(ValueError, "does not verify; nothing was removed: .*still accepts writes"):
+                self.run_teardown(root, commands, retired)
             self.assertTrue((run / ".env").exists())
             self.assertEqual(retired, [])
             self.assertEqual(list((root / "logs").iterdir()), [])
-            self.assertEqual(calls[0][:2], ["sudo", "-n"])
-            self.assertEqual(calls[0][-3:], ["verify", "realms-production", BACKUP])
-
+            state["verifies"] = True
+            original = commands
             def verified(command, **kwargs):
-                calls.append(command)
-                if command[-3] == "verify":
-                    return subprocess.CompletedProcess(command, 0, "{}", "")
-                # Compose down runs only once the verification is recorded.
-                self.assertEqual(json.loads((root / "logs/teardown-production.json").read_text()),
-                                 {"project": "realms-production", "chain_id": "PRODUCTION_1", "backup": BACKUP})
-                return subprocess.CompletedProcess(command, 0, "", "")
-            calls.clear()
+                if "down" in command:
+                    # Compose down runs only once the verification is recorded.
+                    self.assertEqual(json.loads((root / "logs/teardown-production.json").read_text()),
+                                     {"project": "realms-production", "chain_id": "PRODUCTION_1", "backup": BACKUP})
+                return original(command, **kwargs)
+            state["calls"].clear()
             self.run_teardown(root, verified, retired)
             self.assertFalse(run.exists())
             self.assertEqual(retired, ["retired"])
-            self.assertEqual([command[-3] for command in calls], ["verify", "down"])
+            self.assertEqual(state["calls"], ["verify", "down"])
             self.assertFalse((root / "logs/teardown-production.json").exists())
             self.assertEqual(json.loads((root / "logs/teardown-PRODUCTION_1.json").read_text())["backup"], BACKUP)
 
@@ -101,54 +113,69 @@ class TeardownBoundaryTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             run = self.production(root)
-            retired, calls = [], []
-            def first_run(command, **kwargs):
-                calls.append(command)
-                return subprocess.CompletedProcess(command, 0, "{}", "")
+            retired = []
+            state, commands = self.stack()
             def disk_full(*args):
                 raise OSError("no space left on device")
             # Verified, volumes removed, then the run stops copying its logs.
             with self.assertRaisesRegex(OSError, "no space left"):
-                self.run_teardown(root, first_run, retired, copy=disk_full)
-            self.assertEqual([command[-3] for command in calls], ["verify", "down"])
+                self.run_teardown(root, commands, retired, copy=disk_full)
+            self.assertEqual(state["calls"], ["verify", "down"])
+            self.assertFalse(state["volume"])
             self.assertTrue(run.exists())
             self.assertEqual(retired, [])
-            # The node is gone now: a rerun must not need it, and finishes from the record.
-            def node_gone(command, **kwargs):
-                calls.append(command)
-                if command[-3] == "verify":
-                    return subprocess.CompletedProcess(command, 1, '{"problems": ["node no longer exists"]}', "")
-                return subprocess.CompletedProcess(command, 0, "", "")
-            calls.clear()
-            self.run_teardown(root, node_gone, retired)
-            self.assertEqual([command[-3] for command in calls], ["down"])
+            # The node is gone now: verification would refuse, and the rerun finishes from the record without it.
+            state["verifies"] = False
+            state["calls"].clear()
+            self.run_teardown(root, commands, retired)
+            self.assertEqual(state["calls"], ["down"])
             self.assertFalse(run.exists())
             self.assertEqual(retired, ["retired"])
             self.assertTrue((root / "logs/teardown-PRODUCTION_1.json").exists())
+
+    def test_a_verified_shard_that_reopens_its_writes_is_never_removed_on_the_old_record(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            run = self.production(root)
+            retired = []
+            # Verified and recorded, then compose down fails: nothing was removed, the chain is intact.
+            state, commands = self.stack(down_fails=True)
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.run_teardown(root, commands, retired)
+            self.assertTrue(state["volume"])
+            self.assertTrue((root / "logs/teardown-production.json").exists())
+            # The operator reopens writes (backup.py reopen) and S0 takes them; the backup no longer verifies.
+            state.update(verifies=False, down_fails=False)
+            state["calls"].clear()
+            with self.assertRaisesRegex(ValueError, "does not verify; nothing was removed"):
+                self.run_teardown(root, commands, retired)
+            self.assertEqual(state["calls"], ["verify"])
+            self.assertTrue(state["volume"])
+            self.assertTrue((run / ".env").exists())
+            self.assertEqual(retired, [])
 
     def test_a_record_never_stands_for_another_chain_or_another_backup(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             run = self.production(root)
             record = root / "logs/teardown-production.json"
-            retired, calls = [], []
-            def node_gone(command, **kwargs):
-                calls.append(command)
-                return subprocess.CompletedProcess(command, 1 if command[-3] == "verify" else 0, "{}", "")
-            # A record of an older world's chain: this shard is verified afresh, and its node refuses.
+            retired = []
+            state, commands = self.stack(verifies=False)
+            state["volume"] = False
+            # The chain is gone, and the record is an older world's: nothing stands for this chain.
             record.write_text(json.dumps({"project": "realms-production", "chain_id": "PRODUCTION_0", "backup": BACKUP}))
-            with self.assertRaisesRegex(ValueError, "does not verify"):
-                self.run_teardown(root, node_gone, retired)
-            self.assertEqual([command[-3] for command in calls], ["verify"])
+            with self.assertRaisesRegex(ValueError, "chain is gone and no teardown of it verified this backup"):
+                self.run_teardown(root, commands, retired)
+            self.assertEqual(state["calls"], [])
             # A removal stopped part way, its .env gone: only a record of this very backup lets it finish.
             (run / ".env").unlink()
             record.write_text(json.dumps({"project": "realms-production", "chain_id": "PRODUCTION_1",
                                           "backup": "/opt/athanor/backups/other"}))
             with self.assertRaisesRegex(ValueError, "can no longer be identified"):
-                self.run_teardown(root, node_gone, retired)
+                self.run_teardown(root, commands, retired)
             self.assertTrue(run.exists())
             record.write_text(json.dumps({"project": "realms-production", "chain_id": "PRODUCTION_1", "backup": BACKUP}))
-            self.run_teardown(root, node_gone, retired)
+            self.run_teardown(root, commands, retired)
             self.assertFalse(run.exists())
             self.assertEqual(retired, ["retired"])
 
@@ -238,12 +265,32 @@ class BackupVerifyTest(unittest.TestCase):
         self.assertEqual(batches[-1][-1], 259)
         self.assertEqual(sum(len(batch) for batch in batches), 250)
 
-    def test_quiesce_stops_the_write_path_alone(self):
-        with patch.object(verify_backup, "docker") as docker, \
-                patch.object(verify_backup, "docker_output", return_value="false"):
-            self.assertEqual(verify_backup.quiesce("realms-production"),
-                             {"project": "realms-production", "writes": "closed"})
-        docker.assert_called_once_with(["stop", "-t", "60", "realms-production-rpc-1"])
+    def test_quiesce_closes_writes_through_the_proxy_and_reopen_lifts_it(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = Path(temporary)
+            refused = json.dumps({"error": {"code": -32010, "message": verify_backup.WRITES_CLOSED_MESSAGE}})
+            judged = json.dumps({"error": {"code": -32601, "message": "RPC method is not public"}})
+            def proxy(arguments, check=True):
+                closed = (config / "writes-closed").exists()
+                return subprocess.CompletedProcess(arguments, 0, refused if closed else judged, "")
+            with patch.object(verify_backup, "volume_path", return_value=config) as volume, \
+                    patch.object(verify_backup, "docker", side_effect=proxy) as docker:
+                self.assertEqual(verify_backup.quiesce("realms-production"),
+                                 {"project": "realms-production", "writes": "closed"})
+                self.assertFalse(verify_backup.accepts_writes("realms-production"))
+                self.assertEqual(verify_backup.reopen("realms-production"),
+                                 {"project": "realms-production", "writes": "open"})
+            volume.assert_called_with("realms-production_public-config")
+            probe = docker.call_args.args[0]
+            self.assertEqual(probe[:3], ["exec", "realms-production-madara-1", "curl"])
+            self.assertEqual(probe[-1], "http://rpc:8080/")
+
+    def test_a_proxy_without_the_switch_counts_as_open(self):
+        old = json.dumps({"error": {"code": -32010, "message": "Transaction refused"}})
+        for answer in (old, "", "not json"):
+            with self.subTest(answer=answer), patch.object(
+                    verify_backup, "docker", return_value=subprocess.CompletedProcess([], 0, answer, "")):
+                self.assertTrue(verify_backup.accepts_writes("realms-production"))
 
 
 spec_backup = importlib.util.spec_from_file_location("shard_backup", Path(__file__).resolve().parents[3] / "deploy/shard/backup.py")

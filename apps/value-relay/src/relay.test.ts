@@ -160,6 +160,18 @@ const fixture = () => {
 };
 
 describe("confirmed value relay", () => {
+  it("pays a withdrawal accepted just before a final backup's boundary, with every shard write refused after it", async () => {
+    const f = fixture();
+    // The shard refuses writes (backup.py quiesce); its reads still answer through the same public RPC.
+    const closed = () => Effect.fail(new RelayFailure({ operation: "Shard writes are closed for its final backup" }));
+    f.ports.shard.grantLabor = vi.fn(closed);
+    await f.run();
+    expect(f.single.pay).toHaveBeenCalledTimes(1);
+    expect(f.single.pay).toHaveBeenCalledWith(withdrawal, "0x123");
+    expect(f.ports.shard.grantLabor).not.toHaveBeenCalled();
+    expect(await f.store.withdrawals()).toEqual([]);
+    expect(await f.store.held()).toEqual([]);
+  });
   it("advances the cursor once and posts each confirmed obligation", async () => {
     const f = fixture();
     await f.run();
