@@ -3159,6 +3159,12 @@ export default class WorldmapScene extends WarpTravel {
     const isTravelAction = actionType === ActionType.Move || actionType === ActionType.SpireTravel;
     if (actionPath.length > 0) {
       playUnitCommandSoundForWorldmapAction(actionType);
+      if (actionType === ActionType.Move || actionType === ActionType.Explore) {
+        this.armyManager.expectOrderedRoute(
+          selectedEntityId,
+          actionPath.map(({ hex }) => Position.fromContract({ x: hex.col, y: hex.row })),
+        );
+      }
 
       // Get the target position for the effect
       const targetHex =
