@@ -550,6 +550,11 @@ a phone) to use it; click it for its card with the army kept. Each use is the In
 recorded where the game would sign it (`window.__siteUseLab`); the site then goes.
 `src/three/scenes/worldmap-site-use.test.tsx` runs the same handlers as the regression test.
 
+`/lab/game?scenario=sites` is the spire's game with a Well and a Shrine beside its army, the army at 40 stamina and 40
+XP: select it (dock or **Armies**), tap either site. Its card shows the army as one use will leave it (a Well's refill
+on its bar with the explores it buys; a Shrine's XP with the attribute tier it then buys), what the site gives, and
+**Use**.
+
 With the local client running, open `/lab/terrain?evidence=/absolute/capture/directory` and run
 `scripts/outposts/prove-runtime.playwright.js` through the browser connection with the page as its argument (remove the
 trailing statement semicolon when supplying it as an expression). The directory must exist. It drives the visible

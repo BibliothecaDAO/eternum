@@ -103,6 +103,8 @@ export const LABOR = "labor";
 export const WHEAT = "wheat";
 export const TROOPS = "troops";
 export const STAMINA = "stamina";
+/** The explores a Well's stamina buys the army it refills: "+3 explores". */
+export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;
 
 /** The HUD's tab for everything the player holds. */
 export const EMPIRE = "Empire";

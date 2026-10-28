@@ -8,6 +8,7 @@ import type { LabScenario } from "./lab-chain";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 import { realmScenario } from "./realm-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
+import { sitesScenario } from "./sites-scenario";
 import { highGroundScenario, SANDS, spireScenario } from "./spire-scenario";
 import { visitScenario } from "./visit-scenario";
 
@@ -26,6 +27,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "painted-buildings": () => paintedBuildingsScenario(),
   "painted-buildings-sands": () => paintedBuildingsScenario(SANDS),
   visit: visitScenario,
+  sites: sitesScenario,
   "day-turn": dayTurnScenario("live"),
   "day-later": dayTurnScenario("later"),
   "day-turn-slow": dayTurnScenario("live", "late"),
