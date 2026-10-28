@@ -1,3 +1,4 @@
+import { setBuildingCount } from "@bibliothecadao/eternum";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { BUILDINGS_CENTER, BuildingType, getHexesWithinRadius } from "@bibliothecadao/types";
 
@@ -54,15 +55,16 @@ export const visitScenario = (): LabScenario => {
     {
       model: "StructureBuildings",
       key: "0x1ad1",
-      value: {
-        game_id: 1,
-        entity_id: String(NEIGHBOUR_REALM),
-        packed_counts_1: "0",
-        packed_counts_2: "0",
-        packed_counts_3: "0",
-        population: { current: 4, max: 6 },
-      },
+      value: neighbourCounts(),
     },
+    // What the realm holds and makes, as a visit streams it: the player's realm's, so its cards read as the player's do.
+    ...RESOURCE_MODELS.flatMap((model, at) =>
+      ownRealmRows(game.store, model).map((row, index) => ({
+        model,
+        key: `0x1ad5${at}${index.toString(16).padStart(2, "0")}`,
+        value: wire({ ...row, entity_id: NEIGHBOUR_REALM }),
+      })),
+    ),
     // What the realm has researched, which its strip and panel read as a visit streams them.
     {
       model: "RealmKnowledge",
@@ -106,6 +108,33 @@ export const visitScenario = (): LabScenario => {
     board: [boardEntry(game.player, 7, 1), boardEntry(NEIGHBOUR, NEIGHBOUR_REALM, 2)],
   };
 };
+
+/** The neighbour's buildings counted by type, as the game packs them: its eight and the castle's own labor maker. */
+const neighbourCounts = () => {
+  const counts = [...NEIGHBOUR_BUILDINGS, BuildingType.ResourceLabor].reduce(
+    (tally, category) => tally.set(category, (tally.get(category) ?? 0) + 1),
+    new Map<BuildingType, number>(),
+  );
+  const packed = [...counts].reduce<bigint[]>(
+    (values, [category, count]) => setBuildingCount(category, values, count),
+    [0n, 0n, 0n],
+  );
+  return {
+    game_id: 1,
+    entity_id: String(NEIGHBOUR_REALM),
+    packed_counts_1: String(packed[0]),
+    packed_counts_2: String(packed[1]),
+    packed_counts_3: String(packed[2]),
+    population: { current: 4, max: 6 },
+  };
+};
+
+/** What a realm holds, makes and carries: its resources are known only with all three (ResourceManager). */
+const RESOURCE_MODELS = ["ResourceBalance", "ResourceProduction", "ResourceWeight"] as const;
+
+/** The player's realm's rows of `model`. */
+const ownRealmRows = (store: LabScenario["store"], model: (typeof RESOURCE_MODELS)[number]) =>
+  [...store.entries(model)].map(([, row]) => row).filter((row) => BigInt(row.entity_id) === 7n);
 
 const boardEntry = (address: string, structureId: number, rank: number): HeraldFrontierLeaderboardEntry => ({
   address,

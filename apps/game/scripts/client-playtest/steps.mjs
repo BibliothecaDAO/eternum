@@ -1326,26 +1326,37 @@ function armyEnteredEtherealII({ played }) {
 
 const SPIRE_WAIT_MS = 5_000;
 
-/** The board's buildings draw in this long, after the realm's scene holds. */
-const BOARD_SETTLE_MS = 5_000;
+/** The board's buildings draw within this long, after the realm's scene holds. */
+const BOARD_DRAW_MS = 10_000;
 /** A tap's card opens in this long. */
 const TAP_SETTLE_MS = 700;
 /** The fewest buildings a sweep must find for its taps to count: the lab's realms each have eight and a castle. */
 const BUILDINGS_FOUND = 4;
+/** The buildings each lab realm's board lays out: eight and the castle (visit-scenario.ts, painted-buildings-scenario.ts). */
+const LAB_BOARD_BUILDINGS = 9;
+/** The lab visit's two realms (visit-scenario.ts): the player's own, and the neighbour's the Season's board visits. */
+const LAB_HOME_REALM = 7;
+const LAB_NEIGHBOUR_REALM = 8;
 
 /**
- * A neighbour's realm visited from the Season's board (/lab/game?scenario=visit), then left (owner, 28 October 2026:
- * "when i'm visiting the selected panel doesnt match the actual building (hover is right) - also I shouldnt be able to
- * click on the open tiles"). Its board is swept, each point hovered then tapped: on the visit no tap opens a card and
- * nothing is signed. Leave brings the player home, swept the same way: each building's card names what its hover
- * named, and an open plot opens Build.
+ * A neighbour's realm visited from the Season's board (/lab/game?scenario=visit), left, and visited and left again
+ * (owner, 28 October 2026: "when i'm visiting the selected panel doesnt match the actual building (hover is right) -
+ * also I shouldnt be able to click on the open tiles", then "and clicking leave does that": the player's own board
+ * drawn with no building models, its realm panel half off the screen). Each arrival reads which realm the board draws,
+ * every building it lays out with its model attached, shown and loaded, and every HUD panel inside the screen. Each
+ * board is swept, each point hovered then tapped: on a visit a building's card names what its hover named and orders
+ * nothing, an open plot opens nothing, and nothing is signed; at home each building's card names its hover's building
+ * and an open plot opens Build.
  */
 const LAB_VISIT_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  { name: "visit", play: visitTheNeighbour, settleMs: BOARD_SETTLE_MS, verify: visitingTheirRealm },
-  { name: "visit-plots", play: sweepTheBoard, settleMs: 0, verify: aVisitOpensNothing },
-  { name: "leave", play: leaveTheVisit, settleMs: BOARD_SETTLE_MS, verify: homeAgain },
+  { name: "visit", play: visitTheNeighbour, settleMs: 0, verify: visitingTheirRealm },
+  { name: "visit-plots", play: sweepTheBoard, settleMs: 0, verify: aVisitReadsEachBuilding },
+  { name: "leave", play: leaveTheVisit, settleMs: 0, verify: homeAgain },
   { name: "home-plots", play: sweepTheBoard, settleMs: 0, verify: eachCardIsItsHover },
+  { name: "visit-again", play: visitTheNeighbour, settleMs: 0, verify: visitingTheirRealm },
+  { name: "visit-again-plots", play: sweepTheBoard, settleMs: 0, verify: aVisitReadsEachBuilding },
+  { name: "leave-again", play: leaveTheVisit, settleMs: 0, verify: homeAgain },
 ];
 
 const VISIT_FOOT = `JSON.stringify(document.querySelector('[role="status"][aria-label^="Visit "]')?.getAttribute("aria-label") ?? null)`;
@@ -1353,8 +1364,46 @@ const BOARD_HOVER = `JSON.stringify((() => {
   const label = document.querySelector('[data-label-type="hex-hover"]');
   return label ? label.dataset.buildingName : null;
 })())`;
-const OPEN_CARD = `JSON.stringify(document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null)`;
+/** The card open, by its title, with its controls by their names; null with none. */
+const OPEN_CARD = `JSON.stringify((() => {
+  const card = document.querySelector("[data-kit-sheet]");
+  if (!card) return null;
+  const controls = [...card.querySelectorAll("button")].map((each) => each.getAttribute("aria-label") ?? each.textContent.trim());
+  return { title: card.getAttribute("aria-label"), controls };
+})())`;
 const LAB_SENT = `JSON.stringify(window.__labChain?.sent.length ?? 0)`;
+/**
+ * What the realm's board draws, as the scene holds it (window.__gameRenderer): the realm, how many buildings its
+ * layout places, and each placed building whose model is not in the scene, hidden, not grown in, or holds no geometry.
+ */
+const BOARD_MODELS = `JSON.stringify((() => {
+  const board = window.__gameRenderer?.hexceptionScene;
+  if (!board) return null;
+  const shown = (model) => {
+    for (let part = model; part; part = part.parent) {
+      if (!part.visible) return false;
+      if (part === board.scene) return true;
+    }
+    return false;
+  };
+  const loaded = (model) => {
+    let vertices = 0;
+    model.traverse((part) => { if (part.isMesh) vertices += part.geometry?.attributes?.position?.count ?? 0; });
+    return vertices > 0;
+  };
+  const keys = board.buildings.map((building) => building.col + "," + building.row);
+  const missing = keys.filter((key) => {
+    const model = board.buildingInstances.get(key);
+    return !model || !shown(model) || model.scale.y < 0.9 || !loaded(model);
+  });
+  return { realm: board.shownRealmId, laidOut: keys.length, missing };
+})())`;
+/** Each HUD panel and band shown that reaches past the screen's edge, by its name and its box. */
+const HUD_OFF_SCREEN = `JSON.stringify([...document.querySelectorAll("section.ui-panel[aria-label], nav[aria-label]")]
+  .filter((part) => part.checkVisibility({ visibilityProperty: true }))
+  .map((part) => ({ name: part.getAttribute("aria-label"), box: part.getBoundingClientRect() }))
+  .filter(({ box }) => box.width > 0 && (box.left < -1 || box.top < -1 || box.right > innerWidth + 1 || box.bottom > innerHeight + 1))
+  .map(({ name, box }) => name + " at " + [box.left, box.top, box.right, box.bottom].map(Math.round).join(",")))`;
 
 /**
  * The board's second row, the neighbour's realm (the player leads it), by Visit: its realm drawn. No place is lit on a
@@ -1364,24 +1413,52 @@ async function visitTheNeighbour({ browser }) {
   const row = await visitFromTheBoard(browser, 1);
   if (!row) return { row };
   const realm = await waitFor(browser, (seen) => seen.playable && onTheBoard(seen), SCENE_WAIT_MS);
-  return { row, realm, foot: browser.read(VISIT_FOOT) };
+  return { row, realm, foot: browser.read(VISIT_FOOT), ...(await theBoardDrawn(browser)) };
 }
 
 const onTheBoard = (seen) => seen.scene === "hex" && seen.rendered === "hex";
+
+/** The board once every building it lays out stands drawn, or as it stands when that never comes; and the HUD. */
+async function theBoardDrawn(browser) {
+  const startedAt = Date.now();
+  let board = browser.read(BOARD_MODELS);
+  while (!(board?.laidOut && board.missing.length === 0) && Date.now() - startedAt < BOARD_DRAW_MS) {
+    await sleep(POLL_MS);
+    board = browser.read(BOARD_MODELS);
+  }
+  return { board, offScreen: browser.read(HUD_OFF_SCREEN) };
+}
 
 function visitingTheirRealm({ played, seen }) {
   if (!played.row) return blocked("the Season's board listed no other realm to visit", played);
   if (!played.realm || !onTheBoard(seen)) return failed("the visited realm never opened", played);
   if (!played.foot) return failed("the visit's foot with Leave is not shown", played);
-  return completed({ row: played.row, foot: played.foot });
+  return (
+    boardAndHudOf(LAB_NEIGHBOUR_REALM, played) ?? completed({ row: played.row, foot: played.foot, ...played.board })
+  );
+}
+
+/**
+ * Why the board or the HUD is not as a player arriving on `realm` sees it: another realm drawn, fewer buildings laid out
+ * than the lab's realm holds, a building drawn without its model, a panel past the screen's edge; null when it is.
+ */
+function boardAndHudOf(realm, { board, offScreen }) {
+  if (!board) return failed("the realm's board is not drawn", { board });
+  if (board.realm !== realm) return failed(`the board draws realm ${board.realm}, not realm ${realm}`, { board });
+  if (board.laidOut < LAB_BOARD_BUILDINGS)
+    return failed(`the board lays out ${board.laidOut} of the realm's ${LAB_BOARD_BUILDINGS} buildings`, { board });
+  if (board.missing.length)
+    return failed(`${board.missing.length} buildings stand without their model: ${board.missing.join(" ")}`, { board });
+  if (offScreen.length) return failed(`the HUD reaches past the screen: ${offScreen.join("; ")}`, { offScreen });
+  return null;
 }
 
 /**
  * Points about a plot apart over the realm's board at its default view, each hovered then tapped: what its hover named,
- * the card the tap opened, and how many commands the game signed meanwhile. A phone's sweep keeps to the rows clear of
- * its bands.
+ * the card the tap opened (the first one kept as a still), and how many commands the game signed meanwhile. A phone's
+ * sweep keeps to the rows clear of its bands.
  */
-async function sweepTheBoard({ browser }) {
+async function sweepTheBoard({ browser, extraScreenshot }) {
   const signedBefore = browser.read(LAB_SENT);
   const taps = [];
   for (const offset of boardPoints()) {
@@ -1390,7 +1467,9 @@ async function sweepTheBoard({ browser }) {
     const hover = browser.read(BOARD_HOVER);
     browser.tap(offset);
     await sleep(TAP_SETTLE_MS);
-    taps.push({ offset, hover, card: browser.read(OPEN_CARD) });
+    const card = browser.read(OPEN_CARD);
+    if (card && !taps.some((tap) => tap.card)) extraScreenshot("first-card");
+    taps.push({ offset, hover, card });
     browser.press("Escape");
   }
   return { taps, signed: browser.read(LAB_SENT) - signedBefore };
@@ -1407,25 +1486,39 @@ const boardPoints = () => {
   );
 };
 
-/** On a visit nothing is the player's: no tap opens a card, a building's or an open plot's, and nothing is signed. */
-function aVisitOpensNothing({ played }) {
-  const found = played.taps.filter(({ hover }) => hover).length;
-  if (found < BUILDINGS_FOUND) return failed(`the sweep found ${found} buildings on the visited board`, played);
-  const opened = played.taps.find(({ card }) => card);
-  if (opened) return failed(`a tap at ${opened.offset} opened ${opened.card} (its hover: ${opened.hover})`, played);
+/** A card's one control on a viewer's tap: its close. */
+const READ_ONLY = ["Close"];
+
+/**
+ * On a visit each building's card is the building its hover named, read as it stands: its close its one control (no
+ * Research, Delete or Upgrade). An open plot opens nothing, and nothing is signed.
+ */
+function aVisitReadsEachBuilding({ played }) {
+  const buildings = played.taps.filter(({ hover }) => hover);
+  if (buildings.length < BUILDINGS_FOUND)
+    return failed(`the sweep found ${buildings.length} buildings on the visited board`, played);
+  const wrong = buildings.find(({ hover, card }) => card?.title !== hover);
+  if (wrong)
+    return failed(`a tap at ${wrong.offset} on ${wrong.hover} opened ${wrong.card?.title ?? "no card"}`, played);
+  const ordering = buildings.find(({ card }) => card.controls.join() !== READ_ONLY.join());
+  if (ordering)
+    return failed(`the visit's ${ordering.card.title} card offers ${ordering.card.controls.join(", ")}`, played);
+  const plot = played.taps.find(({ hover, card }) => !hover && card);
+  if (plot) return failed(`an open plot at ${plot.offset} opened ${plot.card.title}`, played);
   if (played.signed) return failed(`the visit signed ${played.signed} commands`, played);
-  return completed({ found, taps: played.taps.length });
+  return completed({ buildings: buildings.map(({ hover }) => hover), taps: played.taps.length });
 }
 
 async function leaveTheVisit({ browser }) {
   browser.click("Leave");
-  return { home: await arrives(browser, "Realm", "hex"), foot: browser.read(VISIT_FOOT) };
+  const home = await arrives(browser, "Realm", "hex");
+  return { home, foot: browser.read(VISIT_FOOT), ...(await theBoardDrawn(browser)) };
 }
 
 function homeAgain({ played, seen }) {
   if (!played.home) return failed("Leave did not bring the player's realm back", played);
   if (played.foot) return failed(`the visit's foot stays after Leave: ${played.foot}`, played);
-  return inScene("hex")({ seen });
+  return boardAndHudOf(LAB_HOME_REALM, played) ?? { ...inScene("hex")({ seen }), ...played.board };
 }
 
 /** At home each building's card is the building its hover named, and an open plot opens Build. */
@@ -1433,9 +1526,10 @@ function eachCardIsItsHover({ played }) {
   const buildings = played.taps.filter(({ hover }) => hover);
   if (buildings.length < BUILDINGS_FOUND)
     return failed(`the sweep found ${buildings.length} buildings on the player's board`, played);
-  const wrong = buildings.find(({ hover, card }) => card !== hover);
-  if (wrong) return failed(`a tap at ${wrong.offset} on ${wrong.hover} opened ${wrong.card ?? "no card"}`, played);
-  if (!played.taps.some(({ hover, card }) => !hover && card === "Build"))
+  const wrong = buildings.find(({ hover, card }) => card?.title !== hover);
+  if (wrong)
+    return failed(`a tap at ${wrong.offset} on ${wrong.hover} opened ${wrong.card?.title ?? "no card"}`, played);
+  if (!played.taps.some(({ hover, card }) => !hover && card?.title === "Build"))
     return failed("no open plot opened Build", played);
   return completed({ buildings: buildings.map(({ hover }) => hover), taps: played.taps.length });
 }
@@ -2172,7 +2266,7 @@ export const STEP_SETS = {
   "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps() },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
-  "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS },
+  "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-high-ground": { game: labSpireGame("high-ground"), steps: LAB_HIGH_GROUND_STEPS, devOverlays: true },
   "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },

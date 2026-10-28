@@ -25,6 +25,7 @@ const realmView = ({ store }: Fixture) => {
   const scene = Object.assign(Object.create(HexceptionScene.prototype), {
     game: { store },
     state: { structureEntityId: REALM, setSelectedBuildingHex: () => {} },
+    shownRealmId: REALM,
     structureStage: 0,
     newRingRadius: null,
     isEntered: true,

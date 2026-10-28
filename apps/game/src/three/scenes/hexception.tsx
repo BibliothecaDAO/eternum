@@ -96,6 +96,7 @@ import {
 import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-system";
 import { pickLocalRealm } from "./local-realm";
 import { IS_FLAT_MODE } from "@/ui/config";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 
 import { openProduction } from "@/ui/features/settlement/production/open-production";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
@@ -261,10 +262,11 @@ export default class HexceptionScene extends HexagonScene {
   /** The entered structure's building slots; setup() binds it before the scene is entered. */
   private tileManager!: BuildingTiles;
   /**
-   * The realm the board draws, whose slots tileManager reads: a hover, a tap and a placement each name it, so what a
-   * card reads of a plot is what its hover read, whichever realm the session holds since.
+   * The realm the board draws, whose slots tileManager reads: a hover, a tap, a placement and each model, its stage and
+   * tier name it, so what a card reads of a plot is what its hover read and what the board shows, whichever realm the
+   * session holds since. None until the first setup draws one.
    */
-  private shownRealmId!: ID;
+  private shownRealmId: ID = UNDEFINED_STRUCTURE_ENTITY_ID;
   private labels: {
     col: number;
     row: number;
@@ -617,7 +619,7 @@ export default class HexceptionScene extends HexagonScene {
             ? buildingTypeTier(
                 this.game.store,
                 configManager.getActiveGameId(),
-                this.state.structureEntityId,
+                this.shownRealmId,
                 building as BuildingType,
               )
             : 1;
@@ -685,7 +687,7 @@ export default class HexceptionScene extends HexagonScene {
     if (realmChanged) {
       const realmGeneration = this.advanceRealmGeneration();
       this.centerColRow = [realmPosition.col, realmPosition.row];
-      this.shownRealmId = useUIStore.getState().structureEntityId;
+      this.shownRealmId = safeInteger(structure.entity_id);
       this.tileManager = requireActiveGameClient().views.buildingTiles(this.shownRealmId);
 
       // remove all previous building instances
@@ -1132,8 +1134,8 @@ export default class HexceptionScene extends HexagonScene {
     const structureType = this.tileManager.structureType();
     this.structureStage =
       structureType === StructureType.Hyperstructure
-        ? getStructureStage(structureType, useUIStore.getState().structureEntityId, this.game.store)
-        : this.tileManager.getRealmLevel(this.state.structureEntityId);
+        ? getStructureStage(structureType, this.shownRealmId, this.game.store)
+        : this.tileManager.getRealmLevel(this.shownRealmId);
     this.fitCameraReach();
   }
 
@@ -1487,7 +1489,7 @@ export default class HexceptionScene extends HexagonScene {
     holdPartHeadings(instance);
     if (selection.tierPath && isWonderModelPath(selection.tierPath)) {
       const aura = new RealmLivingAura(buildingData.model);
-      aura.setEntityAt(0, this.state.structureEntityId);
+      aura.setEntityAt(0, this.shownRealmId);
       instance.add(aura.mesh);
       this.wonderAuras.set(key, aura);
     }
@@ -1513,9 +1515,9 @@ export default class HexceptionScene extends HexagonScene {
   ): BuildingModelSelection {
     return resolveBuildingModelSelection(building, {
       stage: this.structureStage,
-      structureId: this.state.structureEntityId,
+      structureId: this.shownRealmId,
       mainStructureType,
-      wonder: !!this.tileManager.getWonder(this.state.structureEntityId),
+      wonder: !!this.tileManager.getWonder(this.shownRealmId),
       frontier: this.mode.id === "frontier",
     });
   }
@@ -1578,7 +1580,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!this.hyperstructureModel || this.tileManager.structureType() !== StructureType.Hyperstructure) return;
     this.hyperstructureModel.setConstructionAt(
       0,
-      readHyperstructureConstruction(this.game.store, safeInteger(this.state.structureEntityId)),
+      readHyperstructureConstruction(this.game.store, safeInteger(this.shownRealmId)),
     );
   }
 
@@ -1770,7 +1772,7 @@ export default class HexceptionScene extends HexagonScene {
   private centerBuildingCategory(structureType: StructureType): BuildingType {
     if (structureType !== StructureType.Mine) return structureTypeToBuildingType[structureType];
     const game_id = configManager.getActiveGameId();
-    const structure = this.game.store.require("Structure", { game_id, entity_id: this.state.structureEntityId });
+    const structure = this.game.store.require("Structure", { game_id, entity_id: this.shownRealmId });
     return this.game.store.require("MineKindConfig", { game_id, kind: structure.metadata.mine_kind }).building_category;
   }
 
@@ -1824,7 +1826,7 @@ export default class HexceptionScene extends HexagonScene {
   private changesShownHyperstructure(change: NativeFactChange): boolean {
     if (change.model !== "Hyperstructure" && change.model !== "HyperstructureProgress") return false;
     const row = change.current ?? change.previous;
-    return row?.entity_id === BigInt(this.state.structureEntityId) && row?.game_id === configManager.getActiveGameId();
+    return row?.entity_id === BigInt(this.shownRealmId) && row?.game_id === configManager.getActiveGameId();
   }
 
   /** The shown structure's new level, when the change is one to its level. */
@@ -1832,7 +1834,7 @@ export default class HexceptionScene extends HexagonScene {
     if (change.model !== "Structure" || !change.current) return undefined;
     const { current, previous } = change;
     const shown =
-      current.game_id === configManager.getActiveGameId() && current.entity_id === BigInt(this.state.structureEntityId);
+      current.game_id === configManager.getActiveGameId() && current.entity_id === BigInt(this.shownRealmId);
     return shown && previous?.base.level !== current.base.level ? current.base.level : undefined;
   }
 
@@ -1929,7 +1931,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!this.isEntered) return;
     const structure = this.game.store.get("Structure", {
       game_id: configManager.getActiveGameId(),
-      entity_id: this.state.structureEntityId,
+      entity_id: this.shownRealmId,
     });
     const activePaths = new Set(
       Array.from(this.buildingInstances.values(), (model) => model.userData.settlementModelPath),

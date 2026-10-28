@@ -15,8 +15,14 @@ const TRANSIENT_FAILURE_PATTERNS = [
  * agent-browser never started: npx was rewriting its cache, which every run on the machine shares, under this command.
  * Nothing ran, so any command, a tap too, is given again once the install has had time to finish.
  */
-// Node names a missing module MODULE_NOT_FOUND (ERR_MODULE_NOT_FOUND from an ES import).
-const NOT_LAUNCHED_PATTERNS = ["MODULE_NOT_FOUND", "No binary found for", "Error executing binary"];
+// Node names a missing module MODULE_NOT_FOUND (ERR_MODULE_NOT_FOUND from an ES import), and a file of the cache
+// removed under it ENOENT.
+const NOT_LAUNCHED_PATTERNS = [
+  /MODULE_NOT_FOUND/,
+  /No binary found for/,
+  /Error executing binary/,
+  /ENOENT[^\n]*\/_npx\/[^\n]*agent-browser/,
+];
 const NOT_LAUNCHED_RETRIES = 12;
 const NOT_LAUNCHED_RETRY_DELAY_MS = 5_000;
 /** The page's size, 1920 by 1080 unless the run asks for another (`--viewport`); steps read it as they play. */
@@ -162,15 +168,16 @@ const ORDER_BAR_EXPRESSION = `JSON.stringify((() => {
   return bar ? { verb: bar.getAttribute("aria-label"), short: Boolean(bar.querySelector('[data-tone="bad"]')) } : null;
 })())`;
 
-/** A busy machine times out CDP calls now and then; a read can be asked again, an action cannot. */
+/** Whether the command failed because agent-browser never started (NOT_LAUNCHED_PATTERNS). */
 function neverLaunched(result) {
   const output = `${result.stderr}\n${result.stdout}`;
-  return result.status !== 0 && NOT_LAUNCHED_PATTERNS.some((pattern) => output.includes(pattern));
+  return result.status !== 0 && NOT_LAUNCHED_PATTERNS.some((pattern) => pattern.test(output));
 }
 
 /** Blocks this synchronous runner between attempts. */
 const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
+/** A busy machine times out CDP calls now and then; a read can be asked again, an action cannot. */
 function isTransientFailure(commandArgs, result) {
   const output = `${result.stderr}\n${result.stdout}`;
   return (

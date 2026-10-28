@@ -88,10 +88,11 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // A spectator watches their own realm when they have one this season, else the leader; the strip reads it.
   useSpectatorWatch();
   // What the map has selected opens its card; the one panel decides which of it, a surface and a deploy order stands.
+  // A tap on the board names the realm the board draws, so its cards read that realm: on a visit, the visited one's.
   // A card's way to Research may name the node it opens on (the castle's own research, a building's gate).
   const [researchPick, setResearchPick] = useState<string | undefined>();
   const card = useSelectionCard({
-    realm,
+    realm: shown,
     onResearch: (node) => {
       setResearchPick(node);
       setSurface("research");
