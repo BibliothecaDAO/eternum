@@ -17,7 +17,8 @@ import type { ReactNode } from "react";
 import { RankSteps } from "../realm/rank-steps";
 import type { RealmPopulation } from "../realm/realm-population";
 import { RealmsChip } from "../value/lords-purse";
-import { LandingDelta, STORE_TONES, STORES, type StoreReading, storeLine } from "./status-strip";
+import { FRONTIER_STORES } from "../stores";
+import { LandingDelta, STORE_TONES, type StoreReading, storeLine } from "./status-strip";
 
 /**
  * Frontier's realm on the desktop HUD's left column, read as Blitz's realm card reads a holding: its name with its
@@ -137,7 +138,7 @@ const StoreRing = ({ store, onOpen }: { store: StoreReading; onOpen?: () => void
     <>
       <LandingDelta target={store.flyTarget} />
       <HudRing
-        icon={STORES[store.kind].icon}
+        icon={FRONTIER_STORES[store.kind].icon}
         label={line}
         tip={line}
         state={store.perHour === undefined ? undefined : store.perHour > 0 ? "producing" : "idle"}

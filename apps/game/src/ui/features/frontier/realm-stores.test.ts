@@ -18,7 +18,7 @@ describe("the realm's stores", () => {
     const limit = 2 * store.require("SliceRules", { game_id: 1 }).troop_limit_config.settlement_deployment_cap;
     expect(troops.limit).toBe(limit);
     expect(troops.tone).toBe("calm");
-    expect(readRealmStore(store, row, rules, ResourcesIds.Essence, clock).limit).toBeUndefined();
+    expect(readRealmStore(store, row, rules, "essence", clock).limit).toBeUndefined();
 
     store.applyFacts([
       {
