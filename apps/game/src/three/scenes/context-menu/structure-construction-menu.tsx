@@ -1,3 +1,4 @@
+import { buildingMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { iconUrl, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { LeftView } from "@/types";
 import { getGameModeConfig } from "@/config/game-modes";
@@ -10,6 +11,7 @@ import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/gam
 import { getRealmInfo, configManager, getEntityName, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import {
   BuildingType,
+  buildingName,
   HexEntityInfo,
   ResourcesIds,
   findResourceById,
@@ -119,6 +121,7 @@ export const createConstructionMenu = ({
   const idString = structureId.toString();
   const structureEntityId = safeInteger(structureId);
   const mode = getGameModeConfig();
+  const frontier = mode.id === "frontier";
   const simpleCostEnabled = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
   const realmInfo = getRealmInfo(structureEntityId, store, getPlayerDisplayName);
@@ -220,37 +223,20 @@ export const createConstructionMenu = ({
     })
     .filter((action): action is ContextMenuAction => action !== null);
 
-  const economicActions: ContextMenuAction[] = (
-    [
-      {
-        suffix: "economic-farm",
-        label: "Farm",
-        building: BuildingType.ResourceWheat,
-        resource: ResourcesIds.Wheat,
-        iconResource: resourceMeaning(ResourcesIds.Wheat),
-      },
-      {
-        suffix: "economic-workers-hut",
-        label: "Workers Hut",
-        building: BuildingType.WorkersHut,
-        iconResource: resourceMeaning(ResourcesIds.Labor),
-      },
-      {
-        suffix: "economic-storehouse",
-        label: "Storehouse",
-        building: BuildingType.Storehouse,
-        iconResource: "granary",
-      },
-      {
-        suffix: "economic-market",
-        label: "Market",
-        building: BuildingType.ResourceDonkey,
-        resource: ResourcesIds.Donkey,
-        iconResource: resourceMeaning(ResourcesIds.Donkey),
-      },
-    ] satisfies Parameters<typeof createActionWithAvailability>[0][]
-  )
-    .map((config) => createActionWithAvailability(config))
+  const economicActions: ContextMenuAction[] = [
+    { suffix: "economic-farm", building: BuildingType.ResourceWheat, resource: ResourcesIds.Wheat },
+    { suffix: "economic-workers-hut", building: BuildingType.WorkersHut },
+    { suffix: "economic-storehouse", building: BuildingType.Storehouse },
+    { suffix: "economic-market", building: BuildingType.ResourceDonkey, resource: ResourcesIds.Donkey },
+  ]
+    // Each named and painted as every card, list and build order names and paints it.
+    .map((economic) =>
+      createActionWithAvailability({
+        ...economic,
+        label: buildingName(economic.building, frontier),
+        iconResource: buildingMeaning(economic.building, frontier),
+      }),
+    )
     .filter((action): action is ContextMenuAction => action !== null);
 
   const militaryTierActions: ContextMenuAction[] = militaryTierConfig.map(({ suffix, label, units }) => {

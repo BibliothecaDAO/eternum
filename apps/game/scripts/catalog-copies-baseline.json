@@ -21,7 +21,6 @@
   "apps/game/src/ui/features/cosmetics/chest-opening/utils/cosmetics.ts": 1,
   "apps/game/src/ui/features/economy/resources/entity-resource-table/utils.ts": 1,
   "apps/game/src/ui/features/frontier/build/build-options.ts": 1,
-  "apps/game/src/ui/features/frontier/build/building-names.ts": 1,
   "apps/game/src/ui/features/frontier/log/day-line.ts": 1,
   "apps/game/src/ui/features/news-headlines/capture-headline.ts": 1,
   "apps/game/src/ui/features/settlement/construction/building-thumbnail.tsx": 1,

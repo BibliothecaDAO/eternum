@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
-import { beastMeaning, readStructureMeaning, structureMeaning } from "./domain-icon-meaning";
+import { beastMeaning, buildingMeaning, readStructureMeaning, structureMeaning } from "./domain-icon-meaning";
+import { resourceMeaning } from "./icon-meaning";
 
 describe("guard and site icon meanings", () => {
   it("keeps Blitz camps as sites and Frontier camps as Trolls in every category caller", () => {
@@ -69,5 +70,16 @@ describe("guard and site icon meanings", () => {
     expect(
       readStructureMeaning(store, { ...structure, base: { ...structure.base, category: StructureType.Camp } }),
     ).toBe("camp");
+  });
+});
+
+describe("a building's painting", () => {
+  it("paints each building one way everywhere: its own painting, else what it makes, Frontier's barracks as Barracks", () => {
+    expect(buildingMeaning(BuildingType.WorkersHut)).toBe("workers-hut");
+    expect(buildingMeaning(BuildingType.Storehouse)).toBe("storehouse");
+    expect(buildingMeaning(BuildingType.ResourceDonkey)).toBe(resourceMeaning(ResourcesIds.Donkey));
+    expect(buildingMeaning(BuildingType.ResourceKnightT1)).toBe(resourceMeaning(ResourcesIds.Knight));
+    expect(buildingMeaning(BuildingType.ResourceKnightT1, true)).toBe("barracks");
+    expect(() => buildingMeaning(BuildingType.None)).toThrow("has no painting");
   });
 });
