@@ -19,8 +19,8 @@ import { useTappedBuilding } from "./research/selected-building";
 
 /**
  * What the player tapped, as its Frontier card, with its key: which card it is and for which tile, so the HUD's one
- * panel (useOnePanel) knows when a card opens; null when the selection opens none. An open plot of the realm opens the
- * build sheet, the keep its card, a standing building its own card, an adjacent friendly army its troop transfer, a standing site or enemy army
+ * panel (useOnePanel) knows when a card opens; null when the selection opens none. An open plot of the player's realm
+ * opens the build sheet, the keep its card, a standing building its own card (a viewer's read as they stand, no order), an adjacent friendly army its troop transfer, a standing site or enemy army
  * its tile card, a Shrine or Well its use card, and a spire or reward chest its own card; so does an army selected on or
  * beside its realm's spire, the spire's (useSelectedSpire). Cleared sites and opened
  * chests keep their receipts on the tile.
@@ -33,6 +33,7 @@ export const useSelectionCard = ({
   onResearch,
   onArmyBack,
 }: {
+  /** The realm the board draws: the player's own, or the realm they visit or watch. */
   realm: NativeRows["Structure"] | null;
   /** Opens Research, on a node where the card names one, for a card whose next step is there. */
   onResearch: (node?: string) => void;

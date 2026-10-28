@@ -37,7 +37,12 @@ const nodeOf = (realm: RealmResearchFacts, row: number) =>
 /** The card as a building's tap opens it, on the lab's realm some days in (a City; Farm rare, Barracks rare). */
 const draw = (
   row: number,
-  { realm = MID_REALM, makes, standing = 4 }: { realm?: RealmResearchFacts; makes?: CardMakes; standing?: number } = {},
+  {
+    realm = MID_REALM,
+    makes,
+    standing = 4,
+    viewer = false,
+  }: { realm?: RealmResearchFacts; makes?: CardMakes; standing?: number; viewer?: boolean } = {},
 ) => {
   const onResearch = vi.fn();
   const onFix = vi.fn();
@@ -49,10 +54,16 @@ const draw = (
         standing={standing}
         makes={makes}
         node={nodeOf(realm, row)}
-        sending={false}
-        fix={() => ({ icon: "realm", word: "Level up the castle", onFix })}
-        onResearch={onResearch}
-        demolish={<button type="button">Delete</button>}
+        orders={
+          viewer
+            ? undefined
+            : {
+                sending: false,
+                fix: () => ({ icon: "realm", word: "Level up the castle", onFix }),
+                onResearch,
+                demolish: <button type="button">Delete</button>,
+              }
+        }
         onClose={() => undefined}
       />,
     ),
@@ -120,10 +131,12 @@ it("says the Essence the Workshops need against what is held, beside Research di
         standing={3}
         makes={undefined}
         node={nodeOf({ ...MID_REALM, essence: 1_000 }, research.ROW_WORKSHOP)}
-        sending={false}
-        fix={() => undefined}
-        onResearch={vi.fn()}
-        demolish={<button type="button">Delete</button>}
+        orders={{
+          sending: false,
+          fix: () => undefined,
+          onResearch: vi.fn(),
+          demolish: <button type="button">Delete</button>,
+        }}
         onClose={() => undefined}
       />,
     ),
@@ -157,6 +170,21 @@ it("at Legendary shows what research gave, with no next column and no Research",
   ]);
   expect(button(/^Research/)).toBeUndefined();
   expect(gems()).toEqual(["V", "V"]);
+});
+
+it("reads a viewer's building as it stands: what it makes and its tier, with nothing to pay or order", () => {
+  draw(research.ROW_FARM, { viewer: true, makes: { icon: "wheat", rate: "+25/min" } });
+  expect(card().textContent).toContain("+25/min");
+  expect(card().textContent).toContain("4 buildings");
+  expect(rows()).toEqual([
+    ["Fields", "+25%"],
+    ["Granary", "+50%"],
+  ]);
+  expect(gems()).toEqual(["III", "III"]);
+  // The sheet's close is its one control.
+  expect([...host.querySelectorAll("button")].map((each) => each.getAttribute("aria-label"))).toEqual(["Close"]);
+  expect(host.querySelector(".ui-window__foot")?.textContent ?? "").toBe("");
+  expect(card().textContent).not.toMatch(/Essence|labor|Needs/);
 });
 
 /** The lab's realm with the Essence and labor for a Scouts' lodge tier. */

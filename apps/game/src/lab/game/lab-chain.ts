@@ -6,7 +6,7 @@ import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldFrontierLeaderboardEntry, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import type { AccountInterface } from "starknet";
 
@@ -55,6 +55,8 @@ export interface LabScenario {
   farSites?: Record<string, unknown>[];
   /** The lab second before which Herald's history holds its answers back (a slow Herald); none: it answers at once. */
   historyAnswersAt?: number;
+  /** The season board's realms, as Herald ranks them; none: the board cannot be read, as an offline shard's. */
+  board?: HeraldFrontierLeaderboardEntry[];
   /** What the player's device holds as the game starts (its storage); set once at the start, never on a reload. */
   startDevice?: () => void;
 }
@@ -207,8 +209,8 @@ const HISTORY_PAGE = 500;
 
 /**
  * The lab shard's Herald reads: the game's history as Herald's history filters it (a player's events: the ones naming
- * them; then one story or model, newest first, a page at a time), and each closed day's ranks, the lab's player first.
- * Undefined for any other read.
+ * them; then one story or model, newest first, a page at a time), each closed day's ranks, the lab's player first, and
+ * the season board where the scenario has one. Undefined for any other read.
  */
 const answerHeraldRead = (
   url: URL,
@@ -244,6 +246,8 @@ const answerHeraldRead = (
     const held = chain.get("ExpeditionSite", { game_id: LAB_GAME.gameId, entity_id: id });
     return held ? wire(held) : (scenario.farSites?.find((row) => Number(row.entity_id) === id) ?? NOT_FOUND);
   }
+  if (url.pathname === `${game}/leaderboard` && scenario.board)
+    return { game_id: String(LAB_GAME.gameId), mode: "frontier", entries: scenario.board };
   const ranks = url.pathname.match(new RegExp(`^${game}/days/(\\d+)/ranks$`));
   if (ranks) {
     const rules = readExpeditionRules(chain, LAB_GAME.gameId);

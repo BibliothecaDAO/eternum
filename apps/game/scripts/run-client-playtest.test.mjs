@@ -102,6 +102,7 @@ describe("the page a run opens", () => {
     "frontier-plates-player",
     "lab-hover-zoom",
     "lab-high-ground",
+    "lab-visit",
   ];
 
   it("keeps the dev overlays off for every spectator list that needs no dev tools", () => {

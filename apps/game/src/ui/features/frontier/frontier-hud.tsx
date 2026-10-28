@@ -78,19 +78,21 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const spectating = useUIStore(isWatching);
   const realm = useFrontierRealm();
-  // On a visit the dock shows the visited realm's armies; no order renders for a realm the player does not own.
+  // The realm on the board: on a visit (a spectator's watch is one too) the visited realm, whose strip, panel and
+  // armies the HUD shows; no order renders for a realm the player does not own.
   const visit = useRealmVisit();
   const visited = useVisitedRealm(visit);
-  const dockRealm = visit ? visited : realm;
+  const shown = visit ? visited : realm;
   // The visit's way in and out lives here, above the two layouts, so switching layout replays no visit.
   useRealmVisitNavigation(realm);
   // A spectator watches their own realm when they have one this season, else the leader; the strip reads it.
   useSpectatorWatch();
   // What the map has selected opens its card; the one panel decides which of it, a surface and a deploy order stands.
+  // A tap on the board names the realm the board draws, so its cards read that realm: on a visit, the visited one's.
   // A card's way to Research may name the node it opens on (the castle's own research, a building's gate).
   const [researchPick, setResearchPick] = useState<string | undefined>();
   const card = useSelectionCard({
-    realm,
+    realm: shown,
     onResearch: (node) => {
       setResearchPick(node);
       setSurface("research");
@@ -146,12 +148,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
 
   const strip = (
     <>
-      <FrontierStrip
-        rules={rules}
-        realm={realm ?? visited}
-        onOpenDay={() => setSurface("today")}
-        storeCards={storeCards}
-      />
+      <FrontierStrip rules={rules} realm={shown} onOpenDay={() => setSurface("today")} storeCards={storeCards} />
       {storeCards?.open && storeCards.card}
     </>
   );
@@ -186,14 +183,12 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   );
   const action = (
     <>
-      {dockRealm && !desktop && (
-        <ArmyAction rules={rules} realm={dockRealm} onOpenArmy={visit ? undefined : openArmy} />
-      )}
+      {shown && !desktop && <ArmyAction rules={rules} realm={shown} onOpenArmy={visit ? undefined : openArmy} />}
       <RealmVisitFoot home={realm} />
     </>
   );
   // A phone's dock picks an army, the map first; a desktop's opens its panel too.
-  const dock = dockRealm && <DockFor rules={rules} realm={dockRealm} onOpenArmy={desktop ? openArmy : pickArmy} />;
+  const dock = shown && <DockFor rules={rules} realm={shown} onOpenArmy={desktop ? openArmy : pickArmy} />;
   const sheets = (
     <>
       <FrontierSurfaces realm={realm} rules={rules} />
@@ -245,10 +240,10 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
       realm={
-        (realm ?? visited) && (
+        shown && (
           <FrontierRealmPanel
             rules={rules}
-            realm={(realm ?? visited)!}
+            realm={shown}
             own={own}
             labor={realmLabor?.plan.total ?? 0}
             storeCards={storeCards}
@@ -286,7 +281,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     <FrontierPhoneHud
       rules={rules}
       realm={realm}
-      board={dockRealm}
+      board={shown}
       visiting={visit !== null}
       surface={surface}
       onSurface={setSurface}

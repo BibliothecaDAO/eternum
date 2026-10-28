@@ -1228,17 +1228,18 @@ export const HudLab = () => {
         {(lab.realmView === "castle" || lab.realmView === "castle-short") && (
           <CastleView
             now={CASTLE_SIDE(1, 18_000)}
-            next={CASTLE_SIDE(2, 50_000)}
             laborRate="+1.7/min"
-            prices={[{ of: "labor", amount: 15_000 }]}
-            refusal={
-              lab.realmView === "castle-short"
-                ? { reason: { kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 } }
-                : undefined
-            }
             research={<LabCastleResearch />}
-            sending={false}
-            onUpgrade={noop}
+            upgrade={{
+              next: CASTLE_SIDE(2, 50_000),
+              prices: [{ of: "labor", amount: 15_000 }],
+              refusal:
+                lab.realmView === "castle-short"
+                  ? { reason: { kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 } }
+                  : undefined,
+              sending: false,
+              onUpgrade: noop,
+            }}
             onClose={noop}
           />
         )}
@@ -1398,10 +1399,12 @@ const LabBuildingCard = ({ building }: { building: keyof typeof LAB_BUILDINGS })
       standing={standing}
       makes={makes}
       node={node}
-      sending={false}
-      fix={() => undefined}
-      onResearch={noop}
-      demolish={<HudIconButton kind="danger" icon="trash" label="Delete" title="Delete" size="sm" onClick={noop} />}
+      orders={{
+        sending: false,
+        fix: () => undefined,
+        onResearch: noop,
+        demolish: <HudIconButton kind="danger" icon="trash" label="Delete" title="Delete" size="sm" onClick={noop} />,
+      }}
       onClose={noop}
     />
   );
