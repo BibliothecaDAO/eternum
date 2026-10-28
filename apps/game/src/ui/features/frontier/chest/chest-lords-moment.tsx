@@ -1,8 +1,11 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useDocumentClass } from "@/hooks/use-document-class";
 import type { ChestRarity } from "@/three/rewards/chest-rarity-glow";
-import { PRESENTED_CHEST_BEATS } from "@/three/rewards/chest-transitions";
-import { onRewardChestShown, type RewardChestRequest } from "@/three/scenes/worldmap-reward-chest-request";
+import {
+  onRewardChestBeat,
+  type RewardChestBeat,
+  type RewardChestRequest,
+} from "@/three/scenes/worldmap-reward-chest-request";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { EASE, type Intensity, POP_SPRING, tickDurationMs } from "@/ui/motion/motion-scale";
@@ -10,7 +13,7 @@ import { playHaptic } from "@/ui/motion/motion-settings";
 import { TickNumber } from "@/ui/motion/tick-number";
 import { formatExact, LORDS } from "@bibliothecadao/types";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 /** How long the LORDS take to count up once the lid opens: long enough to feel their weight. */
@@ -18,30 +21,45 @@ const LORDS_ROLL_MS = 1_300;
 /** How long the veil takes to fall and to lift. */
 const VEIL_SECONDS = 0.35;
 
+/** One staged chest's moment: its presentation, what it gives, and whether its lid has opened yet. */
+type Moment = { id: number; request: RewardChestRequest; opened: boolean };
+
 /**
  * A reward chest's moment around it, while the world map stages it at the centre of the screen: the rest of the
  * screen darkens so the chest is the one thing to look at, and as the lid opens its LORDS are the hero, counted up
  * large under it in front of light rays in its rarity, to Frontier's chest sounds; then the veil lifts as the chest
- * goes. It plays on the chest's own clock, from the moment the world map shows it, and takes no pointer.
+ * goes. It keeps no time of its own: it follows the chest's beats (shown, opened, ended) as the chest reaches them,
+ * whatever the frame rate, and ends whenever the chest does, cancelled, replaced or left with the map. It takes no
+ * pointer.
  */
 export const ChestLordsMoment = () => {
-  const [moment, setMoment] = useState<{ request: RewardChestRequest; shownAt: number } | null>(null);
+  const [moment, setMoment] = useState<Moment | null>(null);
+  useChestSounds();
   useEffect(() => {
-    return onRewardChestShown((request) => setMoment({ request, shownAt: performance.now() }));
+    return onRewardChestBeat((beat) => setMoment((current) => followBeat(current, beat)));
   }, []);
   // Over the whole page, so it veils every HUD column and sheet, whatever stack the HUD draws them in.
   return createPortal(
     <AnimatePresence>
-      {moment && <ChestMoment key={moment.shownAt} request={moment.request} onDone={() => setMoment(null)} />}
+      {moment && <ChestMoment key={moment.id} request={moment.request} opened={moment.opened} />}
     </AnimatePresence>,
     document.body,
   );
 };
 
-const ChestMoment = ({ request, onDone }: { request: RewardChestRequest; onDone: () => void }) => {
+/**
+ * The moment as a chest's beat leaves it: a chest shown starts a fresh moment, in place of any before it; an opening
+ * and an end belong to the chest they name, and a beat of a chest already replaced changes nothing.
+ */
+const followBeat = (current: Moment | null, { id, beat, request }: RewardChestBeat): Moment | null => {
+  if (beat === "shown") return { id, request, opened: false };
+  if (current?.id !== id) return current;
+  return beat === "opened" ? { ...current, opened: true } : null;
+};
+
+const ChestMoment = ({ request, opened }: { request: RewardChestRequest; opened: boolean }) => {
   // The map's labels and plates step aside: nothing but the chest and its LORDS while it plays.
   useDocumentClass("chest-moment");
-  const opened = useChestOpened(request.rarity, onDone);
   return (
     <motion.div
       className="ui-chest-moment"
@@ -106,35 +124,38 @@ const LordsCount = ({ lords }: { lords: number }) => {
 };
 
 /**
- * The chest's beats, from the moment the world map shows it: its charge while it arrives, its rarity's tell and burst
- * as the lid opens (when this turns true), a shower of coins as its LORDS count, and the end as it goes.
+ * Frontier's chest sounds on a staged chest's beats: its charge from the moment it is shown; as its lid opens the charge
+ * stops and its rarity's tell, the burst and a shower of coins play, with a haptic; and the charge stops whenever the
+ * chest ends. A chest shown in another's place stops the other's charge first.
  */
-const useChestOpened = (rarity: ChestRarity, onDone: () => void): boolean => {
-  const [opened, setOpened] = useState(false);
-  // The beats run once per chest: a new onDone from a re-render never restarts them.
-  const done = useRef(onDone);
-  done.current = onDone;
+const useChestSounds = (): void => {
   useEffect(() => {
     const audio = AudioManager.getInstance();
-    const charge = audio.play("chest.charge");
-    const at = (seconds: number, beat: () => void) => window.setTimeout(beat, seconds * 1_000);
-    const timers = [
-      at(PRESENTED_CHEST_BEATS.opens, () => {
-        void charge.then((source) => source && audio.stop(source));
-        void audio.play(`chest.tell.${TELLS[rarity]}`);
-        void audio.play("chest.burst");
-        void audio.play("coin.shower");
-        playHaptic(intensityOf(rarity));
-        setOpened(true);
-      }),
-      at(PRESENTED_CHEST_BEATS.gone - VEIL_SECONDS, () => done.current()),
-    ];
+    let current: { id: number; charge: Promise<AudioBufferSourceNode | null> } | null = null;
+    const stopCharge = () => void current?.charge.then((source) => source && audio.stop(source));
+    const stop = onRewardChestBeat(({ id, beat, request }) => {
+      if (beat === "shown") {
+        stopCharge();
+        current = { id, charge: audio.play("chest.charge") };
+        return;
+      }
+      if (current?.id !== id) return;
+      stopCharge();
+      if (beat === "opened") playOpening(audio, request.rarity);
+      else current = null;
+    });
     return () => {
-      timers.forEach((timer) => window.clearTimeout(timer));
-      void charge.then((source) => source && audio.stop(source));
+      stop();
+      stopCharge();
     };
-  }, [rarity]);
-  return opened;
+  }, []);
+};
+
+const playOpening = (audio: AudioManager, rarity: ChestRarity): void => {
+  void audio.play(`chest.tell.${TELLS[rarity]}`);
+  void audio.play("chest.burst");
+  void audio.play("coin.shower");
+  playHaptic(intensityOf(rarity));
 };
 
 /** Each rarity's tell, as Frontier's chest sounds name them; a legendary chest tells as an epic one, the loudest. */

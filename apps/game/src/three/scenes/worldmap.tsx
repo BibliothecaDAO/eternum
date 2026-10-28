@@ -289,7 +289,7 @@ import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
-import { announceRewardChestShown, onRewardChestRequest } from "./worldmap-reward-chest-request";
+import { announcedRewardChestBeats, onRewardChestRequest } from "./worldmap-reward-chest-request";
 import { chestRarityGlow } from "../rewards/chest-rarity-glow";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
@@ -1908,9 +1908,7 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.stopRewardChestRequests = onRewardChestRequest((request) => {
       if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
-      void this.chestManager
-        .presentAtScreenCentre(chestRarityGlow(request.rarity))
-        .then((shown) => shown && announceRewardChestShown(request));
+      void this.chestManager.presentAtScreenCentre(announcedRewardChestBeats(request), chestRarityGlow(request.rarity));
     });
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     window.addEventListener("resize", this.handleTerrainViewportResize);
@@ -4697,6 +4695,8 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.applyWorldmapSceneExitProjection(nextSceneName);
     this.mapPlates.setVisible(false);
+    // A reward's chest staged mid-moment ends with the map, and the moment beside it with it.
+    this.chestManager.endScreenCentrePresentation();
     this.invalidateWorldmapSwitchOffTransitions();
     this.clearWorldmapLoadingStateForSwitchOff();
     this.resetWorldmapInteractionForSwitchOff(nextSceneName);

@@ -21,9 +21,9 @@ import {
 
 const smooth = (start: number, end: number, time: number) => MathUtils.smoothstep(time, start, end);
 /** How long a chest takes to arrive, its summon, in seconds. */
-export const SUMMONING_DURATION = 1;
+const SUMMONING_DURATION = 1;
 /** How long an opened chest stays before it is absorbed and gone, in seconds. */
-export const ABSORBED_AFTER = 2.7;
+const ABSORBED_AFTER = 2.7;
 
 /** The entire reward tile erupts, summons its chest, then returns to the biome after opening. */
 export class RewardSummoning {

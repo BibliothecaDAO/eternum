@@ -5,7 +5,7 @@ import { activeMapLayer } from "@/three/map-layer";
 import { resolveChestTransition } from "../rewards/chest-transition-policy";
 import { ChestModelPath } from "@/three/constants";
 import { RewardTileModel } from "../rewards/reward-tile-model";
-import { type ChestGlow, ChestTransitions } from "../rewards/chest-transitions";
+import { type ChestGlow, type ChestPresentationBeats, ChestTransitions } from "../rewards/chest-transitions";
 import { chestRewardPrizes } from "../rewards/chest-reward-reveal";
 import type { PipelineCompiler } from "../pipeline-compiler";
 import { FELT_CENTER } from "@/ui/config";
@@ -328,19 +328,26 @@ export class ChestManager {
 
   /**
    * A reward's chest at the centre of the screen: it arrives on the ground the camera looks at, sized to the screen
-   * whatever the zoom, opens by itself in `glow`, and goes. Nothing on the map is replaced or held. The
-   * chest's model loads first when no chest on the map has needed it yet.
+   * whatever the zoom, opens by itself in `glow`, and goes, telling `beats` as it reaches each. A chest already staged
+   * there ends first. Nothing on the map is replaced or held. The chest's model loads first when no chest on the map has
+   * needed it yet.
    */
-  public async presentAtScreenCentre(glow?: ChestGlow): Promise<boolean> {
+  public async presentAtScreenCentre(beats: ChestPresentationBeats, glow?: ChestGlow): Promise<boolean> {
     await this.prepareModel();
     const camera = this.hexagonScene?.getCamera();
     if (!this.chestModel || !this.chestTransitions || !camera) return false;
     const surface = this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE;
     const placement = screenCentrePlacement(camera, CENTRE_SCREEN_SHARE, surface);
     if (!placement) return false;
-    const presented = this.chestTransitions.present(CENTRE_KEY, placement, this.chestModel.time, glow);
+    const presented = this.chestTransitions.present(CENTRE_KEY, placement, this.chestModel.time, beats, glow);
     this.applyContentLadder(this.contentLadder);
     return presented;
+  }
+
+  /** Ends the chest staged at the screen's centre, if one is, as when the map is left mid-moment. */
+  public endScreenCentrePresentation(): void {
+    this.chestTransitions?.cancel(CENTRE_KEY);
+    this.applyContentLadder(this.contentLadder);
   }
 
   private transitionKey(chest: Pick<ChestSpatialRenderable, "hexCoords">): string {
