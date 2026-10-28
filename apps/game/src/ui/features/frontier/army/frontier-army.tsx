@@ -2,12 +2,13 @@ import { useGame } from "@/hooks/context/game-context";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
 import { scoutingKindsOf, type ScoutingKind } from "@bibliothecadao/eternum";
 import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { useArmyRevealYield } from "../frontier-reveal-yield";
+import { SpireButton, useArmyAtItsSpire } from "../spire-card";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { type ArmyDetailFacts, attributeOf, readArmyDetail, type AttributeKey, type ScoutKind } from "./army-detail";
 import { ArmyDetail } from "./army-panel";
@@ -55,6 +56,7 @@ const ArmyPanel = ({
   useNativeRevision(PROGRESS_MODELS);
   const sending = useInFlight("tier", army.explorerId) !== undefined;
   const revealYield = useArmyRevealYield(army);
+  const spire = useArmyAtItsSpire(army.explorerId);
   const progress = setup.store.get("ArmyProgress", { game_id: realm.game_id, explorer_id: army.explorerId });
   const rules = setup.store.get("ArmyProgressionRules", { game_id: realm.game_id });
   if (!progress || !rules || !army.stamina) return null;
@@ -105,6 +107,11 @@ const ArmyPanel = ({
         choosing={choosing}
         onLevelUp={levelUp}
       />
+      {spire && (
+        <HudWindowFoot>
+          <SpireButton explorerId={army.explorerId} spire={spire} />
+        </HudWindowFoot>
+      )}
     </HudSheet>
   );
 };
