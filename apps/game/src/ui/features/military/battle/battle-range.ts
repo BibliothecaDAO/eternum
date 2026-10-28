@@ -34,6 +34,12 @@ export const survivalOf = (side: SideRange): "Eliminated" | "Survives" | "May fa
   return fallen === 0 ? "Survives" : "May fall";
 };
 
+/** The whole troops a side keeps across the dice, low to high, as a fight's side shows them. */
+export const keptAcross = (side: SideRange): { low: number; high: number } => {
+  const [worst, best] = [Math.round(side.worst.remaining), Math.round(side.best.remaining)];
+  return { low: Math.min(worst, best), high: Math.max(worst, best) };
+};
+
 /** A value across the dice, low to high, or one number where the dice cannot move it. */
 export const formatAcross = (a: number, b: number, format: (value: number) => string): string => {
   const [low, high] = [format(Math.min(a, b)), format(Math.max(a, b))];

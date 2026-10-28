@@ -1,14 +1,11 @@
-import { formatCharge, formatExact, formatShort } from "@bibliothecadao/types";
+import { formatCharge, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 import { ARMY, FULL, REST_DID_NOT_FIT, STORAGE, TROOPS, XP } from "@/ui/design-system/kit/words";
 
-import type { ReactNode } from "react";
-
-import { FightBar } from "./fight-bar";
-import type { TroopsChange } from "./fight-record";
+import { FightSide } from "./fight-side";
 import type { FightResult } from "./fight-result";
 import { SiteMark } from "./site-card-view";
 import { TARGET_MARKS, attackTargetName } from "./site-marks";
@@ -46,17 +43,19 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
         <span className={cn("text-hud-title", VERDICT_TONES[result.verdict])}>{verdict}</span>
       </span>
       <span className="flex gap-2">
-        <Side
+        <FightSide
           label={ARMY}
           mark={<SemanticIcon name={result.armyArt} alt="" className="size-7 rounded-full object-cover" />}
-          troops={result.army}
+          before={result.army.before}
+          kept={result.army.after}
           side="ours"
         />
         {result.guard && (
-          <Side
+          <FightSide
             label={result.guardIdentity?.name ?? TROOPS}
             mark={<SemanticIcon name={result.guardIdentity?.art ?? "troops"} size={24} />}
-            troops={result.guard}
+            before={result.guard.before}
+            kept={result.guard.after}
             side="theirs"
           />
         )}
@@ -84,43 +83,3 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
     </button>
   );
 };
-
-/**
- * One side of the fight: its troops before the battle and what is left of them, in red when none are, and its bar in
- * its colour with the part the fight took in grey.
- */
-const Side = ({
-  label,
-  mark,
-  troops,
-  side,
-}: {
-  label: string;
-  mark: ReactNode;
-  troops: TroopsChange;
-  side: "ours" | "theirs";
-}) => (
-  <span
-    role="img"
-    aria-label={`${label} ${formatExact(troops.before)} → ${formatExact(troops.after)}`}
-    className="flex min-w-0 flex-1"
-  >
-    <HudPanel
-      collapsible={false}
-      className="flex-1"
-      bodyClassName="flex flex-col items-center justify-center gap-1 py-2"
-    >
-      <span aria-hidden className="flex items-center gap-2">
-        {mark}
-        <span className="flex items-baseline gap-1.5 tabular-nums">
-          <span className="text-hud-body text-hud-muted">{formatExact(troops.before)}</span>
-          <span className="text-hud-body text-hud-muted">→</span>
-          <span className={cn("text-hud-display leading-none", troops.after === 0 ? "text-hud-bad" : "text-hud-ink")}>
-            {formatExact(troops.after)}
-          </span>
-        </span>
-      </span>
-      <FightBar before={troops.before} after={troops.after} side={side} />
-    </HudPanel>
-  </span>
-);
