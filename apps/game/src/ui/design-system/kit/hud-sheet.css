@@ -978,6 +978,10 @@ span.ui-row__choose {
   overflow-y: auto;
   padding: theme(spacing.2) theme(spacing.3) max(theme(spacing.3), env(safe-area-inset-bottom));
 }
+/* A sheet whose body sends all it holds to its foot (HudWindowFoot) keeps no empty band above it. */
+.ui-sheet__body:empty {
+  display: none;
+}
 /* A phone held sideways: the sheet stands in the HUD's right column, under its strip (HudBands). */
 @media (orientation: landscape) and (max-height: 520px) and (max-width: 1023px) {
   .ui-sheet {
