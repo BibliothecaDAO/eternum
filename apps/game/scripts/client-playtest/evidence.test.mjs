@@ -459,6 +459,28 @@ describe("comparePlaytestSummary", () => {
   });
 });
 
+describe("comparePlaytestSummary for click to result", () => {
+  const timed = (median, max, n = 5) => ({
+    byMode: {
+      "webgpu-auto": { steps: { explore: { "verdict.clickToResult.totalMs": { n, median, min: median - 20, max } } } },
+    },
+  });
+
+  it("passes a median inside the baseline's spread", () => {
+    expect(comparePlaytestSummary(timed(400, 450), timed(440, 600)).ok).toBe(true);
+  });
+
+  it("fails a median past the baseline's slowest run", () => {
+    expect(comparePlaytestSummary(timed(400, 450), timed(470, 500, 3)).failures).toEqual([
+      "webgpu-auto explore: click to result median 470ms (n=3) is past the baseline's slowest 450ms (median 400ms, n=5)",
+    ]);
+  });
+
+  it("does not judge an action the baseline never timed", () => {
+    expect(comparePlaytestSummary({ byMode: { "webgpu-auto": { steps: {} } } }, timed(900, 900)).ok).toBe(true);
+  });
+});
+
 describe("collectBrowserErrors", () => {
   it("fails entry on logged manager timeouts even when no exception escaped", () => {
     expect(

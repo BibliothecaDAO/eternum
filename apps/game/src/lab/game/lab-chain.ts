@@ -5,10 +5,10 @@ import { answerLabChat } from "@/shell/lab/lab-chat";
 import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
-import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { NativeFactStore, ordinaryHash, type PlayFrame } from "@bibliothecadao/eternum/game-client";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
-import type { AccountInterface } from "starknet";
+import type { AccountInterface, Call } from "starknet";
 
 import { LAB_CHAIN_ID } from "./lab-shard";
 
@@ -31,6 +31,8 @@ export const LAB_GAME_ENDS_AT = 30 * 86_400;
 /** The lab shard's node and its account class, as its manifest names them. */
 const LAB_SHARD_RPC = "https://rpc.lab.invalid";
 const LAB_ACCOUNT_CLASS = "0x2";
+/** The lab shard's one gas bound, as its manifest names it. */
+const LAB_L2_GAS_BOUND = "0x47868c00";
 
 /** A fact as Herald carries it: its model, its key, its wire value (null deletes the row). */
 export type LabFact = { model: string; key: string; value: unknown };
@@ -72,7 +74,8 @@ declare global {
   }
 }
 
-const wire = (value: unknown): unknown =>
+/** A value as Herald carries it on the wire: bigints as decimal strings. */
+export const wire = (value: unknown): unknown =>
   JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
 
 /** Every row of a store as Herald carries it. */
@@ -131,7 +134,7 @@ const answerDirectory = (now: () => number, read: (url: URL) => unknown) => {
     accountClassHash: LAB_ACCOUNT_CLASS,
     contracts: { games: "0x1ab" },
     guardianPublicKey: "0x3",
-    l2GasBound: "0x47868c00",
+    l2GasBound: LAB_L2_GAS_BOUND,
   };
   const game = {
     game_id: LAB_GAME.gameId,
@@ -292,12 +295,18 @@ const labAccount = (
     getNonce: async () => `0x${nonce.toString(16)}`,
     getChainId: async () => LAB_GAME.chainId,
     getTransactionStatus: async () => ({ finality_status: "PRE_CONFIRMED" }),
-    execute: async (calls: { calldata: string[] } | { calldata: string[] }[]) => {
+    execute: async (calls: Call | Call[], frame: PlayFrame) => {
       const call = Array.isArray(calls) ? calls[0] : calls;
-      const command = readCommand(bindings, call.calldata.map(String));
+      const command = readCommand(bindings, (call.calldata as string[]).map(String));
       nonce += 1n;
-      const hash = `0x1ab${record.sent.length.toString(16).padStart(4, "0")}`;
-      const answered = scenario.answer(command, chain, now());
+      // The hash a node gives the invoke, so the game's own record of the send finds its answer.
+      const hash = ordinaryHash(
+        scenario.player,
+        calls,
+        { chainId: LAB_GAME.chainId, l2GasBound: LAB_L2_GAS_BOUND },
+        frame,
+      );
+      const answered = scenario.answer(command, chain, now()).map(keyedAsHeldOnChain);
       record.sent.push({ hash, command, answered });
       // The answer lands a moment later, as a block would; a lab answer that fails says so in the console.
       setTimeout(() => {
@@ -311,6 +320,18 @@ const labAccount = (
     },
   };
   return account as unknown as AccountInterface;
+};
+
+/**
+ * A fact under the key its row is held by on the chain, as Herald names every row by one key: a later answer that
+ * finds the row in the chain's store (its entries) and changes or removes it then names the row the game holds.
+ */
+const keyedAsHeldOnChain = (fact: LabFact): LabFact => {
+  if (fact.value === null) return fact;
+  const held = new NativeFactStore();
+  held.applyFacts([fact] as never);
+  const [[key]] = [...held.entries(fact.model as NativeModelName)];
+  return { ...fact, key };
 };
 
 type AbiItem = {

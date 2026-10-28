@@ -52,11 +52,8 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
   const rules = readExpeditionRules(store, 1)!;
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   const site = expeditionRealmSite(rules, entityHomeNamespace(realm.entity_id), SPIRE_DAY_NOW)!;
-  const tile = (key: string, col: number, row: number): LabFact => ({
-    model: "TileOpt",
-    key,
-    value: { game_id: 1, alt: false, col, row, data: tileData(ground({ col, row })).toString() },
-  });
+  const tile = (key: string, col: number, row: number): LabFact =>
+    revealedTile(key, { col, row }, ground({ col, row }));
   store.applyFacts([
     { model: "SliceRules", key: "0x100", value: frontierRules(store.require("SliceRules", { game_id: 1 })) },
     {
@@ -89,8 +86,6 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
         ([, row]) => row.entity_id === explorerId,
       )!;
       const landing = { col: occupancy.col, row: occupancy.row + depth * rules.spacing };
-      const [armyKey, army] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === explorerId)!;
-      const stamina = army.troops.stamina as { Inline: { amount: bigint } };
       const cost = chain.require("DepthRules", { game_id: 1, depth }).entry_stamina;
       return [
         { model: "TileOccupancy", key: occupancyKey, value: null },
@@ -100,19 +95,33 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
           value: wire({ ...occupancy, ...landing }),
         },
         tile(`0x1abe${depth}`, landing.col, landing.row),
-        {
-          model: "ExplorerTroops",
-          key: armyKey,
-          value: wire({
-            ...army,
-            troops: {
-              ...army.troops,
-              stamina: { Inline: { amount: stamina.Inline.amount - BigInt(cost), settled_at: now, remainder: 0 } },
-            },
-          }),
-        },
+        armySpent(chain, explorerId, cost, now),
       ];
     },
+  };
+};
+
+/** A tile revealed in `biome`, as the chain holds it. */
+export const revealedTile = (key: string, hex: { col: number; row: number }, biome: BiomeType): LabFact => ({
+  model: "TileOpt",
+  key,
+  value: { game_id: 1, alt: false, col: hex.col, row: hex.row, data: tileData(biome).toString() },
+});
+
+/** An army's troops row once it has paid `cost` stamina at `now`, as the chain writes it. */
+export const armySpent = (chain: NativeFactStore, explorerId: bigint, cost: number | bigint, now: number): LabFact => {
+  const [key, army] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === explorerId)!;
+  const stamina = army.troops.stamina as { Inline: { amount: bigint } };
+  return {
+    model: "ExplorerTroops",
+    key,
+    value: wire({
+      ...army,
+      troops: {
+        ...army.troops,
+        stamina: { Inline: { amount: stamina.Inline.amount - BigInt(cost), settled_at: now, remainder: 0 } },
+      },
+    }),
   };
 };
 

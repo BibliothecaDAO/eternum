@@ -30,6 +30,7 @@ function probedPage() {
     URL,
   });
   return {
+    window,
     queue: new GPUQueue(),
     gl: new WebGL2RenderingContext(),
     frame() {
@@ -70,4 +71,17 @@ it("counts a WebGL2 upload's bytes the same way, a zero length running to the en
   expect(page.frame()).toBe(8);
   page.gl.bufferSubData(0, 0, shorts.buffer);
   expect(page.frame()).toBe(20);
+});
+
+it("reports the first frame a watched condition holds in, once", () => {
+  const page = probedPage();
+  page.window.level = "Settlement";
+  page.window.__playtest.watch("raised", 'window.level === "City"');
+
+  page.frame();
+  page.window.level = "City";
+  page.frame();
+  page.frame();
+
+  expect(JSON.parse(page.window.__playtest.read()).watched).toEqual([{ name: "raised", t: 32, at: 0 }]);
 });

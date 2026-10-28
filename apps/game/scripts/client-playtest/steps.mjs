@@ -13,6 +13,7 @@ import {
   contextLossErrors,
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
+import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
 import { againstTheirThings, judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
 import { DESKTOP_MIN_WIDTH, judgeHudLayout } from "./hud-layout.mjs";
@@ -142,6 +143,105 @@ const PLAYER_STEPS = [
     confirmed: 1,
   }),
 ];
+
+/**
+ * An action timed from the player's press to its result on screen (owner, 2026-10-28: "I want to reduce as max we can
+ * the time between an action submitted and it appearing on the suers screen"). `press` plays it as a player does;
+ * `result` names what the player then sees (click-latency.mjs), from what was pressed. The step settles long enough
+ * for the chain to answer, then cuts the press to the result at each mark the client recorded.
+ */
+const clickToResultStep = (name, press, result) => ({
+  name,
+  play: press,
+  settleMs: RESULT_SETTLE_MS,
+  verify: ({ played, probe, actionLatency, window }) =>
+    judgeClickToResult(
+      played,
+      measureClickToResult({
+        probe,
+        actionLatency,
+        since: window.from,
+        result: typeof result === "function" ? result(played) : result,
+      }),
+    ),
+});
+/** Long enough for a live shard's answer and the frames after it; the lab's chain answers in 300 ms. */
+const RESULT_SETTLE_MS = 6_000;
+
+/**
+ * Every action a player's press sends, each timed from the press to the first frame showing its result: on the map,
+ * an explore (the revealed tile drawn) and a move (the army walking); in the realm, the castle raised a level (the
+ * realm's card naming its new level) and a building placed (its model drawn on its plot).
+ */
+const ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep("explore", exploreBesideArmy, { rendered: true }),
+  clickToResultStep(
+    "move",
+    (context) => orderBesideArmy(context, "Move"),
+    (played) => ({ walking: played.armyId }),
+  ),
+  { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
+  clickToResultStep("level-up", raiseTheCastle, { watch: "level-up" }),
+  clickToResultStep("build", buildOnAnOpenPlot, { mark: "building:drawn:" }),
+];
+
+const REALM_LEVELS = ["Settlement", "City", "Kingdom", "Empire"];
+const CASTLE_SHEET_TEXT = `document.querySelector('[data-kit-sheet][aria-label="Castle"]')?.textContent ?? ""`;
+const SHEET_NAME = `JSON.stringify(document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null)`;
+const SHEET_WAIT_MS = 3_000;
+
+/**
+ * Taps the keep at the realm's centre for its Castle sheet, which names the level now and the next, then presses
+ * Upgrade, watching for the sheet to stop naming the level the realm had.
+ */
+async function raiseTheCastle({ browser }) {
+  browser.tap([0, 0]);
+  const sheet = await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "Castle",
+    SHEET_WAIT_MS,
+  );
+  if (sheet !== "Castle") return { sheet };
+  const shown = browser.read(`JSON.stringify(${CASTLE_SHEET_TEXT})`);
+  const level = REALM_LEVELS.find((word) => shown.includes(word));
+  if (!level) return { sheet, level };
+  watchFor(browser, "level-up", `!(${CASTLE_SHEET_TEXT}).includes(${JSON.stringify(level)})`);
+  browser.click("Upgrade");
+  return { sheet, level };
+}
+
+/**
+ * Taps down towards the castle from above, a plot at a time, until one opens the Build sheet (straight above the castle
+ * the outermost open plot is the second ring's, nearer on a phone than on a desktop), then presses Build for the sheet's
+ * first offer.
+ */
+async function buildOnAnOpenPlot({ browser }) {
+  browser.press("Escape");
+  const tapped = [];
+  for (const offset of PLOT_CANDIDATES) {
+    browser.tap(offset);
+    const sheet = await readUntil(
+      () => browser.read(SHEET_NAME),
+      (name) => name !== null,
+      SHEET_WAIT_MS,
+    );
+    tapped.push({ offset, sheet });
+    if (sheet === "Build") {
+      browser.click("Build");
+      return { tapped, plot: offset };
+    }
+    if (sheet !== null) browser.press("Escape");
+  }
+  return { tapped };
+}
+
+const PLOT_CANDIDATES = [-230, -210, -190, -170, -150, -130].map((dy) => [0, dy]);
+
+/** Has the probe report the first frame `expression` holds in, under `name`. */
+function watchFor(browser, name, expression) {
+  browser.run(["eval", `window.__playtest.watch(${JSON.stringify(name)}, ${JSON.stringify(expression)})`]);
+}
 
 /**
  * Presses a place's control until its scene holds on a playable page. A first trip to the map may reload the page
@@ -616,17 +716,24 @@ function armySelected({ seen, played }) {
  * tooltip offers Explore and right-clicks it (the map's own order, as in Blitz); on a phone, taps them until one's order
  * bar names Explore and taps that tile again, which sends it, other offers cancelled.
  */
-async function exploreBesideArmy({ browser, extraScreenshot }) {
-  const army = await focusTheReadiestArmy(browser);
+function exploreBesideArmy(context) {
+  return orderBesideArmy(context, "Explore");
+}
+
+/** Centres the army and gives it the order `verb` (Explore, Move) on a tile beside it, as `exploreBesideArmy` does. */
+async function orderBesideArmy({ browser, extraScreenshot }, verb) {
+  // A phone keeps the army selected after its order, its panel standing where the dock was.
+  const army = (await focusTheReadiestArmy(browser)) ?? (browser.observe().selection?.army ? "selected" : null);
   if (!army) return { offered: [], army };
+  const armyId = browser.observe().selection?.army?.id ?? null;
   if (onADesktop()) {
-    const { target, scanned } = await findOrderTile(browser, "Explore");
-    const offered = scanned.map(({ verb }) => verb);
-    if (!target) return { army, offered };
+    const { target, scanned } = await findOrderTile(browser, verb);
+    const offered = scanned.map((seen) => seen.verb);
+    if (!target) return { army, armyId, offered };
     const before = extraScreenshot("before");
     const pressedAt = browser.observe().now;
     browser.rightClick(target.offset);
-    return { army, offered, pressedAt, before, target: target.offset };
+    return { army, armyId, offered, pressedAt, before, target: target.offset };
   }
   const offered = [];
   // The army's paths are planned once it is selected; a pass where no tile pins anything is tried once more.
@@ -634,21 +741,21 @@ async function exploreBesideArmy({ browser, extraScreenshot }) {
     for (const offset of NEIGHBOUR_RING) {
       const pinnedAt = browser.observe().now;
       browser.tap(offset);
-      const verb = orderVerb(browser.orderBar());
-      offered.push(verb);
-      if (verb === "Explore") {
+      const offer = orderVerb(browser.orderBar());
+      offered.push(offer);
+      if (offer === verb) {
         const before = extraScreenshot("before");
         const pressedAt = browser.observe().now;
         // The phone's own confirmation (owner, 27 October 2026: "double tapping to explore on mobile"): the same tile again.
         browser.tap(offset);
-        return { army, offered, pinnedAt, pressedAt, before, target: offset };
+        return { army, armyId, offered, pinnedAt, pressedAt, before, target: offset };
       }
     }
     if (offered.some(Boolean)) break;
     await sleep(ARMY_FLIGHT_MS);
   }
   browser.press("Escape");
-  return { army, offered };
+  return { army, armyId, offered };
 }
 
 /**
@@ -1023,13 +1130,8 @@ async function findOrderTile(browser, ...verbs) {
 // The army's ring, then the ring past it: a moved army may stand a tile off the centre.
 const ORDER_TILE_CANDIDATES = [...NEIGHBOUR_RING, ...NEIGHBOUR_RING.map(([dx, dy]) => [dx * 2, dy * 2])];
 
-// The hover tooltip's title (Move, Explore, Attack…), shown over a tile the selected army has an order on.
-const ORDER_TOOLTIP_TITLE = `JSON.stringify((() => {
-  const hint = [...document.querySelectorAll("span")].find((span) => span.textContent.trim() === "Right-click to confirm");
-  let tooltip = hint;
-  while (tooltip && !tooltip.querySelector("span.px-1")) tooltip = tooltip.parentElement;
-  return tooltip?.querySelector("span.px-1")?.textContent.trim() ?? null;
-})())`;
+// The hover tooltip's title (Move, Explore, Attack…), its first line over a tile the selected army has an order on.
+const ORDER_TOOLTIP_TITLE = `JSON.stringify(document.querySelector('[role="tooltip"][aria-hidden="false"] .ui-tip__line')?.textContent.trim() ?? null)`;
 
 /**
  * The army kept selected through an order's confirmation: selected when the step began (no click or Tab in between),
@@ -2035,6 +2137,7 @@ export const STEP_SETS = {
   "knight-spectator": { game: FRONTIER, steps: knightSteps(FRONTIER_MAP) },
   "knight-blitz-spectator": { game: BLITZ, steps: knightSteps(BLITZ_MAP) },
   player: { game: FRONTIER, steps: PLAYER_STEPS },
+  actions: { game: FRONTIER, steps: ACTION_STEPS },
   "ownership-rings": { game: FRONTIER, steps: OWNERSHIP_RING_STEPS },
   "blitz-orders": { game: BLITZ, steps: BLITZ_ORDER_STEPS },
   "blitz-spectator": { game: BLITZ, steps: BLITZ_SPECTATOR_STEPS },
@@ -2048,6 +2151,7 @@ export const STEP_SETS = {
     devOverlays: true,
   },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  "lab-actions": { game: labSpireGame("actions"), steps: ACTION_STEPS },
   "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps() },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },

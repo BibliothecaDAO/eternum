@@ -22,7 +22,11 @@
     resources: [],
     scenes: [],
     steps: [],
+    watched: [],
   };
+  // Conditions a step waits to see on screen, each checked in the probe's frame callback; `at` is when a check first
+  // found one true (a frame's timestamp is when it began, which a busy frame's callbacks run well after).
+  let watches = [];
   let drawsThisFrame = 0;
   const NO_GPU_WORK = { pipelines: 0, shaders: 0, uploadBytes: 0, callMs: 0 };
   let gpuThisFrame = { ...NO_GPU_WORK };
@@ -128,7 +132,22 @@
     ["compressedTexSubImage2D", "upload", (...args) => byteLength(args.find((arg) => ArrayBuffer.isView(arg)))],
   ]);
 
+  const checkWatches = (timestamp) => {
+    if (watches.length === 0) return;
+    watches = watches.filter(({ name, holds }) => {
+      let seen = false;
+      try {
+        seen = Boolean(holds());
+      } catch {
+        // A condition on an element not drawn yet reads as not seen.
+      }
+      if (seen) push(state.watched, { name, t: timestamp, at: performance.now() });
+      return !seen;
+    });
+  };
+
   const onFrame = (timestamp) => {
+    checkWatches(timestamp);
     push(state.frames, timestamp);
     push(state.draws, drawsThisFrame);
     push(state.gpu, gpuThisFrame);
@@ -283,6 +302,10 @@
       push(state.steps, step);
       return JSON.stringify({ ...step, timeOrigin: performance.timeOrigin });
     },
+    /** Waits for `expression` (page JavaScript) to hold on screen; `read` reports the frame it first held in. */
+    watch(name, expression) {
+      watches.push({ name, holds: new Function(`return (${expression});`) });
+    },
     async pan(keys, msPerKey) {
       for (const code of keys) await holdKey(code, msPerKey);
     },
@@ -311,6 +334,7 @@
         plateStamina: after(state.plateStamina, ([t]) => t),
         resources: state.resources,
         steps: after(state.steps, (entry) => entry.t),
+        watched: after(state.watched, (entry) => entry.t),
         timeOrigin: performance.timeOrigin,
         timeline: window.__eternumGameEntryTimeline ?? [],
       });

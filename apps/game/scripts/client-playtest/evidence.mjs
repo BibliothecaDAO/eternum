@@ -615,9 +615,28 @@ export function comparePlaytestSummary(baseline, current) {
         `${mode} ${threshold.metricName} worst run regressed from ${Math.round(baselineValue)}ms to ${Math.round(currentValue)}ms`,
       );
     }
+    failures.push(...clickToResultRegressions(mode, baseline.byMode?.[mode]?.steps, current.byMode[mode].steps));
   }
 
   return { failures, ok: failures.length === 0 };
+}
+
+/** A completed action step's press-to-result total, as a summary spreads it across runs. */
+const CLICK_TO_RESULT_TOTAL = "verdict.clickToResult.totalMs";
+
+/**
+ * Each action whose press-to-result median is now slower than the slowest run of the baseline: past the baseline's own
+ * spread, so its run-to-run noise alone does not fail it. An action the baseline did not time is not judged.
+ */
+function clickToResultRegressions(mode, baselineSteps = {}, currentSteps = {}) {
+  return Object.entries(currentSteps).flatMap(([step, metrics]) => {
+    const before = baselineSteps[step]?.[CLICK_TO_RESULT_TOTAL];
+    const now = metrics?.[CLICK_TO_RESULT_TOTAL];
+    if (!before || !now || now.median <= before.max) return [];
+    return [
+      `${mode} ${step}: click to result median ${Math.round(now.median)}ms (n=${now.n}) is past the baseline's slowest ${Math.round(before.max)}ms (median ${Math.round(before.median)}ms, n=${before.n})`,
+    ];
+  });
 }
 
 export function collectBrowserErrors(browserErrors, consoleOutput, provoked = []) {

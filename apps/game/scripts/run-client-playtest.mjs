@@ -13,6 +13,7 @@ import {
   touchAtPhoneWidth,
   VIEWPORT,
 } from "./client-playtest/browser-session.mjs";
+import { clickToResultTable } from "./client-playtest/click-latency.mjs";
 import { startClient } from "./client-playtest/client-server.mjs";
 import {
   assertInTargetGame,
@@ -207,6 +208,8 @@ function finish({ options, output, owner, results, runDir }) {
     finishedAt: new Date().toISOString(),
   };
   if (runDir) writeJson(join(runDir, "summary.json"), summary);
+  const actionTable = clickToResultTable(summary.byMode ?? {});
+  if (runDir && actionTable) writeFileSync(join(runDir, "click-to-result.md"), `${actionTable}\n`);
   console.log(JSON.stringify({ runDir, ok: summary.ok, failures, warnings: judged.gateEvaluation?.warnings }, null, 2));
   process.exitCode = summary.ok ? 0 : 1;
 }
