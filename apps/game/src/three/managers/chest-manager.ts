@@ -22,6 +22,7 @@ import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "../scenes/worldmap-content-ladder";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "../terrain/terrain-surface";
+import { screenCentrePlacement } from "../rewards/screen-centre-placement";
 import { RenderChunkSize } from "../types/common";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getWorldPositionForHex } from "../utils";
@@ -334,7 +335,8 @@ export class ChestManager {
     await this.prepareModel();
     const camera = this.hexagonScene?.getCamera();
     if (!this.chestModel || !this.chestTransitions || !camera) return false;
-    const placement = screenCentrePlacement(camera, CENTRE_SCREEN_SHARE);
+    const surface = this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE;
+    const placement = screenCentrePlacement(camera, CENTRE_SCREEN_SHARE, surface);
     if (!placement) return false;
     const presented = this.chestTransitions.present(CENTRE_KEY, placement, this.chestModel.time, glow);
     this.applyContentLadder(this.contentLadder);
@@ -704,17 +706,3 @@ export class ChestManager {
     }
   }
 }
-
-/**
- * Where a chest stands at the screen's centre: on the ground under it, scaled so the chest fills `share` of the
- * screen's height at the camera's distance. None when the camera looks at no ground.
- */
-const screenCentrePlacement = (camera: THREE.Camera, share: number): THREE.Matrix4 | null => {
-  const direction = camera.getWorldDirection(new THREE.Vector3());
-  if (direction.y >= 0) return null;
-  const distance = -camera.position.y / direction.y;
-  const ground = camera.position.clone().addScaledVector(direction, distance);
-  const fov = camera instanceof THREE.PerspectiveCamera ? THREE.MathUtils.degToRad(camera.fov) : Math.PI / 4;
-  const scale = share * 2 * distance * Math.tan(fov / 2);
-  return new THREE.Matrix4().compose(ground, new THREE.Quaternion(), new THREE.Vector3(scale, scale, scale));
-};
