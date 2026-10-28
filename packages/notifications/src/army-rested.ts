@@ -6,9 +6,9 @@ export const includesArmyRestedNotification = (level: NotificationLevel): boolea
   NOTIFICATION_LEVELS.indexOf(level) >= NOTIFICATION_LEVELS.indexOf("standard");
 
 /**
- * The player's armies are rested: one alert a day for every army of theirs in the game, the first time one is full that
- * day (a Frontier game day, else a UTC date), so armies that rest at three times the speed still buzz once. It lives two
- * minutes like every alert.
+ * An army of the player's is rested: one alert a day per player and game, the first time one of their armies is full
+ * that day (a Frontier game day, else a UTC date), so armies that rest at three times the speed still buzz once. It
+ * names one army, since others may still be recovering. It lives two minutes like every alert.
  */
 export function buildArmyRestedNotification(input: {
   chainId: string;
@@ -26,8 +26,8 @@ export function buildArmyRestedNotification(input: {
       version: 1,
       id: `rested:v2:${input.chainId}:${input.gameId}:${input.day}:${input.owner}`,
       owner: input.owner,
-      title: "Your armies are rested",
-      body: `${input.gameName}: their stamina is full.`,
+      title: "An army is rested",
+      body: `${input.gameName}: its stamina is full.`,
       target: gamePath({ chainId: input.chainId, gameId: input.gameId }),
       createdAt: input.fullAt,
       expiresAt: input.fullAt + 120_000,

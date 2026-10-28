@@ -19,6 +19,7 @@ import {
   includesStoryNotification,
   isQuietAt,
   readHistoryStory,
+  sendableAt,
   storyRecipients,
   type LocalNotificationPayload,
   type PushEnvelope,
@@ -93,14 +94,14 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     if (!shard) return;
     const env = decodeIdentityEnv(this.env);
     // Each stage stands alone: one that fails is logged and the others still run.
-    await runStage(shard, "deliver", () => this.deliverDue(env));
+    await runStage(shard, "deliver", () => this.deliverDue(env, shard));
     const watched = await runStage(shard, "manifest", () => this.withWorldAddress(shard));
     let morePages = false;
     let dayOpenWake: number | null = null;
     if (watched) {
       dayOpenWake = (await runStage(shard, "day-open", () => this.prepareDayOpens(env, watched))) ?? null;
       await runStage(shard, "wake", () => this.wakeRestedArmies(env, watched));
-      await runStage(shard, "deliver", () => this.deliverDue(env));
+      await runStage(shard, "deliver", () => this.deliverDue(env, shard));
       morePages = (await runStage(shard, "stories", () => this.readStories(env, watched))) ?? false;
     }
     await this.scheduleNextAlarm(morePages, dayOpenWake);
@@ -118,7 +119,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
   private async prepareDayOpens(env: IdentityEnv, shard: Required<WatchedShard>): Promise<number | null> {
     const directory = await readShard<HeraldGameDirectory>(shard.url, "/games");
     if (BigInt(directory.chain) !== BigInt(shard.chainId)) throw new Error(`${shard.url} changed chain`);
-    await this.forgetEndedDayOpens(shard, directory);
+    await this.forgetPastPreparations();
     const plan = planDayOpenings(directory.games, Date.now(), DAY_OPEN_PREPARE_MS);
     for (const opening of plan.prepare) {
       const preparedKey = `day-open-prepared:${opening.gameId}:${opening.day}`;
@@ -135,17 +136,8 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     return plan.nextAlarmAt;
   }
 
-  /** A game that ended sends no more Day open pushes; a day's preparation is forgotten once the day is over. */
-  private async forgetEndedDayOpens(shard: Required<WatchedShard>, directory: HeraldGameDirectory): Promise<void> {
-    const running = new Set(
-      directory.games
-        .filter((game) => game.mode === "frontier" && game.status !== "Ended" && game.status !== "Settled")
-        .map((game) => gamePath({ chainId: shard.chainId, gameId: game.game_id })),
-    );
-    for (const [key, entry] of await this.ctx.storage.list<OutboxEntry>({ prefix: "outbox:" })) {
-      if (entry.envelope.notification.kind === "day-open" && !running.has(entry.envelope.notification.target))
-        await this.ctx.storage.delete(key);
-    }
+  /** A day's preparation is forgotten once the day is over. */
+  private async forgetPastPreparations(): Promise<void> {
     for (const [key, endsAt] of await this.ctx.storage.list<number>({ prefix: "day-open-prepared:" }))
       if (endsAt <= Date.now()) await this.ctx.storage.delete(key);
   }
@@ -284,12 +276,29 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     });
   }
 
-  private async deliverDue(env: IdentityEnv): Promise<void> {
+  /**
+   * Sends every due alert. A Day open push goes only while its game still runs, as the shard says now: one prepared
+   * before a restart is dropped if its game ended meanwhile, and waits if the shard cannot answer. Other alerts never
+   * wait on the shard.
+   */
+  private async deliverDue(env: IdentityEnv, shard: WatchedShard): Promise<void> {
     const now = Date.now();
     for (const [key, dueAt] of await this.ctx.storage.list<number>({ prefix: "rested-sent:" }))
       if (dueAt <= now) await this.ctx.storage.delete(key);
-    for (const [key, entry] of await this.ctx.storage.list<OutboxEntry>({ prefix: "outbox:" })) {
-      if (entry.dueAt <= now) await this.deliverEntry(env, key, entry);
+    const due = [...(await this.ctx.storage.list<OutboxEntry>({ prefix: "outbox:" }))].filter(
+      ([, entry]) => entry.dueAt <= now,
+    );
+    const running = due.some(([, entry]) => isDayOpen(entry))
+      ? await runningFrontierGames(shard).catch((error: unknown) => {
+          console.error("shard_notifier_day_open_unchecked", shard.url, error);
+          return null;
+        })
+      : new Set<string>();
+    for (const [key, entry] of due) {
+      if (!isDayOpen(entry)) await this.deliverEntry(env, key, entry);
+      else if (!running) await this.ctx.storage.put(key, { ...entry, dueAt: now + POLL_MS });
+      else if (running.has(entry.envelope.notification.target)) await this.deliverEntry(env, key, entry);
+      else await this.ctx.storage.delete(key);
     }
   }
 
@@ -344,14 +353,15 @@ const planAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, page: Heral
       const owners = [...new Set(realmsIds.values())];
       const levels = yield* (yield* NotificationPreferenceStore).levels(owners);
       const devices = yield* (yield* PushSubscriptionStore).gameAlertDevices(owners);
-      const games = owners.length > 0 ? yield* Effect.promise(() => gameNames(shard.url)) : new Map<number, string>();
+      const games = owners.length > 0 ? yield* Effect.promise(() => gameDirectory(shard.url)) : new Map<number, Game>();
       const now = Date.now();
       return recipientsByStory.flatMap(({ item, story, recipients }) =>
         perStory(shard, item, () =>
           recipients.flatMap((account) => {
             const owner = realmsIds.get(account);
-            if (!owner || !includesStoryNotification(levels.get(owner) ?? "off", story)) return [];
             const gameId = Number(item.value.game_id);
+            const game = games.get(gameId);
+            if (!owner || !includesStoryNotification(levels.get(owner) ?? "off", story, game?.mode ?? null)) return [];
             const notification = buildStoryNotification({
               sourceId: historyStoryIdentity(
                 { chainId: shard.chainId, worldAddress: shard.worldAddress, gameId },
@@ -361,7 +371,7 @@ const planAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, page: Heral
               recipient: account,
               value: item.value,
               owner,
-              gameName: games.get(gameId) ?? `Game ${gameId}`,
+              gameName: game?.name ?? `Game ${gameId}`,
               target: gamePath({ chainId: shard.chainId, gameId }),
               now,
             });
@@ -376,9 +386,8 @@ const planAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, page: Heral
   );
 
 /**
- * Checks current consent, expiry, the game in view, quiet hours and the player's 24-hour ceiling before sending. A Day
- * open push was already timed out of quiet hours. Returns the alert to retry (or null when it is done), and whether the
- * push service took it.
+ * Checks current consent, expiry, the game in view, the phone's quiet hours and the player's 24-hour ceiling before
+ * sending. Returns the alert to send later (or null when it is done), and whether the push service took it.
  */
 const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number, sentToday: number) =>
   Effect.runPromise(
@@ -392,7 +401,8 @@ const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number, sentToday: n
       if (!device || device.gameAlertsEnabledAt === null || device.gameAlertsEnabledAt > notification.createdAt)
         return done;
       if (!wantsGameAlerts(device, now) || (levels.get(entry.owner) ?? "off") === "off") return done;
-      if (notification.kind !== "day-open" && isQuietAt(now, device.timeZone)) return done;
+      // The phone's night as it is now, which a zone change or a late retry can move: Day open waits for its morning.
+      if (isQuietAt(now, device.timeZone)) return { next: laterThisMorning(entry, device.timeZone), accepted: false };
       if (sentToday >= DAILY_PUSH_CEILING) {
         console.warn("shard_notifier_daily_ceiling", notification.id, `owner ${entry.owner}`);
         return done;
@@ -415,6 +425,26 @@ const historyStoryIdentity = (scope: StoryEventScope, item: HeraldHistoryEvent) 
     ...item.value,
     event_position: { transaction_hash: item.transaction_hash, event_index: item.event_index },
   });
+
+const isDayOpen = (entry: OutboxEntry) => entry.envelope.notification.kind === "day-open";
+
+/** A Day open push in the phone's night waits for its 08:00, if it still lives then; any other alert is dropped. */
+const laterThisMorning = (entry: OutboxEntry, timeZone: string | null): OutboxEntry | null => {
+  if (!isDayOpen(entry)) return null;
+  const dueAt = sendableAt(Date.now(), timeZone);
+  return dueAt < entry.envelope.notification.expiresAt ? { ...entry, dueAt } : null;
+};
+
+/** The Frontier games of this shard still running, by their notification target. */
+const runningFrontierGames = async (shard: WatchedShard): Promise<Set<string>> => {
+  const directory = await readShard<HeraldGameDirectory>(shard.url, "/games");
+  if (BigInt(directory.chain) !== BigInt(shard.chainId)) throw new Error(`${shard.url} changed chain`);
+  return new Set(
+    directory.games
+      .filter((game) => game.mode === "frontier" && game.status !== "Ended" && game.status !== "Settled")
+      .map((game) => gamePath({ chainId: shard.chainId, gameId: game.game_id })),
+  );
+};
 
 const outboxKey = (entry: OutboxEntry) => `outbox:${entry.envelope.notification.id}:${entry.subscriptionId}`;
 
@@ -588,7 +618,7 @@ const restedAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, watch: Re
   );
 
 /** The day a rested army counts against: its Frontier game day, else its UTC date. */
-const restedDay = (game: HeraldGameDirectory["games"][number] | undefined, fullAt: number): number => {
+const restedDay = (game: Game | undefined, fullAt: number): number => {
   if (!game?.expedition || fullAt / 1000 < game.clock.start_main_at) return Math.floor(fullAt / DAY_MS);
   const calendar = {
     seed: BigInt(game.expedition.seed),
@@ -601,13 +631,12 @@ const restedDay = (game: HeraldGameDirectory["games"][number] | undefined, fullA
 const wantsGameAlerts = (device: PushSubscriptionRow, now: number) =>
   device.gameAlertsEnabledAt !== null && (device.gameForegroundUntil === null || device.gameForegroundUntil <= now);
 
+type Game = HeraldGameDirectory["games"][number];
+
 const gameDirectory = async (url: string) => {
   const directory = await readShard<HeraldGameDirectory>(url, "/games");
   return new Map(directory.games.map((game) => [game.game_id, game]));
 };
-
-const gameNames = async (url: string) =>
-  new Map([...(await gameDirectory(url))].map(([gameId, game]) => [gameId, game.name]));
 
 const readShard = async <T>(url: string, path: string): Promise<T> => {
   const response = await fetch(`${url}${path}`, { signal: AbortSignal.timeout(SHARD_TIMEOUT_MS), redirect: "manual" });

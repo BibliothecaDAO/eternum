@@ -78,7 +78,7 @@ const PAYLOADS: Record<string, Record<string, unknown>> = {
   BitcoinAwardStory: { winner_paid: 5 },
 };
 const DELIVERED = [...nativeStoryVariants, "BattleEvent", "RaidEvent"].filter((story) =>
-  includesStoryNotification("all", story),
+  includesStoryNotification("all", story, "blitz"),
 );
 
 it("puts every delivered story into its own words, in production as in development", () => {

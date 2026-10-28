@@ -237,10 +237,11 @@ and verbs; a words-only notice keeps its text.
   Portrait, Payout wallet) opens in a panel under the rows, and a destructive step (sign out, remove a device) asks
   first in the sheet's dialog over the page (`AppDialog`), Keep or Escape its way out.
 - **Notifications** (Settings, You or in game): Off, Important or All, and **This device**. Important sends one push as
-  each Frontier game day opens ("Day 2 is open · Claim 1,000 Labor · ends 20:00"), the season's or a Blitz's end, and
-  direct messages; All adds rested armies (once a day), arrivals, filled trades and payouts. None between 22:00 and
-  08:00 on the phone's clock (a day that opens then is pushed at 08:00), at most six game pushes a day, none for the
-  player's own taps (the Feed and the Log have them). Server: `apps/realms/server/shard-notifier.ts`.
+  each Frontier game day opens ("Day 2 is open / Devcon: claim 1,000 Labor before 20:00."), the season's or a Blitz's
+  end, fights between players outside Frontier, and direct messages; All adds a rested army (once a day), arrivals,
+  filled trades and payouts. None between 22:00 and 08:00 on the phone's clock, checked again as each is sent (a day
+  that opens then is pushed at 08:00), at most six game pushes a day, none for the player's own taps (the Feed and the
+  Log have them). Server: `apps/realms/server/shard-notifier.ts`.
 - **The Blitz lobby** counts down to one moment: entry closing while the slot takes players, then the games' start (the
   lobby's title names the start time).
 

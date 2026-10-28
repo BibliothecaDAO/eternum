@@ -31,6 +31,8 @@ const ARMY = 7;
 /** Another player on the shard, with no devices, whose army rests too: only an owner-narrowed read leaves it out. */
 const NEIGHBOUR_HOME = 6;
 const NEIGHBOUR_ARMY = 8;
+/** The player's second army, in its realm's second slot, which can rest on a clock of its own. */
+const SECOND_ARMY = 10;
 const PUSH_ENDPOINT = "https://fcm.googleapis.com/fcm/send/player-device";
 const DEVICE_ID = "00000000-0000-4000-8000-000000000001";
 const OWNER = realmsIdOf("player-one");
@@ -85,7 +87,11 @@ const createHerald = () => {
     army: null as null | { amount: number; settledAt: number; day: number },
     /** The neighbour's army, spent whenever the player acts, so it rests alongside the player's. */
     neighbourArmy: null as null | { amount: number; settledAt: number; day: number },
+    /** The player's second army, none until a test spends it. */
+    secondArmy: null as null | { amount: number; settledAt: number; day: number },
     status: "Live" as "Live" | "Settled",
+    /** The game's mode in the directory: fights between players push only outside Frontier. */
+    mode: "frontier" as "frontier" | "blitz",
     chain: CHAIN_ID,
     /** Snapshot reads answered, and whether this Herald is failing them. */
     snapshotReads: 0,
@@ -107,7 +113,7 @@ const createHerald = () => {
             game_id: GAME_ID,
             name: "frontier-a",
             status: state.status,
-            mode: "frontier",
+            mode: state.mode,
             clock: { start_main_at: state.seasonStart, end_at: state.seasonStart + 21 * 20 * DAY_UNIT_SECONDS },
             expedition: { seed: "1", day_unit_seconds: DAY_UNIT_SECONDS },
           },
@@ -125,7 +131,14 @@ const createHerald = () => {
         { status: 409 },
       );
     if (url.pathname === `/games/${GAME_ID}/snapshot`)
-      return snapshot(state.army, state.neighbourArmy, url.searchParams.get("owner"), state.members, state.homeSource);
+      return snapshot(
+        state.army,
+        state.neighbourArmy,
+        url.searchParams.get("owner"),
+        state.members,
+        state.homeSource,
+        state.secondArmy,
+      );
     const page = { chain: state.chain, world_address: "0x5e45", complete_through_block: 10 + log.length };
     const after = url.searchParams.get("after");
     if (!after) return { ...page, next_cursor: { block: 10, transaction: 2147483647, event: 2147483647 }, items: [] };
@@ -213,6 +226,7 @@ const snapshot = (
   owner: string | null,
   members: string[],
   homeSource: "realm" | "golden" | null,
+  second: ArmyState | null,
 ) => ({
   confirmed_block: 10,
   game_id: String(GAME_ID),
@@ -304,6 +318,7 @@ const snapshot = (
       model: "TileOccupancy",
       rows: [
         ...(army ? [armyPosition(ARMY, HOME, army)] : []),
+        ...(second ? [armyPosition(SECOND_ARMY, HOME, second, 1)] : []),
         ...(neighbour ? [armyPosition(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, neighbour)] : []),
       ]
         .filter(({ home }) => owner === null || BigInt(STRUCTURE_OWNERS.get(home)!) === BigInt(owner))
@@ -313,6 +328,7 @@ const snapshot = (
       model: "ArmySlot",
       rows: [
         ...(army ? [armySlotRow(ARMY, HOME, army)] : []),
+        ...(second ? [armySlotRow(SECOND_ARMY, HOME, second, 1)] : []),
         ...(neighbour ? [armySlotRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, neighbour)] : []),
       ].filter(({ value }) => owner === null || BigInt(STRUCTURE_OWNERS.get(value.structure_id)!) === BigInt(owner)),
     },
@@ -320,6 +336,7 @@ const snapshot = (
       model: "ArmyProgress",
       rows: [
         ...(army ? [armyProgressRow(ARMY, HOME)] : []),
+        ...(second ? [armyProgressRow(SECOND_ARMY, HOME)] : []),
         ...(neighbour ? [armyProgressRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME)] : []),
       ]
         .filter(({ home }) => owner === null || BigInt(STRUCTURE_OWNERS.get(home)!) === BigInt(owner))
@@ -329,6 +346,7 @@ const snapshot = (
       model: "ExplorerTroops",
       rows: [
         ...(army ? [armyRow(ARMY, HOME, army)] : []),
+        ...(second ? [armyRow(SECOND_ARMY, HOME, second, 1)] : []),
         ...(neighbour ? [armyRow(NEIGHBOUR_ARMY, NEIGHBOUR_HOME, neighbour)] : []),
       ].filter(({ value }) => owner === null || BigInt(STRUCTURE_OWNERS.get(value.owner)!) === BigInt(owner)),
     },
@@ -359,7 +377,7 @@ const realmRow = (home: number) => ({
   },
 });
 
-const armyRow = (explorerId: number, home: number, army: ArmyState) => ({
+const armyRow = (explorerId: number, home: number, _army: ArmyState, slot = 0) => ({
   key: `0x${explorerId.toString(16)}`,
   value: {
     ...explorerFixture.expected.value,
@@ -369,7 +387,7 @@ const armyRow = (explorerId: number, home: number, army: ArmyState) => ({
     troops: {
       ...explorerFixture.expected.value.troops,
       count: "0x64",
-      stamina: { Slot: 0 },
+      stamina: { Slot: slot },
     },
   },
 });
@@ -394,26 +412,26 @@ const armyProgressRow = (explorerId: number, home: number) => ({
   },
 });
 
-const armySlotRow = (explorerId: number, home: number, army: ArmyState) => ({
-  key: `0x${home.toString(16)}`,
+const armySlotRow = (explorerId: number, home: number, army: ArmyState, slot = 0) => ({
+  key: `0x${(home * 16 + slot).toString(16)}`,
   value: {
     game_id: GAME_ID,
     structure_id: home,
     epoch: army.day,
-    slot: 0,
+    slot,
     explorer_id: explorerId,
     stamina: { amount: army.amount, settled_at: army.settledAt, remainder: 0 },
   },
 });
 
-const armyPosition = (explorerId: number, home: number, army: ArmyState) => ({
+/** An army's tile: in the region of the day it marched out on, the `step`th tile east of the realm's region middle. */
+const armyPosition = (explorerId: number, home: number, army: ArmyState, step = 0) => ({
   home,
   key: `0x${explorerId.toString(16)}`,
   value: {
     game_id: GAME_ID,
-    // An army stands in the region of the day it marched out on.
     alt: false,
-    col: (home === HOME ? 0 : REGION_SPACING) + REGION_SPACING / 2,
+    col: (home === HOME ? 0 : REGION_SPACING) + REGION_SPACING / 2 + step,
     row: army.day * 4 * REGION_SPACING + REGION_SPACING / 2,
     entity_id: explorerId,
     category: 15,
@@ -425,12 +443,20 @@ const armyPosition = (explorerId: number, home: number, army: ArmyState) => ({
 const createHarness = async (level: "off" | "important" | "standard" | "all") => {
   const storage = newStorage();
   const herald = createHerald();
+  const device = await deviceKeys();
   const push = {
     status: 201,
     received: [] as number[],
     times: [] as number[],
     endpoints: [] as string[],
+    bodies: [] as ArrayBuffer[],
     stalledEndpoint: null as string | null,
+    /** Each push the phones received, as their title and body: every test device shares the first one's keys. */
+    words: async () =>
+      (await Promise.all(push.bodies.map((body) => device.open(body)))).map((envelope) => {
+        const { title, body } = (envelope as { notification: { title: string; body: string } }).notification;
+        return `${title} / ${body}`;
+      }),
   };
   const vapid = await vapidKeys();
   const start = () =>
@@ -438,13 +464,14 @@ const createHarness = async (level: "off" | "important" | "standard" | "all") =>
       bundle,
       storage,
       vapid,
-      outbound: (request) => {
+      outbound: async (request) => {
         const url = new URL(request.url);
         if (url.origin === SHARD) {
           const answer = herald.answer(url);
           return answer instanceof Response ? answer : Response.json(answer);
         }
         if (url.href.startsWith(PUSH_ENDPOINT)) {
+          push.bodies.push(await request.arrayBuffer());
           push.received.push(push.status);
           push.times.push(Date.now());
           push.endpoints.push(url.href);
@@ -456,7 +483,7 @@ const createHarness = async (level: "off" | "important" | "standard" | "all") =>
       },
     });
   const worker = await start();
-  await seed(worker.db, level, await deviceKeys());
+  await seed(worker.db, level, device);
   return { herald, push, start, worker };
 };
 
@@ -491,6 +518,7 @@ it.concurrent(
   "alerts the player's device once for a battle on a listed shard, and a restart resends nothing",
   async () => {
     const { herald, push, start, worker } = await createHarness("important");
+    herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     push.status = 503;
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
@@ -534,23 +562,30 @@ it.concurrent(
     const firstWake = (armiesTick() + REST_TICKS) * ticks(1);
     await pause(ticks(1));
     herald.act(0); // the army spends its stamina again before it was rested
+    await pause(ticks(1));
+    // The player's second army is spent a tick later: when the first is full, it is still recovering.
+    herald.state.secondArmy = { amount: 0, settledAt: Math.floor(Date.now() / 1000), day: TODAY };
+    herald.story("ExplorationReward", {});
     await waitUntil(() => Date.now() > firstWake + polls(2), 60_000);
     expect(push.received).toEqual([]);
     await waitUntil(() => push.received.length >= 1, 60_000);
+    expect(await push.words()).toEqual(["An army is rested / frontier-a: its stamina is full."]);
+    await pause(ticks(2) + polls(10)); // the second army rests too: the day's push has gone
     expect(push.received).toEqual([201]);
 
-    herald.act(0); // rested again the same game day: the day's push has gone
+    herald.act(0); // rested again the same game day: still nothing
     await pause(ticks(REST_TICKS + 1) + polls(10));
     expect(push.received).toEqual([201]);
     await worker.dispose();
   },
-  300_000,
+  420_000,
 );
 
 it.concurrent(
   "a game that ends while an army rests alerts nothing for it, and every other alert still flows",
   async () => {
     const { herald, push, worker } = await createHarness("standard");
+    herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
 
@@ -574,6 +609,7 @@ it.concurrent(
   "a wake that keeps failing is retried, then dropped, and every other alert still flows",
   async () => {
     const { herald, push, worker } = await createHarness("standard");
+    herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
 
@@ -597,6 +633,7 @@ it.concurrent(
   "reads a new chain at the same URL from its own head, and sends nothing twice",
   async () => {
     const { herald, push, worker } = await createHarness("important");
+    herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
     herald.battle();
@@ -622,6 +659,7 @@ it.concurrent(
   "a story that cannot be put into words is left, the player's own taps send nothing, and what follows still alerts",
   async () => {
     const { herald, push, worker } = await createHarness("all");
+    herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
     herald.story("HyperstructurePoints", { points: "many" }); // its copy refuses a count that is not a number
@@ -664,8 +702,13 @@ it.each(["important", "all"] as const)(
     expect(push.received).toEqual([201]);
     expect(push.times[0]).toBeGreaterThanOrEqual(opensAt);
     expect(push.times[0]).toBeLessThan(opensAt + 1000);
-    // Preparing the day read the player's realm, as its owner sees it, for what it claims.
+    // The player's golden Devcon realm, read as its owner sees it, names what it claims; the phone has no zone yet.
     expect(herald.state.ownerReads).toContain(PLAYER_ACCOUNT);
+    expect(await push.words()).toEqual([
+      expect.stringMatching(
+        /^Day 2 is open \/ frontier-a: claim 1,000 Labor and 1,000 Essence before \d\d:\d\d UTC\.$/,
+      ),
+    ]);
     await worker.dispose();
     const restarted = await start();
     await restarted.runCron();
@@ -902,6 +945,7 @@ it.concurrent(
   "a player gets at most six game pushes in a day; the seventh waits in the Feed",
   async () => {
     const { herald, push, worker } = await createHarness("important");
+    herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
     for (let fight = 0; fight < 7; fight++) herald.battle();
@@ -949,5 +993,71 @@ it("a phone that turns alerts on gets Alerts are on, and its game's lease keeps 
     expect(push.endpoints).toEqual([endpoint]);
   } finally {
     await worker.dispose();
+  }
+}, 45_000);
+
+it("Frontier pushes no fight to either side or to a second phone; the same fights in Blitz reach both", async () => {
+  const { herald, push, worker } = await createHarness("important");
+  try {
+    const second = `${PUSH_ENDPOINT}/second`;
+    await worker.db
+      .prepare(
+        `INSERT INTO "notification_push_subscriptions"
+      ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "gameAlertsEnabledAt", "createdAt")
+      SELECT '00000000-0000-4000-8000-000000000002', "owner", ?, "p256dh", "auth", 'x', "gameAlertsEnabledAt", "createdAt"
+      FROM "notification_push_subscriptions" WHERE "id" = ?`,
+      )
+      .bind(second, DEVICE_ID)
+      .run();
+    await worker.runCron();
+    await pause(polls(5)); // the notifier reaches the shard's head
+    herald.battle(); // the player attacks a beast camp's army: their own tap
+    await pause(polls(5));
+    expect(push.received).toEqual([]);
+
+    herald.state.mode = "blitz";
+    herald.battle();
+    await waitUntil(() => push.received.length >= 2, 20_000);
+    await pause(polls(3));
+    expect(push.endpoints.sort()).toEqual([PUSH_ENDPOINT, second].sort());
+    expect(await push.words()).toEqual([
+      "You won a battle / frontier-a: your army beat the enemy.",
+      "You won a battle / frontier-a: your army beat the enemy.",
+    ]);
+  } finally {
+    await worker.dispose();
+  }
+}, 60_000);
+
+it("Day open checks the phone's quiet hours again when it is due: a phone now in its night gets nothing then", async () => {
+  const { herald, push, worker } = await createHarness("important");
+  try {
+    await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(dayZone()).run();
+    const opensAt = openSoon(herald, 8);
+    await worker.runCron();
+    await waitUntil(() => herald.state.ownerReads.length > 0, 6000); // prepared while the phone was in its day
+    await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(nightZone()).run();
+    await pause(Math.max(0, opensAt + 3000 - Date.now()));
+    expect(push.received).toEqual([]);
+  } finally {
+    await worker.dispose();
+  }
+}, 45_000);
+
+it("a Day open prepared before a restart is not sent if its game settled while the notifier was down", async () => {
+  const { herald, push, worker, start } = await createHarness("important");
+  const opensAt = openSoon(herald, 8);
+  await worker.runCron();
+  await waitUntil(() => herald.state.ownerReads.length > 0, 6000); // the opening is prepared and stored
+  await worker.dispose();
+  herald.state.status = "Settled";
+  await pause(Math.max(0, opensAt + 1000 - Date.now()));
+  const restarted = await start();
+  try {
+    await restarted.runCron();
+    await pause(3000);
+    expect(push.received).toEqual([]);
+  } finally {
+    await restarted.dispose();
   }
 }, 45_000);

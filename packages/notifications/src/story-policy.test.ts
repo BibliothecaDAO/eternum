@@ -54,7 +54,7 @@ it("covers every native story and tests every cumulative level", () => {
       for (const level of NOTIFICATION_LEVELS) {
         const expected =
           minimum !== "excluded" && NOTIFICATION_LEVELS.indexOf(level) >= NOTIFICATION_LEVELS.indexOf(minimum as "all");
-        expect(includesStoryNotification(level, story), `${story} at ${level}`).toBe(expected);
+        expect(includesStoryNotification(level, story, "blitz"), `${story} at ${level}`).toBe(expected);
       }
     }
   }
@@ -115,17 +115,17 @@ it("validates the versioned preference boundary without accepting owner override
 it("excludes unknown variants in production and diagnoses them in development", () => {
   try {
     vi.stubEnv("NODE_ENV", "production");
-    expect(includesStoryNotification("all", "FutureStory")).toBe(false);
+    expect(includesStoryNotification("all", "FutureStory", "blitz")).toBe(false);
     expect(storyRecipients("FutureStory", "0x1", {})).toEqual([]);
     vi.stubEnv("NODE_ENV", "development");
-    expect(() => includesStoryNotification("all", "FutureStory")).toThrow("Unknown notification story");
+    expect(() => includesStoryNotification("all", "FutureStory", "blitz")).toThrow("Unknown notification story");
   } finally {
     vi.unstubAllEnvs();
   }
 });
 
 it("routes native battles and raids to the owners recorded in the event", () => {
-  expect(includesStoryNotification("important", "BattleEvent")).toBe(true);
+  expect(includesStoryNotification("important", "BattleEvent", "blitz")).toBe(true);
   expect(storyRecipients("BattleEvent", null, { attacker: { player: "0x11" }, defender: { player: "0x12" } })).toEqual([
     "0x11",
     "0x12",
@@ -136,4 +136,15 @@ it("routes native battles and raids to the owners recorded in the event", () => 
 it("notifies both owners for player capture, excluding the zero bandit owner", () => {
   expect(storyRecipients("StructureCapturedStory", "0x222", { previous_owner: "0x111" })).toEqual(["0x222", "0x111"]);
   expect(storyRecipients("StructureCapturedStory", "0x222", { previous_owner: "0x0" })).toEqual(["0x222"]);
+});
+
+it("pushes fights between players only where players fight: never in Frontier, whatever the level", () => {
+  for (const story of ["BattleEvent", "RaidEvent", "StructureCapturedStory"]) {
+    for (const level of NOTIFICATION_LEVELS) expect(includesStoryNotification(level, story, "frontier")).toBe(false);
+    for (const mode of ["blitz", "eternum", "duel"] as const)
+      expect(includesStoryNotification("important", story, mode), `${story} in ${mode}`).toBe(true);
+  }
+  // Everything else a Frontier player is pushed is the same as anywhere.
+  expect(includesStoryNotification("important", "SeasonEnded", "frontier")).toBe(true);
+  expect(includesStoryNotification("all", "ResourceTransferStory", "frontier")).toBe(true);
 });

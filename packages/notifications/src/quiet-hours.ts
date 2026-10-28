@@ -24,12 +24,26 @@ export const isQuietAt = (at: number, timeZone: string | null): boolean => {
   return hour >= QUIET_FROM_HOUR || hour < MORNING_HOUR;
 };
 
-/** When a push due at `at` may go: then, or 08:00 on the phone's clock if `at` falls in its quiet hours. */
+/**
+ * When a push due at `at` may go: then, or 08:00 on the phone's clock if `at` falls in its quiet hours. The clock may
+ * change its offset overnight (daylight saving), so the guess is corrected until the phone reads 08:00.
+ */
 export const sendableAt = (at: number, timeZone: string | null): number => {
   if (!isQuietAt(at, timeZone)) return at;
+  const { hour } = localClock(at, timeZone);
+  let morning = at + ((MORNING_HOUR - hour + 24) % 24) * 3_600_000;
+  for (let step = 0; step < 3; step++) {
+    const correction = fromMorning(morning, timeZone);
+    if (correction === 0) break;
+    morning += correction;
+  }
+  return morning;
+};
+
+/** How far `at` is from 08:00 on the phone's clock that day: positive before it, negative after. */
+const fromMorning = (at: number, timeZone: string | null): number => {
   const { hour, minute, second } = localClock(at, timeZone);
-  const hoursToMorning = (MORNING_HOUR - hour + 24) % 24;
-  return at + hoursToMorning * 3_600_000 - minute * 60_000 - second * 1000 - (at % 1000);
+  return ((MORNING_HOUR - hour) * 60 - minute) * 60_000 - second * 1000 - (at % 1000);
 };
 
 /** "20:00" on the phone's clock, or "20:00 UTC" when its zone is not known. */

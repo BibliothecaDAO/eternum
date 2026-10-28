@@ -12,18 +12,31 @@ import {
 import type { NativeStoryVariant } from "../../../contracts/l3/world-native/schema/client.gen";
 
 type RecipientSource = "capture" | "owner" | "transferReceiver" | "nativeBattle" | "raid";
-/** A delivered story's level, who it is for, and what its alert says; a story is delivered with its words or not at all. */
+/** A game's mode, as its shard's directory names it. */
+export type StoryGameMode = "blitz" | "eternum" | "frontier" | "duel" | null;
+/**
+ * A delivered story's level, who it is for, the game modes it is pushed in (every mode when absent), and what its alert
+ * says; a story is delivered with its words or not at all.
+ */
 type StoryRule =
-  | { level: Exclude<NotificationLevel, "off">; recipients: RecipientSource; copy: StoryCopy }
+  | {
+      level: Exclude<NotificationLevel, "off">;
+      recipients: RecipientSource;
+      copy: StoryCopy;
+      modes?: readonly StoryGameMode[];
+    }
   | { excluded: string };
+
+/** Fights between players. Frontier ships none: its battles are the player's own taps against beasts and camps. */
+const PLAYER_FIGHTS: readonly StoryGameMode[] = ["blitz", "eternum", "duel"];
 
 // Recipient fields are emitted with the action. Never resolve them from present-day structure ownership.
 const OWN_ACTION = "The player's own action: the Feed and the Log show it";
 const STORY_RULES = {
   // What happens to the player without their tap.
-  BattleEvent: { level: "important", recipients: "nativeBattle", copy: battleCopy },
-  StructureCapturedStory: { level: "important", recipients: "capture", copy: captureStoryCopy },
-  RaidEvent: { level: "important", recipients: "raid", copy: raidStoryCopy },
+  BattleEvent: { level: "important", recipients: "nativeBattle", copy: battleCopy, modes: PLAYER_FIGHTS },
+  StructureCapturedStory: { level: "important", recipients: "capture", copy: captureStoryCopy, modes: PLAYER_FIGHTS },
+  RaidEvent: { level: "important", recipients: "raid", copy: raidStoryCopy, modes: PLAYER_FIGHTS },
   SeasonEnded: {
     level: "important",
     recipients: "owner",
@@ -89,9 +102,14 @@ export function storyNotificationRule(story: string): StoryRule {
   return STORY_RULES[story as keyof typeof STORY_RULES];
 }
 
-export function includesStoryNotification(level: NotificationLevel, story: string): boolean {
+/** Whether a player at this level is pushed this story in a game of this mode. */
+export function includesStoryNotification(level: NotificationLevel, story: string, mode: StoryGameMode): boolean {
   const rule = storyNotificationRule(story);
-  return !("excluded" in rule) && NOTIFICATION_LEVELS.indexOf(level) >= NOTIFICATION_LEVELS.indexOf(rule.level);
+  return (
+    !("excluded" in rule) &&
+    (rule.modes === undefined || rule.modes.includes(mode)) &&
+    NOTIFICATION_LEVELS.indexOf(level) >= NOTIFICATION_LEVELS.indexOf(rule.level)
+  );
 }
 
 export function storyRecipients(story: string, owner: unknown, payload: Record<string, unknown>): string[] {

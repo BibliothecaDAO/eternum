@@ -86,7 +86,20 @@ it("keeps quiet from 22:00 to 08:00 on the phone's clock", () => {
   expect(sendableAt(mumbai(15), "Asia/Kolkata")).toBe(mumbai(15));
 });
 
-it("tells a player once a day that their armies are rested, however many rest", () => {
+it.each([
+  // 23:00 on Oct 31 in New York; the clock goes back an hour that night, so 08:00 is 13:00 UTC, not 12:00.
+  ["New York, autumn", "America/New_York", Date.UTC(2026, 10, 1, 3), Date.UTC(2026, 10, 1, 13)],
+  // 22:00 on Mar 13 in New York; the clock goes forward an hour that night, so 08:00 is 12:00 UTC, not 13:00.
+  ["New York, spring", "America/New_York", Date.UTC(2027, 2, 14, 3), Date.UTC(2027, 2, 14, 12)],
+  // Midnight on Oct 25 in Paris; summer time ends that night, so 08:00 is 07:00 UTC.
+  ["Paris, autumn", "Europe/Paris", Date.UTC(2026, 9, 24, 22), Date.UTC(2026, 9, 25, 7)],
+] as const)("waits for 08:00 on the phone's clock across its clock change: %s", (_case, zone, night, morning) => {
+  expect(sendableAt(night, zone)).toBe(morning);
+  expect(isQuietAt(morning, zone)).toBe(false);
+  expect(isQuietAt(morning - 1000, zone)).toBe(true);
+});
+
+it("tells a player once a day that an army is rested, however many rest", () => {
   const rested = (armyDay: number, fullAt: number) =>
     buildArmyRestedNotification({
       chainId: "0xa",
@@ -97,7 +110,7 @@ it("tells a player once a day that their armies are rested, however many rest", 
       gameName: "Devcon",
       now: fullAt,
     })!;
-  expect(rested(1, opensAt)).toMatchObject({ title: "Your armies are rested", body: "Devcon: their stamina is full." });
+  expect(rested(1, opensAt)).toMatchObject({ title: "An army is rested", body: "Devcon: its stamina is full." });
   expect(rested(1, opensAt + HOUR).id).toBe(rested(1, opensAt).id);
   expect(rested(2, opensAt).id).not.toBe(rested(1, opensAt).id);
 });
