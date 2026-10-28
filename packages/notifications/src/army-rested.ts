@@ -27,7 +27,7 @@ export function buildArmyRestedNotification(input: {
       id: `rested:v2:${input.chainId}:${input.gameId}:${input.day}:${input.owner}`,
       owner: input.owner,
       title: "Your armies are rested",
-      body: `${input.gameName} · Stamina full`,
+      body: `${input.gameName}: their stamina is full.`,
       target: gamePath({ chainId: input.chainId, gameId: input.gameId }),
       createdAt: input.fullAt,
       expiresAt: input.fullAt + 120_000,

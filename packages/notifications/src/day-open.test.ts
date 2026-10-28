@@ -21,10 +21,10 @@ const day = {
 };
 
 it.each([
-  ["a held Realm", { labor: 1000, essence: 0 }, "Devcon · Claim 1,000 Labor · ends 20:00"],
-  ["a Devcon realm", { labor: 1000, essence: 1000 }, "Devcon · Claim 1,000 Labor and 1,000 Essence · ends 20:00"],
-  ["a golden ticket", { labor: 2000, essence: 2000 }, "Devcon · Claim 2,000 Labor and 2,000 Essence · ends 20:00"],
-  ["a home with no claim", null, "Devcon · ends 20:00"],
+  ["a held Realm", { labor: 1000, essence: 0 }, "Devcon: claim 1,000 Labor before 20:00."],
+  ["a Devcon realm", { labor: 1000, essence: 1000 }, "Devcon: claim 1,000 Labor and 1,000 Essence before 20:00."],
+  ["a golden ticket", { labor: 2000, essence: 2000 }, "Devcon: claim 2,000 Labor and 2,000 Essence before 20:00."],
+  ["a home with no claim", null, "Devcon: it ends at 20:00."],
 ] as const)("tells %s's player the day is open, what to claim and when it ends", (_home, claim, body) => {
   expect(buildDayOpen({ ...day, claim })).toMatchObject({
     kind: "day-open",
@@ -39,7 +39,7 @@ it.each([
 it("names the last day with the season's end", () => {
   expect(buildDayOpen({ ...day, day: 9, last: true })).toMatchObject({
     title: "The last day is open",
-    body: "Devcon · Claim 1,000 Labor · the season ends 20:00",
+    body: "Devcon: claim 1,000 Labor. The season ends at 20:00.",
   });
 });
 
@@ -48,7 +48,7 @@ it("waits for 08:00 on a phone whose day opens in its quiet hours, and drops a d
   const night = Date.UTC(2026, 10, 3, 17, 30);
   const morning = Date.UTC(2026, 10, 4, 2, 30);
   expect(buildDayOpen({ ...day, opensAt: night, endsAt: night + 12 * HOUR })).toMatchObject({
-    body: "Devcon · Claim 1,000 Labor · ends 11:00",
+    body: "Devcon: claim 1,000 Labor before 11:00.",
     createdAt: morning,
     expiresAt: night + 11 * HOUR,
   });
@@ -57,13 +57,13 @@ it("waits for 08:00 on a phone whose day opens in its quiet hours, and drops a d
   // The same instant is 12:30 in New York: it goes at once, and names the end in New York time.
   expect(
     buildDayOpen({ ...day, opensAt: night, endsAt: night + 12 * HOUR, timeZone: "America/New_York" }),
-  ).toMatchObject({ createdAt: night, body: "Devcon · Claim 1,000 Labor · ends 00:30" });
+  ).toMatchObject({ createdAt: night, body: "Devcon: claim 1,000 Labor before 00:30." });
 });
 
 it("reads UTC, with no quiet hours, on a phone that has not reported its zone", () => {
   expect(buildDayOpen({ ...day, timeZone: null })).toMatchObject({
     createdAt: opensAt,
-    body: "Devcon · Claim 1,000 Labor · ends 14:30 UTC",
+    body: "Devcon: claim 1,000 Labor before 14:30 UTC.",
   });
   expect(isQuietAt(Date.UTC(2026, 10, 3, 2), null)).toBe(false);
 });
@@ -97,7 +97,7 @@ it("tells a player once a day that their armies are rested, however many rest", 
       gameName: "Devcon",
       now: fullAt,
     })!;
-  expect(rested(1, opensAt)).toMatchObject({ title: "Your armies are rested", body: "Devcon · Stamina full" });
+  expect(rested(1, opensAt)).toMatchObject({ title: "Your armies are rested", body: "Devcon: their stamina is full." });
   expect(rested(1, opensAt + HOUR).id).toBe(rested(1, opensAt).id);
   expect(rested(2, opensAt).id).not.toBe(rested(1, opensAt).id);
 });

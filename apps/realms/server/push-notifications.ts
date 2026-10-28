@@ -119,7 +119,7 @@ function sendAlertsOn(env: IdentityEnv, owner: string, id: string) {
         id: `alerts-on:${crypto.randomUUID()}`,
         owner,
         title: "Alerts are on",
-        body: "Each game day opens with a push.",
+        body: "You'll get a push when each game day opens.",
         target: "/",
         createdAt: now,
         expiresAt: now + 120_000,

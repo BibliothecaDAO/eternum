@@ -42,9 +42,7 @@ export function buildDayOpen(input: {
       id: `day-open:v1:0x${BigInt(input.chainId).toString(16)}:0x${BigInt(input.worldAddress).toString(16)}:${input.gameId}:${input.day}:${input.owner}`,
       owner: input.owner,
       title: input.last ? "The last day is open" : `Day ${input.day + 1} is open`,
-      body: [input.gameName, claimLine(input.claim), input.last ? `the season ends ${ends}` : `ends ${ends}`]
-        .filter((part) => part !== null)
-        .join(" · "),
+      body: `${input.gameName}: ${dayLine(input.claim, ends, input.last)}`,
       target: gamePath(input),
       createdAt: sendAt,
       expiresAt,
@@ -53,12 +51,16 @@ export function buildDayOpen(input: {
   );
 }
 
-const claimLine = (claim: DayOpenClaim | null): string | null => {
+/** "claim 1,000 Labor and 1,000 Essence before 20:00.", "it ends at 20:00.", or the last day's season end. */
+const dayLine = (claim: DayOpenClaim | null, ends: string, last: boolean): string => {
   const parts = [
     ...(claim && claim.labor > 0 ? [`${amount(claim.labor)} Labor`] : []),
     ...(claim && claim.essence > 0 ? [`${amount(claim.essence)} Essence`] : []),
   ];
-  return parts.length === 0 ? null : `Claim ${parts.join(" and ")}`;
+  if (parts.length === 0) return last ? `the season ends at ${ends}.` : `it ends at ${ends}.`;
+  return last
+    ? `claim ${parts.join(" and ")}. The season ends at ${ends}.`
+    : `claim ${parts.join(" and ")} before ${ends}.`;
 };
 
 const amount = (value: number) => value.toLocaleString("en-US");

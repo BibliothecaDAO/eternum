@@ -27,7 +27,7 @@ export function buildStoryNotification(input: {
       owner: input.owner,
       id: logicalStoryIdentity(input.sourceId, story, input.value, payload),
       title: copy.title,
-      body: `${input.gameName} · ${copy.body}`,
+      body: `${input.gameName}: ${copy.body}`,
       target: input.target,
       createdAt,
       expiresAt: createdAt + 120_000,

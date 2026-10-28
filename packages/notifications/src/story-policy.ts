@@ -27,22 +27,22 @@ const STORY_RULES = {
   SeasonEnded: {
     level: "important",
     recipients: "owner",
-    copy: says("The season is over", "See where you finished."),
+    copy: says("The season is over", "see where you finished."),
   },
   BlitzFinalized: {
     level: "important",
     recipients: "owner",
-    copy: says("The Blitz is settled", "See where you finished."),
+    copy: says("Your Blitz is settled", "see where you finished."),
   },
   ResourceReceiveArrivalStory: {
     level: "standard",
     recipients: "owner",
-    copy: says("The caravan has arrived", "Fresh supplies have reached their destination."),
+    copy: says("Your caravan arrived", "the resources are in your stores."),
   },
   TradeAccepted: {
     level: "all",
     recipients: "owner",
-    copy: says("A trade was filled", "The goods have changed hands."),
+    copy: says("A trade was filled", "the goods changed hands."),
   },
   ResourceTransferStory: { level: "all", recipients: "transferReceiver", copy: transferStoryCopy },
   BitcoinAwardStory: { level: "all", recipients: "owner", copy: bitcoinAwardCopy },

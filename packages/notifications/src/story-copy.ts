@@ -1,4 +1,4 @@
-/** What a story's alert says: its title, and its line under the game's name. */
+/** What a story's alert says: its title, and its line after the game's name ("Devcon: their stamina is full."). */
 export interface NotificationCopy {
   title: string;
   body: string;
@@ -31,11 +31,11 @@ export const hyperstructurePointsCopy: StoryCopy = ({ payload }) => {
   if (points === null) throw new Error("Incomplete hyperstructure points story");
   const whole = points / POINTS_PRECISION;
   return {
-    title: "Hyperstructure points earned",
+    title: "You earned Hyperstructure points",
     body:
       whole === 0n
-        ? "Your share brought less than a point."
-        : `Your share brought ${groupThousands(whole.toString())} ${whole === 1n ? "point" : "points"}.`,
+        ? "your share is less than a point."
+        : `your share is ${groupThousands(whole.toString())} ${whole === 1n ? "point" : "points"}.`,
   };
 };
 
@@ -44,39 +44,38 @@ export const bitcoinAwardCopy: StoryCopy = ({ payload }) => {
   const paid = integer(payload.winner_paid);
   if (paid === null) throw new Error("Incomplete Bitcoin award story");
   return paid > 0n
-    ? { title: "The Bitcoin mine paid out", body: "Your share has reached your realm." }
-    : { title: "Your Bitcoin share was not paid", body: "Nothing reached your realm this phase." };
+    ? { title: "The Bitcoin mine paid you", body: "your share is in your realm." }
+    : { title: "Your Bitcoin share was not paid", body: "the realm you contributed from is no longer yours." };
 };
 
 /** A native battle names each side's player; the recipient's side tells victory from defeat. */
 function nativeBattleCopy(payload: Record<string, unknown>, recipient: string | undefined): NotificationCopy {
   const attacker = compareInteger(record(payload.attacker).player, recipient) === true;
   const side = attacker ? payload.attacker_id : payload.defender_id;
-  if (compareInteger(payload.winner_id, 0) !== false)
-    return { title: "Battle lines have shifted", body: "The clash is over. Survey the field." };
+  if (compareInteger(payload.winner_id, 0) !== false) return { title: "A battle ended", body: "neither side won." };
   return compareInteger(payload.winner_id, side) === true
-    ? { title: "Victory on the field", body: "Your forces carried the day." }
-    : { title: "Your forces were defeated", body: "The battle is over. Your next move awaits." };
+    ? { title: "You won a battle", body: "your army beat the enemy." }
+    : { title: "You lost a battle", body: "the enemy beat your army." };
 }
 
 /** A capture tells both sides what changed hands: a player's structure takes its armies and incoming deliveries along. */
 function captureCopy(payload: Record<string, unknown>, recipient: string | undefined): NotificationCopy {
   if (compareInteger(payload.new_owner, recipient) !== true)
-    return { title: "A stronghold has fallen", body: "The enemy took it, with its armies and incoming deliveries." };
+    return { title: "You lost a structure", body: "the enemy took it with its armies and incoming deliveries." };
   return compareInteger(payload.previous_owner, 0) === false
-    ? { title: "The stronghold is yours", body: "Its armies and incoming deliveries are yours too." }
-    : { title: "The stronghold is yours", body: "Your banner now flies over the captured site." };
+    ? { title: "You took a structure", body: "its armies and incoming deliveries are yours too." }
+    : { title: "You took a structure", body: "it is yours now." };
 }
 
 function raidCopy(payload: Record<string, unknown>, recipient: string | undefined): NotificationCopy {
   const target = compareInteger(payload.target_owner, recipient) === true;
   if (target)
     return payload.success === true
-      ? { title: "Your realm was raided", body: "Raiders made off with supplies." }
-      : { title: "A raid was repelled", body: "Your defenders held the walls." };
+      ? { title: "Your realm was raided", body: "raiders took some of your resources." }
+      : { title: "You held off a raid", body: "your defenders kept your resources." };
   return payload.success === true
-    ? { title: "The raid succeeded", body: "Your army returns with its spoils." }
-    : { title: "The raid failed", body: "The defenders held. Your army falls back." };
+    ? { title: "Your raid succeeded", body: "your army is bringing the loot home." }
+    : { title: "Your raid failed", body: "the defenders held and your army is falling back." };
 }
 
 /**
@@ -87,8 +86,8 @@ function transferCopy(payload: Record<string, unknown>): NotificationCopy {
   const travel = integer(payload.travel_time);
   if (travel === null) throw new Error("Incomplete resource transfer story");
   return travel === 0n
-    ? { title: "Supplies received", body: "A shipment has reached your stores." }
-    : { title: "Supplies on the road", body: "A shipment is on its way to your stores." };
+    ? { title: "Resources received", body: "they are in your stores." }
+    : { title: "Resources on the way", body: "a shipment is heading to your stores." };
 }
 
 /** A whole number from the story, whatever spelling it arrived in; null when it is not one. */
