@@ -55,8 +55,16 @@ def verification_record(environment):
 
 
 def chain_data_exists(project):
-    """Whether the shard's chain volume is still there: until compose down removes it, the node can be asked."""
-    return subprocess.run([*shard.DOCKER, "volume", "inspect", f"{project}_chain"], capture_output=True).returncode == 0
+    """Whether the shard's chain volume is still there: until compose down removes it, the node can be asked. Docker
+    lists volumes whether or not this one exists, so an empty list proves it is gone; a listing that fails proves
+    nothing, and the teardown stops before removing anything."""
+    volume = f"{project}_chain"
+    listed = subprocess.run([*shard.DOCKER, "volume", "ls", "--quiet", "--filter", f"name={volume}"],
+                            capture_output=True, text=True)
+    if listed.returncode != 0:
+        raise RuntimeError(f"Docker could not list volumes, so {volume} may still exist; nothing was removed: "
+                           f"{listed.stderr.strip()}")
+    return volume in listed.stdout.split()
 
 
 def require_verified_backup(environment, directory, backup):

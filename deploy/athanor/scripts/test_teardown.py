@@ -66,15 +66,21 @@ class TeardownBoundaryTest(unittest.TestCase):
             teardown.teardown(["production", BACKUP], lambda stage: None)
 
     def stack(self, verifies=True, down_fails=False):
-        """The shard's box as teardown's commands see it: its chain volume exists until compose down removes it."""
-        state = {"volume": True, "verifies": verifies, "down_fails": down_fails, "calls": []}
+        """The shard's box as teardown's commands see it: its chain volume exists until compose down removes it, and
+        Docker lists volumes unless its daemon is unreachable."""
+        state = {"volume": True, "verifies": verifies, "down_fails": down_fails, "daemon": True, "calls": []}
         def run(command, **kwargs):
             if "verify" in command:
                 state["calls"].append("verify")
                 code = 0 if state["verifies"] else 1
                 return subprocess.CompletedProcess(command, code, '{"problems": ["the shard still accepts writes"]}', "")
             if "volume" in command:
-                return subprocess.CompletedProcess(command, 0 if state["volume"] else 1, "", "")
+                self.assertEqual(command[-4:], ["ls", "--quiet", "--filter", "name=realms-production_chain"])
+                if not state["daemon"]:
+                    return subprocess.CompletedProcess(command, 1, "", "Cannot connect to the Docker daemon")
+                # The filter matches by substring: another shard's volume is listed too, and must not count.
+                listed = ["realms-production_chain_old"] + (["realms-production_chain"] if state["volume"] else [])
+                return subprocess.CompletedProcess(command, 0, "\n".join(listed) + "\n", "")
             state["calls"].append("down")
             if state["down_fails"]:
                 raise subprocess.CalledProcessError(1, command)
@@ -150,6 +156,26 @@ class TeardownBoundaryTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "does not verify; nothing was removed"):
                 self.run_teardown(root, commands, retired)
             self.assertEqual(state["calls"], ["verify"])
+            self.assertTrue(state["volume"])
+            self.assertTrue((run / ".env").exists())
+            self.assertEqual(retired, [])
+
+    def test_a_failed_volume_listing_never_counts_as_the_chain_being_gone(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            run = self.production(root)
+            retired = []
+            # An earlier run verified and recorded, then stopped before removing anything.
+            state, commands = self.stack(down_fails=True)
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.run_teardown(root, commands, retired)
+            self.assertTrue((root / "logs/teardown-production.json").exists())
+            # Writes reopened; now Docker can't be asked whether the chain still exists.
+            state.update(verifies=False, down_fails=False, daemon=False)
+            state["calls"].clear()
+            with self.assertRaisesRegex(RuntimeError, "could not list volumes.*nothing was removed"):
+                self.run_teardown(root, commands, retired)
+            self.assertEqual(state["calls"], [])
             self.assertTrue(state["volume"])
             self.assertTrue((run / ".env").exists())
             self.assertEqual(retired, [])
