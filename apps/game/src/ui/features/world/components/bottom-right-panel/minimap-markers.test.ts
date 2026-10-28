@@ -34,7 +34,7 @@ describe("minimap icon meanings from game facts", () => {
       store.applyFacts([{ model: "Structure", key: "0x7", value: { ...row, base: { ...row.base, level } } }]);
       expect(minimapMarkersView.read(store, ContractAddress("0x111")).get("7")).toEqual({
         name: `map-realm-${level}`,
-        owner: "you",
+        owner: "own",
         value: String(level),
       });
     }
@@ -42,10 +42,10 @@ describe("minimap icon meanings from game facts", () => {
   it("shows ownership, realm level and army strength from the native rows", () => {
     const { store } = campBeside();
     const markers = minimapMarkersView.read(store, ContractAddress("0x111"));
-    expect(markers.get("7")).toEqual({ name: "map-realm-0", owner: "you", value: "0" });
+    expect(markers.get("7")).toEqual({ name: "map-realm-0", owner: "own", value: "0" });
     expect(markers.get(String(SITE))).toEqual({ name: "camp", owner: "neutral", value: undefined });
-    expect(markers.get("201")).toEqual({ name: "map-army", owner: "you", value: "••" });
-    expect(minimapMarkersView.read(store, null).get("201")?.owner).toBe("neutral");
+    expect(markers.get("201")).toEqual({ name: "map-army", owner: "own", value: "••" });
+    expect(minimapMarkersView.read(store, null).get("201")?.owner).toBe("enemy");
     expect(minimapMarkersView.read(store, ContractAddress("0x222")).get("201")?.owner).toBe("enemy");
   });
   it("updates the badge when troops, a site or guild membership changes", () => {
@@ -69,7 +69,7 @@ describe("minimap icon meanings from game facts", () => {
 });
 
 describe("the minimap to a watching viewer (side-colours-4)", () => {
-  it("marks each player's things in their seat, nobody's neutral, whatever the viewer's account", () => {
+  it("marks each player's things in their seat, nobody's in grey, whatever the viewer's account", () => {
     const { store } = campBeside();
     // The open game's players in the order they joined it: 0x111 holds realm 7 and army 201.
     setActiveGame({ chainId: "SHARD", gameId: 1, presetId: 1, name: "SHARD" });
@@ -79,7 +79,7 @@ describe("the minimap to a watching viewer (side-colours-4)", () => {
       const markers = minimapMarkersView.read(store, viewer);
       expect(markers.get("7")?.owner).toBe("seat-0");
       expect(markers.get("201")?.owner).toBe("seat-0");
-      expect(markers.get(String(SITE))?.owner).toBe("neutral");
+      expect(markers.get(String(SITE))?.owner).toBe("nobody");
     }
   });
 });

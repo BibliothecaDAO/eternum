@@ -450,25 +450,26 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   just over the model's top, never on the thing, at every zoom (`src/three/map-plates/map-plate-token.tsx`): a disk,
   then its plate, the tier chip and count of its troops or guard (a camp's or rift's guard alone: what it holds is on
   its plate), and an army's stamina bar, all three in its side's colour: yours green, an ally's (a tribe member's, in
-  Eternum only: `arePlayersAllied`) blue, anyone else's red, nobody's too (owner, 2026-10-21; `HUD_SHEET` own, ally,
-  enemy). A watching viewer (`?spectate=true`, or a spectating HUD) has no side: each player's labels take their seat's
-  colour, with their initial on the disk, and nobody's are grey (owner, 2026-10-21: "a diff color for every player";
-  `watchedSide`, `src/utils/entity-ownership.ts`: a Blitz roster's order, else the open game's players in the order each
-  first had a realm created (its `RealmCreatedStory` history on Herald), for that shard's game alone; 24 colours,
-  `SEAT_COLOURS`, again from the first past the 24th); the minimap marks and the standings (Blitz's **Standings**,
-  Frontier's **Season**) carry the same colour and initial. An undefended one shows a dashed ring. No label element
-  takes the pointer (`map-plates.css`): a hover or a click, on a token or an open plate, lands on the tile under the
-  pointer, on desktop and phone (owner, 2026-10-20: "we click the tile and that's it"). The tile under the pointer is
-  that of the army or structure drawn there, its model anywhere from its feet to its top (an army half a tile wide, a
-  structure its tile's width), before the ground of the tile behind the model; the ground seen over a model's top, under
-  its token, is that ground's tile (`HexagonScene.pickPointerHex`, `MapPlateLayer.thingHitBy`): the same at every zoom
-  (owner, 2026-10-27: "at a certain zoom level I cant get the hover modal"; "right clicking here I'd expect the army to
-  move"). Hover a tile and its full plate opens where its token was drawn (one plate a tile: the army standing on it
-  before any structure; a cleared site's marker never counts as one, so an army on a cleared site opens its own): on the
-  token's foot (hung from the top bar's edge only where it would reach under the bar), slid aside but always covering
-  the token's middle (`map-plate-layout.ts`). Select it and it goes back to rest, its token ringed in gold: its detail
-  is the HUD's panel; selected while hovered, it rests until the pointer leaves it, and opens again when it comes back.
-  The open plate and the order line are placed together, clear of each other, the screen's edges and the HUD; where the
+  Eternum only: `arePlayersAllied`) blue, anyone else's red, nobody's too (owner, 2026-10-21; `sideOf` and
+  `SIDE_COLOURS`, which the minimap's marks read too, so a beast is red there as well). A watching viewer
+  (`?spectate=true`, or a spectating HUD) has no side: each player's labels take their seat's colour, with their initial
+  on the disk, and nobody's are grey (owner, 2026-10-21: "a diff color for every player"; `watchedSide`,
+  `src/utils/entity-ownership.ts`: a Blitz roster's order, else the open game's players in the order each first had a
+  realm created (its `RealmCreatedStory` history on Herald), for that shard's game alone; 24 colours, `SEAT_COLOURS`,
+  again from the first past the 24th); the minimap marks and the standings (Blitz's **Standings**, Frontier's
+  **Season**) carry the same colour and initial. An undefended one shows a dashed ring. No label element takes the
+  pointer (`map-plates.css`): a hover or a click, on a token or an open plate, lands on the tile under the pointer, on
+  desktop and phone (owner, 2026-10-20: "we click the tile and that's it"). The tile under the pointer is that of the
+  army or structure drawn there, its model anywhere from its feet to its top (an army half a tile wide, a structure its
+  tile's width), before the ground of the tile behind the model; the ground seen over a model's top, under its token, is
+  that ground's tile (`HexagonScene.pickPointerHex`, `MapPlateLayer.thingHitBy`): the same at every zoom (owner,
+  2026-10-27: "at a certain zoom level I cant get the hover modal"; "right clicking here I'd expect the army to move").
+  Hover a tile and its full plate opens where its token was drawn (one plate a tile: the army standing on it before any
+  structure; a cleared site's marker never counts as one, so an army on a cleared site opens its own): on the token's
+  foot (hung from the top bar's edge only where it would reach under the bar), slid aside but always covering the
+  token's middle (`map-plate-layout.ts`). Select it and it goes back to rest, its token ringed in gold: its detail is
+  the HUD's panel; selected while hovered, it rests until the pointer leaves it, and opens again when it comes back. The
+  open plate and the order line are placed together, clear of each other, the screen's edges and the HUD; where the
   hovered plate cannot fit beside the line, it stays its token. The plate, on the HUD panel's surface, has at most three
   rows (`map-plate-rows.ts`) and never an id. An army: "player | home realm" as its realm's plate writes them, then its
   troops, then its stamina bar and exact "84/150". A realm or hyperstructure: "player | name", its guard slots in the
