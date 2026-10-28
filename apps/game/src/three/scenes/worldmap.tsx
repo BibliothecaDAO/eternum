@@ -1062,6 +1062,7 @@ export default class WorldmapScene extends WarpTravel {
         explorerId: entityId,
         currentDefaultTick: getBlockTimestamp().currentDefaultTick,
       }),
+    isBusy: (entityId) => this.hasOrderInFlight(entityId),
     offerOrders: (entityId, playerAddress) => this.offerSelectedArmyOrders(entityId, playerAddress),
   });
   private isApplyingLocalActionPathUpdate = false;
@@ -3895,7 +3896,7 @@ export default class WorldmapScene extends WarpTravel {
   /** The map under the selected army changed (tiles, occupancy, its own tile): its orders are planned again. */
   private refreshSelectedArmyOrders(): void {
     const entityId = this.selectedOrderableArmyId();
-    if (entityId !== null) this.selectedArmyOrders.offer(entityId, this.getArmyOwnerAddress(entityId));
+    if (entityId !== null) this.selectedArmyOrders.followMapChange(entityId, this.getArmyOwnerAddress(entityId));
   }
 
   /**
