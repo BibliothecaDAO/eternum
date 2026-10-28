@@ -3,7 +3,8 @@ import { RelayFailure } from "./failure";
 import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import { hash, shortString, type RpcProvider } from "starknet";
 import { readClassAbi, readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
-import { rpcAt, rpcBatch, SHARD_RPC_MAX_BATCH_CALLS } from "../../../packages/value-ledger/src/rpc";
+import { rpcAt, rpcBatch } from "../../../packages/value-ledger/src/rpc";
+import { SHARD_RPC_MAX_BATCH_CALLS } from "../../../packages/value-ledger/src/shard-rpc-limits";
 
 export interface ShardConnection {
   rpcUrl: string;

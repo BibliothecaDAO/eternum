@@ -105,8 +105,8 @@ def reopen(project):
 
 def stand_in_read_only_proxy(project):
     """Stops the shard's own proxy and runs read-only-rpc.ts from this checkout in its place: the proxy's image (it
-    carries Bun), its network alias `rpc`, its published port and user. Labelled into the compose project, so the
-    teardown's `compose down --remove-orphans` removes it with the stack."""
+    carries Bun), its network alias `rpc`, its published port and user, with the checkout mounted read-only (the
+    stand-in imports two dependency-free files from it). Labelled into the compose project; teardown removes it."""
     proxy, stand_in = f"{project}-rpc-1", f"{project}-rpc-read-only"
     shape = json.loads(docker_output(["inspect", "-f", "{{json .}}", proxy]))
     docker(["rm", "-f", stand_in], check=False)
@@ -115,12 +115,12 @@ def stand_in_read_only_proxy(project):
     ports = [argument for port, bindings in (shape["HostConfig"]["PortBindings"] or {}).items()
              for binding in bindings for argument in ("-p", f"{binding['HostIp']}:{binding['HostPort']}:{port}")]
     network = next(iter(shape["NetworkSettings"]["Networks"]))
-    deploy = Path(__file__).resolve().parents[1]
+    checkout = Path(__file__).resolve().parents[2]
     docker(["run", "-d", "--name", stand_in, "--restart", "on-failure", "--network", network, "--network-alias", "rpc",
             *ports, *(["--user", shape["Config"]["User"]] if shape["Config"]["User"] else []),
             "--label", f"com.docker.compose.project={project}", "--label", "com.docker.compose.service=rpc-read-only",
-            "-v", f"{deploy}:{deploy}:ro", "-e", "NODE_RPC_URL=http://madara:9944", "-e", "PORT=8080",
-            "--entrypoint", "bun", shape["Config"]["Image"], str(deploy / "shard/read-only-rpc.ts")])
+            "-v", f"{checkout}:{checkout}:ro", "-e", "NODE_RPC_URL=http://madara:9944", "-e", "PORT=8080",
+            "--entrypoint", "bun", shape["Config"]["Image"], str(checkout / "deploy/shard/read-only-rpc.ts")])
     for _ in range(30):
         if proxy_refuses_writes(project):
             return

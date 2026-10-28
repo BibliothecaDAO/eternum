@@ -404,13 +404,13 @@ class ReadOnlyStandInTest(unittest.TestCase):
                               "proxy": "read-only stand-in"})
             self.assertEqual(state["proxy"], "stopped")
             run = next(call for call in state["calls"] if call[0] == "run")
-            deploy = str(Path(verify_backup.__file__).resolve().parents[1])
+            checkout = str(Path(verify_backup.__file__).resolve().parents[2])
             for argument in (["--network", "realms-production_default"], ["--network-alias", "rpc"],
                              ["-p", "127.0.0.1:8080:8080/tcp"], ["--user", "1000:1000"],
                              ["--label", "com.docker.compose.project=realms-production"],
-                             ["-v", f"{deploy}:{deploy}:ro"], ["--entrypoint", "bun"]):
+                             ["-v", f"{checkout}:{checkout}:ro"], ["--entrypoint", "bun"]):
                 self.assertIn(argument, [run[i:i + 2] for i in range(len(run) - 1)])
-            self.assertEqual(run[-2:], ["sha256:herald", f"{deploy}/shard/read-only-rpc.ts"])
+            self.assertEqual(run[-2:], ["sha256:herald", f"{checkout}/deploy/shard/read-only-rpc.ts"])
             with patch.object(verify_backup, "volume_path", return_value=config), \
                     patch.object(verify_backup, "docker", side_effect=docker):
                 self.assertTrue(verify_backup.writes_closed("realms-production"))

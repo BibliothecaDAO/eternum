@@ -1,4 +1,5 @@
 import { RpcProvider, shortString } from "starknet";
+import { SHARD_RPC_MAX_BATCH_CALLS } from "./shard-rpc-limits";
 
 /**
  * How often a sent transaction's status is asked while it is awaited: about a block on Starknet (one every 1.7 s or
@@ -17,9 +18,6 @@ export const rpcAt = (rpcUrl: string): RpcProvider => {
   }
   return new RpcProvider({ nodeUrl: rpcUrl, transactionRetryIntervalFallback: TRANSACTION_POLL_MS });
 };
-
-/** The most calls one JSON-RPC batch may carry: the shard's public read RPC refuses a larger one. */
-export const SHARD_RPC_MAX_BATCH_CALLS = 32;
 
 /**
  * One JSON-RPC batch of reads of the same method, answered in request order. Any call's error fails the whole read: a

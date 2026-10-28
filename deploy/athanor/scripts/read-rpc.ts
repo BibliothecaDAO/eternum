@@ -3,11 +3,14 @@ import { CORS, READ_METHODS, WRITE_METHODS, WRITES_CLOSED_FILE, WRITES_CLOSED_ME
 import { isIP } from "node:net";
 import { hash } from "starknet";
 import { openProver, type StampProvider } from "../vrf/native";
-import { felt, gameInvoke, MAX_TRANSACTION_BYTES, type PlayIdentity } from "../vrf/transaction";
+import { felt, gameInvoke, type PlayIdentity } from "../vrf/transaction";
 import { permitsAccountRequest, type ShardIdentity } from "./account-rpc-policy";
 import { accountRequestLimiter, rpcClientAddress } from "./rpc-client-limit";
 import { isDevShardChain } from "../../../packages/value-ledger/src/dev-shard";
-import { SHARD_RPC_MAX_BATCH_CALLS as MAX_BATCH_CALLS } from "../../../packages/value-ledger/src/rpc";
+import {
+  SHARD_RPC_MAX_BATCH_CALLS as MAX_BATCH_CALLS,
+  SHARD_RPC_MAX_REQUEST_BYTES as MAX_REQUEST_BYTES,
+} from "../../../packages/value-ledger/src/shard-rpc-limits";
 import { seaterAccountAddresses } from "../../../packages/value-ledger/src/shard-accounts";
 import {
   PLAY_REFUSED_CODE,
@@ -153,7 +156,7 @@ export function startReadRpc(
   return Bun.serve({
     hostname,
     port,
-    maxRequestBodySize: MAX_TRANSACTION_BYTES,
+    maxRequestBodySize: MAX_REQUEST_BYTES,
     async fetch(request, server) {
       const peer = server.requestIP(request)?.address;
       const client = peer ? rpcClientAddress(peer, trustedProxy, request.headers) : undefined;
@@ -230,7 +233,7 @@ async function handlePublicRequest(
   let payload: unknown;
   try {
     const raw = await untilAborted(request.arrayBuffer(), preparation.signal);
-    if (raw.byteLength > MAX_TRANSACTION_BYTES) return refuseTransaction("validation", 413);
+    if (raw.byteLength > MAX_REQUEST_BYTES) return refuseTransaction("validation", 413);
     payload = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw));
   } catch {
     return refuse(-32700, "Invalid JSON", 400);
