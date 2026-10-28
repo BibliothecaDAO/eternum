@@ -615,10 +615,11 @@ export function comparePlaytestSummary(baseline, current) {
         `${mode} ${threshold.metricName} worst run regressed from ${Math.round(baselineValue)}ms to ${Math.round(currentValue)}ms`,
       );
     }
-    failures.push(...clickToResultRegressions(mode, baseline.byMode?.[mode]?.steps, current.byMode[mode].steps));
   }
+  const actions = compareClickToResult(baseline, current);
+  failures.push(...actions.failures);
 
-  return { failures, ok: failures.length === 0 };
+  return { failures, ok: failures.length === 0, newActions: actions.newActions };
 }
 
 /** A completed action step's press-to-result total, as a summary spreads it across runs. */
@@ -627,19 +628,41 @@ const CLICK_TO_RESULT_TOTAL = "verdict.clickToResult.totalMs";
 const ONE_FRAME_MS = 1000 / 60;
 
 /**
- * Each action whose press-to-result median is now past the slowest run of the baseline by more than a frame: past the
- * baseline's own spread, so its run-to-run noise alone does not fail it. An action the baseline did not time is not
- * judged.
+ * Every action the baseline timed, judged in the current summary: it fails when its renderer mode or its timed runs are
+ * missing (blocked, failed or left out every time: a lost measurement is never a pass), or when its median is past the
+ * baseline's slowest run by more than a frame (past the baseline's own spread, so run-to-run noise alone does not fail
+ * it). Actions timed now that the baseline never timed are listed as new, not judged.
  */
-function clickToResultRegressions(mode, baselineSteps = {}, currentSteps = {}) {
-  return Object.entries(currentSteps).flatMap(([step, metrics]) => {
-    const before = baselineSteps[step]?.[CLICK_TO_RESULT_TOTAL];
-    const now = metrics?.[CLICK_TO_RESULT_TOTAL];
-    if (!before || !now || now.median <= before.max + ONE_FRAME_MS) return [];
-    return [
-      `${mode} ${step}: click to result median ${Math.round(now.median)}ms (n=${now.n}) is past the baseline's slowest ${Math.round(before.max)}ms and a frame (median ${Math.round(before.median)}ms, n=${before.n})`,
-    ];
-  });
+function compareClickToResult(baseline, current) {
+  const failures = [];
+  const newActions = [];
+  for (const [mode, { steps: baselineSteps = {} } = {}] of Object.entries(baseline.byMode ?? {})) {
+    const timedBefore = Object.entries(baselineSteps).filter(([, metrics]) => metrics?.[CLICK_TO_RESULT_TOTAL]);
+    if (timedBefore.length === 0) continue;
+    const currentSteps = current.byMode?.[mode]?.steps;
+    if (!currentSteps) {
+      failures.push(`${mode}: the baseline times ${timedBefore.length} action(s) on this renderer, and none was run`);
+      continue;
+    }
+    for (const [step, metrics] of timedBefore) {
+      const before = metrics[CLICK_TO_RESULT_TOTAL];
+      const now = currentSteps[step]?.[CLICK_TO_RESULT_TOTAL];
+      if (!now) {
+        failures.push(`${mode} ${step}: no timed run (verdicts ${JSON.stringify(currentSteps[step]?.verdicts ?? {})})`);
+      } else if (now.median > before.max + ONE_FRAME_MS) {
+        failures.push(
+          `${mode} ${step}: click to result median ${Math.round(now.median)}ms (n=${now.n}) is past the baseline's slowest ${Math.round(before.max)}ms and a frame (median ${Math.round(before.median)}ms, n=${before.n})`,
+        );
+      }
+    }
+  }
+  for (const [mode, { steps = {} }] of Object.entries(current.byMode ?? {})) {
+    for (const [step, metrics] of Object.entries(steps)) {
+      const timedBefore = baseline.byMode?.[mode]?.steps?.[step]?.[CLICK_TO_RESULT_TOTAL];
+      if (metrics?.[CLICK_TO_RESULT_TOTAL] && !timedBefore) newActions.push(`${mode} ${step}`);
+    }
+  }
+  return { failures, newActions };
 }
 
 export function collectBrowserErrors(browserErrors, consoleOutput, provoked = []) {
