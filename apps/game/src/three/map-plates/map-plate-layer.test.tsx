@@ -215,11 +215,17 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
       expect([element("army:1").dataset.view, element("army:1").dataset.selected]).toEqual(["token", "true"]);
       expectReadable(kept([1, 2, 3]), []);
 
-      // The Raider hovered: its plate opens, or stays its token without room; Own A and Own B stay readable, clear of it.
+      // The Raider hovered: its plate opens (owner, 28 October 2026: "again on desktop the hover label disappears at a
+      // certain zoom level"); Own A and Own B stay readable, clear of it, or step aside under it where it had no room.
       armies.setHover(3);
       await settle();
-      const raider = element("army:3").dataset.view === "open" ? [boxOf("army:3", plates[3])] : [];
-      expectReadable(kept([1, 2]), raider);
+      expect(element("army:3").dataset.view).toBe("open");
+      const raider = boxOf("army:3", plates[3]);
+      const [clearOfIt, underIt] = [true, false].map((clear) =>
+        kept([1, 2]).filter(([key, plate]) => gapBetween(boxOf(key, plate), raider) >= 0 === clear),
+      );
+      for (const [key] of underIt) expect(element(key).dataset.yields).toBe("true");
+      expectReadable(clearOfIt, [raider]);
       armies.clearHover();
       await settle();
 

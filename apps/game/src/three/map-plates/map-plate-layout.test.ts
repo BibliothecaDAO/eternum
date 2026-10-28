@@ -241,9 +241,10 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
       expectInPlaceAndClear(things, placed, { screen, opened: 1, line: DRAWN.line });
     });
 
-    it("keeps the hovered thing its token where its plate has no place clear of a kept token", () => {
+    // Owner, 28 October 2026: "again on desktop the hover label disappears at a certain zoom level".
+    it("opens the hovered plate over a kept token where it has no other place, that token stepping aside", () => {
       // Kept tokens on either side of the hovered one: the wide plate cannot cover its token's middle without covering
-      // one of them, which it never does.
+      // one of them. It opens over the one it covers least, which steps aside until it closes; the other stays.
       const wide = { width: 300, height: 80 };
       const things = [
         thing("selected", 40, 500, 1, { keep: true }),
@@ -251,10 +252,11 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
         thing("hovered", 110, 500, 1, { opened: wide, openRank: 1 }),
       ];
       const placed = placePlates(things, SCREEN);
-      expect([...placed.closed]).toEqual(["hovered"]);
-      expect(placed.spots.get("hovered")).toMatchObject({ shape: "token" });
-      expect(placed.spots.get("selected")).toMatchObject({ shape: "token", yields: false });
-      expectInPlaceAndClear(things, placed, { opened: 0 });
+      expect(placed.closed.size).toBe(0);
+      expect(placed.spots.get("hovered")).toMatchObject({ shape: "plate" });
+      const stepped = ["selected", "own"].filter((id) => (placed.spots.get(id) as { yields: boolean }).yields);
+      expect(stepped).toHaveLength(1);
+      expectInPlaceAndClear(things, placed, { opened: 1 });
     });
 
     it("stays in place of its token on a crowded map, clear of every other label", () => {
@@ -317,8 +319,9 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
       one.at.x <= spot.x + one.token.width - 6;
 
     /**
-     * Every kept thing readable: its token drawn, not yielding, over its own point, and 6px clear of every other label
-     * drawn (tokens, the hovered plate) and of the order line (at `line`'s size). A hovered one may be its plate instead.
+     * Every kept thing readable: its token drawn over its own point, 6px clear of every other label drawn (tokens, the
+     * hovered plate) and of the order line (at `line`'s size). A hovered one may be its plate instead. A kept token
+     * steps aside only under a hovered plate that had no place clear of it, and the order line never covers one.
      */
     const expectKeptReadable = (
       things: readonly PlateThing[],
@@ -328,16 +331,18 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
       const rects = drawn(things, placed.spots);
       const line = placed.orderLine ? [{ id: "line", ...placed.orderLine, ...lineSize }] : [];
       const opened = (one: PlateThing) => one.id === hovered && placed.spots.get(one.id)?.shape === "plate";
+      const plate = rects.find((rect) => things.some((one) => one.id === rect.id && opened(one)));
       for (const one of things.filter((candidate) => candidate.keep && !opened(candidate))) {
         const spot = placed.spots.get(one.id)!;
-        expect({ id: one.id, shape: spot.shape, yields: spot.shape === "token" && spot.yields }).toEqual({
-          id: one.id,
-          shape: "token",
-          yields: false,
-        });
+        expect({ id: one.id, shape: spot.shape }).toEqual({ id: one.id, shape: "token" });
         expect(overItsPoint(one, spot), JSON.stringify({ one, spot })).toBe(true);
-        const rect = rects.find((candidate) => candidate.id === one.id)!;
-        for (const other of [...rects, ...line])
+        const rect = { id: one.id, ...(spot as { x: number; y: number }), ...one.token };
+        for (const other of line) expect(gap(rect, other), JSON.stringify({ rect, other })).toBeGreaterThanOrEqual(6);
+        if (spot.shape === "token" && spot.yields) {
+          expect(plate && gap(rect, plate) < 6, `${one.id} steps aside under no plate`).toBe(true);
+          continue;
+        }
+        for (const other of rects)
           if (other.id !== one.id) expect(gap(rect, other), JSON.stringify({ rect, other })).toBeGreaterThanOrEqual(6);
       }
     };
@@ -393,7 +398,7 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
       expect(overItsPoint(things[1], placed.spots.get("beast"))).toBe(true);
     });
 
-    it("never lets the hovered plate or the order line cover a kept token: the plate stays closed without room", () => {
+    it("never lets the order line cover a kept token, and the hovered plate only where it has no other place", () => {
       // Own armies in a row 30px apart, the middle one's neighbour hovered, the line asked beside a kept tile.
       const things = [
         army("own a", 600, 500),
@@ -402,7 +407,8 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
         army("own c", 690, 500),
       ];
       const placed = placePlates(things, SCREEN, { at: { x: 630, y: 530 }, size: DRAWN.line });
-      expectKeptReadable(things, placed);
+      expect(placed.spots.get("hovered")).toMatchObject({ shape: "plate" });
+      expectKeptReadable(things, placed, { hovered: "hovered" });
     });
 
     it("stands a kept token on its own point when no arrangement of its cluster has room, never hiding it", () => {
@@ -504,10 +510,10 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
       [1440, 900],
       [1920, 1080],
     ])(
-      "keeps the order line off a hovered kept army whose plate has no room, on real hexes at the bottom edge, %sx%s (review-token-anchor-5)",
+      "keeps the order line off every kept army when a hovered one's plate has no room, on real hexes at the bottom edge, %sx%s (review-token-anchor-5)",
       (width, height) => {
         const { at, armyAt, screen } = farthestView(width, height);
-        let closedNearTheLine = 0;
+        let openedOverKept = 0;
         for (let row = 1; row <= 12; row += 1)
           for (const hover of [0, 1, 2]) {
             const hexes = [
@@ -521,16 +527,18 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
             if (things.some((one) => one.at.y > height || one.at.y < 100)) continue;
             const [col, r] = hexes[hover];
             const placed = placePlates(things, screen, { at: at(col, r, 0), size: REVIEWED_LINE });
-            if (placed.closed.has(things[hover].id) && placed.orderLine) closedNearTheLine += 1;
-            // The hovered one resting as its token is kept like the others: the line stands clear of it, or is not drawn.
+            const others = things.filter((_, index) => index !== hover);
+            if (others.some((one) => (placed.spots.get(one.id) as { yields?: boolean }).yields)) openedOverKept += 1;
+            // The line stands clear of every kept token, or is not drawn; the plate covers one only without room.
             expectKeptReadable(things, placed, { line: REVIEWED_LINE, hovered: things[hover].id });
           }
-        // The case the reviewer found: (0,9), (1,9), (1,10) at 1920x1080, the last hovered, its plate with no room.
-        if (width === 1920) expect(closedNearTheLine).toBeGreaterThan(0);
+        // The case the reviewer found: (0,9), (1,9), (1,10) at 1920x1080, the last hovered, its plate with no room
+        // clear of its neighbours: it opens over one of them now, rather than stay closed.
+        if (width === 1920) expect(openedOverKept).toBeGreaterThan(0);
       },
     );
 
-    it("keeps the order line off a hovered kept token whose plate closes, beside two kept neighbours at the bottom edge", () => {
+    it("keeps the order line off the kept tokens when a hovered one's plate has no room, beside two kept neighbours at the bottom edge", () => {
       for (const y of [650, 680, 700, 710])
         for (const dx of [30, 40, 50]) {
           const things = [

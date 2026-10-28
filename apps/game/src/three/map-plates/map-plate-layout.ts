@@ -29,8 +29,9 @@ export interface PlateThing {
   /**
    * It must stay in view however crowded (the owner, 2026-10-20: the selected thing, the player's own armies, anything
    * under attack): the kept tokens are placed before every other, together (`placeKept`), each on its own point, slid
-   * while attached, or a row or two straight up; no plate or order line covers one. The others yield to them, but for
-   * those standing near a kept one, which are placed with it, so a beast beside the player's army keeps its label.
+   * while attached, or a row or two straight up; no order line covers one, nor a hovered plate that has any other place.
+   * The others yield to them, but for those standing near a kept one, which are placed with it, so a beast beside the
+   * player's army keeps its label.
    */
   keep?: boolean;
   /** Among opened plates, higher is placed first (the hovered one is the only plate a thing opens). */
@@ -79,6 +80,12 @@ const ATTACH_MARGIN = 6;
  * 18 px would have kept in view). Where every place hides one, the cheapest still stands, and the token steps aside.
  */
 const HIDE_COST = 60;
+/**
+ * What covering a token kept in view costs an opened plate's place: more than any slide, hang or hidden neighbour, so a
+ * plate covers one only where it has no other place, rather than stay closed (owner, 28 October 2026: "again on desktop
+ * the hover label disappears at a certain zoom level"). The kept token steps aside while the plate is open.
+ */
+const COVER_KEPT_COST = 10_000;
 
 const clear = (a: Rect, b: Rect) =>
   a.x >= b.x + b.width + GAP ||
@@ -152,9 +159,9 @@ const obstaclesFor = (token: Rect, screen: PlateScreen): Rect[] => {
  * structure/army and replace it by the hover/selected modal when i'm on it"): standing on the token's foot, its middle
  * over the token's, so above its thing as the token is; else slid aside, never so far that it stops covering where its
  * token was drawn (`inPlaceOf`). On screen and clear of the HUD, except as far as covering its token needs: a plate that
- * would reach under the top bar standing is hung from the bar's edge instead; it never covers a token kept in view
- * (`kept`), so a hover never hides or moves one. Cheapest first: pixels slid, a hung plate
- * `HANG_COST` more, and `HIDE_COST` for each resting token it would hide.
+ * would reach under the top bar standing is hung from the bar's edge instead. A hover never moves a token. Cheapest
+ * first: pixels slid, a hung plate `HANG_COST` more, `HIDE_COST` for each resting token it would hide, and
+ * `COVER_KEPT_COST` for each token kept in view (`kept`) it would cover.
  */
 const placesInPlaceOf = (
   token: Rect,
@@ -185,10 +192,15 @@ const placesInPlaceOf = (
         rect.x + rect.width <= right &&
         rect.y + rect.height <= bottom &&
         inPlaceOf(rect, token) &&
-        obstacles.every((obstacle) => clear(rect, obstacle)) &&
-        kept.every((box) => clear(rect, box)),
+        obstacles.every((obstacle) => clear(rect, obstacle)),
     )
-    .map(({ rect, cost }) => ({ rect, cost: cost + HIDE_COST * others.filter((other) => !clear(rect, other)).length }))
+    .map(({ rect, cost }) => ({
+      rect,
+      cost:
+        cost +
+        HIDE_COST * others.filter((other) => !clear(rect, other)).length +
+        COVER_KEPT_COST * kept.filter((box) => !clear(rect, box)).length,
+    }))
     .toSorted((a, b) => a.cost - b.cost);
 };
 
@@ -204,10 +216,11 @@ const placesInPlaceOf = (
  *    most of the time"). Then the rest in priority order, each on the nearest of its places clear of every token placed
  *    before it, else not drawn. A hover or a selection never moves a resting token.
  * 2. The hovered plate and the order line are placed together: the plate in its drawn token's place
- *    (`placesInPlaceOf`), the line beside its tile, clear of each other, of the HUD and of every kept token, at the least
- *    sliding. Where no such arrangement exists, the plate stays its token (`closed`): the layout never returns a plate
- *    over another label it must keep, or away from its token.
- * 3. A resting token, not kept, under the opened plate or the order line steps aside (`yields`) until they close.
+ *    (`placesInPlaceOf`), the line beside its tile, clear of each other and of the HUD, the line clear of every kept
+ *    token, the plate too wherever it has such a place, at the least sliding. Where no such arrangement exists, the
+ *    plate stays its token (`closed`): the layout never returns a plate away from its token or under the HUD.
+ * 3. A resting token under the opened plate or the order line steps aside (`yields`) until they close: a kept one only
+ *    under a plate that had no other place.
  */
 export const placePlates = (
   things: readonly PlateThing[],
@@ -267,7 +280,7 @@ export const placePlates = (
               shape: "token",
               x: rest.x,
               y: rest.y,
-              yields: !thing.keep && !covers.every((cover) => clear(rest, cover)),
+              yields: !covers.every((cover) => clear(rest, cover)),
             }
           : { shape: "none" },
     );
