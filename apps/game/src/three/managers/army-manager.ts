@@ -1960,6 +1960,7 @@ export class ArmyManager {
     }
 
     const numericEntityId = this.toNumericId(entityId);
+    if (this.armyPresentations.get(entityId)?.isMine) presentResult(`army-gone:${numericEntityId}`);
     if (playDefeatFx && this.proceduralArmyCharacterLayer.playDefeat(numericEntityId)) {
       this.activeProceduralArmyEntityIds.delete(numericEntityId);
     }

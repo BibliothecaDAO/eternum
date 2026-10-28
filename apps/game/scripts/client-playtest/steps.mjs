@@ -171,7 +171,12 @@ const clickToResultStep = (name, press, resultOf) => ({
   verify: async ({ played, probe, actionLatency, window }) => {
     const result = resultOf({ played, actionLatency, since: window.from });
     if (!result) return judgeClickToResult(played, { missing: ["result"] });
-    const measured = measureClickToResult({ probe, actionLatency, since: window.from, result });
+    const measured = measureClickToResult({
+      probe,
+      actionLatency,
+      since: window.from,
+      result: { ...result, region: undefined },
+    });
     const verdict = judgeClickToResult(played, measured);
     if (!played.capturedAs) return verdict;
     const frames = capturedFrames.get(played.capturedAs) ?? [];
@@ -179,7 +184,7 @@ const clickToResultStep = (name, press, resultOf) => ({
     if (verdict.status !== "completed") return verdict;
     const onScreen = await proveResultOnScreen({
       frames,
-      region: played.region,
+      region: result.region ?? played.region,
       before: measured.marks.diff,
       visible: measured.marks.visible,
       frameMs: medianFrameMs(probe.frames, window),
@@ -242,6 +247,87 @@ const ACTION_STEPS = [
   clickToResultStep("build", buildOnAnOpenPlot, builtBuilding),
 ];
 
+/**
+ * The spire's depth entered (the lab's spire game): the army selected, the spire beside it tapped for its card, then
+ * Enter on Ethereal II; the result is the army setting off into the depth from its tile (a desktop's card also says it
+ * is there; a phone's closes).
+ */
+const SPIRE_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+  { name: "spire-card", play: tapTheSpire, settleMs: 0, verify: spireCardOffersDepths },
+  clickToResultStep(
+    "enter-depth",
+    enterEtherealIIFromItsCard,
+    ({ played }) => played.armyId && { presented: `walk:${played.armyId}` },
+  ),
+];
+
+async function enterEtherealIIFromItsCard({ browser }) {
+  const selection = browser.observe().selection;
+  const armyAt = armyScreenOffset(selection);
+  browser.click("Enter Ethereal II");
+  return { armyId: selection?.army?.id ?? null, region: armyAt && tileRegion(armyAt) };
+}
+
+/**
+ * Two of the realm's armies merged (the lab's merge game): the spire's army picked, the other right-clicked for the
+ * transfer card, then its Merge; the result is the army the chain removed leaving the map.
+ */
+function mergeActionSteps() {
+  const tiles = { byArmy: null };
+  return [
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+    { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+    { name: "open-merge", play: (context) => openTheMerge(context, tiles), settleMs: 0, verify: mergeCardOpen },
+    clickToResultStep("merge", (context) => mergeTheArmies(context, tiles), mergedAway),
+  ];
+}
+
+/**
+ * Presses the transfer card's merge, then confirms it as a player does: a merge that costs the army its XP asks once
+ * more ("Lose 100 XP, merge into Army 2"), and that second press sends it. Each is pressed where it is drawn.
+ */
+async function mergeTheArmies({ browser }, tiles) {
+  const merge = browser.read(MERGE_BUTTON);
+  if (!merge) return { merge, tiles: tiles.byArmy };
+  browser.tap(merge.offset);
+  const confirm = await readUntil(
+    () => browser.read(MERGE_BUTTON),
+    (shown) => shown && shown.name !== merge.name,
+    SHEET_WAIT_MS,
+  );
+  if (confirm && confirm.name !== merge.name) browser.tap(confirm.offset);
+  return { merge, confirm, tiles: tiles.byArmy };
+}
+
+const MERGE_BUTTON = `JSON.stringify((() => {
+  const button = [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])]
+    .find((candidate) => /merge into/i.test(candidate.textContent));
+  if (!button) return null;
+  const rect = button.getBoundingClientRect();
+  return {
+    name: button.textContent.trim(),
+    offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)],
+  };
+})())`;
+
+/** The army the lab's chain removed in the merge, leaving the map from its tile. */
+const mergedAway = ({ played, actionLatency }) => {
+  const removed = (actionLatency.chainAnswers ?? [])
+    .filter(({ kind }) => kind === "ManageTroops")
+    .at(-1)
+    ?.answered.find(({ model, value }) => model === "ExplorerTroops" && value === null);
+  const army = removed?.key.split(":").at(-1);
+  const tile = army && played.tiles?.[army];
+  return tile && { presented: `army-gone:${army}`, region: tileRegion(tile) };
+};
+
+const sheetRegion = (selector) => `JSON.stringify((() => {
+  const rect = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+  return { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) };
+})())`;
+
 const REALM_LEVELS = ["Settlement", "City", "Kingdom", "Empire"];
 const CASTLE_SHEET_TEXT = `document.querySelector('[data-kit-sheet][aria-label="Castle"]')?.textContent ?? ""`;
 const SHEET_NAME = `JSON.stringify(document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null)`;
@@ -275,10 +361,7 @@ async function raiseTheCastle({ browser }) {
   return { sheet, level: REALM_LEVELS[level], raisedTo, region };
 }
 
-const SHEET_REGION = `JSON.stringify((() => {
-  const rect = document.querySelector('[data-kit-sheet][aria-label="Castle"]').getBoundingClientRect();
-  return { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) };
-})())`;
+const SHEET_REGION = sheetRegion('[data-kit-sheet][aria-label="Castle"]');
 
 /**
  * Taps down towards the castle from above, a plot at a time, until one opens the Build sheet (straight above the castle
@@ -773,11 +856,13 @@ async function pickArmy(browser, army) {
   await sleep(ARMY_FLIGHT_MS);
 }
 
+/** The army pressed is the one the map reports selected: a phone's dock names its button otherwise ("Army 1: details"). */
 function armySelected({ seen, played }) {
   if (!played.army) return blocked("the player has no army on the HUD");
-  return seen.pressed.includes(played.army)
-    ? completed({ army: played.army, armies: played.armies })
-    : failed(`${played.army} is not selected (pressed: ${seen.pressed.join(", ") || "none"})`);
+  const selected = seen.selection?.army ?? null;
+  return selected
+    ? completed({ army: played.army, selected, armies: played.armies })
+    : failed(`${played.army} was pressed and the map reports no army selected`);
 }
 
 /**
@@ -1492,8 +1577,8 @@ const LAB_SPIRE_STEPS = [
 ];
 
 const SPIRE_ORDER = "Enter a depth";
-// The pointer's tooltip, read whole: Frontier's names the order on its first line ("Enter a depth").
-const TILE_TOOLTIP = `JSON.stringify(document.querySelector('[role="tooltip"]')?.innerText.replace(/\\s+/g, " ").trim() ?? null)`;
+// The pointer's tooltip: Frontier's names the order on its first line ("Enter a depth"), its cost below.
+const TILE_TOOLTIP = ORDER_TOOLTIP_TITLE;
 const SPIRE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   depths: [...document.querySelectorAll("[data-spire-depths] .ui-row")].map((row) => ({
@@ -1508,10 +1593,12 @@ const SPIRE_STATE = `JSON.stringify({
   sent: (window.__labChain?.sent ?? []).map(({ hash, command }) => ({ hash, ...command })),
 })`;
 
-/** Hovers the selected army's neighbours until one's tooltip offers the spire's order. */
+/** Hovers the selected army's neighbours, from where it stands on screen, until one's tooltip offers the spire's order. */
 async function findTheSpire({ browser }) {
+  const armyAt = armyScreenOffset(browser.observe().selection) ?? [0, 0];
   const scanned = [];
-  for (const offset of NEIGHBOUR_RING) {
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    const offset = [armyAt[0] + dx, armyAt[1] + dy];
     browser.hover(offset);
     await sleep(HOVER_SETTLE_MS);
     const tip = browser.read(TILE_TOOLTIP);
@@ -1527,8 +1614,12 @@ function spireFound({ played }) {
     : failed(`no tile beside the army offers "${SPIRE_ORDER}"`, { scanned: played.scanned });
 }
 
-/** Taps the tile whose hover offers the spire's order, as a player taps what they see. */
+/**
+ * Taps the spire beside the army for its card, as a player taps what they see: on a desktop the tile whose hover offers
+ * the spire's order; a phone has no hover, so each tile beside the army is tapped until the Spire card opens.
+ */
 async function tapTheSpire({ browser }) {
+  if (!onADesktop()) return tapAroundTheArmyForTheSpire(browser);
   const { spire, scanned } = await findTheSpire({ browser });
   if (!spire) return { spire, scanned };
   browser.tap(spire);
@@ -1538,6 +1629,25 @@ async function tapTheSpire({ browser }) {
     SPIRE_WAIT_MS,
   );
   return { spire, scanned, state };
+}
+
+async function tapAroundTheArmyForTheSpire(browser) {
+  const armyAt = armyScreenOffset(browser.observe().selection) ?? [0, 0];
+  const scanned = [];
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    const offset = [armyAt[0] + dx, armyAt[1] + dy];
+    browser.tap(offset);
+    const state = await readUntil(
+      () => browser.read(SPIRE_STATE),
+      (shown) => shown.sheet !== null,
+      SHEET_WAIT_MS,
+    );
+    scanned.push({ offset, tip: state.sheet });
+    if (state.sheet === "Spire") return { spire: offset, scanned, state };
+    if (state.sheet !== null) browser.press("Escape");
+    if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
+  }
+  return { spire: null, scanned };
 }
 
 function spireCardOffersDepths({ played, seen }) {
@@ -1553,11 +1663,7 @@ function spireCardOffersDepths({ played, seen }) {
   ];
   if (JSON.stringify(offered) !== JSON.stringify(expected))
     return failed(`the card offers ${offered.join(", ")}`, shown);
-  if (
-    !/^Entering keeps .+ in that depth for the rest of the day \(.+ left\): there is no way back up$/.test(
-      shown.commitment ?? "",
-    )
-  )
+  if (!/^.+ stays until the day ends \(.+\)$/.test(shown.commitment ?? ""))
     return failed("the card does not say what entering commits the army to", shown);
   return completed(shown);
 }
@@ -1582,7 +1688,7 @@ function armyEnteredEtherealII({ played }) {
   // Two regions of Frontier's hundred rows straight below where it stood.
   if (after.army?.hex.col !== before.army.hex.col || after.army.hex.row - before.army.hex.row !== 200)
     return failed("the army did not land in Ethereal II", { before, after });
-  if (!/is in Ethereal II until the day ends/.test(after.text ?? ""))
+  if (!/is in Ethereal II today/.test(after.text ?? ""))
     return failed("the card does not show the army in Ethereal II", { before, after });
   return completed({ command, before: before.army, after: after.army, card: after.text });
 }
@@ -2320,6 +2426,8 @@ export const STEP_SETS = {
   },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
   "lab-actions": { game: labSpireGame("actions"), steps: ACTION_STEPS },
+  "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },
+  "lab-actions-merge": { game: labSpireGame("merge-keeps-picked"), steps: mergeActionSteps() },
   "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps() },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
