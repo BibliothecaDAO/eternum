@@ -158,6 +158,8 @@ export function HudChatWindow({
     if (!initializer) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && open) {
+        // A field with its list open (chat's mentions) puts the list away first.
+        if (event.target instanceof Element && event.target.closest('[aria-expanded="true"]')) return;
         event.stopImmediatePropagation();
         onOpenChange(false);
         return;

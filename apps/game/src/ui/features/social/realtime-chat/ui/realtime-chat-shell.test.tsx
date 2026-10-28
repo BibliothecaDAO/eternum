@@ -9,6 +9,9 @@ vi.mock("@realms-world/identity", async (original) => ({
     Object.fromEntries(accounts.map((account) => [account, { name: null, portrait: null }])),
 }));
 
+// The game's players to mention need a game; these tests read the chat's frame and lists, with no one to mention.
+vi.mock("../hooks/use-chat-mentions", () => ({ useChatMentions: () => ({ me: null, choices: [], names: [] }) }));
+
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 import { layOutChatLists } from "@/hooks/use-stick-to-latest.test-support";
 import { GLOBAL_ROOM } from "../model/chat-rooms";

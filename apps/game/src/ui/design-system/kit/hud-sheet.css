@@ -1511,7 +1511,7 @@ button.ui-relic:focus-visible {
   text-align: left;
   cursor: pointer;
 }
-.ui-menu__item:is(:hover, [data-state="hover"]) {
+.ui-menu__item:is(:hover, [data-state="hover"], [aria-selected="true"]) {
   background: var(--hud-hover);
 }
 .ui-menu__item[aria-checked="true"] {
@@ -1605,7 +1605,8 @@ button.ui-relic:focus-visible {
     min-width: var(--hud-control);
   }
   .ui-event__open,
-  .ui-feed-line {
+  .ui-feed-line,
+  .ui-menu__item {
     min-height: var(--hud-control);
     align-items: center;
   }

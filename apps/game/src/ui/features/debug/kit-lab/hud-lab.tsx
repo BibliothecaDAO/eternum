@@ -1065,7 +1065,12 @@ export const HudLab = () => {
   useHudMode("frontier");
   useLabNotice(lab.notice);
   const chatPane = useRef<HTMLElement>(null);
-  const chat = lab.chat && <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} />;
+  // Chat reads the game's players (its mentions), so the phone's page stands in the lab game, as the desktop's does.
+  const chat = lab.chat && (
+    <LabGame preset={FRONTIER_PRESET}>
+      {() => <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} />}
+    </LabGame>
+  );
   if (lab.merge)
     return (
       <div data-lab="frontier-merge" className="ui min-h-screen bg-hud-surface flex items-center justify-center p-3">
