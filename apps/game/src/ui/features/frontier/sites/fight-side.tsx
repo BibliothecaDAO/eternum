@@ -97,7 +97,7 @@ const MARK_ROOM = "36px";
  * side's own width, which its body measures as a container).
  */
 const fittedSize = (role: "body" | "display", line: string, beside = "0px"): string =>
-  `min(var(--hud-text-${role}), calc((100cqi - ${beside}) / ${(line.length * CHARACTER_EM).toFixed(2)}))`;
+  `min(var(--hud-text-${role}), calc((100cqi - ${beside}) / ${line.length * CHARACTER_EM}))`;
 
 /** From eight digits a figure no longer fits half a 360 px phone's card. */
 const SHORT_FROM = 10_000_000;
