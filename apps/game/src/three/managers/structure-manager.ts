@@ -1,7 +1,7 @@
 import { FrontierModel, frontierModelKind } from "../structures/frontier-model";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
-import { MineKinds, structureName } from "@bibliothecadao/types";
+import { MineKinds, structureName, troopTierIndex } from "@bibliothecadao/types";
 import { configManager, siteDisplayName, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
 import {
   FALLEN_REALM_RUIN_MODEL_INDEX,
@@ -46,7 +46,6 @@ import {
   getGuardsByStructure,
   getStructureInfoFromTileOccupier,
   getStructureName,
-  TROOP_TIERS,
   unpackBuildingCounts,
   type GuardArmy,
   type IncomingTroopArrival,
@@ -678,7 +677,7 @@ export class StructureManager {
     return guards.map(({ slot, troops }) => ({
       slot,
       category: troops.category,
-      tier: TROOP_TIERS[troops.tier],
+      tier: troopTierIndex(troops.tier) + 1,
       count: divideByPrecision(Number(troops.count)),
     }));
   }

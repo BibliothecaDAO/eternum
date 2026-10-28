@@ -10,7 +10,7 @@ import {
   ResourcesIds,
   StructureType,
   TickIds,
-  TROOP_TIERS,
+  troopTierIndex,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
@@ -47,12 +47,6 @@ const displayAmounts = (rows: readonly ResourceAmount[]) =>
 const missingRule = (description: string): undefined => {
   if (process.env.NODE_ENV !== "production") throw new Error(`This game defines no ${description}`);
   return undefined;
-};
-
-const troopTierIndex = (tier: TroopTier): number => {
-  const index = TROOP_TIERS.indexOf(tier);
-  if (index < 0) throw new Error(`Unknown troop tier ${tier}`);
-  return index;
 };
 
 /** Configuration is read from the active game's immutable facts, without a second balance table. */

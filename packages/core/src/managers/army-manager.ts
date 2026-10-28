@@ -1,4 +1,4 @@
-import { Direction, ID, SystemCalls, TroopTier, TroopType } from "@bibliothecadao/types";
+import { Direction, ID, SystemCalls, TroopTier, troopTierIndex, TroopType } from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
 import { multiplyByPrecision } from "../utils";
 
@@ -35,7 +35,7 @@ export class ArmyManager {
       for_structure_id: this.realmEntityId,
       slot,
       category: Object.keys(TroopType).indexOf(troopType),
-      tier: Object.keys(TroopTier).indexOf(troopTier),
+      tier: troopTierIndex(troopTier),
       amount: multiplyByPrecision(troopCount),
     });
   }
@@ -52,7 +52,7 @@ export class ArmyManager {
       signer,
       for_structure_id: this.realmEntityId,
       category: Object.keys(TroopType).indexOf(troopType),
-      tier: Object.keys(TroopTier).indexOf(troopTier),
+      tier: troopTierIndex(troopTier),
       amount: multiplyByPrecision(troopCount),
       spawn_direction: spawnDirection,
     });

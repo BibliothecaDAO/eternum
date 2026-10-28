@@ -24,7 +24,7 @@ import {
 } from "./amount";
 import { formatCount } from "./count";
 import { ageLine, buildingName, guardSlotName, rankName, resourceName, structureName, troopPlural } from "./nouns";
-import { TROOP_TYPES } from "../types/common";
+import { TROOP_TIERS, TROOP_TYPES, troopTierIndex } from "../types/common";
 import { BuildingType } from "../constants/structures";
 import { formatAgo, formatClockTime, formatDuration, formatGameClock, formatMoment, formatShortDuration } from "./time";
 import { VOICE_RULES } from "./voice";
@@ -335,5 +335,10 @@ describe("troops", () => {
     expect(TROOP_TYPES.map((troop) => troopPlural(troop))).toEqual(["Knights", "Crossbowmen", "Paladins"]);
     expect(troopPlural("Dragon")).toBeUndefined();
     expect(resourceName(ResourcesIds.CrossbowmanT2)).toBe("Crossbowman T2");
+  });
+
+  it("numbers every tier by its place in the catalog, and refuses one it does not hold", () => {
+    expect(TROOP_TIERS.map(troopTierIndex)).toEqual([0, 1, 2]);
+    expect(() => troopTierIndex("T4" as never)).toThrow("Unknown troop tier T4");
   });
 });

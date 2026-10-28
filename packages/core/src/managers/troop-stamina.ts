@@ -1,4 +1,4 @@
-import { TROOP_TIERS, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
+import { troopTierIndex, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { battleBonusBps, logisticsStamina } from "../utils/attribute-tiers";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -13,8 +13,8 @@ export const troopStaminaLimits = (rules: TroopStaminaRules, troopType: TroopTyp
     [TroopType.Crossbowman]: rules.stamina_crossbowman_max,
     [TroopType.Paladin]: rules.stamina_paladin_max,
   }[troopType];
-  const tier = TROOP_TIERS.indexOf(troopTier);
-  if (maximum === undefined || tier < 0) throw new Error("Unknown troop category or tier");
+  const tier = troopTierIndex(troopTier);
+  if (maximum === undefined) throw new Error("Unknown troop category");
   return { staminaInitial: Number(rules.stamina_initial), staminaMax: Number(maximum) + tier * 20 };
 };
 

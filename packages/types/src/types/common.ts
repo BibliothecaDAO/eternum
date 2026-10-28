@@ -127,6 +127,12 @@ export const TroopType = {
 /** The troop catalog: every type and every tier, read from the two above. A list of troops is built from these. */
 export const TROOP_TYPES: readonly TroopType[] = Object.values(TroopType);
 export const TROOP_TIERS: readonly TroopTier[] = Object.values(TroopTier);
+/** A tier's place in the catalog, 0 for T1: the one way to turn a tier into a number. An unknown tier is loud. */
+export const troopTierIndex = (tier: TroopTier): number => {
+  const index = TROOP_TIERS.indexOf(tier);
+  if (index < 0) throw new Error(`Unknown troop tier ${tier}`);
+  return index;
+};
 
 /// TRADING
 export interface MarketInterface {
