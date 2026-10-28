@@ -131,6 +131,7 @@ it("offers Try again when the ticket could not be opened, and Play once the camp
 
 it.each([
   ["/join/devcon/K7M2QX4R", 410, "ticket_taken", "Another player already opened this ticket."],
+  ["/join/devcon/K7M2QX4R", 409, "realm_founded", "Your realm is already founded: give this flyer to a friend."],
   ["/join/devcon", 400, "invalid_redemption", "This link holds no ticket. Scan the QR on your Devcon flyer."],
 ])("on %s, says why no ticket opens (%i %s) and leads on to Play", async (address, status, code, line) => {
   signIn();
@@ -139,6 +140,8 @@ it.each([
   await press("Open your ticket");
   expect(text()).toContain(line);
   expect(text()).not.toMatch(/Open your ticket|Try again/);
+  // The flyer is not this account's to use: its code is let go, not kept for another try.
+  expect(localStorage.getItem("realms:campaign-code:devcon-2026")).toBeNull();
   await press("Continue");
   expect(path).toBe("/");
 });

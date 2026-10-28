@@ -16,10 +16,15 @@ function createCampaignTicketStore(db: D1Database) {
       .bind(campaign, owner)
       .first<CampaignTicket>();
 
-  const tierOfCode = async (campaign: CampaignKey, codeHash: string) =>
+  /** The tier a flyer's code still offers: null for a code no flyer carries, or one another account already took. */
+  const unspentTier = async (campaign: CampaignKey, codeHash: string) =>
     (
       await db
-        .prepare('SELECT "tier" FROM "campaign_codes" WHERE "campaign" = ? AND "code_hash" = ?')
+        .prepare(
+          `SELECT "tier" FROM "campaign_codes" AS code WHERE "campaign" = ? AND "code_hash" = ?
+           AND NOT EXISTS (SELECT 1 FROM "campaign_tickets" AS ticket
+                           WHERE ticket."campaign" = code."campaign" AND ticket."code_hash" = code."code_hash")`,
+        )
         .bind(campaign, codeHash)
         .first<{ tier: TicketTier }>()
     )?.tier ?? null;
@@ -45,23 +50,24 @@ function createCampaignTicketStore(db: D1Database) {
       catch: (cause) => new CampaignStorageError({ cause }),
     });
 
-  /**
-   * The account's ticket: the one it already holds, else the one its flyer's code gives, regular or golden. Null when the
-   * code is no flyer's or another account already took it. Safe to repeat: a retry, or two redemptions at once, return
-   * the one ticket.
-   */
-  const redeem = (campaign: CampaignKey, owner: string, codeHash: string, now: number) =>
+  const offered = (campaign: CampaignKey, codeHash: string) =>
     Effect.tryPromise({
-      try: async (): Promise<CampaignTicket | null> => {
-        const held = await ticketOf(campaign, owner);
-        if (held) return held;
-        const tier = await tierOfCode(campaign, codeHash);
-        if (!tier) return null;
-        return (await insertTicket(campaign, owner, codeHash, tier, now)) ?? (await ticketOf(campaign, owner));
-      },
+      try: () => unspentTier(campaign, codeHash),
       catch: (cause) => new CampaignStorageError({ cause }),
     });
-  return { ticketOf, read, redeem };
+
+  /**
+   * The account's ticket from its flyer's code, at the tier the code offered; the one it holds if it already has one.
+   * Null when another account took the code first. Safe to repeat: a retry, or two redemptions at once, return the one
+   * ticket.
+   */
+  const redeem = (campaign: CampaignKey, owner: string, codeHash: string, tier: TicketTier, now: number) =>
+    Effect.tryPromise({
+      try: async (): Promise<CampaignTicket | null> =>
+        (await insertTicket(campaign, owner, codeHash, tier, now)) ?? (await ticketOf(campaign, owner)),
+      catch: (cause) => new CampaignStorageError({ cause }),
+    });
+  return { ticketOf, read, offered, redeem };
 }
 
 class CampaignStorageError extends Data.TaggedError("CampaignStorageError")<{ readonly cause: unknown }> {}

@@ -943,6 +943,30 @@ describe("identity Worker", () => {
     expect((await createBrowser().request("/api/build-orders")).status).toBe(401);
   });
 
+  /** A running Devcon season game in a shard's directory, as Herald answers it for one player. */
+  const devconGame = (entered: boolean) => ({
+    game_id: 41,
+    name: "devcon",
+    mode: "frontier",
+    preset_id: 6,
+    status: "Live",
+    player_state: { registered: entered, settled: entered, roster_wallet: null, held_realm_id: null, structures: [] },
+  });
+  /**
+   * What every listed shard tells the redeem about this account: no running Devcon game entered, except on the shards
+   * named in `devcon`, whose Devcon game this account entered or not.
+   */
+  const heraldsAnswerFor = async (realmsId: string, devcon: Record<string, boolean> = {}) => {
+    const account = realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey());
+    const { results } = await env.DB.prepare(
+      `SELECT url, chainId FROM shards WHERE status IN ('active', 'draining')`,
+    ).all<{ url: string; chainId: string }>();
+    for (const { url, chainId } of results) {
+      const games = url in devcon ? [devconGame(devcon[url]!)] : [];
+      heralds.set(`${url}/games?player=${account}`, { chain: chainId, games });
+    }
+  };
+
   it("gives each flyer's ticket to its first account only, golden or regular as the code says, told to that account alone", async () => {
     const printed = async (code: string, tier: "regular" | "golden") =>
       env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
@@ -953,11 +977,13 @@ describe("identity Worker", () => {
     const player = async (name: string) => {
       const browser = createBrowser();
       await signInWithCode(browser, `${name}@realms.test`);
+      const realmsId = (await browser.session())!.user.realmsId;
+      await heraldsAnswerFor(realmsId);
       const redeem = async (code?: string, campaign = "devcon-2026") => {
         const response = await browser.request("/api/campaigns/redeem", { body: { campaign, code } });
         return [response.status, await response.json()];
       };
-      return { redeem, realmsId: (await browser.session())!.user.realmsId };
+      return { redeem, realmsId };
     };
     const ticket = (tier: string) => [200, { campaign: "devcon-2026", tier }];
     const taken = [410, { error: "ticket_taken" }];
@@ -1042,6 +1068,7 @@ describe("identity Worker", () => {
       ]);
       const browser = createBrowser();
       await signInWithCode(browser, `flyer-${index}@realms.test`);
+      await heraldsAnswerFor((await browser.session())!.user.realmsId);
       const code = url!.slice(url!.lastIndexOf("/") + 1);
       // The database gets hashes only.
       expect(sql).not.toContain(code);
@@ -1053,11 +1080,54 @@ describe("identity Worker", () => {
     // A flyer passed on after use opens nothing for the next account.
     const next = createBrowser();
     await signInWithCode(next, "flyer-passed-on@realms.test");
+    await heraldsAnswerFor((await next.session())!.user.realmsId);
     const firstCode = pages[0]!.slice(pages[0]!.lastIndexOf("/") + 1);
     const again = await next.request("/api/campaigns/redeem", { body: { campaign: "devcon-2026", code: firstCode } });
     expect([again.status, await again.json()]).toEqual([410, { error: "ticket_taken" }]);
     rmSync(out, { recursive: true, force: true });
   }, 60_000);
+
+  it("keeps a flyer unspent for an account whose realm is already founded in the running Devcon game", async () => {
+    const shard = "https://devcon-season.test";
+    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, '0xdc', 'active', ?)`)
+      .bind(shard, Date.now())
+      .run();
+    await env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
+      .bind("devcon-2026", await campaignCodeHash("devcon-2026", "F7QZ2KHM"), "golden")
+      .run();
+    const player = async (name: string, entered: boolean) => {
+      const browser = createBrowser();
+      await signInWithCode(browser, `${name}@realms.test`);
+      const realmsId = (await browser.session())!.user.realmsId;
+      await heraldsAnswerFor(realmsId, { [shard]: entered });
+      return async (code?: string) => {
+        const response = await browser.request("/api/campaigns/redeem", { body: { campaign: "devcon-2026", code } });
+        return [response.status, await response.json()];
+      };
+    };
+
+    // Founded first (from a poster, say): refused, and the flyer is not spent.
+    const founded = await player("founded-first", true);
+    expect(await founded("F7QZ2KHM")).toEqual([409, { error: "realm_founded" }]);
+    expect(await founded("F7QZ2KHM")).toEqual([409, { error: "realm_founded" }]);
+    // The friend it is passed to, not yet in the game, opens it at its tier.
+    const friend = await player("flyer-friend", false);
+    expect(await friend("F7QZ2KHM")).toEqual([200, { campaign: "devcon-2026", tier: "golden" }]);
+    expect(await founded("F7QZ2KHM")).toEqual([410, { error: "ticket_taken" }]);
+
+    // A shard that cannot answer leaves the flyer unspent too, for a retry.
+    await env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
+      .bind("devcon-2026", await campaignCodeHash("devcon-2026", "B4NW8RXC"), "regular")
+      .run();
+    const unsure = createBrowser();
+    await signInWithCode(unsure, "shard-down@realms.test");
+    const redeem = () =>
+      unsure.request("/api/campaigns/redeem", { body: { campaign: "devcon-2026", code: "B4NW8RXC" } });
+    expect([(await redeem()).status]).toEqual([503]);
+    await heraldsAnswerFor((await unsure.session())!.user.realmsId, { [shard]: false });
+    expect(await (await redeem()).json()).toEqual({ campaign: "devcon-2026", tier: "regular" });
+    await env.DB.prepare("UPDATE shards SET status = 'retired' WHERE url = ?").bind(shard).run();
+  });
 
   it("saves preferences by revision, caps devices per account and revokes a device only with its token", async () => {
     const browser = createBrowser();

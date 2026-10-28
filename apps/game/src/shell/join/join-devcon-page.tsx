@@ -28,6 +28,7 @@ type Opening =
 const FINAL_REFUSALS = new Map<string, string>([
   ["campaign_closed", JOIN_WORDS.closed],
   ["ticket_taken", JOIN_WORDS.taken],
+  ["realm_founded", JOIN_WORDS.founded],
   ["invalid_redemption", JOIN_WORDS.noTicket],
 ]);
 
@@ -58,7 +59,10 @@ export const JoinDevconPage = () => {
   );
 };
 
-/** The signed-in account's ticket: the one it holds, else one from the kept code. The code is spent once answered. */
+/**
+ * The signed-in account's ticket: the one it holds, else one from the kept code. The code is let go once answered, or
+ * refused for good: a flyer this account cannot use (taken, or its realm already founded) goes on to someone else.
+ */
 const redeemTicket = async (): Promise<Opening> => {
   try {
     const ticket = await identityClient.redeemCampaignTicket(DEVCON.campaign, keptCampaignCode());
@@ -66,7 +70,9 @@ const redeemTicket = async (): Promise<Opening> => {
     return ticket;
   } catch (cause) {
     const final = cause instanceof IdentityRequestError ? FINAL_REFUSALS.get(cause.code ?? "") : undefined;
-    return { kind: "refused", line: final ?? JOIN_WORDS.failed, final: final !== undefined };
+    if (final === undefined) return { kind: "refused", line: JOIN_WORDS.failed, final: false };
+    forgetCampaignCode();
+    return { kind: "refused", line: final, final: true };
   }
 };
 

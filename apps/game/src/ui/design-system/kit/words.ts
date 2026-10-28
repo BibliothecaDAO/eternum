@@ -683,6 +683,7 @@ export const JOIN_WORDS = {
   continue: "Continue",
   closed: "Devcon tickets have closed.",
   taken: "Another player already opened this ticket.",
+  founded: "Your realm is already founded: give this flyer to a friend.",
   noTicket: "This link holds no ticket. Scan the QR on your Devcon flyer.",
   failed: "Your ticket could not be opened.",
 } as const;
