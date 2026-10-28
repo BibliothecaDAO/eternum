@@ -249,8 +249,7 @@ const ACTION_STEPS = [
 
 /**
  * The spire's depth entered (the lab's spire game): the army selected, the spire beside it tapped for its card, then
- * Enter on Ethereal II; the result is the army setting off into the depth from its tile (a desktop's card also says it
- * is there; a phone's closes).
+ * Enter on Ethereal II; the result is the army setting off into the depth (its walk), seen on its figure.
  */
 const SPIRE_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -267,7 +266,7 @@ async function enterEtherealIIFromItsCard({ browser }) {
   const selection = browser.observe().selection;
   const armyAt = armyScreenOffset(selection);
   browser.click("Enter Ethereal II");
-  return { armyId: selection?.army?.id ?? null, region: armyAt && tileRegion(armyAt) };
+  return { armyId: selection?.army?.id ?? null, region: armyAt && armyRegion(armyAt) };
 }
 
 /**
@@ -899,7 +898,7 @@ async function orderBesideArmy({ browser, extraScreenshot }, verb) {
   const armyAt = armyScreenOffset(selection);
   if (!armyAt)
     return { army: armyName, armyId, offered: [], aimed: "the army is not within reach of the view's centre" };
-  const regionOf = (target) => tileRegion(verb === "Explore" ? target : armyAt);
+  const regionOf = (target) => (verb === "Explore" ? tileRegion(target) : armyRegion(armyAt));
   if (onADesktop()) {
     const { target, scanned } = await findOrderTile(browser, [verb], armyAt);
     const offered = scanned.map((seen) => seen.verb);
@@ -953,7 +952,7 @@ async function orderBesideArmy({ browser, extraScreenshot }, verb) {
           pressedAt,
           before,
           target: at,
-          region: tileRegion(verb === "Explore" ? at : army),
+          region: verb === "Explore" ? tileRegion(at) : armyRegion(army),
           taps,
         };
       }
@@ -1018,6 +1017,15 @@ export function armyScreenOffset(selection, maxSteps = 4) {
 async function explored({ played, actionLatency, screenshot, probe }) {
   const tileChange = played.before ? await meanViewChange(played.before, screenshot, tileRegion(played.target)) : null;
   return judgeExplore({ ...played, tileChange, plateStamina: probe.plateStamina }, actionLatency.clientActions);
+}
+
+/**
+ * The army's figure standing on its tile at `offset` from the screen centre, at the map's default zoom: where its walk
+ * shows first. Its tile's own highlights (the orders lit round it, the selected outline) fall outside it, and they
+ * change when the selection does, not when the army moves.
+ */
+function armyRegion([dx, dy]) {
+  return { left: VIEWPORT.width / 2 + dx - 25, top: VIEWPORT.height / 2 + dy - 60, width: 50, height: 60 };
 }
 
 /** A 120×100 patch centred on a tile tapped at `offset` from the screen centre. */
