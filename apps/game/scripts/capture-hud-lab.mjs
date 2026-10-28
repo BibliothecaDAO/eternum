@@ -39,29 +39,56 @@ const PHONES = [
 /** A Frontier card or page as a laptop and the phones show it. */
 const CARDS = [[1440, 900], ...PHONES];
 
-/** The Armies list or dock: how many entries it holds (armies and open slots), and each stamina bar's start, top and width. */
-const READ_ARMY_BARS = `(() => {
+/**
+ * The Armies list or dock: how many entries it holds (armies and open slots), each stamina bar's start, top and width,
+ * and each list row's words and figures: every text, whether it starts the row's words or stands after them, and the
+ * height of its middle.
+ */
+const READ_ARMY_LIST = `(() => {
   const nav = document.querySelector('nav[aria-label="Armies"]');
   const bars = nav ? [...nav.querySelectorAll('[role="meter"][aria-label="stamina"]')] : [];
+  const rows = nav ? [...nav.querySelectorAll(".ui-row__choose")] : [];
   return {
     entries: nav ? nav.children.length : 0,
     bars: bars.map((bar) => {
       const box = bar.getBoundingClientRect();
       return { left: box.left, top: box.top, width: box.width };
     }),
+    rows: rows.map((row) => {
+      const start = row.getBoundingClientRect().left;
+      const texts = [];
+      const walker = document.createTreeWalker(row, NodeFilter.SHOW_TEXT);
+      for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+        const range = document.createRange();
+        range.selectNodeContents(text);
+        const at = range.getBoundingClientRect();
+        if (at.width === 0 || !text.textContent.trim()) continue;
+        const words = Math.abs(at.left - start) <= 1;
+        texts.push({ text: text.textContent.trim(), words, middle: (at.top + at.bottom) / 2 });
+      }
+      return texts;
+    }),
   };
 })()`;
 
 /**
  * Every army and open slot carries a stamina bar, and the bars line up whatever each entry's words say (owner, 27
- * October): one width, and one left edge down a list (or one top along a phone's row of tokens).
+ * October): one width, and one left edge down a list (or one top along a phone's row of tokens). On a list, each figure
+ * (XP, stamina) stands on the line of the words it belongs to, whether the row has one line or two (owner, 28 October:
+ * "text alignment with no troop line subtext").
  */
-const armyBarsProblems = ({ entries, bars }) => {
+const armyListProblems = ({ entries, bars, rows }) => {
   if (bars.length < 2 || bars.length !== entries) return [`${bars.length} stamina bars on ${entries} armies and slots`];
   const same = (key) => bars.every((bar) => Math.abs(bar[key] - bars[0][key]) <= 0.5);
   const problems = [];
   if (!same("width")) problems.push(`stamina bars' widths differ: ${bars.map(({ width }) => width.toFixed(1))}`);
   if (!same("left") && !same("top")) problems.push(`stamina bars start at ${bars.map(({ left }) => left.toFixed(1))}`);
+  for (const texts of rows) {
+    const words = texts.filter((text) => text.words);
+    for (const figure of texts.filter((text) => !text.words))
+      if (!words.some((line) => Math.abs(line.middle - figure.middle) <= 1))
+        problems.push(`"${figure.text}" stands off the line of ${words.map(({ text }) => `"${text}"`).join(" and ")}`);
+  }
   return problems;
 };
 
@@ -194,8 +221,17 @@ export const SURFACES = [
     path: "/lab/kit/hud/armies-open",
     mark: "frontier",
     sizes: CARDS,
-    read: READ_ARMY_BARS,
-    rule: armyBarsProblems,
+    read: READ_ARMY_LIST,
+    rule: armyListProblems,
+  },
+  // The day's last hour: each army's Homecoming beside its XP, on its name's line.
+  {
+    name: "frontier-armies-last-hour",
+    path: "/lab/kit/hud/last-hour",
+    mark: "frontier",
+    sizes: [[1440, 900]],
+    read: READ_ARMY_LIST,
+    rule: armyListProblems,
   },
   // Transfer troops: 500 into 1,500, both total XP values, loss confirmation and a partial transfer.
   { name: "frontier-merge", path: "/lab/kit/hud/merge", mark: "frontier-merge", sizes: [VIEWPORT, [390, 844]] },

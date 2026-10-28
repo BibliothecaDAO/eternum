@@ -56,17 +56,22 @@ export const ArmyRow = ({
     }
     label={label}
     title={
-      <span className="flex items-center justify-between gap-2">
-        <span className="truncate">{label}</span>
-        <span className="flex shrink-0 items-center gap-2">
-          {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
-          <span data-tip={xpLine(xp, xpGoal)} className="flex items-center gap-1 tabular-nums text-hud-gold">
-            {`${formatAmount(xp)} ${XP}`}
-          </span>
-        </span>
+      <RowLine
+        words={label}
+        figure={
+          <>
+            {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
+            <span data-tip={xpLine(xp, xpGoal)} className="text-hud-gold">{`${formatAmount(xp)} ${XP}`}</span>
+          </>
+        }
+      />
+    }
+    // The troops line is figures throughout, set as the HUD sets figures.
+    detail={
+      <span className="block tabular-nums">
+        <RowLine words={troops === undefined ? "—" : troopCount(troops)} figure={<RowStamina stamina={stamina} />} />
       </span>
     }
-    detail={<RowDetail words={troops === undefined ? "—" : troopCount(troops)} stamina={stamina} />}
     // The trail is the card fan while a level is affordable now: the row itself opens the panel that buys it.
     trail={<RowTrail>{canBuyTier && <SemanticIcon name="picks" size={20} data-tip={UPGRADE} />}</RowTrail>}
     selected={selected}
@@ -76,8 +81,8 @@ export const ArmyRow = ({
 
 /**
  * An open slot on a desktop's list, as a row like an army's: its dashed ring, Deploy (or the army a later slot waits
- * for, or the word for an army on its way), and the stamina the slot starts its army on. A press opens Deploy; a slot
- * Deploy does not fill next opens nothing. A phone's dock draws the same slot as a token (OpenSlot).
+ * for, or the word for an army on its way), and beside it the stamina the slot starts its army on. A press opens
+ * Deploy; a slot Deploy does not fill next opens nothing. A phone's dock draws the same slot as a token (OpenSlot).
  */
 export const OpenSlotRow = ({
   label,
@@ -97,8 +102,12 @@ export const OpenSlotRow = ({
   <HudRow
     lead={<SlotRing pulse={pulse} filling={filling} waits={waits} />}
     label={filling ?? label}
-    title={filling ?? (waits ? `${ARMY} ${waits.number}` : label)}
-    detail={start && filling === undefined ? <RowDetail stamina={start.bar} /> : undefined}
+    title={
+      <RowLine
+        words={filling ?? (waits ? `${ARMY} ${waits.number}` : label)}
+        figure={start && filling === undefined && <RowStamina stamina={start.bar} />}
+      />
+    }
     trail={<RowTrail />}
     disabled={filling !== undefined || waits !== undefined}
     busy={filling !== undefined}
@@ -108,15 +117,24 @@ export const OpenSlotRow = ({
 );
 
 /**
- * A list row's line under its name: its words take what the stamina leaves, the stamina one column as wide on every
- * row, so every bar on the list starts at one x and is as long (owner, 27 October).
+ * A line of a list row: its words, and at its end the figure they own. A figure stands on its words' line, so a row of
+ * one line (an open slot) keeps its name beside its stamina, not above it (owner, 28 October: "text alignment with no
+ * troop line subtext").
  */
-const RowDetail = ({ words, stamina }: { words?: string; stamina: StaminaBar | undefined }) => (
-  <span className="flex items-center gap-2 whitespace-nowrap tabular-nums">
+const RowLine = ({ words, figure }: { words: string; figure: ReactNode }) => (
+  <span className="flex items-center gap-2 whitespace-nowrap">
     <span className="min-w-0 flex-1 truncate">{words}</span>
-    <span className="flex w-28 shrink-0">
-      <StaminaReading stamina={stamina} />
-    </span>
+    <span className="flex shrink-0 items-center gap-2 tabular-nums">{figure}</span>
+  </span>
+);
+
+/**
+ * A row's stamina, in the row's small words on whichever line it stands, one column as wide on every row, so every bar
+ * on the list starts at one x and is as long (owner, 27 October).
+ */
+const RowStamina = ({ stamina }: { stamina: StaminaBar | undefined }) => (
+  <span className="flex w-28 text-hud-label font-bold text-hud-muted">
+    <StaminaReading stamina={stamina} />
   </span>
 );
 
