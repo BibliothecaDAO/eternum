@@ -205,7 +205,7 @@ const WellAfter = ({ stamina, gain }: { stamina: StaminaBar | undefined; gain: n
   );
 };
 
-/** The army's XP before and after the Shrine, and the attribute tier it then buys, lit when it can. */
+/** The army's XP before and after the Shrine, and the attribute tier that XP then buys, when it buys one. */
 const ShrineAfter = ({
   xp,
   goal,
@@ -221,14 +221,7 @@ const ShrineAfter = ({
       <HudChip>
         {formatShortChange(xp, after)} {XP}
       </HudChip>
-      {goal && (
-        <span
-          data-affordable={after !== undefined && after >= goal.price ? "" : undefined}
-          className="opacity-40 data-[affordable]:opacity-100"
-        >
-          <HudTier tier={goal.tier as Tier} />
-        </span>
-      )}
+      {goal && after !== undefined && after >= goal.price && <HudTier tier={goal.tier as Tier} />}
     </span>
   );
 };

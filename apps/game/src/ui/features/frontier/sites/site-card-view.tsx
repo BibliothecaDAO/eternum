@@ -202,7 +202,7 @@ const Reward = ({ dimmed, children }: { dimmed: boolean; children: ReactNode }) 
 );
 
 /** A site's painting at the head of its card; `children` marks it (a won fight's flag). */
-export const SiteMark = ({ icon, children }: { icon: IconMeaning; children?: ReactNode }) => (
+const SiteMark = ({ icon, children }: { icon: IconMeaning; children?: ReactNode }) => (
   <span className="relative flex size-16 shrink-0 items-center justify-center rounded-xl border border-hud-line bg-hud-surface">
     <SemanticIcon name={icon} size={36} />
     {children}
