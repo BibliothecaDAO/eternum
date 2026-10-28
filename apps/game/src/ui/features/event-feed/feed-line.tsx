@@ -7,6 +7,7 @@ import { formatClockTime } from "@bibliothecadao/types";
 
 import { readFeedStory, type ToldReading } from "./feed-reading";
 import { useStoryOpener } from "./story-feed-row";
+import { useSiteBeastMeaning } from "./use-site-beast";
 
 const OUTCOME_TONES = { good: "text-hud-good", bad: "text-hud-bad", neutral: "text-hud-muted" } as const;
 
@@ -70,10 +71,20 @@ const ObjectWords = ({
 }) => (
   <>
     {" "}
-    {object.icon && <Icon name={object.icon} size={16} className="ui-feed-line__glyph" />}
+    {"site" in object ? (
+      <SiteGlyph site={object.site} />
+    ) : (
+      object.icon && <Icon name={object.icon} size={16} className="ui-feed-line__glyph" />
+    )}
     {"player" in object ? names(object.player) : object.name}
   </>
 );
+
+/** A site's guard, painted as the map paints it. */
+const SiteGlyph = ({ site }: { site: number }) => {
+  const meaning = useSiteBeastMeaning(site);
+  return meaning ? <Icon name={meaning} size={16} className="ui-feed-line__glyph" /> : null;
+};
 
 /** Who did it. */
 const Name = ({ text }: { text: string }) => <strong>{text}</strong>;

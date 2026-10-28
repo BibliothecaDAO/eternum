@@ -143,6 +143,7 @@ const main = async (): Promise<void> => {
     fold: {
       modelRows: (model) => live.modelRows(model),
       structurePosition: (game, entity) => live.structurePosition(game, entity),
+      expeditionSite: (game, entity) => live.expeditionSite(game, entity),
       directoryRevision: () => live.directoryRevision(),
       snapshot: (gameId, _confirmedBlock, models, actor, owner) => live.snapshot(gameId, models, actor, owner),
     },

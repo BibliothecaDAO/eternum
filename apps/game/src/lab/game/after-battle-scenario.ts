@@ -43,12 +43,30 @@ export const afterBattleScenario = (): LabScenario => {
   ] as never);
   return {
     ...spire,
+    // The camp the other player lost at, which Herald holds and the player's map never loads.
+    farSites: [
+      wire({
+        game_id: 1,
+        entity_id: FAR_SITE,
+        category: StructureType.Camp,
+        initial_guard_count: 2_400n * PRECISION,
+        alt: false,
+        col: 9,
+        row: ruinTile.row,
+        clear: null,
+      }) as Record<string, unknown>,
+    ],
     history: [
       // Another player's lost fight at a site this client never loaded (owner, 28 October: "Loaf attacked Runegrasp").
-      fight(spire.startsAt - 60, 2, { player: OTHER_PLAYER, army: 9_002, site: FAR_SITE, coord: { col: 9, row: 40 } }, [
-        [300n, 0n],
-        [2_400n, 2_310n],
-      ]),
+      fight(
+        spire.startsAt - 60,
+        2,
+        { player: OTHER_PLAYER, army: 9_002, site: FAR_SITE, coord: { col: 9, row: ruinTile.row } },
+        [
+          [300n, 0n],
+          [2_400n, 2_310n],
+        ],
+      ),
       fight(spire.startsAt - 120, 1, { player: spire.player, army: SPIRE_ARMY, site: SITE, coord: ruinTile }, [
         [4_716n, 4_015n],
         [3_000n, 999n],
