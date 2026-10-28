@@ -23,7 +23,7 @@ export const mentionChoices = (names: readonly string[], query: string): string[
   const typed = query.toLowerCase();
   return names
     .filter((name) => name.toLowerCase().startsWith(typed))
-    .sort((a, b) => a.localeCompare(b))
+    .toSorted((a, b) => a.localeCompare(b))
     .slice(0, 6);
 };
 
@@ -37,7 +37,7 @@ export const insertMention = (text: string, at: number, caret: number, name: str
 type MessagePart =
   | { type: "text"; text: string }
   | { type: "mention"; text: string; name: string }
-  | { type: "coordinates"; x: number; y: number };
+  | { type: "link"; url: URL };
 
 /** The longest known name written at `from` (ignoring case), whole: what follows it is no character a name holds. */
 const nameAt = (text: string, from: number, names: readonly string[]): string | null => {
@@ -51,12 +51,15 @@ const nameAt = (text: string, from: number, names: readonly string[]): string | 
   return found;
 };
 
-/** A message's text as it reads: mentions of a known name, map coordinates ("12, -4") and the words between. */
+/**
+ * A message's text as it reads: mentions of a known name, links, and the words between. Numbers stay words: "1,200
+ * knights" is never a place.
+ */
 export const messageParts = (content: string, names: readonly string[]): MessagePart[] => {
   const parts: MessagePart[] = [];
   let words = "";
   const flush = () => {
-    if (words) parts.push(...coordinateParts(words));
+    if (words) parts.push(...linkParts(words));
     words = "";
   };
   for (let index = 0; index < content.length; ) {
@@ -74,12 +77,25 @@ export const messageParts = (content: string, names: readonly string[]): Message
   return parts;
 };
 
-const coordinateParts = (text: string): MessagePart[] => {
+/** A web address as written: http(s), up to a space; the punctuation that ends a sentence stays outside it. */
+const LINK = /https?:\/\/[^\s<>"']+?(?=[.,;:!?)\]]*(?:\s|$))/gi;
+
+const parsedUrl = (text: string): URL | null => {
+  try {
+    return new URL(text);
+  } catch {
+    return null;
+  }
+};
+
+const linkParts = (text: string): MessagePart[] => {
   const parts: MessagePart[] = [];
   let last = 0;
-  for (const match of text.matchAll(/(-?\d+),\s*(-?\d+)/g)) {
+  for (const match of text.matchAll(LINK)) {
+    const url = parsedUrl(match[0]);
+    if (!url) continue;
     if (match.index > last) parts.push({ type: "text", text: text.slice(last, match.index) });
-    parts.push({ type: "coordinates", x: Number.parseInt(match[1]!), y: Number.parseInt(match[2]!) });
+    parts.push({ type: "link", url });
     last = match.index + match[0].length;
   }
   if (last < text.length) parts.push({ type: "text", text: text.slice(last) });

@@ -1,5 +1,6 @@
-import { FormEvent, KeyboardEvent, useCallback, useId, useRef, useState } from "react";
-import { HudButton, HudField, HudMenu, menuOptionId } from "@/ui/design-system/kit/hud-elements";
+import { FormEvent, KeyboardEvent, useCallback, useEffect, useId, useRef, useState } from "react";
+import { HudButton, HudField, HudIconButton, HudMenu, menuOptionId } from "@/ui/design-system/kit/hud-elements";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import type { MentionablePlayer } from "../../hooks/use-chat-mentions";
 import { insertMention, mentionChoices, typedMention } from "../../model/mentions";
 
@@ -12,6 +13,8 @@ interface MessageComposerProps {
   maxLength?: number;
   /** Who an "@" typed in the message may name: a list of them opens over the field as the name is typed. */
   mentions?: readonly MentionablePlayer[];
+  /** The message being answered: who wrote it and how it starts, over the field, with the way to put the reply away. */
+  replying?: { name: string; excerpt: string; onCancel: () => void };
 }
 
 const NO_MENTIONS: readonly MentionablePlayer[] = [];
@@ -24,6 +27,7 @@ export function MessageComposer({
   minLength = 1,
   maxLength = 2000,
   mentions = NO_MENTIONS,
+  replying,
 }: MessageComposerProps) {
   const [draft, setDraft] = useState("");
   const [caret, setCaret] = useState(0);
@@ -32,6 +36,11 @@ export function MessageComposer({
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
+  // A reply begun puts the keyboard in the field, to write it.
+  const answering = replying && `${replying.name}\u0000${replying.excerpt}`;
+  useEffect(() => {
+    if (answering) inputRef.current?.focus();
+  }, [answering]);
 
   const typed = typedMention(draft, caret);
   const byName = new Map(mentions.map((player) => [player.name, player]));
@@ -96,7 +105,20 @@ export function MessageComposer({
   );
 
   return (
-    <form onSubmit={handleSubmit} className="p-1.5 flex-shrink-0 transition-all duration-300">
+    <form onSubmit={handleSubmit} className="flex flex-shrink-0 flex-col gap-1 p-1.5">
+      {replying && (
+        <div className="flex min-w-0 items-center gap-1.5 px-1 text-hud-label text-hud-muted">
+          <span className="shrink-0 text-hud-accent">{replying.name}</span>
+          <span className="min-w-0 flex-1 truncate">{replying.excerpt}</span>
+          <HudIconButton
+            icon="close"
+            label={CHAT_WORDS.cancelReply}
+            kind="quiet"
+            size="sm"
+            onClick={replying.onCancel}
+          />
+        </div>
+      )}
       <div className="flex space-x-1.5 relative">
         <HudField
           ref={inputRef}

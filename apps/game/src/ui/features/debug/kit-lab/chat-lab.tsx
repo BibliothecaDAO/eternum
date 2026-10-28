@@ -2,6 +2,7 @@ import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useDocumentClass } from "@/hooks/use-document-class";
 import { useGame } from "@/hooks/context/game-context";
 import { LAB_SEAT_PROFILES, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
+import { replyMetadata } from "@/ui/features/social/realtime-chat/model/reply";
 import { useRealtimeChatStore } from "@/ui/features/social/realtime-chat/model/store";
 import type {
   DirectMessage,
@@ -127,11 +128,19 @@ const LONG_LINE = "Meet at the southern gate with the reinforcements, then hold 
 /** The lab game's players: the lobby lab's nine seats, whose names identity answers (LAB_SEAT_PROFILES). */
 const ROOM_PLAYERS = Object.keys(LAB_SEAT_PROFILES);
 
-/** What two of the last messages say: one mentions another player, one the lab's own. */
+/**
+ * What the last messages say: a count in thousands (words, never a place), two links (Realms' docs, and a site off
+ * Realms that asks first), a reply to the message before it, a mention of another player and one of the lab's own.
+ */
 const MENTIONS: Record<number, string> = {
+  33: "sent 1,200 knights at the ruin, 3,046 left at home",
+  34: "the rules: https://docs.realms.party/frontier/expedition and my run https://www.youtube.com/watch?v=ruin-run",
+  35: "the camps and rifts, that is where the labor is",
   37: "@Aldric hold the ridge, the spire opens at dusk.",
   38: `@${LAB_SESSION.user.name} your army is at the southern gate.`,
 };
+/** The message that answers another: 35 answers 33. */
+const REPLIES: Record<number, number> = { 35: 33 };
 
 /** Forty messages of a busy room from five of its players; the last a long one, as the strip shows it. */
 const labMessages = (): WorldChatMessage[] =>
@@ -141,10 +150,19 @@ const labMessages = (): WorldChatMessage[] =>
       id: `lab-${index}`,
       zoneId: GLOBAL_CHAT_CHANNEL_ID,
       sender: { playerId, displayName: LAB_SEAT_PROFILES[playerId]!.name },
-      content: MENTIONS[index] ?? (index === 39 ? LONG_LINE.repeat(4) : LONG_LINE),
+      content: MENTIONS[index] ?? (index === 39 ? LONG_LINE.repeat(2) : LONG_LINE),
       createdAt: new Date(Date.UTC(2026, 9, 18, 12, index)).toISOString(),
+      ...(REPLIES[index] !== undefined ? { metadata: labReply(REPLIES[index]!) } : {}),
     };
   }) as WorldChatMessage[];
+
+/** A reply's metadata, answering the lab's message `answered`. */
+const labReply = (answered: number) =>
+  replyMetadata({
+    id: `lab-${answered}`,
+    playerId: ROOM_PLAYERS[answered % 5]!,
+    content: MENTIONS[answered] ?? LONG_LINE,
+  });
 
 /** Identity's answer for the room's players, as the identity Worker serves their names; anything else goes on. */
 const answerRoomProfiles = () => {

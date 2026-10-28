@@ -2,7 +2,7 @@ import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profil
 import { HudIconButton } from "@/ui/design-system/kit/hud-elements";
 import { BACK, CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { formatClockTime } from "@bibliothecadao/types";
-import { Fragment, useEffect, useMemo } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   useDirectMessageControls,
@@ -11,11 +11,18 @@ import {
   useRealtimeTypingIndicators,
 } from "../../hooks/use-realtime-chat";
 import type { DirectMessage } from "../../model/types";
-import { computeDateSeparators } from "../../model/message-grouping";
+import { computeDateSeparators, startsRun } from "../../model/message-grouping";
+import { replyMetadata, replyOf } from "../../model/reply";
 import { useStickToLatest } from "@/hooks/use-stick-to-latest";
 import { JumpToLatest } from "../shared/jump-to-latest";
+import { useLinkOpener } from "../shared/leaving-realms";
 import { MessageComposer } from "../shared/message-composer";
-import { UserAvatar } from "../shared/user-avatar";
+import { MessageRow } from "../shared/message-row";
+import { MessageText } from "../shared/message-text";
+import { useShowMessage } from "../shared/use-show-message";
+
+/** A conversation names no one but its two players: no mention is read in it. */
+const NO_NAMES: readonly string[] = [];
 
 interface DirectMessagesPanelProps {
   threadId: string;
@@ -68,6 +75,12 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
   const recipientLabel = recipientId ? nameOf(recipientId) : undefined;
 
   const { sendMessage, loadHistory, markAsRead } = useDirectMessageControls(resolvedThreadId, recipientId);
+  const links = useLinkOpener();
+  const section = useRef<HTMLElement>(null);
+  const quoted = useShowMessage(section);
+  const [replying, setReplying] = useState<DirectMessage | null>(null);
+  const isOwn = (playerId: string) => selfAliases.includes(playerId);
+  const labelOf = (playerId: string) => (isOwn(playerId) ? "You" : nameOf(playerId));
   const isRecipientBlocked = useRealtimeChatSelector(
     (state) => recipientId !== undefined && state.blockedPlayers.includes(recipientId),
   );
@@ -112,7 +125,7 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
   });
 
   return (
-    <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
+    <section ref={section} className={`relative flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
       {thread && recipientId && (
         <header className="flex items-center gap-2 border-b border-hud-line px-2 py-1 text-hud-label">
           <HudIconButton icon="arrow-left" label={BACK} kind="quiet" size="sm" onClick={onBack} />
@@ -131,7 +144,7 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
           </button>
         </header>
       )}
-      <div className="flex-1 min-h-0 px-4 py-3">
+      <div className="flex-1 min-h-0 px-3 py-2">
         {thread && (
           <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
             <div ref={scrollerRef} className="flex-1 min-h-0 overflow-y-auto pr-1">
@@ -141,10 +154,15 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
                 </div>
               )}
 
-              <ul className="flex flex-col gap-0.5">
+              <ul className="flex flex-col">
                 {thread.messages.map((message, index) => {
-                  const isOwn = selfAliases.includes(message.senderId);
-                  const displayLabel = isOwn ? "You" : nameOf(message.senderId);
+                  const reply = replyOf(message.metadata);
+                  const previous = thread.messages[index - 1];
+                  const run = startsRun(previous, {
+                    senderId: message.senderId,
+                    createdAt: message.createdAt,
+                    replies: reply !== null,
+                  });
                   return (
                     <Fragment key={message.id}>
                       {dateSeparators.has(index) && (
@@ -154,18 +172,31 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
                           <div className="flex-1 border-t border-hud-line" />
                         </li>
                       )}
-                      <li className="flex items-start gap-2 text-hud-body leading-snug text-hud-ink">
-                        <UserAvatar
-                          name={displayLabel}
-                          address={message.senderId}
-                          size="sm"
-                          className="mt-0.5 shrink-0"
-                        />
-                        <p className="min-w-0 flex-1 break-words">
-                          <span className="text-hud-cue">[{toDisplayTime(message)}]</span>{" "}
-                          <span className="text-hud-accent">&lt;{displayLabel}&gt;</span> {message.content}
-                        </p>
-                      </li>
+                      <MessageRow
+                        id={message.id}
+                        run={
+                          run || dateSeparators.has(index)
+                            ? {
+                                name: labelOf(message.senderId),
+                                playerId: message.senderId,
+                                time: toDisplayTime(message),
+                              }
+                            : undefined
+                        }
+                        quote={
+                          reply
+                            ? {
+                                name: labelOf(reply.playerId),
+                                excerpt: reply.excerpt,
+                                onShow: () => quoted.show(reply.id),
+                              }
+                            : undefined
+                        }
+                        lit={quoted.lit === message.id}
+                        onReply={() => setReplying(message)}
+                      >
+                        <MessageText content={message.content} names={NO_NAMES} me={null} onLink={links.open} />
+                      </MessageRow>
                     </Fragment>
                   );
                 })}
@@ -184,16 +215,26 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
           </div>
         )}
       </div>
-      <div>
-        <MessageComposer
-          onSend={async (value) => {
-            if (!recipientId) return;
-            await sendMessage(value);
-          }}
-          placeholder={`${CHAT_WORDS.message} ${recipientLabel ?? ""}`.trim()}
-          disabled={!recipientId}
-        />
-      </div>
+      <MessageComposer
+        onSend={async (value) => {
+          if (!recipientId) return;
+          await sendMessage(
+            value,
+            replying
+              ? replyMetadata({ id: replying.id, playerId: replying.senderId, content: replying.content })
+              : undefined,
+          );
+          setReplying(null);
+        }}
+        placeholder={`${CHAT_WORDS.message} ${recipientLabel ?? ""}`.trim()}
+        disabled={!recipientId}
+        replying={
+          replying
+            ? { name: labelOf(replying.senderId), excerpt: replying.content, onCancel: () => setReplying(null) }
+            : undefined
+        }
+      />
+      {links.asking}
     </section>
   );
 }

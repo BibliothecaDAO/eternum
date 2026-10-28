@@ -183,8 +183,8 @@ it("draws a mention of a player as their name, and marks a message that mentions
     message("2", "Ada", "@maelis your army is at the gate"),
     message("3", "Aldric", "write to ada@realms.test, Maelis"),
   ]);
-  // Each message's row: its words follow the date's separator.
-  const rows = [...host.querySelectorAll("li")].filter((row) => row.querySelector("p"));
+  // Each message's row, after the date's separator.
+  const rows = [...host.querySelectorAll("li[data-message-id]")];
   const mention = (row: Element) => [...row.querySelectorAll("[data-mention]")].map((m) => m.textContent);
   expect(mention(rows[0]!)).toEqual(["@Aldric"]);
   expect(rows[0]!.hasAttribute("data-mentions-me")).toBe(false);
@@ -193,10 +193,11 @@ it("draws a mention of a player as their name, and marks a message that mentions
   expect(rows[1]!.querySelector('[data-mention="Maelis"]')!.className).toContain("text-hud-gold");
   expect(mention(rows[2]!)).toEqual([]);
   expect(rows[2]!.hasAttribute("data-mentions-me")).toBe(false);
-  // The words stay as typed; the time before them is the reader's clock.
-  expect(rows.map((row) => row.textContent?.replace(/^\[[^\]]+\] /, ""))).toEqual([
-    "<Corwin> @Aldric hold the ridge",
-    "<Ada> @maelis your army is at the gate",
-    "<Aldric> write to ada@realms.test, Maelis",
+  // The words stay as typed, under their sender's name.
+  expect(rows.map((row) => [...row.querySelectorAll("p")].at(-1)?.textContent)).toEqual([
+    "@Aldric hold the ridge",
+    "@maelis your army is at the gate",
+    "write to ada@realms.test, Maelis",
   ]);
+  expect(rows.map((row) => row.querySelector("p button")?.textContent)).toEqual(["Corwin", "Ada", "Aldric"]);
 });

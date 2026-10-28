@@ -69,7 +69,8 @@ const OPEN = `(() => {
     pane: rect(pane),
     composer: rect(composer),
     scroller: rect(scroller),
-    controls: pane ? [...pane.querySelectorAll("button, input, textarea")].map(rect) : [],
+    // The controls drawn: a message's Reply is drawn only while a pointer is over it.
+    controls: pane ? [...pane.querySelectorAll("button, input, textarea")].filter((c) => c.getClientRects().length > 0).map(rect) : [],
     scrollHeight: scroller?.scrollHeight ?? null,
     clientHeight: scroller?.clientHeight ?? null,
   };
@@ -351,9 +352,14 @@ const LIST = `(() => {
 
 /** The last message's row: its words and its mentions. */
 const LAST = `(() => {
-  const rows = [...document.querySelectorAll('[data-lab="chat"] section[aria-label="Chat"] li')].filter((row) => row.querySelector("p"));
-  const last = rows.at(-1);
-  return last ? { text: last.textContent, mentions: [...last.querySelectorAll("[data-mention]")].map((m) => m.textContent) } : null;
+  const last = [...document.querySelectorAll('[data-lab="chat"] section[aria-label="Chat"] li[data-message-id]')].at(-1);
+  return last
+    ? {
+        sender: last.querySelector("p button")?.textContent ?? null,
+        words: [...last.querySelectorAll("p")].at(-1)?.textContent ?? null,
+        mentions: [...last.querySelectorAll("[data-mention]")].map((m) => m.textContent),
+      }
+    : null;
 })()`;
 
 const historyChecks = (read) => [
@@ -451,7 +457,8 @@ const proveMentions = async (b, out, record, phone) => {
   record.checks.push({
     check: "the message sent comes back drawn with its mention",
     ok:
-      record.measures.sent?.text.endsWith("<Maelis> @Corwin hold the gate") &&
+      record.measures.sent?.sender === "Maelis" &&
+      record.measures.sent.words === "@Corwin hold the gate" &&
       record.measures.sent.mentions.join() === "@Corwin",
   });
   b.run("screenshot", join(out, `mentions-sent-${tag}.png`));

@@ -114,9 +114,9 @@ export const useDirectMessageControls = (threadId?: string, recipientId?: string
   const actions = useRealtimeChatActions();
 
   const sendMessage = useCallback(
-    (content: string) => {
+    (content: string, metadata?: Readonly<Record<string, unknown>>) => {
       if (!recipientId) return Promise.resolve();
-      return actions.sendDirectMessage(threadId, recipientId, content);
+      return actions.sendDirectMessage(threadId, recipientId, content, metadata);
     },
     [actions, recipientId, threadId],
   );

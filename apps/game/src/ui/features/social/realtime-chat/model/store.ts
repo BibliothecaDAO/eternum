@@ -841,7 +841,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         });
       }
     },
-    sendDirectMessage: async (threadId, recipientId, content) => {
+    sendDirectMessage: async (threadId, recipientId, content, metadata) => {
       const { client } = get();
       if (!client) return;
       const message: DirectMessageOutboundMessage = {
@@ -850,6 +850,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           threadId,
           recipientId,
           content,
+          ...(metadata ? { metadata } : {}),
         },
       };
       client.send(message);

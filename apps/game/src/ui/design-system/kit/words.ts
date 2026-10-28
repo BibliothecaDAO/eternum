@@ -734,6 +734,13 @@ export const CHAT_WORDS = {
   noMessages: "No messages yet",
   /** What a conversation's count says. */
   unread: "unread",
+  /** A message's action: answer it, its quote over the answer. */
+  reply: "Reply",
+  /** Over the field while a reply is written: put it away. */
+  cancelReply: "Cancel the reply",
+  /** Asked before a link off Realms' own sites opens: its whole address, then Cancel or Open. */
+  leavingRealms: "Leaving Realms",
+  open: "Open",
 } as const;
 
 /** The doorway into a match: its four steps and what holds it until the player acts. */

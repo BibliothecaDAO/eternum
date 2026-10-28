@@ -1,12 +1,9 @@
 import { formatClockTime } from "@bibliothecadao/types";
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 
-import { Fragment, useCallback, useEffect, useMemo } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
-import { Position } from "@bibliothecadao/eternum";
-import { openOnMap } from "@/play/navigation/open-place";
 import { type PlayerNames, resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import {
   useRealtimeChatActions,
@@ -15,13 +12,17 @@ import {
   useWorldChatControls,
 } from "../../hooks/use-realtime-chat";
 import type { WorldChatMessage } from "../../model/types";
-import { computeDateSeparators } from "../../model/message-grouping";
+import { computeDateSeparators, startsRun } from "../../model/message-grouping";
+import { replyMetadata, replyOf } from "../../model/reply";
 import { useStickToLatest } from "@/hooks/use-stick-to-latest";
 import { JumpToLatest } from "../shared/jump-to-latest";
 import { useChatMentions } from "../../hooks/use-chat-mentions";
 import { mentions, messageParts } from "../../model/mentions";
+import { useLinkOpener } from "../shared/leaving-realms";
 import { MessageComposer } from "../shared/message-composer";
-import { UserAvatar } from "../shared/user-avatar";
+import { MessageRow } from "../shared/message-row";
+import { MessageText } from "../shared/message-text";
+import { useShowMessage } from "../shared/use-show-message";
 
 interface WorldChatPanelProps {
   zoneId?: string;
@@ -29,25 +30,6 @@ interface WorldChatPanelProps {
   name: string;
   className?: string;
 }
-
-// Coordinate navigation button component
-const CoordinateNavButton = ({
-  coordinates,
-  onNavigate,
-}: {
-  coordinates: { x: number; y: number };
-  onNavigate?: (coordinates: { x: number; y: number }) => void;
-}) => {
-  return (
-    <button
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-hud-accent hover:text-hud-cue transition-colors duration-200 rounded bg-hud-chosen hover:bg-hud-chosen"
-      onClick={() => onNavigate?.(coordinates)}
-    >
-      <span className="text-hud-label">{`${coordinates.x}, ${coordinates.y}`}</span>
-      <SemanticIcon name="location" className="w-3 h-3" />
-    </button>
-  );
-};
 
 /** A room or thread not read yet has no messages: the same empty list each render. */
 const NO_MESSAGES: WorldChatMessage[] = [];
@@ -61,9 +43,13 @@ const formatWorldMessageTime = (message: WorldChatMessage) => {
 };
 
 /** The registered name first; the chat server's display name only for a sender this game has not registered. */
-const formatSenderName = (names: PlayerNames, message: WorldChatMessage) =>
-  resolveChatSenderName(names, message.sender.playerId, message.sender.displayName) || "Unknown adventurer";
+const formatSenderName = (names: PlayerNames, playerId: string, displayName?: string | null) =>
+  resolveChatSenderName(names, playerId, displayName) || "Unknown adventurer";
 
+/**
+ * A room: its messages, each sender's run under their name, replies quoting what they answer, and the field. A name
+ * pressed opens the conversation with that player in Messages: private messages are never written in a room.
+ */
 export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps) {
   // Select value directly to prevent infinite re-renders
   const fallbackZoneId = useRealtimeChatSelector((state) => state.activeZoneId ?? Object.keys(state.worldZones)[0]);
@@ -80,12 +66,10 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
   // A sender's name is read as the list draws, and the list draws again when one lands.
   const names = usePlayerNames();
   const mentionable = useChatMentions();
-  const handleNavigateToCoordinates = useCallback((coordinates: { x: number; y: number }) => {
-    openOnMap(Position.fromNormalized({ x: coordinates.x, y: coordinates.y }), "tile");
-  }, []);
-
-  // A sender's name opens Messages' conversation with them: private messages are never written in a room.
-  const handleUserClick = (userId: string) => actions.openConversation(userId);
+  const links = useLinkOpener();
+  const section = useRef<HTMLElement>(null);
+  const quoted = useShowMessage(section);
+  const [replying, setReplying] = useState<WorldChatMessage | null>(null);
 
   useEffect(() => {
     if (resolvedZoneId && hasChannelAccess) {
@@ -127,10 +111,11 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
   });
 
   const dateSeparators = useMemo(() => computeDateSeparators(messages), [messages]);
+  const byId = useMemo(() => new Map(messages.map((message) => [message.id, message])), [messages]);
 
   return (
-    <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
-      <div className="flex-1 min-h-0 px-4 py-3">
+    <section ref={section} className={`relative flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
+      <div className="flex-1 min-h-0 px-3 py-2">
         {!hasChannelAccess && (
           <p className="text-hud-body text-hud-cue">{reconnecting ? "Reconnecting…" : "Chat unavailable."}</p>
         )}
@@ -153,11 +138,16 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
               )}
 
               {/* Anchored to the input: a short history sits at the bottom, next to where the reply goes. */}
-              <ul className="mt-auto flex flex-col gap-0.5">
+              <ul className="mt-auto flex flex-col">
                 {messages.map((message, index) => {
-                  const senderName = formatSenderName(names, message);
-                  const parts = messageParts(message.content, mentionable.names);
-                  const mentionsMe = mentions(parts, mentionable.me);
+                  const senderId = message.sender.playerId;
+                  const senderName = formatSenderName(names, senderId, message.sender.displayName);
+                  const reply = replyOf(message.metadata);
+                  const previous = messages[index - 1];
+                  const run = startsRun(
+                    previous && { senderId: previous.sender.playerId, createdAt: previous.createdAt },
+                    { senderId, createdAt: message.createdAt, replies: reply !== null },
+                  );
                   return (
                     <Fragment key={message.id}>
                       {dateSeparators.has(index) && (
@@ -167,51 +157,39 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
                           <div className="flex-1 border-t border-hud-line" />
                         </li>
                       )}
-                      {/* Every message carries its author: avatar, time and name, then the text. One that mentions the
-                          player is marked for them. */}
-                      <li
-                        data-mentions-me={mentionsMe || undefined}
-                        className={`flex items-start gap-2 rounded text-hud-body leading-snug text-hud-ink ${
-                          mentionsMe ? "bg-hud-chosen" : ""
-                        }`}
+                      <MessageRow
+                        id={message.id}
+                        run={
+                          run || dateSeparators.has(index)
+                            ? {
+                                name: senderName,
+                                playerId: senderId,
+                                avatarUrl: message.sender.avatarUrl,
+                                time: formatWorldMessageTime(message),
+                                onName: () => actions.openConversation(senderId),
+                              }
+                            : undefined
+                        }
+                        quote={
+                          reply
+                            ? {
+                                name: formatSenderName(names, reply.playerId, byId.get(reply.id)?.sender.displayName),
+                                excerpt: reply.excerpt,
+                                onShow: () => quoted.show(reply.id),
+                              }
+                            : undefined
+                        }
+                        mentionsMe={mentions(messageParts(message.content, mentionable.names), mentionable.me)}
+                        lit={quoted.lit === message.id}
+                        onReply={() => setReplying(message)}
                       >
-                        <UserAvatar
-                          name={senderName}
-                          address={message.sender.playerId}
-                          avatarUrl={message.sender.avatarUrl}
-                          size="sm"
-                          className="mt-0.5 shrink-0"
+                        <MessageText
+                          content={message.content}
+                          names={mentionable.names}
+                          me={mentionable.me}
+                          onLink={links.open}
                         />
-                        <p className="min-w-0 flex-1 break-words">
-                          <span className="text-hud-cue">[{formatWorldMessageTime(message)}]</span>{" "}
-                          <span
-                            onClick={() => handleUserClick(message.sender.playerId)}
-                            className="cursor-pointer text-hud-accent transition-colors hover:text-hud-accent"
-                            title={`${CHAT_WORDS.message} ${senderName}`}
-                          >
-                            &lt;{senderName}&gt;
-                          </span>{" "}
-                          {parts.map((part, i) =>
-                            part.type === "text" ? (
-                              <span key={i}>{part.text}</span>
-                            ) : part.type === "mention" ? (
-                              <span
-                                key={i}
-                                data-mention={part.name}
-                                className={part.name === mentionable.me ? "text-hud-gold" : "text-hud-accent"}
-                              >
-                                {part.text}
-                              </span>
-                            ) : (
-                              <CoordinateNavButton
-                                key={i}
-                                coordinates={part}
-                                onNavigate={handleNavigateToCoordinates}
-                              />
-                            ),
-                          )}
-                        </p>
-                      </li>
+                      </MessageRow>
                     </Fragment>
                   );
                 })}
@@ -224,17 +202,29 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
           </div>
         )}
       </div>
-      <div className="">
-        <MessageComposer
-          onSend={async (value) => {
-            if (!resolvedZoneId) return;
-            await sendMessage({ content: value, zoneId: resolvedZoneId });
-          }}
-          placeholder={`${CHAT_WORDS.message} ${name}`}
-          disabled={!hasChannelAccess}
-          mentions={mentionable.choices}
-        />
-      </div>
+      <MessageComposer
+        onSend={async (value) => {
+          if (!resolvedZoneId) return;
+          const metadata = replying
+            ? replyMetadata({ id: replying.id, playerId: replying.sender.playerId, content: replying.content })
+            : undefined;
+          await sendMessage({ content: value, zoneId: resolvedZoneId, ...(metadata ? { metadata } : {}) });
+          setReplying(null);
+        }}
+        placeholder={`${CHAT_WORDS.message} ${name}`}
+        disabled={!hasChannelAccess}
+        mentions={mentionable.choices}
+        replying={
+          replying
+            ? {
+                name: formatSenderName(names, replying.sender.playerId, replying.sender.displayName),
+                excerpt: replying.content,
+                onCancel: () => setReplying(null),
+              }
+            : undefined
+        }
+      />
+      {links.asking}
     </section>
   );
 }

@@ -34,3 +34,19 @@ export function whenSent(value: string | Date): string {
   const day = dayOf(value);
   return day === dayOf(new Date()) ? formatClockTime(toDate(value).getTime() / 1000) : dayName(day);
 }
+
+/** Within this long of a sender's last message, their next one joins its run, under the same name and time. */
+const RUN_MS = 5 * 60_000;
+
+/**
+ * Whether a message starts a run (its name, portrait and time drawn over it): a new sender, a gap of five minutes or a
+ * day, or a reply, which carries its quote over its own name.
+ */
+export function startsRun(
+  previous: { senderId: string; createdAt: string | Date } | undefined,
+  message: { senderId: string; createdAt: string | Date; replies: boolean },
+): boolean {
+  if (!previous || message.replies || previous.senderId !== message.senderId) return true;
+  const gap = toDate(message.createdAt).getTime() - toDate(previous.createdAt).getTime();
+  return gap > RUN_MS || dayOf(previous.createdAt) !== dayOf(message.createdAt);
+}

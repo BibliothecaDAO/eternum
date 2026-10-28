@@ -183,7 +183,9 @@ describe("the chat: rooms, then Messages", () => {
   it("opens the conversation with a player from their name in the room", () => {
     open();
     act(() =>
-      [...host.querySelectorAll<HTMLElement>("li span")].find((name) => name.textContent === "<Aldric>")?.click(),
+      [...host.querySelectorAll<HTMLButtonElement>("li[data-message-id] p button")]
+        .find((name) => name.textContent === "Aldric")
+        ?.click(),
     );
     expect(chosenTab()).toBe("Messages");
     expect(host.querySelector("header")?.textContent).toContain("Aldric");

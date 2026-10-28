@@ -123,7 +123,12 @@ export interface RealtimeChatActions {
   enqueuePendingMessage(message: PendingMessage): void;
   resolvePendingMessage(messageId: string, updates: Partial<PendingMessage>): void;
   sendWorldMessage(zoneId: string, payload: WorldChatPublishPayload): Promise<void>;
-  sendDirectMessage(threadId: string | undefined, recipientId: string, content: string): Promise<void>;
+  sendDirectMessage(
+    threadId: string | undefined,
+    recipientId: string,
+    content: string,
+    metadata?: Readonly<Record<string, unknown>>,
+  ): Promise<void>;
   acknowledgeDirectRead(receipt: DirectMessageReadReceipt): Promise<void>;
   updateTypingState(payload: DirectMessageTyping): void;
   setWorldHistoryLoading(zoneId: string, isLoading: boolean): void;
