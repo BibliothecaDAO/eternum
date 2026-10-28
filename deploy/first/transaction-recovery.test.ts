@@ -118,7 +118,11 @@ test("changing unsent Blitz dates sends the newly computed setup with the curren
   const files = store();
   const rpc = account();
   files.write("transaction-setup.json", { nonce: "7", calls: tampered });
-  const input = { blitzStart: "2027-01-01T00:00:00Z", blitzEnd: "2027-02-01T00:00:00Z" } as Inputs;
+  const input = {
+    blitzStart: "2027-01-01T00:00:00Z",
+    blitzEnd: "2027-02-01T00:00:00Z",
+    frontierPresetId: "6",
+  } as Inputs;
   const provider = {
     ...rpc,
     getBlockWithTxHashes: async () => ({ block_number: 5, timestamp: 1 }),

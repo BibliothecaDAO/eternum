@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { formatExact, LORDS } from "@bibliothecadao/types";
+import { formatExact, formatShort, formatShortChange, LORDS } from "@bibliothecadao/types";
 import { HudButton, HudChip, HudSheet, HudSlider } from "@/ui/design-system/kit/hud-elements";
 import { CANCEL, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
 
@@ -41,7 +41,7 @@ export const RefillChip = ({
     disabled={held === undefined || held < 1 || refilling}
     onPress={onRefill}
   >
-    {refilling ? REFILLING : held === undefined ? "—" : formatExact(Math.min(price, Math.floor(held)))}
+    {refilling ? REFILLING : held === undefined ? "—" : formatShort(Math.min(price, Math.floor(held)))}
   </HudChip>
 );
 
@@ -66,14 +66,12 @@ export const RefillConfirm = ({
   return (
     <HudSheet label={REFILL} onClose={onCancel}>
       <div className="flex items-center justify-center gap-2">
-        <HudChip
-          icons={["stamina"]}
-          label={STAMINA}
-        >{`${formatExact(stamina.current)} → ${formatExact(stamina.current + amount)}`}</HudChip>
-        <HudChip
-          icons={["lords"]}
-          label={LORDS}
-        >{`${formatExact(held)} → ${held === undefined ? "—" : formatExact(held - amount)}`}</HudChip>
+        <HudChip icons={["stamina"]} label={STAMINA}>
+          {formatShortChange(stamina.current, stamina.current + amount)}
+        </HudChip>
+        <HudChip icons={["lords"]} label={LORDS}>
+          {formatShortChange(held, held === undefined ? undefined : held - amount)}
+        </HudChip>
       </div>
       <HudSlider
         label="Stamina to refill"

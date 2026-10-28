@@ -1,7 +1,7 @@
 import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudPanel, HudPortrait, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { ARMIES, ARMY, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
+import { ARMIES, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
 

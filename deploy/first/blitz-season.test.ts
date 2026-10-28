@@ -86,7 +86,7 @@ test("a successful first setup cannot suppress opening season two", async () => 
     environments.dev,
     { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" },
     "0x33",
-    { blitzStart: iso(desired.start), blitzEnd: iso(desired.end) } as Inputs,
+    { blitzStart: iso(desired.start), blitzEnd: iso(desired.end), frontierPresetId: "6" } as Inputs,
     files as unknown as PrivateStore,
     () => {},
     read,

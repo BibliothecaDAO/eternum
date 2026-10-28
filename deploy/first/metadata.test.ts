@@ -78,7 +78,7 @@ test("apply starts every presence read together", async () => {
     environments.dev,
     assets,
     "0x33",
-    { blitzStart: "2027-01-01T00:00:00Z", blitzEnd: "2027-02-01T00:00:00Z" } as Inputs,
+    { blitzStart: "2027-01-01T00:00:00Z", blitzEnd: "2027-02-01T00:00:00Z", frontierPresetId: "5" } as Inputs,
     {} as PrivateStore,
     () => {},
     read,

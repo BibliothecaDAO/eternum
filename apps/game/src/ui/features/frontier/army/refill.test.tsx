@@ -53,9 +53,9 @@ describe("partial stamina refills", () => {
     unmount();
   });
   it.each([
-    [1240, 130, 150, 1110],
-    [40, 40, 60, 0],
-  ])("defaults to an affordable purchase from %s LORDS", (held, amount, after, left) => {
+    [1240, 130, 150, "1.2K → 1.1K"],
+    [40, 40, 60, "40 → 0"],
+  ])("defaults to an affordable purchase from %s LORDS", (held, amount, after, balance) => {
     const onRefill = vi.fn();
     const { host, unmount } = render(
       <RefillConfirm
@@ -67,7 +67,7 @@ describe("partial stamina refills", () => {
       />,
     );
     expect(host.querySelector(`[aria-label="stamina 20 → ${after}"]`)).not.toBeNull();
-    expect(host.textContent).toContain(left.toLocaleString("en-US"));
+    expect(host.querySelector(`[aria-label="LORDS ${balance}"]`)).not.toBeNull();
     const button = [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Refill"))!;
     act(() => button.click());
     expect(onRefill).toHaveBeenCalledWith(amount);
