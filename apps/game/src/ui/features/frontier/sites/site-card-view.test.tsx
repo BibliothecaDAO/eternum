@@ -51,6 +51,10 @@ describe("a guarded site's card", () => {
     const card = document.querySelector("section[aria-label='Troll']")!;
     // The owner, 26 October 2026: "moving the clear rewards in the 'this attack clears it' -> This attack earns xxx".
     expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("This attack earns+550+82 XP");
+    // Owner, 28 October 2026 ("v1 token header yes"): the guard heads the card as a token; with an army its strength is
+    // the fight's to say, once.
+    expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Troll");
+    expect(card.textContent?.match(/1,100/g)).toHaveLength(1);
     expect(card.querySelector(".ui-sheet__body header .opacity-50")).toBeNull();
     const sides = [...card.querySelectorAll(".ui-sheet__body > .flex.gap-2 > *")].map((side) => side.textContent);
     expect(sides).toEqual(["5,000 →4,820", "1,100 →0"]);
@@ -276,7 +280,10 @@ describe("a guarded site's card with no army chosen", () => {
     );
     const card = document.querySelector("section[aria-label='North Watch']")!;
     expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("RuinBasilisk1.1K");
+    // The guard's token, its strength under it, then what the site is: its kind under its name, and its beast.
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("1,100Ruin · Basilisk");
+    expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Basilisk 1,100");
+    expect(card.textContent?.match(/1,100|1\.1K/g)).toHaveLength(1);
   });
 
   // Owner, 28 October 2026: "agree with no picker".
@@ -297,7 +304,7 @@ describe("a guarded site's card with no army chosen", () => {
       ),
     );
     const card = document.querySelector("section[data-kit-sheet]")!;
-    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("+3,300+82 XPDark fey1.1K");
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("1,100Dark fey+3,300+82 XP");
     expect(card.querySelectorAll(".ui-row")).toHaveLength(0);
     expect(card.querySelectorAll("button")).toHaveLength(1);
     expect(card.textContent).not.toContain("Pick an army");
@@ -497,9 +504,9 @@ describe("one fight panel for every state of every target (owner, 10-27: 'this p
             />,
           ),
         );
-        const sides = [...document.querySelectorAll('section[role=dialog] [role="img"]')].map((side) =>
-          side.getAttribute("aria-label"),
-        );
+        const sides = [
+          ...document.querySelectorAll('section[role=dialog] .ui-sheet__body > .flex.gap-2 [role="img"]'),
+        ].map((side) => side.getAttribute("aria-label"));
         expect(sides).toEqual([`Army 5,000 → ${kept[0]}`, `troops 1,100 → ${kept[1]}`]);
         expect(document.querySelector('[role="status"]')?.textContent).toBe(line(TARGET_MARKS[target].word));
         expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(!attacks);

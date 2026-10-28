@@ -28,7 +28,6 @@ import {
   STORAGE,
   tooFarFrom,
   TROOPS,
-  BEAST,
   FIGHT_WORDS,
   XP,
 } from "@/ui/design-system/kit/words";
@@ -38,6 +37,7 @@ import type { ReactNode } from "react";
 
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
+import { GuardToken } from "../hud/army-token";
 import { FightSide } from "./fight-side";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
@@ -59,12 +59,14 @@ export type SiteVerb =
   | { kind: "far" };
 
 /**
- * A guarded site's card (wireframe 06), read as its result will read (the owner's option A). Its headline is what this
- * attack comes to, and beside it what the clear pays (what fits, with its XP, or a ruin's chest with its tier and exact
- * LORDS): "This attack earns" over the reward when it clears the site, the reward dimmed when it does not (owner, 26
- * October 2026: "moving the clear rewards in the 'this attack clears it' -> This attack earns xxx"). Under it, each
- * side's troops before and after, as numbers and bars with no line restating them. Its foot is the sheet's: Realm on
- * the left, the one step alone on the right.
+ * A guarded site's card (wireframe 06), read as its result will read (the owner's option A), headed as the owner picked
+ * (28 October 2026, layout V1: "v1 token header yes"). The guard stands at its head as the dock draws an army: its
+ * portrait, its strength under it. Beside it, what the site is (its kind and its beast, where the title does not say
+ * them), or with an army in reach what this attack comes to; then, on one row, what the clear pays (what fits, with its
+ * XP, or a ruin's chest with its tier and exact LORDS): "This attack earns" over the reward when it clears the site, the
+ * reward dimmed when it does not (owner, 26 October 2026: "moving the clear rewards in the 'this attack clears it' ->
+ * This attack earns xxx"). With an army selected, each side's troops before and after, the guard's strength said there
+ * and not on its token. Its foot is the sheet's: Realm on the left, the one step alone on the right.
  */
 export const SiteCardView = ({
   site,
@@ -101,9 +103,10 @@ export const SiteCardView = ({
 }) => {
   const { word: kind, icon } = TARGET_MARKS[site];
   const word = attackTargetName(site, beast);
+  const title = name ?? word;
   const lost = fight && fight.outcome === "loses";
-  // With no army selected the card says what the site is and pays, its guard beside them (owner, 28 October 2026: "agree
-  // with no picker"); selecting an army, then the site, gives the fight.
+  // With no army selected the card says what the site is and pays, and its guard (owner, 28 October 2026: "agree with
+  // no picker"); selecting an army, then the site, gives the fight.
   const armyless = army === null;
   const guardIcon = beast ? beastMeaning(beast.beast) : "troops";
   // The army against a guard of known size, with the fight forecast: what option A reads, side by side.
@@ -119,21 +122,29 @@ export const SiteCardView = ({
         )}
       </Reward>
     ) : null;
+  // What the site is, in the words the title has not said: its kind under a site's own name, and its beast.
+  const what = [...new Set([name && kind, beast?.name])].filter((part) => part && part !== title).join(" · ");
   return (
-    <HudSheet label={name ?? word} onClose={onClose}>
-      <header className="flex items-center justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-3">
+    <HudSheet label={title} onClose={onClose}>
+      <header className="grid grid-cols-[auto_1fr] items-center gap-3">
+        {typeof guard === "number" ? (
+          <GuardToken
+            label={beast?.name ?? TROOPS}
+            art={guardIcon}
+            troops={armyless ? guard : undefined}
+            tip={beast?.combatClass}
+          />
+        ) : (
           <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
-          <span className="flex min-w-0 flex-col gap-1">
-            {facing ? (
-              <Outcome facing={facing} earns={reward !== null} />
-            ) : (
-              name && kind !== beast?.name && <span className="text-hud-label text-hud-muted">{kind}</span>
-            )}
-            {reward}
-          </span>
+        )}
+        <span className="flex min-w-0 flex-col gap-1.5">
+          {facing ? (
+            <Outcome facing={facing} earns={reward !== null} />
+          ) : (
+            what && <span className="text-hud-label text-hud-muted">{what}</span>
+          )}
+          {reward}
         </span>
-        {armyless && <BeastGuard beast={beast} guard={guard} />}
       </header>
       {!armyless && <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />}
       {receipt}
@@ -229,23 +240,6 @@ const FightPanel = ({
       )}
     </div>
   ) : null;
-
-/** Species and remaining strength, beside the site while no army is selected. */
-const BeastGuard = ({
-  beast,
-  guard,
-}: {
-  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
-  guard: number | null | undefined;
-}) =>
-  guard === null ? null : (
-    <span className="flex items-center gap-2" data-tip={beast?.combatClass}>
-      {beast && <span className="text-hud-strong text-hud-ink">{beast.name}</span>}
-      <HudChip icons={[beast ? beastMeaning(beast.beast) : "troops"]} label={beast ? BEAST : TROOPS}>
-        {formatShort(guard)}
-      </HudChip>
-    </span>
-  );
 
 /** What a clear pays home: what fits, marked Full, as the fight's result marks it, when the store cannot take it all. */
 const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number } }) => {
