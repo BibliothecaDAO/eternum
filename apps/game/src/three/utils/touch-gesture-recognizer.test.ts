@@ -7,6 +7,8 @@ import {
   type TouchPointerSample,
 } from "./touch-gesture-recognizer";
 
+type Feed = (kind: TouchPointerSample["kind"], pointerId: number, x: number, y: number, time: number) => void;
+
 function createHarness() {
   const gestures: TouchGesture[] = [];
   const pendingTimers: Array<{ fn: () => void; ms: number; cancelled: boolean }> = [];
@@ -90,6 +92,69 @@ describe("TouchGestureRecognizer", () => {
     }
     const tap = { kind: "tap", x: 100, y: 100 };
     expect(harness.gestures).toEqual([tap, tap, { kind: "double-tap", x: 100, y: 100 }, tap]);
+  });
+
+  // Review realm-double-tap-1: a player who moved the map between two taps did not double-tap what lies under them.
+  it.each([
+    [
+      "a pan",
+      (feed: Feed) => {
+        feed("down", 2, 100, 100, 100);
+        feed("move", 2, 140, 100, 120);
+        feed("up", 2, 140, 100, 140);
+      },
+    ],
+    [
+      "a pinch",
+      (feed: Feed) => {
+        feed("down", 2, 80, 100, 100);
+        feed("down", 3, 120, 100, 105);
+        feed("move", 3, 150, 100, 120);
+        feed("up", 2, 80, 100, 140);
+        feed("up", 3, 150, 100, 145);
+      },
+    ],
+    [
+      "a two-finger touch",
+      (feed: Feed) => {
+        feed("down", 2, 80, 100, 100);
+        feed("down", 3, 120, 100, 105);
+        feed("up", 2, 80, 100, 130);
+        feed("up", 3, 120, 100, 135);
+      },
+    ],
+    [
+      "a release past the slop with no move between",
+      (feed: Feed) => {
+        feed("down", 2, 100, 100, 100);
+        feed("up", 2, 160, 100, 140);
+      },
+    ],
+  ])("ends the pair at %s: the next tap is a first tap, not a double tap", (_, between) => {
+    const harness = createHarness();
+    harness.feed("down", 1, 100, 100, 0);
+    harness.feed("up", 1, 100, 100, 40);
+    between(harness.feed);
+    harness.feed("down", 4, 100, 100, 200);
+    harness.feed("up", 4, 100, 100, 240);
+    expect(harness.gestures.filter(({ kind }) => kind === "double-tap")).toEqual([]);
+    expect(harness.gestures.filter(({ kind }) => kind === "tap")).toHaveLength(2);
+    // A genuine pair right after still reads as one.
+    harness.feed("down", 5, 100, 100, 300);
+    harness.feed("up", 5, 100, 100, 340);
+    expect(harness.gestures.at(-1)).toEqual({ kind: "double-tap", x: 100, y: 100 });
+  });
+
+  it("ends the pair at a long press", () => {
+    const harness = createHarness();
+    harness.feed("down", 1, 100, 100, 0);
+    harness.feed("up", 1, 100, 100, 40);
+    harness.feed("down", 2, 100, 100, 100);
+    harness.fireLongPressTimer();
+    harness.feed("up", 2, 100, 100, 150);
+    harness.feed("down", 3, 100, 100, 200);
+    harness.feed("up", 3, 100, 100, 240);
+    expect(harness.gestures.map(({ kind }) => kind)).toEqual(["tap", "long-press", "tap"]);
   });
 
   it("reads no double tap from two taps too slow or too far apart", () => {

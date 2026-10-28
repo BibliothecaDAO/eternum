@@ -403,6 +403,44 @@ describe("InputManager touch", () => {
     expect(doubleClickCallback).toHaveBeenCalledTimes(1);
   });
 
+  // Review realm-double-tap-1: a pan between two taps moves the map and leaves no double-click behind.
+  it("dispatches tap, pan, tap as two clicks and the pan, never a double-click", () => {
+    vi.useFakeTimers();
+    const clickCallback = vi.fn();
+    const doubleClickCallback = vi.fn();
+    const navigation = { begin: vi.fn(), move: vi.fn(), end: vi.fn() };
+    const fixture = createSubject();
+    const manager = new InputManager(
+      SceneName.WorldMap,
+      fixture.sceneManager as unknown as SceneManager,
+      fixture.raycaster,
+      fixture.mouse,
+      fixture.camera,
+      navigation as never,
+    );
+    manager.setSurface(fixture.surface);
+    manager.activate();
+    manager.addListener("click", clickCallback);
+    manager.addListener("dblclick", doubleClickCallback);
+
+    const touch = (type: string, id: number, x: number) =>
+      fixture.surface.dispatchEvent(createTouchPointerEvent(type, id, x, 260));
+    touch("pointerdown", 1, 150);
+    touch("pointerup", 1, 150);
+    vi.advanceTimersByTime(80);
+    touch("pointerdown", 2, 150);
+    touch("pointermove", 2, 200);
+    touch("pointerup", 2, 200);
+    vi.advanceTimersByTime(80);
+    touch("pointerdown", 3, 150);
+    touch("pointerup", 3, 150);
+
+    expect(clickCallback).toHaveBeenCalledTimes(2);
+    expect(navigation.move).toHaveBeenCalled();
+    expect(doubleClickCallback).not.toHaveBeenCalled();
+    manager.destroy();
+  });
+
   it("returns to the native mouse path once a mouse pointer is seen again", () => {
     const clickCallback = vi.fn();
     const fixture = createSubject();

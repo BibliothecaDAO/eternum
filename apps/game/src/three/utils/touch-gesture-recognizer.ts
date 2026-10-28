@@ -122,7 +122,7 @@ export class TouchGestureRecognizer {
     const hadPointers = this.pointers.size > 0;
     this.clearPress();
     this.pointers.clear();
-    this.lastTap = null;
+    this.breakTapPair();
     if (hadPointers) this.emit({ kind: "end" });
   }
 
@@ -135,6 +135,8 @@ export class TouchGestureRecognizer {
       return;
     }
 
+    // A second finger: a pinch or a two-finger touch, never half of a double tap.
+    this.breakTapPair();
     this.clearPress();
   }
 
@@ -159,6 +161,7 @@ export class TouchGestureRecognizer {
       if (distanceBetween(this.press.start, sample) > TAP_SLOP_PX) {
         this.press.movedPastSlop = true;
         this.stopLongPressTimer();
+        this.breakTapPair();
       }
     }
     if (!this.press || this.press.movedPastSlop) {
@@ -177,6 +180,7 @@ export class TouchGestureRecognizer {
         distanceBetween(this.press.start, sample) <= TAP_SLOP_PX;
       this.clearPress();
       if (isTap) this.emitTap(sample);
+      else this.breakTapPair();
     }
 
     if (this.pointers.size === 0) this.emit({ kind: "end" });
@@ -187,11 +191,19 @@ export class TouchGestureRecognizer {
     this.emit({ kind: "tap", x: sample.x, y: sample.y });
     const last = this.lastTap;
     if (last && sample.time - last.time <= DOUBLE_TAP_MS && distanceBetween(last, sample) <= DOUBLE_TAP_SLOP_PX) {
-      this.lastTap = null;
+      this.breakTapPair();
       this.emit({ kind: "double-tap", x: sample.x, y: sample.y });
       return;
     }
     this.lastTap = { x: sample.x, y: sample.y, time: sample.time };
+  }
+
+  /**
+   * A press that is not a tap (a pan, a pinch or a second finger, a hold, a release past the slop) ends the pair: the
+   * next tap is a first tap, so a player who moved the map between two taps never double-taps what lies under them.
+   */
+  private breakTapPair(): void {
+    this.lastTap = null;
   }
 
   private handleCancel(sample: TouchPointerSample): void {
@@ -213,6 +225,7 @@ export class TouchGestureRecognizer {
         return;
       }
       press.longPressFired = true;
+      this.breakTapPair();
       this.emit({ kind: "long-press", x: press.start.x, y: press.start.y });
     }, LONG_PRESS_MS);
   }
