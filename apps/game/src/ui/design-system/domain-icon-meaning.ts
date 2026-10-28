@@ -1,6 +1,6 @@
 import type { FrontierSpecies } from "@/three/structures/frontier-beast";
 import { StructureType, type StructureNamingMode } from "@bibliothecadao/types";
-import { frontierBeast, nativeGameModeOf, readFrontierBeast } from "@bibliothecadao/eternum";
+import { frontierBeast, isGuardedSite, nativeGameModeOf, readFrontierBeast } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { iconDefinition, type IconMeaning } from "./icon-meaning";
@@ -23,7 +23,8 @@ export function structureMeaning(
 ): IconMeaning {
   if (mode === "frontier") {
     if (guard) return beastMeaning(guard);
-    if ([StructureType.Camp, StructureType.Beasts, StructureType.Rift].includes(category))
+    // A ruin keeps its landmark; every other guarded site is drawn as its guard.
+    if (isGuardedSite(category) && category !== StructureType.Ruin)
       return beastMeaning(frontierBeast(0, category, "lowly").beast);
   }
   return structureMeanings[category];
@@ -35,8 +36,7 @@ export function readStructureMeaning(
   structure: NativeRows["Structure"],
 ): IconMeaning {
   const category = structure.base.category;
-  if (![StructureType.Camp, StructureType.Beasts, StructureType.Rift, StructureType.Ruin].includes(category))
-    return structureMeaning(category);
+  if (!isGuardedSite(category)) return structureMeaning(category);
   const mode = nativeGameModeOf(store.require("GameRegistry", { game_id: structure.game_id }).preset_id);
   const guard =
     mode === "frontier"
