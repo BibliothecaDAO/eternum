@@ -11,7 +11,8 @@ import {
   useRealtimeChatSelector,
 } from "@/ui/features/social";
 import type { RealtimeConnectionStatus } from "@/ui/features/social/realtime-chat/model/types";
-import { configManager } from "@bibliothecadao/eternum";
+import { chatRooms } from "@/ui/features/social/realtime-chat/model/chat-rooms";
+import { configManager, nativeGameModeOf } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
 import { useEffect, useMemo, useRef } from "react";
@@ -23,22 +24,33 @@ import { CHAT_SHORTCUT } from "./chat-shortcut";
 export const gameChatZoneId = (chainId: string, gameId: number) => `game:0x${BigInt(chainId).toString(16)}:${gameId}`;
 
 /**
- * The game's chat room as the player stands in it: signed in or not, the room's name (game ids repeat across shards,
- * so a room is named by its shard's chain and the game), the zone shown, and what joining it takes.
+ * The chat as the player stands in a game: signed in or not, the rooms they have there (chatRooms: Global, and the
+ * game's own only where its mode keeps one), the room the strip reads, and what joining them takes.
  */
 const useGameChatRoom = () => {
   const { status } = useIdentitySession();
   const signedIn = status === "signed-in";
   const game = getActiveGame();
   const gameZoneId = game ? gameChatZoneId(game.chainId, configManager.getActiveGameId()) : "";
+  const rooms = useMemo(
+    () => chatRooms(game ? { zoneId: gameZoneId, mode: nativeGameModeOf(game.presetId) } : null),
+    [game, gameZoneId],
+  );
   const zoneId = useRealtimeChatSelector((state) =>
-    state.activeZoneId === gameZoneId ? gameZoneId : GLOBAL_CHAT_CHANNEL_ID,
+    rooms.some((room) => room.zoneId === state.activeZoneId) ? state.activeZoneId! : GLOBAL_CHAT_CHANNEL_ID,
   );
+  // The server joins Global at the handshake; a game's room is asked for by name.
   const initializer = useMemo<InitializeRealtimeClientParams | null>(
-    () => (signedIn ? { baseUrl: window.location.origin, joinZones: gameZoneId ? [gameZoneId] : [] } : null),
-    [signedIn, gameZoneId],
+    () =>
+      signedIn
+        ? {
+            baseUrl: window.location.origin,
+            joinZones: rooms.map((room) => room.zoneId).filter((zone) => zone !== GLOBAL_CHAT_CHANNEL_ID),
+          }
+        : null,
+    [signedIn, rooms],
   );
-  return { status, gameZoneId, zoneId, initializer };
+  return { status, rooms, zoneId, initializer };
 };
 
 /**
@@ -64,7 +76,7 @@ export function GameChatConnection() {
  * read while `open`. Every view that shows chat reads it here; the connection itself is GameChatConnection's.
  */
 export function useGameChat(open: boolean) {
-  const { status, gameZoneId, zoneId, initializer } = useGameChatRoom();
+  const { status, rooms, zoneId, initializer } = useGameChatRoom();
   const requestSignIn = useRequestSignIn();
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
   const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
@@ -88,7 +100,7 @@ export function useGameChat(open: boolean) {
       lastMessage &&
       `${resolveChatSenderName(names, lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${lastMessage.content}`,
   });
-  return { status, initializer, requestSignIn, gameZoneId, unread, stripLine };
+  return { status, initializer, requestSignIn, rooms, unread, stripLine };
 }
 
 /** Where the room's history stands: not answered yet, answered (with or without messages), or failed. */
@@ -136,7 +148,7 @@ export function HudChatWindow({
   onOpenChange: (open: boolean) => void;
   foldToIcon?: boolean;
 }) {
-  const { status, initializer, requestSignIn, gameZoneId, unread, stripLine } = useGameChat(open);
+  const { status, initializer, requestSignIn, rooms, unread, stripLine } = useGameChat(open);
   const pane = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -177,14 +189,7 @@ export function HudChatWindow({
             // The chat shell pads its own tabs, history and composer.
             bodyClassName="flex min-h-0 flex-1 flex-col p-0"
           >
-            <RealtimeChatShell
-              defaultZoneId={GLOBAL_CHAT_CHANNEL_ID}
-              gameZoneId={gameZoneId}
-              displayMode="embedded"
-              autoInitializeClient={false}
-              showInlineToggle={false}
-              className="min-h-0 flex-1"
-            />
+            <RealtimeChatShell rooms={rooms} className="min-h-0 flex-1" />
           </HudPanel>
         </div>
       )}

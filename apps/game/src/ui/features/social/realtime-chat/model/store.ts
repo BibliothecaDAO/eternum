@@ -3,7 +3,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 
 import { AudioManager } from "@/audio/core/AudioManager";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
-import { RealtimeClient } from "@bibliothecadao/types";
+import { GLOBAL_CHAT_CHANNEL_ID, RealtimeClient } from "@bibliothecadao/types";
 import type {
   DirectMessage,
   DirectMessageOutboundMessage,
@@ -187,28 +187,6 @@ const matchesIdentityAlias = (identity: { playerId: string } | undefined, candid
   return false;
 };
 
-// Load tabs from localStorage
-const loadTabsFromStorage = () => {
-  try {
-    const stored = localStorage.getItem("realtime-chat-tabs");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return Array.isArray(parsed) ? parsed : [];
-    }
-  } catch (e) {
-    console.warn("Failed to load tabs from localStorage", e);
-  }
-  return [];
-};
-
-const loadActiveTabIdFromStorage = () => {
-  try {
-    return localStorage.getItem("realtime-chat-active-tab") || null;
-  } catch {
-    return null;
-  }
-};
-
 const initialState: Omit<RealtimeChatStore, "actions"> = {
   client: null,
   connectionStatus: "idle",
@@ -226,8 +204,7 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
   onlinePlayers: {},
   typingIndicators: {},
   pendingReadReceipts: [],
-  openTabs: loadTabsFromStorage(),
-  activeTabId: loadActiveTabIdFromStorage(),
+  view: { kind: "room", zoneId: GLOBAL_CHAT_CHANNEL_ID },
   blockedPlayers: [],
 };
 
@@ -400,24 +377,28 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         });
       }
     },
-    setWorldChatChannel: (zoneId) => {
-      const { actions, openTabs, activeTabId } = get();
+    // Each view is read where it stands: the room shown counts nothing unread, a conversation open neither; leaving one
+    // lets its messages count again.
+    showRoom: (zoneId) => {
+      const { actions } = get();
       actions.joinZone(zoneId);
+      actions.setActiveThread(undefined);
       actions.setActiveZone(zoneId);
-      const directTabs = openTabs.filter((tab) => tab.type === "dm");
-      const worldTab = {
-        id: `world-${zoneId}`,
-        type: "world" as const,
-        label: "World",
-        targetId: zoneId,
-        unreadCount: get().worldZones[zoneId]?.unreadCount ?? 0,
-        closeable: false,
-      };
-      const nextTabs = [worldTab, ...directTabs];
-      const nextActiveTabId = directTabs.some((tab) => tab.id === activeTabId) ? activeTabId : worldTab.id;
-      set({ openTabs: nextTabs, activeTabId: nextActiveTabId });
-      localStorage.setItem("realtime-chat-tabs", JSON.stringify(nextTabs));
-      localStorage.setItem("realtime-chat-active-tab", nextActiveTabId!);
+      set({ view: { kind: "room", zoneId } });
+    },
+    showMessages: () => {
+      const { actions } = get();
+      actions.setActiveZone(undefined);
+      actions.setActiveThread(undefined);
+      set({ view: { kind: "messages" } });
+    },
+    openConversation: (playerId) => {
+      const { actions } = get();
+      const threadId = actions.ensureDirectThread(playerId);
+      if (!threadId) return;
+      actions.setActiveZone(undefined);
+      actions.setActiveThread(threadId);
+      set({ view: { kind: "conversation", threadId } });
     },
     setActiveZone: (zoneId) => {
       const { worldZones, unreadWorldTotal, activeZoneId } = get();
@@ -456,22 +437,6 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         return;
       }
       set({ isShellOpen: isOpen });
-    },
-    openDirectThread: (playerId: string) => {
-      if (!playerId) {
-        return undefined;
-      }
-
-      const { actions } = get();
-      const threadId = actions.ensureDirectThread(playerId);
-
-      if (threadId) {
-        actions.setShellOpen(true);
-        actions.setActiveThread(threadId);
-        return threadId;
-      }
-
-      return undefined;
     },
     ensureDirectThread: (participantId: string) => {
       const { identity, dmThreads } = get();
@@ -1152,46 +1117,12 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         });
       }
     },
-    addTab: (tab) => {
-      const { openTabs } = get();
-      const existingIndex = openTabs.findIndex((t) => t.id === tab.id);
-
-      if (existingIndex >= 0) {
-        // Tab already exists, just set it as active
-        set({ activeTabId: tab.id });
-        localStorage.setItem("realtime-chat-active-tab", tab.id);
-        return;
-      }
-
-      const nextTabs = [...openTabs, tab];
-      set({ openTabs: nextTabs, activeTabId: tab.id });
-      localStorage.setItem("realtime-chat-tabs", JSON.stringify(nextTabs));
-      localStorage.setItem("realtime-chat-active-tab", tab.id);
-    },
-    removeTab: (tabId) => {
-      const { openTabs, activeTabId } = get();
-      const nextTabs = openTabs.filter((t) => t.id !== tabId);
-
-      let nextActiveTabId = activeTabId;
-      if (activeTabId === tabId) {
-        // If removing active tab, switch to the last tab
-        nextActiveTabId = nextTabs.length > 0 ? nextTabs[nextTabs.length - 1].id : null;
-      }
-
-      set({ openTabs: nextTabs, activeTabId: nextActiveTabId });
-      localStorage.setItem("realtime-chat-tabs", JSON.stringify(nextTabs));
-      if (nextActiveTabId) {
-        localStorage.setItem("realtime-chat-active-tab", nextActiveTabId);
-      } else {
-        localStorage.removeItem("realtime-chat-active-tab");
-      }
-    },
     loadBlockedPlayers: async () => {
       const blocked = await requestBlockList(get().baseUrl, "GET");
       if (blocked) set({ blockedPlayers: blocked });
     },
-    // Blocking hides the thread: its tab closes and its messages leave this client. The server drops the account's
-    // future messages; unblocking lets later ones through, and a new message brings the thread back.
+    // Blocking hides the thread: the chat leaves it for Messages and its messages leave this client. The server drops
+    // the account's future messages; unblocking lets later ones through, and a new message brings the thread back.
     blockPlayer: async (playerId) => {
       const blocked = await requestBlockList(get().baseUrl, "POST", "", { realmsId: playerId });
       if (!blocked) return;
@@ -1201,26 +1132,13 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       const dmThreads = Object.fromEntries(
         Object.entries(get().dmThreads).filter(([threadId]) => !hidden.includes(threadId)),
       );
-      set({ blockedPlayers: blocked, dmThreads });
-      hidden.forEach((threadId) => get().actions.removeTab(`dm-${threadId}`));
+      const { view } = get();
+      const showing = view.kind === "conversation" && hidden.includes(view.threadId);
+      set({ blockedPlayers: blocked, dmThreads, ...(showing ? { view: { kind: "messages" as const } } : {}) });
     },
     unblockPlayer: async (playerId) => {
       const blocked = await requestBlockList(get().baseUrl, "DELETE", `/${encodeURIComponent(playerId)}`);
       if (blocked) set({ blockedPlayers: blocked });
-    },
-    setActiveTab: (tabId) => {
-      set({ activeTabId: tabId });
-      if (tabId) {
-        localStorage.setItem("realtime-chat-active-tab", tabId);
-      } else {
-        localStorage.removeItem("realtime-chat-active-tab");
-      }
-    },
-    updateTabUnread: (tabId, unreadCount) => {
-      const { openTabs } = get();
-      const nextTabs = openTabs.map((tab) => (tab.id === tabId ? { ...tab, unreadCount } : tab));
-      set({ openTabs: nextTabs });
-      localStorage.setItem("realtime-chat-tabs", JSON.stringify(nextTabs));
     },
   },
 }));

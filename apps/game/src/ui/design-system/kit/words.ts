@@ -728,6 +728,12 @@ export const CHAT_WORDS = {
   refused: "That message was not sent.",
   /** Over a chat scrolled up to read, once a newer message arrived: it jumps to the latest. */
   newMessages: "New messages",
+  /** The private conversations' tab, beside the rooms. */
+  messages: "Messages",
+  /** A room, a conversation or Messages with nothing written yet. */
+  noMessages: "No messages yet",
+  /** What a conversation's count says. */
+  unread: "unread",
 } as const;
 
 /** The doorway into a match: its four steps and what holds it until the player acts. */

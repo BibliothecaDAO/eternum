@@ -1,7 +1,7 @@
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { SIGN_IN } from "@/ui/design-system/kit/words";
 import { RealtimeChatShell } from "@/ui/features/social";
-import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
+import type { ChatRoom } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 import type { RefObject } from "react";
 
 /**
@@ -9,12 +9,12 @@ import type { RefObject } from "react";
  * page is the way into sign-in, which brings the player back to this game.
  */
 export const ChatPage = ({
-  gameZoneId,
+  rooms,
   signedIn,
   onSignIn,
   pane,
 }: {
-  gameZoneId: string;
+  rooms: readonly ChatRoom[];
   signedIn: boolean;
   onSignIn: () => void;
   /** The chat key focuses this pane's field. */
@@ -27,14 +27,7 @@ export const ChatPage = ({
       bodyClassName="flex min-h-0 flex-1 flex-col p-0"
     >
       {signedIn ? (
-        <RealtimeChatShell
-          defaultZoneId={GLOBAL_CHAT_CHANNEL_ID}
-          gameZoneId={gameZoneId}
-          displayMode="embedded"
-          autoInitializeClient={false}
-          showInlineToggle={false}
-          className="min-h-0 flex-1"
-        />
+        <RealtimeChatShell rooms={rooms} className="min-h-0 flex-1" />
       ) : (
         <div className="flex flex-1 items-center justify-center p-4">
           <HudButton kind="primary" onClick={onSignIn}>

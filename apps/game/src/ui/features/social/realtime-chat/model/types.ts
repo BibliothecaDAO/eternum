@@ -35,16 +35,14 @@ export interface PendingMessage {
   errorMessage?: string;
 }
 
-export type ChatTabType = "world" | "zone" | "dm";
-
-export interface ChatTab {
-  id: string;
-  type: ChatTabType;
-  label: string;
-  targetId: string; // zoneId for world/zone, threadId for dm
-  unreadCount: number;
-  closeable?: boolean; // If false, tab cannot be closed (e.g., World tab)
-}
+/**
+ * What the chat shows: a room, the list of private conversations (Messages), or one conversation. Private messages are
+ * never drawn in a room (owner, 28 October 2026: "its a bit weird mixing the dm with the global chat imo").
+ */
+export type ChatView =
+  | { kind: "room"; zoneId: string }
+  | { kind: "messages" }
+  | { kind: "conversation"; threadId: string };
 
 export interface WorldChatZoneState {
   historyError?: string;
@@ -84,8 +82,7 @@ export interface RealtimeChatState {
   onlinePlayers: Record<string, PlayerPresence>;
   typingIndicators: Record<string, DirectMessageTyping>;
   pendingReadReceipts: DirectMessageReadReceipt[];
-  openTabs: ChatTab[];
-  activeTabId: string | null;
+  view: ChatView;
   /** Accounts this player blocked: their direct messages never arrive, and their threads are hidden. */
   blockedPlayers: string[];
 }
@@ -105,10 +102,14 @@ export interface RealtimeChatActions {
   resetClient(): void;
   setConnectionStatus(status: RealtimeConnectionStatus, errorMessage?: string): void;
   joinZone(zoneId: string): void;
-  setWorldChatChannel(zoneId: string): void;
+  /** Shows a room, joined and read there. */
+  showRoom(zoneId: string): void;
+  /** Shows the list of private conversations. */
+  showMessages(): void;
+  /** Opens the conversation with a player, started if there is none: a name pressed in a room leads here. */
+  openConversation(playerId: string): void;
   setActiveZone(zoneId: string | undefined): void;
   setShellOpen(isOpen: boolean): void;
-  openDirectThread(playerId: string): string | undefined;
   ensureDirectThread(participantId: string): string | undefined;
   setActiveThread(threadId: string | undefined): void;
   receiveWorldMessage(zoneId: string, message: WorldChatMessage, options?: { clientMessageId?: string }): void;
@@ -129,10 +130,6 @@ export interface RealtimeChatActions {
   setDirectHistoryLoading(threadId: string, isLoading: boolean): void;
   loadWorldHistory(params: LoadWorldChatHistoryParams): Promise<void>;
   loadDirectHistory(threadId: string, cursor?: string): Promise<void>;
-  addTab(tab: ChatTab): void;
-  removeTab(tabId: string): void;
-  setActiveTab(tabId: string | null): void;
-  updateTabUnread(tabId: string, unreadCount: number): void;
   loadBlockedPlayers(): Promise<void>;
   blockPlayer(playerId: string): Promise<void>;
   unblockPlayer(playerId: string): Promise<void>;

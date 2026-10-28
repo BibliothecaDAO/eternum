@@ -1,6 +1,7 @@
 import { formatClockTime } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 
 import { Fragment, useCallback, useEffect, useMemo } from "react";
 
@@ -10,7 +11,6 @@ import { type PlayerNames, resolveChatSenderName, usePlayerNames } from "@/hooks
 import {
   useRealtimeChatActions,
   useRealtimeChatSelector,
-  useRealtimePresence,
   useRealtimeWorldZone,
   useWorldChatControls,
 } from "../../hooks/use-realtime-chat";
@@ -23,6 +23,8 @@ import { UserAvatar } from "../shared/user-avatar";
 
 interface WorldChatPanelProps {
   zoneId?: string;
+  /** The room's name, as its tab and its field say it. */
+  name: string;
   className?: string;
 }
 
@@ -106,7 +108,7 @@ const formatWorldMessageTime = (message: WorldChatMessage) => {
 const formatSenderName = (names: PlayerNames, message: WorldChatMessage) =>
   resolveChatSenderName(names, message.sender.playerId, message.sender.displayName) || "Unknown adventurer";
 
-export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
+export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps) {
   // Select value directly to prevent infinite re-renders
   const fallbackZoneId = useRealtimeChatSelector((state) => state.activeZoneId ?? Object.keys(state.worldZones)[0]);
   const resolvedZoneId = zoneId ?? fallbackZoneId;
@@ -119,27 +121,14 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
   const { zone, isActive } = useRealtimeWorldZone(resolvedZoneId);
   const { sendMessage, loadHistory, markAsRead } = useWorldChatControls(resolvedZoneId);
   const messages = zone?.messages ?? NO_MESSAGES;
-  const presence = useRealtimePresence();
   // A sender's name is read as the list draws, and the list draws again when one lands.
   const names = usePlayerNames();
   const handleNavigateToCoordinates = useCallback((coordinates: { x: number; y: number }) => {
     openOnMap(Position.fromNormalized({ x: coordinates.x, y: coordinates.y }), "tile");
   }, []);
 
-  const handleUserClick = (userId: string) => {
-    const threadId = actions.openDirectThread(userId);
-    if (threadId) {
-      const user = presence.find((p) => p.playerId === userId);
-      const displayName = user?.displayName ?? userId;
-      actions.addTab({
-        id: `dm-${threadId}`,
-        type: "dm",
-        label: displayName.slice(0, 12),
-        targetId: threadId,
-        unreadCount: 0,
-      });
-    }
-  };
+  // A sender's name opens Messages' conversation with them: private messages are never written in a room.
+  const handleUserClick = (userId: string) => actions.openConversation(userId);
 
   useEffect(() => {
     if (resolvedZoneId && hasChannelAccess) {
@@ -234,7 +223,7 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
                           <span
                             onClick={() => handleUserClick(message.sender.playerId)}
                             className="cursor-pointer text-hud-accent transition-colors hover:text-hud-accent"
-                            title={`Click to send DM to ${senderName}`}
+                            title={`${CHAT_WORDS.message} ${senderName}`}
                           >
                             &lt;{senderName}&gt;
                           </span>{" "}
@@ -256,7 +245,7 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
                   );
                 })}
                 {messages.length === 0 && !zone.isFetchingHistory && !zone.historyError && (
-                  <li className="text-hud-body text-hud-cue">No messages yet.</li>
+                  <li className="text-hud-body text-hud-cue">{CHAT_WORDS.noMessages}</li>
                 )}
               </ul>
             </div>
@@ -270,7 +259,7 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
             if (!resolvedZoneId) return;
             await sendMessage({ content: value, zoneId: resolvedZoneId });
           }}
-          placeholder={resolvedZoneId ? "Message world chat…" : "Select a zone to chat"}
+          placeholder={`${CHAT_WORDS.message} ${name}`}
           disabled={!hasChannelAccess}
         />
       </div>

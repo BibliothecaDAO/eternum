@@ -27,6 +27,7 @@ import { LabGame, useLabPlayer } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { MenuPage } from "@/ui/features/frontier/hud/menu-page";
 import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
+import { GLOBAL_ROOM } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { PickedArmy, type PickedArmyView } from "@/ui/features/frontier/hud/picked-army";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
@@ -1064,7 +1065,7 @@ export const HudLab = () => {
   useHudMode("frontier");
   useLabNotice(lab.notice);
   const chatPane = useRef<HTMLElement>(null);
-  const chat = lab.chat && <ChatPage gameZoneId="lab-game" signedIn onSignIn={noop} pane={chatPane} />;
+  const chat = lab.chat && <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} />;
   if (lab.merge)
     return (
       <div data-lab="frontier-merge" className="ui min-h-screen bg-hud-surface flex items-center justify-center p-3">

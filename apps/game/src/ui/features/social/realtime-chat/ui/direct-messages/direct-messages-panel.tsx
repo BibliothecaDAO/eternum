@@ -1,3 +1,6 @@
+import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
+import { HudIconButton } from "@/ui/design-system/kit/hud-elements";
+import { BACK, CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { formatClockTime } from "@bibliothecadao/types";
 import { Fragment, useEffect, useMemo } from "react";
 
@@ -15,7 +18,9 @@ import { MessageComposer } from "../shared/message-composer";
 import { UserAvatar } from "../shared/user-avatar";
 
 interface DirectMessagesPanelProps {
-  threadId?: string;
+  threadId: string;
+  /** Back to Messages, the list it was opened from. */
+  onBack: () => void;
   className?: string;
 }
 
@@ -30,19 +35,12 @@ const toDisplayTime = (message: DirectMessage) => {
   return "Now";
 };
 
-const truncateIdentifier = (value: string, visibleChars = 4) => {
-  if (!value) return value;
-  const normalized = value.trim();
-  if (normalized.length <= visibleChars * 2 + 3) {
-    return normalized;
-  }
-  return `${normalized.slice(0, visibleChars + 2)}…${normalized.slice(-visibleChars)}`;
-};
-
-export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanelProps) {
-  // Select values individually to prevent infinite re-renders
-  const fallbackThreadId = useRealtimeChatSelector((state) => state.activeThreadId ?? Object.keys(state.dmThreads)[0]);
-  const resolvedThreadId = threadId ?? fallbackThreadId;
+/**
+ * One private conversation, opened from Messages or a player's name: the other player by name, the way back to
+ * Messages, Block, the messages and the field. A player who is offline is written to all the same: the server keeps the
+ * message for them and tells their devices.
+ */
+export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, className }: DirectMessagesPanelProps) {
   const { thread } = useDirectThread(resolvedThreadId);
   const identity = useRealtimeChatSelector((state) => state.identity);
   const identityId = identity?.playerId ?? "";
@@ -64,16 +62,10 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
     );
   }, [selfAliases, thread]);
 
-  const recipientLabel = useMemo(() => {
-    if (!recipientId) return undefined;
-    return truncateIdentifier(recipientId, 6);
-  }, [recipientId]);
-
   const onlinePlayers = useRealtimeChatSelector((state) => state.onlinePlayers);
-  const isRecipientOnline = useMemo(() => {
-    if (!recipientId) return false;
-    return onlinePlayers[recipientId]?.isOnline ?? false;
-  }, [recipientId, onlinePlayers]);
+  const names = usePlayerNames();
+  const nameOf = (playerId: string) => resolveChatSenderName(names, playerId, onlinePlayers[playerId]?.displayName);
+  const recipientLabel = recipientId ? nameOf(recipientId) : undefined;
 
   const { sendMessage, loadHistory, markAsRead } = useDirectMessageControls(resolvedThreadId, recipientId);
   const isRecipientBlocked = useRealtimeChatSelector(
@@ -122,8 +114,9 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
   return (
     <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
       {thread && recipientId && (
-        <header className="flex items-center justify-between gap-2 border-b border-hud-line px-4 py-2 text-hud-label">
-          <span className="text-hud-muted">{recipientLabel}</span>
+        <header className="flex items-center gap-2 border-b border-hud-line px-2 py-1 text-hud-label">
+          <HudIconButton icon="arrow-left" label={BACK} kind="quiet" size="sm" onClick={onBack} />
+          <span className="min-w-0 flex-1 truncate text-hud-strong text-hud-ink">{recipientLabel}</span>
           <button
             type="button"
             className="rounded border border-hud-line px-2 py-0.5 text-hud-accent hover:bg-hud-hover"
@@ -139,7 +132,6 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
         </header>
       )}
       <div className="flex-1 min-h-0 px-4 py-3">
-        {!thread && <p className="text-hud-body text-hud-cue">Select a conversation to get started.</p>}
         {thread && (
           <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
             <div ref={scrollerRef} className="flex-1 min-h-0 overflow-y-auto pr-1">
@@ -152,9 +144,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
               <ul className="flex flex-col gap-0.5">
                 {thread.messages.map((message, index) => {
                   const isOwn = selfAliases.includes(message.senderId);
-                  const displayLabel = isOwn
-                    ? "You"
-                    : (onlinePlayers[message.senderId]?.displayName ?? truncateIdentifier(message.senderId));
+                  const displayLabel = isOwn ? "You" : nameOf(message.senderId);
                   return (
                     <Fragment key={message.id}>
                       {dateSeparators.has(index) && (
@@ -179,7 +169,9 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                     </Fragment>
                   );
                 })}
-                {thread.messages.length === 0 && <li className="text-hud-body text-hud-cue">No messages yet.</li>}
+                {thread.messages.length === 0 && (
+                  <li className="text-hud-body text-hud-cue">{CHAT_WORDS.noMessages}</li>
+                )}
               </ul>
             </div>
             {hasNewer && <JumpToLatest onJump={jumpToLatest} />}
@@ -198,10 +190,8 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
             if (!recipientId) return;
             await sendMessage(value);
           }}
-          placeholder={recipientLabel ? `Message ${recipientLabel}` : "Select a conversation to send a message"}
+          placeholder={`${CHAT_WORDS.message} ${recipientLabel ?? ""}`.trim()}
           disabled={!recipientId}
-          isRecipientOffline={!isRecipientOnline && !!recipientId}
-          recipientName={recipientLabel}
         />
       </div>
     </section>
