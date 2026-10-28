@@ -12,13 +12,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 
 import type { Tier } from "@/ui/design-system/kit/words";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import {
-  biomeTypeOf,
-  configManager,
-  entityMapPosition,
-  getStructureName,
-  isViewerOwner,
-} from "@bibliothecadao/eternum";
+import { biomeTypeOf, configManager, getStructureName, isViewerOwner } from "@bibliothecadao/eternum";
 import {
   safeInteger,
   type GameClientSetup,
@@ -31,13 +25,13 @@ import { useMemo, type ReactNode } from "react";
 
 import { useFrontierRealm, useGoToFrontierPlace } from "../frontier-home";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
-import { armyArt, type DockArmy, useDockArmies } from "../hud/dock-armies";
+import { armyArt } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
 import { readFightRecord } from "./fight-record";
 import { fightIsSent, fightWasNotSent, useFightRefusal } from "./fight-refusal";
-import { pickArmyFor, useSelectedOwnArmy } from "./selected-army";
+import { useSelectedOwnArmy } from "./selected-army";
 import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
-import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
+import { SiteCardView, type SiteVerb } from "./site-card-view";
 
 const SITE_MODELS = [
   "ExpeditionSite",
@@ -110,8 +104,8 @@ const targetId = (target: AttackTarget): number =>
 
 /**
  * A target's card over the game's facts: the selected army's matchup and exact forecast, what a clear pays and its
- * XP, then Attack in reach, Move until the army arrives, or the stamina it lacks. With no army selected, the realm's
- * armies are the choices. The card stays between attacks and closes when the target falls. It is the one surface an
+ * XP, then Attack in reach, Move until the army arrives, or the stamina it lacks. With no army selected, what the site
+ * is and pays, and its guard. The card stays between attacks and closes when the target falls. It is the one surface an
  * army's attack is confirmed on, whatever it attacks.
  *
  * After a clear the panel is the still-selected army's again, not the cleared site's (owner, 27 October 2026: "when I
@@ -136,7 +130,6 @@ export const TileCard = ({
   const facts = useNativeFacts(SITE_MODELS);
   const siteTile = selected.tile.hexCoords;
   const plan = useMemo(() => readTarget(facts.store, selected, attack), [attack, facts, selected]);
-  const choices = useSiteChoices(selected, actor === null);
   const approach = useOrderAt(useApproachTile(siteTile, actor !== null && plan.fight === undefined));
   const stamina = useArmyStamina(actor ? safeInteger(actor.army.explorer_id) : null, plan.attackStamina);
   const realm = useFrontierRealm();
@@ -186,7 +179,6 @@ export const TileCard = ({
       chest={plan.chest ? { tier: (plan.chest.tier + 1) as Tier, lords: plan.chest.amount } : undefined}
       xp={plan.xp}
       verb={verb}
-      choices={actor || !realm ? undefined : choices}
       onRealm={() => {
         onClose();
         goToPlace(false);
@@ -253,34 +245,6 @@ const useSiteAttack = (
 ): SiteAttack | null => {
   const timestamp = useCurrentDefaultTick();
   return actor && { ...actor, biome: biomeTypeOf(siteTile.biome), timestamp };
-};
-
-/** With no army selected, each of the realm's armies as a choice, with the fight it would have from where it stands. */
-const useSiteChoices = (selected: AttackTarget, wanted: boolean): SiteChoice[] => {
-  const { setup } = useGame();
-  const realm = useFrontierRealm();
-  const armies = useDockArmies(realm);
-  const timestamp = useCurrentDefaultTick();
-  if (!wanted || !realm) return [];
-  return armies.map((army: DockArmy) => {
-    const troops = setup.store.get("ExplorerTroops", { game_id: realm.game_id, explorer_id: army.explorerId });
-    const position = entityMapPosition(setup.store, realm.game_id, army.explorerId);
-    const fight =
-      troops &&
-      readTarget(setup.store, selected, {
-        army: troops,
-        armyTile: { col: position.x, row: position.y, alt: position.alt },
-        biome: biomeTypeOf(selected.tile.biome),
-        timestamp,
-      }).fight;
-    return {
-      label: army.label,
-      art: army.art,
-      troops: army.troops,
-      fight,
-      onPick: () => pickArmyFor(army.explorerId, selected.tile.hexCoords),
-    };
-  });
 };
 
 /** What a camp or rift pays home and what of it fits; a ruin pays its chest, beasts only XP. */

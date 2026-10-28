@@ -597,6 +597,23 @@ const STATES = {
     site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
   },
   "site-ruin": { clock: CLOCK, stores: STORES, armies: ARMIES, site: RUIN_CARD },
+  // The owner's Titanwatch on 28 October, no army selected: a named ruin, its Ammit, its chest and XP on one row.
+  "site-ruin-armyless": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...RUIN_CARD,
+      name: "Titanwatch",
+      beast: { name: "Ammit", beast: "ammit", combatClass: "Knight" },
+      army: null,
+      guard: 2_300,
+      fight: undefined,
+      chest: { tier: 2, lords: 100 },
+      xp: 119,
+      verb: null,
+    },
+  },
   "site-ruin-lose": {
     clock: CLOCK,
     stores: STORES,
@@ -652,26 +669,12 @@ const STATES = {
       verb: { ...ATTACK_30, refused: "The army is on battle cooldown" },
     },
   },
-  "site-pick": {
+  // No army selected: what the site is and pays, its guard beside them (owner, 28 October 2026: "agree with no picker").
+  "site-armyless": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    site: {
-      ...CAMP_CARD,
-      army: null,
-      verb: null,
-      choices: [
-        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180, 492), onPick: () => undefined },
-        {
-          label: "Army 2",
-          art: ARMY_CHIP.art,
-          troops: 100,
-          fight: LOSE(1, 100, 1_034),
-          onPick: () => undefined,
-        },
-        { label: "Army 3", art: ARMY_CHIP.art, troops: 600, fight: undefined, onPick: () => undefined },
-      ],
-    },
+    site: { ...CAMP_CARD, army: null, fight: undefined, verb: null },
   },
   "site-short": {
     clock: CLOCK,

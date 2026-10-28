@@ -20,7 +20,6 @@ vi.mock("@/sync/active-game-client", async (original) => ({
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
-import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
 import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActionPaths, ActionType, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
@@ -155,12 +154,12 @@ describe("the tile card", () => {
     try {
       const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
       expect(card).not.toBeNull();
-      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toBe("+550+82 XPTroll1.1K");
-      expect(host.querySelector('[aria-label="Beast 1.1K"]')).not.toBeNull();
+      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toBe("1,100Troll+550+82 XP");
+      expect(host.querySelector('header [aria-label="Troll 1,100"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
-      // With an army chosen, the headline is the attack's; the Troll is its painting and the guard's side.
+      // With an army chosen, the headline is the attack's; the Troll is its token and the guard's side.
       expect(card!.querySelectorAll('[data-icon="beast-troll"]')).toHaveLength(2);
       expect(button("Attack")?.disabled).toBe(false);
       await act(async () => button("Attack")!.click());
@@ -177,7 +176,7 @@ describe("the tile card", () => {
       const card = host.querySelector('section[aria-label="North Watch"]')!;
       expect(card).not.toBeNull();
       expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-      expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("+550+82 XPTroll1.1K");
+      expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("1,100Troll+550+82 XP");
       expect(card.textContent?.match(/Troll/g)).toHaveLength(1);
       expect(card.textContent).not.toMatch(/\bcamp\b/i);
     } finally {
@@ -462,28 +461,6 @@ describe("after the player's attack (owner, 27 October 2026: 'the post fight car
     act(() => store.applyFacts([...ARMY_GONE, gone("Guard", "0x73")] as never));
     expect(selection()).toEqual(ON_THE_SITE);
     noResult(host);
-    unmount();
-  });
-});
-
-describe("an army picked from a site's card", () => {
-  it("asks the map for that army and names the site's tile, so the card stays open with the army as its actor", () => {
-    const { host, unmount } = renderCard("beside");
-    const asked: unknown[] = [];
-    // The site's place as the map reads it: the tile's contract hex, carried as a Position.
-    const hear = () => {
-      const request = takeArmySelectRequest();
-      const site = request?.forSite?.getContract();
-      asked.push({ entityId: request?.entityId, forSite: site && { col: site.x, row: site.y } });
-    };
-    window.addEventListener(ARMY_SELECT_REQUEST_EVENT, hear);
-    const rows = [...host.querySelectorAll<HTMLButtonElement>(".ui-row__choose")].filter((row) =>
-      row.textContent?.startsWith("Army"),
-    );
-    expect(rows.length).toBeGreaterThan(0);
-    act(() => rows[0].click());
-    window.removeEventListener(ARMY_SELECT_REQUEST_EVENT, hear);
-    expect(asked).toEqual([{ entityId: 201, forSite: { col: SITE_TILE.col, row: SITE_TILE.row } }]);
     unmount();
   });
 });

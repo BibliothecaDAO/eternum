@@ -21,7 +21,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActionPaths, ActionType } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { takeArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
 import { MapSiteCard } from "./map-site-card";
 import { campBeside, SITE_TILE } from "./site-fixture";
 
@@ -56,13 +55,9 @@ describe("a Well's tile card", () => {
     const use = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Use");
     expect(host.querySelector('[aria-label="stamina +60"]')).not.toBeNull();
     expect(use()).toBeUndefined();
-    // No army selected: the card says what an army does here and offers the realm's armies, a tap picking one for it.
-    expect(host.textContent).toContain("Pick an army to use it");
-    const armyRow = [...host.querySelectorAll(".ui-row button")].find((button) =>
-      button.textContent?.endsWith("1,498 troops"),
-    );
-    act(() => (armyRow as HTMLButtonElement).click());
-    expect(takeArmySelectRequest()).toMatchObject({ entityId: 201, forSite: { x: SITE_TILE.col, y: SITE_TILE.row } });
+    // No army selected: what it gives alone, no army to pick (owner, 28 October 2026: "agree with no picker").
+    expect(host.querySelectorAll(".ui-row")).toHaveLength(0);
+    expect(host.textContent).not.toContain("Pick an army");
 
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     // Selected but offered no Use (the planner has not offered one): no Use, and no army to pick.

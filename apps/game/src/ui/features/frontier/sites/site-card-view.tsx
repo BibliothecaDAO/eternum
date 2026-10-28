@@ -9,7 +9,6 @@ import {
   HudCost,
   HudNotice,
   HudRarity,
-  HudRow,
   HudSheet,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
@@ -23,17 +22,13 @@ import {
   ATTACKING,
   FULL,
   MOVE,
-  NO_ARMY_OUT,
-  PICK_AN_ARMY,
   ON_ITS_WAY,
   REALM,
   REST_DID_NOT_FIT,
   STORAGE,
   tooFarFrom,
   TROOPS,
-  BEAST,
   FIGHT_WORDS,
-  WOULD_BE_LOST,
   XP,
 } from "@/ui/design-system/kit/words";
 
@@ -42,6 +37,7 @@ import type { ReactNode } from "react";
 
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
+import { GuardToken } from "../hud/army-token";
 import { FightSide } from "./fight-side";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
@@ -63,25 +59,14 @@ export type SiteVerb =
   | { kind: "far" };
 
 /**
- * An army that could take the site, offered when none is selected: the fight it would have from where it stands (the
- * attack preview's own forecast), or none while it is out of reach or the site is not a fight. Picking it selects that
- * army for the site, whose card then acts for it.
- */
-export type SiteChoice = {
-  label: string;
-  art: IconMeaning;
-  troops: number;
-  fight: SiteFight | undefined;
-  onPick: () => void;
-};
-
-/**
- * A guarded site's card (wireframe 06), read as its result will read (the owner's option A). Its headline is what this
- * attack comes to, and beside it what the clear pays (what fits, with its XP, or a ruin's chest with its tier and exact
- * LORDS): "This attack earns" over the reward when it clears the site, the reward dimmed when it does not (owner, 26
- * October 2026: "moving the clear rewards in the 'this attack clears it' -> This attack earns xxx"). Under it, each
- * side's troops before and after, as numbers and bars with no line restating them. Its foot is the sheet's: Realm on
- * the left, the one step alone on the right.
+ * A guarded site's card (wireframe 06), read as its result will read (the owner's option A), headed as the owner picked
+ * (28 October 2026, layout V1: "v1 token header yes"). The guard stands at its head as the dock draws an army: its
+ * portrait, its strength under it. Beside it, what the site is (its kind and its beast, where the title does not say
+ * them), or with an army in reach what this attack comes to; then, on one row, what the clear pays (what fits, with its
+ * XP, or a ruin's chest with its tier and exact LORDS): "This attack earns" over the reward when it clears the site, the
+ * reward dimmed when it does not (owner, 26 October 2026: "moving the clear rewards in the 'this attack clears it' ->
+ * This attack earns xxx"). With an army selected, each side's troops before and after, the guard's strength said there
+ * and not on its token. Its foot is the sheet's: Realm on the left, the one step alone on the right.
  */
 export const SiteCardView = ({
   site,
@@ -94,7 +79,6 @@ export const SiteCardView = ({
   chest,
   xp,
   verb,
-  choices,
   receipt,
   onRealm,
   onClose,
@@ -112,7 +96,6 @@ export const SiteCardView = ({
   chest?: { tier: Tier; lords: number };
   xp: number | undefined;
   verb: SiteVerb | null;
-  choices?: readonly SiteChoice[];
   receipt?: ReactNode;
   /** The way to make room when the payout does not all fit. */
   onRealm?: () => void;
@@ -120,12 +103,14 @@ export const SiteCardView = ({
 }) => {
   const { word: kind, icon } = TARGET_MARKS[site];
   const word = attackTargetName(site, beast);
+  const title = name ?? word;
   const lost = fight && fight.outcome === "loses";
-  // With no army selected the realm's armies are the choices, and the guard moves up beside the kind.
-  const picking = choices !== undefined;
+  // With no army selected the card says what the site is and pays, and its guard (owner, 28 October 2026: "agree with
+  // no picker"); selecting an army, then the site, gives the fight.
+  const armyless = army === null;
   const guardIcon = beast ? beastMeaning(beast.beast) : "troops";
   // The army against a guard of known size, with the fight forecast: what option A reads, side by side.
-  const facing = picking ? undefined : facingOf(army, guard, fight);
+  const facing = facingOf(army, guard, fight);
   const reward =
     chest || pay || xp !== undefined ? (
       <Reward dimmed={facing !== undefined && !clears(facing)}>
@@ -137,27 +122,31 @@ export const SiteCardView = ({
         )}
       </Reward>
     ) : null;
+  // What the site is, in the words the title has not said: its kind under a site's own name, and its beast.
+  const what = [...new Set([name && kind, beast?.name])].filter((part) => part && part !== title).join(" · ");
   return (
-    <HudSheet label={name ?? word} onClose={onClose}>
-      <header className="flex items-center justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-3">
+    <HudSheet label={title} onClose={onClose}>
+      <header className="grid grid-cols-[auto_1fr] items-center gap-3">
+        {typeof guard === "number" ? (
+          <GuardToken
+            label={beast?.name ?? TROOPS}
+            art={guardIcon}
+            troops={armyless ? guard : undefined}
+            tip={beast?.combatClass}
+          />
+        ) : (
           <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
-          <span className="flex min-w-0 flex-col gap-1">
-            {facing ? (
-              <Outcome facing={facing} earns={reward !== null} />
-            ) : (
-              name && kind !== beast?.name && <span className="text-hud-label text-hud-muted">{kind}</span>
-            )}
-            {reward}
-          </span>
+        )}
+        <span className="flex min-w-0 flex-col gap-1.5">
+          {facing ? (
+            <Outcome facing={facing} earns={reward !== null} />
+          ) : (
+            what && <span className="text-hud-label text-hud-muted">{what}</span>
+          )}
+          {reward}
         </span>
-        {picking && <BeastGuard beast={beast} guard={guard} />}
       </header>
-      {picking && choices ? (
-        <ArmyChoices does="attack" choices={choices} guardIcon={guardIcon} />
-      ) : (
-        <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />
-      )}
+      {!armyless && <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />}
       {receipt}
       <Verb
         verb={verb}
@@ -251,116 +240,6 @@ const FightPanel = ({
       )}
     </div>
   ) : null;
-
-/** Species and remaining strength, including while choosing an army. */
-const BeastGuard = ({
-  beast,
-  guard,
-}: {
-  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
-  guard: number | null | undefined;
-}) =>
-  guard === null ? null : (
-    <span className="flex items-center gap-2" data-tip={beast?.combatClass}>
-      {beast && <span className="text-hud-strong text-hud-ink">{beast.name}</span>}
-      <HudChip icons={[beast ? beastMeaning(beast.beast) : "troops"]} label={beast ? BEAST : TROOPS}>
-        {formatShort(guard)}
-      </HudChip>
-    </span>
-  );
-
-/**
- * A site's card with no army selected, whatever the site: what an army does there, then each of the realm's armies as
- * a row (with the fight it would have, at a guarded site) that a tap picks for it; with none out, where one comes from.
- */
-export const ArmyChoices = ({
-  does,
-  choices,
-  guardIcon,
-}: {
-  does: keyof typeof PICK_AN_ARMY;
-  choices: readonly SiteChoice[];
-  /** The guard's mark, at a site an army fights; its rows then carry their forecasts. */
-  guardIcon?: IconMeaning;
-}) => (
-  <div className="flex flex-col gap-1.5">
-    <p className="text-hud-label text-hud-muted">{choices.length > 0 ? PICK_AN_ARMY[does] : NO_ARMY_OUT}</p>
-    {choices.map((choice) => (
-      <HudRow
-        key={choice.label}
-        lead={<SemanticIcon name={choice.art} alt="" className="size-8 rounded-full object-cover" />}
-        title={choice.label}
-        detail={`${formatExact(choice.troops)} ${TROOPS}`}
-        onClick={choice.onPick}
-        trail={
-          <>
-            {guardIcon && <Forecast fight={choice.fight} size="row" guardIcon={guardIcon} />}
-            <SemanticIcon name="chevron-right" size={16} />
-          </>
-        }
-      />
-    ))}
-  </div>
-);
-
-/**
- * One forecast, drawn the same on the attack's plate and on an army's row. The flag's count is the attacks the whole
- * fight takes to win; the figures are the one attack Attack sends now, as its result will show them: the
- * troops it costs and, while the guard still stands after it, the guard left. A fight the army does not win shows
- * both in amber, under a skull that names itself. Unknown is a dash on the plate and nothing on a row.
- */
-const Forecast = ({
-  fight,
-  size,
-  guardIcon = "troops",
-}: {
-  fight: SiteFight | undefined;
-  size: "plate" | "row";
-  guardIcon?: IconMeaning;
-}) => {
-  const known = fight && fight.outcome !== "refused" ? fight : undefined;
-  if (!known && size === "row") return null;
-  if (known && known.outcome !== "wins") {
-    return (
-      <>
-        <Line
-          icon="skull"
-          value={`−${formatExact(known.troopsLost)}`}
-          hot
-          name={known.outcome === "loses" ? WOULD_BE_LOST : undefined}
-        />
-        <Line icon={guardIcon} value={formatExact(known.guardLeft)} hot />
-      </>
-    );
-  }
-  return (
-    <>
-      <Line icon="flag" value={known ? `×${known.exchanges}` : "—"} name={FIGHT_WORDS.attacks} />
-      <Line icon="skull" value={known ? `−${formatExact(known.troopsLost)}` : "—"} />
-      {known && known.guardLeft > 0 && <Line icon={guardIcon} value={formatExact(known.guardLeft)} />}
-    </>
-  );
-};
-
-/** An icon and its figure; a name puts the line on the tooltip (hover, or press-and-hold). */
-const Line = ({
-  icon,
-  value,
-  hot = false,
-  name,
-}: {
-  icon: IconMeaning;
-  value: string;
-  hot?: boolean;
-  name?: string;
-}) => (
-  <span className="flex items-center gap-1.5" data-tip={name}>
-    <SemanticIcon name={icon} size={22} />
-    <span className={cn("text-hud-display leading-none tabular-nums", hot ? "text-hud-bad" : "text-hud-ink")}>
-      {value}
-    </span>
-  </span>
-);
 
 /** What a clear pays home: what fits, marked Full, as the fight's result marks it, when the store cannot take it all. */
 const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number } }) => {
