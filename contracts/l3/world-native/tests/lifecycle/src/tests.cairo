@@ -1,5 +1,6 @@
 pub use world_test_support::tests::*;
 mod blitz_results;
+mod campaign;
 mod camps;
 mod entry;
 

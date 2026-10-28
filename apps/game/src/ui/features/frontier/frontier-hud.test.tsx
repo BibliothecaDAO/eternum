@@ -105,7 +105,7 @@ const renderHud = () =>
 const LABOR_RULES = {
   model: "LaborRules",
   key: "0x1ab",
-  value: { game_id: 1, amount: "1000" },
+  value: { game_id: 1, amount: "1000", golden_essence: "0" },
 };
 
 it("opens Realm Labor from the desktop panel and explains why a free home has no claim", async () => {

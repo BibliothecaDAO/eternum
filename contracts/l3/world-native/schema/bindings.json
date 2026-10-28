@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "8b0bcf82179d42ffe1605743f0900391d145157aade8bb992c5ac97a5a6cd007",
+  "schemaIdentity": "1eb3841f8064b4b439dd5c31b8ad879a0bdd2b0c55a8818b9bbae4ac5761f185",
   "commandAbi": [
     {
       "type": "interface",
@@ -1683,6 +1683,10 @@
     },
     {
       "name": "SettledRealm",
+      "scope": "game"
+    },
+    {
+      "name": "CampaignHome",
       "scope": "game"
     },
     {

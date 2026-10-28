@@ -146,12 +146,27 @@ describe("native presets", () => {
     }
   });
 
-  test("held-Realm labor is fixed per shard calendar day and leaves the account ceiling unruled", () => {
+  test("held-Realm labor is fixed per game day without a golden campaign bonus", () => {
     for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
-      expect(preset.economy.labor.unwrap()).toEqual({ amount: 1000n });
+      expect(preset.economy.labor.unwrap()).toEqual({ amount: 1000n, golden_essence: 0n });
     }
     for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
+  });
+  test.each([-1, 0.5, Number.NaN])("refuses invalid golden Essence grants (%s)", (invalid) => {
+    const labor = nativePresets[FRONTIER_DEVCON_PRESET_ID]!.labor!;
+    const previous = labor.goldenEssence;
+    try {
+      labor.goldenEssence = invalid;
+      expect(() =>
+        buildNativePreset(
+          loadNativePresetConfiguration("madara.frontier", FRONTIER_DEVCON_PRESET_ID),
+          FRONTIER_DEVCON_PRESET_ID,
+        ),
+      ).toThrow("Invalid Realm labor rules");
+    } finally {
+      labor.goldenEssence = previous;
+    }
   });
   test.each([2, 4])(
     "a fixed-roster realm (preset %i) starts with 1,000 T1 troops garrisoned and 1,000 in reserve, its type dealt",
@@ -824,7 +839,7 @@ describe("Devcon's fast Frontier preset", () => {
       })),
     );
     expect(nativePresets[FRONTIER_PRESET_ID]!.labor!.amount).toBe(1_000);
-    expect(fast.economy.labor.unwrap()).toEqual({ amount: 1_000n });
+    expect(fast.economy.labor.unwrap()).toEqual({ amount: 1_000n, golden_essence: 1_000n });
     expect(fast.structures.research.filter(({ row }) => row === research.ROW_DEPTH).map(({ price }) => price)).toEqual([
       { essence: 20_000_000_000_000n, labor: 0n },
       { essence: 50_000_000_000_000n, labor: 0n },

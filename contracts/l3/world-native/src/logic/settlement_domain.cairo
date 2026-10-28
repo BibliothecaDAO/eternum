@@ -351,18 +351,17 @@ pub mod SettlementLogic {
             let home = crate::state::read().games.open_homes.read((game_id, actor));
             assert!(home != 0, "open home must be assigned before the roll");
             let entitlement = self.settlements.data.settlements.entitlements.read((game_id, actor));
-            let realm_id = if let Some(held) = entitlement {
-                assert!(held.pass_kind == 2, "held Realm required");
-                assert!(command.selected_realm.is_none(), "held Realm already selected");
-                let realm_id = held.realm_id.try_into().expect('invalid canonical realm');
-                self.settlements.claim_held_realm(key, realm_id, home);
-                realm_id
+            let selected_realm = if let Some(entitlement) = entitlement {
+                assert!(command.selected_realm.is_none(), "home source already selected");
+                self.claim_frontier_source(key, home, entitlement)
             } else if let Some(selected) = command.selected_realm {
                 assert!(context.game.unbox().dev_mode_on, "development mode required");
-                selected
+                Some(selected)
             } else {
-                crate::entity_ids::namespace(home) % crate::realms::CANONICAL_REALM_COUNT + 1
+                None
             };
+            let realm_id = selected_realm
+                .unwrap_or(crate::entity_ids::namespace(home) % crate::realms::CANONICAL_REALM_COUNT + 1);
             let traits = self.realms.traits(realm_id);
             ISettlementCreationLibraryDispatcher { class_hash: self.release.classes(game_id).structures.read() }
                 .create_settlement(
@@ -379,6 +378,19 @@ pub mod SettlementLogic {
                     ),
                     crate::commands::action_context(context),
                 );
+        }
+
+        fn claim_frontier_source(
+            ref self: ContractState, key: EntryKey, home: u64, entitlement: crate::settlement::EntryEntitlement,
+        ) -> Option<u32> {
+            if entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND {
+                self.settlements.claim_campaign_home(key, home, entitlement);
+                return None;
+            }
+            assert!(entitlement.pass_kind == crate::settlement::HELD_REALM_KIND, "Frontier home source required");
+            let realm_id = entitlement.realm_id.try_into().expect('invalid canonical realm');
+            self.settlements.claim_held_realm(key, realm_id, home);
+            Some(realm_id)
         }
 
         fn resolve_season_realm(

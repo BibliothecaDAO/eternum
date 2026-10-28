@@ -9,6 +9,7 @@ export const frontierDevconPreset: NativePreset = {
   ...frontierPreset,
   id: FRONTIER_DEVCON_PRESET_ID,
   clockScale: 3,
+  labor: { ...frontierPreset.labor, goldenEssence: 1000 },
   research: [
     ...frontierPreset.research.filter(({ row }) => row !== research.ROW_DEPTH),
     ...[20_000, 50_000, 100_000].map((essenceCost, index) => ({

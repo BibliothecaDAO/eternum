@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "8b0bcf82179d42ffe1605743f0900391d145157aade8bb992c5ac97a5a6cd007";
+export const nativeFactSchemaIdentity = "1eb3841f8064b4b439dd5c31b8ad879a0bdd2b0c55a8818b9bbae4ac5761f185";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "SKILL_POINT_REFILL_BASE": 10,
@@ -190,8 +190,8 @@ export interface NativeRows {
   ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly fixed_xp: number; readonly common_xp: number; readonly uncommon_xp: number; readonly rare_xp: number; readonly epic_xp: number; readonly legendary_xp: number };
   FrontierDiscoveryRules: { readonly game_id: number; readonly beasts_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_cleared: boolean };
-  LaborRules: { readonly game_id: number; readonly amount: bigint };
-  LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly account: bigint; readonly amount: bigint };
+  LaborRules: { readonly game_id: number; readonly amount: bigint; readonly golden_essence: bigint };
+  LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly account: bigint; readonly amount: bigint; readonly essence: bigint };
   ChestRules: { readonly game_id: number; readonly price_ceiling: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number; readonly pool_bps: number; readonly top_n: number };
   FrontierPrize: { readonly game_id: number; readonly pool: bigint; readonly issued: bigint; readonly count: (number) | null };
   LordsBudget: { readonly game_id: number; readonly pool: bigint; readonly pool_left: bigint; readonly open: bigint; readonly day: bigint; readonly price: bigint; readonly rolled_shares: bigint; readonly yesterday_shares: bigint; readonly yesterday_ticks: bigint };
@@ -228,6 +228,7 @@ export interface NativeRows {
   VillagePass: { readonly game_id: number; readonly pass_id: number; readonly owner: bigint; readonly village_id: bigint };
   VillagePool: { readonly game_id: number; readonly opened: number; readonly available: readonly ({ readonly coords: readonly ({ readonly alt: boolean; readonly x: number; readonly y: number })[] })[] };
   SettledRealm: { readonly game_id: number; readonly realm_id: number; readonly home: bigint };
+  CampaignHome: { readonly game_id: number; readonly home: bigint; readonly campaign_id: bigint; readonly tier: number };
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint; readonly realm_id: bigint; readonly metadata_1: bigint; readonly metadata_2: bigint; readonly metadata_3: bigint; readonly pass_kind: number };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint; readonly player: bigint };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
@@ -322,6 +323,7 @@ export interface NativeKeys {
   VillagePass: { readonly game_id: number; readonly pass_id: number };
   VillagePool: { readonly game_id: number };
   SettledRealm: { readonly game_id: number; readonly realm_id: number };
+  CampaignHome: { readonly game_id: number; readonly home: bigint };
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
@@ -590,7 +592,8 @@ export const nativeFactModels = {
     "scope": "game",
     "fields": {
       "game_id": "u32",
-      "amount": "u128"
+      "amount": "u128",
+      "golden_essence": "u128"
     }
   },
   "LaborGrant": {
@@ -605,7 +608,8 @@ export const nativeFactModels = {
       "home": "u64",
       "day": "u64",
       "account": "felt",
-      "amount": "u128"
+      "amount": "u128",
+      "essence": "u128"
     }
   },
   "ChestRules": {
@@ -1229,6 +1233,19 @@ export const nativeFactModels = {
       "game_id": "u32",
       "realm_id": "u32",
       "home": "u64"
+    }
+  },
+  "CampaignHome": {
+    "keys": [
+      "game_id",
+      "home"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "home": "u64",
+      "campaign_id": "felt",
+      "tier": "u8"
     }
   },
   "EntryEntitlement": {
@@ -2208,6 +2225,11 @@ export const nativeSyncScopes = {
     ]
   },
   "SettledRealm": {
+    "entities": [
+      "home"
+    ]
+  },
+  "CampaignHome": {
     "entities": [
       "home"
     ]

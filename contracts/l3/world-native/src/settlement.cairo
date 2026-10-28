@@ -1,6 +1,11 @@
 use starknet::ContractAddress;
 use crate::troops::{Coord, TroopType};
 
+pub const HELD_REALM_KIND: u8 = 2;
+pub const CAMPAIGN_KIND: u8 = 3;
+pub const CAMPAIGN_NORMAL: u8 = 1;
+pub const CAMPAIGN_GOLDEN: u8 = 2;
+
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 #[allow(starknet::store_no_default_variant)]
 pub enum SettlementMode {
