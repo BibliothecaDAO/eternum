@@ -423,7 +423,7 @@ it("drops a blocked player's direct messages before socket and push, and deliver
   await worker.dispose();
 }, 120_000);
 
-it("lists a player's conversations from the server: one written while they were offline, read, then answered", async () => {
+it("counts unread on the server alone: the handshake lists conversations, and a read reaches every device", async () => {
   const worker = await startWorker({
     bundle,
     storage: newStorage(),
@@ -432,33 +432,28 @@ it("lists a player's conversations from the server: one written while they were 
   });
   await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
   const [sender, recipient] = [await signIn(worker), await signIn(worker)];
-  type Listed = {
-    thread: {
-      id: string;
-      participants: string[];
-      unreadCounts: Record<string, number>;
-      readThrough?: Record<string, string>;
-    };
+  interface Thread {
+    id: string;
+    participants: string[];
+    unreadCounts: Record<string, number>;
+  }
+  interface Listed {
+    thread: Thread;
     lastMessage: { content: string; senderId: string } | null;
+  }
+  /** A device opening chat: its handshake, and every frame after it. */
+  const open = async (player: { cookie: string }) => {
+    const device = await connect(worker, player.cookie, "/api/chat/inbox");
+    await waitUntil(() => ofType(device.received, "connected").length > 0, 5_000);
+    return { ...device, listed: ofType(device.received, "connected")[0]!.threads as Listed[] };
   };
-  const threadsOf = (player: { cookie: string }) =>
-    worker.mf
-      .dispatchFetch(`${ORIGIN}/api/chat/dm/threads`, { headers: { cookie: player.cookie, origin: ORIGIN } })
-      .then((response) => response.json() as Promise<{ threads: Listed[] }>);
-  /** The list read again until it says what is awaited: a socket's frame lands a moment after it is sent. */
-  const listedOnce = async (player: { cookie: string }, holds: (threads: Listed[]) => boolean) => {
-    const deadline = Date.now() + 5_000;
-    let threads = (await threadsOf(player)).threads;
-    while (!holds(threads) && Date.now() < deadline) {
-      await pause(100);
-      threads = (await threadsOf(player)).threads;
-    }
-    return threads;
-  };
+  const unreadOf = (thread: Thread) => thread.unreadCounts[recipient.realmsId];
+  /** The thread as the last frame told this device after a read. */
+  const told = (device: { received: Record<string, unknown>[] }) =>
+    (ofType(device.received, "direct:thread").at(-1)?.thread as Thread | undefined) ?? null;
 
   // The recipient has never opened chat: two messages wait in their inbox.
-  const outbox = await connect(worker, sender.cookie, "/api/chat/inbox");
-  await waitUntil(() => ofType(outbox.received, "connected").length > 0, 5_000);
+  const outbox = await open(sender);
   for (const [content, sent] of [
     ["are you there", 1],
     ["hello?", 2],
@@ -473,18 +468,18 @@ it("lists a player's conversations from the server: one written while they were 
     ({ message }) => message as { id: string; createdAt: string },
   );
 
-  // A client starting empty finds it: who, the last line, unread, never read.
-  const [waiting] = (await threadsOf(recipient)).threads;
+  // A phone starting empty finds the conversation in its handshake: who, the last line, unread. A desktop opens too.
+  const phone = await open(recipient);
+  const desktop = await open(recipient);
+  expect(phone.listed).toHaveLength(1);
+  const [waiting] = phone.listed;
   expect(waiting!.thread.participants).toContain(sender.realmsId);
   expect(waiting!.lastMessage).toMatchObject({ content: "hello?", senderId: sender.realmsId });
-  expect(waiting!.thread.unreadCounts[recipient.realmsId]).toBe(2);
-  expect(waiting!.thread.readThrough).toBeUndefined();
+  expect(unreadOf(waiting!.thread)).toBe(2);
+  expect(unreadOf(desktop.listed[0]!.thread)).toBe(2);
 
-  // Read through the first only: the second stays unread, and the list says where the reading stands.
-  const inbox = await connect(worker, recipient.cookie, "/api/chat/inbox");
-  await waitUntil(() => ofType(inbox.received, "connected").length > 0, 5_000);
   const readThrough = (message: { id: string }) =>
-    inbox.socket!.send(
+    phone.socket!.send(
       JSON.stringify({
         type: "direct:read",
         payload: {
@@ -495,27 +490,42 @@ it("lists a player's conversations from the server: one written while they were 
         },
       }),
     );
+  const frames = (device: { received: Record<string, unknown>[] }) => ofType(device.received, "direct:thread").length;
+
+  // The phone reads through the first only: both devices are told one is left.
   readThrough(first!);
-  const partly = await listedOnce(recipient, (threads) => threads[0]?.thread.unreadCounts[recipient.realmsId] === 1);
-  expect(partly[0]!.thread.unreadCounts[recipient.realmsId]).toBe(1);
-  expect(partly[0]!.thread.readThrough?.[recipient.realmsId]).toBe(first!.createdAt);
+  await waitUntil(() => frames(desktop) >= 1 && frames(phone) >= 1, 5_000);
+  expect(unreadOf(told(phone)!)).toBe(1);
+  expect(unreadOf(told(desktop)!)).toBe(1);
 
   // Then through the second, then the first again (a late receipt): read, and never back.
   readThrough(second!);
   readThrough(first!);
-  await pause(300);
-  const read = await listedOnce(recipient, (threads) => threads[0]?.thread.unreadCounts[recipient.realmsId] === 0);
-  expect(read).toHaveLength(1);
-  expect(read[0]!.thread.unreadCounts[recipient.realmsId]).toBe(0);
-  expect(read[0]!.thread.readThrough?.[recipient.realmsId]).toBe(second!.createdAt);
+  await waitUntil(() => frames(desktop) >= 3, 5_000);
+  expect(ofType(desktop.received, "direct:thread").map(({ thread }) => unreadOf(thread as Thread))).toEqual([1, 0, 0]);
+  expect(unreadOf(told(phone)!)).toBe(0);
 
-  // The answer is the conversation's last line for both.
-  inbox.socket!.send(
+  // A reload finds it read.
+  phone.socket!.close();
+  const reloaded = await open(recipient);
+  expect(unreadOf(reloaded.listed[0]!.thread)).toBe(0);
+
+  // The answer is the conversation's last line for both, and nothing unread for the one who wrote it.
+  reloaded.socket!.send(
     JSON.stringify({ type: "direct:message", payload: { recipientId: sender.realmsId, content: "yes, at dawn" } }),
   );
-  const answered = await listedOnce(sender, (threads) => threads[0]?.lastMessage?.content === "yes, at dawn");
-  expect(answered[0]!.lastMessage).toMatchObject({ content: "yes, at dawn", senderId: recipient.realmsId });
-  expect((await threadsOf(recipient)).threads[0]!.lastMessage).toMatchObject({ content: "yes, at dawn" });
+  await waitUntil(() => ofType(outbox.received, "direct:message").length >= 3, 5_000);
+  const [senderLists, recipientLists] = [(await open(sender)).listed, (await open(recipient)).listed];
+  expect(senderLists[0]!.lastMessage).toMatchObject({ content: "yes, at dawn", senderId: recipient.realmsId });
+  expect(senderLists[0]!.thread.unreadCounts[sender.realmsId]).toBe(1);
+  expect(recipientLists[0]!.lastMessage).toMatchObject({ content: "yes, at dawn" });
+  expect(unreadOf(recipientLists[0]!.thread)).toBe(0);
+
+  // The list is the handshake's: the route that listed it is gone.
+  const route = await worker.mf.dispatchFetch(`${ORIGIN}/api/chat/dm/threads`, {
+    headers: { cookie: recipient.cookie, origin: ORIGIN },
+  });
+  expect(route.status).toBe(404);
 
   await worker.dispose();
 }, 120_000);

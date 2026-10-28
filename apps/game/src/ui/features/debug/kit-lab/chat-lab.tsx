@@ -198,11 +198,16 @@ const LAB_SELF = LAB_SESSION.user.realmsId as string;
 const labThread = (
   other: string,
   lines: [mine: boolean, content: string, minute: number][],
-  unreadCount: number,
+  unread: number,
 ): DirectMessageThreadState => {
   const id = `${LAB_SELF}|${other}`;
   return {
-    thread: { id, participants: [LAB_SELF, other], createdAt: new Date(0).toISOString(), unreadCounts: {} },
+    thread: {
+      id,
+      participants: [LAB_SELF, other],
+      createdAt: new Date(0).toISOString(),
+      unreadCounts: { [LAB_SELF]: unread },
+    },
     messages: lines.map(
       ([mine, content, minute], index): DirectMessage => ({
         id: `${id}-${index}`,
@@ -213,7 +218,6 @@ const labThread = (
         createdAt: new Date(Date.UTC(2026, 9, 18, 11, minute)).toISOString(),
       }),
     ),
-    unreadCount,
     hasMoreHistory: false,
     lastFetchedCursor: undefined,
     isFetchingHistory: false,
@@ -270,7 +274,6 @@ function installLabRoom(view: string | null): true {
       },
     },
     unreadWorldTotal: 3,
-    unreadDirectTotal: 1,
     view: { kind: "room", zoneId: GLOBAL_CHAT_CHANNEL_ID },
     actions: {
       ...actions,

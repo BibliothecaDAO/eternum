@@ -35,7 +35,10 @@ export interface DirectMessage {
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
 export interface DirectMessageCreatePayload extends Schema.Schema.Type<typeof directMessageCreateSchema> {}
-/** A two-player thread as the chat server sends it, with each participant's unread count. */
+/**
+ * A two-player thread as the chat server sends it, with the receiving participant's unread count: the only count of
+ * what that player has not read, kept by their inbox from its own copy of every message.
+ */
 export interface DirectMessageThread {
   readonly id: string;
   readonly participants: string[];
@@ -43,11 +46,6 @@ export interface DirectMessageThread {
   readonly updatedAt?: Date | string;
   readonly lastMessageId?: string;
   readonly unreadCounts: Readonly<Record<string, number>>;
-  /**
-   * The time each participant has read the thread through, as the server keeps it: their unread count is the other
-   * player's messages after it. Absent for one who never read.
-   */
-  readonly readThrough?: Readonly<Record<string, Date | string>>;
   readonly typing?: string[];
 }
 export interface DirectMessageTyping extends Schema.Schema.Type<typeof directMessageTypingSchema> {}

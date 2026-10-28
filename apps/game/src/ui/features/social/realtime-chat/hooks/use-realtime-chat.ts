@@ -31,19 +31,6 @@ export const useRealtimeConnection = () => {
   );
 };
 
-export const useRealtimeTotals = () => {
-  const unreadWorldTotal = useRealtimeChatStore((state) => state.unreadWorldTotal);
-  const unreadDirectTotal = useRealtimeChatStore((state) => state.unreadDirectTotal);
-
-  return useMemo(
-    () => ({
-      unreadWorldTotal,
-      unreadDirectTotal,
-    }),
-    [unreadWorldTotal, unreadDirectTotal],
-  );
-};
-
 export const useRealtimePresence = (): PlayerPresence[] => {
   const onlinePlayers = useRealtimeChatStore((state) => state.onlinePlayers);
 

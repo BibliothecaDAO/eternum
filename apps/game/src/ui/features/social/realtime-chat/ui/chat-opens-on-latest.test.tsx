@@ -65,7 +65,6 @@ const installRooms = ({ globalCount = 20 } = {}) => {
       [THREAD]: {
         thread: { id: THREAD, participants: ["0x7", "0xada"], createdAt: new Date(0).toISOString(), unreadCounts: {} },
         messages: Array.from({ length: 12 }, (_, index) => directMessage(index)),
-        unreadCount: 0,
         hasMoreHistory: false,
         lastFetchedCursor: undefined,
         isFetchingHistory: false,

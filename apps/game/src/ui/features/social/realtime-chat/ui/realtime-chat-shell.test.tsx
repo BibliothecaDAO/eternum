@@ -32,10 +32,10 @@ const said = (zoneId: string, index: number, playerId: string, displayName: stri
     createdAt: new Date(Date.UTC(2026, 9, 28, 12, index)).toISOString(),
   }) as WorldChatMessage;
 
-const thread = (other: string, lines: [string, string][], minute: number, unreadCount: number) => {
+const thread = (other: string, lines: [string, string][], minute: number, unread: number) => {
   const id = `${SELF}|${other}`;
   return {
-    thread: { id, participants: [SELF, other], createdAt: new Date(0).toISOString(), unreadCounts: {} },
+    thread: { id, participants: [SELF, other], createdAt: new Date(0).toISOString(), unreadCounts: { [SELF]: unread } },
     messages: lines.map(
       ([sender, content], index): DirectMessage => ({
         id: `${id}-${index}`,
@@ -46,7 +46,6 @@ const thread = (other: string, lines: [string, string][], minute: number, unread
         createdAt: new Date(Date.UTC(2026, 9, 28, 12, minute + index)).toISOString(),
       }),
     ),
-    unreadCount,
     hasMoreHistory: false,
     lastFetchedCursor: undefined,
     isFetchingHistory: false,
@@ -89,9 +88,10 @@ const install = () => {
     },
     dmThreads: { [aldric.thread.id]: aldric, [isolde.thread.id]: isolde },
     unreadWorldTotal: 0,
-    unreadDirectTotal: 1,
     onlinePlayers: { [ALDRIC]: { playerId: ALDRIC, displayName: "Aldric", isOnline: true, isTypingInThreadIds: [] } },
     view: { kind: "room", zoneId: GLOBAL_CHAT_CHANNEL_ID },
+    // Shown, as the HUD's chat window says when it is open.
+    isShellOpen: true,
     actions: {
       ...actions,
       initializeClient: () => undefined,

@@ -12,6 +12,7 @@ import {
 } from "@/ui/features/social";
 import type { RealtimeConnectionStatus } from "@/ui/features/social/realtime-chat/model/types";
 import { chatRooms } from "@/ui/features/social/realtime-chat/model/chat-rooms";
+import { directUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
 import { configManager, nativeGameModeOf } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
@@ -76,7 +77,7 @@ export function useGameChat(open: boolean) {
   const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
   const lastMessage = useRealtimeChatSelector((state) => state.worldZones[zoneId]?.messages.at(-1));
   const history = useRealtimeChatSelector((state) => historyState(state.worldZones[zoneId]));
-  const unread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
+  const unread = useRealtimeChatSelector((state) => state.unreadWorldTotal + directUnread(state));
   const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
   useEffect(() => {
     setShellOpen(open);

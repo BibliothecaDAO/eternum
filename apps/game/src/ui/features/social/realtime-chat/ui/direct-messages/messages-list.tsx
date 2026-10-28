@@ -2,8 +2,10 @@ import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profil
 import { HudChip, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 
 import { useRealtimeChatActions, useRealtimeChatSelector } from "../../hooks/use-realtime-chat";
+import { threadUnread } from "../../model/direct-unread";
 import { whenSent } from "../../model/message-grouping";
 import { UserAvatar } from "../shared/user-avatar";
 
@@ -17,18 +19,21 @@ export function MessagesList() {
   const self = useRealtimeChatSelector((state) => state.identity?.playerId);
   const threads = useRealtimeChatSelector((state) => state.dmThreads);
   const online = useRealtimeChatSelector((state) => state.onlinePlayers);
+  const unread = useRealtimeChatSelector(
+    useShallow((state) => Object.fromEntries(Object.keys(state.dmThreads).map((id) => [id, threadUnread(state, id)]))),
+  );
   const names = usePlayerNames();
 
   const conversations = useMemo(
     () =>
       Object.values(threads)
-        .flatMap(({ thread, messages, unreadCount }) => {
+        .flatMap(({ thread, messages }) => {
           const last = messages.at(-1);
           const other = thread.participants.find((participant) => participant !== self);
-          return last && other ? [{ other, last, unreadCount }] : [];
+          return last && other ? [{ other, last, unreadCount: unread[thread.id] ?? 0 }] : [];
         })
         .toSorted((a, b) => Date.parse(String(b.last.createdAt)) - Date.parse(String(a.last.createdAt))),
-    [threads, self],
+    [threads, self, unread],
   );
 
   if (conversations.length === 0)

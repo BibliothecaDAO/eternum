@@ -5,6 +5,7 @@ import { useEffect } from "react";
 
 import { useRealtimeChatActions, useRealtimeChatSelector } from "../hooks/use-realtime-chat";
 import type { ChatRoom } from "../model/chat-rooms";
+import { directUnread } from "../model/direct-unread";
 import { DirectMessagesPanel } from "./direct-messages/direct-messages-panel";
 import { MessagesList } from "./direct-messages/messages-list";
 import { WorldChatPanel } from "./world-chat/world-chat-panel";
@@ -22,7 +23,7 @@ export function RealtimeChatShell({ rooms, className }: { rooms: readonly ChatRo
   const actions = useRealtimeChatActions();
   const view = useRealtimeChatSelector((state) => state.view);
   const worldZones = useRealtimeChatSelector((state) => state.worldZones);
-  const directUnread = useRealtimeChatSelector((state) => state.unreadDirectTotal);
+  const unreadMessages = useRealtimeChatSelector(directUnread);
   // A room this place does not have (a game's, kept from another game) gives way to the first it has.
   const strayRoom = view.kind === "room" && !rooms.some((room) => room.zoneId === view.zoneId);
   useEffect(() => {
@@ -42,7 +43,7 @@ export function RealtimeChatShell({ rooms, className }: { rooms: readonly ChatRo
               label: room.label,
               count: shown(worldZones[room.zoneId]?.unreadCount),
             })),
-            { key: MESSAGES, label: CHAT_WORDS.messages, count: shown(directUnread) },
+            { key: MESSAGES, label: CHAT_WORDS.messages, count: shown(unreadMessages) },
           ]}
           value={tab}
           onChange={(key) => (key === MESSAGES ? actions.showMessages() : actions.showRoom(key))}

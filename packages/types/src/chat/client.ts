@@ -59,6 +59,12 @@ type DirectBroadcastMessage = {
   clientMessageId?: string;
 };
 
+/** A thread's state after its owner read it, to every device of the owner: its unread as the inbox recounted it. */
+type DirectThreadBroadcastMessage = {
+  type: "direct:thread";
+  thread: DirectMessageThread;
+};
+
 type DirectTypingBroadcastMessage = {
   type: "direct:typing";
   typing: DirectMessageTyping;
@@ -85,11 +91,19 @@ type PresenceRemoveBroadcastMessage = {
 };
 
 export type RealtimeServerMessage =
-  | { type: "connected"; playerId: string; displayName?: string | null; channels: string[] }
+  | {
+      type: "connected";
+      playerId: string;
+      displayName?: string | null;
+      channels: string[];
+      /** From the inbox: the player's conversations, the latest first, each with its last line and unread. */
+      threads?: { thread: DirectMessageThread; lastMessage: DirectMessage | null }[];
+    }
   | { type: "joined:zone"; zoneId: string; canWrite?: boolean }
   | { type: "left:zone"; zoneId: string }
   | WorldBroadcastMessage
   | DirectBroadcastMessage
+  | DirectThreadBroadcastMessage
   | DirectTypingBroadcastMessage
   | DirectReadBroadcastMessage
   | PresenceSyncBroadcastMessage

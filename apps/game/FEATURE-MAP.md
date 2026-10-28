@@ -289,6 +289,7 @@ message, drawn there on its first frame; a message arriving keeps a reader on th
 read stays put with **New messages** to jump down (the lab's **A message arrives** delivers one). `&view=messages` opens
 Messages over the lab's three conversations, `&view=conversation` the one with Isolde, who is offline. On the open pane,
 at 1440×900 and on a phone with touch, it reads the history's mentions and types `@` to list, pick and send one.
+Messages' unread counts are the server's: read on one of a player's devices, a conversation clears on the others too.
 
 Before play opens, every action is shown but shut, with **Starts in …** under the actions; a map order or a way into a
 workspace says the same instead of sending (`src/utils/can-issue-orders.ts`).

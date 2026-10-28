@@ -56,10 +56,10 @@ export interface WorldChatZoneState {
 }
 
 export interface DirectMessageThreadState {
+  /** The thread as the server last sent it: its unread count is the only one (directUnread reads it). */
   thread: DirectMessageThread;
   messages: DirectMessage[];
-  unreadCount: number;
-  /** The other player's message this client last told the server it read: the server's unread clears through it. */
+  /** The other player's message this client last told the server it read, so it is told once. */
   readThrough?: string;
   hasMoreHistory: boolean;
   lastFetchedCursor?: string | null;
@@ -80,7 +80,6 @@ export interface RealtimeChatState {
   worldZones: Record<string, WorldChatZoneState>;
   dmThreads: Record<string, DirectMessageThreadState>;
   unreadWorldTotal: number;
-  unreadDirectTotal: number;
   onlinePlayers: Record<string, PlayerPresence>;
   typingIndicators: Record<string, DirectMessageTyping>;
   pendingReadReceipts: DirectMessageReadReceipt[];
@@ -138,8 +137,6 @@ export interface RealtimeChatActions {
   setDirectHistoryLoading(threadId: string, isLoading: boolean): void;
   loadWorldHistory(params: LoadWorldChatHistoryParams): Promise<void>;
   loadDirectHistory(threadId: string, cursor?: string): Promise<void>;
-  /** The account's conversations as the server keeps them: each one, its last line and its unread. */
-  loadDirectThreads(): Promise<void>;
   loadBlockedPlayers(): Promise<void>;
   blockPlayer(playerId: string): Promise<void>;
   unblockPlayer(playerId: string): Promise<void>;

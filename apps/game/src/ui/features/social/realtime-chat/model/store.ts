@@ -59,7 +59,6 @@ const createWorldZoneState = (zoneId: string): WorldChatZoneState => ({
 const createThreadState = (thread: DirectMessageThreadState["thread"]): DirectMessageThreadState => ({
   thread,
   messages: [],
-  unreadCount: 0,
   hasMoreHistory: true,
   lastFetchedCursor: undefined,
   isFetchingHistory: false,
@@ -68,43 +67,11 @@ const createThreadState = (thread: DirectMessageThreadState["thread"]): DirectMe
 
 const timeOf = (value: string | Date | null | undefined) => (value ? new Date(value).getTime() : 0);
 
-/**
- * A conversation as the server listed it, laid over what this client holds now. The list was read a moment ago, so what
- * reached the client since (a message over the socket, a read) is newer than it, and stands:
- * - its lines are the client's and the listed last one, in time order, each once;
- * - its thread (last message, last change) is the list's only where the list is as new as the client's;
- * - unread is none while it is open. Else it is the list's unread, which counts the other player's lines after the
- *   server's read boundary up to the listed last one, less those of them read here since (the client holds every line
- *   up to its own read, its history read on opening), and the other player's lines that came after both.
- */
-const reconcileListedThread = (
-  existing: DirectMessageThreadState | undefined,
-  listed: DirectMessageThread,
-  last: DirectMessage | null,
-  self: string | undefined,
-  open: boolean,
-): DirectMessageThreadState => {
-  const held = existing ?? createThreadState(listed);
-  const messages =
-    last && !held.messages.some((message) => message.id === last.id)
-      ? [...held.messages, last].toSorted((a, b) => timeOf(a.createdAt) - timeOf(b.createdAt))
-      : held.messages;
-  const listedIsNewer = !existing || timeOf(listed.updatedAt) >= timeOf(held.thread.updatedAt);
-  const thread = listedIsNewer ? { ...held.thread, ...listed } : held.thread;
-  const fromPeer = (after: number, through = Infinity) =>
-    messages.filter(
-      (message) =>
-        message.senderId !== self && timeOf(message.createdAt) > after && timeOf(message.createdAt) <= through,
-    ).length;
-  const listedThrough = timeOf(last?.createdAt);
-  const serverRead = self ? timeOf(listed.readThrough?.[self]) : 0;
-  const localRead = timeOf(messages.find((message) => message.id === held.readThrough)?.createdAt);
-  const readHereSince = localRead > serverRead ? fromPeer(serverRead, Math.min(localRead, listedThrough)) : 0;
-  const unreadCount =
-    open || !self
-      ? 0
-      : Math.max(0, (listed.unreadCounts[self] ?? 0) - readHereSince) + fromPeer(Math.max(listedThrough, localRead));
-  return { ...held, thread, messages, unreadCount };
+/** A conversation's lines with others added: each once, in time order. */
+const mergeLines = (held: DirectMessage[], incoming: DirectMessage[]): DirectMessage[] => {
+  const heldIds = new Set(held.map((line) => line.id));
+  const added = incoming.filter((line) => !heldIds.has(line.id));
+  return added.length ? [...held, ...added].toSorted((a, b) => timeOf(a.createdAt) - timeOf(b.createdAt)) : held;
 };
 
 const toIsoTimestamp = (value: string | Date | null | undefined): string => {
@@ -215,7 +182,6 @@ const mapDirectThreadRecord = (record: any): DirectMessageThread => {
     updatedAt,
     lastMessageId: record.lastMessageId ?? undefined,
     unreadCounts: record.unreadCounts ?? {},
-    ...(record.readThrough ? { readThrough: record.readThrough } : {}),
   };
 };
 
@@ -242,7 +208,6 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
   worldZones: {},
   dmThreads: {},
   unreadWorldTotal: 0,
-  unreadDirectTotal: 0,
   onlinePlayers: {},
   typingIndicators: {},
   pendingReadReceipts: [],
@@ -316,8 +281,20 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
                 },
               });
               get().joinedZoneIds.forEach((zoneId) => actions.joinZone(zoneId));
-              // Every handshake (a reconnect too) reads the conversations again, those that came while away with them.
-              actions.loadDirectThreads().catch((error) => console.error("chat_threads_unavailable", error));
+              // The inbox's handshake (a reconnect's too) lists the conversations, those that came while away with them.
+              if (Array.isArray(message.threads)) {
+                const listed = message.threads as { thread: unknown; lastMessage: unknown }[];
+                set((state) => {
+                  const dmThreads = { ...state.dmThreads };
+                  for (const record of listed) {
+                    const thread = mapDirectThreadRecord(record.thread);
+                    const held = dmThreads[thread.id] ?? createThreadState(thread);
+                    const last = record.lastMessage ? [mapDirectMessageRecord(record.lastMessage)] : [];
+                    dmThreads[thread.id] = { ...held, thread, messages: mergeLines(held.messages, last) };
+                  }
+                  return { dmThreads };
+                });
+              }
               break;
             case "joined:zone":
               set((state) => ({
@@ -345,6 +322,17 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
                 actions.resolvePendingMessage(message.clientMessageId as string, { status: "sent" });
               }
               break;
+            case "direct:thread": {
+              // Read on one of the player's devices: every device takes the thread with its unread recounted.
+              const thread = mapDirectThreadRecord(message.thread);
+              set((state) => ({
+                dmThreads: {
+                  ...state.dmThreads,
+                  [thread.id]: { ...(state.dmThreads[thread.id] ?? createThreadState(thread)), thread },
+                },
+              }));
+              break;
+            }
             case "direct:typing":
               set((state) => ({
                 typingIndicators: {
@@ -536,40 +524,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       return threadId;
     },
     setActiveThread: (threadId) => {
-      const { dmThreads, unreadDirectTotal, activeThreadId } = get();
-      if (!threadId) {
-        if (activeThreadId !== undefined) {
-          set({ activeThreadId: undefined });
-        }
-        return;
-      }
-
-      const threadState = dmThreads[threadId];
-      if (!threadState) {
-        if (activeThreadId !== threadId) {
-          set({ activeThreadId: threadId });
-        }
-        return;
-      }
-
-      if (activeThreadId === threadId && threadState.unreadCount === 0) {
-        return;
-      }
-
-      const unreadCount = threadState.unreadCount;
-      const nextUnreadTotal = Math.max(unreadDirectTotal - unreadCount, 0);
-
-      set({
-        activeThreadId: threadId,
-        dmThreads: {
-          ...dmThreads,
-          [threadId]: {
-            ...threadState,
-            unreadCount: 0,
-          },
-        },
-        unreadDirectTotal: nextUnreadTotal,
-      });
+      if (get().activeThreadId !== threadId) set({ activeThreadId: threadId });
     },
     receiveWorldMessage: (zoneId, message, options) => {
       const { worldZones, activeZoneId, unreadWorldTotal, identity, isShellOpen } = get();
@@ -621,7 +576,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       });
     },
     receiveDirectMessage: (message, threadInfo) => {
-      const { dmThreads, identity, activeThreadId, unreadDirectTotal, isShellOpen } = get();
+      const { dmThreads, identity, activeThreadId, isShellOpen } = get();
       const normalizedMessage = normalizeDirectMessage(message);
       const existingThread = dmThreads[normalizedMessage.threadId];
       const baseThread = threadInfo ?? existingThread?.thread ?? createFallbackThread(normalizedMessage);
@@ -629,10 +584,8 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       const messages = [...threadState.messages, normalizedMessage].slice(-200);
       const isOwnMessage = matchesIdentityAlias(identity, normalizedMessage.senderId);
       const isActiveThread = activeThreadId === normalizedMessage.threadId;
-      const shouldIncrement = !isOwnMessage && (!isShellOpen || !isActiveThread);
-      const unreadCount = shouldIncrement ? threadState.unreadCount + 1 : threadState.unreadCount;
-
-      if (shouldIncrement) {
+      // Heard and shown when it is not being read; what it adds to unread is the server's count, in its thread.
+      if (!isOwnMessage && (!isShellOpen || !isActiveThread)) {
         AudioManager.getInstance().play("ui.msg_receive");
         const { onlinePlayers } = get();
         const senderName =
@@ -657,10 +610,8 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               updatedAt,
             },
             messages,
-            unreadCount,
           },
         },
-        unreadDirectTotal: shouldIncrement ? unreadDirectTotal + 1 : unreadDirectTotal,
       });
     },
     setWorldHistory: (zoneId, messages, meta) => {
@@ -735,29 +686,21 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         unreadWorldTotal: Math.max(unreadWorldTotal - zoneState.unreadCount, 0),
       });
     },
-    // Read here, and told to the server: its unread for the conversation clears through the newest message the other
-    // player sent, so another device and a reload find it read. Told once a message.
+    // Read here, and told to the server, which recounts its unread and tells every device of the player: through the
+    // newest message the other player sent, once a message, while the server counts some unread.
     markThreadAsRead: (threadId) => {
-      const { dmThreads, unreadDirectTotal, identity, actions } = get();
+      const { dmThreads, identity, actions } = get();
       const thread = dmThreads[threadId];
-      if (!thread) return;
-      const newest = thread.messages.at(-1);
-      const tell = newest && identity && newest.senderId !== identity.playerId && thread.readThrough !== newest.id;
-      if (thread.unreadCount === 0 && !tell) return;
-      set({
-        dmThreads: {
-          ...dmThreads,
-          [threadId]: { ...thread, unreadCount: 0, ...(tell ? { readThrough: newest.id } : {}) },
-        },
-        unreadDirectTotal: Math.max(unreadDirectTotal - thread.unreadCount, 0),
+      if (!thread || !identity) return;
+      const newest = thread.messages.findLast((line) => line.senderId !== identity.playerId);
+      if (!newest || newest.id === thread.readThrough || !thread.thread.unreadCounts[identity.playerId]) return;
+      set({ dmThreads: { ...dmThreads, [threadId]: { ...thread, readThrough: newest.id } } });
+      void actions.acknowledgeDirectRead({
+        threadId,
+        messageId: newest.id,
+        readerId: identity.playerId,
+        readAt: new Date().toISOString(),
       });
-      if (tell)
-        void actions.acknowledgeDirectRead({
-          threadId,
-          messageId: newest.id,
-          readerId: identity.playerId,
-          readAt: new Date().toISOString(),
-        });
     },
     enqueuePendingMessage: (message: PendingMessage) => {
       const { worldZones, dmThreads } = get();
@@ -1040,27 +983,6 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         });
       }
     },
-    loadDirectThreads: async () => {
-      const { baseUrl, client } = get();
-      if (!baseUrl) return;
-      const response = await fetchApi(new URL("/api/chat/dm/threads", baseUrl).toString(), { credentials: "include" });
-      if (!response.ok) throw new Error(`Failed to load direct chat threads (${response.status})`);
-      const data = (await response.json()) as { threads?: { thread: unknown; lastMessage: unknown }[] };
-      // The list answers for the client that asked: one replaced since (a sign-out, another account) takes nothing.
-      if (get().client !== client) return;
-      set((state) => {
-        const self = state.identity?.playerId;
-        const dmThreads = { ...state.dmThreads };
-        for (const listed of data.threads ?? []) {
-          const thread = mapDirectThreadRecord(listed.thread);
-          const last = listed.lastMessage ? mapDirectMessageRecord(listed.lastMessage) : null;
-          const open = state.activeThreadId === thread.id && state.isShellOpen;
-          dmThreads[thread.id] = reconcileListedThread(dmThreads[thread.id], thread, last, self, open);
-        }
-        const unreadDirectTotal = Object.values(dmThreads).reduce((total, thread) => total + thread.unreadCount, 0);
-        return { dmThreads, unreadDirectTotal };
-      });
-    },
     loadDirectHistory: async (threadId: string, cursor?: string) => {
       const { baseUrl, client } = get();
       if (!baseUrl || get().dmThreads[threadId]?.isFetchingHistory) return;
@@ -1115,22 +1037,13 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         const data = await response.json();
         // A page read for a client replaced since writes nothing into the one that replaced it.
         if (get().client !== client) return;
-        const incomingUnsorted = Array.isArray(data?.messages)
+        const incoming = Array.isArray(data?.messages)
           ? (data.messages as any[]).map((record) => mapDirectMessageRecord(record))
           : [];
 
-        const incoming = incomingUnsorted.toSorted((a, b) => {
-          const aTime = new Date(a.createdAt as string).getTime();
-          const bTime = new Date(b.createdAt as string).getTime();
-          return aTime - bTime;
-        });
-
-        const normalizedThread = data?.thread ? mapDirectThreadRecord(data.thread) : undefined;
-
         set((state) => {
           const existing = state.dmThreads[threadId];
-          const baseThread =
-            existing?.thread ?? normalizedThread ?? (incoming[0] ? createFallbackThread(incoming[0]) : undefined);
+          const baseThread = existing?.thread ?? (incoming[0] ? createFallbackThread(incoming[0]) : undefined);
 
           if (!baseThread) {
             if (!existing) {
@@ -1148,28 +1061,13 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           }
 
           const threadState = existing ?? createThreadState(baseThread);
-          const existingMessages = threadState.messages;
-          const existingIds = new Set(existingMessages.map((msg) => msg.id));
-          const dedupedIncoming = incoming.filter((msg) => !existingIds.has(msg.id));
-          const combined = [...dedupedIncoming, ...existingMessages].toSorted(
-            (a, b) => new Date(a.createdAt as string).getTime() - new Date(b.createdAt as string).getTime(),
-          );
-
-          const nextThread = normalizedThread
-            ? {
-                ...threadState.thread,
-                ...normalizedThread,
-                unreadCounts: normalizedThread.unreadCounts ?? threadState.thread.unreadCounts ?? {},
-              }
-            : threadState.thread;
 
           return {
             dmThreads: {
               ...state.dmThreads,
               [threadId]: {
                 ...threadState,
-                thread: nextThread,
-                messages: combined,
+                messages: mergeLines(threadState.messages, incoming),
                 hasMoreHistory: Boolean(data?.nextCursor),
                 lastFetchedCursor: data?.nextCursor ?? null,
                 isFetchingHistory: false,

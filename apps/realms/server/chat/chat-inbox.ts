@@ -29,7 +29,7 @@ interface ThreadRow extends Record<string, SqlStorageValue> {
   updatedAt: number;
   lastMessageId: string;
   unread: number;
-  /** The time the owner has read through (0: never): `unread` is the peer's messages after it. */
+  /** The time the owner has read through (0: never): a read recounts `unread` as the peer's messages after it. */
   readThroughAt: number;
 }
 
@@ -68,7 +68,10 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
       ctx.storage.sql.exec("ALTER TABLE threads ADD COLUMN readThroughAt INTEGER NOT NULL DEFAULT 0");
   }
 
-  /** The owner's socket, admitted by the Worker with the rooms the owner may join. */
+  /**
+   * The owner's socket, admitted by the Worker with the rooms the owner may join. Its handshake carries the owner's
+   * conversations, read once the socket is accepted and sent in the same step: every later frame is newer than it.
+   */
   override async fetch(request: Request): Promise<Response> {
     const member = chatMemberOf(request);
     if (!member) return new Response("chat member required", { status: 400 });
@@ -82,6 +85,7 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
       playerId: member.realmsId,
       displayName: member.displayName ?? null,
       channels: rooms,
+      threads: this.listThreads(member.realmsId),
     });
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -143,11 +147,11 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
   }
 
   /**
-   * The owner's conversations, the latest first: each thread with its last message and what the owner has not read
-   * (a read receipt the owner sends clears it). A conversation with an account the owner blocked is left out. This is
-   * how a client that starts empty (a new device, a reload, a return after messages came in offline) finds them.
+   * The owner's conversations, the latest first: each thread with its last message and what the owner has not read. A
+   * conversation with an account the owner blocked is left out. This is how a client that starts empty (a new device,
+   * a reload, a return after messages came in offline) finds them.
    */
-  async threads(owner: string): Promise<{ thread: DirectMessageThread; lastMessage: DirectMessage | null }[]> {
+  private listThreads(owner: string): { thread: DirectMessageThread; lastMessage: DirectMessage | null }[] {
     const sql = this.ctx.storage.sql;
     return sql
       .exec<ThreadRow>("SELECT * FROM threads ORDER BY updatedAt DESC")
@@ -232,9 +236,10 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     const read = this.ctx.storage.sql
       .exec<MessageRow>("SELECT * FROM messages WHERE id = ? AND threadId = ?", messageId, threadId)
       .toArray()[0];
-    // Read through that message, never back: what the peer wrote after it stays unread. A receipt for a message this
-    // inbox does not hold moves nothing here, and still reaches the peer.
-    if (read)
+    // Read through that message, never back: what the peer wrote after it stays unread. Every device of the owner is
+    // told the recount before anything else can happen here. A receipt for a message this inbox does not hold moves
+    // nothing here, and still reaches the peer.
+    if (read) {
       this.ctx.storage.sql.exec(
         `UPDATE threads SET readThroughAt = MAX(readThroughAt, ?1),
            unread = (SELECT COUNT(*) FROM messages
@@ -244,6 +249,10 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
         read.createdAt,
         threadId,
       );
+      const row = this.ctx.storage.sql.exec<ThreadRow>("SELECT * FROM threads WHERE id = ?", threadId).toArray()[0]!;
+      const thread = toDirectThread(row, member.realmsId);
+      for (const own of this.ctx.getWebSockets()) sendChat(own, { type: "direct:thread", thread });
+    }
     await inboxOf(this.env, peer).read(parsed.success);
   }
 
@@ -349,6 +358,5 @@ const toDirectThread = (row: ThreadRow, owner: string): DirectMessageThread => (
   updatedAt: new Date(row.updatedAt).toISOString(),
   lastMessageId: row.lastMessageId,
   unreadCounts: { [owner]: row.unread },
-  ...(row.readThroughAt > 0 ? { readThrough: { [owner]: new Date(row.readThroughAt).toISOString() } } : {}),
   typing: [],
 });

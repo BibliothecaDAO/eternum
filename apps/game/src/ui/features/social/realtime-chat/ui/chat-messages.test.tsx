@@ -80,7 +80,6 @@ const install = () => {
       [THREAD]: {
         thread: { id: THREAD, participants: [SELF, ALDRIC], createdAt: new Date(0).toISOString(), unreadCounts: {} },
         messages: [whisper],
-        unreadCount: 0,
         hasMoreHistory: false,
         lastFetchedCursor: undefined,
         isFetchingHistory: false,
