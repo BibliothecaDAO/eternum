@@ -188,24 +188,27 @@ on the newest live Blitz game), `--out <root>` (default `.context/playtest`), `-
 boot, from before the game page opens to the world being interactive), `--steps actions` and `--steps lab-actions`
 (click to result: a player's actions, each timed from its press to the frame that draws its result, in a live Frontier
 game with `--player`, or in the lab's game, `/lab/game?scenario=actions`, whose chain answers each command 300 ms after
-it is sent: on the map, explore and move, each on a tile beside the army aimed from where the army stands on screen (the
-camera's hex to the army's, in screen steps; a phone taps the tile twice, and picks the army again from its dock when a
-tap selects something else); in the realm, level up (the keep's Castle sheet, Upgrade) and build (the outermost open
-plot above the castle, Build); `--steps lab-actions-merge`, two armies merged from the transfer card (pressed, then
-confirmed), and `--steps lab-actions-spire`, Enter on Ethereal II from the spire's card). Each names its exact result:
-the renderer's mark once the frame drawing it was rendered (`presented:<result>`, `src/three/presented-results.ts`: the
-explored tile's terrain, the army's walk, the merged army leaving the map, that building on that plot), or the Castle
-sheet naming exactly the next level; another target's result is not the action's. Each is cut where the client records
-its way: handled (the press to the command), sent (signed and answered by the RPC), confirmed (the chain and Herald, to
-the pre-confirmed diff), applied (the diff's facts in the store) and drawn (to the result); a step completes only with
-every mark reached and every frame from the press to the result observed. `--capture-results` also records the page's
-frames and fails a step unless, in its result's region of the screen, the pixels that show it appear at its mark (not a
-frame before, not absent three frames after); the frames around it are kept. Each run writes `click-to-result.md`, each
-action's segments and total as median (min–max) over its quiet runs), `--compare <summary.json>` (fails when boot
-regresses, when an action the baseline timed has no timed run or a renderer mode it timed is missing, or when an
-action's press-to-result median is past the slowest run of that baseline by more than a frame; actions the baseline
-never timed are listed as new; `scripts/client-playtest/baselines/` keeps the lab's, one per step list and device,
-measured on the lanes' machine), `--headed`. Paths are taken from where the command is run.
+it is sent: on the map, explore and move, each on a tile beside the army aimed from where the army stands on screen (its
+token, as the map places it, lowered to its tile; a phone taps the tile twice, and picks the army again from its dock
+when a tap selects something else); in the realm, level up (the keep's Castle sheet, Upgrade) and build (the outermost
+open plot above the castle, Build); `--steps lab-actions-merge`, two armies merged from the transfer card (pressed, then
+confirmed), `--steps lab-actions-spire`, Enter on Ethereal II from the spire's card; `--steps lab-actions-fight`, the
+ruin beside the army attacked from its card; and `--steps lab-actions-sites`, a Shrine and a Well beside the army used).
+Each names its exact result: the renderer's mark once the frame drawing it was rendered (`presented:<result>`,
+`src/three/presented-results.ts`: the explored tile's terrain, the army's walk, the merged army leaving the map, that
+building on that plot, that Shrine or Well leaving its tile), or a page condition: the Castle sheet naming exactly the
+next level, the attacking army's token showing exactly the count the chain answered; another target's result is not the
+action's. Each is cut where the client records its way: handled (the press to the command), sent (signed and answered by
+the RPC), confirmed (the chain and Herald, to the pre-confirmed diff), applied (the diff's facts in the store) and drawn
+(to the result); a step completes only with every mark reached and every frame from the press to the result observed.
+`--capture-results` also records the page's frames and fails a step unless, in its result's region of the screen, the
+pixels that show it appear at its mark (not a frame before, not absent three frames after); the frames around it are
+kept. Each run writes `click-to-result.md`, each action's segments and total as median (min–max) over its quiet runs),
+`--compare <summary.json>` (fails when boot regresses, when an action the baseline timed has no timed run or a renderer
+mode it timed is missing, or when an action's press-to-result median is past the slowest run of that baseline by more
+than a frame; actions the baseline never timed are listed as new; `scripts/client-playtest/baselines/` keeps the lab's,
+one per step list and device, measured on the lanes' machine), `--headed`. Paths are taken from where the command is
+run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 

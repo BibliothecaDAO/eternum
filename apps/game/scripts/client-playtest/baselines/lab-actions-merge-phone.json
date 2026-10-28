@@ -1,9 +1,9 @@
 {
   "measured": {
-    "commit": "215799f0c5b77c0e339d7ae33b58a2e4f9a59d02",
+    "commit": "984deb47a8d1b11e825b846d3f000b555372af41",
     "steps": "lab-actions-merge",
     "device": "phone",
-    "run": "evidence/click-latency/r3-210803/phone/lab-actions-merge/2026-10-28T20-34-53-929Z-spectator",
+    "run": "evidence/click-latency/r4-230616/phone/lab-actions-merge/2026-10-28T22-30-55-564Z-spectator",
     "machine": "the lanes' laptop (16 threads, desktop GPU; phone: CPU 4x, 20 Mbit/40 ms, low-power GPU)"
   },
   "byMode": {
@@ -12,9 +12,9 @@
         "merge": {
           "verdict.clickToResult.totalMs": {
             "n": 5,
-            "median": 460.9,
-            "min": 458.6,
-            "max": 466.4
+            "median": 459.4,
+            "min": 457.8,
+            "max": 465.9
           }
         }
       }
