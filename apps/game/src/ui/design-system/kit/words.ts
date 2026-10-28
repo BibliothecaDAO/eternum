@@ -19,7 +19,6 @@ import {
   formatCharge,
   resourceName,
   formatHeldAgainst,
-  structureName,
   structurePlural,
   StructureType,
 } from "@bibliothecadao/types";
