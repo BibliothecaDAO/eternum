@@ -1,11 +1,17 @@
 /**
  * Pure touch gesture recognizer. Feed it raw touch pointer samples and it emits taps,
- * long presses and navigation steps. One instance owns the entire touch session,
+ * double taps, long presses and navigation steps. One instance owns the entire touch session,
  * so a drag or a pinch cannot also become a gameplay press.
  */
 
 const TAP_SLOP_PX = 10;
 const LONG_PRESS_MS = 500;
+/**
+ * A second tap this soon after the first and this near it is also a double tap, as a mouse's second click is a
+ * double-click: each tap stays a tap, so the first selects and the second answers as any tap does.
+ */
+const DOUBLE_TAP_MS = 350;
+const DOUBLE_TAP_SLOP_PX = 30;
 
 export interface TouchPointerSample {
   kind: "down" | "move" | "up" | "cancel";
@@ -48,6 +54,7 @@ export type TouchGesture =
   | { kind: "start" }
   | { kind: "end" }
   | { kind: "tap"; x: number; y: number }
+  | { kind: "double-tap"; x: number; y: number }
   | { kind: "long-press"; x: number; y: number }
   | { kind: "pan"; fromX: number; fromY: number; x: number; y: number }
   | {
@@ -67,6 +74,10 @@ interface PointerPosition {
   y: number;
 }
 
+interface TapRecord extends PointerPosition {
+  time: number;
+}
+
 interface PressState {
   pointerId: number;
   start: PointerPosition;
@@ -83,6 +94,7 @@ export class TouchGestureRecognizer {
   private readonly pointers = new Map<number, PointerPosition>();
   private press: PressState | null = null;
   private cancelLongPressTimer: (() => void) | null = null;
+  private lastTap: TapRecord | null = null;
 
   constructor(
     private readonly emit: (gesture: TouchGesture) => void,
@@ -110,6 +122,7 @@ export class TouchGestureRecognizer {
     const hadPointers = this.pointers.size > 0;
     this.clearPress();
     this.pointers.clear();
+    this.lastTap = null;
     if (hadPointers) this.emit({ kind: "end" });
   }
 
@@ -163,12 +176,22 @@ export class TouchGestureRecognizer {
         !this.press.longPressFired &&
         distanceBetween(this.press.start, sample) <= TAP_SLOP_PX;
       this.clearPress();
-      if (isTap) {
-        this.emit({ kind: "tap", x: sample.x, y: sample.y });
-      }
+      if (isTap) this.emitTap(sample);
     }
 
     if (this.pointers.size === 0) this.emit({ kind: "end" });
+  }
+
+  /** The tap, and a double tap too when it follows the last one soon and near enough; a third tap starts afresh. */
+  private emitTap(sample: TouchPointerSample): void {
+    this.emit({ kind: "tap", x: sample.x, y: sample.y });
+    const last = this.lastTap;
+    if (last && sample.time - last.time <= DOUBLE_TAP_MS && distanceBetween(last, sample) <= DOUBLE_TAP_SLOP_PX) {
+      this.lastTap = null;
+      this.emit({ kind: "double-tap", x: sample.x, y: sample.y });
+      return;
+    }
+    this.lastTap = { x: sample.x, y: sample.y, time: sample.time };
   }
 
   private handleCancel(sample: TouchPointerSample): void {

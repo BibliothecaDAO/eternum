@@ -81,13 +81,31 @@ describe("TouchGestureRecognizer", () => {
     expect(harness.gestures).toEqual([]);
   });
 
-  it("keeps repeated short presses as selection taps, never a double-click action", () => {
+  // Owner, 28 October 2026: "double tapping the realm on mobile should bring me to the realm view !"
+  it("keeps every short press a tap, and reads a quick near second tap as a double tap too, a third afresh", () => {
     const harness = createHarness();
     for (let i = 0; i < 3; i++) {
       harness.feed("down", i, 100, 100, i * 100);
       harness.feed("up", i, 100, 100, i * 100 + 50);
     }
-    expect(harness.gestures).toEqual(Array.from({ length: 3 }, () => ({ kind: "tap", x: 100, y: 100 })));
+    const tap = { kind: "tap", x: 100, y: 100 };
+    expect(harness.gestures).toEqual([tap, tap, { kind: "double-tap", x: 100, y: 100 }, tap]);
+  });
+
+  it("reads no double tap from two taps too slow or too far apart", () => {
+    const slow = createHarness();
+    slow.feed("down", 1, 100, 100, 0);
+    slow.feed("up", 1, 100, 100, 50);
+    slow.feed("down", 2, 100, 100, 450);
+    slow.feed("up", 2, 100, 100, 500);
+    expect(slow.gestures.map(({ kind }) => kind)).toEqual(["tap", "tap"]);
+
+    const far = createHarness();
+    far.feed("down", 1, 100, 100, 0);
+    far.feed("up", 1, 100, 100, 50);
+    far.feed("down", 2, 160, 100, 150);
+    far.feed("up", 2, 160, 100, 200);
+    expect(far.gestures.map(({ kind }) => kind)).toEqual(["tap", "tap"]);
   });
 
   it("does not select when the release is far away even if the browser omitted move events", () => {

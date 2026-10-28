@@ -377,7 +377,8 @@ describe("InputManager touch", () => {
     expect(clickCallback).not.toHaveBeenCalled();
   });
 
-  it("keeps quick repeated taps on the selection path without double-click actions", () => {
+  // Owner, 28 October 2026: "double tapping the realm on mobile should bring me to the realm view !"
+  it("dispatches two quick taps as two clicks and one double-click, as a mouse's two clicks are", () => {
     vi.useFakeTimers();
     const clickCallback = vi.fn();
     const doubleClickCallback = vi.fn();
@@ -395,7 +396,11 @@ describe("InputManager touch", () => {
     fixture.surface.dispatchEvent(createTouchPointerEvent("pointerup", 2, 155, 262));
 
     expect(clickCallback).toHaveBeenCalledTimes(2);
-    expect(doubleClickCallback).not.toHaveBeenCalled();
+    expect(doubleClickCallback).toHaveBeenCalledTimes(1);
+    expect(doubleClickCallback.mock.calls[0][0]).toMatchObject({ clientX: 155, clientY: 262, pointerType: "touch" });
+    // A native double-click after the touch is not a second one.
+    fixture.surface.dispatchEvent(new MouseEvent("dblclick", { clientX: 155, clientY: 262 }));
+    expect(doubleClickCallback).toHaveBeenCalledTimes(1);
   });
 
   it("returns to the native mouse path once a mouse pointer is seen again", () => {
