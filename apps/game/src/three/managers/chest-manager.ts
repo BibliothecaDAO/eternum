@@ -23,6 +23,7 @@ import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "../scenes/worldmap-content-ladder";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "../terrain/terrain-surface";
 import { screenCentrePlacement } from "../rewards/screen-centre-placement";
+import { CENTRE_KEY, type ReadyStage, ScreenCentreStage } from "../rewards/screen-centre-stage";
 import { RenderChunkSize } from "../types/common";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getWorldPositionForHex } from "../utils";
@@ -56,8 +57,6 @@ import {
 } from "../frame-budget-work-queue";
 
 const MAX_INSTANCES = 1000;
-/** The transition slot of the chest a reward stages at the screen's centre: it stands on no tile. */
-const CENTRE_KEY = "centre";
 /** How much of the screen's height the centred chest fills, whatever the zoom. */
 const CENTRE_SCREEN_SHARE = 0.22;
 
@@ -330,25 +329,31 @@ export class ChestManager {
    * A reward's chest at the centre of the screen: it arrives on the ground the camera looks at, sized to the screen
    * whatever the zoom, opens by itself in `glow`, and goes, telling `beats` as it reaches each. A chest already staged
    * there ends first. Nothing on the map is replaced or held. The chest's model loads first when no chest on the map has
-   * needed it yet.
+   * needed it yet; a request ended or superseded meanwhile stages nothing (ScreenCentreStage).
    */
   public async presentAtScreenCentre(beats: ChestPresentationBeats, glow?: ChestGlow): Promise<boolean> {
-    await this.prepareModel();
-    const camera = this.hexagonScene?.getCamera();
-    if (!this.chestModel || !this.chestTransitions || !camera) return false;
-    const surface = this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE;
-    const placement = screenCentrePlacement(camera, CENTRE_SCREEN_SHARE, surface);
-    if (!placement) return false;
-    const presented = this.chestTransitions.present(CENTRE_KEY, placement, this.chestModel.time, beats, glow);
+    const presented = await this.centreStage.present(beats, glow);
     this.applyContentLadder(this.contentLadder);
     return presented;
   }
 
-  /** Ends the chest staged at the screen's centre, if one is, as when the map is left mid-moment. */
+  /** Ends the chest staged at the screen's centre and any still loading, as when the map is left mid-moment. */
   public endScreenCentrePresentation(): void {
-    this.chestTransitions?.cancel(CENTRE_KEY);
+    this.centreStage.end(this.chestTransitions);
     this.applyContentLadder(this.contentLadder);
   }
+
+  /** The centre's chest once its model is ready: where it stands now; none when it cannot stand anywhere. */
+  private readonly prepareCentreStage = async (): Promise<ReadyStage | null> => {
+    await this.prepareModel();
+    const camera = this.hexagonScene?.getCamera();
+    if (this.isDestroyed || !this.chestModel || !this.chestTransitions || !camera) return null;
+    const surface = this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE;
+    const placement = screenCentrePlacement(camera, CENTRE_SCREEN_SHARE, surface);
+    return placement && { transitions: this.chestTransitions, placement, time: this.chestModel.time };
+  };
+
+  private readonly centreStage = new ScreenCentreStage(this.prepareCentreStage);
 
   private transitionKey(chest: Pick<ChestSpatialRenderable, "hexCoords">): string {
     return `${chest.hexCoords.col},${chest.hexCoords.row}`;
