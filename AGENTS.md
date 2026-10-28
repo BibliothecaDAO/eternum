@@ -39,11 +39,12 @@ verifiable gate).
    module (`@bibliothecadao/types` constants and names, the generated contract constants, the game's rule rows in the
    native fact store) or one table beside it. Never hand-write a copy, however short: a list of catalog members, a map
    that holds only some of them, a name typed inline, an image path, a number the config holds. Key a table by the
-   catalog's own type (`Record<StructureType, …>`), so a member the game adds does not compile until it has its row, and
-   give a surface built from a catalog a test that fails when it misses a member. The guard is
-   `apps/game/scripts/catalog-guards.mjs`, run in CI by `lint:guards`: outside the catalog modules it refuses a list or
-   a partial map of a catalog's members and an image path. `catalog-copies-baseline.json` counts the copies that stood
-   when it came; a file may not hold more, and the count only falls.
+   catalog's own type (`Record<StructureType, …>`, annotated or with `satisfies`, never an `as` cast), so a member the
+   game adds does not compile until it has its row, and give a surface built from a catalog a test that fails when it
+   misses a member. The guard is `apps/game/scripts/catalog-guards.mjs`, run in CI by `lint:guards`: outside the catalog
+   modules it refuses a list or a partial map of a catalog's members and an image path. `catalog-copies-baseline.json`
+   counts the copies that stood when it came; a file may not hold more, and `--write-catalog-baseline` only lowers a
+   count, writing nothing while any file gains a copy.
 4. **Success of systemic work is deletion.** When a layer becomes trustworthy, the bespoke fallbacks, holds, TTLs, and
    timers stacked above it should disappear. A systemic "fix" that only adds code is suspect.
 5. **Evidence before optimization.** Instrument, convict, then fix what the data names. Performance and bug-fix changes

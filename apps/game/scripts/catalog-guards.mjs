@@ -4,10 +4,12 @@
 // building; Frontier's stores were spelled out eight times). The guard refuses, outside the catalog modules:
 //   - a list naming two or more members of one catalog: `[StructureType.Realm, StructureType.Village]`;
 //   - a map keyed by two or more members of one catalog that is not a whole `Record<Catalog, …>` (which the compiler
-//     holds to every member), including `Partial<Record<Catalog, …>>`;
+//     holds to every member, by an annotation or `satisfies`; an `as` cast holds it to nothing), including
+//     `Partial<Record<Catalog, …>>`;
 //   - an image path written as a string: artwork is named through the icon modules (IconMeaning).
 // Copies that stood when the guard came are counted in catalog-copies-baseline.json, a count per file that may only
-// fall; lint-guards.mjs runs it in CI, and src/catalog-guards.test.mjs holds its controls.
+// fall: --write-catalog-baseline lowers a count, and writes nothing while any file gains a copy. lint-guards.mjs runs
+// it in CI, and src/catalog-guards.test.mjs holds its controls.
 
 /** The game's catalogs: the enums of @bibliothecadao/types whose members are game content. */
 const CATALOGS = new Set([
@@ -51,15 +53,19 @@ const partialRecordCatalog = (type) =>
     ? recordKeyCatalog((type.typeArguments ?? type.typeParameters)?.params[0])
     : undefined;
 
-/** The type an object literal is held to: its `satisfies` or `as` type, or its variable's annotation, through `as const`. */
+/**
+ * The type the compiler holds an object literal to: its `satisfies` type or its variable's annotation, through
+ * `as const`. An `as` cast is no such type: TypeScript accepts `{ Realm, Village } as Record<StructureType, …>` with
+ * Camp missing, so a cast never vouches that a map is whole.
+ */
 const declaredType = (object) => {
   let node = object;
   while (node.parent?.type === "TSAsExpression" && node.parent.typeAnnotation.typeName?.name === "const") {
     node = node.parent;
   }
   const parent = node.parent;
-  if (parent?.type === "TSSatisfiesExpression" || parent?.type === "TSAsExpression") return parent.typeAnnotation;
-  if (parent?.type === "VariableDeclarator") return parent.id.typeAnnotation?.typeAnnotation;
+  if (parent?.type === "TSSatisfiesExpression") return parent.typeAnnotation;
+  if (parent?.type === "VariableDeclarator" && parent.init === node) return parent.id.typeAnnotation?.typeAnnotation;
   return undefined;
 };
 
@@ -75,7 +81,8 @@ const oneSource = {
     messages: {
       [COPY]:
         "One source per fact: a list or partial map of {{catalog}} members is a copy. Read the catalog (or a table in " +
-        "its module), or key a whole Record<{{catalog}}, …> the compiler holds to every member.",
+        "its module), or key a whole Record<{{catalog}}, …> the compiler holds to every member: annotated or with " +
+        "`satisfies`, never an `as` cast.",
       [IMAGE]: "One source per fact: artwork is named through the icon modules (IconMeaning), never a path.",
     },
   },
@@ -133,6 +140,25 @@ const SCENARIOS = [
 ];
 
 export const CATALOG_RULE = "catalog/one-source";
+
+/**
+ * The guard's verdict on the copies standing against the baseline's count per file. A file over its count, or one the
+ * baseline does not name, is an addition: refused. A file under its count is a removal. `write` is the lowered
+ * baseline --write-catalog-baseline may write: only when it is asked to, something was removed and nothing was added,
+ * so lowering the baseline can never carry a new copy in with it.
+ */
+export const planCatalogBaseline = (counts, baseline, { lowering = false } = {}) => {
+  const files = [...new Set([...Object.keys(counts), ...Object.keys(baseline)])].sort();
+  const additions = files.filter((file) => (counts[file] ?? 0) > (baseline[file] ?? 0));
+  const removals = files.filter((file) => (counts[file] ?? 0) < (baseline[file] ?? 0));
+  const write =
+    lowering && additions.length === 0 && removals.length > 0
+      ? Object.fromEntries(files.map((file) => [file, counts[file] ?? 0]).filter(([, count]) => count > 0))
+      : undefined;
+  // A removal still asks for the baseline to be lowered unless this run lowers it.
+  const unlowered = write ? [] : removals;
+  return { additions, unlowered, write };
+};
 
 /** The guard as a flat-config block, for lint-guards.mjs and the test alike. */
 export const catalogGuardConfigs = [

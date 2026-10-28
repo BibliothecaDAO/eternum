@@ -8,7 +8,7 @@ import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
-import { CATALOG_RULE, catalogGuardConfigs } from "./catalog-guards.mjs";
+import { CATALOG_RULE, catalogGuardConfigs, planCatalogBaseline } from "./catalog-guards.mjs";
 import { nameGuardConfigs } from "./name-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -177,26 +177,25 @@ const line = ({ file, message }) => `${file}:${message.line}:${message.column} $
 const isCatalogCopy = ({ message }) => message.ruleId === CATALOG_RULE;
 
 // The catalog copies that stood when the guard came, a count per file: a file may hold no more than its count, and
-// once one is removed the count is lowered with --write-catalog-baseline, so the copies only ever fall.
+// once one is removed --write-catalog-baseline lowers the count. It writes nothing while any file holds more than its
+// count or is new to the baseline, so the copies only ever fall.
 const BASELINE = resolve(dirname(fileURLToPath(import.meta.url)), "catalog-copies-baseline.json");
 const copiesByFile = new Map();
 for (const copy of errors.filter(isCatalogCopy))
   copiesByFile.set(copy.file, [...(copiesByFile.get(copy.file) ?? []), copy]);
-if (process.argv.includes("--write-catalog-baseline")) {
-  const counts = Object.fromEntries([...copiesByFile].map(([file, copies]) => [file, copies.length]).sort());
-  writeFileSync(BASELINE, `${JSON.stringify(counts, null, 2)}\n`);
-}
+const counts = Object.fromEntries([...copiesByFile].map(([file, copies]) => [file, copies.length]));
 const baseline = JSON.parse(readFileSync(BASELINE, "utf8"));
-const catalogHits = [...new Set([...copiesByFile.keys(), ...Object.keys(baseline)])].flatMap((file) => {
-  const copies = copiesByFile.get(file) ?? [];
-  const allowed = baseline[file] ?? 0;
-  if (copies.length > allowed) return copies.map(line);
-  if (copies.length < allowed)
-    return [
-      `${file} holds ${copies.length} catalog copies, under its baseline of ${allowed}: run --write-catalog-baseline`,
-    ];
-  return [];
+const { additions, unlowered, write } = planCatalogBaseline(counts, baseline, {
+  lowering: process.argv.includes("--write-catalog-baseline"),
 });
+if (write) writeFileSync(BASELINE, `${JSON.stringify(write, null, 2)}\n`);
+const catalogHits = [
+  ...additions.flatMap((file) => copiesByFile.get(file).map(line)),
+  ...unlowered.map(
+    (file) =>
+      `${file} holds ${counts[file] ?? 0} catalog copies, under its baseline of ${baseline[file]}: run --write-catalog-baseline`,
+  ),
+];
 
 const hits = [...errors.filter((error) => !isCatalogCopy(error)).map(line), ...catalogHits];
 for (const hit of hits) console.log(hit);

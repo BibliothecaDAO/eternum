@@ -6,7 +6,7 @@ import { ESLint } from "eslint";
 import tseslint from "typescript-eslint";
 import { describe, expect, it } from "vitest";
 
-import { catalogGuardConfigs } from "../scripts/catalog-guards.mjs";
+import { catalogGuardConfigs, planCatalogBaseline } from "../scripts/catalog-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const BASE = {
@@ -41,6 +41,14 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
     [
       "a map held to a partial record",
       "export const M = { [StructureType.Realm]: 1, [StructureType.Camp]: 2 } satisfies Partial<Record<StructureType, number>>;",
+    ],
+    [
+      "a map cast as a whole record, Camp missing (review 1: a cast vouches for nothing)",
+      "export const M = { [StructureType.Realm]: 1, [StructureType.Village]: 2 } as Record<StructureType, number>;",
+    ],
+    [
+      "a cast map assigned to a whole record",
+      "export const M: Record<StructureType, number> = { [StructureType.Realm]: 1, [StructureType.Village]: 2 } as Record<StructureType, number>;",
     ],
     ["an image path", "export const art = '/images/biomes/ocean.png';"],
     ["an image path built in a template", "export const art = (name: string) => `/icons/facets/64/${name}.webp`;"],
@@ -83,5 +91,42 @@ describe("one source per fact: no copy of a catalog outside its modules", () => 
       expect(() => readFileSync(resolve(REPO, file)), file).not.toThrow();
       expect(count, file).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("the baseline only falls (review 1: lowering it must never carry a copy in)", () => {
+  const BASELINE = { "a.ts": 2, "b.ts": 1 };
+  const lower = (counts) => planCatalogBaseline(counts, BASELINE, { lowering: true });
+
+  it("lowers a file's count when a copy is removed, and drops a file left with none", () => {
+    expect(lower({ "a.ts": 1 })).toEqual({ additions: [], unlowered: [], write: { "a.ts": 1 } });
+  });
+
+  it("asks for the lowering when a copy is removed and the run does not lower", () => {
+    expect(planCatalogBaseline({ "a.ts": 1, "b.ts": 1 }, BASELINE)).toEqual({
+      additions: [],
+      unlowered: ["a.ts"],
+      write: undefined,
+    });
+  });
+
+  it("refuses a file over its count, and writes nothing", () => {
+    expect(lower({ "a.ts": 3, "b.ts": 1 })).toEqual({ additions: ["a.ts"], unlowered: [], write: undefined });
+  });
+
+  it("refuses a file the baseline does not name, and writes nothing", () => {
+    expect(lower({ ...BASELINE, "new.ts": 1 })).toEqual({ additions: ["new.ts"], unlowered: [], write: undefined });
+  });
+
+  it("refuses a cleanup that brings a copy in elsewhere, writing nothing and still asking for the cleanup's lowering", () => {
+    expect(lower({ "a.ts": 1, "b.ts": 1, "new.ts": 1 })).toEqual({
+      additions: ["new.ts"],
+      unlowered: ["a.ts"],
+      write: undefined,
+    });
+  });
+
+  it("passes a tree that matches its baseline, writing nothing", () => {
+    expect(lower(BASELINE)).toEqual({ additions: [], unlowered: [], write: undefined });
   });
 });
